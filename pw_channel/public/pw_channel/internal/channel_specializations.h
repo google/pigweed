@@ -26,9 +26,10 @@ template <typename Self>
 class Conversions {
  private:
   template <typename Sibling>
-  static constexpr void ConversionIsValid() {
-    static_assert(Sibling::kDataType == Self::kDataType,
-                  "Datagram and byte channels are not interchangeable");
+  static constexpr bool ConversionIsValid() {
+    static_assert(Sibling::kDataType == DataType::kByte ||
+                      Self::kDataType == DataType::kDatagram,
+                  "Cannot use a byte channel as a datagram channel");
     static_assert(!Sibling::kReliable || Self::kReliable,
                   "Cannot use a unreliable channel as a reliable channel");
     static_assert(!Sibling::kReadable || Self::kReadable,
@@ -37,40 +38,50 @@ class Conversions {
                   "Cannot use a non-writable channel as a writable channel");
     static_assert(!Sibling::kSeekable || Self::kSeekable,
                   "Cannot use a non-seekable channel as a seekable channel");
+    return true;
   }
 
  public:
   template <typename Sibling>
   [[nodiscard]] Sibling& as() {
-    if constexpr (std::is_same_v<Sibling, Channel>) {
+    if constexpr (std::is_same_v<Sibling, AnyChannel>) {
       return static_cast<Self&>(*this);
     } else {
       ConversionIsValid<Sibling>();
-      return pw::internal::SiblingCast<Sibling&, Channel>(
+      return pw::internal::SiblingCast<Sibling&, AnyChannel>(
           static_cast<Self&>(*this));
     }
   }
 
   template <typename Sibling>
   [[nodiscard]] const Sibling& as() const {
-    if constexpr (std::is_same_v<Sibling, Channel>) {
+    if constexpr (std::is_same_v<Sibling, AnyChannel>) {
       return static_cast<const Self&>(*this);
     } else {
       ConversionIsValid<Sibling>();
-      return pw::internal::SiblingCast<const Sibling&, Channel>(
+      return pw::internal::SiblingCast<const Sibling&, AnyChannel>(
           static_cast<const Self&>(*this));
     }
   }
 
-  template <typename Sibling, auto = ConversionIsValid<Sibling>()>
+  template <typename Sibling, bool = ConversionIsValid<Sibling>()>
   operator Sibling&() {
     return as<Sibling>();
   }
 
-  template <typename Sibling, auto = ConversionIsValid<Sibling>()>
+  template <typename Sibling, bool = ConversionIsValid<Sibling>()>
   operator const Sibling&() const {
     return as<Sibling>();
   }
+};
+
+// Helper for the ByteChannel alias that prohibits kDatagram.
+template <Property... kProperties>
+struct ProhibitDatagram {
+  using type = Channel<kProperties...>;
+
+  static_assert(type::kDataType == DataType::kByte,
+                "ByteChannel cannot set the kDatagram property");
 };
 
 }  // namespace internal
@@ -92,9 +103,9 @@ class Conversions {
 //
 #define _PW_CHANNEL(type, read, write, seek, ...)                        \
   template <>                                                            \
-  class type##Channel<__VA_ARGS__>                                       \
-      : public Channel,                                                  \
-        public internal::Conversions<type##Channel<__VA_ARGS__>> {       \
+  class Channel<__VA_ARGS__>                                             \
+      : public AnyChannel,                                               \
+        public internal::Conversions<Channel<__VA_ARGS__>> {             \
    private:                                                              \
     static_assert(PropertiesAreValid<__VA_ARGS__>());                    \
                                                                          \
@@ -118,14 +129,13 @@ class Conversions {
     _PW_CHANNEL_DISABLE_POLL_OVERLOAD_##type##read;                      \
                                                                          \
    protected:                                                            \
-    constexpr type##Channel()                                            \
-        : Channel(channel::DataType::k##type, kProperties) {}            \
+    constexpr Channel() : AnyChannel(kProperties) {}                     \
   }
 
 // Macros that hide the PollRead max_bytes overload for datagram channels.
 #define _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramREAD                         \
   async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx) {     \
-    return Channel::PollRead(cx);                                              \
+    return AnyChannel::PollRead(cx);                                           \
   }                                                                            \
   template <typename OverloadDisabled = void>                                  \
   async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context&,          \
@@ -148,7 +158,7 @@ class Conversions {
                                                       size_t) final {          \
     return async2::Ready(Result<multibuf::MultiBuf>(Status::Unimplemented())); \
   }                                                                            \
-  using Channel::PollRead
+  using AnyChannel::PollRead
 
 #define _PW_CHANNEL_WRITABLE_WRTE static_assert(true)
 #define _PW_CHANNEL_WRITABLE_SKIP                                        \
@@ -161,19 +171,19 @@ class Conversions {
   async2::Poll<Result<WriteToken>> DoPollFlush(async2::Context&) final { \
     return async2::Ready(Result<WriteToken>(Status::Unimplemented()));   \
   }                                                                      \
-  using Channel::PollReadyToWrite;                                       \
-  using Channel::Write;                                                  \
-  using Channel::PollFlush
+  using AnyChannel::PollReadyToWrite;                                    \
+  using AnyChannel::Write;                                               \
+  using AnyChannel::PollFlush
 
 #define _PW_CHANNEL_SEEKABLE_SEEK static_assert(true)
 // TODO: b/323622630 - Implement DoSeek() and DoPosition()
 #define _PW_CHANNEL_SEEKABLE_SKIP \
-  using Channel::Seek;            \
-  using Channel::Position
+  using AnyChannel::Seek;         \
+  using AnyChannel::Position
 
 // Generate specializations for the supported channel types.
-// _PW_CHANNEL(Byte, READ, WRTE, SEEK, kReliable, kReadable, kWritable,
-// kSeekable);
+// _PW_CHANNEL(
+//     Byte, READ, WRTE, SEEK, kReliable, kReadable, kWritable, kSeekable);
 _PW_CHANNEL(Byte, READ, WRTE, SKIP, kReliable, kReadable, kWritable);
 // _PW_CHANNEL(Byte, READ, SKIP, SEEK, kReliable, kReadable, kSeekable);
 _PW_CHANNEL(Byte, READ, SKIP, SKIP, kReliable, kReadable);
@@ -189,20 +199,25 @@ _PW_CHANNEL(Byte, SKIP, WRTE, SKIP, kReliable, kWritable);
 _PW_CHANNEL(Byte, SKIP, WRTE, SKIP, kWritable);
 
 // _PW_CHANNEL(
-//     Datagram, READ, WRTE, SEEK, kReliable, kReadable, kWritable, kSeekable);
-_PW_CHANNEL(Datagram, READ, WRTE, SKIP, kReliable, kReadable, kWritable);
-// _PW_CHANNEL(Datagram, READ, SKIP, SEEK, kReliable, kReadable, kSeekable);
-_PW_CHANNEL(Datagram, READ, SKIP, SKIP, kReliable, kReadable);
+//     Datagram, READ, WRTE, SEEK, kReliable, kDatagram, kReadable, kWritable,
+//     kSeekable);
+_PW_CHANNEL(
+    Datagram, READ, WRTE, SKIP, kDatagram, kReliable, kReadable, kWritable);
+// _PW_CHANNEL(
+//     Datagram, READ, SKIP, SEEK, kDatagram, kReliable, kReadable, kSeekable);
+_PW_CHANNEL(Datagram, READ, SKIP, SKIP, kDatagram, kReliable, kReadable);
 
-// _PW_CHANNEL(Datagram, READ, WRTE, SEEK, kReadable, kWritable, kSeekable);
-_PW_CHANNEL(Datagram, READ, WRTE, SKIP, kReadable, kWritable);
-// _PW_CHANNEL(Datagram, READ, SKIP, SEEK, kReadable, kSeekable);
-_PW_CHANNEL(Datagram, READ, SKIP, SKIP, kReadable);
+// _PW_CHANNEL(
+//     Datagram, READ, WRTE, SEEK, kDatagram, kReadable, kWritable, kSeekable);
+_PW_CHANNEL(Datagram, READ, WRTE, SKIP, kDatagram, kReadable, kWritable);
+// _PW_CHANNEL(Datagram, READ, SKIP, SEEK, kDatagram, kReadable, kSeekable);
+_PW_CHANNEL(Datagram, READ, SKIP, SKIP, kDatagram, kReadable);
 
-// _PW_CHANNEL(Datagram, SKIP, WRTE, SEEK, kReliable, kWritable, kSeekable);
-_PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kReliable, kWritable);
-// _PW_CHANNEL(Datagram, SKIP, WRTE, SEEK, kWritable, kSeekable);
-_PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kWritable);
+// _PW_CHANNEL(
+//     Datagram, SKIP, WRTE, SEEK, kDatagram, kReliable, kWritable, kSeekable);
+_PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kDatagram, kReliable, kWritable);
+// _PW_CHANNEL(Datagram, SKIP, WRTE, SEEK, kDatagram, kWritable, kSeekable);
+_PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kDatagram, kWritable);
 
 #undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramREAD
 #undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramSKIP
