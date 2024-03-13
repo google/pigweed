@@ -23,6 +23,7 @@ pw_bluetooth_sapphire
 pw_boot
 pw_boot_cortex_m
 pw_build
+pw_build_android
 pw_build_info
 pw_build_mcuxpresso
 pw_bytes

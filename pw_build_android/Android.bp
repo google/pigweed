@@ -1,0 +1,40 @@
+// Copyright 2024 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
+// List of Common Android backends used by Pigweed modules.
+// Do not modify this to swap a different backend. Instead see the
+// pw_build_android documentation for how to use custom backends.
+cc_defaults {
+    name: "pw_android_common_backends",
+    cpp_std: "c++20",
+    defaults: [
+        // TODO: b/328503970 - Make these backends follow the Android soong
+        // style guide.
+        "pw_assert_log_defaults",
+        "pw_chrono_stl_defaults",
+        "pw_sync_stl_defaults",
+    ],
+    shared_libs: [
+        "liblog",
+    ],
+    static_libs: [
+        // TODO: b/328503970 - Make these backends follow the Android soong
+        // style guide.
+        "libpw_log_android",
+    ],
+}

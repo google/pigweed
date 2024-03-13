@@ -54,6 +54,7 @@ declare_args() {
   dir_pw_boot = get_path_info("../pw_boot", "abspath")
   dir_pw_boot_cortex_m = get_path_info("../pw_boot_cortex_m", "abspath")
   dir_pw_build = get_path_info("../pw_build", "abspath")
+  dir_pw_build_android = get_path_info("../pw_build_android", "abspath")
   dir_pw_build_info = get_path_info("../pw_build_info", "abspath")
   dir_pw_build_mcuxpresso = get_path_info("../pw_build_mcuxpresso", "abspath")
   dir_pw_bytes = get_path_info("../pw_bytes", "abspath")
@@ -234,6 +235,7 @@ declare_args() {
     dir_pw_boot,
     dir_pw_boot_cortex_m,
     dir_pw_build,
+    dir_pw_build_android,
     dir_pw_build_info,
     dir_pw_build_mcuxpresso,
     dir_pw_bytes,
@@ -399,6 +401,7 @@ declare_args() {
     "$dir_pw_boot:tests",
     "$dir_pw_boot_cortex_m:tests",
     "$dir_pw_build:tests",
+    "$dir_pw_build_android:tests",
     "$dir_pw_build_info:tests",
     "$dir_pw_build_mcuxpresso:tests",
     "$dir_pw_bytes:tests",
@@ -564,6 +567,7 @@ declare_args() {
     "$dir_pw_boot:docs",
     "$dir_pw_boot_cortex_m:docs",
     "$dir_pw_build:docs",
+    "$dir_pw_build_android:docs",
     "$dir_pw_build_info:docs",
     "$dir_pw_build_mcuxpresso:docs",
     "$dir_pw_bytes:docs",

@@ -178,6 +178,13 @@ ambiguity with other build systems or tooling.
 Pigweed's Bazel files follow the `Bazel style guide
 <https://docs.bazel.build/versions/main/skylark/build-style.html>`_.
 
+------------------
+Build files: Soong
+------------------
+Build files (blueprints) for the Soong build system must be named
+``Android.bp``. The way Pigweed modules and backends are used is documented in
+:ref:`module-pw_build_android`.
+
 .. _owners-style:
 
 --------------------
