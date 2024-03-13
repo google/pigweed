@@ -147,6 +147,7 @@ if (dir_pw_third_party_llvm_libc != "") {
       "sqrtur",
       "uksqrtui",
     ]
+    defines = [ "LIBC_FAST_MATH=1" ]
   }
 
   pw_static_library("pw_libc") {
