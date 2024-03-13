@@ -72,15 +72,15 @@ TEST(AllocatorTest, ReallocateSame) {
 
   void* new_ptr = allocator.Reallocate(ptr, layout, layout.size());
 
-  // Reallocate should call Resize.
-  EXPECT_EQ(allocator.resize_ptr(), ptr);
-  EXPECT_EQ(allocator.resize_old_size(), layout.size());
-  EXPECT_EQ(allocator.resize_new_size(), layout.size());
+  // Reallocate should call Resize, but not DoResize.
+  EXPECT_EQ(allocator.resize_ptr(), nullptr);
+  EXPECT_EQ(allocator.resize_old_size(), 0U);
+  EXPECT_EQ(allocator.resize_new_size(), 0U);
 
-  // Allocate should not be called.
+  // DoAllocate should not be called.
   EXPECT_EQ(allocator.allocate_size(), 0U);
 
-  // Deallocate should not be called.
+  // DoDeallocate should not be called.
   EXPECT_EQ(allocator.deallocate_ptr(), nullptr);
   EXPECT_EQ(allocator.deallocate_size(), 0U);
 

@@ -56,16 +56,16 @@ class SynchronizedAllocator : public Allocator {
     return allocator->Resize(ptr, layout, new_size);
   }
 
-  /// @copydoc Allocator::DoGetLayout
-  Result<Layout> DoGetLayout(const void* ptr) const override {
-    pointer_type allocator = borrowable_.acquire();
-    return allocator->GetLayout(ptr);
-  }
-
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override {
     pointer_type allocator = borrowable_.acquire();
     return allocator->Query(ptr, layout);
+  }
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    pointer_type allocator = borrowable_.acquire();
+    return allocator->GetLayout(ptr);
   }
 
   LockType lock_;

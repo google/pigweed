@@ -44,8 +44,7 @@ void CrashPoisonCorrupted(uintptr_t addr);
 
 }  // namespace internal
 
-/// @brief Memory region with links to adjacent blocks and the optional ability
-/// to detect memory  corruption.
+/// Memory region with links to adjacent blocks.
 ///
 /// The blocks do not encode their size directly. Instead, they encode offsets
 /// to the next and previous blocks using the type given by the `OffsetType`

@@ -28,11 +28,4 @@ TEST(NullAllocatorTest, Allocate) {
   }
 }
 
-TEST(NullAllocatorTest, Resize) {
-  NullAllocator allocator;
-  // It is not possible to get a valid pointer from Allocate.
-  constexpr Layout layout = Layout::Of<uint8_t>();
-  EXPECT_FALSE(allocator.Resize(this, layout, 1));
-}
-
 }  // namespace pw::allocator

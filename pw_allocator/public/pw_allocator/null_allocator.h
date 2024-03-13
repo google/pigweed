@@ -35,9 +35,6 @@ class NullAllocator : public Allocator {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void*, Layout) override {}
-
-  /// @copydoc Allocator::Resize
-  bool DoResize(void*, Layout, size_t) override { return false; }
 };
 
 }  // namespace pw::allocator

@@ -72,10 +72,8 @@ class TrackingAllocatorImpl : public Allocator {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout layout) override {
-    if (ptr != nullptr) {
-      allocator_.Deallocate(ptr, layout);
-      metrics_.RecordDeallocation(layout.size());
-    }
+    allocator_.Deallocate(ptr, layout);
+    metrics_.RecordDeallocation(layout.size());
   }
 
   /// @copydoc Allocator::Resize
@@ -88,16 +86,6 @@ class TrackingAllocatorImpl : public Allocator {
     return true;
   }
 
-  /// @copydoc Allocator::GetLayout
-  Result<Layout> DoGetLayout(const void* ptr) const override {
-    return allocator_.GetLayout(ptr);
-  }
-
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    return allocator_.Query(ptr, layout);
-  }
-
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
     void* new_ptr = allocator_.Reallocate(ptr, layout, new_size);
@@ -107,6 +95,16 @@ class TrackingAllocatorImpl : public Allocator {
     }
     metrics_.RecordReallocation(layout.size(), new_size, new_ptr != ptr);
     return new_ptr;
+  }
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    return allocator_.GetLayout(ptr);
+  }
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout layout) const override {
+    return allocator_.Query(ptr, layout);
   }
 
   Allocator& allocator_;
