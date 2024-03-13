@@ -2380,7 +2380,7 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             = __cplusplus \
+PREDEFINED             = __cplusplus=202002L \
                          PW_LOCKABLE= \
                          PW_PRINTF_FORMAT(...)= \
                          PW_CONSTEXPR_CPP20= \
@@ -2394,7 +2394,7 @@ PREDEFINED             = __cplusplus \
                          PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
                          PW_GUARDED_BY(...)= \
                          PW_NO_SANITIZE(...)= \
-			 PW_NODISCARD_STR(...)= \
+                         PW_NODISCARD_STR(...)= \
                          PW_EXCLUDE_FROM_DOXYGEN=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this

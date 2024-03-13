@@ -20,27 +20,36 @@ namespace pw {
 namespace polyfill {
 namespace {
 
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(98), "C++98 must be supported");
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(11), "C++11 must be supported");
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(14), "C++14 must be supported");
+TEST(CppStandardMacro, MacroIsTrueUpToCpp14SincePigweedRequiresCpp14) {
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(98),
+                "Macro must be true since Pigweed requires support for C++98");
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(11),
+                "Macro must be true since Pigweed requires support for C++11");
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(14),
+                "Macro must be true since Pigweed requires support for C++14");
+}
 
-#if __cplusplus >= 201703L
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be not supported");
-#else
-static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be supported");
-#endif  // __cplusplus >= 201703L
+TEST(CppStandardMacro, MacroIsTrueIfSpecifiedStandardIsSupported) {
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(17) == (__cplusplus >= 201703L),
+                "PW_CXX_STANDARD_IS_SUPPORTED() should match __cplusplus");
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(20) == (__cplusplus >= 202002L),
+                "PW_CXX_STANDARD_IS_SUPPORTED() should match __cplusplus");
+  static_assert(PW_CXX_STANDARD_IS_SUPPORTED(23) == (__cplusplus >= 202302L),
+                "PW_CXX_STANDARD_IS_SUPPORTED() should match __cplusplus");
+}
 
-#if __cplusplus >= 202002L
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must be supported");
-#else
-static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must not be supported");
-#endif  // __cplusplus >= 202002L
-
-#if __cplusplus >= 202311L
-static_assert(PW_CXX_STANDARD_IS_SUPPORTED(23), "C++23 must be supported");
-#else
-static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(23), "C++23 must not be supported");
-#endif  // __cplusplus >= 202311L
+TEST(CStandardMacro, MacroIsFalseSinceThisIsACppFile) {
+  static_assert(!PW_C_STANDARD_IS_SUPPORTED(89),
+                "PW_C_STANDARD_IS_SUPPORTED() must always be false in C++");
+  static_assert(!PW_C_STANDARD_IS_SUPPORTED(99),
+                "PW_C_STANDARD_IS_SUPPORTED() must always be false in C++");
+  static_assert(!PW_C_STANDARD_IS_SUPPORTED(11),
+                "PW_C_STANDARD_IS_SUPPORTED() must always be false in C++");
+  static_assert(!PW_C_STANDARD_IS_SUPPORTED(17),
+                "PW_C_STANDARD_IS_SUPPORTED() must always be false in C++");
+  static_assert(!PW_C_STANDARD_IS_SUPPORTED(23),
+                "PW_C_STANDARD_IS_SUPPORTED() must always be false in C++");
+}
 
 // Check that consteval is at least equivalent to constexpr.
 PW_CONSTEVAL int ConstevalFunction() { return 123; }

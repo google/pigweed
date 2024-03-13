@@ -16,6 +16,7 @@
 
 // DOCSTAG: [static_assert-example]
 
+#include "pw_polyfill/standard.h"
 #include "pw_polyfill/static_assert.h"
 
 extern int array[3];
@@ -40,3 +41,36 @@ static_assert(0, "This static assert should FAIL");
 #include <assert.h>
 
 static_assert(1, "This static assert should PASS");
+
+// Tests for pw_polyfill/standard.h
+
+// Test that the PW_C_STANDARD_IS_SUPPORTED() is true for C89 and C99 since
+// support is required in Pigweed.
+static_assert(PW_C_STANDARD_IS_SUPPORTED(89),
+              "Macro must be true since Pigweed requires C99 or newer");
+static_assert(PW_C_STANDARD_IS_SUPPORTED(99),
+              "Macro must be true since Pigweed requires C99 or newer");
+
+// Test that PW_C_STANDARD_IS_SUPPORTED() for C11, C17, and C23 is true or false
+// depending on the value of __STDC_VERSION__.
+static_assert(PW_C_STANDARD_IS_SUPPORTED(11) == (__STDC_VERSION__ >= 201112L),
+              "Macro value should match __STDC_VERSION__");
+static_assert(PW_C_STANDARD_IS_SUPPORTED(17) == (__STDC_VERSION__ >= 201710L),
+              "Macro value should match __STDC_VERSION__");
+static_assert(PW_C_STANDARD_IS_SUPPORTED(23) == (__STDC_VERSION__ >= 202311L),
+              "Macro value should match __STDC_VERSION__");
+
+// Test that PW_CXX_STANDARD_IS_SUPPORTED() is always false since this is a C
+// file.
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(98),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(11),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(14),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(17),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(20),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(23),
+              "PW_CXX_STANDARD_IS_SUPPORTED() must always be false in C");
