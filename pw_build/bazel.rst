@@ -94,7 +94,7 @@ components:
          ],
          # The backend, hidden behind a label_flag; see below.
          backend = [
-             "@pigweed//targets:pw_sync_binary_semaphore_backend",
+             ":binary_semaphore_backend",
          ],
      )
 

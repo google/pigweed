@@ -32,11 +32,16 @@ pw_facade(
     hdrs = [
         "public/pw_boot/boot.h",
     ],
-    backend = "@pigweed//targets:pw_boot_backend",
+    backend = ":backend",
     includes = ["public"],
     deps = [
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 cc_library(

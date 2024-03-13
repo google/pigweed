@@ -40,7 +40,7 @@ cc_library(
 pw_facade(
     name = "task",
     hdrs = ["public/pw_async/task.h"],
-    backend = "@pigweed//targets:pw_async_task_backend",
+    backend = ":task_backend",
     includes = ["public"],
     deps = [
         ":types",
@@ -48,6 +48,11 @@ pw_facade(
         "//pw_function",
         "//pw_status",
     ],
+)
+
+label_flag(
+    name = "task_backend",
+    build_setting_default = "//pw_async_basic:task",
 )
 
 cc_library(
@@ -66,11 +71,16 @@ cc_library(
 pw_facade(
     name = "fake_dispatcher",
     hdrs = ["public/pw_async/fake_dispatcher.h"],
-    backend = "@pigweed//targets:pw_async_fake_dispatcher_backend",
+    backend = ":fake_dispatcher_backend",
     includes = ["public"],
     deps = [
         ":dispatcher",
     ],
+)
+
+label_flag(
+    name = "fake_dispatcher_backend",
+    build_setting_default = "//pw_async_basic:fake_dispatcher",
 )
 
 pw_cc_test(

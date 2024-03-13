@@ -317,9 +317,14 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":target_hooks_backend",
         "//pw_thread:thread",
-        "@pigweed//targets:pw_system_target_hooks_backend",
     ],
+)
+
+label_flag(
+    name = "target_hooks_backend",
+    build_setting_default = ":target_hooks_multiplexer",
 )
 
 # This isn't the best solution, but it's close enough for now. Target hooks are

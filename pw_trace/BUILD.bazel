@@ -35,11 +35,16 @@ pw_facade(
         "public/pw_trace/internal/trace_internal.h",
         "public/pw_trace/trace.h",
     ],
-    backend = "@pigweed//targets:pw_trace_backend",
+    backend = ":backend",
     includes = ["public"],
     deps = [
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 cc_library(

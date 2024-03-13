@@ -27,7 +27,7 @@ pw_facade(
     hdrs = [
         "public/pw_crypto/sha256.h",
     ],
-    backend = "@pigweed//targets:pw_crypto_sha256_backend",
+    backend = ":sha256_backend",
     includes = ["public"],
     deps = [
         "//pw_assert",
@@ -36,6 +36,11 @@ pw_facade(
         "//pw_status",
         "//pw_stream",
     ],
+)
+
+label_flag(
+    name = "sha256_backend",
+    build_setting_default = ":sha256_backend_multiplexer",
 )
 
 constraint_setting(
@@ -106,12 +111,17 @@ pw_facade(
     hdrs = [
         "public/pw_crypto/ecdsa.h",
     ],
-    backend = "@pigweed//targets:pw_crypto_ecdsa_backend",
+    backend = ":ecdsa_backend",
     includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_status",
     ],
+)
+
+label_flag(
+    name = "ecdsa_backend",
+    build_setting_default = ":ecdsa_backend_multiplexer",
 )
 
 constraint_setting(

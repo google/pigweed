@@ -34,12 +34,17 @@ pw_facade(
     hdrs = [
         "public/pw_sync/binary_semaphore.h",
     ],
-    backend = "@pigweed//targets:pw_sync_binary_semaphore_backend",
+    backend = ":binary_semaphore_backend",
     includes = ["public"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "binary_semaphore_backend",
+    build_setting_default = ":binary_semaphore_backend_multiplexer",
 )
 
 cc_library(
@@ -61,12 +66,17 @@ pw_facade(
     hdrs = [
         "public/pw_sync/counting_semaphore.h",
     ],
-    backend = "@pigweed//targets:pw_sync_counting_semaphore_backend",
+    backend = ":counting_semaphore_backend",
     includes = ["public"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "counting_semaphore_backend",
+    build_setting_default = ":counting_semaphore_backend_multiplexer",
 )
 
 cc_library(
@@ -147,12 +157,17 @@ pw_facade(
     hdrs = [
         "public/pw_sync/mutex.h",
     ],
-    backend = "@pigweed//targets:pw_sync_mutex_backend",
+    backend = ":mutex_backend",
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "mutex_backend",
+    build_setting_default = ":mutex_backend_multiplexer",
 )
 
 cc_library(
@@ -174,7 +189,7 @@ pw_facade(
     hdrs = [
         "public/pw_sync/timed_mutex.h",
     ],
-    backend = "@pigweed//targets:pw_sync_timed_mutex_backend",
+    backend = ":timed_mutex_backend",
     deps = [
         ":lock_annotations",
         ":mutex",
@@ -182,6 +197,11 @@ pw_facade(
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "timed_mutex_backend",
+    build_setting_default = ":timed_mutex_backend_multiplexer",
 )
 
 cc_library(
@@ -210,9 +230,14 @@ cc_library(
     srcs = ["recursive_mutex.cc"],
     visibility = ["//pw_sync_baremetal:__pkg__"],
     deps = [
+        ":recursive_mutex_backend",
         ":recursive_mutex_facade",
-        "@pigweed//targets:pw_sync_recursive_mutex_backend",
     ],
+)
+
+label_flag(
+    name = "recursive_mutex_backend",
+    build_setting_default = ":recursive_mutex_backend_multiplexer",
 )
 
 cc_library(
@@ -232,12 +257,17 @@ pw_facade(
     hdrs = [
         "public/pw_sync/interrupt_spin_lock.h",
     ],
-    backend = "@pigweed//targets:pw_sync_interrupt_spin_lock_backend",
+    backend = ":interrupt_spin_lock_backend",
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "interrupt_spin_lock_backend",
+    build_setting_default = ":interrupt_spin_lock_backend_multiplexer",
 )
 
 cc_library(
@@ -256,11 +286,16 @@ pw_facade(
     hdrs = [
         "public/pw_sync/thread_notification.h",
     ],
-    backend = "@pigweed//targets:pw_sync_thread_notification_backend",
+    backend = ":thread_notification_backend",
     includes = ["public"],
     deps = [
         "//pw_chrono:system_clock",
     ],
+)
+
+label_flag(
+    name = "thread_notification_backend",
+    build_setting_default = ":thread_notification_backend_multiplexer",
 )
 
 cc_library(
@@ -277,11 +312,16 @@ pw_facade(
     hdrs = [
         "public/pw_sync/timed_thread_notification.h",
     ],
-    backend = "@pigweed//targets:pw_sync_timed_thread_notification_backend",
+    backend = ":timed_thread_notification_backend",
     deps = [
         ":thread_notification",
         "//pw_chrono:system_clock",
     ],
+)
+
+label_flag(
+    name = "timed_thread_notification_backend",
+    build_setting_default = ":timed_thread_notification_backend_multiplexer",
 )
 
 cc_library(

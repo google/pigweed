@@ -41,12 +41,17 @@ pw_facade(
         "public/pw_chrono/internal/system_clock_macros.h",
         "public/pw_chrono/system_clock.h",
     ],
-    backend = "@pigweed//targets:pw_chrono_system_clock_backend",
+    backend = ":system_clock_backend",
     includes = ["public"],
     deps = [
         ":epoch",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "system_clock_backend",
+    build_setting_default = ":system_clock_backend_multiplexer",
 )
 
 cc_library(
@@ -65,11 +70,16 @@ pw_facade(
     hdrs = [
         "public/pw_chrono/system_timer.h",
     ],
-    backend = "@pigweed//targets:pw_chrono_system_timer_backend",
+    backend = ":system_timer_backend",
     includes = ["public"],
     deps = [
         ":system_clock",
     ],
+)
+
+label_flag(
+    name = "system_timer_backend",
+    build_setting_default = ":system_timer_backend_multiplexer",
 )
 
 cc_library(

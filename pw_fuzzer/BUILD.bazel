@@ -26,7 +26,7 @@ config_setting(
     name = "use_fuzztest",
     testonly = True,
     flag_values = {
-        "@pigweed//targets:pw_fuzzer_fuzztest_backend": "@com_google_fuzztest//fuzztest:fuzztest_core",
+        "@pigweed//pw_fuzzer:fuzztest_backend": "@com_google_fuzztest//fuzztest:fuzztest_core",
     },
 )
 
@@ -42,12 +42,17 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":fuzztest_backend",
         "//pw_containers",
         "//pw_result",
         "//pw_status",
         "//pw_string",
-        "@pigweed//targets:pw_fuzzer_fuzztest_backend",
     ],
+)
+
+label_flag(
+    name = "fuzztest_backend",
+    build_setting_default = ":fuzztest_stub",
 )
 
 cc_library(

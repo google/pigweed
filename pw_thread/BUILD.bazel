@@ -29,8 +29,13 @@ pw_facade(
     hdrs = [
         "public/pw_thread/id.h",
     ],
-    backend = "@pigweed//targets:pw_thread_id_backend",
+    backend = ":id_backend",
     includes = ["public"],
+)
+
+label_flag(
+    name = "id_backend",
+    build_setting_default = ":id_backend_multiplexer",
 )
 
 cc_library(
@@ -68,13 +73,18 @@ pw_facade(
     hdrs = [
         "public/pw_thread/thread_iteration.h",
     ],
-    backend = "@pigweed//targets:pw_thread_iteration_backend",
+    backend = ":iteration_backend",
     includes = ["public"],
     deps = [
         ":thread_info",
         "//pw_function",
         "//pw_status",
     ],
+)
+
+label_flag(
+    name = "iteration_backend",
+    build_setting_default = ":iteration_backend_multiplexer",
 )
 
 cc_library(
@@ -96,7 +106,7 @@ pw_facade(
     hdrs = [
         "public/pw_thread/sleep.h",
     ],
-    backend = "@pigweed//targets:pw_thread_sleep_backend",
+    backend = ":sleep_backend",
     implementation_deps = [
         ":id",
     ],
@@ -105,6 +115,11 @@ pw_facade(
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "sleep_backend",
+    build_setting_default = ":sleep_backend_multiplexer",
 )
 
 cc_library(
@@ -128,12 +143,17 @@ pw_facade(
         "public/pw_thread/detached_thread.h",
         "public/pw_thread/thread.h",
     ],
-    backend = "@pigweed//targets:pw_thread_thread_backend",
+    backend = ":thread_backend",
     includes = ["public"],
     deps = [
         ":id",
         ":thread_core",
     ],
+)
+
+label_flag(
+    name = "thread_backend",
+    build_setting_default = ":thread_backend_multiplexer",
 )
 
 cc_library(
@@ -196,8 +216,13 @@ pw_facade(
     hdrs = [
         "public/pw_thread/test_thread_context.h",
     ],
-    backend = "@pigweed//targets:pw_thread_test_thread_context_backend",
+    backend = ":test_thread_context_backend",
     includes = ["public"],
+)
+
+label_flag(
+    name = "test_thread_context_backend",
+    build_setting_default = ":test_thread_context_backend_multiplexer",
 )
 
 pw_facade(
@@ -208,7 +233,7 @@ pw_facade(
     hdrs = [
         "public/pw_thread/yield.h",
     ],
-    backend = "@pigweed//targets:pw_thread_yield_backend",
+    backend = ":yield_backend",
     implementation_deps = [
         ":id",
     ],
@@ -216,6 +241,11 @@ pw_facade(
     deps = [
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "yield_backend",
+    build_setting_default = ":yield_backend_multiplexer",
 )
 
 cc_library(

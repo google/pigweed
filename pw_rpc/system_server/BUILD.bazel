@@ -34,13 +34,18 @@ cc_library(
         "public/pw_rpc_system_server/socket.h",
     ],
     deps = [
+        ":backend",
         ":facade",
         "//pw_rpc",
         "//pw_span",
         "//pw_status",
         "//pw_stream",
-        "@pigweed//targets:pw_rpc_system_server_backend",
     ],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = ":system_server_backend_multiplexer",
 )
 
 cc_library(

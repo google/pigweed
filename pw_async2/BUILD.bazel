@@ -77,9 +77,14 @@ cc_library(
         "public",
     ],
     deps = [
+        ":dispatcher_backend",
         ":dispatcher_base",
-        "@pigweed//targets:pw_async2_dispatcher_backend",
     ],
+)
+
+label_flag(
+    name = "dispatcher_backend",
+    build_setting_default = ":dispatcher_backend_multiplexer",
 )
 
 cc_library(

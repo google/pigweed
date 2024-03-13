@@ -876,7 +876,7 @@ could build your library with:
 .. code-block:: console
 
    bazel build \
-     --@pigweed//targets:pw_chrono_system_clock_backend=@pigweed//pw_chrono_freertos:system_clock_backend \
+     --@pigweed/pw_chrono:system_clock_backend=@pigweed//pw_chrono_freertos:system_clock_backend \
      //:time_is_relative
 
 Then, ``//pw_chrono:system_clock`` will use the FreeRTOS backend
@@ -890,7 +890,7 @@ target:
    //:time_is_relative
     |
     v
-   @pigweed//pw_chrono:system_clock  -------> @pigweed//targets:pw_chrono_system_clock_backend
+   @pigweed//pw_chrono:system_clock  -------> @pigweed//pw_chrono:system_clock_backend
     |                                                    (Injectable)
     |                                                         |
     |                                                         v
@@ -901,7 +901,7 @@ target:
 
 When building ``//:time_is_relative``, Bazel checks the dependencies of
 ``@pigweed//pw_chrono:system_clock`` and finds that it depends on
-``@pigweed//targets:pw_chrono_system_clock_backend``, which looks like this:
+``@pigweed//pw_chrono:system_clock_backend``, which looks like this:
 
 .. code-block:: python
 
@@ -919,7 +919,7 @@ flags. By setting
 
 .. code-block:: console
 
-   --@pigweed//targets:pw_chrono_system_clock_backend=\
+   --@pigweed//pw_chrono:system_clock_backend=\
      @pigweed//pw_chrono_freertos:system_clock_backend
 
 on the command line, you told Bazel to override the default and use the
@@ -959,7 +959,7 @@ To build your ``//:time_is_relative`` target using this backend, you'd run,
 .. code-block:: console
 
    bazel build //:time_is_relative \
-     --@pigweed//targets:pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
+     --@pigweed//pw_chrono:system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
 
 This modifies the build graph to look something like this:
 
@@ -968,7 +968,7 @@ This modifies the build graph to look something like this:
    //:time_is_relative
     |
     v
-   @pigweed//pw_chrono:system_clock  -------> @pigweed//targets:pw_chrono_system_clock_backend
+   @pigweed//pw_chrono:system_clock  -------> @pigweed//pw_chrono:system_clock_backend
     |                                                    (Injectable)
     |                                                         |
     |                                                         v
@@ -1086,7 +1086,7 @@ backup computer over to use Pigweed's default FreeRTOS backend:
    .. code-block:: bash
 
      # //.bazelrc
-     build --@pigweed//targets:pw_chrono_system_clock_backend=//targets:system_clock_backend_multiplexer
+     build --@pigweed//pw_chrono:system_clock_backend=//targets:system_clock_backend_multiplexer
 
 Building your target now will result in slightly different build graph. For
 example, running;
@@ -1101,7 +1101,7 @@ Will result in a build graph that looks like;
 
    //:time_is_relative
     |
-   @pigweed//pw_chrono -> @pigweed//targets:pw_chrono_system_clock_backend
+   @pigweed//pw_chrono -> @pigweed//pw_chrono:system_clock_backend
     |                                   (Injectable)
     |                                        |
     |                                        v

@@ -30,8 +30,13 @@ pw_facade(
     hdrs = [
         "public/pw_interrupt/context.h",
     ],
-    backend = "@pigweed//targets:pw_interrupt_backend",
+    backend = ":backend",
     includes = ["public"],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 alias(
