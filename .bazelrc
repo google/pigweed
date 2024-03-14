@@ -114,9 +114,9 @@ build:stm32f429i --platforms=//targets/stm32f429i_disc1_stm32cube:platform
 build:stm32f429i --copt="-DSTM32CUBE_HEADER=\"stm32f4xx.h\""
 build:stm32f429i --copt="-DSTM32F429xx"
 build:stm32f429i --@stm32f4xx_hal_driver//:hal_config=//targets/stm32f429i_disc1_stm32cube:hal_config
+build:stm32f429i --//pw_log:backend=@pigweed//pw_log_tokenized
 build:stm32f429i --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
-build:stm32f429i --//targets:pw_log_backend=@pigweed//pw_log_tokenized
-build:stm32f429i --//targets:pw_log_tokenized_handler_backend=@pigweed//pw_system:log_backend
+build:stm32f429i --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
 
 
 # For some platforms i.e. google/oss-fuzz we need to use the system provided

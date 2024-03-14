@@ -47,9 +47,9 @@ another module's facade.
 * In the build system there is a variable of some sort that specifies the
   backend. In Bazel there's a `label
   flag <https://bazel.build/extending/config#label-typed-build-settings>`_
-  at ``//targets:pw_log_backend``. In CMake there's a ``pw_log_BACKEND``
-  variable set to ``pw_log_string``. In GN there's a ``pw_log_BACKEND``
-  variable set to ``dir_pw_log_string``.
+  at ``//pw_log:backend``. In CMake there's a ``pw_log_BACKEND`` variable set
+  to ``pw_log_string``. In GN there's a ``pw_log_BACKEND`` variable set to
+  ``dir_pw_log_string``.
 
 .. note::
 

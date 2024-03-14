@@ -996,8 +996,8 @@ something like this:
    # The Cortex M4 config
    build:m4 --@pigweed//tagrets:pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
    build:m4 --@pigweed//targets:pw_sys_io_backend=//cortex-m4:sys_io
-   build:m4 --@pigweed//targets:pw_log_backend=@pigweed//pw_log_string
-   build:m4 --@pigweed//targets:pw_log_string_handler_backend=@pigweed//pw_system:log_backend
+   build:m4 --@pigweed//pw_log:backend=@pigweed//pw_log_string
+   build:m4 --@pigweed//pw_log_string:handler_backend=@pigweed//pw_system:log_backend
 
 Then, to build your library for a particular configuration, on the command line
 you just specify the ``--config`` on the command line:

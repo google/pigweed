@@ -43,7 +43,7 @@ pw_facade(
         "public/pw_log/short.h",
         "public/pw_log/shorter.h",
     ],
-    backend = "@pigweed//targets:pw_log_backend",
+    backend = ":backend",
     includes = ["public"],
     deps = [
         ":config_override",
@@ -54,6 +54,11 @@ pw_facade(
 label_flag(
     name = "config_override",
     build_setting_default = "//pw_build:default_module_config",
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = "@pigweed//targets:pw_log_backend",
 )
 
 label_flag(

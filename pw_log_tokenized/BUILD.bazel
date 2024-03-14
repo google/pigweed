@@ -89,9 +89,14 @@ alias(
 pw_facade(
     name = "handler",
     hdrs = ["public/pw_log_tokenized/handler.h"],
-    backend = "//targets:pw_log_tokenized_handler_backend",
+    backend = ":handler_backend",
     includes = ["public"],
     deps = ["//pw_preprocessor"],
+)
+
+label_flag(
+    name = "handler_backend",
+    build_setting_default = "//targets:pw_log_tokenized_handler_backend",
 )
 
 # There is no default backend for now.
