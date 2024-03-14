@@ -42,7 +42,6 @@ pub enum PrintfTestGeneratorOps {
 
 #[cfg(test)]
 mod tests {
-    use pw_format::macros::IntegerDisplayType;
     use pw_format_test_macros::{
         char_sub_core_fmt_generator_test_macro, char_sub_printf_generator_test_macro,
         core_fmt_generator_test_macro, generator_test_macro,

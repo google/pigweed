@@ -65,7 +65,7 @@ EXTRA_TARGETS = [
 CHANNELS = [
     {
         "name": "nightly",
-        "extra_rustc_flags": [],
+        "extra_rustc_flags": ["-Dwarnings"],
         "target_settings": ["@rules_rust//rust/toolchain/channel:nightly"],
     },
     {
@@ -74,7 +74,7 @@ CHANNELS = [
         # disable experimental features with the exception of `proc_macro_span`
         # because the `proc-marcro2` automatically detects the toolchain
         # as nightly and dynamically uses this feature.
-        "extra_rustc_flags": ["-Zallow-features=proc_macro_span"],
+        "extra_rustc_flags": ["-Dwarnings", "-Zallow-features=proc_macro_span"],
         "target_settings": ["@rules_rust//rust/toolchain/channel:stable"],
     },
 ]

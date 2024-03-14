@@ -182,8 +182,6 @@ pub(crate) mod test_utils {
 mod tests {
     use core::cmp::min;
 
-    use pw_status::Error;
-
     use super::test_utils::*;
     use super::*;
 
