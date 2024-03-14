@@ -33,6 +33,14 @@ pw_source_set("pw_digital_io_linux") {
   remove_configs = [ "$dir_pw_build:strict_warnings" ]
 }
 
+pw_executable("pw_digital_io_linux_cli") {
+  sources = [ "digital_io_cli.cc" ]
+  deps = [
+    ":pw_digital_io_linux",
+    "$dir_pw_log",
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

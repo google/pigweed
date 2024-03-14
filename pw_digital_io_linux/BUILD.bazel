@@ -37,6 +37,18 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "pw_digital_io_linux_cli",
+    srcs = [
+        "digital_io_cli.cc",
+    ],
+    deps = [
+        ":pw_digital_io_linux",
+        "//pw_log",
+        "//targets:pw_assert_backend_impl",
+    ],
+)
+
 pw_cc_test(
     name = "digital_io_test",
     srcs = ["digital_io_test.cc"],

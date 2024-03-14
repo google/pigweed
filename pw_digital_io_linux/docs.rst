@@ -122,4 +122,55 @@ Configure an output pin and set its state
    }
 
 
+----------------------
+Command-Line Interface
+----------------------
+This module also provides a tool also named ``pw_digital_io_linux`` which
+provides a basic command-line interface to the library. It provides the
+following sub-commands:
+
+``get``
+=======
+Configure a GPIO line as an input and get its value.
+
+Usage:
+
+.. code-block:: none
+
+   get [-i] CHIP LINE
+
+Options:
+
+* ``-i``: Invert; configure as active-low.
+
+Arguments:
+
+* ``CHIP``: gpiochip path (e.g. ``/dev/gpiochip0``)
+* ``LINE``: GPIO line number (e.g. ``1``)
+
+``set``
+=======
+Configure a GPIO line as an output and set its value.
+
+.. warning::
+
+   After this process exits, the GPIO line could immediately return to its
+   hardware-controlled default state (depending on the GPIO driver).
+
+Usage:
+
+.. code-block:: none
+
+   set [-i] CHIP LINE VALUE
+
+Options:
+
+* ``-i``: Invert; configure as active-low.
+
+Arguments:
+
+* ``CHIP``: gpiochip path (e.g. ``/dev/gpiochip0``)
+* ``LINE``: GPIO line number (e.g. ``1``)
+* ``VALUE``: the value to set (``0`` = inactive or ``1`` = active)
+
 .. cpp:namespace-pop::

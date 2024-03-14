@@ -612,6 +612,10 @@ if (current_toolchain != default_toolchain) {
         ]
       }
     }
+
+    if (current_os == "linux") {
+      deps += [ "$dir_pw_digital_io_linux:pw_digital_io_linux_cli" ]
+    }
   }
 
   # All Pigweed modules that can be built using gn. Not built by default.
