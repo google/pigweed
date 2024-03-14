@@ -252,6 +252,25 @@ pw_test("multi_event_handler_test") {
   ]
 }
 
+# Library providing an event handler which outputs a test summary artifact.
+pw_source_set("test_record_event_handler") {
+  public_deps = [
+    ":googletest_style_event_handler",
+    "$dir_pw_json:builder",
+  ]
+  deps = [ "$dir_pw_assert" ]
+  public = [ "public/pw_unit_test/test_record_event_handler.h" ]
+  sources = [ "public/pw_unit_test/internal/test_record_trie.h" ]
+}
+
+pw_test("test_record_event_handler_test") {
+  sources = [ "test_record_event_handler_test.cc" ]
+  deps = [
+    ":pw_unit_test",
+    ":test_record_event_handler",
+  ]
+}
+
 config("rpc_service_backend_light") {
   include_dirs = [ "rpc_light_public" ]
 }
@@ -400,6 +419,7 @@ pw_test_group("tests") {
     ":framework_light_test",
     ":static_library_support_test",
     ":multi_event_handler_test",
+    ":test_record_event_handler_test",
   ]
   if (dir_pw_third_party_googletest != "") {
     tests += [ ":googletest_test_matchers_test" ]

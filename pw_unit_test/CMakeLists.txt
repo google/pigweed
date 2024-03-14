@@ -203,3 +203,24 @@ pw_add_test(pw_unit_test.multi_event_handler_test
   GROUPS
     pw_unit_test
 )
+
+pw_add_library(pw_unit_test.test_record_event_handler INTERFACE
+  HEADERS
+    public/pw_unit_test/internal/test_record_trie.h
+    public/pw_unit_test/test_record_event_handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_json.builder
+    pw_unit_test.event_handler
+)
+
+pw_add_test(pw_unit_test.test_record_event_handler_test
+  SOURCES
+    test_record_event_handler_test.cc
+  PRIVATE_DEPS
+    pw_unit_test.test_record_event_handler
+  GROUPS
+    pw_unit_test
+)

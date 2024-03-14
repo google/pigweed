@@ -272,6 +272,32 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "test_record_event_handler",
+    testonly = True,
+    srcs = ["public/pw_unit_test/internal/test_record_trie.h"],
+    hdrs = [
+        "public/pw_unit_test/test_record_event_handler.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":event_handler",
+        "//pw_assert",
+        "//pw_json:builder",
+    ],
+)
+
+pw_cc_test(
+    name = "test_record_event_handler_test",
+    srcs = ["test_record_event_handler_test.cc"],
+    deps = [
+        ":pw_unit_test",
+        ":test_record_event_handler",
+    ],
+)
+
 proto_library(
     name = "unit_test_proto",
     srcs = ["pw_unit_test_proto/unit_test.proto"],

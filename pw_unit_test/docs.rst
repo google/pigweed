@@ -658,6 +658,7 @@ Event handlers
 .. doxygenclass:: pw::unit_test::LoggingEventHandler
 .. doxygenclass:: pw::unit_test::PrintfEventHandler
 .. doxygenclass:: pw::unit_test::MultiEventHandler
+.. doxygenclass:: pw::unit_test::TestRecordEventHandler
 
 .. _module-pw_unit_test-cpp-config:
 
