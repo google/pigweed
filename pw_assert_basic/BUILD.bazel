@@ -45,15 +45,34 @@ cc_library(
     ],
 )
 
+pw_facade(
+    name = "handler",
+    hdrs = [
+        "public/pw_assert_basic/handler.h",
+    ],
+    backend = ":handler_backend",
+    includes = [
+        "public",
+    ],
+    deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+label_flag(
+    name = "handler_backend",
+    build_setting_default = ":pw_assert_basic_handler",
+)
+
 cc_library(
     name = "impl",
     srcs = [
         "assert_basic.cc",
     ],
     deps = [
+        ":handler",
         ":pw_assert_basic",
-        ":pw_assert_basic_handler",
-        "//pw_assert:facade",
+        "//pw_assert:pw_assert.facade",
         "//pw_preprocessor",
     ],
     # Other libraries may not always depend on this library, even if it is
@@ -61,29 +80,17 @@ cc_library(
     alwayslink = 1,
 )
 
-# TODO: pwbug.dev/328679085 - Remove this alias.
-alias(
-    name = "handler_facade",
-    actual = ":pw_assert_basic_handler.facade",
-)
-
-pw_facade(
+cc_library(
     name = "pw_assert_basic_handler",
     srcs = [
         "basic_handler.cc",
     ],
-    hdrs = [
-        "public/pw_assert_basic/handler.h",
-    ],
-    backend = ":pw_assert_basic",
     implementation_deps = [
-        ":pw_assert_basic",
+        "//pw_preprocessor",
         "//pw_string:builder",
         "//pw_sys_io",
     ],
-    deps = [
-        "//pw_preprocessor",
-    ],
+    deps = [":handler.facade"],
     # Other libraries may not always depend on this library, even if it is
     # necessary at link time.
     alwayslink = 1,
