@@ -876,11 +876,11 @@ could build your library with:
 .. code-block:: console
 
    bazel build \
-     --@pigweed/pw_chrono:system_clock_backend=@pigweed//pw_chrono_freertos:system_clock_backend \
+     --@pigweed/pw_chrono:system_clock_backend=@pigweed//pw_chrono_freertos:system_clock \
      //:time_is_relative
 
 Then, ``//pw_chrono:system_clock`` will use the FreeRTOS backend
-``//pw_chrono_freertos:system_clock_backend``.
+``//pw_chrono_freertos:system_clock``.
 
 How does this work?  Here's the relevant part of the dependency tree for your
 target:
@@ -920,7 +920,7 @@ flags. By setting
 .. code-block:: console
 
    --@pigweed//pw_chrono:system_clock_backend=\
-     @pigweed//pw_chrono_freertos:system_clock_backend
+     @pigweed//pw_chrono_freertos:system_clock
 
 on the command line, you told Bazel to override the default and use the
 FreeRTOS backend.
