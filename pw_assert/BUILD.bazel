@@ -36,7 +36,7 @@ pw_facade(
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
-    backend = "@pigweed//targets:pw_assert_backend",
+    backend = ":backend",
     includes = [
         "public",
     ],
@@ -44,6 +44,16 @@ pw_facade(
         ":config",
         "//pw_preprocessor",
     ],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = "@pigweed//targets:pw_assert_backend",
+)
+
+label_flag(
+    name = "backend_impl",
+    build_setting_default = "@pigweed//targets:pw_assert_backend_impl",
 )
 
 cc_library(

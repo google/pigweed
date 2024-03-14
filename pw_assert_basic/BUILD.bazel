@@ -25,9 +25,8 @@ licenses(["notice"])
 # for pw_assert_basic. The source file and its dependencies are in the separate
 # ":impl" target.
 #
-# If you point @pigweed//targets:pw_assert_backend to //pw_assert_basic, then
-# @pigweed//targets:pw_assert_backend_impl should point to
-# //pw_assert_basic:impl.
+# If you point @pigweed//pw_assert:backend to //pw_assert_basic, then
+# @pigweed//pw_assert:backend_impl should point to //pw_assert_basic:impl.
 cc_library(
     name = "pw_assert_basic",
     hdrs = [

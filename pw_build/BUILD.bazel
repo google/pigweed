@@ -140,7 +140,7 @@ cc_library(
 cc_library(
     name = "default_link_extra_lib",
     deps = [
+        "//pw_assert:backend_impl",
         "//pw_log:backend_impl",
-        "//targets:pw_assert_backend_impl",
     ],
 )

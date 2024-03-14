@@ -512,12 +512,12 @@ Bazel
 -----
 In Bazel, assert backends may break dependency cycles by placing the full
 implementation in an ``impl`` target, like ``//pw_assert_basic:impl`` or
-``//pw_assert_tokenized:impl``. The ``//targets:pw_assert_backend_impl``
-label flag should be set to the ``impl`` target required by the assert backend
-used by the platform.
+``//pw_assert_tokenized:impl``. The ``//pw_assert:backend_impl`` label flag
+should be set to the ``impl`` target required by the assert backend used by the
+platform.
 
-You must add a dependency on the ``@pigweed//targets:pw_assert_backend_impl``
-target to any binary using ``pw_assert``.
+You must add a dependency on the ``@pigweed//pw_assert:backend_impl`` target to
+any binary using ``pw_assert``.
 
 See :ref:`docs-build_system-bazel_link-extra-lib` for a general discussion of
 cyclic dependencies in low-level libraries in Bazel.
