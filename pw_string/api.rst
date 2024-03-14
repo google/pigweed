@@ -5,7 +5,6 @@ API Reference
 =============
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 --------
 Overview

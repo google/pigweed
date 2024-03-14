@@ -5,7 +5,6 @@ Code Size Analysis
 ==================
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 Save code space by replacing ``snprintf``
 =========================================

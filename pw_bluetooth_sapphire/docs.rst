@@ -5,10 +5,6 @@ pw_bluetooth_sapphire
 =====================
 .. pigweed-module::
    :name: pw_bluetooth_sapphire
-   :tagline: Battle-tested Bluetooth with rock-solid reliability
-   :status: unstable
-   :languages: C++17
-   :code-size-impact: 1.5 to 2 megabytes
 
 .. attention::
   This module is still under construction. There is no public API yet. Please

@@ -5,9 +5,6 @@ pw_result
 =========
 .. pigweed-module::
    :name: pw_result
-   :tagline: Error propagation primitives: value-or-error
-   :status: stable
-   :languages: C++17
 
    - **Easy**: Minimal boilerplate via with ``PW_TRY_ASSIGN`` macro and chaining
    - **Reliable**: Propagate errors consistently for less bugs

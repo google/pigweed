@@ -5,7 +5,6 @@ pw_fuzzer: Using OSS-Fuzz
 =============================================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
-   :tagline: Better C++ code through easier fuzzing
 
 .. TODO: b/281139237 - Update with better instructions for downstream projects.
 

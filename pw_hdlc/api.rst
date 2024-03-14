@@ -5,7 +5,6 @@ API reference
 =============
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
 The ``pw_hdlc`` API has 3 conceptual parts:
 

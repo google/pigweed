@@ -5,9 +5,6 @@ pw_grpc
 =======
 .. pigweed-module::
    :name: pw_grpc
-   :tagline: pw_rpc over gRPC
-   :status: unstable
-   :languages: C++17, C++20
 
 ``pw_grpc`` is an implementation of the gRPC over HTTP2 protocol that utilizes
 ``pw_rpc`` for code generation and service hosting. It provides classes that map

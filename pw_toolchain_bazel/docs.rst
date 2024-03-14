@@ -3,12 +3,8 @@
 ==================
 pw_toolchain_bazel
 ==================
-
 .. pigweed-module::
    :name: pw_toolchain_bazel
-   :tagline: A modular toolkit for declaring C/C++ toolchains in Bazel
-   :status: unstable
-   :languages: Starlark
 
    - **Modular**: Construct your own toolchain using shared building blocks, and
      share common flags between multiple platforms. You can even share toolchain

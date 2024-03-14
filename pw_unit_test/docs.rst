@@ -5,9 +5,6 @@ pw_unit_test
 ============
 .. pigweed-module::
    :name: pw_unit_test
-   :tagline: GoogleTest for embedded
-   :status: stable
-   :languages: C++17
 
 .. tab-set::
 

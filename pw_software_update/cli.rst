@@ -5,7 +5,6 @@ pw_software_update: CLI reference
 ---------------------------------
 .. pigweed-module-subpage::
    :name: pw_software_update
-   :tagline: Secure software delivery
 
 Overview
 ---------

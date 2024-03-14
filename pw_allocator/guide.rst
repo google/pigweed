@@ -5,7 +5,6 @@ Guides
 ======
 .. pigweed-module-subpage::
    :name: pw_allocator
-   :tagline: pw_allocator: Flexible, safe, and measurable memory allocation
 
 .. _module-pw_allocator-get-started:
 

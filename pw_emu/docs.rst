@@ -7,9 +7,6 @@ pw_emu
 ======
 .. pigweed-module::
    :name: pw_emu
-   :tagline: Flexible emulators frontend
-   :status: experimental
-   :languages: Python, CLI
 
 * **Declarative**. Define emulation targets in JSON. A target encapsulates the
   emulated machine, tools, and host channels configuration.

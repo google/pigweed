@@ -5,9 +5,6 @@ pw_alignment
 ============
 .. pigweed-module::
    :name: pw_alignment
-   :tagline: Natural object alignment, guaranteed
-   :status: stable
-   :languages: C++17
 
 - **Transparent**: Enforce natural alignment without any changes to how your
   objects are used.

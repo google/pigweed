@@ -5,9 +5,6 @@ pw_function
 ===========
 .. pigweed-module::
    :name: pw_function
-   :tagline: Embedded-friendly std::function
-   :status: stable
-   :languages: C++17
 
 * **Familiar**. ``pw_function`` provides a standard, general-purpose API for
   wrapping callable objects that's similar to `std::function`_.

@@ -5,7 +5,6 @@ Code size analysis
 ==================
 .. pigweed-module-subpage::
    :name: pw_allocator
-   :tagline: pw_allocator: Flexible, safe, and measurable memory allocation
 
 This module provides several implementations of the
 :ref:`module-pw_allocator-api-allocator` interface. The tables below shows the

@@ -5,7 +5,6 @@ Design & Roadmap
 ================
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 ``pw_string`` provides string classes and utility functions designed to
 prioritize safety and static allocation. The APIs are broadly similar to those

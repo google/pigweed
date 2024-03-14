@@ -5,7 +5,6 @@ Plugin Guide
 ============
 .. pigweed-module-subpage::
    :name: pw_console
-   :tagline: pw_console: Multi-purpose pluggable interactive console for dev & manufacturing
 
 Pigweed Console supports extending the user interface with custom widgets. For
 example: Toolbars that display device information and provide buttons for

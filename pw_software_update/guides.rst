@@ -5,7 +5,6 @@ pw_software_update: Guide
 -------------------------
 .. pigweed-module-subpage::
    :name: pw_software_update
-   :tagline: Secure software delivery
 
 How you update software on an embedded system is specific to the project.
 However, there are common patterns. This section provides suggestions for

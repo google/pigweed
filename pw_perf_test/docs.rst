@@ -6,9 +6,6 @@ pw_perf_test
 
 .. pigweed-module::
    :name: pw_perf_test
-   :tagline: Micro-benchmarks that are easy to write and run
-   :status: unstable
-   :languages: C++17
 
    - **Simple**: Automatically manages boilerplate like iterations and durations.
    - **Easy**: Uses an intuitive API that resembles GoogleTest.

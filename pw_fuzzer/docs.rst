@@ -5,9 +5,6 @@ pw_fuzzer
 =========
 .. pigweed-module::
    :name: pw_fuzzer
-   :tagline: Better C++ code through easier fuzzing
-   :status: unstable
-   :languages: C++17, C++20
 
 Use state of the art tools to automatically find bugs in your C++ code with 5
 lines of code or less!

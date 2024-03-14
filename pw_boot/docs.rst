@@ -5,9 +5,6 @@ pw_boot
 =======
 .. pigweed-module::
    :name: pw_boot
-   :tagline: Simplified booting for embedded C++ targets
-   :status: stable
-   :languages: C++17
 
 ``pw_boot`` provides a linker script and some early initialization of static
 memory regions and C++ constructors. This is enough to get many targets booted

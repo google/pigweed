@@ -5,7 +5,6 @@ RPC over HDLC example
 =====================
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
 The :ref:`module-pw_hdlc` module includes an example of bringing up a
 :ref:`module-pw_rpc` server that can be used to invoke RPCs. The example code

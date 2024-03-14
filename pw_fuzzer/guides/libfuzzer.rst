@@ -5,7 +5,6 @@ pw_fuzzer: Adding Fuzzers Using LibFuzzer
 =========================================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
-   :tagline: Better C++ code through easier fuzzing
 
 .. note::
 

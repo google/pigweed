@@ -7,8 +7,6 @@ pw_env_setup_zephyr
 ===================
 .. pigweed-module::
    :name: pw_env_setup_zephyr
-   :tagline: Zephyr utilities
-   :status: experimental
 
    * **Integrate your Pigweed environment with Zephyr**
 

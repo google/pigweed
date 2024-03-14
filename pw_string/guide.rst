@@ -5,7 +5,6 @@ Get Started & Guides
 ====================
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 .. _module-pw_string-get-started:
 

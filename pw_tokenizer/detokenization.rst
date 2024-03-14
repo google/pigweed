@@ -7,7 +7,6 @@ Detokenization
 ==============
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Compress strings to shrink logs by +75%
 
 Detokenization is the process of expanding a token to the string it represents
 and decoding its arguments. ``pw_tokenizer`` provides Python, C++ and

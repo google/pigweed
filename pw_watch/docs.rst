@@ -7,8 +7,6 @@ pw_watch
 ========
 .. pigweed-module::
    :name: pw_watch
-   :tagline: Embedded development file system watcher
-   :status: stable
 
    * **Automatically trigger build actions when source files change**
 

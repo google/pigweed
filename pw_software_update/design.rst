@@ -5,7 +5,6 @@ pw_software_update: Design
 --------------------------
 .. pigweed-module-subpage::
    :name: pw_software_update
-   :tagline: Secure software delivery
 
 This page explains the security framing, bundle format and update workflows of
 ``pw_software_update``.

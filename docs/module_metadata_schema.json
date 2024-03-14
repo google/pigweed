@@ -1,0 +1,54 @@
+{
+  "description": "Schema for //docs/module_metadata.json.",
+  "type": "object",
+  "patternProperties": {
+    "^pw_.*": {
+      "description": "The metadata for each module must match this schema.",
+      "type": "object",
+      "properties": {
+        "languages": {
+          "description": "The programming languages that the module supports.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "C",
+              "C11",
+              "C++",
+              "C++17",
+              "C++20",
+              "CLI",
+              "Java",
+              "Python",
+              "Rust",
+              "Starlark",
+              "TypeScript"
+            ]
+          }
+        },
+        "size": {
+          "description": "A summary of the code size impact of the module.",
+          "type": "string"
+        },
+        "status": {
+          "description": "The status of the module.",
+          "type": "string",
+          "enum": [
+            "stable",
+            "unstable",
+            "experimental"
+          ]
+        },
+        "tagline": {
+          "description": "A concise summary of the module's value proposition.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

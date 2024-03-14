@@ -9,7 +9,6 @@ pw_fuzzer: Guides
 =================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
-   :tagline: Better C++ code through easier fuzzing
 
 ``pw_fuzzer`` contains detailed guides on the following topics:
 

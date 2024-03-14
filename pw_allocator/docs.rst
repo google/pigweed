@@ -5,10 +5,6 @@ pw_allocator
 ============
 .. pigweed-module::
    :name: pw_allocator
-   :tagline: Flexible, safe, and measurable memory allocation
-   :status: unstable
-   :languages: C++17
-   :code-size-impact: 400 to 1800 bytes
 
 - **Flexible**: Simple interface makes it easy to inject specific behaviors.
 - **Safe**: Can detect memory corruption, e.g overflows and use-after-free.

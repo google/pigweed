@@ -5,10 +5,6 @@ pw_kvs
 ======
 .. pigweed-module::
    :name: pw_kvs
-   :tagline: Lightweight, persistent key-value store
-   :status: stable
-   :languages: C++17
-   :code-size-impact: ~12 kB
 
 .. tab-set::
 

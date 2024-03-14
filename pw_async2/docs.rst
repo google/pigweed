@@ -5,9 +5,6 @@ pw_async2
 =============
 .. pigweed-module::
    :name: pw_async2
-   :tagline: Cooperative async tasks for embedded
-   :status: experimental
-   :languages: C++17
 
    - **Simple Ownership**: Say goodbye to that jumble of callbacks and shared
      state! Complex tasks with many concurrent elements can be expressed by

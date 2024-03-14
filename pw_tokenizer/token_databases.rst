@@ -5,7 +5,6 @@ Token databases
 ===============
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Compress strings to shrink logs by +75%
 
 Token databases store a mapping of tokens to the strings they represent. An ELF
 file can be used as a token database, but it only contains the strings for its

@@ -5,9 +5,6 @@ pw_json
 =======
 .. pigweed-module::
    :name: pw_json
-   :tagline: Simple, efficient C++ JSON serialization
-   :status: stable
-   :languages: C++
 
    Use :cpp:class:`pw::JsonBuilder` to serialize JSON to a buffer. It's simple,
    safe, and efficient.

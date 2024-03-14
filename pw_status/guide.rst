@@ -5,7 +5,6 @@ Get started & guides
 ====================
 .. pigweed-module-subpage::
    :name: pw_status
-   :tagline: pw_status: Exception-free error propagation for embedded
 
 .. _module-pw_status-get-started:
 

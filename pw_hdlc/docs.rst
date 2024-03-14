@@ -7,10 +7,6 @@ pw_hdlc
 =======
 .. pigweed-module::
    :name: pw_hdlc
-   :tagline: Simple, robust, and efficient serial communication
-   :status: stable
-   :languages: C++17, Python, TypeScript
-   :code-size-impact: 1400 to 2600 bytes
 
    - **Simple**: Transmit RPCs and other data between devices over serial
    - **Robust**: Detect corruption and data loss

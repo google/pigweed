@@ -5,7 +5,6 @@ Design
 ======
 .. pigweed-module-subpage::
    :name: pw_emu
-   :tagline: pw_emu: Flexible emulators frontend
 
 -----------
 Parallelism

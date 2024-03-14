@@ -5,9 +5,6 @@ pw_span
 =======
 .. pigweed-module::
    :name: pw_span
-   :tagline: std::span for C++17
-   :status: stable
-   :languages: C++17,C++20
 
 * **Standardized**: :cpp:class:`pw::span` matches C++20's `std::span
   <https://en.cppreference.com/w/cpp/container/span>`_ as closely as possible.

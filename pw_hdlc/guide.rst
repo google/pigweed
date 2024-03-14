@@ -5,7 +5,6 @@ Get started & guides
 ====================
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
 .. include:: design.rst
    :start-after: .. pw_hdlc-overview-start

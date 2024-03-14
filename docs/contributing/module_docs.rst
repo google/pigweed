@@ -226,6 +226,37 @@ The following sections provide instructions on how to write each content type.
    :ref:`docs-contrib-moduledocs-multipage` they might be an entire page of
    content or a section within a page.
 
+.. _docs-contrib-moduledocs-metadata:
+
+Module metadata
+===============
+1. Add a ``pigweed-module`` directive right after the title in your
+   ``docs.rst``:
+
+   .. code-block::
+
+      ==========
+      pw_example
+      ==========
+      .. pigweed-module::
+         :name: pw_example
+
+2. Add metadata for your module in ``//docs/module_metadata.json``.
+   See ``//docs/module_metadata_schema.json`` for the schema
+   definition.
+
+3. Add a ``pigweed-module-subpage`` directive right after the title
+   in each of your other docs pages (if your module has multiple docs
+   pages):
+
+   .. code-block::
+
+      =============
+      API reference
+      =============
+      .. pigweed-module-subpage::
+         :name: pw_example
+
 .. _docs-contrib-moduledocs-sales:
 
 Sales pitch

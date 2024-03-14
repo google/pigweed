@@ -5,7 +5,6 @@ Configuration
 =============
 .. pigweed-module-subpage::
    :name: pw_emu
-   :tagline: pw_emu: Flexible emulators frontend
 
 ``pw_emu`` configuration is done in the ``pw.pw_emu`` namespace of
 :ref:`pigweed.json <seed-0101>`.

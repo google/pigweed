@@ -5,9 +5,6 @@ pw_multibuf
 ===========
 .. pigweed-module::
    :name: pw_multibuf
-   :tagline: A buffer API optimized for zero-copy messaging
-   :status: unstable
-   :languages: C++17
 
 Sending or receiving messages via RPC, transfer, or sockets often requires a
 series of intermediate buffers, each requiring their own copy of the data.

@@ -7,9 +7,6 @@ pw_digital_io_linux
 ===================
 .. pigweed-module::
    :name: pw_digital_io_linux
-   :tagline: Digital IO interface for Linux userspace
-   :status: unstable
-   :languages: C++17
 
 ``pw_digital_io_linux`` implements the :ref:`module-pw_digital_io` interface
 using the `Linux userspace gpio-cdev interface

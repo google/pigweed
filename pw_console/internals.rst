@@ -4,7 +4,6 @@ Internal Design
 ===============
 .. pigweed-module-subpage::
    :name: pw_console
-   :tagline: pw_console: Multi-purpose pluggable interactive console for dev & manufacturing
 
 Threads and Event Loops
 -----------------------

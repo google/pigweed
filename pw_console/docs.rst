@@ -5,10 +5,6 @@ pw_console
 ==========
 .. pigweed-module::
    :name: pw_console
-   :tagline: Multi-purpose pluggable interactive console for dev & manufacturing
-   :status: stable
-   :languages: Python
-   :code-size-impact: N/A (host) but works best with pw_rpc on device
 
 The Pigweed Console provides a Python repl (read eval print loop) using
 `ptpython`_ and a log message viewer in a single-window terminal based

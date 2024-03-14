@@ -7,7 +7,6 @@ Tokenization
 ============
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Compress strings to shrink logs by +75%
 
 Tokenization converts a string literal to a token. If it's a printf-style
 string, its arguments are encoded along with it. The results of tokenization can

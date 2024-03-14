@@ -5,7 +5,6 @@ API reference
 =============
 .. pigweed-module-subpage::
    :name: pw_emu
-   :tagline: pw_emu: Flexible emulators frontend
 
 ------------------------
 pw_emu.frontend.Emulator

@@ -1,8 +1,8 @@
 .. _module-pw_docgen:
 
----------
+=========
 pw_docgen
----------
+=========
 The docgen module provides tools to generate documentation for Pigweed-based
 projects, and for Pigweed itself.
 
@@ -20,8 +20,9 @@ depend on other build targets, such as report cards for binary size/profiling.
 Any time the code is changed, documentation will be regenerated with the updated
 reports.
 
-Documentation Overview
-======================
+----------------------
+Documentation overview
+----------------------
 Each Pigweed module provides documentation describing its functionality, use
 cases, and programming API.
 
@@ -29,9 +30,9 @@ Included in a module's documentation are report cards which show an overview of
 the module's size cost and performance benchmarks. These allow prospective users
 to evaluate the impact of including the module in their projects.
 
-Build Integration
-=================
-
+-----------------
+Build integration
+-----------------
 Pigweed documentation files are written in `reStructuredText`_ format and
 rendered to HTML using `Sphinx`_ through Pigweed's GN build system.
 
@@ -53,10 +54,10 @@ system can either be used directly within Pigweed, or integrated into a
 downstream project.
 
 GN Templates
-------------
+============
 
 pw_doc_group
-____________
+------------
 The main template for defining documentation files is ``pw_doc_group``. It is
 used to logically group a collection of documentation source files and assets.
 Each Pigweed module is expected to provide at least one ``pw_doc_group`` target
@@ -87,7 +88,7 @@ groups, causing them to be built with it.
    }
 
 pw_doc_gen
-__________
+----------
 The ``pw_doc_gen`` template creates a target which renders complete HTML
 documentation for a project. It depends on registered ``pw_doc_group`` targets
 and creates an action which collects and renders them.
@@ -120,7 +121,7 @@ to tie everything together.
      ]
    }
 
-Generating Documentation
+Generating documentation
 ------------------------
 All source files listed under a ``pw_doc_gen`` target and its ``pw_doc_group``
 dependencies get copied out into a directory structure mirroring the original
@@ -178,50 +179,18 @@ your browser will refresh as you make changes to the source files.
 In most cases, you will not need to run the docs server directly. Instead, it
 will be run via :ref:`module-pw_watch`.
 
+-----------------
 Sphinx Extensions
-=================
+-----------------
 This module houses Pigweed-specific extensions for the Sphinx documentation
 generator. Extensions are included and configured in ``docs/conf.py``.
 
 module_metadata
----------------
-Per :ref:`SEED-0102 <seed-0102>`, Pigweed module documentation has a standard
-format. The ``pigweed-module`` Sphinx directive provides that format and
-registers module metadata that can be used elsewhere in the Sphinx build.
-
-We need to add the directive after the document title, and add a class *to*
-the document title to achieve the title & subtitle formatting. Here's an
-example:
-
-.. code-block:: rst
-
-   .. rst-class:: with-subtitle
-
-   =========
-   pw_string
-   =========
-
-   .. pigweed-module::
-      :name: pw_string
-      :tagline: Efficient, easy, and safe string manipulation
-      :status: stable
-      :languages: C++17, Rust
-      :code-size-impact: 500 to 1500 bytes
-
-      Module sales pitch goes here!
-
-Directive options
-_________________
-- ``name``: The module name (required)
-- ``tagline``: A very short tagline that summarizes the module (required)
-- ``status``: One of ``experimental``, ``unstable``, and ``stable`` (required)
-- ``is-deprecated``: A flag indicating that the module is deprecated
-- ``languages``: A comma-separated list of languages the module supports.  If
-  the language has API docs (Rust), they will be linked from the metadata block.
-- ``code-size-impact``: A summarize of the average code size impact
+===============
+See :ref:`docs-contrib-moduledocs-metadata`.
 
 Canonical URL configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 ``module_metadata`` fixes the canonical URLs for ``*/docs.html`` pages. By
 default Sphinx assumes that a page's canonical URL is its full URL. E.g. the
 default canonical URL for ``//pw_string/docs.rst`` is

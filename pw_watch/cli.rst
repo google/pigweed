@@ -5,7 +5,6 @@ pw_watch CLI reference
 =======================
 .. pigweed-module-subpage::
    :name: pw_watch
-   :tagline: Embedded development file system watcher
 
 .. argparse::
    :module: pw_watch.watch

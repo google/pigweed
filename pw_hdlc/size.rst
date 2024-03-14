@@ -7,7 +7,6 @@ Code size analysis
 ==================
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
 ``pw_hdlc`` currently optimizes for robustness and flexibility instead of
 binary size or performance.

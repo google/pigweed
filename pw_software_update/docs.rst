@@ -7,9 +7,6 @@ pw_software_update
 ==================
 .. pigweed-module::
    :name: pw_software_update
-   :tagline: Secure software delivery
-   :status: experimental
-   :languages: Python, C++17
 
    The ``pw_software_update`` module offers the following building blocks for
    setting up your own end-to-end software delivery system.

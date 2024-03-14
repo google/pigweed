@@ -5,7 +5,6 @@ Get started & guides
 ====================
 .. pigweed-module-subpage::
    :name: pw_emu
-   :tagline: pw_emu: Flexible emulators frontend
 
 .. _module-pw_emu-get-started:
 

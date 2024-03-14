@@ -5,7 +5,6 @@ pw_watch how-to guide
 =====================
 .. pigweed-module-subpage::
    :name: pw_watch
-   :tagline: Embedded development file system watcher
 
 This guide shows you how to do common ``pw_watch`` tasks.
 

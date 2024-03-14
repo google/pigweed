@@ -5,7 +5,6 @@ pw_fuzzer: Concepts
 ===================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
-   :tagline: Better C++ code through easier fuzzing
 
 Fuzzing is an approach to testing software with generated data. Guided fuzzing
 uses feedback from the code being tested, such as code coverage, to direct the

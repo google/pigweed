@@ -5,9 +5,6 @@ pw_build_android
 ================
 .. pigweed-module::
    :name: pw_build_android
-   :tagline: Utilities for using Pigweed in Android platform
-   :status: unstable
-   :languages: C++20
 
 ``pw_build_android`` provides simple utilities and guidelines for building with
 Soong.

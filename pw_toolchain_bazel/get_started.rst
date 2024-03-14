@@ -5,7 +5,6 @@ Get started with pw_toolchain_bazel
 ===================================
 .. pigweed-module-subpage::
    :name: pw_toolchain_bazel
-   :tagline: A modular toolkit for declaring C/C++ toolchains in Bazel
 
 -----------
 Quick start

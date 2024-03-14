@@ -1,0 +1,213 @@
+{
+  "pw_alignment": {
+    "tagline": "Natural object alignment, guaranteed",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_allocator": {
+    "tagline": "Flexible, safe, and measurable memory allocation",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ],
+    "size": "400 to 1800 bytes"
+  },
+  "pw_async2": {
+    "tagline": "Cooperative async tasks for embedded",
+    "status": "experimental",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_bluetooth_sapphire": {
+    "tagline": "Battle-tested Bluetooth with rock-solid reliability",
+    "status": "unstable",
+    "size": "1.5 to 2 mB",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_boot": {
+    "tagline": "Simplified booting for C++ targets",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_build_android": {
+    "tagline": "Utilities for using Pigweed in Android platform",
+    "status": "unstable",
+    "languages": [
+      "C++20"
+    ]
+  },
+  "pw_console": {
+    "tagline": "Multi-purpose pluggable interactive console for dev & manufacturing",
+    "status": "stable",
+    "size": "N/A (host) but works best with pw_rpc on-device",
+    "languages": [
+      "Python"
+    ]
+  },
+  "pw_digital_io_linux": {
+    "tagline": "Digital I/O interface for Linux userspace",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_emu": {
+    "tagline": "Flexible emulators frontend",
+    "status": "experimental",
+    "languages": [
+      "Python",
+      "CLI"
+    ]
+  },
+  "pw_env_setup_zephyr": {
+    "tagline": "Zephyr utilities",
+    "status": "experimental"
+  },
+  "pw_format": {
+    "tagline": "String formatting",
+    "status": "experimental",
+    "languages": [
+      "Rust"
+    ]
+  },
+  "pw_function": {
+    "tagline": "Embedded-friendly std::function",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_fuzzer": {
+    "tagline": "Better C++ code through easier fuzzing",
+    "status": "unstable",
+    "languages": [
+      "C++17",
+      "C++20"
+    ]
+  },
+  "pw_grpc": {
+    "tagline": "pw_rpc over gRPC",
+    "status": "unstable",
+    "languages": [
+      "C++17",
+      "C++20"
+    ]
+  },
+  "pw_hdlc": {
+    "tagline": "Simple, robust, and efficient serial communication",
+    "status": "stable",
+    "size": "1400 to 2600 bytes",
+    "languages": [
+      "Python",
+      "C++17",
+      "TypeScript"
+    ]
+  },
+  "pw_json": {
+    "tagline": "Simple, efficient C++ JSON serialization",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_kvs": {
+    "tagline": "Lightweight, persistent key-value store",
+    "status": "stable",
+    "size": "~12 kB",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_multibuf": {
+    "tagline": "A buffer API optimized for zero-copy messaging",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_perf_test": {
+    "tagline": "Micro-benchmarks that are easy to write and run",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_result": {
+    "tagline": "Error propagation primitives: value-or-error",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_software_update": {
+    "tagline": "Secure software delivery",
+    "status": "experimental",
+    "languages": [
+      "Python",
+      "C++17"
+    ]
+  },
+  "pw_span": {
+    "tagline": "std::span for C++17",
+    "status": "stable",
+    "languages": [
+      "C++17",
+      "C++20"
+    ]
+  },
+  "pw_status": {
+    "tagline": "Exception-free error propagation for embedded",
+    "status": "stable",
+    "languages": [
+      "C++17",
+      "C",
+      "Python",
+      "Java",
+      "TypeScript",
+      "Rust"
+    ]
+  },
+  "pw_string": {
+    "tagline": "Efficient, easy, and safe string manipulation",
+    "status": "stable",
+    "size": "500 to 1500 bytes",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_tokenizer": {
+    "tagline": "Compress strings to shrink logs by +75%",
+    "status": "stable",
+    "size": "50% reduction in log size",
+    "languages": [
+      "C++",
+      "C11",
+      "Python",
+      "Rust",
+      "TypeScript",
+      "Java"
+    ]
+  },
+  "pw_toolchain_bazel": {
+    "tagline": "A modular toolkit for declaring C/C++ toolchains in Bazel",
+    "status": "unstable",
+    "languages": [
+      "Starlark"
+    ]
+  },
+  "pw_unit_test": {
+    "tagline": "GoogleTest for embedded",
+    "status": "stable"
+  },
+  "pw_watch": {
+    "tagline": "Embedded development file system watcher",
+    "status": "stable"
+  }
+}

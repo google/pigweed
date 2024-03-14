@@ -5,7 +5,6 @@ Get started with pw_tokenizer
 =============================
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Compress strings to shrink logs by +75%
 
 .. _module-pw_tokenizer-get-started-overview:
 
