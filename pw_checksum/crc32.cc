@@ -14,6 +14,8 @@
 
 #include "pw_checksum/crc32.h"
 
+#include <array>
+
 namespace pw::checksum {
 namespace {
 
