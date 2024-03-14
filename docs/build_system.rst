@@ -990,12 +990,12 @@ something like this:
 .. code-block:: sh
 
    # The Cortex M7 config
-   build:m7 --@pigweed//tagrets:pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
-   build:m7 --@pigweed//targets:pw_sys_io_backend=//cortex-m7:sys_io
+   build:m7 --@pigweed//pw_chrono:system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
+   build:m7 --@pigweed//pw_sys_io:backend=//cortex-m7:sys_io
 
    # The Cortex M4 config
-   build:m4 --@pigweed//tagrets:pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
-   build:m4 --@pigweed//targets:pw_sys_io_backend=//cortex-m4:sys_io
+   build:m4 --@pigweed//pw_chrono:system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
+   build:m4 --@pigweed//pw_sys_io:backend=//cortex-m4:sys_io
    build:m4 --@pigweed//pw_log:backend=@pigweed//pw_log_string
    build:m4 --@pigweed//pw_log_string:handler_backend=@pigweed//pw_system:log_backend
 

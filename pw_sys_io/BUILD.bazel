@@ -35,12 +35,17 @@ alias(
 pw_facade(
     name = "pw_sys_io",
     hdrs = ["public/pw_sys_io/sys_io.h"],
-    backend = "@pigweed//targets:pw_sys_io_backend",
+    backend = ":backend",
     includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_status",
     ],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = "@pigweed//targets:pw_sys_io_backend",
 )
 
 cc_library(
