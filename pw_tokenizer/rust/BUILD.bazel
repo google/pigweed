@@ -81,6 +81,8 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         ":pw_tokenizer_core",
+        "//pw_bytes/rust:pw_bytes",
+        "//pw_format/rust:pw_format_core",
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
         "//pw_varint/rust:pw_varint",

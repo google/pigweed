@@ -58,8 +58,11 @@ pub mod internal;
 // name.
 pub mod __private {
     pub use crate::*;
+    pub use pw_bytes::concat_static_strs;
+    pub use pw_format_core::PrintfFormatter;
     pub use pw_status::Result;
     pub use pw_stream::{Cursor, Seek, WriteInteger, WriteVarint};
+    pub use pw_tokenizer_core::hash_string;
     pub use pw_tokenizer_macro::{_token, _tokenize_to_buffer, _tokenize_to_writer};
 }
 
@@ -93,6 +96,7 @@ pub mod __private {
 #[macro_export]
 macro_rules! token {
     ($string:literal) => {{
+        use $crate::__private as __pw_tokenizer_crate;
         $crate::__private::_token!($string)
     }};
 }

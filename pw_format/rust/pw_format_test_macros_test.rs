@@ -25,6 +25,7 @@ pub enum TestGeneratorOps {
     },
     StringConversion,
     CharConversion,
+    UntypedConversion,
 }
 
 // Used to record calls into the test generator from `printf_generator_test_macro!` and friends.
@@ -35,6 +36,7 @@ pub enum PrintfTestGeneratorOps {
     IntegerConversion { ty: String },
     StringConversion,
     CharConversion,
+    UntypedConversion,
 }
 
 #[cfg(test)]
@@ -56,7 +58,7 @@ mod tests {
     #[test]
     fn generate_calls_generator_correctly() {
         assert_eq!(
-            generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
             vec![
                 TestGeneratorOps::StringFragment("test ".to_string()),
                 TestGeneratorOps::IntegerConversion {
@@ -67,6 +69,8 @@ mod tests {
                 TestGeneratorOps::StringConversion,
                 TestGeneratorOps::StringFragment(" ".to_string()),
                 TestGeneratorOps::CharConversion,
+                TestGeneratorOps::StringFragment(" ".to_string()),
+                TestGeneratorOps::UntypedConversion,
                 TestGeneratorOps::Finalize
             ]
         );
@@ -75,11 +79,19 @@ mod tests {
     #[test]
     fn generate_printf_calls_generator_correctly() {
         assert_eq!(
-            printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            printf_generator_test_macro!(
+                "test %ld %s %c %v %v",
+                5,
+                "test",
+                'c',
+                1 as i32,
+                "string" as &str
+            ),
             (
                 // %ld gets converted to %d because they are equivalent for 32 bit
                 // systems.
-                "test %d %s %c",
+                // %v gets converted to %d since we pass in a signed integer.
+                "test %d %s %c %d %s",
                 vec![
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
@@ -89,6 +101,10 @@ mod tests {
                     PrintfTestGeneratorOps::StringConversion,
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
                     PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::UntypedConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::UntypedConversion,
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -171,9 +187,9 @@ mod tests {
     #[test]
     fn generate_core_fmt_calls_generator_correctly() {
         assert_eq!(
-            core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            core_fmt_generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
             (
-                "test {} {} {}",
+                "test {} {} {} {}",
                 vec![
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
@@ -183,6 +199,8 @@ mod tests {
                     PrintfTestGeneratorOps::StringConversion,
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
                     PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::UntypedConversion,
                     PrintfTestGeneratorOps::Finalize
                 ]
             )

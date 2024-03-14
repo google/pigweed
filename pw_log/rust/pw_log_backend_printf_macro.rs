@@ -20,7 +20,10 @@ use syn::{
     parse_macro_input, Expr, Token,
 };
 
-use pw_format::macros::{generate_printf, FormatAndArgs, PrintfFormatMacroGenerator, Result};
+use pw_format::macros::{
+    generate_printf, Arg, FormatAndArgs, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
+    Result,
+};
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -64,19 +67,30 @@ impl<'a> LogfGenerator<'a> {
 // Use a [`pw_format::PrintfFormatMacroGenerator`] to prepare arguments to call
 // `printf`.
 impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
-    fn finalize(self, format_string: String) -> Result<TokenStream2> {
+    fn finalize(
+        self,
+        format_string_fragments: &[PrintfFormatStringFragment],
+    ) -> Result<TokenStream2> {
         let log_level = self.log_level;
         let args = &self.args;
-        let format_string = format!("[%s] {format_string}\n\0");
+        let format_string_pieces: Vec<_> = format_string_fragments
+            .iter()
+            .map(|fragment| fragment.as_token_stream("__pw_log_backend_crate"))
+            .collect::<Result<Vec<_>>>()?;
         Ok(quote! {
           {
             use core::ffi::{c_int, c_uchar};
+            // Prepend log level tag and append newline and null terminator for
+            // C string validity.
+            let format_string = __pw_log_backend_crate::concat_static_strs!(
+              "[%s] ", #(#format_string_pieces),*, "\n\0"
+            );
             unsafe {
               extern "C" {
                 fn printf(fmt: *const c_uchar, ...) -> c_int;
               }
-              printf(#format_string.as_ptr(),
-              __pw_log_backend_crate::log_level_tag(#log_level).as_ptr(),
+              printf(format_string.as_ptr(),
+                __pw_log_backend_crate::log_level_tag(#log_level).as_ptr(),
                 #(#args),*);
             }
           }
@@ -88,12 +102,12 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
         Ok(())
     }
 
-    fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         self.args.push(quote! {((#expression) as #ty)});
         Ok(None)
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         // In order to not convert Rust Strings to CStrings at runtime, we use
         // the "%.*s" specifier to explicitly bound the length of the
         // non-null-terminated Rust String.
@@ -102,9 +116,14 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
         Ok(Some("%.*s".into()))
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         self.args.push(quote! {((#expression) as char)});
         Ok(None)
+    }
+
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        self.args.push(quote! {(#expression) });
+        Ok(())
     }
 }
 

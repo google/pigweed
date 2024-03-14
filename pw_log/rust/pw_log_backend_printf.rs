@@ -26,9 +26,13 @@
 //! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
 pub use pw_log_backend_printf_macro::_pw_logf_backend;
 
+// Re-export dependences of backend proc macro to be accessed via `$crate::__private`.
 #[doc(hidden)]
 pub mod __private {
+    pub use pw_bytes::concat_static_strs;
+    pub use pw_format_core::PrintfFormatter;
     use pw_log_backend_api::LogLevel;
+
     pub const fn log_level_tag(level: LogLevel) -> &'static str {
         match level {
             LogLevel::Debug => "DBG\0",
@@ -41,11 +45,10 @@ pub mod __private {
     }
 }
 
-// Implement the `pw_log` backend API.
 #[macro_export]
 macro_rules! pw_logf_backend {
-  ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
-    use $crate::__private as __pw_log_backend_crate;
-    $crate::_pw_logf_backend!($log_level, $format_string, $($args),*);
-  }};
+    ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
+        use $crate::__private as __pw_log_backend_crate;
+        $crate::_pw_logf_backend!($log_level, $format_string,  $($args),*)
+    }};
 }

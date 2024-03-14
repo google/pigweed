@@ -38,10 +38,10 @@ use std::collections::VecDeque;
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse::{Parse, ParseStream},
+    parse::{discouraged::Speculative, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned,
-    Expr, LitStr, Token,
+    Expr, ExprCast, LitStr, Token,
 };
 
 use crate::{
@@ -160,17 +160,65 @@ pub trait FormatMacroGenerator {
         &mut self,
         display: IntegerDisplayType,
         type_width: u8, // This should probably be an enum
-        expression: Expr,
+        expression: Arg,
     ) -> Result<()>;
 
     /// Process a string conversion.
     ///
     /// See [`string_fragment`](FormatMacroGenerator::string_fragment) for a
     /// disambiguation between that function and this one.
-    fn string_conversion(&mut self, expression: Expr) -> Result<()>;
+    fn string_conversion(&mut self, expression: Arg) -> Result<()>;
 
     /// Process a character conversion.
-    fn char_conversion(&mut self, expression: Expr) -> Result<()>;
+    fn char_conversion(&mut self, expression: Arg) -> Result<()>;
+
+    /// Process an untyped conversion.
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        Err(Error::new("untyped conversion (%v) not supported"))
+    }
+}
+
+/// An argument to a `pw_format` backed macro.
+///
+/// `pw_format` backed macros have special case recognition of type casts
+/// (`value as ty`) in order to annotate a type for typeless printing w/o
+/// relying on experimental features.  If an argument is given in that form,
+/// it will be represented as an [`Arg::ExprCast`] here.  Otherwise it will
+/// be an [`Arg::Expr`].
+#[derive(Clone, Debug)]
+pub enum Arg {
+    /// An argument that is an type cast expression.
+    ExprCast(ExprCast),
+    /// An argument that is an expression.
+    Expr(Expr),
+}
+
+impl Parse for Arg {
+    fn parse(input: ParseStream) -> syn::parse::Result<Self> {
+        // Try parsing as an explicit cast first.  This lets the user name a
+        // type when type_alias_impl_trait is not enabled.
+        let fork = input.fork();
+        if let Ok(cast) = fork.parse::<ExprCast>() {
+            // Speculative parsing and `advance_to` is discouraged due to error
+            // presentation.  However, since `ExprCast` is a subset of `Expr`,
+            //  any errors in parsing here will be reported when trying to parse
+            //  as an `Expr` below.
+            input.advance_to(&fork);
+            return Ok(Self::ExprCast(cast));
+        }
+
+        // Otherwise prase as an expression.
+        input.parse::<Expr>().map(|expr| Self::Expr(expr))
+    }
+}
+
+impl ToTokens for Arg {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Self::Expr(expr) => expr.to_tokens(tokens),
+            Self::ExprCast(cast) => cast.to_tokens(tokens),
+        }
+    }
 }
 
 /// A parsed format string and it's arguments.
@@ -186,7 +234,7 @@ pub trait FormatMacroGenerator {
 pub struct FormatAndArgs {
     format_string: LitStr,
     parsed: FormatString,
-    args: VecDeque<Expr>,
+    args: VecDeque<Arg>,
 }
 
 impl Parse for FormatAndArgs {
@@ -209,7 +257,7 @@ impl Parse for FormatAndArgs {
             // Eat the `,` following the format string.
             input.parse::<Token![,]>()?;
 
-            let punctuated = Punctuated::<Expr, Token![,]>::parse_terminated(input)?;
+            let punctuated = Punctuated::<Arg, Token![,]>::parse_terminated(input)?;
             punctuated.into_iter().collect()
         };
 
@@ -229,7 +277,7 @@ impl Parse for FormatAndArgs {
 }
 
 // Grab the next argument returning a descriptive error if no more args are left.
-fn next_arg(spec: &ConversionSpec, args: &mut VecDeque<Expr>) -> Result<Expr> {
+fn next_arg(spec: &ConversionSpec, args: &mut VecDeque<Arg>) -> Result<Arg> {
     args.pop_front()
         .ok_or_else(|| Error::new(&format!("No argument given for {spec:?}")))
 }
@@ -241,7 +289,7 @@ fn next_arg(spec: &ConversionSpec, args: &mut VecDeque<Expr>) -> Result<Expr> {
 fn handle_conversion(
     generator: &mut dyn FormatMacroGenerator,
     spec: &ConversionSpec,
-    args: &mut VecDeque<Expr>,
+    args: &mut VecDeque<Arg>,
 ) -> Result<()> {
     match spec.specifier {
         Specifier::Decimal
@@ -305,6 +353,11 @@ fn handle_conversion(
         Specifier::Char => {
             let arg = next_arg(spec, args)?;
             generator.char_conversion(arg)
+        }
+
+        Specifier::Untyped => {
+            let arg = next_arg(spec, args)?;
+            generator.untyped_conversion(arg)
         }
 
         Specifier::Double
@@ -382,7 +435,10 @@ pub trait PrintfFormatMacroGenerator {
     ///
     /// Works like [`FormatMacroGenerator::finalize`] with the addition of
     /// being provided a `printf_style` format string.
-    fn finalize(self, format_string: String) -> Result<TokenStream2>;
+    fn finalize(
+        self,
+        format_string_fragments: &[PrintfFormatStringFragment],
+    ) -> Result<TokenStream2>;
 
     /// Process a string fragment.
     ///
@@ -400,7 +456,7 @@ pub trait PrintfFormatMacroGenerator {
     ///
     /// May optionally return a printf format string (i.e. "%d") to override the
     /// default.
-    fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>>;
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>>;
 
     /// Process a string conversion.
     ///
@@ -409,32 +465,127 @@ pub trait PrintfFormatMacroGenerator {
     ///
     /// See [`FormatMacroGenerator::string_fragment`] for a disambiguation
     /// between a string fragment and string conversion.
-    fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>>;
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>>;
 
     /// Process a character conversion.
     ///
     /// May optionally return a printf format string (i.e. "%c") to override the
     /// default.
-    fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>>;
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>>;
+
+    /// Process and untyped conversion.
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        Err(Error::new("untyped conversion not supported"))
+    }
+}
+
+/// A fragment of a printf format string.
+///
+/// Printf format strings are built of multiple fragments.  These fragments can
+/// be either a string ([`PrintfFormatStringFragment::String`]) or an expression
+/// that evaluates to a `const &str` ([`PrintfFormatStringFragment::Expr`]).
+/// These fragments can then be used to create a single `const &str` for use by
+/// code generation.
+///
+/// # Example
+/// ```
+/// use pw_bytes::concat_static_strs;
+/// use pw_format::macros::{PrintfFormatStringFragment, Result};
+/// use quote::quote;
+///
+/// fn handle_fragments(format_string_fragments: &[PrintfFormatStringFragment]) -> Result<()> {
+///   let format_string_pieces: Vec<_> = format_string_fragments
+///     .iter()
+///     .map(|fragment| fragment.as_token_stream("__pw_log_backend_crate"))
+///     .collect::<Result<Vec<_>>>()?;
+///
+///   quote! {
+///     let format_string = concat_static_strs!("prefix: ", #(#format_string_pieces),*, "\n");
+///   };
+///   Ok(())
+/// }
+/// ```
+pub enum PrintfFormatStringFragment {
+    /// A fragment that is a string.
+    String(String),
+
+    /// An expressions that evaluates to a `const &str`.
+    Expr(Arg),
+}
+
+impl PrintfFormatStringFragment {
+    /// Returns a [`proc_macro2::TokenStream`] representing this fragment.
+    pub fn as_token_stream(&self, printf_formatter_trait_location: &str) -> Result<TokenStream2> {
+        let crate_name = format_ident!("{}", printf_formatter_trait_location);
+        match self {
+            Self::String(s) => Ok(quote! {#s}),
+            #[cfg(not(feature = "nightly_tait"))]
+            Self::Expr(arg) => {
+                let Arg::ExprCast(cast) = arg else {
+                    return Err(Error::new(&format!(
+                      "Expected argument to untyped format (%v) to be a cast expression (e.g. x as i32), but found {}.",
+                      arg.to_token_stream()
+                    )));
+                };
+                let ty = &cast.ty;
+                Ok(quote! {
+                  {
+                    use #crate_name::PrintfFormatter;
+                    <#ty as PrintfFormatter>::FORMAT_ARG
+                  }
+                })
+            }
+            #[cfg(feature = "nightly_tait")]
+            Self::Expr(expr) => Ok(quote! {
+              {
+                use #crate_name::PrintfFormatter;
+                type T = impl PrintfFormatter;
+                let _: &T = &(#expr);
+                let arg = <T as PrintfFormatter>::FORMAT_ARG;
+                arg
+              }
+            }),
+        }
+    }
 }
 
 // Wraps a `PrintfFormatMacroGenerator` in a `FormatMacroGenerator` that
 // generates the format string as it goes.
 struct PrintfGenerator<GENERATOR: PrintfFormatMacroGenerator> {
     inner: GENERATOR,
-    format_string: String,
+    format_string_fragments: Vec<PrintfFormatStringFragment>,
+}
+
+impl<GENERATOR: PrintfFormatMacroGenerator> PrintfGenerator<GENERATOR> {
+    // Append `format_string` to the current set of format string fragments.
+    fn append_format_string(&mut self, format_string: &str) {
+        // If the last fragment is a string, append to that.
+        if let PrintfFormatStringFragment::String(s) = self
+            .format_string_fragments
+            .last_mut()
+            .expect("format_string_fragments always has at least one entry")
+        {
+            s.push_str(format_string)
+        } else {
+            // If the last fragment is not a string, add a new string fragment.
+            self.format_string_fragments
+                .push(PrintfFormatStringFragment::String(
+                    format_string.to_string(),
+                ));
+        }
+    }
 }
 
 impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGenerator<GENERATOR> {
     fn finalize(self) -> Result<TokenStream2> {
-        self.inner.finalize(self.format_string)
+        self.inner.finalize(&self.format_string_fragments)
     }
 
     fn string_fragment(&mut self, string: &str) -> Result<()> {
         // Escape '%' characters.
         let format_string = string.replace("%", "%%");
 
-        self.format_string.push_str(&format_string);
+        self.append_format_string(&format_string);
         self.inner.string_fragment(string)
     }
 
@@ -442,7 +593,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
         &mut self,
         display: IntegerDisplayType,
         type_width: u8, // in bits
-        expression: Expr,
+        expression: Arg,
     ) -> Result<()> {
         let length_modifer = match type_width {
             8 => "hh",
@@ -466,28 +617,34 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
         };
 
         match self.inner.integer_conversion(ty, expression)? {
-            Some(s) => self.format_string.push_str(&s),
-            None => self
-                .format_string
-                .push_str(&format!("%{}{}", length_modifer, conversion)),
+            Some(s) => self.append_format_string(&s),
+            None => self.append_format_string(&format!("%{}{}", length_modifer, conversion)),
         }
 
         Ok(())
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<()> {
         match self.inner.string_conversion(expression)? {
-            Some(s) => self.format_string.push_str(&s),
-            None => self.format_string.push_str("%s"),
+            Some(s) => self.append_format_string(&s),
+            None => self.append_format_string("%s"),
         }
         Ok(())
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<()> {
         match self.inner.char_conversion(expression)? {
-            Some(s) => self.format_string.push_str(&s),
-            None => self.format_string.push_str("%c"),
+            Some(s) => self.append_format_string(&s),
+            None => self.append_format_string("%c"),
         }
+        Ok(())
+    }
+
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        self.inner.untyped_conversion(expression.clone())?;
+        self.append_format_string("%");
+        self.format_string_fragments
+            .push(PrintfFormatStringFragment::Expr(expression));
         Ok(())
     }
 }
@@ -502,7 +659,7 @@ pub fn generate_printf(
 ) -> core::result::Result<TokenStream2, syn::Error> {
     let generator = PrintfGenerator {
         inner: generator,
-        format_string: "".into(),
+        format_string_fragments: vec![PrintfFormatStringFragment::String("".into())],
     };
     generate(generator, format_and_args)
 }
@@ -538,13 +695,18 @@ pub trait CoreFmtFormatMacroGenerator {
     fn string_fragment(&mut self, string: &str) -> Result<()>;
 
     /// Process an integer conversion.
-    fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>>;
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>>;
 
     /// Process a string conversion.
-    fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>>;
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>>;
 
     /// Process a character conversion.
-    fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>>;
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>>;
+
+    /// Process an untyped conversion.
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        Err(Error::new("untyped conversion (%v) not supported"))
+    }
 }
 
 // Wraps a `CoreFmtFormatMacroGenerator` in a `FormatMacroGenerator` that
@@ -571,7 +733,7 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
         &mut self,
         display: IntegerDisplayType,
         type_width: u8, // in bits
-        expression: Expr,
+        expression: Arg,
     ) -> Result<()> {
         let (conversion, ty) = match display {
             IntegerDisplayType::Signed => ("{}", format_ident!("i{type_width}")),
@@ -589,7 +751,7 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
         Ok(())
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<()> {
         match self.inner.string_conversion(expression)? {
             Some(s) => self.format_string.push_str(&s),
             None => self.format_string.push_str("{}"),
@@ -597,11 +759,17 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
         Ok(())
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<()> {
         match self.inner.char_conversion(expression)? {
             Some(s) => self.format_string.push_str(&s),
             None => self.format_string.push_str("{}"),
         }
+        Ok(())
+    }
+
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        self.inner.untyped_conversion(expression)?;
+        self.format_string.push_str("{}");
         Ok(())
     }
 }

@@ -56,4 +56,19 @@ mod tests {
             "[INF] test c\n",
         );
     }
+
+    #[test]
+    fn untyped_i32_argument_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", -1 as i32)),
+            "[INF] test -1\n",
+        );
+    }
+    #[test]
+    fn untyped_u32_argument_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", 1 as u32)),
+            "[INF] test 1\n",
+        );
+    }
 }

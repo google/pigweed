@@ -20,7 +20,9 @@ use syn::{
     parse_macro_input, Expr, Token,
 };
 
-use pw_format::macros::{generate_core_fmt, CoreFmtFormatMacroGenerator, FormatAndArgs, Result};
+use pw_format::macros::{
+    generate_core_fmt, Arg, CoreFmtFormatMacroGenerator, FormatAndArgs, Result,
+};
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -81,19 +83,24 @@ impl<'a> CoreFmtFormatMacroGenerator for LogfGenerator<'a> {
         Ok(())
     }
 
-    fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         self.args.push(quote! {((#expression) as #ty)});
         Ok(None)
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         self.args.push(quote! {((#expression) as &str)});
         Ok(None)
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         self.args.push(quote! {((#expression) as char)});
         Ok(None)
+    }
+
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        self.args.push(quote! {(#expression)});
+        Ok(())
     }
 }
 

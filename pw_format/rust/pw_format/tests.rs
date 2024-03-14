@@ -31,6 +31,7 @@ fn test_specifier() {
     assert_eq!(specifier("c"), Ok(("", Specifier::Char)));
     assert_eq!(specifier("s"), Ok(("", Specifier::String)));
     assert_eq!(specifier("p"), Ok(("", Specifier::Pointer)));
+    assert_eq!(specifier("v"), Ok(("", Specifier::Untyped)));
 
     assert_eq!(
         specifier("z"),

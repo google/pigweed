@@ -62,6 +62,7 @@
 //! });
 //! ```
 #![deny(missing_docs)]
+//#![feature(type_alias_impl_trait)]
 
 use std::collections::HashSet;
 
@@ -124,6 +125,9 @@ pub enum Specifier {
 
     /// `%p`
     Pointer,
+
+    /// '%v'
+    Untyped,
 }
 
 impl TryFrom<char> for Specifier {
@@ -146,6 +150,7 @@ impl TryFrom<char> for Specifier {
             'c' => Ok(Self::Char),
             's' => Ok(Self::String),
             'p' => Ok(Self::Pointer),
+            'v' => Ok(Self::Untyped),
             _ => Err(format!("Unsupported format specifier '{}'", value)),
         }
     }

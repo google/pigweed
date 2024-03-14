@@ -15,11 +15,12 @@
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use pw_format::macros::{
-    generate, generate_core_fmt, generate_printf, CoreFmtFormatMacroGenerator, FormatAndArgs,
-    FormatMacroGenerator, IntegerDisplayType, PrintfFormatMacroGenerator, Result,
+    generate, generate_core_fmt, generate_printf, Arg, CoreFmtFormatMacroGenerator, FormatAndArgs,
+    FormatMacroGenerator, IntegerDisplayType, PrintfFormatMacroGenerator,
+    PrintfFormatStringFragment, Result,
 };
 use quote::quote;
-use syn::{parse_macro_input, Expr};
+use syn::parse_macro_input;
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -63,7 +64,7 @@ impl FormatMacroGenerator for TestGenerator {
         &mut self,
         display_type: IntegerDisplayType,
         type_width: u8, // in bits
-        _expression: Expr,
+        _expression: Arg,
     ) -> Result<()> {
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::IntegerConversion{
@@ -74,16 +75,23 @@ impl FormatMacroGenerator for TestGenerator {
         Ok(())
     }
 
-    fn string_conversion(&mut self, _expression: Expr) -> Result<()> {
+    fn string_conversion(&mut self, _expression: Arg) -> Result<()> {
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::StringConversion);
         });
         Ok(())
     }
 
-    fn char_conversion(&mut self, _expression: Expr) -> Result<()> {
+    fn char_conversion(&mut self, _expression: Arg) -> Result<()> {
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::CharConversion);
+        });
+        Ok(())
+    }
+
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        self.code_fragments.push(quote! {
+            ops.push(TestGeneratorOps::UntypedConversion);
         });
         Ok(())
     }
@@ -135,17 +143,25 @@ impl PrintfTestGenerator {
 }
 
 impl PrintfFormatMacroGenerator for PrintfTestGenerator {
-    fn finalize(self, format_string: String) -> Result<TokenStream2> {
+    fn finalize(
+        self,
+        format_string_fragments: &[PrintfFormatStringFragment],
+    ) -> Result<TokenStream2> {
         // Create locally scoped alias so we can refer to them in `quote!()`.
         let code_fragments = self.code_fragments;
+        let format_string_pieces: Vec<_> = format_string_fragments
+            .iter()
+            .map(|fragment| fragment.as_token_stream("pw_format_core"))
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(quote! {
           {
             use pw_format_test_macros_test::PrintfTestGeneratorOps;
             let mut ops = Vec::new();
+            let format_string = pw_bytes::concat_static_strs!(#(#format_string_pieces),*);
             #(#code_fragments);*;
             ops.push(PrintfTestGeneratorOps::Finalize);
-            (#format_string, ops)
+            (format_string, ops)
           }
         })
     }
@@ -155,7 +171,7 @@ impl PrintfFormatMacroGenerator for PrintfTestGenerator {
         });
         Ok(())
     }
-    fn integer_conversion(&mut self, ty: Ident, _expression: Expr) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, _expression: Arg) -> Result<Option<String>> {
         let ty_str = format!("{ty}");
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::IntegerConversion{ ty: #ty_str.to_string() });
@@ -163,18 +179,25 @@ impl PrintfFormatMacroGenerator for PrintfTestGenerator {
         Ok(self.integer_specifier_override.clone())
     }
 
-    fn string_conversion(&mut self, _expression: Expr) -> Result<Option<String>> {
+    fn string_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::StringConversion);
         });
         Ok(self.string_specifier_override.clone())
     }
 
-    fn char_conversion(&mut self, _expression: Expr) -> Result<Option<String>> {
+    fn char_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::CharConversion);
         });
         Ok(self.char_specifier_override.clone())
+    }
+
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        self.code_fragments.push(quote! {
+            ops.push(PrintfTestGeneratorOps::UntypedConversion);
+        });
+        Ok(())
     }
 }
 
@@ -278,7 +301,7 @@ impl CoreFmtFormatMacroGenerator for CoreFmtTestGenerator {
         });
         Ok(())
     }
-    fn integer_conversion(&mut self, ty: Ident, _expression: Expr) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, _expression: Arg) -> Result<Option<String>> {
         let ty_str = format!("{ty}");
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::IntegerConversion{ ty: #ty_str.to_string() });
@@ -286,18 +309,25 @@ impl CoreFmtFormatMacroGenerator for CoreFmtTestGenerator {
         Ok(self.integer_specifier_override.clone())
     }
 
-    fn string_conversion(&mut self, _expression: Expr) -> Result<Option<String>> {
+    fn string_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::StringConversion);
         });
         Ok(self.string_specifier_override.clone())
     }
 
-    fn char_conversion(&mut self, _expression: Expr) -> Result<Option<String>> {
+    fn char_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
         self.code_fragments.push(quote! {
             ops.push(PrintfTestGeneratorOps::CharConversion);
         });
         Ok(self.char_specifier_override.clone())
+    }
+
+    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+        self.code_fragments.push(quote! {
+            ops.push(PrintfTestGeneratorOps::UntypedConversion);
+        });
+        Ok(())
     }
 }
 

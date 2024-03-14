@@ -117,7 +117,7 @@ pub const fn hash_bytes_fixed(bytes: &[u8], len: usize) -> u32 {
 /// let hash = hash_string("I 💖 Pigweed");
 /// assert_eq!(hash, 0xe318d1b3);
 /// ```
-pub fn hash_string(s: &str) -> u32 {
+pub const fn hash_string(s: &str) -> u32 {
     hash_bytes(s.as_bytes())
 }
 

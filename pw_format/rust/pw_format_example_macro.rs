@@ -14,7 +14,7 @@
 
 use proc_macro::TokenStream;
 use pw_format::macros::{
-    generate, FormatAndArgs, FormatMacroGenerator, IntegerDisplayType, Result,
+    generate, Arg, FormatAndArgs, FormatMacroGenerator, IntegerDisplayType, Result,
 };
 use quote::quote;
 use syn::{
@@ -102,7 +102,7 @@ impl FormatMacroGenerator for Generator {
         &mut self,
         _display: IntegerDisplayType,
         _type_width: u8, // in bits
-        expression: Expr,
+        expression: Arg,
     ) -> Result<()> {
         self.code_fragments.push(quote! {
             result.push_str(&format!("{}", #expression));
@@ -110,14 +110,21 @@ impl FormatMacroGenerator for Generator {
         Ok(())
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<()> {
         self.code_fragments.push(quote! {
             result.push_str(&format!("{}", #expression));
         });
         Ok(())
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<()> {
+        self.code_fragments.push(quote! {
+            result.push_str(&format!("{}", #expression));
+        });
+        Ok(())
+    }
+
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
         self.code_fragments.push(quote! {
             result.push_str(&format!("{}", #expression));
         });

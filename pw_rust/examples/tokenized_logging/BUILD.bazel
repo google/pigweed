@@ -48,6 +48,7 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_base64/rust:pw_base64",
+        "//pw_format/rust:pw_format_core",
         "//pw_log/rust:pw_log_backend_api",
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",

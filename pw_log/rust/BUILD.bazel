@@ -91,6 +91,8 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         ":pw_log_backend_api",
+        "//pw_bytes/rust:pw_bytes",
+        "//pw_format/rust:pw_format_core",
     ],
 )
 
