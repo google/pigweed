@@ -19,7 +19,7 @@ use pw_format::macros::{
     FormatMacroGenerator, IntegerDisplayType, PrintfFormatMacroGenerator,
     PrintfFormatStringFragment, Result,
 };
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::parse_macro_input;
 
 type TokenStream2 = proc_macro2::TokenStream;
@@ -64,34 +64,39 @@ impl FormatMacroGenerator for TestGenerator {
         &mut self,
         display_type: IntegerDisplayType,
         type_width: u8, // in bits
-        _expression: Arg,
+        expression: Arg,
     ) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::IntegerConversion{
                 display_type: #display_type,
-                type_width: #type_width
+                type_width: #type_width,
+                arg: #expression.to_string(),
             });
         });
         Ok(())
     }
 
-    fn string_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(TestGeneratorOps::StringConversion);
+            ops.push(TestGeneratorOps::StringConversion(#expression.to_string()));
         });
         Ok(())
     }
 
-    fn char_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(TestGeneratorOps::CharConversion);
+            ops.push(TestGeneratorOps::CharConversion(#expression.to_string()));
         });
         Ok(())
     }
 
-    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(TestGeneratorOps::UntypedConversion);
+            ops.push(TestGeneratorOps::UntypedConversion(#expression.to_string()));
         });
         Ok(())
     }
@@ -171,31 +176,38 @@ impl PrintfFormatMacroGenerator for PrintfTestGenerator {
         });
         Ok(())
     }
-    fn integer_conversion(&mut self, ty: Ident, _expression: Arg) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         let ty_str = format!("{ty}");
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::IntegerConversion{ ty: #ty_str.to_string() });
+            ops.push(PrintfTestGeneratorOps::IntegerConversion{
+               ty: #ty_str.to_string(),
+               arg: #expression.to_string(),
+            });
         });
         Ok(self.integer_specifier_override.clone())
     }
 
-    fn string_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::StringConversion);
+            ops.push(PrintfTestGeneratorOps::StringConversion(#expression.to_string()));
         });
         Ok(self.string_specifier_override.clone())
     }
 
-    fn char_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::CharConversion);
+            ops.push(PrintfTestGeneratorOps::CharConversion(#expression.to_string()));
         });
         Ok(self.char_specifier_override.clone())
     }
 
-    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::UntypedConversion);
+            ops.push(PrintfTestGeneratorOps::UntypedConversion(#expression.to_string()));
         });
         Ok(())
     }
@@ -301,31 +313,38 @@ impl CoreFmtFormatMacroGenerator for CoreFmtTestGenerator {
         });
         Ok(())
     }
-    fn integer_conversion(&mut self, ty: Ident, _expression: Arg) -> Result<Option<String>> {
+    fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         let ty_str = format!("{ty}");
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::IntegerConversion{ ty: #ty_str.to_string() });
+            ops.push(PrintfTestGeneratorOps::IntegerConversion{
+                ty: #ty_str.to_string(),
+                arg: #expression.to_string()
+            });
         });
         Ok(self.integer_specifier_override.clone())
     }
 
-    fn string_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
+    fn string_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::StringConversion);
+            ops.push(PrintfTestGeneratorOps::StringConversion(#expression.to_string()));
         });
         Ok(self.string_specifier_override.clone())
     }
 
-    fn char_conversion(&mut self, _expression: Arg) -> Result<Option<String>> {
+    fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::CharConversion);
+            ops.push(PrintfTestGeneratorOps::CharConversion(#expression.to_string()));
         });
         Ok(self.char_specifier_override.clone())
     }
 
-    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+        let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
-            ops.push(PrintfTestGeneratorOps::UntypedConversion);
+            ops.push(PrintfTestGeneratorOps::UntypedConversion(#expression.to_string()));
         });
         Ok(())
     }

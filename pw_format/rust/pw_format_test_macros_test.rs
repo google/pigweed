@@ -22,10 +22,11 @@ pub enum TestGeneratorOps {
     IntegerConversion {
         display_type: IntegerDisplayType,
         type_width: u8,
+        arg: String,
     },
-    StringConversion,
-    CharConversion,
-    UntypedConversion,
+    StringConversion(String),
+    CharConversion(String),
+    UntypedConversion(String),
 }
 
 // Used to record calls into the test generator from `printf_generator_test_macro!` and friends.
@@ -33,10 +34,10 @@ pub enum TestGeneratorOps {
 pub enum PrintfTestGeneratorOps {
     Finalize,
     StringFragment(String),
-    IntegerConversion { ty: String },
-    StringConversion,
-    CharConversion,
-    UntypedConversion,
+    IntegerConversion { ty: String, arg: String },
+    StringConversion(String),
+    CharConversion(String),
+    UntypedConversion(String),
 }
 
 #[cfg(test)]
@@ -64,13 +65,14 @@ mod tests {
                 TestGeneratorOps::IntegerConversion {
                     display_type: IntegerDisplayType::Signed,
                     type_width: 32,
+                    arg: "5".to_string(),
                 },
                 TestGeneratorOps::StringFragment(" ".to_string()),
-                TestGeneratorOps::StringConversion,
+                TestGeneratorOps::StringConversion("\"test\"".to_string()),
                 TestGeneratorOps::StringFragment(" ".to_string()),
-                TestGeneratorOps::CharConversion,
+                TestGeneratorOps::CharConversion("'c'".to_string()),
                 TestGeneratorOps::StringFragment(" ".to_string()),
-                TestGeneratorOps::UntypedConversion,
+                TestGeneratorOps::UntypedConversion("1".to_string()),
                 TestGeneratorOps::Finalize
             ]
         );
@@ -96,15 +98,16 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::UntypedConversion,
+                    PrintfTestGeneratorOps::UntypedConversion("1 as i32".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::UntypedConversion,
+                    PrintfTestGeneratorOps::UntypedConversion("\"string\" as & str".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -123,11 +126,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -148,11 +152,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -173,11 +178,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string()
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -194,13 +200,14 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string()
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::UntypedConversion,
+                    PrintfTestGeneratorOps::UntypedConversion("1".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -219,11 +226,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string()
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -242,11 +250,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
@@ -265,11 +274,12 @@ mod tests {
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
+                        arg: "5".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
-                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::CharConversion("'c'".to_string()),
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
