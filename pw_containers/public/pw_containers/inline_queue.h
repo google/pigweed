@@ -72,24 +72,74 @@ class BasicInlineQueue
   BasicInlineQueue(InputIterator start, InputIterator finish)
       : deque_(start, finish) {}
 
-  BasicInlineQueue(std::initializer_list<value_type> list) { *this = list; }
+  BasicInlineQueue(const std::initializer_list<value_type>& list) {
+    *this = list;
+  }
 
+  /// Copy constructs for matching capacity.
   BasicInlineQueue(const BasicInlineQueue& other) { *this = other; }
+
+  /// Copy constructs for mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineQueue(
+      const BasicInlineQueue<ValueType, SizeType, kOtherCapacity>& other) {
+    *this = other;
+  }
+
+  /// Move constructs for matching capacity.
+  BasicInlineQueue(BasicInlineQueue&& other) { *this = std::move(other); }
+
+  /// Move constructs for mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineQueue(
+      BasicInlineQueue<ValueType, SizeType, kOtherCapacity>&& other) {
+    *this = std::move(other);
+  }
 
   template <typename T, typename = containers::internal::EnableIfIterable<T>>
   BasicInlineQueue(const T& other) {
     *this = other;
   }
 
-  // Assignment
-
-  BasicInlineQueue& operator=(std::initializer_list<value_type> list) {
+  //
+  BasicInlineQueue& operator=(const std::initializer_list<value_type>& list) {
     deque_ = std::move(list);
     return *this;
   }
 
+  /// Copy assigns from matching capacity.
   BasicInlineQueue& operator=(const BasicInlineQueue& other) {
     deque_ = other.deque_;
+    return *this;
+  }
+
+  /// Copy assigns from mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineQueue& operator=(
+      const BasicInlineQueue<ValueType, SizeType, kOtherCapacity>& other) {
+    deque_ = other.deque_;
+    return *this;
+  }
+
+  /// Move assigns from matching capacity.
+  BasicInlineQueue& operator=(BasicInlineQueue&& other) {
+    deque_ = std::move(other.deque_);
+    return *this;
+  }
+
+  /// Move assigns from mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineQueue& operator=(
+      BasicInlineQueue<ValueType, SizeType, kOtherCapacity>&& other) {
+    deque_ = std::move(other.deque_);
     return *this;
   }
 
@@ -106,9 +156,8 @@ class BasicInlineQueue
   static constexpr size_type capacity() { return kCapacity; }
 
  private:
-  friend class BasicInlineQueue<value_type,
-                                size_type,
-                                containers::internal::kGenericSized>;
+  template <typename OtherValueType, typename OtherSizeType, size_t kOtherSized>
+  friend class BasicInlineQueue;
 
   // The deque() function is defined differently for the generic-sized and
   // known-sized specializations. This data() implementation simply returns the

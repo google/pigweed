@@ -48,34 +48,65 @@ TEST(InlineDeque, Construct_GenericSized) {
 
 TEST(InlineDeque, Construct_CopySameCapacity) {
   InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
-  InlineDeque<CopyOnly, 4> copied(deque);
+  const auto& deque_ref = deque;
+  InlineDeque<CopyOnly, 4> copied(deque_ref);
 
-  EXPECT_EQ(4u, deque.size());
+  ASSERT_EQ(4u, deque.size());
   EXPECT_EQ(123, deque[3].value);
 
-  EXPECT_EQ(4u, copied.size());
+  ASSERT_EQ(4u, copied.size());
   EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Construct_MoveSameCapacity) {
+  InlineDeque<MoveOnly, 4> deque;
+  deque.emplace_back(MoveOnly(1));
+  deque.emplace_back(MoveOnly(2));
+  deque.emplace_back(MoveOnly(3));
+  deque.emplace_back(MoveOnly(4));
+  InlineDeque<MoveOnly, 4> moved(std::move(deque));
+
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  EXPECT_EQ(0u, deque.size());
+
+  ASSERT_EQ(4u, moved.size());
+  EXPECT_EQ(4, moved[3].value);
 }
 
 TEST(InlineDeque, Construct_CopyLargerCapacity) {
   InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
   InlineDeque<CopyOnly, 5> copied(deque);
 
-  EXPECT_EQ(4u, deque.size());
+  ASSERT_EQ(4u, deque.size());
   EXPECT_EQ(123, deque[3].value);
 
-  EXPECT_EQ(4u, copied.size());
+  ASSERT_EQ(4u, copied.size());
   EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Construct_MoveLargerCapacity) {
+  InlineDeque<MoveOnly, 4> deque;
+  deque.emplace_back(MoveOnly(1));
+  deque.emplace_back(MoveOnly(2));
+  deque.emplace_back(MoveOnly(3));
+  deque.emplace_back(MoveOnly(4));
+  InlineDeque<MoveOnly, 5> moved(std::move(deque));
+
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  EXPECT_EQ(0u, deque.size());
+
+  ASSERT_EQ(4u, moved.size());
+  EXPECT_EQ(4, moved[3].value);
 }
 
 TEST(InlineDeque, Construct_CopySmallerCapacity) {
   InlineDeque<CopyOnly, 4> deque(3, CopyOnly(123));
   InlineDeque<CopyOnly, 3> copied(deque);
 
-  EXPECT_EQ(3u, deque.size());
+  ASSERT_EQ(3u, deque.size());
   EXPECT_EQ(123, deque[2].value);
 
-  EXPECT_EQ(3u, copied.size());
+  ASSERT_EQ(3u, copied.size());
   EXPECT_EQ(123, copied[2].value);
 }
 
@@ -113,7 +144,7 @@ TEST(InlineDeque, Destruct_MultipleEntries) {
 TEST(InlineDeque, Assign_InitializerList) {
   InlineDeque<int, 4> deque = {1, 3, 5, 7};
 
-  EXPECT_EQ(4u, deque.size());
+  ASSERT_EQ(4u, deque.size());
 
   EXPECT_EQ(1, deque[0]);
   EXPECT_EQ(3, deque[1]);
@@ -125,10 +156,10 @@ TEST(InlineDeque, Assign_CopySameCapacity) {
   InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
   InlineDeque<CopyOnly, 4> copied = deque;
 
-  EXPECT_EQ(4u, deque.size());
+  ASSERT_EQ(4u, deque.size());
   EXPECT_EQ(123, deque[3].value);
 
-  EXPECT_EQ(4u, copied.size());
+  ASSERT_EQ(4u, copied.size());
   EXPECT_EQ(123, copied[3].value);
 }
 
@@ -136,10 +167,10 @@ TEST(InlineDeque, Assign_CopyLargerCapacity) {
   InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
   InlineDeque<CopyOnly, 5> copied = deque;
 
-  EXPECT_EQ(4u, deque.size());
+  ASSERT_EQ(4u, deque.size());
   EXPECT_EQ(123, deque[3].value);
 
-  EXPECT_EQ(4u, copied.size());
+  ASSERT_EQ(4u, copied.size());
   EXPECT_EQ(123, copied[3].value);
 }
 
@@ -147,11 +178,55 @@ TEST(InlineDeque, Assign_CopySmallerCapacity) {
   InlineDeque<CopyOnly, 4> deque(3, CopyOnly(123));
   InlineDeque<CopyOnly, 3> copied = deque;
 
-  EXPECT_EQ(3u, deque.size());
+  ASSERT_EQ(3u, deque.size());
   EXPECT_EQ(123, deque[2].value);
 
-  EXPECT_EQ(3u, copied.size());
+  ASSERT_EQ(3u, copied.size());
   EXPECT_EQ(123, copied[2].value);
+}
+
+TEST(InlineDeque, Assign_MoveSameCapacity) {
+  InlineDeque<MoveOnly, 4> deque;
+  deque.emplace_back(MoveOnly(1));
+  deque.emplace_back(MoveOnly(2));
+  deque.emplace_back(MoveOnly(3));
+  deque.emplace_back(MoveOnly(4));
+  InlineDeque<MoveOnly, 4> moved = std::move(deque);
+
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  EXPECT_EQ(0u, deque.size());
+
+  ASSERT_EQ(4u, moved.size());
+  EXPECT_EQ(4, moved[3].value);
+}
+
+TEST(InlineDeque, Assign_MoveLargerCapacity) {
+  InlineDeque<MoveOnly, 4> deque;
+  deque.emplace_back(MoveOnly(1));
+  deque.emplace_back(MoveOnly(2));
+  deque.emplace_back(MoveOnly(3));
+  deque.emplace_back(MoveOnly(4));
+  InlineDeque<MoveOnly, 5> moved = std::move(deque);
+
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  EXPECT_EQ(0u, deque.size());
+
+  ASSERT_EQ(4u, moved.size());
+  EXPECT_EQ(4, moved[3].value);
+}
+
+TEST(InlineDeque, Assign_MoveSmallerCapacity) {
+  InlineDeque<MoveOnly, 4> deque;
+  deque.emplace_back(MoveOnly(1));
+  deque.emplace_back(MoveOnly(2));
+  deque.emplace_back(MoveOnly(3));
+  InlineDeque<MoveOnly, 3> moved = std::move(deque);
+
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  EXPECT_EQ(0u, deque.size());
+
+  ASSERT_EQ(3u, moved.size());
+  EXPECT_EQ(3, moved[2].value);
 }
 
 TEST(InlineDeque, Access_Iterator) {
@@ -278,7 +353,7 @@ TEST(InlineDeque, Modify_PushBack_Copy) {
     InlineDeque<Counter, 10> deque;
     deque.push_back(value);
 
-    EXPECT_EQ(deque.size(), 1u);
+    ASSERT_EQ(deque.size(), 1u);
     EXPECT_EQ(deque.front().value, 99);
   }
 
@@ -312,7 +387,7 @@ TEST(InlineDeque, Modify_EmplaceBack) {
     InlineDeque<Counter, 10> deque;
     deque.emplace_back(314);
 
-    EXPECT_EQ(deque.size(), 1u);
+    ASSERT_EQ(deque.size(), 1u);
     EXPECT_EQ(deque.front().value, 314);
   }
 
@@ -940,9 +1015,19 @@ static_assert(sizeof(InlineDeque<uint32_t, 1>) ==
 static_assert(sizeof(InlineDeque<uint64_t, 1>) ==
               sizeof(InlineDeque<uint64_t>::size_type) * 4 + sizeof(uint64_t));
 
+// Test that InlineDeque<T> is copy constructible
+static_assert(std::is_copy_constructible_v<InlineDeque<int, 4>::iterator>);
+
+// Test that InlineDeque<T> is move constructible
+static_assert(std::is_move_constructible_v<InlineDeque<MoveOnly, 4>::iterator>);
+
 // Test that InlineDeque<T> is copy assignable
 static_assert(std::is_copy_assignable_v<InlineDeque<int>::iterator>);
 static_assert(std::is_copy_assignable_v<InlineDeque<int, 4>::iterator>);
+
+// Test that InlineDeque<T> is move assignable
+static_assert(std::is_move_assignable_v<InlineDeque<MoveOnly>>);
+static_assert(std::is_move_assignable_v<InlineDeque<MoveOnly, 4>>);
 
 // Test that InlineDeque<T>::iterator can be converted to a const_iterator
 static_assert(std::is_convertible<InlineDeque<int>::iterator,

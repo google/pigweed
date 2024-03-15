@@ -89,17 +89,19 @@ class BasicInlineDeque : public BasicInlineDequeStorage<
   using typename Base::size_type;
   using typename Base::value_type;
 
-  // Constructors
-
+  /// Constructs with zero elements.
   constexpr BasicInlineDeque() noexcept {}
 
+  /// Constructs with ``count`` copies of ``value``.
   BasicInlineDeque(size_type count, const_reference value) {
     Base::assign(count, value);
   }
 
+  /// Constructs with ``count`` default-initialized elements.
   explicit BasicInlineDeque(size_type count)
       : BasicInlineDeque(count, value_type()) {}
 
+  /// Copy constructs from an iterator.
   template <
       typename InputIterator,
       typename = containers::internal::EnableIfInputIterator<InputIterator>>
@@ -107,26 +109,84 @@ class BasicInlineDeque : public BasicInlineDequeStorage<
     Base::assign(start, finish);
   }
 
-  BasicInlineDeque(std::initializer_list<value_type> list) { *this = list; }
-
+  /// Copy constructs for matching capacity.
   BasicInlineDeque(const BasicInlineDeque& other) { *this = other; }
 
+  /// Copy constructs for mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineDeque(
+      const BasicInlineDeque<ValueType, SizeType, kOtherCapacity>& other) {
+    *this = other;
+  }
+
+  /// Move constructs for matching capacity.
+  BasicInlineDeque(BasicInlineDeque&& other) noexcept {
+    *this = std::move(other);
+  }
+
+  /// Move constructs for mismatched capacity.
+  template <size_t kOtherCapacity>
+  BasicInlineDeque(
+      BasicInlineDeque<ValueType, SizeType, kOtherCapacity>&& other) noexcept {
+    *this = std::move(other);
+  }
+
+  /// Copy constructs from an initializer list.
+  BasicInlineDeque(const std::initializer_list<value_type>& list) {
+    *this = list;
+  }
+
+  /// Copy constructor for arbitrary iterables.
   template <typename T, typename = containers::internal::EnableIfIterable<T>>
   BasicInlineDeque(const T& other) {
     *this = other;
   }
 
-  // Assignment
-  // Use the operators from the base class, but return the correct type of
-  // reference.
+  // Assignment operators
+  //
+  // These operators delegate to the base class implementations in order to
+  // maximize code reuse. The wrappers are required so that `operator=`
+  // returns the correct type of reference.
+  //
+  // The `static_cast`s below are unfortunately necessary: without them,
+  // overload resolution prefers to use the "iterable" operators rather than
+  // upcast the RHS.
 
-  BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
+  /// Copy assigns from ``list``.
+  BasicInlineDeque& operator=(const std::initializer_list<value_type>& list) {
     Base::operator=(list);
     return *this;
   }
 
+  /// Copy assigns for matching capacity.
   BasicInlineDeque& operator=(const BasicInlineDeque& other) {
-    Base::operator=(other);
+    Base::operator=(static_cast<const Base&>(other));
+    return *this;
+  }
+
+  /// Copy assigns for mismatched capacity.
+  ///
+  /// Note that this will result in a crash if `kOtherCapacity < size()`.
+  template <size_t kOtherCapacity>
+  BasicInlineDeque& operator=(
+      const BasicInlineDeque<ValueType, SizeType, kOtherCapacity>& other) {
+    Base::operator=(static_cast<const Base&>(other));
+    return *this;
+  }
+
+  /// Move assigns for matching capacity.
+  BasicInlineDeque& operator=(BasicInlineDeque&& other) noexcept {
+    Base::operator=(static_cast<Base&&>(std::move(other)));
+    return *this;
+  }
+
+  /// Move assigns for mismatched capacity.
+  template <size_t kOtherCapacity>
+  BasicInlineDeque& operator=(
+      BasicInlineDeque<ValueType, SizeType, kOtherCapacity>&& other) noexcept {
+    Base::operator=(static_cast<Base&&>(std::move(other)));
     return *this;
   }
 
@@ -253,13 +313,22 @@ class BasicInlineDeque<ValueType,
   BasicInlineDeque() = delete;
 
   // Assignment
-  BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
+  BasicInlineDeque& operator=(const std::initializer_list<value_type>& list) {
     assign(list);
     return *this;
   }
 
   BasicInlineDeque& operator=(const BasicInlineDeque& other) {
     assign(other.begin(), other.end());
+    return *this;
+  }
+
+  BasicInlineDeque& operator=(BasicInlineDeque&& other) noexcept {
+    clear();
+    for (auto&& item : other) {
+      emplace_back(std::move(item));
+    }
+    other.clear();
     return *this;
   }
 
@@ -282,7 +351,7 @@ class BasicInlineDeque<ValueType,
     CopyFrom(start, finish);
   }
 
-  void assign(std::initializer_list<value_type> list) {
+  void assign(const std::initializer_list<value_type>& list) {
     assign(list.begin(), list.end());
   }
 
