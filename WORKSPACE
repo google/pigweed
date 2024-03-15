@@ -168,6 +168,34 @@ load("@python_packages//:requirements.bzl", "install_deps")
 # Run pip install for all @python_packages_*//:pkg deps.
 install_deps()
 
+# Setup Fuchsia SDK.
+# Required by: bt-host.
+# Used in modules: //pw_bluetooth_sapphire.
+# NOTE: These blocks cannot feasibly be moved into a macro.
+# See https://github.com/bazelbuild/bazel/issues/1550
+cipd_repository(
+    name = "fuchsia_sdk",
+    path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-${arch}",
+    tag = "version:19.20240315.0.1",
+)
+
+load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
+
+rules_fuchsia_deps()
+
+register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
+
+load("@fuchsia_sdk//fuchsia:clang.bzl", "fuchsia_clang_repository")
+
+fuchsia_clang_repository(
+    name = "fuchsia_clang",
+    from_workspace = "@llvm_toolchain//:BUILD.bazel",
+)
+
+load("@fuchsia_clang//:defs.bzl", "register_clang_toolchains")
+
+register_clang_toolchains()
+
 # Set up rules for Abseil C++.
 # Must be included before com_google_googletest and rules_fuzzing.
 # Required by: rules_fuzzing, fuzztest
@@ -180,7 +208,7 @@ http_archive(
 )
 
 # Set up upstream googletest and googlemock.
-# Required by: Pigweed.
+# Required by: Pigweed, Fuchsia SDK.
 # Used in modules: //pw_analog, //pw_fuzzer, //pw_i2c.
 http_archive(
     name = "com_google_googletest",

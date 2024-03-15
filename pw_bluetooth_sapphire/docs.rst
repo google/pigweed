@@ -29,10 +29,35 @@ Why use Sapphire?
   all conformance tests.
 * **A great API**. Coming 2024. See :ref:`module-pw_bluetooth`.
 
+---------------
+Fuchsia support
+---------------
+``//pw_bluetooth_sapphire/fuchsia`` currently contains stub boilerplate to
+demonstrate building, running, and testing Fuchsia components and packages with
+the Fuchsia SDK.
+
+It will eventually be replaced by the `bt-host component`_ once that's migrated.
+
+Build the package
+=================
+To build the example stub package, use the following command:
+
+.. code-block::
+
+   bazel build //pw_bluetooth_sapphire/fuchsia/hello_world:pkg
+
+Run the component
+=================
+To run the example stub component, use the following command:
+
+.. code-block::
+
+   bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:pkg.component
+
 -------
 Roadmap
 -------
-* Support Bazel
+* Support Bazel (In Progress)
 * Support CMake
 * Implement :ref:`module-pw_bluetooth` APIs
 * Optimize memory footprint
@@ -40,3 +65,5 @@ Roadmap
 * Add metrics
 * Add configuration options (LE only, Classic only, etc.)
 * Add CLI for controlling stack over RPC
+
+.. _bt-host component: https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/

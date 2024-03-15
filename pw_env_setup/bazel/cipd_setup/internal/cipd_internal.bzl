@@ -151,9 +151,12 @@ def cipd_repository_impl(rctx):
         rctx: Repository context.
     """
     cipd_repository_base(rctx)
+
+    # Allow the BUILD file to be overriden in the generated repository.
+    # If unspecified, default to a BUILD file that exposes all of its files.
     if rctx.attr.build_file:
         rctx.file("BUILD", rctx.read(rctx.attr.build_file))
-    else:
+    elif not rctx.path("BUILD").exists and not rctx.path("BUILD.bazel").exists:
         rctx.file("BUILD", """
 exports_files(glob(["**"]))
 

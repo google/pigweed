@@ -54,7 +54,7 @@ cipd_repository = repository_rule(
         ),
         "build_file": attr.label(
             allow_single_file = True,
-            doc = "A BUILD file to use instead of generating one internally.",
+            doc = "Override the BUILD file in the new CIPD repository.",
         ),
         "path": attr.string(
             doc = "Path within CIPD where this repository lives.",
