@@ -196,8 +196,8 @@ Options for code formatting can be specified in the ``pigweed.json`` file
 steps that check code formatting and ``pw format`` commands that either check
 or fix code formatting.
 
-* ``python_formatter``: Choice of Python formatter. Options are ``black`` (used
-  by Pigweed itself) and ``yapf`` (the default).
+* ``python_formatter``: Choice of Python formatter. Options are ``black``
+  (default, used by Pigweed itself) and ``yapf``.
 * ``black_path``: If ``python_formatter`` is ``black``, use this as the
   executable instead of ``black``.
 * ``black_config_file``: Set the config file for the black formatter.

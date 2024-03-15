@@ -56,7 +56,7 @@ PRESUBMIT_CHECK_TRACE: ContextVar[
 
 @dataclasses.dataclass(frozen=True)
 class FormatOptions:
-    python_formatter: Optional[str] = 'yapf'
+    python_formatter: Optional[str] = 'black'
     black_path: Optional[str] = 'black'
     exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
 
@@ -65,7 +65,7 @@ class FormatOptions:
         config = pw_env_setup.config_file.load(env=env)
         fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
         return FormatOptions(
-            python_formatter=fmt.get('python_formatter', 'yapf'),
+            python_formatter=fmt.get('python_formatter', 'black'),
             black_path=fmt.get('black_path', 'black'),
             exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
         )
