@@ -737,9 +737,9 @@ See also :ref:`module-pw_unit_test-helpers`.
 ==============
 .. _cc_test: https://bazel.build/reference/be/c-cpp#cc_test
 
-``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults,
-such as a dependency on ``@pigweed//targets:pw_unit_test_main``. It supports and
-passes through all the arguments recognized by ``cc_test``.
+``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults, such as
+a dependency on ``@pigweed//pw_unit_test:main``. It supports and passes through
+all the arguments recognized by ``cc_test``.
 
 .. _module-pw_unit_test-bazel-args:
 

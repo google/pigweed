@@ -109,7 +109,7 @@ def pw_cc_test(**kwargs):
       **kwargs: Passed to cc_test.
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
-                     ["@pigweed//targets:pw_unit_test_main"]
+                     ["@pigweed//pw_unit_test:main"]
 
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into

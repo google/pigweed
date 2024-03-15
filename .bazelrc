@@ -98,7 +98,7 @@ try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
 build:fuzztest \
     --//pw_fuzzer:fuzztest_backend=@com_google_fuzztest//fuzztest:fuzztest_core
 build:fuzztest \
-    --@pigweed//targets:pw_unit_test_main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
+    --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
 
 # We use non-default labels for the STM32Cube repositories upstream (to reserve
 # the option of building for more than one MCU family down the road), so need to

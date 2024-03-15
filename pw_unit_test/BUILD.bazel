@@ -17,12 +17,18 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_test",
+    "pw_facade",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+label_flag(
+    name = "main",
+    build_setting_default = "//targets:pw_unit_test_main",
+)
 
 cc_library(
     name = "config",
@@ -39,12 +45,17 @@ label_flag(
     build_setting_default = "//pw_build:default_module_config",
 )
 
-cc_library(
+pw_facade(
     name = "pw_unit_test",
     testonly = True,
     hdrs = ["public/pw_unit_test/framework.h"],
+    backend = ":backend",
     includes = ["public"],
-    deps = ["@pigweed//targets:pw_unit_test_backend"],
+)
+
+label_flag(
+    name = "backend",
+    build_setting_default = "//targets:pw_unit_test_backend",
 )
 
 cc_library(
