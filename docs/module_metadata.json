@@ -125,6 +125,13 @@
       "C++17"
     ]
   },
+  "pw_log_android": {
+    "tagline": "Android logging backend",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_multibuf": {
     "tagline": "A buffer API optimized for zero-copy messaging",
     "status": "unstable",

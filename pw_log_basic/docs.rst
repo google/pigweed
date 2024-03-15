@@ -3,7 +3,7 @@
 ------------
 pw_log_basic
 ------------
-``pw_log_basic`` is a ``pw_log backend`` that sends logs over ``pw_sys_io`` by
+``pw_log_basic`` is a ``pw_log`` backend that sends logs over ``pw_sys_io`` by
 default. The destination of ``pw_sys_io`` depends on the ``pw_sys_io`` backend
 in use. This is controlled by the ``dir_pw_sys_io_backend`` variable in a
 target's ``target_config.gni``.

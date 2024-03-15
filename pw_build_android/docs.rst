@@ -60,6 +60,8 @@ folowing copyright header with the year adjusted and package.
 The ``bpfmt`` tool in Android can be used to format a blueprint file, e.g.
 ``bpfmt -w Android.bp``.
 
+.. _module-pw_build_android-common-backends:
+
 -----------------------
 Common Android backends
 -----------------------
@@ -70,6 +72,23 @@ likely use the same common set of backends. Thus, Pigweed provides a
 common backends for Android platform binaries. This
 ``pw_android_common_backends`` rule will be used in all Pigweed modules and
 backends defined using Soong.
+
+This table lists the backends selected by this rule:
+
+.. list-table:: ``pw_android_common_backends``
+   :align: left
+   :header-rows: 1
+
+   * - Facade
+     - Selected Backend
+   * - :ref:`module-pw_assert`
+     - :ref:`module-pw_assert_log`
+   * - :ref:`module-pw_log`
+     - :ref:`module-pw_log_android`
+   * - :ref:`module-pw_chrono`
+     - :ref:`module-pw_chrono_stl`
+   * - :ref:`module-pw_sync`
+     - :ref:`module-pw_sync_stl`
 
 .. _module-pw_build_android-module-libraries:
 
