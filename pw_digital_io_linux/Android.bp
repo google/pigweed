@@ -1,0 +1,68 @@
+// Copyright 2024 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
+cc_library_static {
+    name: "pw_digital_io_linux",
+    cpp_std: "c++20",
+    export_include_dirs: ["public"],
+    vendor_available: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    header_libs: [
+        "pw_result_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_result_headers",
+    ],
+    whole_static_libs: [
+        // pw_digital_io needs to use whole_static_libs to ensure symbols
+        // unused by pw_digital_io_linux are available for consumers to avoid
+        // link errors.
+        "pw_digital_io",
+        "pw_status",
+    ],
+    export_static_lib_headers: [
+        "pw_digital_io",
+        "pw_status",
+    ],
+    srcs: [
+        "digital_io.cc",
+    ],
+}
+
+cc_binary {
+    name: "pw_digital_io_linux_cli",
+    cpp_std: "c++20",
+    vendor_available: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    srcs: [
+        "digital_io_cli.cc",
+    ],
+    static_libs: [
+        "pw_digital_io_linux",
+        "pw_status",
+    ],
+    whole_static_libs: [
+        // Force logs to stderr rather than logd.
+        // NOTE: Only use this on cc_binary() targets.
+        "pw_log_android_stderr",
+    ],
+}

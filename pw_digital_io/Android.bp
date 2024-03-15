@@ -16,6 +16,40 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
+cc_library_static {
+    name: "pw_digital_io",
+    cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    header_libs: [
+        "pw_assert_headers",
+        "pw_function_headers",
+        "pw_result_headers",
+        "pw_toolchain",
+    ],
+    export_header_lib_headers: [
+        "pw_assert_headers",
+        "pw_function_headers",
+        "pw_result_headers",
+        "pw_toolchain",
+    ],
+    whole_static_libs: [
+        "pw_status",
+    ],
+    export_static_lib_headers: [
+        "pw_status",
+    ],
+    export_include_dirs: [
+        "public",
+    ],
+    srcs: [
+        "digital_io.cc",
+    ],
+}
+
 genrule {
     name: "pw_digital_io_proto_with_prefix",
     defaults: ["pw_rpc_add_prefix_to_proto"],
