@@ -38,7 +38,7 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
   ///
   /// Returns the newly-created ``OwnedChunk`` if successful.
   static std::optional<OwnedChunk> AllocateRegionAsChunk(
-      allocator::Allocator* alloc, size_t size) {
+      allocator::Allocator& alloc, size_t size) {
     HeaderChunkRegionTracker* tracker = AllocateRegion(alloc, size);
     if (tracker == nullptr) {
       return std::nullopt;
@@ -59,11 +59,11 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
   ///
   /// Returns a pointer to the newly-created ``HeaderChunkRegionTracker``
   /// or ``nullptr`` if the allocation failed.
-  static HeaderChunkRegionTracker* AllocateRegion(allocator::Allocator* alloc,
+  static HeaderChunkRegionTracker* AllocateRegion(allocator::Allocator& alloc,
                                                   size_t size) {
     auto layout =
         allocator::Layout::Of<HeaderChunkRegionTracker>().Extend(size);
-    void* ptr = alloc->Allocate(layout);
+    void* ptr = alloc.Allocate(layout);
     if (ptr == nullptr) {
       return nullptr;
     }
@@ -99,8 +99,8 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
 
   // NOTE: `region` must directly follow this `FakeChunkRegionTracker`
   // in memory allocated by allocated by `alloc`.
-  HeaderChunkRegionTracker(ByteSpan region, allocator::Allocator* alloc)
-      : region_(region), alloc_(alloc) {}
+  HeaderChunkRegionTracker(ByteSpan region, allocator::Allocator& alloc)
+      : region_(region), alloc_(&alloc) {}
 };
 
 }  // namespace pw::multibuf

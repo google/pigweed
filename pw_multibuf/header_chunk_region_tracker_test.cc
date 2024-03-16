@@ -33,7 +33,7 @@ const size_t kArbitraryChunkSize = 32;
 TEST(HeaderChunkRegionTracker, AllocatesRegionAsChunk) {
   AllocatorForTest<kArbitraryAllocatorSize> alloc;
   std::optional<OwnedChunk> chunk =
-      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(alloc,
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk.has_value());
 }
@@ -41,7 +41,7 @@ TEST(HeaderChunkRegionTracker, AllocatesRegionAsChunk) {
 TEST(HeaderChunkRegionTracker, AllocatedRegionAsChunkTooLarge) {
   AllocatorForTest<kArbitraryAllocatorSize> alloc;
   std::optional<OwnedChunk> chunk =
-      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(alloc,
                                                       kArbitraryAllocatorSize);
   ASSERT_FALSE(chunk.has_value());
 }
@@ -49,14 +49,14 @@ TEST(HeaderChunkRegionTracker, AllocatedRegionAsChunkTooLarge) {
 TEST(HeaderChunkRegionTracker, AllocatesRegion) {
   AllocatorForTest<kArbitraryAllocatorSize> alloc;
   auto tracker =
-      HeaderChunkRegionTracker::AllocateRegion(&alloc, kArbitraryChunkSize);
+      HeaderChunkRegionTracker::AllocateRegion(alloc, kArbitraryChunkSize);
   ASSERT_NE(tracker, nullptr);
 }
 
 TEST(HeaderChunkRegionTracker, AllocatedRegionTooLarge) {
   AllocatorForTest<kArbitraryAllocatorSize> alloc;
   auto tracker =
-      HeaderChunkRegionTracker::AllocateRegion(&alloc, kArbitraryAllocatorSize);
+      HeaderChunkRegionTracker::AllocateRegion(alloc, kArbitraryAllocatorSize);
   ASSERT_EQ(tracker, nullptr);
 }
 
