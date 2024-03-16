@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,25 +11,3 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-    "format.rst",
-  ]
-  inputs = [
-    "docs/pw_presubmit_demo.gif",
-    "py/pw_presubmit/cli.py",
-    "py/pw_presubmit/format/core.py",
-    "py/pw_presubmit/format/cpp.py",
-    "py/pw_presubmit/presubmit.py",
-  ]
-}
-
-pw_test_group("tests") {
-}

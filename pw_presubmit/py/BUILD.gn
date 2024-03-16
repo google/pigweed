@@ -27,6 +27,9 @@ pw_python_package("py") {
     "pw_presubmit/build.py",
     "pw_presubmit/cli.py",
     "pw_presubmit/cpp_checks.py",
+    "pw_presubmit/format/__init__.py",
+    "pw_presubmit/format/core.py",
+    "pw_presubmit/format/cpp.py",
     "pw_presubmit/format_code.py",
     "pw_presubmit/git_repo.py",
     "pw_presubmit/gitmodules.py",
@@ -49,10 +52,16 @@ pw_python_package("py") {
     "pw_presubmit/todo_check.py",
     "pw_presubmit/tools.py",
   ]
+  inputs = [
+    "test_data/cpp_test_data.cc",
+    "test_data/cpp_test_data_golden.cc",
+  ]
   tests = [
     "bazel_parser_test.py",
     "context_test.py",
     "cpp_checks_test.py",
+    "cpp_format_test.py",
+    "format_core_test.py",
     "git_repo_test.py",
     "gitmodules_test.py",
     "keep_sorted_test.py",

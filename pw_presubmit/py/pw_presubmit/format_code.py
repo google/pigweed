@@ -65,11 +65,14 @@ from pw_presubmit import (
     owners_checks,
     presubmit_context,
 )
+from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
+from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.tools import (
     exclude_paths,
     file_summary,
     log_run,
     plural,
+    PresubmitToolRunner,
     colorize_diff,
 )
 from pw_presubmit.rst_format import reformat_rst
@@ -131,28 +134,37 @@ def _check_files(
     return errors
 
 
-def _clang_format(*args: Union[Path, str], **kwargs) -> bytes:
-    return log_run(
-        ['clang-format', '--style=file', *args],
-        stdout=subprocess.PIPE,
-        check=True,
-        **kwargs,
-    ).stdout
+def _make_formatting_diff_dict(
+    diffs: Iterable[FormattedDiff],
+) -> Dict[Path, str]:
+    return {
+        result.file_path: (
+            result.diff if result.ok else str(result.error_message)
+        )
+        for result in diffs
+    }
+
+
+def _make_format_fix_error_output_dict(
+    statuses: Iterable[Tuple[Path, FormatFixStatus]],
+) -> Dict[Path, str]:
+    return {
+        file_path: str(status.error_message) for file_path, status in statuses
+    }
 
 
 def clang_format_check(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    return _check_files(
-        ctx.paths,
-        lambda path, _: _clang_format(path),
-        ctx.dry_run,
+    formatter = ClangFormatFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(ctx.paths, ctx.dry_run)
     )
 
 
 def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    print_format_fix(_clang_format('-i', *ctx.paths))
-    return {}
+    formatter = ClangFormatFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:

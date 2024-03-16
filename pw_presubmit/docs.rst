@@ -676,3 +676,11 @@ a formatter or remove/disable a PigWeed supplied one.
    if __name__ == '__main__':
        pw_cli.log.install(logging.INFO)
        sys.exit(main())
+
+.. pw_presubmit-nav-end
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   format

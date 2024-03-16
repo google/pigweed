@@ -8,6 +8,7 @@
           "\\bthird_party/fuchsia/repo",
           "\\bthird_party/.*\\.json$",
           "\\bpackage\\.lock$",
+          "\\bpw_presubmit/py/test_data/.*",
           "\\bpw_web/log-viewer/package(-lock)?\\.json",
           "\\bpw_web/log-viewer/src/assets/material_symbols_rounded_subset\\.woff2",
           "^patches\\.json$"

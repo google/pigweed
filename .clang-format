@@ -5,3 +5,4 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+LineEnding: LF
