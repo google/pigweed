@@ -25,6 +25,7 @@ pw_source_set("pw_sys_io_rp2040") {
     "$PICO_ROOT/src/common/pico_base",
     "$PICO_ROOT/src/common/pico_stdlib",
     "$dir_pw_status",
+    "$dir_pw_sync:thread_notification",
     "$dir_pw_sys_io:default_putget_bytes",
     "$dir_pw_sys_io:facade",
   ]

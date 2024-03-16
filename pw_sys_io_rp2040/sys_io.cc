@@ -14,23 +14,35 @@
 
 #include "pw_sys_io/sys_io.h"
 
+#include <stdio.h>
+
 #include <cinttypes>
 
 #include "pico/stdlib.h"
 #include "pw_status/status.h"
+#include "pw_sync/thread_notification.h"
 
 namespace {
+
+pw::sync::ThreadNotification chars_available_signal;
+
+void chars_available_callback([[maybe_unused]] void* arg) {
+  chars_available_signal.release();
+}
 
 void LazyInitSysIo() {
   static bool initialized = false;
   if (!initialized) {
     stdio_init_all();
+    stdio_set_chars_available_callback(chars_available_callback, nullptr);
     initialized = true;
   }
 }
 
 // Spin until host connects.
 void WaitForConnect() {
+  // In order to stop this sleep polling, we could register a shared IRQ handler
+  // for the USB interrupt and block on a signal from that.
   while (!stdio_usb_connected()) {
     sleep_ms(50);
   }
@@ -45,12 +57,17 @@ namespace pw::sys_io {
 Status ReadByte(std::byte* dest) {
   LazyInitSysIo();
   WaitForConnect();
-  int c = PICO_ERROR_TIMEOUT;
-  while (c == PICO_ERROR_TIMEOUT) {
-    c = getchar_timeout_us(0);
+
+  while (true) {
+    int c = getchar_timeout_us(0);
+    if (c != PICO_ERROR_TIMEOUT) {
+      *dest = static_cast<std::byte>(c);
+      return OkStatus();
+    }
+
+    // Wait for signal from the chars_available_callback().
+    chars_available_signal.acquire();
   }
-  *dest = static_cast<std::byte>(c);
-  return OkStatus();
 }
 
 Status TryReadByte(std::byte* dest) {
