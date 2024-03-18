@@ -126,36 +126,15 @@ struct ProhibitDatagram {
     static constexpr bool kWritable =                                    \
         (kProperties & Property::kWritable) != 0;                        \
                                                                          \
-    _PW_CHANNEL_DISABLE_POLL_OVERLOAD_##type##read;                      \
-                                                                         \
    protected:                                                            \
     constexpr Channel() : AnyChannel(kProperties) {}                     \
   }
 
-// Macros that hide the PollRead max_bytes overload for datagram channels.
-#define _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramREAD                         \
-  async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx) {     \
-    return AnyChannel::PollRead(cx);                                           \
-  }                                                                            \
-  template <typename OverloadDisabled = void>                                  \
-  async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context&,          \
-                                                    size_t) {                  \
-    static_assert(!std::is_same_v<OverloadDisabled, OverloadDisabled>,         \
-                  "The PollRead overload with a max_bytes argument is not "    \
-                  "supported for DatagramChannels");                           \
-    return async2::Ready(Result<multibuf::MultiBuf>(Status::Unimplemented())); \
-  }                                                                            \
-  static_assert(true)
-
-#define _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramSKIP static_assert(true)
-#define _PW_CHANNEL_DISABLE_POLL_OVERLOAD_ByteSKIP static_assert(true)
-#define _PW_CHANNEL_DISABLE_POLL_OVERLOAD_ByteREAD static_assert(true)
-
 // Macros that stub out read/write/seek and hide them if unsupported.
 #define _PW_CHANNEL_READABLE_READ static_assert(true)
 #define _PW_CHANNEL_READABLE_SKIP                                              \
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(async2::Context&,        \
-                                                      size_t) final {          \
+  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(async2::Context&)        \
+      final {                                                                  \
     return async2::Ready(Result<multibuf::MultiBuf>(Status::Unimplemented())); \
   }                                                                            \
   using AnyChannel::PollRead
@@ -219,10 +198,6 @@ _PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kDatagram, kReliable, kWritable);
 // _PW_CHANNEL(Datagram, SKIP, WRTE, SEEK, kDatagram, kWritable, kSeekable);
 _PW_CHANNEL(Datagram, SKIP, WRTE, SKIP, kDatagram, kWritable);
 
-#undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramREAD
-#undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_DatagramSKIP
-#undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_ByteSKIP
-#undef _PW_CHANNEL_DISABLE_POLL_OVERLOAD_ByteREAD
 #undef _PW_CHANNEL_READABLE_READ
 #undef _PW_CHANNEL_READABLE_SKIP
 #undef _PW_CHANNEL_WRITABLE_WRTE

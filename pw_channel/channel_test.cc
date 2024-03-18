@@ -36,7 +36,7 @@ class Stub : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
 
   // The max_bytes argument is ignored for datagram-oriented channels.
   pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPollRead(
-      pw::async2::Context&, size_t) override {
+      pw::async2::Context&) override {
     return pw::async2::Pending();
   }
 
@@ -123,14 +123,6 @@ bool Illegal(pw::channel::ByteChannel<kReadable, kReadable>& foo) {
 }
 #endif  // PW_NC_TEST
 
-#if PW_NC_TEST(PollReadIsHiddenForDatagramChannels)
-PW_NC_EXPECT("not supported for DatagramChannels");
-void Illegal(pw::channel::DatagramChannel<kReadable>& foo,
-             pw::async2::Context& cx) {
-  [[maybe_unused]] auto unused = foo.PollRead(cx, 123u);
-}
-#endif  // PW_NC_TEST
-
 class FixedBufferChunkRegionTracker : public pw::multibuf::ChunkRegionTracker {
  public:
   FixedBufferChunkRegionTracker(pw::ByteSpan region) : region_(region) {}
@@ -191,7 +183,7 @@ class TestByteReader : public pw::channel::ByteChannel<kReliable, kReadable> {
 
  private:
   pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPollRead(
-      pw::async2::Context& cx, size_t) override {
+      pw::async2::Context& cx) override {
     if (read_size_ == 0) {
       read_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
       return pw::async2::Pending();

@@ -171,8 +171,8 @@ class AnyChannel {
   /// is not available, invokes `cx.waker()` when it becomes available.
   ///
   /// For datagram channels, each successful read yields one complete
-  /// datagram. For byte stream channels, each successful read yields some
-  /// number of bytes.
+  /// datagram, which may contain zero or more bytes. For byte stream channels,
+  /// each successful read yields one or more bytes.
   ///
   /// Channels only support one read operation / waker at a time.
   ///
@@ -187,17 +187,7 @@ class AnyChannel {
     if (!is_open()) {
       return Status::FailedPrecondition();
     }
-    return PollRead(cx, std::numeric_limits<size_t>::max());
-  }
-
-  /// On byte stream channels, reads up to max_bytes from the channel.
-  /// This function is hidden on datagram-oriented channels.
-  async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx,
-                                                    size_t max_bytes) {
-    if (!is_open()) {
-      return Status::FailedPrecondition();
-    }
-    return DoPollRead(cx, max_bytes);
+    return DoPollRead(cx);
   }
 
   /// Write API
@@ -380,7 +370,7 @@ class AnyChannel {
 
   // The max_bytes argument is ignored for datagram-oriented channels.
   virtual async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
-      async2::Context& cx, size_t max_bytes) = 0;
+      async2::Context& cx) = 0;
 
   // Write functions
 
