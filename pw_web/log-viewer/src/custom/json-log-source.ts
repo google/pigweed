@@ -14,6 +14,7 @@
 
 import { LogSource } from '../log-source';
 import { LogEntry, Field, Severity } from '../shared/interfaces';
+import { timeFormat } from '../shared/time-format';
 
 import log_data from './log_data.json';
 
@@ -93,18 +94,9 @@ export class JsonLogSource extends LogSource {
 
   readLogEntryFromJson(): LogEntry {
     const data = log_data[this.logIndex];
-
-    const host_log_time = new Date(0); // Date set to epoch seconds 0
-    const host_log_epoch_seconds = Number(data.time);
-    host_log_time.setUTCSeconds(Math.trunc(host_log_epoch_seconds));
-    const host_log_epoch_milliseconds = Math.trunc(
-      1000 * (host_log_epoch_seconds - Math.trunc(host_log_epoch_seconds)),
-    );
-    host_log_time.setUTCMilliseconds(host_log_epoch_milliseconds);
-
     const fields: Array<Field> = [
       { key: 'severity', value: this.logLevelToSeverity[data.levelno] },
-      { key: 'time', value: host_log_time },
+      { key: 'time', value: timeFormat.format(new Date()) },
     ];
 
     Object.keys(data.fields).forEach((columnName) => {

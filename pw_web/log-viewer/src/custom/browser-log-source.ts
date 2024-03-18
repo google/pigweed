@@ -13,7 +13,8 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { Severity } from '../shared/interfaces';
+import { LogEntry, Severity } from '../shared/interfaces';
+import { timeFormat } from '../shared/time-format';
 
 export class BrowserLogSource extends LogSource {
   private originalMethods = {
@@ -26,6 +27,44 @@ export class BrowserLogSource extends LogSource {
 
   constructor(sourceName: string = 'Browser Console') {
     super(sourceName);
+  }
+
+  private getFileInfo(): string | null {
+    const error = new Error();
+    const stackLines = error.stack?.split('\n').slice(1); // Skip the error message itself
+
+    for (const line of stackLines || []) {
+      const regex = /(?:\()?(.*?)(?:\?[^:]+)?:(\d+):(\d+)(?:\))?/;
+      const match = regex.exec(line);
+
+      if (match) {
+        const [, filePath, lineNumber] = match;
+
+        // Ignore non-.js or .ts files
+        if (
+          (!filePath.endsWith('.js') && !filePath.endsWith('.ts')) ||
+          filePath.includes('browser-log-source.ts')
+        ) {
+          continue;
+        }
+
+        let fileName;
+
+        if (filePath) {
+          const segments = filePath?.split('/');
+          const lastSegment = segments?.pop();
+          const withoutQuery = lastSegment?.split('?')[0];
+          const withoutFragment = withoutQuery?.split('#')[0];
+          fileName = withoutFragment;
+        }
+
+        if (fileName && lineNumber) {
+          return `${fileName}:${lineNumber}`;
+        }
+      }
+    }
+
+    return null;
   }
 
   private formatMessage(args: IArguments | string[] | object[]): string {
@@ -75,16 +114,20 @@ export class BrowserLogSource extends LogSource {
     originalArgs: IArguments | string[] | object[],
   ): void {
     const formattedMessage = this.formatMessage(originalArgs);
+    const fileInfo = this.getFileInfo();
 
-    this.publishLogEntry({
+    const logEntry: LogEntry = {
       severity: severity,
       timestamp: new Date(),
       fields: [
-        { key: 'timestamp', value: new Date().toISOString() },
         { key: 'severity', value: severity },
+        { key: 'time', value: timeFormat.format(new Date()) },
         { key: 'message', value: formattedMessage },
+        { key: 'file', value: fileInfo || '' },
       ],
-    });
+    };
+
+    this.publishLogEntry(logEntry);
   }
 
   start(): void {

@@ -14,6 +14,7 @@
 
 import { LogSource } from '../log-source';
 import { LogEntry, Severity } from '../shared/interfaces';
+import { timeFormat } from '../shared/time-format';
 
 export class MockLogSource extends LogSource {
   private intervalId: NodeJS.Timeout | null = null;
@@ -77,20 +78,6 @@ export class MockLogSource extends LogSource {
     return randomValue;
   }
 
-  private formattedTS = () => {
-    const date = new Date();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear().toString().padStart(4, '0');
-    const hour = date.getHours().toString().padStart(2, '0');
-    const minute = date.getMinutes().toString().padStart(2, '0');
-    const second = date.getSeconds().toString().padStart(2, '0');
-    const millisecond = date.getMilliseconds().toString().padStart(3, '0');
-
-    const formattedDate = `${month}-${day}-${year} ${hour}:${minute}:${second}.${millisecond}`;
-    return formattedDate;
-  };
-
   readLogEntryFromHost(): LogEntry {
     // Emulate reading log data from a host device
     const sources = ['application', 'server', 'database', 'network'];
@@ -109,8 +96,6 @@ export class MockLogSource extends LogSource {
     ];
     const severity = this.getSeverity();
     const timestamp: Date = new Date();
-
-    const formattedTimestamp: string = this.formattedTS();
     const getRandomValue = (values: string[]) => {
       const randomIndex = Math.floor(Math.random() * values.length);
       return values[randomIndex];
@@ -121,7 +106,7 @@ export class MockLogSource extends LogSource {
       timestamp: timestamp,
       fields: [
         { key: 'severity', value: severity },
-        { key: 'timestamp', value: formattedTimestamp },
+        { key: 'time', value: timeFormat.format(timestamp) },
         { key: 'source', value: getRandomValue(sources) },
         { key: 'message', value: getRandomValue(messages) },
       ],
