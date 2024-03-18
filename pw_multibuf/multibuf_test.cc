@@ -131,6 +131,37 @@ TEST(MultiBuf, SizeReturnsNumberOfBytes) {
   EXPECT_EQ(buf.size(), kArbitraryChunkSize * 2);
 }
 
+TEST(MultiBuf, EmptyIfNoChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  EXPECT_EQ(buf.size(), 0U);
+  EXPECT_TRUE(buf.empty());
+  buf.PushFrontChunk(MakeChunk(allocator, kArbitraryChunkSize));
+  EXPECT_NE(buf.size(), 0U);
+  EXPECT_FALSE(buf.empty());
+}
+
+TEST(MultiBuf, EmptyIfOnlyEmptyChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  EXPECT_TRUE(buf.empty());
+  buf.PushFrontChunk(MakeChunk(allocator, 0));
+  EXPECT_TRUE(buf.empty());
+  buf.PushFrontChunk(MakeChunk(allocator, 0));
+  EXPECT_TRUE(buf.empty());
+  EXPECT_EQ(buf.size(), 0U);
+}
+
+TEST(MultiBuf, EmptyIsFalseIfAnyNonEmptyChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(allocator, 0));
+  EXPECT_TRUE(buf.empty());
+  buf.PushFrontChunk(MakeChunk(allocator, kArbitraryChunkSize));
+  EXPECT_FALSE(buf.empty());
+  EXPECT_EQ(buf.size(), kArbitraryChunkSize);
+}
+
 TEST(MultiBuf, ClaimPrefixReclaimsFirstChunkPrefix) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;

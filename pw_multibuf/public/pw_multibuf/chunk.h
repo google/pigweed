@@ -53,6 +53,7 @@ class Chunk {
   std::byte* data() { return span_.data(); }
   const std::byte* data() const { return span_.data(); }
   size_t size() const { return span_.size(); }
+  [[nodiscard]] bool empty() const { return span_.empty(); }
 
   std::byte& operator[](size_t index) { return span_[index]; }
   const std::byte& operator[](size_t index) const { return span_[index]; }

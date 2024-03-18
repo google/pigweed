@@ -74,6 +74,12 @@ class MultiBuf {
   /// This method's complexity is ``O(Chunks().size())``.
   [[nodiscard]] size_t size() const;
 
+  /// Returns whether the container is empty (`size() == 0`).
+  ///
+  /// This method's complexity is ``O(Chunks().size())``, but will be more
+  /// efficient than `size() == 0` in most cases.
+  [[nodiscard]] bool empty() const;
+
   /// Returns an iterator pointing to the first byte of this ``MultiBuf`.
   iterator begin() { return iterator(first_, 0); }
   /// Returns a const iterator pointing to the first byte of this ``MultiBuf`.

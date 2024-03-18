@@ -14,6 +14,8 @@
 
 #include "pw_multibuf/multibuf.h"
 
+#include <algorithm>
+
 #include "pw_assert/check.h"
 
 namespace pw::multibuf {
@@ -32,6 +34,12 @@ size_t MultiBuf::size() const {
     len += chunk.size();
   }
   return len;
+}
+
+bool MultiBuf::empty() const {
+  return std::all_of(Chunks().begin(), Chunks().end(), [](const Chunk& c) {
+    return c.empty();
+  });
 }
 
 bool MultiBuf::ClaimPrefix(size_t bytes_to_claim) {
@@ -239,7 +247,7 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
 }
 
 void MultiBuf::const_iterator::AdvanceToData() {
-  while (chunk_ != nullptr && chunk_->size() == 0) {
+  while (chunk_ != nullptr && chunk_->empty()) {
     chunk_ = chunk_->next_in_buf_;
   }
 }
