@@ -19,12 +19,12 @@ import logging
 import sys
 import subprocess
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 _LOG = logging.getLogger(__name__)
 
 
-def _parser_args() -> Dict[str, Any]:
+def _parser_args() -> dict[str, Any]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--llvm-cov-path',

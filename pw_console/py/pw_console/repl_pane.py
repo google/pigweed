@@ -23,7 +23,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -66,7 +65,7 @@ if TYPE_CHECKING:
 
 _LOG = logging.getLogger(__package__)
 
-_Namespace = Dict[str, Any]
+_Namespace = dict[str, Any]
 _GetNamespace = Callable[[], _Namespace]
 
 _REPL_OUTPUT_SCROLL_AMOUNT = 5

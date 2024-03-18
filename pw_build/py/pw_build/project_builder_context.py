@@ -23,7 +23,7 @@ import logging
 import os
 import subprocess
 import time
-from typing import Callable, Dict, Optional, NoReturn, TYPE_CHECKING
+from typing import Callable, Optional, NoReturn, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     AnyFormattedText,
@@ -139,7 +139,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
 
     current_state: ProjectBuilderState = ProjectBuilderState.IDLE
     desired_state: ProjectBuilderState = ProjectBuilderState.BUILDING
-    procs: Dict[BuildRecipe, subprocess.Popen] = field(default_factory=dict)
+    procs: dict[BuildRecipe, subprocess.Popen] = field(default_factory=dict)
     recipes: list[BuildRecipe] = field(default_factory=list)
 
     def __post_init__(self) -> None:

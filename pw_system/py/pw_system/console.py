@@ -43,7 +43,6 @@ from types import ModuleType
 from typing import (
     Any,
     Collection,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -326,7 +325,7 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     client_info = device.info()
     completions = flattened_rpc_completions([client_info])
 
-    log_windows: Dict[str, Union[list[logging.Logger], log_store.LogStore]] = {
+    log_windows: dict[str, Union[list[logging.Logger], log_store.LogStore]] = {
         'Device Logs': device_log_store,
         'Host Logs': root_log_store,
     }

@@ -15,7 +15,7 @@
 
 from dataclasses import dataclass, asdict
 import re
-from typing import Dict, Mapping, Iterator
+from typing import Mapping, Iterator
 
 
 def _mask(value: int, start: int, count: int) -> int:
@@ -59,7 +59,7 @@ class FormatStringWithMetadata:
 
     def __init__(self, string: str) -> None:
         self.raw_string = string
-        self.fields: Dict[str, str] = {}
+        self.fields: dict[str, str] = {}
 
         # Only look for fields if the raw string starts with one.
         if self._FIELD_KEY.match(self.raw_string):

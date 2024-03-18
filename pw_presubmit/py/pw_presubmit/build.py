@@ -33,7 +33,6 @@ from typing import (
     Collection,
     Container,
     ContextManager,
-    Dict,
     Iterable,
     Iterator,
     Mapping,
@@ -321,7 +320,7 @@ def ninja(
         raise exc
 
 
-def get_gn_args(directory: Path) -> list[Dict[str, Dict[str, str]]]:
+def get_gn_args(directory: Path) -> list[dict[str, dict[str, str]]]:
     """Dumps GN variables to JSON."""
     proc = log_run(
         ['gn', 'args', directory, '--list', '--json'], stdout=subprocess.PIPE
@@ -534,7 +533,7 @@ def check_builds_for_files(
     bazel_dirs: Iterable[Path] = (),
     gn_dirs: Iterable[tuple[Path, Path]] = (),
     gn_build_files: Iterable[Path] = (),
-) -> Dict[str, list[Path]]:
+) -> dict[str, list[Path]]:
     """Checks that source files are in the GN and Bazel builds.
 
     Args:
@@ -1002,7 +1001,7 @@ class GnGenNinja(_NinjaBase):
         self,
         *args,
         gn_args: Optional[  # pylint: disable=redefined-outer-name
-            Dict[str, Any]
+            dict[str, Any]
         ] = None,
         **kwargs,
     ):
@@ -1010,21 +1009,21 @@ class GnGenNinja(_NinjaBase):
 
         Args:
             *args: Passed on to superclass.
-            gn_args: Dict of GN args.
+            gn_args: dict of GN args.
             **kwargs: Passed on to superclass.
         """
         super().__init__(self._substeps(), *args, **kwargs)
-        self._gn_args: Dict[str, Any] = gn_args or {}
+        self._gn_args: dict[str, Any] = gn_args or {}
 
     def add_default_gn_args(self, args):
         """Add any project-specific default GN args to 'args'."""
 
     @property
-    def gn_args(self) -> Dict[str, Any]:
+    def gn_args(self) -> dict[str, Any]:
         return self._gn_args
 
     def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
-        args: Dict[str, Any] = {}
+        args: dict[str, Any] = {}
         if self._coverage_options is not None:
             args['pw_toolchain_COVERAGE_ENABLED'] = True
             args['pw_build_PYTHON_TEST_COVERAGE'] = True

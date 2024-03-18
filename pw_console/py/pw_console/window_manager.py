@@ -19,7 +19,7 @@ import functools
 from itertools import chain
 import logging
 import operator
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Iterable, Optional
 
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
@@ -906,7 +906,7 @@ class WindowManager:
 
     def _remove_panes_from_layout(
         self, pane_titles: Iterable[str]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Gather pane objects and remove them from the window layout.
         collected_panes = {}
 

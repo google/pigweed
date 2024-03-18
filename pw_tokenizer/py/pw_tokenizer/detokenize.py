@@ -50,7 +50,6 @@ from typing import (
     AnyStr,
     BinaryIO,
     Callable,
-    Dict,
     Iterable,
     Iterator,
     Match,
@@ -235,7 +234,7 @@ class Detokenizer:
         self._database_lock = threading.Lock()
 
         # Cache FormatStrings for faster lookup & formatting.
-        self._cache: Dict[int, list[_TokenizedFormatString]] = {}
+        self._cache: dict[int, list[_TokenizedFormatString]] = {}
 
         self._initialize_database(token_database_or_elf)
 

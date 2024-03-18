@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import json
 import os
 import sys
-from typing import cast, Dict, Optional, TypeVar, Union
+from typing import cast, Optional, TypeVar, Union
 
 # We use BeautifulSoup for certain docs rendering features. It may not be
 # available in downstream projects. If so, no problem. We fall back to simpler
@@ -117,8 +117,8 @@ class EnvMetadata:
         return value
 
     @property
-    def pw_parsed_bodies(self) -> Dict[str, ParsedBody]:
-        default: Dict[str, ParsedBody] = {}
+    def pw_parsed_bodies(self) -> dict[str, ParsedBody]:
+        default: dict[str, ParsedBody] = {}
         return self._get_env_attr('pw_module_nav', default)
 
 
@@ -466,7 +466,7 @@ def on_html_page_context(
     app: Sphinx,  # pylint: disable=unused-argument
     docname: str,  # pylint: disable=unused-argument
     templatename: str,  # pylint: disable=unused-argument
-    context: Optional[Dict[str, Optional[str]]],
+    context: Optional[dict[str, Optional[str]]],
     doctree: Document,  # pylint: disable=unused-argument
 ) -> None:
     """Handles modifications to HTML page metadata, e.g. canonical URLs.
@@ -702,7 +702,7 @@ def on_source_read(
     source[0] = add_toctree_to_module_homepage(docname, source[0])
 
 
-def setup(app: Sphinx) -> Dict[str, bool]:
+def setup(app: Sphinx) -> dict[str, bool]:
     """Hooks the extension into our Sphinx docs build system.
 
     This runs only once per docs build.

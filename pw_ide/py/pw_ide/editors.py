@@ -51,7 +51,6 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
-    Dict,
     Generator,
     Generic,
     Literal,
@@ -171,11 +170,11 @@ class YamlFileFormat(_StructuredFileFormat):
 
 # Allows constraining to dicts and dict subclasses, while also constraining to
 # the *same* dict subclass.
-_DictLike = TypeVar('_DictLike', bound=Dict)
+_DictLike = TypeVar('_DictLike', bound=dict)
 
 # Likewise, constrain to a specific dict subclass, but one that can be different
 # from that of _DictLike.
-_AnotherDictLike = TypeVar('_AnotherDictLike', bound=Dict)
+_AnotherDictLike = TypeVar('_AnotherDictLike', bound=dict)
 
 
 def dict_deep_merge(
@@ -508,7 +507,7 @@ class SettingsLevel(enum.Enum):
 
 # A map of configurable settings levels and the string that will be prepended
 # to their files to indicate their settings level.
-SettingsFilePrefixes = Dict[SettingsLevel, str]
+SettingsFilePrefixes = dict[SettingsLevel, str]
 
 # Each editor will have one or more settings types that typically reflect each
 # of the files used to define their settings. So each editor should have an
@@ -521,7 +520,7 @@ _SettingsTypeT = TypeVar('_SettingsTypeT')
 
 # Maps each settings type with the callback that generates the default settings
 # for that settings type.
-EditorSettingsTypesWithDefaults = Dict[_SettingsTypeT, DefaultSettingsCallback]
+EditorSettingsTypesWithDefaults = dict[_SettingsTypeT, DefaultSettingsCallback]
 
 
 class EditorSettingsManager(Generic[_SettingsTypeT]):
@@ -600,8 +599,8 @@ class EditorSettingsManager(Generic[_SettingsTypeT]):
         # For each of the settings levels, there is a settings definition for
         # each settings type. Those settings definitions may be stored in files
         # or not.
-        self._settings_definitions: Dict[
-            SettingsLevel, Dict[_SettingsTypeT, EditorSettingsDefinition]
+        self._settings_definitions: dict[
+            SettingsLevel, dict[_SettingsTypeT, EditorSettingsDefinition]
         ] = {}
 
         self._settings_types = tuple(self._types_with_defaults.keys())

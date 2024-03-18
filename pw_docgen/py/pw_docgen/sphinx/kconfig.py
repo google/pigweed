@@ -16,7 +16,7 @@
 
 import os
 import re
-from typing import Iterable, Dict
+from typing import Iterable
 
 import docutils
 from docutils.core import publish_doctree
@@ -130,7 +130,7 @@ def generate_kconfig_reference(_, doctree: document, docname: str) -> None:
     process_node(kconfig.top_node.list.next, root)
 
 
-def setup(app: Sphinx) -> Dict[str, bool]:
+def setup(app: Sphinx) -> dict[str, bool]:
     """Initialize the Sphinx extension."""
     if KCONFIGLIB_AVAILABLE:
         app.connect('doctree-resolved', generate_kconfig_reference)

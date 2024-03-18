@@ -13,9 +13,8 @@
 # the License.
 """Pigweed built-in emulators frontends."""
 
-from typing import Dict
 
-pigweed_emulators: Dict[str, Dict[str, str]] = {
+pigweed_emulators: dict[str, dict[str, str]] = {
     'qemu': {
         'connector': 'pw_emu.qemu.QemuConnector',
         'launcher': 'pw_emu.qemu.QemuLauncher',

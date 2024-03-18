@@ -61,7 +61,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -185,11 +184,11 @@ class Programs(collections.abc.Mapping):
         A program is a sequence of presubmit check functions. The sequence may
         contain nested sequences, which are flattened.
         """
-        self._programs: Dict[str, Program] = {
+        self._programs: dict[str, Program] = {
             name: Program(name, checks) for name, checks in programs.items()
         }
 
-    def all_steps(self) -> Dict[str, Check]:
+    def all_steps(self) -> dict[str, Check]:
         return {c.name: c for c in itertools.chain(*self.values())}
 
     def __getitem__(self, item: str) -> Program:
@@ -392,7 +391,7 @@ class Presubmit:
         paths: Sequence[Path],
         all_paths: Sequence[Path],
         package_root: Path,
-        override_gn_args: Dict[str, str],
+        override_gn_args: dict[str, str],
         continue_after_build_error: bool,
         rng_seed: int,
         full: bool,
@@ -458,7 +457,7 @@ class Presubmit:
     def apply_filters(self, program: Sequence[Callable]) -> list[FilteredCheck]:
         """Returns list of FilteredCheck for checks that should run."""
         checks = [c if isinstance(c, Check) else Check(c) for c in program]
-        filter_to_checks: Dict[
+        filter_to_checks: dict[
             FileFilter, list[Check]
         ] = collections.defaultdict(list)
 
@@ -473,9 +472,9 @@ class Presubmit:
         ]
 
     def _map_checks_to_paths(
-        self, filter_to_checks: Dict[FileFilter, list[Check]]
-    ) -> Dict[Check, Sequence[Path]]:
-        checks_to_paths: Dict[Check, Sequence[Path]] = {}
+        self, filter_to_checks: dict[FileFilter, list[Check]]
+    ) -> dict[Check, Sequence[Path]]:
+        checks_to_paths: dict[Check, Sequence[Path]] = {}
 
         posix_paths = tuple(p.as_posix() for p in self._relative_paths)
 
@@ -602,8 +601,8 @@ class Presubmit:
 
 def _process_pathspecs(
     repos: Iterable[Path], pathspecs: Iterable[str]
-) -> Dict[Path, list[str]]:
-    pathspecs_by_repo: Dict[Path, list[str]] = {repo: [] for repo in repos}
+) -> dict[Path, list[str]]:
+    pathspecs_by_repo: dict[Path, list[str]] = {repo: [] for repo in repos}
     repos_with_paths: Set[Path] = set()
 
     for pathspec in pathspecs:
@@ -748,7 +747,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     all_files: list[Path] = []
     modified_files: list[Path] = []
-    list_steps_data: Dict[str, Any] = {}
+    list_steps_data: dict[str, Any] = {}
 
     if list_steps_file:
         with list_steps_file.open() as ins:
@@ -791,7 +790,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     )
 
     if only_list_steps:
-        steps: list[Dict] = []
+        steps: list[dict] = []
         for filtered_check in presubmit.apply_filters(program):
             step = {
                 'name': filtered_check.name,
@@ -862,7 +861,7 @@ class SubStep:
     name: Optional[str]
     _func: Callable[..., PresubmitResult]
     args: Sequence[Any] = ()
-    kwargs: Dict[str, Any] = dataclasses.field(default_factory=lambda: {})
+    kwargs: dict[str, Any] = dataclasses.field(default_factory=lambda: {})
 
     def __call__(self, ctx: PresubmitContext) -> PresubmitResult:
         if self.name:
@@ -1155,7 +1154,7 @@ def filter_paths(
 
 
 def call(
-    *args, call_annotation: Optional[Dict[Any, Any]] = None, **kwargs
+    *args, call_annotation: Optional[dict[Any, Any]] = None, **kwargs
 ) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
     ctx = PRESUBMIT_CONTEXT.get()

@@ -23,7 +23,6 @@ import shlex
 import tempfile
 from types import ModuleType
 from typing import (
-    Dict,
     Generic,
     Iterable,
     Iterator,
@@ -187,7 +186,7 @@ class _NestedPackage(Generic[T]):
     """Facilitates navigating protobuf packages as attributes."""
 
     def __init__(self, package: str):
-        self._packages: Dict[str, _NestedPackage[T]] = {}
+        self._packages: dict[str, _NestedPackage[T]] = {}
         self._items: list[T] = []
         self._package = package
 
@@ -261,7 +260,7 @@ class _NestedPackage(Generic[T]):
 class Packages(NamedTuple):
     """Items in a protobuf package structure; returned from as_package."""
 
-    items_by_package: Dict[str, list]
+    items_by_package: dict[str, list]
     packages: _NestedPackage
 
 

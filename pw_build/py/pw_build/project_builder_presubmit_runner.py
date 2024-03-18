@@ -17,7 +17,7 @@ import argparse
 import fnmatch
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Optional, Union
 
 
 import pw_cli.log
@@ -84,7 +84,7 @@ def should_gn_gen(out: Path) -> bool:
     return any(not gen_file.is_file() for gen_file in expected_files)
 
 
-def should_gn_gen_with_args(gn_arg_dict: Dict[str, str]) -> Callable:
+def should_gn_gen_with_args(gn_arg_dict: dict[str, str]) -> Callable:
     """Returns a callable which writes an args.gn file prior to checks.
 
     Returns:

@@ -20,7 +20,7 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 from string import Template
-from typing import Dict, IO, Iterable, Iterator, Set
+from typing import IO, Iterable, Iterator, Set
 
 from pw_build.bazel_query import BazelWorkspace
 from pw_build.gn_config import consolidate_configs, GnConfig
@@ -105,10 +105,10 @@ class GnGenerator:
         self._base_path: GnPath
         self._repo: str
         self._repo_var: str
-        self._repos: Dict[str, Set[str]] = defaultdict(set)
+        self._repos: dict[str, Set[str]] = defaultdict(set)
         self._no_gn_check: list[GnLabel] = []
-        self.configs: Dict[str, list[GnConfig]] = defaultdict(list)
-        self.targets: Dict[str, list[GnTarget]] = defaultdict(list)
+        self.configs: dict[str, list[GnConfig]] = defaultdict(list)
+        self.targets: dict[str, list[GnTarget]] = defaultdict(list)
 
         self.packages.add('')
         self.configs[''] = []

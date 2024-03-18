@@ -17,11 +17,11 @@ import argparse
 import copy
 import shlex
 from pathlib import Path
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Union
 
 from pw_config_loader import yaml_config_loader_mixin
 
-_DEFAULT_CONFIG: Dict[Any, Any] = {
+_DEFAULT_CONFIG: dict[Any, Any] = {
     # Config settings not available as a command line options go here.
     'build_system_commands': {
         'default': {
@@ -44,7 +44,7 @@ def load_defaults_from_argparse(
     add_parser_arguments: Callable[
         [argparse.ArgumentParser], argparse.ArgumentParser
     ]
-) -> Dict[Any, Any]:
+) -> dict[Any, Any]:
     parser = argparse.ArgumentParser(
         description='', formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -88,7 +88,7 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
 
     def _argparse_build_system_commands_to_prefs(  # pylint: disable=no-self-use
         self, argparse_input: list[list[str]]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         result = copy.copy(_DEFAULT_CONFIG['build_system_commands'])
         for out_dir, command in argparse_input:
             new_dir_spec = result.get(out_dir, {})
@@ -112,7 +112,7 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         default_args = load_defaults_from_argparse(self.load_argparse_arguments)
 
         # Only apply settings that differ from the defaults.
-        changed_settings: Dict[Any, Any] = {}
+        changed_settings: dict[Any, Any] = {}
         for key, value in vars(new_args).items():
             if key in default_args and value != default_args[key]:
                 if key == 'build_system_commands':
@@ -129,12 +129,12 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         return self._config.get('run_command', [])
 
     @property
-    def build_directories(self) -> Dict[str, list[str]]:
+    def build_directories(self) -> dict[str, list[str]]:
         """Returns build directories and the targets to build in each."""
         build_directories: Union[
-            list[str], Dict[str, list[str]]
+            list[str], dict[str, list[str]]
         ] = self._config.get('build_directories', {})
-        final_build_dirs: Dict[str, list[str]] = {}
+        final_build_dirs: dict[str, list[str]] = {}
 
         if isinstance(build_directories, dict):
             final_build_dirs = build_directories
@@ -163,11 +163,11 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
 
         return final_build_dirs
 
-    def _get_build_system_commands_for(self, build_dir: str) -> Dict[str, Any]:
+    def _get_build_system_commands_for(self, build_dir: str) -> dict[str, Any]:
         config_dict = self._config.get('build_system_commands', {})
         if not config_dict:
             config_dict = _DEFAULT_CONFIG['build_system_commands']
-        default_system_commands: Dict[str, Any] = config_dict.get('default', {})
+        default_system_commands: dict[str, Any] = config_dict.get('default', {})
         if default_system_commands is None:
             default_system_commands = {}
         build_system_commands = config_dict.get(build_dir)
@@ -184,7 +184,7 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         build_system_commands = self._get_build_system_commands_for(build_dir)
 
         command_steps: list[tuple[str, list[str]]] = []
-        commands: list[Dict[str, Any]] = build_system_commands.get(
+        commands: list[dict[str, Any]] = build_system_commands.get(
             'commands', []
         )
         for command_step in commands:

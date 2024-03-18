@@ -17,7 +17,7 @@
 from pathlib import Path
 import tempfile
 import textwrap
-from typing import Dict, Sequence
+from typing import Sequence
 import unittest
 from unittest.mock import MagicMock
 
@@ -45,7 +45,7 @@ class TestKeepSorted(unittest.TestCase):
             with path.open('w') as outs:
                 outs.write(contents)
 
-            self.errors: Dict[Path, Sequence[str]] = {}
+            self.errors: dict[Path, Sequence[str]] = {}
 
             # pylint: disable=protected-access
             self.sorter = keep_sorted._FileSorter(self.ctx, path, self.errors)

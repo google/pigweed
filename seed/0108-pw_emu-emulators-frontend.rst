@@ -473,7 +473,7 @@ emulator instance:
 :python:`def reset() -> None`
    Performs a software reset
 
-:python:`def list_properties(self, path: str) -> List[Dict]`
+:python:`def list_properties(self, path: str) -> List[dict]`
    Returns the property list for an emulator object.
 
    The object is identified by a full path. The path is target specific and

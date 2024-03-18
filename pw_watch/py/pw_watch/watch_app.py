@@ -20,7 +20,7 @@ import logging
 import os
 import re
 import time
-from typing import Callable, Dict, Iterable, NoReturn, Optional
+from typing import Callable, Iterable, NoReturn, Optional
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -208,7 +208,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
 
     # Required pw_console preferences for key bindings and themes
     @property
-    def user_key_bindings(self) -> Dict[str, list[str]]:
+    def user_key_bindings(self) -> dict[str, list[str]]:
         return self._config.get('key_bindings', {})
 
     @property
@@ -333,8 +333,8 @@ class WatchApp(PluginMixin):
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
 
-        self.recipe_name_to_log_pane: Dict[str, LogPane] = {}
-        self.recipe_index_to_log_pane: Dict[int, LogPane] = {}
+        self.recipe_name_to_log_pane: dict[str, LogPane] = {}
+        self.recipe_index_to_log_pane: dict[int, LogPane] = {}
 
         debug_logging = (
             event_handler.project_builder.default_log_level == logging.DEBUG

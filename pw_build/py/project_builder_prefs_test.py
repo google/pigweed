@@ -17,7 +17,7 @@ import argparse
 import copy
 from pathlib import Path
 import tempfile
-from typing import Any, Dict
+from typing import Any
 import unittest
 from unittest.mock import MagicMock
 
@@ -54,7 +54,7 @@ class TestProjectBuilderPrefs(unittest.TestCase):
             user_file=False,
         )
         # Construct an expected result config.
-        expected_config: Dict[Any, Any] = {}
+        expected_config: dict[Any, Any] = {}
         expected_config.update(_DEFAULT_CONFIG)
         expected_config.update(
             load_defaults_from_argparse(add_project_builder_arguments)
@@ -80,7 +80,7 @@ class TestProjectBuilderPrefs(unittest.TestCase):
         )
 
         # Construct an expected result config.
-        expected_config: Dict[Any, Any] = copy.copy(_DEFAULT_CONFIG)
+        expected_config: dict[Any, Any] = copy.copy(_DEFAULT_CONFIG)
         expected_config.update(defaults_from_argparse)
 
         # pylint: disable=protected-access

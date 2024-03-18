@@ -20,7 +20,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 _LOG = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class FailureMode(enum.Enum):
         return self.value
 
 
-def _parse_args() -> Dict[str, Any]:
+def _parse_args() -> dict[str, Any]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--llvm-profdata-path',

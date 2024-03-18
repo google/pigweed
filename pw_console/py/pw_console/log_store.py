@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import logging
 from datetime import datetime
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from pw_cli.color import colors as pw_cli_colors
 
@@ -95,10 +95,10 @@ class LogStore(logging.Handler):
         self.max_history_size: int = 1000000
 
         # Counts of logs per python logger name
-        self.channel_counts: Dict[str, int] = {}
+        self.channel_counts: dict[str, int] = {}
         # Widths of each logger prefix string. For example: the character length
         # of the timestamp string.
-        self.channel_formatted_prefix_widths: Dict[str, int] = {}
+        self.channel_formatted_prefix_widths: dict[str, int] = {}
         # Longest of the above prefix widths.
         self.longest_channel_prefix_width = 0
 

@@ -16,7 +16,6 @@
 
 import datetime
 import sys
-from typing import Dict
 
 from docutils import nodes
 from docutils.parsers.rst import Directive
@@ -117,7 +116,7 @@ class PigweedLiveDirective(Directive):
             return f'{date} {hour} ({timezone})'
 
 
-def setup(app: Sphinx) -> Dict[str, bool]:
+def setup(app: Sphinx) -> dict[str, bool]:
     """Initialize the directive."""
     if PYTZ_AVAILABLE:
         app.add_directive('pigweed-live', PigweedLiveDirective)

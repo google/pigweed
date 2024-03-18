@@ -17,7 +17,7 @@ import asyncio
 import ctypes
 import logging
 import threading
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
@@ -39,7 +39,7 @@ except ImportError:
 
 _LOG = logging.getLogger(__package__)
 
-_TransferDict = Dict[int, Transfer]
+_TransferDict = dict[int, Transfer]
 
 
 class _TransferStream:

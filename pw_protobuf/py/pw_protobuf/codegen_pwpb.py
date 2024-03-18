@@ -21,7 +21,7 @@ from graphlib import CycleError, TopologicalSorter  # type: ignore
 from itertools import takewhile
 import os
 import sys
-from typing import Dict, Iterable, Optional, Type
+from typing import Iterable, Optional, Type
 from typing import cast
 
 from google.protobuf import descriptor_pb2
@@ -2323,7 +2323,7 @@ class EnumProperty(MessageProperty):
 
 
 # Mapping of protobuf field types to their method definitions.
-PROTO_FIELD_WRITE_METHODS: Dict[int, list] = {
+PROTO_FIELD_WRITE_METHODS: dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleWriteMethod,
         PackedDoubleWriteMethod,
@@ -2402,7 +2402,7 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, list] = {
     ],
 }
 
-PROTO_FIELD_READ_METHODS: Dict[int, list] = {
+PROTO_FIELD_READ_METHODS: dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleReadMethod,
         PackedDoubleReadMethod,
@@ -2483,7 +2483,7 @@ PROTO_FIELD_READ_METHODS: Dict[int, list] = {
     ],
 }
 
-PROTO_FIELD_FIND_METHODS: Dict[int, list] = {
+PROTO_FIELD_FIND_METHODS: dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleFindMethod,
         DoubleFindStreamMethod,
@@ -2554,7 +2554,7 @@ PROTO_FIELD_FIND_METHODS: Dict[int, list] = {
     ],
 }
 
-PROTO_FIELD_PROPERTIES: Dict[int, Type[MessageProperty]] = {
+PROTO_FIELD_PROPERTIES: dict[int, Type[MessageProperty]] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: DoubleProperty,
     descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: FloatProperty,
     descriptor_pb2.FieldDescriptorProto.TYPE_INT32: Int32Property,
@@ -3140,7 +3140,7 @@ def dependency_sorted_messages(package: ProtoNode):
     """Yields the messages in the package sorted after their dependencies."""
 
     # Build the graph of dependencies between messages.
-    graph: Dict[ProtoMessage, list[ProtoMessage]] = {}
+    graph: dict[ProtoMessage, list[ProtoMessage]] = {}
     for node in package:
         if node.type() == ProtoNode.Type.MESSAGE:
             message = cast(ProtoMessage, node)

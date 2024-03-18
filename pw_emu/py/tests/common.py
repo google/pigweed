@@ -21,7 +21,7 @@ import tempfile
 import unittest
 
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any, Optional
 
 from pw_emu.frontend import Emulator
 
@@ -43,12 +43,12 @@ def check_prog(prog: str) -> tuple:
 class ConfigHelper(unittest.TestCase):
     """Helper that setups and tears down the configuration file"""
 
-    _config: Optional[Dict[str, Any]] = None
+    _config: Optional[dict[str, Any]] = None
 
     def setUp(self) -> None:
         self._wdir = tempfile.TemporaryDirectory()
         with tempfile.NamedTemporaryFile('wt', delete=False) as file:
-            pw_emu_config: Dict[str, Any] = {'pw': {'pw_emu': {}}}
+            pw_emu_config: dict[str, Any] = {'pw': {'pw_emu': {}}}
             if self._config:
                 pw_emu_config['pw']['pw_emu'].update(self._config)
             json.dump(pw_emu_config, file)

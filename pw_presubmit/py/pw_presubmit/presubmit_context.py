@@ -28,7 +28,6 @@ import subprocess
 import tempfile
 from typing import (
     Any,
-    Dict,
     Iterable,
     NamedTuple,
     Optional,
@@ -48,7 +47,7 @@ _COLOR = pw_cli.color.colors()
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 PRESUBMIT_CHECK_TRACE: ContextVar[
-    Dict[str, list['PresubmitCheckTrace']]
+    dict[str, list['PresubmitCheckTrace']]
 ] = ContextVar('pw_presubmit_check_trace', default={})
 
 
@@ -59,7 +58,7 @@ class FormatOptions:
     exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
 
     @staticmethod
-    def load(env: Optional[Dict[str, str]] = None) -> 'FormatOptions':
+    def load(env: Optional[dict[str, str]] = None) -> 'FormatOptions':
         config = pw_env_setup.config_file.load(env=env)
         fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
         return FormatOptions(
@@ -77,7 +76,7 @@ class FormatOptions:
         return tuple(root / x for x in relpaths)
 
 
-def get_buildbucket_info(bbid) -> Dict[str, Any]:
+def get_buildbucket_info(bbid) -> dict[str, Any]:
     if not bbid or not shutil.which('bb'):
         return {}
 
@@ -103,9 +102,9 @@ class LuciPipeline:
     @staticmethod
     def create(
         bbid: int,
-        fake_pipeline_props: Optional[Dict[str, Any]] = None,
+        fake_pipeline_props: Optional[dict[str, Any]] = None,
     ) -> Optional['LuciPipeline']:
-        pipeline_props: Dict[str, Any]
+        pipeline_props: dict[str, Any]
         if fake_pipeline_props is not None:
             pipeline_props = fake_pipeline_props
         else:
@@ -172,7 +171,7 @@ class LuciTrigger:
 
     @staticmethod
     def create_from_environment(
-        env: Optional[Dict[str, str]] = None,
+        env: Optional[dict[str, str]] = None,
     ) -> Sequence['LuciTrigger']:
         if not env:
             env = os.environ.copy()
@@ -283,8 +282,8 @@ class LuciContext:
 
     @staticmethod
     def create_from_environment(
-        env: Optional[Dict[str, str]] = None,
-        fake_pipeline_props: Optional[Dict[str, Any]] = None,
+        env: Optional[dict[str, str]] = None,
+        fake_pipeline_props: Optional[dict[str, Any]] = None,
     ) -> Optional['LuciContext']:
         """Create a LuciContext from the environment."""
 
@@ -436,7 +435,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     all_paths: tuple[Path, ...]
     package_root: Path
     luci: Optional[LuciContext]
-    override_gn_args: Dict[str, str]
+    override_gn_args: dict[str, str]
     format_options: FormatOptions
     num_jobs: Optional[int] = None
     continue_after_build_error: bool = False
@@ -491,7 +490,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     def append_check_command(
         self,
         *command_args,
-        call_annotation: Optional[Dict[Any, Any]] = None,
+        call_annotation: Optional[dict[Any, Any]] = None,
         **command_kwargs,
     ) -> None:
         """Save a subprocess command annotation to this presubmit context.
@@ -587,8 +586,8 @@ class PresubmitCheckTrace(NamedTuple):
     check: Optional['Check']
     func: Optional[str]
     args: Iterable[Any]
-    kwargs: Dict[Any, Any]
-    call_annotation: Dict[Any, Any]
+    kwargs: dict[Any, Any]
+    call_annotation: dict[Any, Any]
 
     def __repr__(self) -> str:
         return f'''CheckTrace(

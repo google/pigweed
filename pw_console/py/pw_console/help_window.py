@@ -17,7 +17,7 @@ import functools
 import importlib.resources
 import inspect
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
@@ -108,7 +108,7 @@ class HelpWindow(ConditionalContainer):
         # Dict containing key = section title and value = list of key bindings.
         self.application: 'ConsoleApp' = application
         self.show_window: bool = False
-        self.help_text_sections: Dict[str, Dict] = {}
+        self.help_text_sections: dict[str, dict] = {}
         self._pane_title: str = title
         self.disable_ctrl_c = disable_ctrl_c
 
@@ -338,7 +338,7 @@ class HelpWindow(ConditionalContainer):
             text=self.help_text, cursor_position=0
         )
 
-    def add_custom_keybinds_help_text(self, section_name, key_bindings: Dict):
+    def add_custom_keybinds_help_text(self, section_name, key_bindings: dict):
         """Add hand written key_bindings."""
         self.help_text_sections[section_name] = key_bindings
 

@@ -17,7 +17,7 @@ from collections import defaultdict
 import os
 from pathlib import Path
 import platform
-from typing import Dict, NamedTuple
+from typing import NamedTuple
 
 _PYTHON_VENV_PATH = (
     Path(os.path.expandvars('$_PW_ACTUAL_ENVIRONMENT_ROOT')) / 'pigweed-venv'
@@ -31,7 +31,7 @@ class _PythonPathsForPlatform(NamedTuple):
 
 # When given a platform (e.g. the output of platform.system()), this dict gives
 # the platform-specific virtualenv path names.
-_PYTHON_PATHS_FOR_PLATFORM: Dict[str, _PythonPathsForPlatform] = defaultdict(
+_PYTHON_PATHS_FOR_PLATFORM: dict[str, _PythonPathsForPlatform] = defaultdict(
     _PythonPathsForPlatform
 )
 _PYTHON_PATHS_FOR_PLATFORM['Windows'] = _PythonPathsForPlatform(

@@ -16,7 +16,7 @@
 
 import unittest
 
-from typing import Any, Dict
+from typing import Any
 
 from pw_emu.core import (
     ConfigError,
@@ -123,7 +123,7 @@ class TestGdbEmptyConfig(ConfigHelperWithEmulator):
 
     """
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',

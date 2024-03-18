@@ -64,7 +64,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import cast, Dict, Optional
+from typing import cast, Optional
 
 _PW_PROJECT_PATH = Path(
     os.environ.get('PW_PROJECT_ROOT', os.environ.get('PW_ROOT', os.getcwd()))
@@ -178,7 +178,7 @@ class ShellModifier(ABC):
 
     def __init__(
         self,
-        env: Optional[Dict[str, str]] = None,
+        env: Optional[dict[str, str]] = None,
         env_only: bool = False,
         path_var: str = '$PATH',
         project_root: str = '.',
@@ -196,7 +196,7 @@ class ShellModifier(ABC):
         # So it contains the complete new environment after modifications.
         # If no existing environment is provided, this is identical to env_mod.
         env = env if env is not None else default_env_mod.copy()
-        self.env: Dict[str, str] = defaultdict(str, env)
+        self.env: dict[str, str] = defaultdict(str, env)
 
         # Will contain the side effects, i.e. commands executed in the shell to
         # modify its environment.

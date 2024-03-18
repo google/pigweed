@@ -22,7 +22,6 @@ import types
 from typing import (
     Any,
     Collection,
-    Dict,
     Iterable,
     Mapping,
     NamedTuple,
@@ -129,7 +128,7 @@ class ClientInfo(NamedTuple):
 
 def flattened_rpc_completions(
     client_info_list: Collection[ClientInfo],
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Create a flattened list of rpc commands for repl auto-completion.
 
     This gathers all rpc commands from a set of ClientInfo variables and
@@ -208,11 +207,11 @@ class Context:
         self.protos = protos
 
         # Store objects with references to RPC services, sorted by package.
-        self._services: Dict[str, types.SimpleNamespace] = defaultdict(
+        self._services: dict[str, types.SimpleNamespace] = defaultdict(
             types.SimpleNamespace
         )
 
-        self._variables: Dict[str, object] = dict(
+        self._variables: dict[str, object] = dict(
             Status=pw_status.Status,
             set_target=functions.help_as_repr(self.set_target),
             # The original built-in help function is available as 'python_help'.
@@ -252,7 +251,7 @@ class Context:
         """Create a flattened list of rpc commands for repl auto-completion."""
         return flattened_rpc_completions(self.client_info)
 
-    def variables(self) -> Dict[str, Any]:
+    def variables(self) -> dict[str, Any]:
         """Returns a mapping of names to variables for use in an RPC console."""
         return self._variables
 

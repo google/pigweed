@@ -13,12 +13,12 @@
 # the License.
 """Converts ST generated .icf linker files into basic .ld linker files"""
 
-from typing import Dict, Optional
+from typing import Optional
 
 import pathlib
 
 
-def parse_icf(icf_file: str) -> tuple[Dict, Dict]:
+def parse_icf(icf_file: str) -> tuple[dict, dict]:
     """Parse ICF linker file.
 
     ST only provides .icf linker files for many products, so there is a need
@@ -76,7 +76,7 @@ def parse_icf(icf_file: str) -> tuple[Dict, Dict]:
     return (parsed_regions, parsed_blocks)
 
 
-def icf_regions_to_ld_regions(icf_regions: Dict) -> Dict:
+def icf_regions_to_ld_regions(icf_regions: dict) -> dict:
     """Converts .icf regions to .ld regions
 
     The .icf format specifies the beginning and end of each region, while
@@ -111,7 +111,7 @@ def icf_regions_to_ld_regions(icf_regions: Dict) -> Dict:
     return ld_regions
 
 
-def create_ld(ld_regions: Dict, blocks: Dict) -> str:
+def create_ld(ld_regions: dict, blocks: dict) -> str:
     """Create .ld file from template.
 
     This creates a barebones .ld file that *should* work for most single core

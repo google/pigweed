@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import shlex
-from typing import Callable, Dict, Optional, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -221,7 +221,7 @@ class BuildRecipeStatus:
     return_code: Optional[int] = None
     flag_done: bool = False
     flag_started: bool = False
-    error_lines: Dict[int, list[str]] = field(default_factory=dict)
+    error_lines: dict[int, list[str]] = field(default_factory=dict)
 
     def pending(self) -> bool:
         return self.return_code is None

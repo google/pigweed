@@ -89,7 +89,7 @@ import importlib
 import json
 from pathlib import Path
 import time
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import hashes, serialization
@@ -202,7 +202,7 @@ class RemoteSignClient:
         bundle_blob_name: Optional[str] = None,
         request_blob_name: Optional[str] = None,
         signed_bundle_blob_name: Optional[str] = None,
-        request_overrides: Optional[Dict] = None,
+        request_overrides: Optional[dict] = None,
         timeout_s: int = DEFAULT_TIMEOUT_S,
     ) -> bytes:
         """Upload file to GCS and download signed counterpart when ready.
@@ -215,7 +215,7 @@ class RemoteSignClient:
           bundle_blob_name: GCS path at which to upload bundle to sign.
           request_blob_name: GCS path at which to upload request file.
           signed_bundle_blob_name: GCS path in output bucket to request.
-          request_overrides: Dict of signing request JSON keys and values to
+          request_overrides: dict of signing request JSON keys and values to
               add to the signing requests. If this dict contains any keys whose
               values are already in the signing request, the existing values
               will be overwritten by the ones passed in here.

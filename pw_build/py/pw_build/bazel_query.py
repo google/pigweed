@@ -23,7 +23,6 @@ from pathlib import Path, PurePosixPath
 from typing import (
     Any,
     Callable,
-    Dict,
     IO,
     Iterable,
     Iterator,
@@ -35,14 +34,14 @@ from xml.etree import ElementTree
 _LOG = logging.getLogger(__name__)
 
 
-BazelValue = Union[bool, int, str, list[str], Dict[str, str]]
+BazelValue = Union[bool, int, str, list[str], dict[str, str]]
 
 
 class ParseError(Exception):
     """Raised when a Bazel query returns data that can't be parsed."""
 
 
-def parse_invalid(attr: Dict[str, Any]) -> BazelValue:
+def parse_invalid(attr: dict[str, Any]) -> BazelValue:
     """Raises an error that a type is unrecognized."""
     attr_type = attr['type']
     raise ParseError(f'unknown type: {attr_type}, expected one of {BazelValue}')
@@ -71,7 +70,7 @@ class BazelRule:
             self._target = PurePosixPath(label).name
         self._kind = kind
 
-        self._attrs: Dict[str, BazelValue] = {}
+        self._attrs: dict[str, BazelValue] = {}
 
     def package(self) -> str:
         """Returns the package portion of this rule's name."""
@@ -85,7 +84,7 @@ class BazelRule:
         """Returns this rule's target type."""
         return self._kind
 
-    def parse(self, attrs: Iterable[Dict[str, Any]]) -> None:
+    def parse(self, attrs: Iterable[dict[str, Any]]) -> None:
         """Maps JSON data from a bazel query into this object.
 
         Args:
@@ -93,7 +92,7 @@ class BazelRule:
                 rule. These should match the output of
                 `bazel cquery ... --output=jsonproto`.
         """
-        attr_parsers: Dict[str, Callable[[Dict[str, Any]], BazelValue]] = {
+        attr_parsers: dict[str, Callable[[dict[str, Any]], BazelValue]] = {
             'boolean': lambda attr: attr.get('booleanValue', False),
             'integer': lambda attr: int(attr.get('intValue', '0')),
             'string': lambda attr: attr.get('stringValue', ''),
@@ -172,7 +171,7 @@ class BazelRule:
         assert isinstance(val, list)
         return val
 
-    def get_dict(self, attr_name: str) -> Dict[str, str]:
+    def get_dict(self, attr_name: str) -> dict[str, str]:
         """Gets the value of a string list attribute.
 
         Args:
@@ -208,7 +207,7 @@ class BazelWorkspace:
             pathname: Path to the local instance of a Bazel workspace.
         """
         self.root: Path = pathname
-        self.packages: Dict[str, str] = {}
+        self.packages: dict[str, str] = {}
         self.repo: str = os.path.basename(pathname)
 
     def get_rules(self, kind: str) -> Iterator[BazelRule]:

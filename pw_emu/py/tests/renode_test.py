@@ -23,7 +23,7 @@ import time
 import unittest
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pw_emu.core import InvalidChannelName, InvalidChannelType
 from tests.common import check_prog, ConfigHelperWithEmulator
@@ -212,7 +212,7 @@ class TestRenodeChannels(ConfigHelperWithEmulator):
 class TestRenodeChannelsPty(TestRenodeChannels):
     """Tests for configurations using PTY channels."""
 
-    _config: Dict[str, Any] = {}
+    _config: dict[str, Any] = {}
     _config.update(json.loads(json.dumps(TestRenodeChannels._config)))
     _config['renode']['channels'] = {'terminals': {'type': 'pty'}}
 

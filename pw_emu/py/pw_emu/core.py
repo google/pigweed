@@ -26,7 +26,7 @@ import time
 from abc import ABC, abstractmethod
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Dict, Union, Any, Type
+from typing import Optional, Union, Any, Type
 
 import psutil  # type: ignore
 
@@ -242,8 +242,8 @@ class Handles:
         self.config = config
         self.gdb_cmd: list[str] = []
         self.target = ''
-        self.channels: Dict[str, Handles.Channel] = {}
-        self.procs: Dict[str, Handles.Proc] = {}
+        self.channels: dict[str, Handles.Channel] = {}
+        self.procs: dict[str, Handles.Proc] = {}
 
     def add_channel_tcp(self, name: str, host: str, port: int) -> None:
         """Adds a TCP channel."""
@@ -405,7 +405,7 @@ class Config:
         """
 
         keys_str = ': '.join(keys)
-        entry: Optional[Dict[str, Any]] = self._config
+        entry: Optional[dict[str, Any]] = self._config
 
         for key in keys:
             if not isinstance(entry, dict):
@@ -509,7 +509,7 @@ class Connector(ABC):
 
         return self._handles.config
 
-    def get_procs(self) -> Dict[str, Handles.Proc]:
+    def get_procs(self) -> dict[str, Handles.Proc]:
         """Returns the running processes indexed by the process name."""
 
         return self._handles.procs

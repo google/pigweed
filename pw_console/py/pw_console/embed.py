@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -49,7 +49,7 @@ class PwConsoleEmbed:
         global_vars=None,
         local_vars=None,
         loggers: Optional[
-            Union[Dict[str, Iterable[logging.Logger]], Iterable]
+            Union[dict[str, Iterable[logging.Logger]], Iterable]
         ] = None,
         test_mode=False,
         repl_startup_message: Optional[str] = None,
@@ -98,11 +98,11 @@ class PwConsoleEmbed:
             console.embed()
 
         Args:
-            global_vars: Dictionary representing the desired global symbol
+            global_vars: dictionary representing the desired global symbol
                 table. Similar to what is returned by `globals()`.
-            local_vars: Dictionary representing the desired local symbol
+            local_vars: dictionary representing the desired local symbol
                 table. Similar to what is returned by `locals()`.
-            loggers: Dict with keys of log window titles and values of either:
+            loggers: dict with keys of log window titles and values of either:
 
                     1. List of `logging.getLogger()
                        <https://docs.python.org/3/library/logging.html#logging.getLogger>`_
@@ -134,7 +134,7 @@ class PwConsoleEmbed:
         self.setup_python_logging_called = False
         self.hidden_by_default_windows: list[str] = []
         self.window_plugins: list[WindowPane] = []
-        self.floating_window_plugins: list[tuple[FloatingWindowPane, Dict]] = []
+        self.floating_window_plugins: list[tuple[FloatingWindowPane, dict]] = []
         self.top_toolbar_plugins: list[WindowPaneToolbar] = []
         self.bottom_toolbar_plugins: list[WindowPaneToolbar] = []
 
@@ -205,12 +205,12 @@ class PwConsoleEmbed:
         self.bottom_toolbar_plugins.append(toolbar)
 
     def add_sentence_completer(
-        self, word_meta_dict: Dict[str, str], ignore_case=True
+        self, word_meta_dict: dict[str, str], ignore_case=True
     ) -> None:
         """Include a custom completer that matches on the entire repl input.
 
         Args:
-            word_meta_dict: Dictionary representing the sentence completions
+            word_meta_dict: dictionary representing the sentence completions
                 and descriptions. Keys are completion text, values are
                 descriptions.
         """
@@ -292,7 +292,7 @@ class PwConsoleEmbed:
         for window_title in window_titles:
             self.hidden_by_default_windows.append(window_title)
 
-    def embed(self, override_window_config: Optional[Dict] = None) -> None:
+    def embed(self, override_window_config: Optional[dict] = None) -> None:
         """Start the console."""
 
         # Create the ConsoleApp instance.

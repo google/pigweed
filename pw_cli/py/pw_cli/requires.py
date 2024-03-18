@@ -36,7 +36,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Dict, IO, Sequence
+from typing import Callable, IO, Sequence
 import uuid
 
 HELPER_GERRIT = 'pigweed-internal'
@@ -220,7 +220,7 @@ def push_commit(requires_dir: Path, push=True) -> Change:
 
 
 @log_entry_exit
-def amend_existing_change(dependency: Dict[str, str]) -> None:
+def amend_existing_change(dependency: dict[str, str]) -> None:
     """Amend the current change to depend on the dependency
 
     Args:

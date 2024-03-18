@@ -20,7 +20,6 @@ import itertools
 
 from typing import (
     Callable,
-    Dict,
     Iterator,
     Optional,
     TypeVar,
@@ -73,7 +72,7 @@ class ProtoNode(abc.ABC):
 
     def __init__(self, name: str):
         self._name: str = name
-        self._children: Dict[str, 'ProtoNode'] = collections.OrderedDict()
+        self._children: dict[str, 'ProtoNode'] = collections.OrderedDict()
         self._parent: Optional['ProtoNode'] = None
 
     @abc.abstractmethod

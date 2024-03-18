@@ -17,7 +17,7 @@ import enum
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import yaml
 
@@ -64,7 +64,7 @@ class YamlConfigLoaderMixin:
         project_file: Optional[Union[Path, bool]] = None,
         project_user_file: Optional[Union[Path, bool]] = None,
         user_file: Optional[Union[Path, bool]] = None,
-        default_config: Optional[Dict[Any, Any]] = None,
+        default_config: Optional[dict[Any, Any]] = None,
         environment_var: Optional[str] = None,
         skip_files_without_sections: bool = False,
     ) -> None:
@@ -169,7 +169,7 @@ class YamlConfigLoaderMixin:
                 stage=Stage.ENVIRONMENT_VAR_FILE,
             )
 
-    def _update_config(self, cfg: Dict[Any, Any], stage: Stage) -> None:
+    def _update_config(self, cfg: dict[Any, Any], stage: Stage) -> None:
         if cfg is None:
             cfg = {}
         for key, value in cfg.items():
@@ -194,12 +194,12 @@ class YamlConfigLoaderMixin:
         return overriding_value
 
     def reset_config(self) -> None:
-        self._config: Dict[Any, Any] = {}
+        self._config: dict[Any, Any] = {}
         self._update_config(self.default_config, Stage.DEFAULT)
 
     def _load_config_from_string(  # pylint: disable=no-self-use
         self, file_contents: str
-    ) -> list[Dict[Any, Any]]:
+    ) -> list[dict[Any, Any]]:
         return list(yaml.safe_load_all(file_contents))
 
     def load_config_file(

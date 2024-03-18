@@ -22,7 +22,6 @@ import unittest
 from typing import (
     Any,
     Callable,
-    Dict,
     Generic,
     Iterable,
     Iterator,
@@ -131,7 +130,7 @@ class TestGenerator(Generic[T]):
     """Generates tests for multiple languages from a series of test cases."""
 
     def __init__(self, test_cases: Sequence[GroupOrTest[T]]):
-        self._cases: Dict[str, list[T]] = defaultdict(list)
+        self._cases: dict[str, list[T]] = defaultdict(list)
         message = ''
 
         if len(test_cases) < 2:
@@ -157,7 +156,7 @@ class TestGenerator(Generic[T]):
                 yield Context(group, i, len(test_list), test_case)
 
     def _generate_python_tests(self, define_py_test: PyTestGenerator):
-        tests: Dict[str, Callable[[Any], None]] = {}
+        tests: dict[str, Callable[[Any], None]] = {}
 
         for ctx in self._test_contexts():
             test = define_py_test(ctx)

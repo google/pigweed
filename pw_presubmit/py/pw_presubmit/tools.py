@@ -22,7 +22,6 @@ import shlex
 import subprocess
 from typing import (
     Any,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -142,7 +141,7 @@ def file_summary(
     """Summarizes a list of files by the file types in each directory."""
 
     # Count the file types in each directory.
-    all_counts: Dict[Any, Counter] = defaultdict(Counter)
+    all_counts: dict[Any, Counter] = defaultdict(Counter)
 
     for path in paths:
         parent = path.parents[max(len(path.parents) - levels, 0)]

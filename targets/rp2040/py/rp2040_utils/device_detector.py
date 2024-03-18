@@ -21,7 +21,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
-from typing import Dict, Iterable, Optional
+from typing import Iterable, Optional
 
 from ctypes.util import find_library as ctypes_find_library
 import serial.tools.list_ports
@@ -173,9 +173,9 @@ class _BoardUsbInfo:
     port: int
 
 
-def _detect_pico_usb_info() -> Dict[str, _BoardUsbInfo]:
+def _detect_pico_usb_info() -> dict[str, _BoardUsbInfo]:
     """Finds Raspberry Pi Pico devices and retrieves USB info for each one."""
-    boards: Dict[str, _BoardUsbInfo] = {}
+    boards: dict[str, _BoardUsbInfo] = {}
     devices = libusb_raspberry_pi_devices()
 
     if not devices:
@@ -212,7 +212,7 @@ def _detect_pico_usb_info() -> Dict[str, _BoardUsbInfo]:
     return boards
 
 
-def _detect_pico_serial_ports() -> Dict[str, _BoardSerialInfo]:
+def _detect_pico_serial_ports() -> dict[str, _BoardSerialInfo]:
     """Finds the serial com port associated with each Raspberry Pi Pico."""
     boards = {}
     all_devs = serial.tools.list_ports.comports()

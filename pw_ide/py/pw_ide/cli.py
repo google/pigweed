@@ -17,7 +17,7 @@ import argparse
 import enum
 from inspect import cleandoc
 import re
-from typing import Any, Callable, Dict, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
 from pw_ide.commands import (
     cmd_cpp,
@@ -383,7 +383,7 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
-def _dispatch_command(func: Callable, **kwargs: Dict[str, Any]) -> int:
+def _dispatch_command(func: Callable, **kwargs: dict[str, Any]) -> int:
     """Dispatch arguments to a subcommand handler.
 
     Each CLI subcommand is handled by handler function, which is registered

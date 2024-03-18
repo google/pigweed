@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 
 from pathlib import Path
-from typing import Any, Optional, Union, Dict
+from typing import Any, Optional, Union
 
 from pw_emu.core import (
     AlreadyRunning,
@@ -189,7 +189,7 @@ class Emulator:
         """Performs a software reset."""
         self._c().reset()
 
-    def list_properties(self, path: str) -> list[Dict]:
+    def list_properties(self, path: str) -> list[dict]:
         """Returns the property list for an emulator object.
 
         The object is identified by a full path. The path is

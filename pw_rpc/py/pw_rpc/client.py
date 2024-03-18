@@ -20,7 +20,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -82,7 +81,7 @@ class PendingRpcs:
     """Tracks pending RPCs and encodes outgoing RPC packets."""
 
     def __init__(self) -> None:
-        self._pending: Dict[PendingRpc, _PendingRpcMetadata] = {}
+        self._pending: dict[PendingRpc, _PendingRpcMetadata] = {}
         # We skip call_id = 0 in order to avoid LEGACY_OPEN_CALL_ID.
         self._next_call_id: int = 1
 

@@ -18,7 +18,7 @@ from datetime import datetime
 import json
 import logging
 import tempfile
-from typing import Any, Dict, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, Optional
 
 
 def all_loggers() -> Iterator[logging.Logger]:
@@ -118,7 +118,7 @@ def setup_python_logging(
 
 
 def log_record_to_json(record: logging.LogRecord) -> str:
-    log_dict: Dict[str, Any] = {}
+    log_dict: dict[str, Any] = {}
     log_dict["message"] = record.getMessage()
     log_dict["levelno"] = record.levelno
     log_dict["levelname"] = record.levelname

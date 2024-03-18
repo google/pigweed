@@ -15,7 +15,7 @@
 
 import enum
 import hashlib
-from typing import Dict, Iterable
+from typing import Iterable
 
 from pw_software_update.tuf_pb2 import (
     CommonMetadata,
@@ -62,7 +62,7 @@ def gen_target_file(
 
 
 def gen_targets_metadata(
-    target_payloads: Dict[str, bytes],
+    target_payloads: dict[str, bytes],
     hash_funcs: Iterable['HashFunction.V'] = DEFAULT_HASHES,
     version: int = DEFAULT_METADATA_VERSION,
 ) -> TargetsMetadata:

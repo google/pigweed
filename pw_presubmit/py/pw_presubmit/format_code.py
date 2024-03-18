@@ -34,7 +34,6 @@ import tempfile
 from typing import (
     Callable,
     Collection,
-    Dict,
     Iterable,
     NamedTuple,
     Optional,
@@ -121,7 +120,7 @@ def _diff_formatted(
 
 def _check_files(
     files, formatter: FormatterT, dry_run: bool = False
-) -> Dict[Path, str]:
+) -> dict[Path, str]:
     errors = {}
 
     for path in files:
@@ -134,7 +133,7 @@ def _check_files(
 
 def _make_formatting_diff_dict(
     diffs: Iterable[FormattedDiff],
-) -> Dict[Path, str]:
+) -> dict[Path, str]:
     return {
         result.file_path: (
             result.diff if result.ok else str(result.error_message)
@@ -145,13 +144,13 @@ def _make_formatting_diff_dict(
 
 def _make_format_fix_error_output_dict(
     statuses: Iterable[tuple[Path, FormatFixStatus]],
-) -> Dict[Path, str]:
+) -> dict[Path, str]:
     return {
         file_path: str(status.error_message) for file_path, status in statuses
     }
 
 
-def clang_format_check(ctx: _Context) -> Dict[Path, str]:
+def clang_format_check(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     formatter = ClangFormatFormatter(tool_runner=PresubmitToolRunner())
     return _make_formatting_diff_dict(
@@ -159,7 +158,7 @@ def clang_format_check(ctx: _Context) -> Dict[Path, str]:
     )
 
 
-def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
+def clang_format_fix(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     formatter = ClangFormatFormatter(tool_runner=PresubmitToolRunner())
     return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
@@ -185,7 +184,7 @@ def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:
     ).stdout
 
 
-def typescript_format_check(ctx: _Context) -> Dict[Path, str]:
+def typescript_format_check(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         ctx.paths,
@@ -194,13 +193,13 @@ def typescript_format_check(ctx: _Context) -> Dict[Path, str]:
     )
 
 
-def typescript_format_fix(ctx: _Context) -> Dict[Path, str]:
+def typescript_format_fix(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     print_format_fix(_typescript_format(*ctx.paths, '--', '--write'))
     return {}
 
 
-def check_gn_format(ctx: _Context) -> Dict[Path, str]:
+def check_gn_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         ctx.paths,
@@ -214,15 +213,15 @@ def check_gn_format(ctx: _Context) -> Dict[Path, str]:
     )
 
 
-def fix_gn_format(ctx: _Context) -> Dict[Path, str]:
+def fix_gn_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     log_run(['gn', 'format', *ctx.paths], check=True)
     return {}
 
 
-def check_bazel_format(ctx: _Context) -> Dict[Path, str]:
+def check_bazel_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    errors: Dict[Path, str] = {}
+    errors: dict[Path, str] = {}
 
     def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
         # buildifier doesn't have an option to output the changed file, so
@@ -244,7 +243,7 @@ def check_bazel_format(ctx: _Context) -> Dict[Path, str]:
     return result
 
 
-def fix_bazel_format(ctx: _Context) -> Dict[Path, str]:
+def fix_bazel_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     errors = {}
     for path in ctx.paths:
@@ -271,15 +270,15 @@ def fix_bazel_format(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def check_owners_format(ctx: _Context) -> Dict[Path, str]:
+def check_owners_format(ctx: _Context) -> dict[Path, str]:
     return owners_checks.run_owners_checks(ctx.paths)
 
 
-def fix_owners_format(ctx: _Context) -> Dict[Path, str]:
+def fix_owners_format(ctx: _Context) -> dict[Path, str]:
     return owners_checks.format_owners_file(ctx.paths)
 
 
-def check_go_format(ctx: _Context) -> Dict[Path, str]:
+def check_go_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         ctx.paths,
@@ -290,7 +289,7 @@ def check_go_format(ctx: _Context) -> Dict[Path, str]:
     )
 
 
-def fix_go_format(ctx: _Context) -> Dict[Path, str]:
+def fix_go_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     log_run(['gofmt', '-w', *ctx.paths], check=True)
     return {}
@@ -308,11 +307,11 @@ def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
 
 
-def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
+def check_py_format_yapf(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     process = _yapf('--diff', *ctx.paths)
 
-    errors: Dict[Path, str] = {}
+    errors: dict[Path, str] = {}
 
     if process.stdout:
         raw_diff = process.stdout.decode(errors='replace')
@@ -333,7 +332,7 @@ def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
+def fix_py_format_yapf(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     print_format_fix(_yapf('--in-place', *ctx.paths, check=True).stdout)
     return {}
@@ -392,9 +391,9 @@ def _black_multiple_files(ctx: _Context) -> tuple[str, ...]:
     return tuple(changed_paths)
 
 
-def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
+def check_py_format_black(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    errors: Dict[Path, str] = {}
+    errors: dict[Path, str] = {}
 
     # Run black --check on the full list of paths and then only run black
     # individually on the files that black found issue with.
@@ -427,9 +426,9 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
     return result
 
 
-def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
+def fix_py_format_black(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    errors: Dict[Path, str] = {}
+    errors: dict[Path, str] = {}
 
     # Run black --check on the full list of paths and then only run black
     # individually on the files that black found issue with.
@@ -449,7 +448,7 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def check_py_format(ctx: _Context) -> Dict[Path, str]:
+def check_py_format(ctx: _Context) -> dict[Path, str]:
     if ctx.format_options.python_formatter == 'black':
         return check_py_format_black(ctx)
     if ctx.format_options.python_formatter == 'yapf':
@@ -457,7 +456,7 @@ def check_py_format(ctx: _Context) -> Dict[Path, str]:
     raise ValueError(ctx.format_options.python_formatter)
 
 
-def fix_py_format(ctx: _Context) -> Dict[Path, str]:
+def fix_py_format(ctx: _Context) -> dict[Path, str]:
     if ctx.format_options.python_formatter == 'black':
         return fix_py_format_black(ctx)
     if ctx.format_options.python_formatter == 'yapf':
@@ -468,7 +467,7 @@ def fix_py_format(ctx: _Context) -> Dict[Path, str]:
 _TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
 
 
-def _check_trailing_space(paths: Iterable[Path], fix: bool) -> Dict[Path, str]:
+def _check_trailing_space(paths: Iterable[Path], fix: bool) -> dict[Path, str]:
     """Checks for and optionally removes trailing whitespace."""
     errors = {}
 
@@ -495,7 +494,7 @@ def _json_error(exc: json.JSONDecodeError, path: Path) -> str:
     return f'{path}: {exc.msg} {exc.lineno}:{exc.colno}\n'
 
 
-def check_json_format(ctx: _Context) -> Dict[Path, str]:
+def check_json_format(ctx: _Context) -> dict[Path, str]:
     errors = {}
 
     for path in ctx.paths:
@@ -512,7 +511,7 @@ def check_json_format(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def fix_json_format(ctx: _Context) -> Dict[Path, str]:
+def fix_json_format(ctx: _Context) -> dict[Path, str]:
     errors = {}
     for path in ctx.paths:
         orig = path.read_bytes()
@@ -528,16 +527,16 @@ def fix_json_format(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def check_trailing_space(ctx: _Context) -> Dict[Path, str]:
+def check_trailing_space(ctx: _Context) -> dict[Path, str]:
     return _check_trailing_space(ctx.paths, fix=False)
 
 
-def fix_trailing_space(ctx: _Context) -> Dict[Path, str]:
+def fix_trailing_space(ctx: _Context) -> dict[Path, str]:
     _check_trailing_space(ctx.paths, fix=True)
     return {}
 
 
-def rst_format_check(ctx: _Context) -> Dict[Path, str]:
+def rst_format_check(ctx: _Context) -> dict[Path, str]:
     errors = {}
     for path in ctx.paths:
         result = reformat_rst(path, diff=True, in_place=False)
@@ -546,7 +545,7 @@ def rst_format_check(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def rst_format_fix(ctx: _Context) -> Dict[Path, str]:
+def rst_format_fix(ctx: _Context) -> dict[Path, str]:
     errors = {}
     for path in ctx.paths:
         result = reformat_rst(path, diff=True, in_place=True)
@@ -556,7 +555,7 @@ def rst_format_fix(ctx: _Context) -> Dict[Path, str]:
 
 
 def print_format_check(
-    errors: Dict[Path, str],
+    errors: dict[Path, str],
     show_fix_commands: bool,
     show_summary: bool = True,
     colors: Optional[bool] = None,
@@ -605,8 +604,8 @@ def print_format_fix(stdout: bytes):
 class CodeFormat(NamedTuple):
     language: str
     filter: FileFilter
-    check: Callable[[_Context], Dict[Path, str]]
-    fix: Callable[[_Context], Dict[Path, str]]
+    check: Callable[[_Context], dict[Path, str]]
+    fix: Callable[[_Context], dict[Path, str]]
 
     @property
     def extensions(self):
@@ -831,7 +830,7 @@ class CodeFormatter:
         package_root: Optional[Path] = None,
     ):
         self.root = root
-        self._formats: Dict[CodeFormat, list] = collections.defaultdict(list)
+        self._formats: dict[CodeFormat, list] = collections.defaultdict(list)
         self.root_output_dir = output_dir
         self.package_root = package_root or output_dir / 'packages'
         self._format_options = FormatOptions.load()
@@ -865,9 +864,9 @@ class CodeFormatter:
             format_options=self._format_options,
         )
 
-    def check(self) -> Dict[Path, str]:
+    def check(self) -> dict[Path, str]:
         """Returns {path: diff} for files with incorrect formatting."""
-        errors: Dict[Path, str] = {}
+        errors: dict[Path, str] = {}
 
         for code_format, files in self._formats.items():
             _LOG.debug('Checking %s', ', '.join(str(f) for f in files))
@@ -875,9 +874,9 @@ class CodeFormatter:
 
         return collections.OrderedDict(sorted(errors.items()))
 
-    def fix(self) -> Dict[Path, str]:
+    def fix(self) -> dict[Path, str]:
         """Fixes format errors for supported files in place."""
-        all_errors: Dict[Path, str] = {}
+        all_errors: dict[Path, str] = {}
         for code_format, files in self._formats.items():
             errors = code_format.fix(self._context(code_format))
             if errors:

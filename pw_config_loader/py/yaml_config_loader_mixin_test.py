@@ -15,7 +15,7 @@
 
 from pathlib import Path
 import tempfile
-from typing import Any, Dict
+from typing import Any
 import unittest
 
 from pw_config_loader import yaml_config_loader_mixin
@@ -26,7 +26,7 @@ import yaml
 
 class YamlConfigLoader(yaml_config_loader_mixin.YamlConfigLoaderMixin):
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         return self._config
 
 
@@ -36,7 +36,7 @@ class TestOneFile(unittest.TestCase):
     def setUp(self):
         self._title = 'title'
 
-    def init(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def init(self, config: dict[str, Any]) -> dict[str, Any]:
         loader = YamlConfigLoader()
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder, 'foo.yaml')
@@ -65,10 +65,10 @@ class TestMultipleFiles(unittest.TestCase):
 
     def init(
         self,
-        project_config: Dict[str, Any],
-        project_user_config: Dict[str, Any],
-        user_config: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        project_config: dict[str, Any],
+        project_user_config: dict[str, Any],
+        user_config: dict[str, Any],
+    ) -> dict[str, Any]:
         """Write config files then read and parse them."""
 
         loader = YamlConfigLoader()
@@ -138,7 +138,7 @@ class TestNestedTitle(unittest.TestCase):
     def setUp(self):
         self._title = ('title', 'subtitle', 'subsubtitle', 'subsubsubtitle')
 
-    def init(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def init(self, config: dict[str, Any]) -> dict[str, Any]:
         loader = YamlConfigLoader()
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder, 'foo.yaml')
@@ -170,7 +170,7 @@ class CustomOverloadYamlConfigLoader(
     """Custom config loader that implements handle_overloaded_value()."""
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         return self._config
 
     def handle_overloaded_value(  # pylint: disable=no-self-use
@@ -207,10 +207,10 @@ class TestOverloading(unittest.TestCase):
 
     def init(
         self,
-        project_config: Dict[str, Any],
-        project_user_config: Dict[str, Any],
-        user_config: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        project_config: dict[str, Any],
+        project_user_config: dict[str, Any],
+        user_config: dict[str, Any],
+    ) -> dict[str, Any]:
         """Write config files then read and parse them."""
 
         loader = CustomOverloadYamlConfigLoader()

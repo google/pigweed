@@ -16,7 +16,7 @@
 import inspect
 import logging
 import textwrap
-from typing import Any, Callable, Dict, Iterable, Optional, Type
+from typing import Any, Callable, Iterable, Optional, Type
 
 from dataclasses import dataclass
 from pw_status import Status
@@ -209,7 +209,7 @@ class _UnaryMethodClient(_MethodClient):
         on_completed: Optional[OnCompletedCallback] = None,
         on_error: Optional[OnErrorCallback] = None,
         *,
-        request_args: Optional[Dict[str, Any]] = None,
+        request_args: Optional[dict[str, Any]] = None,
         timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
@@ -229,7 +229,7 @@ class _UnaryMethodClient(_MethodClient):
         on_completed: Optional[OnCompletedCallback] = None,
         on_error: Optional[OnErrorCallback] = None,
         *,
-        request_args: Optional[Dict[str, Any]] = None,
+        request_args: Optional[dict[str, Any]] = None,
     ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
         return self._start_call(
@@ -251,7 +251,7 @@ class _ServerStreamingMethodClient(_MethodClient):
         on_completed: Optional[OnCompletedCallback] = None,
         on_error: Optional[OnErrorCallback] = None,
         *,
-        request_args: Optional[Dict[str, Any]] = None,
+        request_args: Optional[dict[str, Any]] = None,
         timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> ServerStreamingCall:
         """Invokes the server streaming RPC and returns a call object."""
@@ -271,7 +271,7 @@ class _ServerStreamingMethodClient(_MethodClient):
         on_completed: Optional[OnCompletedCallback] = None,
         on_error: Optional[OnErrorCallback] = None,
         *,
-        request_args: Optional[Dict[str, Any]] = None,
+        request_args: Optional[dict[str, Any]] = None,
     ) -> ServerStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 

@@ -24,7 +24,7 @@ from pathlib import Path
 import pprint
 import re
 import shutil
-from typing import Any, Dict, Optional, Iterable
+from typing import Any, Optional, Iterable
 
 _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
 
@@ -93,7 +93,7 @@ class PythonPackage:
     tests: list[Path]
     inputs: list[Path]
     gn_target_name: str = ''
-    generate_setup: Optional[Dict] = None
+    generate_setup: Optional[dict] = None
     config: Optional[configparser.ConfigParser] = None
 
     @staticmethod
@@ -141,7 +141,7 @@ class PythonPackage:
             return None
         return setup_cfg[0]
 
-    def as_dict(self) -> Dict[Any, Any]:
+    def as_dict(self) -> dict[Any, Any]:
         """Return a dict representation of this class."""
         self_dict = asdict(self)
         if self.config:

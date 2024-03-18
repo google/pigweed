@@ -17,7 +17,7 @@ import enum
 from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, cast, Dict, Literal, Optional, Union
+from typing import Any, cast, Literal, Optional, Union
 import yaml
 
 from pw_cli.env import pigweed_environment
@@ -41,11 +41,11 @@ class SupportedEditor(enum.Enum):
     VSCODE = 'vscode'
 
 
-_DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
+_DEFAULT_SUPPORTED_EDITORS: dict[SupportedEditorName, bool] = {
     'vscode': True,
 }
 
-_DEFAULT_CONFIG: Dict[str, Any] = {
+_DEFAULT_CONFIG: dict[str, Any] = {
     'cascade_targets': False,
     'clangd_alternate_path': None,
     'clangd_additional_query_drivers': [],
@@ -115,7 +115,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
         project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
         user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
-        default_config: Optional[Dict[str, Any]] = None,
+        default_config: Optional[dict[str, Any]] = None,
     ) -> None:
         self.config_init(
             config_section_title='pw_ide',
@@ -308,7 +308,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return ','.join(self.clangd_query_drivers(host_clang_cc_path))
 
     @property
-    def editors(self) -> Dict[str, bool]:
+    def editors(self) -> dict[str, bool]:
         """Enable or disable automated support for editors.
 
         Automatic support for some editors is provided by ``pw_ide``, which is

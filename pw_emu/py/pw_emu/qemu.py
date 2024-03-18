@@ -23,7 +23,7 @@ import socket
 import sys
 
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
 from pw_emu.core import (
     ConfigError,
@@ -63,7 +63,7 @@ class QmpClient:
         # subsequent 'return' response.
         self.request('qmp_capabilities')
 
-    def request(self, cmd: str, args: Optional[Dict[str, Any]] = None) -> Any:
+    def request(self, cmd: str, args: Optional[dict[str, Any]] = None) -> Any:
         """Issue a command using the qmp interface.
 
         Returns a map with the response or None if there is no
@@ -71,7 +71,7 @@ class QmpClient:
 
         """
 
-        req: Dict[str, Any] = {'execute': cmd}
+        req: dict[str, Any] = {'execute': cmd}
         if args:
             req['arguments'] = args
         _QMP_LOG.debug(' -> {json.dumps(cmd)}')
@@ -97,7 +97,7 @@ class QemuLauncher(Launcher):
             'compat_monitor1': 'monitor',
             'gdb': 'gdb',
         }
-        self._chardevs: Dict[str, Any] = {}
+        self._chardevs: dict[str, Any] = {}
         self._qmp_init_sock: Optional[socket.socket] = None
 
     def _set_qemu_channel_tcp(self, name: str, filename: str) -> None:
@@ -172,7 +172,7 @@ class QemuLauncher(Launcher):
             val = self._get_channels_config(name, opt)
         return val
 
-    def _configure_serial_channels(self, serials: Dict) -> None:
+    def _configure_serial_channels(self, serials: dict) -> None:
         """Create "standard" serial devices.
 
         We can't control the serial allocation number for "standard"

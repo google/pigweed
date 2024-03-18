@@ -13,7 +13,7 @@
 # the License.
 """Toml config file loader mixin."""
 
-from typing import Any, Dict
+from typing import Any
 
 import toml  # type: ignore
 
@@ -46,5 +46,5 @@ class TomlConfigLoaderMixin(YamlConfigLoaderMixin):
 
     def _load_config_from_string(  # pylint: disable=no-self-use
         self, file_contents: str
-    ) -> list[Dict[Any, Any]]:
+    ) -> list[dict[Any, Any]]:
         return [toml.loads(file_contents)]

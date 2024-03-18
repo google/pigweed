@@ -19,7 +19,7 @@ import logging
 import os
 import pathlib
 import shutil
-from typing import Dict, Optional, Sequence
+from typing import Optional, Sequence
 
 from pw_env_setup import config_file
 
@@ -81,7 +81,7 @@ class Package:
         return []
 
 
-_PACKAGES: Dict[str, Package] = {}
+_PACKAGES: dict[str, Package] = {}
 
 
 def register(package_class: type, *args, **kwargs) -> None:

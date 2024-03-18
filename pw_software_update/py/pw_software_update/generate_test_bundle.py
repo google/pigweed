@@ -16,7 +16,7 @@
 import argparse
 import subprocess
 import sys
-from typing import Dict, Optional
+from typing import Optional
 
 from pw_software_update import dev_sign, keys, metadata, root_metadata
 from pw_software_update.update_bundle_pb2 import Manifest, UpdateBundle
@@ -132,7 +132,7 @@ class Bundle:
         self._targets_prod_key = serialization.load_pem_private_key(
             TEST_TARGETS_PROD_KEY.encode(), None
         )
-        self._payloads: Dict[str, bytes] = {}
+        self._payloads: dict[str, bytes] = {}
         # Adds some update files.
         for key, value in TARGET_FILES.items():
             self.add_payload(key, value)

@@ -49,7 +49,6 @@ import subprocess
 import time
 from typing import (
     Callable,
-    Dict,
     Generator,
     NoReturn,
     Optional,
@@ -190,7 +189,7 @@ _BAZEL_ELAPSED_TIME = re.compile(
 
 def execute_command_no_logging(
     command: list,
-    env: Dict,
+    env: dict,
     recipe: BuildRecipe,
     # pylint: disable=unused-argument
     logger: logging.Logger = _LOG,
@@ -218,7 +217,7 @@ def execute_command_no_logging(
 
 def execute_command_with_logging(
     command: list,
-    env: Dict,
+    env: dict,
     recipe: BuildRecipe,
     logger: logging.Logger = _LOG,
     line_processed_callback: Optional[Callable[[BuildRecipe], None]] = None,
@@ -522,7 +521,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         keep_going: bool = False,
         abort_callback: Callable = _exit,
         execute_command: Callable[
-            [list, Dict, BuildRecipe, logging.Logger, Optional[Callable]], bool
+            [list, dict, BuildRecipe, logging.Logger, Optional[Callable]], bool
         ] = execute_command_no_logging,
         charset: ProjectBuilderCharset = ASCII_CHARSET,
         colors: bool = True,
@@ -748,7 +747,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
     def run_build(
         self,
         cfg: BuildRecipe,
-        env: Dict,
+        env: dict,
         index_message: Optional[str] = '',
     ) -> bool:
         """Run a single build config."""

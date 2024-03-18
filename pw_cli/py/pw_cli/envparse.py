@@ -18,7 +18,6 @@ from dataclasses import dataclass
 import os
 from typing import (
     Callable,
-    Dict,
     Generic,
     IO,
     Literal,
@@ -96,7 +95,7 @@ class EnvironmentParser:
             error_on_unrecognized = varname not in os.environ
         self._error_on_unrecognized: bool = error_on_unrecognized
 
-        self._variables: Dict[str, VariableDescriptor] = {}
+        self._variables: dict[str, VariableDescriptor] = {}
         self._allowed_suffixes: list[str] = []
 
     def add_var(
@@ -136,7 +135,7 @@ class EnvironmentParser:
         """Parses known environment variables into a namespace.
 
         Args:
-            env: Dictionary of environment variables. Defaults to os.environ.
+            env: dictionary of environment variables. Defaults to os.environ.
 
         Raises:
             EnvironmentValueError: If the type conversion fails.

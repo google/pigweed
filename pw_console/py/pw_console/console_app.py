@@ -27,7 +27,7 @@ import sys
 import tempfile
 import time
 from threading import Thread
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -159,7 +159,7 @@ class ConsoleApp:
         extra_completers=None,
         prefs=None,
         floating_window_plugins: Optional[
-            list[tuple[FloatingWindowPane, Dict]]
+            list[tuple[FloatingWindowPane, dict]]
         ] = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
@@ -171,7 +171,7 @@ class ConsoleApp:
         self._last_ui_update_time = time.time()
 
         self.http_server: Optional[socketserver.TCPServer] = None
-        self.html_files: Dict[str, str] = {}
+        self.html_files: dict[str, str] = {}
 
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():

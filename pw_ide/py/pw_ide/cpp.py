@@ -59,7 +59,6 @@ import sys
 from typing import (
     Any,
     cast,
-    Dict,
     Generator,
     Iterator,
     Optional,
@@ -101,7 +100,7 @@ class CppIdeFeaturesTarget:
     def __str__(self) -> str:
         return self.name
 
-    def serialized(self) -> Dict[str, Any]:
+    def serialized(self) -> dict[str, Any]:
         return {
             **asdict(self),
             **{
@@ -121,15 +120,15 @@ class CppIdeFeaturesTarget:
         )
 
 
-CppCompilationDatabaseFileHashes = Dict[Path, str]
-CppCompilationDatabaseFileTargets = Dict[Path, list[CppIdeFeaturesTarget]]
+CppCompilationDatabaseFileHashes = dict[Path, str]
+CppCompilationDatabaseFileTargets = dict[Path, list[CppIdeFeaturesTarget]]
 
 
 @dataclass
 class CppIdeFeaturesData:
     """State data about C++ code analysis features."""
 
-    targets: Dict[str, CppIdeFeaturesTarget] = field(default_factory=dict)
+    targets: dict[str, CppIdeFeaturesTarget] = field(default_factory=dict)
     current_target: Optional[CppIdeFeaturesTarget] = None
     compdb_hashes: CppCompilationDatabaseFileHashes = field(
         default_factory=dict
@@ -138,7 +137,7 @@ class CppIdeFeaturesData:
         default_factory=dict
     )
 
-    def serialized(self) -> Dict[str, Any]:
+    def serialized(self) -> dict[str, Any]:
         return {
             'current_target': self.current_target.serialized()
             if self.current_target is not None
@@ -221,12 +220,12 @@ class CppIdeFeaturesState:
             json.dump(data.serialized(), file, indent=2)
 
     @property
-    def targets(self) -> Dict[str, CppIdeFeaturesTarget]:
+    def targets(self) -> dict[str, CppIdeFeaturesTarget]:
         with self._file() as state:
             return state.targets
 
     @targets.setter
-    def targets(self, new_targets: Dict[str, CppIdeFeaturesTarget]) -> None:
+    def targets(self, new_targets: dict[str, CppIdeFeaturesTarget]) -> None:
         with self._file() as state:
             state.targets = new_targets
 
@@ -563,7 +562,7 @@ class CppCompileCommand:
 
     @classmethod
     def from_dict(
-        cls, compile_command_dict: Dict[str, Any]
+        cls, compile_command_dict: dict[str, Any]
     ) -> 'CppCompileCommand':
         return cls(
             # We want to let possible Nones through to raise at runtime.
@@ -576,7 +575,7 @@ class CppCompileCommand:
 
     @classmethod
     def try_from_dict(
-        cls, compile_command_dict: Dict[str, Any]
+        cls, compile_command_dict: dict[str, Any]
     ) -> Optional['CppCompileCommand']:
         try:
             return cls.from_dict(compile_command_dict)
@@ -747,7 +746,7 @@ def infer_target(
 
 
 LoadableToCppCompilationDatabase = Union[
-    list[Dict[str, Any]], str, TextIOBase, Path
+    list[dict[str, Any]], str, TextIOBase, Path
 ]
 
 
@@ -845,7 +844,7 @@ class CppCompilationDatabase:
         You can provide a JSON file handle or path, a JSON string, or a native
         Python data structure that matches the format (list of dicts).
         """
-        db_as_dicts: list[Dict[str, Any]]
+        db_as_dicts: list[dict[str, Any]]
         file_path = None
 
         if isinstance(compdb_to_load, list):
@@ -985,7 +984,7 @@ class CppCompilationDatabasesMap:
 
     def __init__(self, settings: PigweedIdeSettings):
         self.settings = settings
-        self._dbs: Dict[str, CppCompilationDatabase] = dict()
+        self._dbs: dict[str, CppCompilationDatabase] = dict()
 
     def __len__(self) -> int:
         return len(self._dbs)

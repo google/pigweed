@@ -21,7 +21,7 @@ import shlex
 import subprocess
 import sys
 import pathlib
-from typing import Dict, Optional
+from typing import Optional
 
 # Need to be able to run without pw_cli installed in the virtualenv.
 try:
@@ -88,7 +88,7 @@ def argument_parser(
 _ENV_REGEX = re.compile(r'(\w+)(\+)?=(.+)')
 
 
-def apply_env_var(string: str, env: Dict[str, str]) -> None:
+def apply_env_var(string: str, env: dict[str, str]) -> None:
     """Update an environment map with provided a key-value pair.
 
     Pairs are accepted in two forms:

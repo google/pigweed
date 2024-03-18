@@ -25,7 +25,7 @@ import operator
 from pathlib import Path
 import re
 from threading import Thread
-from typing import Callable, Dict, Optional, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -88,7 +88,7 @@ class LogView:
         self.search_validator = RegexValidator()
 
         # Container for each log_index matched by active searches.
-        self.search_matched_lines: Dict[int, int] = {}
+        self.search_matched_lines: dict[int, int] = {}
         # Background task to find historical matched lines.
         self.search_match_count_task: Optional[asyncio.Task] = None
 

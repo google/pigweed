@@ -19,7 +19,7 @@ import argparse
 import itertools
 import sys
 from pathlib import Path
-from typing import Dict, Iterator, Optional, Union
+from typing import Iterator, Optional, Union
 
 import pkg_resources
 
@@ -141,10 +141,10 @@ def diff(
     removed_requirements = expected_requirements - actual_requirements
     added_requirements = actual_requirements - expected_requirements
 
-    removed_packages: Dict[pkg_resources.Requirement, str] = {}
-    updated_packages: Dict[pkg_resources.Requirement, str] = {}
-    new_packages: Dict[pkg_resources.Requirement, str] = {}
-    reformatted_packages: Dict[pkg_resources.Requirement, str] = {}
+    removed_packages: dict[pkg_resources.Requirement, str] = {}
+    updated_packages: dict[pkg_resources.Requirement, str] = {}
+    new_packages: dict[pkg_resources.Requirement, str] = {}
+    reformatted_packages: dict[pkg_resources.Requirement, str] = {}
 
     for line in expected_lines:
         requirement = pkg_resources.Requirement.parse(line)

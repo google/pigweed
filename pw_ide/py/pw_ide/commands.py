@@ -19,7 +19,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import cast, Dict, Optional, Set
+from typing import cast, Optional, Set
 
 from pw_cli.env import pigweed_environment
 
@@ -317,7 +317,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     processed_compdb_files: list[Path] = []
 
     # Associate processed compilation databases with their original sources
-    all_processed_compdbs: Dict[Path, CppCompilationDatabasesMap] = {}
+    all_processed_compdbs: dict[Path, CppCompilationDatabasesMap] = {}
 
     # Get a list of paths to search for compilation databases.
     compdb_search_paths: list[

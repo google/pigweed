@@ -24,7 +24,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from unittest.mock import patch
 
@@ -51,7 +51,7 @@ class ConfigHelperWithLauncher(ConfigHelper):
 class TestInvalidTarget(ConfigHelperWithLauncher):
     """Check that InvalidTarget is raised with an empty config."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',
@@ -68,7 +68,7 @@ class TestInvalidTarget(ConfigHelperWithLauncher):
 class TestStart(ConfigHelperWithLauncher):
     """Start tests for valid config."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',
@@ -122,7 +122,7 @@ class TestStart(ConfigHelperWithLauncher):
 class TestPrePostStartCmds(ConfigHelperWithLauncher):
     """Tests for configurations with pre-start commands."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',
@@ -197,7 +197,7 @@ class TestPrePostStartCmds(ConfigHelperWithLauncher):
 class TestStop(ConfigHelperWithLauncher):
     """Stop tests for valid config."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',
@@ -231,7 +231,7 @@ class TestStop(ConfigHelperWithLauncher):
 class TestChannels(ConfigHelperWithLauncher):
     """Test Connector channels APIs."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'emulators': {
             'mock-emu': {
                 'launcher': 'mock_emu_frontend.MockEmuLauncher',
@@ -293,7 +293,7 @@ class TestChannels(ConfigHelperWithLauncher):
 class TestTargetFragments(unittest.TestCase):
     """Tests for configurations using target fragments."""
 
-    _config_templ: Dict[str, Any] = {
+    _config_templ: dict[str, Any] = {
         'pw': {
             'pw_emu': {
                 'target_files': [],
@@ -306,7 +306,7 @@ class TestTargetFragments(unittest.TestCase):
         }
     }
 
-    _tf1_config: Dict[str, Any] = {
+    _tf1_config: dict[str, Any] = {
         'targets': {
             'test-target1': {},
             'test-target': {
@@ -315,7 +315,7 @@ class TestTargetFragments(unittest.TestCase):
         }
     }
 
-    _tf2_config: Dict[str, Any] = {'targets': {'test-target2': {}}}
+    _tf2_config: dict[str, Any] = {'targets': {'test-target2': {}}}
 
     def setUp(self) -> None:
         with tempfile.NamedTemporaryFile(
@@ -397,7 +397,7 @@ class TestHandles(unittest.TestCase):
 class TestConfig(ConfigHelper):
     """Stop tests for valid config."""
 
-    _config: Dict[str, Any] = {
+    _config: dict[str, Any] = {
         'top': 'entry',
         'multi': {
             'level': {

@@ -28,7 +28,6 @@ from typing import (
     Callable,
     Collection,
     DefaultDict,
-    Dict,
     Iterable,
     OrderedDict,
     Set,
@@ -117,7 +116,7 @@ class OwnersFile:
 
     path: pathlib.Path
     original_lines: list[str]
-    sections: Dict[LineType, list[Line]]
+    sections: dict[LineType, list[Line]]
     formatted_lines: list[str]
 
     def __init__(self, path: pathlib.Path) -> None:
@@ -394,9 +393,9 @@ def _format_owners_file(owners_obj: OwnersFile) -> None:
 def _list_unwrapper(
     func: Callable[[OwnersFile], None],
     list_or_path: Union[Iterable[pathlib.Path], pathlib.Path],
-) -> Dict[pathlib.Path, str]:
+) -> dict[pathlib.Path, str]:
     """Decorator that accepts Paths or list of Paths and iterates as needed."""
-    errors: Dict[pathlib.Path, str] = {}
+    errors: dict[pathlib.Path, str] = {}
     if isinstance(list_or_path, Iterable):
         files = list_or_path
     else:

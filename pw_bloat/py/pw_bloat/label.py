@@ -18,7 +18,7 @@ The label module defines a class to store and manipulate size reports.
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Iterable, Dict, Sequence, Optional
+from typing import Iterable, Sequence, Optional
 import csv
 
 
@@ -49,7 +49,7 @@ class LabelInfo:
 class _LabelMap:
     """Private module to hold parent and child labels with their size."""
 
-    _label_map: Dict[str, Dict[str, LabelInfo]]
+    _label_map: dict[str, dict[str, LabelInfo]]
 
     def __init__(self):
         self._label_map = defaultdict(lambda: defaultdict(LabelInfo))
@@ -63,14 +63,14 @@ class _LabelMap:
         else:
             del self._label_map[parent_label]
 
-    def __getitem__(self, parent_label: str) -> Dict[str, LabelInfo]:
+    def __getitem__(self, parent_label: str) -> dict[str, LabelInfo]:
         """Indexing LabelMap using '[]' operators by specifying a label."""
         return self._label_map[parent_label]
 
     def __contains__(self, parent_label: str) -> bool:
         return parent_label in self._label_map
 
-    def map_items(self) -> Iterable[tuple[str, Dict[str, LabelInfo]]]:
+    def map_items(self) -> Iterable[tuple[str, dict[str, LabelInfo]]]:
         return self._label_map.items()
 
 
@@ -96,13 +96,13 @@ class _DataSource:
         if curr_label_info.exists_both is None:
             curr_label_info.exists_both = diff_exist
 
-    def __getitem__(self, parent_label: str) -> Dict[str, LabelInfo]:
+    def __getitem__(self, parent_label: str) -> dict[str, LabelInfo]:
         return self._ds_label_map[parent_label]
 
     def __contains__(self, parent_label: str) -> bool:
         return parent_label in self._ds_label_map
 
-    def label_map_items(self) -> Iterable[tuple[str, Dict[str, LabelInfo]]]:
+    def label_map_items(self) -> Iterable[tuple[str, dict[str, LabelInfo]]]:
         return self._ds_label_map.map_items()
 
 

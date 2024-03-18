@@ -20,7 +20,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Optional, Union
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -213,7 +213,7 @@ _DefaultArgsFunction = Callable[
 
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
-DEFAULT_PROTOC_ARGS: Dict[str, _DefaultArgsFunction] = {
+DEFAULT_PROTOC_ARGS: dict[str, _DefaultArgsFunction] = {
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,
     'nanopb_rpc': protoc_nanopb_rpc_args,

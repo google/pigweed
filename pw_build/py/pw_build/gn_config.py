@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections import deque
 from json import loads as json_loads, dumps as json_dumps
-from typing import Any, Deque, Dict, Iterable, Iterator, Optional, Set
+from typing import Any, Deque, Iterable, Iterator, Optional, Set
 
 from pw_build.gn_utils import GnLabel, MalformedGnError
 
@@ -145,7 +145,7 @@ class GnConfig:
 
     def to_json(self) -> str:
         """Returns a JSON representation of this config."""
-        obj: Dict[str, Any] = {}
+        obj: dict[str, Any] = {}
         if self.label:
             obj['label'] = str(self.label)
         for flag in GN_CONFIG_FLAGS + _INTERNAL_FLAGS:

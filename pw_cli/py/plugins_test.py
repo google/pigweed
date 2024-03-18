@@ -17,7 +17,7 @@ from pathlib import Path
 import sys
 import tempfile
 import types
-from typing import Dict, Iterator
+from typing import Iterator
 import unittest
 
 from pw_cli import plugins
@@ -32,7 +32,7 @@ def _with_docstring() -> int:
     return 456
 
 
-def _create_files(directory: str, files: Dict[str, str]) -> Iterator[Path]:
+def _create_files(directory: str, files: dict[str, str]) -> Iterator[Path]:
     for relative_path, contents in files.items():
         path = Path(directory) / relative_path
         path.parent.mkdir(exist_ok=True, parents=True)

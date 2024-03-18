@@ -27,7 +27,6 @@ import subprocess
 from typing import (
     BinaryIO,
     Callable,
-    Dict,
     Iterable,
     Iterator,
     NamedTuple,
@@ -137,10 +136,10 @@ class Database:
     def __init__(self, entries: Iterable[TokenizedStringEntry] = ()):
         """Creates a token database."""
         # The database dict stores each unique (token, string) entry.
-        self._database: Dict[_EntryKey, TokenizedStringEntry] = {}
+        self._database: dict[_EntryKey, TokenizedStringEntry] = {}
 
         # This is a cache for fast token lookup that is built as needed.
-        self._cache: Optional[Dict[int, list[TokenizedStringEntry]]] = None
+        self._cache: Optional[dict[int, list[TokenizedStringEntry]]] = None
 
         self.add(entries)
 
@@ -167,7 +166,7 @@ class Database:
         return db
 
     @property
-    def token_to_entries(self) -> Dict[int, list[TokenizedStringEntry]]:
+    def token_to_entries(self) -> dict[int, list[TokenizedStringEntry]]:
         """Returns a dict that maps tokens to a list of TokenizedStringEntry."""
         if self._cache is None:  # build cache token -> entry cache
             self._cache = collections.defaultdict(list)

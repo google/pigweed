@@ -133,6 +133,6 @@ PwExtraActionFilesSetInfo = provider(
 PwToolchainConfigInfo = provider(
     doc = "Additional metadata about the config of the pigweed toolchain.",
     fields = {
-        "action_to_files": "Dict[str, depset[File]]: A set of files required to execute a given action",
+        "action_to_files": "dict[str, depset[File]]: A set of files required to execute a given action",
     },
 )

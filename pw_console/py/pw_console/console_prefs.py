@@ -16,7 +16,7 @@
 import dataclasses
 import os
 from pathlib import Path
-from typing import Dict, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -94,7 +94,7 @@ class CodeSnippet:
     @staticmethod
     def from_yaml(
         title: str,
-        value: Union[str, Dict],
+        value: Union[str, dict],
         previous_description: Optional[str] = None,
     ) -> 'CodeSnippet':
         if isinstance(value, str):
@@ -263,7 +263,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             )
         return column_style
 
-    def pw_console_color_config(self) -> Dict[str, Dict]:
+    def pw_console_color_config(self) -> dict[str, dict]:
         column_colors = self._config.get('column_colors', {})
         theme_styles = generate_styles(self.ui_theme)
         style_classes = dict(theme_styles.style_rules)
@@ -278,10 +278,10 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('window_column_split_method', 'vertical')
 
     @property
-    def windows(self) -> Dict:
+    def windows(self) -> dict:
         return self._config.get('windows', {})
 
-    def set_windows(self, new_config: Dict) -> None:
+    def set_windows(self, new_config: dict) -> None:
         self._config['windows'] = new_config
 
     @property
@@ -289,7 +289,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return list(column_type for column_type in self.windows.keys())
 
     @property
-    def command_runner_position(self) -> Dict[str, int]:
+    def command_runner_position(self) -> dict[str, int]:
         position = self._config.get('command_runner', {}).get(
             'position', {'top': 3}
         )
@@ -308,7 +308,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('command_runner', {}).get('height', 10)
 
     @property
-    def user_key_bindings(self) -> Dict[str, list[str]]:
+    def user_key_bindings(self) -> dict[str, list[str]]:
         return self._config.get('key_bindings', {})
 
     def current_config_as_yaml(self) -> str:
@@ -367,11 +367,11 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return decorator
 
     @property
-    def snippets(self) -> Dict:
+    def snippets(self) -> dict:
         return self._config.get('snippets', {})
 
     @property
-    def user_snippets(self) -> Dict:
+    def user_snippets(self) -> dict:
         return self._config.get('user_snippets', {})
 
     def snippet_completions(self) -> list[CodeSnippet]:

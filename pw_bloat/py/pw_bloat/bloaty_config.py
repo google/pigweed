@@ -17,7 +17,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import BinaryIO, Dict, NamedTuple, Optional, TextIO
+from typing import BinaryIO, NamedTuple, Optional, TextIO
 
 import pw_cli.argument_types
 from elftools.elf import elffile  # type: ignore
@@ -89,7 +89,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
+def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[dict]:
     """
     Search for the special pw::bloat::config symbols in the ELF binary.
 
@@ -125,7 +125,7 @@ def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
     #      K:{ 'start':vm_start_address, 'end':vm_end_address }
     #    }
     #  }
-    memory_regions: Dict = {}
+    memory_regions: dict = {}
     for symbol in symtab_section.iter_symbols():
         match = _MEMORY_REGION_SYMBOL_RE.match(symbol.name)
         if not match:
@@ -171,7 +171,7 @@ def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
 
     # Translate the initial memory_regions dictionary to the tupled return
     # format, i.e. (start, end) values in the nested dictionary.
-    tupled_memory_regions: Dict = {}
+    tupled_memory_regions: dict = {}
     for region_name, ranges in memory_regions.items():
         if region_name not in tupled_memory_regions:
             tupled_memory_regions[region_name] = {}
@@ -189,7 +189,7 @@ def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
     return tupled_memory_regions
 
 
-def _parse_segments(parsed_elf_file: elffile.ELFFile) -> Dict:
+def _parse_segments(parsed_elf_file: elffile.ELFFile) -> dict:
     """
     Report all of the segment information from the ELF binary.
 
@@ -214,7 +214,7 @@ def _parse_segments(parsed_elf_file: elffile.ELFFile) -> Dict:
     return segments
 
 
-def _memory_regions_overlap(memory_regions: Dict) -> bool:
+def _memory_regions_overlap(memory_regions: dict) -> bool:
     """Returns where any memory regions overlap each other."""
     overlaps_detected = False
     for current_name, current_ranges in memory_regions.items():
@@ -252,7 +252,7 @@ def _memory_regions_overlap(memory_regions: Dict) -> bool:
     return overlaps_detected
 
 
-def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> Optional[Dict]:
+def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> Optional[dict]:
     """
     Processes an ELF file to look up what memory regions segments are in.
 
@@ -273,8 +273,8 @@ def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> Optional[Dict]:
 
 
 def map_segments_to_memory_regions(
-    segments: Dict, memory_regions: Dict
-) -> Dict:
+    segments: dict, memory_regions: dict
+) -> dict:
     """
     Maps segments to the virtual memory regions they reside in.
 
@@ -312,7 +312,7 @@ def map_segments_to_memory_regions(
     return segment_to_memory_region
 
 
-def generate_memoryregions_data_source(segment_to_memory_region: Dict) -> str:
+def generate_memoryregions_data_source(segment_to_memory_region: dict) -> str:
     output: list[str] = []
     output.append('custom_data_source: {')
     output.append('  name: "memoryregions"')

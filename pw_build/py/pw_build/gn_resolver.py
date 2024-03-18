@@ -23,7 +23,6 @@ import sys
 from pathlib import Path
 from typing import (
     Callable,
-    Dict,
     Iterable,
     Iterator,
     NamedTuple,
@@ -118,7 +117,7 @@ class Label:
 
 class _Artifact(NamedTuple):
     path: Path
-    variables: Dict[str, str]
+    variables: dict[str, str]
 
 
 # Matches a non-phony build statement.
@@ -362,7 +361,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
 
 
 # TODO: b/234886742 - Replace expressions with native GN features when possible.
-_FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
+_FUNCTIONS: dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
     'TARGET_OBJECTS': _target_objects,

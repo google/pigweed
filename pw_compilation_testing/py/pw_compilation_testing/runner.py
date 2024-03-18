@@ -21,7 +21,7 @@ import shlex
 import string
 import sys
 import subprocess
-from typing import Dict, Optional
+from typing import Optional
 
 import pw_cli.log
 
@@ -57,8 +57,8 @@ def find_cc_rule(toolchain_ninja_file: Path) -> Optional[str]:
     return None
 
 
-def _parse_ninja_variables(target_ninja_file: Path) -> Dict[str, str]:
-    variables: Dict[str, str] = {}
+def _parse_ninja_variables(target_ninja_file: Path) -> dict[str, str]:
+    variables: dict[str, str] = {}
 
     with target_ninja_file.open() as fd:
         for line in fd:
@@ -223,7 +223,7 @@ def _should_skip_test(base_command: str) -> bool:
 def _execute_test(
     test: TestCase,
     command: str,
-    variables: Dict[str, str],
+    variables: dict[str, str],
     all_tests: list[str],
 ) -> None:
     variables['in'] = str(test.source)

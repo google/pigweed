@@ -18,7 +18,7 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import Dict, IO, Union, Optional
+from typing import IO, Union, Optional
 
 import pw_cli.color
 import pw_cli.log
@@ -145,7 +145,7 @@ async def _kill_process_and_children(
 async def run_async(
     program: str,
     *args: str,
-    env: Optional[Dict[str, str]] = None,
+    env: Optional[dict[str, str]] = None,
     log_output: bool = False,
     timeout: Optional[float] = None,
 ) -> CompletedProcess:

@@ -19,7 +19,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path, PurePath, PurePosixPath
 from types import TracebackType
-from typing import Dict, IO, Iterable, Iterator, Optional, Type, Union
+from typing import IO, Iterable, Iterator, Optional, Type, Union
 
 from pw_build.gn_config import GnConfig, GN_CONFIG_FLAGS
 from pw_build.gn_target import GnTarget
@@ -62,8 +62,8 @@ class GnWriter:
         self._scopes: list[str] = []
         self._margin: str = ''
         self._needs_blank: bool = False
-        self.repos: Dict[str, str] = {}
-        self.aliases: Dict[str, str] = {}
+        self.repos: dict[str, str] = {}
+        self.aliases: dict[str, str] = {}
 
     def write_comment(self, comment: Optional[str] = None) -> None:
         """Adds a GN comment.

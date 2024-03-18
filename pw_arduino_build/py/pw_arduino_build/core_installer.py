@@ -21,7 +21,6 @@ import os
 from pathlib import Path
 import platform
 import shutil
-from typing import Dict
 
 try:
     from pw_arduino_build import file_operations
@@ -41,7 +40,7 @@ class ArduinoCoreInstallationFailed(Exception):
     """Exception raised when a given core failed to be installed."""
 
 
-_ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
+_ARDUINO_CORE_ARTIFACTS: dict[str, dict] = {
     # pylint: disable=line-too-long
     "teensy": {
         "all": {

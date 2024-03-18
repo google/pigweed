@@ -18,7 +18,7 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from typing import Dict, Iterable, Optional
+from typing import Iterable, Optional
 
 from pw_software_update import metadata
 from pw_software_update.tuf_pb2 import SignedRootMetadata, SignedTargetsMetadata
@@ -30,8 +30,8 @@ _LOG = logging.getLogger(__package__)
 def targets_from_directory(
     root_dir: Path,
     exclude: Iterable[Path] = tuple(),
-    remap_paths: Optional[Dict[Path, str]] = None,
-) -> Dict[str, Path]:
+    remap_paths: Optional[dict[Path, str]] = None,
+) -> dict[str, Path]:
     """Given a directory on dist, generate a dict of target names to files.
 
     Args:
@@ -107,7 +107,7 @@ def gen_empty_update_bundle(
 
 
 def gen_unsigned_update_bundle(
-    targets: Dict[Path, str],
+    targets: dict[Path, str],
     persist: Optional[Path] = None,
     targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
     root_metadata: Optional[SignedRootMetadata] = None,

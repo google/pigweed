@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 import mimetypes
 import http.server
-from typing import Dict, Callable
+from typing import Callable
 
 _LOG = logging.getLogger(__package__)
 
@@ -42,7 +42,7 @@ def pw_console_http_server(starting_port: int, handler: Callable) -> None:
 class ConsoleLogHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     """Request handler that serves files from pw_console.html package data."""
 
-    def __init__(self, html_files: Dict[str, str], *args, **kwargs):
+    def __init__(self, html_files: dict[str, str], *args, **kwargs):
         self.html_files = html_files
         super().__init__(*args, **kwargs)
 

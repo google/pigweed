@@ -32,7 +32,6 @@ import sys
 from typing import (
     Any,
     Callable,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -132,11 +131,11 @@ def tokenization_domains(elf) -> Iterator[str]:
         )
 
 
-def read_tokenizer_metadata(elf) -> Dict[str, int]:
+def read_tokenizer_metadata(elf) -> dict[str, int]:
     """Reads the metadata entries from an ELF."""
     sections = _elf_reader(elf).dump_section_contents(r'\.pw_tokenizer\.info')
 
-    metadata: Dict[str, int] = {}
+    metadata: dict[str, int] = {}
     if sections is not None:
         for key, value in struct.iter_unpack('12sI', sections):
             try:
@@ -236,7 +235,7 @@ def load_token_database(
     )
 
 
-def database_summary(db: tokens.Database) -> Dict[str, Any]:
+def database_summary(db: tokens.Database) -> dict[str, Any]:
     """Returns a simple report of properties of the database."""
     present = [entry for entry in db.entries() if not entry.date_removed]
     collisions = {
@@ -254,7 +253,7 @@ def database_summary(db: tokens.Database) -> Dict[str, Any]:
     )
 
 
-_DatabaseReport = Dict[str, Dict[str, Dict[str, Any]]]
+_DatabaseReport = dict[str, dict[str, dict[str, Any]]]
 
 
 def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:

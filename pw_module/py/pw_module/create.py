@@ -24,7 +24,7 @@ from pathlib import Path
 import re
 import sys
 
-from typing import Any, Dict, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Optional, Type, Union
 
 from pw_build import generate_modules_lists
 
@@ -270,11 +270,11 @@ class _BuildFile:
         """Defines a documentation target within the build file."""
 
 
-# TODO(frolv): The Dict here should be Dict[str, '_GnVal'] (i.e. _GnScope),
+# TODO(frolv): The Dict here should be dict[str, '_GnVal'] (i.e. _GnScope),
 # but mypy does not yet support recursive types:
 # https://github.com/python/mypy/issues/731
-_GnVal = Union[bool, int, str, list[str], Dict[str, Any]]
-_GnScope = Dict[str, _GnVal]
+_GnVal = Union[bool, int, str, list[str], dict[str, Any]]
+_GnScope = dict[str, _GnVal]
 
 
 class _GnBuildFile(_BuildFile):
@@ -558,7 +558,7 @@ class _BazelBuildFile(_BuildFile):
         file: _OutputFile,
         target_type: str,
         name: str,
-        keys: Dict[str, list[str]],
+        keys: dict[str, list[str]],
     ) -> None:
         file.line(f'{target_type}(')
 
@@ -641,7 +641,7 @@ class _CmakeBuildFile(_BuildFile):
         file: _OutputFile,
         target_type: str,
         name: str,
-        keys: Dict[str, list[str]],
+        keys: dict[str, list[str]],
     ) -> None:
         file.line(f'{target_type}({name}')
 
@@ -750,13 +750,13 @@ class _CcLanguageGenerator(_LanguageGenerator):
         return file
 
 
-_BUILD_FILES: Dict[str, Type[_BuildFile]] = {
+_BUILD_FILES: dict[str, Type[_BuildFile]] = {
     'bazel': _BazelBuildFile,
     'cmake': _CmakeBuildFile,
     'gn': _GnBuildFile,
 }
 
-_LANGUAGE_GENERATORS: Dict[str, Type[_LanguageGenerator]] = {
+_LANGUAGE_GENERATORS: dict[str, Type[_LanguageGenerator]] = {
     'cc': _CcLanguageGenerator,
 }
 

@@ -36,7 +36,6 @@ import os
 import subprocess
 
 from pathlib import Path
-from typing import Dict
 
 _ARM_COMPILER_PREFIX = 'arm-none-eabi'
 _ARM_COMPILER_NAME = _ARM_COMPILER_PREFIX + '-gcc'
@@ -95,8 +94,8 @@ def get_gcc_lib_dir(cflags: list[str]) -> Path:
     ).parent
 
 
-def get_compiler_info(cflags: list[str]) -> Dict[str, str]:
-    compiler_info: Dict[str, str] = {}
+def get_compiler_info(cflags: list[str]) -> dict[str, str]:
+    compiler_info: dict[str, str] = {}
     compiler_info['gcc_libs_dir'] = os.path.relpath(
         str(get_gcc_lib_dir(cflags)), "."
     )
@@ -110,7 +109,7 @@ def get_compiler_info(cflags: list[str]) -> Dict[str, str]:
     return compiler_info
 
 
-def get_cflags(compiler_info: Dict[str, str]):
+def get_cflags(compiler_info: dict[str, str]):
     """TODO(amontanez): Add docstring."""
     # TODO(amontanez): Make newlib-nano optional.
     cflags = [
@@ -153,7 +152,7 @@ def get_cflags(compiler_info: Dict[str, str]):
     return cflags
 
 
-def get_crt_objs(compiler_info: Dict[str, str]) -> tuple[str, ...]:
+def get_crt_objs(compiler_info: dict[str, str]) -> tuple[str, ...]:
     return (
         str(Path(compiler_info['gcc_libs_dir']) / 'crtfastmath.o'),
         str(Path(compiler_info['gcc_libs_dir']) / 'crti.o'),
@@ -167,7 +166,7 @@ def get_crt_objs(compiler_info: Dict[str, str]) -> tuple[str, ...]:
     )
 
 
-def get_ldflags(compiler_info: Dict[str, str]) -> list[str]:
+def get_ldflags(compiler_info: dict[str, str]) -> list[str]:
     ldflags: list[str] = [
         # Add library search paths.
         '-L' + compiler_info['gcc_libs_dir'],

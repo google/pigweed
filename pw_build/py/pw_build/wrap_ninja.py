@@ -25,7 +25,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, Dict, IO, Optional
+from typing import Any, IO, Optional
 
 if sys.platform != 'win32':
     import pty
@@ -226,7 +226,7 @@ class Ninja:
     num_finished: int
     num_total: int
     actions: list[NinjaAction]
-    running_actions: Dict[str, NinjaAction]
+    running_actions: dict[str, NinjaAction]
     last_action_completed: Optional[NinjaAction]
     events: list[NinjaEvent]
     exited: bool

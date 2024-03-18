@@ -24,7 +24,6 @@ import sys
 from typing import (
     Callable,
     Collection,
-    Dict,
     Optional,
     Pattern,
     Sequence,
@@ -127,13 +126,13 @@ class _FileSorter:
         self,
         ctx: Union[presubmit.PresubmitContext, KeepSortedContext],
         path: Path,
-        errors: Optional[Dict[Path, Sequence[str]]] = None,
+        errors: Optional[dict[Path, Sequence[str]]] = None,
     ):
         self.ctx = ctx
         self.path: Path = path
         self.all_lines: list[str] = []
         self.changed: bool = False
-        self._errors: Dict[Path, Sequence[str]] = {}
+        self._errors: dict[Path, Sequence[str]] = {}
         if errors is not None:
             self._errors = errors
 
@@ -352,9 +351,9 @@ def _print_howto_fix(paths: Sequence[Path]) -> None:
 
 def _process_files(
     ctx: Union[presubmit.PresubmitContext, KeepSortedContext]
-) -> Dict[Path, Sequence[str]]:
+) -> dict[Path, Sequence[str]]:
     fix = getattr(ctx, 'fix', False)
-    errors: Dict[Path, Sequence[str]] = {}
+    errors: dict[Path, Sequence[str]] = {}
 
     for path in ctx.paths:
         if path.is_symlink() or path.is_dir():

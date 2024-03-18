@@ -315,7 +315,7 @@ function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
   submodule URLs are prohibited.
 * ``require_branch: bool = False`` — If true, all submodules must reference a
   branch.
-* ``validator: Callable[[PresubmitContext, Path, str, Dict[str, str]], None] = None``
+* ``validator: Callable[[PresubmitContext, Path, str, dict[str, str]], None] = None``
   — A function that can be used for arbitrary submodule validation. It's called
   with the ``PresubmitContext``, the path to the ``.gitmodules`` file, the name
   of the current submodule, and the properties of the current submodule.

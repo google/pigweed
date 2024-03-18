@@ -38,7 +38,7 @@ import pkgutil
 import sys
 from textwrap import TextWrapper
 import types
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set
+from typing import Any, Callable, Iterable, Iterator, Optional, Set
 
 _LOG = logging.getLogger(__name__)
 _BUILT_IN = '<built-in>'
@@ -199,9 +199,9 @@ class Registry(collections.abc.Mapping):
               be registered. Must raise plugins.Error is the plugin is invalid.
         """
 
-        self._registry: Dict[str, Plugin] = {}
+        self._registry: dict[str, Plugin] = {}
         self._sources: Set[Path] = set()  # Paths to plugins files
-        self._errors: Dict[str, list[Exception]] = collections.defaultdict(list)
+        self._errors: dict[str, list[Exception]] = collections.defaultdict(list)
         self._validate_plugin = validator
 
     def __getitem__(self, name: str) -> Plugin:
@@ -223,7 +223,7 @@ class Registry(collections.abc.Mapping):
     def __len__(self) -> int:
         return len(self._registry)
 
-    def errors(self) -> Dict[str, list[Exception]]:
+    def errors(self) -> dict[str, list[Exception]]:
         return self._errors
 
     def run_with_argv(self, name: str, argv: Iterable[str]) -> int:
@@ -320,7 +320,7 @@ class Registry(collections.abc.Mapping):
 
     def register_config(
         self,
-        config: Dict,
+        config: dict,
         path: Optional[Path] = None,
     ) -> None:
         """Registers plugins from a Pigweed config.

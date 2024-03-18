@@ -182,11 +182,11 @@ def _split_args(kwargs, filter_dict):
     the tuple.
 
     Args:
-        kwargs: Dictionary of args to split.
+        kwargs: dictionary of args to split.
         filter_dict: The dictionary used as the filter.
 
     Returns:
-        tuple[Dict, Dict]
+        tuple[dict, dict]
     """
     filtered_args = {}
     remainder = {}

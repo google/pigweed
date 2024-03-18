@@ -13,7 +13,7 @@
 # the License.
 """JSON config file loader mixin."""
 
-from typing import Any, Dict
+from typing import Any
 
 import json
 
@@ -46,5 +46,5 @@ class JsonConfigLoaderMixin(YamlConfigLoaderMixin):
 
     def _load_config_from_string(  # pylint: disable=no-self-use
         self, file_contents: str
-    ) -> list[Dict[Any, Any]]:
+    ) -> list[dict[Any, Any]]:
         return [json.loads(file_contents)]

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import datetime
 import logging
 import re
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from pw_log.proto import log_pb2
 import pw_log_tokenized
@@ -78,7 +78,7 @@ class Log:
         thread_name: str = '',
         source_name: str = '',
         file_and_line: str = '',
-        metadata_fields: Optional[Dict[str, str]] = None,
+        metadata_fields: Optional[dict[str, str]] = None,
     ) -> None:
         self.message = message
         self.level = level  # Value from logging levels.

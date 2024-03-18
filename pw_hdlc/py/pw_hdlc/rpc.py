@@ -30,7 +30,6 @@ from typing import (
     Any,
     BinaryIO,
     Callable,
-    Dict,
     Iterable,
     Optional,
     Sequence,
@@ -83,7 +82,7 @@ def channel_output(
     return write_hdlc
 
 
-FrameHandlers = Dict[int, Callable[[Frame], Any]]
+FrameHandlers = dict[int, Callable[[Frame], Any]]
 FrameTypeT = TypeVar('FrameTypeT')
 
 

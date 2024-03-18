@@ -27,7 +27,7 @@ import sys
 import time
 
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Sequence, Set
+from typing import Iterable, Optional, Sequence, Set
 
 import requests
 
@@ -161,16 +161,16 @@ class TestRunner:
         executable: str,
         args: Sequence[str],
         tests: Iterable[Test],
-        env: Optional[Dict[str, str]] = None,
+        env: Optional[dict[str, str]] = None,
         timeout: Optional[float] = None,
         verbose: bool = False,
     ) -> None:
         self._executable: str = executable
         self._args: Sequence[str] = args
         self._tests: list[Test] = list(tests)
-        self._env: Dict[str, str] = env or {}
+        self._env: dict[str, str] = env or {}
         self._timeout = timeout
-        self._result_sink: Optional[Dict[str, str]] = None
+        self._result_sink: Optional[dict[str, str]] = None
         self.verbose = verbose
 
         # Access go/result-sink, if available.
@@ -361,7 +361,7 @@ def find_binary(target: str) -> str:
     )
 
 
-def parse_metadata(metadata: list[str], root: str) -> Dict[str, TestGroup]:
+def parse_metadata(metadata: list[str], root: str) -> dict[str, TestGroup]:
     """Builds a graph of test group objects from metadata.
 
     Args:
@@ -386,8 +386,8 @@ def parse_metadata(metadata: list[str], root: str) -> Dict[str, TestGroup]:
         return path[: index - 1] + path[index:]
 
     group_deps: list[tuple[str, list[str]]] = []
-    all_tests: Dict[str, Test] = {}
-    test_groups: Dict[str, TestGroup] = {}
+    all_tests: dict[str, Test] = {}
+    test_groups: dict[str, TestGroup] = {}
     num_tests = 0
 
     for path in metadata:
@@ -465,7 +465,7 @@ def tests_from_paths(paths: Sequence[str]) -> list[Test]:
     return tests
 
 
-def parse_env(env: Sequence[str]) -> Dict[str, str]:
+def parse_env(env: Sequence[str]) -> dict[str, str]:
     """Returns a dictionary of environment names and values.
 
     Args:

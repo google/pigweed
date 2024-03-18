@@ -21,7 +21,6 @@ import logging
 from pathlib import Path
 import sys
 
-from typing import Dict
 
 import pw_cli.log
 
@@ -49,7 +48,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main(inputs: list[Path], output: Path) -> int:
-    all_data: Dict[str, int] = {}
+    all_data: dict[str, int] = {}
 
     for file in inputs:
         try:

@@ -23,7 +23,7 @@ import time
 import unittest
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pw_emu.core import InvalidChannelName, InvalidChannelType
 from tests.common import check_prog, ConfigHelperWithEmulator
@@ -158,7 +158,7 @@ class TestQemu(ConfigHelperWithEmulator):
 class TestQemuChannelsTcp(TestQemu):
     """Tests for configurations using TCP channels."""
 
-    _config: Dict[str, Any] = {}
+    _config: dict[str, Any] = {}
     _config.update(json.loads(json.dumps(TestQemu._config)))
     _config['qemu']['channels'] = {'type': 'tcp'}
 
@@ -172,7 +172,7 @@ class TestQemuChannelsTcp(TestQemu):
 class TestQemuChannelsPty(TestQemu):
     """Tests for configurations using PTY channels."""
 
-    _config: Dict[str, Any] = {}
+    _config: dict[str, Any] = {}
     _config.update(json.loads(json.dumps(TestQemu._config)))
     _config['qemu']['channels'] = {'type': 'pty'}
 

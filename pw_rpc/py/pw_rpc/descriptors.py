@@ -21,7 +21,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Dict,
     Generic,
     Iterable,
     Iterator,
@@ -282,7 +281,7 @@ class Method:
         return self.Type.UNARY
 
     def get_request(
-        self, proto: Optional[Message], proto_kwargs: Optional[Dict[str, Any]]
+        self, proto: Optional[Message], proto_kwargs: Optional[dict[str, Any]]
     ) -> Message:
         """Returns a request_type protobuf message.
 
@@ -373,13 +372,13 @@ class ServiceAccessor(Collection[T]):
         if not isinstance(members, dict):
             members = {m: m for m in members}
 
-        by_name: Dict[str, Any] = {_name(k): v for k, v in members.items()}
+        by_name: dict[str, Any] = {_name(k): v for k, v in members.items()}
         self._by_id = {k.id: v for k, v in members.items()}
         # Note: a dictionary is used rather than `setattr` in order to
         # (1) Hint to the type checker that there will be extra fields
         # (2) Ensure that built-in attributes such as `_by_id`` are not
         #     overwritten.
-        self._attrs: Dict[str, Any] = {}
+        self._attrs: dict[str, Any] = {}
 
         if as_attrs == 'members':
             for name, member in by_name.items():
