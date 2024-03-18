@@ -31,7 +31,7 @@ class Emboss(pw_package.git_repo.GitRepo):
                 "https://pigweed.googlesource.com"
                 "/third_party/github/google/emboss"
             ),
-            commit="ac5e59b3be7ccac05921fff6ec274ff56b095ae6",
+            commit="35e21b10019ded9ae14041af9b8e49659d9b327a",
             **kwargs,
         )
 
