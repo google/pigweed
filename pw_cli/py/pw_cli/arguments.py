@@ -185,9 +185,10 @@ def arg_parser() -> argparse.ArgumentParser:
         ),
     )
     argparser.add_argument(
-        '--no-banner',
-        action='store_true',
-        help='Do not print the Pigweed banner',
+        '--banner',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Whether to print the Pigweed banner',
     )
     argparser.add_argument(
         '--tab-complete-command',

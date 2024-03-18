@@ -454,29 +454,15 @@ def _get_parser(
 
     parser.add_argument(
         '--progress-bars',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
         default=True,
         help='Show progress bars in the terminal.',
     )
 
     parser.add_argument(
-        '--no-progress-bars',
-        action='store_false',
-        dest='progress_bars',
-        help='Hide progress bars in terminal output.',
-    )
-
-    parser.add_argument(
         '--log-build-steps',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
         help='Show ninja build step log lines in output.',
-    )
-
-    parser.add_argument(
-        '--no-log-build-steps',
-        action='store_false',
-        dest='log_build_steps',
-        help='Hide ninja build steps log lines from log output.',
     )
 
     if PW_WATCH_AVAILABLE:

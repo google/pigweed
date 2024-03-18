@@ -87,10 +87,10 @@ def add_parser_arguments(
     )
 
     watch_group.add_argument(
-        '--no-restart',
-        dest='restart',
-        action='store_false',
-        help='Do not restart ongoing builds if files change.',
+        '--restart',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Whether to restart ongoing builds if files change.',
     )
 
     watch_group.add_argument(

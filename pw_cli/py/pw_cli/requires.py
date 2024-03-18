@@ -108,9 +108,9 @@ def parse_args() -> argparse.Namespace:
         help='Requirements to be added ("<gerrit-name>:<cl-number>").',
     )
     parser.add_argument(
-        '--no-push',
-        dest='push',
-        action='store_false',
+        '--push',
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=argparse.SUPPRESS,  # This option is only for debugging.
     )
 

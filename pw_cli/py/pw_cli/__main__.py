@@ -34,7 +34,7 @@ def main() -> NoReturn:
     # Print the banner unless --no-banner or --tab-complete-command is provided.
     # Note: args.tab_complete_command may be the empty string '' so check for
     # None instead.
-    if not args.no_banner and args.tab_complete_command is None:
+    if args.banner and args.tab_complete_command is None:
         arguments.print_banner()
 
     _LOG.debug('Executing the pw command from %s', args.directory)

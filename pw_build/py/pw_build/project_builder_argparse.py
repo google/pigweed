@@ -133,34 +133,18 @@ def add_project_builder_arguments(
 
     output_group = parser.add_argument_group(title='Display Output Options')
 
-    # TODO: b/248257406 - Use argparse.BooleanOptionalAction when Python 3.8 is
-    # no longer supported.
     output_group.add_argument(
         '--banners',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
         default=True,
         help='Show pass/fail banners.',
     )
-    output_group.add_argument(
-        '--no-banners',
-        action='store_false',
-        dest='banners',
-        help='Hide pass/fail banners.',
-    )
 
-    # TODO: b/248257406 - Use argparse.BooleanOptionalAction when Python 3.8 is
-    # no longer supported.
     output_group.add_argument(
         '--colors',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
         default=True,
         help='Force color output from ninja.',
-    )
-    output_group.add_argument(
-        '--no-colors',
-        action='store_false',
-        dest='colors',
-        help="Don't force ninja to use color output.",
     )
 
     return parser
