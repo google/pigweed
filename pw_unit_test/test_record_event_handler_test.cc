@@ -122,5 +122,32 @@ TEST(TestRecordFunctionality, HandleSkipMacro) {
   ASSERT_EQ(actual, expected);
 }
 
+TEST(TestRecordFunctionality, DuplicateTest) {
+  TestRecordEventHandler test_record_event_handler(kFakeTimeSinceEpoch);
+
+  // Initialize test cases to be run
+  TestCase test_case1{"suite1", "test1", "dir1/test_file.cc"};
+  TestResult test_result1 = TestResult::kSuccess;
+  TestCase test_case2{"suite1", "test1", "dir1/test_file.cc"};
+  TestResult test_result2 = TestResult::kFailure;
+  RunTestsSummary run_tests_summary = {0, 1, 0, 0};
+
+  // Simulate test run
+  test_record_event_handler.TestCaseStart(test_case1);
+  test_record_event_handler.TestCaseEnd(test_case1, test_result1);
+  test_record_event_handler.TestCaseStart(test_case2);
+  test_record_event_handler.TestCaseEnd(test_case2, test_result2);
+  test_record_event_handler.RunAllTestsEnd(run_tests_summary);
+
+  std::string actual = test_record_event_handler.GetTestRecordJsonString(300);
+
+  std::string expected =
+      R"({"tests": {"dir1": {"test_file.cc": {"suite1":)"
+      R"( {"test1": {"expected": "PASS", "actual": "FAIL"}}}}},)"
+      R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
+      R"( "num_failures_by_type": {"PASS": 0, "FAIL": 1, "SKIP": 0}})";
+  ASSERT_EQ(actual, expected);
+}
+
 }  // namespace
 }  // namespace pw::unit_test
