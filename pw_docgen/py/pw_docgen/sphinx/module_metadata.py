@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import json
 import os
 import sys
-from typing import cast, Optional, TypeVar, Union
+from typing import cast, Optional, TypeVar
 
 # We use BeautifulSoup for certain docs rendering features. It may not be
 # available in downstream projects. If so, no problem. We fall back to simpler
@@ -370,7 +370,7 @@ def _parse_body(body: str) -> ParsedBody:
         tag['class'] = tag.get('class', []) + [classname]  # type: ignore
 
     def _add_classes_to_tag(
-        tag: HTMLTag, classnames: Union[str, list[str], None]
+        tag: HTMLTag, classnames: str | list[str] | None
     ) -> None:
         tag['class'] = tag.get('class', []) + classnames  # type: ignore
 

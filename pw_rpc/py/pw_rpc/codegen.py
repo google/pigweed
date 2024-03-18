@@ -16,7 +16,7 @@
 import abc
 from datetime import datetime
 import os
-from typing import cast, Any, Iterable, Union
+from typing import cast, Any, Iterable
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
@@ -49,7 +49,7 @@ STUB_READER_WRITER_TODO = (
 # todo-check: enable
 
 
-def get_id(item: Union[ProtoService, ProtoServiceMethod]) -> str:
+def get_id(item: ProtoService | ProtoServiceMethod) -> str:
     name = item.proto_path() if isinstance(item, ProtoService) else item.name()
     return f'0x{ids.calculate(name):08x}'
 

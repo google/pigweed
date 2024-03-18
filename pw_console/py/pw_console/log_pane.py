@@ -22,7 +22,6 @@ from typing import (
     Callable,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from prompt_toolkit.application.current import get_app
@@ -797,7 +796,7 @@ class LogPane(WindowPane):
 
     def get_window_menu_options(
         self,
-    ) -> list[tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Callable | None]]:
         """Return all menu options for the log pane."""
 
         options = [
@@ -923,7 +922,7 @@ class LogPane(WindowPane):
 
     def add_log_handler(
         self,
-        logger: Union[str, logging.Logger],
+        logger: str | logging.Logger,
         level_name: Optional[str] = None,
     ) -> None:
         """Add a log handlers to this LogPane."""

@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 
 from pathlib import PurePosixPath
-from typing import Optional, Union
+from typing import Optional
 
 
 class MalformedGnError(Exception):
@@ -30,7 +30,7 @@ class GnPath:
 
     def __init__(
         self,
-        base: Union[str, PurePosixPath, GnPath],
+        base: str | PurePosixPath | GnPath,
         bazel: Optional[str] = None,
         gn: Optional[str] = None,  # pylint: disable=invalid-name
     ) -> None:
@@ -111,7 +111,7 @@ class GnLabel:
 
     def __init__(
         self,
-        base: Union[str, PurePosixPath, GnLabel],
+        base: str | PurePosixPath | GnLabel,
         public: bool = False,
         bazel: Optional[str] = None,
         gn: Optional[str] = None,  # pylint: disable=invalid-name
@@ -226,7 +226,7 @@ class GnLabel:
                 '$dir_pw_third_party', repo, *self._path.parts[1:]
             )
 
-    def relative_to(self, start: Union[str, PurePosixPath, GnLabel]) -> str:
+    def relative_to(self, start: str | PurePosixPath | GnLabel) -> str:
         """Returns a label string relative to the given starting label."""
         start_path = _as_path(start)
         if not start:
@@ -247,8 +247,8 @@ class GnVisibility:
 
     def __init__(
         self,
-        base: Union[str, PurePosixPath, GnLabel],
-        label: Union[str, PurePosixPath, GnLabel],
+        base: str | PurePosixPath | GnLabel,
+        label: str | PurePosixPath | GnLabel,
         bazel: Optional[str] = None,
         gn: Optional[str] = None,  # pylint: disable=invalid-name
     ) -> None:
@@ -295,7 +295,7 @@ class GnVisibility:
         """Populates this object using a GN visibility scope."""
         self._scope = GnLabel(label, gn=scope)
 
-    def relative_to(self, start: Union[str, PurePosixPath, GnLabel]) -> str:
+    def relative_to(self, start: str | PurePosixPath | GnLabel) -> str:
         """Returns a label string relative to the given starting label."""
         return self._scope.relative_to(start)
 
@@ -314,7 +314,7 @@ class GnVisibility:
         return str(self) == str(other)
 
 
-def _as_path(item: Union[str, GnPath, GnLabel, PurePosixPath]) -> PurePosixPath:
+def _as_path(item: str | GnPath | GnLabel | PurePosixPath) -> PurePosixPath:
     """Converts an argument to be a PurePosixPath.
 
     Args:
@@ -330,7 +330,7 @@ def _as_path(item: Union[str, GnPath, GnLabel, PurePosixPath]) -> PurePosixPath:
 
 
 def _relative_to(
-    path: Union[str, PurePosixPath], start: Union[str, PurePosixPath]
+    path: str | PurePosixPath, start: str | PurePosixPath
 ) -> PurePosixPath:
     """Like `PosixPath._relative_to`, but can ascend directories as well."""
     if not start:

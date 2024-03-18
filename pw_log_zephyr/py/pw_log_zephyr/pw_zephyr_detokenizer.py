@@ -23,7 +23,7 @@ import enum
 import os
 
 from pathlib import Path
-from typing import Iterable, Optional, Callable, Union, Any
+from typing import Iterable, Optional, Callable, Any
 
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 from pw_tokenizer import detokenize, encode
@@ -45,7 +45,7 @@ class _State(enum.Enum):
 PREFIX = ord('$')
 EOT = ord('#')
 
-_PathOrStr = Union[Path, str]
+_PathOrStr = Path | str
 
 
 class Token:

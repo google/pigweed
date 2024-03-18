@@ -27,14 +27,13 @@ from typing import (
     Iterable,
     Iterator,
     Optional,
-    Union,
 )
 from xml.etree import ElementTree
 
 _LOG = logging.getLogger(__name__)
 
 
-BazelValue = Union[bool, int, str, list[str], dict[str, str]]
+BazelValue = bool | int | str | list[str] | dict[str, str]
 
 
 class ParseError(Exception):

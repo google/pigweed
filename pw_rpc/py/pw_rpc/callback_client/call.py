@@ -23,7 +23,6 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
-    Union,
     Optional,
     Sequence,
     TypeVar,
@@ -58,7 +57,7 @@ OnNextCallback = Callable[[CallTypeT, Any], Any]
 OnCompletedCallback = Callable[[CallTypeT, Any], Any]
 OnErrorCallback = Callable[[CallTypeT, Any], Any]
 
-OptionalTimeout = Union[UseDefault, float, None]
+OptionalTimeout = UseDefault | float | None
 
 
 class UnaryResponse(NamedTuple):

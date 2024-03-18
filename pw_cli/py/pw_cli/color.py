@@ -16,7 +16,7 @@
 import ctypes
 import os
 import sys
-from typing import Optional, Union
+from typing import Optional
 
 import pw_cli.env
 
@@ -78,7 +78,7 @@ def is_enabled():
     return sys.stdout.isatty() and sys.stderr.isatty()
 
 
-def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
+def colors(enabled: Optional[bool] = None) -> _Color | _NoColor:
     """Returns an object for colorizing strings.
 
     By default, the object only colorizes if both stderr and stdout are TTYs.

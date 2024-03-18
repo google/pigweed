@@ -38,7 +38,6 @@ from typing import (
     Pattern,
     Set,
     TextIO,
-    Union,
 )
 
 try:
@@ -223,7 +222,7 @@ def _load_token_database(  # pylint: disable=too-many-return-statements
 
 
 def load_token_database(
-    *databases, domain: Union[str, Pattern[str]] = tokens.DEFAULT_DOMAIN
+    *databases, domain: str | Pattern[str] = tokens.DEFAULT_DOMAIN
 ) -> tokens.Database:
     """Loads a Database from supported database types.
 

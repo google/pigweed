@@ -31,7 +31,6 @@ from typing import (
     Iterable,
     OrderedDict,
     Set,
-    Union,
 )
 
 from pw_presubmit import git_repo
@@ -392,7 +391,7 @@ def _format_owners_file(owners_obj: OwnersFile) -> None:
 
 def _list_unwrapper(
     func: Callable[[OwnersFile], None],
-    list_or_path: Union[Iterable[pathlib.Path], pathlib.Path],
+    list_or_path: Iterable[pathlib.Path] | pathlib.Path,
 ) -> dict[pathlib.Path, str]:
     """Decorator that accepts Paths or list of Paths and iterates as needed."""
     errors: dict[pathlib.Path, str] = {}
@@ -426,9 +425,7 @@ run_owners_checks = functools.partial(_list_unwrapper, _run_owners_checks)
 format_owners_file = functools.partial(_list_unwrapper, _format_owners_file)
 
 
-def presubmit_check(
-    files: Union[pathlib.Path, Collection[pathlib.Path]]
-) -> None:
+def presubmit_check(files: pathlib.Path | Collection[pathlib.Path]) -> None:
     errors = run_owners_checks(files)
     if errors:
         for file in errors:

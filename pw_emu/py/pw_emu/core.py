@@ -26,7 +26,7 @@ import time
 from abc import ABC, abstractmethod
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Union, Any, Type
+from typing import Optional, Any, Type
 
 import psutil  # type: ignore
 
@@ -713,7 +713,7 @@ class Launcher(ABC):
     def _get_connector(self, wdir: Path) -> Connector:
         """Gets a connector for this emulator type."""
 
-    def _path(self, name: Union[Path, str]) -> Path:
+    def _path(self, name: Path | str) -> Path:
         """Returns the full path for a given emulator file."""
         if self._wdir is None:
             raise Error('internal error')
@@ -815,7 +815,7 @@ class Launcher(ABC):
         name: str,
         cmd: list[str],
         foreground: bool = False,
-    ) -> Union[subprocess.Popen, None]:
+    ) -> subprocess.Popen | None:
         """Run the main emulator process.
 
         The process pid is stored and can later be accessed by its name to

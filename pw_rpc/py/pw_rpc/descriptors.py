@@ -26,7 +26,6 @@ from typing import (
     Iterator,
     Optional,
     TypeVar,
-    Union,
 )
 
 from google.protobuf import descriptor_pb2, message_factory
@@ -351,7 +350,7 @@ class Method:
 T = TypeVar('T')
 
 
-def _name(item: Union[Service, Method]) -> str:
+def _name(item: Service | Method) -> str:
     return item.full_name if isinstance(item, Service) else item.name
 
 
@@ -394,7 +393,7 @@ class ServiceAccessor(Collection[T]):
     def __getattr__(self, name: str) -> Any:
         return self._attrs[name]
 
-    def __getitem__(self, name_or_id: Union[str, int]) -> Any:
+    def __getitem__(self, name_or_id: str | int) -> Any:
         """Accesses a service/method by the string name or ID."""
         try:
             return self._by_id[_id(name_or_id)]
@@ -418,7 +417,7 @@ class ServiceAccessor(Collection[T]):
         return f'{self.__class__.__name__}({members})'
 
 
-def _id(handle: Union[str, int]) -> int:
+def _id(handle: str | int) -> int:
     return ids.calculate(handle) if isinstance(handle, str) else handle
 
 

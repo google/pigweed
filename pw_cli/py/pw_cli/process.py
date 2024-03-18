@@ -18,7 +18,7 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import IO, Union, Optional
+from typing import IO, Optional
 
 import pw_cli.color
 import pw_cli.log
@@ -45,7 +45,7 @@ class CompletedProcess:
     def __init__(
         self,
         process: 'asyncio.subprocess.Process',
-        output: Union[bytes, IO[bytes]],
+        output: bytes | IO[bytes],
     ):
         assert process.returncode is not None
         self.returncode: int = process.returncode
@@ -177,7 +177,7 @@ async def run_async(
         for key, value in env.items():
             hydrated_env[key] = value
     hydrated_env[PW_SUBPROCESS_ENV] = '1'
-    output: Union[bytes, IO[bytes]]
+    output: bytes | IO[bytes]
 
     if log_output:
         process, output = await _run_and_log(program, args, hydrated_env)

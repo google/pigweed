@@ -16,7 +16,7 @@
 import dataclasses
 import os
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -94,7 +94,7 @@ class CodeSnippet:
     @staticmethod
     def from_yaml(
         title: str,
-        value: Union[str, dict],
+        value: str | dict,
         previous_description: Optional[str] = None,
     ) -> 'CodeSnippet':
         if isinstance(value, str):
@@ -159,9 +159,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
 
     def __init__(
         self,
-        project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
-        project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
-        user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
+        project_file: Path | bool = _DEFAULT_PROJECT_FILE,
+        project_user_file: Path | bool = _DEFAULT_PROJECT_USER_FILE,
+        user_file: Path | bool = _DEFAULT_USER_FILE,
     ) -> None:
         self.config_init(
             config_section_title='pw_console',

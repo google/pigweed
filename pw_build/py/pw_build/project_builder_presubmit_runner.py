@@ -17,7 +17,7 @@ import argparse
 import fnmatch
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 
 import pw_cli.log
@@ -502,7 +502,7 @@ def _get_parser(
 
 def _get_prefs(
     args: argparse.Namespace,
-) -> Union[ProjectBuilderPrefs, WatchAppPrefs]:
+) -> ProjectBuilderPrefs | WatchAppPrefs:
     """Load either WatchAppPrefs or ProjectBuilderPrefs.
 
     Applies the command line args to the correct prefs class.
@@ -511,7 +511,7 @@ def _get_prefs(
       A WatchAppPrefs instance if pw_watch is importable, ProjectBuilderPrefs
       otherwise.
     """
-    prefs: Union[ProjectBuilderPrefs, WatchAppPrefs]
+    prefs: ProjectBuilderPrefs | WatchAppPrefs
     if PW_WATCH_AVAILABLE:
         prefs = WatchAppPrefs(load_argparse_arguments=add_watch_arguments)
         prefs.apply_command_line_args(args)

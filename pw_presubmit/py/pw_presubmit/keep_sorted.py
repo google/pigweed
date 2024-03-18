@@ -27,7 +27,6 @@ from typing import (
     Optional,
     Pattern,
     Sequence,
-    Union,
 )
 
 import pw_cli
@@ -124,7 +123,7 @@ class _Block:
 class _FileSorter:
     def __init__(
         self,
-        ctx: Union[presubmit.PresubmitContext, KeepSortedContext],
+        ctx: presubmit.PresubmitContext | KeepSortedContext,
         path: Path,
         errors: Optional[dict[Path, Sequence[str]]] = None,
     ):
@@ -350,7 +349,7 @@ def _print_howto_fix(paths: Sequence[Path]) -> None:
 
 
 def _process_files(
-    ctx: Union[presubmit.PresubmitContext, KeepSortedContext]
+    ctx: presubmit.PresubmitContext | KeepSortedContext,
 ) -> dict[Path, Sequence[str]]:
     fix = getattr(ctx, 'fix', False)
     errors: dict[Path, Sequence[str]] = {}
@@ -421,7 +420,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def keep_sorted_in_repo(
-    paths: Collection[Union[Path, str]],
+    paths: Collection[Path | str],
     fix: bool,
     exclude: Collection[Pattern[str]],
     base: str,

@@ -19,7 +19,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path, PurePath, PurePosixPath
 from types import TracebackType
-from typing import IO, Iterable, Iterator, Optional, Type, Union
+from typing import IO, Iterable, Iterator, Optional, Type
 
 from pw_build.gn_config import GnConfig, GN_CONFIG_FLAGS
 from pw_build.gn_target import GnTarget
@@ -82,7 +82,7 @@ class GnWriter:
             comment = comment[index + 1 :]
         self.write(f'# {comment}')
 
-    def write_import(self, gni: Union[str, PurePosixPath, GnPath]) -> None:
+    def write_import(self, gni: str | PurePosixPath | GnPath) -> None:
         """Adds a GN import.
 
         Args:

@@ -16,13 +16,13 @@
 import logging
 from pathlib import Path
 import subprocess
-from typing import Collection, Iterable, Optional, Pattern, Union
+from typing import Collection, Iterable, Optional, Pattern
 
 from pw_presubmit.tools import log_run, plural
 
 _LOG = logging.getLogger(__name__)
-PathOrStr = Union[Path, str]
-PatternOrStr = Union[Pattern, str]
+PathOrStr = Path | str
+PatternOrStr = Pattern | str
 
 TRACKING_BRANCH_ALIAS = '@{upstream}'
 _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'

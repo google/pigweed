@@ -89,7 +89,7 @@ import importlib
 import json
 from pathlib import Path
 import time
-from typing import Optional, Union
+from typing import Optional
 
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import hashes, serialization
@@ -100,7 +100,7 @@ from google.cloud.storage.bucket import Bucket  # type: ignore
 
 DEFAULT_TIMEOUT_S = 600
 
-PathOrBytes = Union[Path, bytes]
+PathOrBytes = Path | bytes
 
 
 def _parse_args():

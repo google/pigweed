@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from pw_emu.core import (
     AlreadyRunning,
@@ -122,7 +122,7 @@ class Emulator:
         except NotRunning:
             return False
 
-    def _path(self, name: Union[Path, str]) -> Union[Path, str]:
+    def _path(self, name: Path | str) -> Path | str:
         """Returns the full path for a given emulator file."""
 
         return os.path.join(self._wdir, name)

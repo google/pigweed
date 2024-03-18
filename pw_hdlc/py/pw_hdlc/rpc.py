@@ -34,7 +34,6 @@ from typing import (
     Optional,
     Sequence,
     TypeVar,
-    Union,
 )
 import warnings
 
@@ -322,9 +321,9 @@ def default_channels(write: Callable[[bytes], Any]) -> list[pw_rpc.Channel]:
     return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
 
 
-PathsModulesOrProtoLibrary = Union[
-    Iterable[python_protos.PathOrModule], python_protos.Library
-]
+PathsModulesOrProtoLibrary = (
+    Iterable[python_protos.PathOrModule] | python_protos.Library
+)
 
 
 class RpcClient:

@@ -19,7 +19,7 @@ import tempfile
 
 # from pathlib import Path
 # from types import ModuleType
-# from typing import Callable, List, Optional, Union
+# from typing import Callable, List, Optional
 from typing import Optional
 
 import pw_transfer

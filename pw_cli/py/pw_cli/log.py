@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 import sys
-from typing import NamedTuple, Optional, Union, Iterator
+from typing import NamedTuple, Optional, Iterator
 
 from pw_cli.color import colors as pw_cli_colors
 from pw_cli.env import pigweed_environment
@@ -79,7 +79,7 @@ def main() -> int:
 def _setup_handler(
     handler: logging.Handler,
     formatter: logging.Formatter,
-    level: Union[str, int],
+    level: str | int,
     logger: logging.Logger,
 ) -> None:
     handler.setLevel(level)
@@ -88,12 +88,12 @@ def _setup_handler(
 
 
 def install(
-    level: Union[str, int] = logging.INFO,
+    level: str | int = logging.INFO,
     use_color: Optional[bool] = None,
     hide_timestamp: bool = False,
-    log_file: Optional[Union[str, Path]] = None,
+    log_file: Optional[str | Path] = None,
     logger: Optional[logging.Logger] = None,
-    debug_log: Optional[Union[str, Path]] = None,
+    debug_log: Optional[str | Path] = None,
     time_format: str = '%Y%m%d %H:%M:%S',
     msec_format: str = '%s,%03d',
     include_msec: bool = False,

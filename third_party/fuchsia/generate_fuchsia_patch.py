@@ -21,10 +21,10 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-from typing import Iterable, TextIO, Optional, Union
+from typing import Iterable, TextIO, Optional
 from datetime import datetime
 
-PathOrStr = Union[Path, str]
+PathOrStr = Path | str
 
 HEADER = f'''# Copyright {datetime.today().year} The Pigweed Authors
 #

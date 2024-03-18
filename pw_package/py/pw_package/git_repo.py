@@ -18,14 +18,13 @@ import os
 import pathlib
 import shutil
 import subprocess
-from typing import Union
 import urllib.parse
 
 import pw_package.package_manager
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-PathOrStr = Union[pathlib.Path, str]
+PathOrStr = pathlib.Path | str
 
 
 def git_stdout(

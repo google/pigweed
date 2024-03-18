@@ -36,7 +36,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    Union,
 )
 
 ARCHIVE_MAGIC = b'!<arch>\n'
@@ -163,7 +162,7 @@ def _bytes_match(fd: BinaryIO, expected: bytes) -> bool:
         return False
 
 
-def compatible_file(file: Union[BinaryIO, str, Path]) -> bool:
+def compatible_file(file: BinaryIO | str | Path) -> bool:
     """True if the file type is supported (ELF or archive)."""
     try:
         fd = open(file, 'rb') if isinstance(file, (str, Path)) else file
@@ -309,7 +308,7 @@ class Elf:
 
     def read_value(
         self, address: int, size: Optional[int] = None
-    ) -> Union[None, bytes, int]:
+    ) -> None | bytes | int:
         """Reads specified bytes or null-terminated string at address."""
         section = self.section_by_address(address)
         if not section:
@@ -325,9 +324,7 @@ class Elf:
 
         return self._elf.read(size)
 
-    def dump_sections(
-        self, name: Union[str, Pattern[str]]
-    ) -> Mapping[str, bytes]:
+    def dump_sections(self, name: str | Pattern[str]) -> Mapping[str, bytes]:
         """Returns a mapping of section names to section contents.
 
         If processing an archive with multiple object files, the contents of
@@ -345,7 +342,7 @@ class Elf:
         return sections
 
     def dump_section_contents(
-        self, name: Union[str, Pattern[str]]
+        self, name: str | Pattern[str]
     ) -> Optional[bytes]:
         """Dumps a binary string containing the sections matching the regex.
 

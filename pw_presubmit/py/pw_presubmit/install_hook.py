@@ -21,12 +21,12 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def git_repo_root(path: Union[Path, str]) -> Path:
+def git_repo_root(path: Path | str) -> Path:
     return Path(
         subprocess.run(
             ['git', '-C', path, 'rev-parse', '--show-toplevel'],
@@ -65,8 +65,8 @@ def _replace_arg_in_hook(arg: str, unquoted_args: Sequence[str]) -> str:
 
 def install_git_hook(
     hook: str,
-    command: Sequence[Union[Path, str]],
-    repository: Union[Path, str] = '.',
+    command: Sequence[Path | str],
+    repository: Path | str = '.',
 ) -> None:
     """Installs a simple Git hook that executes the provided command.
 

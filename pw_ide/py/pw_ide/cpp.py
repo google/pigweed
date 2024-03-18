@@ -63,7 +63,6 @@ from typing import (
     Iterator,
     Optional,
     TypedDict,
-    Union,
 )
 
 from pw_cli.env import pigweed_environment
@@ -236,7 +235,7 @@ class CppIdeFeaturesState:
 
     @current_target.setter
     def current_target(
-        self, new_current_target: Optional[Union[str, CppIdeFeaturesTarget]]
+        self, new_current_target: Optional[str | CppIdeFeaturesTarget]
     ) -> None:
         with self._file() as state:
             if new_current_target is None:
@@ -467,9 +466,9 @@ class CppCompileCommandDictWithArguments(BaseCppCompileCommandDict):
     arguments: list[str]
 
 
-CppCompileCommandDict = Union[
-    CppCompileCommandDictWithCommand, CppCompileCommandDictWithArguments
-]
+CppCompileCommandDict = (
+    CppCompileCommandDictWithCommand | CppCompileCommandDictWithArguments
+)
 
 
 class CppCompileCommand:
@@ -745,9 +744,9 @@ def infer_target(
     return '_'.join([subpath.parts[pos] for pos in target_pos])
 
 
-LoadableToCppCompilationDatabase = Union[
-    list[dict[str, Any]], str, TextIOBase, Path
-]
+LoadableToCppCompilationDatabase = (
+    list[dict[str, Any]] | str | TextIOBase | Path
+)
 
 
 class CppCompilationDatabase:
@@ -989,14 +988,14 @@ class CppCompilationDatabasesMap:
     def __len__(self) -> int:
         return len(self._dbs)
 
-    def _default(self, key: Union[str, int]):
+    def _default(self, key: str | int):
         # This is like `defaultdict` except that we can use the provided key
         # (i.e. the target name) in the constructor.
         if isinstance(key, str) and key not in self._dbs:
             file_path = self.settings.working_dir / key / COMPDB_FILE_NAME
             self._dbs[key] = CppCompilationDatabase(file_path=file_path)
 
-    def __getitem__(self, key: Union[str, int]) -> CppCompilationDatabase:
+    def __getitem__(self, key: str | int) -> CppCompilationDatabase:
         self._default(key)
 
         # Support list-based indexing...

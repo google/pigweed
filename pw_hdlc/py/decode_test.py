@@ -15,7 +15,7 @@
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
 import queue
-from typing import Iterator, NamedTuple, Optional, Union
+from typing import Iterator, NamedTuple, Optional
 import unittest
 
 from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
@@ -74,7 +74,7 @@ class ExpectedRaw(NamedTuple):
 
 class TestCase(NamedTuple):
     data: bytes
-    frames: list[Union[Expected, ExpectedRaw]]
+    frames: list[Expected | ExpectedRaw]
     raw_data: bytes
 
 

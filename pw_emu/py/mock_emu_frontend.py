@@ -17,7 +17,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 import time
 
 from pw_emu.core import (
@@ -35,7 +35,7 @@ _mock_emu = [
 
 
 def wait_for_file_size(
-    path: Union[os.PathLike, str], size: int, timeout: int = 5
+    path: os.PathLike | str, size: int, timeout: int = 5
 ) -> None:
     deadline = time.monotonic() + timeout
     while not os.path.exists(path):

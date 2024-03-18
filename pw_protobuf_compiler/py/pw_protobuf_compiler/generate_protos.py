@@ -20,7 +20,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -263,7 +263,7 @@ def main() -> int:
             args.plugin_path = wrapper_script = Path(file.name)
             _LOG.debug('Using generated plugin wrapper %s', args.plugin_path)
 
-    cmd: tuple[Union[str, Path], ...] = (
+    cmd: tuple[str | Path, ...] = (
         args.protoc,
         f'-I{args.compile_dir}',
         *[f'-I{include_path}' for include_path in include_paths],

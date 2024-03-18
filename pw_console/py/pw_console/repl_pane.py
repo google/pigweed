@@ -25,7 +25,6 @@ from typing import (
     Callable,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from prompt_toolkit.filters import (
@@ -354,7 +353,7 @@ class ReplPane(WindowPane):
 
     def get_window_menu_options(
         self,
-    ) -> list[tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Callable | None]]:
         return [
             (
                 'Python Input > Paste',

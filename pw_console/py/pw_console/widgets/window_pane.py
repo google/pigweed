@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Any, Callable, Optional, TYPE_CHECKING, Union
+from typing import Callable, Optional, TYPE_CHECKING
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -33,6 +33,7 @@ from pw_console.get_pw_console_app import get_pw_console_app
 from pw_console.style import get_pane_style
 
 if TYPE_CHECKING:
+    from typing import Any
     from pw_console.console_app import ConsoleApp
 
 
@@ -79,7 +80,7 @@ class WindowPane(ABC):
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        application: Union['ConsoleApp', Any] = None,
+        application: 'ConsoleApp | Any' = None,
         pane_title: str = 'Window',
         height: Optional[AnyDimension] = None,
         width: Optional[AnyDimension] = None,
@@ -177,7 +178,7 @@ class WindowPane(ABC):
 
     def get_window_menu_options(
         self,
-    ) -> list[tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Callable | None]]:
         """Return menu options for the window pane.
 
         Should return a list of tuples containing with the display text and

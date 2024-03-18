@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -49,13 +49,13 @@ class PwConsoleEmbed:
         global_vars=None,
         local_vars=None,
         loggers: Optional[
-            Union[dict[str, Iterable[logging.Logger]], Iterable]
+            dict[str, Iterable[logging.Logger]] | Iterable
         ] = None,
         test_mode=False,
         repl_startup_message: Optional[str] = None,
         help_text: Optional[str] = None,
         app_title: Optional[str] = None,
-        config_file_path: Optional[Union[str, Path]] = None,
+        config_file_path: Optional[str | Path] = None,
     ) -> None:
         """Call this to embed pw console at the call point within your program.
 

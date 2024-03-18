@@ -67,7 +67,6 @@ from typing import (
     Pattern,
     Sequence,
     Set,
-    Union,
 )
 
 import pw_cli.color
@@ -291,7 +290,7 @@ class FileFilter:
     (path does not match a regular expression) may be applied.
     """
 
-    _StrOrPattern = Union[Pattern, str]
+    _StrOrPattern = Pattern | str
 
     def __init__(
         self,
@@ -319,7 +318,7 @@ class FileFilter:
         self.name = tuple(re.compile(i) for i in name)
         self.suffix = tuple(suffix)
 
-    def matches(self, path: Union[str, Path]) -> bool:
+    def matches(self, path: str | Path) -> bool:
         """Returns true if the path matches any filter but not an exclude.
 
         If no positive filters are specified, any paths that do not match a
@@ -345,7 +344,7 @@ class FileFilter:
             or any(posix_path.endswith(end) for end in self.endswith)
         )
 
-    def filter(self, paths: Sequence[Union[str, Path]]) -> Sequence[Path]:
+    def filter(self, paths: Sequence[str | Path]) -> Sequence[Path]:
         return [Path(x) for x in paths if self.matches(x)]
 
     def apply_to_check(self, always_run: bool = False) -> Callable:
@@ -815,7 +814,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     return presubmit.run(program, keep_going, substep=substep, dry_run=dry_run)
 
 
-def _make_str_tuple(value: Union[Iterable[str], str]) -> tuple[str, ...]:
+def _make_str_tuple(value: Iterable[str] | str) -> tuple[str, ...]:
     return tuple([value] if isinstance(value, str) else value)
 
 
@@ -878,9 +877,9 @@ class Check:
 
     def __init__(
         self,
-        check: Union[  # pylint: disable=redefined-outer-name
-            Callable, Iterable[SubStep]
-        ],
+        check: (  # pylint: disable=redefined-outer-name
+            Callable | Iterable[SubStep]
+        ),
         path_filter: FileFilter = FileFilter(),
         always_run: bool = True,
         name: Optional[str] = None,
@@ -944,7 +943,7 @@ class Check:
         self,
         *,
         endswith: Iterable[str] = (),
-        exclude: Iterable[Union[Pattern[str], str]] = (),
+        exclude: Iterable[Pattern[str] | str] = (),
     ) -> Check:
         """Create a new check identical to this one, but with extra filters.
 
@@ -1114,7 +1113,7 @@ def _ensure_is_valid_presubmit_check_function(chk: Callable) -> None:
 def filter_paths(
     *,
     endswith: Iterable[str] = (),
-    exclude: Iterable[Union[Pattern[str], str]] = (),
+    exclude: Iterable[Pattern[str] | str] = (),
     file_filter: Optional[FileFilter] = None,
     always_run: bool = False,
 ) -> Callable[[Callable], Check]:
@@ -1224,7 +1223,7 @@ def call(
 
 
 def install_package(
-    ctx: Union[FormatContext, PresubmitContext],
+    ctx: FormatContext | PresubmitContext,
     name: str,
     force: bool = False,
 ) -> None:

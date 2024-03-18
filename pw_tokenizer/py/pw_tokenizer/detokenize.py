@@ -56,7 +56,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    Union,
 )
 
 try:
@@ -93,8 +92,8 @@ _NESTED_TOKEN_FORMATS = (
     _BASE64_TOKEN_REGEX,
 )
 
-_RawIo = Union[io.RawIOBase, BinaryIO]
-_RawIoOrBytes = Union[_RawIo, bytes]
+_RawIo = io.RawIOBase | BinaryIO
+_RawIoOrBytes = _RawIo | bytes
 
 
 def _token_regex(prefix: bytes) -> Pattern[bytes]:
@@ -261,7 +260,7 @@ class Detokenizer:
     def detokenize(
         self,
         encoded_message: bytes,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> DetokenizedString:
         """Decodes and detokenizes a message as a DetokenizedString."""
@@ -296,7 +295,7 @@ class Detokenizer:
     def detokenize_text(
         self,
         data: AnyStr,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> AnyStr:
         """Decodes and replaces prefixed Base64 messages in the provided data.
@@ -315,7 +314,7 @@ class Detokenizer:
     def detokenize_base64(
         self,
         data: AnyStr,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> AnyStr:
         """Alias of detokenize_text for backwards compatibility."""
@@ -325,7 +324,7 @@ class Detokenizer:
         self,
         data: AnyStr,
         output: BinaryIO,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Decodes prefixed Base64 messages in data; decodes to output file."""
@@ -336,7 +335,7 @@ class Detokenizer:
         self,
         data: AnyStr,
         output: BinaryIO,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Alias of detokenize_text_to_file for backwards compatibility."""
@@ -346,7 +345,7 @@ class Detokenizer:
         self,
         input_file: _RawIo,
         output: BinaryIO,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Reads chars one-at-a-time, decoding messages; SLOW for big files."""
@@ -368,7 +367,7 @@ class Detokenizer:
         self,
         input_file: _RawIo,
         output: BinaryIO,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Alias of detokenize_text_live for backwards compatibility."""
@@ -376,7 +375,7 @@ class Detokenizer:
 
     def _detokenize_nested_callback(
         self,
-        prefix: Union[str, bytes],
+        prefix: str | bytes,
         recursion: int,
     ) -> Callable[[AnyStr], AnyStr]:
         """Returns a function that replaces all tokens for a given string."""
@@ -389,8 +388,8 @@ class Detokenizer:
 
     def _detokenize_nested(
         self,
-        message: Union[str, bytes],
-        prefix: Union[str, bytes],
+        message: str | bytes,
+        prefix: str | bytes,
         recursion: int,
     ) -> bytes:
         """Returns the message with recognized tokens replaced.
@@ -473,7 +472,7 @@ class Detokenizer:
         return original
 
 
-_PathOrStr = Union[Path, str]
+_PathOrStr = Path | str
 
 
 # TODO: b/265334753 - Reuse this function in database.py:LoadTokenDatabases
@@ -580,8 +579,8 @@ class NestedMessageParser:
 
     def __init__(
         self,
-        prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
-        chars: Union[str, bytes] = _BASE64_CHARS,
+        prefix: str | bytes = NESTED_TOKEN_PREFIX,
+        chars: str | bytes = _BASE64_CHARS,
     ) -> None:
         """Initializes a parser.
 
@@ -707,7 +706,7 @@ class NestedMessageParser:
 def detokenize_base64(
     detokenizer: Detokenizer,
     data: bytes,
-    prefix: Union[str, bytes] = NESTED_TOKEN_PREFIX,
+    prefix: str | bytes = NESTED_TOKEN_PREFIX,
     recursion: int = DEFAULT_RECURSION,
 ) -> bytes:
     """Alias for detokenizer.detokenize_base64 for backwards compatibility.
@@ -721,7 +720,7 @@ def _follow_and_detokenize_file(
     detokenizer: Detokenizer,
     file: BinaryIO,
     output: BinaryIO,
-    prefix: Union[str, bytes],
+    prefix: str | bytes,
     poll_period_s: float = 0.01,
 ) -> None:
     """Polls a file to detokenize it and any appended data."""

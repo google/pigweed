@@ -30,7 +30,6 @@ from typing import (
     Optional,
     Set,
     TypeVar,
-    Union,
 )
 
 try:
@@ -46,7 +45,7 @@ except ImportError:
 
 _LOG = logging.getLogger(__name__)
 
-PathOrStr = Union[Path, str]
+PathOrStr = Path | str
 
 
 def _find_protoc() -> str:
@@ -297,7 +296,7 @@ def as_packages(
     return packages
 
 
-PathOrModule = Union[str, Path, ModuleType]
+PathOrModule = str | Path | ModuleType
 
 
 class Library:

@@ -24,7 +24,7 @@ from pathlib import Path
 import re
 import sys
 
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Optional, Type
 
 from pw_build import generate_modules_lists
 
@@ -270,10 +270,10 @@ class _BuildFile:
         """Defines a documentation target within the build file."""
 
 
-# TODO(frolv): The Dict here should be dict[str, '_GnVal'] (i.e. _GnScope),
+# TODO(frolv): The dict here should be dict[str, '_GnVal'] (i.e. _GnScope),
 # but mypy does not yet support recursive types:
 # https://github.com/python/mypy/issues/731
-_GnVal = Union[bool, int, str, list[str], dict[str, Any]]
+_GnVal = bool | int | str | list[str] | dict[str, Any]
 _GnScope = dict[str, _GnVal]
 
 

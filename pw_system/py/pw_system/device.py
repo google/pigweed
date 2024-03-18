@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Union, Optional
+from typing import Any, Callable, Optional
 
 from pw_thread_protos import thread_pb2
 from pw_hdlc import rpc
@@ -48,15 +48,13 @@ class Device:
         channel_id: int,
         reader: rpc.CancellableReader,
         write,
-        proto_library: list[Union[ModuleType, Path]],
+        proto_library: list[ModuleType | Path],
         detokenizer: Optional[detokenize.Detokenizer] = None,
         timestamp_decoder: Optional[Callable[[int], str]] = None,
         rpc_timeout_s: float = 5,
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
-        logger: Union[
-            logging.Logger, logging.LoggerAdapter
-        ] = DEFAULT_DEVICE_LOGGER,
+        logger: logging.Logger | logging.LoggerAdapter = DEFAULT_DEVICE_LOGGER,
     ):
         self.channel_id = channel_id
         self.protos = proto_library

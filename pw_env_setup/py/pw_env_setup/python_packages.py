@@ -19,7 +19,7 @@ import argparse
 import itertools
 import sys
 from pathlib import Path
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional
 
 import pkg_resources
 
@@ -294,7 +294,7 @@ Please do the following:
     return 0
 
 
-def parse(argv: Union[list[str], None] = None) -> argparse.Namespace:
+def parse(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="python -m pw_env_setup.python_packages"

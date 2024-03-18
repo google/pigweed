@@ -233,7 +233,7 @@ def _to_chars(data: bytes) -> Iterator[str]:
             yield fr'\x{byte:02x}'
 
 
-def cc_string(data: Union[str, bytes]) -> str:
+def cc_string(data: str | bytes) -> str:
     """Returns a C++ string literal version of a byte string or UTF-8 string."""
     if isinstance(data, str):
         data = data.encode()

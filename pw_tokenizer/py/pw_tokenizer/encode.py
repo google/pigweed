@@ -17,7 +17,7 @@ import argparse
 import base64
 import struct
 import sys
-from typing import Sequence, Union
+from typing import Sequence
 
 from pw_tokenizer import tokens
 
@@ -60,7 +60,7 @@ def _encode_string(arg: bytes) -> bytes:
     return struct.pack('B', size_byte) + arg[:127]
 
 
-def encode_args(*args: Union[int, float, bytes, str]) -> bytes:
+def encode_args(*args: int | float | bytes | str) -> bytes:
     """Encodes a list of arguments to their on-wire representation."""
 
     data = bytearray(b'')
@@ -85,7 +85,7 @@ def encode_args(*args: Union[int, float, bytes, str]) -> bytes:
 
 
 def encode_token_and_args(
-    token: int, *args: Union[int, float, bytes, str]
+    token: int, *args: int | float | bytes | str
 ) -> bytes:
     """Encodes a tokenized message given its token and arguments.
 

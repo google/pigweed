@@ -29,7 +29,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 import pw_cli.env
 
@@ -146,7 +146,7 @@ def run_clang_tidy(
     extra_args: list[str],
 ) -> int:
     """Executes clang_tidy via subprocess. Returns true if no failures."""
-    command: list[Union[str, Path]] = [clang_tidy, source_file]
+    command: list[str | Path] = [clang_tidy, source_file]
 
     if pw_cli.env.pigweed_environment().PW_USE_COLOR:
         command.append('--use-color')

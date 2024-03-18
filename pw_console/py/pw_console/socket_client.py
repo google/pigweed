@@ -14,7 +14,7 @@
 """Wrapers for socket clients to log read and write data."""
 from __future__ import annotations
 
-from typing import Callable, Optional, TYPE_CHECKING, Union
+from typing import Callable, Optional, TYPE_CHECKING
 
 import errno
 import re
@@ -39,7 +39,7 @@ class SocketClient:
     ]
     # Can be a string, (address, port) for AF_INET or (address, port, flowinfo,
     # scope_id) AF_INET6.
-    _AddressType = Union[str, tuple[str, int], tuple[str, int, int, int]]
+    _AddressType = str | tuple[str, int] | tuple[str, int, int, int]
 
     def __init__(
         self,

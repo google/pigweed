@@ -17,7 +17,7 @@ import enum
 from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, cast, Literal, Optional, Union
+from typing import Any, cast, Literal, Optional
 import yaml
 
 from pw_cli.env import pigweed_environment
@@ -99,7 +99,7 @@ def _parse_dir_path(input_path_str: str) -> Path:
 
 
 def _parse_compdb_search_path(
-    input_data: Union[str, tuple[str, str]], default_inference: str
+    input_data: str | tuple[str, str], default_inference: str
 ) -> tuple[Path, str]:
     if isinstance(input_data, (tuple, list)):
         return _parse_dir_path(input_data[0]), input_data[1]
@@ -112,9 +112,9 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
 
     def __init__(
         self,
-        project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
-        project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
-        user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
+        project_file: Path | bool = _DEFAULT_PROJECT_FILE,
+        project_user_file: Path | bool = _DEFAULT_PROJECT_USER_FILE,
+        user_file: Path | bool = _DEFAULT_USER_FILE,
         default_config: Optional[dict[str, Any]] = None,
     ) -> None:
         self.config_init(

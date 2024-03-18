@@ -16,7 +16,6 @@
 import enum
 from typing import (
     Iterable,
-    Union,
     Type,
     Optional,
     NamedTuple,
@@ -94,9 +93,9 @@ class BloatTableOutput:
 
     def __init__(
         self,
-        ds_map: Union[DiffDataSourceMap, DataSourceMap],
+        ds_map: DiffDataSourceMap | DataSourceMap,
         col_max_width: int = _DEFAULT_MAX_WIDTH,
-        charset: Union[Type[AsciiCharset], Type[LineCharset]] = AsciiCharset,
+        charset: Type[AsciiCharset] | Type[LineCharset] = AsciiCharset,
         rst_output: bool = False,
         diff_label: Optional[str] = None,
     ):

@@ -17,7 +17,7 @@ import asyncio
 import ctypes
 import logging
 import threading
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional
 
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
@@ -274,7 +274,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def write(
         self,
         resource_id: int,
-        data: Union[bytes, str],
+        data: bytes | str,
         progress_callback: Optional[ProgressCallback] = None,
         protocol_version: Optional[ProtocolVersion] = None,
         chunk_timeout_s: Optional[Any] = None,

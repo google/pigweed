@@ -40,7 +40,6 @@ from typing import (
     Pattern,
     Sequence,
     TextIO,
-    Union,
 )
 
 import pw_cli.color
@@ -78,7 +77,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 _COLOR = pw_cli.color.colors()
 _DEFAULT_PATH = Path('out', 'format')
 
-_Context = Union[PresubmitContext, FormatContext]
+_Context = PresubmitContext | FormatContext
 
 
 def _ensure_newline(orig: bytes) -> bytes:
@@ -164,7 +163,7 @@ def clang_format_fix(ctx: _Context) -> dict[Path, str]:
     return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
-def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:
+def _typescript_format(*args: Path | str, **kwargs) -> bytes:
     # TODO: b/323378974 - Better integrate NPM actions with pw_env_setup so
     # we don't have to manually set `npm_config_cache` every time we run npm.
     # Force npm cache to live inside the environment directory.
@@ -223,7 +222,7 @@ def check_bazel_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     errors: dict[Path, str] = {}
 
-    def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
+    def _format_temp(path: Path | str, data: bytes) -> bytes:
         # buildifier doesn't have an option to output the changed file, so
         # copy the file to a temp location, run buildifier on it, read that
         # modified copy, and return its contents.
@@ -362,14 +361,14 @@ def _enumerate_black_configs() -> Iterable[Path]:
         yield Path(directory, 'pyproject.toml')
 
 
-def _black_config_args() -> Sequence[Union[str, Path]]:
+def _black_config_args() -> Sequence[str | Path]:
     config = None
     for config_location in _enumerate_black_configs():
         if config_location.is_file():
             config = config_location
             break
 
-    config_args: Sequence[Union[str, Path]] = ()
+    config_args: Sequence[str | Path] = ()
     if config:
         config_args = ('--config', config)
     return config_args
@@ -399,7 +398,7 @@ def check_py_format_black(ctx: _Context) -> dict[Path, str]:
     # individually on the files that black found issue with.
     paths: tuple[str, ...] = _black_multiple_files(ctx)
 
-    def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
+    def _format_temp(path: Path | str, data: bytes) -> bytes:
         # black doesn't have an option to output the changed file, so copy the
         # file to a temp location, run buildifier on it, read that modified
         # copy, and return its contents.
@@ -762,7 +761,7 @@ CODE_FORMATS_WITH_YAPF: tuple[CodeFormat, ...] = CODE_FORMATS
 def presubmit_check(
     code_format: CodeFormat,
     *,
-    exclude: Collection[Union[str, Pattern[str]]] = (),
+    exclude: Collection[str | Pattern[str]] = (),
 ) -> Callable:
     """Creates a presubmit check function from a CodeFormat object.
 
@@ -805,7 +804,7 @@ def presubmit_check(
 
 def presubmit_checks(
     *,
-    exclude: Collection[Union[str, Pattern[str]]] = (),
+    exclude: Collection[str | Pattern[str]] = (),
     code_formats: Collection[CodeFormat] = CODE_FORMATS,
 ) -> tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
@@ -893,7 +892,7 @@ class CodeFormatter:
         return all_errors
 
 
-def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> list[str]:
+def _file_summary(files: Iterable[Path | str], base: Path) -> list[str]:
     try:
         return file_summary(
             Path(f).resolve().relative_to(base.resolve()) for f in files
@@ -903,7 +902,7 @@ def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> list[str]:
 
 
 def format_paths_in_repo(
-    paths: Collection[Union[Path, str]],
+    paths: Collection[Path | str],
     exclude: Collection[Pattern[str]],
     fix: bool,
     base: str,
@@ -958,7 +957,7 @@ def format_paths_in_repo(
 
 
 def format_files(
-    paths: Collection[Union[Path, str]],
+    paths: Collection[Path | str],
     fix: bool,
     repo: Optional[Path] = None,
     code_formats: Collection[CodeFormat] = CODE_FORMATS,

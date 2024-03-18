@@ -39,7 +39,6 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Union,
 )
 
 import pw_cli.color
@@ -195,7 +194,7 @@ def gn_gen(
     *args: str,
     gn_check: bool = True,  # pylint: disable=redefined-outer-name
     gn_fail_on_unused: bool = True,
-    export_compile_commands: Union[bool, str] = True,
+    export_compile_commands: bool | str = True,
     preserve_args_gn: bool = False,
     **gn_arguments,
 ) -> None:
@@ -418,7 +417,7 @@ def compiled_files(compile_commands: Path) -> Iterable[Path]:
 
 
 def check_compile_commands_for_files(
-    compile_commands: Union[Path, Iterable[Path]],
+    compile_commands: Path | Iterable[Path],
     files: Iterable[Path],
     extensions: Collection[str] = format_code.CPP_SOURCE_EXTS,
 ) -> list[Path]:
@@ -650,11 +649,11 @@ def gn_gen_check(ctx: PresubmitContext):
     gn_gen(ctx, gn_check=True)
 
 
-Item = Union[int, str]
-Value = Union[Item, Sequence[Item]]
+Item = int | str
+Value = Item | Sequence[Item]
 ValueCallable = Callable[[PresubmitContext], Value]
-InputItem = Union[Item, ValueCallable]
-InputValue = Union[InputItem, Sequence[InputItem]]
+InputItem = Item | ValueCallable
+InputValue = InputItem | Sequence[InputItem]
 
 
 def _value(ctx: PresubmitContext, val: InputValue) -> Value:
@@ -688,7 +687,7 @@ def _value(ctx: PresubmitContext, val: InputValue) -> Value:
 
 
 _CtxMgrLambda = Callable[[PresubmitContext], ContextManager]
-_CtxMgrOrLambda = Union[ContextManager, _CtxMgrLambda]
+_CtxMgrOrLambda = ContextManager | _CtxMgrLambda
 
 
 @dataclass(frozen=True)
@@ -765,7 +764,7 @@ class _NinjaBase(Check):
         *args,
         packages: Sequence[str] = (),
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
-        ninja_targets: Union[str, Sequence[str], Sequence[Sequence[str]]] = (),
+        ninja_targets: str | Sequence[str] | Sequence[Sequence[str]] = (),
         coverage_options: Optional[CoverageOptions] = None,
         **kwargs,
     ):

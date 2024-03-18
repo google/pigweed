@@ -27,7 +27,7 @@ import sys
 import tempfile
 import time
 from threading import Thread
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -114,7 +114,7 @@ class FloatingMessageBar(ConditionalContainer):
 
 
 def _add_log_handler_to_pane(
-    logger: Union[str, logging.Logger],
+    logger: str | logging.Logger,
     pane: 'LogPane',
     level_name: Optional[str] = None,
 ) -> None:
@@ -1084,7 +1084,7 @@ class ConsoleApp:
     def add_log_handler(
         self,
         window_title: str,
-        logger_instances: Union[Iterable[logging.Logger], LogStore],
+        logger_instances: Iterable[logging.Logger] | LogStore,
         separate_log_panes: bool = False,
         log_level_name: Optional[str] = None,
     ) -> Optional[LogPane]:

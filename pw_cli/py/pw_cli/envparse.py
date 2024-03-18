@@ -24,7 +24,6 @@ from typing import (
     Mapping,
     Optional,
     TypeVar,
-    Union,
 )
 
 
@@ -87,7 +86,7 @@ class EnvironmentParser:
     def __init__(
         self,
         prefix: Optional[str] = None,
-        error_on_unrecognized: Union[bool, None] = None,
+        error_on_unrecognized: bool | None = None,
     ) -> None:
         self._prefix: Optional[str] = prefix
         if error_on_unrecognized is None:

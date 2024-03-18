@@ -33,7 +33,6 @@ from typing import (
     Optional,
     Pattern,
     TextIO,
-    Union,
     ValuesView,
 )
 from uuid import uuid4
@@ -53,12 +52,12 @@ TOKENIZER_HASH_CONSTANT = 65599
 _LOG = logging.getLogger('pw_tokenizer')
 
 
-def _value(char: Union[int, str]) -> int:
+def _value(char: int | str) -> int:
     return char if isinstance(char, int) else ord(char)
 
 
 def pw_tokenizer_65599_hash(
-    string: Union[str, bytes], *, hash_length: Optional[int] = None
+    string: str | bytes, *, hash_length: Optional[int] = None
 ) -> int:
     """Hashes the string with the hash function used to generate tokens in C++.
 
@@ -77,7 +76,7 @@ def pw_tokenizer_65599_hash(
 
 
 def c_hash(
-    string: Union[str, bytes], hash_length: int = DEFAULT_C_HASH_LENGTH
+    string: str | bytes, hash_length: int = DEFAULT_C_HASH_LENGTH
 ) -> int:
     """Hashes the string with the hash function used in C."""
     return pw_tokenizer_65599_hash(string, hash_length=hash_length)
@@ -286,9 +285,9 @@ class Database:
 
     def filter(
         self,
-        include: Iterable[Union[str, Pattern[str]]] = (),
-        exclude: Iterable[Union[str, Pattern[str]]] = (),
-        replace: Iterable[tuple[Union[str, Pattern[str]], str]] = (),
+        include: Iterable[str | Pattern[str]] = (),
+        exclude: Iterable[str | Pattern[str]] = (),
+        replace: Iterable[tuple[str | Pattern[str], str]] = (),
     ) -> None:
         """Filters the database using regular expressions (strings or compiled).
 

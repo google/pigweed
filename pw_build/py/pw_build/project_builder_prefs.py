@@ -17,7 +17,7 @@ import argparse
 import copy
 import shlex
 from pathlib import Path
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 from pw_config_loader import yaml_config_loader_mixin
 
@@ -64,9 +64,9 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         load_argparse_arguments: Callable[
             [argparse.ArgumentParser], argparse.ArgumentParser
         ],
-        project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
-        project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
-        user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
+        project_file: Path | bool = _DEFAULT_PROJECT_FILE,
+        project_user_file: Path | bool = _DEFAULT_PROJECT_USER_FILE,
+        user_file: Path | bool = _DEFAULT_USER_FILE,
     ) -> None:
         self.load_argparse_arguments = load_argparse_arguments
 
@@ -131,9 +131,9 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
     @property
     def build_directories(self) -> dict[str, list[str]]:
         """Returns build directories and the targets to build in each."""
-        build_directories: Union[
-            list[str], dict[str, list[str]]
-        ] = self._config.get('build_directories', {})
+        build_directories: list[str] | dict[str, list[str]] = self._config.get(
+            'build_directories', {}
+        )
         final_build_dirs: dict[str, list[str]] = {}
 
         if isinstance(build_directories, dict):
