@@ -129,7 +129,7 @@ can be configured using the `--cxxopt flag
 
 Python
 ------
-Pigweed officially supports Python 3.8, 3.9, 3.10, and 3.11.
+Pigweed officially supports Python 3.10 and 3.11.
 
 .. toctree::
    :maxdepth: 1
