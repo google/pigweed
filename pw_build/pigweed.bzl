@@ -157,18 +157,6 @@ def pw_cc_perf_test(**kwargs):
     kwargs["testonly"] = True
     native.cc_binary(**kwargs)
 
-def pw_cc_facade(**kwargs):
-    # Bazel facades should be source only cc_library's this is to simplify
-    # lazy header evaluation. Bazel headers are not 'precompiled' so the build
-    # system does not check to see if the build has the right dependant headers
-    # in the sandbox. If a source file is declared here and includes a header
-    # file the toolchain will compile as normal and complain about the missing
-    # backend headers.
-    if "srcs" in kwargs.keys():
-        fail("'srcs' attribute does not exist in pw_cc_facade, please use \
-        main implementing target.")
-    native.cc_library(**kwargs)
-
 def host_backend_alias(name, backend):
     """An alias that resolves to the backend for host platforms."""
     native.alias(
