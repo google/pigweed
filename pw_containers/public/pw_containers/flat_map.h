@@ -127,7 +127,7 @@ class FlatMap {
 
   constexpr FlatMap(const std::array<value_type, kArraySize>& items)
       : items_(items) {
-    ConstexprSort(items_.data(), kArraySize);
+    ConstexprSort(items_.begin(), kArraySize);
   }
 
   FlatMap(FlatMap&) = delete;
