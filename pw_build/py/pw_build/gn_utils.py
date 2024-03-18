@@ -309,7 +309,7 @@ class GnVisibility:
                 return True
             if other_path.endswith('*'):
                 parent = PurePosixPath(other_path).parent
-                return _is_relative_to(_path, parent)
+                return PurePosixPath(_path).is_relative_to(parent)
             return _path == other_path
         return str(self) == str(other)
 
@@ -329,19 +329,6 @@ def _as_path(item: Union[str, GnPath, GnLabel, PurePosixPath]) -> PurePosixPath:
     return item
 
 
-def _is_relative_to(
-    path: Union[str, PurePosixPath], start: Union[str, PurePosixPath]
-) -> bool:
-    """Returns whether `path` is a subdirectory of `start`."""
-    _path = PurePosixPath(path)
-    _start = PurePosixPath(start)
-    try:
-        _path.relative_to(_start)
-        return True
-    except ValueError:
-        return False
-
-
 def _relative_to(
     path: Union[str, PurePosixPath], start: Union[str, PurePosixPath]
 ) -> PurePosixPath:
@@ -353,7 +340,7 @@ def _relative_to(
     if _path.parts[0] != _start.parts[0]:
         return _path
     ascend = PurePosixPath()
-    while not _is_relative_to(_path, _start):
+    while not _path.is_relative_to(_start):
         if _start.parent == PurePosixPath():
             break
         _start = _start.parent

@@ -82,19 +82,11 @@ def _transform_lcov_file_paths(lcov_file: Path, repo_root: Path) -> str:
         file_string = line[3:].rstrip()
         source_file_path = Path(file_string)
 
-        # TODO: b/248257406 - Remove once we drop support for Python 3.8.
-        def is_relative_to(path: Path, other: Path) -> bool:
-            try:
-                path.relative_to(other)
-                return True
-            except ValueError:
-                return False
-
         # Attempt to map a generated Python package source file to the root
         # source tree.
         # pylint: disable=no-member
-        if not is_relative_to(
-            source_file_path, repo_root  # type: ignore[attr-defined]
+        if not source_file_path.is_relative_to(
+            repo_root  # type: ignore[attr-defined]
         ):
             # pylint: enable=no-member
             source_file_path = repo_root / str(source_file_path).replace(
@@ -103,8 +95,8 @@ def _transform_lcov_file_paths(lcov_file: Path, repo_root: Path) -> str:
 
         # If mapping fails don't modify this line.
         # pylint: disable=no-member
-        if not is_relative_to(
-            source_file_path, repo_root  # type: ignore[attr-defined]
+        if not source_file_path.is_relative_to(
+            repo_root  # type: ignore[attr-defined]
         ):
             # pylint: enable=no-member
             lcov_output += line + '\n'

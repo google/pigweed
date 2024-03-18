@@ -142,20 +142,12 @@ def _sanitize_path(
     user_home = Path.home().resolve()
     resolved_path = Path(path).resolve()
 
-    # TODO: b/248257406 - Remove once we drop support for Python 3.8.
-    def is_relative_to(path: Path, other: Path) -> bool:
-        try:
-            path.relative_to(other)
-            return True
-        except ValueError:
-            return False
-
-    if is_relative_to(resolved_path, project_root):
+    if resolved_path.is_relative_to(project_root):
         return f'{project_root_prefix}/' + str(
             resolved_path.relative_to(project_root)
         )
 
-    if is_relative_to(resolved_path, user_home):
+    if resolved_path.is_relative_to(user_home):
         return f'{user_home_prefix}/' + str(
             resolved_path.relative_to(user_home)
         )
