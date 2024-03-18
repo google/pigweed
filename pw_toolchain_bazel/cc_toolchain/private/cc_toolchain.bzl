@@ -186,7 +186,7 @@ def _split_args(kwargs, filter_dict):
         filter_dict: The dictionary used as the filter.
 
     Returns:
-        Tuple[Dict, Dict]
+        tuple[Dict, Dict]
     """
     filtered_args = {}
     remainder = {}

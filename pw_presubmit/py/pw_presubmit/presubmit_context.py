@@ -33,7 +33,6 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Tuple,
     TYPE_CHECKING,
 )
 import urllib
@@ -69,7 +68,7 @@ class FormatOptions:
             exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
         )
 
-    def filter_paths(self, paths: Iterable[Path]) -> Tuple[Path, ...]:
+    def filter_paths(self, paths: Iterable[Path]) -> tuple[Path, ...]:
         root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
         relpaths = [x.relative_to(root) for x in paths]
 
@@ -373,7 +372,7 @@ class FormatContext:
 
     root: Optional[Path]
     output_dir: Path
-    paths: Tuple[Path, ...]
+    paths: tuple[Path, ...]
     package_root: Path
     format_options: FormatOptions
     dry_run: bool = False
@@ -430,11 +429,11 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     """
 
     root: Path
-    repos: Tuple[Path, ...]
+    repos: tuple[Path, ...]
     output_dir: Path
     failure_summary_log: Path
-    paths: Tuple[Path, ...]
-    all_paths: Tuple[Path, ...]
+    paths: tuple[Path, ...]
+    all_paths: tuple[Path, ...]
     package_root: Path
     luci: Optional[LuciContext]
     override_gn_args: Dict[str, str]
@@ -635,5 +634,5 @@ def log_check_traces(ctx: 'PresubmitContext') -> None:
 def apply_exclusions(
     ctx: PresubmitContext,
     paths: Optional[Sequence[Path]] = None,
-) -> Tuple[Path, ...]:
+) -> tuple[Path, ...]:
     return ctx.format_options.filter_paths(paths or ctx.paths)

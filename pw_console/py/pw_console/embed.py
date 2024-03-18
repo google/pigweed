@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -134,7 +134,7 @@ class PwConsoleEmbed:
         self.setup_python_logging_called = False
         self.hidden_by_default_windows: list[str] = []
         self.window_plugins: list[WindowPane] = []
-        self.floating_window_plugins: list[Tuple[FloatingWindowPane, Dict]] = []
+        self.floating_window_plugins: list[tuple[FloatingWindowPane, Dict]] = []
         self.top_toolbar_plugins: list[WindowPaneToolbar] = []
         self.bottom_toolbar_plugins: list[WindowPaneToolbar] = []
 

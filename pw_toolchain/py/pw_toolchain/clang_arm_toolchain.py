@@ -36,7 +36,7 @@ import os
 import subprocess
 
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
 _ARM_COMPILER_PREFIX = 'arm-none-eabi'
 _ARM_COMPILER_NAME = _ARM_COMPILER_PREFIX + '-gcc'
@@ -153,7 +153,7 @@ def get_cflags(compiler_info: Dict[str, str]):
     return cflags
 
 
-def get_crt_objs(compiler_info: Dict[str, str]) -> Tuple[str, ...]:
+def get_crt_objs(compiler_info: Dict[str, str]) -> tuple[str, ...]:
     return (
         str(Path(compiler_info['gcc_libs_dir']) / 'crtfastmath.o'),
         str(Path(compiler_info['gcc_libs_dir']) / 'crti.o'),

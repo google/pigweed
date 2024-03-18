@@ -14,7 +14,7 @@
 """Wrapers for socket clients to log read and write data."""
 from __future__ import annotations
 
-from typing import Callable, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Callable, Optional, TYPE_CHECKING, Union
 
 import errno
 import re
@@ -34,12 +34,12 @@ class SocketClient:
     DEFAULT_SOCKET_PORT = 33000
     PW_RPC_MAX_PACKET_SIZE = 256
 
-    _InitArgsType = Tuple[
+    _InitArgsType = tuple[
         socket.AddressFamily, int  # pylint: disable=no-member
     ]
     # Can be a string, (address, port) for AF_INET or (address, port, flowinfo,
     # scope_id) AF_INET6.
-    _AddressType = Union[str, Tuple[str, int], Tuple[str, int, int, int]]
+    _AddressType = Union[str, tuple[str, int], tuple[str, int, int, int]]
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class SocketClient:
     @staticmethod
     def _parse_socket_config(
         config: str,
-    ) -> Tuple[SocketClient._InitArgsType, SocketClient._AddressType]:
+    ) -> tuple[SocketClient._InitArgsType, SocketClient._AddressType]:
         """Sets the variables used to create a socket given a config string.
 
         Raises:

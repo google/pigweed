@@ -14,14 +14,14 @@
 """Decodes the in-memory representation of a sized-entry ring buffer."""
 
 import struct
-from typing import Iterable, Tuple
+from typing import Iterable
 
 _HEADER = struct.Struct('III')  # data_size_bytes, head, tail
 
 
 def _decode_leb128(
     data: bytes, offset: int = 0, max_bits: int = 32
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     count = value = shift = 0
 
     while offset < len(data):

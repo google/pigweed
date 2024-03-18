@@ -13,7 +13,6 @@
 # the License.
 """Module for low-level HDLC protocol features."""
 
-from typing import Tuple
 
 import zlib
 
@@ -54,7 +53,7 @@ def encode_address(address: int) -> bytes:
     return result
 
 
-def decode_address(frame: bytes) -> Tuple[int, int]:
+def decode_address(frame: bytes) -> tuple[int, int]:
     """Decodes an HDLC address from a frame, returning it and its size."""
     result = 0
     length = 0

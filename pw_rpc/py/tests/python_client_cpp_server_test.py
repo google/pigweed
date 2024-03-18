@@ -15,7 +15,6 @@
 """Tests using the callback client for pw_rpc."""
 
 import contextlib
-from typing import Tuple
 import unittest
 
 import pw_hdlc.rpc
@@ -28,7 +27,7 @@ ITERATIONS = 50
 class RpcIntegrationTest(unittest.TestCase):
     """Calls RPCs on an RPC server through a socket."""
 
-    test_server_command: Tuple[str, ...] = ()
+    test_server_command: tuple[str, ...] = ()
     port: int
 
     def setUp(self) -> None:

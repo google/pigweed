@@ -57,7 +57,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    Tuple,
     Union,
 )
 
@@ -134,7 +133,7 @@ class DetokenizedString:
         self.successes: list[decode.FormattedString] = []
         self.failures: list[decode.FormattedString] = []
 
-        decode_attempts: list[Tuple[Tuple, decode.FormattedString]] = []
+        decode_attempts: list[tuple[tuple, decode.FormattedString]] = []
 
         for entry, fmt in format_string_entries:
             result = fmt.format(
@@ -479,7 +478,7 @@ _PathOrStr = Union[Path, str]
 
 
 # TODO: b/265334753 - Reuse this function in database.py:LoadTokenDatabases
-def _parse_domain(path: _PathOrStr) -> Tuple[Path, Optional[Pattern[str]]]:
+def _parse_domain(path: _PathOrStr) -> tuple[Path, Optional[Pattern[str]]]:
     """Extracts an optional domain regex pattern suffix from a path"""
 
     if isinstance(path, Path):
@@ -610,7 +609,7 @@ class NestedMessageParser:
 
     def read_messages_io(
         self, binary_io: _RawIo
-    ) -> Iterator[Tuple[bool, bytes]]:
+    ) -> Iterator[tuple[bool, bytes]]:
         """Reads prefixed messages from a byte stream (BinaryIO object).
 
         Reads until EOF. If the stream is nonblocking (``read(1)`` returns
@@ -638,7 +637,7 @@ class NestedMessageParser:
 
     def read_messages(
         self, chunk: bytes, *, flush: bool = False
-    ) -> Iterator[Tuple[bool, bytes]]:
+    ) -> Iterator[tuple[bool, bytes]]:
         """Reads prefixed messages from a byte string.
 
         This function may be called repeatedly with chunks of a stream. Partial
@@ -658,7 +657,7 @@ class NestedMessageParser:
         if flush or self._state is self._State.NON_MESSAGE:
             yield from self._flush()
 
-    def _handle_byte(self, byte: int) -> Iterator[Tuple[bool, bytes]]:
+    def _handle_byte(self, byte: int) -> Iterator[tuple[bool, bytes]]:
         if self._state is self._State.MESSAGE:
             if byte not in self._message_bytes:
                 yield from self._flush()
@@ -673,7 +672,7 @@ class NestedMessageParser:
 
         self._buffer.append(byte)
 
-    def _flush(self) -> Iterator[Tuple[bool, bytes]]:
+    def _flush(self) -> Iterator[tuple[bool, bytes]]:
         data = bytes(self._buffer)
         self._buffer.clear()
         if data:

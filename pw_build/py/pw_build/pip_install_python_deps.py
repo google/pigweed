@@ -19,7 +19,6 @@ from pathlib import Path
 import subprocess
 import shlex
 import sys
-from typing import Tuple
 
 try:
     from pw_build.python_package import load_packages
@@ -30,7 +29,7 @@ except ImportError:
 _LOG = logging.getLogger('pw_build.pip_install_python_deps')
 
 
-def _parse_args() -> Tuple[argparse.Namespace, list[str]]:
+def _parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--python-dep-list-files',

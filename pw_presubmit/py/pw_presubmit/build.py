@@ -40,7 +40,6 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Tuple,
     Union,
 )
 
@@ -486,7 +485,7 @@ def check_bazel_build_for_files(
 def check_gn_build_for_files(
     gn_extensions_to_check: Container[str],
     files: Iterable[Path],
-    gn_dirs: Iterable[Tuple[Path, Path]] = (),
+    gn_dirs: Iterable[tuple[Path, Path]] = (),
     gn_build_files: Iterable[Path] = (),
 ) -> list[Path]:
     """Checks that source files are in the GN build.
@@ -533,7 +532,7 @@ def check_builds_for_files(
     gn_extensions_to_check: Container[str],
     files: Iterable[Path],
     bazel_dirs: Iterable[Path] = (),
-    gn_dirs: Iterable[Tuple[Path, Path]] = (),
+    gn_dirs: Iterable[tuple[Path, Path]] = (),
     gn_build_files: Iterable[Path] = (),
 ) -> Dict[str, list[Path]]:
     """Checks that source files are in the GN and Bazel builds.
@@ -755,7 +754,7 @@ class CoverageOptions:
     """Coverage collection configuration. For Google use only."""
 
     common: CommonCoverageOptions
-    codesearch: Tuple[CodeSearchCoverageOptions, ...]
+    codesearch: tuple[CodeSearchCoverageOptions, ...]
     gerrit: GerritCoverageOptions
 
 
@@ -787,7 +786,7 @@ class _NinjaBase(Check):
         """
         super().__init__(*args, **kwargs)
         self._packages: Sequence[str] = packages
-        self._ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(
+        self._ninja_contexts: tuple[_CtxMgrOrLambda, ...] = tuple(
             ninja_contexts
         )
         self._coverage_options = coverage_options
@@ -800,7 +799,7 @@ class _NinjaBase(Check):
         if ninja_targets and all_strings != any_strings:
             raise ValueError(repr(ninja_targets))
 
-        self._ninja_target_lists: Tuple[Tuple[str, ...], ...]
+        self._ninja_target_lists: tuple[tuple[str, ...], ...]
         if all_strings:
             targets: list[str] = []
             for target in ninja_targets:

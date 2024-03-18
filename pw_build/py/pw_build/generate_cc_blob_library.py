@@ -26,7 +26,6 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Tuple,
 )
 
 COMMENT = f"""\
@@ -141,7 +140,7 @@ def parse_args() -> dict:
 
 def split_into_chunks(
     data: Iterable[Any], chunk_size: int
-) -> Generator[Tuple[Any, ...], None, None]:
+) -> Generator[tuple[Any, ...], None, None]:
     """Splits an iterable into chunks of a given size."""
     data_iterator = iter(data)
     chunk = tuple(itertools.islice(data_iterator, chunk_size))

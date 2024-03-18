@@ -19,7 +19,7 @@ import difflib
 import logging
 from pathlib import Path
 import subprocess
-from typing import Callable, Iterable, Iterator, Optional, Protocol, Tuple
+from typing import Callable, Iterable, Iterator, Optional, Protocol
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -275,7 +275,7 @@ class FileFormatter(FileChecker):
 
     def format_files(
         self, paths: Iterable[Path], keep_warnings: bool = True
-    ) -> Iterator[Tuple[Path, FormatFixStatus]]:
+    ) -> Iterator[tuple[Path, FormatFixStatus]]:
         """Formats the provided files and fixes them in-place.
 
         All files must be updated to contain the formatted version. If errors

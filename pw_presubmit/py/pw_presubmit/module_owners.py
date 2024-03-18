@@ -15,7 +15,7 @@
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 from pw_presubmit.presubmit_context import (
     PresubmitContext,
@@ -31,7 +31,7 @@ def upstream_pigweed_applicability(
     path: Path,
 ) -> Optional[Path]:
     """Return a parent of path required to have an OWNERS file, or None."""
-    parts: Tuple[str, ...] = path.relative_to(ctx.root).parts
+    parts: tuple[str, ...] = path.relative_to(ctx.root).parts
 
     if len(parts) >= 2 and parts[0].startswith('pw_'):
         return ctx.root / parts[0]

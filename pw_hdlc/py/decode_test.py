@@ -15,7 +15,7 @@
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
 import queue
-from typing import Iterator, NamedTuple, Optional, Tuple, Union
+from typing import Iterator, NamedTuple, Optional, Union
 import unittest
 
 from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
@@ -112,7 +112,7 @@ _ESCAPED_FLAG_TEST_CASE = case(
 # second time for the FrameAndNonFrameDecoder. The FrameAndNonFrameDecoder tests
 # flush the non-frame data to simulate a timeout or MTU overflow, so the
 # expected raw data includes all bytes not in an HDLC frame.
-TEST_CASES: Tuple[GroupOrTest[TestCase], ...] = (
+TEST_CASES: tuple[GroupOrTest[TestCase], ...] = (
     'Empty payload',
     case(_encode(0, 0, b''), [Expected(0, b'\0', b'')]),
     case(_encode(55, 0x99, b''), [Expected(55, b'\x99', b'')]),

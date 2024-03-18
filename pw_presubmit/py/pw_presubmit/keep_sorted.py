@@ -28,7 +28,6 @@ from typing import (
     Optional,
     Pattern,
     Sequence,
-    Tuple,
     Union,
 )
 
@@ -116,7 +115,7 @@ class _Block:
     ignore_case: bool = False
     allow_dupes: bool = False
     ignored_prefixes: Sequence[str] = dataclasses.field(default_factory=list)
-    sticky_comments: Tuple[str, ...] = ()
+    sticky_comments: tuple[str, ...] = ()
     start_line_number: int = -1
     start_line: str = ''
     end_line: str = ''
@@ -180,7 +179,7 @@ class _FileSorter:
         if not block.allow_dupes:
             lines = list({x.full: x for x in lines}.values())
 
-        StrLinePair = Tuple[str, _Line]  # pylint: disable=invalid-name
+        StrLinePair = tuple[str, _Line]  # pylint: disable=invalid-name
         sort_key_funcs: list[Callable[[StrLinePair], StrLinePair]] = []
 
         if block.ignored_prefixes:

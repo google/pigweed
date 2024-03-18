@@ -17,8 +17,8 @@ import argparse
 import json
 from typing import Iterator, TextIO
 
-# Note: This should be list[Tuple[str, str]], but using string.split()
-# produces Tuple[Any,...], so this permits that typing for convenience.
+# Note: This should be list[tuple[str, str]], but using string.split()
+# produces tuple[Any,...], so this permits that typing for convenience.
 PrefixMaps = list[tuple]
 
 

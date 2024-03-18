@@ -16,7 +16,6 @@
 import enum
 from typing import (
     Iterable,
-    Tuple,
     Union,
     Type,
     Optional,
@@ -164,9 +163,9 @@ class BloatTableOutput:
 
     def _diff_label_names(
         self,
-        old_labels: Optional[Tuple[_LabelContent, ...]],
-        new_labels: Tuple[_LabelContent, ...],
-    ) -> Tuple[_LabelContent, ...]:
+        old_labels: Optional[tuple[_LabelContent, ...]],
+        new_labels: tuple[_LabelContent, ...],
+    ) -> tuple[_LabelContent, ...]:
         """Return difference between arrays of labels."""
 
         if old_labels is None:
@@ -283,7 +282,7 @@ class BloatTableOutput:
         return label_row
 
     def _get_ds_label_size(
-        self, parent_labels: Tuple[str, ...]
+        self, parent_labels: tuple[str, ...]
     ) -> Iterable[_LabelContent]:
         """Produce label, size pairs from parent label names."""
         parent_label_sizes = []
@@ -341,7 +340,7 @@ class BloatTableOutput:
         return complete_total_rows
 
     def _create_diff_rows(
-        self, diff_list: Tuple[_LabelContent, ...]
+        self, diff_list: tuple[_LabelContent, ...]
     ) -> Iterable[str]:
         """Create rows for each label according to its index in diff_list."""
         curr_row = ''

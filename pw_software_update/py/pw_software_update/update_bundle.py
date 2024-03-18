@@ -18,7 +18,7 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, Optional
 
 from pw_software_update import metadata
 from pw_software_update.tuf_pb2 import SignedRootMetadata, SignedTargetsMetadata
@@ -168,7 +168,7 @@ def gen_unsigned_update_bundle(
     )
 
 
-def parse_target_arg(target_arg: str) -> Tuple[Path, str]:
+def parse_target_arg(target_arg: str) -> tuple[Path, str]:
     """Parse an individual target string passed in to the --targets argument.
 
     Target strings take the following form:

@@ -13,12 +13,12 @@
 # the License.
 """Converts ST generated .icf linker files into basic .ld linker files"""
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import pathlib
 
 
-def parse_icf(icf_file: str) -> Tuple[Dict, Dict]:
+def parse_icf(icf_file: str) -> tuple[Dict, Dict]:
     """Parse ICF linker file.
 
     ST only provides .icf linker files for many products, so there is a need

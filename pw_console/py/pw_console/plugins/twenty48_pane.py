@@ -14,7 +14,7 @@
 """Example Plugin that displays some dynamic content: a game of 2048."""
 
 from random import choice
-from typing import Iterable, Tuple, TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING
 import time
 
 from prompt_toolkit.filters import has_focus
@@ -44,7 +44,7 @@ from pw_console.get_pw_console_app import get_pw_console_app
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
 
-Twenty48Cell = Tuple[int, int, int]
+Twenty48Cell = tuple[int, int, int]
 
 
 class Twenty48Game:
@@ -183,7 +183,7 @@ class Twenty48Game:
                 if col == col_index:
                     yield (row, col, cell_value)
 
-    def non_zero_row_values(self, index: int) -> Tuple[list, list]:
+    def non_zero_row_values(self, index: int) -> tuple[list, list]:
         non_zero_values = [
             value for row, col, value in self.row(index) if value != 0
         ]
@@ -214,7 +214,7 @@ class Twenty48Game:
                     self.board[row][col + 1] = this_cell * 2
                     break
 
-    def non_zero_col_values(self, index: int) -> Tuple[list, list]:
+    def non_zero_col_values(self, index: int) -> tuple[list, list]:
         non_zero_values = [
             value for row, col, value in self.col(index) if value != 0
         ]

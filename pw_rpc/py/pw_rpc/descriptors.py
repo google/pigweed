@@ -26,7 +26,6 @@ from typing import (
     Iterable,
     Iterator,
     Optional,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -153,7 +152,7 @@ class Service:
         return self.full_name
 
 
-def _streaming_attributes(method) -> Tuple[bool, bool]:
+def _streaming_attributes(method) -> tuple[bool, bool]:
     # TODO(hepler): Investigate adding server_streaming and client_streaming
     #     attributes to the generated protobuf code. As a workaround,
     #     deserialize the FileDescriptorProto to get that information.

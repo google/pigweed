@@ -34,7 +34,6 @@ from typing import (
     Optional,
     Pattern,
     TextIO,
-    Tuple,
     Union,
     ValuesView,
 )
@@ -181,7 +180,7 @@ class Database:
         """Returns iterable over all TokenizedStringEntries in the database."""
         return self._database.values()
 
-    def collisions(self) -> Iterator[Tuple[int, list[TokenizedStringEntry]]]:
+    def collisions(self) -> Iterator[tuple[int, list[TokenizedStringEntry]]]:
         """Returns tuple of (token, entries_list)) for all colliding tokens."""
         for token, entries in self.token_to_entries.items():
             if len(entries) > 1:
@@ -290,7 +289,7 @@ class Database:
         self,
         include: Iterable[Union[str, Pattern[str]]] = (),
         exclude: Iterable[Union[str, Pattern[str]]] = (),
-        replace: Iterable[Tuple[Union[str, Pattern[str]], str]] = (),
+        replace: Iterable[tuple[Union[str, Pattern[str]], str]] = (),
     ) -> None:
         """Filters the database using regular expressions (strings or compiled).
 

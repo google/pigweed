@@ -14,7 +14,7 @@
 """Attractive status output to the terminal (and other places if you want)."""
 
 import logging
-from typing import Callable, Tuple, Union
+from typing import Callable, Union
 
 from pw_cli.color import colors
 
@@ -23,7 +23,7 @@ def _no_color(msg: str) -> str:
     return msg
 
 
-def _split_lines(msg: Union[str, list[str]]) -> Tuple[str, list[str]]:
+def _split_lines(msg: Union[str, list[str]]) -> tuple[str, list[str]]:
     """Turn a list of strings into a tuple of the first and list of rest."""
     if isinstance(msg, str):
         return (msg, [])

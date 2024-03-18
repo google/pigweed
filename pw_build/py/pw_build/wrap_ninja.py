@@ -25,7 +25,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, Dict, IO, Tuple, Optional
+from typing import Any, Dict, IO, Optional
 
 if sys.platform != 'win32':
     import pty
@@ -522,7 +522,7 @@ class UI:
         self._renderer.print_line(line)
 
 
-def _parse_args() -> Tuple[argparse.Namespace, list[str]]:
+def _parse_args() -> tuple[argparse.Namespace, list[str]]:
     """Parses CLI arguments.
 
     Returns:

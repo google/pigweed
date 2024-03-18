@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -128,7 +128,7 @@ class LogScreen:
     log lines as the user moves the cursor."""
 
     # Callable functions to retrieve logs and display formatting.
-    get_log_source: Callable[[], Tuple[int, collections.deque[LogLine]]]
+    get_log_source: Callable[[], tuple[int, collections.deque[LogLine]]]
     get_line_wrapping: Callable[[], bool]
     get_log_formatter: Callable[
         [], Optional[Callable[[LogLine], StyleAndTextTuples]]

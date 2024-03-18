@@ -41,7 +41,6 @@ from typing import (
     Pattern,
     Sequence,
     TextIO,
-    Tuple,
     Union,
 )
 
@@ -145,7 +144,7 @@ def _make_formatting_diff_dict(
 
 
 def _make_format_fix_error_output_dict(
-    statuses: Iterable[Tuple[Path, FormatFixStatus]],
+    statuses: Iterable[tuple[Path, FormatFixStatus]],
 ) -> Dict[Path, str]:
     return {
         file_path: str(status.error_message) for file_path, status in statuses
@@ -377,7 +376,7 @@ def _black_config_args() -> Sequence[Union[str, Path]]:
     return config_args
 
 
-def _black_multiple_files(ctx: _Context) -> Tuple[str, ...]:
+def _black_multiple_files(ctx: _Context) -> tuple[str, ...]:
     black = ctx.format_options.black_path
     changed_paths: list[str] = []
     for line in (
@@ -399,7 +398,7 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
 
     # Run black --check on the full list of paths and then only run black
     # individually on the files that black found issue with.
-    paths: Tuple[str, ...] = _black_multiple_files(ctx)
+    paths: tuple[str, ...] = _black_multiple_files(ctx)
 
     def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
         # black doesn't have an option to output the changed file, so copy the
@@ -434,7 +433,7 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
 
     # Run black --check on the full list of paths and then only run black
     # individually on the files that black found issue with.
-    paths: Tuple[str, ...] = _black_multiple_files(ctx)
+    paths: tuple[str, ...] = _black_multiple_files(ctx)
 
     for path in ctx.paths:
         if not str(path).endswith(paths):
@@ -729,7 +728,7 @@ JSON_FORMAT: CodeFormat = CodeFormat(
     fix=fix_json_format,
 )
 
-CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
+CODE_FORMATS: tuple[CodeFormat, ...] = tuple(
     filter(
         None,
         (
@@ -757,8 +756,8 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
 
 
 # TODO: b/264578594 - Remove these lines when these globals aren't referenced.
-CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS
-CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = CODE_FORMATS
+CODE_FORMATS_WITH_BLACK: tuple[CodeFormat, ...] = CODE_FORMATS
+CODE_FORMATS_WITH_YAPF: tuple[CodeFormat, ...] = CODE_FORMATS
 
 
 def presubmit_check(
@@ -809,7 +808,7 @@ def presubmit_checks(
     *,
     exclude: Collection[Union[str, Pattern[str]]] = (),
     code_formats: Collection[CodeFormat] = CODE_FORMATS,
-) -> Tuple[Callable, ...]:
+) -> tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
 
     Args:
@@ -837,7 +836,7 @@ class CodeFormatter:
         self.package_root = package_root or output_dir / 'packages'
         self._format_options = FormatOptions.load()
         raw_paths = files
-        self.paths: Tuple[Path, ...] = self._format_options.filter_paths(files)
+        self.paths: tuple[Path, ...] = self._format_options.filter_paths(files)
 
         filtered_paths = set(raw_paths) - set(self.paths)
         for path in sorted(filtered_paths):

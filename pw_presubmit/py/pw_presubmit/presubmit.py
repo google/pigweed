@@ -68,7 +68,6 @@ from typing import (
     Pattern,
     Sequence,
     Set,
-    Tuple,
     Union,
 )
 
@@ -581,7 +580,7 @@ class Presubmit:
         program: list[FilteredCheck],
         keep_going: bool,
         dry_run: bool = False,
-    ) -> Tuple[int, int, int]:
+    ) -> tuple[int, int, int]:
         """Runs presubmit checks; returns (passed, failed, skipped) lists."""
         passed = failed = 0
 
@@ -640,7 +639,7 @@ def fetch_file_lists(
     pathspecs: list[str],
     exclude: Sequence[Pattern] = (),
     base: Optional[str] = None,
-) -> Tuple[list[Path], list[Path]]:
+) -> tuple[list[Path], list[Path]]:
     """Returns lists of all files and modified files for the given repo.
 
     Args:
@@ -686,7 +685,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     output_directory: Optional[Path] = None,
     package_root: Optional[Path] = None,
     only_list_steps: bool = False,
-    override_gn_args: Sequence[Tuple[str, str]] = (),
+    override_gn_args: Sequence[tuple[str, str]] = (),
     keep_going: bool = False,
     continue_after_build_error: bool = False,
     rng_seed: int = 1,
@@ -817,7 +816,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     return presubmit.run(program, keep_going, substep=substep, dry_run=dry_run)
 
 
-def _make_str_tuple(value: Union[Iterable[str], str]) -> Tuple[str, ...]:
+def _make_str_tuple(value: Union[Iterable[str], str]) -> tuple[str, ...]:
     return tuple([value] if isinstance(value, str) else value)
 
 

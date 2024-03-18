@@ -60,7 +60,6 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
-    Tuple,
 )
 
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
@@ -750,7 +749,7 @@ def watch_setup(  # pylint: disable=too-many-locals
     debug_logging: bool = False,
     # pylint: enable=unused-argument
     # pylint: disable=too-many-arguments
-) -> Tuple[PigweedBuildWatcher, list[Path]]:
+) -> tuple[PigweedBuildWatcher, list[Path]]:
     """Watches files and runs Ninja commands when they change."""
     watch_logging_init(
         log_level=project_builder.default_log_level,

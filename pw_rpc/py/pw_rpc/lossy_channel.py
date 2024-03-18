@@ -17,7 +17,7 @@ import abc
 import collections
 import copy
 import logging
-from typing import Callable, Deque, Optional, Tuple
+from typing import Callable, Deque, Optional
 import random
 import time
 
@@ -67,7 +67,7 @@ class LossController(abc.ABC):
 class ManualPacketFilter(LossController):
     """Determines if a packet should be kept or dropped for testing purposes."""
 
-    _Action = Callable[[int], Tuple[bool, bool]]
+    _Action = Callable[[int], tuple[bool, bool]]
     _KEEP = lambda _: (True, False)
     _DROP = lambda _: (False, False)
 
@@ -140,7 +140,7 @@ class RandomLossGenerator(LossController):
         max_duplications_per_packet: int,
         out_of_order_probability: float,
         delayed_packet_probability: float,
-        delayed_packet_range_ms: Tuple[int, int],
+        delayed_packet_range_ms: tuple[int, int],
         dropped_packet_probability: float,
         seed: Optional[int] = None,
     ):

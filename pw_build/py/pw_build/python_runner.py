@@ -28,7 +28,7 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
 try:
     from pw_build import gn_resolver
@@ -188,7 +188,7 @@ class MissingPythonDependency(Exception):
     """An error occurred while processing a Python dependency."""
 
 
-def _load_virtualenv_config(json_file_path: Path) -> Tuple[str, str]:
+def _load_virtualenv_config(json_file_path: Path) -> tuple[str, str]:
     with json_file_path.open() as json_fp:
         json_dict = json.load(json_fp)
     return json_dict.get('interpreter'), json_dict.get('path')

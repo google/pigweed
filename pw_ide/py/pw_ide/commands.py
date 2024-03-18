@@ -19,7 +19,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import cast, Dict, Optional, Set, Tuple
+from typing import cast, Dict, Optional, Set
 
 from pw_cli.env import pigweed_environment
 
@@ -321,7 +321,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
 
     # Get a list of paths to search for compilation databases.
     compdb_search_paths: list[
-        Tuple[Path, str]
+        tuple[Path, str]
     ] = pw_ide_settings.compdb_search_paths
     # Get the list of files for each search path, tupled with the search path.
     compdb_file_path_groups = [
@@ -329,7 +329,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
         for search_path in compdb_search_paths
     ]
     # Flatten that list.
-    compdb_file_paths: list[Tuple[Path, Path, str]] = [
+    compdb_file_paths: list[tuple[Path, Path, str]] = [
         (search_path, file_path, target_inference)
         for (
             (search_path, target_inference),

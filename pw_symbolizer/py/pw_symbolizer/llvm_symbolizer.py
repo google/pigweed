@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import threading
 import json
-from typing import Optional, Tuple
+from typing import Optional
 from pathlib import Path
 from pw_symbolizer import symbolizer
 
@@ -117,7 +117,7 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
         )
 
     @staticmethod
-    def _llvm_output_line_splitter(file_and_line: str) -> Tuple[str, int]:
+    def _llvm_output_line_splitter(file_and_line: str) -> tuple[str, int]:
         split = file_and_line.split(':')
         # LLVM file name output is as follows:
         #   path/to/src.c:123:1

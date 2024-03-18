@@ -13,7 +13,7 @@
 # the License.
 """Finds components for a given manifest."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import pathlib
 import sys
@@ -22,7 +22,7 @@ import xml.etree.ElementTree
 
 def get_component(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> Tuple[Optional[xml.etree.ElementTree.Element], Optional[pathlib.Path]]:
+) -> tuple[Optional[xml.etree.ElementTree.Element], Optional[pathlib.Path]]:
     """Parse <component> manifest stanza.
 
     Schema:
@@ -394,7 +394,7 @@ def create_project(
     root: xml.etree.ElementTree.Element,
     include: list[str],
     exclude: Optional[list[str]] = None,
-) -> Tuple[
+) -> tuple[
     list[str],
     list[str],
     list[pathlib.Path],

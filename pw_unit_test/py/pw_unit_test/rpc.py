@@ -17,7 +17,7 @@ import enum
 import abc
 from dataclasses import dataclass
 import logging
-from typing import Iterable, Tuple
+from typing import Iterable
 
 from pw_rpc.client import Services
 from pw_rpc.callback_client import OptionalTimeout, UseDefault
@@ -137,9 +137,9 @@ class LoggingEventHandler(EventHandler):
 class TestRecord:
     """Records test results."""
 
-    passing_tests: Tuple[TestCase, ...]
-    failing_tests: Tuple[TestCase, ...]
-    disabled_tests: Tuple[TestCase, ...]
+    passing_tests: tuple[TestCase, ...]
+    failing_tests: tuple[TestCase, ...]
+    disabled_tests: tuple[TestCase, ...]
 
     def all_tests_passed(self) -> bool:
         return not self.failing_tests

@@ -22,7 +22,6 @@ from typing import (
     Callable,
     Optional,
     TYPE_CHECKING,
-    Tuple,
     Union,
 )
 
@@ -798,7 +797,7 @@ class LogPane(WindowPane):
 
     def get_window_menu_options(
         self,
-    ) -> list[Tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Union[Callable, None]]]:
         """Return all menu options for the log pane."""
 
         options = [

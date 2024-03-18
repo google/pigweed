@@ -39,7 +39,6 @@ from typing import (
     Pattern,
     Set,
     TextIO,
-    Tuple,
     Union,
 )
 
@@ -593,7 +592,7 @@ def _parse_args():
 
     unescaped_slash = re.compile(r'(?<!\\)/')
 
-    def replacement(value: str) -> Tuple[Pattern, 'str']:
+    def replacement(value: str) -> tuple[Pattern, 'str']:
         try:
             find, sub = unescaped_slash.split(value, 1)
         except ValueError as _err:

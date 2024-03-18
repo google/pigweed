@@ -63,7 +63,6 @@ from typing import (
     Generator,
     Iterator,
     Optional,
-    Tuple,
     TypedDict,
     Union,
 )
@@ -421,7 +420,7 @@ def path_to_executable(
     return maybe_path
 
 
-def command_parts(command: str) -> Tuple[Optional[str], str, list[str]]:
+def command_parts(command: str) -> tuple[Optional[str], str, list[str]]:
     """Return the executable string and the rest of the command tokens.
 
     If the command contains a prefixed wrapper like `ccache`, it will be
@@ -1022,7 +1021,7 @@ class CppCompilationDatabasesMap:
 
     def items(
         self,
-    ) -> Generator[Tuple[str, CppCompilationDatabase], None, None]:
+    ) -> Generator[tuple[str, CppCompilationDatabase], None, None]:
         return ((key, value) for (key, value) in self._dbs.items())
 
     def _sort_by_commands(self) -> list[str]:

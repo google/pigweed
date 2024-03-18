@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from io import TextIOWrapper
 from pathlib import Path
 import tempfile
-from typing import Generator, Optional, Tuple, Union
+from typing import Generator, Optional, Union
 import unittest
 
 from pw_ide.settings import PigweedIdeSettings
@@ -37,7 +37,7 @@ class TempDirTestCase(unittest.TestCase):
     @contextmanager
     def make_temp_file(
         self, filename: Union[Path, str], content: str = ''
-    ) -> Generator[Tuple[TextIOWrapper, Path], None, None]:
+    ) -> Generator[tuple[TextIOWrapper, Path], None, None]:
         """Create a temp file in the test case's temp dir.
 
         Returns a tuple containing the file reference and the file's path.
@@ -62,7 +62,7 @@ class TempDirTestCase(unittest.TestCase):
     def open_temp_file(
         self,
         filename: Union[Path, str],
-    ) -> Generator[Tuple[TextIOWrapper, Path], None, None]:
+    ) -> Generator[tuple[TextIOWrapper, Path], None, None]:
         """Open an existing temp file in the test case's temp dir.
 
         Returns a tuple containing the file reference and the file's path.
@@ -74,7 +74,7 @@ class TempDirTestCase(unittest.TestCase):
 
     @contextmanager
     def make_temp_files(
-        self, files_data: list[Tuple[Union[Path, str], str]]
+        self, files_data: list[tuple[Union[Path, str], str]]
     ) -> Generator[list[TextIOWrapper], None, None]:
         """Create several temp files in the test case's temp dir.
 
@@ -98,7 +98,7 @@ class TempDirTestCase(unittest.TestCase):
             file.close()
 
     def touch_temp_files(
-        self, files_data: list[Tuple[Union[Path, str], str]]
+        self, files_data: list[tuple[Union[Path, str], str]]
     ) -> None:
         """Create several temp files in the temp dir, without context."""
         with self.make_temp_files(files_data):

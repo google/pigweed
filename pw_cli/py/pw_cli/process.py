@@ -18,7 +18,7 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import Dict, IO, Tuple, Union, Optional
+from typing import Dict, IO, Union, Optional
 
 import pw_cli.color
 import pw_cli.log
@@ -64,7 +64,7 @@ class CompletedProcess:
         return self._output
 
 
-async def _run_and_log(program: str, args: Tuple[str, ...], env: dict):
+async def _run_and_log(program: str, args: tuple[str, ...], env: dict):
     process = await asyncio.create_subprocess_exec(
         program,
         *args,

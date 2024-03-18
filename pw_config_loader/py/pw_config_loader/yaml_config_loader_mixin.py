@@ -17,7 +17,7 @@ import enum
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 import yaml
 
@@ -110,7 +110,7 @@ class YamlConfigLoaderMixin:
                 move on to the next file.
         """
 
-        self._config_section_title: Tuple[str, ...]
+        self._config_section_title: tuple[str, ...]
         if isinstance(config_section_title, (list, tuple)):
             self._config_section_title = tuple(config_section_title)
         elif isinstance(config_section_title, str):

@@ -27,7 +27,7 @@ import sys
 import time
 
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Set
 
 import requests
 
@@ -385,7 +385,7 @@ def parse_metadata(metadata: list[str], root: str) -> Dict[str, TestGroup]:
             return path
         return path[: index - 1] + path[index:]
 
-    group_deps: list[Tuple[str, list[str]]] = []
+    group_deps: list[tuple[str, list[str]]] = []
     all_tests: Dict[str, Test] = {}
     test_groups: Dict[str, TestGroup] = {}
     num_tests = 0

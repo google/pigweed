@@ -15,7 +15,7 @@
 """Unit tests for owners_checks.py."""
 from pathlib import Path
 import tempfile
-from typing import Iterable, Sequence, Tuple
+from typing import Iterable, Sequence
 import unittest
 from unittest import mock
 from pw_presubmit import owners_checks
@@ -291,7 +291,7 @@ STYLING_CHECKS = (
     ("bad_whitespace", "bad_whitespace_fixed"),
 )
 
-DEPENDENCY_TEST_CASES: Iterable[Tuple[str, Iterable[str]]] = (
+DEPENDENCY_TEST_CASES: Iterable[tuple[str, Iterable[str]]] = (
     ("no_dependencies", tuple()),
     ("has_dependencies_file", ("foo_owners", "bar_owners")),
     ("has_dependencies_perfile", ("foo_owners",)),
@@ -314,7 +314,7 @@ class TestOwnersChecks(unittest.TestCase):
 
     @staticmethod
     def _create_temp_files(
-        temp_dir: str, file_list: Sequence[Tuple[str, str]]
+        temp_dir: str, file_list: Sequence[tuple[str, str]]
     ) -> Sequence[Path]:
         real_files = []
         temp_dir_path = Path(temp_dir)

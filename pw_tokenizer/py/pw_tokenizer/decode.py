@@ -30,7 +30,6 @@ from typing import (
     Match,
     Optional,
     Sequence,
-    Tuple,
 )
 
 
@@ -798,7 +797,7 @@ class FormatString:
 
         return segments
 
-    def decode(self, encoded: bytes) -> Tuple[Sequence[DecodedArg], bytes]:
+    def decode(self, encoded: bytes) -> tuple[Sequence[DecodedArg], bytes]:
         """Decodes arguments according to the format string.
 
         Args:

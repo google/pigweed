@@ -28,7 +28,6 @@ from typing import (
     Optional,
     Sequence,
     Pattern,
-    Tuple,
 )
 
 import pw_cli.color
@@ -219,7 +218,7 @@ def _truncate(value, length: int = 60) -> str:
     return (value[: length - 5] + '[...]') if len(value) > length else value
 
 
-def format_command(args: Sequence, kwargs: dict) -> Tuple[str, str]:
+def format_command(args: Sequence, kwargs: dict) -> tuple[str, str]:
     attr = ', '.join(f'{k}={_truncate(v)}' for k, v in sorted(kwargs.items()))
     return attr, ' '.join(shlex.quote(str(arg)) for arg in args)
 

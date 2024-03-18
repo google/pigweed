@@ -16,7 +16,7 @@
 
 import unittest
 from unittest import mock
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
@@ -76,7 +76,7 @@ class _CallbackClientImplTestBase(unittest.TestCase):
         ).rpcs.pw.test1.PublicService
 
         self.requests: list[packet_pb2.RpcPacket] = []
-        self._next_packets: list[Tuple[bytes, Status]] = []
+        self._next_packets: list[tuple[bytes, Status]] = []
         self.send_responses_after_packets: float = 1
 
         self.output_exception: Optional[Exception] = None
@@ -92,7 +92,7 @@ class _CallbackClientImplTestBase(unittest.TestCase):
         status: Status = Status.OK,
         payload: bytes = b'',
         *,
-        ids: Optional[Tuple[int, int]] = None,
+        ids: Optional[tuple[int, int]] = None,
         process_status: Status = Status.OK,
         call_id: int = client.OPEN_CALL_ID,
     ) -> None:
@@ -401,7 +401,7 @@ class UnaryTest(_CallbackClientImplTestBase):
     def test_concurrent_nonblocking_calls(self) -> None:
         # Start several calls to the same method
         callbacks_and_calls: list[
-            Tuple[mock.Mock, callback_client.call.Call]
+            tuple[mock.Mock, callback_client.call.Call]
         ] = []
         for _ in range(3):
             callback = mock.Mock()

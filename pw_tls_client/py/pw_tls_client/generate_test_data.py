@@ -20,7 +20,6 @@ import argparse
 import subprocess
 import sys
 from datetime import datetime, timedelta
-from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -54,7 +53,7 @@ class Subject:
     to issue its certificate"""
 
     def __init__(
-        self, name: str, extensions: list[Tuple[x509.ExtensionType, bool]]
+        self, name: str, extensions: list[tuple[x509.ExtensionType, bool]]
     ):
         self._subject_name = x509.Name(
             [
@@ -84,7 +83,7 @@ class Subject:
         """Returns the private key of this subject"""
         return self._private_key
 
-    def extensions(self) -> list[Tuple[x509.ExtensionType, bool]]:
+    def extensions(self) -> list[tuple[x509.ExtensionType, bool]]:
         """Returns the requested extensions for issuer"""
         return self._extensions
 

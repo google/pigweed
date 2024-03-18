@@ -25,7 +25,6 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -356,7 +355,7 @@ class ReplPane(WindowPane):
 
     def get_window_menu_options(
         self,
-    ) -> list[Tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Union[Callable, None]]]:
         return [
             (
                 'Python Input > Paste',
@@ -541,7 +540,7 @@ class ReplPane(WindowPane):
 
         return test
 
-    def history_completions(self) -> list[Tuple[str, str]]:
+    def history_completions(self) -> list[tuple[str, str]]:
         return [
             (
                 ' '.join([line.lstrip() for line in text.splitlines()]),

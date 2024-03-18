@@ -14,7 +14,7 @@
 """Code formatter plugin for C/C++."""
 
 from pathlib import Path
-from typing import Final, Iterable, Iterator, Sequence, Tuple
+from typing import Final, Iterable, Iterator, Sequence
 from subprocess import PIPE  # DO NOT use subprocess.run()!
 
 from pw_presubmit.format.core import (
@@ -58,7 +58,7 @@ class ClangFormatFormatter(FileFormatter):
 
     def format_files(
         self, paths: Iterable[Path], keep_warnings: bool = True
-    ) -> Iterator[Tuple[Path, FormatFixStatus]]:
+    ) -> Iterator[tuple[Path, FormatFixStatus]]:
         self.run_tool(
             'clang-format',
             ['-i'] + self.clang_format_flags + list(paths),

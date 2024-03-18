@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Any, Callable, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Callable, Optional, TYPE_CHECKING, Union
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -177,7 +177,7 @@ class WindowPane(ABC):
 
     def get_window_menu_options(
         self,
-    ) -> list[Tuple[str, Union[Callable, None]]]:
+    ) -> list[tuple[str, Union[Callable, None]]]:
         """Return menu options for the window pane.
 
         Should return a list of tuples containing with the display text and

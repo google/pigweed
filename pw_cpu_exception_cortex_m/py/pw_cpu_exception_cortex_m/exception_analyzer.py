@@ -13,7 +13,7 @@
 # the License.
 """Tools to analyze Cortex-M CPU state context captured during an exception."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 from pw_cpu_exception_cortex_m import cortex_m_constants
 from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
@@ -52,10 +52,10 @@ class CortexMExceptionAnalyzer:
         self._cpu_state = cpu_state
         self._symbolizer = symbolizer
         self._active_cfsr_fields: Optional[
-            Tuple[cortex_m_constants.BitField, ...]
+            tuple[cortex_m_constants.BitField, ...]
         ] = None
 
-    def active_cfsr_fields(self) -> Tuple[cortex_m_constants.BitField, ...]:
+    def active_cfsr_fields(self) -> tuple[cortex_m_constants.BitField, ...]:
         """Returns a list of BitFields for each active CFSR flag."""
 
         if self._active_cfsr_fields is not None:

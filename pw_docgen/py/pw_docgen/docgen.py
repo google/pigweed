@@ -25,7 +25,7 @@ import subprocess
 import sys
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 SCRIPT_HEADER: str = '''
 ██████╗ ██╗ ██████╗ ██╗    ██╗███████╗███████╗██████╗     ██████╗  ██████╗  ██████╗███████╗
@@ -136,7 +136,7 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
     os.link(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.
-    dirs: Dict[str, list[Tuple[str, str]]] = collections.defaultdict(list)
+    dirs: Dict[str, list[tuple[str, str]]] = collections.defaultdict(list)
 
     for source_file, copy_path in zip(source_files, copy_paths):
         dirname = os.path.dirname(copy_path)

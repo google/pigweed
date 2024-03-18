@@ -13,13 +13,13 @@
 # the License.
 """Finds files for a given product."""
 
-from typing import Any, Optional, Set, Tuple
+from typing import Any, Optional, Set
 
 import pathlib
 import re
 
 
-def parse_product_str(product_str: str) -> Tuple[str, Set[str], str]:
+def parse_product_str(product_str: str) -> tuple[str, Set[str], str]:
     """Parses provided product string.
 
     Args:
@@ -131,7 +131,7 @@ def match_filename(product_name: str, filename: str):
 
 def find_linker_files(
     product_name: str, files: list[str], stm32cube_path: pathlib.Path
-) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
+) -> tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
     """Finds linker file for the given product.
 
     This searches `files` for linker scripts by name.
@@ -239,7 +239,7 @@ def get_include_dirs(stm32cube_path: pathlib.Path) -> list[pathlib.Path]:
 
 def get_sources_and_headers(
     files: list[str], stm32cube_path: pathlib.Path
-) -> Tuple[list[pathlib.Path], list[pathlib.Path]]:
+) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
     """Gets list of all sources and headers needed to build the stm32cube hal.
 
     Args:

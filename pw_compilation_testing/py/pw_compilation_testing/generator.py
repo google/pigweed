@@ -39,7 +39,6 @@ from typing import (
     Pattern,
     Sequence,
     Set,
-    Tuple,
 )
 
 # Matches the #if or #elif statement that starts a compile fail test.
@@ -93,7 +92,7 @@ class Expectation:
 class TestCase:
     suite: str
     case: str
-    expectations: Tuple[Expectation, ...]
+    expectations: tuple[Expectation, ...]
     source: Path
     line: int
 

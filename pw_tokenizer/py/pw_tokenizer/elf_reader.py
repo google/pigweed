@@ -36,7 +36,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    Tuple,
     Union,
 )
 
@@ -257,7 +256,7 @@ class Elf:
 
     def __init__(self, elf: BinaryIO):
         self._elf = elf
-        self.sections: Tuple[Elf.Section, ...] = tuple(self._list_sections())
+        self.sections: tuple[Elf.Section, ...] = tuple(self._list_sections())
 
     def _list_sections(self) -> Iterable['Elf.Section']:
         """Reads the section headers to enumerate all ELF sections."""

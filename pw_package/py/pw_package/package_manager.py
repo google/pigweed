@@ -19,7 +19,7 @@ import logging
 import os
 import pathlib
 import shutil
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, Optional, Sequence
 
 from pw_env_setup import config_file
 
@@ -91,9 +91,9 @@ def register(package_class: type, *args, **kwargs) -> None:
 
 @dataclasses.dataclass
 class Packages:
-    all: Tuple[str, ...]
-    installed: Tuple[str, ...]
-    available: Tuple[str, ...]
+    all: tuple[str, ...]
+    installed: tuple[str, ...]
+    available: tuple[str, ...]
 
 
 class MiddlewareOnlyPackageError(Exception):

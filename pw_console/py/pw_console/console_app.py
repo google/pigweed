@@ -27,7 +27,7 @@ import sys
 import tempfile
 import time
 from threading import Thread
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -159,7 +159,7 @@ class ConsoleApp:
         extra_completers=None,
         prefs=None,
         floating_window_plugins: Optional[
-            list[Tuple[FloatingWindowPane, Dict]]
+            list[tuple[FloatingWindowPane, Dict]]
         ] = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()

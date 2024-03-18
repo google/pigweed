@@ -25,7 +25,7 @@ import operator
 from pathlib import Path
 import re
 from threading import Thread
-from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Optional, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -432,7 +432,7 @@ class LogView:
         self.search_highlight = False
         self._reset_log_screen_on_next_render = True
 
-    def _get_log_lines(self) -> Tuple[int, collections.deque[LogLine]]:
+    def _get_log_lines(self) -> tuple[int, collections.deque[LogLine]]:
         logs = self.log_store.logs
         if self.filtering_on:
             logs = self.filtered_logs

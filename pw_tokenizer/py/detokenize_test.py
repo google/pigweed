@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 import struct
 import tempfile
-from typing import Any, Callable, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple
 import unittest
 from unittest import mock
 
@@ -750,7 +750,7 @@ class NestedMessageParserTest(unittest.TestCase):
     def test_read_messages(self) -> None:
         for step in self.MESSAGES_TEST:
             data: bytes = step[0]
-            pieces: Tuple[Tuple[bool, bytes], ...] = step[1:]
+            pieces: tuple[tuple[bool, bytes], ...] = step[1:]
             self.assertEqual(tuple(self.decoder.read_messages(data)), pieces)
 
     def test_read_messages_flush(self) -> None:

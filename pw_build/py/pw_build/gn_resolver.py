@@ -28,7 +28,6 @@ from typing import (
     Iterator,
     NamedTuple,
     Optional,
-    Tuple,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -190,7 +189,7 @@ def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
 
 def _search_target_ninja(
     ninja_file: Path, target: Label
-) -> Tuple[Optional[Path], list[Path]]:
+) -> tuple[Optional[Path], list[Path]]:
     """Parses the main output file and object files from <target>.ninja."""
 
     artifact: Optional[Path] = None
@@ -253,7 +252,7 @@ def _search_toolchain_ninja(
 
 def _search_ninja_files(
     paths: GnPaths, target: Label
-) -> Tuple[bool, Optional[Path], list[Path]]:
+) -> tuple[bool, Optional[Path], list[Path]]:
     ninja_file = target.out_dir / f'{target.name}.ninja'
     if ninja_file.exists():
         return (True, *_search_target_ninja(ninja_file, target))
@@ -272,7 +271,7 @@ class TargetInfo:
     label: Label
     generated: bool  # True if the Ninja files for this target were generated.
     artifact: Optional[Path]
-    object_files: Tuple[Path]
+    object_files: tuple[Path]
 
     def __init__(self, paths: GnPaths, target: str):
         object.__setattr__(self, 'label', Label(paths, target))
@@ -317,7 +316,7 @@ class _Expression:
         return self.string[self._match.start() : self.end]
 
 
-_Actions = Iterator[Tuple[_ArgAction, str]]
+_Actions = Iterator[tuple[_ArgAction, str]]
 
 
 def _target_file(paths: GnPaths, expr: _Expression) -> _Actions:
@@ -458,7 +457,7 @@ def main(
     current_path: Path,
     default_toolchain: str,
     current_toolchain: str,
-    files: Iterable[Tuple[Path, Path]],
+    files: Iterable[tuple[Path, Path]],
 ) -> int:
     """Evaluates GN target expressions within a list of files.
 

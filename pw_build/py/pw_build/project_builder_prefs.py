@@ -17,7 +17,7 @@ import argparse
 import copy
 import shlex
 from pathlib import Path
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Union
 
 from pw_config_loader import yaml_config_loader_mixin
 
@@ -180,10 +180,10 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
 
     def build_system_commands(
         self, build_dir: str
-    ) -> list[Tuple[str, list[str]]]:
+    ) -> list[tuple[str, list[str]]]:
         build_system_commands = self._get_build_system_commands_for(build_dir)
 
-        command_steps: list[Tuple[str, list[str]]] = []
+        command_steps: list[tuple[str, list[str]]] = []
         commands: list[Dict[str, Any]] = build_system_commands.get(
             'commands', []
         )

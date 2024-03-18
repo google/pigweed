@@ -23,7 +23,6 @@ from typing import (
     Dict,
     Iterator,
     Optional,
-    Tuple,
     TypeVar,
     cast,
 )
@@ -365,12 +364,12 @@ class ProtoEnum(ProtoNode):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._values: list[Tuple[str, int]] = []
+        self._values: list[tuple[str, int]] = []
 
     def type(self) -> ProtoNode.Type:
         return ProtoNode.Type.ENUM
 
-    def values(self) -> list[Tuple[str, int]]:
+    def values(self) -> list[tuple[str, int]]:
         return list(self._values)
 
     def add_value(self, name: str, value: int) -> None:
@@ -781,7 +780,7 @@ def _populate_fields(
 
 def _build_hierarchy(
     proto_file: descriptor_pb2.FileDescriptorProto,
-) -> Tuple[ProtoPackage, ProtoPackage]:
+) -> tuple[ProtoPackage, ProtoPackage]:
     """Creates a ProtoNode hierarchy from a proto file descriptor."""
 
     root = ProtoPackage('')
@@ -816,7 +815,7 @@ def _build_hierarchy(
 def build_node_tree(
     file_descriptor_proto: descriptor_pb2.FileDescriptorProto,
     proto_options: Optional[options.ParsedOptions] = None,
-) -> Tuple[ProtoNode, ProtoNode]:
+) -> tuple[ProtoNode, ProtoNode]:
     """Constructs a tree of proto nodes from a file descriptor.
 
     Returns the root node of the entire proto package tree and the node

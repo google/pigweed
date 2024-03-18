@@ -30,7 +30,6 @@ from typing import (
     NamedTuple,
     Optional,
     Set,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -77,7 +76,7 @@ def compile_protos(
         if not any(include in path.parents for include in include_paths):
             include_paths.add(path.parent)
 
-    cmd: Tuple[PathOrStr, ...] = (
+    cmd: tuple[PathOrStr, ...] = (
         _find_protoc(),
         '--experimental_allow_proto3_optional',
         '--python_out',
@@ -267,7 +266,7 @@ class Packages(NamedTuple):
 
 
 def as_packages(
-    items: Iterable[Tuple[str, T]], packages: Optional[Packages] = None
+    items: Iterable[tuple[str, T]], packages: Optional[Packages] = None
 ) -> Packages:
     """Places items in a proto-style package structure navigable by attributes.
 
