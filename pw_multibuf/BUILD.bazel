@@ -102,10 +102,8 @@ pw_cc_test(
     name = "multibuf_test",
     srcs = ["multibuf_test.cc"],
     deps = [
-        ":header_chunk_region_tracker",
         ":pw_multibuf",
-        "//pw_allocator:testing",
-        "//pw_assert",
+        ":test_utils",
         "//pw_unit_test",
     ],
 )
@@ -155,5 +153,42 @@ pw_cc_test(
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
         "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "stream",
+    srcs = ["stream.cc"],
+    hdrs = ["public/pw_multibuf/stream.h"],
+    deps = [
+        ":pw_multibuf",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_test",
+    srcs = ["stream_test.cc"],
+    deps = [
+        ":pw_multibuf",
+        ":stream",
+        ":test_utils",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "test_utils",
+    testonly = True,
+    hdrs = ["pw_multibuf_private/test_utils.h"],
+    includes = ["pw_multibuf_private"],
+    deps = [
+        ":header_chunk_region_tracker",
+        ":pw_multibuf",
+        "//pw_allocator:testing",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_status",
     ],
 )

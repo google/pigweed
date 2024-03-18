@@ -14,23 +14,16 @@
 
 #include "pw_multibuf/multibuf.h"
 
-#include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/suffix.h"
-#include "pw_multibuf/header_chunk_region_tracker.h"
+#include "pw_multibuf_private/test_utils.h"
 #include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
 namespace {
 
-using ::pw::allocator::test::AllocatorForTest;
-
-// Arbitrary size intended to be large enough to store the Chunk and data
-// slices. This may be increased if `MakeChunk` or a Chunk-splitting operation
-// fails.
-const size_t kArbitraryAllocatorSize = 2048;
-const size_t kArbitraryChunkSize = 32;
+using namespace pw::multibuf::test_utils;
 
 #if __cplusplus >= 202002L
 static_assert(std::forward_iterator<MultiBuf::iterator>);
@@ -38,53 +31,6 @@ static_assert(std::forward_iterator<MultiBuf::const_iterator>);
 static_assert(std::forward_iterator<MultiBuf::ChunkIterator>);
 static_assert(std::forward_iterator<MultiBuf::ConstChunkIterator>);
 #endif  // __cplusplus >= 202002L
-
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator, size_t size) {
-  std::optional<OwnedChunk> chunk =
-      HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, size);
-  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
-  PW_CHECK(chunk.has_value());
-  return std::move(*chunk);
-}
-
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
-                     std::initializer_list<std::byte> data) {
-  std::optional<OwnedChunk> chunk =
-      HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
-  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
-  PW_CHECK(chunk.has_value());
-  std::copy(data.begin(), data.end(), (*chunk)->begin());
-  return std::move(*chunk);
-}
-
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
-                     pw::span<const std::byte> data) {
-  std::optional<OwnedChunk> chunk =
-      HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
-  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
-  PW_CHECK(chunk.has_value());
-  std::copy(data.begin(), data.end(), (*chunk)->begin());
-  return std::move(*chunk);
-}
-
-template <typename ActualIterable, typename ExpectedIterable>
-void ExpectElementsEqual(const ActualIterable& actual,
-                         const ExpectedIterable& expected) {
-  EXPECT_EQ(actual.size(), expected.size());
-  auto actual_iter = actual.begin();
-  auto expected_iter = expected.begin();
-  for (; expected_iter != expected.end(); ++actual_iter, ++expected_iter) {
-    ASSERT_NE(actual_iter, actual.end());
-    EXPECT_EQ(*actual_iter, *expected_iter);
-  }
-}
-
-template <typename ActualIterable, typename T>
-void ExpectElementsEqual(const ActualIterable& actual,
-                         std::initializer_list<T> expected) {
-  ExpectElementsEqual<ActualIterable, std::initializer_list<T>>(actual,
-                                                                expected);
-}
 
 TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
 

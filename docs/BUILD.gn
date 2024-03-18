@@ -190,6 +190,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_multibuf/public/pw_multibuf/multibuf.h",
   "$dir_pw_multibuf/public/pw_multibuf/simple_allocator.h",
   "$dir_pw_multibuf/public/pw_multibuf/single_chunk_region_tracker.h",
+  "$dir_pw_multibuf/public/pw_multibuf/stream.h",
   "$dir_pw_perf_test/public/pw_perf_test/event_handler.h",
   "$dir_pw_perf_test/public/pw_perf_test/perf_test.h",
   "$dir_pw_polyfill/public/pw_polyfill/language_feature_macros.h",

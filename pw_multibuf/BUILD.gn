@@ -112,10 +112,8 @@ pw_source_set("pw_multibuf") {
 
 pw_test("multibuf_test") {
   deps = [
-    ":header_chunk_region_tracker",
     ":pw_multibuf",
-    "$dir_pw_allocator:testing",
-    dir_pw_assert,
+    ":test_utils",
   ]
   sources = [ "multibuf_test.cc" ]
 
@@ -169,6 +167,38 @@ pw_test("simple_allocator_test") {
   sources = [ "simple_allocator_test.cc" ]
 }
 
+pw_source_set("stream") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/stream.h" ]
+  public_deps = [
+    ":pw_multibuf",
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  sources = [ "stream.cc" ]
+}
+
+pw_test("stream_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":stream",
+    ":test_utils",
+  ]
+  sources = [ "stream_test.cc" ]
+}
+
+pw_source_set("test_utils") {
+  sources = [ "pw_multibuf_private/test_utils.h" ]
+  public_deps = [
+    ":header_chunk_region_tracker",
+    ":pw_multibuf",
+    "$dir_pw_allocator:testing",
+    dir_pw_assert,
+    dir_pw_bytes,
+  ]
+  visibility = [ ":*" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
@@ -177,6 +207,7 @@ pw_test_group("tests") {
     ":multibuf_test",
     ":simple_allocator_test",
     ":single_chunk_region_tracker_test",
+    ":stream_test",
   ]
 }
 

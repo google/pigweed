@@ -237,7 +237,7 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
   if (advance == 0) {
     return *this;
   }
-  while (advance >= (chunk_->size() - byte_index_)) {
+  while (chunk_ != nullptr && advance >= (chunk_->size() - byte_index_)) {
     advance -= (chunk_->size() - byte_index_);
     chunk_ = chunk_->next_in_buf_;
     byte_index_ = 0;
