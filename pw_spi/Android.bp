@@ -12,66 +12,30 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// To use this module:
-//
-// 1. Define your own local cc_library_static which includes
-//    pw_spi_linux_defaults in its defaults: and specifies the pw_assert and
-//    pw_log backends:
-//
-//    cc_library_static {
-//        name: "my-personal-pw_spi_linux",
-//        defaults: ["pw_spi_linux_defaults"],
-//        header_libs: [
-//            "pw_assert_log_headers", // pw_assert backend
-//        ],
-//        static_libs: [
-//            "libpw_log_android", // pw_log backend
-//        ],
-//    }
-//
-// 2. Then use this library in your application:
-//
-//    cc_binary {
-//        name: "my-spi-prog",
-//        srcs: ["src/main.cc"],
-//        static_libs: [
-//            "my-personal-pw_spi_linux",
-//        ],
-//    }
-
 package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-filegroup {
-    name: "pw_spi_linux_src_files",
+cc_library_static {
+    name: "pw_spi_linux",
+    cpp_std: "c++20",
+    vendor_available: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    export_include_dirs: [
+        "public",
+    ],
     srcs: [
         "linux_spi.cc",
     ],
-}
-
-cc_library_headers {
-    name: "pw_spi_headers",
-    cpp_std: "c++20",
-    export_include_dirs: ["public"],
-    vendor_available: true,
-    host_supported: true,
-}
-
-cc_defaults {
-    name: "pw_spi_linux_defaults",
-    cpp_std: "c++20",
-    srcs: [
-        ":pw_spi_linux_src_files",
-    ],
     header_libs: [
-        "pw_assert_headers", // NOTE: You must provide an assert backend.
+        "pw_assert_headers",
         "pw_chrono_include_dirs",
-        "pw_log_headers", // NOTE: You must provide a log backend.
+        "pw_log_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
         "pw_span_headers",
-        "pw_spi_headers",
         "pw_sync_headers",
         "pw_sync_binary_semaphore_thread_notification_backend_headers",
     ],
@@ -81,7 +45,6 @@ cc_defaults {
         "pw_preprocessor_headers",
         "pw_result_headers",
         "pw_span_headers",
-        "pw_spi_headers",
         "pw_sync_headers",
     ],
     static_libs: [
