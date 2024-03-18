@@ -20,7 +20,7 @@ import argparse
 import subprocess
 import sys
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -54,7 +54,7 @@ class Subject:
     to issue its certificate"""
 
     def __init__(
-        self, name: str, extensions: List[Tuple[x509.ExtensionType, bool]]
+        self, name: str, extensions: list[Tuple[x509.ExtensionType, bool]]
     ):
         self._subject_name = x509.Name(
             [
@@ -84,7 +84,7 @@ class Subject:
         """Returns the private key of this subject"""
         return self._private_key
 
-    def extensions(self) -> List[Tuple[x509.ExtensionType, bool]]:
+    def extensions(self) -> list[Tuple[x509.ExtensionType, bool]]:
         """Returns the requested extensions for issuer"""
         return self._extensions
 
@@ -239,7 +239,7 @@ class CertificateGen(Codegen):
 
 def generate_test_data() -> str:
     """Generates test data"""
-    subjects: List[Codegen] = []
+    subjects: list[Codegen] = []
 
     # Working valid period.
     # Start from yesterday, to make sure we are in the valid period.

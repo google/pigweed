@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from pw_cli.color import colors as pw_cli_colors
 
@@ -108,7 +108,7 @@ class LogStore(logging.Handler):
         self.clear_logs()
 
         # List of viewers that should be notified on new log line arrival.
-        self.registered_viewers: List['LogView'] = []
+        self.registered_viewers: list['LogView'] = []
 
         super().__init__()
 
@@ -147,7 +147,7 @@ class LogStore(logging.Handler):
         self.channel_formatted_prefix_widths = {}
         self.line_index = 0
 
-    def get_channel_names(self) -> List[str]:
+    def get_channel_names(self) -> list[str]:
         return list(sorted(self.channel_counts.keys()))
 
     def get_channel_counts(self):

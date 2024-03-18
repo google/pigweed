@@ -24,7 +24,6 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
-    List,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -114,7 +113,7 @@ class ReplPane(WindowPane):
     ) -> None:
         super().__init__(application, pane_title)
 
-        self.executed_code: List[UserCodeExecution] = []
+        self.executed_code: list[UserCodeExecution] = []
         self.application = application
 
         self.pw_ptpython_repl = python_repl
@@ -339,7 +338,7 @@ class ReplPane(WindowPane):
         )
 
     # pylint: disable=no-self-use
-    def get_all_key_bindings(self) -> List:
+    def get_all_key_bindings(self) -> list:
         """Return all keybinds for this plugin."""
         # ptpython native bindings:
         # return [load_python_bindings(self.pw_ptpython_repl)]
@@ -357,7 +356,7 @@ class ReplPane(WindowPane):
 
     def get_window_menu_options(
         self,
-    ) -> List[Tuple[str, Union[Callable, None]]]:
+    ) -> list[Tuple[str, Union[Callable, None]]]:
         return [
             (
                 'Python Input > Paste',
@@ -507,7 +506,7 @@ class ReplPane(WindowPane):
 
     def get_output_buffer_text(
         self,
-        code_items: Optional[List[UserCodeExecution]] = None,
+        code_items: Optional[list[UserCodeExecution]] = None,
         show_index: bool = True,
     ):
         executed_code = code_items or self.executed_code
@@ -542,7 +541,7 @@ class ReplPane(WindowPane):
 
         return test
 
-    def history_completions(self) -> List[Tuple[str, str]]:
+    def history_completions(self) -> list[Tuple[str, str]]:
         return [
             (
                 ' '.join([line.lstrip() for line in text.splitlines()]),

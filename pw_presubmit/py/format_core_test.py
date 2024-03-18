@@ -15,7 +15,7 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List
+from typing import Dict
 import unittest
 
 from pw_presubmit.format.core import (
@@ -51,7 +51,7 @@ class FakeFileChecker(FileChecker):
 
 def _check_files(
     formatter: FileChecker, file_contents: Dict[str, str], dry_run=False
-) -> List[FormattedDiff]:
+) -> list[FormattedDiff]:
     with TemporaryDirectory() as tmp:
         paths = []
         for f in file_contents.keys():

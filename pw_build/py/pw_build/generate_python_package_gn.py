@@ -24,7 +24,7 @@ be included in the build.
 from datetime import datetime
 from pathlib import Path
 import sys
-from typing import Iterable, List, NamedTuple
+from typing import Iterable, NamedTuple
 
 from pw_presubmit import git_repo
 
@@ -50,10 +50,10 @@ import("$dir_pw_build/python.gni")
 
 
 class PackageFiles(NamedTuple):
-    setup: List[Path]
-    sources: List[Path]
-    tests: List[Path]
-    other: List[Path]
+    setup: list[Path]
+    sources: list[Path]
+    tests: list[Path]
+    other: list[Path]
 
 
 def _find_package_files(root_dir: Path) -> PackageFiles:

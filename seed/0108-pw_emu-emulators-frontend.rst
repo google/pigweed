@@ -455,7 +455,7 @@ emulator instance:
 .. code-block:: python
 
    def run_gdb_cmds(
-       commands : List[str],
+       commands : list[str],
        executable: Optional[Path] = None,
        pause: bool = False
    ) -> subprocess.CompletedProcess:

@@ -28,7 +28,7 @@ import random
 import socket
 import sys
 import time
-from typing import Awaitable, Callable, Iterable, List, NamedTuple, Optional
+from typing import Awaitable, Callable, Iterable, NamedTuple, Optional
 
 from google.protobuf import text_format
 
@@ -309,7 +309,7 @@ class ServerFailure(Filter):
         self,
         send_data: Callable[[bytes], Awaitable[None]],
         name: str,
-        packets_before_failure_list: List[int],
+        packets_before_failure_list: list[int],
         start_immediately: bool = False,
         only_consider_transfer_chunks: bool = False,
     ):
@@ -478,7 +478,7 @@ def _extract_transfer_chunk(data: bytes) -> Chunk:
 
 
 async def _handle_simplex_events(
-    event_queue: asyncio.Queue, handlers: List[Callable[[Event], None]]
+    event_queue: asyncio.Queue, handlers: list[Callable[[Event], None]]
 ):
     while True:
         event = await event_queue.get()
@@ -488,7 +488,7 @@ async def _handle_simplex_events(
 
 async def _handle_simplex_connection(
     name: str,
-    filter_stack_config: List[config_pb2.FilterConfig],
+    filter_stack_config: list[config_pb2.FilterConfig],
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
     inbound_event_queue: asyncio.Queue,
@@ -503,7 +503,7 @@ async def _handle_simplex_connection(
 
     filter_stack = EventFilter(send, name, outbound_event_queue)
 
-    event_handlers: List[Callable[[Event], None]] = []
+    event_handlers: list[Callable[[Event], None]] = []
 
     # Build the filter stack from the bottom up
     for config in reversed(filter_stack_config):

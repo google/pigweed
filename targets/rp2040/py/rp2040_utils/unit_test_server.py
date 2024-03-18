@@ -18,7 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
-from typing import IO, List, Optional
+from typing import IO, Optional
 
 import pw_cli.process
 import pw_cli.log
@@ -63,7 +63,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate_runner(command: str, arguments: List[str]) -> str:
+def generate_runner(command: str, arguments: list[str]) -> str:
     """Generates a text-proto style pw_target_runner_server configuration."""
     # TODO(amontanez): Use a real proto library to generate this when we have
     # one set up.

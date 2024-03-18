@@ -20,7 +20,7 @@ import argparse
 import logging
 from pathlib import Path
 import re
-from typing import List, IO
+from typing import IO
 import sys
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -36,8 +36,8 @@ _GOOGLETEST_FAILED, _GOOGLETEST_RUN, _GOOGLETEST_OK, _GOOGLETEST_DISABLED = (
 )
 
 
-def _remove_passing_tests(failure_lines: List[str]) -> List[str]:
-    test_lines: List[str] = []
+def _remove_passing_tests(failure_lines: list[str]) -> list[str]:
+    test_lines: list[str] = []
     result = []
     for line in failure_lines:
         if test_lines:
@@ -60,7 +60,7 @@ def _remove_passing_tests(failure_lines: List[str]) -> List[str]:
 
 
 def _parse_ninja(ins: IO) -> str:
-    failure_lines: List[str] = []
+    failure_lines: list[str] = []
     last_line: str = ''
 
     for line in ins:

@@ -19,7 +19,6 @@ from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import List
 
 
 _LOG = logging.getLogger('pw_build.generate_python_wheel_cache')
@@ -58,7 +57,7 @@ def _parse_args() -> argparse.Namespace:
 def main(
     pip_download_log: Path,
     wheel_dir: Path,
-    requirement: List[Path],
+    requirement: list[Path],
     download_all_platforms: bool = False,
 ) -> int:
     """Download all Python packages required for a pw_python_venv."""

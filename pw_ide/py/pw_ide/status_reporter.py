@@ -14,7 +14,7 @@
 """Attractive status output to the terminal (and other places if you want)."""
 
 import logging
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Tuple, Union
 
 from pw_cli.color import colors
 
@@ -23,7 +23,7 @@ def _no_color(msg: str) -> str:
     return msg
 
 
-def _split_lines(msg: Union[str, List[str]]) -> Tuple[str, List[str]]:
+def _split_lines(msg: Union[str, list[str]]) -> Tuple[str, list[str]]:
     """Turn a list of strings into a tuple of the first and list of rest."""
     if isinstance(msg, str):
         return (msg, [])
@@ -59,7 +59,7 @@ class StatusReporter:
 
     def _report(  # pylint: disable=no-self-use
         self,
-        msg: Union[str, List[str]],
+        msg: Union[str, list[str]],
         color: Callable[[str], str],
         char: str,
         func: Callable,
@@ -90,19 +90,19 @@ class StatusReporter:
         self.wrn('Uh oh, you might want to be aware of this.')
         self.err('This is bad! Things might be broken!')
 
-    def info(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def info(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '\u2022', print, silent)
 
-    def ok(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def ok(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, colors().blue, '\u2713', print, silent)
 
-    def new(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def new(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, colors().green, '\u2713', print, silent)
 
-    def wrn(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def wrn(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, colors().yellow, '\u26A0\uFE0F ', print, silent)
 
-    def err(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def err(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, colors().red, '\U0001F525', print, silent)
 
 
@@ -115,7 +115,7 @@ class LoggingStatusReporter(StatusReporter):
 
     def _report(
         self,
-        msg: Union[str, List[str]],
+        msg: Union[str, list[str]],
         color: Callable[[str], str],
         char: str,
         func: Callable,
@@ -127,17 +127,17 @@ class LoggingStatusReporter(StatusReporter):
             for line in [first_line, *rest_lines]:
                 func(line)
 
-    def info(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def info(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '', self.logger.info, silent)
 
-    def ok(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def ok(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '', self.logger.info, silent)
 
-    def new(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def new(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '', self.logger.info, silent)
 
-    def wrn(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def wrn(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '', self.logger.warning, silent)
 
-    def err(self, msg: Union[str, List[str]], silent: bool = False) -> None:
+    def err(self, msg: Union[str, list[str]], silent: bool = False) -> None:
         self._report(msg, _no_color, '', self.logger.error, silent)

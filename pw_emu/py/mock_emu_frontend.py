@@ -17,7 +17,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional, List, Union
+from typing import Any, Optional, Union
 import time
 
 from pw_emu.core import (
@@ -67,7 +67,7 @@ class MockEmuLauncher(Launcher):
         pause: bool = False,
         debug: bool = False,
         args: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         channels = []
         if self._config.get_target(['pre-start-cmds']):
             self._handles.add_channel_tcp('test_subst_tcp', 'localhost', 1234)
@@ -126,7 +126,7 @@ class MockEmuConnector(Connector):
     def cont(self) -> None:
         Path(os.path.join(self._wdir, 'cont')).touch()
 
-    def list_properties(self, path: str) -> List[Any]:
+    def list_properties(self, path: str) -> list[Any]:
         try:
             return list(self._props[path].keys())
         except KeyError:

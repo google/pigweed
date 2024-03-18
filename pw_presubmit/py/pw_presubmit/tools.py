@@ -25,7 +25,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Optional,
     Sequence,
     Pattern,
@@ -140,7 +139,7 @@ def file_summary(
     pad: str = ' ',
     pad_start: str = ' ',
     pad_end: str = ' ',
-) -> List[str]:
+) -> list[str]:
     """Summarizes a list of files by the file types in each directory."""
 
     # Count the file types in each directory.

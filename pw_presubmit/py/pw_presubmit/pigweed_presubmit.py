@@ -25,7 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Callable, Iterable, List, Sequence, TextIO
+from typing import Callable, Iterable, Sequence, TextIO
 
 import pw_package.pigweed_packages
 
@@ -824,7 +824,7 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
 #
 
 
-def _clang_system_include_paths(lang: str) -> List[str]:
+def _clang_system_include_paths(lang: str) -> list[str]:
     """Generate default system header paths.
 
     Returns the list of system include paths used by the host
@@ -847,7 +847,7 @@ def _clang_system_include_paths(lang: str) -> List[str]:
     # Parse the command output to retrieve system include paths.
     # The paths are listed one per line.
     output = process.stdout.decode(errors='backslashreplace')
-    include_paths: List[str] = []
+    include_paths: list[str] = []
     for line in output.splitlines():
         path = line.strip()
         if os.path.exists(path):

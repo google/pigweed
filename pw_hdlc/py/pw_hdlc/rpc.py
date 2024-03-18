@@ -32,7 +32,6 @@ from typing import (
     Callable,
     Dict,
     Iterable,
-    List,
     Optional,
     Sequence,
     TypeVar,
@@ -320,7 +319,7 @@ def write_to_file(
     output.flush()
 
 
-def default_channels(write: Callable[[bytes], Any]) -> List[pw_rpc.Channel]:
+def default_channels(write: Callable[[bytes], Any]) -> list[pw_rpc.Channel]:
     return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
 
 

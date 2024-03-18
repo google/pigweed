@@ -13,7 +13,7 @@
 # the License.
 """Finds components for a given manifest."""
 
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import pathlib
 import sys
@@ -50,7 +50,7 @@ def get_component(
 
 def parse_defines(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[str]:
+) -> list[str]:
     """Parse pre-processor definitions for a component.
 
     Schema:
@@ -93,7 +93,7 @@ def _parse_define(define: xml.etree.ElementTree.Element) -> str:
 
 def parse_include_paths(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[pathlib.Path]:
+) -> list[pathlib.Path]:
     """Parse include directories for a component.
 
     Schema:
@@ -114,7 +114,7 @@ def parse_include_paths(
     if component is None:
         return []
 
-    include_paths: List[pathlib.Path] = []
+    include_paths: list[pathlib.Path] = []
     for include_type in ('c_include', 'asm_include'):
         include_xpath = f'./include_paths/include_path[@type="{include_type}"]'
 
@@ -149,7 +149,7 @@ def _parse_include_path(
 
 def parse_headers(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[pathlib.Path]:
+) -> list[pathlib.Path]:
     """Parse header files for a component.
 
     Schema:
@@ -171,7 +171,7 @@ def parse_headers(
 
 def parse_sources(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[pathlib.Path]:
+) -> list[pathlib.Path]:
     """Parse source files for a component.
 
     Schema:
@@ -196,7 +196,7 @@ def parse_sources(
 
 def parse_libs(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[pathlib.Path]:
+) -> list[pathlib.Path]:
     """Parse pre-compiled libraries for a component.
 
     Schema:
@@ -218,7 +218,7 @@ def parse_libs(
 
 def _parse_sources(
     root: xml.etree.ElementTree.Element, component_id: str, source_type: str
-) -> List[pathlib.Path]:
+) -> list[pathlib.Path]:
     """Parse <source> manifest stanza.
 
     Schema:
@@ -240,7 +240,7 @@ def _parse_sources(
     if component is None:
         return []
 
-    sources: List[pathlib.Path] = []
+    sources: list[pathlib.Path] = []
     source_xpath = f'./source[@type="{source_type}"]'
     for source in component.findall(source_xpath):
         relative_path = pathlib.Path(source.attrib['relative_path'])
@@ -256,7 +256,7 @@ def _parse_sources(
 
 def parse_dependencies(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> List[str]:
+) -> list[str]:
     """Parse the list of dependencies for a component.
 
     Optional dependencies are ignored for parsing since they have to be
@@ -288,7 +288,7 @@ def parse_dependencies(
     return dependencies
 
 
-def _parse_dependency(dependency: xml.etree.ElementTree.Element) -> List[str]:
+def _parse_dependency(dependency: xml.etree.ElementTree.Element) -> list[str]:
     """Parse <all>, <any_of>, and <component_dependency> manifest stanzas.
 
     Schema:
@@ -325,8 +325,8 @@ def _parse_dependency(dependency: xml.etree.ElementTree.Element) -> List[str]:
 def check_dependencies(
     root: xml.etree.ElementTree.Element,
     component_id: str,
-    include: List[str],
-    exclude: Optional[List[str]] = None,
+    include: list[str],
+    exclude: Optional[list[str]] = None,
 ) -> bool:
     """Check the list of optional dependencies for a component.
 
@@ -351,8 +351,8 @@ def check_dependencies(
 
 def _check_dependency(
     dependency: xml.etree.ElementTree.Element,
-    include: List[str],
-    exclude: Optional[List[str]] = None,
+    include: list[str],
+    exclude: Optional[list[str]] = None,
 ) -> bool:
     """Check a dependency for a component.
 
@@ -392,15 +392,15 @@ def _check_dependency(
 
 def create_project(
     root: xml.etree.ElementTree.Element,
-    include: List[str],
-    exclude: Optional[List[str]] = None,
+    include: list[str],
+    exclude: Optional[list[str]] = None,
 ) -> Tuple[
-    List[str],
-    List[str],
-    List[pathlib.Path],
-    List[pathlib.Path],
-    List[pathlib.Path],
-    List[pathlib.Path],
+    list[str],
+    list[str],
+    list[pathlib.Path],
+    list[pathlib.Path],
+    list[pathlib.Path],
+    list[pathlib.Path],
 ]:
     """Create a project from a list of specified components.
 
@@ -481,8 +481,8 @@ class Project:
     def from_file(
         cls,
         manifest_path: pathlib.Path,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
     ):
         """Create a self-contained project with the specified components.
 
@@ -498,8 +498,8 @@ class Project:
     def __init__(
         self,
         manifest: xml.etree.ElementTree.Element,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
     ):
         """Create a self-contained project with the specified components.
 

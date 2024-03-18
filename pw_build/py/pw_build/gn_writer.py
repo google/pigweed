@@ -19,7 +19,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path, PurePath, PurePosixPath
 from types import TracebackType
-from typing import Dict, IO, Iterable, Iterator, List, Optional, Type, Union
+from typing import Dict, IO, Iterable, Iterator, Optional, Type, Union
 
 from pw_build.gn_config import GnConfig, GN_CONFIG_FLAGS
 from pw_build.gn_target import GnTarget
@@ -59,7 +59,7 @@ class GnWriter:
 
     def __init__(self, file: IO) -> None:
         self._file: IO = file
-        self._scopes: List[str] = []
+        self._scopes: list[str] = []
         self._margin: str = ''
         self._needs_blank: bool = False
         self.repos: Dict[str, str] = {}

@@ -35,7 +35,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Optional,
     Pattern,
     Set,
@@ -153,7 +152,7 @@ def read_tokenizer_metadata(elf) -> Dict[str, int]:
     return metadata
 
 
-def _database_from_strings(strings: List[str]) -> tokens.Database:
+def _database_from_strings(strings: list[str]) -> tokens.Database:
     """Generates a C and C++ compatible database from untokenized strings."""
     # Generate a C-compatible database from the fixed length hash.
     c_db = tokens.Database.from_strings(strings, tokenize=tokens.c_hash)
@@ -337,7 +336,7 @@ def _handle_create(
 
 def _handle_add(
     token_database: tokens.DatabaseFile,
-    databases: List[tokens.Database],
+    databases: list[tokens.Database],
     commit: Optional[str],
 ) -> None:
     initial = len(token_database)
@@ -362,7 +361,7 @@ def _handle_add(
 
 def _handle_mark_removed(
     token_database: tokens.DatabaseFile,
-    databases: List[tokens.Database],
+    databases: list[tokens.Database],
     date: Optional[datetime],
 ):
     marked_removed = token_database.mark_removed(
@@ -393,7 +392,7 @@ def _handle_purge(
     _LOG.info('Removed %d entries from %s', len(purged), token_database.path)
 
 
-def _handle_report(token_database_or_elf: List[Path], output: TextIO) -> None:
+def _handle_report(token_database_or_elf: list[Path], output: TextIO) -> None:
     json.dump(generate_reports(token_database_or_elf), output, indent=2)
     output.write('\n')
 
@@ -448,7 +447,7 @@ class LoadTokenDatabases(argparse.Action):
     """
 
     def __call__(self, parser, namespace, values, option_string=None):
-        databases: List[tokens.Database] = []
+        databases: list[tokens.Database] = []
         paths: Set[Path] = set()
 
         try:

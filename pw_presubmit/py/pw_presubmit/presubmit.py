@@ -64,7 +64,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Optional,
     Pattern,
     Sequence,
@@ -235,7 +234,7 @@ def download_cas_artifact(
 
 
 def archive_cas_artifact(
-    ctx: PresubmitContext, root: str, upload_paths: List[str]
+    ctx: PresubmitContext, root: str, upload_paths: list[str]
 ) -> str:
     """Uploads the given artifacts into cas
 
@@ -457,11 +456,11 @@ class Presubmit:
 
         return not failed and not skipped
 
-    def apply_filters(self, program: Sequence[Callable]) -> List[FilteredCheck]:
+    def apply_filters(self, program: Sequence[Callable]) -> list[FilteredCheck]:
         """Returns list of FilteredCheck for checks that should run."""
         checks = [c if isinstance(c, Check) else Check(c) for c in program]
         filter_to_checks: Dict[
-            FileFilter, List[Check]
+            FileFilter, list[Check]
         ] = collections.defaultdict(list)
 
         for chk in checks:
@@ -475,7 +474,7 @@ class Presubmit:
         ]
 
     def _map_checks_to_paths(
-        self, filter_to_checks: Dict[FileFilter, List[Check]]
+        self, filter_to_checks: Dict[FileFilter, list[Check]]
     ) -> Dict[Check, Sequence[Path]]:
         checks_to_paths: Dict[Check, Sequence[Path]] = {}
 
@@ -579,7 +578,7 @@ class Presubmit:
 
     def _execute_checks(
         self,
-        program: List[FilteredCheck],
+        program: list[FilteredCheck],
         keep_going: bool,
         dry_run: bool = False,
     ) -> Tuple[int, int, int]:
@@ -604,8 +603,8 @@ class Presubmit:
 
 def _process_pathspecs(
     repos: Iterable[Path], pathspecs: Iterable[str]
-) -> Dict[Path, List[str]]:
-    pathspecs_by_repo: Dict[Path, List[str]] = {repo: [] for repo in repos}
+) -> Dict[Path, list[str]]:
+    pathspecs_by_repo: Dict[Path, list[str]] = {repo: [] for repo in repos}
     repos_with_paths: Set[Path] = set()
 
     for pathspec in pathspecs:
@@ -638,10 +637,10 @@ def _process_pathspecs(
 def fetch_file_lists(
     root: Path,
     repo: Path,
-    pathspecs: List[str],
+    pathspecs: list[str],
     exclude: Sequence[Pattern] = (),
     base: Optional[str] = None,
-) -> Tuple[List[Path], List[Path]]:
+) -> Tuple[list[Path], list[Path]]:
     """Returns lists of all files and modified files for the given repo.
 
     Args:
@@ -652,8 +651,8 @@ def fetch_file_lists(
         exclude: regular expressions for Posix-style paths to exclude
     """
 
-    all_files: List[Path] = []
-    modified_files: List[Path] = []
+    all_files: list[Path] = []
+    modified_files: list[Path] = []
 
     all_files_repo = tuple(
         tools.exclude_paths(
@@ -748,8 +747,8 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     pathspecs_by_repo = _process_pathspecs(repos, paths)
 
-    all_files: List[Path] = []
-    modified_files: List[Path] = []
+    all_files: list[Path] = []
+    modified_files: list[Path] = []
     list_steps_data: Dict[str, Any] = {}
 
     if list_steps_file:
@@ -793,7 +792,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     )
 
     if only_list_steps:
-        steps: List[Dict] = []
+        steps: list[Dict] = []
         for filtered_check in presubmit.apply_filters(program):
             step = {
                 'name': filtered_check.name,

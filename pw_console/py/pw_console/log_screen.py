@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, List, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -215,7 +215,7 @@ class LogScreen:
         self,
         marked_logs_start: Optional[int] = None,
         marked_logs_end: Optional[int] = None,
-    ) -> List[StyleAndTextTuples]:
+    ) -> list[StyleAndTextTuples]:
         """Return lines for final display.
 
         Styling is added for the line under the cursor."""
@@ -224,7 +224,7 @@ class LogScreen:
         if not marked_logs_end:
             marked_logs_end = -1
 
-        all_lines: List[StyleAndTextTuples] = []
+        all_lines: list[StyleAndTextTuples] = []
         # Loop through a copy of the line_buffer in case it is mutated before
         # this function is complete.
         for i, line in enumerate(list(self.line_buffer)):
@@ -566,7 +566,7 @@ class LogScreen:
 
     def _get_fragments_per_line(
         self, log_index: int
-    ) -> List[StyleAndTextTuples]:
+    ) -> list[StyleAndTextTuples]:
         """Return a list of lines wrapped to the screen width for a log.
 
         Before fetching the log message this function updates the log_source and

@@ -17,7 +17,7 @@ import enum
 import abc
 from dataclasses import dataclass
 import logging
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple
 
 from pw_rpc.client import Services
 from pw_rpc.callback_client import OptionalTimeout, UseDefault
@@ -189,9 +189,9 @@ def run_tests(
     for event_handler in event_handlers:
         event_handler.run_all_tests_start()
 
-    passing_tests: List[TestCase] = []
-    failing_tests: List[TestCase] = []
-    disabled_tests: List[TestCase] = []
+    passing_tests: list[TestCase] = []
+    failing_tests: list[TestCase] = []
+    disabled_tests: list[TestCase] = []
 
     for response in test_responses:
         if response.HasField('test_run_start'):

@@ -13,7 +13,7 @@
 # the License.
 """GN output support."""
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import pathlib
 
@@ -24,7 +24,7 @@ except ImportError:
     from components import Project  # type: ignore
 
 
-def _gn_list_str_out(name: str, val: List[Any]):
+def _gn_list_str_out(name: str, val: list[Any]):
     """Outputs list of strings in GN format with correct escaping."""
     list_str = ','.join(
         '"' + str(x).replace('"', r'\"').replace('$', r'\$') + '"' for x in val
@@ -33,7 +33,7 @@ def _gn_list_str_out(name: str, val: List[Any]):
 
 
 def _gn_list_path_out(
-    name: str, val: List[pathlib.Path], path_prefix: Optional[str] = None
+    name: str, val: list[pathlib.Path], path_prefix: Optional[str] = None
 ):
     """Outputs list of paths in GN format with common prefix."""
     if path_prefix is not None:

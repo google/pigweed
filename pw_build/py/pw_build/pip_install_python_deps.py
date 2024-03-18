@@ -19,7 +19,7 @@ from pathlib import Path
 import subprocess
 import shlex
 import sys
-from typing import List, Tuple
+from typing import Tuple
 
 try:
     from pw_build.python_package import load_packages
@@ -30,7 +30,7 @@ except ImportError:
 _LOG = logging.getLogger('pw_build.pip_install_python_deps')
 
 
-def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
+def _parse_args() -> Tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--python-dep-list-files',
@@ -66,8 +66,8 @@ class NoMatchingGnPythonDependency(Exception):
 def main(
     python_dep_list_files: Path,
     editable_pip_install: bool,
-    gn_targets: List[str],
-    pip_args: List[str],
+    gn_targets: list[str],
+    pip_args: list[str],
 ) -> int:
     """Find matching python packages to pip install.
 
@@ -76,7 +76,7 @@ def main(
       FileNotFoundError: if a Python wheel was not found when using pip install
           with --require-hashes.
     """
-    pip_target_dirs: List[Path] = []
+    pip_target_dirs: list[Path] = []
 
     py_packages = load_packages([python_dep_list_files], ignore_missing=True)
     for pkg in py_packages:

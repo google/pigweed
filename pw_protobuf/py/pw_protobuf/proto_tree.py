@@ -22,7 +22,6 @@ from typing import (
     Callable,
     Dict,
     Iterator,
-    List,
     Optional,
     Tuple,
     TypeVar,
@@ -82,7 +81,7 @@ class ProtoNode(abc.ABC):
     def type(self) -> 'ProtoNode.Type':
         """The type of the node."""
 
-    def children(self) -> List['ProtoNode']:
+    def children(self) -> list['ProtoNode']:
         return list(self._children.values())
 
     def parent(self) -> Optional['ProtoNode']:
@@ -366,12 +365,12 @@ class ProtoEnum(ProtoNode):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._values: List[Tuple[str, int]] = []
+        self._values: list[Tuple[str, int]] = []
 
     def type(self) -> ProtoNode.Type:
         return ProtoNode.Type.ENUM
 
-    def values(self) -> List[Tuple[str, int]]:
+    def values(self) -> list[Tuple[str, int]]:
         return list(self._values)
 
     def add_value(self, name: str, value: int) -> None:
@@ -394,14 +393,14 @@ class ProtoMessage(ProtoNode):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._fields: List['ProtoMessageField'] = []
-        self._dependencies: Optional[List['ProtoMessage']] = None
-        self._dependency_cycles: List['ProtoMessage'] = []
+        self._fields: list['ProtoMessageField'] = []
+        self._dependencies: Optional[list['ProtoMessage']] = None
+        self._dependency_cycles: list['ProtoMessage'] = []
 
     def type(self) -> ProtoNode.Type:
         return ProtoNode.Type.MESSAGE
 
-    def fields(self) -> List['ProtoMessageField']:
+    def fields(self) -> list['ProtoMessageField']:
         return list(self._fields)
 
     def add_field(self, field: 'ProtoMessageField') -> None:
@@ -412,7 +411,7 @@ class ProtoMessage(ProtoNode):
             child.type() == self.Type.ENUM or child.type() == self.Type.MESSAGE
         )
 
-    def dependencies(self) -> List['ProtoMessage']:
+    def dependencies(self) -> list['ProtoMessage']:
         if self._dependencies is None:
             self._dependencies = []
             for field in self._fields:
@@ -429,7 +428,7 @@ class ProtoMessage(ProtoNode):
 
         return list(self._dependencies)
 
-    def dependency_cycles(self) -> List['ProtoMessage']:
+    def dependency_cycles(self) -> list['ProtoMessage']:
         return list(self._dependency_cycles)
 
     def remove_dependency_cycle(self, dependency: 'ProtoMessage'):
@@ -444,12 +443,12 @@ class ProtoService(ProtoNode):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._methods: List['ProtoServiceMethod'] = []
+        self._methods: list['ProtoServiceMethod'] = []
 
     def type(self) -> ProtoNode.Type:
         return ProtoNode.Type.SERVICE
 
-    def methods(self) -> List['ProtoServiceMethod']:
+    def methods(self) -> list['ProtoServiceMethod']:
         return list(self._methods)
 
     def add_method(self, method: 'ProtoServiceMethod') -> None:

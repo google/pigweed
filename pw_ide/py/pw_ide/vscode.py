@@ -65,7 +65,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any, Dict, List, Optional, OrderedDict
+from typing import Any, Dict, Optional, OrderedDict
 
 from pw_cli.env import pigweed_environment
 
@@ -373,7 +373,7 @@ class VscSettingsType(Enum):
     LAUNCH = 'launch'
 
     @classmethod
-    def all(cls) -> List['VscSettingsType']:
+    def all(cls) -> list['VscSettingsType']:
         return list(cls)
 
 

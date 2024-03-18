@@ -14,7 +14,7 @@
 """Window pane toolbar base class."""
 
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 import functools
 
 from prompt_toolkit.filters import Condition, has_focus
@@ -220,7 +220,7 @@ class WindowPaneToolbar:
                 self.focus_action_callable,
             )
 
-        self.buttons: List[ToolbarButton] = []
+        self.buttons: list[ToolbarButton] = []
         self.show_toolbar = True
 
         self.left_section_window = Window(

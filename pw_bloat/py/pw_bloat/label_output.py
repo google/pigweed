@@ -19,7 +19,6 @@ from typing import (
     Tuple,
     Union,
     Type,
-    List,
     Optional,
     NamedTuple,
     cast,
@@ -113,7 +112,7 @@ class BloatTableOutput:
             self._diff_mode = True
         self._col_names = col_names
         self._additional_padding = 0
-        self._ascii_table_rows: List[str] = []
+        self._ascii_table_rows: list[str] = []
         self._rst_output = rst_output
         self._total_divider = self._cs.HH.value
         if self._rst_output:
@@ -122,7 +121,7 @@ class BloatTableOutput:
 
         self._col_widths = self._generate_col_width(col_max_width)
 
-    def _generate_col_width(self, col_max_width: int) -> List[int]:
+    def _generate_col_width(self, col_max_width: int) -> list[int]:
         """Find column width for all data sources and sizes."""
         max_len_size = 0
         diff_len_col_width = 0
@@ -181,7 +180,7 @@ class BloatTableOutput:
 
         return tuple(diff_list)
 
-    def _label_title_row(self) -> List[str]:
+    def _label_title_row(self) -> list[str]:
         label_rows = []
         label_cells = ''
         divider_cells = ''

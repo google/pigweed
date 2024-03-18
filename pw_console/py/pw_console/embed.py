@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Iterable, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -129,14 +129,14 @@ class PwConsoleEmbed:
         )
 
         self.console_app: Optional[ConsoleApp] = None
-        self.extra_completers: List = []
+        self.extra_completers: list = []
 
         self.setup_python_logging_called = False
-        self.hidden_by_default_windows: List[str] = []
-        self.window_plugins: List[WindowPane] = []
-        self.floating_window_plugins: List[Tuple[FloatingWindowPane, Dict]] = []
-        self.top_toolbar_plugins: List[WindowPaneToolbar] = []
-        self.bottom_toolbar_plugins: List[WindowPaneToolbar] = []
+        self.hidden_by_default_windows: list[str] = []
+        self.window_plugins: list[WindowPane] = []
+        self.floating_window_plugins: list[Tuple[FloatingWindowPane, Dict]] = []
+        self.top_toolbar_plugins: list[WindowPaneToolbar] = []
+        self.bottom_toolbar_plugins: list[WindowPaneToolbar] = []
 
     def add_window_plugin(self, window_pane: WindowPane) -> None:
         """Include a custom window pane plugin.
@@ -219,7 +219,7 @@ class PwConsoleEmbed:
         if len(word_meta_dict) == 0:
             return
 
-        sentences: List[str] = list(word_meta_dict.keys())
+        sentences: list[str] = list(word_meta_dict.keys())
         word_completer = WordCompleter(
             sentences,
             meta_dict=word_meta_dict,

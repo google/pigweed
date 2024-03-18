@@ -13,7 +13,6 @@
 # the License.
 """Generates a list of relevant files present in a stm32cube source package."""
 
-from typing import List
 
 import pathlib
 
@@ -36,7 +35,7 @@ def gen_file_list(stm32cube_dir: pathlib.Path):
     assert (stm32cube_dir / 'cmsis_core').is_dir(), 'cmsis_core not found'
     assert (stm32cube_dir / 'cmsis_device').is_dir(), 'cmsis_device not found'
 
-    file_paths: List[pathlib.Path] = []
+    file_paths: list[pathlib.Path] = []
     file_paths.extend(stm32cube_dir.glob("**/*.h"))
     file_paths.extend(stm32cube_dir.glob("**/*.c"))
     file_paths.extend(stm32cube_dir.glob("**/*.s"))

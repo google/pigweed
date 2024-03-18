@@ -36,7 +36,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Mapping,
     Optional,
     Sequence,
@@ -79,11 +78,11 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str, **kwargs) -> None:
     Intended for use with bazel build and test. May not work with others.
     """
 
-    num_jobs: List[str] = []
+    num_jobs: list[str] = []
     if ctx.num_jobs is not None:
         num_jobs.extend(('--jobs', str(ctx.num_jobs)))
 
-    keep_going: List[str] = []
+    keep_going: list[str] = []
     if ctx.continue_after_build_error:
         keep_going.append('--keep_going')
 
@@ -136,7 +135,7 @@ def _gn_value(value) -> str:
     return str(value)
 
 
-def gn_args_list(**kwargs) -> List[str]:
+def gn_args_list(**kwargs) -> list[str]:
     """Return a list of formatted strings to use as gn args.
 
     Currently supports bool, int, and str values. In the case of str values,
@@ -265,11 +264,11 @@ def ninja(
 ) -> None:
     """Runs ninja in the specified directory."""
 
-    num_jobs: List[str] = []
+    num_jobs: list[str] = []
     if ctx.num_jobs is not None:
         num_jobs.extend(('-j', str(ctx.num_jobs)))
 
-    keep_going: List[str] = []
+    keep_going: list[str] = []
     if ctx.continue_after_build_error:
         keep_going.extend(('-k', '0'))
 
@@ -323,7 +322,7 @@ def ninja(
         raise exc
 
 
-def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
+def get_gn_args(directory: Path) -> list[Dict[str, Dict[str, str]]]:
     """Dumps GN variables to JSON."""
     proc = log_run(
         ['gn', 'args', directory, '--list', '--json'], stdout=subprocess.PIPE
@@ -424,7 +423,7 @@ def check_compile_commands_for_files(
     compile_commands: Union[Path, Iterable[Path]],
     files: Iterable[Path],
     extensions: Collection[str] = format_code.CPP_SOURCE_EXTS,
-) -> List[Path]:
+) -> list[Path]:
     """Checks for paths in one or more compile_commands.json files.
 
     Only checks C and C++ source files by default.
@@ -444,7 +443,7 @@ def check_bazel_build_for_files(
     bazel_extensions_to_check: Container[str],
     files: Iterable[Path],
     bazel_dirs: Iterable[Path] = (),
-) -> List[Path]:
+) -> list[Path]:
     """Checks that source files are in the Bazel builds.
 
     Args:
@@ -465,7 +464,7 @@ def check_bazel_build_for_files(
             )
         )
 
-    missing: List[Path] = []
+    missing: list[Path] = []
 
     if bazel_dirs:
         for path in (p for p in files if p.suffix in bazel_extensions_to_check):
@@ -489,7 +488,7 @@ def check_gn_build_for_files(
     files: Iterable[Path],
     gn_dirs: Iterable[Tuple[Path, Path]] = (),
     gn_build_files: Iterable[Path] = (),
-) -> List[Path]:
+) -> list[Path]:
     """Checks that source files are in the GN build.
 
     Args:
@@ -512,7 +511,7 @@ def check_gn_build_for_files(
 
     gn_builds.update(_search_files_for_paths(gn_build_files))
 
-    missing: List[Path] = []
+    missing: list[Path] = []
 
     if gn_dirs or gn_build_files:
         for path in (p for p in files if p.suffix in gn_extensions_to_check):
@@ -536,7 +535,7 @@ def check_builds_for_files(
     bazel_dirs: Iterable[Path] = (),
     gn_dirs: Iterable[Tuple[Path, Path]] = (),
     gn_build_files: Iterable[Path] = (),
-) -> Dict[str, List[Path]]:
+) -> Dict[str, list[Path]]:
     """Checks that source files are in the GN and Bazel builds.
 
     Args:
@@ -675,7 +674,7 @@ def _value(ctx: PresubmitContext, val: InputValue) -> Value:
     if callable(val):
         return val(ctx)
 
-    result: List[Item] = []
+    result: list[Item] = []
     for item in val:
         if callable(item):
             call_result = item(ctx)
@@ -803,7 +802,7 @@ class _NinjaBase(Check):
 
         self._ninja_target_lists: Tuple[Tuple[str, ...], ...]
         if all_strings:
-            targets: List[str] = []
+            targets: list[str] = []
             for target in ninja_targets:
                 targets.append(target)  # type: ignore
             self._ninja_target_lists = (tuple(targets),)
@@ -811,7 +810,7 @@ class _NinjaBase(Check):
             self._ninja_target_lists = tuple(tuple(x) for x in ninja_targets)
 
     @property
-    def ninja_targets(self) -> List[str]:
+    def ninja_targets(self) -> list[str]:
         return list(itertools.chain(*self._ninja_target_lists))
 
     def _install_package(  # pylint: disable=no-self-use
@@ -846,7 +845,7 @@ class _NinjaBase(Check):
         """Archive and (on LUCI) upload coverage reports."""
         reports = ctx.output_dir / 'coverage_reports'
         os.makedirs(reports, exist_ok=True)
-        coverage_jsons: List[Path] = []
+        coverage_jsons: list[Path] = []
         for path in ctx.output_dir.rglob('coverage_report'):
             _LOG.debug('exploring %s', path)
             name = str(path.relative_to(ctx.output_dir))

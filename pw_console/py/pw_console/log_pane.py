@@ -20,7 +20,6 @@ import time
 from typing import (
     Any,
     Callable,
-    List,
     Optional,
     TYPE_CHECKING,
     Tuple,
@@ -99,7 +98,7 @@ class LogContentControl(UIControl):
         self.visual_select_mode_drag_stop = False
 
         self.uicontent: Optional[UIContent] = None
-        self.lines: List[StyleAndTextTuples] = []
+        self.lines: list[StyleAndTextTuples] = []
 
         # Key bindings.
         key_bindings = KeyBindings()
@@ -792,14 +791,14 @@ class LogPane(WindowPane):
             self.saveas_dialog_active = False
             self.websocket_dialog_active = True
 
-    def get_all_key_bindings(self) -> List:
+    def get_all_key_bindings(self) -> list:
         """Return all keybinds for this pane."""
         # Return log content control keybindings
         return [self.log_content_control.get_key_bindings()]
 
     def get_window_menu_options(
         self,
-    ) -> List[Tuple[str, Union[Callable, None]]]:
+    ) -> list[Tuple[str, Union[Callable, None]]]:
         """Return all menu options for the log pane."""
 
         options = [

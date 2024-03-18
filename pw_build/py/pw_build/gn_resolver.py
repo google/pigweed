@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import (
     Callable,
     Dict,
-    List,
     Iterable,
     Iterator,
     NamedTuple,
@@ -132,7 +131,7 @@ _OBJECTS_EXTENSIONS = ('.o',)
 _MAIN_ARTIFACTS = '', '.elf', '.a', '.so', '.dylib', '.exe', '.lib', '.dll'
 
 
-def _get_artifact(entries: List[str]) -> _Artifact:
+def _get_artifact(entries: list[str]) -> _Artifact:
     """Attempts to resolve which artifact to use if there are multiple.
 
     Selects artifacts based on extension. This will not work if a toolchain
@@ -191,11 +190,11 @@ def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
 
 def _search_target_ninja(
     ninja_file: Path, target: Label
-) -> Tuple[Optional[Path], List[Path]]:
+) -> Tuple[Optional[Path], list[Path]]:
     """Parses the main output file and object files from <target>.ninja."""
 
     artifact: Optional[Path] = None
-    objects: List[Path] = []
+    objects: list[Path] = []
 
     _LOG.debug('Parsing target Ninja file %s for %s', ninja_file, target)
 
@@ -254,7 +253,7 @@ def _search_toolchain_ninja(
 
 def _search_ninja_files(
     paths: GnPaths, target: Label
-) -> Tuple[bool, Optional[Path], List[Path]]:
+) -> Tuple[bool, Optional[Path], list[Path]]:
     ninja_file = target.out_dir / f'{target.name}.ninja'
     if ninja_file.exists():
         return (True, *_search_target_ninja(ninja_file, target))
@@ -402,7 +401,7 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
     if arg == '':
         return ['']
 
-    expanded_args: List[List[str]] = [[]]
+    expanded_args: list[list[str]] = [[]]
 
     for action, piece in _expand_arguments(paths, arg):
         if action is _ArgAction.OMIT:

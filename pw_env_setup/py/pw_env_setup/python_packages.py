@@ -19,7 +19,7 @@ import argparse
 import itertools
 import sys
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Union
+from typing import Dict, Iterator, Optional, Union
 
 import pkg_resources
 
@@ -60,7 +60,7 @@ def ls(output_file: Optional[Path]) -> int:  # pylint: disable=invalid-name
         )
         missing_requirements = expected_requirements - actual_requirements
 
-    new_requirements: List[pkg_resources.Requirement] = list(
+    new_requirements: list[pkg_resources.Requirement] = list(
         actual_requirements
     )
 
@@ -115,7 +115,7 @@ def _load_requirements_lines(*req_files: Path) -> Iterator[str]:
 
 
 def diff(
-    expected: Path, ignore_requirements_file: Optional[List[Path]] = None
+    expected: Path, ignore_requirements_file: Optional[list[Path]] = None
 ) -> int:
     """Report on differences between installed and expected versions."""
     actual_lines = set(_installed_packages())
@@ -225,8 +225,8 @@ def diff(
             yield req_dist_info
 
     def expand_requirements(
-        reqs: List[pkg_resources.Distribution],
-    ) -> Iterator[List[pkg_resources.Distribution]]:
+        reqs: list[pkg_resources.Distribution],
+    ) -> Iterator[list[pkg_resources.Distribution]]:
         """Recursively expand requirements."""
         for dist_info in reqs:
             deps = list(get_requirements(dist_info))
@@ -294,7 +294,7 @@ Please do the following:
     return 0
 
 
-def parse(argv: Union[List[str], None] = None) -> argparse.Namespace:
+def parse(argv: Union[list[str], None] = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="python -m pw_env_setup.python_packages"

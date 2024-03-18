@@ -19,7 +19,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import cast, Dict, List, Optional, Set, Tuple
+from typing import cast, Dict, Optional, Set, Tuple
 
 from pw_cli.env import pigweed_environment
 
@@ -144,8 +144,8 @@ def cmd_setup(
 
 @_inject_reporter
 def cmd_vscode(
-    include: Optional[List[VscSettingsType]] = None,
-    exclude: Optional[List[VscSettingsType]] = None,
+    include: Optional[list[VscSettingsType]] = None,
+    exclude: Optional[list[VscSettingsType]] = None,
     build_extension: bool = False,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
@@ -246,7 +246,7 @@ def cmd_vscode(
         exclude_set = set(exclude if exclude is not None else [])
 
     types_to_update = cast(
-        List[VscSettingsType], tuple(include_set - exclude_set)
+        list[VscSettingsType], tuple(include_set - exclude_set)
     )
 
     for settings_type in types_to_update:
@@ -307,20 +307,20 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     prev_compdb_targets = state.compdb_targets
     new_compdb_targets: CppCompilationDatabaseFileTargets = {}
 
-    targets: List[CppIdeFeaturesTarget] = []
+    targets: list[CppIdeFeaturesTarget] = []
     num_new_unprocessed_targets = 0
     num_new_processed_targets = 0
     num_carried_over_targets = 0
     num_removed_targets = len(state.targets.values())
 
-    unprocessed_compdb_files: List[Path] = []
-    processed_compdb_files: List[Path] = []
+    unprocessed_compdb_files: list[Path] = []
+    processed_compdb_files: list[Path] = []
 
     # Associate processed compilation databases with their original sources
     all_processed_compdbs: Dict[Path, CppCompilationDatabasesMap] = {}
 
     # Get a list of paths to search for compilation databases.
-    compdb_search_paths: List[
+    compdb_search_paths: list[
         Tuple[Path, str]
     ] = pw_ide_settings.compdb_search_paths
     # Get the list of files for each search path, tupled with the search path.
@@ -329,7 +329,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
         for search_path in compdb_search_paths
     ]
     # Flatten that list.
-    compdb_file_paths: List[Tuple[Path, Path, str]] = [
+    compdb_file_paths: list[Tuple[Path, Path, str]] = [
         (search_path, file_path, target_inference)
         for (
             (search_path, target_inference),

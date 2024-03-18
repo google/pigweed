@@ -27,7 +27,6 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
-    List,
     NamedTuple,
     Optional,
     Set,
@@ -71,7 +70,7 @@ def compile_protos(
     Proto files not covered by one of the provided include paths will have their
     directory added as an include path.
     """
-    proto_paths: List[Path] = [Path(f).resolve() for f in proto_files]
+    proto_paths: list[Path] = [Path(f).resolve() for f in proto_files]
     include_paths: Set[Path] = set(Path(d).resolve() for d in includes)
 
     for path in proto_paths:
@@ -190,7 +189,7 @@ class _NestedPackage(Generic[T]):
 
     def __init__(self, package: str):
         self._packages: Dict[str, _NestedPackage[T]] = {}
-        self._items: List[T] = []
+        self._items: list[T] = []
         self._package = package
 
     def _add_package(self, subpackage: str, package: '_NestedPackage') -> None:
@@ -222,7 +221,7 @@ class _NestedPackage(Generic[T]):
 
         return result
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         """List subpackages and members of modules as attributes."""
         attributes = list(self._packages)
 
@@ -263,7 +262,7 @@ class _NestedPackage(Generic[T]):
 class Packages(NamedTuple):
     """Items in a protobuf package structure; returned from as_package."""
 
-    items_by_package: Dict[str, List]
+    items_by_package: Dict[str, list]
     packages: _NestedPackage
 
 
@@ -325,8 +324,8 @@ class Library:
     @classmethod
     def from_paths(cls, protos: Iterable[PathOrModule]) -> 'Library':
         """Creates a Library from paths to proto files or proto modules."""
-        paths: List[PathOrStr] = []
-        modules: List[ModuleType] = []
+        paths: list[PathOrStr] = []
+        modules: list[ModuleType] = []
 
         for proto in protos:
             if isinstance(proto, (Path, str)):

@@ -15,7 +15,7 @@
 
 import json
 from pathlib import Path
-from typing import cast, Dict, List, Optional
+from typing import cast, Dict, Optional
 import unittest
 
 # pylint: disable=protected-access
@@ -169,7 +169,7 @@ class TestCppCompileCommand(PwIdeTestCase):
     def test_process_valid_with_gn_compile_command(self) -> None:
         """Test output against typical GN-generated compile commands."""
 
-        cases: List[Dict[str, str]] = [
+        cases: list[Dict[str, str]] = [
             {
                 # pylint: disable=line-too-long
                 'command': 'arm-none-eabi-g++ -MMD -MF  stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o.d  -Wno-psabi -mabi=aapcs -mthumb --sysroot=../environment/cipd/packages/arm -specs=nano.specs -specs=nosys.specs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Og -Wshadow -Wredundant-decls -u_printf_float -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_ARMV7M_ENABLE_FPU=1  -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/assert_compatibility_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o  stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
@@ -972,7 +972,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
     def setUp(self):
         self.root_dir = Path('/pigweed/pigweed/out')
 
-        self.fixture: List[CppCompileCommandDict] = [
+        self.fixture: list[CppCompileCommandDict] = [
             {
                 # pylint: disable=line-too-long
                 'command': 'arm-none-eabi-g++ -MMD -MF stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o.d -Wno-psabi -mabi=aapcs -mthumb --sysroot=../environment/cipd/packages/arm -specs=nano.specs -specs=nosys.specs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Og -Wshadow -Wredundant-decls -u_printf_float -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -DPW_ARMV7M_ENABLE_FPU=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/assert_compatibility_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
@@ -989,7 +989,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
             },
         ]
 
-        self.expected: List[CppCompileCommandDict] = [
+        self.expected: list[CppCompileCommandDict] = [
             {
                 **self.fixture[0],
                 # pylint: disable=line-too-long
@@ -1108,7 +1108,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         settings = self.make_ide_settings(targets=targets)
 
         # pylint: disable=line-too-long
-        raw_db: List[CppCompileCommandDict] = [
+        raw_db: list[CppCompileCommandDict] = [
             {
                 'command': 'arm-none-eabi-g++ -MMD -MF stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o.d -Wno-psabi -mabi=aapcs -mthumb --sysroot=../environment/cipd/packages/arm -specs=nano.specs -specs=nosys.specs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Og -Wshadow -Wredundant-decls -u_printf_float -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -DPW_ARMV7M_ENABLE_FPU=1  -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/assert_compatibility_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
                 'directory': str(self.root_dir),

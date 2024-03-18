@@ -27,7 +27,7 @@ import logging
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import List, Union
+from typing import Union
 
 
 from pw_transfer import transfer_pb2
@@ -149,7 +149,7 @@ def _main(args) -> int:
         _LOG.exception('Failed to initialize socket at %s', args.socket_addr)
         return 1
 
-    protos: List[Union[ModuleType, Path]] = [
+    protos: list[Union[ModuleType, Path]] = [
         log_pb2,
         file_pb2,
         transfer_pb2,

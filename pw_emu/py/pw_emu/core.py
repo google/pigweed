@@ -26,7 +26,7 @@ import time
 from abc import ABC, abstractmethod
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Dict, List, Union, Any, Type
+from typing import Optional, Dict, Union, Any, Type
 
 import psutil  # type: ignore
 
@@ -240,7 +240,7 @@ class Handles:
     def __init__(self, emu: str, config: str) -> None:
         self.emu = emu
         self.config = config
-        self.gdb_cmd: List[str] = []
+        self.gdb_cmd: list[str] = []
         self.target = ''
         self.channels: Dict[str, Handles.Channel] = {}
         self.procs: Dict[str, Handles.Proc] = {}
@@ -265,7 +265,7 @@ class Handles:
 
         self.target = target
 
-    def set_gdb_cmd(self, cmd: List[str]) -> None:
+    def set_gdb_cmd(self, cmd: list[str]) -> None:
         """Sets the ``gdb`` command."""
 
         self.gdb_cmd = cmd.copy()
@@ -349,7 +349,7 @@ class Config:
         except ConfigError:
             raise InvalidTarget(self.path, self._emu, self._target)
 
-    def get_targets(self) -> List[str]:
+    def get_targets(self) -> list[str]:
         return list(self.get(['targets'], entry_type=dict).keys())
 
     def _subst(self, string: str) -> str:
@@ -371,7 +371,7 @@ class Config:
 
         raise ConfigError(self.path, f'Invalid substitution type: {subst_type}')
 
-    def _subst_list(self, items: List[Any]) -> List[Any]:
+    def _subst_list(self, items: list[Any]) -> list[Any]:
         new_list = []
         for item in items:
             if isinstance(item, str):
@@ -382,7 +382,7 @@ class Config:
 
     def get(
         self,
-        keys: List[str],
+        keys: list[str],
         optional: bool = True,
         entry_type: Optional[Type] = None,
     ) -> Any:
@@ -436,7 +436,7 @@ class Config:
 
     def get_target(
         self,
-        keys: List[str],
+        keys: list[str],
         optional: bool = True,
         entry_type: Optional[Type] = None,
     ) -> Any:
@@ -448,7 +448,7 @@ class Config:
 
     def get_emu(
         self,
-        keys: List[str],
+        keys: list[str],
         optional: bool = True,
         entry_type: Optional[Type] = None,
     ) -> Any:
@@ -460,7 +460,7 @@ class Config:
 
     def get_target_emu(
         self,
-        keys: List[str],
+        keys: list[str],
         optional: bool = True,
         entry_type: Optional[Type] = None,
     ) -> Any:
@@ -500,7 +500,7 @@ class Connector(ABC):
 
         return self._handles.emu
 
-    def get_gdb_cmd(self) -> List[str]:
+    def get_gdb_cmd(self) -> list[str]:
         """Returns the configured ``gdb`` command."""
         return self._handles.gdb_cmd
 
@@ -581,7 +581,7 @@ class Connector(ABC):
             return ser
         raise InvalidChannelType(chan_type)
 
-    def get_channels(self) -> List[str]:
+    def get_channels(self) -> list[str]:
         return self._handles.channels.keys()
 
     def get_logs(self) -> str:
@@ -623,7 +623,7 @@ class Connector(ABC):
         """Resumes the emulator's execution."""
 
     @abstractmethod
-    def list_properties(self, path: str) -> List[Any]:
+    def list_properties(self, path: str) -> list[Any]:
         """Returns the property list for an emulator object."""
 
     @abstractmethod
@@ -683,7 +683,7 @@ class Launcher(ABC):
         pause: bool = False,
         debug: bool = False,
         args: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Pre-start work, returns command to start the emulator.
 
         The target and emulator configuration can be accessed through
@@ -769,7 +769,7 @@ class Launcher(ABC):
     def _daemonize(
         self,
         name: str,
-        cmd: List[str],
+        cmd: list[str],
     ) -> None:
         """Daemonize process for UNIX hosts."""
 
@@ -813,7 +813,7 @@ class Launcher(ABC):
     def _start_proc(
         self,
         name: str,
-        cmd: List[str],
+        cmd: list[str],
         foreground: bool = False,
     ) -> Union[subprocess.Popen, None]:
         """Run the main emulator process.

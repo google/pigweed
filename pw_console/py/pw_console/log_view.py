@@ -25,7 +25,7 @@ import operator
 from pathlib import Path
 import re
 from threading import Thread
-from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -145,7 +145,7 @@ class LogView:
         self.visual_select_mode: bool = False
 
         # Cache of formatted text tuples used in the last UI render.
-        self._line_fragment_cache: List[StyleAndTextTuples] = []
+        self._line_fragment_cache: list[StyleAndTextTuples] = []
 
         # websocket server variables
         self.websocket_running: bool = False
@@ -819,7 +819,7 @@ class LogView:
     def get_web_socket_url(self):
         return f'http://127.0.0.1:3000/#ws={self.websocket_port}'
 
-    def render_content(self) -> List:
+    def render_content(self) -> list:
         """Return logs to display on screen as a list of FormattedText tuples.
 
         This function determines when the log screen requires re-rendeing based

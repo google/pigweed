@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Any, Callable, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Callable, Optional, Tuple, TYPE_CHECKING, Union
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -153,7 +153,7 @@ class WindowPane(ABC):
         object."""
         return self.container  # pylint: disable=no-member
 
-    def get_all_key_bindings(self) -> List:
+    def get_all_key_bindings(self) -> list:
         """Return keybinds for display in the help window.
 
         For example:
@@ -177,7 +177,7 @@ class WindowPane(ABC):
 
     def get_window_menu_options(
         self,
-    ) -> List[Tuple[str, Union[Callable, None]]]:
+    ) -> list[Tuple[str, Union[Callable, None]]]:
         """Return menu options for the window pane.
 
         Should return a list of tuples containing with the display text and
@@ -186,7 +186,7 @@ class WindowPane(ABC):
         # pylint: disable=no-self-use
         return []
 
-    def get_top_level_menus(self) -> List[MenuItem]:
+    def get_top_level_menus(self) -> list[MenuItem]:
         """Return MenuItems to be displayed on the main pw_console menu bar."""
         # pylint: disable=no-self-use
         return []

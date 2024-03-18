@@ -21,7 +21,7 @@ from graphlib import CycleError, TopologicalSorter  # type: ignore
 from itertools import takewhile
 import os
 import sys
-from typing import Dict, Iterable, List, Optional, Tuple, Type
+from typing import Dict, Iterable, Optional, Tuple, Type
 from typing import cast
 
 from google.protobuf import descriptor_pb2
@@ -150,7 +150,7 @@ class ProtoMethod(ProtoMember):
         self._base_class: str = base_class
 
     @abc.abstractmethod
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         """Returns the parameters of the method as a list of (type, name) pairs.
 
         e.g.
@@ -158,7 +158,7 @@ class ProtoMethod(ProtoMember):
         """
 
     @abc.abstractmethod
-    def body(self) -> List[str]:
+    def body(self) -> list[str]:
         """Returns the method body as a list of source code lines.
 
         e.g.
@@ -211,14 +211,14 @@ class WriteMethod(ProtoMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::Status'
 
-    def body(self) -> List[str]:
+    def body(self) -> list[str]:
         params = ', '.join([pair[1] for pair in self.params()])
         line = 'return {}::{}({}, {});'.format(
             self._base_class, self._encoder_fn(), self.field_cast(), params
         )
         return [line]
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         """Method parameters, defined in subclasses."""
         raise NotImplementedError()
 
@@ -278,8 +278,8 @@ class ReadMethod(ProtoMethod):
         """
         raise NotImplementedError()
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += ['::pw::Result<uint32_t> field_number = FieldNumber();']
         lines += ['PW_ASSERT(field_number.ok());']
         lines += [
@@ -288,7 +288,7 @@ class ReadMethod(ProtoMethod):
         lines += self._decoder_body()
         return lines
 
-    def _decoder_body(self) -> List[str]:
+    def _decoder_body(self) -> list[str]:
         """Returns the decoder body part as a list of source code lines."""
         params = ', '.join([pair[1] for pair in self.params()])
         line = 'return {}::{}({});'.format(
@@ -305,7 +305,7 @@ class ReadMethod(ProtoMethod):
         """
         raise NotImplementedError()
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         """Method parameters, can be overriden in subclasses."""
         return []
 
@@ -325,7 +325,7 @@ class PackedReadMethod(ReadMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<{}>'.format(self._result_type()), 'out')]
 
 
@@ -342,7 +342,7 @@ class PackedReadVectorMethod(ReadMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::Status'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('::pw::Vector<{}>&'.format(self._result_type()), 'out')]
 
 
@@ -350,11 +350,11 @@ class FindMethod(ReadMethod):
     def name(self) -> str:
         return 'Find{}'.format(self._field.name())
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('::pw::ConstByteSpan', 'message')]
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
             f'(message, {self.field_cast()});'
@@ -375,11 +375,11 @@ class FindStreamMethod(FindMethod):
     def name(self) -> str:
         return 'Find{}'.format(self._field.name())
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('::pw::stream::Reader&', 'message_stream')]
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
             f'(message_stream, {self.field_cast()});'
@@ -512,7 +512,7 @@ class MessageProperty(ProtoMember):
         """C++ string for a bool argument that includes the argument name."""
         return f'/*{attr}=*/{bool(getattr(self, attr)())}'.lower()
 
-    def table_entry(self) -> List[str]:
+    def table_entry(self) -> list[str]:
         """Table entry."""
         return [
             self.field_cast(),
@@ -571,10 +571,10 @@ class SubMessageEncoderMethod(ProtoMethod):
             self._relative_type_namespace(from_root)
         )
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return []
 
-    def body(self) -> List[str]:
+    def body(self) -> list[str]:
         line = 'return {}::StreamEncoder({}::GetNestedEncoder({}));'.format(
             self._relative_type_namespace(), self._base_class, self.field_cast()
         )
@@ -597,7 +597,7 @@ class SubMessageDecoderMethod(ReadMethod):
             self._relative_type_namespace(from_root)
         )
 
-    def _decoder_body(self) -> List[str]:
+    def _decoder_body(self) -> list[str]:
         line = 'return {}::StreamDecoder(GetNestedDecoder());'.format(
             self._relative_type_namespace()
         )
@@ -704,7 +704,7 @@ class BytesReaderMethod(ReadMethod):
 class DoubleWriteMethod(WriteMethod):
     """Method which writes a proto double value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('double', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -714,7 +714,7 @@ class DoubleWriteMethod(WriteMethod):
 class PackedDoubleWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of doubles."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const double>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -724,7 +724,7 @@ class PackedDoubleWriteMethod(PackedWriteMethod):
 class PackedDoubleWriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of doubles."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<double>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -797,7 +797,7 @@ class DoubleProperty(MessageProperty):
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('float', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -807,7 +807,7 @@ class FloatWriteMethod(WriteMethod):
 class PackedFloatWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of floats."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const float>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -817,7 +817,7 @@ class PackedFloatWriteMethod(PackedWriteMethod):
 class PackedFloatWriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of floats."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<float>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -890,7 +890,7 @@ class FloatProperty(MessageProperty):
 class Int32WriteMethod(WriteMethod):
     """Method which writes a proto int32 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int32_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -900,7 +900,7 @@ class Int32WriteMethod(WriteMethod):
 class PackedInt32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of int32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -910,7 +910,7 @@ class PackedInt32WriteMethod(PackedWriteMethod):
 class PackedInt32WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of int32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int32_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -986,7 +986,7 @@ class Int32Property(MessageProperty):
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int32_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -996,7 +996,7 @@ class Sint32WriteMethod(WriteMethod):
 class PackedSint32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sint32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1006,7 +1006,7 @@ class PackedSint32WriteMethod(PackedWriteMethod):
 class PackedSint32WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of sint32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int32_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1082,7 +1082,7 @@ class Sint32Property(MessageProperty):
 class Sfixed32WriteMethod(WriteMethod):
     """Method which writes a proto sfixed32 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int32_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1092,7 +1092,7 @@ class Sfixed32WriteMethod(WriteMethod):
 class PackedSfixed32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sfixed32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1102,7 +1102,7 @@ class PackedSfixed32WriteMethod(PackedWriteMethod):
 class PackedSfixed32WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of sfixed32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int32_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1175,7 +1175,7 @@ class Sfixed32Property(MessageProperty):
 class Int64WriteMethod(WriteMethod):
     """Method which writes a proto int64 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int64_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1185,7 +1185,7 @@ class Int64WriteMethod(WriteMethod):
 class PackedInt64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of int64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1195,7 +1195,7 @@ class PackedInt64WriteMethod(PackedWriteMethod):
 class PackedInt64WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of int64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int64_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1271,7 +1271,7 @@ class Int64Property(MessageProperty):
 class Sint64WriteMethod(WriteMethod):
     """Method which writes a proto sint64 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int64_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1281,7 +1281,7 @@ class Sint64WriteMethod(WriteMethod):
 class PackedSint64WriteMethod(PackedWriteMethod):
     """Method which writes a packst list of sint64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1291,7 +1291,7 @@ class PackedSint64WriteMethod(PackedWriteMethod):
 class PackedSint64WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of sint64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int64_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1367,7 +1367,7 @@ class Sint64Property(MessageProperty):
 class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('int64_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1377,7 +1377,7 @@ class Sfixed64WriteMethod(WriteMethod):
 class PackedSfixed64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sfixed64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1387,7 +1387,7 @@ class PackedSfixed64WriteMethod(PackedWriteMethod):
 class PackedSfixed64WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of sfixed64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<int64_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1460,7 +1460,7 @@ class Sfixed64Property(MessageProperty):
 class Uint32WriteMethod(WriteMethod):
     """Method which writes a proto uint32 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('uint32_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1470,7 +1470,7 @@ class Uint32WriteMethod(WriteMethod):
 class PackedUint32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of uint32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1480,7 +1480,7 @@ class PackedUint32WriteMethod(PackedWriteMethod):
 class PackedUint32WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of uint32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<uint32_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1556,7 +1556,7 @@ class Uint32Property(MessageProperty):
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('uint32_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1566,7 +1566,7 @@ class Fixed32WriteMethod(WriteMethod):
 class PackedFixed32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of fixed32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1576,7 +1576,7 @@ class PackedFixed32WriteMethod(PackedWriteMethod):
 class PackedFixed32WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of fixed32."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<uint32_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1649,7 +1649,7 @@ class Fixed32Property(MessageProperty):
 class Uint64WriteMethod(WriteMethod):
     """Method which writes a proto uint64 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('uint64_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1659,7 +1659,7 @@ class Uint64WriteMethod(WriteMethod):
 class PackedUint64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of uint64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1669,7 +1669,7 @@ class PackedUint64WriteMethod(PackedWriteMethod):
 class PackedUint64WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of uint64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<uint64_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1745,7 +1745,7 @@ class Uint64Property(MessageProperty):
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('uint64_t', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1755,7 +1755,7 @@ class Fixed64WriteMethod(WriteMethod):
 class PackedFixed64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of fixed64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1765,7 +1765,7 @@ class PackedFixed64WriteMethod(PackedWriteMethod):
 class PackedFixed64WriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed list of fixed64."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<uint64_t>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1838,7 +1838,7 @@ class Fixed64Property(MessageProperty):
 class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('bool', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1848,7 +1848,7 @@ class BoolWriteMethod(WriteMethod):
 class PackedBoolWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of bools."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const bool>', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1858,7 +1858,7 @@ class PackedBoolWriteMethod(PackedWriteMethod):
 class PackedBoolWriteVectorMethod(PackedWriteMethod):
     """Method which writes a packed vector of bools."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const ::pw::Vector<bool>&', 'values')]
 
     def _encoder_fn(self) -> str:
@@ -1924,7 +1924,7 @@ class BoolProperty(MessageProperty):
 class BytesWriteMethod(WriteMethod):
     """Method which writes a proto bytes value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<const std::byte>', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -1937,7 +1937,7 @@ class BytesReadMethod(ReadMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<std::byte>', 'out')]
 
     def _decoder_fn(self) -> str:
@@ -1960,14 +1960,14 @@ class BytesFindStreamMethod(FindStreamMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [
             ('::pw::stream::Reader&', 'message_stream'),
             ('::pw::ByteSpan', 'out'),
         ]
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
             f'(message_stream, {self.field_cast()}, out);'
@@ -2021,7 +2021,7 @@ class BytesProperty(MessageProperty):
 class StringLenWriteMethod(WriteMethod):
     """Method which writes a proto string value with length."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('const char*', 'value'), ('size_t', 'len')]
 
     def _encoder_fn(self) -> str:
@@ -2031,7 +2031,7 @@ class StringLenWriteMethod(WriteMethod):
 class StringWriteMethod(WriteMethod):
     """Method which writes a proto string value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('std::string_view', 'value')]
 
     def _encoder_fn(self) -> str:
@@ -2044,7 +2044,7 @@ class StringReadMethod(ReadMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [('pw::span<char>', 'out')]
 
     def _decoder_fn(self) -> str:
@@ -2067,14 +2067,14 @@ class StringFindStreamMethod(FindStreamMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [
             ('::pw::stream::Reader&', 'message_stream'),
             ('::pw::span<char>', 'out'),
         ]
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
             f'(message_stream, {self.field_cast()}, out);'
@@ -2091,14 +2091,14 @@ class StringFindStreamMethodInlineString(FindStreamMethod):
     def return_type(self, from_root: bool = False) -> str:
         return '::pw::StatusWithSize'
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [
             ('::pw::stream::Reader&', 'message_stream'),
             ('::pw::InlineString<>&', 'out'),
         ]
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
             f'(message_stream, {self.field_cast()}, out);'
@@ -2154,10 +2154,10 @@ class StringProperty(MessageProperty):
 class EnumWriteMethod(WriteMethod):
     """Method which writes a proto enum value."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [(self._relative_type_namespace(), 'value')]
 
-    def body(self) -> List[str]:
+    def body(self) -> list[str]:
         line = (
             'return {}::WriteUint32({}, '
             'static_cast<uint32_t>(value));'.format(
@@ -2176,7 +2176,7 @@ class EnumWriteMethod(WriteMethod):
 class PackedEnumWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of enum."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [
             (
                 'pw::span<const {}>'.format(self._relative_type_namespace()),
@@ -2184,7 +2184,7 @@ class PackedEnumWriteMethod(PackedWriteMethod):
             )
         ]
 
-    def body(self) -> List[str]:
+    def body(self) -> list[str]:
         value_param = self.params()[0][1]
         line = (
             f'return {self._base_class}::WritePackedUint32('
@@ -2203,7 +2203,7 @@ class PackedEnumWriteMethod(PackedWriteMethod):
 class PackedEnumWriteVectorMethod(PackedEnumWriteMethod):
     """Method which writes a packed vector of enum."""
 
-    def params(self) -> List[Tuple[str, str]]:
+    def params(self) -> list[Tuple[str, str]]:
         return [
             (
                 'const ::pw::Vector<{}>&'.format(
@@ -2220,8 +2220,8 @@ class EnumReadMethod(ReadMethod):
     def _result_type(self):
         return self._relative_type_namespace()
 
-    def _decoder_body(self) -> List[str]:
-        lines: List[str] = []
+    def _decoder_body(self) -> list[str]:
+        lines: list[str] = []
         lines += ['::pw::Result<uint32_t> value = ReadUint32();']
         lines += ['if (!value.ok()) {']
         lines += ['  return value.status();']
@@ -2237,7 +2237,7 @@ class PackedEnumReadMethod(PackedReadMethod):
     def _result_type(self):
         return self._relative_type_namespace()
 
-    def _decoder_body(self) -> List[str]:
+    def _decoder_body(self) -> list[str]:
         value_param = self.params()[0][1]
         return [
             f'return ReadPackedUint32('
@@ -2252,7 +2252,7 @@ class PackedEnumReadVectorMethod(PackedReadVectorMethod):
     def _result_type(self):
         return self._relative_type_namespace()
 
-    def _decoder_body(self) -> List[str]:
+    def _decoder_body(self) -> list[str]:
         value_param = self.params()[0][1]
         return [
             f'return ReadRepeatedUint32('
@@ -2266,8 +2266,8 @@ class EnumFindMethod(FindMethod):
     def _result_type(self) -> str:
         return self._relative_type_namespace()
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             '::pw::Result<uint32_t> result = '
             f'{PROTOBUF_NAMESPACE}::{self._find_fn()}'
@@ -2289,8 +2289,8 @@ class EnumFindStreamMethod(FindStreamMethod):
     def _result_type(self) -> str:
         return self._relative_type_namespace()
 
-    def body(self) -> List[str]:
-        lines: List[str] = []
+    def body(self) -> list[str]:
+        lines: list[str] = []
         lines += [
             '::pw::Result<uint32_t> result = '
             f'{PROTOBUF_NAMESPACE}::{self._find_fn()}'
@@ -2323,7 +2323,7 @@ class EnumProperty(MessageProperty):
 
 
 # Mapping of protobuf field types to their method definitions.
-PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
+PROTO_FIELD_WRITE_METHODS: Dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleWriteMethod,
         PackedDoubleWriteMethod,
@@ -2402,7 +2402,7 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
     ],
 }
 
-PROTO_FIELD_READ_METHODS: Dict[int, List] = {
+PROTO_FIELD_READ_METHODS: Dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleReadMethod,
         PackedDoubleReadMethod,
@@ -2483,7 +2483,7 @@ PROTO_FIELD_READ_METHODS: Dict[int, List] = {
     ],
 }
 
-PROTO_FIELD_FIND_METHODS: Dict[int, List] = {
+PROTO_FIELD_FIND_METHODS: Dict[int, list] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
         DoubleFindMethod,
         DoubleFindStreamMethod,
@@ -2598,7 +2598,7 @@ def proto_message_field_props(
             yield prop
 
 
-def proto_field_methods(class_type: ClassType, field_type: int) -> List:
+def proto_field_methods(class_type: ClassType, field_type: int) -> list:
     return (
         PROTO_FIELD_WRITE_METHODS[field_type]
         if class_type.is_encoder()
@@ -2924,7 +2924,7 @@ def generate_struct_for_message(
 
     # Generate members for each of the message's fields.
     with output.indent():
-        cmp: List[str] = []
+        cmp: list[str] = []
         for prop in proto_message_field_props(message, root):
             type_name = prop.struct_member_type()
             name = prop.name()
@@ -3041,8 +3041,8 @@ def generate_sizes_for_message(
     namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
-    property_sizes: List[str] = []
-    scratch_sizes: List[str] = []
+    property_sizes: list[str] = []
+    scratch_sizes: list[str] = []
     for prop in proto_message_field_props(message, root):
         property_sizes.append(prop.max_encoded_size())
         if prop.include_in_scratch_size():
@@ -3140,7 +3140,7 @@ def dependency_sorted_messages(package: ProtoNode):
     """Yields the messages in the package sorted after their dependencies."""
 
     # Build the graph of dependencies between messages.
-    graph: Dict[ProtoMessage, List[ProtoMessage]] = {}
+    graph: Dict[ProtoMessage, list[ProtoMessage]] = {}
     for node in package:
         if node.type() == ProtoNode.Type.MESSAGE:
             message = cast(ProtoMessage, node)

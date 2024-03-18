@@ -46,7 +46,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Optional,
     Union,
 )
@@ -327,7 +326,7 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     client_info = device.info()
     completions = flattened_rpc_completions([client_info])
 
-    log_windows: Dict[str, Union[List[logging.Logger], log_store.LogStore]] = {
+    log_windows: Dict[str, Union[list[logging.Logger], log_store.LogStore]] = {
         'Device Logs': device_log_store,
         'Host Logs': root_log_store,
     }
@@ -375,7 +374,7 @@ def console(
     serial_debug: bool = False,
     config_file: Optional[Path] = None,
     verbose: bool = False,
-    compiled_protos: Optional[List[ModuleType]] = None,
+    compiled_protos: Optional[list[ModuleType]] = None,
     merge_device_and_host_logs: bool = False,
     rpc_logging: bool = True,
     use_ipython: bool = False,
@@ -462,7 +461,7 @@ def console(
         )
         detokenizer.show_errors = True
 
-    protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
+    protos: list[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
 
     if compiled_protos is None:
         compiled_protos = []

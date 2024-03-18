@@ -16,7 +16,6 @@
 import logging
 import re
 import unittest
-from typing import List
 
 from unittest.mock import MagicMock
 
@@ -125,7 +124,7 @@ class TestCommandRunner(unittest.TestCase):
             def empty_handler() -> None:
                 return None
 
-            def get_completions() -> List[CommandRunnerItem]:
+            def get_completions() -> list[CommandRunnerItem]:
                 return [
                     CommandRunnerItem('[File] > Open Logger', empty_handler),
                     CommandRunnerItem(

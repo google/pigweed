@@ -25,7 +25,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, Dict, IO, List, Tuple, Optional
+from typing import Any, Dict, IO, Tuple, Optional
 
 if sys.platform != 'win32':
     import pty
@@ -86,8 +86,8 @@ class ConsoleRenderer:
 
     def __init__(self) -> None:
         """Initialize the console renderer."""
-        self._queued_lines: List[str] = []
-        self._temporary_lines: List[str] = []
+        self._queued_lines: list[str] = []
+        self._temporary_lines: list[str] = []
         self._previous_line_count = 0
 
         term = os.environ.get('TERM')
@@ -97,7 +97,7 @@ class ConsoleRenderer:
         """Queue a permanent line for printing during the next render."""
         self._queued_lines.append(line)
 
-    def set_temporary_lines(self, lines: List[str]) -> None:
+    def set_temporary_lines(self, lines: list[str]) -> None:
         """Set the temporary lines to be displayed during the next render."""
         self._temporary_lines = lines[:]
 
@@ -225,16 +225,16 @@ class Ninja:
     num_started: int
     num_finished: int
     num_total: int
-    actions: List[NinjaAction]
+    actions: list[NinjaAction]
     running_actions: Dict[str, NinjaAction]
     last_action_completed: Optional[NinjaAction]
-    events: List[NinjaEvent]
+    events: list[NinjaEvent]
     exited: bool
     lock: threading.Lock
     process: subprocess.Popen
     start_time: float
 
-    def __init__(self, args: List[str]) -> None:
+    def __init__(self, args: list[str]) -> None:
         if sys.platform == 'win32':
             raise RuntimeError('Ninja wrapper does not support Windows.')
 
@@ -279,7 +279,7 @@ class Ninja:
         # A Ninja status line starts with "\r" and ends with "\x1B[K". This
         # tracks whether we're currently in a status line.
         ninja_status = False
-        buffer: List[str] = []
+        buffer: list[str] = []
         try:
             while True:
                 char = file.read(1)
@@ -390,7 +390,7 @@ class Ninja:
     def write_trace(self, file: IO[str]) -> None:
         """Write a Chromium trace_event-formatted trace to a file."""
         now = time.time()
-        threads: List[float] = []
+        threads: list[float] = []
         events = []
         actions = sorted(
             self.actions, key=lambda x: x.end_time or now, reverse=True
@@ -434,7 +434,7 @@ class UI:
         self._renderer = ConsoleRenderer()
         self._last_log_action: Optional[NinjaAction] = None
 
-    def _get_status_display(self) -> List[str]:
+    def _get_status_display(self) -> list[str]:
         """Generates the status display. Must be called under the Ninja lock."""
         actions = sorted(
             self._ninja.running_actions.values(), key=lambda x: x.start_time
@@ -522,7 +522,7 @@ class UI:
         self._renderer.print_line(line)
 
 
-def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
+def _parse_args() -> Tuple[argparse.Namespace, list[str]]:
     """Parses CLI arguments.
 
     Returns:

@@ -15,7 +15,7 @@
 
 import copy
 import re
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -31,11 +31,11 @@ def strip_ansi(text: str):
 
 def split_lines(
     input_fragments: StyleAndTextTuples,
-) -> List[StyleAndTextTuples]:
+) -> list[StyleAndTextTuples]:
     """Break a flattened list of StyleAndTextTuples into a list of lines.
 
     Ending line breaks are not preserved."""
-    lines: List[StyleAndTextTuples] = []
+    lines: list[StyleAndTextTuples] = []
     this_line: StyleAndTextTuples = []
     for item in input_fragments:
         if item[1].endswith('\n'):

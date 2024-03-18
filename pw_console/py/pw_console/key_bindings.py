@@ -14,7 +14,7 @@
 # pylint: skip-file
 """Console key bindings."""
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from prompt_toolkit.filters import (
     Condition,
@@ -29,7 +29,7 @@ __all__ = ('create_key_bindings',)
 
 _LOG = logging.getLogger(__package__)
 
-DEFAULT_KEY_BINDINGS: Dict[str, List[str]] = {
+DEFAULT_KEY_BINDINGS: Dict[str, list[str]] = {
     'global.open-user-guide': ['f1'],
     'global.open-menu-search': ['c-p'],
     'global.focus-previous-widget': ['c-left'],

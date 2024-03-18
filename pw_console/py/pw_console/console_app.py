@@ -27,7 +27,7 @@ import sys
 import tempfile
 import time
 from threading import Thread
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -159,7 +159,7 @@ class ConsoleApp:
         extra_completers=None,
         prefs=None,
         floating_window_plugins: Optional[
-            List[Tuple[FloatingWindowPane, Dict]]
+            list[Tuple[FloatingWindowPane, Dict]]
         ] = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
@@ -264,7 +264,7 @@ class ConsoleApp:
             self.prefs.current_config_as_yaml()
         )
 
-        self.floating_window_plugins: List[FloatingWindowPane] = []
+        self.floating_window_plugins: list[FloatingWindowPane] = []
         if floating_window_plugins:
             self.floating_window_plugins = [
                 plugin for plugin, _ in floating_window_plugins
@@ -578,8 +578,8 @@ class ConsoleApp:
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
-    def _create_logger_completions(self) -> List[CommandRunnerItem]:
-        completions: List[CommandRunnerItem] = [
+    def _create_logger_completions(self) -> list[CommandRunnerItem]:
+        completions: list[CommandRunnerItem] = [
             CommandRunnerItem(
                 title='root',
                 handler=functools.partial(
@@ -609,7 +609,7 @@ class ConsoleApp:
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
-    def _create_history_completions(self) -> List[CommandRunnerItem]:
+    def _create_history_completions(self) -> list[CommandRunnerItem]:
         return [
             CommandRunnerItem(
                 title=title,
@@ -650,8 +650,8 @@ class ConsoleApp:
         )
         server_thread.start()
 
-    def _create_snippet_completions(self) -> List[CommandRunnerItem]:
-        completions: List[CommandRunnerItem] = []
+    def _create_snippet_completions(self) -> list[CommandRunnerItem]:
+        completions: list[CommandRunnerItem] = []
 
         for snippet in self.prefs.snippet_completions():
             fenced_code = f'```python\n{snippet.code.strip()}\n```'
@@ -1072,8 +1072,8 @@ class ConsoleApp:
         self.update_menu_items()
         self._update_help_window()
 
-    def all_log_stores(self) -> List[LogStore]:
-        log_stores: List[LogStore] = []
+    def all_log_stores(self) -> list[LogStore]:
+        log_stores: list[LogStore] = []
         for pane in self.window_manager.active_panes():
             if not isinstance(pane, LogPane):
                 continue

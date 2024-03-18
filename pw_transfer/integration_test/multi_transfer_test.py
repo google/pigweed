@@ -32,7 +32,6 @@ Which tests to run can be specified as command-line arguments:
 
 from parameterized import parameterized
 import random
-from typing import List
 
 from pigweed.pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness, BasicTransfer
@@ -57,7 +56,7 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         rng = random.Random(1533659510898)
         config = self.default_config()
         resource_id = 5
-        transfers: List[BasicTransfer] = []
+        transfers: list[BasicTransfer] = []
         for i in range(1, 6):
             transfers.append(
                 BasicTransfer(
@@ -80,7 +79,7 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         rng = random.Random(1533659510898)
         config = self.default_config()
         resource_id = 5
-        transfers: List[BasicTransfer] = []
+        transfers: list[BasicTransfer] = []
         for i in range(1, 6):
             transfers.append(
                 BasicTransfer(
@@ -103,7 +102,7 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         rng = random.Random(1533659510898)
         config = self.default_config()
         resource_id = 53333333
-        transfers: List[BasicTransfer] = []
+        transfers: list[BasicTransfer] = []
         for i in range(1, 6):
             transfer_type = (
                 config_pb2.TransferAction.TransferType.READ_FROM_SERVER

@@ -26,7 +26,6 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
-    List,
     Sequence,
     TextIO,
     TypeVar,
@@ -132,7 +131,7 @@ class TestGenerator(Generic[T]):
     """Generates tests for multiple languages from a series of test cases."""
 
     def __init__(self, test_cases: Sequence[GroupOrTest[T]]):
-        self._cases: Dict[str, List[T]] = defaultdict(list)
+        self._cases: Dict[str, list[T]] = defaultdict(list)
         message = ''
 
         if len(test_cases) < 2:

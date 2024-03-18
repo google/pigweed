@@ -15,7 +15,7 @@
 """Tests using the callback client for pw_rpc."""
 
 import contextlib
-from typing import List, Tuple
+from typing import Tuple
 import unittest
 
 import pw_hdlc.rpc
@@ -92,7 +92,7 @@ class RpcIntegrationTest(unittest.TestCase):
 
 
 def _main(
-    test_server_command: List[str], port: int, unittest_args: List[str]
+    test_server_command: list[str], port: int, unittest_args: list[str]
 ) -> None:
     RpcIntegrationTest.test_server_command = tuple(test_server_command)
     RpcIntegrationTest.port = port

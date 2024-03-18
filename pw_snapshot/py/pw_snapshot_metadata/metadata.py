@@ -13,7 +13,7 @@
 # the License.
 """Library to assist processing Snapshot Metadata protos into text"""
 
-from typing import Optional, List, Mapping
+from typing import Optional, Mapping
 import pw_log_tokenized
 import pw_tokenizer
 from pw_tokenizer import proto as proto_detokenizer
@@ -35,7 +35,7 @@ def _process_tags(tags: Mapping[str, str]) -> Optional[str]:
     if not tags:
         return None
 
-    output: List[str] = ['Tags:']
+    output: list[str] = ['Tags:']
     for key, value in tags.items():
         output.append(f'  {key}: {value}')
 
@@ -49,7 +49,7 @@ def process_snapshot(
     snapshot = snapshot_metadata_pb2.SnapshotBasicInfo()
     snapshot.ParseFromString(serialized_snapshot)
 
-    output: List[str] = []
+    output: list[str] = []
 
     if snapshot.HasField('metadata'):
         output.extend(
@@ -127,7 +127,7 @@ class MetadataProcessor:
 
     def __str__(self) -> str:
         """outputs a pw.snapshot.Metadata proto as a multi-line string."""
-        output: List[str] = []
+        output: list[str] = []
         if self._metadata.fatal:
             output.extend(
                 (

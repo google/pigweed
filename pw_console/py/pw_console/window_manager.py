@@ -19,7 +19,7 @@ import functools
 from itertools import chain
 import logging
 import operator
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
@@ -190,8 +190,8 @@ class WindowManager:
         self.window_lists: collections.deque = collections.deque()
         self.window_lists.append(WindowList(self))
         self.key_bindings = self._create_key_bindings()
-        self.top_toolbars: List[WindowPaneToolbar] = []
-        self.bottom_toolbars: List[WindowPaneToolbar] = []
+        self.top_toolbars: list[WindowPaneToolbar] = []
+        self.bottom_toolbars: list[WindowPaneToolbar] = []
 
         self.resize_mode: bool = False
         self.resize_target_window_list_index: Optional[int] = None
@@ -221,7 +221,7 @@ class WindowManager:
             self.rebalance_window_list_sizes()
 
     def _set_window_list_sizes(
-        self, new_heights: List[int], new_widths: List[int]
+        self, new_heights: list[int], new_widths: list[int]
     ) -> None:
         for window_list in self.window_lists:
             window_list.height = Dimension(preferred=new_heights[0])
@@ -803,7 +803,7 @@ class WindowManager:
         # Mouse event not handled, return NotImplemented.
         return NotImplemented
 
-    def _calculate_actual_widths(self) -> List[int]:
+    def _calculate_actual_widths(self) -> list[int]:
         widths = [w.width.preferred for w in self.window_lists]
 
         available_width = self.current_window_manager_width
@@ -819,7 +819,7 @@ class WindowManager:
 
         return widths
 
-    def _calculate_actual_heights(self) -> List[int]:
+    def _calculate_actual_heights(self) -> list[int]:
         heights = [w.height.preferred for w in self.window_lists]
 
         available_height = self.current_window_manager_height
@@ -1040,7 +1040,7 @@ class WindowManager:
         # Focus on the first visible pane.
         self.focus_first_visible_pane()
 
-    def create_window_menu_items(self) -> List[MenuItem]:
+    def create_window_menu_items(self) -> list[MenuItem]:
         """Build the [Window] menu for the current set of window lists."""
         root_menu_items = []
         for window_list_index, window_list in enumerate(self.window_lists):

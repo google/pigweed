@@ -24,7 +24,6 @@ import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
-from typing import List
 
 try:
     from pw_arduino_build import core_installer, log
@@ -85,7 +84,7 @@ def list_menu_options_command(args, builder):
         print(name.ljust(all_column_widths[0] + 1), description)
 
 
-def show_command_print_string_list(args, string_list: List[str]):
+def show_command_print_string_list(args, string_list: list[str]):
     if string_list:
         join_token = "\n" if args.delimit_with_newlines else " "
         print(join_token.join(string_list))
@@ -99,7 +98,7 @@ def show_command_print_flag_string(args, flag_string):
         print(flag_string)
 
 
-def subtract_flags(flag_list_a: List[str], flag_list_b: List[str]) -> List[str]:
+def subtract_flags(flag_list_a: list[str], flag_list_b: list[str]) -> list[str]:
     """Given two sets of flags return flags in a that are not in b."""
     flag_counts = OrderedDict()  # type: OrderedDict[str, int]
     for flag in flag_list_a + flag_list_b:
@@ -107,7 +106,7 @@ def subtract_flags(flag_list_a: List[str], flag_list_b: List[str]) -> List[str]:
     return [flag for flag in flag_list_a if flag_counts.get(flag, 0) == 1]
 
 
-def run_command_lines(args, command_lines: List[str]):
+def run_command_lines(args, command_lines: list[str]):
     for command_line in command_lines:
         if not args.quiet:
             print(command_line)

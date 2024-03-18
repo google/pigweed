@@ -20,7 +20,7 @@ import logging
 import os
 import re
 import time
-from typing import Callable, Dict, Iterable, List, NoReturn, Optional
+from typing import Callable, Dict, Iterable, NoReturn, Optional
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -208,7 +208,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
 
     # Required pw_console preferences for key bindings and themes
     @property
-    def user_key_bindings(self) -> Dict[str, List[str]]:
+    def user_key_bindings(self) -> Dict[str, list[str]]:
         return self._config.get('key_bindings', {})
 
     @property
@@ -227,7 +227,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
     def swap_light_and_dark(self) -> bool:
         return self._config.get('swap_light_and_dark', False)
 
-    def get_function_keys(self, name: str) -> List:
+    def get_function_keys(self, name: str) -> list:
         """Return the keys for the named function."""
         try:
             return self.registered_commands[name]
@@ -235,7 +235,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
             raise KeyError('Unbound key function: {}'.format(name)) from error
 
     def register_named_key_function(
-        self, name: str, default_bindings: List[str]
+        self, name: str, default_bindings: list[str]
     ) -> None:
         self.registered_commands[name] = default_bindings
 
@@ -403,7 +403,7 @@ class WatchApp(PluginMixin):
             right_margin_columns=1,
         )
 
-        self.floating_window_plugins: List[FloatingWindowPane] = []
+        self.floating_window_plugins: list[FloatingWindowPane] = []
 
         self.user_guide_window = HelpWindow(
             self,  # type: ignore
@@ -553,7 +553,7 @@ class WatchApp(PluginMixin):
         )
 
     def add_build_log_pane(
-        self, title: str, loggers: List[logging.Logger], level_name: str
+        self, title: str, loggers: list[logging.Logger], level_name: str
     ) -> LogPane:
         """Setup a new build log pane."""
         new_log_pane = LogPane(application=self, pane_title=title)
@@ -589,7 +589,7 @@ class WatchApp(PluginMixin):
             KeyBindingsBase
         ] = new_log_pane.log_content_control.key_bindings
 
-        key_binding_list: List[KeyBindingsBase] = []
+        key_binding_list: list[KeyBindingsBase] = []
         if existing_log_bindings:
             key_binding_list.append(existing_log_bindings)
         key_binding_list.append(next_error_bindings)

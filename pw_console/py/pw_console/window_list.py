@@ -17,7 +17,7 @@ import collections
 from enum import Enum
 import functools
 import logging
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from prompt_toolkit.filters import has_focus
 from prompt_toolkit.layout import (
@@ -145,7 +145,7 @@ class WindowList:
         # set of active_panes.
         self.container = None
 
-    def _calculate_actual_heights(self) -> List[int]:
+    def _calculate_actual_heights(self) -> list[int]:
         heights = [
             p.height.preferred if p.show_pane else 0 for p in self.active_panes
         ]
@@ -314,7 +314,7 @@ class WindowList:
 
         self.application.redraw_ui()
 
-    def _set_window_heights(self, new_heights: List[int]):
+    def _set_window_heights(self, new_heights: list[int]):
         for pane in self.active_panes:
             if not pane.show_pane:
                 continue

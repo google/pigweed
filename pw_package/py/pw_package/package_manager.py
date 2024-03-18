@@ -19,7 +19,7 @@ import logging
 import os
 import pathlib
 import shutil
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 from pw_env_setup import config_file
 
@@ -221,7 +221,7 @@ class PackageManagerCLI:
         return getattr(self, command)(**kwargs)
 
 
-def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser("Manage packages.")
     parser.add_argument(
         '--package-root',

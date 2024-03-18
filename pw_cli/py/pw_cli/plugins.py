@@ -38,7 +38,7 @@ import pkgutil
 import sys
 from textwrap import TextWrapper
 import types
-from typing import Any, Callable, Dict, List, Iterable, Iterator, Optional, Set
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set
 
 _LOG = logging.getLogger(__name__)
 _BUILT_IN = '<built-in>'
@@ -201,7 +201,7 @@ class Registry(collections.abc.Mapping):
 
         self._registry: Dict[str, Plugin] = {}
         self._sources: Set[Path] = set()  # Paths to plugins files
-        self._errors: Dict[str, List[Exception]] = collections.defaultdict(list)
+        self._errors: Dict[str, list[Exception]] = collections.defaultdict(list)
         self._validate_plugin = validator
 
     def __getitem__(self, name: str) -> Plugin:
@@ -223,7 +223,7 @@ class Registry(collections.abc.Mapping):
     def __len__(self) -> int:
         return len(self._registry)
 
-    def errors(self) -> Dict[str, List[Exception]]:
+    def errors(self) -> Dict[str, list[Exception]]:
         return self._errors
 
     def run_with_argv(self, name: str, argv: Iterable[str]) -> int:

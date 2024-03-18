@@ -15,7 +15,7 @@
 
 import argparse
 from pathlib import Path
-from typing import Iterable, List, NewType
+from typing import Iterable, NewType
 
 from pw_software_update import keys, metadata
 from pw_software_update.tuf_pb2 import (
@@ -24,8 +24,8 @@ from pw_software_update.tuf_pb2 import (
     SignatureRequirement,
 )
 
-RootKeys = NewType('RootKeys', List[bytes])
-TargetsKeys = NewType('TargetsKeys', List[bytes])
+RootKeys = NewType('RootKeys', list[bytes])
+TargetsKeys = NewType('TargetsKeys', list[bytes])
 
 
 def gen_root_metadata(

@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 import logging
-from typing import Any, Callable, List
+from typing import Any, Callable
 from unittest import TestCase, main, mock
 
 from google.protobuf import message
@@ -86,7 +86,7 @@ class _CallableWithCounter:
 
     def __init__(self, func: Callable[[Any], Any]):
         self._func = func
-        self.calls: List[_CallableWithCounter.CallParams] = []
+        self.calls: list[_CallableWithCounter.CallParams] = []
 
     def call_count(self) -> int:
         return len(self.calls)
@@ -108,7 +108,7 @@ class TestRpcLogStreamHandler(TestCase):
             [log_pb2],
         )
 
-        self.captured_logs: List[Log] = []
+        self.captured_logs: list[Log] = []
 
         def decoded_log_handler(log: Log) -> None:
             self.captured_logs.append(log)

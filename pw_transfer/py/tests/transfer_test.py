@@ -18,7 +18,7 @@ import enum
 import math
 import os
 import unittest
-from typing import Iterable, List
+from typing import Iterable
 
 from pw_status import Status
 from pw_rpc import callback_client, client, ids, packets
@@ -60,8 +60,8 @@ class TransferManagerTest(unittest.TestCase):
         )
         self._service = self._client.channel(1).rpcs.pw.transfer.Transfer
 
-        self._sent_chunks: List[transfer_pb2.Chunk] = []
-        self._packets_to_send: List[List[packet_pb2.RpcPacket]] = []
+        self._sent_chunks: list[transfer_pb2.Chunk] = []
+        self._packets_to_send: list[list[packet_pb2.RpcPacket]] = []
 
     def _enqueue_server_responses(
         self, method: _Method, responses: Iterable[Iterable[transfer_pb2.Chunk]]
@@ -181,7 +181,7 @@ class TransferManagerTest(unittest.TestCase):
             ),
         )
 
-        progress: List[pw_transfer.ProgressStats] = []
+        progress: list[pw_transfer.ProgressStats] = []
 
         data = manager.read(3, progress.append)
         self.assertEqual(data, b'abcdef')
@@ -585,7 +585,7 @@ class TransferManagerTest(unittest.TestCase):
             ),
         )
 
-        progress: List[pw_transfer.ProgressStats] = []
+        progress: list[pw_transfer.ProgressStats] = []
 
         manager.write(4, b'data to write', progress.append)
         self.assertEqual(len(self._sent_chunks), 3)

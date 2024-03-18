@@ -17,7 +17,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import BinaryIO, Dict, List, NamedTuple, Optional, TextIO
+from typing import BinaryIO, Dict, NamedTuple, Optional, TextIO
 
 import pw_cli.argument_types
 from elftools.elf import elffile  # type: ignore
@@ -313,7 +313,7 @@ def map_segments_to_memory_regions(
 
 
 def generate_memoryregions_data_source(segment_to_memory_region: Dict) -> str:
-    output: List[str] = []
+    output: list[str] = []
     output.append('custom_data_source: {')
     output.append('  name: "memoryregions"')
     output.append('  base_data_source: "segments"')
@@ -332,7 +332,7 @@ def generate_memoryregions_data_source(segment_to_memory_region: Dict) -> str:
 
 
 def generate_utilization_data_source() -> str:
-    output: List[str] = []
+    output: list[str] = []
     output.append('custom_data_source: {')
     output.append('  name:"utilization"')
     output.append('  base_data_source:"sections"')

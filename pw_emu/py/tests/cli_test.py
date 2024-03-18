@@ -22,7 +22,6 @@ import time
 import unittest
 
 from pathlib import Path
-from typing import List
 
 from mock_emu_frontend import _mock_emu
 from tests.common import ConfigHelper
@@ -57,7 +56,7 @@ class TestCli(ConfigHelper):
         'targets': {'test-target': {'mock-emu': {}}},
     }
 
-    def _build_cmd(self, args: List[str]) -> List[str]:
+    def _build_cmd(self, args: list[str]) -> list[str]:
         cmd = [
             'python',
             str(_cli_path),
@@ -68,11 +67,11 @@ class TestCli(ConfigHelper):
         ] + args
         return cmd
 
-    def _run(self, args: List[str], **kwargs) -> subprocess.CompletedProcess:
+    def _run(self, args: list[str], **kwargs) -> subprocess.CompletedProcess:
         """Run the CLI and wait for completion"""
         return subprocess.run(self._build_cmd(args), **kwargs)
 
-    def _popen(self, args: List[str], **kwargs) -> subprocess.Popen:
+    def _popen(self, args: list[str], **kwargs) -> subprocess.Popen:
         """Run the CLI in the background"""
         return subprocess.Popen(self._build_cmd(args), **kwargs)
 

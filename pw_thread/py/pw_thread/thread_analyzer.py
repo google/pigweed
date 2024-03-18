@@ -14,7 +14,7 @@
 """Library to analyze and dump Thread protos and Thread snapshots into text."""
 
 import binascii
-from typing import Optional, List, Mapping
+from typing import Optional, Mapping
 import pw_tokenizer
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_tokenizer import proto as proto_detokenizer
@@ -233,7 +233,7 @@ class ThreadSnapshotAnalyzer:
 
     def __str__(self) -> str:
         """outputs a pw.snapshot.Metadata proto as a multi-line string."""
-        output: List[str] = []
+        output: list[str] = []
         if not self._threads:
             return ''
 

@@ -20,7 +20,6 @@ import subprocess
 import typing
 
 from pathlib import Path
-from typing import List
 
 import pw_arduino_build.log
 
@@ -48,7 +47,7 @@ class BoardInfo(typing.NamedTuple):
     label: str
     arduino_upload_tool_name: str
 
-    def test_runner_args(self) -> List[str]:
+    def test_runner_args(self) -> list[str]:
         return [
             "--set-variable",
             f"serial.port.protocol={self.protocol}",

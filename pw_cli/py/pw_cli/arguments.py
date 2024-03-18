@@ -19,7 +19,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import sys
-from typing import List, NoReturn, Optional
+from typing import NoReturn, Optional
 
 from pw_cli import argument_types, plugins
 from pw_cli.branding import banner
@@ -46,20 +46,20 @@ class ShellCompletionFormat(Enum):
 
 @dataclass(frozen=True)
 class ShellCompletion:
-    option_strings: List[str] = field(default_factory=list)
+    option_strings: list[str] = field(default_factory=list)
     help: Optional[str] = None
-    choices: Optional[List[str]] = None
+    choices: Optional[list[str]] = None
     flag: bool = True
 
-    def bash_completion(self, text: str) -> List[str]:
-        result: List[str] = []
+    def bash_completion(self, text: str) -> list[str]:
+        result: list[str] = []
         for option_str in self.option_strings:
             if option_str.startswith(text):
                 result.append(option_str)
         return result
 
-    def zsh_completion(self, text: str) -> List[str]:
-        result: List[str] = []
+    def zsh_completion(self, text: str) -> list[str]:
+        result: list[str] = []
         for option_str in self.option_strings:
             if option_str.startswith(text):
                 short_and_long_opts = ' '.join(self.option_strings)
@@ -79,7 +79,7 @@ class ShellCompletion:
 
 def get_options_and_help(
     parser: argparse.ArgumentParser,
-) -> List[ShellCompletion]:
+) -> list[ShellCompletion]:
     return list(
         ShellCompletion(
             option_strings=list(action.option_strings),
@@ -96,7 +96,7 @@ def print_completions_for_option(
     text: str = '',
     tab_completion_format: str = ShellCompletionFormat.BASH.value,
 ) -> None:
-    matched_lines: List[str] = []
+    matched_lines: list[str] = []
     for completion in get_options_and_help(parser):
         if tab_completion_format == ShellCompletionFormat.ZSH.value:
             matched_lines.extend(completion.zsh_completion(text))

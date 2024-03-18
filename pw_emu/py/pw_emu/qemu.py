@@ -23,7 +23,7 @@ import socket
 import sys
 
 from pathlib import Path
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, Any
 
 from pw_emu.core import (
     ConfigError,
@@ -91,7 +91,7 @@ class QemuLauncher(Launcher):
 
     def __init__(self, config_path: Optional[Path] = None):
         super().__init__('qemu', config_path)
-        self._start_cmd: List[str] = []
+        self._start_cmd: list[str] = []
         self._chardevs_id_to_name = {
             'compat_monitor0': 'qmp',
             'compat_monitor1': 'monitor',
@@ -248,7 +248,7 @@ class QemuLauncher(Launcher):
         pause: bool = False,
         debug: bool = False,
         args: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         qemu = self._config.get_target_emu(['executable'])
         if not qemu:
             qemu = self._config.get_emu(['executable'], optional=False)
@@ -348,7 +348,7 @@ class QemuConnector(Connector):
         }
         return self._q().request('qom-get', args)
 
-    def list_properties(self, path: str) -> List[Any]:
+    def list_properties(self, path: str) -> list[Any]:
         args = {
             'path': '{}'.format(path),
         }

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import shlex
-from typing import Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Callable, Dict, Optional, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -80,14 +80,14 @@ class BuildCommand:
 
     build_dir: Optional[Path] = None
     build_system_command: Optional[str] = None
-    build_system_extra_args: List[str] = field(default_factory=list)
-    targets: List[str] = field(default_factory=list)
-    command: List[str] = field(default_factory=list)
+    build_system_extra_args: list[str] = field(default_factory=list)
+    targets: list[str] = field(default_factory=list)
+    command: list[str] = field(default_factory=list)
     run_if: Callable[[Path], bool] = lambda _build_dir: True
 
     def __post_init__(self) -> None:
         # Copy self._expanded_args from the command list.
-        self._expanded_args: List[str] = []
+        self._expanded_args: list[str] = []
         if self.command:
             self._expanded_args = self.command
 
@@ -97,13 +97,13 @@ class BuildCommand:
             return self.run_if(self.build_dir)
         return True
 
-    def _get_starting_build_system_args(self) -> List[str]:
+    def _get_starting_build_system_args(self) -> list[str]:
         """Return flags that appear immediately after the build command."""
         assert self.build_system_command
         assert self.build_dir
         return []
 
-    def _get_build_system_args(self) -> List[str]:
+    def _get_build_system_args(self) -> list[str]:
         assert self.build_system_command
         assert self.build_dir
 
@@ -127,7 +127,7 @@ class BuildCommand:
             'Supported commands: ninja, bazel, make'
         )
 
-    def _resolve_expanded_args(self) -> List[str]:
+    def _resolve_expanded_args(self) -> list[str]:
         """Replace instances of '{build_dir}' with the self.build_dir."""
         resolved_args = []
         for arg in self._expanded_args:
@@ -174,10 +174,10 @@ class BuildCommand:
 
     def get_args(
         self,
-        additional_ninja_args: Optional[List[str]] = None,
-        additional_bazel_args: Optional[List[str]] = None,
-        additional_bazel_build_args: Optional[List[str]] = None,
-    ) -> List[str]:
+        additional_ninja_args: Optional[list[str]] = None,
+        additional_bazel_args: Optional[list[str]] = None,
+        additional_bazel_build_args: Optional[list[str]] = None,
+    ) -> list[str]:
         """Return all args required to launch this BuildCommand."""
         # If this is a plain command step, return self._expanded_args as-is.
         if not self.build_system_command:
@@ -221,7 +221,7 @@ class BuildRecipeStatus:
     return_code: Optional[int] = None
     flag_done: bool = False
     flag_started: bool = False
-    error_lines: Dict[int, List[str]] = field(default_factory=dict)
+    error_lines: Dict[int, list[str]] = field(default_factory=dict)
 
     def pending(self) -> bool:
         return self.return_code is None
@@ -436,7 +436,7 @@ class BuildRecipe:
     """
 
     build_dir: Path
-    steps: List[BuildCommand] = field(default_factory=list)
+    steps: list[BuildCommand] = field(default_factory=list)
     title: Optional[str] = None
     enabled: bool = True
 
@@ -462,7 +462,7 @@ class BuildRecipe:
     def set_project_builder(self, project_builder) -> None:
         self.project_builder = project_builder
 
-    def set_targets(self, new_targets: List[str]) -> None:
+    def set_targets(self, new_targets: list[str]) -> None:
         """Reset all build step targets."""
         for step in self.steps:
             step.targets = new_targets
@@ -499,7 +499,7 @@ class BuildRecipe:
             return self.title
         return str(self.build_dir)
 
-    def targets(self) -> List[str]:
+    def targets(self) -> list[str]:
         return list(
             set(target for step in self.steps for target in step.targets)
         )
@@ -513,9 +513,9 @@ class BuildRecipe:
         return message
 
 
-def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> List[BuildRecipe]:
+def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> list[BuildRecipe]:
     """Create a list of BuildRecipes from ProjectBuilderPrefs."""
-    build_recipes: List[BuildRecipe] = []
+    build_recipes: list[BuildRecipe] = []
 
     if prefs.run_commands:
         for command_str in prefs.run_commands:
@@ -528,7 +528,7 @@ def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> List[BuildRecipe]:
             )
 
     for build_dir, targets in prefs.build_directories.items():
-        steps: List[BuildCommand] = []
+        steps: list[BuildCommand] = []
         build_path = Path(build_dir)
         if not targets:
             targets = []

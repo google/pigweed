@@ -26,7 +26,6 @@ import re
 import struct
 from typing import (
     Iterable,
-    List,
     NamedTuple,
     Match,
     Optional,
@@ -777,7 +776,7 @@ class FormatString:
         # List of non-specifier string pieces with room for formatted arguments.
         self._segments = self._parse_string_segments()
 
-    def _parse_string_segments(self) -> List:
+    def _parse_string_segments(self) -> list:
         """Splits the format string by format specifiers."""
         if not self.specifiers:
             return [self.format_string]
@@ -794,7 +793,7 @@ class FormatString:
         string_pieces.append(self.format_string[spec_spans[-1][1] :])
 
         # Make a list with spots for the replacements between the string pieces.
-        segments: List = [None] * (len(string_pieces) + len(self.specifiers))
+        segments: list = [None] * (len(string_pieces) + len(self.specifiers))
         segments[::2] = string_pieces
 
         return segments

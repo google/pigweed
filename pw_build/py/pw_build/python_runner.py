@@ -28,7 +28,7 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 try:
     from pw_build import gn_resolver
@@ -197,12 +197,12 @@ def _load_virtualenv_config(json_file_path: Path) -> Tuple[str, str]:
 def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
     gn_root: Path,
     current_path: Path,
-    original_cmd: List[str],
+    original_cmd: list[str],
     default_toolchain: str,
     current_toolchain: str,
     module: Optional[str],
-    env: Optional[List[str]],
-    python_dep_list_files: List[Path],
+    env: Optional[list[str]],
+    python_dep_list_files: list[Path],
     python_virtualenv_config: Optional[Path],
     capture_output: bool,
     touch: Optional[Path],

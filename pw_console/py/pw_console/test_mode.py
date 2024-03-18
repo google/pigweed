@@ -19,7 +19,7 @@ import re
 import random
 import logging
 from threading import Thread
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 FAKE_DEVICE_LOGGER_NAME = 'pw_console_fake_device'
 
@@ -42,8 +42,8 @@ def start_fake_logger(lines, log_thread_entry, log_thread_loop):
     return background_log_task
 
 
-def prepare_fake_logs(lines) -> List[Tuple[str, Dict]]:
-    fake_logs: List[Tuple[str, Dict]] = []
+def prepare_fake_logs(lines) -> list[Tuple[str, Dict]]:
+    fake_logs: list[Tuple[str, Dict]] = []
     key_regex = re.compile(r':kbd:`(?P<key>[^`]+)`')
     for line in lines:
         if not line:
@@ -58,7 +58,7 @@ def prepare_fake_logs(lines) -> List[Tuple[str, Dict]]:
     return fake_logs
 
 
-async def log_forever(fake_log_messages: List[Tuple[str, Dict]]):
+async def log_forever(fake_log_messages: list[Tuple[str, Dict]]):
     """Test mode async log generator coroutine that runs forever."""
     _ROOT_LOG.info('Fake log device connected.')
     start_time = time.time()

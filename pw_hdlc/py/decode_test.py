@@ -15,7 +15,7 @@
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
 import queue
-from typing import Iterator, List, NamedTuple, Optional, Tuple, Union
+from typing import Iterator, NamedTuple, Optional, Tuple, Union
 import unittest
 
 from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
@@ -74,7 +74,7 @@ class ExpectedRaw(NamedTuple):
 
 class TestCase(NamedTuple):
     data: bytes
-    frames: List[Union[Expected, ExpectedRaw]]
+    frames: list[Union[Expected, ExpectedRaw]]
     raw_data: bytes
 
 
@@ -347,7 +347,7 @@ TEST_CASES: Tuple[GroupOrTest[TestCase], ...] = (
 _TESTS = TestGenerator(TEST_CASES)
 
 
-def _expected(frames: List[Frame]) -> Iterator[str]:
+def _expected(frames: list[Frame]) -> Iterator[str]:
     for i, frame in enumerate(frames, 1):
         if frame.ok():
             yield f'      Frame::Parse(kDecodedFrame{i:02}).value(),'
@@ -509,7 +509,7 @@ def _define_py_decoder_test(ctx: Context) -> PyTest:
         )
         # Decode byte-by-byte
         decoder = FrameDecoder()
-        decoded_frames: List[Frame] = []
+        decoded_frames: list[Frame] = []
         for i in range(len(data)):
             decoded_frames += decoder.process(data[i : i + 1])
 
@@ -552,7 +552,7 @@ def _define_raw_decoder_py_test(ctx: Context) -> PyTest:
         decoder = FrameAndNonFrameDecoder(
             non_frame_data_handler=non_frame_data.extend
         )
-        decoded_frames: List[Frame] = []
+        decoded_frames: list[Frame] = []
         for i in range(len(raw_data)):
             decoded_frames += decoder.process(raw_data[i : i + 1])
 

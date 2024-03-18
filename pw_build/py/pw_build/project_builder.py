@@ -51,7 +51,6 @@ from typing import (
     Callable,
     Dict,
     Generator,
-    List,
     NoReturn,
     Optional,
     Sequence,
@@ -190,7 +189,7 @@ _BAZEL_ELAPSED_TIME = re.compile(
 
 
 def execute_command_no_logging(
-    command: List,
+    command: list,
     env: Dict,
     recipe: BuildRecipe,
     # pylint: disable=unused-argument
@@ -218,7 +217,7 @@ def execute_command_no_logging(
 
 
 def execute_command_with_logging(
-    command: List,
+    command: list,
     env: Dict,
     recipe: BuildRecipe,
     logger: logging.Logger = _LOG,
@@ -523,7 +522,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         keep_going: bool = False,
         abort_callback: Callable = _exit,
         execute_command: Callable[
-            [List, Dict, BuildRecipe, logging.Logger, Optional[Callable]], bool
+            [list, Dict, BuildRecipe, logging.Logger, Optional[Callable]], bool
         ] = execute_command_no_logging,
         charset: ProjectBuilderCharset = ASCII_CHARSET,
         colors: bool = True,
@@ -550,9 +549,9 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             recipe.set_project_builder(self)
 
         # Save build system args
-        self.extra_ninja_args: List[str] = []
-        self.extra_bazel_args: List[str] = []
-        self.extra_bazel_build_args: List[str] = []
+        self.extra_ninja_args: list[str] = []
+        self.extra_bazel_args: list[str] = []
+        self.extra_bazel_build_args: list[str] = []
 
         # Handle jobs and keep going flags.
         if jobs:

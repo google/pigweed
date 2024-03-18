@@ -21,7 +21,7 @@ from pathlib import Path
 import re
 import shutil
 import textwrap
-from typing import Callable, Collection, List, Optional, Sequence
+from typing import Callable, Collection, Optional, Sequence
 
 from pw_presubmit import git_repo, presubmit
 
@@ -144,7 +144,7 @@ def _add_programs_arguments(
         help='List all the available steps.',
     )
 
-    def presubmit_step(arg: str) -> List[presubmit.Check]:
+    def presubmit_step(arg: str) -> list[presubmit.Check]:
         """Return a list of matching presubmit steps."""
         filtered_step_names = fnmatch.filter(all_steps.keys(), arg)
 
@@ -353,7 +353,7 @@ def run(  # pylint: disable=too-many-arguments
     elif len(program) == 1 and not step:
         final_program = program[0]
     else:
-        steps: List[presubmit.Check] = []
+        steps: list[presubmit.Check] = []
         steps.extend(step)
         for prog in program:
             steps.extend(prog)

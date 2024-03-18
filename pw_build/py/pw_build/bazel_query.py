@@ -27,7 +27,6 @@ from typing import (
     IO,
     Iterable,
     Iterator,
-    List,
     Optional,
     Union,
 )
@@ -36,7 +35,7 @@ from xml.etree import ElementTree
 _LOG = logging.getLogger(__name__)
 
 
-BazelValue = Union[bool, int, str, List[str], Dict[str, str]]
+BazelValue = Union[bool, int, str, list[str], Dict[str, str]]
 
 
 class ParseError(Exception):
@@ -163,7 +162,7 @@ class BazelRule:
         assert isinstance(val, str)
         return val
 
-    def get_list(self, attr_name: str) -> List[str]:
+    def get_list(self, attr_name: str) -> list[str]:
         """Gets the value of a string list attribute.
 
         Args:

@@ -24,7 +24,7 @@ from pathlib import Path
 import re
 import sys
 
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Dict, Iterable, Optional, Type, Union
 
 from pw_build import generate_modules_lists
 
@@ -54,7 +54,7 @@ class _OutputFile:
 
     def __init__(self, file: Path, indent_width: int = DEFAULT_INDENT_WIDTH):
         self._file = file
-        self._content: List[str] = []
+        self._content: list[str] = []
         self._indent_width: int = indent_width
         self._indentation = 0
 
@@ -144,9 +144,9 @@ class _ModuleName:
 class _ModuleContext:
     name: _ModuleName
     dir: Path
-    root_build_files: List['_BuildFile']
-    sub_build_files: List['_BuildFile']
-    build_systems: List[str]
+    root_build_files: list['_BuildFile']
+    sub_build_files: list['_BuildFile']
+    build_systems: list[str]
     is_upstream: bool
 
     def build_files(self) -> Iterable['_BuildFile']:
@@ -175,12 +175,12 @@ class _BuildFile:
 
         # TODO(frolv): Shouldn't be a string list as that's build system
         # specific. Figure out a way to resolve dependencies from targets.
-        deps: List[str] = dataclasses.field(default_factory=list)
+        deps: list[str] = dataclasses.field(default_factory=list)
 
     @dataclass
     class CcTarget(Target):
-        sources: List[Path] = dataclasses.field(default_factory=list)
-        headers: List[Path] = dataclasses.field(default_factory=list)
+        sources: list[Path] = dataclasses.field(default_factory=list)
+        headers: list[Path] = dataclasses.field(default_factory=list)
 
         def rebased_sources(self, rebase_path: Path) -> Iterable[str]:
             return (str(src.relative_to(rebase_path)) for src in self.sources)
@@ -192,9 +192,9 @@ class _BuildFile:
         self._path = path
         self._ctx = ctx
 
-        self._docs_sources: List[str] = []
-        self._cc_targets: List[_BuildFile.CcTarget] = []
-        self._cc_tests: List[_BuildFile.CcTarget] = []
+        self._docs_sources: list[str] = []
+        self._cc_targets: list[_BuildFile.CcTarget] = []
+        self._cc_tests: list[_BuildFile.CcTarget] = []
 
     @property
     def path(self) -> Path:
@@ -265,7 +265,7 @@ class _BuildFile:
     def _write_docs_target(
         self,
         file: _OutputFile,
-        docs_sources: List[str],
+        docs_sources: list[str],
     ) -> None:
         """Defines a documentation target within the build file."""
 
@@ -273,7 +273,7 @@ class _BuildFile:
 # TODO(frolv): The Dict here should be Dict[str, '_GnVal'] (i.e. _GnScope),
 # but mypy does not yet support recursive types:
 # https://github.com/python/mypy/issues/731
-_GnVal = Union[bool, int, str, List[str], Dict[str, Any]]
+_GnVal = Union[bool, int, str, list[str], Dict[str, Any]]
 _GnScope = Dict[str, _GnVal]
 
 
@@ -375,7 +375,7 @@ class _GnBuildFile(_BuildFile):
     def _write_docs_target(
         self,
         file: _OutputFile,
-        docs_sources: List[str],
+        docs_sources: list[str],
     ) -> None:
         """Defines a pw_doc_group for module documentation."""
         _GnBuildFile._target(
@@ -546,7 +546,7 @@ class _BazelBuildFile(_BuildFile):
     def _write_docs_target(
         self,
         file: _OutputFile,
-        docs_sources: List[str],
+        docs_sources: list[str],
     ) -> None:
         file.line('# Bazel does not yet support building docs.')
         _BazelBuildFile._target(
@@ -558,7 +558,7 @@ class _BazelBuildFile(_BuildFile):
         file: _OutputFile,
         target_type: str,
         name: str,
-        keys: Dict[str, List[str]],
+        keys: Dict[str, list[str]],
     ) -> None:
         file.line(f'{target_type}(')
 
@@ -632,7 +632,7 @@ class _CmakeBuildFile(_BuildFile):
     def _write_docs_target(
         self,
         file: _OutputFile,
-        docs_sources: List[str],
+        docs_sources: list[str],
     ) -> None:
         file.line('# CMake does not yet support building docs.')
 
@@ -641,7 +641,7 @@ class _CmakeBuildFile(_BuildFile):
         file: _OutputFile,
         target_type: str,
         name: str,
-        keys: Dict[str, List[str]],
+        keys: Dict[str, list[str]],
     ) -> None:
         file.line(f'{target_type}({name}')
 

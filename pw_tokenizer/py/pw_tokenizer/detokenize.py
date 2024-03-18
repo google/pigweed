@@ -51,7 +51,6 @@ from typing import (
     BinaryIO,
     Callable,
     Dict,
-    List,
     Iterable,
     Iterator,
     Match,
@@ -132,10 +131,10 @@ class DetokenizedString:
         self.encoded_message = encoded_message
         self._show_errors = show_errors
 
-        self.successes: List[decode.FormattedString] = []
-        self.failures: List[decode.FormattedString] = []
+        self.successes: list[decode.FormattedString] = []
+        self.failures: list[decode.FormattedString] = []
 
-        decode_attempts: List[Tuple[Tuple, decode.FormattedString]] = []
+        decode_attempts: list[Tuple[Tuple, decode.FormattedString]] = []
 
         for entry, fmt in format_string_entries:
             result = fmt.format(
@@ -163,7 +162,7 @@ class DetokenizedString:
         """True if exactly one string decoded the arguments successfully."""
         return len(self.successes) == 1
 
-    def matches(self) -> List[decode.FormattedString]:
+    def matches(self) -> list[decode.FormattedString]:
         """Returns the strings that matched the token, best matches first."""
         return self.successes + self.failures
 
@@ -237,7 +236,7 @@ class Detokenizer:
         self._database_lock = threading.Lock()
 
         # Cache FormatStrings for faster lookup & formatting.
-        self._cache: Dict[int, List[_TokenizedFormatString]] = {}
+        self._cache: Dict[int, list[_TokenizedFormatString]] = {}
 
         self._initialize_database(token_database_or_elf)
 
@@ -246,7 +245,7 @@ class Detokenizer:
             self.database = database.load_token_database(*token_sources)
             self._cache.clear()
 
-    def lookup(self, token: int) -> List[_TokenizedFormatString]:
+    def lookup(self, token: int) -> list[_TokenizedFormatString]:
         """Returns (TokenizedStringEntry, FormatString) list for matches."""
         with self._database_lock:
             try:
@@ -569,7 +568,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
                 _LOG.info('Changes detected; reloading token database')
                 self._pool.submit(self._reload_paths)
 
-    def lookup(self, token: int) -> List[_TokenizedFormatString]:
+    def lookup(self, token: int) -> list[_TokenizedFormatString]:
         self._reload_if_changed()
         return super().lookup(token)
 

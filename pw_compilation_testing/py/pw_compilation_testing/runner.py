@@ -21,7 +21,7 @@ import shlex
 import string
 import sys
 import subprocess
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import pw_cli.log
 
@@ -132,7 +132,7 @@ def _check_results(
     compiler = Compiler.from_command(compiler_str)
 
     _LOG.debug('%s is %s', compiler_str, compiler)
-    expectations: List[Expectation] = [
+    expectations: list[Expectation] = [
         e for e in test.expectations if compiler.matches(e.compiler)
     ]
 
@@ -224,7 +224,7 @@ def _execute_test(
     test: TestCase,
     command: str,
     variables: Dict[str, str],
-    all_tests: List[str],
+    all_tests: list[str],
 ) -> None:
     variables['in'] = str(test.source)
 

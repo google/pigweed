@@ -62,7 +62,6 @@ from typing import (
     Dict,
     Generator,
     Iterator,
-    List,
     Optional,
     Tuple,
     TypedDict,
@@ -124,7 +123,7 @@ class CppIdeFeaturesTarget:
 
 
 CppCompilationDatabaseFileHashes = Dict[Path, str]
-CppCompilationDatabaseFileTargets = Dict[Path, List[CppIdeFeaturesTarget]]
+CppCompilationDatabaseFileTargets = Dict[Path, list[CppIdeFeaturesTarget]]
 
 
 @dataclass
@@ -312,7 +311,7 @@ def path_to_executable(
     exe: str,
     *,
     default_path: Optional[Path] = None,
-    path_globs: Optional[List[str]] = None,
+    path_globs: Optional[list[str]] = None,
     strict: bool = False,
 ) -> Optional[Path]:
     """Return the path to a compiler executable.
@@ -422,7 +421,7 @@ def path_to_executable(
     return maybe_path
 
 
-def command_parts(command: str) -> Tuple[Optional[str], str, List[str]]:
+def command_parts(command: str) -> Tuple[Optional[str], str, list[str]]:
     """Return the executable string and the rest of the command tokens.
 
     If the command contains a prefixed wrapper like `ccache`, it will be
@@ -467,7 +466,7 @@ class CppCompileCommandDictWithCommand(BaseCppCompileCommandDict):
 
 
 class CppCompileCommandDictWithArguments(BaseCppCompileCommandDict):
-    arguments: List[str]
+    arguments: list[str]
 
 
 CppCompileCommandDict = Union[
@@ -486,7 +485,7 @@ class CppCompileCommand:
         file: str,
         directory: str,
         command: Optional[str] = None,
-        arguments: Optional[List[str]] = None,
+        arguments: Optional[list[str]] = None,
         output: Optional[str] = None,
     ) -> None:
         # Per the spec, either one of these two must be present. clangd seems
@@ -540,7 +539,7 @@ class CppCompileCommand:
         return self._command
 
     @property
-    def arguments(self) -> Optional[List[str]]:
+    def arguments(self) -> Optional[list[str]]:
         return self._arguments
 
     @property
@@ -589,7 +588,7 @@ class CppCompileCommand:
         self,
         *,
         default_path: Optional[Path] = None,
-        path_globs: Optional[List[str]] = None,
+        path_globs: Optional[list[str]] = None,
         strict: bool = False,
     ) -> Optional['CppCompileCommand']:
         """Process a compile command.
@@ -703,7 +702,7 @@ def _path_nearest_parent(path1: Path, path2: Path) -> Path:
     return _path_nearest_parent(path1.parent, path2.parent)
 
 
-def _infer_target_pos(target_glob: str) -> List[int]:
+def _infer_target_pos(target_glob: str) -> list[int]:
     """Infer the position of the target in a compilation unit artifact path."""
     tokens = Path(target_glob).parts
     positions = []
@@ -749,7 +748,7 @@ def infer_target(
 
 
 LoadableToCppCompilationDatabase = Union[
-    List[Dict[str, Any]], str, TextIOBase, Path
+    list[Dict[str, Any]], str, TextIOBase, Path
 ]
 
 
@@ -766,7 +765,7 @@ class CppCompilationDatabase:
         source_file_path: Optional[Path] = None,
         target_inference: Optional[str] = None,
     ) -> None:
-        self._db: List[CppCompileCommand] = []
+        self._db: list[CppCompileCommand] = []
         self.file_path: Optional[Path] = file_path
         self.source_file_path: Optional[Path] = source_file_path
         self.source_file_hash: Optional[str] = None
@@ -820,7 +819,7 @@ class CppCompilationDatabase:
 
         self._db = list(self_dict.values())
 
-    def as_dicts(self) -> List[CppCompileCommandDict]:
+    def as_dicts(self) -> list[CppCompileCommandDict]:
         return [compile_command.as_dict() for compile_command in self._db]
 
     def to_json(self) -> str:
@@ -847,7 +846,7 @@ class CppCompilationDatabase:
         You can provide a JSON file handle or path, a JSON string, or a native
         Python data structure that matches the format (list of dicts).
         """
-        db_as_dicts: List[Dict[str, Any]]
+        db_as_dicts: list[Dict[str, Any]]
         file_path = None
 
         if isinstance(compdb_to_load, list):
@@ -903,7 +902,7 @@ class CppCompilationDatabase:
         settings: PigweedIdeSettings,
         *,
         default_path: Optional[Path] = None,
-        path_globs: Optional[List[str]] = None,
+        path_globs: Optional[list[str]] = None,
         strict: bool = False,
         always_output_new: bool = False,
     ) -> Optional['CppCompilationDatabasesMap']:
@@ -1018,7 +1017,7 @@ class CppCompilationDatabasesMap:
             yield target
 
     @property
-    def targets(self) -> List[str]:
+    def targets(self) -> list[str]:
         return list(self._dbs.keys())
 
     def items(
@@ -1026,7 +1025,7 @@ class CppCompilationDatabasesMap:
     ) -> Generator[Tuple[str, CppCompilationDatabase], None, None]:
         return ((key, value) for (key, value) in self._dbs.items())
 
-    def _sort_by_commands(self) -> List[str]:
+    def _sort_by_commands(self) -> list[str]:
         """Sort targets by the number of compile commands they have."""
         enumerated_targets = sorted(
             [(len(db), target) for target, db in self._dbs.items()],
@@ -1036,7 +1035,7 @@ class CppCompilationDatabasesMap:
 
         return [target for (_, target) in enumerated_targets]
 
-    def _sort_with_target_priority(self, target: str) -> List[str]:
+    def _sort_with_target_priority(self, target: str) -> list[str]:
         """Sorted targets, but with the provided target first."""
         sorted_targets = self._sort_by_commands()
         # This will raise a ValueError if the target is not in the list, but
@@ -1044,7 +1043,7 @@ class CppCompilationDatabasesMap:
         sorted_targets.remove(target)
         return [target, *sorted_targets]
 
-    def _targets_to_write(self, target: str) -> List[str]:
+    def _targets_to_write(self, target: str) -> list[str]:
         """Return the list of targets whose comp. commands should be written.
 
         Under most conditions, this will return a list with just the provided
@@ -1144,7 +1143,7 @@ def find_cipd_installed_exe_path(exe: str) -> Path:
 
     env_vars = vars(env)
 
-    search_paths: List[str] = []
+    search_paths: list[str] = []
     for env_var_name, env_var in env_vars.items():
         if re.fullmatch(r"PW_[A-Z_]+_CIPD_INSTALL_DIR", env_var_name):
             search_paths.append(str(Path(env_var) / "bin" / exe))
@@ -1192,7 +1191,7 @@ class ClangdSettings:
             compile_commands_dir = str(state.stable_target_link)
 
         host_cc_path = find_cipd_installed_exe_path("clang++")
-        self.arguments: List[str] = [
+        self.arguments: list[str] = [
             f'--compile-commands-dir={compile_commands_dir}',
             f'--query-driver={settings.clangd_query_driver_str(host_cc_path)}',
             '--background-index',

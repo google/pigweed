@@ -17,7 +17,7 @@ import argparse
 import copy
 import shlex
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union
 
 from pw_config_loader import yaml_config_loader_mixin
 
@@ -87,7 +87,7 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         )
 
     def _argparse_build_system_commands_to_prefs(  # pylint: disable=no-self-use
-        self, argparse_input: List[List[str]]
+        self, argparse_input: list[list[str]]
     ) -> Dict[str, Any]:
         result = copy.copy(_DEFAULT_CONFIG['build_system_commands'])
         for out_dir, command in argparse_input:
@@ -125,16 +125,16 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
         )
 
     @property
-    def run_commands(self) -> List[str]:
+    def run_commands(self) -> list[str]:
         return self._config.get('run_command', [])
 
     @property
-    def build_directories(self) -> Dict[str, List[str]]:
+    def build_directories(self) -> Dict[str, list[str]]:
         """Returns build directories and the targets to build in each."""
         build_directories: Union[
-            List[str], Dict[str, List[str]]
+            list[str], Dict[str, list[str]]
         ] = self._config.get('build_directories', {})
-        final_build_dirs: Dict[str, List[str]] = {}
+        final_build_dirs: Dict[str, list[str]] = {}
 
         if isinstance(build_directories, dict):
             final_build_dirs = build_directories
@@ -180,11 +180,11 @@ class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
 
     def build_system_commands(
         self, build_dir: str
-    ) -> List[Tuple[str, List[str]]]:
+    ) -> list[Tuple[str, list[str]]]:
         build_system_commands = self._get_build_system_commands_for(build_dir)
 
-        command_steps: List[Tuple[str, List[str]]] = []
-        commands: List[Dict[str, Any]] = build_system_commands.get(
+        command_steps: list[Tuple[str, list[str]]] = []
+        commands: list[Dict[str, Any]] = build_system_commands.get(
             'commands', []
         )
         for command_step in commands:

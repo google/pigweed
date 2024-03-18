@@ -23,7 +23,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List
 
 import serial
 import serial.tools.list_ports
@@ -295,7 +294,7 @@ def run_device_test(
 
     _LOG.debug('Launching test binary %s', binary)
     try:
-        result: List[bytes] = []
+        result: list[bytes] = []
         _LOG.info('Running test')
         # Warning: A race condition is possible here. This assumes the host is
         # able to connect to the port and that there isn't a test running on

@@ -36,7 +36,6 @@ from typing import (
     Collection,
     Dict,
     Iterable,
-    List,
     NamedTuple,
     Optional,
     Pattern,
@@ -380,7 +379,7 @@ def _black_config_args() -> Sequence[Union[str, Path]]:
 
 def _black_multiple_files(ctx: _Context) -> Tuple[str, ...]:
     black = ctx.format_options.black_path
-    changed_paths: List[str] = []
+    changed_paths: list[str] = []
     for line in (
         log_run(
             [black, '--check', *_black_config_args(), *ctx.paths],
@@ -833,7 +832,7 @@ class CodeFormatter:
         package_root: Optional[Path] = None,
     ):
         self.root = root
-        self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
+        self._formats: Dict[CodeFormat, list] = collections.defaultdict(list)
         self.root_output_dir = output_dir
         self.package_root = package_root or output_dir / 'packages'
         self._format_options = FormatOptions.load()
@@ -896,7 +895,7 @@ class CodeFormatter:
         return all_errors
 
 
-def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> List[str]:
+def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> list[str]:
     try:
         return file_summary(
             Path(f).resolve().relative_to(base.resolve()) for f in files

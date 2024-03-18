@@ -16,7 +16,7 @@
 
 import unittest
 from unittest import mock
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
@@ -75,8 +75,8 @@ class _CallbackClientImplTestBase(unittest.TestCase):
             CLIENT_CHANNEL_ID
         ).rpcs.pw.test1.PublicService
 
-        self.requests: List[packet_pb2.RpcPacket] = []
-        self._next_packets: List[Tuple[bytes, Status]] = []
+        self.requests: list[packet_pb2.RpcPacket] = []
+        self._next_packets: list[Tuple[bytes, Status]] = []
         self.send_responses_after_packets: float = 1
 
         self.output_exception: Optional[Exception] = None
@@ -400,7 +400,7 @@ class UnaryTest(_CallbackClientImplTestBase):
 
     def test_concurrent_nonblocking_calls(self) -> None:
         # Start several calls to the same method
-        callbacks_and_calls: List[
+        callbacks_and_calls: list[
             Tuple[mock.Mock, callback_client.call.Call]
         ] = []
         for _ in range(3):

@@ -18,7 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
-from typing import IO, List, Optional
+from typing import IO, Optional
 
 import pw_cli.process
 
@@ -77,7 +77,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate_runner(command: str, arguments: List[str]) -> str:
+def generate_runner(command: str, arguments: list[str]) -> str:
     """Generates a text-proto style pw_target_runner_server configuration."""
     # TODO(amontanez): Use a real proto library to generate this when we have
     # one set up.
@@ -90,7 +90,7 @@ def generate_runner(command: str, arguments: List[str]) -> str:
 
 
 def generate_server_config(
-    runner_args: Optional[List[str]], arduino_package_path: str
+    runner_args: Optional[list[str]], arduino_package_path: str
 ) -> IO[bytes]:
     """Returns a temporary generated file for use as the server config."""
 
@@ -123,7 +123,7 @@ def generate_server_config(
 def launch_server(
     server_config: Optional[IO[bytes]],
     server_port: Optional[int],
-    runner_args: Optional[List[str]],
+    runner_args: Optional[list[str]],
     arduino_package_path: str,
 ) -> int:
     """Launch a device test server with the provided arguments."""

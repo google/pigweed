@@ -20,7 +20,6 @@ import os
 import subprocess
 import sys
 import threading
-from typing import List
 
 import coloredlogs  # type: ignore
 import serial
@@ -286,7 +285,7 @@ def run_device_test(
         # device since the test will automatically run after the image is
         # flashed. This reduces flake since there isn't a need to time a reset
         # correctly relative to the start of capturing device output.
-        result: List[bytes] = []
+        result: list[bytes] = []
         threaded_reader_args = (result, port, baud, test_timeout)
         read_thread = threading.Thread(
             target=_threaded_test_reader, args=threaded_reader_args

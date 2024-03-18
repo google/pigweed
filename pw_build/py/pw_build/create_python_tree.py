@@ -22,7 +22,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import setuptools  # type: ignore
 
@@ -271,7 +271,7 @@ def update_config_with_packages(
 
 def update_config_with_package_data(
     config: configparser.ConfigParser,
-    extra_files_list: List[Path],
+    extra_files_list: list[Path],
     auto_create_init_py_files: bool,
     tree_destination_dir: Path,
 ) -> None:
@@ -392,9 +392,9 @@ def build_python_tree(
             shutil.rmtree(lib_dir_path, ignore_errors=True)
 
 
-def copy_extra_files(extra_file_strings: Iterable[str]) -> List[Path]:
+def copy_extra_files(extra_file_strings: Iterable[str]) -> list[Path]:
     """Copy extra files to their destinations."""
-    output_files: List[Path] = []
+    output_files: list[Path] = []
 
     if not extra_file_strings:
         return output_files

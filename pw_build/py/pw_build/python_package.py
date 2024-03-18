@@ -24,7 +24,7 @@ from pathlib import Path
 import pprint
 import re
 import shutil
-from typing import Any, Dict, List, Optional, Iterable
+from typing import Any, Dict, Optional, Iterable
 
 _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
 
@@ -88,10 +88,10 @@ def _sanitize_install_requires(metadata_dict: dict) -> dict:
 class PythonPackage:
     """Class to hold a single Python package's metadata."""
 
-    sources: List[Path]
-    setup_sources: List[Path]
-    tests: List[Path]
-    inputs: List[Path]
+    sources: list[Path]
+    setup_sources: list[Path]
+    tests: list[Path]
+    inputs: list[Path]
     gn_target_name: str = ''
     generate_setup: Optional[Dict] = None
     config: Optional[configparser.ConfigParser] = None
@@ -253,9 +253,9 @@ class PythonPackage:
         new_destination.mkdir(parents=True, exist_ok=True)
         shutil.copytree(self.package_dir, new_destination, dirs_exist_ok=True)
 
-    def install_requires_entries(self) -> List[str]:
+    def install_requires_entries(self) -> list[str]:
         """Convert the install_requires entry into a list of strings."""
-        this_requires: List[str] = []
+        this_requires: list[str] = []
         # If there's no setup.cfg, do nothing.
         if not self.config:
             return this_requires
@@ -287,7 +287,7 @@ class PythonPackage:
 
 def load_packages(
     input_list_files: Iterable[Path], ignore_missing=False
-) -> List[PythonPackage]:
+) -> list[PythonPackage]:
     """Load Python package metadata and configs."""
 
     packages = []

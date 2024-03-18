@@ -16,7 +16,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -135,7 +135,7 @@ class RpcIntegrationTest(unittest.TestCase):
 
 
 def _main(
-    test_server_command: List[str], port: int, unittest_args: List[str]
+    test_server_command: list[str], port: int, unittest_args: list[str]
 ) -> None:
     RpcIntegrationTest.test_server_command = tuple(test_server_command)
     RpcIntegrationTest.port = port

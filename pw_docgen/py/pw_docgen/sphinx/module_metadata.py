@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import json
 import os
 import sys
-from typing import cast, Dict, List, Optional, TypeVar, Union
+from typing import cast, Dict, Optional, TypeVar, Union
 
 # We use BeautifulSoup for certain docs rendering features. It may not be
 # available in downstream projects. If so, no problem. We fall back to simpler
@@ -122,7 +122,7 @@ class EnvMetadata:
         return self._get_env_attr('pw_module_nav', default)
 
 
-def get_languages(module_name: str) -> Optional[List[str]]:
+def get_languages(module_name: str) -> Optional[list[str]]:
     """Returns the list of languages that a module supports.
 
     Args:
@@ -208,7 +208,7 @@ def issues_url(module_name: str) -> str:
     return f'https://issues.pigweed.dev/issues?q={module_name}%20status:open'
 
 
-def concat_tags(*tag_lists: List[str]) -> List[str]:
+def concat_tags(*tag_lists: list[str]) -> list[str]:
     """Given a list of tag lists, return them concat'ed and ready for render."""
 
     all_tags = tag_lists[0]
@@ -223,7 +223,7 @@ def concat_tags(*tag_lists: List[str]) -> List[str]:
 
 def create_topnav(
     subtitle: Optional[str],
-    extra_classes: Optional[List[str]] = None,
+    extra_classes: Optional[list[str]] = None,
 ) -> nodes.Node:
     """Create the nodes for the top title and navigation bar."""
 
@@ -263,12 +263,12 @@ class PigweedModuleDirective(SphinxDirective):
         """Try to get an option by name and return None on failure."""
         return self.options.get(option, None)
 
-    def run(self) -> List[nodes.Node]:
+    def run(self) -> list[nodes.Node]:
         module_name = self._try_get_option('name')
         tagline = get_tagline(module_name)
         status = get_status(module_name)
 
-        status_tags: List[str] = [
+        status_tags: list[str] = [
             status_badge(status),
         ]
 
@@ -286,7 +286,7 @@ class PigweedModuleDirective(SphinxDirective):
 
         # Move the directive content into a section that we can render wherever
         # we want.
-        raw_content = cast(List[str], self.content)  # type: ignore
+        raw_content = cast(list[str], self.content)  # type: ignore
         content = nodes.paragraph()
         self.state.nested_parse(raw_content, 0, content)
 
@@ -322,7 +322,7 @@ class PigweedModuleSubpageDirective(PigweedModuleDirective):
         'nav': directives.unchanged_required,
     }
 
-    def run(self) -> List[nodes.Node]:
+    def run(self) -> list[nodes.Node]:
         module_name = self._try_get_option('name')
         tagline = get_tagline(module_name)
         # Prepend the module name on sub-pages so that it's very clear what
@@ -370,7 +370,7 @@ def _parse_body(body: str) -> ParsedBody:
         tag['class'] = tag.get('class', []) + [classname]  # type: ignore
 
     def _add_classes_to_tag(
-        tag: HTMLTag, classnames: Union[str, List[str], None]
+        tag: HTMLTag, classnames: Union[str, list[str], None]
     ) -> None:
         tag['class'] = tag.get('class', []) + classnames  # type: ignore
 
@@ -661,7 +661,7 @@ def add_toctree_to_module_homepage(docname: str, source: str) -> str:
 def on_source_read(
     app: Sphinx,  # pylint: disable=unused-argument
     docname: str,
-    source: List[str],
+    source: list[str],
 ) -> None:
     """Event handler that enables manipulating a doc's reStructuredText.
 

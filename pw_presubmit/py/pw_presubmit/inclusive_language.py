@@ -16,7 +16,7 @@
 import dataclasses
 from pathlib import Path
 import re
-from typing import Dict, List, Union
+from typing import Dict, Union
 
 from . import presubmit, presubmit_context
 
@@ -117,7 +117,7 @@ def presubmit_check(
     if ctx.dry_run:
         return
 
-    found_words: Dict[Path, List[Union[PathMatch, LineMatch]]] = {}
+    found_words: Dict[Path, list[Union[PathMatch, LineMatch]]] = {}
 
     ctx.paths = presubmit_context.apply_exclusions(ctx)
 

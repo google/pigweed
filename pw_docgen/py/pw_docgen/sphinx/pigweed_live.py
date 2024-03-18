@@ -16,7 +16,7 @@
 
 import datetime
 import sys
-from typing import Dict, List
+from typing import Dict
 
 from docutils import nodes
 from docutils.parsers.rst import Directive
@@ -66,7 +66,7 @@ class PigweedLiveDirective(Directive):
     ]
     timezone = pytz.timezone('US/Pacific')
 
-    def run(self) -> List[nodes.Node]:
+    def run(self) -> list[nodes.Node]:
         return [self._make_paragraph()]
 
     def _make_paragraph(self) -> nodes.Node:

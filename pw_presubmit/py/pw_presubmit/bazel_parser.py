@@ -16,13 +16,12 @@
 from pathlib import Path
 import re
 import sys
-from typing import List
 
 
 def parse_bazel_stdout(bazel_stdout: Path) -> str:
     """Extracts a concise error from a bazel log."""
     seen_error: bool = False
-    error_lines: List[str] = []
+    error_lines: list[str] = []
 
     with bazel_stdout.open() as ins:
         for line in ins:

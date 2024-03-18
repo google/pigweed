@@ -17,7 +17,6 @@ import argparse
 import configparser
 from pathlib import Path
 import sys
-from typing import List
 
 try:
     from pw_build.python_package import load_packages
@@ -81,7 +80,7 @@ def main(
     python_dep_list_files: Path,
     gn_root_build_dir: Path,
     output_requirement_file: Path,
-    constraint_files: List[Path],
+    constraint_files: list[Path],
     gn_packages: str,
     exclude_transitive_deps: bool,
 ) -> int:

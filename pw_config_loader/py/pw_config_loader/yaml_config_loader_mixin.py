@@ -17,7 +17,7 @@ import enum
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import yaml
 
@@ -199,7 +199,7 @@ class YamlConfigLoaderMixin:
 
     def _load_config_from_string(  # pylint: disable=no-self-use
         self, file_contents: str
-    ) -> List[Dict[Any, Any]]:
+    ) -> list[Dict[Any, Any]]:
         return list(yaml.safe_load_all(file_contents))
 
     def load_config_file(

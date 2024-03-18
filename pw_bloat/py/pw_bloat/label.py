@@ -18,7 +18,7 @@ The label module defines a class to store and manipulate size reports.
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Iterable, Dict, Sequence, Tuple, List, Optional
+from typing import Iterable, Dict, Sequence, Tuple, Optional
 import csv
 
 
@@ -134,7 +134,7 @@ class DataSourceMap:
         self._data_sources = list(
             _DataSource(name) for name in ['base', *data_sources_names]
         )
-        self._capacity_array: List[Tuple[str, int]] = []
+        self._capacity_array: list[Tuple[str, int]] = []
 
     def label_exists(
         self, ds_index: int, parent_label: str, child_label: str

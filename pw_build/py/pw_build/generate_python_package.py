@@ -26,7 +26,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Optional,
     Sequence,
     Set,
@@ -100,7 +99,7 @@ class _ProtoInfo:
 
 
 def _collect_all_files(
-    root: Path, files: List[Path], paths_to_collect: Iterable[_ProtoInfo]
+    root: Path, files: list[Path], paths_to_collect: Iterable[_ProtoInfo]
 ) -> Dict[str, Set[str]]:
     """Collects files in output dir, adds to files; returns package_data."""
     root.mkdir(exist_ok=True)
@@ -210,7 +209,7 @@ def _generate_setup_cfg(
         config.write(config_file)
 
 
-def _import_module_in_package_init(all_files: List[Path]) -> None:
+def _import_module_in_package_init(all_files: list[Path]) -> None:
     """Generates an __init__.py that imports the module.
 
     This makes an individual module usable as a package. This is used for proto
@@ -250,7 +249,7 @@ def _load_metadata(
 
 def main(
     generated_root: Path,
-    files: List[Path],
+    files: list[Path],
     module_as_package: bool,
     setup_json: TextIO,
     label: str,

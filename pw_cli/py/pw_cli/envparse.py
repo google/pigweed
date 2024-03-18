@@ -21,7 +21,6 @@ from typing import (
     Dict,
     Generic,
     IO,
-    List,
     Literal,
     Mapping,
     Optional,
@@ -98,7 +97,7 @@ class EnvironmentParser:
         self._error_on_unrecognized: bool = error_on_unrecognized
 
         self._variables: Dict[str, VariableDescriptor] = {}
-        self._allowed_suffixes: List[str] = []
+        self._allowed_suffixes: list[str] = []
 
     def add_var(
         self,

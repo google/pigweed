@@ -17,7 +17,7 @@
 from dataclasses import dataclass
 import logging
 from random import randint
-from typing import Any, List
+from typing import Any
 from unittest import TestCase, main
 
 from pw_log.log_decoder import (
@@ -121,7 +121,7 @@ class TestLogStreamDecoderBase(TestCase):
         def parse_pw_status(msg: str) -> str:
             return pw_status_code_to_name(msg)
 
-        self.captured_logs: List[Log] = []
+        self.captured_logs: list[Log] = []
 
         def decoded_log_handler(log: Log) -> None:
             self.captured_logs.append(log)
@@ -698,7 +698,7 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
 
             def __init__(self):
                 super().__init__(name="CapturingLogger")
-                self.log_calls: List[CapturingLogger.LoggerLog] = []
+                self.log_calls: list[CapturingLogger.LoggerLog] = []
 
             def log(self, level, msg, *args, **kwargs) -> None:
                 log = CapturingLogger.LoggerLog(

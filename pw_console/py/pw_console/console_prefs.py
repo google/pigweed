@@ -16,7 +16,7 @@
 import dataclasses
 import os
 from pathlib import Path
-from typing import Dict, Callable, List, Optional, Union
+from typing import Dict, Callable, Optional, Union
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -116,7 +116,7 @@ class CodeSnippet:
 
 
 def error_unknown_window(
-    window_title: str, existing_pane_titles: List[str]
+    window_title: str, existing_pane_titles: list[str]
 ) -> None:
     """Raise an error when the window config has an unknown title.
 
@@ -172,7 +172,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             environment_var='PW_CONSOLE_CONFIG_FILE',
         )
 
-        self._snippet_completions: List[CodeSnippet] = []
+        self._snippet_completions: list[CodeSnippet] = []
         self.registered_commands = DEFAULT_KEY_BINDINGS
         self.registered_commands.update(self.user_key_bindings)
 
@@ -242,7 +242,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         self._config[name] = not existing_setting
 
     @property
-    def column_order(self) -> List:
+    def column_order(self) -> list:
         return self._config.get('column_order', [])
 
     def column_style(
@@ -285,7 +285,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         self._config['windows'] = new_config
 
     @property
-    def window_column_modes(self) -> List:
+    def window_column_modes(self) -> list:
         return list(column_type for column_type in self.windows.keys())
 
     @property
@@ -308,7 +308,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('command_runner', {}).get('height', 10)
 
     @property
-    def user_key_bindings(self) -> Dict[str, List[str]]:
+    def user_key_bindings(self) -> Dict[str, list[str]]:
         return self._config.get('key_bindings', {})
 
     def current_config_as_yaml(self) -> str:
@@ -341,7 +341,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
                 )
         return set(titles)
 
-    def get_function_keys(self, name: str) -> List:
+    def get_function_keys(self, name: str) -> list:
         """Return the keys for the named function."""
         try:
             return self.registered_commands[name]
@@ -349,7 +349,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             raise KeyError('Unbound key function: {}'.format(name)) from error
 
     def register_named_key_function(
-        self, name: str, default_bindings: List[str]
+        self, name: str, default_bindings: list[str]
     ) -> None:
         self.registered_commands[name] = default_bindings
 
@@ -374,11 +374,11 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     def user_snippets(self) -> Dict:
         return self._config.get('user_snippets', {})
 
-    def snippet_completions(self) -> List[CodeSnippet]:
+    def snippet_completions(self) -> list[CodeSnippet]:
         if self._snippet_completions:
             return self._snippet_completions
 
-        all_snippets: List[CodeSnippet] = []
+        all_snippets: list[CodeSnippet] = []
 
         def previous_description() -> Optional[str]:
             if not all_snippets:

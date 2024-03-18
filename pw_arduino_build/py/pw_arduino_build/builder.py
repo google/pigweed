@@ -24,7 +24,6 @@ import sys
 import time
 from collections import OrderedDict
 from pathlib import Path
-from typing import List
 
 try:
     from pw_arduino_build import file_operations
@@ -192,7 +191,7 @@ class ArduinoBuilder:
         self._apply_recipe_overrides()
         self._substitute_variables()
 
-    def set_variables(self, variable_list: List[str]):
+    def set_variables(self, variable_list: list[str]):
         # Convert the string list containing 'name=value' items into a dict
         variable_source = {}
         for var in variable_list:
@@ -933,7 +932,7 @@ class ArduinoBuilder:
         ]
         return names
 
-    def get_objcopy_steps(self) -> List[str]:
+    def get_objcopy_steps(self) -> list[str]:
         lines = [
             line
             for name, line in self.platform.items()
@@ -998,7 +997,7 @@ class ArduinoBuilder:
         line = self.replace_command_args_with_compiler_override_path(line)
         return line
 
-    def get_prebuild_steps(self) -> List[str]:
+    def get_prebuild_steps(self) -> list[str]:
         # Teensy core uses recipe.hooks.sketch.prebuild.1.pattern
         # stm32 core uses recipe.hooks.prebuild.1.pattern
         # TODO(tonymd): STM32 core uses recipe.hooks.prebuild.1.pattern.windows
@@ -1018,7 +1017,7 @@ class ArduinoBuilder:
         ]
         return lines
 
-    def get_postbuild_steps(self) -> List[str]:
+    def get_postbuild_steps(self) -> list[str]:
         lines = [
             line
             for name, line in self.platform.items()

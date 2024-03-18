@@ -30,7 +30,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     NamedTuple,
     Optional,
     Pattern,
@@ -142,7 +141,7 @@ class Database:
         self._database: Dict[_EntryKey, TokenizedStringEntry] = {}
 
         # This is a cache for fast token lookup that is built as needed.
-        self._cache: Optional[Dict[int, List[TokenizedStringEntry]]] = None
+        self._cache: Optional[Dict[int, list[TokenizedStringEntry]]] = None
 
         self.add(entries)
 
@@ -169,7 +168,7 @@ class Database:
         return db
 
     @property
-    def token_to_entries(self) -> Dict[int, List[TokenizedStringEntry]]:
+    def token_to_entries(self) -> Dict[int, list[TokenizedStringEntry]]:
         """Returns a dict that maps tokens to a list of TokenizedStringEntry."""
         if self._cache is None:  # build cache token -> entry cache
             self._cache = collections.defaultdict(list)
@@ -182,7 +181,7 @@ class Database:
         """Returns iterable over all TokenizedStringEntries in the database."""
         return self._database.values()
 
-    def collisions(self) -> Iterator[Tuple[int, List[TokenizedStringEntry]]]:
+    def collisions(self) -> Iterator[Tuple[int, list[TokenizedStringEntry]]]:
         """Returns tuple of (token, entries_list)) for all colliding tokens."""
         for token, entries in self.token_to_entries.items():
             if len(entries) > 1:
@@ -192,7 +191,7 @@ class Database:
         self,
         all_entries: Iterable[TokenizedStringEntry],
         removal_date: Optional[datetime] = None,
-    ) -> List[TokenizedStringEntry]:
+    ) -> list[TokenizedStringEntry]:
         """Marks entries missing from all_entries as having been removed.
 
         The entries are assumed to represent the complete set of entries for the
@@ -256,7 +255,7 @@ class Database:
 
     def purge(
         self, date_removed_cutoff: Optional[datetime] = None
-    ) -> List[TokenizedStringEntry]:
+    ) -> list[TokenizedStringEntry]:
         """Removes and returns entries removed on/before date_removed_cutoff."""
         self._cache = None
 
@@ -302,7 +301,7 @@ class Database:
         """
         self._cache = None
 
-        to_delete: List[_EntryKey] = []
+        to_delete: list[_EntryKey] = []
 
         if include:
             include_re = [re.compile(pattern) for pattern in include]
@@ -644,7 +643,7 @@ class _DirectoryDatabase(DatabaseFile):
                 with self._create_filename().open('wb') as fd:
                     write_csv(new_entries, fd)
 
-    def _git_paths(self, commands: List) -> List[Path]:
+    def _git_paths(self, commands: list) -> list[Path]:
         """Returns a list of database CSVs from a Git command."""
         try:
             output = subprocess.run(

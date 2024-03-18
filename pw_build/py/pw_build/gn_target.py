@@ -15,7 +15,7 @@
 
 from json import loads as json_loads, dumps as json_dumps
 from pathlib import PurePosixPath
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, Optional, Set, Union
 
 from pw_build.bazel_query import BazelRule
 from pw_build.gn_config import GnConfig, GN_CONFIG_FLAGS
@@ -69,12 +69,12 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         self._base_label: GnLabel = GnLabel(base_label)
         self._base_path: GnPath = GnPath(base_path)
         self._repos: Set[str] = set()
-        self.visibility: List[GnVisibility] = []
+        self.visibility: list[GnVisibility] = []
         self.testonly: bool = False
         self.check_includes = check_includes
-        self.public: List[GnPath] = []
-        self.sources: List[GnPath] = []
-        self.inputs: List[GnPath] = []
+        self.public: list[GnPath] = []
+        self.sources: list[GnPath] = []
+        self.inputs: list[GnPath] = []
         self.config: GnConfig = GnConfig()
         self.public_configs: Set[GnLabel] = set()
         self.configs: Set[GnLabel] = set()
@@ -187,7 +187,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
 
     def to_json(self) -> str:
         """Returns a JSON representation of this target."""
-        obj: Dict[str, Union[bool, str, List[str]]] = {}
+        obj: Dict[str, Union[bool, str, list[str]]] = {}
         if self._type:
             obj['target_type'] = self._type
         obj['target_name'] = self.name()

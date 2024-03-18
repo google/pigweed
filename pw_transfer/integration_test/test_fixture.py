@@ -22,7 +22,7 @@ import pathlib
 from pathlib import Path
 import sys
 import tempfile
-from typing import BinaryIO, Iterable, List, NamedTuple, Optional
+from typing import BinaryIO, Iterable, NamedTuple, Optional
 import unittest
 
 from google.protobuf import text_format
@@ -103,7 +103,7 @@ class MonitoredSubprocess:
     """A subprocess with monitored asynchronous communication."""
 
     @staticmethod
-    async def create(cmd: List[str], prefix: str, stdinput: bytes):
+    async def create(cmd: list[str], prefix: str, stdinput: bytes):
         """Starts the subprocess and writes stdinput to stdin.
 
         This method returns once stdinput has been written to stdin. The
@@ -534,7 +534,7 @@ class TransferIntegrationTest(unittest.TestCase):
             client_file: BinaryIO
             expected_data: bytes
 
-        transfer_results: List[ReadbackSet] = []
+        transfer_results: list[ReadbackSet] = []
         for transfer in transfers:
             server_file = tempfile.NamedTemporaryFile()
             client_file = tempfile.NamedTemporaryFile()

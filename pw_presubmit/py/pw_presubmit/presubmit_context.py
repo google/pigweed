@@ -29,7 +29,6 @@ import tempfile
 from typing import (
     Any,
     Dict,
-    List,
     Iterable,
     NamedTuple,
     Optional,
@@ -50,7 +49,7 @@ _COLOR = pw_cli.color.colors()
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 PRESUBMIT_CHECK_TRACE: ContextVar[
-    Dict[str, List['PresubmitCheckTrace']]
+    Dict[str, list['PresubmitCheckTrace']]
 ] = ContextVar('pw_presubmit_check_trace', default={})
 
 
@@ -610,7 +609,7 @@ def save_check_trace(output_dir: Path, trace: PresubmitCheckTrace) -> None:
     PRESUBMIT_CHECK_TRACE.get()[trace_key] = trace_list
 
 
-def get_check_traces(ctx: 'PresubmitContext') -> List[PresubmitCheckTrace]:
+def get_check_traces(ctx: 'PresubmitContext') -> list[PresubmitCheckTrace]:
     trace_key = str(ctx.output_dir.resolve())
     return PRESUBMIT_CHECK_TRACE.get().get(trace_key, [])
 

@@ -15,11 +15,11 @@
 
 import argparse
 import json
-from typing import Iterator, List, TextIO
+from typing import Iterator, TextIO
 
-# Note: This should be List[Tuple[str, str]], but using string.split()
+# Note: This should be list[Tuple[str, str]], but using string.split()
 # produces Tuple[Any,...], so this permits that typing for convenience.
-PrefixMaps = List[tuple]
+PrefixMaps = list[tuple]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -54,7 +54,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def remap_paths(paths: List[str], prefix_maps: PrefixMaps) -> Iterator[str]:
+def remap_paths(paths: list[str], prefix_maps: PrefixMaps) -> Iterator[str]:
     for path in paths:
         for from_prefix, to_prefix in prefix_maps:
             if path.startswith(from_prefix):

@@ -14,7 +14,7 @@
 """Example Plugin that displays some dynamic content: a game of 2048."""
 
 from random import choice
-from typing import Iterable, List, Tuple, TYPE_CHECKING
+from typing import Iterable, Tuple, TYPE_CHECKING
 import time
 
 from prompt_toolkit.filters import has_focus
@@ -65,8 +65,8 @@ class Twenty48Game:
             2048: 'bg:#0f8',
             4096: 'bg:#0ff',
         }
-        self.board: List[List[int]]
-        self.last_board: List[Twenty48Cell]
+        self.board: list[list[int]]
+        self.last_board: list[Twenty48Cell]
         self.move_count: int
         self.width: int = 4
         self.height: int = 4
@@ -106,7 +106,7 @@ class Twenty48Game:
         """Returns the game board formatted in a grid with colors."""
         fragments: StyleAndTextTuples = []
 
-        def print_row(row: List[int], include_number: bool = False) -> None:
+        def print_row(row: list[int], include_number: bool = False) -> None:
             fragments.append(('', '  '))
             for col in row:
                 style = 'class:theme-fg-default '
@@ -183,7 +183,7 @@ class Twenty48Game:
                 if col == col_index:
                     yield (row, col, cell_value)
 
-    def non_zero_row_values(self, index: int) -> Tuple[List, List]:
+    def non_zero_row_values(self, index: int) -> Tuple[list, list]:
         non_zero_values = [
             value for row, col, value in self.row(index) if value != 0
         ]
@@ -214,14 +214,14 @@ class Twenty48Game:
                     self.board[row][col + 1] = this_cell * 2
                     break
 
-    def non_zero_col_values(self, index: int) -> Tuple[List, List]:
+    def non_zero_col_values(self, index: int) -> Tuple[list, list]:
         non_zero_values = [
             value for row, col, value in self.col(index) if value != 0
         ]
         padding = [0] * (self.height - len(non_zero_values))
         return (non_zero_values, padding)
 
-    def _set_column(self, col_index: int, values: List[int]) -> None:
+    def _set_column(self, col_index: int, values: list[int]) -> None:
         for row, value in enumerate(values):
             self.board[row][col_index] = value
 
@@ -475,7 +475,7 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
             )
         )
 
-        self.dialog_content: List[AnyContainer] = [
+        self.dialog_content: list[AnyContainer] = [
             # Vertical split content
             VSplit(
                 [
@@ -514,7 +514,7 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
             plugin_logger_name='pw_console_example_2048_plugin',
         )
 
-    def get_top_level_menus(self) -> List[MenuItem]:
+    def get_top_level_menus(self) -> list[MenuItem]:
         def _toggle_dialog() -> None:
             self.toggle_dialog()
 

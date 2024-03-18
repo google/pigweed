@@ -21,7 +21,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional
 
 from ctypes.util import find_library as ctypes_find_library
 import serial.tools.list_ports
@@ -57,7 +57,7 @@ else:
 
 def custom_find_library(name: str) -> Optional[str]:
     """Search for shared libraries in non-standard locations."""
-    search_paths: List[Path] = []
+    search_paths: list[Path] = []
 
     # Add to search_paths starting with lowest priority locations.
 
@@ -230,7 +230,7 @@ def _detect_pico_serial_ports() -> Dict[str, _BoardSerialInfo]:
     return boards
 
 
-def detect_boards() -> List[BoardInfo]:
+def detect_boards() -> list[BoardInfo]:
     """Detects attached Raspberry Pi Pico boards in USB serial mode.
 
     Returns:

@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 
 from pathlib import Path
-from typing import Any, Optional, List, Union, Dict
+from typing import Any, Optional, Union, Dict
 
 from pw_emu.core import (
     AlreadyRunning,
@@ -149,13 +149,13 @@ class Emulator:
 
         raise InvalidChannelType(chan_type)
 
-    def get_gdb_cmd(self) -> List[str]:
+    def get_gdb_cmd(self) -> list[str]:
         """Returns the ``gdb`` command for current target."""
         return self._c().get_gdb_cmd()
 
     def run_gdb_cmds(
         self,
-        commands: List[str],
+        commands: list[str],
         executable: Optional[str] = None,
         pause: bool = False,
     ) -> subprocess.CompletedProcess:
@@ -189,7 +189,7 @@ class Emulator:
         """Performs a software reset."""
         self._c().reset()
 
-    def list_properties(self, path: str) -> List[Dict]:
+    def list_properties(self, path: str) -> list[Dict]:
         """Returns the property list for an emulator object.
 
         The object is identified by a full path. The path is
@@ -253,7 +253,7 @@ class Emulator:
 
         return self._c().get_channel_stream(name, timeout)
 
-    def get_channels(self) -> List[str]:
+    def get_channels(self) -> list[str]:
         """Returns the list of available channels."""
 
         return self._c().get_channels()

@@ -19,7 +19,6 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from typing import List
 
 
 def _parse_args() -> argparse.Namespace:
@@ -61,7 +60,7 @@ def main(
     pigweed_modules_file: Path,
     output_dir: Path,
     doxygen_config: Path,
-    include_paths: List[Path],
+    include_paths: list[Path],
 ) -> None:
     root_build_dir = Path.cwd()
 

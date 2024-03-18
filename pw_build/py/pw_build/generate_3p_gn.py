@@ -20,7 +20,7 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 from string import Template
-from typing import Dict, List, IO, Iterable, Iterator, Set
+from typing import Dict, IO, Iterable, Iterator, Set
 
 from pw_build.bazel_query import BazelWorkspace
 from pw_build.gn_config import consolidate_configs, GnConfig
@@ -106,9 +106,9 @@ class GnGenerator:
         self._repo: str
         self._repo_var: str
         self._repos: Dict[str, Set[str]] = defaultdict(set)
-        self._no_gn_check: List[GnLabel] = []
-        self.configs: Dict[str, List[GnConfig]] = defaultdict(list)
-        self.targets: Dict[str, List[GnTarget]] = defaultdict(list)
+        self._no_gn_check: list[GnLabel] = []
+        self.configs: Dict[str, list[GnConfig]] = defaultdict(list)
+        self.targets: Dict[str, list[GnTarget]] = defaultdict(list)
 
         self.packages.add('')
         self.configs[''] = []
@@ -388,7 +388,7 @@ def write_owners(owners: IO) -> None:
         pass
 
 
-def _parse_args() -> List[Path]:
+def _parse_args() -> list[Path]:
     """Parse arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

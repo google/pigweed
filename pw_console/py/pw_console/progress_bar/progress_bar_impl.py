@@ -19,7 +19,6 @@ application."""
 import functools
 from typing import (
     Iterable,
-    List,
     Optional,
     Sequence,
 )
@@ -100,7 +99,7 @@ class ProgressBarImpl:
     ) -> None:
         self.title = title
         self.formatters = formatters or create_default_formatters()
-        self.counters: List[ProgressBarCounter[object]] = []
+        self.counters: list[ProgressBarCounter[object]] = []
         self.style = style
 
         # Create UI Application.

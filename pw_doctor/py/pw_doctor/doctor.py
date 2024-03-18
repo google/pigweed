@@ -24,7 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Iterable, List, Optional, Set
+from typing import Callable, Iterable, Optional, Set
 
 import pw_cli.pw_command_plugins
 import pw_env_setup.cipd_setup.update as cipd_update
@@ -79,7 +79,7 @@ class DoctorContext:
         self._doctor = doctor
         self.check = check
         self._executor = executor
-        self._futures: List[futures.Future] = []
+        self._futures: list[futures.Future] = []
 
     def submit(self, function, *args, **kwargs):
         """Starts running the provided function in parallel."""
@@ -133,7 +133,7 @@ def register_into(dest):
     return decorate
 
 
-CHECKS: List[Callable] = []
+CHECKS: list[Callable] = []
 
 
 @register_into(CHECKS)

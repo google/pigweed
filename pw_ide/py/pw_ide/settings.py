@@ -17,7 +17,7 @@ import enum
 from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, cast, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, cast, Dict, Literal, Optional, Tuple, Union
 import yaml
 
 from pw_cli.env import pigweed_environment
@@ -149,7 +149,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('compdb_gen_cmd')
 
     @property
-    def compdb_search_paths(self) -> List[Tuple[Path, str]]:
+    def compdb_search_paths(self) -> list[Tuple[Path, str]]:
         """Paths to directories to search for compilation databases.
 
         If you're using a build system to generate compilation databases, this
@@ -170,7 +170,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         ]
 
     @property
-    def targets(self) -> List[str]:
+    def targets(self) -> list[str]:
         """The list of targets that should be enabled for code analysis.
 
         In this case, "target" is analogous to a GN target, i.e., a particular
@@ -249,7 +249,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('default_target', None)
 
     @property
-    def sync(self) -> List[str]:
+    def sync(self) -> list[str]:
         """A sequence of commands to automate IDE features setup.
 
         ``pw ide sync`` should do everything necessary to get the project from
@@ -279,7 +279,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('clangd_alternate_path', None)
 
     @property
-    def clangd_additional_query_drivers(self) -> List[str]:
+    def clangd_additional_query_drivers(self) -> list[str]:
         """Additional query driver paths that clangd should use.
 
         By default, ``pw_ide`` supplies driver paths for the toolchains included
@@ -289,7 +289,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         """
         return self._config.get('clangd_additional_query_drivers', list())
 
-    def clangd_query_drivers(self, host_clang_cc_path: Path) -> List[str]:
+    def clangd_query_drivers(self, host_clang_cc_path: Path) -> list[str]:
         drivers = [
             *[
                 _expand_any_vars_str(p)

@@ -18,7 +18,6 @@ import abc
 import asyncio
 from struct import pack
 import time
-from typing import List
 import unittest
 
 from pigweed.pw_rpc.internal import packet_pb2
@@ -30,7 +29,7 @@ import proxy
 
 
 class MockRng(abc.ABC):
-    def __init__(self, results: List[float]):
+    def __init__(self, results: list[float]):
         self._results = results
 
     def uniform(self, from_val: float, to_val: float) -> float:
@@ -43,11 +42,11 @@ class MockRng(abc.ABC):
 
 class ProxyTest(unittest.IsolatedAsyncioTestCase):
     async def test_transposer_simple(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
         new_packets_event: asyncio.Event = asyncio.Event()
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
             # Notify that a new packet was "sent".
             new_packets_event.set()
@@ -80,10 +79,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                 return
 
     async def test_transposer_timeout(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         transposer = proxy.DataTransposer(
@@ -106,10 +105,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, [b'aaaaaaaaaa', b'bbbbbbbbbb'])
 
     async def test_server_failure(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         packets_before_failure = [1, 2, 3]
@@ -148,7 +147,7 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         sent_packets = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         packets_before_failure = [2]
@@ -196,10 +195,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, expected_result)
 
     async def test_keep_drop_queue_loop(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         keep_drop_queue = proxy.KeepDropQueue(
@@ -233,10 +232,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, expected_sequence)
 
     async def test_keep_drop_queue(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         keep_drop_queue = proxy.KeepDropQueue(
@@ -267,10 +266,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, expected_sequence)
 
     async def test_keep_drop_queue_transfer_chunks_only(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         keep_drop_queue = proxy.KeepDropQueue(
@@ -325,10 +324,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, expected_sequence)
 
     async def test_window_packet_dropper(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         window_packet_dropper = proxy.WindowPacketDropper(
@@ -421,10 +420,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             window_packet_dropper.handle_event(event)
 
     async def test_window_packet_dropper_extra_in_flight_packets(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so DataTransposer can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         window_packet_dropper = proxy.WindowPacketDropper(
@@ -513,10 +512,10 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent_packets, expected_packets)
 
     async def test_event_filter(self):
-        sent_packets: List[bytes] = []
+        sent_packets: list[bytes] = []
 
         # Async helper so EventFilter can await on it.
-        async def append(list: List[bytes], data: bytes):
+        async def append(list: list[bytes], data: bytes):
             list.append(data)
 
         queue = asyncio.Queue()

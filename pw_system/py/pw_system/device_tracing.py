@@ -20,7 +20,7 @@ import tempfile
 # from pathlib import Path
 # from types import ModuleType
 # from typing import Callable, List, Optional, Union
-from typing import List, Optional
+from typing import Optional
 
 import pw_transfer
 from pw_file import file_pb2
@@ -86,7 +86,7 @@ class DeviceWithTracing(Device):
 
         return resp.response.clock_parameters.tick_period_seconds_denominator
 
-    def list_files(self) -> List:
+    def list_files(self) -> list:
         """Lists all files on this device."""
         fs_service = self.rpcs.pw.file.FileSystem
         stream_response = fs_service.List()

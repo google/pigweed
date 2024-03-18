@@ -13,7 +13,6 @@
 # the License.
 """Library to analyze timestamp."""
 
-from typing import List
 import datetime
 from pw_chrono_protos import chrono_pb2
 
@@ -31,7 +30,7 @@ def process_snapshot(serialized_snapshot: bytes):
 
 
 def timestamp_output(timestamps: chrono_pb2.SnapshotTimestamps):
-    output: List[str] = []
+    output: list[str] = []
     if not timestamps.timestamps:
         return ''
 

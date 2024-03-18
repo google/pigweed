@@ -13,8 +13,6 @@
 # the License.
 """Defines a class used to write code to an output buffer."""
 
-from typing import List
-
 
 class OutputFile:
     """A buffer to which data is written.
@@ -45,7 +43,7 @@ class OutputFile:
 
     def __init__(self, filename: str):
         self._filename: str = filename
-        self._content: List[str] = []
+        self._content: list[str] = []
         self._indentation: int = 0
 
     def write_line(self, line: str = '') -> None:

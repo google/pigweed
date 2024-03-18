@@ -57,7 +57,6 @@ from threading import Thread
 from typing import (
     Callable,
     Iterable,
-    List,
     NoReturn,
     Optional,
     Sequence,
@@ -235,7 +234,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             return
 
         # Collect paths of interest from the event.
-        paths: List[str] = []
+        paths: list[str] = []
         if hasattr(event, 'dest_path'):
             paths.append(os.fsdecode(event.dest_path))
         if event.src_path:
@@ -578,7 +577,7 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
         assert False, "Please watch one directory at a time."
 
     # Reformat to_exclude.
-    directories_to_exclude: List[Path] = [
+    directories_to_exclude: list[Path] = [
         to_watch.joinpath(directory_to_exclude)
         for directory_to_exclude in to_exclude
         if to_watch.joinpath(directory_to_exclude).is_dir()
@@ -611,11 +610,11 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
                 yield item, True
 
 
-def get_common_excludes() -> List[Path]:
+def get_common_excludes() -> list[Path]:
     """Find commonly excluded directories, and return them as a [Path]"""
-    exclude_list: List[Path] = []
+    exclude_list: list[Path] = []
 
-    typical_ignored_directories: List[str] = [
+    typical_ignored_directories: list[str] = [
         '.environment',  # Legacy bootstrap-created CIPD and Python venv.
         '.presubmit',  # Presubmit-created CIPD and Python venv.
         '.git',  # Pigweed's git repo.
@@ -729,7 +728,7 @@ def watch_setup(  # pylint: disable=too-many-locals
     # allows use of watch_setup by other project build scripts.
     patterns: str = WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS),
     ignore_patterns_string: str = '',
-    exclude_list: Optional[List[Path]] = None,
+    exclude_list: Optional[list[Path]] = None,
     restart: bool = True,
     serve_docs: bool = False,
     serve_docs_port: int = 8000,
@@ -741,17 +740,17 @@ def watch_setup(  # pylint: disable=too-many-locals
     parallel: bool = False,
     parallel_workers: int = 0,
     # pylint: disable=unused-argument
-    default_build_targets: Optional[List[str]] = None,
-    build_directories: Optional[List[str]] = None,
-    build_system_commands: Optional[List[str]] = None,
-    run_command: Optional[List[str]] = None,
+    default_build_targets: Optional[list[str]] = None,
+    build_directories: Optional[list[str]] = None,
+    build_system_commands: Optional[list[str]] = None,
+    run_command: Optional[list[str]] = None,
     jobs: Optional[int] = None,
     keep_going: bool = False,
     colors: bool = True,
     debug_logging: bool = False,
     # pylint: enable=unused-argument
     # pylint: disable=too-many-arguments
-) -> Tuple[PigweedBuildWatcher, List[Path]]:
+) -> Tuple[PigweedBuildWatcher, list[Path]]:
     """Watches files and runs Ninja commands when they change."""
     watch_logging_init(
         log_level=project_builder.default_log_level,
@@ -852,7 +851,7 @@ def watch_setup(  # pylint: disable=too-many-locals
 
 def watch(
     event_handler: PigweedBuildWatcher,
-    exclude_list: List[Path],
+    exclude_list: list[Path],
 ):
     """Watches files and runs Ninja commands when they change."""
     # Try to make a short display path for the watched directory that has
@@ -919,7 +918,7 @@ def watch(
 
 def run_watch(
     event_handler: PigweedBuildWatcher,
-    exclude_list: List[Path],
+    exclude_list: list[Path],
     prefs: Optional[WatchAppPrefs] = None,
     fullscreen: bool = False,
 ) -> None:

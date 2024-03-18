@@ -21,7 +21,7 @@ import difflib
 from functools import cached_property
 from pathlib import Path
 import textwrap
-from typing import List, Optional
+from typing import Optional
 
 from pw_presubmit.tools import colorize_diff
 
@@ -87,8 +87,8 @@ class CodeBlock:
     directive_line: str
     first_line_indent: Optional[int] = None
     end_lineno: Optional[int] = None
-    option_lines: List[str] = field(default_factory=list)
-    code_lines: List[str] = field(default_factory=list)
+    option_lines: list[str] = field(default_factory=list)
+    code_lines: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self._blank_line_after_options_found = False
@@ -203,7 +203,7 @@ def reformat_rst(
     diff: bool = False,
     in_place: bool = False,
     tab_width: int = DEFAULT_TAB_WIDTH,
-) -> List[str]:
+) -> list[str]:
     """Reformat an rst file.
 
     Returns a list of diff lines."""
@@ -233,7 +233,7 @@ def reformat_rst(
 
 
 def rst_format_main(
-    rst_files: List[Path],
+    rst_files: list[Path],
     diff: bool = False,
     in_place: bool = False,
     tab_width: int = DEFAULT_TAB_WIDTH,

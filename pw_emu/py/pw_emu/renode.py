@@ -18,7 +18,7 @@ import time
 import xmlrpc.client
 
 from pathlib import Path
-from typing import Optional, List, Any
+from typing import Optional, Any
 
 from pw_emu.core import (
     Connector,
@@ -43,7 +43,7 @@ class RenodeLauncher(Launcher):
 
     def __init__(self, config_path: Optional[Path] = None):
         super().__init__('renode', config_path)
-        self._start_cmd: List[str] = []
+        self._start_cmd: list[str] = []
 
     @staticmethod
     def _allocate_port() -> int:
@@ -68,7 +68,7 @@ class RenodeLauncher(Launcher):
         pause: bool = False,
         debug: bool = False,
         args: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         renode = self._config.get_target_emu(['executable'])
         if not renode:
             renode = self._config.get_emu(['executable'], optional=False)
@@ -176,7 +176,7 @@ class RenodeConnector(Connector):
         port = robot.port
         self._proxy = xmlrpc.client.ServerProxy(f'http://{host}:{port}/')
 
-    def _request(self, cmd: str, args: List[str]) -> Any:
+    def _request(self, cmd: str, args: list[str]) -> Any:
         """Send a request using the robot interface.
 
         Using the robot interface is not ideal since it is designed
@@ -200,7 +200,7 @@ class RenodeConnector(Connector):
     def cont(self) -> None:
         self._request('StartEmulation', [])
 
-    def list_properties(self, path: str) -> List[Any]:
+    def list_properties(self, path: str) -> list[Any]:
         return self._request('ExecuteCommand', [f'{path}'])
 
     def get_property(self, path: str, prop: str) -> Any:

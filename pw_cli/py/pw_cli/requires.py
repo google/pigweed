@@ -36,7 +36,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Dict, IO, List, Sequence
+from typing import Callable, Dict, IO, Sequence
 import uuid
 
 HELPER_GERRIT = 'pigweed-internal'
@@ -152,7 +152,7 @@ def create_commit(
     change_id = str(uuid.uuid4()).replace('-', '00')
     _LOG.debug('change_id %s', change_id)
 
-    requirement_objects: List[Change] = []
+    requirement_objects: list[Change] = []
     for req in requirement_strings:
         gerrit_name, number = req.split(':', 1)
         requirement_objects.append(Change(gerrit_name, int(number)))

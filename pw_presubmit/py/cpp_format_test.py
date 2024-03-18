@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
-from typing import Final, List, Sequence
+from typing import Final, Sequence
 import unittest
 
 from pw_presubmit.format.core import ToolRunner
@@ -38,7 +38,7 @@ _CLANG_FORMAT_ARGS: Final[Sequence[str]] = (
 
 class CapturingToolRunner(ToolRunner):
     def __init__(self):
-        self.command_history: List[str] = []
+        self.command_history: list[str] = []
 
     def __call__(
         self, tool: str, args, **kwargs

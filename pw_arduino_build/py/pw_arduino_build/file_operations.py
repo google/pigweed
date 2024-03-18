@@ -26,7 +26,6 @@ import tarfile
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import List
 
 _LOG = logging.getLogger(__name__)
 
@@ -36,8 +35,8 @@ class InvalidChecksumError(Exception):
 
 
 def find_files(
-    starting_dir: str, patterns: List[str], directories_only=False
-) -> List[str]:
+    starting_dir: str, patterns: list[str], directories_only=False
+) -> list[str]:
     original_working_dir = os.getcwd()
     if not (os.path.exists(starting_dir) and os.path.isdir(starting_dir)):
         raise FileNotFoundError(

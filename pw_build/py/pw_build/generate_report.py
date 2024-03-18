@@ -19,7 +19,7 @@ import logging
 import sys
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 _LOG = logging.getLogger(__name__)
 
@@ -116,8 +116,8 @@ def generate_report(
     build_dir: Path,
     output_dir: Path,
     depfile_path: Path,
-    filter_paths: List[str],
-    ignore_filename_patterns: List[str],
+    filter_paths: list[str],
+    ignore_filename_patterns: list[str],
 ) -> int:
     """Generate a coverage report using llvm-cov."""
 

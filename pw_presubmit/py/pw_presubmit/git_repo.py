@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 import subprocess
-from typing import Collection, Iterable, List, Optional, Pattern, Union
+from typing import Collection, Iterable, Optional, Pattern, Union
 
 from pw_presubmit.tools import log_run, plural
 
@@ -117,7 +117,7 @@ def list_files(
     commit: Optional[str] = None,
     pathspecs: Collection[PathOrStr] = (),
     repo_path: Optional[Path] = None,
-) -> List[Path]:
+) -> list[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
     Args:
@@ -312,7 +312,7 @@ def commit_hash(
 
 def discover_submodules(
     superproject_dir: Path, excluded_paths: Collection[PatternOrStr] = ()
-) -> List[Path]:
+) -> list[Path]:
     """Query git and return a list of submodules in the current project.
 
     Args:
