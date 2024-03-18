@@ -1815,7 +1815,7 @@ Highlights (Dec 15, 2023 to Dec 29, 2023):
 * The Rust macro ``tokenize_to_buffer!`` in the ``pw_tokenizer`` Rust crate now
   supports concatenation of format strings via the ``PW_FMT_CONCAT`` operator.
 * The :ref:`module-pw_hdlc` and :ref:`module-pw_result` docs were updated to
-  follow our latest :ref:`docs-contrib-moduledocs`.
+  follow our latest :ref:`docs-contrib-docs-modules`.
 
 Active SEEDs
 ============
@@ -1973,7 +1973,7 @@ Highlights (Dec 1, 2023 to Dec 15, 2023):
      update are related to this change.
 
 * The :ref:`module-pw_alignment` and :ref:`module-pw_emu` docs have been updated
-  to follow our latest :ref:`docs-contrib-moduledocs`.
+  to follow our latest :ref:`docs-contrib-docs-modules`.
 * ``pw_system`` now supports an :ref:`extra logging channel
   <module-pw_system-logchannel>`.
 * ``pw_toolchain_bazel`` has a new :ref:`get started guide
@@ -2499,7 +2499,7 @@ Highlights (Nov 17, 2023 to Dec 1, 2023):
   <docs-changelog-20231201-pw_log>`.
 * The :ref:`module-pw_alignment`, :ref:`module-pw_perf_test`, and
   :ref:`module-pw_status` docs were refactored to follow our latest
-  :ref:`docs-contrib-moduledocs`.
+  :ref:`docs-contrib-docs-modules`.
 
 Active SEEDs
 ============
@@ -2513,7 +2513,7 @@ Modules
 pw_alignment
 ------------
 The :ref:`docs <module-pw_alignment>` were updated to follow our new
-:ref:`docs-contrib-moduledocs`.
+:ref:`docs-contrib-docs-modules`.
 
 * `Follow the new docs guidelines
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181432>`__
@@ -2735,7 +2735,7 @@ pw_sensor
 pw_status
 ---------
 The :ref:`docs <module-pw_status>` have been refactored to follow
-our latest :ref:`docs-contrib-moduledocs`.
+our latest :ref:`docs-contrib-docs-modules`.
 
 * `Adopt latest docs standard
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181181>`__
@@ -2891,7 +2891,7 @@ Docs
 ====
 The tool that we use to semi-automate these changelog updates has been
 added to the main Pigweed repository. Try out the tool on
-:ref:`docs-contrib-changelog` and see ``//docs/_static/js/changelog.js``
+:ref:`docs-contrib-docs-changelog` and see ``//docs/_static/js/changelog.js``
 to view its implementation.
 
 * `Gerrit code coverage documentation
@@ -3259,7 +3259,7 @@ Highlights (Oct 19, 2023 to Nov 3, 2023):
   :ref:`full control <docs-changelog-20231103-bazel>` over how Pigweed libraries
   are built.
 * New guidelines for authoring module docs have been published at
-  :ref:`docs-contrib-moduledocs`. :ref:`module-pw_string` is now an example
+  :ref:`docs-contrib-docs-modules`. :ref:`module-pw_string` is now an example
   of a "golden" module docs set that follows the new guidelines. Please leave
   feedback on the new guidelines (and module docs updated to follow the
   guidelines) in `issue #309123039 <https://issues.pigweed.dev/issues/309123039>`__.
@@ -3464,7 +3464,7 @@ now supports :ref:`DynamicClient <module-pw_rpc_pw_protobuf-client>`.
 
 pw_string
 ---------
-The docs were updated to match the new :ref:`docs-contrib-moduledocs`.
+The docs were updated to match the new :ref:`docs-contrib-docs-modules`.
 
 * `Docs tweaks <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177883>`__
 
@@ -3554,7 +3554,7 @@ OS support
 Docs
 ====
 New guidelines for authoring module docs have been published at
-:ref:`docs-contrib-moduledocs`. :ref:`module-pw_string` is now an example
+:ref:`docs-contrib-docs-modules`. :ref:`module-pw_string` is now an example
 of a "golden" module docs set that follows the new guidelines. Please leave
 feedback on the new guidelines (and module docs updated to follow the
 guidelines) in `issue #309123039 <https://issues.pigweed.dev/issues/309123039>`__.

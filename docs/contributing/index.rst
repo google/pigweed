@@ -405,5 +405,4 @@ See the warning about caching Python packages for multiple platforms in
    ../style_guide
    ../code_reviews
    ../code_of_conduct
-   module_docs
-   changelog
+   Docs and pigweed.dev <docs/index>

@@ -16,7 +16,7 @@
 Status (October 2023)
 ---------------------
 If you're looking for guidelines on how to author module docs, use these:
-:ref:`docs-contrib-moduledocs`
+:ref:`docs-contrib-docs-modules`
 
 .. caution::
 

@@ -1,8 +1,8 @@
-.. _docs-contrib-changelog:
+.. _docs-contrib-docs-changelog:
 
-====================
-Changelog guidelines
-====================
+==============================
+Contributing changelog updates
+==============================
 This page describes how to write a bi-weekly :ref:`changelog <docs-changelog>`
 update.
 
@@ -10,19 +10,19 @@ update.
 Overview
 --------
 #. You should start working on the update on the Thursday before Pigweed Live.
-   Follow the :ref:`docs-contrib-changelog-instructions`.
+   Follow the :ref:`docs-contrib-docs-changelog-instructions`.
 
 #. You should have a rough draft pushed up to Gerrit and ready for review by
    noon on Friday.
 
 #. The update must be published before Pigweed Live.
 
-.. _docs-contrib-changelog-instructions:
+.. _docs-contrib-docs-changelog-instructions:
 
 ------------
 Instructions
 ------------
-#. Use the :ref:`changelog tool <docs-contrib-changelog-tool>` to kickstart
+#. Use the :ref:`changelog tool <docs-contrib-docs-changelog-tool>` to kickstart
    your rough draft. This tool grabs all the commits between the start and end
    dates that you specify, organizes them, and then outputs reStructuredText
    (reST).
@@ -47,7 +47,7 @@ Instructions
 When in doubt about anything, look at ``//docs/changelog.rst`` and follow the
 previous precedents.
 
-.. _docs-contrib-changelog-tool:
+.. _docs-contrib-docs-changelog-tool:
 
 --------------
 Changelog tool

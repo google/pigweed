@@ -1,8 +1,8 @@
-.. _docs-contrib-moduledocs:
+.. _docs-contrib-docs-modules:
 
-======================
-Module Docs Guidelines
-======================
+===========
+Module docs
+===========
 This page provides guidelines on how to write documentation for a single
 Pigweed module.
 
@@ -26,7 +26,7 @@ documenting. This flowchart summarizes the decision path:
      D -->|A little| E[Use the single-page approach]
      D -->|A lot| F[Use the multi-page approach]
 
-.. _docs-contrib-moduledocs-moduletypes:
+.. _docs-contrib-docs-modules-moduletypes:
 
 -------------------------------------
 Simple modules versus complex modules
@@ -61,49 +61,49 @@ Examples of complex modules:
 
 * :ref:`module-pw_tokenizer`
 
-.. _docs-contrib-moduledocs-simple:
+.. _docs-contrib-docs-modules-simple:
 
 ------------------------
 Simple module guidelines
 ------------------------
 Follow these guidelines if you're writing docs for a
-:ref:`simple module <docs-contrib-moduledocs-moduletypes>`.
+:ref:`simple module <docs-contrib-docs-modules-moduletypes>`.
 
 Single-page approach versus multi-page approach
 ===============================================
 If your module meets the following criteria then you should *probably* use
-the :ref:`docs-contrib-moduledocs-singlepage`:
+the :ref:`docs-contrib-docs-modules-singlepage`:
 
 * There is less than 1000 words of content in total.
 * The API has 2 classes or less.
 * The API has 10 methods or less.
 
 If your module doesn't meet all these criteria, then you should *probably*
-use the :ref:`docs-contrib-moduledocs-multipage`. As you can tell by our use of
+use the :ref:`docs-contrib-docs-modules-multipage`. As you can tell by our use of
 *probably*, this is just a soft guideline. E.g. if you have 2000 words of
 content but you feel strongly that the single-page approach is better for your
 module, then go for it!
 
 The content that you write mostly stays the same whether you use the single-page
 or multi-page approach. All modules must have
-:ref:`docs-contrib-moduledocs-sales` content for example. The only
+:ref:`docs-contrib-docs-modules-sales` content for example. The only
 difference is that in the single-page approach this is the first *section* of
 content whereas in the multi-page approach it's the first *page* of content.
 
-.. _docs-contrib-moduledocs-singlepage:
+.. _docs-contrib-docs-modules-singlepage:
 
 Single-page approach
 ====================
 When using the single-page approach, this is the default ordering of
 sections in ``docs.rst``:
 
-* :ref:`docs-contrib-moduledocs-sales`
-* :ref:`docs-contrib-moduledocs-getstarted`
-* :ref:`docs-contrib-moduledocs-guides`
-* :ref:`docs-contrib-moduledocs-reference`
-* :ref:`docs-contrib-moduledocs-design`
-* :ref:`docs-contrib-moduledocs-roadmap`
-* :ref:`docs-contrib-moduledocs-size`
+* :ref:`docs-contrib-docs-modules-sales`
+* :ref:`docs-contrib-docs-modules-getstarted`
+* :ref:`docs-contrib-docs-modules-guides`
+* :ref:`docs-contrib-docs-modules-reference`
+* :ref:`docs-contrib-docs-modules-design`
+* :ref:`docs-contrib-docs-modules-roadmap`
+* :ref:`docs-contrib-docs-modules-size`
 
 The sales pitch must come first, followed by the getting started instructions.
 Everything else beyond that is optional. The sections can be re-arranged if
@@ -117,7 +117,7 @@ Examples:
 * :ref:`module-pw_alignment`
 * :ref:`module-pw_perf_test`
 
-.. _docs-contrib-moduledocs-multipage:
+.. _docs-contrib-docs-modules-multipage:
 
 Multi-page approach
 ===================
@@ -132,20 +132,20 @@ pages:
      - Description
    * - ``pw_<name>``
      - ``docs.rst``
-     - The :ref:`docs-contrib-moduledocs-sales` content.
+     - The :ref:`docs-contrib-docs-modules-sales` content.
    * - ``Get Started & Guides``
      - ``guides.rst``
-     - The :ref:`docs-contrib-moduledocs-getstarted` content followed by the
-       :ref:`docs-contrib-moduledocs-guides` content. See the note below.
+     - The :ref:`docs-contrib-docs-modules-getstarted` content followed by the
+       :ref:`docs-contrib-docs-modules-guides` content. See the note below.
    * - ``API Reference``
      - ``api.rst``
-     - The :ref:`docs-contrib-moduledocs-reference` content.
+     - The :ref:`docs-contrib-docs-modules-reference` content.
    * - ``Design & Roadmap``
      - ``design.rst``
-     - The :ref:`docs-contrib-moduledocs-design` content. See the note below.
+     - The :ref:`docs-contrib-docs-modules-design` content. See the note below.
    * - ``Code Size Analysis``
      - ``size.rst``
-     - The :ref:`docs-contrib-moduledocs-size` content.
+     - The :ref:`docs-contrib-docs-modules-size` content.
 
 The sales pitch and getting started instructions are required. Everything else
 is optional. The sections can be re-arranged if you feel strongly about it,
@@ -221,12 +221,12 @@ The following sections provide instructions on how to write each content type.
 .. note::
 
    We call them "content types" because in the
-   :ref:`docs-contrib-moduledocs-singlepage` each of these things represent a
+   :ref:`docs-contrib-docs-modules-singlepage` each of these things represent a
    section of content on ``docs.rst`` whereas in the
-   :ref:`docs-contrib-moduledocs-multipage` they might be an entire page of
+   :ref:`docs-contrib-docs-modules-multipage` they might be an entire page of
    content or a section within a page.
 
-.. _docs-contrib-moduledocs-metadata:
+.. _docs-contrib-docs-modules-metadata:
 
 Module metadata
 ===============
@@ -257,7 +257,7 @@ Module metadata
       .. pigweed-module-subpage::
          :name: pw_example
 
-.. _docs-contrib-moduledocs-sales:
+.. _docs-contrib-docs-modules-sales:
 
 Sales pitch
 ===========
@@ -275,7 +275,7 @@ Examples:
 * :ref:`module-pw_string`
 * :ref:`module-pw_tokenizer`
 
-.. _docs-contrib-moduledocs-getstarted:
+.. _docs-contrib-docs-modules-getstarted:
 
 Get started
 ===========
@@ -300,7 +300,7 @@ Examples:
 
 * :ref:`module-pw_string-get-started` (pw_string)
 
-.. _docs-contrib-moduledocs-guides:
+.. _docs-contrib-docs-modules-guides:
 
 Guides
 ======
@@ -313,7 +313,7 @@ Examples:
 
 * :ref:`module-pw_string-guide-stringbuilder`
 
-.. _docs-contrib-moduledocs-reference:
+.. _docs-contrib-docs-modules-reference:
 
 API reference
 =============
@@ -335,7 +335,7 @@ Examples:
 * :ref:`module-pw_string-api` (pw_string)
 * :ref:`module-pw_tokenizer-api` (pw_tokenizer)
 
-.. _docs-contrib-moduledocs-design:
+.. _docs-contrib-docs-modules-design:
 
 Design
 ======
@@ -348,7 +348,7 @@ Examples:
 
 * :ref:`module-pw_string-design-inlinestring` (pw_string)
 
-.. _docs-contrib-moduledocs-roadmap:
+.. _docs-contrib-docs-modules-roadmap:
 
 Roadmap
 =======
@@ -367,7 +367,7 @@ Examples:
 
 * :ref:`module-pw_string-roadmap` (pw_string)
 
-.. _docs-contrib-moduledocs-size:
+.. _docs-contrib-docs-modules-size:
 
 Size analysis
 =============

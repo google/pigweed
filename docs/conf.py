@@ -52,6 +52,7 @@ extensions = [
     'sphinx_design',
     'breathe',
     'sphinx_copybutton',  # Copy-to-clipboard button on code blocks
+    'sphinx_reredirects',
     'sphinx_sitemap',
 ]
 
@@ -237,6 +238,22 @@ mermaid.initialize({
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'
+
+# Client-side redirects. See //docs/contributing/docs/index.rst.
+redirects = {
+    'docs/contributing': 'docs/contributing/',
+    'docs/contributing/module_docs': 'docs/contributing/docs/modules.html',
+    'docs/contributing/changelog': 'docs/contributing/docs/changelog.html',
+    'docs/getting_started': 'docs/get_started/',
+    'docs/os_abstraction_layers': 'docs/os/',
+    'docs/release_notes': 'changelog.html',
+    'docs/release_notes/2022_jan': 'changelog.html',
+    'module_guides': 'modules.html',
+    'pw_sys_io_pico': 'pw_sys_io_rp2040/',
+    'pw_sys_io_pico/docs': 'pw_sys_io_rp2040/',
+    'pw_tokenizer/cli': 'pw_tokenizer/',
+    'pw_tokenizer/guides': 'pw_tokenizer/',
+}
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).

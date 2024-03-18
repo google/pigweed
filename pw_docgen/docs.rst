@@ -187,7 +187,7 @@ generator. Extensions are included and configured in ``docs/conf.py``.
 
 module_metadata
 ===============
-See :ref:`docs-contrib-moduledocs-metadata`.
+See :ref:`docs-contrib-docs-modules-metadata`.
 
 Canonical URL configuration
 ---------------------------
