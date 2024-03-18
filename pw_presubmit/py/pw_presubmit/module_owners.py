@@ -15,7 +15,7 @@
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from pw_presubmit.presubmit_context import (
     PresubmitContext,
@@ -29,7 +29,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 def upstream_pigweed_applicability(
     ctx: PresubmitContext,
     path: Path,
-) -> Optional[Path]:
+) -> Path | None:
     """Return a parent of path required to have an OWNERS file, or None."""
     parts: tuple[str, ...] = path.relative_to(ctx.root).parts
 
@@ -41,7 +41,7 @@ def upstream_pigweed_applicability(
     return None
 
 
-ApplicabilityFunc = Callable[[PresubmitContext, Path], Optional[Path]]
+ApplicabilityFunc = Callable[[PresubmitContext, Path], Path | None]
 
 
 def presubmit_check(

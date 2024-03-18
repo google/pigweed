@@ -25,7 +25,6 @@ from typing import (
     Iterable,
     Mapping,
     NamedTuple,
-    Optional,
 )
 
 import pw_status
@@ -256,7 +255,7 @@ class Context:
         return self._variables
 
     def set_target(
-        self, selected_client: object, channel_id: Optional[int] = None
+        self, selected_client: object, channel_id: int | None = None
     ) -> None:
         """Sets the default target for commands."""
         # Make sure the variable is one of the client variables.

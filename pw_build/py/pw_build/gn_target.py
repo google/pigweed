@@ -15,7 +15,7 @@
 
 from json import loads as json_loads, dumps as json_dumps
 from pathlib import PurePosixPath
-from typing import Optional, Set
+from typing import Set
 
 from pw_build.bazel_query import BazelRule
 from pw_build.gn_config import GnConfig, GN_CONFIG_FLAGS
@@ -55,8 +55,8 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         self,
         base_label: str | PurePosixPath | GnLabel,
         base_path: str | PurePosixPath | GnPath,
-        bazel: Optional[BazelRule] = None,
-        json: Optional[str] = None,
+        bazel: BazelRule | None = None,
+        json: str | None = None,
         check_includes: bool = True,
     ) -> None:
         """Creates a GN target

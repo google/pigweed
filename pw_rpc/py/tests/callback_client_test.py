@@ -16,7 +16,7 @@
 
 import unittest
 from unittest import mock
-from typing import Any, Optional
+from typing import Any
 
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
@@ -79,7 +79,7 @@ class _CallbackClientImplTestBase(unittest.TestCase):
         self._next_packets: list[tuple[bytes, Status]] = []
         self.send_responses_after_packets: float = 1
 
-        self.output_exception: Optional[Exception] = None
+        self.output_exception: Exception | None = None
 
     def last_request(self) -> packet_pb2.RpcPacket:
         assert self.requests
@@ -88,11 +88,11 @@ class _CallbackClientImplTestBase(unittest.TestCase):
     def _enqueue_response(
         self,
         channel_id: int = CLIENT_CHANNEL_ID,
-        method: Optional[descriptors.Method] = None,
+        method: descriptors.Method | None = None,
         status: Status = Status.OK,
         payload: bytes = b'',
         *,
-        ids: Optional[tuple[int, int]] = None,
+        ids: tuple[int, int] | None = None,
         process_status: Status = Status.OK,
         call_id: int = client.OPEN_CALL_ID,
     ) -> None:

@@ -63,7 +63,6 @@ from typing import (
     Collection,
     Iterable,
     Iterator,
-    Optional,
     Pattern,
     Sequence,
     Set,
@@ -369,7 +368,7 @@ def _print_ui(*args) -> None:
 class FilteredCheck:
     check: Check
     paths: Sequence[Path]
-    substep: Optional[str] = None
+    substep: str | None = None
 
     @property
     def name(self) -> str:
@@ -413,7 +412,7 @@ class Presubmit:
         self,
         program: Program,
         keep_going: bool = False,
-        substep: Optional[str] = None,
+        substep: str | None = None,
         dry_run: bool = False,
     ) -> bool:
         """Executes a series of presubmit checks on the paths."""
@@ -636,7 +635,7 @@ def fetch_file_lists(
     repo: Path,
     pathspecs: list[str],
     exclude: Sequence[Pattern] = (),
-    base: Optional[str] = None,
+    base: str | None = None,
 ) -> tuple[list[Path], list[Path]]:
     """Returns lists of all files and modified files for the given repo.
 
@@ -677,19 +676,19 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     program: Sequence[Check],
     root: Path,
     repos: Collection[Path] = (),
-    base: Optional[str] = None,
+    base: str | None = None,
     paths: Sequence[str] = (),
     exclude: Sequence[Pattern] = (),
-    output_directory: Optional[Path] = None,
-    package_root: Optional[Path] = None,
+    output_directory: Path | None = None,
+    package_root: Path | None = None,
     only_list_steps: bool = False,
     override_gn_args: Sequence[tuple[str, str]] = (),
     keep_going: bool = False,
     continue_after_build_error: bool = False,
     rng_seed: int = 1,
     presubmit_class: type = Presubmit,
-    list_steps_file: Optional[Path] = None,
-    substep: Optional[str] = None,
+    list_steps_file: Path | None = None,
+    substep: str | None = None,
     dry_run: bool = False,
 ) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
@@ -857,7 +856,7 @@ def check(*args, **kwargs):
 
 @dataclasses.dataclass
 class SubStep:
-    name: Optional[str]
+    name: str | None
     _func: Callable[..., PresubmitResult]
     args: Sequence[Any] = ()
     kwargs: dict[str, Any] = dataclasses.field(default_factory=lambda: {})
@@ -882,8 +881,8 @@ class Check:
         ),
         path_filter: FileFilter = FileFilter(),
         always_run: bool = True,
-        name: Optional[str] = None,
-        doc: Optional[str] = None,
+        name: str | None = None,
+        doc: str | None = None,
     ) -> None:
         # Since Check wraps a presubmit function, adopt that function's name.
         self.name: str = ''
@@ -984,7 +983,7 @@ class Check:
         ctx: PresubmitContext,
         count: int,
         total: int,
-        substep: Optional[str] = None,
+        substep: str | None = None,
     ) -> PresubmitResult:
         """Runs the presubmit check on the provided paths."""
 
@@ -1055,7 +1054,7 @@ class Check:
             return PresubmitResult.CANCEL
 
     def run_substep(
-        self, ctx: PresubmitContext, name: Optional[str]
+        self, ctx: PresubmitContext, name: str | None
     ) -> PresubmitResult:
         for substep in self.substeps():
             if substep.name == name:
@@ -1114,7 +1113,7 @@ def filter_paths(
     *,
     endswith: Iterable[str] = (),
     exclude: Iterable[Pattern[str] | str] = (),
-    file_filter: Optional[FileFilter] = None,
+    file_filter: FileFilter | None = None,
     always_run: bool = False,
 ) -> Callable[[Callable], Check]:
     """Decorator for filtering the paths list for a presubmit check function.
@@ -1153,7 +1152,7 @@ def filter_paths(
 
 
 def call(
-    *args, call_annotation: Optional[dict[Any, Any]] = None, **kwargs
+    *args, call_annotation: dict[Any, Any] | None = None, **kwargs
 ) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
     ctx = PRESUBMIT_CONTEXT.get()

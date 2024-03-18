@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 import re
-from typing import Callable, Optional, Iterable, Iterator
+from typing import Callable, Iterable, Iterator
 
 from pw_presubmit.presubmit import (
     Check,
@@ -55,7 +55,7 @@ def pragma_once(ctx: PresubmitContext) -> None:
 
 
 def include_guard_check(
-    guard: Optional[Callable[[Path], str]] = None,
+    guard: Callable[[Path], str] | None = None,
     allow_pragma_once: bool = True,
 ) -> Check:
     """Create an include guard check.
@@ -89,7 +89,7 @@ def include_guard_check(
         """Check if path has a valid include guard."""
 
         _LOG.debug('checking %s', path)
-        expected: Optional[str] = None
+        expected: str | None = None
         if guard:
             expected = guard(path)
             _LOG.debug('expecting guard %r', expected)

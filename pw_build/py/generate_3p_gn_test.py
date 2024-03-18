@@ -21,7 +21,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
 from types import TracebackType
-from typing import Iterator, Optional, Type
+from typing import Iterator, Type
 
 from pw_build.generate_3p_gn import GnGenerator, write_owners
 from pw_build.gn_config import GnConfig
@@ -45,9 +45,9 @@ class GnGeneratorForTest(AbstractContextManager):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Removes the temporary directory."""
         self._tmp.__exit__(exc_type, exc_val, exc_tb)

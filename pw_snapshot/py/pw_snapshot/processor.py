@@ -18,7 +18,7 @@ import functools
 import logging
 import sys
 from pathlib import Path
-from typing import Optional, BinaryIO, TextIO, Callable
+from typing import BinaryIO, TextIO, Callable
 import pw_tokenizer
 import pw_cpu_exception_cortex_m
 import pw_build_info.build_id
@@ -41,7 +41,7 @@ _BRANDING = """
 """
 
 # Deprecated, use SymbolizerMatcher. Will be removed shortly.
-ElfMatcher = Callable[[snapshot_pb2.Snapshot], Optional[Path]]
+ElfMatcher = Callable[[snapshot_pb2.Snapshot], Path | None]
 
 # Symbolizers are useful for turning addresses into source code locations and
 # function names. As a single snapshot may contain embedded snapshots from
@@ -56,10 +56,10 @@ SymbolizerMatcher = Callable[[snapshot_pb2.Snapshot], Symbolizer]
 
 def process_snapshot(
     serialized_snapshot: bytes,
-    detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
-    elf_matcher: Optional[ElfMatcher] = None,
-    symbolizer_matcher: Optional[SymbolizerMatcher] = None,
-    llvm_symbolizer_binary: Optional[Path] = None,
+    detokenizer: pw_tokenizer.Detokenizer | None = None,
+    elf_matcher: ElfMatcher | None = None,
+    symbolizer_matcher: SymbolizerMatcher | None = None,
+    llvm_symbolizer_binary: Path | None = None,
 ) -> str:
     """Processes a single snapshot."""
 
@@ -118,10 +118,10 @@ def process_snapshot(
 
 def process_snapshots(
     serialized_snapshot: bytes,
-    detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
-    elf_matcher: Optional[ElfMatcher] = None,
-    user_processing_callback: Optional[Callable[[bytes], str]] = None,
-    symbolizer_matcher: Optional[SymbolizerMatcher] = None,
+    detokenizer: pw_tokenizer.Detokenizer | None = None,
+    elf_matcher: ElfMatcher | None = None,
+    user_processing_callback: Callable[[bytes], str] | None = None,
+    symbolizer_matcher: SymbolizerMatcher | None = None,
 ) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
@@ -160,7 +160,7 @@ def process_snapshots(
 def _snapshot_symbolizer_matcher(
     artifacts_dir: Path, snapshot: snapshot_pb2.Snapshot
 ) -> LlvmSymbolizer:
-    matching_elf: Optional[Path] = pw_build_info.build_id.find_matching_elf(
+    matching_elf: Path | None = pw_build_info.build_id.find_matching_elf(
         snapshot.metadata.software_build_uuid, artifacts_dir
     )
     if not matching_elf:
@@ -174,13 +174,13 @@ def _snapshot_symbolizer_matcher(
 def _load_and_dump_snapshots(
     in_file: BinaryIO,
     out_file: TextIO,
-    token_db: Optional[TextIO],
-    artifacts_dir: Optional[Path],
+    token_db: TextIO | None,
+    artifacts_dir: Path | None,
 ):
     detokenizer = None
     if token_db:
         detokenizer = pw_tokenizer.Detokenizer(token_db)
-    symbolizer_matcher: Optional[SymbolizerMatcher] = None
+    symbolizer_matcher: SymbolizerMatcher | None = None
     if artifacts_dir:
         symbolizer_matcher = functools.partial(
             _snapshot_symbolizer_matcher, artifacts_dir

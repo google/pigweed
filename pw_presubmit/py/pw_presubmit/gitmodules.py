@@ -16,7 +16,7 @@
 import dataclasses
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Sequence
+from typing import Callable, Sequence
 import urllib.parse
 
 from pw_presubmit.presubmit import filter_paths
@@ -57,9 +57,9 @@ class Config:
     # Arbitrary validator. Gets invoked with the submodule name and a dict of
     # the submodule properties. Should throw exceptions or call ctx.fail to
     # register errors.
-    validator: Optional[
-        Callable[[PresubmitContext, Path, str, dict[str, str]], None]
-    ] = None
+    validator: (
+        Callable[[PresubmitContext, Path, str, dict[str, str]], None] | None
+    ) = None
 
 
 def _parse_gitmodules(path: Path) -> dict[str, dict[str, str]]:

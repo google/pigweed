@@ -19,7 +19,7 @@ import difflib
 import logging
 from pathlib import Path
 import subprocess
-from typing import Callable, Iterable, Iterator, Optional, Protocol
+from typing import Callable, Iterable, Iterator, Protocol
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class FormattedFileContents:
 
     ok: bool
     formatted_file_contents: bytes
-    error_message: Optional[str]
+    error_message: str | None
 
 
 @dataclass(frozen=True)
@@ -95,7 +95,7 @@ class FormattedDiff:
 
     ok: bool
     diff: str
-    error_message: Optional[str]
+    error_message: str | None
     file_path: Path
 
 
@@ -112,7 +112,7 @@ class FormatFixStatus:
     """
 
     ok: bool
-    error_message: Optional[str]
+    error_message: str | None
 
 
 class ToolRunner(Protocol):
@@ -194,7 +194,7 @@ class FileChecker(abc.ABC):
 
     def get_formatting_diff(
         self, file_path: Path, dry_run: bool = False
-    ) -> Optional[FormattedDiff]:
+    ) -> FormattedDiff | None:
         """Returns a diff comparing a file to its formatted version.
 
         If ``dry_run`` is ``True``, the diff will always be ``None``.

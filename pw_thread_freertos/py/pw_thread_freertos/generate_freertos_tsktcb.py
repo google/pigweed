@@ -20,7 +20,7 @@ the specified output path.
 import argparse
 import re
 import sys
-from typing import Optional, TextIO
+from typing import TextIO
 from pathlib import Path
 
 _GENERATED_HEADER = """\
@@ -74,8 +74,8 @@ def _extract_struct(tasks_src: str):
 
 
 def _main(
-    freertos_src_dir: Optional[Path],
-    freertos_tasks_c: Optional[Path],
+    freertos_src_dir: Path | None,
+    freertos_tasks_c: Path | None,
     output: TextIO,
 ):
     if freertos_tasks_c is None or not freertos_tasks_c.is_file():

@@ -14,7 +14,7 @@
 """Simple watchdog class."""
 
 import threading
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 
 class Watchdog:
@@ -30,7 +30,7 @@ class Watchdog:
         on_expiration: Callable[[], Any],
         while_expired: Callable[[], Any] = lambda: None,
         timeout_s: float = 1,
-        expired_timeout_s: Optional[float] = None,
+        expired_timeout_s: float | None = None,
     ):
         """Creates a watchdog; start() must be called to start it.
 

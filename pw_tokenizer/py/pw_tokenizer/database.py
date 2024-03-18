@@ -34,7 +34,6 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
-    Optional,
     Pattern,
     Set,
     TextIO,
@@ -334,7 +333,7 @@ def _handle_create(
 def _handle_add(
     token_database: tokens.DatabaseFile,
     databases: list[tokens.Database],
-    commit: Optional[str],
+    commit: str | None,
 ) -> None:
     initial = len(token_database)
     if commit:
@@ -359,7 +358,7 @@ def _handle_add(
 def _handle_mark_removed(
     token_database: tokens.DatabaseFile,
     databases: list[tokens.Database],
-    date: Optional[datetime],
+    date: datetime | None,
 ):
     marked_removed = token_database.mark_removed(
         (
@@ -380,9 +379,7 @@ def _handle_mark_removed(
     )
 
 
-def _handle_purge(
-    token_database: tokens.DatabaseFile, before: Optional[datetime]
-):
+def _handle_purge(token_database: tokens.DatabaseFile, before: datetime | None):
     purged = token_database.purge(before)
     token_database.write_to_file(rewrite=True)
 

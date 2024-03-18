@@ -24,7 +24,7 @@ from pathlib import Path
 import re
 import sys
 
-from typing import Any, Iterable, Optional, Type
+from typing import Any, Iterable, Type
 
 from pw_build import generate_modules_lists
 
@@ -66,7 +66,7 @@ class _OutputFile:
 
     def indent(
         self,
-        width: Optional[int] = None,
+        width: int | None = None,
     ) -> '_OutputFile._IndentationContext':
         """Increases the indentation level of the output."""
         return self._IndentationContext(
@@ -132,7 +132,7 @@ class _ModuleName:
         return self.full
 
     @classmethod
-    def parse(cls, name: str) -> Optional['_ModuleName']:
+    def parse(cls, name: str) -> '_ModuleName | None':
         match = re.fullmatch(_ModuleName._MODULE_NAME_REGEX, name)
         if not match:
             return None
@@ -764,7 +764,7 @@ _LANGUAGE_GENERATORS: dict[str, Type[_LanguageGenerator]] = {
 def _check_module_name(
     module: str,
     is_upstream: bool,
-) -> Optional[_ModuleName]:
+) -> _ModuleName | None:
     """Checks whether a module name is valid."""
 
     name = _ModuleName.parse(module)

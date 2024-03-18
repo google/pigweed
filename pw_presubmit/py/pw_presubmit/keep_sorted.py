@@ -24,7 +24,6 @@ import sys
 from typing import (
     Callable,
     Collection,
-    Optional,
     Pattern,
     Sequence,
 )
@@ -66,8 +65,8 @@ class KeepSortedContext:
     def fail(
         self,
         description: str = '',
-        path: Optional[Path] = None,
-        line: Optional[int] = None,
+        path: Path | None = None,
+        line: int | None = None,
     ) -> None:
         if not self.fix:
             self.failed = True
@@ -125,7 +124,7 @@ class _FileSorter:
         self,
         ctx: presubmit.PresubmitContext | KeepSortedContext,
         path: Path,
-        errors: Optional[dict[Path, Sequence[str]]] = None,
+        errors: dict[Path, Sequence[str]] | None = None,
     ):
         self.ctx = ctx
         self.path: Path = path
@@ -141,7 +140,7 @@ class _FileSorter:
 
         prefix = lambda x: len(x) - len(x.lstrip())
 
-        prev_prefix: Optional[int] = None
+        prev_prefix: int | None = None
         comments: list[str] = []
         for raw_line in raw_lines:
             curr_prefix: int = prefix(raw_line)
@@ -227,7 +226,7 @@ class _FileSorter:
         return raw_sorted_lines
 
     def _parse_file(self, ins):
-        block: Optional[_Block] = None
+        block: _Block | None = None
 
         for i, line in enumerate(ins, start=1):
             if block:
@@ -325,7 +324,7 @@ class _FileSorter:
             # File is not text, like a gif.
             _LOG.debug('File %s is not a text file', self.path)
 
-    def write(self, path: Optional[Path] = None) -> None:
+    def write(self, path: Path | None = None) -> None:
         if not self.changed:
             return
         if not path:
@@ -424,7 +423,7 @@ def keep_sorted_in_repo(
     fix: bool,
     exclude: Collection[Pattern[str]],
     base: str,
-    output_directory: Optional[Path],
+    output_directory: Path | None,
 ) -> int:
     """Checks or fixes keep-sorted blocks for files in a Git repo."""
 

@@ -17,7 +17,7 @@ import abc
 import collections
 import copy
 import logging
-from typing import Callable, Deque, Optional
+from typing import Callable, Deque
 import random
 import time
 
@@ -142,7 +142,7 @@ class RandomLossGenerator(LossController):
         delayed_packet_probability: float,
         delayed_packet_range_ms: tuple[int, int],
         dropped_packet_probability: float,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ):
         self.duplicated_packet_probability = duplicated_packet_probability
         self.max_duplications_per_packet = max_duplications_per_packet

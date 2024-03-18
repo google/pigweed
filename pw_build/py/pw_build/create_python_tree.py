@@ -22,7 +22,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from typing import Iterable, Optional
+from typing import Iterable
 
 import setuptools  # type: ignore
 
@@ -125,7 +125,7 @@ class UnknownGitSha(Exception):
     """Exception thrown when the current git SHA cannot be found."""
 
 
-def get_current_git_sha(repo_root: Optional[Path] = None) -> str:
+def get_current_git_sha(repo_root: Path | None = None) -> str:
     if not repo_root:
         repo_root = Path.cwd()
     git_command = [
@@ -162,12 +162,12 @@ class UnexpectedConfigSection(Exception):
 
 
 def load_common_config(
-    common_config: Optional[Path] = None,
-    package_name_override: Optional[str] = None,
-    package_version_override: Optional[str] = None,
+    common_config: Path | None = None,
+    package_name_override: str | None = None,
+    package_version_override: str | None = None,
     append_git_sha: bool = False,
     append_date: bool = False,
-    repo_root: Optional[Path] = None,
+    repo_root: Path | None = None,
 ) -> configparser.ConfigParser:
     """Load an existing ConfigParser file and update metadata.version."""
     config = configparser.ConfigParser()
@@ -302,7 +302,7 @@ def update_config_with_package_data(
 def write_config(
     final_config: configparser.ConfigParser,
     tree_destination_dir: Path,
-    common_config: Optional[Path] = None,
+    common_config: Path | None = None,
 ) -> None:
     """Write a the final setup.cfg file with license comment block."""
     comment_block_text = ''

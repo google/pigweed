@@ -468,7 +468,6 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
    from pathlib import Path
    import re
    import sys
-   from typing import Optional
 
    try:
        import pw_cli.log
@@ -568,7 +567,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
    PRE_PUSH_REMOTE_REF_ALLOWLIST = ("refs/for/main",)
 
 
-   def run(install: bool, remote_ref: Optional[str], **presubmit_args) -> int:
+   def run(install: bool, remote_ref: str | None, **presubmit_args) -> int:
        """Process the --install argument then invoke pw_presubmit."""
 
        # Install the presubmit Git pre-push hook, if requested.

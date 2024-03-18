@@ -24,7 +24,6 @@ from typing import (
     Any,
     Iterable,
     Iterator,
-    Optional,
     Sequence,
     Pattern,
 )
@@ -199,7 +198,7 @@ def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:
 def exclude_paths(
     exclusions: Iterable[Pattern[str]],
     paths: Iterable[Path],
-    relative_to: Optional[Path] = None,
+    relative_to: Path | None = None,
 ) -> Iterable[Path]:
     """Excludes paths based on a series of regular expressions."""
     if relative_to:

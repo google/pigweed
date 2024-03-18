@@ -34,7 +34,6 @@ from typing import (
     Iterable,
     Mapping,
     NamedTuple,
-    Optional,
     Pattern,
 )
 
@@ -292,7 +291,7 @@ class Elf:
 
                 base += section_header_size
 
-    def section_by_address(self, address: int) -> Optional['Elf.Section']:
+    def section_by_address(self, address: int) -> 'Elf.Section | None':
         """Returns the section that contains the provided address, if any."""
         # Iterate in reverse to give priority to sections with nonzero addresses
         for section in sorted(self.sections, reverse=True):
@@ -307,7 +306,7 @@ class Elf:
                 yield section
 
     def read_value(
-        self, address: int, size: Optional[int] = None
+        self, address: int, size: int | None = None
     ) -> None | bytes | int:
         """Reads specified bytes or null-terminated string at address."""
         section = self.section_by_address(address)
@@ -341,9 +340,7 @@ class Elf:
 
         return sections
 
-    def dump_section_contents(
-        self, name: str | Pattern[str]
-    ) -> Optional[bytes]:
+    def dump_section_contents(self, name: str | Pattern[str]) -> bytes | None:
         """Dumps a binary string containing the sections matching the regex.
 
         If processing an archive with multiple object files, the contents of

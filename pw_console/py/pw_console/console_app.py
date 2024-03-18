@@ -27,7 +27,7 @@ import sys
 import tempfile
 import time
 from threading import Thread
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -116,7 +116,7 @@ class FloatingMessageBar(ConditionalContainer):
 def _add_log_handler_to_pane(
     logger: str | logging.Logger,
     pane: 'LogPane',
-    level_name: Optional[str] = None,
+    level_name: str | None = None,
 ) -> None:
     """A log pane handler for a given logger instance."""
     if not pane:
@@ -125,7 +125,7 @@ def _add_log_handler_to_pane(
 
 
 def get_default_colordepth(
-    color_depth: Optional[ColorDepth] = None,
+    color_depth: ColorDepth | None = None,
 ) -> ColorDepth:
     # Set prompt_toolkit color_depth to the highest possible.
     if color_depth is None:
@@ -158,9 +158,9 @@ class ConsoleApp:
         color_depth=None,
         extra_completers=None,
         prefs=None,
-        floating_window_plugins: Optional[
-            list[tuple[FloatingWindowPane, dict]]
-        ] = None,
+        floating_window_plugins: (
+            list[tuple[FloatingWindowPane, dict]] | None
+        ) = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
         self.color_depth = get_default_colordepth(color_depth)
@@ -170,7 +170,7 @@ class ConsoleApp:
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
 
-        self.http_server: Optional[socketserver.TCPServer] = None
+        self.http_server: socketserver.TCPServer | None = None
         self.html_files: dict[str, str] = {}
 
         # Create a default global and local symbol table. Values are the same
@@ -290,7 +290,7 @@ class ConsoleApp:
         )
         self.pw_ptpython_repl.use_code_colorscheme(self.prefs.code_theme)
 
-        self.system_command_output_pane: Optional[LogPane] = None
+        self.system_command_output_pane: LogPane | None = None
 
         if self.prefs.swap_light_and_dark:
             self.toggle_light_theme()
@@ -481,7 +481,7 @@ class ConsoleApp:
         self,
         logger_name: str,
         level_name='NOTSET',
-        window_title: Optional[str] = None,
+        window_title: str | None = None,
     ) -> None:
         pane_title = window_title if window_title else logger_name
         self.run_pane_menu_option(
@@ -1051,7 +1051,7 @@ class ConsoleApp:
             self.prefs.set_ui_theme(theme_name)
 
     def _create_log_pane(
-        self, title: str = '', log_store: Optional[LogStore] = None
+        self, title: str = '', log_store: LogStore | None = None
     ) -> 'LogPane':
         # Create one log pane.
         log_pane = LogPane(
@@ -1086,8 +1086,8 @@ class ConsoleApp:
         window_title: str,
         logger_instances: Iterable[logging.Logger] | LogStore,
         separate_log_panes: bool = False,
-        log_level_name: Optional[str] = None,
-    ) -> Optional[LogPane]:
+        log_level_name: str | None = None,
+    ) -> LogPane | None:
         """Add the Log pane as a handler for this logger instance."""
 
         existing_log_pane = None
@@ -1097,7 +1097,7 @@ class ConsoleApp:
                 existing_log_pane = pane
                 break
 
-        log_store: Optional[LogStore] = None
+        log_store: LogStore | None = None
         if isinstance(logger_instances, LogStore):
             log_store = logger_instances
 

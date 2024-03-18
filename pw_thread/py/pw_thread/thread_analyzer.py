@@ -14,7 +14,7 @@
 """Library to analyze and dump Thread protos and Thread snapshots into text."""
 
 import binascii
-from typing import Optional, Mapping
+from typing import Mapping
 import pw_tokenizer
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_tokenizer import proto as proto_detokenizer
@@ -33,8 +33,8 @@ THREAD_STATE_TO_STRING: Mapping[int, str] = {
 
 def process_snapshot(
     serialized_snapshot: bytes,
-    tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
-    symbolizer: Optional[Symbolizer] = None,
+    tokenizer_db: pw_tokenizer.Detokenizer | None = None,
+    symbolizer: Symbolizer | None = None,
 ) -> str:
     """Processes snapshot threads, producing a multi-line string."""
     captured_threads = thread_pb2.SnapshotThreadInfo()
@@ -198,8 +198,8 @@ class ThreadSnapshotAnalyzer:
     def __init__(
         self,
         threads: thread_pb2.SnapshotThreadInfo,
-        tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
-        symbolizer: Optional[Symbolizer] = None,
+        tokenizer_db: pw_tokenizer.Detokenizer | None = None,
+        symbolizer: Symbolizer | None = None,
     ):
         self._threads = threads.threads
         self._tokenizer_db = (
@@ -215,7 +215,7 @@ class ThreadSnapshotAnalyzer:
         for thread in self._threads:
             proto_detokenizer.detokenize_fields(self._tokenizer_db, thread)
 
-    def active_thread(self) -> Optional[thread_pb2.Thread]:
+    def active_thread(self) -> thread_pb2.Thread | None:
         """The thread that requested the snapshot capture."""
         # First check if an interrupt handler was active.
         for thread in self._threads:

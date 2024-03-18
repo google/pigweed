@@ -17,7 +17,7 @@ import functools
 import importlib.resources
 import inspect
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
@@ -302,7 +302,7 @@ class HelpWindow(ConditionalContainer):
         )
 
     def set_help_text(
-        self, text: str, lexer: Optional[PygmentsLexer] = None
+        self, text: str, lexer: PygmentsLexer | None = None
     ) -> None:
         self.help_text_area = self._create_help_text_area(
             lexer=lexer,

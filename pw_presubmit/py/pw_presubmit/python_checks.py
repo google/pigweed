@@ -24,7 +24,6 @@ import platform
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import Optional
 
 from pw_env_setup import python_packages
 
@@ -368,8 +367,8 @@ def check_python_versions(ctx: PresubmitContext):
     """Checks that the list of installed packages is as expected."""
 
     build.gn_gen(ctx)
-    constraint_file: Optional[str] = None
-    requirement_file: Optional[str] = None
+    constraint_file: str | None = None
+    requirement_file: str | None = None
     try:
         for arg in build.get_gn_args(ctx.output_dir):
             if arg['name'] == 'pw_build_PIP_CONSTRAINTS':

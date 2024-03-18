@@ -15,7 +15,7 @@
 
 import json
 from pathlib import Path
-from typing import cast, Optional
+from typing import cast
 import unittest
 
 # pylint: disable=protected-access
@@ -144,7 +144,7 @@ class TestCppCompileCommand(PwIdeTestCase):
     """Tests CppCompileCommand"""
 
     def run_process_test_with_valid_commands(
-        self, command: str, expected_executable: Optional[str]
+        self, command: str, expected_executable: str | None
     ) -> None:
         compile_command = CppCompileCommand(
             command=command, file='', directory=''

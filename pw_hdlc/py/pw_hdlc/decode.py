@@ -17,7 +17,7 @@ import enum
 import logging
 import threading
 import time
-from typing import Iterable, Optional, Callable, Any
+from typing import Iterable, Callable, Any
 import zlib
 
 from pw_hdlc import protocol
@@ -165,9 +165,9 @@ class FrameDecoder:
         self._decoded_data.clear()
         return frame
 
-    def process_byte(self, byte: int) -> Optional[Frame]:
+    def process_byte(self, byte: int) -> Frame | None:
         """Processes a single byte and returns a frame if one was completed."""
-        frame: Optional[Frame] = None
+        frame: Frame | None = None
 
         self._raw_data.append(byte)
 
@@ -210,8 +210,8 @@ class FrameAndNonFrameDecoder:
         self,
         non_frame_data_handler: Callable[[bytes], Any],
         *,
-        mtu: Optional[int] = None,
-        timeout_s: Optional[float] = None,
+        mtu: int | None = None,
+        timeout_s: float | None = None,
         handle_shared_flags: bool = True,
     ) -> None:
         """Yields valid HDLC frames and passes non-frame data to callback.
@@ -251,7 +251,7 @@ class FrameAndNonFrameDecoder:
         with self._lock:
             self._flush_non_frame()
 
-    def _flush_non_frame(self, to_index: Optional[int] = None):
+    def _flush_non_frame(self, to_index: int | None = None):
         if self._raw_data:
             self._non_frame_data_handler(bytes(self._raw_data[:to_index]))
             del self._raw_data[:to_index]

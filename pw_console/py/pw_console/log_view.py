@@ -25,7 +25,7 @@ import operator
 from pathlib import Path
 import re
 from threading import Thread
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -67,7 +67,7 @@ class LogView:
         self,
         log_pane: 'LogPane',
         application: 'ConsoleApp',
-        log_store: Optional[LogStore] = None,
+        log_store: LogStore | None = None,
     ):
         # Parent LogPane reference. Updated by calling `set_log_pane()`.
         self.log_pane = log_pane
@@ -77,12 +77,12 @@ class LogView:
         self.log_store.set_prefs(application.prefs)
         self.log_store.register_viewer(self)
 
-        self.marked_logs_start: Optional[int] = None
-        self.marked_logs_end: Optional[int] = None
+        self.marked_logs_start: int | None = None
+        self.marked_logs_end: int | None = None
 
         # Search variables
-        self.search_text: Optional[str] = None
-        self.search_filter: Optional[LogFilter] = None
+        self.search_text: str | None = None
+        self.search_filter: LogFilter | None = None
         self.search_highlight: bool = False
         self.search_matcher = DEFAULT_SEARCH_MATCHER
         self.search_validator = RegexValidator()
@@ -90,17 +90,17 @@ class LogView:
         # Container for each log_index matched by active searches.
         self.search_matched_lines: dict[int, int] = {}
         # Background task to find historical matched lines.
-        self.search_match_count_task: Optional[asyncio.Task] = None
+        self.search_match_count_task: asyncio.Task | None = None
 
         # Flag for automatically jumping to each new search match as they
         # appear.
         self.follow_search_match: bool = False
-        self.last_search_matched_log: Optional[int] = None
+        self.last_search_matched_log: int | None = None
 
         # Follow event flag. This is set to by the new_logs_arrived() function
         # as a signal that the log screen should be scrolled to the bottom.
         # This is read by render_content() whenever the screen is drawn.
-        self.follow_event: Optional[FollowEvent] = None
+        self.follow_event: FollowEvent | None = None
 
         self.log_screen = LogScreen(
             get_log_source=self._get_log_lines,
@@ -116,7 +116,7 @@ class LogView:
             collections.OrderedDict()
         )
         self.filtered_logs: collections.deque = collections.deque()
-        self.filter_existing_logs_task: Optional[asyncio.Task] = None
+        self.filter_existing_logs_task: asyncio.Task | None = None
 
         # Current log line index state variables:
         self._last_log_index = -1
@@ -306,7 +306,7 @@ class LogView:
                 return
 
     def set_search_regex(
-        self, text, invert, field, matcher: Optional[SearchMatcher] = None
+        self, text, invert, field, matcher: SearchMatcher | None = None
     ) -> bool:
         search_matcher = matcher if matcher else self.search_matcher
         _LOG.debug(search_matcher)
@@ -336,13 +336,13 @@ class LogView:
         self,
         text,
         invert=False,
-        field: Optional[str] = None,
-        search_matcher: Optional[str] = None,
+        field: str | None = None,
+        search_matcher: str | None = None,
         interactive: bool = True,
     ) -> bool:
         """Start a new search for the given text."""
         valid_matchers = list(s.name for s in SearchMatcher)
-        selected_matcher: Optional[SearchMatcher] = None
+        selected_matcher: SearchMatcher | None = None
         if (
             search_matcher is not None
             and search_matcher.upper() in valid_matchers
@@ -446,7 +446,7 @@ class LogView:
             )
         return logs
 
-    def _get_table_formatter(self) -> Optional[Callable]:
+    def _get_table_formatter(self) -> Callable | None:
         table_formatter = None
         if self.log_pane.table_view:
             table_formatter = self.log_store.table.formatted_row
@@ -602,7 +602,7 @@ class LogView:
                     self.filtered_logs.append(self.log_store.logs[i])
 
         if self.search_filter:
-            last_matched_log: Optional[int] = None
+            last_matched_log: int | None = None
             # Scan newly arived log lines
             for i in range(self._last_log_store_index, latest_total):
                 if self.search_filter.matches(self.log_store.logs[i]):
@@ -943,7 +943,7 @@ class LogView:
         self,
         use_table_formatting: bool = True,
         selected_lines_only: bool = False,
-        file_name: Optional[str] = None,
+        file_name: str | None = None,
         to_clipboard: bool = False,
         add_markdown_fence: bool = False,
     ) -> bool:

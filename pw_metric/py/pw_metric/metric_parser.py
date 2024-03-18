@@ -15,7 +15,7 @@
 from collections import defaultdict
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 from pw_tokenizer import detokenize
 
 _LOG = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ def _insert(metrics, path_names, value):
 
 def parse_metrics(
     rpcs: Any,
-    detokenizer: Optional[detokenize.Detokenizer],
-    timeout_s: Optional[float],
+    detokenizer: detokenize.Detokenizer | None,
+    timeout_s: float | None,
 ):
     """Detokenizes metric names and retrieves their values."""
     # Creates a defaultdict that can infinitely have other defaultdicts

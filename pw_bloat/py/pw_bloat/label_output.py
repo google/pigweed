@@ -17,7 +17,6 @@ import enum
 from typing import (
     Iterable,
     Type,
-    Optional,
     NamedTuple,
     cast,
 )
@@ -97,7 +96,7 @@ class BloatTableOutput:
         col_max_width: int = _DEFAULT_MAX_WIDTH,
         charset: Type[AsciiCharset] | Type[LineCharset] = AsciiCharset,
         rst_output: bool = False,
-        diff_label: Optional[str] = None,
+        diff_label: str | None = None,
     ):
         self._data_source_map = ds_map
         self._cs = charset
@@ -162,7 +161,7 @@ class BloatTableOutput:
 
     def _diff_label_names(
         self,
-        old_labels: Optional[tuple[_LabelContent, ...]],
+        old_labels: tuple[_LabelContent, ...] | None,
         new_labels: tuple[_LabelContent, ...],
     ) -> tuple[_LabelContent, ...]:
         """Return difference between arrays of labels."""
@@ -400,7 +399,7 @@ class BloatTableOutput:
         content: str,
         last_cell: bool,
         col_index: int,
-        align: Optional[_Align] = _Align.RIGHT,
+        align: _Align | None = _Align.RIGHT,
     ) -> str:
         v_border = self._cs.V.value
         if self._rst_output and content:
@@ -523,9 +522,7 @@ class BloatTableOutput:
 class RstOutput:
     """Tabular output in ASCII format, which is also valid RST."""
 
-    def __init__(
-        self, ds_map: DataSourceMap, table_label: Optional[str] = None
-    ):
+    def __init__(self, ds_map: DataSourceMap, table_label: str | None = None):
         self._data_source_map = ds_map
         self._table_label = table_label
         self._diff_mode = False

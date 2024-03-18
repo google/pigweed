@@ -14,7 +14,7 @@
 """Functions to create checkboxes for menus and toolbars."""
 
 import sys
-from typing import Callable, Iterable, Optional, NamedTuple
+from typing import Callable, Iterable, NamedTuple
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -27,16 +27,16 @@ if sys.platform in ['win32']:
 
 
 class ToolbarButton(NamedTuple):
-    key: Optional[str] = None
-    description: Optional[str] = 'Button'
-    mouse_handler: Optional[Callable] = None
+    key: str | None = None
+    description: str | None = 'Button'
+    mouse_handler: Callable | None = None
     is_checkbox: bool = False
-    checked: Optional[Callable] = None
+    checked: Callable | None = None
 
 
 def to_checkbox(
     checked: bool,
-    mouse_handler: Optional[Callable] = None,
+    mouse_handler: Callable | None = None,
     end: str = ' ',
     unchecked_style: str = 'class:checkbox',
     checked_style: str = 'class:checkbox-checked',
@@ -97,9 +97,9 @@ def to_checkbox_with_keybind_indicator(
 def to_keybind_indicator(
     key: str,
     description: str,
-    mouse_handler: Optional[Callable] = None,
-    leading_fragments: Optional[Iterable] = None,
-    middle_fragments: Optional[Iterable] = None,
+    mouse_handler: Callable | None = None,
+    leading_fragments: Iterable | None = None,
+    middle_fragments: Iterable | None = None,
     base_style: str = '',
     key_style: str = 'class:keybind',
     description_style: str = 'class:keyhelp',

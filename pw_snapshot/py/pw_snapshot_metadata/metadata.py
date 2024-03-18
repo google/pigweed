@@ -13,7 +13,7 @@
 # the License.
 """Library to assist processing Snapshot Metadata protos into text"""
 
-from typing import Optional, Mapping
+from typing import Mapping
 import pw_log_tokenized
 import pw_tokenizer
 from pw_tokenizer import proto as proto_detokenizer
@@ -30,7 +30,7 @@ _FATAL = (
 )
 
 
-def _process_tags(tags: Mapping[str, str]) -> Optional[str]:
+def _process_tags(tags: Mapping[str, str]) -> str | None:
     """Outputs snapshot tags as a multi-line string."""
     if not tags:
         return None
@@ -43,7 +43,7 @@ def _process_tags(tags: Mapping[str, str]) -> Optional[str]:
 
 
 def process_snapshot(
-    serialized_snapshot: bytes, tokenizer_db: Optional[pw_tokenizer.Detokenizer]
+    serialized_snapshot: bytes, tokenizer_db: pw_tokenizer.Detokenizer | None
 ) -> str:
     """Processes snapshot metadata and tags, producing a multi-line string."""
     snapshot = snapshot_metadata_pb2.SnapshotBasicInfo()
@@ -75,7 +75,7 @@ class MetadataProcessor:
     def __init__(
         self,
         metadata: snapshot_metadata_pb2.Metadata,
-        tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
+        tokenizer_db: pw_tokenizer.Detokenizer | None = None,
     ):
         self._metadata = metadata
         self._tokenizer_db = (
@@ -102,7 +102,7 @@ class MetadataProcessor:
 
         return f'{log.file}: {log.message}' if log.file else log.message
 
-    def reason_token(self) -> Optional[int]:
+    def reason_token(self) -> int | None:
         """If the snapshot `reason` is tokenized, the value of the token."""
         return self._reason_token
 

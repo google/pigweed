@@ -51,7 +51,6 @@ from typing import (
     Callable,
     Generator,
     NoReturn,
-    Optional,
     Sequence,
     NamedTuple,
 )
@@ -193,7 +192,7 @@ def execute_command_no_logging(
     recipe: BuildRecipe,
     # pylint: disable=unused-argument
     logger: logging.Logger = _LOG,
-    line_processed_callback: Optional[Callable[[BuildRecipe], None]] = None,
+    line_processed_callback: Callable[[BuildRecipe], None] | None = None,
     # pylint: enable=unused-argument
 ) -> bool:
     print()
@@ -220,7 +219,7 @@ def execute_command_with_logging(
     env: dict,
     recipe: BuildRecipe,
     logger: logging.Logger = _LOG,
-    line_processed_callback: Optional[Callable[[BuildRecipe], None]] = None,
+    line_processed_callback: Callable[[BuildRecipe], None] | None = None,
 ) -> bool:
     """Run a command in a subprocess and log all output."""
     current_stdout = ''
@@ -516,19 +515,19 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         # pylint: disable=too-many-arguments,too-many-locals
         self,
         build_recipes: Sequence[BuildRecipe],
-        jobs: Optional[int] = None,
+        jobs: int | None = None,
         banners: bool = True,
         keep_going: bool = False,
         abort_callback: Callable = _exit,
         execute_command: Callable[
-            [list, dict, BuildRecipe, logging.Logger, Optional[Callable]], bool
+            [list, dict, BuildRecipe, logging.Logger, Callable | None], bool
         ] = execute_command_no_logging,
         charset: ProjectBuilderCharset = ASCII_CHARSET,
         colors: bool = True,
         separate_build_file_logging: bool = False,
         send_recipe_logs_to_root: bool = False,
         root_logger: logging.Logger = _LOG,
-        root_logfile: Optional[Path] = None,
+        root_logfile: Path | None = None,
         log_level: int = logging.INFO,
         allow_progress_bars: bool = True,
         use_verbatim_error_log_formatting: bool = False,
@@ -575,7 +574,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         # Progress bar enable/disable flag
         self.allow_progress_bars = allow_progress_bars
         self.log_build_steps = log_build_steps
-        self.stdout_proxy: Optional[StdoutProxy] = None
+        self.stdout_proxy: StdoutProxy | None = None
 
         # Logger configuration
         self.root_logger = root_logger
@@ -748,7 +747,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         self,
         cfg: BuildRecipe,
         env: dict,
-        index_message: Optional[str] = '',
+        index_message: str | None = '',
     ) -> bool:
         """Run a single build config."""
         if BUILDER_CONTEXT.build_stopping():

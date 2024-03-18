@@ -16,7 +16,6 @@
 
 from pathlib import Path
 import tempfile
-from typing import Optional
 import unittest
 from unittest.mock import MagicMock
 
@@ -25,9 +24,9 @@ from pw_presubmit import gitmodules, PresubmitFailure
 
 def dotgitmodules(
     name: str = 'foo',
-    url: Optional[str] = None,
-    host: Optional[str] = None,
-    branch: Optional[str] = 'main',
+    url: str | None = None,
+    host: str | None = None,
+    branch: str | None = 'main',
 ):
     cfg = f'[submodule "{name}"]\n'
     cfg += f'path = {name}\n'

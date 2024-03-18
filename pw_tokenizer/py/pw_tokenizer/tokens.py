@@ -30,7 +30,6 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
-    Optional,
     Pattern,
     TextIO,
     ValuesView,
@@ -57,7 +56,7 @@ def _value(char: int | str) -> int:
 
 
 def pw_tokenizer_65599_hash(
-    string: str | bytes, *, hash_length: Optional[int] = None
+    string: str | bytes, *, hash_length: int | None = None
 ) -> int:
     """Hashes the string with the hash function used to generate tokens in C++.
 
@@ -96,13 +95,13 @@ class TokenizedStringEntry:
     token: int
     string: str
     domain: str = DEFAULT_DOMAIN
-    date_removed: Optional[datetime] = None
+    date_removed: datetime | None = None
 
     def key(self) -> _EntryKey:
         """The key determines uniqueness for a tokenized string."""
         return _EntryKey(self.token, self.string)
 
-    def update_date_removed(self, new_date_removed: Optional[datetime]) -> None:
+    def update_date_removed(self, new_date_removed: datetime | None) -> None:
         """Sets self.date_removed if the other date is newer."""
         # No removal date (None) is treated as the newest date.
         if self.date_removed is None:
@@ -138,7 +137,7 @@ class Database:
         self._database: dict[_EntryKey, TokenizedStringEntry] = {}
 
         # This is a cache for fast token lookup that is built as needed.
-        self._cache: Optional[dict[int, list[TokenizedStringEntry]]] = None
+        self._cache: dict[int, list[TokenizedStringEntry]] | None = None
 
         self.add(entries)
 
@@ -187,7 +186,7 @@ class Database:
     def mark_removed(
         self,
         all_entries: Iterable[TokenizedStringEntry],
-        removal_date: Optional[datetime] = None,
+        removal_date: datetime | None = None,
     ) -> list[TokenizedStringEntry]:
         """Marks entries missing from all_entries as having been removed.
 
@@ -251,7 +250,7 @@ class Database:
                 )
 
     def purge(
-        self, date_removed_cutoff: Optional[datetime] = None
+        self, date_removed_cutoff: datetime | None = None
     ) -> list[TokenizedStringEntry]:
         """Removes and returns entries removed on/before date_removed_cutoff."""
         self._cache = None
@@ -460,7 +459,7 @@ def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
         )
 
         try:
-            date_removed: Optional[datetime] = datetime(year, month, day)
+            date_removed: datetime | None = datetime(year, month, day)
         except ValueError:
             date_removed = None
 

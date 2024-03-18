@@ -22,7 +22,6 @@ from typing import (
     IO,
     Literal,
     Mapping,
-    Optional,
     TypeVar,
 )
 
@@ -41,7 +40,7 @@ TypeConversion = Callable[[str], T]
 class VariableDescriptor(Generic[T]):
     name: str
     type: TypeConversion[T]
-    default: Optional[T]
+    default: T | None
 
 
 class EnvironmentValueError(Exception):
@@ -85,10 +84,10 @@ class EnvironmentParser:
 
     def __init__(
         self,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         error_on_unrecognized: bool | None = None,
     ) -> None:
-        self._prefix: Optional[str] = prefix
+        self._prefix: str | None = prefix
         if error_on_unrecognized is None:
             varname = 'PW_ENVIRONMENT_NO_ERROR_ON_UNRECOGNIZED'
             error_on_unrecognized = varname not in os.environ
@@ -103,7 +102,7 @@ class EnvironmentParser:
         # pylint: disable=redefined-builtin
         type: TypeConversion[T] = str,  # type: ignore[assignment]
         # pylint: enable=redefined-builtin
-        default: Optional[T] = None,
+        default: T | None = None,
     ) -> None:
         """Registers an environment variable.
 
@@ -128,9 +127,7 @@ class EnvironmentParser:
 
         self._allowed_suffixes.append(suffix)
 
-    def parse_env(
-        self, env: Optional[Mapping[str, str]] = None
-    ) -> EnvNamespace:
+    def parse_env(self, env: Mapping[str, str] | None = None) -> EnvNamespace:
         """Parses known environment variables into a namespace.
 
         Args:

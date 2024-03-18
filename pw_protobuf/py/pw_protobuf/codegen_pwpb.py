@@ -21,7 +21,7 @@ from graphlib import CycleError, TopologicalSorter  # type: ignore
 from itertools import takewhile
 import os
 import sys
-from typing import Iterable, Optional, Type
+from typing import Iterable, Type
 from typing import cast
 
 from google.protobuf import descriptor_pb2
@@ -533,7 +533,7 @@ class MessageProperty(ProtoMember):
     def _size_fn(self) -> str:
         """Returns the name of the field size function."""
 
-    def _size_length(self) -> Optional[str]:  # pylint: disable=no-self-use
+    def _size_length(self) -> str | None:  # pylint: disable=no-self-use
         """Returns the length to add to the maximum encoded size."""
         return None
 
@@ -543,7 +543,7 @@ class MessageProperty(ProtoMember):
             PROTOBUF_NAMESPACE, self._size_fn(), self.field_cast()
         )
 
-        size_length: Optional[str] = self._size_length()
+        size_length: str | None = self._size_length()
         if size_length is None:
             return size_call
 
@@ -670,7 +670,7 @@ class SubMessageProperty(MessageProperty):
         # account for scratch overhead when used with MemoryEncoder.
         return 'SizeOfDelimitedFieldWithoutValue'
 
-    def _size_length(self) -> Optional[str]:
+    def _size_length(self) -> str | None:
         if self.use_callback():
             return None
 
@@ -2012,7 +2012,7 @@ class BytesProperty(MessageProperty):
         # overhead when used with MemoryEncoder.
         return 'SizeOfDelimitedFieldWithoutValue'
 
-    def _size_length(self) -> Optional[str]:
+    def _size_length(self) -> str | None:
         if self.use_callback():
             return None
         return self.max_size_constant_name()
@@ -2145,7 +2145,7 @@ class StringProperty(MessageProperty):
         # overhead when used with MemoryEncoder.
         return 'SizeOfDelimitedFieldWithoutValue'
 
-    def _size_length(self) -> Optional[str]:
+    def _size_length(self) -> str | None:
         if self.use_callback():
             return None
         return self.max_size_constant_name()

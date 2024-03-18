@@ -16,7 +16,6 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 
@@ -39,7 +38,7 @@ class LogLine:
         """Return a datetime object for the log record."""
         return datetime.fromtimestamp(self.record.created)
 
-    def update_metadata(self, extra_fields: Optional[dict] = None):
+    def update_metadata(self, extra_fields: dict | None = None):
         """Parse log metadata fields from various sources."""
 
         # 1. Parse any metadata from the message itself.

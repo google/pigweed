@@ -25,7 +25,6 @@ import subprocess
 import sys
 
 from pathlib import Path
-from typing import Optional
 
 SCRIPT_HEADER: str = '''
 ██████╗ ██╗ ██████╗ ██╗    ██╗███████╗███████╗██████╗     ██████╗  ██████╗  ██████╗███████╗
@@ -88,7 +87,7 @@ def build_docs(
     src_dir: str,
     dst_dir: str,
     parallel: int,
-    google_analytics_id: Optional[str] = None,
+    google_analytics_id: str | None = None,
 ) -> int:
     """Runs Sphinx to render HTML documentation from a doc tree."""
 

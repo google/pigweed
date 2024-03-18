@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pw_emu.core import (
     AlreadyRunning,
@@ -37,11 +37,11 @@ from pw_emu.core import (
 class Emulator:
     """Launches, controls and interacts with an emulator instance."""
 
-    def __init__(self, wdir: Path, config_path: Optional[Path] = None) -> None:
+    def __init__(self, wdir: Path, config_path: Path | None = None) -> None:
         self._wdir = wdir
         self._config_path = config_path
-        self._connector: Optional[Connector] = None
-        self._launcher: Optional[Launcher] = None
+        self._connector: Connector | None = None
+        self._launcher: Launcher | None = None
 
     def _get_launcher(self, target: str) -> Launcher:
         """Returns an emulator for a given target.
@@ -68,11 +68,11 @@ class Emulator:
     def start(
         self,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
         foreground: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> None:
         """Starts the emulator for the given ``target``.
 
@@ -156,7 +156,7 @@ class Emulator:
     def run_gdb_cmds(
         self,
         commands: list[str],
-        executable: Optional[str] = None,
+        executable: str | None = None,
         pause: bool = False,
     ) -> subprocess.CompletedProcess:
         """Connects to the target and runs the given commands silently
@@ -240,7 +240,7 @@ class Emulator:
     def get_channel_stream(
         self,
         name: str,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> io.RawIOBase:
         """Returns a file object for a given host-exposed device.
 
@@ -306,7 +306,7 @@ class TemporaryEmulator(Emulator):
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
+        config_path: Path | None = None,
         cleanup: bool = True,
     ) -> None:
         self._temp = tempfile.TemporaryDirectory()

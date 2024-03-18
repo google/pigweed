@@ -25,7 +25,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, IO, Optional
+from typing import Any, IO
 
 if sys.platform != 'win32':
     import pty
@@ -170,7 +170,7 @@ class NinjaAction:
     name: str
     jobs: int = 0
     start_time: float = dataclasses.field(default_factory=time.time)
-    end_time: Optional[float] = None
+    end_time: float | None = None
 
 
 class NinjaEventKind(enum.Enum):
@@ -196,8 +196,8 @@ class NinjaEvent:
     """
 
     kind: NinjaEventKind
-    action: Optional[NinjaAction] = None
-    log_message: Optional[str] = None
+    action: NinjaAction | None = None
+    log_message: str | None = None
     num_started: int = 0
     num_finished: int = 0
     num_total: int = 0
@@ -227,7 +227,7 @@ class Ninja:
     num_total: int
     actions: list[NinjaAction]
     running_actions: dict[str, NinjaAction]
-    last_action_completed: Optional[NinjaAction]
+    last_action_completed: NinjaAction | None
     events: list[NinjaEvent]
     exited: bool
     lock: threading.Lock
@@ -432,7 +432,7 @@ class UI:
         self._ninja = ninja
         self._args = args
         self._renderer = ConsoleRenderer()
-        self._last_log_action: Optional[NinjaAction] = None
+        self._last_log_action: NinjaAction | None = None
 
     def _get_status_display(self) -> list[str]:
         """Generates the status display. Must be called under the Ninja lock."""

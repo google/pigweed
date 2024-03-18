@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from io import TextIOWrapper
 from pathlib import Path
 import tempfile
-from typing import Generator, Optional
+from typing import Generator
 import unittest
 
 from pw_ide.settings import PigweedIdeSettings
@@ -149,8 +149,8 @@ class PwIdeTestCase(TempDirTestCase):
 
     def make_ide_settings(
         self,
-        working_dir: Optional[str | Path] = None,
-        targets: Optional[list[str]] = None,
+        working_dir: str | Path | None = None,
+        targets: list[str] | None = None,
         cascade_targets: bool = False,
     ) -> PigweedIdeSettings:
         """Make settings that wrap provided paths in the temp path."""

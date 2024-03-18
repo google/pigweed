@@ -21,7 +21,7 @@ import tempfile
 import unittest
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pw_emu.frontend import Emulator
 
@@ -43,7 +43,7 @@ def check_prog(prog: str) -> tuple:
 class ConfigHelper(unittest.TestCase):
     """Helper that setups and tears down the configuration file"""
 
-    _config: Optional[dict[str, Any]] = None
+    _config: dict[str, Any] | None = None
 
     def setUp(self) -> None:
         self._wdir = tempfile.TemporaryDirectory()

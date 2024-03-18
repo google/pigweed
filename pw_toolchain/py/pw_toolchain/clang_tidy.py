@@ -29,7 +29,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Iterable, Optional
+from typing import Iterable
 
 import pw_cli.env
 
@@ -141,7 +141,7 @@ def run_clang_tidy(
     clang_tidy: str,
     verbose: bool,
     source_file: Path,
-    export_fixes: Optional[Path],
+    export_fixes: Path | None,
     skip_include_path: list[str],
     extra_args: list[str],
 ) -> int:
@@ -191,7 +191,7 @@ def main(
     clang_tidy: str,
     source_file: Path,
     source_root: Path,
-    export_fixes: Optional[Path],
+    export_fixes: Path | None,
     source_exclude: list[str],
     skip_include_path: list[str],
     extra_args: list[str],

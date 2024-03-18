@@ -26,7 +26,6 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
-    Optional,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -66,7 +65,7 @@ class Label:
     name: str
     dir: Path
     relative_dir: Path
-    toolchain: Optional['Label']
+    toolchain: 'Label | None'
     out_dir: Path
     gen_dir: Path
 
@@ -162,7 +161,7 @@ def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
             return None
 
     # Serves as the parse state (only two states)
-    artifact: Optional[_Artifact] = None
+    artifact: _Artifact | None = None
 
     line = next_line()
 
@@ -188,10 +187,10 @@ def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
 
 def _search_target_ninja(
     ninja_file: Path, target: Label
-) -> tuple[Optional[Path], list[Path]]:
+) -> tuple[Path | None, list[Path]]:
     """Parses the main output file and object files from <target>.ninja."""
 
-    artifact: Optional[Path] = None
+    artifact: Path | None = None
     objects: list[Path] = []
 
     _LOG.debug('Parsing target Ninja file %s for %s', ninja_file, target)
@@ -213,7 +212,7 @@ def _search_target_ninja(
 
 def _search_toolchain_ninja(
     ninja_file: Path, paths: GnPaths, target: Label
-) -> Optional[Path]:
+) -> Path | None:
     """Searches the toolchain.ninja file for outputs from the provided target.
 
     Files created by an action appear in toolchain.ninja instead of in their own
@@ -251,7 +250,7 @@ def _search_toolchain_ninja(
 
 def _search_ninja_files(
     paths: GnPaths, target: Label
-) -> tuple[bool, Optional[Path], list[Path]]:
+) -> tuple[bool, Path | None, list[Path]]:
     ninja_file = target.out_dir / f'{target.name}.ninja'
     if ninja_file.exists():
         return (True, *_search_target_ninja(ninja_file, target))
@@ -269,7 +268,7 @@ class TargetInfo:
 
     label: Label
     generated: bool  # True if the Ninja files for this target were generated.
-    artifact: Optional[Path]
+    artifact: Path | None
     object_files: tuple[Path]
 
     def __init__(self, paths: GnPaths, target: str):

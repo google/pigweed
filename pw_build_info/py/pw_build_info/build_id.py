@@ -17,7 +17,7 @@ import argparse
 import logging
 from pathlib import Path
 import sys
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 import elftools  # type: ignore
 from elftools.elf import elffile, notes, sections  # type: ignore
 
@@ -29,7 +29,7 @@ class GnuBuildIdError(Exception):
     """An exception raised when a GNU build ID is malformed."""
 
 
-def read_build_id_from_section(elf_file: BinaryIO) -> Optional[bytes]:
+def read_build_id_from_section(elf_file: BinaryIO) -> bytes | None:
     """Reads a build ID from a .note.gnu.build-id section."""
     parsed_elf_file = elffile.ELFFile(elf_file)
     build_id_section = parsed_elf_file.get_section_by_name('.note.gnu.build-id')
@@ -82,7 +82,7 @@ def _read_build_id_from_offset(elf, offset: int) -> bytes:
     return elf.stream.read(note['n_descsz'])
 
 
-def read_build_id_from_symbol(elf_file: BinaryIO) -> Optional[bytes]:
+def read_build_id_from_symbol(elf_file: BinaryIO) -> bytes | None:
     """Reads a GNU build ID using gnu_build_id_begin to locate the data."""
     parsed_elf_file = elffile.ELFFile(elf_file)
 
@@ -118,7 +118,7 @@ def read_build_id_from_symbol(elf_file: BinaryIO) -> Optional[bytes]:
     return None
 
 
-def read_build_id(elf_file: BinaryIO) -> Optional[bytes]:
+def read_build_id(elf_file: BinaryIO) -> bytes | None:
     """Reads a GNU build ID from an ELF binary."""
     # Prefer to read the build ID from a dedicated section.
     maybe_build_id = read_build_id_from_section(elf_file)
@@ -130,7 +130,7 @@ def read_build_id(elf_file: BinaryIO) -> Optional[bytes]:
     return read_build_id_from_symbol(elf_file)
 
 
-def find_matching_elf(uuid: bytes, search_dir: Path) -> Optional[Path]:
+def find_matching_elf(uuid: bytes, search_dir: Path) -> Path | None:
     """Recursively searches a directory for an ELF file with a matching UUID."""
     elf_file_paths = search_dir.glob('**/*.elf')
     for elf_file in elf_file_paths:

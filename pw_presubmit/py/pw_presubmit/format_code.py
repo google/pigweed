@@ -36,7 +36,6 @@ from typing import (
     Collection,
     Iterable,
     NamedTuple,
-    Optional,
     Pattern,
     Sequence,
     TextIO,
@@ -104,7 +103,7 @@ FormatterT = Callable[[str, bytes], bytes]
 
 def _diff_formatted(
     path, formatter: FormatterT, dry_run: bool = False
-) -> Optional[str]:
+) -> str | None:
     """Returns a diff comparing a file to its formatted version."""
     with open(path, 'rb') as fd:
         original = fd.read()
@@ -557,7 +556,7 @@ def print_format_check(
     errors: dict[Path, str],
     show_fix_commands: bool,
     show_summary: bool = True,
-    colors: Optional[bool] = None,
+    colors: bool | None = None,
     file: TextIO = sys.stdout,
 ) -> None:
     """Prints and returns the result of a check_*_format function."""
@@ -822,11 +821,11 @@ class CodeFormatter:
 
     def __init__(
         self,
-        root: Optional[Path],
+        root: Path | None,
         files: Iterable[Path],
         output_dir: Path,
         code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
-        package_root: Optional[Path] = None,
+        package_root: Path | None = None,
     ):
         self.root = root
         self._formats: dict[CodeFormat, list] = collections.defaultdict(list)
@@ -907,8 +906,8 @@ def format_paths_in_repo(
     fix: bool,
     base: str,
     code_formats: Collection[CodeFormat] = CODE_FORMATS,
-    output_directory: Optional[Path] = None,
-    package_root: Optional[Path] = None,
+    output_directory: Path | None = None,
+    package_root: Path | None = None,
 ) -> int:
     """Checks or fixes formatting for files in a Git repo."""
 
@@ -959,14 +958,14 @@ def format_paths_in_repo(
 def format_files(
     paths: Collection[Path | str],
     fix: bool,
-    repo: Optional[Path] = None,
+    repo: Path | None = None,
     code_formats: Collection[CodeFormat] = CODE_FORMATS,
-    output_directory: Optional[Path] = None,
-    package_root: Optional[Path] = None,
+    output_directory: Path | None = None,
+    package_root: Path | None = None,
 ) -> int:
     """Checks or fixes formatting for the specified files."""
 
-    root: Optional[Path] = None
+    root: Path | None = None
 
     if git_repo.is_repo():
         root = git_repo.root()

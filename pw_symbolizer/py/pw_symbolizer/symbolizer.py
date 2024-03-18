@@ -14,7 +14,7 @@
 """Utilities for address symbolization."""
 
 import abc
-from typing import Iterable, Optional
+from typing import Iterable
 from dataclasses import dataclass
 
 
@@ -90,7 +90,7 @@ class Symbolizer(abc.ABC):
 class FakeSymbolizer(Symbolizer):
     """A fake symbolizer that only knows a fixed set of symbols."""
 
-    def __init__(self, known_symbols: Optional[Iterable[Symbol]] = None):
+    def __init__(self, known_symbols: Iterable[Symbol] | None = None):
         if known_symbols is not None:
             self._db = {sym.address: sym for sym in known_symbols}
         else:

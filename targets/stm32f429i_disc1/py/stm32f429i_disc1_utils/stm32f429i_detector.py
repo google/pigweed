@@ -16,7 +16,6 @@
 
 import logging
 import typing
-from typing import Optional
 
 import coloredlogs  # type: ignore
 import serial.tools.list_ports
@@ -32,7 +31,7 @@ class BoardInfo(typing.NamedTuple):
     """Information about a connected dev board."""
 
     dev_name: str
-    serial_number: Optional[str]
+    serial_number: str | None
 
 
 def detect_boards() -> list:

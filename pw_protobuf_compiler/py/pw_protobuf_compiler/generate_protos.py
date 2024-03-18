@@ -20,7 +20,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Optional
+from typing import Callable
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -246,7 +246,7 @@ def main() -> int:
     if args.proto_path:
         include_paths.extend(str(path) for path in args.proto_path)
 
-    wrapper_script: Optional[Path] = None
+    wrapper_script: Path | None = None
 
     # On Windows, use a .bat version of the plugin if it exists or create a .bat
     # wrapper to use if none exists.

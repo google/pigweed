@@ -89,7 +89,6 @@ import importlib
 import json
 from pathlib import Path
 import time
-from typing import Optional
 
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import hashes, serialization
@@ -183,7 +182,7 @@ class RemoteSignClient:
         project_name: str,
         input_bucket_name: str,
         output_bucket_name: str,
-        gcs_credentials: Optional[Credentials] = None,
+        gcs_credentials: Credentials | None = None,
     ):
         storage_client = storage.Client(
             project=project_name, credentials=gcs_credentials
@@ -199,10 +198,10 @@ class RemoteSignClient:
         signing_key_name: str,
         builder_key: Path,
         builder_public_key: Path,
-        bundle_blob_name: Optional[str] = None,
-        request_blob_name: Optional[str] = None,
-        signed_bundle_blob_name: Optional[str] = None,
-        request_overrides: Optional[dict] = None,
+        bundle_blob_name: str | None = None,
+        request_blob_name: str | None = None,
+        signed_bundle_blob_name: str | None = None,
+        request_overrides: dict | None = None,
         timeout_s: int = DEFAULT_TIMEOUT_S,
     ) -> bytes:
         """Upload file to GCS and download signed counterpart when ready.
@@ -289,7 +288,7 @@ class RemoteSignClient:
         self,
         blob_name,
         interval: int = 1,
-        max_tries: Optional[int] = None,
+        max_tries: int | None = None,
         timeout_s: int = DEFAULT_TIMEOUT_S,
     ) -> storage.Blob:
         """Wait for a specific blob to appear in the output bucket.

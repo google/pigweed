@@ -26,7 +26,7 @@ import time
 from abc import ABC, abstractmethod
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Any, Type
+from typing import Any, Type
 
 import psutil  # type: ignore
 
@@ -73,7 +73,7 @@ class Error(Exception):
 class ConfigError(Error):
     """Exception raised for configuration errors."""
 
-    def __init__(self, config: Optional[Path], err: str) -> None:
+    def __init__(self, config: Path | None, err: str) -> None:
         msg = f'{config}: {err}\n'
         try:
             if config:
@@ -108,7 +108,7 @@ class InvalidEmulator(Error):
 class InvalidTarget(Error):
     """Exception raised if the target is invalid."""
 
-    def __init__(self, config: Path, emu: Optional[str], target: str) -> None:
+    def __init__(self, config: Path, emu: str | None, target: str) -> None:
         emu_str = f'for `{emu}`' if emu else ''
         super().__init__(f'{config}: invalid target `{target}` {emu_str}')
 
@@ -289,9 +289,9 @@ class Config:
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
-        target: Optional[str] = None,
-        emu: Optional[str] = None,
+        config_path: Path | None = None,
+        target: str | None = None,
+        emu: str | None = None,
     ) -> None:
         """Loads the emulator configuration.
 
@@ -384,7 +384,7 @@ class Config:
         self,
         keys: list[str],
         optional: bool = True,
-        entry_type: Optional[Type] = None,
+        entry_type: Type | None = None,
     ) -> Any:
         """Gets a config entry.
 
@@ -405,7 +405,7 @@ class Config:
         """
 
         keys_str = ': '.join(keys)
-        entry: Optional[dict[str, Any]] = self._config
+        entry: dict[str, Any] | None = self._config
 
         for key in keys:
             if not isinstance(entry, dict):
@@ -438,7 +438,7 @@ class Config:
         self,
         keys: list[str],
         optional: bool = True,
-        entry_type: Optional[Type] = None,
+        entry_type: Type | None = None,
     ) -> Any:
         """Gets a config option starting at ``['targets'][target]``."""
 
@@ -450,7 +450,7 @@ class Config:
         self,
         keys: list[str],
         optional: bool = True,
-        entry_type: Optional[Type] = None,
+        entry_type: Type | None = None,
     ) -> Any:
         """Gets a config option starting at ``[emu]``."""
 
@@ -462,7 +462,7 @@ class Config:
         self,
         keys: list[str],
         optional: bool = True,
-        entry_type: Optional[Type] = None,
+        entry_type: Type | None = None,
     ) -> Any:
         """Gets a config option starting at ``['targets'][target][emu]``."""
 
@@ -552,7 +552,7 @@ class Connector(ABC):
     def get_channel_stream(
         self,
         name: str,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> io.RawIOBase:
         """Returns a file object for a given host-exposed device.
 
@@ -641,17 +641,17 @@ class Launcher(ABC):
     def __init__(
         self,
         emu: str,
-        config_path: Optional[Path] = None,
+        config_path: Path | None = None,
     ) -> None:
         """Initializes a ``Launcher`` instance."""
 
-        self._wdir: Optional[Path] = None
+        self._wdir: Path | None = None
         """Working directory"""
 
         self._emu = emu
         """Emulator type (e.g. "qemu", "renode")."""
 
-        self._target: Optional[str] = None
+        self._target: str | None = None
         """Target, initialized to None and set with _prep_start."""
 
         self._config = Config(config_path, emu=emu)
@@ -665,7 +665,7 @@ class Launcher(ABC):
             self._handles.set_gdb_cmd(gdb_cmd)
 
     @staticmethod
-    def get(emu: str, config_path: Optional[Path] = None) -> Any:
+    def get(emu: str, config_path: Path | None = None) -> Any:
         """Returns a launcher for a given emulator type."""
         config = Config(config_path)
         try:
@@ -679,10 +679,10 @@ class Launcher(ABC):
     def _pre_start(
         self,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> list[str]:
         """Pre-start work, returns command to start the emulator.
 
@@ -900,11 +900,11 @@ class Launcher(ABC):
         self,
         wdir: Path,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
         foreground: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> Connector:
         """Starts the emulator for the given target.
 

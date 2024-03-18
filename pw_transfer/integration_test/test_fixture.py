@@ -22,7 +22,7 @@ import pathlib
 from pathlib import Path
 import sys
 import tempfile
-from typing import BinaryIO, Iterable, NamedTuple, Optional
+from typing import BinaryIO, Iterable, NamedTuple
 import unittest
 
 from google.protobuf import text_format
@@ -156,7 +156,7 @@ class MonitoredSubprocess:
         """Terminate the process."""
         self._process.terminate()
 
-    async def wait_for_termination(self, timeout: Optional[float]):
+    async def wait_for_termination(self, timeout: float | None):
         """Wait for the process to terminate."""
         await asyncio.wait_for(
             asyncio.gather(
@@ -196,11 +196,11 @@ class TransferIntegrationTestHarness:
     class Config:
         server_port: int = 3300
         client_port: int = 3301
-        java_client_binary: Optional[Path] = None
-        cpp_client_binary: Optional[Path] = None
-        python_client_binary: Optional[Path] = None
-        proxy_binary: Optional[Path] = None
-        server_binary: Optional[Path] = None
+        java_client_binary: Path | None = None
+        cpp_client_binary: Path | None = None
+        python_client_binary: Path | None = None
+        proxy_binary: Path | None = None
+        server_binary: Path | None = None
 
     class TransferExitCodes(NamedTuple):
         client: int
@@ -231,9 +231,9 @@ class TransferIntegrationTestHarness:
         self._CLIENT_PORT = harness_config.client_port
         self._SERVER_PORT = harness_config.server_port
 
-        self._server: Optional[MonitoredSubprocess] = None
-        self._client: Optional[MonitoredSubprocess] = None
-        self._proxy: Optional[MonitoredSubprocess] = None
+        self._server: MonitoredSubprocess | None = None
+        self._client: MonitoredSubprocess | None = None
+        self._proxy: MonitoredSubprocess | None = None
 
         # If the harness configuration specifies overrides, use those.
         if harness_config.java_client_binary is not None:

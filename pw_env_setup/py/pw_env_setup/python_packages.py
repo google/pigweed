@@ -19,7 +19,7 @@ import argparse
 import itertools
 import sys
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator
 
 import pkg_resources
 
@@ -44,7 +44,7 @@ def _installed_packages() -> Iterator[str]:
         yield str(req)
 
 
-def ls(output_file: Optional[Path]) -> int:  # pylint: disable=invalid-name
+def ls(output_file: Path | None) -> int:  # pylint: disable=invalid-name
     """Run pip python_packages and write to output_file."""
     actual_requirements = frozenset(
         pkg_resources.Requirement.parse(line) for line in _installed_packages()
@@ -115,7 +115,7 @@ def _load_requirements_lines(*req_files: Path) -> Iterator[str]:
 
 
 def diff(
-    expected: Path, ignore_requirements_file: Optional[list[Path]] = None
+    expected: Path, ignore_requirements_file: list[Path] | None = None
 ) -> int:
     """Report on differences between installed and expected versions."""
     actual_lines = set(_installed_packages())

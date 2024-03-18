@@ -17,7 +17,6 @@ from contextvars import ContextVar
 import copy
 from dataclasses import dataclass, field
 import signal
-from typing import Optional
 
 from prompt_toolkit.application import get_app_or_none
 from prompt_toolkit.shortcuts import ProgressBar
@@ -67,7 +66,7 @@ class ProgressBarState:
     An instance of this class is intended to be a global variable."""
 
     tasks: dict[str, ProgressBarTaskCounter] = field(default_factory=dict)
-    instance: Optional[ProgressBar | ProgressBarImpl] = None
+    instance: ProgressBar | ProgressBarImpl | None = None
 
     def _install_sigint_handler(self) -> None:
         """Add ctrl-c handling if not running inside pw_console"""

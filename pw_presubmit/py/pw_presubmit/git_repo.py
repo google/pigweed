@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 import subprocess
-from typing import Collection, Iterable, Optional, Pattern
+from typing import Collection, Iterable, Pattern
 
 from pw_presubmit.tools import log_run, plural
 
@@ -76,9 +76,9 @@ def _diff_names(
 
 
 def tracking_branch(
-    repo_path: Optional[Path] = None,
-    fallback: Optional[str] = None,
-) -> Optional[str]:
+    repo_path: Path | None = None,
+    fallback: str | None = None,
+) -> str | None:
     """Returns the tracking branch of the current branch.
 
     Since most callers of this function can safely handle a return value of
@@ -114,9 +114,9 @@ def tracking_branch(
 
 
 def list_files(
-    commit: Optional[str] = None,
+    commit: str | None = None,
     pathspecs: Collection[PathOrStr] = (),
-    repo_path: Optional[Path] = None,
+    repo_path: Path | None = None,
 ) -> list[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
@@ -148,7 +148,7 @@ def list_files(
     return sorted(_ls_files(pathspecs, repo_path))
 
 
-def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
+def has_uncommitted_changes(repo: Path | None = None) -> bool:
     """Returns True if the Git repo has uncommitted changes in it.
 
     This does not check for untracked files.
@@ -188,7 +188,7 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
 def _describe_constraints(
     git_root: Path,
     repo_path: Path,
-    commit: Optional[str],
+    commit: str | None,
     pathspecs: Collection[PathOrStr],
     exclude: Collection[Pattern[str]],
 ) -> Iterable[str]:
@@ -224,10 +224,10 @@ def _describe_constraints(
 def describe_files(
     git_root: Path,
     repo_path: Path,
-    commit: Optional[str],
+    commit: str | None,
     pathspecs: Collection[PathOrStr],
     exclude: Collection[Pattern],
-    project_root: Optional[Path] = None,
+    project_root: Path | None = None,
 ) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
     constraints = list(
@@ -269,7 +269,7 @@ def root(repo_path: PathOrStr = '.', *, show_stderr: bool = True) -> Path:
     )
 
 
-def within_repo(repo_path: PathOrStr = '.') -> Optional[Path]:
+def within_repo(repo_path: PathOrStr = '.') -> Path | None:
     """Similar to root(repo_path), returns None if the path is not in a repo."""
     try:
         return root(repo_path, show_stderr=False)

@@ -13,7 +13,6 @@
 # the License.
 """Converts ST generated .icf linker files into basic .ld linker files"""
 
-from typing import Optional
 
 import pathlib
 
@@ -277,7 +276,7 @@ SECTIONS
     """
 
 
-def icf_to_ld(icf_path: pathlib.Path, ld_path: Optional[pathlib.Path]):
+def icf_to_ld(icf_path: pathlib.Path, ld_path: pathlib.Path | None):
     """Convert icf file into an ld file.
 
     Note: This only works for ST generated .icf files.

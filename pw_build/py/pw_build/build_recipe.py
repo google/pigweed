@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import shlex
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -78,8 +78,8 @@ class BuildCommand:
             BuildCommands are run by default.
     """
 
-    build_dir: Optional[Path] = None
-    build_system_command: Optional[str] = None
+    build_dir: Path | None = None
+    build_system_command: str | None = None
     build_system_extra_args: list[str] = field(default_factory=list)
     targets: list[str] = field(default_factory=list)
     command: list[str] = field(default_factory=list)
@@ -174,9 +174,9 @@ class BuildCommand:
 
     def get_args(
         self,
-        additional_ninja_args: Optional[list[str]] = None,
-        additional_bazel_args: Optional[list[str]] = None,
-        additional_bazel_build_args: Optional[list[str]] = None,
+        additional_ninja_args: list[str] | None = None,
+        additional_bazel_args: list[str] | None = None,
+        additional_bazel_build_args: list[str] | None = None,
     ) -> list[str]:
         """Return all args required to launch this BuildCommand."""
         # If this is a plain command step, return self._expanded_args as-is.
@@ -218,7 +218,7 @@ class BuildRecipeStatus:
     current_step: str = ''
     percent: float = 0.0
     error_count: int = 0
-    return_code: Optional[int] = None
+    return_code: int | None = None
     flag_done: bool = False
     flag_started: bool = False
     error_lines: dict[int, list[str]] = field(default_factory=dict)
@@ -437,7 +437,7 @@ class BuildRecipe:
 
     build_dir: Path
     steps: list[BuildCommand] = field(default_factory=list)
-    title: Optional[str] = None
+    title: str | None = None
     enabled: bool = True
 
     def __hash__(self):
@@ -450,11 +450,11 @@ class BuildRecipe:
                 step.build_dir = self.build_dir
 
         # Set logging variables
-        self._logger: Optional[logging.Logger] = None
-        self.error_logger: Optional[logging.Logger] = None
-        self._logfile: Optional[Path] = None
+        self._logger: logging.Logger | None = None
+        self.error_logger: logging.Logger | None = None
+        self._logfile: Path | None = None
         self._status: BuildRecipeStatus = BuildRecipeStatus(self)
-        self.project_builder: Optional['ProjectBuilder'] = None
+        self.project_builder: 'ProjectBuilder | None' = None
 
     def toggle_enabled(self) -> None:
         self.enabled = not self.enabled
@@ -490,7 +490,7 @@ class BuildRecipe:
         return logging.getLogger()
 
     @property
-    def logfile(self) -> Optional[Path]:
+    def logfile(self) -> Path | None:
         return self._logfile
 
     @property

@@ -27,7 +27,7 @@ import sys
 import time
 
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Set
+from typing import Iterable, Sequence, Set
 
 import requests
 
@@ -161,8 +161,8 @@ class TestRunner:
         executable: str,
         args: Sequence[str],
         tests: Iterable[Test],
-        env: Optional[dict[str, str]] = None,
-        timeout: Optional[float] = None,
+        env: dict[str, str] | None = None,
+        timeout: float | None = None,
         verbose: bool = False,
     ) -> None:
         self._executable: str = executable
@@ -170,7 +170,7 @@ class TestRunner:
         self._tests: list[Test] = list(tests)
         self._env: dict[str, str] = env or {}
         self._timeout = timeout
-        self._result_sink: Optional[dict[str, str]] = None
+        self._result_sink: dict[str, str] | None = None
         self.verbose = verbose
 
         # Access go/result-sink, if available.
@@ -429,7 +429,7 @@ def parse_metadata(metadata: list[str], root: str) -> dict[str, TestGroup]:
 
 
 def tests_from_groups(
-    group_names: Optional[Sequence[str]], root: str
+    group_names: Sequence[str] | None, root: str
 ) -> list[Test]:
     """Returns unit tests belonging to test groups and their dependencies.
 
@@ -489,9 +489,9 @@ async def find_and_run_tests(
     runner: str,
     runner_args: Sequence[str] = (),
     env: Sequence[str] = (),
-    timeout: Optional[float] = None,
-    group: Optional[Sequence[str]] = None,
-    test: Optional[Sequence[str]] = None,
+    timeout: float | None = None,
+    group: Sequence[str] | None = None,
+    test: Sequence[str] | None = None,
     verbose: bool = False,
 ) -> int:
     """Runs some unit tests."""

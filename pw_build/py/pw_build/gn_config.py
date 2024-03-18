@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections import deque
 from json import loads as json_loads, dumps as json_dumps
-from typing import Any, Deque, Iterable, Iterator, Optional, Set
+from typing import Any, Deque, Iterable, Iterator, Set
 
 from pw_build.gn_utils import GnLabel, MalformedGnError
 
@@ -70,16 +70,14 @@ class GnConfig:
             compiler flag might be 'cflag::-foo'.
     """
 
-    def __init__(
-        self, public: bool = False, json: Optional[str] = None
-    ) -> None:
+    def __init__(self, public: bool = False, json: str | None = None) -> None:
         """Create a GN config object.
 
         Args:
             public: Indicates if this is a `public_config`.
             json: If provided, populates this object from a JSON string.
         """
-        self.label: Optional[GnLabel] = None
+        self.label: GnLabel | None = None
         self.values: Set[str] = set()
         self._public: bool = public
         self._usages: int = 0

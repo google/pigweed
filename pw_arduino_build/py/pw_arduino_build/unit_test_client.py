@@ -17,7 +17,6 @@
 import argparse
 import subprocess
 import sys
-from typing import Optional
 
 _TARGET_CLIENT_COMMAND = 'pw_target_runner_client'
 
@@ -42,7 +41,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def launch_client(binary: str, server_port: Optional[int]) -> int:
+def launch_client(binary: str, server_port: int | None) -> int:
     """Sends a test request to the specified server port."""
     cmd = [_TARGET_CLIENT_COMMAND, '-binary', binary]
 

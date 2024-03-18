@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -101,7 +101,7 @@ class ScreenLine:
     # correct source.
     #
     # Note this is NOT an index into LogScreen.line_buffer.
-    log_index: Optional[int] = None
+    log_index: int | None = None
 
     # Keep track the total height and subline number for this log message.
     # For example this line could be subline (0, 1, or 2) of a log message with
@@ -131,9 +131,9 @@ class LogScreen:
     get_log_source: Callable[[], tuple[int, collections.deque[LogLine]]]
     get_line_wrapping: Callable[[], bool]
     get_log_formatter: Callable[
-        [], Optional[Callable[[LogLine], StyleAndTextTuples]]
+        [], Callable[[LogLine], StyleAndTextTuples] | None
     ]
-    get_search_filter: Callable[[], Optional[LogFilter]]
+    get_search_filter: Callable[[], LogFilter | None]
     get_search_highlight: Callable[[], bool]
 
     # Window row of the current cursor position
@@ -213,8 +213,8 @@ class LogScreen:
 
     def get_lines(
         self,
-        marked_logs_start: Optional[int] = None,
-        marked_logs_end: Optional[int] = None,
+        marked_logs_start: int | None = None,
+        marked_logs_end: int | None = None,
     ) -> list[StyleAndTextTuples]:
         """Return lines for final display.
 
@@ -544,7 +544,7 @@ class LogScreen:
 
         return remaining_lines
 
-    def first_rendered_log_index(self) -> Optional[int]:
+    def first_rendered_log_index(self) -> int | None:
         """Scan the screen for the first valid log_index and return it."""
         log_index = None
         for i in range(self.height):
@@ -555,7 +555,7 @@ class LogScreen:
                 break
         return log_index
 
-    def last_rendered_log_index(self) -> Optional[int]:
+    def last_rendered_log_index(self) -> int | None:
         """Return the last log_index shown on screen."""
         log_index = None
         if len(self.line_buffer) == 0:
@@ -605,7 +605,7 @@ class LogScreen:
     def prepend_log(
         self,
         log_index: int,
-        subline: Optional[int] = None,
+        subline: int | None = None,
     ) -> None:
         """Add a log message or a single line to the top of the screen.
 
@@ -652,7 +652,7 @@ class LogScreen:
     def append_log(
         self,
         log_index: int,
-        subline: Optional[int] = None,
+        subline: int | None = None,
     ) -> None:
         """Add a log message or a single line to the bottom of the screen."""
         # Save this log_index

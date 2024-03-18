@@ -23,7 +23,7 @@ import socket
 import sys
 
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 from pw_emu.core import (
     ConfigError,
@@ -63,7 +63,7 @@ class QmpClient:
         # subsequent 'return' response.
         self.request('qmp_capabilities')
 
-    def request(self, cmd: str, args: Optional[dict[str, Any]] = None) -> Any:
+    def request(self, cmd: str, args: dict[str, Any] | None = None) -> Any:
         """Issue a command using the qmp interface.
 
         Returns a map with the response or None if there is no
@@ -89,7 +89,7 @@ class QmpClient:
 class QemuLauncher(Launcher):
     """Start a new qemu process for a given target and config file."""
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         super().__init__('qemu', config_path)
         self._start_cmd: list[str] = []
         self._chardevs_id_to_name = {
@@ -98,7 +98,7 @@ class QemuLauncher(Launcher):
             'gdb': 'gdb',
         }
         self._chardevs: dict[str, Any] = {}
-        self._qmp_init_sock: Optional[socket.socket] = None
+        self._qmp_init_sock: socket.socket | None = None
 
     def _set_qemu_channel_tcp(self, name: str, filename: str) -> None:
         """Parse a TCP chardev and return (host, port) tuple.
@@ -244,10 +244,10 @@ class QemuLauncher(Launcher):
     def _pre_start(
         self,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> list[str]:
         qemu = self._config.get_target_emu(['executable'])
         if not qemu:
@@ -320,7 +320,7 @@ class QemuConnector(Connector):
         super().__init__(wdir)
         if self.get_emu() != 'qemu':
             raise WrongEmulator('qemu', self.get_emu())
-        self._qmp: Optional[QmpClient] = None
+        self._qmp: QmpClient | None = None
 
     def _q(self) -> QmpClient:
         if not self._qmp:

@@ -54,7 +54,7 @@ PwFeatureInfo = provider(
         "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",
         "provides": "Sequence[str]: Indicates that this feature is one of several mutually exclusive alternate features.",
         "known": "bool: Whether the feature is a known feature. Known features are assumed to be defined elsewhere.",
-        "overrides": "Optional[FeatureInfo]: The feature that this overrides",
+        "overrides": "FeatureInfo | None: The feature that this overrides",
     },
 )
 PwFeatureSetInfo = provider(
@@ -108,8 +108,8 @@ PwToolInfo = provider(
     doc = "A type-safe version of @bazel_tool's ToolInfo",
     fields = {
         "label": "Label: The label that defined this tool",
-        "exe": "Optional[File]: The file corresponding to the tool",
-        "path": "Optional[str]: The path to the tool. Prefer tool (mutually exclusive with tool).",
+        "exe": "File | None: The file corresponding to the tool",
+        "path": "str | None: The path to the tool. Prefer tool (mutually exclusive with tool).",
         "files": "Depset[File]: The files associated with the tool",
         "requires_any_of": "Sequence[PwFeatureConstraintInfo]: A set of constraints required to enable the tool. Equivalent to with_features",
         "execution_requirements": "Sequence[str]: A set of execution requirements of the tool",

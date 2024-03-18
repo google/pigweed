@@ -16,7 +16,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import tempfile
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 import unittest
 
 from pw_software_update import dev_sign, root_metadata, update_bundle
@@ -26,7 +26,7 @@ from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
 def gen_unsigned_bundle(
-    signed_root_metadata: Optional[SignedRootMetadata] = None,
+    signed_root_metadata: SignedRootMetadata | None = None,
     targets_metadata_version: int = 0,
 ) -> UpdateBundle:
     """Generates an unsigned test bundle."""

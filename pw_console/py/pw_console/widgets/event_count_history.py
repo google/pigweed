@@ -17,7 +17,6 @@ import collections
 import logging
 from dataclasses import dataclass, field
 import time
-from typing import Optional
 
 _LOG = logging.getLogger('pw_console')
 
@@ -97,7 +96,7 @@ class EventCountHistory:
         return [('', self.__repr__())]
 
     def sparkline(
-        self, min_value: int = 0, max_value: Optional[int] = None
+        self, min_value: int = 0, max_value: int | None = None
     ) -> str:
         msg = ''.rjust(self.history_limit)
         if len(self.history) == 0:

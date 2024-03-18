@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import json
 import os
 import sys
-from typing import cast, Optional, TypeVar
+from typing import cast, TypeVar
 
 # We use BeautifulSoup for certain docs rendering features. It may not be
 # available in downstream projects. If so, no problem. We fall back to simpler
@@ -122,7 +122,7 @@ class EnvMetadata:
         return self._get_env_attr('pw_module_nav', default)
 
 
-def get_languages(module_name: str) -> Optional[list[str]]:
+def get_languages(module_name: str) -> list[str] | None:
     """Returns the list of languages that a module supports.
 
     Args:
@@ -158,7 +158,7 @@ def get_status(module_name: str) -> str:
     return metadata[module_name]['status']
 
 
-def get_tagline(module_name: str) -> Optional[str]:
+def get_tagline(module_name: str) -> str | None:
     """Returns the tagline for a module.
 
     Args:
@@ -175,7 +175,7 @@ def get_tagline(module_name: str) -> Optional[str]:
     return metadata[module_name]['tagline']
 
 
-def get_code_size(module_name: str) -> Optional[str]:
+def get_code_size(module_name: str) -> str | None:
     """Returns the code size impact summary for a module.
 
     Args:
@@ -222,8 +222,8 @@ def concat_tags(*tag_lists: list[str]) -> list[str]:
 
 
 def create_topnav(
-    subtitle: Optional[str],
-    extra_classes: Optional[list[str]] = None,
+    subtitle: str | None,
+    extra_classes: list[str] | None = None,
 ) -> nodes.Node:
     """Create the nodes for the top title and navigation bar."""
 
@@ -437,7 +437,7 @@ def setup_parse_body(_app, _pagename, _templatename, context, _doctree):
     context['parse_body'] = parse_body
 
 
-def fix_canonical_url(canonical_url: Optional[str]) -> Optional[str]:
+def fix_canonical_url(canonical_url: str | None) -> str | None:
     """Rewrites the canonical URL for `pigweed.dev/*/docs.html` pages.
 
     Our server is configured to remove `docs.html` from URLs. E.g.
@@ -466,7 +466,7 @@ def on_html_page_context(
     app: Sphinx,  # pylint: disable=unused-argument
     docname: str,  # pylint: disable=unused-argument
     templatename: str,  # pylint: disable=unused-argument
-    context: Optional[dict[str, Optional[str]]],
+    context: dict[str, str | None] | None,
     doctree: Document,  # pylint: disable=unused-argument
 ) -> None:
     """Handles modifications to HTML page metadata, e.g. canonical URLs.
@@ -515,7 +515,7 @@ def add_links(module_name: str, toctree: Element) -> None:
     toctree['rawentries'] += [src[0], issues[0]]
 
 
-def find_first_toctree(doctree: Document) -> Optional[Element]:
+def find_first_toctree(doctree: Document) -> Element | None:
     """Finds the first `toctree` (table of contents tree) node in a `Document`.
 
     Args:

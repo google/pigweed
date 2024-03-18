@@ -21,7 +21,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
-from typing import Iterable, Optional
+from typing import Iterable
 
 from ctypes.util import find_library as ctypes_find_library
 import serial.tools.list_ports
@@ -55,7 +55,7 @@ else:
     raise RuntimeError(f'Unsupported platform.system(): {platform.system()}')
 
 
-def custom_find_library(name: str) -> Optional[str]:
+def custom_find_library(name: str) -> str | None:
     """Search for shared libraries in non-standard locations."""
     search_paths: list[Path] = []
 

@@ -23,7 +23,7 @@ import enum
 import os
 
 from pathlib import Path
-from typing import Iterable, Optional, Callable, Any
+from typing import Iterable, Callable, Any
 
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 from pw_tokenizer import detokenize, encode
@@ -134,9 +134,9 @@ class ZephyrTokenDecoder:
         self._decoded_data.clear()
         return token
 
-    def process_byte(self, byte: int) -> Optional[Token]:
+    def process_byte(self, byte: int) -> Token | None:
         """Processes a single byte and returns a token if one was completed."""
-        token: Optional[Token] = None
+        token: Token | None = None
 
         self._raw_data.append(byte)
 
@@ -187,7 +187,7 @@ class ZephyrDetokenizer:
         """
         self._flush_non_frame()
 
-    def _flush_non_frame(self, to_index: Optional[int] = None):
+    def _flush_non_frame(self, to_index: int | None = None):
         if self._raw_data:
             self._log_handler(bytes(self._raw_data[:to_index]))
             del self._raw_data[:to_index]

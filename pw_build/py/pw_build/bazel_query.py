@@ -26,7 +26,6 @@ from typing import (
     IO,
     Iterable,
     Iterator,
-    Optional,
 )
 from xml.etree import ElementTree
 
@@ -248,7 +247,7 @@ class BazelWorkspace:
         self._exec(*args, '--noshow_progress', output=output)
         return output.getvalue()
 
-    def _exec(self, *args: str, output: Optional[IO] = None) -> None:
+    def _exec(self, *args: str, output: IO | None = None) -> None:
         """Execute a Bazel command in the workspace."""
         cmdline = ['bazel'] + list(args) + ['--noshow_progress']
         result = subprocess.run(
@@ -262,7 +261,7 @@ class BazelWorkspace:
         if output:
             output.write(result.stdout.decode('utf-8').strip())
 
-    def run(self, label: str, *args, output: Optional[IO] = None) -> None:
+    def run(self, label: str, *args, output: IO | None = None) -> None:
         """Invokes `bazel run` on the given label.
 
         Args:

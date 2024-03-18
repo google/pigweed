@@ -21,7 +21,7 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
-from typing import Optional, Sequence
+from typing import Sequence
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ def install_git_hook(
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> argparse.ArgumentParser:
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)

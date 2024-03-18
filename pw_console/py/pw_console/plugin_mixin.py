@@ -17,7 +17,7 @@ import asyncio
 import logging
 from threading import Thread
 import time
-from typing import Callable, Optional
+from typing import Callable
 
 from pw_console.get_pw_console_app import get_pw_console_app
 
@@ -83,9 +83,9 @@ class PluginMixin:
 
     def plugin_init(
         self,
-        plugin_callback: Optional[Callable[..., bool]] = None,
+        plugin_callback: Callable[..., bool] | None = None,
         plugin_callback_frequency: float = 30.0,
-        plugin_logger_name: Optional[str] = 'pw_console_plugins',
+        plugin_logger_name: str | None = 'pw_console_plugins',
     ) -> None:
         """Call this on __init__() to set plugin background task variables.
 

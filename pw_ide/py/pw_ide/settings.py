@@ -17,7 +17,7 @@ import enum
 from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, cast, Literal, Optional
+from typing import Any, cast, Literal
 import yaml
 
 from pw_cli.env import pigweed_environment
@@ -115,7 +115,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         project_file: Path | bool = _DEFAULT_PROJECT_FILE,
         project_user_file: Path | bool = _DEFAULT_PROJECT_USER_FILE,
         user_file: Path | bool = _DEFAULT_USER_FILE,
-        default_config: Optional[dict[str, Any]] = None,
+        default_config: dict[str, Any] | None = None,
     ) -> None:
         self.config_init(
             config_section_title='pw_ide',
@@ -140,7 +140,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return Path(self._config.get('working_dir', PW_IDE_DEFAULT_DIR))
 
     @property
-    def compdb_gen_cmd(self) -> Optional[str]:
+    def compdb_gen_cmd(self) -> str | None:
         """The command that should be run to generate a compilation database.
 
         Defining this allows ``pw_ide`` to automatically generate a compilation
@@ -237,7 +237,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('target_inference', _DEFAULT_TARGET_INFERENCE)
 
     @property
-    def default_target(self) -> Optional[str]:
+    def default_target(self) -> str | None:
         """The default target to use when calling ``--set-default``.
 
         This target will be selected when ``pw ide cpp --set-default`` is
@@ -263,7 +263,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('sync', list())
 
     @property
-    def clangd_alternate_path(self) -> Optional[Path]:
+    def clangd_alternate_path(self) -> Path | None:
         """An alternate path to ``clangd`` to use instead of Pigweed's.
 
         Pigweed provides the ``clang`` toolchain, including ``clangd``, via

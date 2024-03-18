@@ -19,7 +19,7 @@ import functools
 from itertools import chain
 import logging
 import operator
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable
 
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
@@ -90,7 +90,7 @@ class WindowManagerVSplit(VSplit):
         write_position,
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> None:
         new_mouse_handlers = mouse_handlers
         # Is resize mode active?
@@ -142,7 +142,7 @@ class WindowManagerHSplit(HSplit):
         write_position,
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> None:
         new_mouse_handlers = mouse_handlers
         # Is resize mode active?
@@ -194,8 +194,8 @@ class WindowManager:
         self.bottom_toolbars: list[WindowPaneToolbar] = []
 
         self.resize_mode: bool = False
-        self.resize_target_window_list_index: Optional[int] = None
-        self.resize_target_window_list: Optional[int] = None
+        self.resize_target_window_list_index: int | None = None
+        self.resize_target_window_list: int | None = None
         self.resize_current_row: int = 0
         self.resize_current_column: int = 0
 
@@ -416,7 +416,7 @@ class WindowManager:
                 break
         return active_window_list, active_pane
 
-    def window_list_index(self, window_list: WindowList) -> Optional[int]:
+    def window_list_index(self, window_list: WindowList) -> int | None:
         index = None
         try:
             index = self.window_lists.index(window_list)
@@ -652,7 +652,7 @@ class WindowManager:
 
     def _get_next_window_list_for_resizing(
         self, window_list: WindowList
-    ) -> Optional[WindowList]:
+    ) -> WindowList | None:
         window_list_index = self.window_list_index(window_list)
         if window_list_index is None:
             return None

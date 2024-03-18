@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import datetime
 import logging
 import re
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from pw_log.proto import log_pb2
 import pw_log_tokenized
@@ -78,7 +78,7 @@ class Log:
         thread_name: str = '',
         source_name: str = '',
         file_and_line: str = '',
-        metadata_fields: Optional[dict[str, str]] = None,
+        metadata_fields: dict[str, str] | None = None,
     ) -> None:
         self.message = message
         self.level = level  # Value from logging levels.
@@ -254,10 +254,10 @@ class LogStreamDecoder:
     def __init__(
         self,
         decoded_log_handler: Callable[[Log], None],
-        detokenizer: Optional[Detokenizer] = None,
+        detokenizer: Detokenizer | None = None,
         source_name: str = '',
-        timestamp_parser: Optional[Callable[[int], str]] = None,
-        message_parser: Optional[Callable[[str], str]] = None,
+        timestamp_parser: Callable[[int], str] | None = None,
+        message_parser: Callable[[str], str] | None = None,
     ):
         self.decoded_log_handler = decoded_log_handler
         self.detokenizer = detokenizer

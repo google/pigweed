@@ -18,7 +18,6 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import fragment_list_to_text
@@ -87,9 +86,9 @@ class LogFilter:
     """Log Filter Dataclass."""
 
     regex: re.Pattern
-    input_text: Optional[str] = None
+    input_text: str | None = None
     invert: bool = False
-    field: Optional[str] = None
+    field: str | None = None
 
     def pattern(self):
         return self.regex.pattern  # pylint: disable=no-member

@@ -28,7 +28,6 @@ from typing import (
     Iterable,
     NamedTuple,
     Match,
-    Optional,
     Sequence,
 )
 
@@ -418,11 +417,11 @@ class FormatSpec:
 
     def _merge_decoded_args(
         self,
-        width: Optional['DecodedArg'],
-        precision: Optional['DecodedArg'],
+        width: 'DecodedArg | None',
+        precision: 'DecodedArg | None',
         main: 'DecodedArg',
     ) -> 'DecodedArg':
-        def merge_optional_str(*args: Optional[str]) -> Optional[str]:
+        def merge_optional_str(*args: str | None) -> str | None:
             return ' '.join(a for a in args if a) or None
 
         if width is not None and precision is not None:
@@ -739,7 +738,7 @@ class FormattedString(NamedTuple):
         """Arg data decoded successfully and all expected args were found."""
         return all(arg.ok() for arg in self.args) and not self.remaining
 
-    def score(self, date_removed: Optional[datetime] = None) -> tuple:
+    def score(self, date_removed: datetime | None = None) -> tuple:
         """Returns a key for sorting by how successful a decode was.
 
         Decoded strings are sorted by whether they

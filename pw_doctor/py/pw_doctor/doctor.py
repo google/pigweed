@@ -24,7 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Iterable, Optional, Set
+from typing import Callable, Iterable, Set
 
 import pw_cli.pw_command_plugins
 import pw_env_setup.cipd_setup.update as cipd_update
@@ -43,7 +43,7 @@ class _Fatal(Exception):
 
 class Doctor:
     def __init__(
-        self, *, log: Optional[logging.Logger] = None, strict: bool = False
+        self, *, log: logging.Logger | None = None, strict: bool = False
     ):
         self.strict = strict
         self.log = log or logging.getLogger(__name__)

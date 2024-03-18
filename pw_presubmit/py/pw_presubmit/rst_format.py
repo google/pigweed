@@ -21,7 +21,6 @@ import difflib
 from functools import cached_property
 from pathlib import Path
 import textwrap
-from typing import Optional
 
 from pw_presubmit.tools import colorize_diff
 
@@ -85,8 +84,8 @@ class CodeBlock:
 
     directive_lineno: int
     directive_line: str
-    first_line_indent: Optional[int] = None
-    end_lineno: Optional[int] = None
+    first_line_indent: int | None = None
+    end_lineno: int | None = None
     option_lines: list[str] = field(default_factory=list)
     code_lines: list[str] = field(default_factory=list)
 
@@ -171,7 +170,7 @@ class CodeBlock:
 def reindent_code_blocks(in_text: str) -> str:
     """Reindent code blocks to 3 spaces."""
     out_text = ''
-    current_block: Optional[CodeBlock] = None
+    current_block: CodeBlock | None = None
     for index, line in enumerate(in_text.splitlines(keepends=True)):
         # If a code block is active, process this line.
         if current_block:

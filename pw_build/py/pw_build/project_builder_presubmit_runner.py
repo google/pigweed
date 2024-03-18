@@ -17,7 +17,7 @@ import argparse
 import fnmatch
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 
 import pw_cli.log
@@ -260,7 +260,7 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
     presubmit_step: Check,
     all_files: list[Path],
     modified_files: list[Path],
-) -> Optional['BuildRecipe']:
+) -> 'BuildRecipe | None':
     """Construct a BuildRecipe from a pw_presubmit step."""
     out_dir = presubmit_out_dir / presubmit_step.name
 
@@ -357,8 +357,8 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
 
 
 def _get_parser(
-    presubmit_programs: Optional[Programs] = None,
-    build_recipes: Optional[list[BuildRecipe]] = None,
+    presubmit_programs: Programs | None = None,
+    build_recipes: list[BuildRecipe] | None = None,
 ) -> argparse.ArgumentParser:
     """Setup argparse for pw_build.project_builder and optionally pw_watch."""
     parser = argparse.ArgumentParser(
@@ -531,7 +531,7 @@ def load_presubmit_build_recipes(
     package_root: Path,
     all_files: list[Path],
     modified_files: list[Path],
-    default_presubmit_step_names: Optional[list[str]] = None,
+    default_presubmit_step_names: list[str] | None = None,
 ) -> list[BuildRecipe]:
     """Convert selected presubmit steps into a list of BuildRecipes."""
     # Use the default presubmit if no other steps or command line out
@@ -580,8 +580,8 @@ def _tab_complete_presubmit_step(
 
 
 def _list_steps_and_recipes(
-    presubmit_programs: Optional[Programs] = None,
-    build_recipes: Optional[list[BuildRecipe]] = None,
+    presubmit_programs: Programs | None = None,
+    build_recipes: list[BuildRecipe] | None = None,
 ) -> None:
     if presubmit_programs:
         _LOG.info('Presubmit steps:')
@@ -598,13 +598,13 @@ def _list_steps_and_recipes(
 
 
 def _print_usage_help(
-    presubmit_programs: Optional[Programs] = None,
-    build_recipes: Optional[list[BuildRecipe]] = None,
+    presubmit_programs: Programs | None = None,
+    build_recipes: list[BuildRecipe] | None = None,
 ) -> None:
     """Print usage examples with known presubmits and build recipes."""
 
     def print_pw_build(
-        option: str, arg: Optional[str] = None, end: str = '\n'
+        option: str, arg: str | None = None, end: str = '\n'
     ) -> None:
         print(
             ' '.join(
@@ -651,13 +651,13 @@ def _print_usage_help(
 
 
 def main(
-    presubmit_programs: Optional[Programs] = None,
-    default_presubmit_step_names: Optional[list[str]] = None,
-    build_recipes: Optional[list[BuildRecipe]] = None,
-    default_build_recipe_names: Optional[list[str]] = None,
-    repo_root: Optional[Path] = None,
-    presubmit_out_dir: Optional[Path] = None,
-    package_root: Optional[Path] = None,
+    presubmit_programs: Programs | None = None,
+    default_presubmit_step_names: list[str] | None = None,
+    build_recipes: list[BuildRecipe] | None = None,
+    default_build_recipe_names: list[str] | None = None,
+    repo_root: Path | None = None,
+    presubmit_out_dir: Path | None = None,
+    package_root: Path | None = None,
     default_root_logfile: Path = Path('out/build.txt'),
     force_pw_watch: bool = False,
 ) -> int:

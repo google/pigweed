@@ -23,7 +23,7 @@ import time
 import unittest
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pw_emu.core import InvalidChannelName, InvalidChannelType
 from tests.common import check_prog, ConfigHelperWithEmulator
@@ -122,7 +122,7 @@ class TestQemu(ConfigHelperWithEmulator):
 
         return ret
 
-    def poll_data(self, timeout: int) -> Optional[bytes]:
+    def poll_data(self, timeout: int) -> bytes | None:
         uartris = 0x4000C03C
         uartrd = 0x4000C000
 

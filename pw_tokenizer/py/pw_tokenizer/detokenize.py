@@ -54,7 +54,6 @@ from typing import (
     Iterator,
     Match,
     NamedTuple,
-    Optional,
     Pattern,
 )
 
@@ -118,11 +117,11 @@ class DetokenizedString:
 
     def __init__(
         self,
-        token: Optional[int],
+        token: int | None,
         format_string_entries: Iterable[tuple],
         encoded_message: bytes,
         show_errors: bool = False,
-        recursive_detokenize: Optional[Callable[[str], str]] = None,
+        recursive_detokenize: Callable[[str], str] | None = None,
     ):
         self.token = token
         self.encoded_message = encoded_message
@@ -163,7 +162,7 @@ class DetokenizedString:
         """Returns the strings that matched the token, best matches first."""
         return self.successes + self.failures
 
-    def best_result(self) -> Optional[decode.FormattedString]:
+    def best_result(self) -> decode.FormattedString | None:
         """Returns the string and args for the most likely decoded string."""
         for string_and_args in self.matches():
             return string_and_args
@@ -476,7 +475,7 @@ _PathOrStr = Path | str
 
 
 # TODO: b/265334753 - Reuse this function in database.py:LoadTokenDatabases
-def _parse_domain(path: _PathOrStr) -> tuple[Path, Optional[Pattern[str]]]:
+def _parse_domain(path: _PathOrStr) -> tuple[Path, Pattern[str] | None]:
     """Extracts an optional domain regex pattern suffix from a path"""
 
     if isinstance(path, Path):
@@ -504,7 +503,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
 
         def __init__(self, path: _PathOrStr) -> None:
             self.path, self.domain = _parse_domain(path)
-            self._modified_time: Optional[float] = self._last_modified_time()
+            self._modified_time: float | None = self._last_modified_time()
 
         def updated(self) -> bool:
             """True if the path has been updated since the last call."""
@@ -515,7 +514,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
             self._modified_time = modified_time
             return True
 
-        def _last_modified_time(self) -> Optional[float]:
+        def _last_modified_time(self) -> float | None:
             if self.path.is_dir():
                 mtime = -1.0
                 for child in self.path.glob(tokens.DIR_DB_GLOB):

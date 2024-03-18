@@ -15,7 +15,7 @@
 """Tests creating pw_rpc client."""
 
 import unittest
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
@@ -90,7 +90,7 @@ def create_protos() -> Any:
 
 def create_client(
     proto_modules: Any,
-    first_channel_output_fn: Optional[Callable[[bytes], Any]] = None,
+    first_channel_output_fn: Callable[[bytes], Any] | None = None,
 ) -> client.Client:
     return client.Client.from_modules(
         callback_client.Impl(),
@@ -203,7 +203,7 @@ class ClientTest(unittest.TestCase):
     """Tests the pw_rpc Client independently of the ClientImpl."""
 
     def setUp(self) -> None:
-        self._last_packet_sent_bytes: Optional[bytes] = None
+        self._last_packet_sent_bytes: bytes | None = None
         self._protos = create_protos()
         self._client = create_client(self._protos.modules(), self._save_packet)
 
@@ -398,7 +398,7 @@ class ClientTest(unittest.TestCase):
         def response_callback(
             rpc: client.PendingRpc,
             message,
-            status: Optional[Status],
+            status: Status | None,
         ) -> None:
             self.assertEqual(
                 rpc,

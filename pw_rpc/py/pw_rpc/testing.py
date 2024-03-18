@@ -19,13 +19,13 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Optional, Sequence
+from typing import Sequence
 
 TEMP_DIR_MARKER = '(pw_rpc:CREATE_TEMP_DIR)'
 
 
 def parse_test_server_args(
-    parser: Optional[argparse.ArgumentParser] = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> argparse.Namespace:
     """Parses arguments for running a Python-based integration test."""
     if parser is None:
@@ -112,7 +112,7 @@ def execute_integration_test(
     setup_time_s: float = 0.2,
 ) -> int:
     """Runs an RPC server and client as part of an integration test."""
-    temp_dir: Optional[tempfile.TemporaryDirectory] = None
+    temp_dir: tempfile.TemporaryDirectory | None = None
 
     if TEMP_DIR_MARKER in common_args:
         temp_dir = tempfile.TemporaryDirectory(prefix='pw_rpc_test_')

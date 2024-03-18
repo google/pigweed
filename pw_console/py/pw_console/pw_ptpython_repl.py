@@ -21,7 +21,7 @@ import os
 import sys
 import shlex
 import subprocess
-from typing import Any, Iterable, Optional, TYPE_CHECKING
+from typing import Any, Iterable, TYPE_CHECKING
 from unittest.mock import patch
 
 # inclusive-language: disable
@@ -101,7 +101,7 @@ class PwPtPythonRepl(
         self,
         *args,
         # pw_console specific kwargs
-        extra_completers: Optional[Iterable] = None,
+        extra_completers: Iterable | None = None,
         **ptpython_kwargs,
     ):
         completer = None
@@ -154,7 +154,7 @@ class PwPtPythonRepl(
         )
 
         # Additional state variables.
-        self.repl_pane: 'Optional[ReplPane]' = None
+        self.repl_pane: 'ReplPane | None' = None
         self._last_result = None
         self._last_exception = None
 
@@ -223,7 +223,7 @@ class PwPtPythonRepl(
         self._last_result = None
         self._last_exception = None
 
-    def _format_result_output(self, result: Any) -> Optional[str]:
+    def _format_result_output(self, result: Any) -> str | None:
         """Return a plaintext repr of any object."""
         try:
             formatted_result = repr(result)

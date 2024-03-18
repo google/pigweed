@@ -13,7 +13,7 @@
 # the License.
 """GN output support."""
 
-from typing import Any, Optional
+from typing import Any
 
 import pathlib
 
@@ -33,7 +33,7 @@ def _gn_list_str_out(name: str, val: list[Any]):
 
 
 def _gn_list_path_out(
-    name: str, val: list[pathlib.Path], path_prefix: Optional[str] = None
+    name: str, val: list[pathlib.Path], path_prefix: str | None = None
 ):
     """Outputs list of paths in GN format with common prefix."""
     if path_prefix is not None:
@@ -43,7 +43,7 @@ def _gn_list_path_out(
     _gn_list_str_out(name, str_val)
 
 
-def gn_output(project: Project, path_prefix: Optional[str] = None):
+def gn_output(project: Project, path_prefix: str | None = None):
     """Output GN scope for a project with the specified components.
 
     Args:

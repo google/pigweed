@@ -23,7 +23,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -79,20 +78,20 @@ class UserCodeExecution:
     output: str
     stdout: str
     stderr: str
-    stdout_check_task: Optional[Awaitable] = None
-    result_object: Optional[Any] = None
-    result_str: Optional[str] = None
-    exception_text: Optional[str] = None
+    stdout_check_task: Awaitable | None = None
+    result_object: Any | None = None
+    result_str: str | None = None
+    exception_text: str | None = None
 
     @property
     def is_running(self):
         return not self.future.done()
 
-    def update_stdout(self, text: Optional[str]):
+    def update_stdout(self, text: str | None):
         if text:
             self.stdout = text
 
-    def update_stderr(self, text: Optional[str]):
+    def update_stderr(self, text: str | None):
         if text:
             self.stderr = text
 
@@ -106,7 +105,7 @@ class ReplPane(WindowPane):
         application: 'ConsoleApp',
         python_repl: PwPtPythonRepl,
         pane_title: str = 'Python Repl',
-        startup_message: Optional[str] = None,
+        startup_message: str | None = None,
     ) -> None:
         super().__init__(application, pane_title)
 
@@ -503,7 +502,7 @@ class ReplPane(WindowPane):
 
     def get_output_buffer_text(
         self,
-        code_items: Optional[list[UserCodeExecution]] = None,
+        code_items: list[UserCodeExecution] | None = None,
         show_index: bool = True,
     ):
         executed_code = code_items or self.executed_code

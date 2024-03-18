@@ -18,7 +18,7 @@ from datetime import datetime
 import json
 import logging
 import tempfile
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator
 
 
 def all_loggers() -> Iterator[logging.Logger]:
@@ -30,7 +30,7 @@ def all_loggers() -> Iterator[logging.Logger]:
 
 
 def create_temp_log_file(
-    prefix: Optional[str] = None, add_time: bool = True
+    prefix: str | None = None, add_time: bool = True
 ) -> str:
     """Create a unique tempfile for saving logs.
 
@@ -57,7 +57,7 @@ def create_temp_log_file(
 
 
 def set_logging_last_resort_file_handler(
-    file_name: Optional[str] = None,
+    file_name: str | None = None,
 ) -> None:
     log_file = file_name if file_name else create_temp_log_file()
     logging.lastResort = logging.FileHandler(log_file)
@@ -75,8 +75,8 @@ def disable_stdout_handlers(logger: logging.Logger) -> None:
 
 
 def setup_python_logging(
-    last_resort_filename: Optional[str] = None,
-    loggers_with_no_propagation: Optional[Iterable[logging.Logger]] = None,
+    last_resort_filename: str | None = None,
+    loggers_with_no_propagation: Iterable[logging.Logger] | None = None,
 ) -> None:
     """Disable log handlers for full screen prompt_toolkit applications."""
     if not loggers_with_no_propagation:

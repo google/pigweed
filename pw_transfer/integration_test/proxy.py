@@ -28,7 +28,7 @@ import random
 import socket
 import sys
 import time
-from typing import Awaitable, Callable, Iterable, NamedTuple, Optional
+from typing import Awaitable, Callable, Iterable, NamedTuple
 
 from google.protobuf import text_format
 
@@ -123,7 +123,7 @@ class DataDropper(Filter):
         send_data: Callable[[bytes], Awaitable[None]],
         name: str,
         rate: float,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ):
         super().__init__(send_data)
         self._rate = rate
@@ -258,7 +258,7 @@ class DataTransposer(Filter):
 
     async def _transpose_handler(self):
         """Async task that handles the packet transposition and timeouts"""
-        held_data: Optional[bytes] = None
+        held_data: bytes | None = None
         while True:
             # Only use timeout if we have data held for transposition
             timeout = None if held_data is None else self._timeout
@@ -370,7 +370,7 @@ class WindowPacketDropper(Filter):
         self._name = name
         self._relay_packets = True
         self._window_packet_to_drop = window_packet_to_drop
-        self._next_window_start_offset: Optional[int] = 0
+        self._next_window_start_offset: int | None = 0
         self._window_packet = 0
 
     async def process(self, data: bytes) -> None:

@@ -45,7 +45,6 @@ from typing import (
     Collection,
     Iterable,
     Iterator,
-    Optional,
 )
 
 import serial
@@ -228,7 +227,7 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_args(args: Optional[argparse.Namespace] = None):
+def _parse_args(args: argparse.Namespace | None = None):
     """Parses and returns the command line arguments."""
     if args is not None:
         return args
@@ -253,7 +252,7 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     device_logfile: str,
     json_logfile: str,
     serial_debug: bool = False,
-    config_file_path: Optional[Path] = None,
+    config_file_path: Path | None = None,
     use_ipython: bool = False,
 ) -> None:
     """Starts an interactive Python terminal with preset variables."""
@@ -343,7 +342,7 @@ def console(
     device: str,
     baudrate: int,
     proto_globs: Collection[str],
-    ticks_per_second: Optional[int],
+    ticks_per_second: int | None,
     token_databases: Collection[Path],
     socket_addr: str,
     logfile: str,
@@ -352,9 +351,9 @@ def console(
     json_logfile: str,
     output: Any,
     serial_debug: bool = False,
-    config_file: Optional[Path] = None,
+    config_file: Path | None = None,
     verbose: bool = False,
-    compiled_protos: Optional[list[ModuleType]] = None,
+    compiled_protos: list[ModuleType] | None = None,
     merge_device_and_host_logs: bool = False,
     rpc_logging: bool = True,
     use_ipython: bool = False,
@@ -558,12 +557,12 @@ def console(
     return 0
 
 
-def main(args: Optional[argparse.Namespace] = None) -> int:
+def main(args: argparse.Namespace | None = None) -> int:
     return console(**vars(_parse_args(args)))
 
 
 def main_with_compiled_protos(
-    compiled_protos, args: Optional[argparse.Namespace] = None
+    compiled_protos, args: argparse.Namespace | None = None
 ):
     return console(**vars(_parse_args(args)), compiled_protos=compiled_protos)
 

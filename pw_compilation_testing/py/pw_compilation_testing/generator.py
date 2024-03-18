@@ -35,7 +35,6 @@ from typing import (
     Iterator,
     NamedTuple,
     NoReturn,
-    Optional,
     Pattern,
     Sequence,
     Set,
@@ -140,7 +139,7 @@ class _ExpectationParser:
         self._state = self._State.SPACE
         self._contents: list[str] = []
 
-    def parse(self, chars: str) -> Optional[Expectation]:
+    def parse(self, chars: str) -> Expectation | None:
         """State machine that parses characters in PW_NC_EXPECT()."""
         for char in chars:
             if self._state is self._State.SPACE:
@@ -212,7 +211,7 @@ class _NegativeCompilationTestSource:
         raise ParseError(message, self._file, self._lines, error_lines)
 
     def _parse_expectations(self, start: int) -> Iterator[Expectation]:
-        expectation: Optional[_ExpectationParser] = None
+        expectation: _ExpectationParser | None = None
 
         for index in range(start, len(self._lines)):
             line = self._lines[index]

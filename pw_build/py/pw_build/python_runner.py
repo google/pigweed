@@ -28,7 +28,6 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Optional
 
 try:
     from pw_build import gn_resolver
@@ -200,15 +199,15 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     original_cmd: list[str],
     default_toolchain: str,
     current_toolchain: str,
-    module: Optional[str],
-    env: Optional[list[str]],
+    module: str | None,
+    env: list[str] | None,
     python_dep_list_files: list[Path],
-    python_virtualenv_config: Optional[Path],
+    python_virtualenv_config: Path | None,
     capture_output: bool,
-    touch: Optional[Path],
-    working_directory: Optional[Path],
-    command_launcher: Optional[str],
-    lockfile: Optional[Path],
+    touch: Path | None,
+    working_directory: Path | None,
+    command_launcher: str | None,
+    lockfile: Path | None,
 ) -> int:
     """Script entry point."""
 

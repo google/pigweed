@@ -18,7 +18,6 @@ from __future__ import annotations
 import re
 
 from pathlib import PurePosixPath
-from typing import Optional
 
 
 class MalformedGnError(Exception):
@@ -31,8 +30,8 @@ class GnPath:
     def __init__(
         self,
         base: str | PurePosixPath | GnPath,
-        bazel: Optional[str] = None,
-        gn: Optional[str] = None,  # pylint: disable=invalid-name
+        bazel: str | None = None,
+        gn: str | None = None,  # pylint: disable=invalid-name
     ) -> None:
         """Creates a GN source path.
 
@@ -113,8 +112,8 @@ class GnLabel:
         self,
         base: str | PurePosixPath | GnLabel,
         public: bool = False,
-        bazel: Optional[str] = None,
-        gn: Optional[str] = None,  # pylint: disable=invalid-name
+        bazel: str | None = None,
+        gn: str | None = None,  # pylint: disable=invalid-name
     ) -> None:
         """Creates a GN label.
 
@@ -128,9 +127,9 @@ class GnLabel:
         """
         self._name: str
         self._path: PurePosixPath
-        self._toolchain: Optional[str] = None
+        self._toolchain: str | None = None
         self._public: bool = public
-        self._repo: Optional[str] = None
+        self._repo: str | None = None
         base_path = _as_path(base)
         if bazel:
             self._from_bazel(base_path, bazel)
@@ -249,8 +248,8 @@ class GnVisibility:
         self,
         base: str | PurePosixPath | GnLabel,
         label: str | PurePosixPath | GnLabel,
-        bazel: Optional[str] = None,
-        gn: Optional[str] = None,  # pylint: disable=invalid-name
+        bazel: str | None = None,
+        gn: str | None = None,  # pylint: disable=invalid-name
     ) -> None:
         """Creates a GN visibility scope.
 

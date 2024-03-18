@@ -20,7 +20,6 @@ import time
 from typing import (
     Any,
     Callable,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -95,7 +94,7 @@ class LogContentControl(UIControl):
         self.visual_select_mode_drag_start = False
         self.visual_select_mode_drag_stop = False
 
-        self.uicontent: Optional[UIContent] = None
+        self.uicontent: UIContent | None = None
         self.lines: list[StyleAndTextTuples] = []
 
         # Key bindings.
@@ -239,7 +238,7 @@ class LogContentControl(UIControl):
     def is_focusable(self) -> bool:
         return True
 
-    def get_key_bindings(self) -> Optional[KeyBindingsBase]:
+    def get_key_bindings(self) -> KeyBindingsBase | None:
         return self.key_bindings
 
     def preferred_width(self, max_available_width: int) -> int:
@@ -253,12 +252,12 @@ class LogContentControl(UIControl):
         max_available_height: int,
         wrap_lines: bool,
         get_line_prefix,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Return the preferred height for the log lines."""
         content = self.create_content(width, None)
         return content.line_count
 
-    def create_content(self, width: int, height: Optional[int]) -> UIContent:
+    def create_content(self, width: int, height: int | None) -> UIContent:
         # Update lines to render
         self.lines = self.log_view.render_content()
 
@@ -515,7 +514,7 @@ class LogPane(WindowPane):
         self,
         application: Any,
         pane_title: str = 'Logs',
-        log_store: Optional[LogStore] = None,
+        log_store: LogStore | None = None,
     ):
         super().__init__(application, pane_title)
 
@@ -923,7 +922,7 @@ class LogPane(WindowPane):
     def add_log_handler(
         self,
         logger: str | logging.Logger,
-        level_name: Optional[str] = None,
+        level_name: str | None = None,
     ) -> None:
         """Add a log handlers to this LogPane."""
 

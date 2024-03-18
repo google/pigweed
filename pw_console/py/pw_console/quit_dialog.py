@@ -17,7 +17,7 @@ from __future__ import annotations
 import functools
 import logging
 import sys
-from typing import Optional, Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
@@ -48,7 +48,7 @@ class QuitDialog(ConditionalContainer):
     DIALOG_HEIGHT = 2
 
     def __init__(
-        self, application: ConsoleApp, on_quit: Optional[Callable] = None
+        self, application: ConsoleApp, on_quit: Callable | None = None
     ):
         self.application = application
         self.show_dialog = False

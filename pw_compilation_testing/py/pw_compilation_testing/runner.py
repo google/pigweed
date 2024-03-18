@@ -21,7 +21,6 @@ import shlex
 import string
 import sys
 import subprocess
-from typing import Optional
 
 import pw_cli.log
 
@@ -34,7 +33,7 @@ _NINJA_VARIABLE = re.compile('^([a-zA-Z0-9_]+) = ?')
 
 
 # TODO(hepler): Could do this step just once and output the results.
-def find_cc_rule(toolchain_ninja_file: Path) -> Optional[str]:
+def find_cc_rule(toolchain_ninja_file: Path) -> str | None:
     """Searches the toolchain.ninja file for the cc rule."""
     cmd_prefix = '  command = '
 

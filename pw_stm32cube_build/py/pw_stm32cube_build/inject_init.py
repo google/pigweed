@@ -13,7 +13,6 @@
 # the License.
 """Injects pre main init to ST startup scripts."""
 
-from typing import Optional
 
 import pathlib
 import re
@@ -49,7 +48,7 @@ def add_pre_main_init(startup: str) -> str:
     )
 
 
-def inject_init(startup_in: pathlib.Path, startup_out: Optional[pathlib.Path]):
+def inject_init(startup_in: pathlib.Path, startup_out: pathlib.Path | None):
     """Injects pw_stm32cube_Init before main in given ST startup script.
 
     Args:

@@ -24,7 +24,7 @@ from pathlib import Path
 import pprint
 import re
 import shutil
-from typing import Any, Optional, Iterable
+from typing import Any, Iterable
 
 _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
 
@@ -93,8 +93,8 @@ class PythonPackage:
     tests: list[Path]
     inputs: list[Path]
     gn_target_name: str = ''
-    generate_setup: Optional[dict] = None
-    config: Optional[configparser.ConfigParser] = None
+    generate_setup: dict | None = None
+    config: configparser.ConfigParser | None = None
 
     @staticmethod
     def from_dict(**kwargs) -> 'PythonPackage':
@@ -113,7 +113,7 @@ class PythonPackage:
             self.config = self._load_config()
 
     @property
-    def setup_dir(self) -> Optional[Path]:
+    def setup_dir(self) -> Path | None:
         if not self.setup_sources:
             return None
         # Assuming all setup_source files live in the same parent directory.
@@ -131,7 +131,7 @@ class PythonPackage:
         return setup_py[0]
 
     @property
-    def setup_cfg(self) -> Optional[Path]:
+    def setup_cfg(self) -> Path | None:
         setup_cfg = [
             setup_file
             for setup_file in self.setup_sources
@@ -205,7 +205,7 @@ class PythonPackage:
         return self.setup_sources[0].parent
 
     @property
-    def top_level_source_dir(self) -> Optional[Path]:
+    def top_level_source_dir(self) -> Path | None:
         source_dir_paths = sorted(
             set((len(sfile.parts), sfile.parent) for sfile in self.sources),
             key=lambda s: s[1],
@@ -219,7 +219,7 @@ class PythonPackage:
 
         return top_level_source_dir
 
-    def _load_config(self) -> Optional[configparser.ConfigParser]:
+    def _load_config(self) -> configparser.ConfigParser | None:
         config = configparser.ConfigParser()
 
         # Check for a setup.cfg and load that config.

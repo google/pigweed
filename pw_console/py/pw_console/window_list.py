@@ -17,7 +17,7 @@ import collections
 from enum import Enum
 import functools
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from prompt_toolkit.filters import has_focus
 from prompt_toolkit.layout import (
@@ -73,7 +73,7 @@ class WindowListHSplit(HSplit):
         write_position,
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> None:
         new_mouse_handlers = mouse_handlers
         # Is resize mode active?
@@ -131,7 +131,7 @@ class WindowList:
 
         self.display_mode = DEFAULT_DISPLAY_MODE
         self.active_panes: collections.deque = collections.deque()
-        self.focused_pane_index: Optional[int] = None
+        self.focused_pane_index: int | None = None
 
         self.height = Dimension(preferred=10)
         self.width = Dimension(preferred=10)

@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -48,14 +48,12 @@ class PwConsoleEmbed:
         self,
         global_vars=None,
         local_vars=None,
-        loggers: Optional[
-            dict[str, Iterable[logging.Logger]] | Iterable
-        ] = None,
+        loggers: dict[str, Iterable[logging.Logger]] | Iterable | None = None,
         test_mode=False,
-        repl_startup_message: Optional[str] = None,
-        help_text: Optional[str] = None,
-        app_title: Optional[str] = None,
-        config_file_path: Optional[str | Path] = None,
+        repl_startup_message: str | None = None,
+        help_text: str | None = None,
+        app_title: str | None = None,
+        config_file_path: str | Path | None = None,
     ) -> None:
         """Call this to embed pw console at the call point within your program.
 
@@ -128,7 +126,7 @@ class PwConsoleEmbed:
             Path(config_file_path) if config_file_path else None
         )
 
-        self.console_app: Optional[ConsoleApp] = None
+        self.console_app: ConsoleApp | None = None
         self.extra_completers: list = []
 
         self.setup_python_logging_called = False
@@ -255,8 +253,8 @@ class PwConsoleEmbed:
 
     def setup_python_logging(
         self,
-        last_resort_filename: Optional[str] = None,
-        loggers_with_no_propagation: Optional[Iterable[logging.Logger]] = None,
+        last_resort_filename: str | None = None,
+        loggers_with_no_propagation: Iterable[logging.Logger] | None = None,
     ) -> None:
         """Setup friendly logging for full-screen prompt_toolkit applications.
 
@@ -292,7 +290,7 @@ class PwConsoleEmbed:
         for window_title in window_titles:
             self.hidden_by_default_windows.append(window_title)
 
-    def embed(self, override_window_config: Optional[dict] = None) -> None:
+    def embed(self, override_window_config: dict | None = None) -> None:
         """Start the console."""
 
         # Create the ConsoleApp instance.

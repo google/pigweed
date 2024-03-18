@@ -13,7 +13,6 @@
 # the License.
 """Exceptions for RPC-related errors."""
 
-from typing import Optional
 
 from pw_status import Status
 
@@ -21,7 +20,7 @@ from pw_rpc.client import PendingRpc
 
 
 class RpcTimeout(Exception):
-    def __init__(self, rpc: PendingRpc, timeout: Optional[float]):
+    def __init__(self, rpc: PendingRpc, timeout: float | None):
         super().__init__(
             f'No response received for {rpc.method} after {timeout} s'
         )

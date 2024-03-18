@@ -27,7 +27,6 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
-    Optional,
     Set,
     TypeVar,
 )
@@ -36,7 +35,7 @@ try:
     # pylint: disable=wrong-import-position
     import black
 
-    black_mode: Optional[black.Mode] = black.Mode(string_normalization=False)
+    black_mode: black.Mode | None = black.Mode(string_normalization=False)
 
     # pylint: enable=wrong-import-position
 except ImportError:
@@ -123,7 +122,7 @@ def import_modules(directory: PathOrStr) -> Iterator:
 def compile_and_import(
     proto_files: Iterable[PathOrStr],
     includes: Iterable[PathOrStr] = (),
-    output_dir: Optional[PathOrStr] = None,
+    output_dir: PathOrStr | None = None,
 ) -> Iterator:
     """Compiles protos and imports their modules; yields the proto modules.
 
@@ -149,7 +148,7 @@ def compile_and_import(
 def compile_and_import_file(
     proto_file: PathOrStr,
     includes: Iterable[PathOrStr] = (),
-    output_dir: Optional[PathOrStr] = None,
+    output_dir: PathOrStr | None = None,
 ):
     """Compiles and imports the module for a single .proto file."""
     return next(iter(compile_and_import([proto_file], includes, output_dir)))
@@ -158,7 +157,7 @@ def compile_and_import_file(
 def compile_and_import_strings(
     contents: Iterable[str],
     includes: Iterable[PathOrStr] = (),
-    output_dir: Optional[PathOrStr] = None,
+    output_dir: PathOrStr | None = None,
 ) -> Iterator:
     """Compiles protos in one or more strings."""
 
@@ -264,7 +263,7 @@ class Packages(NamedTuple):
 
 
 def as_packages(
-    items: Iterable[tuple[str, T]], packages: Optional[Packages] = None
+    items: Iterable[tuple[str, T]], packages: Packages | None = None
 ) -> Packages:
     """Places items in a proto-style package structure navigable by attributes.
 
@@ -339,7 +338,7 @@ class Library:
         cls,
         contents: Iterable[str],
         includes: Iterable[PathOrStr] = (),
-        output_dir: Optional[PathOrStr] = None,
+        output_dir: PathOrStr | None = None,
     ) -> 'Library':
         """Creates a proto library from protos in the provided strings."""
         return cls(compile_and_import_strings(contents, includes, output_dir))

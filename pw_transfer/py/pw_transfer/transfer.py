@@ -20,7 +20,7 @@ import enum
 import logging
 import math
 import threading
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from pw_status import Status
 from pw_transfer.chunk import Chunk, ProtocolVersion
@@ -32,7 +32,7 @@ _LOG = logging.getLogger(__package__)
 class ProgressStats:
     bytes_sent: int
     bytes_confirmed_received: int
-    total_size_bytes: Optional[int]
+    total_size_bytes: int | None
 
     def percent_received(self) -> float:
         if self.total_size_bytes is None or self.total_size_bytes == 0:
@@ -59,9 +59,9 @@ class _Timer:
     def __init__(self, timeout_s: float, callback: Callable[[], Any]):
         self.timeout_s = timeout_s
         self._callback = callback
-        self._task: Optional[asyncio.Task[Any]] = None
+        self._task: asyncio.Task[Any] | None = None
 
-    def start(self, timeout_s: Optional[float] = None) -> None:
+    def start(self, timeout_s: float | None = None) -> None:
         """Starts a new timer.
 
         If a timer is already running, it is stopped and a new timer started.
@@ -130,7 +130,7 @@ class Transfer(abc.ABC):
         max_retries: int,
         max_lifetime_retries: int,
         protocol_version: ProtocolVersion,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
         initial_offset: int = 0,
     ):
         self.status = Status.OK
@@ -156,7 +156,7 @@ class Transfer(abc.ABC):
         else:
             self._state = Transfer._State.INITIATING
 
-        self._last_chunk: Optional[Chunk] = None
+        self._last_chunk: Chunk | None = None
 
         self._retries = 0
         self._max_retries = max_retries
@@ -410,7 +410,7 @@ class Transfer(abc.ABC):
         self,
         bytes_sent: int,
         bytes_confirmed_received: int,
-        total_size_bytes: Optional[int],
+        total_size_bytes: int | None,
     ) -> None:
         """Invokes the provided progress callback, if any, with the progress."""
 
@@ -457,7 +457,7 @@ class WriteTransfer(Transfer):
         max_retries: int,
         max_lifetime_retries: int,
         protocol_version: ProtocolVersion,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
         initial_offset: int = 0,
     ):
         super().__init__(
@@ -478,7 +478,7 @@ class WriteTransfer(Transfer):
 
         self._window_end_offset = 0
         self._max_chunk_size = 0
-        self._chunk_delay_us: Optional[int] = None
+        self._chunk_delay_us: int | None = None
 
         # The window ID increments for each parameters update.
         self._window_id = 0
@@ -516,7 +516,7 @@ class WriteTransfer(Transfer):
         asyncio.create_task(self._transmit_next_chunk(self._window_id))
 
     async def _transmit_next_chunk(
-        self, window_id: int, timeout_us: Optional[int] = None
+        self, window_id: int, timeout_us: int | None = None
     ) -> None:
         """Transmits a single data chunk to the server.
 
@@ -669,8 +669,8 @@ class ReadTransfer(Transfer):
         protocol_version: ProtocolVersion,
         max_bytes_to_receive: int = 8192,
         max_chunk_size: int = 1024,
-        chunk_delay_us: Optional[int] = None,
-        progress_callback: Optional[ProgressCallback] = None,
+        chunk_delay_us: int | None = None,
+        progress_callback: ProgressCallback | None = None,
         initial_offset: int = 0,
     ):
         super().__init__(
@@ -690,10 +690,10 @@ class ReadTransfer(Transfer):
         self._max_chunk_size = max_chunk_size
         self._chunk_delay_us = chunk_delay_us
 
-        self._remaining_transfer_size: Optional[int] = None
+        self._remaining_transfer_size: int | None = None
         self._data = bytearray()
         self._window_end_offset = max_bytes_to_receive
-        self._last_chunk_offset: Optional[int] = None
+        self._last_chunk_offset: int | None = None
 
     @property
     def data(self) -> bytes:

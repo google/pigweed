@@ -23,7 +23,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Iterable, Optional
+from typing import Iterable
 
 import pw_cli.log
 
@@ -80,7 +80,7 @@ def parse_args() -> argparse.Namespace:
 def run_bloaty(
     filename: str,
     config: str,
-    base_file: Optional[str] = None,
+    base_file: str | None = None,
     data_sources: Iterable[str] = (),
     extra_args: Iterable[str] = (),
 ) -> bytes:

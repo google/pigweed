@@ -64,14 +64,14 @@ from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import cast, Optional
+from typing import cast
 
 _PW_PROJECT_PATH = Path(
     os.environ.get('PW_PROJECT_ROOT', os.environ.get('PW_ROOT', os.getcwd()))
 )
 
 
-def assumed_environment_root() -> Optional[Path]:
+def assumed_environment_root() -> Path | None:
     """Infer the path to the Pigweed environment directory.
 
     First we look at the environment variable that should contain the path if
@@ -170,7 +170,7 @@ class ShellModifier(ABC):
 
     def __init__(
         self,
-        env: Optional[dict[str, str]] = None,
+        env: dict[str, str] | None = None,
         env_only: bool = False,
         path_var: str = '$PATH',
         project_root: str = '.',
@@ -212,7 +212,7 @@ class ShellModifier(ABC):
 
     def modify_env(
         self,
-        config_file_path: Optional[Path] = _DEFAULT_CONFIG_FILE_PATH,
+        config_file_path: Path | None = _DEFAULT_CONFIG_FILE_PATH,
         sanitize: bool = False,
     ) -> 'ShellModifier':
         """Modify the current shell state per the actions.json file provided."""

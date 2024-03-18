@@ -18,7 +18,6 @@ import logging
 from pathlib import Path
 import shutil
 import sys
-from typing import Optional
 
 import pw_cli.log
 
@@ -26,7 +25,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 

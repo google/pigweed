@@ -15,7 +15,6 @@
 """Tests the pw_rpc.console_tools.console module."""
 
 import types
-from typing import Optional
 import unittest
 
 import pw_status
@@ -190,7 +189,7 @@ class TestConsoleContext(unittest.TestCase):
             def set_target(
                 self,
                 unused_selected_client,
-                unused_channel_id: Optional[int] = None,
+                unused_channel_id: int | None = None,
             ) -> None:
                 nonlocal called_derived_set_target
                 called_derived_set_target = True

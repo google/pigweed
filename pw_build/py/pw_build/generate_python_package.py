@@ -25,7 +25,6 @@ from typing import (
     Any,
     Iterable,
     Iterator,
-    Optional,
     Sequence,
     Set,
     TextIO,
@@ -164,7 +163,7 @@ def _get_setup_keywords(pkg_data: dict, keywords: dict) -> dict:
 
 
 def _write_to_config(
-    config: configparser.ConfigParser, data: dict, section: Optional[str] = None
+    config: configparser.ConfigParser, data: dict, section: str | None = None
 ):
     """Populate a ConfigParser instance with the contents of a dict."""
     # Add a specified section if missing.

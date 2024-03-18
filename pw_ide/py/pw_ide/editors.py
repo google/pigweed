@@ -54,7 +54,6 @@ from typing import (
     Generator,
     Generic,
     Literal,
-    Optional,
     OrderedDict,
     Type,
     TypeVar,
@@ -180,7 +179,7 @@ _AnotherDictLike = TypeVar('_AnotherDictLike', bound=dict)
 def dict_deep_merge(
     src: _DictLike,
     dest: _DictLike,
-    ctor: Optional[Callable[[], _DictLike]] = None,
+    ctor: Callable[[], _DictLike] | None = None,
 ) -> _DictLike:
     """Deep merge dict-like `src` into dict-like `dest`.
 
@@ -314,8 +313,8 @@ class EditorSettingsDefinition:
 
     def __init__(
         self,
-        pw_ide_settings: Optional[PigweedIdeSettings] = None,
-        data: Optional[DefaultSettingsCallback] = None,
+        pw_ide_settings: PigweedIdeSettings | None = None,
+        data: DefaultSettingsCallback | None = None,
     ):
         self._data: EditorSettingsDict = OrderedDict()
 
@@ -550,11 +549,11 @@ class EditorSettingsManager(Generic[_SettingsTypeT]):
     def __init__(
         self,
         pw_ide_settings: PigweedIdeSettings,
-        settings_dir: Optional[Path] = None,
-        file_format: Optional[_StructuredFileFormat] = None,
-        types_with_defaults: Optional[
-            EditorSettingsTypesWithDefaults[_SettingsTypeT]
-        ] = None,
+        settings_dir: Path | None = None,
+        file_format: _StructuredFileFormat | None = None,
+        types_with_defaults: (
+            EditorSettingsTypesWithDefaults[_SettingsTypeT] | None
+        ) = None,
     ):
         if SettingsLevel.ACTIVE in self.__class__.prefixes:
             raise ValueError(

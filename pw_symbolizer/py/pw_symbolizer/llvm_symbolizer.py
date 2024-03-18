@@ -17,7 +17,6 @@ import shutil
 import subprocess
 import threading
 import json
-from typing import Optional
 from pathlib import Path
 from pw_symbolizer import symbolizer
 
@@ -27,9 +26,9 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
 
     def __init__(
         self,
-        binary: Optional[Path] = None,
+        binary: Path | None = None,
         force_legacy=False,
-        llvm_symbolizer_binary: Optional[Path] = None,
+        llvm_symbolizer_binary: Path | None = None,
     ):
         # Lets destructor return cleanly if the binary is not found.
         self._symbolizer = None

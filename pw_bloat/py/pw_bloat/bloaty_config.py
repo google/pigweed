@@ -17,7 +17,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import BinaryIO, NamedTuple, Optional, TextIO
+from typing import BinaryIO, NamedTuple, TextIO
 
 import pw_cli.argument_types
 from elftools.elf import elffile  # type: ignore
@@ -89,7 +89,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[dict]:
+def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> dict | None:
     """
     Search for the special pw::bloat::config symbols in the ELF binary.
 
@@ -252,7 +252,7 @@ def _memory_regions_overlap(memory_regions: dict) -> bool:
     return overlaps_detected
 
 
-def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> Optional[dict]:
+def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> dict | None:
     """
     Processes an ELF file to look up what memory regions segments are in.
 

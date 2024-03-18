@@ -17,7 +17,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 import time
 
 from pw_emu.core import (
@@ -57,16 +57,16 @@ class MockEmuLauncher(Launcher):
         config_path: Path,
     ):
         super().__init__('mock-emu', config_path)
-        self._wdir: Optional[Path] = None
+        self._wdir: Path | None = None
         self.log = True
 
     def _pre_start(
         self,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> list[str]:
         channels = []
         if self._config.get_target(['pre-start-cmds']):

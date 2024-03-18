@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import logging
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from pw_cli.color import colors as pw_cli_colors
 
@@ -77,7 +77,7 @@ class LogStore(logging.Handler):
         console.embed()
     """
 
-    def __init__(self, prefs: Optional[ConsolePrefs] = None):
+    def __init__(self, prefs: ConsolePrefs | None = None):
         """Initializes the LogStore instance."""
 
         # ConsolePrefs may not be passed on init. For example, if the user is

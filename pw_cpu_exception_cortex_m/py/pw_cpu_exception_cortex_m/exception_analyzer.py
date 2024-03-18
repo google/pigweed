@@ -13,7 +13,6 @@
 # the License.
 """Tools to analyze Cortex-M CPU state context captured during an exception."""
 
-from typing import Optional
 
 from pw_cpu_exception_cortex_m import cortex_m_constants
 from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
@@ -47,13 +46,13 @@ class CortexMExceptionAnalyzer:
     """This class provides helper functions to dump a ArmV7mCpuState proto."""
 
     def __init__(
-        self, cpu_state, symbolizer: Optional[pw_symbolizer.Symbolizer] = None
+        self, cpu_state, symbolizer: pw_symbolizer.Symbolizer | None = None
     ):
         self._cpu_state = cpu_state
         self._symbolizer = symbolizer
-        self._active_cfsr_fields: Optional[
-            tuple[cortex_m_constants.BitField, ...]
-        ] = None
+        self._active_cfsr_fields: (
+            tuple[cortex_m_constants.BitField, ...] | None
+        ) = None
 
     def active_cfsr_fields(self) -> tuple[cortex_m_constants.BitField, ...]:
         """Returns a list of BitFields for each active CFSR flag."""
@@ -223,7 +222,7 @@ class CortexMExceptionAnalyzer:
 
 def process_snapshot(
     serialized_snapshot: bytes,
-    symbolizer: Optional[pw_symbolizer.Symbolizer] = None,
+    symbolizer: pw_symbolizer.Symbolizer | None = None,
 ) -> str:
     """Returns the stringified result of a SnapshotCpuStateOverlay message run
     though a CortexMExceptionAnalyzer.

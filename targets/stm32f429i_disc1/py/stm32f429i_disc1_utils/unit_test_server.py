@@ -18,7 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
-from typing import IO, Optional
+from typing import IO
 
 import pw_cli.process
 import pw_cli.log
@@ -96,7 +96,7 @@ def generate_server_config() -> IO[bytes]:
 
 
 def launch_server(
-    server_config: Optional[IO[bytes]], server_port: Optional[int]
+    server_config: IO[bytes] | None, server_port: int | None
 ) -> int:
     """Launch a device test server with the provided arguments."""
     if server_config is None:

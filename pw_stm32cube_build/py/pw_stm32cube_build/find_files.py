@@ -13,7 +13,7 @@
 # the License.
 """Finds files for a given product."""
 
-from typing import Any, Optional, Set
+from typing import Any, Set
 
 import pathlib
 import re
@@ -131,7 +131,7 @@ def match_filename(product_name: str, filename: str):
 
 def find_linker_files(
     product_name: str, files: list[str], stm32cube_path: pathlib.Path
-) -> tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
+) -> tuple[pathlib.Path | None, pathlib.Path | None]:
     """Finds linker file for the given product.
 
     This searches `files` for linker scripts by name.

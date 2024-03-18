@@ -417,11 +417,11 @@ emulator instance:
    def start(
        self,
        target: str,
-       file: Optional[os.PathLike] = None,
+       file: os.PathLike | None = None,
        pause: bool = False,
        debug: bool = False,
        foreground: bool = False,
-       args: Optional[str] = None,
+       args: str | None = None,
    ) -> None:
 
 |nbsp|
@@ -449,14 +449,14 @@ emulator instance:
 :python:`def get_gdb_remote(self) -> str:`
    Return a string that can be passed to the target remote gdb command.
 
-:python:`def get_gdb(self) -> Optional[str]:`
+:python:`def get_gdb(self) -> str | None:`
    Returns the gdb command for current target.
 
 .. code-block:: python
 
    def run_gdb_cmds(
        commands : list[str],
-       executable: Optional[Path] = None,
+       executable: Path | None = None,
        pause: bool = False
    ) -> subprocess.CompletedProcess:
 
@@ -506,7 +506,7 @@ emulator instance:
 
    def get_channel_stream(
        name: str,
-       timeout: Optional[float] = None
+       timeout: float | None = None
    ) -> io.RawIOBase:
 
 |nbsp|

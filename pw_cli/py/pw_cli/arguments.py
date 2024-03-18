@@ -19,7 +19,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import sys
-from typing import NoReturn, Optional
+from typing import NoReturn
 
 from pw_cli import argument_types, plugins
 from pw_cli.branding import banner
@@ -47,8 +47,8 @@ class ShellCompletionFormat(Enum):
 @dataclass(frozen=True)
 class ShellCompletion:
     option_strings: list[str] = field(default_factory=list)
-    help: Optional[str] = None
-    choices: Optional[list[str]] = None
+    help: str | None = None
+    choices: list[str] | None = None
     flag: bool = True
 
     def bash_completion(self, text: str) -> list[str]:

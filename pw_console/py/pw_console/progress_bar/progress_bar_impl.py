@@ -19,7 +19,6 @@ application."""
 import functools
 from typing import (
     Iterable,
-    Optional,
     Sequence,
 )
 
@@ -94,8 +93,8 @@ class ProgressBarImpl:
     def __init__(
         self,
         title: AnyFormattedText = None,
-        formatters: Optional[Sequence[Formatter]] = None,
-        style: Optional[BaseStyle] = None,
+        formatters: Sequence[Formatter] | None = None,
+        style: BaseStyle | None = None,
     ) -> None:
         self.title = title
         self.formatters = formatters or create_default_formatters()
@@ -145,10 +144,10 @@ class ProgressBarImpl:
 
     def __call__(
         self,
-        data: Optional[Iterable] = None,
+        data: Iterable | None = None,
         label: AnyFormattedText = '',
         remove_when_done: bool = False,
-        total: Optional[int] = None,
+        total: int | None = None,
     ) -> 'ProgressBarCounter':
         """
         Start a new counter.

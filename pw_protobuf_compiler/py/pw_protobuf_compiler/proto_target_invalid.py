@@ -17,13 +17,12 @@ import argparse
 import logging
 import sys
 
-from typing import Optional
 
 _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 

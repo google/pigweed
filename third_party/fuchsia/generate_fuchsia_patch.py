@@ -21,7 +21,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-from typing import Iterable, TextIO, Optional
+from typing import Iterable, TextIO
 from datetime import datetime
 
 PathOrStr = Path | str
@@ -144,7 +144,7 @@ def _patch_invoke(file: Path, text: str) -> str:
     )
 
 
-def _patch(file: Path) -> Optional[str]:
+def _patch(file: Path) -> str | None:
     text = file.read_text()
     updated = _patch_assert(text)
     updated = _patch_constinit(updated)

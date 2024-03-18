@@ -14,13 +14,12 @@
 """Facilities for accessing the current Pigweed branding"""
 
 import operator
-from typing import Optional
 from pathlib import Path
 
 import pw_cli.env
 import pw_cli.color
 
-_memoized_banner: Optional[str] = None
+_memoized_banner: str | None = None
 
 # This is the default banner for Pigweed.
 _PIGWEED_BANNER = '''

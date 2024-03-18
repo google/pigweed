@@ -29,7 +29,7 @@ import os
 from pathlib import Path
 import sys
 import subprocess
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, Sequence
 
 _COPYRIGHT_NOTICE = '''\
 # Copyright 2022 The Pigweed Authors
@@ -212,7 +212,7 @@ def main(
     modules_list: Path,
     modules_gni_file: Path,
     mode: Mode,
-    stamp: Optional[Path] = None,
+    stamp: Path | None = None,
 ) -> int:
     """Manages the list of Pigweed modules."""
     prefix = Path(os.path.relpath(root, modules_gni_file.parent))

@@ -18,7 +18,7 @@ The label module defines a class to store and manipulate size reports.
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Iterable, Sequence, Optional
+from typing import Iterable, Sequence
 import csv
 
 
@@ -28,8 +28,8 @@ class Label:
 
     name: str
     size: int
-    capacity: Optional[int] = None
-    exists_both: Optional[bool] = None
+    capacity: int | None = None
+    exists_both: bool | None = None
     parents: tuple[str, ...] = ()
 
     def is_new(self) -> bool:
@@ -42,8 +42,8 @@ class Label:
 @dataclass
 class LabelInfo:
     size: int = 0
-    capacity: Optional[int] = None
-    exists_both: Optional[bool] = None
+    capacity: int | None = None
+    exists_both: bool | None = None
 
 
 class _LabelMap:
@@ -54,9 +54,7 @@ class _LabelMap:
     def __init__(self):
         self._label_map = defaultdict(lambda: defaultdict(LabelInfo))
 
-    def remove(
-        self, parent_label: str, child_label: Optional[str] = None
-    ) -> None:
+    def remove(self, parent_label: str, child_label: str | None = None) -> None:
         """Delete entire parent label or the child label."""
         if child_label:
             del self._label_map[parent_label][child_label]
@@ -89,7 +87,7 @@ class _DataSource:
         parent_label: str,
         child_label: str,
         size: int,
-        diff_exist: Optional[bool] = None,
+        diff_exist: bool | None = None,
     ) -> None:
         curr_label_info = self._ds_label_map[parent_label][child_label]
         curr_label_info.size += size
@@ -147,7 +145,7 @@ class DataSourceMap:
         self,
         label_hierarchy: Iterable[str],
         size: int,
-        diff_exist: Optional[bool] = None,
+        diff_exist: bool | None = None,
     ) -> None:
         """Insert a hierarchy of labels with its size."""
 
@@ -234,7 +232,7 @@ class DataSourceMap:
         )
 
     @lru_cache
-    def labels(self, ds_index: Optional[int] = None) -> Iterable[Label]:
+    def labels(self, ds_index: int | None = None) -> Iterable[Label]:
         """Generator that yields a Label depending on specified data source.
 
         Args:

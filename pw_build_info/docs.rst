@@ -124,24 +124,24 @@ Python API reference
 ====================
 
 .. py:function:: read_build_id_from_section(elf_file: BinaryIO) -> \
-                     Optional[bytes]
+                     bytes | None
 
   Reads a GNU build ID from an ELF binary by searching for a
   ``.note.gnu.build-id`` section.
 
 .. py:function:: read_build_id_from_symbol(elf_file: BinaryIO) -> \
-                     Optional[bytes]
+                     bytes | None
 
   Reads a GNU build ID from an ELF binary by searching for a
   ``gnu_build_id_begin`` symbol. This can be a rather slow operation.
 
-.. py:function:: read_build_id(elf_file: BinaryIO) -> Optional[bytes]
+.. py:function:: read_build_id(elf_file: BinaryIO) -> bytes | None
 
   Reads a GNU build ID from an ELF binary, first checking for a GNU build ID
   section and then falling back to search for a ``gnu_build_id_begin`` symbol.
 
 .. py:function:: find_matching_elf(uuid: bytes, search_dir: Path) -> \
-                     Optional[Path]
+                     Path | None
 
   Recursively searches a directory for an ELF file with a matching UUID.
 

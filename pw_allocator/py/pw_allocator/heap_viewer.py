@@ -21,7 +21,6 @@ import argparse
 import sys
 import math
 import logging
-from typing import Optional
 from dataclasses import dataclass, field
 import coloredlogs  # type: ignore
 
@@ -32,7 +31,7 @@ class HeapBlock:
 
     size: int
     mem_offset: int
-    next: Optional['HeapBlock'] = None
+    next: 'HeapBlock | None' = None
 
 
 @dataclass

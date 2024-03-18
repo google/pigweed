@@ -58,7 +58,6 @@ from typing import (
     Callable,
     Iterable,
     NoReturn,
-    Optional,
     Sequence,
 )
 
@@ -176,7 +175,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.restart_on_changes = restart
         self.fullscreen_enabled = fullscreen
-        self.watch_app: Optional[WatchApp] = None
+        self.watch_app: WatchApp | None = None
 
         self.use_logfile = use_logfile
         self.separate_logfiles = separate_logfiles
@@ -187,7 +186,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         # Track state of a build. These need to be members instead of locals
         # due to the split between dispatch(), run(), and on_complete().
-        self.matching_path: Optional[Path] = None
+        self.matching_path: Path | None = None
 
         if (
             not self.fullscreen_enabled
@@ -727,23 +726,23 @@ def watch_setup(  # pylint: disable=too-many-locals
     # allows use of watch_setup by other project build scripts.
     patterns: str = WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS),
     ignore_patterns_string: str = '',
-    exclude_list: Optional[list[Path]] = None,
+    exclude_list: list[Path] | None = None,
     restart: bool = True,
     serve_docs: bool = False,
     serve_docs_port: int = 8000,
     serve_docs_path: Path = Path('docs/gen/docs'),
     fullscreen: bool = False,
     banners: bool = True,
-    logfile: Optional[Path] = None,
+    logfile: Path | None = None,
     separate_logfiles: bool = False,
     parallel: bool = False,
     parallel_workers: int = 0,
     # pylint: disable=unused-argument
-    default_build_targets: Optional[list[str]] = None,
-    build_directories: Optional[list[str]] = None,
-    build_system_commands: Optional[list[str]] = None,
-    run_command: Optional[list[str]] = None,
-    jobs: Optional[int] = None,
+    default_build_targets: list[str] | None = None,
+    build_directories: list[str] | None = None,
+    build_system_commands: list[str] | None = None,
+    run_command: list[str] | None = None,
+    jobs: int | None = None,
     keep_going: bool = False,
     colors: bool = True,
     debug_logging: bool = False,
@@ -918,7 +917,7 @@ def watch(
 def run_watch(
     event_handler: PigweedBuildWatcher,
     exclude_list: list[Path],
-    prefs: Optional[WatchAppPrefs] = None,
+    prefs: WatchAppPrefs | None = None,
     fullscreen: bool = False,
 ) -> None:
     """Start pw_watch."""

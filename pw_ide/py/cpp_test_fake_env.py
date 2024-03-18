@@ -17,7 +17,6 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-from typing import Optional
 import unittest
 
 import pw_cli.env
@@ -39,7 +38,7 @@ class PwFindCipdInstalledExeTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = Path(self.temp_dir.name)
 
-        self.envs_saves: dict[str, Optional[str]] = {
+        self.envs_saves: dict[str, str | None] = {
             "PW_FAKE_PROJ_CIPD_INSTALL_DIR": None,
             "PW_PIGWEED_CIPD_INSTALL_DIR": None,
         }

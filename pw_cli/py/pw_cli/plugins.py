@@ -38,7 +38,7 @@ import pkgutil
 import sys
 from textwrap import TextWrapper
 import types
-from typing import Any, Callable, Iterable, Iterator, Optional, Set
+from typing import Any, Callable, Iterable, Iterator, Set
 
 _LOG = logging.getLogger(__name__)
 _BUILT_IN = '<built-in>'
@@ -79,7 +79,7 @@ class Plugin:
         name: str,
         module_name: str,
         member_name: str,
-        source: Optional[Path],
+        source: Path | None,
     ) -> 'Plugin':
         """Creates a plugin by module and attribute name.
 
@@ -113,7 +113,7 @@ class Plugin:
         return cls(name, member, source)
 
     def __init__(
-        self, name: str, target: Any, source: Optional[Path] = None
+        self, name: str, target: Any, source: Path | None = None
     ) -> None:
         """Creates a plugin for the provided target."""
         self.name = name
@@ -287,7 +287,7 @@ class Registry(collections.abc.Mapping):
 
         return False
 
-    def register(self, name: str, target: Any) -> Optional[Plugin]:
+    def register(self, name: str, target: Any) -> Plugin | None:
         """Registers an object as a plugin."""
         return self._register(Plugin(name, target, None))
 
@@ -296,14 +296,14 @@ class Registry(collections.abc.Mapping):
         name: str,
         module_name: str,
         member_name: str,
-        source: Optional[Path] = None,
-    ) -> Optional[Plugin]:
+        source: Path | None = None,
+    ) -> Plugin | None:
         """Registers an object from its module and name as a plugin."""
         return self._register(
             Plugin.from_name(name, module_name, member_name, source)
         )
 
-    def _register(self, plugin: Plugin) -> Optional[Plugin]:
+    def _register(self, plugin: Plugin) -> Plugin | None:
         # Prohibit functions not from a plugins file from overriding others.
         if not self._should_register(plugin):
             return None
@@ -321,7 +321,7 @@ class Registry(collections.abc.Mapping):
     def register_config(
         self,
         config: dict,
-        path: Optional[Path] = None,
+        path: Path | None = None,
     ) -> None:
         """Registers plugins from a Pigweed config.
 
@@ -388,7 +388,7 @@ class Registry(collections.abc.Mapping):
         self,
         directory: Path,
         file_name: str,
-        restrict_to: Optional[Path] = None,
+        restrict_to: Path | None = None,
     ) -> None:
         """Finds and registers plugins from plugins files in a directory.
 
@@ -458,7 +458,7 @@ class Registry(collections.abc.Mapping):
             yield '  (none found)'
 
     def plugin(
-        self, function: Optional[Callable] = None, *, name: Optional[str] = None
+        self, function: Callable | None = None, *, name: str | None = None
     ) -> Callable[[Callable], Callable]:
         """Decorator that registers a function with this plugin registry."""
 
@@ -473,7 +473,7 @@ class Registry(collections.abc.Mapping):
         return function
 
 
-def find_in_parents(name: str, path: Path) -> Optional[Path]:
+def find_in_parents(name: str, path: Path) -> Path | None:
     """Searches parent directories of the path for a file or directory."""
     path = path.resolve()
 

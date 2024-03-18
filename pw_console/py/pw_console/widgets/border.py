@@ -13,7 +13,7 @@
 # the License.
 """Wrapper fuctions to add borders around prompt_toolkit containers."""
 
-from typing import Callable, Optional
+from typing import Callable
 
 from prompt_toolkit.layout import (
     AnyContainer,
@@ -29,7 +29,7 @@ from prompt_toolkit.formatted_text import StyleAndTextTuples
 def create_border(
     # pylint: disable=too-many-arguments
     content: AnyContainer,
-    content_height: Optional[int] = None,
+    content_height: int | None = None,
     title: Callable[[], str | StyleAndTextTuples] | str = '',
     border_style: Callable[[], str] | str = '',
     base_style: Callable[[], str] | str = '',

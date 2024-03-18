@@ -14,7 +14,6 @@
 """The env module defines the environment variables used by Pigweed."""
 
 from pathlib import Path
-from typing import Optional
 
 from pw_cli import envparse
 
@@ -83,7 +82,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
 
 # Internal: memoize environment parsing to avoid unnecessary computation in
 # multiple calls to pigweed_environment().
-_memoized_environment: Optional[envparse.EnvNamespace] = None
+_memoized_environment: envparse.EnvNamespace | None = None
 
 
 def pigweed_environment() -> envparse.EnvNamespace:

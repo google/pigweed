@@ -14,7 +14,7 @@
 """Wrapers for socket clients to log read and write data."""
 from __future__ import annotations
 
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 import errno
 import re
@@ -44,7 +44,7 @@ class SocketClient:
     def __init__(
         self,
         config: str,
-        on_disconnect: Optional[Callable[[SocketClient], None]] = None,
+        on_disconnect: Callable[[SocketClient], None] | None = None,
     ):
         """Creates a socket connection.
 

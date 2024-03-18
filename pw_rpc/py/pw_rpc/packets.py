@@ -14,7 +14,6 @@
 """Functions for working with pw_rpc packets."""
 
 import dataclasses
-from typing import Optional
 
 from google.protobuf import message
 from pw_status import Status
@@ -44,7 +43,7 @@ class RpcIds:
     call_id: int
 
 
-def encode_request(rpc: RpcIds, request: Optional[message.Message]) -> bytes:
+def encode_request(rpc: RpcIds, request: message.Message | None) -> bytes:
     payload = request.SerializeToString() if request is not None else bytes()
 
     return packet_pb2.RpcPacket(

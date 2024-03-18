@@ -17,7 +17,7 @@ import argparse
 import enum
 from inspect import cleandoc
 import re
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Callable, Protocol
 
 from pw_ide.commands import (
     cmd_cpp,
@@ -30,8 +30,8 @@ from pw_ide.commands import (
 from pw_ide.vscode import VscSettingsType
 
 
-def _get_docstring(obj: Any) -> Optional[str]:
-    doc: Optional[str] = getattr(obj, '__doc__', None)
+def _get_docstring(obj: Any) -> str | None:
+    doc: str | None = getattr(obj, '__doc__', None)
     return doc
 
 

@@ -14,7 +14,6 @@
 """Container class for a single progress bar task."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 from prompt_toolkit.application import get_app_or_none
 from prompt_toolkit.shortcuts.progress_bar import ProgressBarCounter
@@ -36,7 +35,7 @@ class ProgressBarTaskCounter:
     count: int = 0
     completed: bool = False
     canceled: bool = False
-    prompt_toolkit_counter: Optional[ProgressBarCounter] = None
+    prompt_toolkit_counter: ProgressBarCounter | None = None
 
     def mark_canceled(self):
         self.canceled = True

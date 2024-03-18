@@ -13,7 +13,6 @@
 # the License.
 """Finds components for a given manifest."""
 
-from typing import Optional
 
 import pathlib
 import sys
@@ -22,7 +21,7 @@ import xml.etree.ElementTree
 
 def get_component(
     root: xml.etree.ElementTree.Element, component_id: str
-) -> tuple[Optional[xml.etree.ElementTree.Element], Optional[pathlib.Path]]:
+) -> tuple[xml.etree.ElementTree.Element | None, pathlib.Path | None]:
     """Parse <component> manifest stanza.
 
     Schema:
@@ -127,7 +126,7 @@ def parse_include_paths(
 
 def _parse_include_path(
     include_path: xml.etree.ElementTree.Element,
-    base_path: Optional[pathlib.Path],
+    base_path: pathlib.Path | None,
 ) -> pathlib.Path:
     """Parse <include_path> manifest stanza.
 
@@ -326,7 +325,7 @@ def check_dependencies(
     root: xml.etree.ElementTree.Element,
     component_id: str,
     include: list[str],
-    exclude: Optional[list[str]] = None,
+    exclude: list[str] | None = None,
 ) -> bool:
     """Check the list of optional dependencies for a component.
 
@@ -352,7 +351,7 @@ def check_dependencies(
 def _check_dependency(
     dependency: xml.etree.ElementTree.Element,
     include: list[str],
-    exclude: Optional[list[str]] = None,
+    exclude: list[str] | None = None,
 ) -> bool:
     """Check a dependency for a component.
 
@@ -393,7 +392,7 @@ def _check_dependency(
 def create_project(
     root: xml.etree.ElementTree.Element,
     include: list[str],
-    exclude: Optional[list[str]] = None,
+    exclude: list[str] | None = None,
 ) -> tuple[
     list[str],
     list[str],
@@ -481,8 +480,8 @@ class Project:
     def from_file(
         cls,
         manifest_path: pathlib.Path,
-        include: Optional[list[str]] = None,
-        exclude: Optional[list[str]] = None,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
     ):
         """Create a self-contained project with the specified components.
 
@@ -498,8 +497,8 @@ class Project:
     def __init__(
         self,
         manifest: xml.etree.ElementTree.Element,
-        include: Optional[list[str]] = None,
-        exclude: Optional[list[str]] = None,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
     ):
         """Create a self-contained project with the specified components.
 

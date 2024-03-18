@@ -18,7 +18,7 @@ import time
 import xmlrpc.client
 
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 from pw_emu.core import (
     Connector,
@@ -41,7 +41,7 @@ class RenodeRobotError(Error):
 class RenodeLauncher(Launcher):
     """Start a new renode process for a given target and config file."""
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         super().__init__('renode', config_path)
         self._start_cmd: list[str] = []
 
@@ -64,10 +64,10 @@ class RenodeLauncher(Launcher):
     def _pre_start(
         self,
         target: str,
-        file: Optional[Path] = None,
+        file: Path | None = None,
         pause: bool = False,
         debug: bool = False,
-        args: Optional[str] = None,
+        args: str | None = None,
     ) -> list[str]:
         renode = self._config.get_target_emu(['executable'])
         if not renode:

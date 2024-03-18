@@ -20,7 +20,7 @@ import logging
 import os
 import re
 import time
-from typing import Callable, Iterable, NoReturn, Optional
+from typing import Callable, Iterable, NoReturn
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -585,9 +585,9 @@ class WatchApp(PluginMixin):
         def _next_error(_event):
             self.jump_to_error()
 
-        existing_log_bindings: Optional[
-            KeyBindingsBase
-        ] = new_log_pane.log_content_control.key_bindings
+        existing_log_bindings: (
+            KeyBindingsBase | None
+        ) = new_log_pane.log_content_control.key_bindings
 
         key_binding_list: list[KeyBindingsBase] = []
         if existing_log_bindings:
@@ -810,7 +810,7 @@ class WatchApp(PluginMixin):
     def exit(
         self,
         exit_code: int = 1,
-        log_after_shutdown: Optional[Callable[[], None]] = None,
+        log_after_shutdown: Callable[[], None] | None = None,
     ) -> None:
         _LOG.info('Exiting...')
         BUILDER_CONTEXT.ctrl_c_pressed = True

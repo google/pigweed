@@ -24,7 +24,6 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
-    Optional,
     TypeVar,
 )
 
@@ -43,7 +42,7 @@ from pw_rpc import ids
 @dataclass(frozen=True)
 class Channel:
     id: int
-    output: Optional[Callable[[bytes], Any]]
+    output: Callable[[bytes], Any] | None
 
     def __repr__(self) -> str:
         return f'Channel({self.id})'
@@ -280,7 +279,7 @@ class Method:
         return self.Type.UNARY
 
     def get_request(
-        self, proto: Optional[Message], proto_kwargs: Optional[dict[str, Any]]
+        self, proto: Message | None, proto_kwargs: dict[str, Any] | None
     ) -> Message:
         """Returns a request_type protobuf message.
 

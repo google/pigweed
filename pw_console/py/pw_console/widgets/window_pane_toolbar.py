@@ -14,7 +14,7 @@
 """Window pane toolbar base class."""
 
 import logging
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 import functools
 
 from prompt_toolkit.filters import Condition, has_focus
@@ -175,11 +175,11 @@ class WindowPaneToolbar:
 
     def __init__(
         self,
-        parent_window_pane: Optional[Any] = None,
-        title: Optional[str] = None,
-        subtitle: Optional[Callable[[], str]] = None,
-        focus_check_container: Optional[Any] = None,
-        focus_action_callable: Optional[Callable] = None,
+        parent_window_pane: Any | None = None,
+        title: str | None = None,
+        subtitle: Callable[[], str] | None = None,
+        focus_check_container: Any | None = None,
+        focus_action_callable: Callable | None = None,
         center_section_align: WindowAlign = WindowAlign.LEFT,
         include_resize_handle: bool = True,
         click_to_focus_text: str = 'click to focus',

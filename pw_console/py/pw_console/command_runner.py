@@ -22,7 +22,6 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -69,7 +68,7 @@ _LOG = logging.getLogger(__package__)
 class CommandRunnerItem:
     title: str
     handler: Callable
-    description: Optional[str] = None
+    description: str | None = None
 
 
 def flatten_menu_items(
@@ -129,10 +128,8 @@ class CommandRunner:
     def __init__(
         self,
         application: ConsoleApp,
-        window_title: Optional[str] = None,
-        load_completions: Optional[
-            Callable[[], list[CommandRunnerItem]]
-        ] = None,
+        window_title: str | None = None,
+        load_completions: Callable[[], list[CommandRunnerItem]] | None = None,
         width: int = 80,
         height: int = 10,
     ):
@@ -152,8 +149,8 @@ class CommandRunner:
         # Current selected item tracking variables
         self.selected_item: int = 0
         self.selected_item_title: str = ''
-        self.selected_item_handler: Optional[Callable] = None
-        self.selected_item_description: Optional[str] = None
+        self.selected_item_handler: Callable | None = None
+        self.selected_item_description: str | None = None
         # Previous input text
         self.last_input_field_text: str = 'EMPTY'
         # Previous selected item
@@ -355,10 +352,8 @@ class CommandRunner:
 
     def set_completions(
         self,
-        window_title: Optional[str] = None,
-        load_completions: Optional[
-            Callable[[], list[CommandRunnerItem]]
-        ] = None,
+        window_title: str | None = None,
+        load_completions: Callable[[], list[CommandRunnerItem]] | None = None,
     ) -> None:
         """Set window title and callable to fetch possible completions.
 

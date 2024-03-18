@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -56,7 +56,7 @@ class WindowPaneHSplit(HSplit):
         write_position,
         parent_style: str,
         erase_bg: bool,
-        z_index: Optional[int],
+        z_index: int | None,
     ) -> None:
         # Save the width and height for the current render pass. This will be
         # used by the log pane to render the correct amount of log lines.
@@ -82,8 +82,8 @@ class WindowPane(ABC):
         self,
         application: 'ConsoleApp | Any' = None,
         pane_title: str = 'Window',
-        height: Optional[AnyDimension] = None,
-        width: Optional[AnyDimension] = None,
+        height: AnyDimension | None = None,
+        width: AnyDimension | None = None,
     ):
         if application:
             self.application = application
@@ -93,7 +93,7 @@ class WindowPane(ABC):
         self._pane_title = pane_title
         self._pane_subtitle: str = ''
 
-        self.extra_tab_style: Optional[str] = None
+        self.extra_tab_style: str | None = None
 
         # Default width and height to 10 lines each. They will be resized by the
         # WindowManager later.

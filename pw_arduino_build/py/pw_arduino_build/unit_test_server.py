@@ -18,7 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
-from typing import IO, Optional
+from typing import IO
 
 import pw_cli.process
 
@@ -90,7 +90,7 @@ def generate_runner(command: str, arguments: list[str]) -> str:
 
 
 def generate_server_config(
-    runner_args: Optional[list[str]], arduino_package_path: str
+    runner_args: list[str] | None, arduino_package_path: str
 ) -> IO[bytes]:
     """Returns a temporary generated file for use as the server config."""
 
@@ -121,9 +121,9 @@ def generate_server_config(
 
 
 def launch_server(
-    server_config: Optional[IO[bytes]],
-    server_port: Optional[int],
-    runner_args: Optional[list[str]],
+    server_config: IO[bytes] | None,
+    server_port: int | None,
+    runner_args: list[str] | None,
     arduino_package_path: str,
 ) -> int:
     """Launch a device test server with the provided arguments."""

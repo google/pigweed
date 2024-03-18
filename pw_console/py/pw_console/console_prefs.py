@@ -16,7 +16,7 @@
 import dataclasses
 import os
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -89,13 +89,13 @@ class CodeSnippet:
 
     title: str
     code: str
-    description: Optional[str] = None
+    description: str | None = None
 
     @staticmethod
     def from_yaml(
         title: str,
         value: str | dict,
-        previous_description: Optional[str] = None,
+        previous_description: str | None = None,
     ) -> 'CodeSnippet':
         if isinstance(value, str):
             return CodeSnippet(title=title, code=value)
@@ -380,7 +380,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
 
         all_snippets: list[CodeSnippet] = []
 
-        def previous_description() -> Optional[str]:
+        def previous_description() -> str | None:
             if not all_snippets:
                 return None
             return all_snippets[-1].description

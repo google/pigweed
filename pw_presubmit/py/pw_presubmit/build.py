@@ -36,7 +36,6 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
-    Optional,
     Sequence,
     Set,
 )
@@ -330,7 +329,7 @@ def get_gn_args(directory: Path) -> list[dict[str, dict[str, str]]]:
 def cmake(
     ctx: PresubmitContext,
     *args: str,
-    env: Optional[Mapping['str', 'str']] = None,
+    env: Mapping['str', 'str'] | None = None,
 ) -> None:
     """Runs CMake for Ninja on the given source and output directories."""
     call(
@@ -765,7 +764,7 @@ class _NinjaBase(Check):
         packages: Sequence[str] = (),
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
         ninja_targets: str | Sequence[str] | Sequence[Sequence[str]] = (),
-        coverage_options: Optional[CoverageOptions] = None,
+        coverage_options: CoverageOptions | None = None,
         **kwargs,
     ):
         """Initializes a _NinjaBase object.
@@ -999,9 +998,9 @@ class GnGenNinja(_NinjaBase):
     def __init__(
         self,
         *args,
-        gn_args: Optional[  # pylint: disable=redefined-outer-name
-            dict[str, Any]
-        ] = None,
+        gn_args: (  # pylint: disable=redefined-outer-name
+            dict[str, Any] | None
+        ) = None,
         **kwargs,
     ):
         """Initializes a GnGenNinja object.

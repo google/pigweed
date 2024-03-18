@@ -65,7 +65,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any, Optional, OrderedDict
+from typing import Any, OrderedDict
 
 from pw_cli.env import pigweed_environment
 
@@ -327,7 +327,7 @@ def _default_settings(
 
 def _default_tasks(
     pw_ide_settings: PigweedIdeSettings,
-    state: Optional[CppIdeFeaturesState] = None,
+    state: CppIdeFeaturesState | None = None,
 ) -> EditorSettingsDict:
     if state is None:
         state = CppIdeFeaturesState(pw_ide_settings)

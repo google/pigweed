@@ -14,7 +14,7 @@
 """This module generates the code for pw_protobuf pw_rpc services."""
 
 import os
-from typing import Iterable, Optional
+from typing import Iterable
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoServiceMethod
@@ -53,7 +53,7 @@ def _serde(method: ProtoServiceMethod) -> str:
 
 
 def _client_call(
-    method: ProtoServiceMethod, response: Optional[str] = None
+    method: ProtoServiceMethod, response: str | None = None
 ) -> str:
     template_args = []
 
@@ -70,13 +70,13 @@ def _client_call(
 
 def _function(
     method: ProtoServiceMethod,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> str:
     return f'auto {name or method.name()}'
 
 
 def _user_args(
-    method: ProtoServiceMethod, response: Optional[str] = None
+    method: ProtoServiceMethod, response: str | None = None
 ) -> Iterable[str]:
     if not method.client_streaming():
         yield f'const {method.request_type().pwpb_struct()}& request'
@@ -150,8 +150,8 @@ class PwpbCodeGenerator(CodeGenerator):
         self,
         method: ProtoServiceMethod,
         *,
-        response: Optional[str] = None,
-        name: Optional[str] = None,
+        response: str | None = None,
+        name: str | None = None,
         dynamic: bool,
     ) -> None:
         if response is None:
@@ -219,8 +219,8 @@ class PwpbCodeGenerator(CodeGenerator):
     def _client_static_function(
         self,
         method: ProtoServiceMethod,
-        response: Optional[str] = None,
-        name: Optional[str] = None,
+        response: str | None = None,
+        name: str | None = None,
     ) -> None:
         if response is None:
             response = method.response_type().pwpb_struct()

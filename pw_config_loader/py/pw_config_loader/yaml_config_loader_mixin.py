@@ -17,7 +17,7 @@ import enum
 import os
 import logging
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 import yaml
 
@@ -61,11 +61,11 @@ class YamlConfigLoaderMixin:
     def config_init(
         self,
         config_section_title: str | Sequence[str],
-        project_file: Optional[Path | bool] = None,
-        project_user_file: Optional[Path | bool] = None,
-        user_file: Optional[Path | bool] = None,
-        default_config: Optional[dict[Any, Any]] = None,
-        environment_var: Optional[str] = None,
+        project_file: Path | bool | None = None,
+        project_user_file: Path | bool | None = None,
+        user_file: Path | bool | None = None,
+        default_config: dict[Any, Any] | None = None,
+        environment_var: str | None = None,
         skip_files_without_sections: bool = False,
     ) -> None:
         """Call this to load YAML config files in order of precedence.

@@ -19,7 +19,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import cast, Optional, Set
+from typing import cast, Set
 
 from pw_cli.env import pigweed_environment
 
@@ -144,8 +144,8 @@ def cmd_setup(
 
 @_inject_reporter
 def cmd_vscode(
-    include: Optional[list[VscSettingsType]] = None,
-    exclude: Optional[list[VscSettingsType]] = None,
+    include: list[VscSettingsType] | None = None,
+    exclude: list[VscSettingsType] | None = None,
     build_extension: bool = False,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
@@ -527,11 +527,11 @@ class TryAgainException(Exception):
 def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     should_list_targets: bool,
     should_get_target: bool,
-    target_to_set: Optional[str],
+    target_to_set: str | None,
     process: bool = True,
     use_default_target: bool = False,
     clangd_command: bool = False,
-    clangd_command_system: Optional[str] = None,
+    clangd_command_system: str | None = None,
     should_try_compdb_gen_cmd: bool = True,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
@@ -817,7 +817,7 @@ def install_py_module_as_editable(
 @_inject_reporter
 def cmd_python(
     should_print_venv: bool,
-    install_editable: Optional[str] = None,
+    install_editable: str | None = None,
     reporter: StatusReporter = StatusReporter(),
 ) -> None:
     """Configure Python code intelligence support.

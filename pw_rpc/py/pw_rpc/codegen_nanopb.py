@@ -14,7 +14,7 @@
 """This module generates the code for nanopb-based pw_rpc services."""
 
 import os
-from typing import Iterable, NamedTuple, Optional
+from typing import Iterable, NamedTuple
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoServiceMethod
@@ -53,7 +53,7 @@ def _proto_filename_to_generated_header(proto_file: str) -> str:
 
 
 def _client_call(
-    method: ProtoServiceMethod, response: Optional[str] = None
+    method: ProtoServiceMethod, response: str | None = None
 ) -> str:
     template_args = []
 
@@ -70,8 +70,8 @@ def _client_call(
 
 def _function(
     method: ProtoServiceMethod,
-    response: Optional[str] = None,
-    name: Optional[str] = None,
+    response: str | None = None,
+    name: str | None = None,
 ) -> str:
     if name is None:
         name = method.name()
@@ -80,7 +80,7 @@ def _function(
 
 
 def _user_args(
-    method: ProtoServiceMethod, response: Optional[str] = None
+    method: ProtoServiceMethod, response: str | None = None
 ) -> Iterable[str]:
     if not method.client_streaming():
         yield f'const {method.request_type().nanopb_struct()}& request'
@@ -152,8 +152,8 @@ class NanopbCodeGenerator(CodeGenerator):
     def _client_member_function(
         self,
         method: ProtoServiceMethod,
-        response: Optional[str] = None,
-        name: Optional[str] = None,
+        response: str | None = None,
+        name: str | None = None,
     ) -> None:
         if response is None:
             response = method.response_type().nanopb_struct()
@@ -216,8 +216,8 @@ class NanopbCodeGenerator(CodeGenerator):
     def _client_static_function(
         self,
         method: ProtoServiceMethod,
-        response: Optional[str] = None,
-        name: Optional[str] = None,
+        response: str | None = None,
+        name: str | None = None,
     ) -> None:
         if response is None:
             response = method.response_type().nanopb_struct()
@@ -283,7 +283,7 @@ class _CallbackFunction(NamedTuple):
 
     function_type: str
     name: str
-    default_value: Optional[str] = None
+    default_value: str | None = None
 
     def __str__(self):
         param = f'::pw::Function<{self.function_type}>&& {self.name}'
