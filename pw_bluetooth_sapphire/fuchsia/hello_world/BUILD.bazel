@@ -24,6 +24,7 @@ load(
     "fuchsia_platforms",
     "fuchsia_unittest_package",
 )
+load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_HOST_X64")
 
 fuchsia_cc_binary(
     name = "hello_world",
@@ -55,6 +56,7 @@ fuchsia_package(
     ],
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
+    tags = MANUAL_IF_NOT_HOST_X64,
 )
 
 fuchsia_cc_test(
@@ -74,6 +76,7 @@ fuchsia_unittest_package(
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
     # TODO: b/42178254 - Reenable after we've rolled gtest.
+    # tags = MANUAL_IF_NOT_HOST_X64,
     tags = ["manual"],
     unit_tests = [
         ":hello_gtest",

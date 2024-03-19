@@ -175,7 +175,7 @@ install_deps()
 # See https://github.com/bazelbuild/bazel/issues/1550
 cipd_repository(
     name = "fuchsia_sdk",
-    path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-${arch}",
+    path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-amd64",
     tag = "version:19.20240315.0.1",
 )
 
@@ -195,6 +195,13 @@ fuchsia_clang_repository(
 load("@fuchsia_clang//:defs.bzl", "register_clang_toolchains")
 
 register_clang_toolchains()
+
+# Since Fuchsia doesn't release arm64 SDKs, use this to gate Fuchsia targets.
+load("//pw_env_setup:bazel/host_metadata_repository.bzl", "host_metadata_repository")
+
+host_metadata_repository(
+    name = "host_metadata",
+)
 
 # Set up rules for Abseil C++.
 # Must be included before com_google_googletest and rules_fuzzing.
