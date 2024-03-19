@@ -21,14 +21,12 @@
 
 #include "pw_bytes/endian.h"
 #include "pw_hdlc/encoded_size.h"
-#include "pw_hdlc/internal/encoder.h"
 #include "pw_span/span.h"
 #include "pw_varint/varint.h"
 
 using std::byte;
 
 namespace pw::hdlc {
-namespace internal {
 
 Status EscapeAndWrite(const byte b, stream::Writer& writer) {
   if (b == kFlag) {
@@ -85,8 +83,6 @@ Status Encoder::StartFrame(uint64_t address, std::byte control) {
   return WriteData(span(metadata_buffer).first(metadata_size));
 }
 
-}  // namespace internal
-
 Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer) {
@@ -94,7 +90,7 @@ Status WriteUIFrame(uint64_t address,
     return Status::ResourceExhausted();
   }
 
-  internal::Encoder encoder(writer);
+  Encoder encoder(writer);
 
   if (Status status = encoder.StartUnnumberedFrame(address); !status.ok()) {
     return status;

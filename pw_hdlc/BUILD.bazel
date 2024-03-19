@@ -26,7 +26,6 @@ cc_library(
     srcs = [
         "decoder.cc",
         "encoder.cc",
-        "public/pw_hdlc/internal/encoder.h",
         "public/pw_hdlc/internal/protocol.h",
     ],
     hdrs = [

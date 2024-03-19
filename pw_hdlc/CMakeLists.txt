@@ -80,7 +80,6 @@ pw_add_library(pw_hdlc.encoder STATIC
     pw_hdlc.encoded_size
   SOURCES
     encoder.cc
-    public/pw_hdlc/internal/encoder.h
 )
 
 pw_add_library(pw_hdlc.rpc_channel_output INTERFACE

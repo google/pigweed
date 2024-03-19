@@ -13,7 +13,12 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include "pw_bytes/span.h"
+#include "pw_checksum/crc32.h"
+#include "pw_hdlc/internal/protocol.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
@@ -21,6 +26,9 @@ namespace pw::hdlc {
 
 /// @brief Writes an HDLC unnumbered information frame (UI frame) to the
 /// provided ``pw::stream`` writer.
+///
+/// This function is a convenience alias for the more general ``Encoder``
+/// type and set of functions.
 ///
 /// @param address The frame address.
 ///
@@ -45,5 +53,34 @@ namespace pw::hdlc {
 Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer);
+
+/// Encodes and writes HDLC frames.
+class Encoder {
+ public:
+  /// Construct an encoder which will write data to ``output``.
+  constexpr Encoder(stream::Writer& output) : writer_(output) {}
+
+  /// Writes the header for an U-frame. After successfully calling
+  /// StartUnnumberedFrame, WriteData may be called any number of times.
+  Status StartUnnumberedFrame(uint64_t address) {
+    return StartFrame(address, UFrameControl::UnnumberedInformation().data());
+  }
+
+  /// Writes data for an ongoing frame. Must only be called after a successful
+  /// StartInformationFrame call, and prior to a FinishFrame() call.
+  Status WriteData(ConstByteSpan data);
+
+  /// Finishes a frame. Writes the frame check sequence and a terminating flag.
+  Status FinishFrame();
+
+ private:
+  // Indicates this an information packet with sequence numbers set to 0.
+  static constexpr std::byte kUnusedControl = std::byte{0};
+
+  Status StartFrame(uint64_t address, std::byte control);
+
+  stream::Writer& writer_;
+  checksum::Crc32 fcs_;
+};
 
 }  // namespace pw::hdlc

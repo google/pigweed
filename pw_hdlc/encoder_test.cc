@@ -21,7 +21,6 @@
 
 #include "pw_bytes/array.h"
 #include "pw_hdlc/encoded_size.h"
-#include "pw_hdlc/internal/encoder.h"
 #include "pw_hdlc/internal/protocol.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_unit_test/framework.h"

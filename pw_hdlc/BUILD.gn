@@ -70,10 +70,7 @@ pw_source_set("decoder") {
 pw_source_set("encoder") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_hdlc/encoder.h" ]
-  sources = [
-    "encoder.cc",
-    "public/pw_hdlc/internal/encoder.h",
-  ]
+  sources = [ "encoder.cc" ]
   public_deps = [
     ":common",
     dir_pw_bytes,

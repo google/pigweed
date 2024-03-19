@@ -15,10 +15,14 @@ The ``pw_hdlc`` API has 3 conceptual parts:
 
 .. _module-pw_hdlc-api-encoder:
 
+-------
 Encoder
-=======
-The Encoder API provides a single function that encodes data as an HDLC
-unnumbered information frame.
+-------
+
+Single-Function Encoding
+========================
+Pigweed offers a single function which will encode an HDLC frame in each of
+C++, Python, and TypeScript:
 
 .. tab-set::
 
@@ -79,10 +83,20 @@ unnumbered information frame.
          :param Uint8Array data: frame data.
          :returns: ``Uint8Array`` containing a complete HDLC frame.
 
+Piecemeal Encoding
+==================
+
+Additionally, the C++ API provides an API for piecemeal encoding of an HDLC
+frame. This allows frames to be encoded gradually without ever holding an
+entire frame in memory at once.
+
+.. doxygenclass:: pw::hdlc::Encoder
+
 .. _module-pw_hdlc-api-decoder:
 
+-------
 Decoder
-=======
+-------
 .. tab-set::
 
    .. tab-item:: C++
@@ -169,8 +183,9 @@ Decoder
 
 .. _module-pw_hdlc-api-rpc:
 
+---
 RPC
-===
+---
 
 .. tab-set::
 
