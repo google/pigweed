@@ -19,6 +19,7 @@
 #include <cstring>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/buffer.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
@@ -526,15 +527,14 @@ class Block {
 template <typename OffsetType, size_t kAlign, bool kCanPoison>
 Result<Block<OffsetType, kAlign, kCanPoison>*>
 Block<OffsetType, kAlign, kCanPoison>::Init(ByteSpan region) {
-  if (region.data() == nullptr) {
-    return Status::InvalidArgument();
+  Result<ByteSpan> result = GetAlignedSubspan(region, kAlignment);
+  if (!result.ok()) {
+    return result.status();
   }
-  auto addr = reinterpret_cast<uintptr_t>(region.data());
-  auto aligned = AlignUp(addr, kAlignment);
-  if (addr + region.size() <= aligned + kBlockOverhead) {
+  region = result.value();
+  if (region.size() < kBlockOverhead) {
     return Status::ResourceExhausted();
   }
-  region = region.subspan(aligned - addr);
   if (std::numeric_limits<OffsetType>::max() < region.size() / kAlignment) {
     return Status::OutOfRange();
   }

@@ -49,6 +49,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
+        ":buffer",
         "//pw_assert",
         "//pw_bytes",
         "//pw_bytes:alignment",
@@ -66,6 +67,7 @@ cc_library(
     deps = [
         ":allocator",
         ":block",
+        ":buffer",
         "//pw_assert",
         "//pw_bytes",
         "//pw_result",
@@ -75,10 +77,18 @@ cc_library(
 
 cc_library(
     name = "buffer",
+    srcs = [
+        "buffer.cc",
+    ],
     hdrs = [
         "public/pw_allocator/buffer.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_bytes:alignment",
+        "//pw_result",
+    ],
 )
 
 cc_library(
@@ -293,6 +303,19 @@ pw_cc_test(
         ":block_allocator",
         ":buffer",
         "//pw_bytes",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "buffer_test",
+    srcs = [
+        "buffer_test.cc",
+    ],
+    deps = [
+        ":buffer",
+        "//pw_bytes",
+        "//pw_result",
         "//pw_unit_test",
     ],
 )

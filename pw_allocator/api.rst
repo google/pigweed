@@ -136,7 +136,7 @@ TrackingAllocator
 ---------------
 Utility Classes
 ---------------
-In addtion to providing allocator implementations themselves, this module
+In addition to providing allocator implementations themselves, this module
 includes some utility classes.
 
 .. _module-pw_allocator-api-block:
@@ -145,6 +145,12 @@ Block
 =====
 .. doxygenclass:: pw::allocator::Block
    :members:
+
+.. tip::
+   Avoid converting pointers to allocations into ``Block`` instances, even if
+   you know your memory is coming from a ``BlockAllocator``. Breaking the
+   abstraction in this manner will limit your flexibility to change to a
+   different allocator in the future.
 
 .. _module-pw_allocator-api-metrics_adapter:
 
@@ -164,8 +170,8 @@ template parameter of this class:
 - ``AllMetrics``, which enables all metrics.
 - ``NoMetrics``, which disables all metrics.
 
-Additionally, projects can define their own metrics structs using the following
-macros:
+Additionally, module consumers can define their own metrics structs using the
+following macros:
 
 .. doxygendefine:: PW_ALLOCATOR_METRICS_DECLARE
 .. doxygendefine:: PW_ALLOCATOR_METRICS_ENABLE
@@ -174,19 +180,29 @@ macros:
 
 SizeReporter
 ============
+This modules includes a utility class for generating size reports. It is
+intended for allocator implementers and not for module consumers.
+
 .. doxygenclass:: pw::allocator::SizeReporter
    :members:
 
-WithBuffer
-==========
+Buffer management
+=================
 .. doxygenclass:: pw::allocator::WithBuffer
    :members:
+
+The following utility functions are available to allocator implementers. They
+are not intended to be used by module consumers.
+
+.. doxygenfunction:: pw::allocator::GetAlignedSubspan
+.. doxygenfunction:: pw::allocator::IsWithin
 
 ------------
 Test support
 ------------
-This modules also include test utilities to facilitate writing uint tests and
-fuzz tests for both concrete and forwarding allocator implementations.
+This modules includes test utilities for allocator implementers. These
+facilitate writing unit tests and fuzz tests for both concrete and forwarding
+allocator implementations. They are not intended to be used by module consumers.
 
 .. _module-pw_allocator-api-allocator_for_test:
 

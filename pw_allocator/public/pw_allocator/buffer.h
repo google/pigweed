@@ -18,6 +18,7 @@
 #include <cstdint>
 
 #include "pw_bytes/span.h"
+#include "pw_result/result.h"
 
 namespace pw::allocator {
 
@@ -66,5 +67,19 @@ class WithBuffer {
   alignas(AlignType) std::array<std::byte, kBufferSize> buffer_;
   T obj_;
 };
+
+/// Returns the largest aligned subspan of a given byte span.
+///
+/// @retval OK                  Returns the aligned subspan.
+/// @retval RESOURCE_EXHAUSTED  The given span does not contain an alignment
+///                             boundary.
+Result<ByteSpan> GetAlignedSubspan(ByteSpan bytes, size_t alignment);
+
+/// Returns whether one region is completely contained within another.
+///
+/// @param[in]  ptr     Points to the start of the subregion.
+/// @param[in]  layout  Describes the subregion.
+/// @param[in]  outer   The memory that may contain the subregion.
+bool IsWithin(const void* ptr, size_t size, ConstByteSpan outer);
 
 }  // namespace pw::allocator

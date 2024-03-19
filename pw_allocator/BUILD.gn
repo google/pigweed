@@ -54,13 +54,17 @@ pw_source_set("block") {
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
     ":allocator",
+    ":buffer",
     "$dir_pw_bytes:alignment",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
   ]
-  deps = [ dir_pw_assert ]
+  deps = [
+    ":buffer",
+    dir_pw_assert,
+  ]
   sources = [ "block.cc" ]
 }
 
@@ -81,6 +85,12 @@ pw_source_set("block_allocator") {
 pw_source_set("buffer") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/buffer.h" ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_result,
+  ]
+  deps = [ "$dir_pw_bytes:alignment" ]
+  sources = [ "buffer.cc" ]
 }
 
 pw_source_set("fallback_allocator") {
@@ -270,6 +280,15 @@ pw_test("block_allocator_test") {
   }
 }
 
+pw_test("buffer_test") {
+  deps = [
+    ":buffer",
+    dir_pw_bytes,
+    dir_pw_result,
+  ]
+  sources = [ "buffer_test.cc" ]
+}
+
 pw_test("fallback_allocator_test") {
   deps = [
     ":fallback_allocator",
@@ -360,6 +379,7 @@ pw_test_group("tests") {
     ":allocator_test",
     ":block_allocator_test",
     ":block_test",
+    ":buffer_test",
     ":fallback_allocator_test",
     ":freelist_test",
     ":freelist_heap_test",
