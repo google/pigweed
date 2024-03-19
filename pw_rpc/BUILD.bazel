@@ -402,6 +402,11 @@ proto_library(
     visibility = [":__subpackages__"],
 )
 
+java_proto_library(
+    name = "packet_proto_java",
+    deps = [":internal_packet_proto"],
+)
+
 java_lite_proto_library(
     name = "packet_proto_java_lite",
     deps = [":internal_packet_proto"],

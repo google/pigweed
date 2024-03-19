@@ -23,10 +23,10 @@ java_test(
     test_class = "dev.pigweed.pw_transfer.TransferClientTest",
     visibility = ["//visibility:public"],
     deps = [
-        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
+        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "//pw_rpc/java/test/dev/pigweed/pw_rpc:test_client",
         "//pw_transfer:transfer_proto_java_lite",
-        "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
+        "//pw_transfer/java/main/dev/pigweed/pw_transfer:client_lite",
         "@com_google_protobuf//java/lite",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_flogger_flogger_system_backend",

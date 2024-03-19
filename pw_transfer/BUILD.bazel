@@ -250,6 +250,11 @@ py_proto_library(
     deps = [":transfer_proto"],
 )
 
+java_proto_library(
+    name = "transfer_proto_java",
+    deps = [":transfer_proto"],
+)
+
 java_lite_proto_library(
     name = "transfer_proto_java_lite",
     deps = [":transfer_proto"],

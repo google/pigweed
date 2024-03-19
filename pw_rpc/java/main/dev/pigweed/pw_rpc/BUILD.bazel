@@ -40,17 +40,30 @@ RPC_CLIENT_SOURCES = [
     "UnaryResult.java",
 ]
 
+CLIENT_DEPS = [
+    "//pw_log/java/main/dev/pigweed/pw_log",
+    "//third_party/google_auto:value",
+    "@maven//:com_google_code_findbugs_jsr305",
+    "@maven//:com_google_guava_guava",
+]
+
 java_library(
     name = "client",
     srcs = RPC_CLIENT_SOURCES,
     visibility = ["//visibility:public"],
-    deps = [
-        "//pw_log/java/main/dev/pigweed/pw_log",
+    deps = CLIENT_DEPS + [
+        "//pw_rpc:packet_proto_java",
+        "@com_google_protobuf//java/core",
+    ],
+)
+
+java_library(
+    name = "client_lite",
+    srcs = RPC_CLIENT_SOURCES,
+    visibility = ["//visibility:public"],
+    deps = CLIENT_DEPS + [
         "//pw_rpc:packet_proto_java_lite",
-        "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
     ],
 )
 
