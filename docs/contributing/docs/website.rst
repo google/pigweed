@@ -25,6 +25,16 @@ To create a redirect:
 #. Add your redirect to the ``redirects`` dict. See the
    `Usage`_ section from the ``sphinx-reredirects`` docs.
 
+   * The redirect should be relative to the source path (i.e. the path that
+     needs to get redirected).
+
+   * The target path (i.e. the destination path that the source path should
+     redirect to) should include the full HTML filename to ensure that the
+     redirects also work during local development. In other words, prefer
+     ``./example/docs.html`` over ``./example/`` because the latter assumes
+     the existence of a server that redirects ``./example/`` to
+     ``./example/docs.html``.
+
 For each URL that should be redirected, ``sphinx-reredirects`` auto-generates
 HTML like this:
 

@@ -239,20 +239,24 @@ mermaid.initialize({
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'
 
-# Client-side redirects. See //docs/contributing/docs/index.rst.
+# Client-side redirects. See //docs/contributing/docs/website.rst.
+# Use relative URLs and provide the full path to ensure that the
+# redirects work when developing locally. An example of using the
+# full path is `./example/docs.html`. Using just `./example/`
+# assumes that the redirect will work, which may not be true during
+# local development.
 redirects = {
-    'docs/contributing': 'docs/contributing/',
-    'docs/contributing/module_docs': 'docs/contributing/docs/modules.html',
-    'docs/contributing/changelog': 'docs/contributing/docs/changelog.html',
-    'docs/getting_started': 'docs/get_started/',
-    'docs/os_abstraction_layers': 'docs/os/',
-    'docs/release_notes': 'changelog.html',
-    'docs/release_notes/2022_jan': 'changelog.html',
-    'module_guides': 'modules.html',
-    'pw_sys_io_pico': 'pw_sys_io_rp2040/',
-    'pw_sys_io_pico/docs': 'pw_sys_io_rp2040/',
-    'pw_tokenizer/cli': 'pw_tokenizer/',
-    'pw_tokenizer/guides': 'pw_tokenizer/',
+    'docs/contributing': './contributing/index.html',
+    'docs/contributing/changelog': './docs/changelog.html',
+    'docs/contributing/module_docs': './docs/modules.html',
+    'docs/getting_started': './get_started/index.html',
+    'docs/os_abstraction_layers': './os/index.html',
+    'docs/release_notes/index': '../../changelog.html',
+    'docs/release_notes/2022_jan': '../../changelog.html',
+    'module_guides': './modules.html',
+    'pw_sys_io_pico/docs': '../pw_sys_io_rp2040/docs.html',
+    'pw_tokenizer/cli': './docs.html',
+    'pw_tokenizer/guides': './docs.html',
 }
 
 # One entry per manual page. List of tuples
