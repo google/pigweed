@@ -47,8 +47,9 @@ void DeleteNamedU32(Allocator& allocator, NamedU32* named_u32) {
 // DOCSTAG: [pw_allocator-examples-basic-new_delete]
 
 // DOCSTAG: [pw_allocator-examples-basic-make_unique]
-std::optional<pw::allocator::UniquePtr<NamedU32>> MakeNamedU32(
-    Allocator& allocator, std::string_view name, uint32_t value) {
+pw::allocator::UniquePtr<NamedU32> MakeNamedU32(Allocator& allocator,
+                                                std::string_view name,
+                                                uint32_t value) {
   return allocator.MakeUnique<NamedU32>(name, value);
 }
 // DOCSTAG: [pw_allocator-examples-basic-make_unique]
@@ -75,9 +76,9 @@ TEST(BasicExample, NewNamedU32) {
 
 TEST(BasicExample, MakeNamedU32) {
   test::AllocatorForTest<256> allocator;
-  auto result = examples::MakeNamedU32(allocator, "test2", 222);
-  ASSERT_TRUE(result.has_value());
-  UniquePtr<examples::NamedU32> named_u32 = std::move(result.value());
+  UniquePtr<examples::NamedU32> named_u32 =
+      examples::MakeNamedU32(allocator, "test2", 222);
+  ASSERT_NE(named_u32, nullptr);
   EXPECT_STREQ(named_u32->name().data(), "test2");
   EXPECT_EQ(named_u32->value(), 222U);
 }

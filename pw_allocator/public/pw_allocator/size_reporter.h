@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <optional>
 #include <type_traits>
 
 #include "pw_allocator/allocator.h"
@@ -135,12 +134,10 @@ class SizeReporter final {
 
     // Measure `MakeUnique`.
     if constexpr (std::is_base_of_v<Allocator, Derived>) {
-      std::optional<UniquePtr<Foo>> result =
-          allocator->template MakeUnique<Foo>("foo");
-      PW_ASSERT(result.has_value());
+      UniquePtr<Foo> unique_foo = allocator->template MakeUnique<Foo>("foo");
+      PW_ASSERT(unique_foo != nullptr);
     } else {
-      std::optional<Foo*> result;
-      PW_ASSERT(!result.has_value());
+      PW_ASSERT(buffer_.data() != nullptr);
     }
   }
 

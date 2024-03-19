@@ -14,7 +14,6 @@
 #pragma once
 
 #include <cstddef>
-#include <optional>
 #include <utility>
 
 #include "pw_assert/assert.h"
@@ -23,6 +22,7 @@
 #include "pw_status/status.h"
 
 namespace pw::allocator {
+
 /// Describes the layout of a block of memory.
 ///
 /// Layouts are passed to allocators, and consist of a (possibly padded) size
@@ -117,19 +117,17 @@ class Allocator {
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
   /// `UniquePtr`
   ///
-  /// The return value is optional, as allocating memory for the object may
-  /// fail. Callers must check for this error before using the `UniquePtr`.
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
   template <typename T, int&... ExplicitGuard, typename... Args>
-  std::optional<UniquePtr<T>> MakeUnique(Args&&... args) {
+  [[nodiscard]] UniquePtr<T> MakeUnique(Args&&... args) {
     static constexpr Layout kStaticLayout = Layout::Of<T>();
-    T* ptr = New<T>(std::forward<Args>(args)...);
-    if (ptr == nullptr) {
-      return std::nullopt;
-    }
-    return std::make_optional<UniquePtr<T>>(
-        UniquePtr<T>::kPrivateConstructor, ptr, &kStaticLayout, this);
+    return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor,
+                        New<T>(std::forward<Args>(args)...),
+                        &kStaticLayout,
+                        this);
   }
 
   /// Releases a previously-allocated block of memory.
@@ -398,13 +396,19 @@ class UniquePtr {
   /// Destructs and deallocates any currently-held value.
   ~UniquePtr() { Reset(); }
 
-  /// Sets this ``UniquePtr`` to an "empty" (``nullptr``) value without
-  /// destructing any currently-held value or deallocating any underlying
-  /// memory.
-  void Release() {
+  const Layout* layout() const { return layout_; }
+  Allocator* allocator() const { return allocator_; }
+
+  /// Releases a value from the ``UniquePtr`` without destructing or
+  /// deallocating it.
+  ///
+  /// After this call, the object will have an "empty" (``nullptr``) value.
+  T* Release() {
+    T* value = value_;
     value_ = nullptr;
     layout_ = nullptr;
     allocator_ = nullptr;
+    return value;
   }
 
   /// Destructs and deallocates any currently-held value.

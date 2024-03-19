@@ -441,9 +441,6 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Reset() {
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 void* BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoAllocate(
     Layout layout) {
-  if (layout.size() == 0) {
-    return nullptr;
-  }
   BlockType* block = ChooseBlock(layout);
   if (block == nullptr) {
     return nullptr;

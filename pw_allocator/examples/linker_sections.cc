@@ -65,10 +65,10 @@ namespace pw::allocator {
 
 TEST(LinkerSectionExample, MakeObjects) {
   auto result1 = examples::sram_factory.MakeNamedU32("1", 1);
-  EXPECT_TRUE(result1.has_value());
+  EXPECT_NE(result1, nullptr);
 
   auto result2 = examples::psram_factory.MakeNamedU32("2", 2);
-  EXPECT_TRUE(result2.has_value());
+  EXPECT_NE(result2, nullptr);
 }
 
 }  // namespace pw::allocator

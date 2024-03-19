@@ -35,7 +35,7 @@ void CollectAllMetrics(Allocator& allocator) {
 
   // Keep one UniquePtr in scope, and let the other deallocate immediately.
   auto ptr = tracker.MakeUnique<NamedU32>("test", 111);
-  tracker.MakeUnique<NamedU32>("test", 222);
+  ptr = tracker.MakeUnique<NamedU32>("test", 222);
 
   // DOCSTAG: [pw_allocator-examples-metrics-dump]
   tracker.metric_group().Dump();
@@ -59,7 +59,7 @@ void CollectCustomMetrics(Allocator& allocator) {
 
   // Keep one UniquePtr in scope, and let the other deallocate immediately.
   auto ptr = tracker.MakeUnique<NamedU32>("test", 111);
-  tracker.MakeUnique<NamedU32>("test", 222);
+  ptr = tracker.MakeUnique<NamedU32>("test", 222);
 
   tracker.metric_group().Dump();
 }
@@ -84,8 +84,8 @@ void CollectMultipleTrackers(Allocator& allocator) {
 
   // Keep one UniquePtr in scope, and let others deallocate immediately.
   auto ptr = tracker1.MakeUnique<NamedU32>("test", 111);
-  tracker1.MakeUnique<NamedU32>("test", 222);
-  tracker2.MakeUnique<NamedU32>("test", 222);
+  ptr = tracker1.MakeUnique<NamedU32>("test", 222);
+  ptr = tracker2.MakeUnique<NamedU32>("test", 222);
 
   combined.metric_group().Dump();
 }
