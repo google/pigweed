@@ -138,18 +138,12 @@ template("emboss_cc_library") {
       "$dir_pw_third_party_emboss/compiler/util/ir_util.py",
       "$dir_pw_third_party_emboss/compiler/util/name_conversion.py",
       "$dir_pw_third_party_emboss/compiler/util/parser_types.py",
+      "$dir_pw_third_party_emboss/compiler/util/resources.py",
       "$dir_pw_third_party_emboss/compiler/util/simple_memoizer.py",
       "$dir_pw_third_party_emboss/compiler/util/traverse_ir.py",
       "$dir_pw_third_party_emboss/embossc",
       invoker.source,
     ]
-
-    if (pw_third_party_emboss_USE_NEW_SOURCES) {
-      sources += [
-        # Introduced in v2024.0304.184309
-        "$dir_pw_third_party_emboss/compiler/util/resources.py",
-      ]
-    }
 
     # TODO(benlawson): Use a depfile for adding imports to inputs (https://github.com/google/emboss/issues/68).
     if (defined(invoker.imports)) {

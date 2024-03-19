@@ -453,9 +453,6 @@ gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
             ctx.root / 'pw_function:enable_dynamic_allocation'
         ),
         pw_bluetooth_sapphire_ENABLED=True,
-        # Pigweed uses Python 3.8 and must use the old version of Emboss until
-        # updated to Python 3.9.
-        pw_third_party_emboss_USE_NEW_SOURCES=False,
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     ),
     ninja_targets=(
