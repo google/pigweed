@@ -114,10 +114,10 @@ cc_library(
         "include/timers.h",
     ],
     deps = [
+        ":freertos_config",
         ":freertos_malloc",
         ":freertos_port_headers",
         ":tasks_c",
-        ":freertos_config",
     ],
     # Required because breaking out tasks_c results in the dependencies between
     # the libraries not being quite correct: to link tasks_c you actually need
@@ -174,8 +174,8 @@ cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":freertos_port_headers",
         ":freertos_config",
+        ":freertos_port_headers",
     ],
 )
 

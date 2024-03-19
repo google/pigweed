@@ -60,8 +60,8 @@ _DISABLED_WARNINGS = [
 
 cc_library(
     name = "default_timebase",
-    copts = _DISABLED_WARNINGS,
     srcs = glob(["Src/*_hal_timebase_tim_template.c"]),
+    copts = _DISABLED_WARNINGS,
     deps = [":hal_driver_without_timebase"],
 )
 
