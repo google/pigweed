@@ -54,6 +54,8 @@ label_flag(
 label_flag(
     name = "backend_impl",
     build_setting_default = "@pigweed//targets:pw_assert_backend_impl",
+    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
+    tags = ["keep_dep"],
 )
 
 cc_library(

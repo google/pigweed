@@ -37,11 +37,15 @@ label_flag(
 label_flag(
     name = "pw_assert_backend_impl",
     build_setting_default = "@pigweed//pw_assert:backend_impl_multiplexer",
+    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
+    tags = ["keep_dep"],
 )
 
 label_flag(
     name = "pw_log_backend",
     build_setting_default = "@pigweed//pw_log:backend_multiplexer",
+    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
+    tags = ["keep_dep"],
 )
 
 label_flag(
