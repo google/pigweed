@@ -91,9 +91,6 @@ _NESTED_TOKEN_FORMATS = (
     _BASE64_TOKEN_REGEX,
 )
 
-_RawIo = io.RawIOBase | BinaryIO
-_RawIoOrBytes = _RawIo | bytes
-
 
 def _token_regex(prefix: bytes) -> Pattern[bytes]:
     """Returns a regular expression for prefixed tokenized strings."""
@@ -342,7 +339,7 @@ class Detokenizer:
 
     def detokenize_text_live(
         self,
-        input_file: _RawIo,
+        input_file: io.RawIOBase | BinaryIO,
         output: BinaryIO,
         prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
@@ -364,7 +361,7 @@ class Detokenizer:
     # TODO(gschen): remove unnecessary function
     def detokenize_base64_live(
         self,
-        input_file: _RawIo,
+        input_file: io.RawIOBase | BinaryIO,
         output: BinaryIO,
         prefix: str | bytes = NESTED_TOKEN_PREFIX,
         recursion: int = DEFAULT_RECURSION,
@@ -471,11 +468,8 @@ class Detokenizer:
         return original
 
 
-_PathOrStr = Path | str
-
-
 # TODO: b/265334753 - Reuse this function in database.py:LoadTokenDatabases
-def _parse_domain(path: _PathOrStr) -> tuple[Path, Pattern[str] | None]:
+def _parse_domain(path: Path | str) -> tuple[Path, Pattern[str] | None]:
     """Extracts an optional domain regex pattern suffix from a path"""
 
     if isinstance(path, Path):
@@ -501,7 +495,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
     class _DatabasePath:
         """Tracks the modified time of a path or file object."""
 
-        def __init__(self, path: _PathOrStr) -> None:
+        def __init__(self, path: Path | str) -> None:
             self.path, self.domain = _parse_domain(path)
             self._modified_time: float | None = self._last_modified_time()
 
@@ -538,7 +532,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
 
     def __init__(
         self,
-        *paths_or_files: _PathOrStr,
+        *paths_or_files: Path | str,
         min_poll_period_s: float = 1.0,
         pool: Executor = ThreadPoolExecutor(max_workers=1),
     ) -> None:
@@ -605,7 +599,7 @@ class NestedMessageParser:
         self._state: NestedMessageParser._State = self._State.NON_MESSAGE
 
     def read_messages_io(
-        self, binary_io: _RawIo
+        self, binary_io: io.RawIOBase | BinaryIO
     ) -> Iterator[tuple[bool, bytes]]:
         """Reads prefixed messages from a byte stream (BinaryIO object).
 
@@ -677,7 +671,7 @@ class NestedMessageParser:
 
     def transform_io(
         self,
-        binary_io: _RawIo,
+        binary_io: io.RawIOBase | BinaryIO,
         transform: Callable[[bytes], bytes],
     ) -> Iterator[bytes]:
         """Yields the file with a transformation applied to the messages."""

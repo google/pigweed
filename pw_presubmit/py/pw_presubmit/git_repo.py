@@ -21,8 +21,6 @@ from typing import Collection, Iterable, Pattern
 from pw_presubmit.tools import log_run, plural
 
 _LOG = logging.getLogger(__name__)
-PathOrStr = Path | str
-PatternOrStr = Pattern | str
 
 TRACKING_BRANCH_ALIAS = '@{upstream}'
 _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
@@ -30,7 +28,7 @@ _NON_TRACKING_FALLBACK = 'HEAD~10'
 
 
 def git_stdout(
-    *args: PathOrStr, show_stderr=False, repo: PathOrStr = '.'
+    *args: Path | str, show_stderr=False, repo: Path | str = '.'
 ) -> str:
     return (
         log_run(
@@ -45,7 +43,7 @@ def git_stdout(
     )
 
 
-def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
+def _ls_files(args: Collection[Path | str], repo: Path) -> Iterable[Path]:
     """Returns results of git ls-files as absolute paths."""
     git_root = repo.resolve()
     for file in git_stdout('ls-files', '--', *args, repo=repo).splitlines():
@@ -56,7 +54,7 @@ def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
 
 
 def _diff_names(
-    commit: str, pathspecs: Collection[PathOrStr], repo: Path
+    commit: str, pathspecs: Collection[Path | str], repo: Path
 ) -> Iterable[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     git_root = root(repo)
@@ -115,7 +113,7 @@ def tracking_branch(
 
 def list_files(
     commit: str | None = None,
-    pathspecs: Collection[PathOrStr] = (),
+    pathspecs: Collection[Path | str] = (),
     repo_path: Path | None = None,
 ) -> list[Path]:
     """Lists files with git ls-files or git diff --name-only.
@@ -189,7 +187,7 @@ def _describe_constraints(
     git_root: Path,
     repo_path: Path,
     commit: str | None,
-    pathspecs: Collection[PathOrStr],
+    pathspecs: Collection[Path | str],
     exclude: Collection[Pattern[str]],
 ) -> Iterable[str]:
     if not git_root.samefile(repo_path):
@@ -225,7 +223,7 @@ def describe_files(
     git_root: Path,
     repo_path: Path,
     commit: str | None,
-    pathspecs: Collection[PathOrStr],
+    pathspecs: Collection[Path | str],
     exclude: Collection[Pattern],
     project_root: Path | None = None,
 ) -> str:
@@ -248,7 +246,7 @@ def describe_files(
     return msg + ''.join(f'\n    - {line}' for line in constraints)
 
 
-def root(repo_path: PathOrStr = '.', *, show_stderr: bool = True) -> Path:
+def root(repo_path: Path | str = '.', *, show_stderr: bool = True) -> Path:
     """Returns the repository root as an absolute path.
 
     Raises:
@@ -269,7 +267,7 @@ def root(repo_path: PathOrStr = '.', *, show_stderr: bool = True) -> Path:
     )
 
 
-def within_repo(repo_path: PathOrStr = '.') -> Path | None:
+def within_repo(repo_path: Path | str = '.') -> Path | None:
     """Similar to root(repo_path), returns None if the path is not in a repo."""
     try:
         return root(repo_path, show_stderr=False)
@@ -277,30 +275,30 @@ def within_repo(repo_path: PathOrStr = '.') -> Path | None:
         return None
 
 
-def is_repo(repo_path: PathOrStr = '.') -> bool:
+def is_repo(repo_path: Path | str = '.') -> bool:
     """True if the path is tracked by a Git repo."""
     return within_repo(repo_path) is not None
 
 
 def path(
-    repo_path: PathOrStr,
-    *additional_repo_paths: PathOrStr,
-    repo: PathOrStr = '.',
+    repo_path: Path | str,
+    *additional_repo_paths: Path | str,
+    repo: Path | str = '.',
 ) -> Path:
     """Returns a path relative to a Git repository's root."""
     return root(repo).joinpath(repo_path, *additional_repo_paths)
 
 
-def commit_message(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
+def commit_message(commit: str = 'HEAD', repo: Path | str = '.') -> str:
     return git_stdout('log', '--format=%B', '-n1', commit, repo=repo)
 
 
-def commit_author(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
+def commit_author(commit: str = 'HEAD', repo: Path | str = '.') -> str:
     return git_stdout('log', '--format=%ae', '-n1', commit, repo=repo)
 
 
 def commit_hash(
-    rev: str = 'HEAD', short: bool = True, repo: PathOrStr = '.'
+    rev: str = 'HEAD', short: bool = True, repo: Path | str = '.'
 ) -> str:
     """Returns the commit hash of the revision."""
     args = ['rev-parse']
@@ -311,7 +309,7 @@ def commit_hash(
 
 
 def discover_submodules(
-    superproject_dir: Path, excluded_paths: Collection[PatternOrStr] = ()
+    superproject_dir: Path, excluded_paths: Collection[Pattern | str] = ()
 ) -> list[Path]:
     """Query git and return a list of submodules in the current project.
 

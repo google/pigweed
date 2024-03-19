@@ -15,7 +15,7 @@
 
 import logging
 import os
-import pathlib
+from pathlib import Path
 import shutil
 import subprocess
 import urllib.parse
@@ -24,11 +24,9 @@ import pw_package.package_manager
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-PathOrStr = pathlib.Path | str
-
 
 def git_stdout(
-    *args: PathOrStr, show_stderr=False, repo: PathOrStr = '.'
+    *args: Path | str, show_stderr=False, repo: Path | str = '.'
 ) -> str:
     _LOG.debug('executing %r in %r', args, repo)
     return (
@@ -43,7 +41,9 @@ def git_stdout(
     )
 
 
-def git(*args: PathOrStr, repo: PathOrStr = '.') -> subprocess.CompletedProcess:
+def git(
+    *args: Path | str, repo: Path | str = '.'
+) -> subprocess.CompletedProcess:
     _LOG.debug('executing %r in %r', args, repo)
     return subprocess.run(['git', '-C', repo, *args], check=True)
 
@@ -64,7 +64,7 @@ class GitRepo(pw_package.package_manager.Package):
         self._sparse_list = sparse_list
         self._allow_use_in_downstream = False
 
-    def status(self, path: pathlib.Path) -> bool:
+    def status(self, path: Path) -> bool:
         _LOG.debug('%s: status', self.name)
         # TODO(tonymd): Check the correct SHA is checked out here.
         if not os.path.isdir(path / '.git'):
@@ -121,7 +121,7 @@ class GitRepo(pw_package.package_manager.Package):
         _LOG.debug('%s: status %r', self.name, status)
         return not status
 
-    def install(self, path: pathlib.Path) -> None:
+    def install(self, path: Path) -> None:
         _LOG.debug('%s: install', self.name)
         # If already installed and at correct version exit now.
         if self.status(path):
@@ -138,7 +138,7 @@ class GitRepo(pw_package.package_manager.Package):
         else:
             self.checkout_full(path)
 
-    def checkout_full(self, path: pathlib.Path) -> None:
+    def checkout_full(self, path: Path) -> None:
         # --filter=blob:none means we don't get history, just the current
         # revision. If we later run commands that need history it will be
         # retrieved on-demand. For small repositories the effect is negligible
@@ -150,7 +150,7 @@ class GitRepo(pw_package.package_manager.Package):
         elif self._tag:
             git('clone', '-b', self._tag, '--filter=blob:none', self._url, path)
 
-    def checkout_sparse(self, path: pathlib.Path) -> None:
+    def checkout_sparse(self, path: Path) -> None:
         _LOG.debug('%s: checkout_sparse', self.name)
         # sparse checkout
         git('init', path)
@@ -166,7 +166,7 @@ class GitRepo(pw_package.package_manager.Package):
         target = self._commit if self._commit else self._tag
         git('pull', '--depth=1', 'origin', target, repo=path)
 
-    def check_sparse_list(self, path: pathlib.Path) -> bool:
+    def check_sparse_list(self, path: Path) -> bool:
         sparse_list = (
             git_stdout('sparse-checkout', 'list', repo=path)
             .strip('\n')

@@ -44,8 +44,6 @@ except ImportError:
 
 _LOG = logging.getLogger(__name__)
 
-PathOrStr = Path | str
-
 
 def _find_protoc() -> str:
     """Locates a protoc binary to use for compiling protos."""
@@ -57,9 +55,9 @@ def _find_protoc() -> str:
 
 
 def compile_protos(
-    output_dir: PathOrStr,
-    proto_files: Iterable[PathOrStr],
-    includes: Iterable[PathOrStr] = (),
+    output_dir: Path | str,
+    proto_files: Iterable[Path | str],
+    includes: Iterable[Path | str] = (),
 ) -> None:
     """Compiles proto files for Python by invoking the protobuf compiler.
 
@@ -73,7 +71,7 @@ def compile_protos(
         if not any(include in path.parents for include in include_paths):
             include_paths.add(path.parent)
 
-    cmd: tuple[PathOrStr, ...] = (
+    cmd: tuple[Path | str, ...] = (
         _find_protoc(),
         '--experimental_allow_proto3_optional',
         '--python_out',
@@ -102,7 +100,7 @@ def _import_module(name: str, path: str) -> ModuleType:
     return module
 
 
-def import_modules(directory: PathOrStr) -> Iterator:
+def import_modules(directory: Path | str) -> Iterator:
     """Imports modules in a directory and yields them."""
     parent = os.path.dirname(directory)
 
@@ -120,9 +118,9 @@ def import_modules(directory: PathOrStr) -> Iterator:
 
 
 def compile_and_import(
-    proto_files: Iterable[PathOrStr],
-    includes: Iterable[PathOrStr] = (),
-    output_dir: PathOrStr | None = None,
+    proto_files: Iterable[Path | str],
+    includes: Iterable[Path | str] = (),
+    output_dir: Path | str | None = None,
 ) -> Iterator:
     """Compiles protos and imports their modules; yields the proto modules.
 
@@ -146,9 +144,9 @@ def compile_and_import(
 
 
 def compile_and_import_file(
-    proto_file: PathOrStr,
-    includes: Iterable[PathOrStr] = (),
-    output_dir: PathOrStr | None = None,
+    proto_file: Path | str,
+    includes: Iterable[Path | str] = (),
+    output_dir: Path | str | None = None,
 ):
     """Compiles and imports the module for a single .proto file."""
     return next(iter(compile_and_import([proto_file], includes, output_dir)))
@@ -156,8 +154,8 @@ def compile_and_import_file(
 
 def compile_and_import_strings(
     contents: Iterable[str],
-    includes: Iterable[PathOrStr] = (),
-    output_dir: PathOrStr | None = None,
+    includes: Iterable[Path | str] = (),
+    output_dir: Path | str | None = None,
 ) -> Iterator:
     """Compiles protos in one or more strings."""
 
@@ -318,9 +316,9 @@ class Library:
     """
 
     @classmethod
-    def from_paths(cls, protos: Iterable[PathOrModule]) -> 'Library':
+    def from_paths(cls, protos: Iterable[str | Path | ModuleType]) -> 'Library':
         """Creates a Library from paths to proto files or proto modules."""
-        paths: list[PathOrStr] = []
+        paths: list[Path | str] = []
         modules: list[ModuleType] = []
 
         for proto in protos:
@@ -337,8 +335,8 @@ class Library:
     def from_strings(
         cls,
         contents: Iterable[str],
-        includes: Iterable[PathOrStr] = (),
-        output_dir: PathOrStr | None = None,
+        includes: Iterable[Path | str] = (),
+        output_dir: Path | str | None = None,
     ) -> 'Library':
         """Creates a proto library from protos in the provided strings."""
         return cls(compile_and_import_strings(contents, includes, output_dir))

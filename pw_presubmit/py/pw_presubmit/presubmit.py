@@ -289,14 +289,12 @@ class FileFilter:
     (path does not match a regular expression) may be applied.
     """
 
-    _StrOrPattern = Pattern | str
-
     def __init__(
         self,
         *,
-        exclude: Iterable[_StrOrPattern] = (),
+        exclude: Iterable[Pattern | str] = (),
         endswith: Iterable[str] = (),
-        name: Iterable[_StrOrPattern] = (),
+        name: Iterable[Pattern | str] = (),
         suffix: Iterable[str] = (),
     ) -> None:
         """Creates a FileFilter with the provided filters.

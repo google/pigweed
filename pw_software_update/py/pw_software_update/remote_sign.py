@@ -99,8 +99,6 @@ from google.cloud.storage.bucket import Bucket  # type: ignore
 
 DEFAULT_TIMEOUT_S = 600
 
-PathOrBytes = Path | bytes
-
 
 def _parse_args():
     """Parse CLI aguments."""
@@ -317,7 +315,7 @@ class RemoteSignClient:
         )
 
     @staticmethod
-    def _get_builder_signature(data: PathOrBytes, key: Path) -> bytes:
+    def _get_builder_signature(data: Path | bytes, key: Path) -> bytes:
         """Generate a base64-encided builder signature for file.
 
         In order for the remote signing system to have some level of trust in

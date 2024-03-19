@@ -24,8 +24,6 @@ import tempfile
 from typing import Iterable, TextIO
 from datetime import datetime
 
-PathOrStr = Path | str
-
 HEADER = f'''# Copyright {datetime.today().year} The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not

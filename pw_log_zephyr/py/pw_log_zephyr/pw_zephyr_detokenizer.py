@@ -45,8 +45,6 @@ class _State(enum.Enum):
 PREFIX = ord('$')
 EOT = ord('#')
 
-_PathOrStr = Path | str
-
 
 class Token:
     """Represents an Zephyr Base64 Token."""
@@ -166,7 +164,7 @@ class ZephyrDetokenizer:
     """Processes both base64 message and non-token data in a stream."""
 
     def __init__(
-        self, log_handler: Callable[[bytes], Any], *paths_or_files: _PathOrStr
+        self, log_handler: Callable[[bytes], Any], *paths_or_files: Path | str
     ) -> None:
         """Yields valid Zephyr tokens and passes non-token data to callback."""
         self._log_handler = log_handler
