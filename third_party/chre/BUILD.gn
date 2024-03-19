@@ -79,14 +79,12 @@ if (dir_pw_third_party_chre == "") {
   pw_source_set("shared_platform") {
     public_configs = [ ":disable_warnings" ]
     sources = [
-      "$dir_pw_third_party_chre/platform/shared/assert.cc",
       "$dir_pw_third_party_chre/platform/shared/chre_api_core.cc",
       "$dir_pw_third_party_chre/platform/shared/chre_api_re.cc",
       "$dir_pw_third_party_chre/platform/shared/chre_api_user_settings.cc",
       "$dir_pw_third_party_chre/platform/shared/chre_api_version.cc",
       "$dir_pw_third_party_chre/platform/shared/memory_manager.cc",
       "$dir_pw_third_party_chre/platform/shared/nanoapp/nanoapp_dso_util.cc",
-      "$dir_pw_third_party_chre/platform/shared/pal_system_api.cc",
       "$dir_pw_third_party_chre/platform/shared/system_time.cc",
     ]
 
@@ -122,10 +120,6 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/core/timer_pool.cc",
       "$dir_pw_third_party_chre/util/buffer_base.cc",
       "$dir_pw_third_party_chre/util/dynamic_vector_base.cc",
-      "$dir_pw_third_party_chre/util/nanoapp/audio.cc",
-      "$dir_pw_third_party_chre/util/nanoapp/callbacks.cc",
-      "$dir_pw_third_party_chre/util/nanoapp/debug.cc",
-      "$dir_pw_third_party_chre/util/nanoapp/wifi.cc",
       "$dir_pw_third_party_chre/util/system/debug_dump.cc",
     ]
 
