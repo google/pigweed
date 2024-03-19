@@ -110,15 +110,15 @@ Example
 
       .. code-block:: c
 
-        // Initialize a InlineVarLenEntryQueue.
-        uint32_t buffer[32];
-        pw_InlineVarLenEntryQueue_Init(buffer, 32);
+         // Initialize a InlineVarLenEntryQueue.
+         uint32_t buffer[32];
+         pw_InlineVarLenEntryQueue_Init(buffer, 32);
 
-        // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
-        assert(pw_InlineVarLenEntryQueue_MaxSizeBytes(buffer) == 114u);
+         // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
+         assert(pw_InlineVarLenEntryQueue_MaxSizeBytes(buffer) == 114u);
 
-        // Write some data
-        pw_InlineVarLenEntryQueue_PushOverwrite(buffer, "123", 3);
+         // Write some data
+         pw_InlineVarLenEntryQueue_PushOverwrite(buffer, "123", 3);
 
 Queue vs. deque
 ===============

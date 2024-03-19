@@ -24,8 +24,8 @@ submodule:
 
 .. code-block:: sh
 
-  git submodule add https://boringssl.googlesource.com/boringssl/ \
-      third_party/boringssl/src
+   git submodule add https://boringssl.googlesource.com/boringssl/ \
+       third_party/boringssl/src
 
 GN
 ==
@@ -35,8 +35,8 @@ version.
 
 .. code-block:: sh
 
-  cd third_party/boringssl
-  python src/util/generate_build_files.py gn
+   cd third_party/boringssl
+   python src/util/generate_build_files.py gn
 
 The GN variables needed are defined in
 ``$dir_pw_third_party/boringssl/boringssl.gni``:
@@ -60,13 +60,13 @@ The GN variables needed are defined in
 
    .. code-block:: json
 
-     {
-       "virtualenv": {
-         "gn_args": [
-           "dir_pw_third_party_boringssl=\"\""
-         ]
-       }
-     }
+      {
+        "virtualenv": {
+          "gn_args": [
+            "dir_pw_third_party_boringssl=\"\""
+          ]
+        }
+      }
 
 #. Alternatively, set the GN ``pw_third_party_boringssl_ALIAS`` to your
    boringssl build target if you would like to use your own build target instead

@@ -34,19 +34,19 @@ Pigweed target directory.
 
 .. code-block:: sh
 
-  $ gn args out
-  # Modify and save the args file to use the sample SDK.
-  pw_target_mimxrt595_evk_freertos_MANIFEST = "//third_party/mcuxpresso/sdk/EVK-MIMXRT595_manifest_v3_8.xml"
-  pw_third_party_mcuxpresso_SDK = "//targets/mimxrt595_evk_freertos:sdk"
+   $ gn args out
+   # Modify and save the args file to use the sample SDK.
+   pw_target_mimxrt595_evk_freertos_MANIFEST = "//third_party/mcuxpresso/sdk/EVK-MIMXRT595_manifest_v3_8.xml"
+   pw_third_party_mcuxpresso_SDK = "//targets/mimxrt595_evk_freertos:sdk"
 
 Step 3: Install Freertos Source and Configure Location
 ======================================================
 
 .. code-block:: sh
 
-  pw package install freertos
+   pw package install freertos
 
-  gn args out
+   gn args out
 
 Then add the following line to that text file:
 
@@ -62,7 +62,7 @@ Once configured, to build for this Pigweed target, build the top-level
 
 .. code-block:: sh
 
-  $ ninja -C out mimxrt595_freertos
+   $ ninja -C out mimxrt595_freertos
 
 ---------------------
 Running and Debugging
@@ -109,13 +109,13 @@ disconnect or reboot.
 
    .. code-block:: sh
 
-     JLinkGDBServer -select USB -device MIMXRT595S -endian little -if SWD -speed 4000 -noir
+      JLinkGDBServer -select USB -device MIMXRT595S -endian little -if SWD -speed 4000 -noir
 
 On Linux, you may need to install the `libncurses5` library to use the tools:
 
 .. code-block:: sh
 
-  sudo apt install libncurses5
+   sudo apt install libncurses5
 
 Running and Debugging
 =====================

@@ -54,3 +54,4 @@ Example code to use GPIO pins:
    // State::kActive if the pin is high or and State::kInactive if the pin is
    // low (grounded).
    State pin_state = in.GetState();
+

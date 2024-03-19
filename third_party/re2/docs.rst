@@ -19,8 +19,8 @@ Add RE2 to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add https://github.com/google/re2.git \
-    third_party/re2/src
+   git submodule add https://github.com/google/re2.git \
+     third_party/re2/src
 
 GN
 ==
@@ -46,8 +46,8 @@ the ``-w`` option, e.g.
 
 .. code-block:: sh
 
-  python pw_build/py/pw_build/generate_3p_gn.py \
-    -w third_party/re2/src
+   python pw_build/py/pw_build/generate_3p_gn.py \
+     -w third_party/re2/src
 
 Version
 =======

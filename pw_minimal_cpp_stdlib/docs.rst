@@ -49,7 +49,7 @@ defined in ``public/``. These files are symlinks to their implementations in
 
   .. code-block:: bash
 
-    for f in $(ls pw_minimal_cpp_stdlib/internal/); do ln -s pw_minimal_cpp_stdlib/internal/$f ${f%.h}; done
+     for f in $(ls pw_minimal_cpp_stdlib/internal/); do ln -s pw_minimal_cpp_stdlib/internal/$f ${f%.h}; done
 
 ------------
 Requirements

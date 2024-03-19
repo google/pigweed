@@ -29,21 +29,21 @@ include the following:
 
   .. code-block:: cpp
 
-      #define ARG_PRINT(...)  PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
-      #define _ARG_PRINT0(a)        LOG_INFO("nothing!")
-      #define _ARG_PRINT1(a)        LOG_INFO("1 arg: %s", a)
-      #define _ARG_PRINT2(a, b)     LOG_INFO("2 args: %s, %s", a, b)
-      #define _ARG_PRINT3(a, b, c)  LOG_INFO("3 args: %s, %s, %s", a, b, c)
+     #define ARG_PRINT(...)  PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
+     #define _ARG_PRINT0(a)        LOG_INFO("nothing!")
+     #define _ARG_PRINT1(a)        LOG_INFO("1 arg: %s", a)
+     #define _ARG_PRINT2(a, b)     LOG_INFO("2 args: %s, %s", a, b)
+     #define _ARG_PRINT3(a, b, c)  LOG_INFO("3 args: %s, %s, %s", a, b, c)
 
   When used, ``ARG_PRINT`` expands to the ``_ARG_PRINT#`` macro corresponding
   to the number of arguments.
 
   .. code-block:: cpp
 
-      ARG_PRINT();               // Outputs: nothing!
-      ARG_PRINT("a");            // Outputs: 1 arg: a
-      ARG_PRINT("a", "b");       // Outputs: 2 args: a, b
-      ARG_PRINT("a", "b", "c");  // Outputs: 3 args: a, b, c
+     ARG_PRINT();               // Outputs: nothing!
+     ARG_PRINT("a");            // Outputs: 1 arg: a
+     ARG_PRINT("a", "b");       // Outputs: 2 args: a, b
+     ARG_PRINT("a", "b", "c");  // Outputs: 3 args: a, b, c
 
 .. c:macro:: PW_COMMA_ARGS(...)
 
@@ -80,12 +80,12 @@ code. Use :c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
 
 .. code-block:: c
 
-  PW_MODIFY_DIAGNOSTICS_PUSH();
-  PW_MODIFY_DIAGNOSTIC(ignored, "-Wunused-variable");
+   PW_MODIFY_DIAGNOSTICS_PUSH();
+   PW_MODIFY_DIAGNOSTIC(ignored, "-Wunused-variable");
 
-  static int this_variable_is_never_used;
+   static int this_variable_is_never_used;
 
-  PW_MODIFY_DIAGNOSTICS_POP();
+   PW_MODIFY_DIAGNOSTICS_POP();
 
 .. tip::
 

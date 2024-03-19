@@ -9,7 +9,7 @@ The following command generates Ninja build files for a host build in the
 
 .. code-block:: sh
 
-  cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake
+   cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake
 
 The ``PW_ROOT`` environment variable must point to the root of the Pigweed
 directory. This variable is set by Pigweed's environment setup.
@@ -19,13 +19,13 @@ module tests, execute ``pw_run_tests.modules``:
 
 .. code-block:: sh
 
-  ninja -C out/cmake_host pw_run_tests.modules
+   ninja -C out/cmake_host pw_run_tests.modules
 
 :ref:`module-pw_watch` supports CMake, so you can also run
 
 .. code-block:: sh
 
-  pw watch -C out/cmake_host pw_run_tests.modules
+   pw watch -C out/cmake_host pw_run_tests.modules
 
 CMake functions
 ---------------
@@ -97,9 +97,9 @@ following ways:
 
   .. code-block:: sh
 
-    cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
-        -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
-        -Dpw_log_BACKEND=pw_log_basic
+     cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
+         -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
+         -Dpw_log_BACKEND=pw_log_basic
 
 * Temporarily override a backend by setting it interactively with ``ccmake`` or
   ``cmake-gui``.
@@ -154,15 +154,15 @@ is recommended to set these in one of the following ways:
 
   .. code-block:: cmake
 
-    set(dir_pw_third_party_nanopb ${CMAKE_CURRENT_SOURCE_DIR}/external/nanopb CACHE PATH "" FORCE)
+     set(dir_pw_third_party_nanopb ${CMAKE_CURRENT_SOURCE_DIR}/external/nanopb CACHE PATH "" FORCE)
 
 * Set the variable at the command line with the ``-D`` option.
 
   .. code-block:: sh
 
-    cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
-        -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
-        -Ddir_pw_third_party_nanopb=/path/to/nanopb
+     cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
+         -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
+         -Ddir_pw_third_party_nanopb=/path/to/nanopb
 
 * Set the variable interactively with ``ccmake`` or ``cmake-gui``.
 
@@ -173,7 +173,7 @@ repository from a ``CMakeLists.txt``.
 
 .. code-block:: cmake
 
-  add_subdirectory(path/to/pigweed pigweed)
+   add_subdirectory(path/to/pigweed pigweed)
 
 All module libraries will be available as ``module_name`` or
 ``module_name.sublibrary``.
@@ -182,5 +182,6 @@ If desired, modules can be included individually.
 
 .. code-block:: cmake
 
-  add_subdirectory(path/to/pigweed/pw_some_module pw_some_module)
-  add_subdirectory(path/to/pigweed/pw_another_module pw_another_module)
+   add_subdirectory(path/to/pigweed/pw_some_module pw_some_module)
+   add_subdirectory(path/to/pigweed/pw_another_module pw_another_module)
+

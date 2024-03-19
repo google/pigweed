@@ -110,7 +110,7 @@ to the virtual environment on your system with:
 
 .. code-block:: bash
 
-  pw ide python --venv
+   pw ide python --venv
 
 Docs Code Intelligence
 ----------------------

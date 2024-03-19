@@ -44,20 +44,20 @@ Examples in C++
 ---------------
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  #include "pw_chrono/system_clock.h"
-  #include "pw_thread/sleep.h"
+   #include "pw_chrono/system_clock.h"
+   #include "pw_thread/sleep.h"
 
-  using std::literals::chrono_literals::ms;
+   using std::literals::chrono_literals::ms;
 
-  void FunctionInvokedByThread() {
-    pw::this_thread::sleep_for(42ms);
-  }
+   void FunctionInvokedByThread() {
+     pw::this_thread::sleep_for(42ms);
+   }
 
-  void AnotherFunctionInvokedByThread() {
-    pw::this_thread::sleep_until(pw::chrono::SystemClock::now() + 42ms);
-  }
+   void AnotherFunctionInvokedByThread() {
+     pw::this_thread::sleep_until(pw::chrono::SystemClock::now() + 42ms);
+   }
 
 C
 =
@@ -91,11 +91,11 @@ Example in C++
 ---------------
 .. code-block:: cpp
 
-  #include "pw_thread/yield.h"
+   #include "pw_thread/yield.h"
 
-  void FunctionInvokedByThread() {
-    pw::this_thread::yield();
-  }
+   void FunctionInvokedByThread() {
+     pw::this_thread::yield();
+   }
 
 C
 =
@@ -139,11 +139,11 @@ Example
 =======
 .. code-block:: cpp
 
-  #include "pw_thread/id.h"
+   #include "pw_thread/id.h"
 
-  void FunctionInvokedByThread() {
-    const pw::thread::Id my_id = pw::this_thread::get_id();
-  }
+   void FunctionInvokedByThread() {
+     const pw::thread::Id my_id = pw::this_thread::get_id();
+   }
 
 
 .. _module-pw_thread-thread-creation:
@@ -273,16 +273,16 @@ with the following contents:
 
 .. code-block:: cpp
 
-  // Contents of my_app/threads.h
-  #pragma once
+   // Contents of my_app/threads.h
+   #pragma once
 
-  #include "pw_thread/thread.h"
+   #include "pw_thread/thread.h"
 
-  namespace my_app {
+   namespace my_app {
 
-  const pw::thread::Options& HellowWorldThreadOptions();
+   const pw::thread::Options& HellowWorldThreadOptions();
 
-  }  // namespace my_app
+   }  // namespace my_app
 
 This could then be backed by two different backend implementations based on
 the thread backend. For example for the STL the backend's ``stl_threads.cc``
@@ -290,44 +290,44 @@ source file may look something like:
 
 .. code-block:: cpp
 
-  // Contents of my_app/stl_threads.cc
-  #include "my_app/threads.h"
-  #include "pw_thread_stl/options.h"
+   // Contents of my_app/stl_threads.cc
+   #include "my_app/threads.h"
+   #include "pw_thread_stl/options.h"
 
-  namespace my_app {
+   namespace my_app {
 
-  const pw::thread::Options& HelloWorldThreadOptions() {
-    static constexpr auto options = pw::thread::stl::Options();
-    return options;
-  }
+   const pw::thread::Options& HelloWorldThreadOptions() {
+     static constexpr auto options = pw::thread::stl::Options();
+     return options;
+   }
 
-  }  // namespace my_app
+   }  // namespace my_app
 
 While for FreeRTOS the backend's ``freertos_threads.cc`` source file may look
 something like:
 
 .. code-block:: cpp
 
-  // Contents of my_app/freertos_threads.cc
-  #include "FreeRTOS.h"
-  #include "my_app/threads.h"
-  #include "pw_thread_freertos/context.h"
-  #include "pw_thread_freertos/options.h"
-  #include "task.h"
+   // Contents of my_app/freertos_threads.cc
+   #include "FreeRTOS.h"
+   #include "my_app/threads.h"
+   #include "pw_thread_freertos/context.h"
+   #include "pw_thread_freertos/options.h"
+   #include "task.h"
 
-  namespace my_app {
+   namespace my_app {
 
-  StaticContextWithStack<kHelloWorldStackWords> hello_world_thread_context;
-  const pw::thread::Options& HelloWorldThreadOptions() {
-    static constexpr auto options =
-        pw::thread::freertos::Options()
-            .set_name("HelloWorld")
-            .set_static_context(hello_world_thread_context)
-            .set_priority(kHelloWorldThreadPriority);
-    return options;
-  }
+   StaticContextWithStack<kHelloWorldStackWords> hello_world_thread_context;
+   const pw::thread::Options& HelloWorldThreadOptions() {
+     static constexpr auto options =
+         pw::thread::freertos::Options()
+             .set_name("HelloWorld")
+             .set_static_context(hello_world_thread_context)
+             .set_priority(kHelloWorldThreadPriority);
+     return options;
+   }
 
-  }  // namespace my_app
+   }  // namespace my_app
 
 Detaching & Joining
 ===================
@@ -358,7 +358,7 @@ instead of:
 
 .. code-block:: cpp
 
-  Thread(options, foo).detach();
+   Thread(options, foo).detach();
 
 You can instead use this helper wrapper to:
 
@@ -378,24 +378,24 @@ Threads must either be invoked through a
 
 .. code-block:: cpp
 
-  namespace pw::thread {
+   namespace pw::thread {
 
-  // This function may return.
-  using Thread::ThreadRoutine = void (*)(void* arg);
+   // This function may return.
+   using Thread::ThreadRoutine = void (*)(void* arg);
 
-  class ThreadCore {
-   public:
-    virtual ~ThreadCore() = default;
+   class ThreadCore {
+    public:
+     virtual ~ThreadCore() = default;
 
-    // The public API to start a ThreadCore, note that this may return.
-    void Start() { Run(); }
+     // The public API to start a ThreadCore, note that this may return.
+     void Start() { Run(); }
 
-   private:
-    // This function may return.
-    virtual void Run() = 0;
-  };
+    private:
+     // This function may return.
+     virtual void Run() = 0;
+   };
 
-  }  // namespace pw::thread;
+   }  // namespace pw::thread;
 
 
 To use the ``pw::thread::Thread::ThreadRoutine``, your function must have the
@@ -403,7 +403,7 @@ following signature:
 
 .. code-block:: cpp
 
-  void example_thread_entry_function(void *arg);
+   void example_thread_entry_function(void *arg);
 
 
 To invoke a member method of a class a static lambda closure can be used
@@ -412,21 +412,21 @@ done executing. For example:
 
 .. code-block:: cpp
 
-  class Foo {
-   public:
-    void DoBar() {}
-  };
-  Foo foo;
+   class Foo {
+    public:
+     void DoBar() {}
+   };
+   Foo foo;
 
-  static auto invoke_foo_do_bar = [](void *void_foo_ptr) {
-      //  If needed, additional arguments could be set here.
-      static_cast<Foo*>(void_foo_ptr)->DoBar();
-  };
+   static auto invoke_foo_do_bar = [](void *void_foo_ptr) {
+       //  If needed, additional arguments could be set here.
+       static_cast<Foo*>(void_foo_ptr)->DoBar();
+   };
 
-  // Now use the lambda closure as the thread entry, passing the foo's
-  // this as the argument.
-  Thread thread(options, invoke_foo_do_bar, &foo);
-  thread.detach();
+   // Now use the lambda closure as the thread entry, passing the foo's
+   // this as the argument.
+   Thread thread(options, invoke_foo_do_bar, &foo);
+   thread.detach();
 
 
 Alternatively, the aforementioned ``pw::thread::ThreadCore`` interface can be
@@ -437,14 +437,14 @@ function without arguments. For example:
 
 .. code-block:: cpp
 
-  class Foo : public ThreadCore {
-   private:
-    void Run() override {}
-  };
-  Foo foo;
+   class Foo : public ThreadCore {
+    private:
+     void Run() override {}
+   };
+   Foo foo;
 
-  // Now create the thread, using foo directly.
-  Thread(options, foo).detach();
+   // Now create the thread, using foo directly.
+   Thread(options, foo).detach();
 
 .. Warning::
   Because the thread may start after the pw::Thread creation, an object which

@@ -65,31 +65,31 @@ Example
 
 .. code-block:: cpp
 
-  #define PW_TRACE_MODULE_NAME "Input"
-  #include "pw_trace/trace.h"
+   #define PW_TRACE_MODULE_NAME "Input"
+   #include "pw_trace/trace.h"
 
-  void SendButton() {
-    PW_TRACE_FUNCTION()
-    // do something
-  }
+   void SendButton() {
+     PW_TRACE_FUNCTION()
+     // do something
+   }
 
-  void InputLoop() {
-    while(1) {
-      auto event = WaitNewInputEvent()
-      TRACE_SCOPE("Handle Event");  // measure until loop finished
-      if (event == kNewButton){
-        SendButton();
-        PW_TRACE_END("button");  // Trace event was started in ButtonIsr
-      } else {
-        PW_TRACE_INSTANT("Unknown event");
-      }
-    }
-  }
+   void InputLoop() {
+     while(1) {
+       auto event = WaitNewInputEvent()
+       TRACE_SCOPE("Handle Event");  // measure until loop finished
+       if (event == kNewButton){
+         SendButton();
+         PW_TRACE_END("button");  // Trace event was started in ButtonIsr
+       } else {
+         PW_TRACE_INSTANT("Unknown event");
+       }
+     }
+   }
 
-  void ButtonIsr() {
-    PW_TRACE_START("button");
-    SendNewInputEvent(kNewButton);
-  }
+   void ButtonIsr() {
+     PW_TRACE_START("button");
+     SendNewInputEvent(kNewButton);
+   }
 
 
 ------------
@@ -253,8 +253,8 @@ of the module's files:
 
 .. code-block:: cpp
 
-  // Enable tracing based on pw_example module config parameter.
-  #define PW_TRACE_ENABLE PW_EXAMPLE_TRACE_ENABLE
+   // Enable tracing based on pw_example module config parameter.
+   #define PW_TRACE_ENABLE PW_EXAMPLE_TRACE_ENABLE
 
 
 Additionally specific trace points (or sets of points) can be enabled/disabled
@@ -262,17 +262,17 @@ using the following pattern:
 
 .. code-block:: cpp
 
-  // Assuming tracing is disabled at the top of the file.
+   // Assuming tracing is disabled at the top of the file.
 
-  // Enable specific trace.
-  #undef PW_TRACE_ENABLE
-  #define PW_TRACE_ENABLE 1
-  PW_TRACE_INSTANT("important trace");
+   // Enable specific trace.
+   #undef PW_TRACE_ENABLE
+   #define PW_TRACE_ENABLE 1
+   PW_TRACE_INSTANT("important trace");
 
-  // Set traces back to disabled.  PW_TRACE_ENABLE can not be left
-  // undefined.
-  #undef PW_TRACE_ENABLE
-  #define PW_TRACE_ENABLE 0
+   // Set traces back to disabled.  PW_TRACE_ENABLE can not be left
+   // undefined.
+   #undef PW_TRACE_ENABLE
+   #define PW_TRACE_ENABLE 0
 
 -----------
 Backend API

@@ -17,11 +17,11 @@ to point to the locations the repositories were downloaded to.
 
 .. code-block:: sh
 
-  pw package install freertos
-  pw package install smartfusion_mss
-  pw package install nanopb
+   pw package install freertos
+   pw package install smartfusion_mss
+   pw package install nanopb
 
-  gn args out
+   gn args out
 
 Then add the following lines to that text file:
 

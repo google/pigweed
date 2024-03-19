@@ -128,37 +128,37 @@ the Persistent container.
 
 .. code-block:: cpp
 
-    #include "pw_persistent_ram/persistent.h"
-    #include "pw_preprocessor/compiler.h"
+   #include "pw_persistent_ram/persistent.h"
+   #include "pw_preprocessor/compiler.h"
 
-    using pw::persistent_ram::Persistent;
+   using pw::persistent_ram::Persistent;
 
-    class BootCount {
-     public:
-      explicit BootCount(Persistent<uint16_t>& persistent_boot_count)
-          : persistent_(persistent_boot_count) {
-        if (!persistent_.has_value()) {
-          persistent_ = 0;
-        } else {
-          persistent_ = persistent_.value() + 1;
-        }
-        boot_count_ = persistent_.value();
-      }
+   class BootCount {
+    public:
+     explicit BootCount(Persistent<uint16_t>& persistent_boot_count)
+         : persistent_(persistent_boot_count) {
+       if (!persistent_.has_value()) {
+         persistent_ = 0;
+       } else {
+         persistent_ = persistent_.value() + 1;
+       }
+       boot_count_ = persistent_.value();
+     }
 
-      uint16_t GetBootCount() { return boot_count_; }
+     uint16_t GetBootCount() { return boot_count_; }
 
-     private:
-      Persistent<uint16_t>& persistent_;
-      uint16_t boot_count_;
-    };
+    private:
+     Persistent<uint16_t>& persistent_;
+     uint16_t boot_count_;
+   };
 
-    PW_PLACE_IN_SECTION(".noinit") Persistent<uint16_t> persistent_boot_count;
-    BootCount boot_count(persistent_boot_count);
+   PW_PLACE_IN_SECTION(".noinit") Persistent<uint16_t> persistent_boot_count;
+   BootCount boot_count(persistent_boot_count);
 
-    int main() {
-      const uint16_t boot_count = boot_count.GetBootCount();
-      // ... rest of main
-    }
+   int main() {
+     const uint16_t boot_count = boot_count.GetBootCount();
+     // ... rest of main
+   }
 
 Example: Storing larger objects
 -------------------------------
@@ -171,46 +171,46 @@ object's checksum is updated to reflect the changes.
 
 .. code-block:: cpp
 
-    #include "pw_persistent_ram/persistent.h"
-    #include "pw_preprocessor/compiler.h"
+   #include "pw_persistent_ram/persistent.h"
+   #include "pw_preprocessor/compiler.h"
 
-    using pw::persistent_ram::Persistent;
+   using pw::persistent_ram::Persistent;
 
-    contexpr size_t kMaxReasonLength = 256;
+   contexpr size_t kMaxReasonLength = 256;
 
-    struct LastCrashInfo {
-      uint32_t uptime_ms;
-      uint32_t boot_id;
-      char reason[kMaxReasonLength];
-    }
+   struct LastCrashInfo {
+     uint32_t uptime_ms;
+     uint32_t boot_id;
+     char reason[kMaxReasonLength];
+   }
 
-    PW_PLACE_IN_SECTION(".noinit") Persistent<LastBootInfo> persistent_crash_info;
+   PW_PLACE_IN_SECTION(".noinit") Persistent<LastBootInfo> persistent_crash_info;
 
-    void HandleCrash(const char* fmt, va_list args) {
-      // Once this scope ends, we know the persistent object has been updated
-      // to reflect changes.
-      {
-        auto& mutable_crash_info =
-            persistent_crash_info.mutator(GetterAction::kReset);
-        vsnprintf(mutable_crash_info->reason,
-                  sizeof(mutable_crash_info->reason),
-                  fmt,
-                  args);
-        mutable_crash_info->uptime_ms = system::GetUptimeMs();
-        mutable_crash_info->boot_id = system::GetBootId();
-      }
-      // ...
-    }
+   void HandleCrash(const char* fmt, va_list args) {
+     // Once this scope ends, we know the persistent object has been updated
+     // to reflect changes.
+     {
+       auto& mutable_crash_info =
+           persistent_crash_info.mutator(GetterAction::kReset);
+       vsnprintf(mutable_crash_info->reason,
+                 sizeof(mutable_crash_info->reason),
+                 fmt,
+                 args);
+       mutable_crash_info->uptime_ms = system::GetUptimeMs();
+       mutable_crash_info->boot_id = system::GetBootId();
+     }
+     // ...
+   }
 
-    int main() {
-      if (persistent_crash_info.has_value()) {
-        LogLastCrashInfo(persistent_crash_info.value());
-        // Clear crash info once it has been dumped.
-        persistent_crash_info.Invalidate();
-      }
+   int main() {
+     if (persistent_crash_info.has_value()) {
+       LogLastCrashInfo(persistent_crash_info.value());
+       // Clear crash info once it has been dumped.
+       persistent_crash_info.Invalidate();
+     }
 
-      // ... rest of main
-    }
+     // ... rest of main
+   }
 
 .. _module-pw_persistent_ram-persistent_buffer:
 
@@ -234,33 +234,33 @@ logs, tokenized logs are small enough for this to be useful.
 
 .. code-block:: cpp
 
-    #include "pw_persistent_ram/persistent_buffer.h"
-    #include "pw_preprocessor/compiler.h"
+   #include "pw_persistent_ram/persistent_buffer.h"
+   #include "pw_preprocessor/compiler.h"
 
-    using pw::persistent_ram::PersistentBuffer;
-    using pw::persistent_ram::PersistentBuffer::PersistentBufferWriter;
+   using pw::persistent_ram::PersistentBuffer;
+   using pw::persistent_ram::PersistentBuffer::PersistentBufferWriter;
 
-    PW_KEEP_IN_SECTION(".noinit") PersistentBuffer<2048> crash_logs;
-    void CheckForCrashLogs() {
-      if (crash_logs.has_value()) {
-        // A function that dumps sequentially serialized logs using pw_log.
-        DumpRawLogs(crash_logs.written_data());
-        crash_logs.clear();
-      }
-    }
+   PW_KEEP_IN_SECTION(".noinit") PersistentBuffer<2048> crash_logs;
+   void CheckForCrashLogs() {
+     if (crash_logs.has_value()) {
+       // A function that dumps sequentially serialized logs using pw_log.
+       DumpRawLogs(crash_logs.written_data());
+       crash_logs.clear();
+     }
+   }
 
-    void HandleCrash(CrashInfo* crash_info) {
-      PersistentBufferWriter crash_log_writer = crash_logs.GetWriter();
-      // Sets the pw::stream::Writer that pw_log should dump logs to.
-      crash_log_writer.clear();
-      SetLogSink(crash_log_writer);
-      // Handle crash, calling PW_LOG to log useful info.
-    }
+   void HandleCrash(CrashInfo* crash_info) {
+     PersistentBufferWriter crash_log_writer = crash_logs.GetWriter();
+     // Sets the pw::stream::Writer that pw_log should dump logs to.
+     crash_log_writer.clear();
+     SetLogSink(crash_log_writer);
+     // Handle crash, calling PW_LOG to log useful info.
+   }
 
-    int main() {
-      void CheckForCrashLogs();
-      // ... rest of main
-    }
+   int main() {
+     void CheckForCrashLogs();
+     // ... rest of main
+   }
 
 Size Report
 -----------

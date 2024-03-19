@@ -42,51 +42,51 @@ when unattached will crash.
 
 .. code-block:: cpp
 
-  // Create a multisink during global construction.
-  std::byte buffer[1024];
-  MultiSink multisink(buffer);
+   // Create a multisink during global construction.
+   std::byte buffer[1024];
+   MultiSink multisink(buffer);
 
-  int main() {
-    // Do some initialization work for the application that pushes information
-    // into the multisink.
-    multisink.HandleEntry("Booting up!");
-    Initialize();
+   int main() {
+     // Do some initialization work for the application that pushes information
+     // into the multisink.
+     multisink.HandleEntry("Booting up!");
+     Initialize();
 
-    multisink.HandleEntry("Prepare I/O!");
-    PrepareIO();
+     multisink.HandleEntry("Prepare I/O!");
+     PrepareIO();
 
-    // Start a thread to process logs in multisink.
-    StartLoggingThread();
-  }
+     // Start a thread to process logs in multisink.
+     StartLoggingThread();
+   }
 
-  void StartLoggingThread() {
-    MultiSink::Drain drain;
-    multisink.AttachDrain(drain);
+   void StartLoggingThread() {
+     MultiSink::Drain drain;
+     multisink.AttachDrain(drain);
 
-    std::byte read_buffer[512];
-    uint32_t drop_count = 0;
-    do {
-      Result<ConstByteSpan> entry = drain.PopEntry(read_buffer, drop_count);
-      if (drop_count > 0) {
-        StringBuilder<32> sb;
-        sb.Format("Dropped %d entries.", drop_count);
-        // Note: PrintByteArray is not a provided utility function.
-        PrintByteArray(sb.as_bytes());
-      }
+     std::byte read_buffer[512];
+     uint32_t drop_count = 0;
+     do {
+       Result<ConstByteSpan> entry = drain.PopEntry(read_buffer, drop_count);
+       if (drop_count > 0) {
+         StringBuilder<32> sb;
+         sb.Format("Dropped %d entries.", drop_count);
+         // Note: PrintByteArray is not a provided utility function.
+         PrintByteArray(sb.as_bytes());
+       }
 
-      // Iterate through the entries, this will print out:
-      //   "Booting up!"
-      //   "Prepare I/O!"
-      //
-      // Even though the drain was attached after entries were pushed into the
-      // multisink, this drain will still be able to consume those entries.
-      //
-      // Note: PrintByteArray is not a provided utility function.
-      if (entry.status().ok()) {
-        PrintByteArray(read_buffer);
-      }
-    } while (true);
-  }
+       // Iterate through the entries, this will print out:
+       //   "Booting up!"
+       //   "Prepare I/O!"
+       //
+       // Even though the drain was attached after entries were pushed into the
+       // multisink, this drain will still be able to consume those entries.
+       //
+       // Note: PrintByteArray is not a provided utility function.
+       if (entry.status().ok()) {
+         PrintByteArray(read_buffer);
+       }
+     } while (true);
+   }
 
 Iterator
 ========
@@ -104,44 +104,44 @@ iterator to be used even if no drains have been previously attached.
 
 .. code-block:: cpp
 
-  // Create a multisink and a test string to push into it.
-  constexpr char kExampleEntry[] = "Example!";
-  std::byte buffer[1024];
-  MultiSink multisink(buffer);
-  MultiSink::Drain drain;
+   // Create a multisink and a test string to push into it.
+   constexpr char kExampleEntry[] = "Example!";
+   std::byte buffer[1024];
+   MultiSink multisink(buffer);
+   MultiSink::Drain drain;
 
-  // Push an entry before a drain is attached.
-  multisink.HandleEntry(kExampleEntry);
-  multisink.HandleEntry(kExampleEntry);
+   // Push an entry before a drain is attached.
+   multisink.HandleEntry(kExampleEntry);
+   multisink.HandleEntry(kExampleEntry);
 
-  // Iterate through the entries, this will print out:
-  //  "Example!"
-  //  "Example!"
-  // Note: PrintByteArray is not a provided utility function.
-  for (ConstByteSpan entry : multisink.UnsafeIteration()) {
-    PrintByteArray(entry);
-  }
+   // Iterate through the entries, this will print out:
+   //  "Example!"
+   //  "Example!"
+   // Note: PrintByteArray is not a provided utility function.
+   for (ConstByteSpan entry : multisink.UnsafeIteration()) {
+     PrintByteArray(entry);
+   }
 
-  // Attach a drain and consume only one of the entries.
-  std::byte read_buffer[512];
-  uint32_t drop_count = 0;
+   // Attach a drain and consume only one of the entries.
+   std::byte read_buffer[512];
+   uint32_t drop_count = 0;
 
-  multisink.AttachDrain(drain);
-  drain.PopEntry(read_buffer, drop_count);
+   multisink.AttachDrain(drain);
+   drain.PopEntry(read_buffer, drop_count);
 
-  // !! A function causes a crash before we've read out all entries.
-  FunctionThatCrashes();
+   // !! A function causes a crash before we've read out all entries.
+   FunctionThatCrashes();
 
-  // ... Crash Context ...
+   // ... Crash Context ...
 
-  // You can use a range-based for-loop to walk through all entries,
-  // even though the attached drain has consumed one of them.
-  // This will also print out:
-  //  "Example!"
-  //  "Example!"
-  for (ConstByteSpan entry : multisink.UnsafeIteration()) {
-    PrintByteArray(entry);
-  }
+   // You can use a range-based for-loop to walk through all entries,
+   // even though the attached drain has consumed one of them.
+   // This will also print out:
+   //  "Example!"
+   //  "Example!"
+   for (ConstByteSpan entry : multisink.UnsafeIteration()) {
+     PrintByteArray(entry);
+   }
 
 As an alternative to using the ``UnsafeIterationWrapper``,
 ``MultiSink::UnsafeForEachEntry()`` may be used to run a callback for each
@@ -157,28 +157,28 @@ the drain to remove the peeked entry from the multisink and advance one entry.
 
 .. code-block:: cpp
 
-  constexpr char kExampleEntry[] = "Example!";
-  std::byte buffer[1024];
-  MultiSink multisink(buffer);
-  MultiSink::Drain drain;
+   constexpr char kExampleEntry[] = "Example!";
+   std::byte buffer[1024];
+   MultiSink multisink(buffer);
+   MultiSink::Drain drain;
 
-  multisink.AttachDrain(drain);
-  multisink.HandleEntry(kExampleEntry);
+   multisink.AttachDrain(drain);
+   multisink.HandleEntry(kExampleEntry);
 
-  std::byte read_buffer[512];
-  uint32_t drop_count = 0;
-  Result<PeekedEntry> peeked_entry = drain.PeekEntry(read_buffer, drop_count);
-  // ... Handle drop_count ...
+   std::byte read_buffer[512];
+   uint32_t drop_count = 0;
+   Result<PeekedEntry> peeked_entry = drain.PeekEntry(read_buffer, drop_count);
+   // ... Handle drop_count ...
 
-  if (peeked_entry.ok()) {
-    // Note: SendByteArray is not a provided utility function.
-    Status send_status = SendByteArray(peeked_entry.value().entry());
-    if (send_status.ok()) {
-      drain.PopEntry(peeked_entry.value());
-    } else {
-      // ... Handle send error ...
-    }
-  }
+   if (peeked_entry.ok()) {
+     // Note: SendByteArray is not a provided utility function.
+     Status send_status = SendByteArray(peeked_entry.value().entry());
+     if (send_status.ok()) {
+       drain.PopEntry(peeked_entry.value());
+     } else {
+       // ... Handle send error ...
+     }
+   }
 
 Drop Counts
 ===========

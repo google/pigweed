@@ -231,13 +231,13 @@ configuration values.
 
 .. code-block:: c++
 
-  // Example configuration header
+   // Example configuration header
 
-  #ifndef PW_FOO_INPUT_BUFFER_SIZE_BYTES
-  #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 128
-  #endif  // PW_FOO_INPUT_BUFFER_SIZE_BYTES
+   #ifndef PW_FOO_INPUT_BUFFER_SIZE_BYTES
+   #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 128
+   #endif  // PW_FOO_INPUT_BUFFER_SIZE_BYTES
 
-  static_assert(PW_FOO_INPUT_BUFFER_SIZE_BYTES >= 64);
+   static_assert(PW_FOO_INPUT_BUFFER_SIZE_BYTES >= 64);
 
 The configuration header may go in one of three places in the module, depending
 on whether the header should be exposed by the module or not.
@@ -591,7 +591,7 @@ To create a new Pigweed module, follow the below steps.
 
    .. code-block:: bash
 
-     ninja -C out update_modules
+      ninja -C out update_modules
 
 10. Add the new module to CMake build
 

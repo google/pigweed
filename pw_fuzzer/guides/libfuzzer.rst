@@ -99,10 +99,10 @@ following the guidelines given by libFuzzer:
 
 .. code-block:: cpp
 
-  extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    DoSomethingInterestingWithMyAPI(data, size);
-    return 0;  // Non-zero return values are reserved for future use.
-  }
+   extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+     DoSomethingInterestingWithMyAPI(data, size);
+     return 0;  // Non-zero return values are reserved for future use.
+   }
 
 When writing your fuzz target function, you may want to consider:
 
@@ -246,7 +246,7 @@ runtimes when building.
 
       .. code-block:: sh
 
-        $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
+         $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
       Some toolchains may set a default for fuzzers if none is specified. For
       example, `//targets/host:host_clang_fuzz` defaults to "address".
@@ -255,7 +255,7 @@ runtimes when building.
 
       .. code-block:: sh
 
-        $ ninja -C out fuzzers
+         $ ninja -C out fuzzers
 
    .. tab-item:: CMake
       :sync: cmake
@@ -272,7 +272,7 @@ runtimes when building.
 
       .. code-block:: sh
 
-        $ bazel build //my_module:my_fuzzer --config=asan-libfuzzer
+         $ bazel build //my_module:my_fuzzer --config=asan-libfuzzer
 
 ----------------------------------
 Step 5: Running the fuzzer locally
@@ -288,7 +288,7 @@ Step 5: Running the fuzzer locally
 
       .. code-block:: sh
 
-        $ out/host_clang_fuzz/obj/my_module/bin/my_fuzzer -seed=1 path/to/corpus
+         $ out/host_clang_fuzz/obj/my_module/bin/my_fuzzer -seed=1 path/to/corpus
 
       Additional `sanitizer flags`_ may be passed uisng environment variables.
 
@@ -310,8 +310,8 @@ Step 5: Running the fuzzer locally
 
       .. code-block:: sh
 
-        $ bazel run //my_module:my_fuzzer_run --config=asan-libfuzzer -- \
-          -seed=1 path/to/corpus -max_total_time=5
+         $ bazel run //my_module:my_fuzzer_run --config=asan-libfuzzer -- \
+           -seed=1 path/to/corpus -max_total_time=5
 
 Running the fuzzer should produce output similar to the following:
 

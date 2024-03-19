@@ -48,33 +48,33 @@ alongside the ``.text`` and ``.rodata`` sections, and named
 
 .. code-block:: none
 
-  /* Main executable code. */
-  .code : ALIGN(4)
-  {
-    . = ALIGN(4);
-    /* Application code. */
-    *(.text)
-    *(.text*)
-    KEEP(*(.init))
-    KEEP(*(.fini))
-    ...
-  } >FLASH
+   /* Main executable code. */
+   .code : ALIGN(4)
+   {
+     . = ALIGN(4);
+     /* Application code. */
+     *(.text)
+     *(.text*)
+     KEEP(*(.init))
+     KEEP(*(.fini))
+     ...
+   } >FLASH
 
-  /* GNU build ID section. */
-  .note.gnu.build-id :
-  {
-    . = ALIGN(4);
-    gnu_build_id_begin = .;
-    *(.note.gnu.build-id);
-  } >FLASH
+   /* GNU build ID section. */
+   .note.gnu.build-id :
+   {
+     . = ALIGN(4);
+     gnu_build_id_begin = .;
+     *(.note.gnu.build-id);
+   } >FLASH
 
-  /* Explicitly initialized global and static data. (.data) */
-  .static_init_ram : ALIGN(4)
-  {
-    *(.data)
-    *(.data*)
-    ...
-  } >RAM AT> FLASH
+   /* Explicitly initialized global and static data. (.data) */
+   .static_init_ram : ALIGN(4)
+   {
+     *(.data)
+     *(.data*)
+     ...
+   } >RAM AT> FLASH
 
 
 Alternatively, you can copy the following linker snippet into a pre-existing
@@ -88,22 +88,22 @@ provided below:
 
 .. code-block:: none
 
-  /* Main executable code. */
-  .code : ALIGN(4)
-  {
-    . = ALIGN(4);
-    /* Application code. */
-    *(.text)
-    *(.text*)
-    KEEP(*(.init))
-    KEEP(*(.fini))
+   /* Main executable code. */
+   .code : ALIGN(4)
+   {
+     . = ALIGN(4);
+     /* Application code. */
+     *(.text)
+     *(.text*)
+     KEEP(*(.init))
+     KEEP(*(.fini))
 
-    . = ALIGN(4);
-    gnu_build_id_begin = .;
-    *(.note.gnu.build-id);
+     . = ALIGN(4);
+     gnu_build_id_begin = .;
+     *(.note.gnu.build-id);
 
-    ...
-  } >FLASH
+     ...
+   } >FLASH
 
 If your linker script is auto-generated, you may be able to use the
 ``INSERT AFTER`` linker script directive to append the build ID as seen in the
@@ -155,5 +155,6 @@ printed out if it is found.
 
 .. code-block:: sh
 
-  $ python -m pw_build_info.build_id my_device_image.elf
-  d43cce74f18522052f77a1fa3fb7a25fe33f40dd
+   $ python -m pw_build_info.build_id my_device_image.elf
+   d43cce74f18522052f77a1fa3fb7a25fe33f40dd
+

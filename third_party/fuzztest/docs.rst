@@ -19,8 +19,8 @@ Add FuzzTest to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add https://github.com/google/fuzztest.git \
-    third_party/fuzztest
+   git submodule add https://github.com/google/fuzztest.git \
+     third_party/fuzztest
 
 .. tab-set::
 

@@ -53,7 +53,7 @@ generate the ``files.txt``.
 
 .. code-block:: bash
 
-  pw package install stm32cube_{family}
+   pw package install stm32cube_{family}
 
 Headers
 =======
@@ -106,7 +106,7 @@ For multi target projects, the standard practice to set this for each target:
 
 .. code-block:: text
 
-  dir_pw_third_party_stm32cube = dir_pw_third_party_stm32cube_f4
+   dir_pw_third_party_stm32cube = dir_pw_third_party_stm32cube_f4
 
 
 ``pw_third_party_stm32cube_PRODUCT``
@@ -161,7 +161,7 @@ directories.
 
 .. code-block:: bash
 
-  stm32cube_builder gen_file_list /path/to/stm32cube_dir
+   stm32cube_builder gen_file_list /path/to/stm32cube_dir
 
 find_files
 ==========
@@ -186,7 +186,7 @@ The following variables are output: ``family``, ``product_define``,
 
 .. code-block:: bash
 
-  stm32cube_builder find_files /path/to/stm32cube_dir stm32{family}{product} [--init]
+   stm32cube_builder find_files /path/to/stm32cube_dir stm32{family}{product} [--init]
 
 inject_init
 =============
@@ -207,7 +207,7 @@ the pre main init call. The output is printed to stdout, or to the specified
 
 .. code-block:: bash
 
-  stm32cube_builder inject_init /path/to/startup.s [--out-startup-path /path/to/new_startup.s]
+   stm32cube_builder inject_init /path/to/startup.s [--out-startup-path /path/to/new_startup.s]
 
 icf_to_ld
 =========
@@ -223,7 +223,7 @@ stdout or the specified ``--ld-path``.
 
 .. code-block:: bash
 
-  stm32cube_builder inject_init /path/to/iar_linker.icf [--ld-path /path/to/gcc_linker.ld]
+   stm32cube_builder inject_init /path/to/iar_linker.icf [--ld-path /path/to/gcc_linker.ld]
 
 .. _`MCU Components`: https://github.com/STMicroelectronics/STM32Cube_MCU_Overall_Offer#stm32cube-mcu-components
 .. _`ST's GitHub page`: https://github.com/STMicroelectronics

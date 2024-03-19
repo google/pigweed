@@ -67,40 +67,40 @@ To add a new package create a class that subclasses ``Package`` from
 
 .. code-block:: python
 
-  class Package:
-      """Package to be installed.
+   class Package:
+       """Package to be installed.
 
-      Subclass this to implement installation of a specific package.
-      """
-      def __init__(self, name):
-          self._name = name
+       Subclass this to implement installation of a specific package.
+       """
+       def __init__(self, name):
+           self._name = name
 
-      @property
-      def name(self):
-          return self._name
+       @property
+       def name(self):
+           return self._name
 
-      def install(self, path: pathlib.Path) -> None:
-          """Install the package at path.
+       def install(self, path: pathlib.Path) -> None:
+           """Install the package at path.
 
-          Install the package in path. Cannot assume this directory is empty—it
-          may need to be deleted or updated.
-          """
+           Install the package in path. Cannot assume this directory is empty—it
+           may need to be deleted or updated.
+           """
 
-      def remove(self, path: pathlib.Path) -> None:
-          """Remove the package from path.
+       def remove(self, path: pathlib.Path) -> None:
+           """Remove the package from path.
 
-          Removes the directory containing the package. For most packages this
-          should be sufficient to remove the package, and subclasses should not
-          need to override this package.
-          """
-          if os.path.exists(path):
-              shutil.rmtree(path)
+           Removes the directory containing the package. For most packages this
+           should be sufficient to remove the package, and subclasses should not
+           need to override this package.
+           """
+           if os.path.exists(path):
+               shutil.rmtree(path)
 
-      def status(self, path: pathlib.Path) -> bool:
-          """Returns if package is installed at path and current.
+       def status(self, path: pathlib.Path) -> bool:
+           """Returns if package is installed at path and current.
 
-          This method will be skipped if the directory does not exist.
-          """
+           This method will be skipped if the directory does not exist.
+           """
 
 There's also a helper class for retrieving specific revisions of Git
 repositories in ``pw_package/git_repo.py``.
@@ -116,13 +116,13 @@ file is based off of ``pw_package/pigweed_packages.py``.
 
 .. code-block:: python
 
-  from pw_package import package_manager
-  # These modules register themselves so must be imported despite appearing
-  # unused.
-  from pw_package.packages import nanopb
+   from pw_package import package_manager
+   # These modules register themselves so must be imported despite appearing
+   # unused.
+   from pw_package.packages import nanopb
 
-  def main(argv=None) -> int:
-      return package_manager.run(**vars(package_manager.parse_args(argv)))
+   def main(argv=None) -> int:
+       return package_manager.run(**vars(package_manager.parse_args(argv)))
 
 Options
 ~~~~~~~

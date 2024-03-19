@@ -19,8 +19,8 @@ Add Abseil C++ to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add https://github.com/abseil/abseil-cpp.git \
-    third_party/abseil-cpp/src
+   git submodule add https://github.com/abseil/abseil-cpp.git \
+     third_party/abseil-cpp/src
 
 GN
 ==
@@ -46,8 +46,8 @@ the ``-w`` option, e.g.
 
 .. code-block:: sh
 
-  python pw_build/py/pw_build/generate_3p_gn.py \
-    -w third_party/abseil-cpp/src
+   python pw_build/py/pw_build/generate_3p_gn.py \
+     -w third_party/abseil-cpp/src
 
 Version
 =======

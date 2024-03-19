@@ -13,14 +13,14 @@ the Pigweed environment, these commands will be available for use.
 
 .. code-block:: text
 
-  doctor   Check that the environment is set up correctly for Pigweed.
-  format   Check and fix formatting for source files.
-  help     Display detailed information about pw commands.
-  ide      Configure editors and IDEs to work best with Pigweed.
-  logdemo  Show how logs look at various levels.
-  module   Utilities for managing modules.
-  test     Run Pigweed unit tests built using GN.
-  watch    Watch files for changes and rebuild.
+   doctor   Check that the environment is set up correctly for Pigweed.
+   format   Check and fix formatting for source files.
+   help     Display detailed information about pw commands.
+   ide      Configure editors and IDEs to work best with Pigweed.
+   logdemo  Show how logs look at various levels.
+   module   Utilities for managing modules.
+   test     Run Pigweed unit tests built using GN.
+   watch    Watch files for changes and rebuild.
 
 To see an up-to-date list of ``pw`` subcommands, run ``pw --help``.
 
@@ -34,17 +34,17 @@ Here are some example invocations of ``pw``:
 
 .. code-block:: text
 
-  # Run the doctor command
-  $ pw doctor
+   # Run the doctor command
+   $ pw doctor
 
-  # Run format --fix with debug-level logs
-  $ pw --loglevel debug format --fix
+   # Run format --fix with debug-level logs
+   $ pw --loglevel debug format --fix
 
-  # Display help for the pw command
-  $ pw -h watch
+   # Display help for the pw command
+   $ pw -h watch
 
-  # Display help for the watch command
-  $ pw watch -h
+   # Display help for the watch command
+   $ pw watch -h
 
 Registering ``pw`` plugins
 ==========================
@@ -117,72 +117,72 @@ This example shows a function that is registered as a ``pw`` plugin.
 
 .. code-block:: python
 
-  # my_package/my_module.py
+   # my_package/my_module.py
 
-  def _do_something(device):
-      ...
+   def _do_something(device):
+       ...
 
-  def main() -> int:
-      """Do something to a connected device."""
+   def main() -> int:
+       """Do something to a connected device."""
 
-      parser = argparse.ArgumentParser(description=__doc__)
-      parser.add_argument('--device', help='Set which device to target')
-      return _do_something(**vars(parser.parse_args()))
+       parser = argparse.ArgumentParser(description=__doc__)
+       parser.add_argument('--device', help='Set which device to target')
+       return _do_something(**vars(parser.parse_args()))
 
 
-  if __name__ == '__main__':
-      logging.basicConfig(format='%(message)s', level=logging.INFO)
-      sys.exit(main())
+   if __name__ == '__main__':
+       logging.basicConfig(format='%(message)s', level=logging.INFO)
+       sys.exit(main())
 
 This plugin is registered in a ``PW_PLUGINS`` file in the current working
 directory or a parent of it.
 
 .. code-block:: python
 
-  # Register my_commmand
-  my_command my_package.my_module main
+   # Register my_commmand
+   my_command my_package.my_module main
 
 The function is now available through the ``pw`` command, and will be listed in
 ``pw``'s help. Arguments after the command name are passed to the plugin.
 
 .. code-block:: text
 
-  $ pw
+   $ pw
 
-   ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-    ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-    ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-    ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-    ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+    ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+     ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+     ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+     ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+     ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
-  usage: pw [-h] [-C DIRECTORY] [-l LOGLEVEL] [--no-banner] [command] ...
+   usage: pw [-h] [-C DIRECTORY] [-l LOGLEVEL] [--no-banner] [command] ...
 
-  The Pigweed command line interface (CLI).
+   The Pigweed command line interface (CLI).
 
-  ...
+   ...
 
-  supported commands:
-    doctor        Check that the environment is set up correctly for Pigweed.
-    format        Check and fix formatting for source files.
-    help          Display detailed information about pw commands.
-    ...
-    my_command    Do something to a connected device.
+   supported commands:
+     doctor        Check that the environment is set up correctly for Pigweed.
+     format        Check and fix formatting for source files.
+     help          Display detailed information about pw commands.
+     ...
+     my_command    Do something to a connected device.
 
-  $ pw my_command -h
+   $ pw my_command -h
 
-   ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-    ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-    ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-    ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-    ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+    ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+     ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+     ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+     ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+     ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
-  usage: pw my_command [-h] [--device DEVICE]
+   usage: pw my_command [-h] [--device DEVICE]
 
-  Do something to a connected device.
+   Do something to a connected device.
 
-  optional arguments:
-    -h, --help       show this help message and exit
-    --device DEVICE  Set which device to target
+   optional arguments:
+     -h, --help       show this help message and exit
+     --device DEVICE  Set which device to target
 
 Branding Pigweed's tooling
 ==========================
@@ -204,29 +204,29 @@ line. However, these environment variables should be set in the project root's
 
 .. code-block:: text
 
-  $ cat foo-banner.txt
+   $ cat foo-banner.txt
 
-   ▒██████  ░▓██▓░  ░▓██▓░
-    ▒█░    ▒█   ▒█ ▒█   ▒█
-    ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
-    ▒█▀    ▒█   ▒█ ▒█   ▒█
-    ▒█      ░▓██▓░  ░▓██▓░
+    ▒██████  ░▓██▓░  ░▓██▓░
+     ▒█░    ▒█   ▒█ ▒█   ▒█
+     ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
+     ▒█▀    ▒█   ▒█ ▒█   ▒█
+     ▒█      ░▓██▓░  ░▓██▓░
 
-  $ export PW_BRANDING_BANNER="$(pwd)/foo-banner.txt"
-  $ export PW_BRANDING_BANNER_COLOR="bold_red"
-  $ pw logdemo
+   $ export PW_BRANDING_BANNER="$(pwd)/foo-banner.txt"
+   $ export PW_BRANDING_BANNER_COLOR="bold_red"
+   $ pw logdemo
 
-   ▒██████  ░▓██▓░  ░▓██▓░
-    ▒█░    ▒█   ▒█ ▒█   ▒█
-    ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
-    ▒█▀    ▒█   ▒█ ▒█   ▒█
-    ▒█      ░▓██▓░  ░▓██▓░
+    ▒██████  ░▓██▓░  ░▓██▓░
+     ▒█░    ▒█   ▒█ ▒█   ▒█
+     ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
+     ▒█▀    ▒█   ▒█ ▒█   ▒█
+     ▒█      ░▓██▓░  ░▓██▓░
 
-  20200610 12:03:44 CRT This is a critical message
-  20200610 12:03:44 ERR There was an error on our last operation
-  20200610 12:03:44 WRN Looks like something is amiss; consider investigating
-  20200610 12:03:44 INF The operation went as expected
-  20200610 12:03:44 OUT Standard output of subprocess
+   20200610 12:03:44 CRT This is a critical message
+   20200610 12:03:44 ERR There was an error on our last operation
+   20200610 12:03:44 WRN Looks like something is amiss; consider investigating
+   20200610 12:03:44 INF The operation went as expected
+   20200610 12:03:44 OUT Standard output of subprocess
 
 The branding is not purely visual; it serves to make it clear which project an
 engineer is working with.
@@ -300,27 +300,27 @@ Plugins may be registered in a few different ways.
 
   .. code-block:: python
 
-    registry = pw_cli.plugins.Registry()
+     registry = pw_cli.plugins.Registry()
 
-    registry.register('plugin_name', my_plugin)
-    registry.register_by_name('plugin_name', 'module_name', 'function_name')
+     registry.register('plugin_name', my_plugin)
+     registry.register_by_name('plugin_name', 'module_name', 'function_name')
 
 * **Decorator.** Register using the :py:meth:`pw_cli.plugins.Registry.plugin`
   decorator.
 
   .. code-block:: python
 
-    _REGISTRY = pw_cli.plugins.Registry()
+     _REGISTRY = pw_cli.plugins.Registry()
 
-    # This function is registered as the "my_plugin" plugin.
-    @_REGISTRY.plugin
-    def my_plugin():
-        pass
+     # This function is registered as the "my_plugin" plugin.
+     @_REGISTRY.plugin
+     def my_plugin():
+         pass
 
-    # This function is registered as the "input" plugin.
-    @_REGISTRY.plugin(name='input')
-    def read_something():
-        pass
+     # This function is registered as the "input" plugin.
+     @_REGISTRY.plugin(name='input')
+     def read_something():
+         pass
 
   The decorator may be aliased to give a cleaner syntax (e.g. ``register =
   my_registry.plugin``).

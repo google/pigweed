@@ -84,11 +84,11 @@ In order to use these you must use a using namespace directive, for example:
 
 .. code-block:: cpp
 
-  #include "pw_bytes/units.h"
+   #include "pw_bytes/units.h"
 
-  using namespace pw::bytes::unit_literals;
+   using namespace pw::bytes::unit_literals;
 
-  constexpr size_t kRandomBufferSizeBytes = 1_MiB + 42_KiB;
+   constexpr size_t kRandomBufferSizeBytes = 1_MiB + 42_KiB;
 
 In some cases, the use of user-defined literals is not permitted because of the
 required using namespace directive. One example of this is in header files,
@@ -97,9 +97,9 @@ also similar functions:
 
 .. code-block:: cpp
 
-  #include "pw_bytes/units.h"
+   #include "pw_bytes/units.h"
 
-  constexpr size_t kBufferSizeBytes = pw::bytes::MiB(1) + pw::bytes::KiB(42);
+   constexpr size_t kBufferSizeBytes = pw::bytes::MiB(1) + pw::bytes::KiB(42);
 
 ------
 Zephyr

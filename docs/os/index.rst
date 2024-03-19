@@ -83,15 +83,15 @@ around the singleton clock facade to enable dependency injection.
 
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  #include "pw_thread/sleep.h"
+   #include "pw_thread/sleep.h"
 
-  using namespace std::literals::chrono_literals;
+   using namespace std::literals::chrono_literals;
 
-  void ThisSleeps() {
-    pw::thread::sleep_for(42ms);
-  }
+   void ThisSleeps() {
+     pw::thread::sleep_for(42ms);
+   }
 
 Unlike the STL's time bound templated APIs which are not specific to a
 particular clock, Pigweed's time bound APIs are strongly typed to use the
@@ -99,11 +99,11 @@ particular clock, Pigweed's time bound APIs are strongly typed to use the
 
 .. code-block:: cpp
 
-  #include "pw_chrono/system_clock.h"
+   #include "pw_chrono/system_clock.h"
 
-  bool HasThisPointInTimePassed(const SystemClock::time_point timestamp) {
-    return SystemClock::now() > timestamp;
-  }
+   bool HasThisPointInTimePassed(const SystemClock::time_point timestamp) {
+     return SystemClock::now() > timestamp;
+   }
 
 --------------------------
 Synchronization Primitives
@@ -157,16 +157,16 @@ extension with timeout and deadline based semantics.
 
 .. code-block:: cpp
 
-  #include <mutex>
+   #include <mutex>
 
-  #include "pw_sync/mutex.h"
+   #include "pw_sync/mutex.h"
 
-  pw::sync::Mutex mutex;
+   pw::sync::Mutex mutex;
 
-  void ThreadSafeCriticalSection() {
-    std::lock_guard lock(mutex);
-    NotThreadSafeCriticalSection();
-  }
+   void ThreadSafeCriticalSection() {
+     std::lock_guard lock(mutex);
+     NotThreadSafeCriticalSection();
+   }
 
 Interrupt Safe InterruptSpinLock
 --------------------------------
@@ -177,16 +177,16 @@ interrupt locks, this also works safely and efficiently on SMP systems.
 
 .. code-block:: cpp
 
-  #include <mutex>
+   #include <mutex>
 
-  #include "pw_sync/interrupt_spin_lock.h"
+   #include "pw_sync/interrupt_spin_lock.h"
 
-  pw::sync::InterruptSpinLock interrupt_spin_lock;
+   pw::sync::InterruptSpinLock interrupt_spin_lock;
 
-  void InterruptSafeCriticalSection() {
-    std::lock_guard lock(interrupt_spin_lock);
-    NotThreadSafeCriticalSection();
-  }
+   void InterruptSafeCriticalSection() {
+     std::lock_guard lock(interrupt_spin_lock);
+     NotThreadSafeCriticalSection();
+   }
 
 Signaling Primitives
 ====================
@@ -260,20 +260,20 @@ on acquire until notifier(s) signal by invoking release.
 
 .. code-block:: cpp
 
-  #include "pw_sync/counting_semaphore.h"
+   #include "pw_sync/counting_semaphore.h"
 
-  pw::sync::CountingSemaphore event_semaphore;
+   pw::sync::CountingSemaphore event_semaphore;
 
-  void NotifyEventOccurred() {
-    event_semaphore.release();
-  }
+   void NotifyEventOccurred() {
+     event_semaphore.release();
+   }
 
-  void HandleEventsForever() {
-    while (true) {
-      event_semaphore.acquire();
-      HandleEvent();
-    }
-  }
+   void HandleEventsForever() {
+     while (true) {
+       event_semaphore.acquire();
+       HandleEvent();
+     }
+   }
 
 Binary Semaphore
 ----------------
@@ -282,17 +282,17 @@ with an arbitrary token limit of 1, meaning it's either full or empty.
 
 .. code-block:: cpp
 
-  #include "pw_sync/binary_semaphore.h"
+   #include "pw_sync/binary_semaphore.h"
 
-  pw::sync::BinarySemaphore do_foo_semaphore;
+   pw::sync::BinarySemaphore do_foo_semaphore;
 
-  void NotifyResultReady() {
-    result_ready_semaphore.release();
-  }
+   void NotifyResultReady() {
+     result_ready_semaphore.release();
+   }
 
-  void BlockUntilResultReady() {
-    result_ready_semaphore.acquire();
-  }
+   void BlockUntilResultReady() {
+     result_ready_semaphore.acquire();
+   }
 
 --------------------
 Threading Primitives
@@ -333,20 +333,20 @@ the native OS's threading options without getting in your way.
 
 .. code-block:: cpp
 
-  #include "pw_thread/detached_thread.h"
-  #include "pw_thread_freertos/context.h"
-  #include "pw_thread_freertos/options.h"
+   #include "pw_thread/detached_thread.h"
+   #include "pw_thread_freertos/context.h"
+   #include "pw_thread_freertos/options.h"
 
-  pw::thread::freertos::ContextWithStack<42> example_thread_context;
+   pw::thread::freertos::ContextWithStack<42> example_thread_context;
 
-  void StartDetachedExampleThread() {
-     pw::thread::DetachedThread(
-       pw::thread::freertos::Options()
-           .set_name("static_example_thread")
-           .set_priority(kFooPriority)
-           .set_static_context(example_thread_context),
-       example_thread_function);
-  }
+   void StartDetachedExampleThread() {
+      pw::thread::DetachedThread(
+        pw::thread::freertos::Options()
+            .set_name("static_example_thread")
+            .set_priority(kFooPriority)
+            .set_static_context(example_thread_context),
+        example_thread_function);
+   }
 
 Controlling the current thread
 ==============================
@@ -355,14 +355,14 @@ yielding the current thread.
 
 .. code-block:: cpp
 
-  #include "pw_thread/yield.h"
+   #include "pw_thread/yield.h"
 
-  void CooperativeBusyLooper() {
-    while (true) {
-      DoChunkOfWork();
-      pw::this_thread::yield();
-    }
-  }
+   void CooperativeBusyLooper() {
+     while (true) {
+       DoChunkOfWork();
+       pw::this_thread::yield();
+     }
+   }
 
 ------------------
 Execution Contexts

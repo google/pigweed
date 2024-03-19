@@ -309,32 +309,32 @@ list. An example of this is shown below:
 
 .. code-block:: cpp
 
-  using pw::spi::MakeExpectedTransactionlist;
-  using pw::spi::MockInitiator;
-  using pw::spi::MockWriteTransaction;
+   using pw::spi::MakeExpectedTransactionlist;
+   using pw::spi::MockInitiator;
+   using pw::spi::MockWriteTransaction;
 
-  constexpr auto kExpectWrite1 = pw::bytes::Array<1, 2, 3, 4, 5>();
-  constexpr auto kExpectWrite2 = pw::bytes::Array<3, 4, 5>();
-  auto expected_transactions = MakeExpectedTransactionArray(
-      {MockWriteTransaction(pw::OkStatus(), kExpectWrite1),
-       MockWriteTransaction(pw::OkStatus(), kExpectWrite2)});
-  MockInitiator spi_mock(expected_transactions);
+   constexpr auto kExpectWrite1 = pw::bytes::Array<1, 2, 3, 4, 5>();
+   constexpr auto kExpectWrite2 = pw::bytes::Array<3, 4, 5>();
+   auto expected_transactions = MakeExpectedTransactionArray(
+       {MockWriteTransaction(pw::OkStatus(), kExpectWrite1),
+        MockWriteTransaction(pw::OkStatus(), kExpectWrite2)});
+   MockInitiator spi_mock(expected_transactions);
 
-  // Begin driver code
-  ConstByteSpan write1 = kExpectWrite1;
-  // write1 is ok as spi_mock expects {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5}
-  Status status = spi_mock.WriteRead(write1, ConstByteSpan());
+   // Begin driver code
+   ConstByteSpan write1 = kExpectWrite1;
+   // write1 is ok as spi_mock expects {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5}
+   Status status = spi_mock.WriteRead(write1, ConstByteSpan());
 
-  // Takes the first two bytes from the expected array to build a mismatching
-  // span to write.
-  ConstByteSpan write2 = pw::span(kExpectWrite2).first(2);
-  // write2 fails as spi_mock expects {3, 4, 5} != {3, 4}
-  status = spi_mock.WriteRead(write2, ConstByteSpan());
-  // End driver code
+   // Takes the first two bytes from the expected array to build a mismatching
+   // span to write.
+   ConstByteSpan write2 = pw::span(kExpectWrite2).first(2);
+   // write2 fails as spi_mock expects {3, 4, 5} != {3, 4}
+   status = spi_mock.WriteRead(write2, ConstByteSpan());
+   // End driver code
 
-  // Optionally check if the mocked transaction list has been exhausted.
-  // Alternatively this is also called from MockInitiator::~MockInitiator().
-  EXPECT_EQ(spi_mock.Finalize(), OkStatus());
+   // Optionally check if the mocked transaction list has been exhausted.
+   // Alternatively this is also called from MockInitiator::~MockInitiator().
+   EXPECT_EQ(spi_mock.Finalize(), OkStatus());
 
 pw::spi::Responder
 ------------------

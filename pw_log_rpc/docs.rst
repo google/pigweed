@@ -352,27 +352,27 @@ main.cc
 =======
 .. code-block:: cpp
 
-  #include "foo/log.h"
-  #include "pw_log/log.h"
-  #include "pw_thread/detached_thread.h"
-  #include "pw_thread_stl/options.h"
+   #include "foo/log.h"
+   #include "pw_log/log.h"
+   #include "pw_thread/detached_thread.h"
+   #include "pw_thread_stl/options.h"
 
-  namespace {
+   namespace {
 
-  void RegisterServices() {
-    pw::rpc::system_server::Server().RegisterService(foo::log::log_service);
-    pw::rpc::system_server::Server().RegisterService(foo::log::filter_service);
-  }
-  }  // namespace
+   void RegisterServices() {
+     pw::rpc::system_server::Server().RegisterService(foo::log::log_service);
+     pw::rpc::system_server::Server().RegisterService(foo::log::filter_service);
+   }
+   }  // namespace
 
-  int main() {
-    PW_LOG_INFO("Deferred logging over RPC example");
-    pw::rpc::system_server::Init();
-    RegisterServices();
-    pw::thread::DetachedThread(pw::thread::stl::Options(), foo::log::log_thread);
-    pw::rpc::system_server::Start();
-    return 0;
-  }
+   int main() {
+     PW_LOG_INFO("Deferred logging over RPC example");
+     pw::rpc::system_server::Init();
+     RegisterServices();
+     pw::thread::DetachedThread(pw::thread::stl::Options(), foo::log::log_thread);
+     pw::rpc::system_server::Start();
+     return 0;
+   }
 
 foo/log.cc
 ==========
@@ -381,102 +381,102 @@ log drains and filters are set up.
 
 .. code-block:: cpp
 
-  #include "foo/log.h"
+   #include "foo/log.h"
 
-  #include <array>
-  #include <cstdint>
+   #include <array>
+   #include <cstdint>
 
-  #include "pw_chrono/system_clock.h"
-  #include "pw_log/proto_utils.h"
-  #include "pw_log_rpc/log_filter.h"
-  #include "pw_log_rpc/log_filter_map.h"
-  #include "pw_log_rpc/log_filter_service.h"
-  #include "pw_log_rpc/log_service.h"
-  #include "pw_log_rpc/rpc_log_drain.h"
-  #include "pw_log_rpc/rpc_log_drain_map.h"
-  #include "pw_log_rpc/rpc_log_drain_thread.h"
-  #include "pw_rpc_system_server/rpc_server.h"
-  #include "pw_sync/interrupt_spin_lock.h"
-  #include "pw_sync/lock_annotations.h"
-  #include "pw_sync/mutex.h"
+   #include "pw_chrono/system_clock.h"
+   #include "pw_log/proto_utils.h"
+   #include "pw_log_rpc/log_filter.h"
+   #include "pw_log_rpc/log_filter_map.h"
+   #include "pw_log_rpc/log_filter_service.h"
+   #include "pw_log_rpc/log_service.h"
+   #include "pw_log_rpc/rpc_log_drain.h"
+   #include "pw_log_rpc/rpc_log_drain_map.h"
+   #include "pw_log_rpc/rpc_log_drain_thread.h"
+   #include "pw_rpc_system_server/rpc_server.h"
+   #include "pw_sync/interrupt_spin_lock.h"
+   #include "pw_sync/lock_annotations.h"
+   #include "pw_sync/mutex.h"
 
-  namespace foo::log {
-  namespace {
-  constexpr size_t kLogBufferSize = 5000;
-  // Tokenized logs are typically 12-24 bytes.
-  constexpr size_t kMaxMessageSize = 32;
-  // kMaxLogEntrySize should be less than the MTU of the RPC channel output used
-  // by the provided server writer.
-  constexpr size_t kMaxLogEntrySize =
-      pw::log_rpc::RpcLogDrain::kMinEntrySizeWithoutPayload + kMaxMessageSize;
-  std::array<std::byte, kLogBufferSize> multisink_buffer;
+   namespace foo::log {
+   namespace {
+   constexpr size_t kLogBufferSize = 5000;
+   // Tokenized logs are typically 12-24 bytes.
+   constexpr size_t kMaxMessageSize = 32;
+   // kMaxLogEntrySize should be less than the MTU of the RPC channel output used
+   // by the provided server writer.
+   constexpr size_t kMaxLogEntrySize =
+       pw::log_rpc::RpcLogDrain::kMinEntrySizeWithoutPayload + kMaxMessageSize;
+   std::array<std::byte, kLogBufferSize> multisink_buffer;
 
-  // To save RAM, share the mutex, since drains will be managed sequentially.
-  pw::sync::Mutex shared_mutex;
-  std::array<std::byte, kMaxEntrySize> client1_buffer
-      PW_GUARDED_BY(shared_mutex);
-  std::array<std::byte, kMaxEntrySize> client2_buffer
-      PW_GUARDED_BY(shared_mutex);
-  std::array<pw::log_rpc::RpcLogDrain, 2> drains = {
-      pw::log_rpc::RpcLogDrain(
-          1,
-          client1_buffer,
-          shared_mutex,
-          RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
-      pw::log_rpc::RpcLogDrain(
-          2,
-          client2_buffer,
-          shared_mutex,
-          RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
-  };
+   // To save RAM, share the mutex, since drains will be managed sequentially.
+   pw::sync::Mutex shared_mutex;
+   std::array<std::byte, kMaxEntrySize> client1_buffer
+       PW_GUARDED_BY(shared_mutex);
+   std::array<std::byte, kMaxEntrySize> client2_buffer
+       PW_GUARDED_BY(shared_mutex);
+   std::array<pw::log_rpc::RpcLogDrain, 2> drains = {
+       pw::log_rpc::RpcLogDrain(
+           1,
+           client1_buffer,
+           shared_mutex,
+           RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+       pw::log_rpc::RpcLogDrain(
+           2,
+           client2_buffer,
+           shared_mutex,
+           RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+   };
 
-  pw::sync::InterruptSpinLock log_encode_lock;
-  std::array<std::byte, kMaxLogEntrySize> log_encode_buffer
-      PW_GUARDED_BY(log_encode_lock);
+   pw::sync::InterruptSpinLock log_encode_lock;
+   std::array<std::byte, kMaxLogEntrySize> log_encode_buffer
+       PW_GUARDED_BY(log_encode_lock);
 
-  std::array<Filter::Rule, 2> logs_to_host_filter_rules;
-  std::array<Filter::Rule, 2> logs_to_server_filter_rules{{
-      {
-          .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = pw::log::FilterRule::Level::INFO_LEVEL,
-      },
-      {
-          .action = Filter::Rule::Action::kDrop,
-      },
-  }};
-  std::array<Filter, 2> filters{
-      Filter(pw::as_bytes(pw::span("HOST", 4)), logs_to_host_filter_rules),
-      Filter(pw::as_bytes(pw::span("WEB", 3)), logs_to_server_filter_rules),
-  };
-  pw::log_rpc::FilterMap filter_map(filters);
+   std::array<Filter::Rule, 2> logs_to_host_filter_rules;
+   std::array<Filter::Rule, 2> logs_to_server_filter_rules{{
+       {
+           .action = Filter::Rule::Action::kKeep,
+           .level_greater_than_or_equal = pw::log::FilterRule::Level::INFO_LEVEL,
+       },
+       {
+           .action = Filter::Rule::Action::kDrop,
+       },
+   }};
+   std::array<Filter, 2> filters{
+       Filter(pw::as_bytes(pw::span("HOST", 4)), logs_to_host_filter_rules),
+       Filter(pw::as_bytes(pw::span("WEB", 3)), logs_to_server_filter_rules),
+   };
+   pw::log_rpc::FilterMap filter_map(filters);
 
-  extern "C" void pw_log_tokenized_HandleLog(
-      uint32_t metadata, const uint8_t message[], size_t size_bytes) {
-    int64_t timestamp =
-        pw::chrono::SystemClock::now().time_since_epoch().count();
-    std::lock_guard lock(log_encode_lock);
-    pw::Result<pw::ConstByteSpan> encoded_log_result =
-      pw::log::EncodeTokenizedLog(
-          metadata, message, size_bytes, timestamp, log_encode_buffer);
+   extern "C" void pw_log_tokenized_HandleLog(
+       uint32_t metadata, const uint8_t message[], size_t size_bytes) {
+     int64_t timestamp =
+         pw::chrono::SystemClock::now().time_since_epoch().count();
+     std::lock_guard lock(log_encode_lock);
+     pw::Result<pw::ConstByteSpan> encoded_log_result =
+       pw::log::EncodeTokenizedLog(
+           metadata, message, size_bytes, timestamp, log_encode_buffer);
 
-    if (!encoded_log_result.ok()) {
-      GetMultiSink().HandleDropped();
-      return;
-    }
-    GetMultiSink().HandleEntry(encoded_log_result.value());
-  }
-  }  // namespace
+     if (!encoded_log_result.ok()) {
+       GetMultiSink().HandleDropped();
+       return;
+     }
+     GetMultiSink().HandleEntry(encoded_log_result.value());
+   }
+   }  // namespace
 
-  pw::log_rpc::RpcLogDrainMap drain_map(drains);
-  pw::log_rpc::RpcLogDrainThread log_thread(GetMultiSink(), drain_map);
-  pw::log_rpc::LogService log_service(drain_map);
-  pw::log_rpc::FilterService filter_service(filter_map);
+   pw::log_rpc::RpcLogDrainMap drain_map(drains);
+   pw::log_rpc::RpcLogDrainThread log_thread(GetMultiSink(), drain_map);
+   pw::log_rpc::LogService log_service(drain_map);
+   pw::log_rpc::FilterService filter_service(filter_map);
 
-  pw::multisink::MultiSink& GetMultiSink() {
-    static pw::multisink::MultiSink multisink(multisink_buffer);
-    return multisink;
-  }
-  }  // namespace foo::log
+   pw::multisink::MultiSink& GetMultiSink() {
+     static pw::multisink::MultiSink multisink(multisink_buffer);
+     return multisink;
+   }
+   }  // namespace foo::log
 
 Logging in other source files
 -----------------------------

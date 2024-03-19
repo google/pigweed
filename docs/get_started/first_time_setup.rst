@@ -112,7 +112,7 @@ Install prerequisites
 
       .. code-block:: sh
 
-        xcode-select --install
+         xcode-select --install
 
       **SSL certificates**
 

@@ -62,38 +62,39 @@ you are responsible for using whatever APIs make sense for your use case(s).
 
 .. code-block:: cpp
 
-  #include "cmsis.h"
-  #include "hal.h"
-  #include "pw_string/string_builder.h"
+   #include "cmsis.h"
+   #include "hal.h"
+   #include "pw_string/string_builder.h"
 
-  using pw::sys_io::WriteLine;
+   using pw::sys_io::WriteLine;
 
-  extern "C" void pw_assert_basic_HandleFailure(
-      [[maybe_unused]] const char* file_name,
-      [[maybe_unused]] int line_number,
-      [[maybe_unused]] const char* function_name,
-      const char* message,
-      ...) {
-    // Global interrupt disable for a single core microcontroller.
-    __disable_irq();
+   extern "C" void pw_assert_basic_HandleFailure(
+       [[maybe_unused]] const char* file_name,
+       [[maybe_unused]] int line_number,
+       [[maybe_unused]] const char* function_name,
+       const char* message,
+       ...) {
+     // Global interrupt disable for a single core microcontroller.
+     __disable_irq();
 
-    // Re-initialize the UART to ensure it's safe to use at crash time.
-    HAL_UART_DeInit(sys_io_uart);
-    HAL_UART_Init(sys_io_uart);
+     // Re-initialize the UART to ensure it's safe to use at crash time.
+     HAL_UART_DeInit(sys_io_uart);
+     HAL_UART_Init(sys_io_uart);
 
-    WriteLine(
-        "  Welp, that didn't go as planned. "
-        "It seems we crashed. Terribly sorry! Assert reason:");
-    {
-      pw::StringBuffer<150> buffer;
-      buffer << "     ";
-      va_list args;
-      va_start(args, format);
-      buffer.FormatVaList(format, args);
-      va_end(args);
-      WriteLine(buffer.view());
-    }
+     WriteLine(
+         "  Welp, that didn't go as planned. "
+         "It seems we crashed. Terribly sorry! Assert reason:");
+     {
+       pw::StringBuffer<150> buffer;
+       buffer << "     ";
+       va_list args;
+       va_start(args, format);
+       buffer.FormatVaList(format, args);
+       va_end(args);
+       WriteLine(buffer.view());
+     }
 
-    // Reboot the microcontroller.
-    HAL_NVIC_SystemReset();
-  }
+     // Reboot the microcontroller.
+     HAL_NVIC_SystemReset();
+   }
+

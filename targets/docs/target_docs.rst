@@ -16,8 +16,8 @@ target to build.
 
 .. code-block:: sh
 
-  $ gn gen out
-  $ ninja -C out docs
+   $ gn gen out
+   $ ninja -C out docs
 
 Output
 ======

@@ -69,12 +69,12 @@ dump might look something like this:
 
 .. code-block:: none
 
-  {
-    "my_subsystem" : {
-      "successes" : 1000,
-      "attempts" : 1200,
-    }
-  }
+   {
+     "my_subsystem" : {
+       "successes" : 1000,
+       "attempts" : 1200,
+     }
+   }
 
 In this case, every instance of ``MySubsystem`` will have unique counters.
 

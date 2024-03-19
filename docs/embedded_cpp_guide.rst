@@ -51,14 +51,14 @@ Constexpr variables in headers must be declared with the ``inline`` specifier.
 
 .. code-block:: cpp
 
-  namespace pw {
+   namespace pw {
 
-  inline constexpr const char* kStringConstant = "O_o";
+   inline constexpr const char* kStringConstant = "O_o";
 
-  inline constexpr float kFloatConstant1 = CalculateFloatConstant(1);
-  inline constexpr float kFloatConstant2 = CalculateFloatConstant(2);
+   inline constexpr float kFloatConstant1 = CalculateFloatConstant(1);
+   inline constexpr float kFloatConstant2 = CalculateFloatConstant(2);
 
-  }  // namespace pw
+   }  // namespace pw
 
 Function templates
 ==================
@@ -67,16 +67,16 @@ example, the following clamps a value within a minimum and maximum:
 
 .. code-block:: cpp
 
-  template <typename T>
-  T Clamp(T min, T max, T value) {
-    if (value < min) {
-      return min;
-    }
-    if (value > max) {
-      return max;
-    }
-    return value;
-  }
+   template <typename T>
+   T Clamp(T min, T max, T value) {
+     if (value < min) {
+       return min;
+     }
+     if (value > max) {
+       return max;
+     }
+     return value;
+   }
 
 The above code works seamlessly with values of any type -- float, int, or even a
 custom type that supports the < and > operators.
@@ -188,3 +188,4 @@ used.
 
    DoThingWithStatus().IgnoreError();
    std::ignore = DoThingWithReturnValue();
+

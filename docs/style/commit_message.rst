@@ -11,15 +11,15 @@ documentation or code comments instead. For example:
 
 .. code-block:: none
 
-  pw_some_module: Short capitalized description
+   pw_some_module: Short capitalized description
 
-  Details about the change here. Include a summary of what changed, and a clear
-  description of why the change is needed. Consider what parts of the commit
-  message are better suited for documentation or code.
+   Details about the change here. Include a summary of what changed, and a clear
+   description of why the change is needed. Consider what parts of the commit
+   message are better suited for documentation or code.
 
-  - Added foo, to fix issue bar
-  - Improved speed of qux
-  - Refactored and extended qux's test suite
+   - Added foo, to fix issue bar
+   - Improved speed of qux
+   - Refactored and extended qux's test suite
 
 -----------------------------
 Include both "what" and "why"
@@ -252,7 +252,7 @@ case-sensitive symbol.
 
    .. code-block:: none
 
-     pw_foo: Improve use of std::unique_lock
+      pw_foo: Improve use of std::unique_lock
 
 ------
 Footer
@@ -285,19 +285,19 @@ You are encouraged to use the following footers when appropriate:
 
   .. code-block:: none
 
-      pw_something: Add foo and bar functions
+     pw_something: Add foo and bar functions
 
-      Bug: 123
-      Bug: 456
+     Bug: 123
+     Bug: 456
 
 * ``Fixed`` or ``Fixes``: Like ``Bug``, but automatically closes the bug when
   submitted.
 
   .. code-block:: none
 
-      pw_something: Fix incorrect use of foo
+     pw_something: Fix incorrect use of foo
 
-      Fixes: 123
+     Fixes: 123
 
 * ``Test``: The author can use this field to tell the reviewer how the change
   was tested. Typically, this will be some combination of writing new automated
@@ -309,9 +309,9 @@ You are encouraged to use the following footers when appropriate:
 
   .. code-block:: none
 
-      pw_something: Fix incorrect use of foo
+     pw_something: Fix incorrect use of foo
 
-      Test: Added a regression unit test.
+     Test: Added a regression unit test.
 
 In addition, we support all of the `Chromium CQ footers`_, but those are
 relatively rarely useful.

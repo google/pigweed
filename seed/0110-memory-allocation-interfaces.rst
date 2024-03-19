@@ -57,87 +57,87 @@ Allocator
 
 .. code-block:: c++
 
-  class Allocator {
-   public:
-    class Layout {
-     public:
-      constexpr Layout(
-          size_t size, std::align_val_t alignment = alignof(std::max_align_t))
-          : size_(size), alignment_(alignment) {}
+   class Allocator {
+    public:
+     class Layout {
+      public:
+       constexpr Layout(
+           size_t size, std::align_val_t alignment = alignof(std::max_align_t))
+           : size_(size), alignment_(alignment) {}
 
-      // Creates a Layout for the given type.
-      template <typename T>
-      static constexpr Layout Of() {
-        return Layout(sizeof(T), alignof(T));
-      }
+       // Creates a Layout for the given type.
+       template <typename T>
+       static constexpr Layout Of() {
+         return Layout(sizeof(T), alignof(T));
+       }
 
-      size_t size() const { return size_; }
-      size_t alignment() const { return alignment_; }
+       size_t size() const { return size_; }
+       size_t alignment() const { return alignment_; }
 
-     private:
-      size_t size_;
-      size_t alignment_;
-    };
+      private:
+       size_t size_;
+       size_t alignment_;
+     };
 
-    template <typename T, typename... Args>
-    T* New(Args&&... args);
+     template <typename T, typename... Args>
+     T* New(Args&&... args);
 
-    template <typename T>
-    void Delete(T* obj);
+     template <typename T>
+     void Delete(T* obj);
 
-    template <typename T, typename... Args>
-    std::optional<UniquePtr<T>> MakeUnique(Args&&... args);
+     template <typename T, typename... Args>
+     std::optional<UniquePtr<T>> MakeUnique(Args&&... args);
 
-    void* Allocate(Layout layout) {
-      return DoAllocate(layout);
-    }
+     void* Allocate(Layout layout) {
+       return DoAllocate(layout);
+     }
 
-    void Deallocate(void* ptr, Layout layout) {
-      return DoDeallocate(layout);
-    }
+     void Deallocate(void* ptr, Layout layout) {
+       return DoDeallocate(layout);
+     }
 
-    bool Resize(void* ptr, Layout old_layout, size_t new_size) {
-      if (ptr == nullptr) {
-        return false;
-      }
-      return DoResize(ptr, old_layout, new_size);
-    }
+     bool Resize(void* ptr, Layout old_layout, size_t new_size) {
+       if (ptr == nullptr) {
+         return false;
+       }
+       return DoResize(ptr, old_layout, new_size);
+     }
 
-    void* Reallocate(void* ptr, Layout old_layout, size_t new_size) {
-      return DoReallocate(void* ptr, Layout old_layout, size_t new_size);
-    }
+     void* Reallocate(void* ptr, Layout old_layout, size_t new_size) {
+       return DoReallocate(void* ptr, Layout old_layout, size_t new_size);
+     }
 
-   protected:
-    virtual void* DoAllocate(Layout layout) = 0;
-    virtual void DoDeallocate(void* ptr, Layout layout) = 0;
+    protected:
+     virtual void* DoAllocate(Layout layout) = 0;
+     virtual void DoDeallocate(void* ptr, Layout layout) = 0;
 
-    virtual bool DoResize(void* ptr, Layout old_layout, size_t new_size) {
-      return false;
-    }
+     virtual bool DoResize(void* ptr, Layout old_layout, size_t new_size) {
+       return false;
+     }
 
-    virtual void* DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
-      if (new_size == 0) {
-        DoDeallocate(ptr, old_layout);
-        return nullptr;
-      }
+     virtual void* DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
+       if (new_size == 0) {
+         DoDeallocate(ptr, old_layout);
+         return nullptr;
+       }
 
-      if (DoResize(ptr, old_layout, new_size)) {
-        return ptr;
-      }
+       if (DoResize(ptr, old_layout, new_size)) {
+         return ptr;
+       }
 
-      void* new_ptr = DoAllocate(new_layout);
-      if (new_ptr == nullptr) {
-        return nullptr;
-      }
+       void* new_ptr = DoAllocate(new_layout);
+       if (new_ptr == nullptr) {
+         return nullptr;
+       }
 
-      if (ptr != nullptr && old_layout.size() != 0) {
-        std::memcpy(new_ptr, ptr, std::min(old_layout.size(), new_size));
-        DoDeallocate(ptr, old_layout);
-      }
+       if (ptr != nullptr && old_layout.size() != 0) {
+         std::memcpy(new_ptr, ptr, std::min(old_layout.size(), new_size));
+         DoDeallocate(ptr, old_layout);
+       }
 
-      return new_ptr;
-    }
-  };
+       return new_ptr;
+     }
+   };
 
 ``Allocator`` is the most generic and fundamental interface provided by the
 module, representing any object capable of dynamic memory allocation.
@@ -236,24 +236,24 @@ which wraps another allocator implementation with basic usage reporting through
 
 .. code-block:: c++
 
-  class AllocatorMetricProxy : public Allocator {
-   public:
-    constexpr explicit AllocatorMetricProxy(metric::Token token)
-        : memusage_(token) {}
+   class AllocatorMetricProxy : public Allocator {
+    public:
+     constexpr explicit AllocatorMetricProxy(metric::Token token)
+         : memusage_(token) {}
 
-    // Sets the wrapped allocator.
-    void Initialize(Allocator& allocator);
+     // Sets the wrapped allocator.
+     void Initialize(Allocator& allocator);
 
-    // Exposed usage statistics.
-    metric::Group& memusage() { return memusage_; }
-    size_t used() const { return used_.value(); }
-    size_t peak() const { return peak_.value(); }
-    size_t count() const { return count_.value(); }
+     // Exposed usage statistics.
+     metric::Group& memusage() { return memusage_; }
+     size_t used() const { return used_.value(); }
+     size_t peak() const { return peak_.value(); }
+     size_t count() const { return count_.value(); }
 
-    // Implements the Allocator interface by forwarding through to the
-    // sub-allocator provided to Initialize.
+     // Implements the Allocator interface by forwarding through to the
+     // sub-allocator provided to Initialize.
 
-  };
+   };
 
 Integration with C++ polymorphic memory resources
 -------------------------------------------------
@@ -266,31 +266,31 @@ presented here.
 
 .. code-block:: c++
 
-  template <typename Allocator>
-  class MemoryResource : public std::pmr::memory_resource {
-   public:
-    template <typename... Args>
-    MemoryResource(Args&&... args) : allocator_(std::forward<Args>(args)...) {}
+   template <typename Allocator>
+   class MemoryResource : public std::pmr::memory_resource {
+    public:
+     template <typename... Args>
+     MemoryResource(Args&&... args) : allocator_(std::forward<Args>(args)...) {}
 
-   private:
-    void* do_allocate(size_t bytes, size_t alignment) override {
-      void* p = allocator_.Allocate(bytes, alignment);
-      PW_ASSERT(p != nullptr);  // Cannot throw in Pigweed code.
-      return p;
-    }
+    private:
+     void* do_allocate(size_t bytes, size_t alignment) override {
+       void* p = allocator_.Allocate(bytes, alignment);
+       PW_ASSERT(p != nullptr);  // Cannot throw in Pigweed code.
+       return p;
+     }
 
-    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
-      allocator_.Deallocate(p, bytes, alignment);
-    }
+     void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+       allocator_.Deallocate(p, bytes, alignment);
+     }
 
-    bool do_is_equal(const std::pmr::memory_resource&) override {
-      // Pigweed allocators do not yet support the concept of equality; this
-      // remains an open question for the future.
-      return false;
-    }
+     bool do_is_equal(const std::pmr::memory_resource&) override {
+       // Pigweed allocators do not yet support the concept of equality; this
+       // remains an open question for the future.
+       return false;
+     }
 
-    Allocator allocator_;
-  };
+     Allocator allocator_;
+   };
 
 Future Considerations
 =====================
@@ -325,10 +325,10 @@ using them.
 
 .. code-block:: c++
 
-  template <typename T>
-  class DynamicVector {
-    DynamicVector(Allocator& allocator);
-  };
+   template <typename T>
+   class DynamicVector {
+     DynamicVector(Allocator& allocator);
+   };
 
 Per-allocation tagging
 ----------------------
@@ -349,18 +349,18 @@ the file and line number of the allocation.
 
 .. code-block:: c++
 
-  void GenerateAndProcessData(TaggedAllocator& allocator) {
-    void* data = allocator->AllocatedTagged(
-        Layout::Sized(kDataSize), PW_ALLOCATOR_TAG("my data buffer"));
-    if (data == nullptr) {
-      return;
-    }
+   void GenerateAndProcessData(TaggedAllocator& allocator) {
+     void* data = allocator->AllocatedTagged(
+         Layout::Sized(kDataSize), PW_ALLOCATOR_TAG("my data buffer"));
+     if (data == nullptr) {
+       return;
+     }
 
-    GenerateData(data);
-    ProcessData(data);
+     GenerateData(data);
+     ProcessData(data);
 
-    allocator->Deallocate(data);
-  }
+     allocator->Deallocate(data);
+   }
 
 Allocator implementations
 -------------------------

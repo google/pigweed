@@ -116,10 +116,13 @@ class CodeBlock:
                 line_words
                 and line_words[0].startswith(':')
                 and line_words[0].endswith(':')
+                # In case the first word starts with two colons '::'
+                and len(line_words[0]) > 2
             ):
                 self.option_lines.append(line.rstrip())
                 return
-            # Check for a blank line
+
+            # Step 1: Check for a blank line
             if len(line.strip()) == 0:
                 if (
                     self.option_lines
@@ -127,11 +130,20 @@ class CodeBlock:
                 ):
                     self._blank_line_after_options_found = True
                 return
-            # Check for a line that is a continuation of a previous option.
+
+            # Step 2: Check for a line that is a continuation of a previous
+            # option.
             if self.option_lines and not self._blank_line_after_options_found:
                 self.option_lines.append(line.rstrip())
                 return
 
+            # Step 3: Check a line with content.
+            if len(line.strip()) > 0:
+                # Line is not a directive and not blank: it is content.
+                # Flag the end of the options
+                self._blank_line_after_options_found = True
+
+            # Set the content indentation amount.
             self.first_line_indent = _indent_amount(line)
 
         # Save this line as code.
@@ -182,9 +194,7 @@ def reindent_code_blocks(in_text: str) -> str:
                 # Erase this code_block variable
                 current_block = None
         # Check for new code block start
-        elif line.lstrip().startswith('.. code') and line.rstrip().endswith(
-            '::'
-        ):
+        elif line.lstrip().startswith('.. code-block'):
             current_block = CodeBlock(
                 directive_lineno=index, directive_line=line
             )

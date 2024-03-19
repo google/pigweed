@@ -108,21 +108,21 @@ intended behavior of "latching" to the first error.
 
    .. code-block:: cpp
 
-     Status overall_status;
-     for (Sector& sector : sectors) {
-       Status erase_status = sector.Erase();
-       if (!overall_status.ok()) {
-         overall_status = erase_status;
-       }
+      Status overall_status;
+      for (Sector& sector : sectors) {
+        Status erase_status = sector.Erase();
+        if (!overall_status.ok()) {
+          overall_status = erase_status;
+        }
 
-       if (erase_status.ok()) {
-         Status header_write_status = sector.WriteHeader();
-         if (!overall_status.ok()) {
-           overall_status = header_write_status;
-         }
-       }
-     }
-     return overall_status;
+        if (erase_status.ok()) {
+          Status header_write_status = sector.WriteHeader();
+          if (!overall_status.ok()) {
+            overall_status = header_write_status;
+          }
+        }
+      }
+      return overall_status;
 
 :cpp:class:`pw::Status` has a :cpp:func:`pw::Status::Update()` helper function
 that does exactly this to reduce visual clutter and succinctly highlight the
@@ -133,16 +133,16 @@ intended behavior.
 
    .. code-block:: cpp
 
-     Status overall_status;
-     for (Sector& sector : sectors) {
-       Status erase_status = sector.Erase();
-       overall_status.Update(erase_status);
+      Status overall_status;
+      for (Sector& sector : sectors) {
+        Status erase_status = sector.Erase();
+        overall_status.Update(erase_status);
 
-       if (erase_status.ok()) {
-         overall_status.Update(sector.WriteHeader());
-       }
-     }
-     return overall_status;
+        if (erase_status.ok()) {
+          overall_status.Update(sector.WriteHeader());
+        }
+      }
+      return overall_status;
 
 .. _module-pw_status-guide-status-with-size:
 
@@ -216,3 +216,4 @@ assigning the size from the ``pw::StatusWithSize`` on ok.
      // Do something that uses size_value. size_value is only assigned and this
      // following code executed if the PW_TRY_ASSIGN function above returns OK.
    }
+

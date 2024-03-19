@@ -94,7 +94,7 @@ Then build with:
 
 .. code-block:: sh
 
-  ninja -C out arduino
+   ninja -C out arduino
 
 To see supported boards and Arduino menu options for a given core:
 
@@ -187,8 +187,8 @@ the correct Arduino core, compiler path, and Arduino board used.
 
 .. code-block:: sh
 
-  arduino_test_server --verbose \
-      --config-file ./out/arduino_debug/gen/arduino_builder_config.json
+   arduino_test_server --verbose \
+       --config-file ./out/arduino_debug/gen/arduino_builder_config.json
 
 .. TODO(tonymd): Flesh out this section similar to the stm32f429i target docs.
 
@@ -212,48 +212,48 @@ libraries.
 
 .. code-block:: text
 
-  import("//build_overrides/pigweed.gni")
-  import("$dir_pw_arduino_build/arduino.gni")
-  import("$dir_pw_build/target_types.gni")
+   import("//build_overrides/pigweed.gni")
+   import("$dir_pw_arduino_build/arduino.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  _library_args = [
-    "--library-path",
-    rebase_path(arduino_core_library_path, root_build_dir),
-    "--library-names",
-    "Time",
-    "Wire",
-  ]
+   _library_args = [
+     "--library-path",
+     rebase_path(arduino_core_library_path, root_build_dir),
+     "--library-names",
+     "Time",
+     "Wire",
+   ]
 
-  pw_executable("my_app") {
-    # All Library Sources
-    _library_c_files = exec_script(
-            arduino_builder_script,
-            arduino_show_command_args + _library_args + [
-              "--library-c-files"
-            ],
-            "list lines")
-    _library_cpp_files = exec_script(
-            arduino_builder_script,
-            arduino_show_command_args + _library_args + [
-              "--library-cpp-files"
-            ],
-            "list lines")
+   pw_executable("my_app") {
+     # All Library Sources
+     _library_c_files = exec_script(
+             arduino_builder_script,
+             arduino_show_command_args + _library_args + [
+               "--library-c-files"
+             ],
+             "list lines")
+     _library_cpp_files = exec_script(
+             arduino_builder_script,
+             arduino_show_command_args + _library_args + [
+               "--library-cpp-files"
+             ],
+             "list lines")
 
-    sources = [ "main.cc" ] + _library_c_files + _library_cpp_files
+     sources = [ "main.cc" ] + _library_c_files + _library_cpp_files
 
-    deps = [
-      "$dir_pw_hex_dump",
-      "$dir_pw_log",
-      "$dir_pw_string",
-    ]
+     deps = [
+       "$dir_pw_hex_dump",
+       "$dir_pw_log",
+       "$dir_pw_string",
+     ]
 
-    include_dirs = exec_script(arduino_builder_script,
-                               arduino_show_command_args + _library_args +
-                                   [ "--library-include-dirs" ],
-                               "list lines")
+     include_dirs = exec_script(arduino_builder_script,
+                                arduino_show_command_args + _library_args +
+                                    [ "--library-include-dirs" ],
+                                "list lines")
 
-    # Required for using Arduino.h and any Arduino API functions
-    remove_configs = [ "$dir_pw_build:strict_warnings" ]
-    deps += [ "$dir_pw_third_party/arduino:arduino_core_sources" ]
-  }
+     # Required for using Arduino.h and any Arduino API functions
+     remove_configs = [ "$dir_pw_build:strict_warnings" ]
+     deps += [ "$dir_pw_third_party/arduino:arduino_core_sources" ]
+   }
 

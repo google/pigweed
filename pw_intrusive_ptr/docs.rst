@@ -27,21 +27,21 @@ threads without external lock is not allowed.
 
 .. code-block:: cpp
 
-  class MyClass : public RefCounted<MyClass> {
-  // ...
-  };
+   class MyClass : public RefCounted<MyClass> {
+   // ...
+   };
 
-  // Empty pointer, equals to nullptr.
-  // MyClass::Ptr is the same as IntrusivePtr<MyClass>.
-  MyClass::Ptr empty_ptr = IntrusivePtr<MyClass>();
+   // Empty pointer, equals to nullptr.
+   // MyClass::Ptr is the same as IntrusivePtr<MyClass>.
+   MyClass::Ptr empty_ptr = IntrusivePtr<MyClass>();
 
-  // Wrapping an externally created pointer.
-  MyClass raw_ptr = new MyClass();
-  MyClass::Ptr ptr_1 = MyClass::Ptr(raw_ptr);
-  // raw_ptr shouldn't be used after this line if ptr_1 can go out of scope.
+   // Wrapping an externally created pointer.
+   MyClass raw_ptr = new MyClass();
+   MyClass::Ptr ptr_1 = MyClass::Ptr(raw_ptr);
+   // raw_ptr shouldn't be used after this line if ptr_1 can go out of scope.
 
-  // Using MakeRefCounted() helper.
-  auto ptr_2 = MakeRefCounted<MyClass>(/* ... */);
+   // Using MakeRefCounted() helper.
+   auto ptr_2 = MakeRefCounted<MyClass>(/* ... */);
 
 ``IntrusivePtr`` can be passed as an argument by either const reference or
 value. Const reference is more preferable because it does not cause unnecessary
@@ -65,19 +65,19 @@ of `delete`. The cleanup routine is specified as a method with the signature
 
 .. code-block:: cpp
 
-  class Foo : public pw::Recyclable<Foo>, public pw::IntrusivePtr<Foo> {
-  public:
-    // public implementation here
-  private:
-    friend class pw::Recyclable<Foo>;
-    void pw_recycle() {
-      if (should_recycle())) {
-        do_recycle_stuff();
-      } else {
-        delete this;
-      }
-    }
-  };
+   class Foo : public pw::Recyclable<Foo>, public pw::IntrusivePtr<Foo> {
+   public:
+     // public implementation here
+   private:
+     friend class pw::Recyclable<Foo>;
+     void pw_recycle() {
+       if (should_recycle())) {
+         do_recycle_stuff();
+       } else {
+         delete this;
+       }
+     }
+   };
 
 ``Recyclable`` can be used to avoid heap allocation when using smart pointers,
 as the recycle routine can return memory to a memory pool.

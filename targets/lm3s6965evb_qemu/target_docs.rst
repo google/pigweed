@@ -17,7 +17,7 @@ target.
 
 .. code-block:: sh
 
-  $ ninja -C out qemu_gcc
+   $ ninja -C out qemu_gcc
 
 Testing
 =======
@@ -36,9 +36,9 @@ further interaction.
 
 .. code-block:: sh
 
-  $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
-    -nographic -no-reboot \
-    -kernel path/to/firmware.elf
+   $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
+     -nographic -no-reboot \
+     -kernel path/to/firmware.elf
 
 Run With GDB
 ------------------
@@ -48,17 +48,18 @@ wish, and then continue execution.
 
 .. code-block:: sh
 
-  # Start the VM and GDB server.
-  $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
-    -gdb tcp::3333 -S
-    -nographic -no-reboot \
-    -kernel path/to/firmware.elf
+   # Start the VM and GDB server.
+   $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
+     -gdb tcp::3333 -S
+     -nographic -no-reboot \
+     -kernel path/to/firmware.elf
 
 In another window
 
 .. code-block:: sh
 
-  $ arm-none-eabi-gdb path/to/firmare.elf
-  (gdb) target remote :3333
-  (gdb) break SomeFunction()
-  (gdb) continue
+   $ arm-none-eabi-gdb path/to/firmare.elf
+   (gdb) target remote :3333
+   (gdb) break SomeFunction()
+   (gdb) continue
+

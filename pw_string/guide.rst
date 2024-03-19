@@ -128,19 +128,19 @@ constructing a string for external use.
 
 .. code-block:: cpp
 
-  #include "pw_string/string_builder.h"
+   #include "pw_string/string_builder.h"
 
-  pw::Status FlushSensorValueToUart(int32_t sensor_value) {
-    pw::StringBuffer<42> sb;
-    sb << "Sensor value: ";
-    sb << sensor_value;  // Formats as int.
-    FlushCStringToUart(sb.c_str());
+   pw::Status FlushSensorValueToUart(int32_t sensor_value) {
+     pw::StringBuffer<42> sb;
+     sb << "Sensor value: ";
+     sb << sensor_value;  // Formats as int.
+     FlushCStringToUart(sb.c_str());
 
-    if (!sb.status().ok) {
-      format_error_metric.Increment();  // Track overflows.
-    }
-    return sb.status();
-  }
+     if (!sb.status().ok) {
+       format_error_metric.Increment();  // Track overflows.
+     }
+     return sb.status();
+   }
 
 .. _module-pw_string-guide-stringbuilder:
 
@@ -150,29 +150,29 @@ The following shows basic use of a :cpp:class:`pw::StringBuilder`.
 
 .. code-block:: cpp
 
-  #include "pw_log/log.h"
-  #include "pw_string/string_builder.h"
+   #include "pw_log/log.h"
+   #include "pw_string/string_builder.h"
 
-  pw::Status LogProducedData(std::string_view func_name,
-                             span<const std::byte> data) {
-    // pw::StringBuffer allocates a pw::StringBuilder with a built-in buffer.
-    pw::StringBuffer<42> sb;
+   pw::Status LogProducedData(std::string_view func_name,
+                              span<const std::byte> data) {
+     // pw::StringBuffer allocates a pw::StringBuilder with a built-in buffer.
+     pw::StringBuffer<42> sb;
 
-    // Append a std::string_view to the buffer.
-    sb << func_name;
+     // Append a std::string_view to the buffer.
+     sb << func_name;
 
-    // Append a format string to the buffer.
-    sb.Format(" produced %d bytes of data: ", static_cast<int>(data.data()));
+     // Append a format string to the buffer.
+     sb.Format(" produced %d bytes of data: ", static_cast<int>(data.data()));
 
-    // Append bytes as hex to the buffer.
-    sb << data;
+     // Append bytes as hex to the buffer.
+     sb << data;
 
-    // Log the final string.
-    PW_LOG_DEBUG("%s", sb.c_str());
+     // Log the final string.
+     PW_LOG_DEBUG("%s", sb.c_str());
 
-    // Errors encountered while mutating the string builder are tracked.
-    return sb.status();
-  }
+     // Errors encountered while mutating the string builder are tracked.
+     return sb.status();
+   }
 
 Build a string with pw::InlineString
 ====================================
@@ -300,18 +300,18 @@ the same namespace as the custom type. For example:
 
 .. code-block:: cpp
 
-  namespace my_project {
+   namespace my_project {
 
-  struct MyType {
-    int foo;
-    const char* bar;
-  };
+   struct MyType {
+     int foo;
+     const char* bar;
+   };
 
-  pw::StringBuilder& operator<<(pw::StringBuilder& sb, const MyType& value) {
-    return sb << "MyType(" << value.foo << ", " << value.bar << ')';
-  }
+   pw::StringBuilder& operator<<(pw::StringBuilder& sb, const MyType& value) {
+     return sb << "MyType(" << value.foo << ", " << value.bar << ')';
+   }
 
-  }  // namespace my_project
+   }  // namespace my_project
 
 Internally, ``StringBuilder`` uses the ``ToString`` function to print. The
 ``ToString`` template function can be specialized to support custom types with
@@ -320,13 +320,14 @@ This example shows how to specialize ``pw::ToString``:
 
 .. code-block:: cpp
 
-  #include "pw_string/to_string.h"
+   #include "pw_string/to_string.h"
 
-  namespace pw {
+   namespace pw {
 
-  template <>
-  StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
-    return Copy(MyStatusString(value), buffer);
-  }
+   template <>
+   StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
+     return Copy(MyStatusString(value), buffer);
+   }
 
-  }  // namespace pw
+   }  // namespace pw
+

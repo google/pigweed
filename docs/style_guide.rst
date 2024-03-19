@@ -62,37 +62,37 @@ Apache header source code files that support ``//`` comments:
 
 .. code-block:: none
 
-  // Copyright 2023 The Pigweed Authors
-  //
-  // Licensed under the Apache License, Version 2.0 (the "License"); you may not
-  // use this file except in compliance with the License. You may obtain a copy of
-  // the License at
-  //
-  //     https://www.apache.org/licenses/LICENSE-2.0
-  //
-  // Unless required by applicable law or agreed to in writing, software
-  // distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  // License for the specific language governing permissions and limitations under
-  // the License.
+   // Copyright 2023 The Pigweed Authors
+   //
+   // Licensed under the Apache License, Version 2.0 (the "License"); you may not
+   // use this file except in compliance with the License. You may obtain a copy of
+   // the License at
+   //
+   //     https://www.apache.org/licenses/LICENSE-2.0
+   //
+   // Unless required by applicable law or agreed to in writing, software
+   // distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+   // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+   // License for the specific language governing permissions and limitations under
+   // the License.
 
 Apache header for source code files that support ``#`` comments:
 
 .. code-block:: none
 
-  # Copyright 2023 The Pigweed Authors
-  #
-  # Licensed under the Apache License, Version 2.0 (the "License"); you may not
-  # use this file except in compliance with the License. You may obtain a copy of
-  # the License at
-  #
-  #     https://www.apache.org/licenses/LICENSE-2.0
-  #
-  # Unless required by applicable law or agreed to in writing, software
-  # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  # License for the specific language governing permissions and limitations under
-  # the License.
+   # Copyright 2023 The Pigweed Authors
+   #
+   # Licensed under the Apache License, Version 2.0 (the "License"); you may not
+   # use this file except in compliance with the License. You may obtain a copy of
+   # the License at
+   #
+   #     https://www.apache.org/licenses/LICENSE-2.0
+   #
+   # Unless required by applicable law or agreed to in writing, software
+   # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+   # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+   # License for the specific language governing permissions and limitations under
+   # the License.
 
 
 .. _python-style:
@@ -134,39 +134,39 @@ Assets within each field must be listed in alphabetical order.
 
 .. code-block:: cpp
 
-  # Here is a brief example of a GN build file.
+   # Here is a brief example of a GN build file.
 
-  import("$dir_pw_unit_test/test.gni")
+   import("$dir_pw_unit_test/test.gni")
 
-  config("public_include_path") {
-    include_dirs = [ "public" ]
-    visibility = [":*"]
-  }
+   config("public_include_path") {
+     include_dirs = [ "public" ]
+     visibility = [":*"]
+   }
 
-  pw_source_set("pw_sample_module") {
-    public = [ "public/pw_sample_module/sample_module.h" ]
-    sources = [
-      "public/pw_sample_module/internal/secret_header.h",
-      "sample_module.cc",
-      "used_by_sample_module.cc",
-    ]
-    public_configs = [ ":public_include_path" ]
-    public_deps = [ dir_pw_status ]
-    deps = [ dir_pw_varint ]
-  }
+   pw_source_set("pw_sample_module") {
+     public = [ "public/pw_sample_module/sample_module.h" ]
+     sources = [
+       "public/pw_sample_module/internal/secret_header.h",
+       "sample_module.cc",
+       "used_by_sample_module.cc",
+     ]
+     public_configs = [ ":public_include_path" ]
+     public_deps = [ dir_pw_status ]
+     deps = [ dir_pw_varint ]
+   }
 
-  pw_test_group("tests") {
-    tests = [ ":sample_module_test" ]
-  }
+   pw_test_group("tests") {
+     tests = [ ":sample_module_test" ]
+   }
 
-  pw_test("sample_module_test") {
-    sources = [ "sample_module_test.cc" ]
-    deps = [ ":sample_module" ]
-  }
+   pw_test("sample_module_test") {
+     sources = [ "sample_module_test.cc" ]
+     deps = [ ":sample_module" ]
+   }
 
-  pw_doc_group("docs") {
-    sources = [ "docs.rst" ]
-  }
+   pw_doc_group("docs") {
+     sources = [ "docs.rst" ]
+   }
 
 ------------------
 Build files: Bazel

@@ -118,12 +118,12 @@ explicitly discarded in the linker script through the use of the special
 
 .. code-block:: text
 
-      /DISCARD/ : {
-      /* The finalizers are never invoked when the target shuts down and ergo
-       * can be discarded. These include C++ global static destructors and C
-       * designated finalizers. */
-      *(.fini_array);
-      *(.fini);
+   /DISCARD/ : {
+   /* The finalizers are never invoked when the target shuts down and ergo
+    * can be discarded. These include C++ global static destructors and C
+    * designated finalizers. */
+   *(.fini_array);
+   *(.fini);
 
 Second, there are the destructors for the scoped static objects, frequently
 referred to as Meyer's Singletons. With the Itanium ABI these use
@@ -139,31 +139,31 @@ which uses placement new.
 
 .. code-block:: cpp
 
-  #include <type_traits>
+   #include <type_traits>
 
-  template <class T>
-  class NoDestroy {
-   public:
-    template <class... Ts>
-    NoDestroy(Ts&&... ts) {
-      new (&static_) T(std::forward<Ts>(ts)...);
-    }
+   template <class T>
+   class NoDestroy {
+    public:
+     template <class... Ts>
+     NoDestroy(Ts&&... ts) {
+       new (&static_) T(std::forward<Ts>(ts)...);
+     }
 
-    T& get() { return reinterpret_cast<T&>(static_); }
+     T& get() { return reinterpret_cast<T&>(static_); }
 
-   private:
-    std::aligned_storage_t<sizeof(T), alignof(T)> static_;
-  };
+    private:
+     std::aligned_storage_t<sizeof(T), alignof(T)> static_;
+   };
 
 This can then be used as follows to instantiate scoped statics where the
 destructor will never be invoked and ergo will not be linked in.
 
 .. code-block:: cpp
 
-  Foo& GetFoo() {
-    static NoDestroy<Foo> foo(foo_args);
-    return foo.get();
-  }
+   Foo& GetFoo() {
+     static NoDestroy<Foo> foo(foo_args);
+     return foo.get();
+   }
 
 -------
 Strings
@@ -272,42 +272,42 @@ following ``BUILD.gn`` file:
 
 .. code-block:: text
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  # Wraps the function called by newlib's implementation of assert from stdlib.h.
-  #
-  # When using this, we suggest injecting :newlib_assert via pw_build_LINK_DEPS.
-  config("wrap_newlib_assert") {
-    ldflags = [ "-Wl,--wrap=__assert_func" ]
-  }
+   # Wraps the function called by newlib's implementation of assert from stdlib.h.
+   #
+   # When using this, we suggest injecting :newlib_assert via pw_build_LINK_DEPS.
+   config("wrap_newlib_assert") {
+     ldflags = [ "-Wl,--wrap=__assert_func" ]
+   }
 
-  # Implements the function called by newlib's implementation of assert from
-  # stdlib.h which invokes __assert_func unless NDEBUG is defined.
-  pw_source_set("wrapped_newlib_assert") {
-    sources = [ "wrapped_newlib_assert.cc" ]
-    deps = [
-      "$dir_pw_assert:check",
-      "$dir_pw_preprocessor",
-    ]
-  }
+   # Implements the function called by newlib's implementation of assert from
+   # stdlib.h which invokes __assert_func unless NDEBUG is defined.
+   pw_source_set("wrapped_newlib_assert") {
+     sources = [ "wrapped_newlib_assert.cc" ]
+     deps = [
+       "$dir_pw_assert:check",
+       "$dir_pw_preprocessor",
+     ]
+   }
 
 And a ``wrapped_newlib_assert.cc`` source file implementing the wrapped assert
 function:
 
 .. code-block:: cpp
 
-  #include "pw_assert/check.h"
-  #include "pw_preprocessor/compiler.h"
+   #include "pw_assert/check.h"
+   #include "pw_preprocessor/compiler.h"
 
-  // This is defined by <cassert>
-  extern "C" PW_NO_RETURN void __wrap___assert_func(const char*,
-                                                    int,
-                                                    const char*,
-                                                    const char*) {
-    PW_CRASH("libc assert() failure");
-  }
+   // This is defined by <cassert>
+   extern "C" PW_NO_RETURN void __wrap___assert_func(const char*,
+                                                     int,
+                                                     const char*,
+                                                     const char*) {
+     PW_CRASH("libc assert() failure");
+   }
 
 
 Ignored Finalizer and Destructor Registration
@@ -326,40 +326,40 @@ replace it with the following ``BUILD.gn`` file:
 
 .. code-block:: text
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  config("wrap_atexit") {
-    ldflags = [
-      "-Wl,--wrap=atexit",
-      "-Wl,--wrap=at_quick_exit",
-      "-Wl,--wrap=__cxa_atexit",
-    ]
-  }
+   config("wrap_atexit") {
+     ldflags = [
+       "-Wl,--wrap=atexit",
+       "-Wl,--wrap=at_quick_exit",
+       "-Wl,--wrap=__cxa_atexit",
+     ]
+   }
 
-  # Implements atexit, at_quick_exit, and __cxa_atexit from stdlib.h with noop
-  # versions for targets which do not cleanup during exit and quick_exit.
-  #
-  # This removes any dependencies which may exist in your existing libc.
-  # Although this removes the ability for things such as Meyer's Singletons,
-  # i.e. non-global statics, to register destruction function it does not permit
-  # them to be garbage collected by the linker.
-  pw_source_set("wrapped_noop_atexit") {
-    sources = [ "wrapped_noop_atexit.cc" ]
-  }
+   # Implements atexit, at_quick_exit, and __cxa_atexit from stdlib.h with noop
+   # versions for targets which do not cleanup during exit and quick_exit.
+   #
+   # This removes any dependencies which may exist in your existing libc.
+   # Although this removes the ability for things such as Meyer's Singletons,
+   # i.e. non-global statics, to register destruction function it does not permit
+   # them to be garbage collected by the linker.
+   pw_source_set("wrapped_noop_atexit") {
+     sources = [ "wrapped_noop_atexit.cc" ]
+   }
 
 And a ``wrapped_noop_atexit.cc`` source file implementing the noop functions:
 
 .. code-block:: cpp
 
-  // These two are defined by <cstdlib>.
-  extern "C" int __wrap_atexit(void (*)(void)) { return 0; }
-  extern "C" int __wrap_at_quick_exit(void (*)(void)) { return 0; }
+   // These two are defined by <cstdlib>.
+   extern "C" int __wrap_atexit(void (*)(void)) { return 0; }
+   extern "C" int __wrap_at_quick_exit(void (*)(void)) { return 0; }
 
-  // This function is part of the Itanium C++ ABI, there is no header which
-  // provides this.
-  extern "C" int __wrap___cxa_atexit(void (*)(void*), void*, void*) { return 0; }
+   // This function is part of the Itanium C++ ABI, there is no header which
+   // provides this.
+   extern "C" int __wrap___cxa_atexit(void (*)(void*), void*, void*) { return 0; }
 
 Unexpected Bloat in Disabled STL Exceptions
 ===========================================
@@ -396,161 +396,161 @@ note that the mangled names must be used:
 
 .. code-block:: text
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  # Wraps the std::__throw_* functions called by GNU ISO C++ Library regardless
-  # of whether "-fno-exceptions" is specified.
-  #
-  # When using this, we suggest injecting :wrapped_libstdc++_functexcept via
-  # pw_build_LINK_DEPS.
-  config("wrap_libstdc++_functexcept") {
-    ldflags = [
-      "-Wl,--wrap=_ZSt21__throw_bad_exceptionv",
-      "-Wl,--wrap=_ZSt17__throw_bad_allocv",
-      "-Wl,--wrap=_ZSt16__throw_bad_castv",
-      "-Wl,--wrap=_ZSt18__throw_bad_typeidv",
-      "-Wl,--wrap=_ZSt19__throw_logic_errorPKc",
-      "-Wl,--wrap=_ZSt20__throw_domain_errorPKc",
-      "-Wl,--wrap=_ZSt24__throw_invalid_argumentPKc",
-      "-Wl,--wrap=_ZSt20__throw_length_errorPKc",
-      "-Wl,--wrap=_ZSt20__throw_out_of_rangePKc",
-      "-Wl,--wrap=_ZSt24__throw_out_of_range_fmtPKcz",
-      "-Wl,--wrap=_ZSt21__throw_runtime_errorPKc",
-      "-Wl,--wrap=_ZSt19__throw_range_errorPKc",
-      "-Wl,--wrap=_ZSt22__throw_overflow_errorPKc",
-      "-Wl,--wrap=_ZSt23__throw_underflow_errorPKc",
-      "-Wl,--wrap=_ZSt19__throw_ios_failurePKc",
-      "-Wl,--wrap=_ZSt19__throw_ios_failurePKci",
-      "-Wl,--wrap=_ZSt20__throw_system_errori",
-      "-Wl,--wrap=_ZSt20__throw_future_errori",
-      "-Wl,--wrap=_ZSt25__throw_bad_function_callv",
-    ]
-  }
+   # Wraps the std::__throw_* functions called by GNU ISO C++ Library regardless
+   # of whether "-fno-exceptions" is specified.
+   #
+   # When using this, we suggest injecting :wrapped_libstdc++_functexcept via
+   # pw_build_LINK_DEPS.
+   config("wrap_libstdc++_functexcept") {
+     ldflags = [
+       "-Wl,--wrap=_ZSt21__throw_bad_exceptionv",
+       "-Wl,--wrap=_ZSt17__throw_bad_allocv",
+       "-Wl,--wrap=_ZSt16__throw_bad_castv",
+       "-Wl,--wrap=_ZSt18__throw_bad_typeidv",
+       "-Wl,--wrap=_ZSt19__throw_logic_errorPKc",
+       "-Wl,--wrap=_ZSt20__throw_domain_errorPKc",
+       "-Wl,--wrap=_ZSt24__throw_invalid_argumentPKc",
+       "-Wl,--wrap=_ZSt20__throw_length_errorPKc",
+       "-Wl,--wrap=_ZSt20__throw_out_of_rangePKc",
+       "-Wl,--wrap=_ZSt24__throw_out_of_range_fmtPKcz",
+       "-Wl,--wrap=_ZSt21__throw_runtime_errorPKc",
+       "-Wl,--wrap=_ZSt19__throw_range_errorPKc",
+       "-Wl,--wrap=_ZSt22__throw_overflow_errorPKc",
+       "-Wl,--wrap=_ZSt23__throw_underflow_errorPKc",
+       "-Wl,--wrap=_ZSt19__throw_ios_failurePKc",
+       "-Wl,--wrap=_ZSt19__throw_ios_failurePKci",
+       "-Wl,--wrap=_ZSt20__throw_system_errori",
+       "-Wl,--wrap=_ZSt20__throw_future_errori",
+       "-Wl,--wrap=_ZSt25__throw_bad_function_callv",
+     ]
+   }
 
-  # Implements the std::__throw_* functions called by GNU ISO C++ Library
-  # regardless of whether "-fno-exceptions" is specified with PW_CRASH.
-  pw_source_set("wrapped_libstdc++_functexcept") {
-    sources = [ "wrapped_libstdc++_functexcept.cc" ]
-    deps = [
-      "$dir_pw_assert:check",
-      "$dir_pw_preprocessor",
-    ]
-  }
+   # Implements the std::__throw_* functions called by GNU ISO C++ Library
+   # regardless of whether "-fno-exceptions" is specified with PW_CRASH.
+   pw_source_set("wrapped_libstdc++_functexcept") {
+     sources = [ "wrapped_libstdc++_functexcept.cc" ]
+     deps = [
+       "$dir_pw_assert:check",
+       "$dir_pw_preprocessor",
+     ]
+   }
 
 And a ``wrapped_libstdc++_functexcept.cc`` source file implementing each
 wrapped and mangled ``std::__throw_*`` function:
 
 .. code-block:: cpp
 
- #include "pw_assert/check.h"
- #include "pw_preprocessor/compiler.h"
+   #include "pw_assert/check.h"
+   #include "pw_preprocessor/compiler.h"
 
- // These are all wrapped implementations of the throw functions provided by
- // libstdc++'s bits/functexcept.h which are not needed when "-fno-exceptions"
- // is used.
+   // These are all wrapped implementations of the throw functions provided by
+   // libstdc++'s bits/functexcept.h which are not needed when "-fno-exceptions"
+   // is used.
 
- // std::__throw_bad_exception(void)
- extern "C" PW_NO_RETURN void __wrap__ZSt21__throw_bad_exceptionv() {
-   PW_CRASH("std::throw_bad_exception");
- }
+   // std::__throw_bad_exception(void)
+   extern "C" PW_NO_RETURN void __wrap__ZSt21__throw_bad_exceptionv() {
+     PW_CRASH("std::throw_bad_exception");
+   }
 
- // std::__throw_bad_alloc(void)
- extern "C" PW_NO_RETURN void __wrap__ZSt17__throw_bad_allocv() {
-   PW_CRASH("std::throw_bad_alloc");
- }
+   // std::__throw_bad_alloc(void)
+   extern "C" PW_NO_RETURN void __wrap__ZSt17__throw_bad_allocv() {
+     PW_CRASH("std::throw_bad_alloc");
+   }
 
- // std::__throw_bad_cast(void)
- extern "C" PW_NO_RETURN void __wrap__ZSt16__throw_bad_castv() {
-   PW_CRASH("std::throw_bad_cast");
- }
+   // std::__throw_bad_cast(void)
+   extern "C" PW_NO_RETURN void __wrap__ZSt16__throw_bad_castv() {
+     PW_CRASH("std::throw_bad_cast");
+   }
 
- // std::__throw_bad_typeid(void)
- extern "C" PW_NO_RETURN void __wrap__ZSt18__throw_bad_typeidv() {
-   PW_CRASH("std::throw_bad_typeid");
- }
+   // std::__throw_bad_typeid(void)
+   extern "C" PW_NO_RETURN void __wrap__ZSt18__throw_bad_typeidv() {
+     PW_CRASH("std::throw_bad_typeid");
+   }
 
- // std::__throw_logic_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_logic_errorPKc(const char*) {
-   PW_CRASH("std::throw_logic_error");
- }
+   // std::__throw_logic_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_logic_errorPKc(const char*) {
+     PW_CRASH("std::throw_logic_error");
+   }
 
- // std::__throw_domain_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_domain_errorPKc(const char*) {
-   PW_CRASH("std::throw_domain_error");
- }
+   // std::__throw_domain_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_domain_errorPKc(const char*) {
+     PW_CRASH("std::throw_domain_error");
+   }
 
- // std::__throw_invalid_argument(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt24__throw_invalid_argumentPKc(
-     const char*) {
-   PW_CRASH("std::throw_invalid_argument");
- }
+   // std::__throw_invalid_argument(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt24__throw_invalid_argumentPKc(
+       const char*) {
+     PW_CRASH("std::throw_invalid_argument");
+   }
 
- // std::__throw_length_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_length_errorPKc(const char*) {
-   PW_CRASH("std::throw_length_error");
- }
+   // std::__throw_length_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_length_errorPKc(const char*) {
+     PW_CRASH("std::throw_length_error");
+   }
 
- // std::__throw_out_of_range(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_out_of_rangePKc(const char*) {
-   PW_CRASH("std::throw_out_of_range");
- }
+   // std::__throw_out_of_range(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_out_of_rangePKc(const char*) {
+     PW_CRASH("std::throw_out_of_range");
+   }
 
- // std::__throw_out_of_range_fmt(const char*, ...)
- extern "C" PW_NO_RETURN void __wrap__ZSt24__throw_out_of_range_fmtPKcz(
-     const char*, ...) {
-   PW_CRASH("std::throw_out_of_range");
- }
+   // std::__throw_out_of_range_fmt(const char*, ...)
+   extern "C" PW_NO_RETURN void __wrap__ZSt24__throw_out_of_range_fmtPKcz(
+       const char*, ...) {
+     PW_CRASH("std::throw_out_of_range");
+   }
 
- // std::__throw_runtime_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt21__throw_runtime_errorPKc(
-     const char*) {
-   PW_CRASH("std::throw_runtime_error");
- }
+   // std::__throw_runtime_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt21__throw_runtime_errorPKc(
+       const char*) {
+     PW_CRASH("std::throw_runtime_error");
+   }
 
- // std::__throw_range_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_range_errorPKc(const char*) {
-   PW_CRASH("std::throw_range_error");
- }
+   // std::__throw_range_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_range_errorPKc(const char*) {
+     PW_CRASH("std::throw_range_error");
+   }
 
- // std::__throw_overflow_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt22__throw_overflow_errorPKc(
-     const char*) {
-   PW_CRASH("std::throw_overflow_error");
- }
+   // std::__throw_overflow_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt22__throw_overflow_errorPKc(
+       const char*) {
+     PW_CRASH("std::throw_overflow_error");
+   }
 
- // std::__throw_underflow_error(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt23__throw_underflow_errorPKc(
-     const char*) {
-   PW_CRASH("std::throw_underflow_error");
- }
+   // std::__throw_underflow_error(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt23__throw_underflow_errorPKc(
+       const char*) {
+     PW_CRASH("std::throw_underflow_error");
+   }
 
- // std::__throw_ios_failure(const char*)
- extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_ios_failurePKc(const char*) {
-   PW_CRASH("std::throw_ios_failure");
- }
+   // std::__throw_ios_failure(const char*)
+   extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_ios_failurePKc(const char*) {
+     PW_CRASH("std::throw_ios_failure");
+   }
 
- // std::__throw_ios_failure(const char*, int)
- extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_ios_failurePKci(const char*,
-                                                                   int) {
-   PW_CRASH("std::throw_ios_failure");
- }
+   // std::__throw_ios_failure(const char*, int)
+   extern "C" PW_NO_RETURN void __wrap__ZSt19__throw_ios_failurePKci(const char*,
+                                                                     int) {
+     PW_CRASH("std::throw_ios_failure");
+   }
 
- // std::__throw_system_error(int)
- extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_system_errori(int) {
-   PW_CRASH("std::throw_system_error");
- }
+   // std::__throw_system_error(int)
+   extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_system_errori(int) {
+     PW_CRASH("std::throw_system_error");
+   }
 
- // std::__throw_future_error(int)
- extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_future_errori(int) {
-   PW_CRASH("std::throw_future_error");
- }
+   // std::__throw_future_error(int)
+   extern "C" PW_NO_RETURN void __wrap__ZSt20__throw_future_errori(int) {
+     PW_CRASH("std::throw_future_error");
+   }
 
- // std::__throw_bad_function_call(void)
- extern "C" PW_NO_RETURN void __wrap__ZSt25__throw_bad_function_callv() {
-   PW_CRASH("std::throw_bad_function_call");
- }
+   // std::__throw_bad_function_call(void)
+   extern "C" PW_NO_RETURN void __wrap__ZSt25__throw_bad_function_callv() {
+     PW_CRASH("std::throw_bad_function_call");
+   }
 
 ---------------------------------
 Compiler and Linker Optimizations

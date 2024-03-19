@@ -37,38 +37,38 @@ To get setup:
 
    .. code-block:: bash
 
-     $ cd ~
-     $ git clone https://pigweed.googlesource.com/pigweed/pigweed
-     ...
-     $ cd pigweed
-     $ source ./bootstrap.sh (On Linux & Mac)
-     $ bootstrap.bat         (On Windows)
-     ...
+      $ cd ~
+      $ git clone https://pigweed.googlesource.com/pigweed/pigweed
+      ...
+      $ cd pigweed
+      $ source ./bootstrap.sh (On Linux & Mac)
+      $ bootstrap.bat         (On Windows)
+      ...
 
 #. Configure the GN build.
 
    .. code-block:: bash
 
-     $ gn gen out
-     Done. Made 1047 targets from 91 files in 114ms
+      $ gn gen out
+      Done. Made 1047 targets from 91 files in 114ms
 
 #. Start the watcher. The watcher will invoke Ninja to build all the targets
 
    .. code-block:: bash
 
-     $ pw watch
+      $ pw watch
 
-      ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-       ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-       ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-       ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-       ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+       ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+        ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+        ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+        ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+        ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
-     20200707 17:24:06 INF Starting Pigweed build watcher
-     20200707 17:24:06 INF Will build [1/1]: out
-     20200707 17:24:06 INF Attaching filesystem watcher to $HOME/wrk/pigweed/...
-     20200707 17:24:06 INF Triggering initial build...
-     ...
+      20200707 17:24:06 INF Starting Pigweed build watcher
+      20200707 17:24:06 INF Will build [1/1]: out
+      20200707 17:24:06 INF Attaching filesystem watcher to $HOME/wrk/pigweed/...
+      20200707 17:24:06 INF Triggering initial build...
+      ...
 
 #. **Congratulations, you're ready to go!** Now take Pigweed for a spin by
    making a test fail.
@@ -104,18 +104,18 @@ bootstrap may take several minutes to complete, so please be patient.
 
 .. code-block:: bash
 
-  $ git clone https://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
-  $ cd ~/pigweed
-  $ source ./bootstrap.sh
+   $ git clone https://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
+   $ cd ~/pigweed
+   $ source ./bootstrap.sh
 
 **Windows**
 
 .. code-block:: batch
 
-  :: Run git commands from the shell you set up to use with Git during install.
-  > git clone https://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
-  > cd %HOMEPATH%\pigweed
-  > bootstrap.bat
+   :: Run git commands from the shell you set up to use with Git during install.
+   > git clone https://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
+   > cd %HOMEPATH%\pigweed
+   > bootstrap.bat
 
 Below is a real-time demo with roughly what you should expect to see as output:
 
@@ -139,13 +139,13 @@ environment in a new session with the following command:
 
 .. code-block:: bash
 
-  $ source ./activate.sh
+   $ source ./activate.sh
 
 **Windows**
 
 .. code-block:: batch
 
-  > activate.bat
+   > activate.bat
 
 Some major changes may require triggering the bootstrap again, so if you run
 into host tooling changes after a pull it may be worth re-running bootstrap.
@@ -168,7 +168,7 @@ Run GN as seen below:
 
 .. code-block:: bash
 
-  $ gn gen out
+   $ gn gen out
 
 .. note::
   ``out`` is simply the directory the build files are saved to. Unless
@@ -194,7 +194,7 @@ Go ahead and start ``pw_watch``:
 
 .. code-block:: bash
 
-  $ pw watch
+   $ pw watch
 
 When ``pw_watch`` starts up, it will automatically build the directory we
 generated in ``out``. Additionally, ``pw_watch`` watches source code files for
@@ -235,7 +235,7 @@ Try running the ``pw_status`` test manually:
 
 .. code-block:: bash
 
-  $ ./out/pw_strict_host_{clang,gcc}_debug/obj/pw_status/test/status_test
+   $ ./out/pw_strict_host_{clang,gcc}_debug/obj/pw_status/test/status_test
 
 Depending on your host OS, the compiler will default to either ``clang`` or
 ``gcc``.
@@ -253,13 +253,13 @@ If you want to build JUST for the device, you can kick of watch with:
 
 .. code-block:: bash
 
-  $ pw watch stm32f429i
+   $ pw watch stm32f429i
 
 This is equivalent to the following Ninja invocation:
 
 .. code-block:: bash
 
-  $ ninja -C out stm32f429i
+   $ ninja -C out stm32f429i
 
 -------------------------
 Running tests on a device
@@ -293,7 +293,7 @@ Pigweed environment first).
 
 .. code-block:: bash
 
-  $ stm32f429i_disc1_test_server
+   $ stm32f429i_disc1_test_server
 
 **Note:** If you attach or detach any more boards to your workstation you'll
 need to relaunch this server.
@@ -305,10 +305,10 @@ stm32f429i-disc1 target.
 
 .. code-block:: bash
 
-  $ gn args out
-  # Append this line to the file that opens in your editor to tell GN to run
-  # on-device unit tests.
-  pw_use_test_server = true
+   $ gn args out
+   # Append this line to the file that opens in your editor to tell GN to run
+   # on-device unit tests.
+   pw_use_test_server = true
 
 Done!
 =====
@@ -335,7 +335,7 @@ You can explicitly build just the documentation with the command below.
 
 .. code-block:: bash
 
-  $ ninja -C out docs
+   $ ninja -C out docs
 
 This concludes the introduction to developing for upstream Pigweed.
 
@@ -352,12 +352,12 @@ after the desired GN build step label as seen in the example below.
 
 .. code-block:: none
 
-  $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)"
-  pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
+   $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)"
+   pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
 
-  $ ninja -C out pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
-  ninja: Entering directory `out'
-  [4/4] ACTION //pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)
+   $ ninja -C out pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
+   ninja: Entering directory `out'
+   [4/4] ACTION //pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)
 
 The ``.run`` following the test target name is a sub-target created as part of
 the ``pw_test`` GN template. If you remove ``.run``, the test will build but
@@ -367,7 +367,7 @@ In macOS and Linux, ``xargs`` can be used to turn this into a single command:
 
 .. code-block:: bash
 
-  $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)" | xargs ninja -C out
+   $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)" | xargs ninja -C out
 
 ----------
 Next steps
@@ -394,7 +394,7 @@ the following for a quick setup:
 
 .. code-block:: bash
 
-  pw ide sync
+   pw ide sync
 
 Hackaday Supercon talk about Pigweed
 ====================================

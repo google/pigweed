@@ -18,8 +18,8 @@ Begin each section below by running the console in test mode:
 
 .. code-block:: shell
 
-  touch /tmp/empty.yaml
-  env PW_CONSOLE_CONFIG_FILE='/tmp/empty.yaml' pw console --test-mode
+   touch /tmp/empty.yaml
+   env PW_CONSOLE_CONFIG_FILE='/tmp/empty.yaml' pw console --test-mode
 
 Test Sections
 =============

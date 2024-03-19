@@ -189,30 +189,30 @@ falliable operations that return values:
 
 .. code-block:: cpp
 
-  #include "pw_status/try.h"
-  #include "pw_result/result.h"
+   #include "pw_status/try.h"
+   #include "pw_result/result.h"
 
-  pw::Result<int> GetAnswer();  // Example function.
+   pw::Result<int> GetAnswer();  // Example function.
 
-  pw::Status UseAnswerWithTry() {
-    const pw::Result<int> answer = GetAnswer();
-    PW_TRY(answer.status());
-    if (answer.value() == 42) {
-      WhatWasTheUltimateQuestion();
-    }
-    return pw::OkStatus();
-  }
+   pw::Status UseAnswerWithTry() {
+     const pw::Result<int> answer = GetAnswer();
+     PW_TRY(answer.status());
+     if (answer.value() == 42) {
+       WhatWasTheUltimateQuestion();
+     }
+     return pw::OkStatus();
+   }
 
 With the ``PW_TRY_ASSIGN`` macro, you can combine declaring the result with the
 return:
 
 .. code-block:: cpp
 
-  pw::Status UseAnswerWithTryAssign() {
-    PW_TRY_ASSIGN(const int answer, GetAnswer());
-    PW_LOG_INFO("Got answer: %d", static_cast<int>(answer));
-    return pw::OkStatus();
-  }
+   pw::Status UseAnswerWithTryAssign() {
+     PW_TRY_ASSIGN(const int answer, GetAnswer());
+     PW_LOG_INFO("Got answer: %d", static_cast<int>(answer));
+     return pw::OkStatus();
+   }
 
 Chaining results
 ================
@@ -228,45 +228,45 @@ verbose:
 
 .. code-block:: cpp
 
-  pw::Result<Image> GetCuteCat(const Image& img) {
-     pw::Result<Image> cropped = CropToCat(img);
-     if (!cropped.ok()) {
-       return cropped.status();
-     }
-     pw::Result<Image> with_tie = AddBowTie(*cropped);
-     if (!with_tie.ok()) {
-       return with_tie.status();
-     }
-     pw::Result<Image> with_sparkles = MakeEyesSparkle(*with_tie);
-     if (!with_sparkles.ok()) {
-       return with_parkes.status();
-     }
-     return AddRainbow(MakeSmaller(*with_sparkles));
-  }
+   pw::Result<Image> GetCuteCat(const Image& img) {
+      pw::Result<Image> cropped = CropToCat(img);
+      if (!cropped.ok()) {
+        return cropped.status();
+      }
+      pw::Result<Image> with_tie = AddBowTie(*cropped);
+      if (!with_tie.ok()) {
+        return with_tie.status();
+      }
+      pw::Result<Image> with_sparkles = MakeEyesSparkle(*with_tie);
+      if (!with_sparkles.ok()) {
+        return with_parkes.status();
+      }
+      return AddRainbow(MakeSmaller(*with_sparkles));
+   }
 
 Leveraging ``PW_TRY_ASSIGN`` reduces the verbosity:
 
 .. code-block:: cpp
 
-  // Without chaining but using PW_TRY_ASSIGN.
-  pw::Result<Image> GetCuteCat(const Image& img) {
-     PW_TRY_ASSIGN(Image cropped, CropToCat(img));
-     PW_TRY_ASSIGN(Image with_tie, AddBowTie(*cropped));
-     PW_TRY_ASSIGN(Image with_sparkles, MakeEyesSparkle(*with_tie));
-     return AddRainbow(MakeSmaller(*with_sparkles));
-  }
+   // Without chaining but using PW_TRY_ASSIGN.
+   pw::Result<Image> GetCuteCat(const Image& img) {
+      PW_TRY_ASSIGN(Image cropped, CropToCat(img));
+      PW_TRY_ASSIGN(Image with_tie, AddBowTie(*cropped));
+      PW_TRY_ASSIGN(Image with_sparkles, MakeEyesSparkle(*with_tie));
+      return AddRainbow(MakeSmaller(*with_sparkles));
+   }
 
 With chaining we can reduce the code even further:
 
 .. code-block:: cpp
 
-  pw::Result<Image> GetCuteCat(const Image& img) {
-    return CropToCat(img)
-           .and_then(AddBoeTie)
-           .and_then(MakeEyesSparkle)
-           .transform(MakeSmaller)
-           .transform(AddRainbow);
-  }
+   pw::Result<Image> GetCuteCat(const Image& img) {
+     return CropToCat(img)
+            .and_then(AddBoeTie)
+            .and_then(MakeEyesSparkle)
+            .transform(MakeSmaller)
+            .transform(AddRainbow);
+   }
 
 ``pw::Result<T>::and_then``
 ---------------------------
@@ -277,17 +277,17 @@ return type of provided function.
 
 .. code-block:: cpp
 
-  // Expositional prototype of and_then:
-  template <typename T>
-  class Result {
-    template <typename U>
-    Result<U> and_then(Function<Result<U>(T)> func);
-  };
+   // Expositional prototype of and_then:
+   template <typename T>
+   class Result {
+     template <typename U>
+     Result<U> and_then(Function<Result<U>(T)> func);
+   };
 
-  Result<Foo> CreateFoo();
-  Result<Bar> CreateBarFromFoo(const Foo& foo);
+   Result<Foo> CreateFoo();
+   Result<Bar> CreateBarFromFoo(const Foo& foo);
 
-  Result<Bar> bar = CreateFoo().and_then(CreateBarFromFoo);
+   Result<Bar> bar = CreateFoo().and_then(CreateBarFromFoo);
 
 ``pw::Result<T>::or_else``
 --------------------------
@@ -298,31 +298,31 @@ This is particularly useful for handling errors.
 
 .. code-block:: cpp
 
-  // Expositional prototype of or_else:
-  template <typename T>
-  class Result {
-    template <typename U>
-      requires std::is_convertible_v<U, Result<T>>
-    Result<T> or_else(Function<U(Status)> func);
+   // Expositional prototype of or_else:
+   template <typename T>
+   class Result {
+     template <typename U>
+       requires std::is_convertible_v<U, Result<T>>
+     Result<T> or_else(Function<U(Status)> func);
 
-    Result<T> or_else(Function<void(Status)> func);
-  };
+     Result<T> or_else(Function<void(Status)> func);
+   };
 
-  // Without or_else:
-  Result<Image> GetCuteCat(const Image& image) {
-    Result<Image> cropped = CropToCat(image);
-    if (!cropped.ok()) {
-      PW_LOG_ERROR("Failed to crop cat: %d", cropped.status().code());
-      return cropped.status();
-    }
-    return cropped;
-  }
+   // Without or_else:
+   Result<Image> GetCuteCat(const Image& image) {
+     Result<Image> cropped = CropToCat(image);
+     if (!cropped.ok()) {
+       PW_LOG_ERROR("Failed to crop cat: %d", cropped.status().code());
+       return cropped.status();
+     }
+     return cropped;
+   }
 
-  // With or_else:
-  Result<Image> GetCuteCat(const Image& image) {
-    return CropToCat(image).or_else(
-        [](Status s) { PW_LOG_ERROR("Failed to crop cat: %d", s.code()); });
-  }
+   // With or_else:
+   Result<Image> GetCuteCat(const Image& image) {
+     return CropToCat(image).or_else(
+         [](Status s) { PW_LOG_ERROR("Failed to crop cat: %d", s.code()); });
+   }
 
 Another useful scenario for ``pw::Result<T>::or_else`` is providing a default
 value that is expensive to compute. Typically, default values are provided by
@@ -331,17 +331,17 @@ constructed regardless of whether you actually need it.
 
 .. code-block:: cpp
 
-  // With value_or:
-  Image GetCuteCat(const Image& image) {
-    // GenerateCuteCat() must execute regardless of the success of CropToCat
-    return CropToCat(image).value_or(GenerateCuteCat());
-  }
+   // With value_or:
+   Image GetCuteCat(const Image& image) {
+     // GenerateCuteCat() must execute regardless of the success of CropToCat
+     return CropToCat(image).value_or(GenerateCuteCat());
+   }
 
-  // With or_else:
-  Image GetCuteCat(const Image& image) {
-    // GenerateCuteCat() only executes if CropToCat fails.
-    return *CropToCat(image).or_else([](Status) { return GenerateCuteCat(); });
-  }
+   // With or_else:
+   Image GetCuteCat(const Image& image) {
+     // GenerateCuteCat() only executes if CropToCat fails.
+     return *CropToCat(image).or_else([](Status) { return GenerateCuteCat(); });
+   }
 
 ``pw::Result<T>::transform``
 ----------------------------
@@ -358,18 +358,18 @@ should be aware that if they provide a function that returns a ``pw::Result`` to
 
 .. code-block:: cpp
 
-  // Expositional prototype of transform:
-  template <typename T>
-  class Result {
-    template <typename U>
-    Result<U> transform(Function<U(T)> func);
-  };
+   // Expositional prototype of transform:
+   template <typename T>
+   class Result {
+     template <typename U>
+     Result<U> transform(Function<U(T)> func);
+   };
 
-  Result<int> ConvertStringToInteger(std::string_view);
-  int MultiplyByTwo(int x);
+   Result<int> ConvertStringToInteger(std::string_view);
+   int MultiplyByTwo(int x);
 
-  Result<int> x = ConvertStringToInteger("42")
-                    .transform(MultiplyByTwo);
+   Result<int> x = ConvertStringToInteger("42")
+                     .transform(MultiplyByTwo);
 
 Results with custom error types: ``pw::expected``
 =================================================

@@ -138,16 +138,16 @@ appropriate reader/writer class must be used.
 
 .. code-block:: c++
 
-  // Open a ServerWriter for a server streaming RPC.
-  auto writer = RawServerWriter::Open<pw_rpc::raw::ServiceName::MethodName>(
-      server, channel_id, service_instance);
+   // Open a ServerWriter for a server streaming RPC.
+   auto writer = RawServerWriter::Open<pw_rpc::raw::ServiceName::MethodName>(
+       server, channel_id, service_instance);
 
-  // Send some responses, even though the client has not yet called this RPC.
-  CHECK_OK(writer.Write(encoded_response_1));
-  CHECK_OK(writer.Write(encoded_response_2));
+   // Send some responses, even though the client has not yet called this RPC.
+   CHECK_OK(writer.Write(encoded_response_1));
+   CHECK_OK(writer.Write(encoded_response_2));
 
-  // Finish the RPC.
-  CHECK_OK(writer.Finish(OkStatus()));
+   // Finish the RPC.
+   CHECK_OK(writer.Finish(OkStatus()));
 
 Errata
 ------
@@ -1703,9 +1703,9 @@ Default packet processing is equivalent to the next processor:
 
 .. code-block:: cpp
 
-    [](ClientServer& client_server, pw::ConstByteSpan packet) -> pw::Status {
-      return client_server.ProcessPacket(packet);
-    };
+   [](ClientServer& client_server, pw::ConstByteSpan packet) -> pw::Status {
+     return client_server.ProcessPacket(packet);
+   };
 
 The Server processor will be applied to all packets sent to the server (i.e.
 requests) and client processor will be applied to all packets sent to the client

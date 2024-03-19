@@ -300,14 +300,14 @@ Linux/macOS
 ^^^^^^^^^^^
 .. code-block:: bash
 
-  $ pw presubmit --install
+   $ pw presubmit --install
 
 This will be effectively the same as running the following command before every
 ``git push``:
 
 .. code-block:: bash
 
-  $ pw presubmit
+   $ pw presubmit
 
 
 .. image:: ../../pw_presubmit/docs/pw_presubmit_demo.gif
@@ -319,7 +319,7 @@ example) you may push using this command:
 
 .. code-block:: bash
 
-  $ git push origin HEAD:refs/for/main --no-verify
+   $ git push origin HEAD:refs/for/main --no-verify
 
 Presubmit and branch management
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -328,7 +328,7 @@ track, e.g.
 
 .. code-block:: bash
 
-  $ git checkout -b myfeature origin/main
+   $ git checkout -b myfeature origin/main
 
 When tracking an upstream branch, ``pw presubmit`` will only run checks on the
 modified files, rather than the entire repository.

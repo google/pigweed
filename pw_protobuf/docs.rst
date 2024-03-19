@@ -933,10 +933,10 @@ that can hold the set of values encoded by it, following these rules.
 
   .. code-block:: protobuf
 
-    message Register {
-      repeated int32 cash_in = 1;
-      repeated int32 cash_out = 2;
-    }
+     message Register {
+       repeated int32 cash_in = 1;
+       repeated int32 cash_out = 2;
+     }
 
   .. code-block:: text
 

@@ -124,3 +124,4 @@ Emboss source file:
 .. code-block:: c++
 
    #include <my-project/my-protocol.emb.h>
+

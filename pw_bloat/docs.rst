@@ -54,7 +54,6 @@ Basic usage
 
 .. code-block:: sh
 
-
    $ pw bloat out/docs/obj/pw_metric/size_report/bin/one_metric.elf \
          --diff out/docs/obj/pw_metric/size_report/bin/base.elf \
          -d symbols
@@ -281,13 +280,13 @@ reports under ``//pw_bloat/examples`` are imported into this file as follows:
 
 .. code-block:: rst
 
-  Simple bloat loop example
-  ^^^^^^^^^^^^^^^^^^^^^^^^^
-  .. include:: examples/simple_bloat_loop
+   Simple bloat loop example
+   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   .. include:: examples/simple_bloat_loop
 
-  Simple bloat function example
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  .. include:: examples/simple_bloat_function
+   Simple bloat function example
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   .. include:: examples/simple_bloat_function
 
 Resulting in this output:
 

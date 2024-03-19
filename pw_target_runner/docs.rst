@@ -53,21 +53,21 @@ STM32F429I Discovery board with a specified serial number.
 
 .. code-block:: text
 
-  runner {
-    command: "stm32f429i_disc1_unit_test_runner"
-    args: "--openocd-config"
-    args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
-    args: "--serial"
-    args: "066DFF575051717867013127"
-  }
+   runner {
+     command: "stm32f429i_disc1_unit_test_runner"
+     args: "--openocd-config"
+     args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
+     args: "--serial"
+     args: "066DFF575051717867013127"
+   }
 
-  runner {
-    command: "stm32f429i_disc1_unit_test_runner"
-    args: "--openocd-config"
-    args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
-    args: "--serial"
-    args: "0667FF494849887767196023"
-  }
+   runner {
+     command: "stm32f429i_disc1_unit_test_runner"
+     args: "--openocd-config"
+     args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
+     args: "--serial"
+     args: "0667FF494849887767196023"
+   }
 
 
 Running the server
@@ -77,7 +77,7 @@ point it to your config file.
 
 .. code-block:: text
 
-  $ pw_target_runner_server -config server_config.txt -port 8080
+   $ pw_target_runner_server -config server_config.txt -port 8080
 
 
 Sending requests
@@ -87,7 +87,7 @@ specifying the path to the executable through a ``-binary`` option.
 
 .. code-block:: text
 
-  $ pw_target_runner_client -host localhost -port 8080 -binary /path/to/my/test.elf
+   $ pw_target_runner_client -host localhost -port 8080 -binary /path/to/my/test.elf
 
 This command blocks until the executable has finished running. Multiple
 requests can be scheduled in parallel; the server will distribute them among its

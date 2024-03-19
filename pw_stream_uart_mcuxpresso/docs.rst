@@ -33,45 +33,46 @@ Usage
 
 .. code-block:: cpp
 
-  constexpr uint32_t kFlexcomm = 0;
-  constexpr uint32_t kBaudRate = 115200;
-  std::array<std::byte, 20> kBuffer = {};
+   constexpr uint32_t kFlexcomm = 0;
+   constexpr uint32_t kBaudRate = 115200;
+   std::array<std::byte, 20> kBuffer = {};
 
-  auto stream = UartStreamMcuxpresso{USART0,
-                                     kBaudRate,
-                                     kUSART_ParityDisabled,
-                                     kUSART_OneStopBit,
-                                     kBuffer};
+   auto stream = UartStreamMcuxpresso{USART0,
+                                      kBaudRate,
+                                      kUSART_ParityDisabled,
+                                      kUSART_OneStopBit,
+                                      kBuffer};
 
-  PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
+   PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
 
-  std::array<std::byte, 10> to_write = {};
-  PW_TRY(stream.Write(to_write));
+   std::array<std::byte, 10> to_write = {};
+   PW_TRY(stream.Write(to_write));
 
 
 ``UartDmaStreamMcuxpresso`` example:
 
 .. code-block:: cpp
 
-  constexpr uint32_t kFlexcomm = 0;
-  const auto kUartBase = USART0;
-  constexpr uint32_t kBaudRate = 115200;
-  std::array<std::byte, 65536> ring_buffer = {};
-  constexpr uint32_t kUartRxDmaCh = 0;
-  constexpr uint32_t kUartTxDmaCh = 1;
+   constexpr uint32_t kFlexcomm = 0;
+   const auto kUartBase = USART0;
+   constexpr uint32_t kBaudRate = 115200;
+   std::array<std::byte, 65536> ring_buffer = {};
+   constexpr uint32_t kUartRxDmaCh = 0;
+   constexpr uint32_t kUartTxDmaCh = 1;
 
-  const UartDmaStreamMcuxpresso::Config kConfig = {
-      .usart_base = kUartBase,
-      .baud_rate = kBaudRate,
-      .parity = kUSART_ParityDisabled,
-      .stop_bits = kUSART_OneStopBit,
-      .dma_base = DMA0,
-      .rx_dma_ch = kUartRxDmaCh,
-      .tx_dma_ch = kUartTxDmaCh,
-      .rx_input_mux_dmac_ch_request_en = kINPUTMUX_Flexcomm0RxToDmac0Ch0RequestEna,
-      .tx_input_mux_dmac_ch_request_en = kINPUTMUX_Flexcomm0TxToDmac0Ch1RequestEna,
-      .buffer = ByteSpan(ring_buffer)};
+   const UartDmaStreamMcuxpresso::Config kConfig = {
+       .usart_base = kUartBase,
+       .baud_rate = kBaudRate,
+       .parity = kUSART_ParityDisabled,
+       .stop_bits = kUSART_OneStopBit,
+       .dma_base = DMA0,
+       .rx_dma_ch = kUartRxDmaCh,
+       .tx_dma_ch = kUartTxDmaCh,
+       .rx_input_mux_dmac_ch_request_en = kINPUTMUX_Flexcomm0RxToDmac0Ch0RequestEna,
+       .tx_input_mux_dmac_ch_request_en = kINPUTMUX_Flexcomm0TxToDmac0Ch1RequestEna,
+       .buffer = ByteSpan(ring_buffer)};
 
-  auto stream = UartDmaStreamMcuxpresso{kConfig};
+   auto stream = UartDmaStreamMcuxpresso{kConfig};
 
-  PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
+   PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
+

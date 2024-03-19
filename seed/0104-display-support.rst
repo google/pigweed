@@ -416,27 +416,27 @@ Each display has:
 
 .. code-block:: cpp
 
-  namespace pw::display {
+   namespace pw::display {
 
-  class Display {
-  public:
-    // Called on the completion of an update.
-    using WriteCallback = Callback<void(Status)>;
+   class Display {
+   public:
+     // Called on the completion of an update.
+     using WriteCallback = Callback<void(Status)>;
 
-    Display(pw::display_driver::DisplayDriver& display_driver,
-            pw::math::Size<uint16_t> size,
-            pw::framebuffer_pool::FramebufferPool& framebuffer_pool);
-    virtual ~Display();
+     Display(pw::display_driver::DisplayDriver& display_driver,
+             pw::math::Size<uint16_t> size,
+             pw::framebuffer_pool::FramebufferPool& framebuffer_pool);
+     virtual ~Display();
 
-    pw::framebuffer::Framebuffer GetFramebuffer();
+     pw::framebuffer::Framebuffer GetFramebuffer();
 
-    void ReleaseFramebuffer(pw::framebuffer::Framebuffer framebuffer,
-                            WriteCallback callback);
+     void ReleaseFramebuffer(pw::framebuffer::Framebuffer framebuffer,
+                             WriteCallback callback);
 
-    pw::math::Size<uint16_t> size() const;
-  };
+     pw::math::Size<uint16_t> size() const;
+   };
 
-  }  // namespace pw::display
+   }  // namespace pw::display
 
 Once applications are initialized they typically will not directly interact with
 display drivers or framebuffer pools. These will be utilized by the display
@@ -455,16 +455,16 @@ A simplified application rendering loop would resemble:
 
 .. code-block:: cpp
 
-  // Get a framebuffer for drawing.
-  FrameBuffer fb = display.GetFramebuffer();
+   // Get a framebuffer for drawing.
+   FrameBuffer fb = display.GetFramebuffer();
 
-  // DrawScreen is a function that will draw to |fb|'s pixel buffer using a
-  // drawing library. See example above.
-  DrawScreen(&fb);
+   // DrawScreen is a function that will draw to |fb|'s pixel buffer using a
+   // drawing library. See example above.
+   DrawScreen(&fb);
 
-  // Return the framebuffer to the display which will be written to the display
-  // controller by the display's display driver.
-  display.ReleaseFramebuffer(std::move(fb), [](Status){});
+   // Return the framebuffer to the display which will be written to the display
+   // controller by the display's display driver.
+   display.ReleaseFramebuffer(std::move(fb), [](Status){});
 
 Simple Drawing Module
 ---------------------

@@ -19,31 +19,31 @@ SHA256
 
 .. code-block:: cpp
 
-  #include "pw_crypto/sha256.h"
+   #include "pw_crypto/sha256.h"
 
-  std::byte digest[32];
-  if (!pw::crypto::sha256::Hash(message, digest).ok()) {
-    // Handle errors.
-  }
+   std::byte digest[32];
+   if (!pw::crypto::sha256::Hash(message, digest).ok()) {
+     // Handle errors.
+   }
 
-  // The content can also come from a pw::stream::Reader.
-  if (!pw::crypto::sha256::Hash(reader, digest).ok()) {
-    // Handle errors.
-  }
+   // The content can also come from a pw::stream::Reader.
+   if (!pw::crypto::sha256::Hash(reader, digest).ok()) {
+     // Handle errors.
+   }
 
 2. Hashing a long, potentially non-contiguous message.
 
 .. code-block:: cpp
 
-  #include "pw_crypto/sha256.h"
+   #include "pw_crypto/sha256.h"
 
-  std::byte digest[32];
+   std::byte digest[32];
 
-  if (!pw::crypto::sha256::Sha256()
-      .Update(chunk1).Update(chunk2).Update(chunk...)
-      .Final().ok()) {
-    // Handle errors.
-  }
+   if (!pw::crypto::sha256::Sha256()
+       .Update(chunk1).Update(chunk2).Update(chunk...)
+       .Final().ok()) {
+     // Handle errors.
+   }
 
 -----
 ECDSA
@@ -53,37 +53,37 @@ ECDSA
 
 .. code-block:: cpp
 
-  #include "pw_crypto/sha256.h"
+   #include "pw_crypto/sha256.h"
 
-  std::byte digest[32];
-  if (!pw::crypto::sha256::Hash(message, digest).ok()) {
-    // handle errors.
-  }
+   std::byte digest[32];
+   if (!pw::crypto::sha256::Hash(message, digest).ok()) {
+     // handle errors.
+   }
 
-  if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
-                                              signature).ok()) {
-    // handle errors.
-  }
+   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
+                                               signature).ok()) {
+     // handle errors.
+   }
 
 2. Verifying a digital signature signed with ECDSA over the NIST P256 curve,
    with a long and/or non-contiguous message.
 
 .. code-block:: cpp
 
-  #include "pw_crypto/sha256.h"
+   #include "pw_crypto/sha256.h"
 
-  std::byte digest[32];
+   std::byte digest[32];
 
-  if (!pw::crypto::sha256::Sha256()
-      .Update(chunk1).Update(chunk2).Update(chunkN)
-      .Final(digest).ok()) {
-      // Handle errors.
-  }
+   if (!pw::crypto::sha256::Sha256()
+       .Update(chunk1).Update(chunk2).Update(chunkN)
+       .Final(digest).ok()) {
+       // Handle errors.
+   }
 
-  if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
-                                              signature).ok()) {
-      // Handle errors.
-  }
+   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
+                                               signature).ok()) {
+       // Handle errors.
+   }
 
 -------------
 Configuration
@@ -109,15 +109,15 @@ configured. If using GN, do,
 
 .. code-block:: sh
 
-  # Install and configure MbedTLS
-  pw package install mbedtls
-  gn gen out --args='
-      dir_pw_third_party_mbedtls=getenv("PW_PACKAGE_ROOT")+"/mbedtls"
-      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls_v3"
-      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls_v3"
-  '
+   # Install and configure MbedTLS
+   pw package install mbedtls
+   gn gen out --args='
+       dir_pw_third_party_mbedtls=getenv("PW_PACKAGE_ROOT")+"/mbedtls"
+       pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls_v3"
+       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls_v3"
+   '
 
-  ninja -C out
+   ninja -C out
 
 If using Bazel, add the Mbed TLS repository to your WORKSPACE and select
 appropriate backends by adding them to your project's `platform
@@ -125,14 +125,14 @@ appropriate backends by adding them to your project's `platform
 
 .. code-block:: python
 
-  platform(
-    name = "my_platform",
-     constraint_values = [
-       "@pigweed//pw_crypto:sha256_mbedtls_backend",
-       "@pigweed//pw_crypto:ecdsa_mbedtls_backend",
-       # ... other constraint_values
-     ],
-  )
+   platform(
+     name = "my_platform",
+      constraint_values = [
+        "@pigweed//pw_crypto:sha256_mbedtls_backend",
+        "@pigweed//pw_crypto:ecdsa_mbedtls_backend",
+        # ... other constraint_values
+      ],
+   )
 
 For optimal code size and/or performance, the Mbed TLS library can be configured
 per product. Mbed TLS configuration is achieved by turning on and off MBEDTLS_*
@@ -169,12 +169,12 @@ To select Micro ECC, the library needs to be installed and configured.
 
 .. code-block:: sh
 
-  # Install and configure Micro ECC
-  pw package install micro-ecc
-  gn gen out --args='
-      dir_pw_third_party_micro_ecc=getenv("PW_PACKAGE_ROOT")+"/micro-ecc"
-      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"
-  '
+   # Install and configure Micro ECC
+   pw package install micro-ecc
+   gn gen out --args='
+       dir_pw_third_party_micro_ecc=getenv("PW_PACKAGE_ROOT")+"/micro-ecc"
+       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"
+   '
 
 The default micro-ecc backend uses big endian as is standard practice. It also
 has a little-endian configuration which can be used to slightly reduce call

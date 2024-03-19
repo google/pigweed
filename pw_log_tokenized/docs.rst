@@ -142,39 +142,39 @@ The following example shows that a ``Metadata`` object can be created from a
 
 .. code-block:: cpp
 
-  extern "C" void pw_log_tokenized_HandleLog(
-      uint32_t payload,
-      const uint8_t message[],
-      size_t size_bytes) {
-    pw::log_tokenized::Metadata metadata = payload;
-    // Check the log level to see if this log is a crash.
-    if (metadata.level() == PW_LOG_LEVEL_FATAL) {
-      HandleCrash(metadata, pw::ConstByteSpan(
-          reinterpret_cast<const std::byte*>(message), size_bytes));
-      PW_UNREACHABLE;
-    }
-    // ...
-  }
+   extern "C" void pw_log_tokenized_HandleLog(
+       uint32_t payload,
+       const uint8_t message[],
+       size_t size_bytes) {
+     pw::log_tokenized::Metadata metadata = payload;
+     // Check the log level to see if this log is a crash.
+     if (metadata.level() == PW_LOG_LEVEL_FATAL) {
+       HandleCrash(metadata, pw::ConstByteSpan(
+           reinterpret_cast<const std::byte*>(message), size_bytes));
+       PW_UNREACHABLE;
+     }
+     // ...
+   }
 
 It's also possible to get a ``uint32_t`` representation of a ``Metadata``
 object:
 
 .. code-block:: cpp
 
-  // Logs an explicitly created string token.
-  void LogToken(uint32_t token, int level, int line_number, int module) {
-    const uint32_t payload =
-        log_tokenized::Metadata(
-            level, module, PW_LOG_FLAGS, line_number)
-            .value();
-    std::array<std::byte, sizeof(token)> token_buffer =
-        pw::bytes::CopyInOrder(endian::little, token);
+   // Logs an explicitly created string token.
+   void LogToken(uint32_t token, int level, int line_number, int module) {
+     const uint32_t payload =
+         log_tokenized::Metadata(
+             level, module, PW_LOG_FLAGS, line_number)
+             .value();
+     std::array<std::byte, sizeof(token)> token_buffer =
+         pw::bytes::CopyInOrder(endian::little, token);
 
-    pw_log_tokenized_HandleLog(
-        payload,
-        reinterpret_cast<const uint8_t*>(token_buffer.data()),
-        token_buffer.size());
-  }
+     pw_log_tokenized_HandleLog(
+         payload,
+         reinterpret_cast<const uint8_t*>(token_buffer.data()),
+         token_buffer.size());
+   }
 
 The binary tokenized message may be encoded in the :ref:`prefixed Base64 format
 <module-pw_tokenizer-base64-format>` with the following function:

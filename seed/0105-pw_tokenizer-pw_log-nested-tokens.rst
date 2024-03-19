@@ -121,13 +121,13 @@ types in sync when switching between other ``pw_log`` backends like
 
 .. code-block:: cpp
 
-  #include "pw_log/log.h"
-  #include "pw_log/tokenized_args.h"
+   #include "pw_log/log.h"
+   #include "pw_log/tokenized_args.h"
 
-  // token with default options base-16 and empty domain
-  // token database literal: "The sun will come out $#%08x!"
-  PW_LOG("The sun will come out " PW_LOG_TOKEN_FMT() "!", PW_LOG_TOKEN_EXPR("tomorrow"))
-  // after detokenization: "The sun will come out tomorrow!"
+   // token with default options base-16 and empty domain
+   // token database literal: "The sun will come out $#%08x!"
+   PW_LOG("The sun will come out " PW_LOG_TOKEN_FMT() "!", PW_LOG_TOKEN_EXPR("tomorrow"))
+   // after detokenization: "The sun will come out tomorrow!"
 
 Additional macros are also provided specifically for enum handling. The
 ``TOKENIZE_ENUM`` macro creates ELF token database entries for each enum
@@ -138,28 +138,28 @@ external dependency.
 
 .. code-block:: cpp
 
-  // enums
-  namespace foo {
+   // enums
+   namespace foo {
 
-    enum class Color { kRed, kGreen, kBlue };
+     enum class Color { kRed, kGreen, kBlue };
 
-    // syntax TBD
-    TOKENIZE_ENUM(
-      foo::Color,
-      kRed,
-      kGreen,
-      kBlue
-    )
+     // syntax TBD
+     TOKENIZE_ENUM(
+       foo::Color,
+       kRed,
+       kGreen,
+       kBlue
+     )
 
-  } // namespace foo
+   } // namespace foo
 
-  void LogColor(foo::Color color) {
-    // token database literal:
-    // "Color: [${foo::Color}10#%010d]"
-    PW_LOG("Color: [" PW_LOG_ENUM_FMT(foo::Color, 10) "]", color)
-    // after detokenization:
-    // e.g. "Color: kRed"
-  }
+   void LogColor(foo::Color color) {
+     // token database literal:
+     // "Color: [${foo::Color}10#%010d]"
+     PW_LOG("Color: [" PW_LOG_ENUM_FMT(foo::Color, 10) "]", color)
+     // after detokenization:
+     // e.g. "Color: kRed"
+   }
 
 .. admonition:: Nested Base64 tokens
 
@@ -356,15 +356,15 @@ single byte for most enums.
 
   .. code-block:: cpp
 
-    #include "pw_log/log.h"
-    #include "pw_log/tokenized_args.h"
-    #include "pw_status/status.h"
+     #include "pw_log/log.h"
+     #include "pw_log/tokenized_args.h"
+     #include "pw_status/status.h"
 
-    pw::Status status = pw::Status::NotFound();
+     pw::Status status = pw::Status::NotFound();
 
-    // "pw::Status: ${pw::Status}#%08d"
-    PW_LOG("pw::Status: " PW_LOG_TOKEN(pw::Status), status.code)
-    // "pw::Status: NOT_FOUND"
+     // "pw::Status: ${pw::Status}#%08d"
+     PW_LOG("pw::Status: " PW_LOG_TOKEN(pw::Status), status.code)
+     // "pw::Status: NOT_FOUND"
 
 Since the token mapping entries in the ELF are optimized out of the final
 binary, the enum domains are tokenized away as part of the log format strings,

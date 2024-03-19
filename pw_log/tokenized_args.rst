@@ -36,41 +36,41 @@ Example usage with inline string arguments:
 
 .. code-block:: cpp
 
-  #include "pw_log/log.h"
-  #include "pw_log/tokenized_args.h"
+   #include "pw_log/log.h"
+   #include "pw_log/tokenized_args.h"
 
-  // bool active_
-  PW_LOG_INFO("Component is " PW_LOG_TOKEN_FMT(),
-              active_ ? PW_LOG_TOKEN_EXPR("active")
-                      : PW_LOG_TOKEN_EXPR("idle"));
+   // bool active_
+   PW_LOG_INFO("Component is " PW_LOG_TOKEN_FMT(),
+               active_ ? PW_LOG_TOKEN_EXPR("active")
+                       : PW_LOG_TOKEN_EXPR("idle"));
 
 Example usage with enums:
 
 .. code-block:: cpp
 
-  #include "pw_log/log.h"
-  #include "pw_log/tokenized_args.h"
+   #include "pw_log/log.h"
+   #include "pw_log/tokenized_args.h"
 
-  namespace foo {
+   namespace foo {
 
-  enum class Color { kRed, kGreen, kBlue };
+   enum class Color { kRed, kGreen, kBlue };
 
-  PW_LOG_TOKEN_TYPE ColorToToken(Color color) {
-    switch (color) {
-      case Color::kRed:
-        return PW_LOG_TOKEN_EXPR("kRed");
-      case Color::kGreen:
-        return PW_LOG_TOKEN_EXPR("kGreen");
-      case Color::kBlue:
-        return PW_LOG_TOKEN_EXPR("kBlue");
-      default:
-        return PW_LOG_TOKEN_EXPR("kUnknown");
-    }
-  }
+   PW_LOG_TOKEN_TYPE ColorToToken(Color color) {
+     switch (color) {
+       case Color::kRed:
+         return PW_LOG_TOKEN_EXPR("kRed");
+       case Color::kGreen:
+         return PW_LOG_TOKEN_EXPR("kGreen");
+       case Color::kBlue:
+         return PW_LOG_TOKEN_EXPR("kBlue");
+       default:
+         return PW_LOG_TOKEN_EXPR("kUnknown");
+     }
+   }
 
-  } // namespace foo
+   } // namespace foo
 
-  void LogColor(foo::Color color) {
-    PW_LOG("Color: [" PW_LOG_TOKEN_FMT() "]", color)
-  }
+   void LogColor(foo::Color color) {
+     PW_LOG("Color: [" PW_LOG_TOKEN_FMT() "]", color)
+   }
 

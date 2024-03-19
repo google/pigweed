@@ -28,63 +28,63 @@ Negative compilation test example
 ---------------------------------
 .. code-block:: cpp
 
-  #include "pw_unit_test/framework.h"
-  #include "pw_compilation_testing/negative_compilation.h"
+   #include "pw_unit_test/framework.h"
+   #include "pw_compilation_testing/negative_compilation.h"
 
-  template <int kValue>
-  struct MyStruct {
-    static_assert(kValue % 2 == 0, "wrong number!");
+   template <int kValue>
+   struct MyStruct {
+     static_assert(kValue % 2 == 0, "wrong number!");
 
-    constexpr int MultiplyOdd(int runtime_value) const {
-      PW_ASSERT(runtime_value % 2 == 0);
-      return kValue * runtime_value;
-    }
-  };
+     constexpr int MultiplyOdd(int runtime_value) const {
+       PW_ASSERT(runtime_value % 2 == 0);
+       return kValue * runtime_value;
+     }
+   };
 
-  [[maybe_unused]] MyStruct<16> this_one_works;
+   [[maybe_unused]] MyStruct<16> this_one_works;
 
-  // NC tests cannot be compiled, so they are created in preprocessor #if or
-  // #elif blocks. These NC tests check that a static_assert statement fails if
-  // the code is compiled.
-  #if PW_NC_TEST(NegativeOddNumber)
-  PW_NC_EXPECT("wrong number!");
-  [[maybe_unused]] MyStruct<-1> illegal;
-  #elif PW_NC_TEST(PositiveOddNumber)
-  PW_NC_EXPECT("wrong number!");
-  [[maybe_unused]] MyStruct<5> this_is_illegal;
-  #endif  // PW_NC_TEST
+   // NC tests cannot be compiled, so they are created in preprocessor #if or
+   // #elif blocks. These NC tests check that a static_assert statement fails if
+   // the code is compiled.
+   #if PW_NC_TEST(NegativeOddNumber)
+   PW_NC_EXPECT("wrong number!");
+   [[maybe_unused]] MyStruct<-1> illegal;
+   #elif PW_NC_TEST(PositiveOddNumber)
+   PW_NC_EXPECT("wrong number!");
+   [[maybe_unused]] MyStruct<5> this_is_illegal;
+   #endif  // PW_NC_TEST
 
-  struct Foo {
-    // Negative compilation tests can go anywhere in a source file.
-  #if PW_NC_TEST(IllegalValueAsClassMember)
-    PW_NC_EXPECT("wrong number!");
-    MyStruct<12> also_illegal;
-  #endif  // PW_NC_TEST
-  };
+   struct Foo {
+     // Negative compilation tests can go anywhere in a source file.
+   #if PW_NC_TEST(IllegalValueAsClassMember)
+     PW_NC_EXPECT("wrong number!");
+     MyStruct<12> also_illegal;
+   #endif  // PW_NC_TEST
+   };
 
-  TEST(MyStruct, MultiplyOdd) {
-    MyStruct<5> five;
-    EXPECT_EQ(five.MultiplyOdd(3), 15);
+   TEST(MyStruct, MultiplyOdd) {
+     MyStruct<5> five;
+     EXPECT_EQ(five.MultiplyOdd(3), 15);
 
-    // This NC test checks that a specific PW_ASSERT() fails when expected.
-    // This only works in an NC test if the PW_ASSERT() fails while the compiler
-    // is executing constexpr code. The test code is used in a constexpr
-    // statement to force compile-time evaluation.
-    #if PW_NC_TEST(MyStruct_MultiplyOdd_AssertsOnOddNumber)
-    [[maybe_unused]] constexpr auto fail = [] {
-      PW_NC_EXPECT("PW_ASSERT\(runtime_value % 2 == 0\);");
-      MyStruct<3> my_struct;
-      return my_struct.MultiplyOdd(4);  // Even number, PW_ASSERT should fail.
-    }();
-    #endif  // PW_NC_TEST
-  }
+     // This NC test checks that a specific PW_ASSERT() fails when expected.
+     // This only works in an NC test if the PW_ASSERT() fails while the compiler
+     // is executing constexpr code. The test code is used in a constexpr
+     // statement to force compile-time evaluation.
+     #if PW_NC_TEST(MyStruct_MultiplyOdd_AssertsOnOddNumber)
+     [[maybe_unused]] constexpr auto fail = [] {
+       PW_NC_EXPECT("PW_ASSERT\(runtime_value % 2 == 0\);");
+       MyStruct<3> my_struct;
+       return my_struct.MultiplyOdd(4);  // Even number, PW_ASSERT should fail.
+     }();
+     #endif  // PW_NC_TEST
+   }
 
-  // PW_NC_TESTs can be conditionally executed using preprocessor conditionals.
-  #if PW_CXX_STANDARD_IS_SUPPORTED(20)
-  #if PW_NC_TEST(RequiresSomeCpp20Feature)
-  [[maybe_unused]] constinit MyStruct<4> constinit_works;
-  #endif // PW_NC_TEST
-  #endif // PW_CXX_STANDARD_IS_SUPPORTED(20)
+   // PW_NC_TESTs can be conditionally executed using preprocessor conditionals.
+   #if PW_CXX_STANDARD_IS_SUPPORTED(20)
+   #if PW_NC_TEST(RequiresSomeCpp20Feature)
+   [[maybe_unused]] constinit MyStruct<4> constinit_works;
+   #endif // PW_NC_TEST
+   #endif // PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 ------------------------------------
 Creating a negative compilation test

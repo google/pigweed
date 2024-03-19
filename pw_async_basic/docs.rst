@@ -39,20 +39,20 @@ Next, construct and use a ``BasicDispatcher``.
 
 .. code-block:: cpp
 
-  #include "pw_async_basic/dispatcher.h"
+   #include "pw_async_basic/dispatcher.h"
 
-  void DelayedPrint(pw::async::Dispatcher& dispatcher) {
-    dispatcher.PostAfter([](auto&){
-       printf("hello world\n");
-    }, 5s);
-  }
+   void DelayedPrint(pw::async::Dispatcher& dispatcher) {
+     dispatcher.PostAfter([](auto&){
+        printf("hello world\n");
+     }, 5s);
+   }
 
-  int main() {
-    pw::async::BasicDispatcher dispatcher;
-    DelayedPrint(dispatcher);
-    dispatcher.RunFor(10s);
-    return 0;
-  }
+   int main() {
+     pw::async::BasicDispatcher dispatcher;
+     DelayedPrint(dispatcher);
+     dispatcher.RunFor(10s);
+     return 0;
+   }
 
 -----------
 Size Report

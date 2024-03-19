@@ -24,32 +24,32 @@ entries in the provided buffer.
 
 .. code-block:: cpp
 
-  // A test string to push into the buffer.
-  constexpr char kExampleEntry[] = "Example!";
+   // A test string to push into the buffer.
+   constexpr char kExampleEntry[] = "Example!";
 
-  // Setting up buffers and attaching a reader.
-  std::byte buffer[1024];
-  std::byte read_buffer[256];
-  PrefixedEntryRingBuffer ring_buffer;
-  PrefixedEntryRingBuffer::Reader reader;
-  ring_buffer.SetBuffer(buffer);
-  ring_buffer.AttachReader(reader);
+   // Setting up buffers and attaching a reader.
+   std::byte buffer[1024];
+   std::byte read_buffer[256];
+   PrefixedEntryRingBuffer ring_buffer;
+   PrefixedEntryRingBuffer::Reader reader;
+   ring_buffer.SetBuffer(buffer);
+   ring_buffer.AttachReader(reader);
 
-  // Insert some entries and process some entries.
-  ring_buffer.PushBack(kExampleEntry);
-  ring_buffer.PushBack(kExampleEntry);
-  reader.PopFront();
+   // Insert some entries and process some entries.
+   ring_buffer.PushBack(kExampleEntry);
+   ring_buffer.PushBack(kExampleEntry);
+   reader.PopFront();
 
-  // !! A function causes a crash before we've read out all entries.
-  FunctionThatCrashes();
+   // !! A function causes a crash before we've read out all entries.
+   FunctionThatCrashes();
 
-  // ... Crash Context ...
+   // ... Crash Context ...
 
-  // You can use a range-based for-loop to walk through all entries.
-  for (auto entry : ring_buffer) {
-    PW_LOG_WARN("Read entry of size: %u",
-                static_cast<unsigned>(entry.buffer.size()));
-  }
+   // You can use a range-based for-loop to walk through all entries.
+   for (auto entry : ring_buffer) {
+     PW_LOG_WARN("Read entry of size: %u",
+                 static_cast<unsigned>(entry.buffer.size()));
+   }
 
 In cases where a crash has caused the ring buffer to have corrupted data, the
 iterator will progress until it sees the corrupted section and instead move to

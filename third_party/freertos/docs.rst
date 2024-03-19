@@ -119,5 +119,6 @@ is provided under ``pw_third_party/freertos/config_assert.h`` which defines
 
 .. code-block:: cpp
 
-  // Instead of defining configASSERT, simply include this header in its place.
-  #include "pw_third_party/freertos/config_assert.h"
+   // Instead of defining configASSERT, simply include this header in its place.
+   #include "pw_third_party/freertos/config_assert.h"
+

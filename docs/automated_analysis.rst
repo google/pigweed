@@ -194,9 +194,9 @@ asan, you would run,
 
 .. code-block:: bash
 
-    gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
-    ninja -C out host_clang_debug/obj/example/sample/bin/sample_binary
-    out/host_clang_debug/obj/example/sample/bin/sample_binary
+   gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
+   ninja -C out host_clang_debug/obj/example/sample/bin/sample_binary
+   out/host_clang_debug/obj/example/sample/bin/sample_binary
 
 Sanitizer toolchains
 --------------------

@@ -201,9 +201,9 @@ should include the behavior being banchmarked, e.g.
 
 .. code-block:: cpp
 
-  while (state.KeepRunning()) {
-    // Code to be benchmarked.
-  }
+   while (state.KeepRunning()) {
+     // Code to be benchmarked.
+   }
 
 In particular, ``State::KeepRunning`` should be called exactly once before the
 first iteration, as in a ``for`` or ``while`` loop. The ``State`` object will

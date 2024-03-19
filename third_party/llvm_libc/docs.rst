@@ -17,8 +17,8 @@ Add LLVM libc to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add https://llvm.googlesource.com/llvm-project/libc \
-    third_party/llvm_libc/src
+   git submodule add https://llvm.googlesource.com/llvm-project/libc \
+     third_party/llvm_libc/src
 
 Note, this git repository is maintained by Google and is a slice of upstream
 LLVM including only the libc subdirectory.

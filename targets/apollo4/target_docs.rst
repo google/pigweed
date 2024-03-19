@@ -17,7 +17,7 @@ extracted directory:
 
 .. code-block:: sh
 
-  $ gn args out
+   $ gn args out
 
 Then add the following lines to that text file:
 
@@ -36,7 +36,7 @@ can be build with a command:
 
 .. code-block:: sh
 
-  ninja -C out apollo4
+   ninja -C out apollo4
 
 If using out as a build directory, tests will be located in out/apollo4/obj/[module name]/[test_name].elf.
 
@@ -49,31 +49,31 @@ an Apollo4 board using ``JLinkExe`` program:
 
 .. code-block:: sh
 
-  #!/bin/bash
-  function flash_jlink()
-  {
-     local TMP_FLASH_SCRIPT=/tmp/gdb-flash.txt
+   #!/bin/bash
+   function flash_jlink()
+   {
+      local TMP_FLASH_SCRIPT=/tmp/gdb-flash.txt
 
-     cat > $TMP_FLASH_SCRIPT <<- EOF
-        r
-        h
-        loadfile $1
-        r
-        q
-     EOF
+      cat > $TMP_FLASH_SCRIPT <<- EOF
+         r
+         h
+         loadfile $1
+         r
+         q
+      EOF
 
-     JLinkExe -NoGui 1 -device AMAP42KK-KBR -if SWD -speed 4000 -autoconnect 1 -CommanderScript $TMP_FLASH_SCRIPT
+      JLinkExe -NoGui 1 -device AMAP42KK-KBR -if SWD -speed 4000 -autoconnect 1 -CommanderScript $TMP_FLASH_SCRIPT
 
-     rm "$TMP_FLASH_SCRIPT"
-  }
+      rm "$TMP_FLASH_SCRIPT"
+   }
 
-  flash_jlink $@
+   flash_jlink $@
 
 Then call this script:
 
 .. code-block:: sh
 
-  bash ./flash_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   bash ./flash_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
 In this case the basic log test is debugged, but substitute your own ELF file.
 
@@ -84,16 +84,16 @@ start ``JLinkGDBServer`` and connect to the on-board J-Link Debug Probe.
 
 .. code-block:: sh
 
-  JLinkGDBServer -select USB      \
-            -device AMAP42KK-KBR  \
-            -endian little        \
-            -if SWD               \
-            -speed 4000           \
-            -noir -LocalhostOnly  \
-            -singlerun            \
-            -nogui                \
-            -excdbg               \
-            -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib
+   JLinkGDBServer -select USB      \
+             -device AMAP42KK-KBR  \
+             -endian little        \
+             -if SWD               \
+             -speed 4000           \
+             -noir -LocalhostOnly  \
+             -singlerun            \
+             -nogui                \
+             -excdbg               \
+             -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib
 
 The ``-rtos`` option is for `Thread Aware Debugging`_.
 
@@ -104,62 +104,63 @@ into the target, debug, and run it.
 
 .. code-block:: sh
 
-  arm-none-eabi-gdb -q out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   arm-none-eabi-gdb -q out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
 This can be combined with a simple bash script. Here is an example of one:
 
 .. code-block:: sh
 
-  #!/bin/bash
+   #!/bin/bash
 
-  function debug_jlink()
-  {
-     local TMP_GDB_SCRIPT=/tmp/gdb-debug.txt
+   function debug_jlink()
+   {
+      local TMP_GDB_SCRIPT=/tmp/gdb-debug.txt
 
-     # Create GDB script.
+      # Create GDB script.
 
-     cat > $TMP_GDB_SCRIPT <<- EOF
+      cat > $TMP_GDB_SCRIPT <<- EOF
 
-     # Backtrace all threads.
+      # Backtrace all threads.
 
-     define btall
-       thread apply all backtrace
-     end
+      define btall
+        thread apply all backtrace
+      end
 
-     target remote localhost:2331
-     load
-     monitor reset
-     monitor halt
-     b pw_boot_Entry
+      target remote localhost:2331
+      load
+      monitor reset
+      monitor halt
+      b pw_boot_Entry
 
-     EOF
+      EOF
 
-     # Start GDB server.
+      # Start GDB server.
 
-     set -m
-     JLinkGDBServer -select USB       \
-                -device AMAP42KK-KBR  \
-                -endian little        \
-                -if SWD               \
-                -speed 4000           \
-                -noir -LocalhostOnly  \
-                -singlerun            \
-                -nogui                \
-                -excdbg               \
-                -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib &
-     set +m
+      set -m
+      JLinkGDBServer -select USB       \
+                 -device AMAP42KK-KBR  \
+                 -endian little        \
+                 -if SWD               \
+                 -speed 4000           \
+                 -noir -LocalhostOnly  \
+                 -singlerun            \
+                 -nogui                \
+                 -excdbg               \
+                 -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib &
+      set +m
 
-     # Debug program.
+      # Debug program.
 
-     arm-none-eabi-gdb -q $1 -x $TMP_GDB_SCRIPT
+      arm-none-eabi-gdb -q $1 -x $TMP_GDB_SCRIPT
 
-     rm "$TMP_GDB_SCRIPT"
-  }
+      rm "$TMP_GDB_SCRIPT"
+   }
 
-  debug_jlink $@
+   debug_jlink $@
 
 Then call this script:
 
 .. code-block:: sh
 
-  bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+

@@ -65,7 +65,7 @@ top-level ``host`` group as the target to build.
 
 .. code-block:: sh
 
-  $ ninja -C out host
+   $ ninja -C out host
 
 
 ``host`` may be replaced with ``host_clang``, ``host_gcc``,
@@ -83,7 +83,7 @@ Example:
 
 .. code-block:: sh
 
-  $ ./out/host_[compiler]_debug/obj/pw_status/status_test
+   $ ./out/host_[compiler]_debug/obj/pw_status/status_test
 
 ----------
 RPC server

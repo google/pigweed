@@ -21,30 +21,30 @@ can be created as follows:
 
 .. code-block:: cpp
 
-  #include "pw_thread/detached_thread.h"
-  #include "pw_thread_embos/config.h"
-  #include "pw_thread_embos/context.h"
-  #include "pw_thread_embos/options.h"
-  #include "RTOS.h"  // For the embOS types.
+   #include "pw_thread/detached_thread.h"
+   #include "pw_thread_embos/config.h"
+   #include "pw_thread_embos/context.h"
+   #include "pw_thread_embos/options.h"
+   #include "RTOS.h"  // For the embOS types.
 
-  constexpr OS_PRIO kFooPriority =
-      pw::thread::embos::config::kDefaultPriority;
-  constexpr OS_UINT kFooTimeSliceInterval =
-      pw::thread::embos::config::kDefaultTimeSliceInterval;
-  constexpr size_t kFooStackSizeWords =
-      pw::thread::embos::config::kDefaultStackSizeWords;
+   constexpr OS_PRIO kFooPriority =
+       pw::thread::embos::config::kDefaultPriority;
+   constexpr OS_UINT kFooTimeSliceInterval =
+       pw::thread::embos::config::kDefaultTimeSliceInterval;
+   constexpr size_t kFooStackSizeWords =
+       pw::thread::embos::config::kDefaultStackSizeWords;
 
-  pw::thread::embos::ContextWithStack<kFooStackSizeWords>
-      example_thread_context;
-  void StartExampleThread() {
-    pw::thread::DetachedThread(
-        pw::thread::embos::Options()
-            .set_name("example_thread")
-            .set_priority(kFooPriority)
-            .set_time_slice_interval(kFooTimeSliceInterval)
-            .set_context(example_thread_context),
-        example_thread_function);
-  }
+   pw::thread::embos::ContextWithStack<kFooStackSizeWords>
+       example_thread_context;
+   void StartExampleThread() {
+     pw::thread::DetachedThread(
+         pw::thread::embos::Options()
+             .set_name("example_thread")
+             .set_priority(kFooPriority)
+             .set_time_slice_interval(kFooTimeSliceInterval)
+             .set_context(example_thread_context),
+         example_thread_function);
+   }
 
 
 Module Configuration Options
@@ -195,16 +195,16 @@ captured. For ARM Cortex-M CPUs, you can do something like this:
 
 .. code-block:: cpp
 
-  // Capture PSP.
-  void* stack_ptr = 0;
-  asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
-  pw::thread::ProcessThreadStackCallback cb =
-      [](pw::thread::proto::Thread::StreamEncoder& encoder,
-         pw::ConstByteSpan stack) -> pw::Status {
-    return encoder.WriteRawStack(stack);
-  };
-  pw::thread::embos::SnapshotThread(my_thread, stack_ptr,
-                                    snapshot_encoder, cb);
+   // Capture PSP.
+   void* stack_ptr = 0;
+   asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
+   pw::thread::ProcessThreadStackCallback cb =
+       [](pw::thread::proto::Thread::StreamEncoder& encoder,
+          pw::ConstByteSpan stack) -> pw::Status {
+     return encoder.WriteRawStack(stack);
+   };
+   pw::thread::embos::SnapshotThread(my_thread, stack_ptr,
+                                     snapshot_encoder, cb);
 
 ``SnapshotThreads()`` wraps the singular thread capture to instead captures
 all created threads to a ``pw::thread::proto::SnapshotThreadInfo`` message.

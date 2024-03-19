@@ -204,9 +204,9 @@ function would produce this in the output logs:
 
 .. code-block:: sh
 
-  [TRACE] begin
-  [TRACE] data: BWdDMRoABWj52YMB
-  [TRACE] end
+   [TRACE] begin
+   [TRACE] data: BWdDMRoABWj52YMB
+   [TRACE] end
 
 Added dependencies
 ------------------

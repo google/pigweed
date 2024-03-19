@@ -50,27 +50,27 @@ other things while in an impacted state.
 
 .. code-block:: cpp
 
-  // This can be be directly accessed by a crash handler
-  static CrashData crash_data;
-  extern "C" void pw_assert_basic_HandleFailure(const char* file_name,
-                                                int line_number,
-                                                const char* format,
-                                                ...) {
-    // Always disable interrupts first! How this is done depends
-    // on your platform.
-    __disable_irq();
+   // This can be be directly accessed by a crash handler
+   static CrashData crash_data;
+   extern "C" void pw_assert_basic_HandleFailure(const char* file_name,
+                                                 int line_number,
+                                                 const char* format,
+                                                 ...) {
+     // Always disable interrupts first! How this is done depends
+     // on your platform.
+     __disable_irq();
 
-    va_list args;
-    va_start(args, format);
-    crash_data.file_name = file_name;
-    crash_data.line_number = line_number;
-    crash_data.reason_fmt = format;
-    crash_data.reason_args = &args;
-    crash_data.cpu_state = nullptr;
+     va_list args;
+     va_start(args, format);
+     crash_data.file_name = file_name;
+     crash_data.line_number = line_number;
+     crash_data.reason_fmt = format;
+     crash_data.reason_args = &args;
+     crash_data.cpu_state = nullptr;
 
-    HandleCrash(crash_data);
-    PW_UNREACHABLE;
-  }
+     HandleCrash(crash_data);
+     PW_UNREACHABLE;
+   }
 
 Exception Handler Setup
 =======================
@@ -82,36 +82,36 @@ handler.
 
 .. code-block:: cpp
 
-  static CrashData crash_data;
-  // This helper turns a format string to a va_list that can be used by the
-  // common crash handling path.
-  void HandleExceptionWithString(pw_cpu_exception_State& state,
-                                 const char* fmt,
-                                 ...) {
-    va_list args;
-    va_start(args, fmt);
-    crash_data.cpu_state = state;
-    crash_data.file_name = nullptr;
-    crash_data.reason_fmt = fmt;
-    crash_data.reason_args = &args;
+   static CrashData crash_data;
+   // This helper turns a format string to a va_list that can be used by the
+   // common crash handling path.
+   void HandleExceptionWithString(pw_cpu_exception_State& state,
+                                  const char* fmt,
+                                  ...) {
+     va_list args;
+     va_start(args, fmt);
+     crash_data.cpu_state = state;
+     crash_data.file_name = nullptr;
+     crash_data.reason_fmt = fmt;
+     crash_data.reason_args = &args;
 
-    HandleCrash(crash_data);
-    PW_UNREACHABLE;
-  }
+     HandleCrash(crash_data);
+     PW_UNREACHABLE;
+   }
 
-  extern "C" void pw_cpu_exception_DefaultHandler(
-      pw_cpu_exception_State* state) {
-    // Always disable interrupts first! How this is done depends
-    // on your platform.
-    __disable_irq();
+   extern "C" void pw_cpu_exception_DefaultHandler(
+       pw_cpu_exception_State* state) {
+     // Always disable interrupts first! How this is done depends
+     // on your platform.
+     __disable_irq();
 
-    crash_data.state = cpu_state;
-    // The CFSR is an extremely useful register for understanding ARMv7-M and
-    // ARMv8-M CPU faults. Other architectures should put something else here.
-    HandleExceptionWithString(crash_data,
-                              "Exception encountered, cfsr=0x%",
-                              cpu_state->extended.cfsr);
-  }
+     crash_data.state = cpu_state;
+     // The CFSR is an extremely useful register for understanding ARMv7-M and
+     // ARMv8-M CPU faults. Other architectures should put something else here.
+     HandleExceptionWithString(crash_data,
+                               "Exception encountered, cfsr=0x%",
+                               cpu_state->extended.cfsr);
+   }
 
 Common Crash Handler Setup
 ==========================
@@ -122,18 +122,18 @@ information to the shared handler.
 
 .. code-block:: cpp
 
-  struct CrashData {
-    pw_cpu_exception_State *cpu_state;
-    const char *reason_fmt;
-    const va_list *reason_args;
-    const char *file_name;
-    int line_number;
-  };
+   struct CrashData {
+     pw_cpu_exception_State *cpu_state;
+     const char *reason_fmt;
+     const va_list *reason_args;
+     const char *file_name;
+     int line_number;
+   };
 
-  // This function assumes interrupts are properly disabled BEFORE it is called.
-  [[noreturn]] void HandleCrash(CrashData& crash_info) {
-    // Handle crash
-  }
+   // This function assumes interrupts are properly disabled BEFORE it is called.
+   [[noreturn]] void HandleCrash(CrashData& crash_info) {
+     // Handle crash
+   }
 
 In the crash handler your project can re-initialize a minimal subset of the
 system needed to safely capture a snapshot before rebooting the device. The
@@ -152,14 +152,14 @@ checks earlier in both codepaths.
 
 .. code-block:: cpp
 
-  [[noreturn]] void HandleCrash(CrashData &crash_info) {
-    static size_t crash_depth = 0;
-    if (crash_depth > kMaxCrashDepth) {
-      Abort(/*run_callbacks=*/false);
-    }
-    crash_depth++;
-    ...
-  }
+   [[noreturn]] void HandleCrash(CrashData &crash_info) {
+     static size_t crash_depth = 0;
+     if (crash_depth > kMaxCrashDepth) {
+       Abort(/*run_callbacks=*/false);
+     }
+     crash_depth++;
+     ...
+   }
 
 Re-initialize Logging (Optional)
 --------------------------------
@@ -199,17 +199,17 @@ storage objects used by your Snapshot capture codepath.
 
 .. code-block:: cpp
 
-  // Persistent RAM objects are highly available. They don't rely on
-  // their constructor being run, and require no initialization.
-  PW_PLACE_IN_SECTION(".noinit")
-  pw::persistent_ram::PersistentBuffer<2048> persistent_snapshot;
+   // Persistent RAM objects are highly available. They don't rely on
+   // their constructor being run, and require no initialization.
+   PW_PLACE_IN_SECTION(".noinit")
+   pw::persistent_ram::PersistentBuffer<2048> persistent_snapshot;
 
-  void CaptureSnapshot(CrashInfo& crash_info) {
-    ...
-    persistent_snapshot.clear();
-    PersistentBufferWriter& writer = persistent_snapshot.GetWriter();
-    ...
-  }
+   void CaptureSnapshot(CrashInfo& crash_info) {
+     ...
+     persistent_snapshot.clear();
+     PersistentBufferWriter& writer = persistent_snapshot.GetWriter();
+     ...
+   }
 
 ----------------------
 Snapshot Capture Setup
@@ -233,27 +233,27 @@ was captured ("Host communication buffer full!", "Exception encountered at
 
 .. code-block:: cpp
 
-  Status CaptureSnapshot(CrashData& crash_info) {
-    // Temporary buffer for encoding "reason" to.
-    static std::byte temp_buffer[500];
-    // Temporary buffer to encode serialized proto to before dumping to the
-    // final ``pw::stream::Writer``.
-    static std::byte proto_encode_buffer[512];
-    ...
-    pw::protobuf::NestedEncoder<kMaxDepth> proto_encoder(proto_encode_buffer);
-    pw::snapshot::Snapshot::Encoder snapshot_encoder(&proto_encoder);
-    size_t length = snprintf(temp_buffer,
-                             sizeof(temp_buffer,
-                             crash_info.reason_fmt),
-                             *crash_info.reason_args);
-    snapshot_encoder.WriteReason(temp_buffer, length));
+   Status CaptureSnapshot(CrashData& crash_info) {
+     // Temporary buffer for encoding "reason" to.
+     static std::byte temp_buffer[500];
+     // Temporary buffer to encode serialized proto to before dumping to the
+     // final ``pw::stream::Writer``.
+     static std::byte proto_encode_buffer[512];
+     ...
+     pw::protobuf::NestedEncoder<kMaxDepth> proto_encoder(proto_encode_buffer);
+     pw::snapshot::Snapshot::Encoder snapshot_encoder(&proto_encoder);
+     size_t length = snprintf(temp_buffer,
+                              sizeof(temp_buffer,
+                              crash_info.reason_fmt),
+                              *crash_info.reason_args);
+     snapshot_encoder.WriteReason(temp_buffer, length));
 
-    // Final encode and write.
-    Result<ConstByteSpan> encoded_proto = proto_encoder.Encode();
-    PW_TRY(encoded_proto.status());
-    PW_TRY(writer.Write(encoded_proto.value()));
-    ...
-  }
+     // Final encode and write.
+     Result<ConstByteSpan> encoded_proto = proto_encoder.Encode();
+     PW_TRY(encoded_proto.status());
+     PW_TRY(writer.Write(encoded_proto.value()));
+     ...
+   }
 
 Capture CPU State
 =================
@@ -265,22 +265,22 @@ time once the snapshot is retrieved from the device.
 
 .. code-block:: cpp
 
-  Status CaptureSnapshot(CrashData& crash_info) {
-    ...
+   Status CaptureSnapshot(CrashData& crash_info) {
+     ...
 
-    proto_encoder.clear();
+     proto_encoder.clear();
 
-    // Write CPU state.
-    if (crash_info.cpu_state) {
-      PW_TRY(DumpCpuStateProto(snapshot_encoder.GetArmv7mCpuStateEncoder(),
-                               *crash_info.cpu_state));
+     // Write CPU state.
+     if (crash_info.cpu_state) {
+       PW_TRY(DumpCpuStateProto(snapshot_encoder.GetArmv7mCpuStateEncoder(),
+                                *crash_info.cpu_state));
 
-      // Final encode and write.
-      Result<ConstByteSpan> encoded_proto = proto_encoder.Encode();
-      PW_TRY(encoded_proto.status());
-      PW_TRY(writer.Write(encoded_proto.value()));
-    }
-  }
+       // Final encode and write.
+       Result<ConstByteSpan> encoded_proto = proto_encoder.Encode();
+       PW_TRY(encoded_proto.status());
+       PW_TRY(writer.Write(encoded_proto.value()));
+     }
+   }
 
 -----------------------
 Snapshot Transfer Setup
@@ -303,24 +303,25 @@ by creating a light wrapper around
 
 .. code-block:: python
 
-  def _process_hw_failures(serialized_snapshot: bytes) -> str:
-      """Custom handler that checks wheel state."""
-      wheel_state = wheel_state_pb2.WheelStateSnapshot()
-      output = []
-      wheel_state.ParseFromString(serialized_snapshot)
+   def _process_hw_failures(serialized_snapshot: bytes) -> str:
+       """Custom handler that checks wheel state."""
+       wheel_state = wheel_state_pb2.WheelStateSnapshot()
+       output = []
+       wheel_state.ParseFromString(serialized_snapshot)
 
-      if len(wheel_state.wheels) != 2:
-          output.append(f'Expected 2 wheels, found {len(wheel_state.wheels)}')
+       if len(wheel_state.wheels) != 2:
+           output.append(f'Expected 2 wheels, found {len(wheel_state.wheels)}')
 
-      if len(wheel_state.wheels) < 2:
-          output.append('Wheels fell off!')
+       if len(wheel_state.wheels) < 2:
+           output.append('Wheels fell off!')
 
-      # And more...
+       # And more...
 
-      return '\n'.join(output)
+       return '\n'.join(output)
 
 
-  def process_my_snapshots(serialized_snapshot: bytes) -> str:
-      """Runs the snapshot processor with a custom callback."""
-      return pw_snapshot.processor.process_snapshots(
-          serialized_snapshot, user_processing_callback=_process_hw_failures)
+   def process_my_snapshots(serialized_snapshot: bytes) -> str:
+       """Runs the snapshot processor with a custom callback."""
+       return pw_snapshot.processor.process_snapshots(
+           serialized_snapshot, user_processing_callback=_process_hw_failures)
+

@@ -585,9 +585,9 @@ commonly used commands used in bazel are;
 
 .. code-block:: sh
 
-  bazel build //your:target
-  bazel test //your:target
-  bazel coverage //your:target
+   bazel build //your:target
+   bazel test //your:target
+   bazel coverage //your:target
 
 .. note:: Code coverage support is only available on the host for now.
 
@@ -598,8 +598,8 @@ platform (e.g. stm32f429i-discovery) a slight variation is required.
 
 .. code-block:: sh
 
-  bazel build //your:target \
-    --platforms=@pigweed//pw_build/platforms:lm3s6965evb
+   bazel build //your:target \
+     --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 For more information on how to create your own platforms refer to the official
 `Bazel platforms reference`_. You may also find helpful examples of constraints
@@ -627,7 +627,7 @@ Then, run:
 
    .. code-block:: sh
 
-    bazel test //your:test --platforms=//your/platform --run_under=//your_handler
+      bazel test //your:test --platforms=//your/platform --run_under=//your_handler
 
 Test tag conventions
 ~~~~~~~~~~~~~~~~~~~~
@@ -642,7 +642,7 @@ use the following additional tags:
 
    .. code-block:: sh
 
-     bazel test --test_tag_filters=-integration //...
+      bazel test --test_tag_filters=-integration //...
 
    will run all tests *except* for these integration tests.
 
@@ -736,13 +736,13 @@ see the `Bazel selects reference`_. e.g.
 
 .. code-block:: py
 
-  cc_library(
-    name = "some_platform_dependant_library",
-    deps = select({
-      "@platforms//cpu:armv7e-m": [":arm_libs"],
-      "//conditions:default": [":host_libs"],
-    }),
-  )
+   cc_library(
+     name = "some_platform_dependant_library",
+     deps = select({
+       "@platforms//cpu:armv7e-m": [":arm_libs"],
+       "//conditions:default": [":host_libs"],
+     }),
+   )
 
 Compatibility lists
 ^^^^^^^^^^^^^^^^^^^
@@ -752,17 +752,17 @@ compatible with only a host os;
 
 .. code-block:: py
 
-  cc_library(
-    name = "some_host_only_lib",
-    srcs = ["host.cc"],
-    target_compatible_with = select({
-      "@platforms//os:windows": [],
-      "@platforms//os:linux": [],
-      "@platforms//os:ios": [],
-      "@platforms//os:macos": [],
-      "//conditions:default": ["@platforms//:incompatible"],
-    }),
-  )
+   cc_library(
+     name = "some_host_only_lib",
+     srcs = ["host.cc"],
+     target_compatible_with = select({
+       "@platforms//os:windows": [],
+       "@platforms//os:linux": [],
+       "@platforms//os:ios": [],
+       "@platforms//os:macos": [],
+       "//conditions:default": ["@platforms//:incompatible"],
+     }),
+   )
 
 In this case building from or for either Windows/Linux/Mac will be supported, but
 other OS's will fail if this target is explicitly depended on. However if
@@ -771,7 +771,7 @@ and the build will continue. e.g.
 
 .. code-block:: sh
 
-  bazel build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
+   bazel build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 This allows for you to easily create compatibility matricies without adversely
 affecting your ability build your entire repo for a given Pigweed target.
@@ -797,32 +797,32 @@ swap out a single dependency from the command line. e.g.
 
 .. code-block:: py
 
-  cc_library(
-    name = "some_default_io",
-    srcs = ["default_io.cc"],
-  )
+   cc_library(
+     name = "some_default_io",
+     srcs = ["default_io.cc"],
+   )
 
-  cc_library(
-    name = "some_other_io",
-    srcs = ["other_io.cc"],
-  )
+   cc_library(
+     name = "some_other_io",
+     srcs = ["other_io.cc"],
+   )
 
-  label_flag(
-    name = "io",
-    default_build_setting = ":some_default_io",
-  )
+   label_flag(
+     name = "io",
+     default_build_setting = ":some_default_io",
+   )
 
-  cc_library(
-    name = "some_target_that_needs_io",
-    deps = [":io"],
-  )
+   cc_library(
+     name = "some_target_that_needs_io",
+     deps = [":io"],
+   )
 
 From here the label_flag by default redirects to the target ":some_default_io",
 however it is possible to override this from the command line. e.g.
 
 .. code-block:: sh
 
-  bazel build //:some_target_that_needs_io --//:io=//:some_other_io
+   bazel build //:some_target_that_needs_io --//:io=//:some_other_io
 
 
 
@@ -1004,7 +1004,7 @@ you just specify the ``--config`` on the command line:
 
 .. code-block:: console
 
-    bazel build --config=m4 //:time_is_relative
+   bazel build --config=m4 //:time_is_relative
 
 Multiplexer-based backend selection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1018,7 +1018,7 @@ build with,
 
 .. code-block:: console
 
-    bazel build --platforms-//platforms:primary_computer //:time_is_relative
+   bazel build --platforms-//platforms:primary_computer //:time_is_relative
 
 and backend selection is done by Bazel based on the platform definition. Let's
 discuss how to set this up.
@@ -1034,11 +1034,11 @@ backup computer over to use Pigweed's default FreeRTOS backend:
 
    .. code-block:: python
 
-     # //pw_chrono_my_hardware_rtc/BUILD.bazel
-     constraint_value(
-       name = "system_clock_backend",
-       constraint_setting = "//pw_chrono:system_clock_constraint_setting",
-     )
+      # //pw_chrono_my_hardware_rtc/BUILD.bazel
+      constraint_value(
+        name = "system_clock_backend",
+        constraint_setting = "//pw_chrono:system_clock_constraint_setting",
+      )
 
 #. Create a set of platforms that can be used to switch constraint values.
    For example:
@@ -1064,36 +1064,36 @@ backup computer over to use Pigweed's default FreeRTOS backend:
 
    .. code-block:: python
 
-     # //targets/BUILD.bazel
-     cc_library(
-       name = "system_clock_backend_multiplexer",
-       deps = select({
-         "//pw_chrono_my_hardware_rtc:system_clock_backend": [
-           "//pw_chrono_my_hardware_rtc:system_clock",
-         ],
-         "@pigweed//pw_chrono_freertos:system_clock_backend": [
-           "@pigweed//pw_chrono_freertos:system_clock",
-         ],
-         "//conditions:default": [
-           "@pigweed//pw_chrono_stl:system_clock",
-         ],
-       }),
-     )
+      # //targets/BUILD.bazel
+      cc_library(
+        name = "system_clock_backend_multiplexer",
+        deps = select({
+          "//pw_chrono_my_hardware_rtc:system_clock_backend": [
+            "//pw_chrono_my_hardware_rtc:system_clock",
+          ],
+          "@pigweed//pw_chrono_freertos:system_clock_backend": [
+            "@pigweed//pw_chrono_freertos:system_clock",
+          ],
+          "//conditions:default": [
+            "@pigweed//pw_chrono_stl:system_clock",
+          ],
+        }),
+      )
 
 #. Add a build setting override for the ``pw_chrono_system_clock_backend`` label
    flag to your ``.bazelrc`` file that points to your new target multiplexer.
 
    .. code-block:: bash
 
-     # //.bazelrc
-     build --@pigweed//pw_chrono:system_clock_backend=//targets:system_clock_backend_multiplexer
+      # //.bazelrc
+      build --@pigweed//pw_chrono:system_clock_backend=//targets:system_clock_backend_multiplexer
 
 Building your target now will result in slightly different build graph. For
 example, running;
 
 .. code-block:: sh
 
-  bazel build //:time_is_relative --platforms=//platforms:primary_computer
+   bazel build //:time_is_relative --platforms=//platforms:primary_computer
 
 Will result in a build graph that looks like;
 

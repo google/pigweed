@@ -1314,7 +1314,7 @@ invoke Ninja:
 
 .. code-block:: sh
 
-  pw-wrap-ninja -C out
+   pw-wrap-ninja -C out
 
 The script lists the progress of the build, as well as the list of targets that
 Ninja is currently building, along with a timer that measures how long each

@@ -30,13 +30,13 @@ after that early init we run it within ``setup()``:
 
 .. code-block:: cpp
 
-  void setup() {
-    pw_arduino_Init();
-    // Start Pigweed main()
-    main();
-  }
+   void setup() {
+     pw_arduino_Init();
+     // Start Pigweed main()
+     main();
+   }
 
-  void loop() {}
+   void loop() {}
 
 .. note::
    ``pw_arduino_Init()`` initializes the :ref:`module-pw_sys_io_arduino`

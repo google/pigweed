@@ -73,14 +73,14 @@ size of that MTU.
 
 .. code-block:: cpp
 
-  class MyRpcTransport : public RpcFrameSender {
-  public:
-    size_t mtu() const override { return 128; }
+   class MyRpcTransport : public RpcFrameSender {
+   public:
+     size_t mtu() const override { return 128; }
 
-    Status Send(RpcFrame frame) override {
-      // Send the frame via mailbox, shared memory or some other mechanism...
-    }
-  };
+     Status Send(RpcFrame frame) override {
+       // Send the frame via mailbox, shared memory or some other mechanism...
+     }
+   };
 
 --------------------------
 Integration with pw_stream
@@ -91,23 +91,23 @@ about MTU's, it's up to the user to select one.
 
 .. code-block:: cpp
 
-  stream::SysIoWriter writer;
-  StreamRpcFrameSender<kMtu> sender(writer);
+   stream::SysIoWriter writer;
+   StreamRpcFrameSender<kMtu> sender(writer);
 
 A thread to feed data to a ``pw::rpc::RpcIngressHandler`` from a
 ``pw::stream::Reader`` is provided by ``pw::rpc::StreamRpcDispatcher``.
 
 .. code-block:: cpp
 
-  rpc::HdlcRpcIngress<kMaxRpcPacketSize> hdlc_ingress(...);
-  stream::SysIoReader reader;
+   rpc::HdlcRpcIngress<kMaxRpcPacketSize> hdlc_ingress(...);
+   stream::SysIoReader reader;
 
-  // Feed Hdlc ingress with bytes from sysio.
-  rpc::StreamRpcDispatcher<kMaxSysioRead> sysio_dispatcher(reader,
-                                                           hdlc_ingress);
+   // Feed Hdlc ingress with bytes from sysio.
+   rpc::StreamRpcDispatcher<kMaxSysioRead> sysio_dispatcher(reader,
+                                                            hdlc_ingress);
 
-  thread::DetachedThread(SysioDispatcherThreadOptions(),
-                         sysio_dispatcher);
+   thread::DetachedThread(SysioDispatcherThreadOptions(),
+                          sysio_dispatcher);
 
 -------------------------------------------
 Using transports: a sample three-node setup
@@ -126,51 +126,51 @@ and accessed from the same process on ``kChannelAA``:
 
 .. code-block:: cpp
 
-  // Set up A->B transport over a network socket where B is a server
-  // and A is a client.
-  SocketRpcTransport<kSocketReadBufferSize> a_to_b_transport(
-    SocketRpcTransport<kSocketReadBufferSize>::kAsClient, "localhost",
-    kNodeBPortNumber);
+   // Set up A->B transport over a network socket where B is a server
+   // and A is a client.
+   SocketRpcTransport<kSocketReadBufferSize> a_to_b_transport(
+     SocketRpcTransport<kSocketReadBufferSize>::kAsClient, "localhost",
+     kNodeBPortNumber);
 
-  // LocalRpcEgress handles RPC packets received from other nodes and destined
-  // to this node.
-  LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
-  // HdlcRpcEgress applies HDLC framing to all packets outgoing over the A->B
-  // transport.
-  HdlcRpcEgress<kMaxPacketSize> a_to_b_egress("a->b", a_to_b_transport);
+   // LocalRpcEgress handles RPC packets received from other nodes and destined
+   // to this node.
+   LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
+   // HdlcRpcEgress applies HDLC framing to all packets outgoing over the A->B
+   // transport.
+   HdlcRpcEgress<kMaxPacketSize> a_to_b_egress("a->b", a_to_b_transport);
 
-  // List of channels for all packets originated locally at A.
-  std::array tx_channels = {
-    // Self-destined packets go directly to local egress.
-    Channel::Create<kChannelAA>(&local_egress),
-    // Packets to B and C go over A->B transport.
-    Channel::Create<kChannelAB>(&a_to_b_egress),
-    Channel::Create<kChannelAC>(&a_to_b_egress),
-  };
+   // List of channels for all packets originated locally at A.
+   std::array tx_channels = {
+     // Self-destined packets go directly to local egress.
+     Channel::Create<kChannelAA>(&local_egress),
+     // Packets to B and C go over A->B transport.
+     Channel::Create<kChannelAB>(&a_to_b_egress),
+     Channel::Create<kChannelAC>(&a_to_b_egress),
+   };
 
-  // Here we list all egresses for the packets _incoming_ from B.
-  std::array b_rx_channels = {
-    // Packets on both AB and AC channels are destined locally; hence sending
-    // to the local egress.
-    ChannelEgress{kChannelAB, local_egress},
-    ChannelEgress{kChannelAC, local_egress},
-  };
+   // Here we list all egresses for the packets _incoming_ from B.
+   std::array b_rx_channels = {
+     // Packets on both AB and AC channels are destined locally; hence sending
+     // to the local egress.
+     ChannelEgress{kChannelAB, local_egress},
+     ChannelEgress{kChannelAC, local_egress},
+   };
 
-  // HdlcRpcIngress complements HdlcRpcEgress: all packets received on
-  // `b_rx_channels` are assumed to have HDLC framing.
-  HdlcRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
+   // HdlcRpcIngress complements HdlcRpcEgress: all packets received on
+   // `b_rx_channels` are assumed to have HDLC framing.
+   HdlcRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
 
-  // Local egress needs to know how to send received packets to their target
-  // pw_rpc service.
-  ServiceRegistry registry(tx_channels);
-  local_egress.set_packet_processor(registry);
-  // Socket transport needs to be aware of what ingress it's handling.
-  a_to_b_transport.set_ingress(b_ingress);
+   // Local egress needs to know how to send received packets to their target
+   // pw_rpc service.
+   ServiceRegistry registry(tx_channels);
+   local_egress.set_packet_processor(registry);
+   // Socket transport needs to be aware of what ingress it's handling.
+   a_to_b_transport.set_ingress(b_ingress);
 
-  // Both RpcSocketTransport and LocalRpcEgress are ThreadCore's and
-  // need to be started in order for packet processing to start.
-  DetachedThread(/*...*/, a_to_b_transport);
-  DetachedThread(/*...*/, local_egress);
+   // Both RpcSocketTransport and LocalRpcEgress are ThreadCore's and
+   // need to be started in order for packet processing to start.
+   DetachedThread(/*...*/, a_to_b_transport);
+   DetachedThread(/*...*/, local_egress);
 
 Node B setup is the most complicated since it needs to deal with egress
 and ingress from both A and B and needs to support two kinds of transports. Note
@@ -178,72 +178,73 @@ that A is unaware of which transport and framing B is using when talking to C:
 
 .. code-block:: cpp
 
-  // This is the server counterpart to A's client socket.
-  SocketRpcTransport<kSocketReadBufferSize> b_to_a_transport(
-    SocketRpcTransport<kSocketReadBufferSize>::kAsServer, "localhost",
-    kNodeBPortNumber);
+   // This is the server counterpart to A's client socket.
+   SocketRpcTransport<kSocketReadBufferSize> b_to_a_transport(
+     SocketRpcTransport<kSocketReadBufferSize>::kAsServer, "localhost",
+     kNodeBPortNumber);
 
-  SharedMemoryRpcTransport b_to_c_transport(/*...*/);
+   SharedMemoryRpcTransport b_to_c_transport(/*...*/);
 
-  LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
-  HdlcRpcEgress<kMaxPacketSize> b_to_a_egress("b->a", b_to_a_transport);
-  // SimpleRpcEgress applies a very simple length-prefixed framing to B->C
-  // traffic (because HDLC adds unnecessary overhead over shared memory).
-  SimpleRpcEgress<kMaxPacketSize> b_to_c_egress("b->c", b_to_c_transport);
+   LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
+   HdlcRpcEgress<kMaxPacketSize> b_to_a_egress("b->a", b_to_a_transport);
+   // SimpleRpcEgress applies a very simple length-prefixed framing to B->C
+   // traffic (because HDLC adds unnecessary overhead over shared memory).
+   SimpleRpcEgress<kMaxPacketSize> b_to_c_egress("b->c", b_to_c_transport);
 
-  // List of channels for all packets originated locally at B (note that in
-  // this example B doesn't need to talk to C directly; it only proxies for A).
-  std::array tx_channels = {
-    Channel::Create<kChannelAB>(&b_to_a_egress),
-  };
+   // List of channels for all packets originated locally at B (note that in
+   // this example B doesn't need to talk to C directly; it only proxies for A).
+   std::array tx_channels = {
+     Channel::Create<kChannelAB>(&b_to_a_egress),
+   };
 
-  // Here we list all egresses for the packets _incoming_ from A.
-  std::array a_rx_channels = {
-    ChannelEgress{kChannelAB, local_egress},
-    ChannelEgress{kChannelAC, b_to_c_egress},
-  };
+   // Here we list all egresses for the packets _incoming_ from A.
+   std::array a_rx_channels = {
+     ChannelEgress{kChannelAB, local_egress},
+     ChannelEgress{kChannelAC, b_to_c_egress},
+   };
 
-  // Here we list all egresses for the packets _incoming_ from C.
-  std::array c_rx_channels = {
-    ChannelEgress{kChannelAC, b_to_a_egress},
-  };
+   // Here we list all egresses for the packets _incoming_ from C.
+   std::array c_rx_channels = {
+     ChannelEgress{kChannelAC, b_to_a_egress},
+   };
 
-  HdlcRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
-  SimpleRpcIngress<kMaxPacketSize> c_ingress(c_rx_channels);
+   HdlcRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
+   SimpleRpcIngress<kMaxPacketSize> c_ingress(c_rx_channels);
 
-  ServiceRegistry registry(tx_channels);
-  local_egress.set_packet_processor(registry);
+   ServiceRegistry registry(tx_channels);
+   local_egress.set_packet_processor(registry);
 
-  b_to_a_transport.set_ingress(a_ingress);
-  b_to_c_transport.set_ingress(c_ingress);
+   b_to_a_transport.set_ingress(a_ingress);
+   b_to_c_transport.set_ingress(c_ingress);
 
-  DetachedThread({}, b_to_a_transport);
-  DetachedThread({}, b_to_c_transport);
-  DetachedThread({}, local_egress);
+   DetachedThread({}, b_to_a_transport);
+   DetachedThread({}, b_to_c_transport);
+   DetachedThread({}, local_egress);
 
 Node C setup is straightforward since it only needs to handle ingress from B:
 
 .. code-block:: cpp
 
-  SharedMemoryRpcTransport c_to_b_transport(/*...*/);
-  LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
-  SimpleRpcEgress<kMaxPacketSize> c_to_b_egress("c->b", c_to_b_transport);
+   SharedMemoryRpcTransport c_to_b_transport(/*...*/);
+   LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
+   SimpleRpcEgress<kMaxPacketSize> c_to_b_egress("c->b", c_to_b_transport);
 
-  std::array tx_channels = {
-    Channel::Create<kChannelAC>(&c_to_b_egress),
-  };
+   std::array tx_channels = {
+     Channel::Create<kChannelAC>(&c_to_b_egress),
+   };
 
-  // Here we list all egresses for the packets _incoming_ from B.
-  std::array b_rx_channels = {
-    ChannelEgress{kChannelAC, local_egress},
-  };
+   // Here we list all egresses for the packets _incoming_ from B.
+   std::array b_rx_channels = {
+     ChannelEgress{kChannelAC, local_egress},
+   };
 
-  SimpleRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
+   SimpleRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
 
-  ServiceRegistry registry(tx_channels);
-  local_egress.set_packet_processor(registry);
+   ServiceRegistry registry(tx_channels);
+   local_egress.set_packet_processor(registry);
 
-  c_to_b_transport.set_ingress(b_ingress);
+   c_to_b_transport.set_ingress(b_ingress);
 
-  DetachedThread(/*...*/, c_to_b_transport);
-  DetachedThread(/*...*/, local_egress);
+   DetachedThread(/*...*/, c_to_b_transport);
+   DetachedThread(/*...*/, local_egress);
+

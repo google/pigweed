@@ -139,12 +139,12 @@ The ``--prefix`` option specifies the GN location of the SDK files.
 
 .. code-block:: bash
 
-  mcuxpresso_builder gn /path/to/manifest.xml \
-      --include project_template.evkmimxrt595.MIMXRT595S \
-      --include utility.debug_console.MIMXRT595S \
-      --include component.serial_manager_uart.MIMXRT595S \
-      --exclude middleware.freertos-kernel.MIMXRT595S \
-      --prefix //path/to/sdk
+   mcuxpresso_builder gn /path/to/manifest.xml \
+       --include project_template.evkmimxrt595.MIMXRT595S \
+       --include utility.debug_console.MIMXRT595S \
+       --include component.serial_manager_uart.MIMXRT595S \
+       --exclude middleware.freertos-kernel.MIMXRT595S \
+       --prefix //path/to/sdk
 
 ---------------
 The Bazel build
@@ -159,12 +159,12 @@ create, along with the names of the components you wish to ``--include`` or
 
 .. code-block:: bash
 
-  mcuxpresso_builder bazel /path/to/manifest.xml \
-      --name example_sdk \
-      --include project_template.evkmimxrt595.MIMXRT595S \
-      --include utility.debug_console.MIMXRT595S \
-      --include component.serial_manager_uart.MIMXRT595S \
-      --exclude middleware.freertos-kernel.MIMXRT595S
+   mcuxpresso_builder bazel /path/to/manifest.xml \
+       --name example_sdk \
+       --include project_template.evkmimxrt595.MIMXRT595S \
+       --include utility.debug_console.MIMXRT595S \
+       --include component.serial_manager_uart.MIMXRT595S \
+       --exclude middleware.freertos-kernel.MIMXRT595S
 
 
 Place the resulting output in a ``BUILD`` file, and then modify your
@@ -173,11 +173,11 @@ checkout.
 
 .. code-block:: python
 
-  new_local_repository(
-      name = "mcuxpresso_sdk",
-      build_file = "//third_party/mcuxpresso_sdk/BUILD",
-      path = "third_party/evkmimxrt595/sdk",
-  )
+   new_local_repository(
+       name = "mcuxpresso_sdk",
+       build_file = "//third_party/mcuxpresso_sdk/BUILD",
+       path = "third_party/evkmimxrt595/sdk",
+   )
 
 To add other dependencies, compiler definitions, etc. it is recommended that
 you do so by creating a new target, and add a dependency to it, rather than
