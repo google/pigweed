@@ -49,6 +49,9 @@ cc_library_static {
     name: "pw_log_android_stderr",
     vendor_available: true,
     host_supported: true,
+    shared_libs: [
+        "liblog",
+    ],
     srcs: [
         "log_android_stderr.c",
     ],
