@@ -340,41 +340,13 @@ Pigweed.
 .. todo-check: disable
 
 TODO(b/###) Formatting
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 There's a check that confirms ``TODO`` lines match a given format. Upstream
 Pigweed expects these to look like ``TODO: https://pwbug.dev/### -
-Explanation``, but makes it easy for projects to define their own pattern
-instead.
+Explanation``, but projects may define their own patterns instead.
 
-In markdown docs like `Rustdoc <https://doc.rust-lang.org/rustdoc/what-is-rustdoc.html>`_
-the following format is preferred.
-
-.. todo-check: disable
-
-.. code-block::
-
-   //! TODO: <pwbug.dev/1234> - Explanation.
-
-.. todo-check: enable
-
-Some older forms are still allowed but discouraged. In order of preference we
-allow the following formats by default.
-
-.. todo-check: disable
-
-.. code-block::
-
-   # TODO: https://pwbug.dev/1234 - Explanation.
-   # TODO: b/1234 - Explanation.
-   # TODO: username@ - Explanation.
-   # TODO: username@example.com - Explanation.
-   # TODO: b/1234 - Explanation.
-   # TODO(username) Explanation.
-
-.. todo-check: enable
-
-To use this check add ``todo_check.create(todo_check.BUGS_OR_USERNAMES)`` to a
-presubmit program.
+For information on supported TODO expressions, see Pigweed's
+:ref:`docs-pw-todo-style`.
 
 .. todo-check: enable
 

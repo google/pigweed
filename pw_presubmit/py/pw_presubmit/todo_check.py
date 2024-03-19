@@ -135,7 +135,9 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
                         ctx.fail(f'    {line.strip()}')
                         ctx.fail('Prefer this format in new code:')
                         # todo-check: ignore
-                        ctx.fail('    TODO: b/XXXXX - info here')
+                        ctx.fail(
+                            '    TODO: https://pwbug.dev/12345 - More context.'
+                        )
                         summary.append(f'{i}:{line.strip()}')
 
                 prev = line
