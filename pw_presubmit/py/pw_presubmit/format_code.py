@@ -535,20 +535,20 @@ def fix_trailing_space(ctx: _Context) -> dict[Path, str]:
 
 
 def rst_format_check(ctx: _Context) -> dict[Path, str]:
-    errors = {}
+    errors: dict[Path, str] = {}
     for path in ctx.paths:
-        result = reformat_rst(path, diff=True, in_place=False)
+        result = reformat_rst(
+            path, diff=True, in_place=False, suppress_stdout=True
+        )
         if result:
             errors[path] = ''.join(result)
     return errors
 
 
 def rst_format_fix(ctx: _Context) -> dict[Path, str]:
-    errors = {}
+    errors: dict[Path, str] = {}
     for path in ctx.paths:
-        result = reformat_rst(path, diff=True, in_place=True)
-        if result:
-            errors[path] = ''.join(result)
+        reformat_rst(path, diff=True, in_place=True, suppress_stdout=True)
     return errors
 
 

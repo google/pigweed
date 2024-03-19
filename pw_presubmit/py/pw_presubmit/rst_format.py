@@ -212,6 +212,7 @@ def reformat_rst(
     diff: bool = False,
     in_place: bool = False,
     tab_width: int = DEFAULT_TAB_WIDTH,
+    suppress_stdout: bool = False,
 ) -> list[str]:
     """Reformat an rst file.
 
@@ -233,7 +234,8 @@ def reformat_rst(
         )
     )
     if diff and result_diff:
-        print(''.join(colorize_diff(result_diff)))
+        if not suppress_stdout:
+            print(''.join(colorize_diff(result_diff)))
 
     if in_place:
         file_name.write_text(out_text)
