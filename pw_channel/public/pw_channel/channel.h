@@ -48,22 +48,18 @@ namespace pw::channel {
 /// `kReadable` and `kWritable` channel may be passed to an API that only
 /// requires `kReadable`.
 enum Property : uint8_t {
-  /// Data is delivered in defined chunks of zero or more bytes. A write of N
-  /// bytes results in a read of the same N bytes on the other end.
-  kDatagram = 1 << 0,
-
   /// All data is guaranteed to be delivered in order. The channel is closed if
   /// data is lost.
-  kReliable = 1 << 1,
+  kReliable = 1 << 0,
 
   /// The channel supports reading.
-  kReadable = 1 << 2,
+  kReadable = 1 << 1,
 
   /// The channel supports writing.
-  kWritable = 1 << 3,
+  kWritable = 1 << 2,
 
   /// The channel supports seeking (changing the read/write position).
-  kSeekable = 1 << 4,
+  kSeekable = 1 << 3,
 };
 
 /// The type of data exchanged in `Channel` read and write calls. Unlike
@@ -142,10 +138,7 @@ class AnyChannel {
 
   // Channel properties
 
-  [[nodiscard]] constexpr DataType data_type() const {
-    return (properties_ & Property::kDatagram) != 0 ? DataType::kDatagram
-                                                    : DataType::kByte;
-  }
+  [[nodiscard]] constexpr DataType data_type() const { return data_type_; }
 
   [[nodiscard]] constexpr bool reliable() const {
     return (properties_ & Property::kReliable) != 0;
@@ -323,7 +316,7 @@ class AnyChannel {
   void set_closed() { open_ = false; }
 
  private:
-  template <Property...>
+  template <DataType, Property...>
   friend class Channel;
 
   template <Property kLhs, Property kRhs, Property... kProperties>
@@ -350,19 +343,19 @@ class AnyChannel {
     static_assert(((kProperties == kReadable) || ...) ||
                       ((kProperties == kWritable) || ...),
                   "At least one of kReadable or kWritable must be provided");
-    static_assert(sizeof...(kProperties) <= 5,
-                  "Too many properties given; no more than 5 may be specified "
-                  "(kDatagram, kReliable, kReadable, kWritable, kSeekable)");
+    static_assert(sizeof...(kProperties) <= 4,
+                  "Too many properties given; no more than 4 may be specified "
+                  "(kReliable, kReadable, kWritable, kSeekable)");
     static_assert(
         PropertiesAreInOrderWithoutDuplicates<kProperties...>(),
         "Properties must be specified in the following order, without "
-        "duplicates: kDatagram, kReliable, kReadable, kWritable, kSeekable");
+        "duplicates: kReliable, kReadable, kWritable, kSeekable");
     return true;
   }
 
   // `AnyChannel` may only be constructed by deriving from `Channel`.
-  explicit constexpr AnyChannel(uint8_t properties)
-      : open_(true), properties_(properties) {}
+  explicit constexpr AnyChannel(DataType type, uint8_t properties)
+      : open_(true), data_type_(type), properties_(properties) {}
 
   // Virtual interface
 
@@ -394,6 +387,7 @@ class AnyChannel {
   virtual async2::Poll<Status> DoPollClose(async2::Context& cx) = 0;
 
   bool open_;
+  DataType data_type_;
   uint8_t properties_;
 };
 
@@ -402,32 +396,18 @@ class AnyChannel {
 ///
 /// Properties must be specified in order (`kDatagram`, `kReliable`,
 /// `kReadable`, `kWritable`, `kSeekable`) and without duplicates.
-template <Property... kProperties>
+template <DataType kDataType, Property... kProperties>
 class Channel : public AnyChannel {
   static_assert(PropertiesAreValid<kProperties...>());
 };
 
-/// @}
-
-}  // namespace pw::channel
-
-// Include specializations for supported Channel types.
-#include "pw_channel/internal/channel_specializations.h"
-
-namespace pw::channel {
-
-/// @defgroup pw_channel_aliases
-/// @{
-
-// Aliases for common Channel types.
-
 /// A `ByteChannel` exchanges data as a stream of bytes.
 template <Property... kProperties>
-using ByteChannel = typename internal::ProhibitDatagram<kProperties...>::type;
+using ByteChannel = Channel<DataType::kByte, kProperties...>;
 
 /// A `DatagramChannel` exchanges data as a series of datagrams.
 template <Property... kProperties>
-using DatagramChannel = Channel<kDatagram, kProperties...>;
+using DatagramChannel = Channel<DataType::kDatagram, kProperties...>;
 
 /// Reliable byte-oriented `Channel` that supports reading.
 using ByteReader = ByteChannel<kReliable, kReadable>;
@@ -454,3 +434,6 @@ using DatagramReaderWriter = DatagramChannel<kReadable, kWritable>;
 /// @}
 
 }  // namespace pw::channel
+
+// Include specializations for supported Channel types.
+#include "pw_channel/internal/channel_specializations.h"

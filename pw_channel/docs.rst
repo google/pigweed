@@ -7,36 +7,44 @@ pw_channel
 
   This module is in an early, experimental state. Do not rely on its APIs.
 
-----------------------------------------
+.. cpp:namespace:: pw::channel
+
+------------------
+Channel attributes
+------------------
+Channels may be reliable, readable, writable, or seekable. A channel may be
+substituted for another as long as it provides at least the same set of
+capabilities; additional capabilities are okay. The channel's data type
+(datagram or byte) implies different read/write semantics, so datagram/byte
+channels cannot be used interchangeably in general.
+
 Using datagram channels as byte channels
-----------------------------------------
-Datagram-oriented channels may be passed to APIs that take byte-oriented
-channels. The byte view of the channel is simply the concatenation of the
-contents of the datagrams.
+========================================
+For datagram channels, the exact bytes provided to a write call will appear in a
+read call on the other end. A zero-byte datagram write results in a zero-byte
+datagram read, so empty datagrams may convey information.
 
-It is important to note that zero-length reads and writes are are semantically
-different between datagram-oriented and byte-oriented channels. With datagrams,
-a zero-length write always produces a zero-length read on the other end. A
-zero-length datagram may convey meaning.
+For byte channels, bytes written may be grouped differently when read. A
+zero-length byte write is meaningless and will not result in a zero-length byte
+read. If a zero-length byte read occurs, it is ignored.
 
-For byte-oriented channels, zero-length reads and writes never convey meaning,
-but are permitted so that datagram channels can be used as byte channels. A
-zero-length write may or may not result in a zero-length read on the other end.
-Byte channel implementations must ignore zero-length byte writes. Code reading
-from a byte channel must ignore zero-length reads. The existence of a
-zero-length byte read or write does not signal any information.
+To facilitate simple code reuse, datagram-oriented channels may used as
+byte-oriented channels when appropriate. Calling
+:cpp:func:`Channel::IgnoreDatagramBoundaries` on a datagram channel returns a
+byte channel reference to it. The byte view of the channel is simply the
+concatenation of the contents of the datagrams.
+
+This is only valid if, for the datagram channel:
+
+- datagram boundaries have no significance or meaning,
+- zero-length datagrams are not used to convey information, since they are
+  meaningless for byte channels,
+- short or zero-length writes through the byte API will not result in
+  unacceptable overhead.
 
 -------------
 API reference
 -------------
-.. cpp:namespace:: pw::channel
-
 .. doxygengroup:: pw_channel
-   :content-only:
-   :members:
-
-Channel aliases
-===============
-.. doxygengroup:: pw_channel_aliases
    :content-only:
    :members:

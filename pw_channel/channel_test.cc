@@ -19,7 +19,8 @@
 #include "pw_assert/check.h"
 #include "pw_compilation_testing/negative_compilation.h"
 
-using pw::channel::kDatagram;
+namespace {
+
 using pw::channel::kReadable;
 using pw::channel::kReliable;
 using pw::channel::kSeekable;
@@ -27,10 +28,11 @@ using pw::channel::kWritable;
 
 static_assert(sizeof(::pw::channel::AnyChannel) == 2 * sizeof(void*));
 
-static_assert((kDatagram < kReliable) && (kReliable < kReadable) &&
-              (kReadable < kWritable) && (kWritable < kSeekable));
+static_assert((kReliable < kReadable) && (kReadable < kWritable) &&
+              (kWritable < kSeekable));
 
-class Stub : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
+class ReliableByteReaderWriterStub
+    : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
  public:
   // Read functions
 
@@ -67,7 +69,7 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
 
   class : public pw::async2::Task {
    public:
-    Stub channel;
+    ReliableByteReaderWriterStub channel;
 
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
@@ -108,12 +110,10 @@ bool Illegal(pw::channel::ByteChannel<pw::channel::kReliable>& foo) {
 }
 #elif PW_NC_TEST(TooMany)
 PW_NC_EXPECT("Too many properties given");
-bool Illegal(pw::channel::ByteChannel<kReliable,
-                                      kReliable,
-                                      kReliable,
-                                      kReadable,
-                                      kWritable,
-                                      kWritable>& foo) {
+bool Illegal(
+    pw::channel::
+        ByteChannel<kReliable, kReliable, kReliable, kReadable, kWritable>&
+            foo) {
   return foo.is_open();
 }
 #elif PW_NC_TEST(Duplicates)
@@ -419,48 +419,70 @@ TEST(Channel, TestDatagramWriter) {
 
 void TakesAChannel(const pw::channel::AnyChannel&) {}
 
-void TakesAReadableByteChannel(const pw::channel::ByteChannel<kReadable>&) {}
+const pw::channel::ByteChannel<kReadable>& TakesAReadableByteChannel(
+    const pw::channel::ByteChannel<kReadable>& channel) {
+  return channel;
+}
 
 void TakesAWritableByteChannel(const pw::channel::ByteChannel<kWritable>&) {}
-
-void TakesAReadableDatagramChannel(
-    const pw::channel::DatagramChannel<kReadable>&) {}
-
-void TakesAWritableChannel(pw::channel::ByteChannel<kReliable, kWritable>&) {}
 
 TEST(Channel, Conversions) {
   const TestByteReader byte_channel;
   const TestDatagramWriter datagram_channel;
 
   TakesAReadableByteChannel(byte_channel);
+  TakesAReadableByteChannel(byte_channel.as<kReadable>());
+  TakesAReadableByteChannel(byte_channel.as<pw::channel::ByteReader>());
+  TakesAReadableByteChannel(
+      byte_channel.as<pw::channel::ByteChannel<kReliable, kReadable>>());
   TakesAChannel(byte_channel);
 
-  TakesAWritableByteChannel(datagram_channel);
+  TakesAWritableByteChannel(datagram_channel.IgnoreDatagramBoundaries());
 
-  [[maybe_unused]] const pw::channel::AnyChannel& plain =
-      byte_channel.as<pw::channel::AnyChannel>();
+  [[maybe_unused]] const pw::channel::AnyChannel& plain = byte_channel;
 
-#if PW_NC_TEST(CannotLoseWritability)
+#if PW_NC_TEST(CannotImplicitlyLoseWritability)
+  PW_NC_EXPECT("no matching function for call");
+  TakesAWritableByteChannel(byte_channel);
+#elif PW_NC_TEST(CannotExplicitlyLoseWritability)
   PW_NC_EXPECT("Cannot use a non-writable channel as a writable channel");
-  TakesAWritableChannel(byte_channel);
+  TakesAWritableByteChannel(byte_channel.as<kWritable>());
 #endif  // PW_NC_TEST
 }
 
-#if PW_NC_TEST(CannotUseByteChannelAsDatagramChannel)
-PW_NC_EXPECT("Cannot use a byte channel as a datagram channel");
-void ByteChannelNcTest(pw::channel::ByteChannel<kReliable, kReadable>& bytes) {
-  TakesAReadableDatagramChannel(bytes);
+#if PW_NC_TEST(CannotImplicitlyUseDatagramChannelAsByteChannel)
+PW_NC_EXPECT("no matching function for call");
+void DatagramChannelNcTest(
+    pw::channel::DatagramChannel<kReliable, kReadable>& dgram) {
+  TakesAReadableByteChannel(dgram);
 }
-#elif PW_NC_TEST(DuplicateDatagramAttributes)
-PW_NC_EXPECT("Properties must be specified in the following order");
-bool DuplicateAttributesTest(
-    pw::channel::DatagramChannel<pw::channel::kDatagram,
-                                 pw::channel::kReadable>& channel) {
-  return channel.is_open();
-}
-#elif PW_NC_TEST(ByteChannelCannotSetDatagramProperty)
-PW_NC_EXPECT("ByteChannel cannot set the kDatagram property");
-void ByteChannelDatagramTest(
-    pw::channel::ByteChannel<pw::channel::kDatagram, pw::channel::kReadable>&) {
+#elif PW_NC_TEST(CannotExplicitlyUseDatagramChannelAsByteChannel)
+PW_NC_EXPECT("Datagram and byte channels are not interchangeable");
+void DatagramChannelNcTest(
+    pw::channel::DatagramChannel<kReliable, kReadable>& dgram) {
+  TakesAReadableByteChannel(dgram.as<pw::channel::ByteChannel<kReadable>>());
 }
 #endif  // PW_NC_TEST
+
+class Foo {
+ public:
+  Foo(pw::channel::ByteChannel<kReadable>&) {}
+  Foo(const Foo&) = default;
+};
+
+// Define additional overloads to ensure the right overload is selected with the
+// implicit conversion.
+[[maybe_unused]] void TakesAReadableByteChannel(const Foo&) {}
+[[maybe_unused]] void TakesAReadableByteChannel(int) {}
+[[maybe_unused]] void TakesAReadableByteChannel(
+    const pw::channel::DatagramReaderWriter&) {}
+
+TEST(Channel, SelectsCorrectOverloadWhenRelyingOnImplicitConversion) {
+  TestByteReader byte_channel;
+
+  [[maybe_unused]] Foo selects_channel_ctor_not_copy_ctor(byte_channel);
+  EXPECT_EQ(&byte_channel.as<pw::channel::ByteChannel<kReadable>>(),
+            &TakesAReadableByteChannel(byte_channel));
+}
+
+}  // namespace
