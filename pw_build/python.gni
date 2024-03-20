@@ -36,6 +36,23 @@ declare_args() {
 
   # Output format for pylint. Options include "text" and "colorized".
   pw_build_PYLINT_OUTPUT_FORMAT = "colorized"
+
+  # Whether or not to lint/test transitive deps of pw_python_package targets.
+  #
+  # For example: if lib_a depends on lib_b, lib_a.tests will run after first
+  # running lib_b.tests if pw_build_TEST_TRANSITIVE_PYTHON_DEPS is true.
+  #
+  # If pw_build_TEST_TRANSITIVE_PYTHON_DEPS is false, tests for a
+  # pw_python_package will run if you directly build the target (e.g.
+  # lib_b.tests) OR if the pw_python_package is placed in a pw_python_group AND
+  # you build the group.tests target.
+  #
+  # This applies to mypy, pylint, and tests.
+  #
+  # While this defaults to true for compatibility reasons, it's strongly
+  # recommended to turn this off so you're not linting and testing all of your
+  # external dependencies.
+  pw_build_TEST_TRANSITIVE_PYTHON_DEPS = true
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
@@ -101,10 +118,11 @@ template("_pw_python_static_analysis_mypy") {
     deps = invoker.deps
 
     if (defined(invoker.python_deps)) {
-      python_deps = []
-      foreach(dep, invoker.python_deps) {
-        deps += [ string_replace(dep, "(", ".lint.mypy(") ]
-        python_deps += [ dep ]
+      python_deps = invoker.python_deps
+      if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
+        foreach(dep, invoker.python_deps) {
+          deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+        }
       }
     }
     if (defined(invoker.python_metadata_deps)) {
@@ -142,10 +160,11 @@ template("_pw_python_static_analysis_pylint") {
     public_deps = invoker.deps
 
     if (defined(invoker.python_deps)) {
-      python_deps = []
-      foreach(dep, invoker.python_deps) {
-        public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
-        python_deps += [ dep ]
+      python_deps = invoker.python_deps
+      if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
+        foreach(dep, invoker.python_deps) {
+          public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+        }
       }
     }
     if (defined(invoker.python_metadata_deps)) {
@@ -716,8 +735,10 @@ template("pw_python_package") {
 
         deps = _test_install_deps
 
-        foreach(dep, _python_test_deps) {
-          deps += [ string_replace(dep, "(", ".tests(") ]
+        if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
+          foreach(dep, _python_test_deps) {
+            deps += [ string_replace(dep, "(", ".tests(") ]
+          }
         }
       }
     } else {

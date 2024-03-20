@@ -635,7 +635,17 @@ template("pw_python_pip_install") {
 
   foreach(subtarget, pw_python_package_subtargets - [ "install" ]) {
     group("$target_name.$subtarget") {
-      public_deps = [ ":${invoker.target_name}._pw_python_group.$subtarget" ]
+      _test_and_lint_subtargets = [
+        "tests",
+        "lint",
+        "lint.mypy",
+        "lint.pylint",
+      ]
+      if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS ||
+          filter_exclude([ subtarget ], _test_and_lint_subtargets) != []) {
+        public_deps = [ ":${invoker.target_name}._pw_python_group.$subtarget" ]
+      }
+      not_needed([ "_test_and_lint_subtargets" ])
     }
   }
 }

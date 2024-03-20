@@ -57,6 +57,14 @@ multi-toolchain builds. This toolchain can be set with the
 ``pw_build_PYTHON_TOOLCHAIN`` GN arg, which defaults to
 ``$dir_pw_build/python_toolchain:python``.
 
+.. note::
+
+   By default, ``<name>.lint`` and ``<name>.tests`` will transitively test and
+   lint any dependencies. This is done for backwards compatibility, but if you
+   don't rely on this behavior you should turn this off by adding
+   ``pw_build_TEST_TRANSITIVE_PYTHON_DEPS = false`` to your project's ``.gn``
+   file.
+
 Arguments
 ---------
 - ``setup`` - List of setup file paths (setup.py or pyproject.toml & setup.cfg),
