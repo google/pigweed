@@ -15,19 +15,14 @@
 #include "pw_allocator/block_allocator.h"
 #include "pw_allocator/size_reporter.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  constexpr size_t kThreshold = 128;
-  DualFirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer(),
-                                                 kThreshold);
-  size_reporter.MeasureAllocator(&allocator);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  constexpr size_t kThreshold = 128;
+  pw::allocator::DualFirstFitBlockAllocator<uint16_t> allocator(
+      reporter.buffer(), kThreshold);
+  reporter.Measure(allocator);
+
   return 0;
 }

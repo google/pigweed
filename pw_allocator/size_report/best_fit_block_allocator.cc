@@ -15,17 +15,12 @@
 #include "pw_allocator/block_allocator.h"
 #include "pw_allocator/size_reporter.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  BestFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
-  size_reporter.MeasureAllocator(&allocator);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::BestFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  reporter.Measure(allocator);
+
   return 0;
 }

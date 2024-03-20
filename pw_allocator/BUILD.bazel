@@ -429,7 +429,7 @@ cc_library(
     hdrs = ["public/pw_allocator/size_reporter.h"],
     includes = ["public"],
     deps = [
-        ":allocator",
+        ":null_allocator",
         "//pw_bloat:bloat_this_binary",
         "//pw_bytes",
     ],

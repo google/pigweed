@@ -24,6 +24,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORTER_BASE"],
     deps = ["//pw_allocator:size_reporter"],
 )
 

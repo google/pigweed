@@ -17,18 +17,14 @@
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_sync/interrupt_spin_lock.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  FirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
-  SynchronizedAllocator<sync::InterruptSpinLock> synchronized(allocator);
-  size_reporter.MeasureAllocator(&synchronized);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  pw::allocator::SynchronizedAllocator<pw::sync::InterruptSpinLock>
+      synchronized(allocator);
+  reporter.Measure(synchronized);
+
   return 0;
 }

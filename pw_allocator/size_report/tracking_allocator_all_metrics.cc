@@ -17,18 +17,14 @@
 #include "pw_allocator/size_reporter.h"
 #include "pw_allocator/tracking_allocator.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  FirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
-  TrackingAllocatorImpl<AllMetrics> tracker(1, allocator);
-  size_reporter.MeasureAllocator(&tracker);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  pw::allocator::TrackingAllocatorImpl<pw::allocator::AllMetrics> tracker(
+      1, allocator);
+  reporter.Measure(tracker);
+
   return 0;
 }

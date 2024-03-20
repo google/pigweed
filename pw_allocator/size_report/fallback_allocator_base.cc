@@ -15,20 +15,15 @@
 #include "pw_allocator/block_allocator.h"
 #include "pw_allocator/size_reporter.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  std::array<std::byte, 0x1000> buffer;
-  FirstFitBlockAllocator<uint16_t> primary(size_reporter.buffer());
-  FirstFitBlockAllocator<uint16_t> secondary(buffer);
-  size_reporter.MeasureAllocator(&primary);
-  size_reporter.MeasureAllocator(&secondary);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  std::array<std::byte, 0x1000> buffer;
+  pw::allocator::FirstFitBlockAllocator<uint16_t> primary(reporter.buffer());
+  pw::allocator::FirstFitBlockAllocator<uint16_t> secondary(buffer);
+  reporter.Measure(primary);
+  reporter.Measure(secondary);
+
   return 0;
 }

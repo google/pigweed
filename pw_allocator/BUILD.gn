@@ -398,9 +398,20 @@ pw_source_set("size_reporter") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/size_reporter.h" ]
   public_deps = [
-    ":allocator",
+    ":null_allocator",
     "$dir_pw_bloat:bloat_this_binary",
     dir_pw_bytes,
+  ]
+}
+
+pw_size_diff("allocator_api_size_report") {
+  title = "Size of an empty implmentation of the Allocator interface"
+  binaries = [
+    {
+      target = "size_report:null_allocator"
+      base = "size_report:base"
+      label = "NullAllocator"
+    },
   ]
 }
 
@@ -409,37 +420,32 @@ pw_size_diff("concrete_allocators_size_report") {
   binaries = [
     {
       target = "size_report:best_fit_block_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "BestFitBlockAllocator"
     },
     {
       target = "size_report:dual_first_fit_block_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "DualFirstFitBlockAllocator"
     },
     {
       target = "size_report:first_fit_block_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "FirstFitBlockAllocator"
     },
     {
       target = "size_report:last_fit_block_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "LastFitBlockAllocator"
     },
     {
       target = "size_report:libc_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "LibCAllocator"
     },
     {
-      target = "size_report:null_allocator"
-      base = "size_report:base"
-      label = "NullAllocator"
-    },
-    {
       target = "size_report:worst_fit_block_allocator"
-      base = "size_report:base"
+      base = "size_report:null_allocator"
       label = "WorstFitBlockAllocator"
     },
   ]
@@ -510,6 +516,7 @@ pw_doc_group("docs") {
     "guide.rst",
   ]
   report_deps = [
+    ":allocator_api_size_report",
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
     "examples:custom_allocator_size_report",

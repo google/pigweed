@@ -20,11 +20,12 @@
 #include "pw_allocator/size_reporter.h"
 
 int main() {
-  pw::allocator::SizeReporter size_reporter;
-  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(
-      size_reporter.buffer());
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
   examples::CustomAllocator custom(allocator, 128);
-  size_reporter.MeasureAllocator(&custom);
-  size_reporter.MeasureAllocator<void>(nullptr);
+  reporter.Measure(custom);
+
   return 0;
 }

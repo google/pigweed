@@ -17,18 +17,13 @@
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_sync/mutex.h"
 
-namespace pw::allocator {
-
-void Run() {
-  SizeReporter size_reporter;
-  FirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
-  SynchronizedAllocator<sync::Mutex> synchronized(allocator);
-  size_reporter.MeasureAllocator(&synchronized);
-}
-
-}  // namespace pw::allocator
-
 int main() {
-  pw::allocator::Run();
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  pw::allocator::SynchronizedAllocator<pw::sync::Mutex> synchronized(allocator);
+  reporter.Measure(synchronized);
+
   return 0;
 }
