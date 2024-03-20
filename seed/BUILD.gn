@@ -187,9 +187,9 @@ pw_seed("0119") {
 }
 
 pw_seed("0120") {
-  changelist = 182805
-  title = "pw_sensor Sensor driver configuration"
-  status = "Draft"
+  sources = [ "0120-pw-sensor-config.rst" ]
+  status = "Accepted"
+  title = "pw_sensor Sensor configuration"
   author = "Yuval Peress"
 }
 
