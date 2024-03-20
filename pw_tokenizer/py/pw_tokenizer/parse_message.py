@@ -17,6 +17,8 @@ This is useful for attempting to decode tokenized messages with arguments for
 which the token is not recognized.
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 from dataclasses import dataclass
@@ -78,7 +80,7 @@ class TokenizedMessage:
         return self.binary[4:]
 
     @classmethod
-    def parse(cls, message: str, prefix: str = '$') -> 'TokenizedMessage':
+    def parse(cls, message: str, prefix: str = '$') -> TokenizedMessage:
         if not message.startswith(prefix):
             raise ValueError(
                 f'{message} does not start with {prefix!r} as expected'

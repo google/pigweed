@@ -21,6 +21,8 @@ This file is executed during gn gen, so it cannot rely on any setup that occurs
 during the build.
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 from collections import defaultdict
@@ -64,7 +66,7 @@ class Compiler(Enum):
     CLANG = 2
 
     @staticmethod
-    def from_command(command: str) -> 'Compiler':
+    def from_command(command: str) -> Compiler:
         if command.endswith(('clang', 'clang++')):
             return Compiler.CLANG
 
@@ -76,7 +78,7 @@ class Compiler(Enum):
             f'in {Path(__file__).name} to account for this'
         )
 
-    def matches(self, other: 'Compiler') -> bool:
+    def matches(self, other: Compiler) -> bool:
         return self is other or self is Compiler.ANY or other is Compiler.ANY
 
 
@@ -102,7 +104,7 @@ class TestCase:
         return base64.b64encode(pickle.dumps(self)).decode()
 
     @classmethod
-    def deserialize(cls, serialized: str) -> 'Expectation':
+    def deserialize(cls, serialized: str) -> Expectation:
         return pickle.loads(base64.b64decode(serialized))
 
 

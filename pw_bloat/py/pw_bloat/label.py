@@ -15,6 +15,8 @@
 The label module defines a class to store and manipulate size reports.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
@@ -116,7 +118,7 @@ class DataSourceMap:
     _BASE_TOTAL_LABEL = 'total'
 
     @classmethod
-    def from_bloaty_tsv(cls, raw_tsv: Iterable[str]) -> 'DataSourceMap':
+    def from_bloaty_tsv(cls, raw_tsv: Iterable[str]) -> DataSourceMap:
         """Read in Bloaty TSV output and store in DataSourceMap."""
         reader = csv.reader(raw_tsv, delimiter='\t')
         top_row = next(reader)
@@ -168,7 +170,7 @@ class DataSourceMap:
         """Insert regex pattern and capacity into dictionary."""
         self._capacity_array.append((regex_pattern, capacity))
 
-    def diff(self, base: 'DataSourceMap') -> 'DiffDataSourceMap':
+    def diff(self, base: DataSourceMap) -> DiffDataSourceMap:
         """Calculate the difference between 2 DataSourceMaps."""
         diff_dsm = DiffDataSourceMap(self.get_ds_names())
         curr_parent = self._BASE_TOTAL_LABEL

@@ -13,6 +13,8 @@
 # the License.
 """Builds and manages databases of tokenized strings."""
 
+from __future__ import annotations
+
 from abc import abstractmethod
 import collections
 import csv
@@ -147,7 +149,7 @@ class Database:
         strings: Iterable[str],
         domain: str = DEFAULT_DOMAIN,
         tokenize: Callable[[str], int] = pw_tokenizer_65599_hash,
-    ) -> 'Database':
+    ) -> Database:
         """Creates a Database from an iterable of strings."""
         return cls(
             (
@@ -157,7 +159,7 @@ class Database:
         )
 
     @classmethod
-    def merged(cls, *databases: 'Database') -> 'Database':
+    def merged(cls, *databases: Database) -> Database:
         """Creates a TokenDatabase from one or more other databases."""
         db = cls()
         db.merge(*databases)
@@ -269,7 +271,7 @@ class Database:
 
         return to_delete
 
-    def merge(self, *databases: 'Database') -> None:
+    def merge(self, *databases: Database) -> None:
         """Merges two or more databases together, keeping the newest dates."""
         self._cache = None
 
@@ -324,7 +326,7 @@ class Database:
             for value in self._database.values():
                 value.string = search.sub(replacement, value.string)
 
-    def difference(self, other: 'Database') -> 'Database':
+    def difference(self, other: Database) -> Database:
         """Returns a new Database with entries in this DB not in the other."""
         # pylint: disable=protected-access
         return Database(
@@ -528,7 +530,7 @@ class DatabaseFile(Database):
         self.path = path
 
     @staticmethod
-    def load(path: Path) -> 'DatabaseFile':
+    def load(path: Path) -> DatabaseFile:
         """Creates a DatabaseFile that coincides to the file type."""
         if path.is_dir():
             return _DirectoryDatabase(path)

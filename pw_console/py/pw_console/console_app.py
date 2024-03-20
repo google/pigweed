@@ -13,6 +13,8 @@
 # the License.
 """ConsoleApp control class."""
 
+from __future__ import annotations
+
 import asyncio
 import base64
 import builtins
@@ -1052,7 +1054,7 @@ class ConsoleApp:
 
     def _create_log_pane(
         self, title: str = '', log_store: LogStore | None = None
-    ) -> 'LogPane':
+    ) -> LogPane:
         # Create one log pane.
         log_pane = LogPane(
             application=self, pane_title=title, log_store=log_store

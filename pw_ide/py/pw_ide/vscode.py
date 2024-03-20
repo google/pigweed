@@ -58,6 +58,8 @@ this takes effect until they are merged into VSC's active settings files
 command.
 """
 
+from __future__ import annotations
+
 # TODO(chadnorvell): Import collections.OrderedDict when we don't need to
 # support Python 3.8 anymore.
 from enum import Enum
@@ -373,7 +375,7 @@ class VscSettingsType(Enum):
     LAUNCH = 'launch'
 
     @classmethod
-    def all(cls) -> list['VscSettingsType']:
+    def all(cls) -> list[VscSettingsType]:
         return list(cls)
 
 

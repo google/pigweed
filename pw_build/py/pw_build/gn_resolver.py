@@ -13,6 +13,8 @@
 # the License.
 """Evaluates target expressions within a GN build context."""
 
+from __future__ import annotations
+
 import argparse
 from dataclasses import dataclass
 import enum
@@ -65,7 +67,7 @@ class Label:
     name: str
     dir: Path
     relative_dir: Path
-    toolchain: 'Label | None'
+    toolchain: Label | None
     out_dir: Path
     gen_dir: Path
 
@@ -360,7 +362,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
 
 
 # TODO: b/234886742 - Replace expressions with native GN features when possible.
-_FUNCTIONS: dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
+_FUNCTIONS: dict[str, Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
     'TARGET_OBJECTS': _target_objects,

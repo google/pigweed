@@ -75,7 +75,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
     # Height of the dialog box contens in lines of text.
     DIALOG_HEIGHT = 3
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         self.log_pane = log_pane
 
         self.path_validator = PathValidator()

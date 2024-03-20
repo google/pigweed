@@ -13,6 +13,8 @@
 # the License.
 """Creates a new Pigweed module."""
 
+from __future__ import annotations
+
 import abc
 import argparse
 import dataclasses
@@ -67,7 +69,7 @@ class _OutputFile:
     def indent(
         self,
         width: int | None = None,
-    ) -> '_OutputFile._IndentationContext':
+    ) -> _OutputFile._IndentationContext:
         """Increases the indentation level of the output."""
         return self._IndentationContext(
             self, width if width is not None else self._indent_width
@@ -132,7 +134,7 @@ class _ModuleName:
         return self.full
 
     @classmethod
-    def parse(cls, name: str) -> '_ModuleName | None':
+    def parse(cls, name: str) -> _ModuleName | None:
         match = re.fullmatch(_ModuleName._MODULE_NAME_REGEX, name)
         if not match:
             return None
@@ -144,12 +146,12 @@ class _ModuleName:
 class _ModuleContext:
     name: _ModuleName
     dir: Path
-    root_build_files: list['_BuildFile']
-    sub_build_files: list['_BuildFile']
+    root_build_files: list[_BuildFile]
+    sub_build_files: list[_BuildFile]
     build_systems: list[str]
     is_upstream: bool
 
-    def build_files(self) -> Iterable['_BuildFile']:
+    def build_files(self) -> Iterable[_BuildFile]:
         yield from self.root_build_files
         yield from self.sub_build_files
 
@@ -157,11 +159,11 @@ class _ModuleContext:
         for build_file in self.root_build_files:
             build_file.add_docs_source(str(file.relative_to(self.dir)))
 
-    def add_cc_target(self, target: '_BuildFile.CcTarget') -> None:
+    def add_cc_target(self, target: _BuildFile.CcTarget) -> None:
         for build_file in self.root_build_files:
             build_file.add_cc_target(target)
 
-    def add_cc_test(self, target: '_BuildFile.CcTarget') -> None:
+    def add_cc_test(self, target: _BuildFile.CcTarget) -> None:
         for build_file in self.root_build_files:
             build_file.add_cc_test(target)
 

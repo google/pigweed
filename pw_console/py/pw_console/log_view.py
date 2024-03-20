@@ -514,7 +514,7 @@ class LogView:
             if i % 100 == 0:
                 await asyncio.sleep(0.1)
 
-    def set_log_pane(self, log_pane: 'LogPane'):
+    def set_log_pane(self, log_pane: LogPane):
         """Set the parent LogPane instance."""
         self.log_pane = log_pane
 
@@ -572,7 +572,7 @@ class LogView:
             self.follow_search_match = False
             self.scroll_to_bottom()
 
-    def filter_scan(self, log: 'LogLine'):
+    def filter_scan(self, log: LogLine):
         filter_match_count = 0
         for _filter_text, log_filter in self.filters.items():
             if log_filter.matches(log):

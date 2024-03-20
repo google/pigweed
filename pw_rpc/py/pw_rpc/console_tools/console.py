@@ -13,6 +13,8 @@
 # the License.
 """Utilities for creating an interactive console."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 import functools
 from itertools import chain
@@ -47,7 +49,7 @@ class CommandHelper:
         variables: Mapping[str, object],
         header: str,
         footer: str = '',
-    ) -> 'CommandHelper':
+    ) -> CommandHelper:
         return cls({m.full_name: m for m in methods}, variables, header, footer)
 
     def __init__(

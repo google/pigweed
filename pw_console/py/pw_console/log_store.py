@@ -14,6 +14,7 @@
 """LogStore saves logs and acts as a Python logging handler."""
 
 from __future__ import annotations
+
 import collections
 import logging
 from datetime import datetime
@@ -108,7 +109,7 @@ class LogStore(logging.Handler):
         self.clear_logs()
 
         # List of viewers that should be notified on new log line arrival.
-        self.registered_viewers: list['LogView'] = []
+        self.registered_viewers: list[LogView] = []
 
         super().__init__()
 
@@ -120,7 +121,7 @@ class LogStore(logging.Handler):
         self.prefs = prefs
         self.table.set_prefs(prefs)
 
-    def register_viewer(self, viewer: 'LogView') -> None:
+    def register_viewer(self, viewer: LogView) -> None:
         """Register this LogStore with a LogView."""
         self.registered_viewers.append(viewer)
 

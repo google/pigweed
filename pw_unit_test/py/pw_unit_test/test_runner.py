@@ -13,6 +13,8 @@
 # the License.
 """Runs Pigweed unit tests built using GN."""
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 import base64
@@ -377,8 +379,8 @@ def parse_metadata(metadata: list[str], root: str) -> dict[str, TestGroup]:
     def canonicalize(path: str) -> str:
         """Removes a trailing slash from a GN target's directory.
 
-        '//module:target'  -> '//module:target'
-        '//module/:target' -> '//module:target'
+        '//module:target'  -> //module:target
+        '//module/:target' -> //module:target
         """
         index = path.find(':')
         if index == -1 or path[index - 1] != '/':

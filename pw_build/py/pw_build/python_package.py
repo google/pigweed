@@ -13,6 +13,8 @@
 # the License.
 """Dataclass for a Python package."""
 
+from __future__ import annotations
+
 import configparser
 from contextlib import contextmanager
 import copy
@@ -97,7 +99,7 @@ class PythonPackage:
     config: configparser.ConfigParser | None = None
 
     @staticmethod
-    def from_dict(**kwargs) -> 'PythonPackage':
+    def from_dict(**kwargs) -> PythonPackage:
         """Build a PythonPackage instance from a dictionary."""
         transformed_kwargs = copy.copy(kwargs)
 

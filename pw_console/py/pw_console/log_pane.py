@@ -13,6 +13,8 @@
 # the License.
 """LogPane class."""
 
+from __future__ import annotations
+
 import functools
 import logging
 import re
@@ -85,7 +87,7 @@ _LOG = logging.getLogger(__package__)
 class LogContentControl(UIControl):
     """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
 
-    def __init__(self, log_pane: 'LogPane') -> None:
+    def __init__(self, log_pane: LogPane) -> None:
         # pylint: disable=too-many-locals
         self.log_pane = log_pane
         self.log_view = log_pane.log_view
@@ -355,7 +357,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     # Height of the dialog box contens in lines of text.
     DIALOG_HEIGHT = 2
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         self.log_pane = log_pane
 
         self._last_action_message: str = ''
@@ -895,7 +897,7 @@ class LogPane(WindowPane):
         # Trigger any existing log messages to be added to the view.
         self.log_view.new_logs_arrived()
 
-    def create_duplicate(self) -> 'LogPane':
+    def create_duplicate(self) -> LogPane:
         """Create a duplicate of this LogView."""
         new_pane = LogPane(self.application, pane_title=self.pane_title())
         # Set the log_store

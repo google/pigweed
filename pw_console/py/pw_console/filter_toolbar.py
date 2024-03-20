@@ -104,7 +104,7 @@ class FilterToolbar(ConditionalContainer):
             base_style=button_style,
         )
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         self.log_pane = log_pane
         left_bar_control = FormattedTextControl(self.get_left_fragments)
         left_bar_window = Window(

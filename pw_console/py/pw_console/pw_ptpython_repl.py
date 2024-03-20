@@ -13,6 +13,8 @@
 # the License.
 """PwPtPythonPane class."""
 
+from __future__ import annotations
+
 import asyncio
 import functools
 import io
@@ -154,7 +156,7 @@ class PwPtPythonRepl(
         )
 
         # Additional state variables.
-        self.repl_pane: 'ReplPane | None' = None
+        self.repl_pane: ReplPane | None = None
         self._last_result = None
         self._last_exception = None
 

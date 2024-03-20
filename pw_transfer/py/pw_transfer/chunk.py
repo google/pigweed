@@ -13,6 +13,8 @@
 # the License.
 """Protocol version-aware chunk message wrapper."""
 
+from __future__ import annotations
+
 import enum
 from typing import Any
 
@@ -132,7 +134,7 @@ class Chunk:
         self.initial_offset = initial_offset
 
     @classmethod
-    def from_message(cls, message: transfer_pb2.Chunk) -> 'Chunk':
+    def from_message(cls, message: transfer_pb2.Chunk) -> Chunk:
         """Parses a Chunk from a protobuf message."""
 
         # Some very old versions of transfer don't always encode chunk types,

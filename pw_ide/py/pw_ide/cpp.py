@@ -43,6 +43,8 @@ point at the symlink and is set up with the right paths, you'll get code
 intelligence.
 """
 
+from __future__ import annotations
+
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 import functools
@@ -107,7 +109,7 @@ class CppIdeFeaturesTarget:
         }
 
     @classmethod
-    def deserialize(cls, **data) -> 'CppIdeFeaturesTarget':
+    def deserialize(cls, **data) -> CppIdeFeaturesTarget:
         return cls(
             **{
                 **data,
@@ -157,7 +159,7 @@ class CppIdeFeaturesData:
         }
 
     @classmethod
-    def deserialize(cls, **data) -> 'CppIdeFeaturesData':
+    def deserialize(cls, **data) -> CppIdeFeaturesData:
         return cls(
             current_target=CppIdeFeaturesTarget.deserialize(
                 **data['current_target']
@@ -561,7 +563,7 @@ class CppCompileCommand:
     @classmethod
     def from_dict(
         cls, compile_command_dict: dict[str, Any]
-    ) -> 'CppCompileCommand':
+    ) -> CppCompileCommand:
         return cls(
             # We want to let possible Nones through to raise at runtime.
             file=cast(str, compile_command_dict.get('file')),
@@ -574,7 +576,7 @@ class CppCompileCommand:
     @classmethod
     def try_from_dict(
         cls, compile_command_dict: dict[str, Any]
-    ) -> 'CppCompileCommand | None':
+    ) -> CppCompileCommand | None:
         try:
             return cls.from_dict(compile_command_dict)
         except TypeError:
@@ -586,7 +588,7 @@ class CppCompileCommand:
         default_path: Path | None = None,
         path_globs: list[str] | None = None,
         strict: bool = False,
-    ) -> 'CppCompileCommand | None':
+    ) -> CppCompileCommand | None:
         """Process a compile command.
 
         At minimum, a compile command from a clang compilation database needs to
@@ -799,7 +801,7 @@ class CppCompilationDatabase:
         """Add compile commands to the compilation database."""
         self._db.extend(commands)
 
-    def merge(self, other: 'CppCompilationDatabase') -> None:
+    def merge(self, other: CppCompilationDatabase) -> None:
         """Merge values from another database into this one.
 
         This will not overwrite a compile command that already exists for a
@@ -834,7 +836,7 @@ class CppCompilationDatabase:
         compdb_to_load: LoadableToCppCompilationDatabase,
         root_dir: Path,
         target_inference: str | None = None,
-    ) -> 'CppCompilationDatabase':
+    ) -> CppCompilationDatabase:
         """Load a compilation database.
 
         You can provide a JSON file handle or path, a JSON string, or a native
@@ -899,7 +901,7 @@ class CppCompilationDatabase:
         path_globs: list[str] | None = None,
         strict: bool = False,
         always_output_new: bool = False,
-    ) -> 'CppCompilationDatabasesMap | None':
+    ) -> CppCompilationDatabasesMap | None:
         """Process a ``clangd`` compilation database file.
 
         Given a clang compilation database that may have commands for multiple
@@ -1082,7 +1084,7 @@ class CppCompilationDatabasesMap:
     @classmethod
     def merge(
         cls, *db_sets: 'CppCompilationDatabasesMap'
-    ) -> 'CppCompilationDatabasesMap':
+    ) -> CppCompilationDatabasesMap:
         """Merge several sets of processed compilation databases.
 
         If you process N compilation databases produced by a build system,

@@ -14,6 +14,8 @@
 # the License.
 """Watch build config dataclasses."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import logging
 from pathlib import Path
@@ -454,7 +456,7 @@ class BuildRecipe:
         self.error_logger: logging.Logger | None = None
         self._logfile: Path | None = None
         self._status: BuildRecipeStatus = BuildRecipeStatus(self)
-        self.project_builder: 'ProjectBuilder | None' = None
+        self.project_builder: ProjectBuilder | None = None
 
     def toggle_enabled(self) -> None:
         self.enabled = not self.enabled
@@ -513,7 +515,7 @@ class BuildRecipe:
         return message
 
 
-def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> list[BuildRecipe]:
+def create_build_recipes(prefs: ProjectBuilderPrefs) -> list[BuildRecipe]:
     """Create a list of BuildRecipes from ProjectBuilderPrefs."""
     build_recipes: list[BuildRecipe] = []
 

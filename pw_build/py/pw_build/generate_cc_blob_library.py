@@ -13,6 +13,8 @@
 # the License.
 """Outputs the contents of blobs as a hard-coded arrays in a C++ library."""
 
+from __future__ import annotations
+
 import argparse
 import itertools
 import json
@@ -92,7 +94,7 @@ class Blob(NamedTuple):
     alignas: str | None = None
 
     @staticmethod
-    def from_dict(blob_dict: dict) -> 'Blob':
+    def from_dict(blob_dict: dict) -> Blob:
         return Blob(
             blob_dict['symbol_name'],
             Path(blob_dict['file_path']),

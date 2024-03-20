@@ -13,6 +13,8 @@
 # the License.
 """Utilities for using HDLC with ``pw_rpc``."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 import io
@@ -105,7 +107,7 @@ class CancellableReader(ABC):
         self._read_args = read_args
         self._read_kwargs = read_kwargs
 
-    def __enter__(self) -> 'CancellableReader':
+    def __enter__(self) -> CancellableReader:
         return self
 
     def __exit__(self, *exc_info) -> None:
@@ -553,7 +555,7 @@ class SocketSubprocess:
             self._server_process.terminate()
             self._server_process.communicate()
 
-    def __enter__(self) -> 'SocketSubprocess':
+    def __enter__(self) -> SocketSubprocess:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -624,7 +626,7 @@ class HdlcRpcLocalServerAndClient:
         self._rpc_client.close()
         self._read_thread.join()
 
-    def __enter__(self) -> 'HdlcRpcLocalServerAndClient':
+    def __enter__(self) -> HdlcRpcLocalServerAndClient:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:

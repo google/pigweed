@@ -13,6 +13,8 @@
 # the License.
 """Fetch active Project Builder Context."""
 
+from __future__ import annotations
+
 import asyncio
 import concurrent.futures
 from contextvars import ContextVar
@@ -143,7 +145,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
     recipes: list[BuildRecipe] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self.project_builder: 'ProjectBuilder | None' = None
+        self.project_builder: ProjectBuilder | None = None
 
         self.progress_bar_formatters = [
             formatters.Text(' '),

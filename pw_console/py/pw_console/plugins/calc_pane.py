@@ -13,6 +13,8 @@
 # the License.
 """Example text input-output Plugin."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.document import Document
@@ -129,7 +131,7 @@ class CalcPane(WindowPane):
             self.bottom_toolbar,
         )
 
-    def pw_console_init(self, app: 'ConsoleApp') -> None:
+    def pw_console_init(self, app: ConsoleApp) -> None:
         """Set the Pigweed Console application instance.
 
         This function is called after the Pigweed Console starts up and allows

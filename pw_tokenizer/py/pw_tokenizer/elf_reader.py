@@ -23,6 +23,8 @@ module also has basic support for archive (.a) files. All ELF files in an
 archive are read as one unit.
 """
 
+from __future__ import annotations
+
 import argparse
 import collections
 from pathlib import Path
@@ -256,7 +258,7 @@ class Elf:
         self._elf = elf
         self.sections: tuple[Elf.Section, ...] = tuple(self._list_sections())
 
-    def _list_sections(self) -> Iterable['Elf.Section']:
+    def _list_sections(self) -> Iterable[Elf.Section]:
         """Reads the section headers to enumerate all ELF sections."""
         for _ in _elf_files_in_archive(self._elf):
             reader = FieldReader(self._elf)
@@ -291,7 +293,7 @@ class Elf:
 
                 base += section_header_size
 
-    def section_by_address(self, address: int) -> 'Elf.Section | None':
+    def section_by_address(self, address: int) -> Elf.Section | None:
         """Returns the section that contains the provided address, if any."""
         # Iterate in reverse to give priority to sections with nonzero addresses
         for section in sorted(self.sections, reverse=True):
@@ -300,7 +302,7 @@ class Elf:
 
         return None
 
-    def sections_with_name(self, name: str) -> Iterable['Elf.Section']:
+    def sections_with_name(self, name: str) -> Iterable[Elf.Section]:
         for section in self.sections:
             if section.name == name:
                 yield section

@@ -13,6 +13,8 @@
 # the License.
 """pw_build.project_builder_presubmit_runner"""
 
+from __future__ import annotations
+
 import argparse
 import fnmatch
 import logging
@@ -260,7 +262,7 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
     presubmit_step: Check,
     all_files: list[Path],
     modified_files: list[Path],
-) -> 'BuildRecipe | None':
+) -> BuildRecipe | None:
     """Construct a BuildRecipe from a pw_presubmit step."""
     out_dir = presubmit_out_dir / presubmit_step.name
 

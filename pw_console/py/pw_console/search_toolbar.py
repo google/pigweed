@@ -52,7 +52,7 @@ class SearchToolbar(ConditionalContainer):
 
     TOOLBAR_HEIGHT = 2
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         self.log_pane = log_pane
         self.log_view = log_pane.log_view
         self.search_validator = RegexValidator()

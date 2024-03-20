@@ -13,6 +13,8 @@
 # the License.
 """Code for improving interactive use of Python functions."""
 
+from __future__ import annotations
+
 import inspect
 import textwrap
 from typing import Callable

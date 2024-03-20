@@ -16,6 +16,8 @@
 Designed to be embedded in an existing prompt_toolkit full screen
 application."""
 
+from __future__ import annotations
+
 import functools
 from typing import (
     Iterable,
@@ -148,7 +150,7 @@ class ProgressBarImpl:
         label: AnyFormattedText = '',
         remove_when_done: bool = False,
         total: int | None = None,
-    ) -> 'ProgressBarCounter':
+    ) -> ProgressBarCounter:
         """
         Start a new counter.
 

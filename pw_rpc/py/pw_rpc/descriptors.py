@@ -13,6 +13,8 @@
 # the License.
 """Types representing the basic pw_rpc concepts: channel, service, method."""
 
+from __future__ import annotations
+
 import abc
 from dataclasses import dataclass
 import enum
@@ -125,7 +127,7 @@ class Service:
         return self._descriptor.file.package
 
     @classmethod
-    def from_descriptor(cls, descriptor: ServiceDescriptor) -> 'Service':
+    def from_descriptor(cls, descriptor: ServiceDescriptor) -> Service:
         service = cls(
             descriptor,
             ids.calculate(descriptor.full_name),
@@ -232,7 +234,7 @@ class Method:
     @classmethod
     def from_descriptor(
         cls, descriptor: MethodDescriptor, service: Service
-    ) -> 'Method':
+    ) -> Method:
         return Method(
             descriptor,
             service,
@@ -266,7 +268,7 @@ class Method:
         return self._descriptor.containing_service.file.package
 
     @property
-    def type(self) -> 'Method.Type':
+    def type(self) -> Method.Type:
         if self.server_streaming and self.client_streaming:
             return self.Type.BIDIRECTIONAL_STREAMING
 

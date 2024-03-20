@@ -44,7 +44,7 @@ class LineInfoBar(ConditionalContainer):
         )
         return [('', tokens)]
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         self.log_pane = log_pane
         info_bar_control = FormattedTextControl(self.get_tokens)
         info_bar_window = Window(
@@ -73,7 +73,7 @@ class TableToolbar(ConditionalContainer):
 
     TOOLBAR_HEIGHT = 1
 
-    def __init__(self, log_pane: 'LogPane'):
+    def __init__(self, log_pane: LogPane):
         # FormattedText of the table column headers.
         table_header_bar_control = FormattedTextControl(
             log_pane.log_view.render_table_header

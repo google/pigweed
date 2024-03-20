@@ -18,6 +18,8 @@ Learn more at: pigweed.dev/pw_software_update
 
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import sys

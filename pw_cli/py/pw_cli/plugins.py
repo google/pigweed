@@ -28,6 +28,8 @@ interactive consoles, or anything else. Pigweed's pw command uses this module
 for its plugins.
 """
 
+from __future__ import annotations
+
 import collections
 import collections.abc
 import importlib
@@ -80,7 +82,7 @@ class Plugin:
         module_name: str,
         member_name: str,
         source: Path | None,
-    ) -> 'Plugin':
+    ) -> Plugin:
         """Creates a plugin by module and attribute name.
 
         Args:

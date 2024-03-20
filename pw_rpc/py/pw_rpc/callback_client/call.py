@@ -13,6 +13,8 @@
 # the License.
 """Classes for handling ongoing RPC calls."""
 
+from __future__ import annotations
+
 import enum
 import logging
 import math
@@ -277,7 +279,7 @@ class Call:
             self._callback_exception = RuntimeError(msg)
             self._callback_exception.__cause__ = callback_exception
 
-    def __enter__(self) -> 'Call':
+    def __enter__(self) -> Call:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:

@@ -54,6 +54,8 @@ Aside from importing it, this script can be used in three ways:
 """
 # pylint: enable=line-too-long
 
+from __future__ import annotations
+
 from abc import abstractmethod, ABC
 import argparse
 from collections import defaultdict
@@ -214,7 +216,7 @@ class ShellModifier(ABC):
         self,
         config_file_path: Path | None = _DEFAULT_CONFIG_FILE_PATH,
         sanitize: bool = False,
-    ) -> 'ShellModifier':
+    ) -> ShellModifier:
         """Modify the current shell state per the actions.json file provided."""
         json_file_options = {}
 

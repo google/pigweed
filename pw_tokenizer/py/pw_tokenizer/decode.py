@@ -20,6 +20,8 @@ Missing, truncated, or otherwise corrupted arguments are handled and displayed
 in the resulting string with an error message.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 import math
 import re
@@ -354,7 +356,7 @@ class FormatSpec:
             ]
         )
 
-    def decode(self, encoded_arg: bytes) -> 'DecodedArg':
+    def decode(self, encoded_arg: bytes) -> DecodedArg:
         """Decodes the provided data according to this format specifier."""
         if self.error is not None:
             return DecodedArg(
@@ -417,10 +419,10 @@ class FormatSpec:
 
     def _merge_decoded_args(
         self,
-        width: 'DecodedArg | None',
-        precision: 'DecodedArg | None',
-        main: 'DecodedArg',
-    ) -> 'DecodedArg':
+        width: DecodedArg | None,
+        precision: DecodedArg | None,
+        main: DecodedArg,
+    ) -> DecodedArg:
         def merge_optional_str(*args: str | None) -> str | None:
             return ' '.join(a for a in args if a) or None
 
@@ -460,7 +462,7 @@ class FormatSpec:
     def _decode_signed_integer(
         self,
         encoded: bytes,
-    ) -> 'DecodedArg':
+    ) -> DecodedArg:
         """Decodes a signed variable-length integer."""
         if not encoded:
             return DecodedArg.missing(self)
@@ -493,7 +495,7 @@ class FormatSpec:
             'Unterminated variable-length integer',
         )
 
-    def _decode_unsigned_integer(self, encoded: bytes) -> 'DecodedArg':
+    def _decode_unsigned_integer(self, encoded: bytes) -> DecodedArg:
         """Decodes an unsigned variable-length integer."""
         arg = self._decode_signed_integer(encoded)
         # Since ZigZag encoding is used, unsigned integers must be masked off to
@@ -503,7 +505,7 @@ class FormatSpec:
 
         return arg
 
-    def _decode_float(self, encoded: bytes) -> 'DecodedArg':
+    def _decode_float(self, encoded: bytes) -> DecodedArg:
         if len(encoded) < 4:
             return DecodedArg.missing(self)
 
@@ -511,7 +513,7 @@ class FormatSpec:
             self, self._PACKED_FLOAT.unpack_from(encoded)[0], encoded[:4]
         )
 
-    def _decode_string(self, encoded: bytes) -> 'DecodedArg':
+    def _decode_string(self, encoded: bytes) -> DecodedArg:
         """Reads a unicode string from the encoded data."""
         if not encoded:
             return DecodedArg.missing(self)
@@ -542,7 +544,7 @@ class FormatSpec:
 
         return DecodedArg(self, decoded, raw_data, status)
 
-    def _decode_char(self, encoded: bytes) -> 'DecodedArg':
+    def _decode_char(self, encoded: bytes) -> DecodedArg:
         """Reads an integer from the data, then converts it to a string."""
         arg = self._decode_signed_integer(encoded)
 

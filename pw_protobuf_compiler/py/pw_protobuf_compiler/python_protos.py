@@ -13,6 +13,8 @@
 # the License.
 """Tools for compiling and importing Python protos on the fly."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 import importlib.util
 import logging
@@ -186,7 +188,7 @@ class _NestedPackage(Generic[T]):
         self._items: list[T] = []
         self._package = package
 
-    def _add_package(self, subpackage: str, package: '_NestedPackage') -> None:
+    def _add_package(self, subpackage: str, package: _NestedPackage) -> None:
         self._packages[subpackage] = package
 
     def _add_item(self, item) -> None:
@@ -206,7 +208,7 @@ class _NestedPackage(Generic[T]):
             f'Proto package "{self._package}" does not contain "{attr}"'
         )
 
-    def __getitem__(self, subpackage: str) -> '_NestedPackage[T]':
+    def __getitem__(self, subpackage: str) -> _NestedPackage[T]:
         """Support accessing nested packages by name."""
         result = self
 
@@ -316,7 +318,7 @@ class Library:
     """
 
     @classmethod
-    def from_paths(cls, protos: Iterable[str | Path | ModuleType]) -> 'Library':
+    def from_paths(cls, protos: Iterable[str | Path | ModuleType]) -> Library:
         """Creates a Library from paths to proto files or proto modules."""
         paths: list[Path | str] = []
         modules: list[ModuleType] = []
@@ -337,7 +339,7 @@ class Library:
         contents: Iterable[str],
         includes: Iterable[Path | str] = (),
         output_dir: Path | str | None = None,
-    ) -> 'Library':
+    ) -> Library:
         """Creates a proto library from protos in the provided strings."""
         return cls(compile_and_import_strings(contents, includes, output_dir))
 

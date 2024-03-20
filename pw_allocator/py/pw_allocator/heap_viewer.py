@@ -17,6 +17,8 @@ TODO: b/328648868 - This tool is in need of an update, and should be considered
 **experimental** until then.
 """
 
+from __future__ import annotations
+
 import argparse
 import sys
 import math
@@ -31,7 +33,7 @@ class HeapBlock:
 
     size: int
     mem_offset: int
-    next: 'HeapBlock | None' = None
+    next: HeapBlock | None = None
 
 
 @dataclass

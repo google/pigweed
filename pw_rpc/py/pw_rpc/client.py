@@ -13,6 +13,8 @@
 # the License.
 """Provides a pw_rpc client for Python."""
 
+from __future__ import annotations
+
 import abc
 from dataclasses import dataclass
 import logging
@@ -234,7 +236,7 @@ class ClientImpl(abc.ABC):
     """
 
     def __init__(self) -> None:
-        self.client: 'Client | None' = None
+        self.client: Client | None = None
         self.rpcs: PendingRpcs | None = None
 
     @abc.abstractmethod

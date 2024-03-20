@@ -13,6 +13,8 @@
 # the License.
 """pw_console preferences"""
 
+from __future__ import annotations
+
 import dataclasses
 import os
 from pathlib import Path
@@ -96,7 +98,7 @@ class CodeSnippet:
         title: str,
         value: str | dict,
         previous_description: str | None = None,
-    ) -> 'CodeSnippet':
+    ) -> CodeSnippet:
         if isinstance(value, str):
             return CodeSnippet(title=title, code=value)
 

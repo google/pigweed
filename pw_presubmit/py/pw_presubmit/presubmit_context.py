@@ -13,6 +13,8 @@
 # the License.
 """pw_presubmit ContextVar."""
 
+from __future__ import annotations
+
 from contextvars import ContextVar
 import dataclasses
 import enum
@@ -46,7 +48,7 @@ _COLOR = pw_cli.color.colors()
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 PRESUBMIT_CHECK_TRACE: ContextVar[
-    dict[str, list['PresubmitCheckTrace']]
+    dict[str, list[PresubmitCheckTrace]]
 ] = ContextVar('pw_presubmit_check_trace', default={})
 
 
@@ -57,7 +59,7 @@ class FormatOptions:
     exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
 
     @staticmethod
-    def load(env: dict[str, str] | None = None) -> 'FormatOptions':
+    def load(env: dict[str, str] | None = None) -> FormatOptions:
         config = pw_env_setup.config_file.load(env=env)
         fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
         return FormatOptions(
@@ -102,7 +104,7 @@ class LuciPipeline:
     def create(
         bbid: int,
         fake_pipeline_props: dict[str, Any] | None = None,
-    ) -> 'LuciPipeline | None':
+    ) -> LuciPipeline | None:
         pipeline_props: dict[str, Any]
         if fake_pipeline_props is not None:
             pipeline_props = fake_pipeline_props
@@ -283,7 +285,7 @@ class LuciContext:
     def create_from_environment(
         env: dict[str, str] | None = None,
         fake_pipeline_props: dict[str, Any] | None = None,
-    ) -> 'LuciContext | None':
+    ) -> LuciContext | None:
         """Create a LuciContext from the environment."""
 
         if not env:
@@ -581,8 +583,8 @@ class PresubmitCheckTraceType(enum.Enum):
 
 
 class PresubmitCheckTrace(NamedTuple):
-    ctx: 'PresubmitContext'
-    check: 'Check | None'
+    ctx: PresubmitContext
+    check: Check | None
     func: str | None
     args: Iterable[Any]
     kwargs: dict[Any, Any]
@@ -606,12 +608,12 @@ def save_check_trace(output_dir: Path, trace: PresubmitCheckTrace) -> None:
     PRESUBMIT_CHECK_TRACE.get()[trace_key] = trace_list
 
 
-def get_check_traces(ctx: 'PresubmitContext') -> list[PresubmitCheckTrace]:
+def get_check_traces(ctx: PresubmitContext) -> list[PresubmitCheckTrace]:
     trace_key = str(ctx.output_dir.resolve())
     return PRESUBMIT_CHECK_TRACE.get().get(trace_key, [])
 
 
-def log_check_traces(ctx: 'PresubmitContext') -> None:
+def log_check_traces(ctx: PresubmitContext) -> None:
     traces = PRESUBMIT_CHECK_TRACE.get()
 
     for _output_dir, check_traces in traces.items():
