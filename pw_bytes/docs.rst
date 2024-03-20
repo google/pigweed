@@ -53,6 +53,7 @@ features:
 * Additional functions for bit-level operations.
 
   .. doxygenfunction:: pw::bytes::SignExtend
+  .. doxygenfunction:: pw::bytes::ExtractBits
 
 pw_bytes/endian.h
 =================
