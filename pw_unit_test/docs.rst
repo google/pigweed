@@ -1061,6 +1061,19 @@ See also :ref:`module-pw_unit_test-helpers`.
 ===============
 ``pw_add_test`` declares a single unit test suite.
 
+.. tip::
+   Upstream Pigweed tests can be disabled in downstream projects by setting
+   ``pw_unit_test_ENABLE_PW_ADD_TEST`` to ``OFF`` before adding the ``pigweed``
+   directory to an existing cmake build.
+
+   .. code-block:: cmake
+
+      set(pw_unit_test_ENABLE_PW_ADD_TEST OFF)
+      add_subdirectory(path/to/pigweed pigweed)
+      set(pw_unit_test_ENABLE_PW_ADD_TEST ON)
+
+   See also: :ref:`module-pw_build-existing-cmake-project`.
+
 Targets
 -------
 .. object:: {NAME}

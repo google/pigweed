@@ -281,6 +281,8 @@ executable and ``pw_protobuf_compiler_PROTOC_BINARY`` to the path, relative to
 For all ``protoc`` invocations, the build will add a dependency on that target
 and will invoke that executable.
 
+.. _module-pw_protobuf_compiler-cmake:
+
 CMake
 =====
 CMake provides a ``pw_proto_library`` function with similar features as the

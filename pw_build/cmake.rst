@@ -1,3 +1,5 @@
+.. _module-pw_build-cmake:
+
 CMake
 =====
 Pigweed's `CMake`_ support is provided primarily for projects that have an
@@ -166,6 +168,8 @@ is recommended to set these in one of the following ways:
 
 * Set the variable interactively with ``ccmake`` or ``cmake-gui``.
 
+.. _module-pw_build-existing-cmake-project:
+
 Use Pigweed from an existing CMake project
 ------------------------------------------
 To use Pigweed libraries form a CMake-based project, simply include the Pigweed
@@ -184,4 +188,10 @@ If desired, modules can be included individually.
 
    add_subdirectory(path/to/pigweed/pw_some_module pw_some_module)
    add_subdirectory(path/to/pigweed/pw_another_module pw_another_module)
+
+.. seealso::
+   Additional Pigweed CMake function references:
+   - :bdg-ref-primary-line:`module-pw_fuzzer-guides-using_fuzztest-toolchain`
+   - :bdg-ref-primary-line:`module-pw_protobuf_compiler-cmake`
+   - :bdg-ref-primary-line:`module-pw_unit_test-cmake`
 

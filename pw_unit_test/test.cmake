@@ -15,6 +15,12 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+set(pw_unit_test_ENABLE_PW_ADD_TEST ON CACHE BOOL
+    "Enable or disable pw_add_test calls. This is useful if you would like to \
+     disable test generation when adding Pigweed to an existing project. Set to \
+     OFF before the add_subdirectory(third_party/pigweed) call to prevent tests \
+     from being generated.")
+
 set(pw_unit_test_BACKEND pw_unit_test.light CACHE STRING
     "CMake target which implements GoogleTest, by default pw_unit_test.light \
      is used. You could, for example, point this at pw_unit_test.googletest \
@@ -81,6 +87,7 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   GROUPS - groups to which to add this test.
 #
 function(pw_add_test NAME)
+if("${pw_unit_test_ENABLE_PW_ADD_TEST}")
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
       1
@@ -118,6 +125,7 @@ function(pw_add_test NAME)
     GROUPS
       ${arg_GROUPS}
   )
+endif()
 endfunction()
 
 # pw_add_test_generic: Declares a single unit test suite.
