@@ -28,7 +28,7 @@ const containerEl = document.querySelector(
 ) as HTMLElement;
 
 if (containerEl) {
-  createLogViewer(containerEl, state, logStore, ...logSources);
+  createLogViewer(logSources, containerEl, state, logStore);
 }
 
 // Start reading log data

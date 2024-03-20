@@ -22,10 +22,10 @@ function setUpLogViewer() {
   const mockLogSource = new MockLogSource();
   const logStore = new LogStore();
   const destroyLogViewer = createLogViewer(
+    mockLogSource,
     document.body,
     undefined,
     logStore,
-    mockLogSource,
   );
   const logViewer = document.querySelector('log-viewer');
   return { mockLogSource, destroyLogViewer, logViewer, logStore };

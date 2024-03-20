@@ -26,7 +26,7 @@ describe('log-list', () => {
 
     // Initialize the log viewer component with a mock log source
     mockLogSource = new MockLogSource();
-    logViewer = createLogViewer(document.body, undefined, mockLogSource);
+    logViewer = createLogViewer(mockLogSource, document.body);
 
     // Handle benign error caused by custom log viewer initialization
     // See: https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver#observation_errors

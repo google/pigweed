@@ -30,10 +30,10 @@ import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
 
 export function createLogViewer(
+  logSources: LogSource | LogSource[],
   root: HTMLElement,
   state: StateStore = new LocalStorageState(),
-  logStore: LogStore,
-  ...logSources: LogSource[]
+  logStore: LogStore = new LogStore(),
 ) {
   const logViewer = new RootComponent(state);
   root.appendChild(logViewer);
@@ -56,7 +56,9 @@ export function createLogViewer(
     }
   };
 
-  logSources.forEach((logSource: LogSource) => {
+  const sourcesArray = Array.isArray(logSources) ? logSources : [logSources];
+
+  sourcesArray.forEach((logSource: LogSource) => {
     // Add the event listener to the LogSource instance
     logSource.addEventListener('log-entry', logEntryListener);
   });
@@ -67,7 +69,7 @@ export function createLogViewer(
       logViewer.parentNode.removeChild(logViewer);
     }
 
-    logSources.forEach((logSource: LogSource) => {
+    sourcesArray.forEach((logSource: LogSource) => {
       logSource.removeEventListener('log-entry', logEntryListener);
     });
   };

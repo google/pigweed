@@ -21,10 +21,10 @@ import { LogStore } from '../src/log-store';
 function setUpLogViewer(logSources) {
   const logStore = new LogStore();
   const destroyLogViewer = createLogViewer(
+    logSources,
     document.body,
     undefined,
     logStore,
-    ...logSources,
   );
   const logViewer = document.querySelector('log-viewer');
 
