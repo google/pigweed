@@ -15,6 +15,7 @@
 
 #include <type_traits>
 
+#include "pw_assert/assert.h"
 #include "pw_channel/channel.h"
 #include "pw_toolchain/internal/sibling_cast.h"
 
@@ -178,18 +179,21 @@ class Conversions {
   using AnyChannel::PollRead
 
 #define _PW_CHANNEL_WRITABLE_WRTE static_assert(true)
-#define _PW_CHANNEL_WRITABLE_SKIP                                        \
-  async2::Poll<> DoPollReadyToWrite(async2::Context&) final {            \
-    return async2::Ready(); /* Should this be Ready() correct here? */   \
-  }                                                                      \
-  Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&&) final {      \
-    return Status::Unimplemented();                                      \
-  }                                                                      \
-  async2::Poll<Result<WriteToken>> DoPollFlush(async2::Context&) final { \
-    return async2::Ready(Result<WriteToken>(Status::Unimplemented()));   \
-  }                                                                      \
-  using AnyChannel::PollReadyToWrite;                                    \
-  using AnyChannel::Write;                                               \
+#define _PW_CHANNEL_WRITABLE_SKIP                                         \
+  async2::Poll<> DoPollReadyToWrite(async2::Context&) final {             \
+    return async2::Ready(); /* Should this be Ready() correct here? */    \
+  }                                                                       \
+  multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
+    PW_ASSERT(false); /* shouldn't be called on non-writeable channels */ \
+  }                                                                       \
+  Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&&) final {       \
+    return Status::Unimplemented();                                       \
+  }                                                                       \
+  async2::Poll<Result<WriteToken>> DoPollFlush(async2::Context&) final {  \
+    return async2::Ready(Result<WriteToken>(Status::Unimplemented()));    \
+  }                                                                       \
+  using AnyChannel::PollReadyToWrite;                                     \
+  using AnyChannel::Write;                                                \
   using AnyChannel::PollFlush
 
 #define _PW_CHANNEL_SEEKABLE_SEEK static_assert(true)

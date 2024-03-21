@@ -45,7 +45,9 @@ pw_cc_test(
     srcs = ["channel_test.cc"],
     deps = [
         ":pw_channel",
+        "//pw_allocator:testing",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_multibuf:simple_allocator",
         "//pw_unit_test",
     ],
 )

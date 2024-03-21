@@ -212,9 +212,10 @@ class AnyChannel {
   /// ``Write``, and the returned ``MultiBuf`` must not be combined with
   /// any other ``MultiBuf`` s or ``Chunk`` s.
   ///
-  /// Write allocation attempts will always return ``std::nullopt`` for
-  /// channels that do not support writing.
-  multibuf::MultiBufAllocator& GetWriteAllocator();
+  /// This method must not be called on channels which do not support writing.
+  multibuf::MultiBufAllocator& GetWriteAllocator() {
+    return DoGetWriteAllocator();
+  }
 
   /// Writes using a previously allocated MultiBuf. Returns a token that
   /// refers to this write. These tokens are monotonically increasing, and
@@ -367,8 +368,7 @@ class AnyChannel {
 
   // Write functions
 
-  // TODO: b/323624921 - Implement when MultiBufAllocator exists.
-  // virtual multibuf::MultiBufAllocator& DoGetWriteBufferAllocator() = 0;
+  virtual multibuf::MultiBufAllocator& DoGetWriteAllocator() = 0;
 
   virtual async2::Poll<> DoPollReadyToWrite(async2::Context& cx) = 0;
 

@@ -265,8 +265,11 @@ inline StatusWithSize ToString(const async2::Poll<T>& poll, span<char> buffer) {
 }
 
 template <>
-inline StatusWithSize ToString(const async2::Poll<>&, span<char> buffer) {
-  return ToString(async2::ReadyType{}, buffer);
+inline StatusWithSize ToString(const async2::Poll<>& poll, span<char> buffer) {
+  if (poll.IsReady()) {
+    return ToString(async2::ReadyType{}, buffer);
+  }
+  return ToString(async2::PendingType{}, buffer);
 }
 
 }  // namespace pw

@@ -16,15 +16,30 @@
 #include <optional>
 
 #include "gtest/gtest.h"
+#include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
 #include "pw_compilation_testing/negative_compilation.h"
+#include "pw_multibuf/allocator.h"
+#include "pw_multibuf/simple_allocator.h"
 
 namespace {
 
-using pw::channel::kReadable;
-using pw::channel::kReliable;
-using pw::channel::kSeekable;
-using pw::channel::kWritable;
+using ::pw::allocator::test::AllocatorForTest;
+using ::pw::async2::Context;
+using ::pw::async2::Pending;
+using ::pw::async2::Poll;
+using ::pw::async2::Ready;
+using ::pw::async2::Waker;
+using ::pw::channel::ByteChannel;
+using ::pw::channel::DatagramWriter;
+using ::pw::channel::kReadable;
+using ::pw::channel::kReliable;
+using ::pw::channel::kSeekable;
+using ::pw::channel::kWritable;
+using ::pw::multibuf::MultiBuf;
+using ::pw::multibuf::MultiBufAllocationFuture;
+using ::pw::multibuf::MultiBufAllocator;
+using ::pw::multibuf::SimpleAllocator;
 
 static_assert(sizeof(::pw::channel::AnyChannel) == 2 * sizeof(void*));
 
@@ -33,7 +48,7 @@ static_assert((kReliable < kReadable) && (kReadable < kWritable) &&
 
 class ReliableByteReaderWriterStub
     : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
- public:
+ private:
   // Read functions
 
   // The max_bytes argument is ignored for datagram-oriented channels.
@@ -45,6 +60,12 @@ class ReliableByteReaderWriterStub
   // Write functions
   pw::async2::Poll<> DoPollReadyToWrite(pw::async2::Context&) override {
     return pw::async2::Pending();
+  }
+
+  pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
+    // ``DoPollReadyToWrite`` will never return ``Ready``, so this is not
+    // callable.
+    PW_CHECK(false);
   }
 
   pw::Result<pw::channel::WriteToken> DoWrite(
@@ -123,106 +144,40 @@ bool Illegal(pw::channel::ByteChannel<kReadable, kReadable>& foo) {
 }
 #endif  // PW_NC_TEST
 
-class FixedBufferChunkRegionTracker : public pw::multibuf::ChunkRegionTracker {
+class TestByteReader : public ByteChannel<kReliable, kReadable> {
  public:
-  FixedBufferChunkRegionTracker(pw::ByteSpan region) : region_(region) {}
+  TestByteReader() {}
 
-  ~FixedBufferChunkRegionTracker() override = default;
-
- private:
-  /// Destroys the ``ChunkRegionTracker``.
-  ///
-  /// Typical implementations will call ``std::destroy_at(this)`` and then free
-  /// the memory associated with the region and the tracker.
-  void Destroy() override {}
-
-  /// Returns the entire span of the region being managed.
-  ///
-  /// ``Chunk`` s referencing this tracker will not expand beyond this region,
-  /// nor into one another's portions of the region.
-  ///
-  /// This region must not change for the lifetime of this
-  /// ``ChunkRegionTracker``.
-  pw::ByteSpan Region() const override { return region_; }
-
-  /// Returns a pointer to ``sizeof(Chunk)`` bytes.
-  /// Returns ``nullptr`` on failure.
-  void* AllocateChunkClass() override {
-    if (chunk_allocated_) {
-      return nullptr;
-    }
-    chunk_allocated_ = true;
-    return chunk_;
-  }
-
-  /// Deallocates a pointer returned by ``AllocateChunkClass``.
-  void DeallocateChunkClass(void* chunk_ptr) override {
-    PW_DCHECK(chunk_allocated_);
-    if (chunk_ptr == chunk_) {
-      chunk_allocated_ = true;
+  void PushData(MultiBuf data) {
+    bool was_empty = data_.empty();
+    data_.PushSuffix(std::move(data));
+    if (was_empty) {
+      std::move(read_waker_).Wake();
     }
   }
 
-  alignas(pw::multibuf::Chunk) std::byte chunk_[sizeof(pw::multibuf::Chunk)];
-  pw::ByteSpan region_;
-  bool chunk_allocated_ = false;
-};
-
-class TestByteReader : public pw::channel::ByteChannel<kReliable, kReadable> {
- public:
-  TestByteReader() : region_(read_data_) {}
-
-  void set_read_data(pw::ConstByteSpan data) {
-    PW_CHECK_UINT_LT(read_size_ + data.size(), sizeof(read_data_));
-    std::memcpy(&read_data_[read_size_], data.data(), data.size());
-    read_size_ = data.size();
-
-    std::move(*read_waker_).Wake();
-    read_waker_.reset();
-  }
-
  private:
-  pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPollRead(
-      pw::async2::Context& cx) override {
-    if (read_size_ == 0) {
+  Poll<pw::Result<MultiBuf>> DoPollRead(Context& cx) override {
+    if (data_.empty()) {
       read_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
-      return pw::async2::Pending();
+      return Pending();
     }
-
-    // This seems like a lot of steps to get a multibuf of a span.
-    auto chunk = region_.CreateFirstChunk();
-    (*chunk)->Truncate(read_size_);
-    pw::multibuf::MultiBuf mb;
-    mb.PushFrontChunk(std::move(*chunk));
-    return pw::Result<pw::multibuf::MultiBuf>(std::move(mb));
+    return std::move(data_);
   }
 
-  pw::async2::Poll<pw::Status> DoPollClose(pw::async2::Context&) override {
-    return pw::async2::Ready(pw::OkStatus());
+  Poll<pw::Status> DoPollClose(Context&) override {
+    return Ready(pw::OkStatus());
   }
 
-  std::optional<pw::async2::Waker> read_waker_;
-  int read_size_ = 0;
-  std::byte read_data_[128];
-
-  FixedBufferChunkRegionTracker region_;
+  Waker read_waker_;
+  MultiBuf data_;
 };
 
-class TestDatagramWriter : public pw::channel::DatagramWriter {
+class TestDatagramWriter : public DatagramWriter {
  public:
-  TestDatagramWriter() : region_(buffer_) {}
+  TestDatagramWriter(MultiBufAllocator& alloc) : alloc_(alloc) {}
 
-  const pw::multibuf::MultiBuf& last_datagram() const {
-    PW_CHECK_INT_NE(state_, kWritePending);
-    return last_dgram_;
-  }
-
-  pw::multibuf::MultiBuf GetMultiBuf() {
-    auto chunk = region_.CreateFirstChunk();
-    pw::multibuf::MultiBuf mb;
-    mb.PushFrontChunk(std::move(*chunk));
-    return mb;
-  }
+  const pw::multibuf::MultiBuf& last_datagram() const { return last_dgram_; }
 
   void MakeReadyToWrite() {
     PW_CHECK_INT_EQ(
@@ -230,11 +185,8 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
         kUnavailable,
         "Can't make writable when write is pending or already writable");
 
-    if (write_waker_.has_value()) {
-      std::move(write_waker_.value()).Wake();
-      write_waker_.reset();
-    }
     state_ = kReadyToWrite;
+    std::move(waker_).Wake();
   }
 
   void MakeReadyToFlush() {
@@ -242,25 +194,21 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
                     kWritePending,
                     "Can't make flushable unless a write is pending");
 
-    if (flush_waker_.has_value()) {
-      std::move(*flush_waker_).Wake();
-      flush_waker_.reset();
-    }
     state_ = kReadyToFlush;
+    std::move(waker_).Wake();
   }
 
  private:
-  pw::async2::Poll<> DoPollReadyToWrite(pw::async2::Context& cx) override {
+  Poll<> DoPollReadyToWrite(Context& cx) override {
     if (state_ == kReadyToWrite) {
-      return pw::async2::Ready();
+      return Ready();
     }
 
-    write_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
-    return pw::async2::Pending();
+    waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+    return Pending();
   }
 
-  pw::Result<pw::channel::WriteToken> DoWrite(
-      pw::multibuf::MultiBuf&& buffer) override {
+  pw::Result<pw::channel::WriteToken> DoWrite(MultiBuf&& buffer) override {
     if (state_ != kReadyToWrite) {
       return pw::Status::Unavailable();
     }
@@ -270,19 +218,22 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
     return CreateWriteToken(++last_write_);
   }
 
-  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPollFlush(
-      pw::async2::Context& cx) override {
+  pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
+    return alloc_;
+  }
+
+  Poll<pw::Result<pw::channel::WriteToken>> DoPollFlush(Context& cx) override {
     if (state_ != kReadyToFlush) {
-      flush_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
-      return pw::async2::Pending();
+      waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+      return Pending();
     }
     last_flush_ = last_write_;
-    return pw::async2::Ready(
+    return Ready(
         pw::Result<pw::channel::WriteToken>(CreateWriteToken(last_flush_)));
   }
 
-  pw::async2::Poll<pw::Status> DoPollClose(pw::async2::Context&) override {
-    return pw::async2::Ready(pw::OkStatus());
+  Poll<pw::Status> DoPollClose(Context&) override {
+    return Ready(pw::OkStatus());
   }
 
   enum {
@@ -291,53 +242,60 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
     kWritePending,
     kReadyToFlush,
   } state_ = kUnavailable;
-  std::optional<pw::async2::Waker> write_waker_;
-  std::optional<pw::async2::Waker> flush_waker_;
-
+  Waker waker_;
   uint32_t last_write_ = 0;
   uint32_t last_flush_ = 0;
-
-  std::byte buffer_[128];
-  FixedBufferChunkRegionTracker region_;
-  pw::multibuf::MultiBuf last_dgram_;
+  MultiBuf last_dgram_;
+  MultiBufAllocator& alloc_;
 };
 
 TEST(Channel, TestByteReader) {
   static constexpr char kReadData[] = "hello, world";
+  static constexpr size_t kReadDataSize = sizeof(kReadData);
+  static constexpr size_t kArbitraryMetaSize = 512;
 
   pw::async2::Dispatcher dispatcher;
+  std::array<std::byte, kReadDataSize> data_area;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc);
+  std::optional<MultiBuf> read_buf_opt =
+      simple_allocator.Allocate(kReadDataSize);
+  ASSERT_TRUE(read_buf_opt.has_value());
+  MultiBuf& read_buf = *read_buf_opt;
 
   class : public pw::async2::Task {
    public:
     TestByteReader channel;
-
     int test_executed = 0;
 
    private:
-    pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
+    Poll<> DoPend(Context& cx) override {
       auto result = channel.PollRead(cx);
       if (!result.IsReady()) {
-        return pw::async2::Pending();
+        return Pending();
       }
 
       auto actual_result = std::move(*result);
       EXPECT_TRUE(actual_result.ok());
 
-      std::byte contents[64] = {};
+      std::byte contents[kReadDataSize] = {};
 
       EXPECT_EQ(actual_result->size(), sizeof(kReadData));
       std::copy(actual_result->begin(), actual_result->end(), contents);
       EXPECT_STREQ(reinterpret_cast<const char*>(contents), kReadData);
 
       test_executed += 1;
-      return pw::async2::Ready();
+      return Ready();
     }
   } test_task;
 
   dispatcher.Post(test_task);
 
   EXPECT_FALSE(dispatcher.RunUntilStalled().IsReady());
-  test_task.channel.set_read_data(pw::as_bytes(pw::span(kReadData)));
+
+  auto kReadDataBytes = reinterpret_cast<const std::byte*>(kReadData);
+  std::copy(kReadDataBytes, kReadDataBytes + kReadDataSize, read_buf.begin());
+  test_task.channel.PushData(std::move(read_buf));
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 
   EXPECT_EQ(test_task.test_executed, 1);
@@ -345,45 +303,58 @@ TEST(Channel, TestByteReader) {
 
 TEST(Channel, TestDatagramWriter) {
   pw::async2::Dispatcher dispatcher;
+  static constexpr size_t kArbitraryDataSize = 128;
+  static constexpr size_t kArbitraryMetaSize = 512;
+  std::array<std::byte, kArbitraryDataSize> data_area;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc);
+  TestDatagramWriter write_channel(simple_allocator);
 
   static constexpr char kWriteData[] = "Hello there";
 
-  class : public pw::async2::Task {
+  class SendWriteDataAndFlush : public pw::async2::Task {
    public:
-    TestDatagramWriter channel;
-
-    pw::channel::WriteToken write_token;
+    explicit SendWriteDataAndFlush(DatagramWriter& channel, size_t)
+        : channel_(channel) {}
     int test_executed = 0;
 
    private:
-    enum { kWaitUntilReady, kFlushPacket } state_ = kWaitUntilReady;
-
-    pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
+    Poll<> DoPend(Context& cx) override {
       switch (state_) {
         case kWaitUntilReady: {
-          if (!channel.PollReadyToWrite(cx).IsReady()) {
-            return pw::async2::Pending();
+          if (channel_.PollReadyToWrite(cx).IsPending()) {
+            return Pending();
           }
-
-          auto mb = channel.GetMultiBuf();
+          if (!allocation_future_.has_value()) {
+            allocation_future_ =
+                channel_.GetWriteAllocator().AllocateAsync(sizeof(kWriteData));
+          }
+          Poll<std::optional<MultiBuf>> buffer = allocation_future_->Pend(cx);
+          if (buffer.IsPending()) {
+            return Pending();
+          }
+          allocation_future_ = std::nullopt;
+          if (!buffer->has_value()) {
+            // Allocator should have enough space for `kWriteData`.
+            ADD_FAILURE();
+            return Ready();
+          }
           pw::ConstByteSpan str(pw::as_bytes(pw::span(kWriteData)));
-          std::copy(str.begin(), str.end(), mb.begin());
-          mb.ChunkBegin()->Truncate(sizeof(kWriteData));
-
-          auto token = channel.Write(std::move(mb));
+          std::copy(str.begin(), str.end(), (**buffer).begin());
+          auto token = channel_.Write(std::move(**buffer));
           PW_CHECK(token.ok());
-          write_token = *token;
+          write_token_ = *token;
           state_ = kFlushPacket;
           [[fallthrough]];
         }
         case kFlushPacket: {
-          auto result = channel.PollFlush(cx);
-          if (!result.IsReady() || **result < write_token) {
-            return pw::async2::Pending();
+          auto result = channel_.PollFlush(cx);
+          if (result.IsPending() || **result < write_token_) {
+            return Pending();
           }
           test_executed += 1;
           state_ = kWaitUntilReady;
-          return pw::async2::Ready();
+          return Ready();
         }
         default:
           PW_CRASH("Illegal value");
@@ -392,27 +363,33 @@ TEST(Channel, TestDatagramWriter) {
       // This test is INCOMPLETE.
 
       test_executed += 1;
-      return pw::async2::Ready();
+      return Ready();
     }
-  } test_task;
 
+    enum { kWaitUntilReady, kFlushPacket } state_ = kWaitUntilReady;
+    std::optional<MultiBufAllocationFuture> allocation_future_;
+    DatagramWriter& channel_;
+    pw::channel::WriteToken write_token_;
+  };
+
+  SendWriteDataAndFlush test_task(write_channel, 24601);
   dispatcher.Post(test_task);
 
-  EXPECT_FALSE(dispatcher.RunUntilStalled().IsReady());
-  EXPECT_FALSE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
 
-  test_task.channel.MakeReadyToWrite();
+  write_channel.MakeReadyToWrite();
 
-  EXPECT_FALSE(dispatcher.RunUntilStalled().IsReady());
-  EXPECT_FALSE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
 
-  test_task.channel.MakeReadyToFlush();
+  write_channel.MakeReadyToFlush();
 
-  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
   EXPECT_EQ(test_task.test_executed, 1);
 
   std::byte contents[64] = {};
-  const auto& dgram = test_task.channel.last_datagram();
+  const MultiBuf& dgram = write_channel.last_datagram();
   std::copy(dgram.begin(), dgram.end(), contents);
   EXPECT_STREQ(reinterpret_cast<const char*>(contents), kWriteData);
 }
@@ -427,8 +404,14 @@ const pw::channel::ByteChannel<kReadable>& TakesAReadableByteChannel(
 void TakesAWritableByteChannel(const pw::channel::ByteChannel<kWritable>&) {}
 
 TEST(Channel, Conversions) {
+  static constexpr size_t kArbitraryDataSize = 128;
+  static constexpr size_t kArbitraryMetaSize = 128;
+  std::array<std::byte, kArbitraryDataSize> data_area;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc);
+
   const TestByteReader byte_channel;
-  const TestDatagramWriter datagram_channel;
+  const TestDatagramWriter datagram_channel(simple_allocator);
 
   TakesAReadableByteChannel(byte_channel);
   TakesAReadableByteChannel(byte_channel.as<kReadable>());

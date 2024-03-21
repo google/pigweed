@@ -52,7 +52,11 @@ pw_test_group("tests") {
 
 pw_test("channel_test") {
   sources = [ "channel_test.cc" ]
-  deps = [ ":pw_channel" ]
+  deps = [
+    ":pw_channel",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_multibuf:simple_allocator",
+  ]
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   negative_compilation_tests = true
 }
