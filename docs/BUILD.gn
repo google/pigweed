@@ -70,6 +70,7 @@ pw_doc_group("core_docs") {
     "os/zephyr/kconfig.rst",
     "overview.rst",
     "size_optimizations.rst",
+    "style/cli.rst",
     "style/commit_message.rst",
     "style/cpp.rst",
     "style/doxygen.rst",

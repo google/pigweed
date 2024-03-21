@@ -15,7 +15,7 @@ Style Guide
 
 .. grid:: 2
 
-   .. grid-item-card:: :octicon:`rocket` Commit messages
+   .. grid-item-card:: :octicon:`pencil` Commit messages
       :link: docs-pw-style-commit-message
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
@@ -44,6 +44,16 @@ Style Guide
       :class-item: sales-pitch-cta-secondary
 
       How to structure reference documentation for C++ code
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`terminal` CLI style
+      :link: docs-pw-style-cli
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      How to style your CLI program so that it behaves
+      consistently with other Pigweed CLI programs
 
 .. tip::
    Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
@@ -274,6 +284,7 @@ This plugin will, by default, act upon any file named "OWNERS".
 
    C++ <style/cpp>
    Commit message <style/commit_message>
+   CLI <style/cli>
    Doxygen documentation <style/doxygen>
    Protobuf <style/protobuf>
    Sphinx documentation <style/sphinx>
