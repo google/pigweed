@@ -43,9 +43,9 @@ Examples
 
 .. code-block:: none
 
-   Offs.  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  Text
-   0000: A4 CC 32 62 9B 46 38 1A 23 1A 2A 7A BC E2 40 A0  ..2b.F8.#.*z..@.
-   0010: FF 33 E5 2B 9E 9F 6B 3C BE 9B 89 3C 7E 4A 7A 48  .3.+..k<...<~JzH
+   Offs. 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f  Text
+   0000: a4 cc 32 62 9b 46 38 1a 23 1a 2a 7a bc e2 40 a0  ..2b.F8.#.*z..@.
+   0010: ff 33 e5 2b 9e 9f 6b 3c be 9b 89 3c 7e 4a 7a 48  .3.+..k<...<~JzH
    0020: 18                                               .
 
 **Example 1:**
@@ -53,11 +53,11 @@ Examples
 
 .. code-block:: none
 
-   Address      0        4        Text
-   0x20000000: A4CC3262 9B46381A  ..2b.F8.
-   0x20000008: 231A2A7A BCE240A0  #.*z..@.
-   0x20000010: FF33E52B 9E9F6B3C  .3.+..k<
-   0x20000018: BE9B893C 7E4A7A48  ...<~JzH
+   Address     00       04        Text
+   0x20000000: a4cc3262 9b46381a  ..2b.F8.
+   0x20000008: 231a2a7a bce240a0  #.*z..@.
+   0x20000010: ff33e52b 9e9f6b3c  .3.+..k<
+   0x20000018: be9b893c 7e4a7a48  ...<~JzH
    0x20000020: 18                 .
 
 **Example 2:**
@@ -65,9 +65,9 @@ Examples
 
 .. code-block:: none
 
-   Offs.  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-   0000: A4 CC 32 62 9B 46 38 1A 23 1A 2A 7A BC E2 40 A0
-   0010: FF 33 E5 2B 9E 9F 6B 3C BE 9B 89 3C 7E 4A 7A 48
+   Offs. 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+   0000: a4 cc 32 62 9b 46 38 1a 23 1a 2a 7a bc e2 40 a0
+   0010: ff 33 e5 2b 9e 9f 6b 3c be 9b 89 3c 7e 4a 7a 48
    0020: 18
 
 **Example 3:**
@@ -75,8 +75,8 @@ Examples
 
 .. code-block:: none
 
-   A4CC32629B46381A231A2A7ABCE240A0
-   FF33E52B9E9F6B3CBE9B893C7E4A7A48
+   a4cc32629b46381a231a2a7abce240a0
+   ff33e52b9e9f6b3cbe9b893c7e4a7a48
    18
 
 
@@ -88,7 +88,7 @@ Here's an example of how this class might be used:
 
    std::array<char, 80> temp;
    FormattedHexDumper hex_dumper(temp);
-   hex_dumper.HideAscii();
+   hex_dumper.flags.show_ascii = false;
    hex_dumper.BeginDump(my_data);
    while(hex_dumper.DumpLine().ok()) {
      LOG_INFO("%s", temp.data());
@@ -98,9 +98,9 @@ Which prints:
 
 .. code-block:: none
 
-   Offs.  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-   0000: A4 CC 32 62 9B 46 38 1A 23 1A 2A 7A BC E2 40 A0
-   0010: FF 33 E5 2B 9E 9F 6B 3C BE 9B 89 3C 7E 4A 7A 48
+   Offs. 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+   0000: a4 cc 32 62 9b 46 38 1a 23 1a 2a 7a bc e2 40 a0
+   0010: ff 33 e5 2b 9e 9f 6b 3c be 9b 89 3c 7e 4a 7a 48
    0020: 18
 
 Dependencies
