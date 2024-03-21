@@ -30,22 +30,19 @@ TRANSFER_CLIENT_SOURCES = [
     "WriteTransfer.java",
 ]
 
-TRANSFER_CLIENT_DEPS = [
-    "//third_party/google_auto:value",
-    "@maven//:com_google_code_findbugs_jsr305",
-    "@maven//:com_google_guava_failureaccess",
-    "@maven//:com_google_guava_guava",
-]
-
 java_library(
     name = "client",
     srcs = TRANSFER_CLIENT_SOURCES,
     visibility = ["//visibility:public"],
-    deps = TRANSFER_CLIENT_DEPS + [
+    deps = [
         "//pw_log/java/main/dev/pigweed/pw_log",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
         "//pw_transfer:transfer_proto_java",
+        "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_failureaccess",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -53,11 +50,15 @@ java_library(
     name = "client_lite",
     srcs = TRANSFER_CLIENT_SOURCES,
     visibility = ["//visibility:public"],
-    deps = TRANSFER_CLIENT_DEPS + [
+    deps = [
         "//pw_log/java/main/dev/pigweed/pw_log",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "//pw_transfer:transfer_proto_java_lite",
+        "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_failureaccess",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -66,10 +67,14 @@ android_library(
     srcs = TRANSFER_CLIENT_SOURCES,
     tags = ["manual"],  # TODO: b/227771184 - support Android in the Bazel build
     visibility = ["//visibility:public"],
-    deps = TRANSFER_CLIENT_DEPS + [
+    deps = [
         "//pw_log/java/android_main/dev/pigweed/pw_log",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_android",
         "//pw_transfer:transfer_proto_java_lite",
+        "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_failureaccess",
+        "@maven//:com_google_guava_guava",
     ],
 )
