@@ -59,6 +59,17 @@ pw_facade("pw_log") {
   require_link_deps = [ ":impl" ]
 }
 
+pw_source_set("rate_limited") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_log/rate_limited.h" ]
+  public_deps = [
+    ":config",
+    ":pw_log",
+    "$dir_pw_chrono:system_clock",
+  ]
+  sources = [ "rate_limited.cc" ]
+}
+
 pw_source_set("args") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_tokenizer ]

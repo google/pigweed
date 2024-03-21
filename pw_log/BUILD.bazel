@@ -51,6 +51,22 @@ pw_facade(
     ],
 )
 
+cc_library(
+    name = "rate_limited",
+    srcs = [
+        "rate_limited.cc",
+    ],
+    hdrs = [
+        "public/pw_log/rate_limited.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":config_override",
+        ":pw_log",
+        "//pw_chrono:system_clock",
+    ],
+)
+
 label_flag(
     name = "config_override",
     build_setting_default = "//pw_build:default_module_config",
@@ -151,6 +167,7 @@ pw_cc_test(
     deps = [
         ":pw_log",
         ":pw_log.facade",
+        ":rate_limited",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

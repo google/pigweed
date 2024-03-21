@@ -45,6 +45,18 @@ pw_add_facade(pw_log INTERFACE
     pw_log.config
 )
 
+pw_add_library(pw_log.rate_limited STATIC
+  HEADERS
+    public/pw_log/rate_limited.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log
+    pw_chrono.system_clock
+  SOURCES
+    rate_limited.cc
+)
+
 pw_add_library(pw_log.glog_adapter INTERFACE
   HEADERS
     public/pw_log/glog_adapter.h

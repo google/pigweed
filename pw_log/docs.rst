@@ -133,6 +133,57 @@ system, intended to be used directly.
 
    Shorthand for ``PW_LOG(<level>, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, fmt, ...)``.
 
+.. c:macro:: PW_LOG_EVERY_N(level, rate, ...)
+
+   A simple rate limit logger which will simply log one out of every N logs.
+
+   *level* - An integer level as defined by ``pw_log/levels.h``.
+
+   *rate* - Rate to reduce logs to, every ``rate``-th log will complete, others
+   will be suppressed.
+
+.. c:macro:: PW_LOG_EVERY_N_DURATION(level, min_interval_between_logs, msg, ...)
+
+   This is a rate-limited form of logging, especially useful for progressive
+   or chatty logs that should be logged periodically, but not on each instance
+   of the logger being called.
+
+   *level* - An integer level as defined by ``pw_log/levels.h``.
+
+   *min_interval_between_logs* - A ``std::chrono::duration`` of the minimum time
+   between logs. Logs attempted before this time duration will be completely
+   dropped.
+   Dropped logs will be counted to add a drop count and calculated rate of the
+   logs.
+
+   *msg* - Formattable log message, as you would pass to the above ``PW_LOG``
+   macro.
+
+   .. note::
+
+      ``PW_LOG_EVERY_N`` is simpler, if you simply need to reduce uniformly
+      periodic logs by a fixed or variable factor not based explicitly on a
+      duration. Each call to the macro will incur a static ``uint32_t`` within
+      the calling context.
+
+      ``PW_LOG_EVERY_N_DURATION`` is able to suppress all logs based on a time
+      interval, suppressing logs logging faster than the desired time interval.
+      Each call to the duration macro will incur a static 16 byte object to
+      track the time interval within the calling context.
+
+   Example:
+
+   .. code-block:: cpp
+
+      // Ensure at least 500ms between transfer parameter logs.
+      chrono::SystemClock::duration rate_limit_ =
+         chrono::SystemClock::for_at_least(std::chrono::milliseconds(500));
+
+      PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_INFO,
+                              rate_limit_,
+                              "Transfer %u sending transfer parameters!"
+                              static_cast<unsigned>(session_id_));
+
 --------------------
 Module configuration
 --------------------

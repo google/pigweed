@@ -101,6 +101,19 @@
   PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
+#ifndef PW_LOG_EVERY_N
+#define PW_LOG_EVERY_N(level, rate, ...)                            \
+  do {                                                              \
+    static uint32_t _pw_log_suppressor##__LINE__ = 0;               \
+    if (_pw_log_suppressor##__LINE__ == 0) {                        \
+      PW_LOG(level, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__); \
+      _pw_log_suppressor##__LINE__ = rate;                          \
+    } else {                                                        \
+      _pw_log_suppressor##__LINE__--;                               \
+    }                                                               \
+  } while (0)
+#endif  // PW_LOG_EVERY_N
+
 // Default: Number of bits available for the log flags
 //
 // All log statements have a flags field, and this define is the number of bits
