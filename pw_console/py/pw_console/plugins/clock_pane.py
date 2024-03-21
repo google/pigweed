@@ -14,6 +14,8 @@
 """Example Plugin that displays some dynamic content (a clock) and examples of
 text formatting."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from prompt_toolkit.filters import Condition, has_focus
@@ -42,7 +44,7 @@ class ClockControl(FormattedTextControl):
     handling keybindings if in focus, and mouse input.
     """
 
-    def __init__(self, clock_pane: 'ClockPane', *args, **kwargs) -> None:
+    def __init__(self, clock_pane: ClockPane, *args, **kwargs) -> None:
         self.clock_pane = clock_pane
 
         # Set some custom key bindings to toggle the view mode and wrap lines.

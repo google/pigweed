@@ -13,6 +13,8 @@
 # the License.
 """Help window container class."""
 
+from __future__ import annotations
+
 import functools
 import importlib.resources
 import inspect
@@ -99,14 +101,14 @@ class HelpWindow(ConditionalContainer):
 
     def __init__(
         self,
-        application: 'ConsoleApp',
+        application: ConsoleApp,
         preamble: str = '',
         additional_help_text: str = '',
         title: str = '',
         disable_ctrl_c: bool = False,
     ) -> None:
         # Dict containing key = section title and value = list of key bindings.
-        self.application: 'ConsoleApp' = application
+        self.application: ConsoleApp = application
         self.show_window: bool = False
         self.help_text_sections: dict[str, dict] = {}
         self._pane_title: str = title

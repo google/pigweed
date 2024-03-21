@@ -13,6 +13,8 @@
 # the License.
 """ReplPane class."""
 
+from __future__ import annotations
+
 import asyncio
 import concurrent
 import functools
@@ -102,7 +104,7 @@ class ReplPane(WindowPane):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     def __init__(
         self,
-        application: 'ConsoleApp',
+        application: ConsoleApp,
         python_repl: PwPtPythonRepl,
         pane_title: str = 'Python Repl',
         startup_message: str | None = None,

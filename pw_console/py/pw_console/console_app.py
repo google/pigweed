@@ -117,7 +117,7 @@ class FloatingMessageBar(ConditionalContainer):
 
 def _add_log_handler_to_pane(
     logger: str | logging.Logger,
-    pane: 'LogPane',
+    pane: LogPane,
     level_name: str | None = None,
 ) -> None:
     """A log pane handler for a given logger instance."""

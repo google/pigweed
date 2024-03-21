@@ -90,7 +90,7 @@ class _OutputFile:
     class _IndentationContext:
         """Context that increases the output's indentation when it is active."""
 
-        def __init__(self, output: '_OutputFile', width: int):
+        def __init__(self, output: _OutputFile, width: int):
             self._output = output
             self._width: int = width
 
@@ -251,7 +251,7 @@ class _BuildFile:
     def _write_cc_target(
         self,
         file: _OutputFile,
-        target: '_BuildFile.CcTarget',
+        target: _BuildFile.CcTarget,
     ) -> None:
         """Defines a C++ library target within the build file."""
 
@@ -259,7 +259,7 @@ class _BuildFile:
     def _write_cc_test(
         self,
         file: _OutputFile,
-        target: '_BuildFile.CcTarget',
+        target: _BuildFile.CcTarget,
     ) -> None:
         """Defines a C++ unit test target within the build file."""
 
@@ -362,7 +362,7 @@ class _GnBuildFile(_BuildFile):
     def _write_cc_test(
         self,
         file: _OutputFile,
-        target: '_BuildFile.CcTarget',
+        target: _BuildFile.CcTarget,
     ) -> None:
         _GnBuildFile._target(
             file,
@@ -533,7 +533,7 @@ class _BazelBuildFile(_BuildFile):
     def _write_cc_test(
         self,
         file: _OutputFile,
-        target: '_BuildFile.CcTarget',
+        target: _BuildFile.CcTarget,
     ) -> None:
         _BazelBuildFile._target(
             file,
@@ -622,7 +622,7 @@ class _CmakeBuildFile(_BuildFile):
     def _write_cc_test(
         self,
         file: _OutputFile,
-        target: '_BuildFile.CcTarget',
+        target: _BuildFile.CcTarget,
     ) -> None:
         _CmakeBuildFile._target(
             file,

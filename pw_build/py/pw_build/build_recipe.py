@@ -216,7 +216,7 @@ class BuildCommand:
 class BuildRecipeStatus:
     """Stores the status of a build recipe."""
 
-    recipe: 'BuildRecipe'
+    recipe: BuildRecipe
     current_step: str = ''
     percent: float = 0.0
     error_count: int = 0

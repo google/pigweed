@@ -13,6 +13,8 @@
 # the License.
 """Window pane base class."""
 
+from __future__ import annotations
+
 from abc import ABC
 from typing import Callable, TYPE_CHECKING
 import functools
@@ -80,7 +82,7 @@ class WindowPane(ABC):
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        application: 'ConsoleApp | Any' = None,
+        application: ConsoleApp | Any = None,
         pane_title: str = 'Window',
         height: AnyDimension | None = None,
         width: AnyDimension | None = None,

@@ -54,7 +54,7 @@ class TextIfNotHidden(Text):
     def format(
         self,
         progress_bar: ProgressBar,
-        progress: 'ProgressBarCounter[object]',
+        progress: ProgressBarCounter[object],
         width: int,
     ) -> AnyFormattedText:
         formatted_text = super().format(progress_bar, progress, width)
@@ -67,7 +67,7 @@ class IterationsPerSecondIfNotHidden(IterationsPerSecond):
     def format(
         self,
         progress_bar: ProgressBar,
-        progress: 'ProgressBarCounter[object]',
+        progress: ProgressBarCounter[object],
         width: int,
     ) -> AnyFormattedText:
         formatted_text = super().format(progress_bar, progress, width)
@@ -80,7 +80,7 @@ class TimeLeftIfNotHidden(TimeLeft):
     def format(
         self,
         progress_bar: ProgressBar,
-        progress: 'ProgressBarCounter[object]',
+        progress: ProgressBarCounter[object],
         width: int,
     ) -> AnyFormattedText:
         formatted_text = super().format(progress_bar, progress, width)

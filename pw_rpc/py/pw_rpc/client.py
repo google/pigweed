@@ -400,7 +400,7 @@ class ChannelClient:
     invoked directly (e.g. rpc(field1=123, field2=b'456')).
     """
 
-    client: 'Client'
+    client: Client
     channel: Channel
     rpcs: Services
 

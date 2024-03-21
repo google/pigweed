@@ -13,6 +13,8 @@
 # the License.
 """Module for running subprocesses from pw and capturing their output."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
@@ -44,7 +46,7 @@ class CompletedProcess:
 
     def __init__(
         self,
-        process: 'asyncio.subprocess.Process',
+        process: asyncio.subprocess.Process,
         output: bytes | IO[bytes],
     ):
         assert process.returncode is not None
@@ -93,7 +95,7 @@ async def _run_and_log(program: str, args: tuple[str, ...], env: dict):
 
 
 async def _kill_process_and_children(
-    process: 'asyncio.subprocess.Process',
+    process: asyncio.subprocess.Process,
 ) -> None:
     """Kills child processes of a process with PID `pid`."""
     # Look up child processes before sending the kill signal to the parent,

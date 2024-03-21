@@ -37,6 +37,8 @@ Examples:
   --build-system-command outbazel 'bazel test'
 """
 
+from __future__ import annotations
+
 import argparse
 import concurrent.futures
 import os
@@ -347,7 +349,7 @@ def execute_command_with_logging(
 
 def log_build_recipe_start(
     index_message: str,
-    project_builder: 'ProjectBuilder',
+    project_builder: ProjectBuilder,
     cfg: BuildRecipe,
     logger: logging.Logger = _LOG,
 ) -> None:
@@ -386,7 +388,7 @@ def log_build_recipe_start(
 
 def log_build_recipe_finish(
     index_message: str,
-    project_builder: 'ProjectBuilder',
+    project_builder: ProjectBuilder,
     cfg: BuildRecipe,
     logger: logging.Logger = _LOG,
 ) -> None:

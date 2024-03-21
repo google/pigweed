@@ -112,7 +112,7 @@ class Service:
 
     _descriptor: ServiceDescriptor
     id: int
-    methods: 'Methods'
+    methods: Methods
 
     @property
     def name(self):

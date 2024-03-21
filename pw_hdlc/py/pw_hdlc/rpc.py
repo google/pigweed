@@ -581,7 +581,7 @@ class HdlcRpcLocalServerAndClient:
 
         self.server = SocketSubprocess(server_command, port)
 
-        self._bytes_queue: 'queue.SimpleQueue[bytes]' = queue.SimpleQueue()
+        self._bytes_queue: queue.SimpleQueue[bytes] = queue.SimpleQueue()
         self._read_thread = threading.Thread(target=self._read_from_socket)
         self._read_thread.start()
 

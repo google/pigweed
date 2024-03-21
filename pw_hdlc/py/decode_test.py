@@ -14,6 +14,8 @@
 # the License.
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
+from __future__ import annotations
+
 import queue
 from typing import Iterator, NamedTuple
 import unittest
@@ -686,7 +688,7 @@ class AdditionalNonFrameDecoderTests(unittest.TestCase):
     def test_emits_data_if_timeout_expires(self) -> None:
         frame_start = b'~this looks like a real frame'
 
-        non_frame_data: 'queue.Queue[bytes]' = queue.Queue()
+        non_frame_data: queue.Queue[bytes] = queue.Queue()
         decoder = FrameAndNonFrameDecoder(non_frame_data.put, timeout_s=0.001)
 
         self.assertEqual([], list(decoder.process(frame_start)))

@@ -1083,7 +1083,7 @@ class CppCompilationDatabasesMap:
 
     @classmethod
     def merge(
-        cls, *db_sets: 'CppCompilationDatabasesMap'
+        cls, *db_sets: CppCompilationDatabasesMap
     ) -> CppCompilationDatabasesMap:
         """Merge several sets of processed compilation databases.
 

@@ -65,8 +65,8 @@ class LogView:
 
     def __init__(
         self,
-        log_pane: 'LogPane',
-        application: 'ConsoleApp',
+        log_pane: LogPane,
+        application: ConsoleApp,
         log_store: LogStore | None = None,
     ):
         # Parent LogPane reference. Updated by calling `set_log_pane()`.
@@ -112,9 +112,9 @@ class LogView:
 
         # Filter
         self.filtering_on: bool = False
-        self.filters: 'collections.OrderedDict[str, LogFilter]' = (
-            collections.OrderedDict()
-        )
+        self.filters: collections.OrderedDict[
+            str, LogFilter
+        ] = collections.OrderedDict()
         self.filtered_logs: collections.deque = collections.deque()
         self.filter_existing_logs_task: asyncio.Task | None = None
 
@@ -471,9 +471,9 @@ class LogView:
             return
         self.clear_search()
         self.filtering_on = False
-        self.filters: 'collections.OrderedDict[str, re.Pattern]' = (
-            collections.OrderedDict()
-        )
+        self.filters: collections.OrderedDict[
+            str, re.Pattern
+        ] = collections.OrderedDict()
         self.filtered_logs.clear()
         # Reset scrollback start
         self._scrollback_start_index = 0

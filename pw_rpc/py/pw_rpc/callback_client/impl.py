@@ -13,6 +13,8 @@
 # the License.
 """The callback-based pw_rpc client implementation."""
 
+from __future__ import annotations
+
 import inspect
 import logging
 import textwrap
@@ -59,7 +61,7 @@ class _MethodClient:
 
     def __init__(
         self,
-        client_impl: 'Impl',
+        client_impl: Impl,
         rpcs: PendingRpcs,
         channel: Channel,
         method: Method,

@@ -14,6 +14,8 @@
 # the License.
 """Test fixture for pw_transfer integration tests."""
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 from dataclasses import dataclass
@@ -349,7 +351,7 @@ class TransferIntegrationTestHarness:
 
 class BasicTransfer(NamedTuple):
     id: int
-    type: 'config_pb2.TransferAction.TransferType.ValueType'
+    type: config_pb2.TransferAction.TransferType.ValueType
     data: bytes
 
 

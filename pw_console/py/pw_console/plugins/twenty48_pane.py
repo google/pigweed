@@ -283,7 +283,7 @@ class Twenty48Control(FormattedTextControl):
     handling keybindings if in focus, and mouse input.
     """
 
-    def __init__(self, twenty48_pane: 'Twenty48Pane', *args, **kwargs) -> None:
+    def __init__(self, twenty48_pane: Twenty48Pane, *args, **kwargs) -> None:
         self.twenty48_pane = twenty48_pane
         self.game = self.twenty48_pane.game
 
