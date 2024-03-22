@@ -121,8 +121,7 @@ cc_defaults {
         "pw_result_headers",
         "pw_rpc_include_dirs",
         "pw_span_headers",
-        "pw_sync_baremetal_headers",
-        "pw_sync_headers",
+        "pw_sync",
         "pw_toolchain",
     ],
     export_header_lib_headers: [
@@ -136,8 +135,7 @@ cc_defaults {
         "pw_result_headers",
         "pw_rpc_include_dirs",
         "pw_span_headers",
-        "pw_sync_baremetal_headers",
-        "pw_sync_headers",
+        "pw_sync",
         "pw_toolchain",
     ],
     static_libs: [
@@ -147,6 +145,7 @@ cc_defaults {
         "pw_status",
         "pw_stream",
         "pw_string",
+        "pw_sync_baremetal",
         "pw_varint",
     ],
     export_static_lib_headers: [
@@ -156,6 +155,7 @@ cc_defaults {
         "pw_status",
         "pw_stream",
         "pw_string",
+        "pw_sync_baremetal",
         "pw_varint",
     ],
     generated_headers: [

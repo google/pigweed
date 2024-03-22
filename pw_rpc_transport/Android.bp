@@ -132,18 +132,18 @@ cc_defaults {
         "pw_chrono",
         "pw_log_headers",
         "pw_rpc_transport_rpc_transport_headers",
-        "pw_sync_headers",
-        "pw_sync_binary_semaphore_thread_notification_backend_headers",
+        "pw_sync",
     ],
     export_header_lib_headers: [
         "pw_assert_headers",
         "pw_log_headers",
         "pw_rpc_transport_rpc_transport_headers",
-        "pw_sync_headers",
+        "pw_sync",
     ],
     static_libs: [
         "pw_hdlc",
         "pw_metric",
+        "pw_sync.binary_semaphore_thread_notification",
     ],
     export_static_lib_headers: [
         "pw_hdlc",

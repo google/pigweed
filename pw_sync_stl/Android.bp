@@ -16,8 +16,8 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_headers {
-    name: "pw_sync_stl_include_dirs",
+cc_library_static {
+    name: "pw_sync_stl",
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
@@ -25,30 +25,27 @@ cc_library_headers {
     ],
     vendor_available: true,
     host_supported: true,
-}
-
-filegroup {
-    name: "pw_sync_stl_src_files",
     srcs: [
         "binary_semaphore.cc",
         "counting_semaphore.cc",
         "mutex.cc",
     ],
-}
-
-cc_defaults {
-    name: "pw_sync_stl_defaults",
-    cpp_std: "c++20",
     header_libs: [
         "pw_assert_headers",
-        "pw_sync_headers",
-        "pw_sync_stl_include_dirs",
+        "pw_chrono",
+        "pw_sync",
     ],
     export_header_lib_headers: [
-        "pw_sync_headers",
-        "pw_sync_stl_include_dirs",
+        "pw_sync",
+        "pw_chrono",
     ],
-    srcs: [
-        ":pw_sync_stl_src_files",
+    // Explicitly depend on the pw_assert_log and pw_chrono_stl backends since
+    // they are part of pw_android_common_backends.
+    static_libs: [
+        "pw_assert_log",
+        "pw_chrono_stl",
+    ],
+    shared_libs: [
+        "liblog",
     ],
 }
