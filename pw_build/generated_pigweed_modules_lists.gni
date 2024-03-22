@@ -99,6 +99,7 @@ declare_args() {
   dir_pw_i2c = get_path_info("../pw_i2c", "abspath")
   dir_pw_i2c_linux = get_path_info("../pw_i2c_linux", "abspath")
   dir_pw_i2c_mcuxpresso = get_path_info("../pw_i2c_mcuxpresso", "abspath")
+  dir_pw_i2c_rp2040 = get_path_info("../pw_i2c_rp2040", "abspath")
   dir_pw_ide = get_path_info("../pw_ide", "abspath")
   dir_pw_interrupt = get_path_info("../pw_interrupt", "abspath")
   dir_pw_interrupt_cortex_m =
@@ -278,6 +279,7 @@ declare_args() {
     dir_pw_i2c,
     dir_pw_i2c_linux,
     dir_pw_i2c_mcuxpresso,
+    dir_pw_i2c_rp2040,
     dir_pw_ide,
     dir_pw_interrupt,
     dir_pw_interrupt_cortex_m,
@@ -445,6 +447,7 @@ declare_args() {
     "$dir_pw_i2c:tests",
     "$dir_pw_i2c_linux:tests",
     "$dir_pw_i2c_mcuxpresso:tests",
+    "$dir_pw_i2c_rp2040:tests",
     "$dir_pw_ide:tests",
     "$dir_pw_interrupt:tests",
     "$dir_pw_interrupt_cortex_m:tests",
@@ -612,6 +615,7 @@ declare_args() {
     "$dir_pw_i2c:docs",
     "$dir_pw_i2c_linux:docs",
     "$dir_pw_i2c_mcuxpresso:docs",
+    "$dir_pw_i2c_rp2040:docs",
     "$dir_pw_ide:docs",
     "$dir_pw_interrupt:docs",
     "$dir_pw_interrupt_cortex_m:docs",
