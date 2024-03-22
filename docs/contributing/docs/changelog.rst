@@ -68,4 +68,4 @@ Changelog tool
    <section id="output">Output will be rendered here...</section>
    <!-- Use a relative path here so that the changelog tool also works when
         you preview the page locally on a `file:///...` path. -->
-   <script src="../../_static/js/changelog.js"></script>
+   <script src="../../../_static/js/changelog.js"></script>
