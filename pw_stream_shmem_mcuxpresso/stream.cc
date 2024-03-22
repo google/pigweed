@@ -91,7 +91,7 @@ Status ShmemMcuxpressoStream::DoWrite(ConstByteSpan data) {
 }
 
 void ShmemMcuxpressoStream::HandleInterrupt() {
-  const uint32_t flags = MU_GetStatusFlags(base_);
+  const uint32_t flags = MU_GetInterruptsPending(base_);
   if (flags & kMU_Tx0EmptyFlag) {
     write_semaphore_.release();
     MU_DisableInterrupts(base_, kMU_Tx0EmptyInterruptEnable);
