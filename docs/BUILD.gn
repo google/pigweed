@@ -159,6 +159,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_bytes/public/pw_bytes/bit.h",
   "$dir_pw_bytes/public/pw_bytes/byte_builder.h",
   "$dir_pw_channel/public/pw_channel/channel.h",
+  "$dir_pw_channel/public/pw_channel/forwarding_channel.h",
   "$dir_pw_chre/public/pw_chre/chre.h",
   "$dir_pw_chre/public/pw_chre/host_link.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",

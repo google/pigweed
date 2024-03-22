@@ -42,12 +42,37 @@ pw_source_set("pw_channel") {
   sources = [ "public/pw_channel/internal/channel_specializations.h" ]
 }
 
+pw_source_set("forwarding_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/forwarding_channel.h" ]
+  sources = [ "forwarding_channel.cc" ]
+  public_deps = [
+    ":pw_channel",
+    "$dir_pw_multibuf:allocator",
+    "$dir_pw_sync:mutex",
+  ]
+}
+
+pw_test("forwarding_channel_test") {
+  sources = [ "forwarding_channel_test.cc" ]
+  deps = [
+    ":forwarding_channel",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_multibuf:header_chunk_region_tracker",
+    "$dir_pw_multibuf:simple_allocator",
+  ]
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":channel_test" ]
+  tests = [
+    ":channel_test",
+    ":forwarding_channel_test",
+  ]
 }
 
 pw_test("channel_test") {

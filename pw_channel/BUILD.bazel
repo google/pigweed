@@ -51,3 +51,27 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "forwarding_channel",
+    srcs = ["forwarding_channel.cc"],
+    hdrs = ["public/pw_channel/forwarding_channel.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_channel",
+        "//pw_multibuf:allocator",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_test(
+    name = "forwarding_channel_test",
+    srcs = ["forwarding_channel_test.cc"],
+    deps = [
+        ":forwarding_channel",
+        "//pw_allocator:testing",
+        "//pw_multibuf:header_chunk_region_tracker",
+        "//pw_multibuf:simple_allocator",
+        "//pw_unit_test",
+    ],
+)
