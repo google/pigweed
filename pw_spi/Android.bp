@@ -31,7 +31,7 @@ cc_library_static {
     ],
     header_libs: [
         "pw_assert_headers",
-        "pw_chrono_include_dirs",
+        "pw_chrono",
         "pw_log_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",

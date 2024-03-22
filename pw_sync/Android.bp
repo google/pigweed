@@ -23,12 +23,12 @@ cc_library_headers {
     export_include_dirs: ["public"],
     host_supported: true,
     header_libs: [
-        "pw_chrono_include_dirs",
+        "pw_chrono",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
-        "pw_chrono_include_dirs",
+        "pw_chrono",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
     ],

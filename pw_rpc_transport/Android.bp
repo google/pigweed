@@ -123,13 +123,13 @@ cc_defaults {
     cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
-        "pw_chrono_defaults",
         "pw_rpc_defaults",
         "pw_thread_defaults",
         "pw_thread_stl_defaults",
     ],
     header_libs: [
         "pw_assert_headers",
+        "pw_chrono",
         "pw_log_headers",
         "pw_rpc_transport_rpc_transport_headers",
         "pw_sync_headers",

@@ -16,8 +16,8 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_headers {
-    name: "pw_chrono_stl_include_dirs",
+cc_library_static {
+    name: "pw_chrono_stl",
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
@@ -25,16 +25,12 @@ cc_library_headers {
     ],
     vendor_available: true,
     host_supported: true,
-}
-
-cc_defaults {
-    name: "pw_chrono_stl_defaults",
-    cpp_std: "c++20",
     header_libs: [
-        "pw_chrono_stl_include_dirs",
+        "pw_chrono",
+        "pw_function_headers",
     ],
-
     export_header_lib_headers: [
-        "pw_chrono_stl_include_dirs",
+        "pw_chrono",
+        "pw_function_headers",
     ],
 }
