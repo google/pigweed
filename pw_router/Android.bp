@@ -20,6 +20,9 @@ cc_library {
     name: "pw_router_static_router",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     srcs: [
         "static_router.cc",
     ],
