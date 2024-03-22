@@ -27,16 +27,16 @@ cc_library_static {
     ],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_result_headers",
-        "pw_span_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_polyfill",
+        "pw_preprocessor",
+        "pw_result",
+        "pw_span",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_polyfill_headers",
+        "pw_polyfill",
     ],
     whole_static_libs: [
         "pw_bytes",

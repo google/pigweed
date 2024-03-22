@@ -25,21 +25,21 @@ filegroup {
 }
 
 cc_library_headers {
-    name: "pw_multibuf_headers",
+    name: "pw_multibuf",
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_span_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_span",
         "pw_sync",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_span_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_span",
         "pw_sync",
     ],
     vendor_available: true,
@@ -53,10 +53,10 @@ cc_defaults {
         ":pw_multibuf_src_files",
     ],
     header_libs: [
-        "pw_multibuf_headers",
+        "pw_multibuf",
     ],
     export_header_lib_headers: [
-        "pw_multibuf_headers",
+        "pw_multibuf",
     ],
     static_libs: [
         "pw_bytes",

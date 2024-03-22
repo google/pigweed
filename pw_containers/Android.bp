@@ -25,10 +25,10 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_polyfill",
+        "pw_preprocessor",
     ],
     host_supported: true,
     srcs: [

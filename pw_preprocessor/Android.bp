@@ -17,15 +17,15 @@ package {
 }
 
 cc_library_headers {
-    name: "pw_preprocessor_headers",
+    name: "pw_preprocessor",
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public"],
     header_libs: [
-        "pw_polyfill_headers",
+        "pw_polyfill",
     ],
     export_header_lib_headers: [
-        "pw_polyfill_headers",
+        "pw_polyfill",
     ],
 }

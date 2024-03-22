@@ -31,7 +31,7 @@ cc_library_static {
         "mutex.cc",
     ],
     header_libs: [
-        "pw_assert_headers",
+        "pw_assert",
         "pw_chrono",
         "pw_sync",
     ],

@@ -25,15 +25,15 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_function_headers",
-        "pw_result_headers",
+        "pw_assert",
+        "pw_function",
+        "pw_result",
         "pw_toolchain",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_function_headers",
-        "pw_result_headers",
+        "pw_assert",
+        "pw_function",
+        "pw_result",
         "pw_toolchain",
     ],
     whole_static_libs: [
@@ -72,7 +72,7 @@ genrule {
 }
 
 cc_library_headers {
-    name: "pw_digital_io_service_pwpb_headers",
+    name: "pw_digital_io_service_pwpb",
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,

@@ -26,10 +26,10 @@ cc_library_static {
     ],
     host_supported: true,
     header_libs: [
-        "pw_assert_headers",
+        "pw_assert",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
+        "pw_assert",
     ],
     whole_static_libs: [
         "pw_assert_log",

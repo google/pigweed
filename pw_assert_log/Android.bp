@@ -27,14 +27,14 @@ cc_library_static {
         "public",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_preprocessor_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_preprocessor",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_preprocessor_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_preprocessor",
     ],
     whole_static_libs: [
         // Explicitly depend on the pw_log_android since pw_assert_log is a part

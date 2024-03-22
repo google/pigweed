@@ -26,10 +26,10 @@ cc_library_static {
         "public_overrides",
     ],
     export_header_lib_headers: [
-        "pw_log_headers",
+        "pw_log",
     ],
     header_libs: [
-        "pw_log_headers",
+        "pw_log",
     ],
     shared_libs: [
         "liblog",

@@ -27,10 +27,10 @@ cc_library_static {
     host_supported: true,
     header_libs: [
         "pw_chrono",
-        "pw_function_headers",
+        "pw_function",
     ],
     export_header_lib_headers: [
         "pw_chrono",
-        "pw_function_headers",
+        "pw_function",
     ],
 }

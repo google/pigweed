@@ -17,14 +17,14 @@ package {
 }
 
 cc_library_headers {
-    name: "pw_rpc_transport_rpc_transport_headers",
+    name: "pw_rpc_transport_rpc_transport",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
     header_libs: [
-        "pw_function_headers",
+        "pw_function",
     ],
     export_header_lib_headers: [
-        "pw_function_headers",
+        "pw_function",
     ],
     static_libs: [
         "pw_bytes",
@@ -47,16 +47,16 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_log_headers",
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_result_headers",
-        "pw_rpc_transport_rpc_transport_headers",
+        "pw_log",
+        "pw_polyfill",
+        "pw_preprocessor",
+        "pw_result",
+        "pw_rpc_transport_rpc_transport",
     ],
     export_header_lib_headers: [
-        "pw_log_headers",
-        "pw_result_headers",
-        "pw_rpc_transport_rpc_transport_headers",
+        "pw_log",
+        "pw_result",
+        "pw_rpc_transport_rpc_transport",
     ],
     static_libs: [
         "pw_containers",
@@ -78,20 +78,20 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_result_headers",
-        "pw_rpc_transport_rpc_transport_headers",
-        "pw_span_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_polyfill",
+        "pw_preprocessor",
+        "pw_result",
+        "pw_rpc_transport_rpc_transport",
+        "pw_span",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_result_headers",
-        "pw_rpc_transport_rpc_transport_headers",
-        "pw_span_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_result",
+        "pw_rpc_transport_rpc_transport",
+        "pw_span",
     ],
     srcs: [
         "simple_framing.cc",
@@ -128,16 +128,16 @@ cc_defaults {
         "pw_thread_stl_defaults",
     ],
     header_libs: [
-        "pw_assert_headers",
+        "pw_assert",
         "pw_chrono",
-        "pw_log_headers",
-        "pw_rpc_transport_rpc_transport_headers",
+        "pw_log",
+        "pw_rpc_transport_rpc_transport",
         "pw_sync",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_rpc_transport_rpc_transport_headers",
+        "pw_assert",
+        "pw_log",
+        "pw_rpc_transport_rpc_transport",
         "pw_sync",
     ],
     static_libs: [

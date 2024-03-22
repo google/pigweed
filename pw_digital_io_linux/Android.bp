@@ -25,10 +25,10 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_result_headers",
+        "pw_result",
     ],
     export_header_lib_headers: [
-        "pw_result_headers",
+        "pw_result",
     ],
     whole_static_libs: [
         // pw_digital_io needs to use whole_static_libs to ensure symbols

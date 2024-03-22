@@ -25,10 +25,10 @@ cc_library {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_assert_headers",
+        "pw_assert",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
+        "pw_assert",
     ],
     export_static_lib_headers: [
         "pw_metric",
