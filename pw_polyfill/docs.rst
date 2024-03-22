@@ -50,53 +50,49 @@ systems, add ``pw_polyfill/public`` as an include path.
 ------------------------------------------------
 Backport new C++ features to older C++ standards
 ------------------------------------------------
-Pigweed backports a few C++ features to older C++ standards. These features
-are provided in the ``pw`` namespace. If the features are provided by the
-toolchain, the ``pw`` versions are aliases of the ``std`` versions.
+Pigweed backports a few C++ features to older C++ standards. These features are
+provided in the ``pw`` namespace. If the features are provided by the toolchain,
+the ``pw`` versions are aliases of the ``std`` versions.
+
+List of backported features
+===========================
 
 These features are documented here, but are not implemented in ``pw_polyfill``.
+See the listed Pigweed module for more information on each feature.
 
-Backported features
-===================
 .. list-table::
   :header-rows: 1
 
   * - Header
     - Feature
-    - Feature test macro
-    - Module
-    - Polyfill header
+    - Pigweed module and header
     - Polyfill name
   * - ``<array>``
     - ``std::to_array``
-    - ``__cpp_lib_to_array``
-    - :ref:`module-pw_containers`
-    - ``pw_containers/to_array.h``
+    - :ref:`module-pw_containers`/to_array.h
     - ``pw::containers::to_array``
   * - ``<bit>``
     - ``std::endian``
-    - ``__cpp_lib_endian``
-    - :ref:`module-pw_bytes`
-    - ``pw_bytes/bit.h``
+    - :ref:`module-pw_bytes`/bit.h
     - ``pw::endian``
   * - ``<expected>``
     - ``std::expected``
-    - ``__cpp_lib_expected``
-    - :ref:`module-pw_result`
-    - ``pw_result/expected.h``
+    - :ref:`module-pw_result`/expected.h
     - ``pw::expected``
   * - ``<span>``
     - ``std::span``
-    - ``__cpp_lib_span``
-    - :ref:`module-pw_span`
-    - ``pw_span/span.h``
+    - :ref:`module-pw_span`/span.h
     - ``pw::span``
-
-.. _module-pw_polyfill-static_assert:
 
 ------------------------------------------------
 Adapt code to compile with different C standards
 ------------------------------------------------
+
+.. _module-pw_polyfill-static_assert:
+
+static_assert
+=============
+
 ``pw_polyfill/static_assert.h`` provides C23-style ``static_assert`` for older
 C standards. As in C23, the message argument is optional.
 
