@@ -49,6 +49,7 @@ declare_args() {
   dir_pw_bluetooth_hci = get_path_info("../pw_bluetooth_hci", "abspath")
   dir_pw_bluetooth_profiles =
       get_path_info("../pw_bluetooth_profiles", "abspath")
+  dir_pw_bluetooth_proxy = get_path_info("../pw_bluetooth_proxy", "abspath")
   dir_pw_bluetooth_sapphire =
       get_path_info("../pw_bluetooth_sapphire", "abspath")
   dir_pw_boot = get_path_info("../pw_boot", "abspath")
@@ -231,6 +232,7 @@ declare_args() {
     dir_pw_bluetooth,
     dir_pw_bluetooth_hci,
     dir_pw_bluetooth_profiles,
+    dir_pw_bluetooth_proxy,
     dir_pw_bluetooth_sapphire,
     dir_pw_boot,
     dir_pw_boot_cortex_m,
@@ -397,6 +399,7 @@ declare_args() {
     "$dir_pw_bluetooth:tests",
     "$dir_pw_bluetooth_hci:tests",
     "$dir_pw_bluetooth_profiles:tests",
+    "$dir_pw_bluetooth_proxy:tests",
     "$dir_pw_bluetooth_sapphire:tests",
     "$dir_pw_boot:tests",
     "$dir_pw_boot_cortex_m:tests",
@@ -563,6 +566,7 @@ declare_args() {
     "$dir_pw_bluetooth:docs",
     "$dir_pw_bluetooth_hci:docs",
     "$dir_pw_bluetooth_profiles:docs",
+    "$dir_pw_bluetooth_proxy:docs",
     "$dir_pw_bluetooth_sapphire:docs",
     "$dir_pw_boot:docs",
     "$dir_pw_boot_cortex_m:docs",

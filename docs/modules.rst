@@ -24,6 +24,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_blob_store/docs
    pw_bluetooth/docs
    pw_bluetooth_hci/docs
+   pw_bluetooth_proxy/docs
    pw_bluetooth_profiles/docs
    pw_bluetooth_sapphire/docs
    pw_boot/docs

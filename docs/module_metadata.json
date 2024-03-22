@@ -21,6 +21,13 @@
       "C++17"
     ]
   },
+  "pw_bluetooth_proxy": {
+    "tagline": "Lightweight proxy for augmenting Bluetooth functionality",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_bluetooth_sapphire": {
     "tagline": "Battle-tested Bluetooth with rock-solid reliability",
     "status": "unstable",
