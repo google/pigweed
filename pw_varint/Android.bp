@@ -20,15 +20,15 @@ cc_library_static {
     name: "pw_varint",
     cpp_std: "c++20",
     vendor_available: true,
+    host_supported: true,
     export_include_dirs: ["public"],
     defaults: [
-        "pw_assert_log_defaults",
+        "pw_android_common_backends",
     ],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -38,7 +38,7 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_polyfill_headers",
     ],
-    static_libs: [
+    whole_static_libs: [
         "pw_bytes",
         "pw_status",
         "pw_stream",
@@ -48,5 +48,4 @@ cc_library_static {
         "varint_c.c",
         "varint.cc",
     ],
-    host_supported: true,
 }

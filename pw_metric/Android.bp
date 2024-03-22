@@ -20,19 +20,18 @@ cc_library {
     name: "pw_metric",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_span_headers",
         "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_span_headers",
         "pw_preprocessor_headers",
     ],

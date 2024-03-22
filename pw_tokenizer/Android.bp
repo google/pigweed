@@ -22,12 +22,14 @@ cc_library_static {
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_log_headers",
         "pw_log_tokenized_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -37,7 +39,6 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -68,6 +69,9 @@ cc_library_static {
     host_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     srcs: [
         "encode_args.cc",
         "hash.cc",
@@ -76,7 +80,6 @@ cc_library_static {
     header_libs: [
         "pw_assert_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_log_tokenized_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
@@ -85,7 +88,6 @@ cc_library_static {
     export_header_lib_headers: [
         "pw_assert_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_log_tokenized_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",

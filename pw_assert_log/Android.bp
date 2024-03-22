@@ -16,45 +16,32 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_headers {
-    name: "pw_assert_log_headers",
+cc_library_static {
+    name: "pw_assert_log",
     cpp_std: "c++20",
     vendor_available: true,
+    host_supported: true,
     export_include_dirs: [
         "assert_backend_public_overrides",
         "check_backend_public_overrides",
         "public",
     ],
-    host_supported: true,
     header_libs: [
+        "pw_assert_headers",
         "pw_log_headers",
+        "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
+        "pw_assert_headers",
         "pw_log_headers",
+        "pw_preprocessor_headers",
     ],
-}
-
-filegroup {
-    name: "pw_assert_log_src_files",
+    whole_static_libs: [
+        // Explicitly depend on the pw_log_android since pw_assert_log is a part
+        // of pw_android_common_backends.
+        "pw_log_android",
+    ],
     srcs: [
         "assert_log.cc",
-    ],
-}
-
-cc_defaults {
-    name: "pw_assert_log_defaults",
-    cpp_std: "c++20",
-    header_libs: [
-        "pw_assert_log_headers",
-        "pw_log_headers",
-        "pw_preprocessor_headers",
-    ],
-    export_header_lib_headers: [
-        "pw_assert_log_headers",
-        "pw_log_headers",
-        "pw_preprocessor_headers",
-    ],
-    srcs: [
-        ":pw_assert_log_src_files",
     ],
 }

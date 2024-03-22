@@ -43,9 +43,11 @@ cc_library_static {
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -72,11 +74,12 @@ cc_library_static {
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -119,18 +122,15 @@ cc_defaults {
     name: "pw_rpc_transport_egress_ingress_defaults",
     cpp_std: "c++20",
     defaults: [
+        "pw_android_common_backends",
         "pw_chrono_defaults",
-        "pw_chrono_stl_defaults",
         "pw_rpc_defaults",
-        "pw_sync_stl_defaults",
         "pw_thread_defaults",
         "pw_thread_stl_defaults",
     ],
     header_libs: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_rpc_transport_rpc_transport_headers",
         "pw_sync_headers",
         "pw_sync_binary_semaphore_thread_notification_backend_headers",

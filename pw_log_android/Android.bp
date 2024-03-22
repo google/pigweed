@@ -16,8 +16,8 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library {
-    name: "libpw_log_android",
+cc_library_static {
+    name: "pw_log_android",
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
@@ -39,7 +39,7 @@ cc_library {
     ],
 }
 
-// Include this library (in addition to libpw_log_android) via
+// Include this library (in addition to pw_log_android) via
 // whole_static_libs: [] to send Android logs to stderr rather than logd.
 //
 // NOTE: This should only be used by an executable (cc_binary), and not by a

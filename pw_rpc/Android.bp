@@ -107,14 +107,15 @@ cc_library_headers {
 cc_defaults {
     name: "pw_rpc_defaults",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_function_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
@@ -128,10 +129,8 @@ cc_defaults {
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
-        "pw_assert_log_headers",
         "pw_function_headers",
         "pw_log_headers",
-        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",

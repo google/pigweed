@@ -21,13 +21,14 @@ cc_library {
     cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     header_libs: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
     ],
     export_header_lib_headers: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
     ],
     export_static_lib_headers: [
         "pw_metric",
