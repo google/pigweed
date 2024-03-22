@@ -36,42 +36,28 @@ class TestRecordTrie {
   TestRecordTrie() {
     root_ = new TestRecordTrieNode();
     root_->prefix = "test_results";
+    failing_results_root_ = new TestRecordTrieNode();
+    failing_results_root_->prefix = "test_results";
   }
 
   /// Destructor that deletes all the allocated memory for the test record trie.
-  ~TestRecordTrie() { DeleteTestRecordTrie(root_); }
+  ~TestRecordTrie() {
+    DeleteTestRecordTrie(root_);
+    DeleteTestRecordTrie(failing_results_root_);
+  }
 
   /// Adds a test result into the trie, creating new trie nodes if needed.
+  /// If the test case's result is a failure, record it in the failing-results
+  /// trie as well.
   ///
   /// @param[in] test_case The test case we want to add.
   ///
   /// @param[in] result The result of the test case.
   void AddTestResult(const TestCase& test_case, TestResult result) {
-    TestRecordTrieNode* curr_node = root_;
-
-    // Calculate path to the test, including directories, test file, test suite,
-    // and test name
-    std::filesystem::path path_to_test =
-        std::filesystem::path(test_case.file_name) / test_case.suite_name /
-        test_case.test_name;
-
-    // Walk curr_node through the Trie to the test, creating new
-    // TestRecordTrieNodes along the way if needed
-    for (auto dir_entry : path_to_test) {
-      if (auto search = curr_node->children.find(dir_entry.string());
-          search != curr_node->children.end()) {
-        curr_node = search->second;
-      } else {
-        TestRecordTrieNode* child_node = new TestRecordTrieNode();
-        child_node->prefix = dir_entry.string();
-        curr_node->children[dir_entry.string()] = child_node;
-        curr_node = child_node;
-      }
+    AddTestResultHelper(root_, test_case, result);
+    if (result == TestResult::kFailure) {
+      AddTestResultHelper(failing_results_root_, test_case, result);
     }
-
-    // Add the test case's result
-    curr_node->is_leaf = true;
-    curr_node->actual_test_result = result;
   }
 
   /// Adds the test result expectation for a particular test case. Usually, we
@@ -121,6 +107,9 @@ class TestRecordTrie {
   /// @param[in] max_json_buffer_size The max size (in bytes) of the buffer to
   /// allocate for the json string.
   ///
+  /// @param[in] failing_results_only If true, the test record will only contain
+  /// the failing tests.
+  ///
   /// @param[in] interrupted Whether this test run was interrupted or not.
   ///
   /// @param[in] version Version of the test result JSON format.
@@ -130,6 +119,7 @@ class TestRecordTrie {
       const RunTestsSummary& summary,
       int64_t seconds_since_epoch,
       size_t max_json_buffer_size,
+      bool failing_results_only = false,
       bool interrupted = false,
       int version = kJsonTestResultsFormatVersion) {
     // Dynamically allocate a string to serve as the json buffer.
@@ -137,7 +127,9 @@ class TestRecordTrie {
     JsonBuilder builder(buffer.data(), max_json_buffer_size);
     JsonObject& object = builder.StartObject();
     NestedJsonObject tests_json_object = object.AddNestedObject("tests");
-    GetTestRecordJsonHelper(root_, tests_json_object);
+    TestRecordTrieNode* starting_trie_node =
+        failing_results_only ? failing_results_root_ : root_;
+    GetTestRecordJsonHelper(starting_trie_node, tests_json_object);
 
     // Add test record metadata
     object.Add("version", version);
@@ -177,6 +169,44 @@ class TestRecordTrie {
     /// Children of the current trie node, keyed by the child's prefix.
     std::unordered_map<std::string, TestRecordTrieNode*> children{};
   };
+
+  /// Helper for adding a test result into the specified Trie, creating new trie
+  /// nodes if needed.
+  ///
+  /// @param[in] root The root of the Trie we want to add the test result to.
+  ///
+  /// @param[in] test_case The test case we want to add.
+  ///
+  /// @param[in] result The result of the test case.
+  void AddTestResultHelper(TestRecordTrieNode* root,
+                           const TestCase& test_case,
+                           TestResult result) {
+    TestRecordTrieNode* curr_node = root;
+
+    // Calculate path to the test, including directories, test file, test suite,
+    // and test name
+    std::filesystem::path path_to_test =
+        std::filesystem::path(test_case.file_name) / test_case.suite_name /
+        test_case.test_name;
+
+    // Walk curr_node through the Trie to the test, creating new
+    // TestRecordTrieNodes along the way if needed
+    for (auto dir_entry : path_to_test) {
+      if (auto search = curr_node->children.find(dir_entry.string());
+          search != curr_node->children.end()) {
+        curr_node = search->second;
+      } else {
+        TestRecordTrieNode* child_node = new TestRecordTrieNode();
+        child_node->prefix = dir_entry.string();
+        curr_node->children[dir_entry.string()] = child_node;
+        curr_node = child_node;
+      }
+    }
+
+    // Add the test case's result
+    curr_node->is_leaf = true;
+    curr_node->actual_test_result = result;
+  }
 
   /// Recursively convert the test record trie into a json object.
   ///
@@ -236,8 +266,12 @@ class TestRecordTrie {
     delete curr_node;
   }
 
-  /// The root node of the test record trie
+  // The root node of the test record trie
   TestRecordTrieNode* root_;
+
+  // The root node of the failing-results test record trie, which is a subset of
+  // the test record trie that only contains failing tests.
+  TestRecordTrieNode* failing_results_root_;
 };
 
 }  // namespace pw::unit_test::json_impl

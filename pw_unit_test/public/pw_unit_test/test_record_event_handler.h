@@ -27,10 +27,12 @@ inline constexpr const char* kSkipMacroIndicator = "(test skipped)";
 }  // namespace json_impl
 
 /// Predefined event handler implementation that outputs a test record (or
-/// summary) in Chromium JSON Test Results Format. To use it, register event
+/// summary) in Chromium JSON Test Results Format. To use it, register the event
 /// handler, call the ``RUN_ALL_TESTS`` macro, then extract the test record json
-/// as a string using the ``GetTestRecordJsonString()`` method. See
-/// ``pw::unit_test::EventHandler`` for explanations of emitted events.
+/// as a string using the ``GetTestRecordJsonString`` method. If you only want
+/// to extract the failing tests, set the `failing_results_only` parameter to
+/// true. See ``pw::unit_test::EventHandler`` for explanations of emitted
+/// events.
 /// @see
 /// https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/testing/json_test_results_format.md
 /// @warning This event handler uses dynamic allocation
@@ -90,10 +92,16 @@ class TestRecordEventHandler : public EventHandler {
   /// @param[in] max_json_buffer_size The max size (in bytes) of the buffer to
   /// allocate for the json string.
   ///
+  /// @param[in] failing_results_only If true, the outputted test record will
+  /// only contain the failing tests.
+  ///
   /// @returns The test record json as a string.
-  std::string GetTestRecordJsonString(size_t max_json_buffer_size) {
-    return test_record_trie_.GetTestRecordJsonString(
-        run_tests_summary_, seconds_since_epoch_, max_json_buffer_size);
+  std::string GetTestRecordJsonString(size_t max_json_buffer_size,
+                                      bool failing_results_only = false) {
+    return test_record_trie_.GetTestRecordJsonString(run_tests_summary_,
+                                                     seconds_since_epoch_,
+                                                     max_json_buffer_size,
+                                                     failing_results_only);
   }
 
   void RunAllTestsStart() override {}

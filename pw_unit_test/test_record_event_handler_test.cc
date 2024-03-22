@@ -42,6 +42,15 @@ TEST(TestRecordFunctionality, SingleTestRun) {
       R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
       R"( "num_failures_by_type": {"PASS": 1, "FAIL": 0, "SKIP": 0}})";
   ASSERT_EQ(actual, expected);
+
+  std::string failed_results_actual =
+      test_record_event_handler.GetTestRecordJsonString(300, true);
+
+  std::string failed_results_expected =
+      R"({"tests": {}, "version": 3, "interrupted": false,)"
+      R"( "seconds_since_epoch": 12345, "num_failures_by_type": {"PASS": 1,)"
+      R"( "FAIL": 0, "SKIP": 0}})";
+  ASSERT_EQ(failed_results_actual, failed_results_expected);
 }
 
 TEST(TestRecordFunctionality, MultipleTestsRun) {
@@ -75,6 +84,16 @@ TEST(TestRecordFunctionality, MultipleTestsRun) {
       R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
       R"( "num_failures_by_type": {"PASS": 2, "FAIL": 1, "SKIP": 0}})";
   ASSERT_EQ(actual, expected);
+
+  std::string failed_results_actual =
+      test_record_event_handler.GetTestRecordJsonString(400, true);
+
+  std::string failed_results_expected =
+      R"({"tests": {"dir1": {"test_file.cc": {"suite2": {"test2": {"expected":)"
+      R"( "PASS", "actual": "FAIL"}}}}}, "version": 3, "interrupted": false,)"
+      R"( "seconds_since_epoch": 12345, "num_failures_by_type": {"PASS": 2,)"
+      R"( "FAIL": 1, "SKIP": 0}})";
+  ASSERT_EQ(failed_results_actual, failed_results_expected);
 }
 
 TEST(TestRecordFunctionality, JsonBufferTooSmall) {
@@ -120,6 +139,15 @@ TEST(TestRecordFunctionality, HandleSkipMacro) {
       R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
       R"( "num_failures_by_type": {"PASS": 0, "FAIL": 0, "SKIP": 1}})";
   ASSERT_EQ(actual, expected);
+
+  std::string failed_results_actual =
+      test_record_event_handler.GetTestRecordJsonString(300, true);
+
+  std::string failed_results_expected =
+      R"({"tests": {}, "version": 3, "interrupted": false,)"
+      R"( "seconds_since_epoch": 12345, "num_failures_by_type": {"PASS": 0,)"
+      R"( "FAIL": 0, "SKIP": 1}})";
+  ASSERT_EQ(failed_results_actual, failed_results_expected);
 }
 
 TEST(TestRecordFunctionality, DuplicateTest) {
@@ -147,6 +175,16 @@ TEST(TestRecordFunctionality, DuplicateTest) {
       R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
       R"( "num_failures_by_type": {"PASS": 0, "FAIL": 1, "SKIP": 0}})";
   ASSERT_EQ(actual, expected);
+
+  std::string failed_results_actual =
+      test_record_event_handler.GetTestRecordJsonString(300, true);
+
+  std::string failed_results_expected =
+      R"({"tests": {"dir1": {"test_file.cc": {"suite1":)"
+      R"( {"test1": {"expected": "PASS", "actual": "FAIL"}}}}},)"
+      R"( "version": 3, "interrupted": false, "seconds_since_epoch": 12345,)"
+      R"( "num_failures_by_type": {"PASS": 0, "FAIL": 1, "SKIP": 0}})";
+  ASSERT_EQ(failed_results_actual, failed_results_expected);
 }
 
 }  // namespace
