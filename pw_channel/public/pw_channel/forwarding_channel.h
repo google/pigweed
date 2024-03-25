@@ -75,6 +75,7 @@ class ForwardingChannelPair {
 
   sync::Mutex mutex_;
   multibuf::MultiBufAllocator& allocator_;
+  bool closed_ PW_GUARDED_BY(mutex_) = false;
 
   // These channels refer to each other, so their lifetimes must match.
   internal::ForwardingChannel<kType> first_;
@@ -133,8 +134,7 @@ class ForwardingChannel<DataType::kDatagram>
   // Could use a queue here.
   std::optional<multibuf::MultiBuf> read_queue_ PW_GUARDED_BY(pair_.mutex_);
   uint32_t write_token_ PW_GUARDED_BY(pair_.mutex_);
-  async2::Waker read_waker_ PW_GUARDED_BY(pair_.mutex_);
-  async2::Waker write_waker_ PW_GUARDED_BY(pair_.mutex_);
+  async2::Waker waker_ PW_GUARDED_BY(pair_.mutex_);
 };
 
 template <>

@@ -25,6 +25,19 @@
 
 namespace {
 
+using ::pw::Result;
+using ::pw::async2::Context;
+using ::pw::async2::Pending;
+using ::pw::async2::Poll;
+using ::pw::async2::Ready;
+using ::pw::async2::Task;
+using ::pw::async2::Waker;
+using ::pw::channel::ByteReader;
+using ::pw::channel::ByteWriter;
+using ::pw::channel::DatagramReader;
+using ::pw::channel::DatagramWriter;
+using ::pw::multibuf::MultiBuf;
+
 // Creates and initializes a MultiBuf to the specified value.
 class InitializedMultiBuf {
  public:
@@ -225,6 +238,39 @@ TEST(ForwardingDatagramChannel, ForwardsDatagrams) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
   EXPECT_EQ(test_task.test_completed, 1);
 }
+
+TEST(ForwardingDatagramchannel, PollCloseAwakensAndClosesPeer) {
+  class TryToReadUntilClosed : public Task {
+   public:
+    TryToReadUntilClosed(DatagramReader& reader) : reader_(reader) {}
+
+   private:
+    pw::async2::Poll<> DoPend(Context& cx) final {
+      Poll<Result<MultiBuf>> read = reader_.PollRead(cx);
+      if (read.IsPending()) {
+        return Pending();
+      }
+      EXPECT_EQ(read->status(), pw::Status::FailedPrecondition());
+      return Ready();
+    }
+    DatagramReader& reader_;
+  };
+
+  pw::async2::Dispatcher dispatcher;
+  TestChannelPair<pw::channel::DataType::kDatagram> pair;
+  TryToReadUntilClosed read_task(pair->first());
+  dispatcher.Post(read_task);
+
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  Waker empty_waker;
+  Context empty_cx(dispatcher, empty_waker);
+  EXPECT_EQ(pair->second().PollClose(empty_cx), Ready(pw::OkStatus()));
+
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
 TEST(ForwardingByteChannel, IgnoresEmptyWrites) {
   pw::async2::Dispatcher dispatcher;
 
@@ -318,6 +364,38 @@ TEST(ForwardingByteChannel, WriteData) {
 
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
   EXPECT_EQ(test_task.test_completed, 1);
+}
+
+TEST(ForwardingByteChannel, PollCloseAwakensAndClosesPeer) {
+  class TryToReadUntilClosed : public Task {
+   public:
+    TryToReadUntilClosed(ByteReader& reader) : reader_(reader) {}
+
+   private:
+    pw::async2::Poll<> DoPend(Context& cx) final {
+      Poll<Result<MultiBuf>> read = reader_.PollRead(cx);
+      if (read.IsPending()) {
+        return Pending();
+      }
+      EXPECT_EQ(read->status(), pw::Status::FailedPrecondition());
+      return Ready();
+    }
+    ByteReader& reader_;
+  };
+
+  pw::async2::Dispatcher dispatcher;
+  TestChannelPair<pw::channel::DataType::kByte> pair;
+  TryToReadUntilClosed read_task(pair->first());
+  dispatcher.Post(read_task);
+
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  Waker empty_waker;
+  Context empty_cx(dispatcher, empty_waker);
+  EXPECT_EQ(pair->second().PollClose(empty_cx), Ready(pw::OkStatus()));
+
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
 }  // namespace

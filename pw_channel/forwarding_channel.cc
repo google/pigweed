@@ -20,20 +20,26 @@ async2::Poll<Result<multibuf::MultiBuf>>
 ForwardingChannel<DataType::kDatagram>::DoPollRead(async2::Context& cx)
     PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   if (!read_queue_.has_value()) {
-    read_waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
+    waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
   auto read_data = std::move(*read_queue_);
   read_queue_.reset();
-  std::move(sibling_.write_waker_).Wake();
+  std::move(sibling_.waker_).Wake();
   return read_data;
 }
 async2::Poll<> ForwardingChannel<DataType::kDatagram>::DoPollReadyToWrite(
     async2::Context& cx) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return async2::Ready();
+  }
   if (sibling_.read_queue_.has_value()) {
-    write_waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
+    waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
   return async2::Ready();
@@ -42,35 +48,47 @@ async2::Poll<> ForwardingChannel<DataType::kDatagram>::DoPollReadyToWrite(
 Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   PW_DASSERT(!sibling_.read_queue_.has_value());
   sibling_.read_queue_ = std::move(data);
   const uint32_t token = ++write_token_;
-  std::move(sibling_.read_waker_).Wake();
+  std::move(sibling_.waker_).Wake();
   return CreateWriteToken(token);
 }
 
 async2::Poll<Result<channel::WriteToken>>
 ForwardingChannel<DataType::kDatagram>::DoPollFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPollClose(
-    async2::Context&) {
+    async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
+  pair_.closed_ = true;
   read_queue_.reset();
-  std::move(read_waker_).Wake();
+  std::move(sibling_.waker_).Wake();
   return OkStatus();
 }
 
 async2::Poll<Result<multibuf::MultiBuf>>
 ForwardingChannel<DataType::kByte>::DoPollRead(async2::Context& cx) {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   if (read_queue_.empty()) {
     read_waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
-
   auto read_data = std::move(read_queue_);
   read_queue_ = {};
   return read_data;
@@ -79,6 +97,9 @@ ForwardingChannel<DataType::kByte>::DoPollRead(async2::Context& cx) {
 Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   if (data.empty()) {
     return CreateWriteToken(write_token_);  // no data, nothing to do
   }
@@ -91,14 +112,21 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
 async2::Poll<Result<channel::WriteToken>>
 ForwardingChannel<DataType::kByte>::DoPollFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPollClose(
-    async2::Context&) {
+    async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
+  if (pair_.closed_) {
+    return Status::FailedPrecondition();
+  }
+  pair_.closed_ = true;
   read_queue_.Release();
-  std::move(read_waker_).Wake();
+  std::move(sibling_.read_waker_).Wake();
   return OkStatus();
 }
 
