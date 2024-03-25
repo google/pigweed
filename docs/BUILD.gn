@@ -276,7 +276,10 @@ pw_python_action("generate_doxygen") {
     "--include-paths",
   ]
   args += rebase_path(_doxygen_input_files, root_build_dir)
-  outputs = [ "$root_build_dir/$_output_dir/xml/index.xml" ]
+  outputs = [
+    "$root_build_dir/$_output_dir/html/index.html",
+    "$root_build_dir/$_output_dir/xml/index.xml",
+  ]
 }
 
 pw_doc_gen("docs") {
