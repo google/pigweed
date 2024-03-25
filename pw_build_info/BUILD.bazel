@@ -37,15 +37,31 @@ cc_library(
     srcs = [
         "build_id.cc",
     ],
-    linkopts = [
+    # Automatically add the gnu build ID linker sections when building for
+    # Linux. macOS and Windows executables are not supported, and embedded
+    # targets must manually add the snippet to their linker script in a
+    # read-only section.
+    linkopts = select({
+        # When building for Linux, the linker provides a default linker script.
+        # The add_build_id_to_default_script.ld wrapper includes the
+        # build_id_linker_snippet.ld script in a way that appends to the
+        # default linker script instead of overriding it.
+        "@platforms//os:linux": [
+            "-T$(location add_build_id_to_default_linker_script.ld)",
+        ],
+        "//conditions:default": [],
+    }) + [
         "-Lpw_build_info",
-        "-T$(location add_build_id_to_default_linker_script.ld)",
         "-Wl,--build-id=sha1",
     ],
-    deps = [
-        ":add_build_id_to_default_linker_script.ld",
+    deps = select({
+        "@platforms//os:linux": [
+            ":add_build_id_to_default_linker_script.ld",
+            ":build_id_linker_snippet.ld",
+        ],
+        "//conditions:default": [],
+    }) + [
         ":build_id_header",
-        ":build_id_linker_snippet.ld",
         "//pw_preprocessor",
         "//pw_span",
     ],

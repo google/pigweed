@@ -27,8 +27,8 @@ config("linker_script") {
   if (current_os == "linux") {
     # When building for Linux, the linker provides a default linker script.
     # The add_build_id_to_default_script.ld wrapper includes the
-    # build_id_linker_snippet.ld script in a way that appends to the the
-    # default linker script instead of overriding it.
+    # build_id_linker_snippet.ld script in a way that appends to the default
+    # linker script instead of overriding it.
     ldflags = [
       "-T",
       rebase_path("add_build_id_to_default_linker_script.ld", root_build_dir),
