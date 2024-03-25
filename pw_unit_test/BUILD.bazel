@@ -27,7 +27,7 @@ licenses(["notice"])
 
 label_flag(
     name = "main",
-    build_setting_default = "//targets:pw_unit_test_main",
+    build_setting_default = ":simple_printing_main",
 )
 
 cc_library(
@@ -55,7 +55,7 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = "//targets:pw_unit_test_backend",
+    build_setting_default = ":light",
 )
 
 cc_library(
@@ -104,7 +104,7 @@ config_setting(
     name = "light_setting",
     testonly = True,
     flag_values = {
-        "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:light",
+        "@pigweed//pw_unit_test:backend": "@pigweed//pw_unit_test:light",
     },
     # Do not depend on this config_setting outside upstream Pigweed. Config
     # settings based on label flags are unreliable. See
@@ -116,7 +116,7 @@ config_setting(
     name = "gtest_setting",
     testonly = True,
     flag_values = {
-        "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:googletest",
+        "@pigweed//pw_unit_test:backend": "@pigweed//pw_unit_test:googletest",
     },
     # Do not depend on this config_setting outside upstream Pigweed. Config
     # settings based on label flags are unreliable. See

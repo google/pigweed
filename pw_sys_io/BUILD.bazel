@@ -45,7 +45,7 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = "@pigweed//targets:pw_sys_io_backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 cc_library(

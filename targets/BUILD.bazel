@@ -12,70 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Bazel build flags.
-#
-# See https://pigweed.dev/build_system.html#facades-and-backends-tutorial for
-# how these flags are used.
-#
-# Please keep this list sorted by name, i.e. the following command should yield
-# no output:
-#
-#   t=$(grep 'name = ' targets/BUILD.bazel); diff <(echo $t) <(echo $t | sort)
-
 package(default_visibility = ["//visibility:public"])
 
 label_flag(
     name = "mcuxpresso_sdk",
     build_setting_default = "@pigweed//third_party/mcuxpresso:default_mcuxpresso_sdk",
-)
-
-label_flag(
-    name = "pw_assert_backend",
-    build_setting_default = "@pigweed//pw_assert:backend_multiplexer",
-)
-
-label_flag(
-    name = "pw_assert_backend_impl",
-    build_setting_default = "@pigweed//pw_assert:backend_impl_multiplexer",
-    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
-    tags = ["keep_dep"],
-)
-
-label_flag(
-    name = "pw_log_backend",
-    build_setting_default = "@pigweed//pw_log:backend_multiplexer",
-    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
-    tags = ["keep_dep"],
-)
-
-label_flag(
-    name = "pw_log_string_handler_backend",
-    build_setting_default = "@pigweed//pw_log_string:handler_backend_multiplexer",
-)
-
-label_flag(
-    name = "pw_log_tokenized_handler_backend",
-    build_setting_default = "@pigweed//pw_log_tokenized:base64_over_hdlc",
-)
-
-label_flag(
-    name = "pw_malloc_backend",
-    build_setting_default = "@pigweed//pw_malloc:backend_multiplexer",
-)
-
-label_flag(
-    name = "pw_sys_io_backend",
-    build_setting_default = "@pigweed//pw_sys_io:backend_multiplexer",
-)
-
-label_flag(
-    name = "pw_unit_test_backend",
-    build_setting_default = "@pigweed//pw_unit_test:light",
-)
-
-label_flag(
-    name = "pw_unit_test_main",
-    build_setting_default = "@pigweed//pw_unit_test:simple_printing_main",
 )
 
 label_flag(

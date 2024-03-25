@@ -44,8 +44,8 @@ cc_binary(
     ],
     deps = [
         ":pw_digital_io_linux",
+        "//pw_assert:backend_impl",
         "//pw_log",
-        "//targets:pw_assert_backend_impl",
     ],
 )
 

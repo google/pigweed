@@ -48,12 +48,12 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = "@pigweed//targets:pw_assert_backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 label_flag(
     name = "backend_impl",
-    build_setting_default = "@pigweed//targets:pw_assert_backend_impl",
+    build_setting_default = ":backend_impl_multiplexer",
     # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
     tags = ["keep_dep"],
 )

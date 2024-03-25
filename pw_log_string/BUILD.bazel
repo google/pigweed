@@ -51,7 +51,7 @@ pw_facade(
 
 label_flag(
     name = "handler_backend",
-    build_setting_default = "//targets:pw_log_string_handler_backend",
+    build_setting_default = ":handler_backend_multiplexer",
 )
 
 label_flag(

@@ -74,7 +74,9 @@ label_flag(
 
 label_flag(
     name = "backend",
-    build_setting_default = "@pigweed//targets:pw_log_backend",
+    build_setting_default = ":backend_multiplexer",
+    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
+    tags = ["keep_dep"],
 )
 
 label_flag(

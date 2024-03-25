@@ -42,7 +42,7 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = "@pigweed//targets:pw_malloc_backend",
+    build_setting_default = ":backend_multiplexer",
 )
 
 alias(

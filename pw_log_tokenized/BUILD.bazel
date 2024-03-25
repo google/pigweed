@@ -96,7 +96,7 @@ pw_facade(
 
 label_flag(
     name = "handler_backend",
-    build_setting_default = "//targets:pw_log_tokenized_handler_backend",
+    build_setting_default = ":base64_over_hdlc",
 )
 
 # There is no default backend for now.
