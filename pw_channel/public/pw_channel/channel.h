@@ -180,7 +180,11 @@ class AnyChannel {
     if (!is_open()) {
       return Status::FailedPrecondition();
     }
-    return DoPollRead(cx);
+    async2::Poll<Result<multibuf::MultiBuf>> result = DoPollRead(cx);
+    if (result.IsReady() && result->status().IsFailedPrecondition()) {
+      set_closed();
+    }
+    return result;
   }
 
   /// Write API
@@ -244,7 +248,11 @@ class AnyChannel {
     if (!is_open()) {
       return Status::FailedPrecondition();
     }
-    return DoWrite(std::move(data));
+    Result<WriteToken> result = DoWrite(std::move(data));
+    if (result.status().IsFailedPrecondition()) {
+      set_closed();
+    }
+    return result;
   }
 
   /// Flushes pending writes.
