@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "pw_allocator/capability.h"
 #include "pw_assert/assert.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_result/result.h"
@@ -88,8 +89,14 @@ class UniquePtr;
 /// NOTE: This interface is in development and should not be considered stable.
 class Allocator {
  public:
-  constexpr Allocator() = default;
   virtual ~Allocator() = default;
+
+  const Capabilities& capabilities() const { return capabilities_; }
+
+  /// Returns whether a given capabilityis enabled for this allocator.
+  bool HasCapability(Capability capability) const {
+    return capabilities_.has(capability);
+  }
 
   /// Allocates a block of memory with the specified size and alignment.
   ///
@@ -264,6 +271,13 @@ class Allocator {
   /// @param[in]  other       Allocator to compare with this object.
   bool IsEqual(const Allocator& other) const { return this == &other; }
 
+ protected:
+  /// TODO(b/326509341): Remove when downstream consumer migrated.
+  constexpr Allocator() = default;
+
+  explicit constexpr Allocator(const Capabilities& capabilities)
+      : capabilities_(capabilities) {}
+
  private:
   /// Virtual `Allocate` function implemented by derived classes.
   ///
@@ -318,6 +332,10 @@ class Allocator {
   virtual Status DoQuery(const void*, Layout) const {
     return Status::Unimplemented();
   }
+
+  /// Hints about optional methods implemented or optional behaviors requested
+  /// by an allocator of a derived type.
+  Capabilities capabilities_;
 };
 
 /// An RAII pointer to a value of type ``T`` stored within an ``Allocator``.

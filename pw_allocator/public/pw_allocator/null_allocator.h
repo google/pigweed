@@ -16,6 +16,7 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/capability.h"
 
 namespace pw::allocator {
 
@@ -27,7 +28,9 @@ namespace pw::allocator {
 /// null allocator when given an invalid or unsupported parameter value.
 class NullAllocator : public Allocator {
  public:
-  constexpr NullAllocator() = default;
+  static constexpr Capabilities kCapabilities = 0;
+
+  constexpr NullAllocator() : Allocator(kCapabilities) {}
 
  private:
   /// @copydoc Allocator::Allocate

@@ -18,6 +18,7 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
+#include "pw_allocator/capability.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -36,6 +37,9 @@ namespace internal {
 /// one of its specializations.
 class GenericBlockAllocator : public Allocator {
  public:
+  static constexpr Capabilities kCapabilities =
+      Capability::kImplementsGetLayout | Capability::kImplementsQuery;
+
   // Not copyable or movable.
   GenericBlockAllocator(const GenericBlockAllocator&) = delete;
   GenericBlockAllocator& operator=(const GenericBlockAllocator&) = delete;
@@ -43,7 +47,7 @@ class GenericBlockAllocator : public Allocator {
   GenericBlockAllocator& operator=(GenericBlockAllocator&&) = delete;
 
  protected:
-  constexpr GenericBlockAllocator() = default;
+  constexpr GenericBlockAllocator() : Allocator(kCapabilities) {}
 
   /// Crashes with an informational method that the given block is allocated.
   ///
@@ -69,7 +73,7 @@ class BlockAllocator : public GenericBlockAllocator {
   using Range = typename BlockType::Range;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr BlockAllocator() = default;
+  constexpr BlockAllocator() : GenericBlockAllocator() {}
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///

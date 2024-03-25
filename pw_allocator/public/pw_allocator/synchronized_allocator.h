@@ -33,7 +33,7 @@ template <typename LockType>
 class SynchronizedAllocator : public Allocator {
  public:
   constexpr SynchronizedAllocator(Allocator& allocator) noexcept
-      : borrowable_(allocator, lock_) {}
+      : Allocator(allocator.capabilities()), borrowable_(allocator, lock_) {}
 
  private:
   using pointer_type = sync::BorrowedPointer<Allocator, LockType>;

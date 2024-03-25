@@ -16,11 +16,18 @@
 
 #include <cstddef>
 
+#include "pw_allocator/capability.h"
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {
+
+TEST(AllocatorTest, HasFlags) {
+  test::AllocatorForTest<256> allocator;
+  EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetLayout));
+  EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsQuery));
+}
 
 TEST(AllocatorTest, ReallocateNull) {
   test::AllocatorForTest<256> allocator;
@@ -154,7 +161,7 @@ TEST(AllocatorTest, ReallocateLarger) {
 // Test fixture for IsEqual tests.
 class BaseAllocator : public Allocator {
  public:
-  BaseAllocator(void* ptr) : ptr_(ptr) {}
+  BaseAllocator(void* ptr) : Allocator(Capabilities()), ptr_(ptr) {}
 
  private:
   void* DoAllocate(Layout) override {

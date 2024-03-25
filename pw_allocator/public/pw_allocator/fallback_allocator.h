@@ -16,6 +16,7 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/capability.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -26,53 +27,47 @@ namespace pw::allocator {
 /// secondary alloator will try to allocate memory instead.
 class FallbackAllocator : public Allocator {
  public:
-  /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr FallbackAllocator() = default;
-
-  /// Non-constexpr constructor that autmatically invokes `Init`.
-  FallbackAllocator(Allocator& primary, Allocator& secondary)
-      : FallbackAllocator() {
-    Init(primary, secondary);
-  }
-
-  /// Sets the primary and secondary allocators.
+  /// Constructor.
   ///
-  /// It is an error to call any method without calling this method first.
-  void Init(Allocator& primary, Allocator& secondary) {
-    primary_ = &primary;
-    secondary_ = &secondary;
+  /// @param[in]  primary     Allocator tried first. Must implement `Query`.
+  /// @param[in]  secondary   Allocator tried if `primary` fails a request.
+  FallbackAllocator(Allocator& primary, Allocator& secondary)
+      : Allocator(primary.capabilities() | secondary.capabilities()),
+        primary_(primary),
+        secondary_(secondary) {
+    PW_ASSERT(primary.HasCapability(Capability::kImplementsQuery));
   }
 
  private:
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
-    void* ptr = primary_->Allocate(layout);
-    return ptr != nullptr ? ptr : secondary_->Allocate(layout);
+    void* ptr = primary_.Allocate(layout);
+    return ptr != nullptr ? ptr : secondary_.Allocate(layout);
   }
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout layout) override {
-    if (primary_->Query(ptr, layout).ok()) {
-      primary_->Deallocate(ptr, layout);
+    if (primary_.Query(ptr, layout).ok()) {
+      primary_.Deallocate(ptr, layout);
     } else {
-      secondary_->Deallocate(ptr, layout);
+      secondary_.Deallocate(ptr, layout);
     }
   }
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override {
-    return primary_->Query(ptr, layout).ok()
-               ? primary_->Resize(ptr, layout, new_size)
-               : secondary_->Resize(ptr, layout, new_size);
+    return primary_.Query(ptr, layout).ok()
+               ? primary_.Resize(ptr, layout, new_size)
+               : secondary_.Resize(ptr, layout, new_size);
   }
 
   /// @copydoc Allocator::GetLayout
   Result<Layout> DoGetLayout(const void* ptr) const override {
-    Result<Layout> primary_result = primary_->GetLayout(ptr);
+    Result<Layout> primary_result = primary_.GetLayout(ptr);
     if (primary_result.ok()) {
       return primary_result;
     }
-    Result<Layout> secondary_result = secondary_->GetLayout(ptr);
+    Result<Layout> secondary_result = secondary_.GetLayout(ptr);
     if (secondary_result.ok()) {
       return secondary_result;
     }
@@ -85,12 +80,12 @@ class FallbackAllocator : public Allocator {
 
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override {
-    Status status = primary_->Query(ptr, layout);
-    return status.ok() ? status : secondary_->Query(ptr, layout);
+    Status status = primary_.Query(ptr, layout);
+    return status.ok() ? status : secondary_.Query(ptr, layout);
   }
 
-  Allocator* primary_ = nullptr;
-  Allocator* secondary_ = nullptr;
+  Allocator& primary_;
+  Allocator& secondary_;
 };
 
 }  // namespace pw::allocator

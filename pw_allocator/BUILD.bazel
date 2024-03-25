@@ -30,6 +30,7 @@ cc_library(
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
+        "public/pw_allocator/capability.h",
     ],
     includes = ["public"],
     deps = [

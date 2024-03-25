@@ -17,12 +17,15 @@
 
 #include <cstdint>
 
+#include "pw_allocator/capability.h"
 #include "pw_log/log.h"
 
 namespace examples {
 
 CustomAllocator::CustomAllocator(Allocator& allocator, size_t threshold)
-    : allocator_(allocator), threshold_(threshold) {}
+    : Allocator(pw::allocator::Capabilities()),
+      allocator_(allocator),
+      threshold_(threshold) {}
 
 // Allocates, and reports if allocated memory exceeds its threshold.
 void* CustomAllocator::DoAllocate(Layout layout) {

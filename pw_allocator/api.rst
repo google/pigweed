@@ -42,6 +42,17 @@ UniquePtr
 .. doxygenclass:: pw::allocator::UniquePtr
    :members:
 
+.. _module-pw_allocator-api-capabilities:
+
+Capabilities
+============
+This modules includes types for communicating about optional methods and
+behaviors. It is intended for allocator implementers and not for module
+consumers.
+
+.. doxygenclass:: pw::allocator::Capabilities
+   :members:
+
 -------------------------
 Allocator Implementations
 -------------------------

@@ -125,6 +125,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_allocator/public/pw_allocator/block.h",
   "$dir_pw_allocator/public/pw_allocator/block_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/buffer.h",
+  "$dir_pw_allocator/public/pw_allocator/capability.h",
   "$dir_pw_allocator/public/pw_allocator/fallback_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/fuzzing.h",
   "$dir_pw_allocator/public/pw_allocator/libc_allocator.h",

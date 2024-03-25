@@ -46,7 +46,9 @@ struct RecordedParameters {
 class AllocatorForTestImpl : public Allocator {
  public:
   AllocatorForTestImpl(Allocator& allocator, RecordedParameters& params)
-      : allocator_(allocator), params_(params) {}
+      : Allocator(allocator.capabilities()),
+        allocator_(allocator),
+        params_(params) {}
 
  private:
   /// @copydoc Allocator::Allocate
@@ -82,7 +84,9 @@ class AllocatorForTest : public Allocator {
   using BlockType = AllocatorType::BlockType;
 
   AllocatorForTest()
-      : recorder_(*allocator_, params_), tracker_(kToken, recorder_) {
+      : Allocator(AllocatorType::kCapabilities),
+        recorder_(*allocator_, params_),
+        tracker_(kToken, recorder_) {
     EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
   }
 

@@ -25,7 +25,7 @@ namespace {
 
 class FallbackAllocatorTest : public ::testing::Test {
  protected:
-  void SetUp() override { allocator_.Init(primary_, secondary_); }
+  FallbackAllocatorTest() : allocator_(primary_, secondary_) {}
 
   test::AllocatorForTest<128> primary_;
   test::AllocatorForTest<128> secondary_;
@@ -33,15 +33,6 @@ class FallbackAllocatorTest : public ::testing::Test {
 };
 
 // Unit tests.
-
-TEST_F(FallbackAllocatorTest, ExplicitlyInitialized) {
-  FallbackAllocator fallback;
-  fallback.Init(primary_, secondary_);
-}
-
-TEST_F(FallbackAllocatorTest, AutomaticallyInitialized) {
-  FallbackAllocator fallback(primary_, secondary_);
-}
 
 TEST_F(FallbackAllocatorTest, QueryValidPrimary) {
   Layout layout = Layout::Of<uint32_t>();

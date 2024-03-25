@@ -272,6 +272,11 @@ There are also several optional methods you can provide:
 - If an implementation of ``DoQuery`` isn't provided, then ``Query`` will
   always return ``pw::Status::Unimplmented``.
 
+Custom allocators can indicate which optional methods they implement and what
+optional behaviors they want from the base class by specifying
+:ref:`module-pw_allocator-api-capabilities` when invoking the base class
+constructor.
+
 .. TODO: b/328076428 - Make Deallocate optional once traits supporting
    MonotonicAllocator are added.
 

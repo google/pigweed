@@ -43,13 +43,15 @@ class TrackingAllocatorImpl : public Allocator {
   using metric_type = MetricsType;
 
   TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
-      : allocator_(allocator), metrics_(token) {}
+      : Allocator(allocator.capabilities()),
+        allocator_(allocator),
+        metrics_(token) {}
 
   template <typename OtherMetrics>
   TrackingAllocatorImpl(metric::Token token,
                         TrackingAllocatorImpl<OtherMetrics>& parent,
                         const AddTrackingAllocatorAsChild&)
-      : allocator_(parent), metrics_(token) {
+      : TrackingAllocatorImpl(token, parent) {
     parent.metric_group().Add(metric_group());
   }
 

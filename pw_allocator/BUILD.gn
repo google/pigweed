@@ -39,7 +39,10 @@ group("pw_allocator") {
 
 pw_source_set("allocator") {
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/allocator.h" ]
+  public = [
+    "public/pw_allocator/allocator.h",
+    "public/pw_allocator/capability.h",
+  ]
   public_deps = [
     dir_pw_assert,
     dir_pw_preprocessor,
