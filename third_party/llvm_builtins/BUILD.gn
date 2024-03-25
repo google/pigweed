@@ -39,13 +39,12 @@ config("no-warnings") {
   ]
 }
 
-files = [
+# Source files that are common between ARMv6M and ARMv7M.
+generic_sources = [
   "absvdi2.c",
   "absvsi2.c",
   "absvti2.c",
   "adddf3.c",
-  "addsf3.c",
-  "addtf3.c",
   "addvdi3.c",
   "addvsi3.c",
   "addvti3.c",
@@ -64,10 +63,9 @@ files = [
   "divdf3.c",
   "divdi3.c",
   "divmoddi4.c",
+  "divmodti4.c",
   "divsc3.c",
   "divsf3.c",
-  "divtc3.c",
-  "divtf3.c",
   "divti3.c",
   "extendhfsf2.c",
   "extendsfdf2.c",
@@ -111,7 +109,6 @@ files = [
   "muloti4.c",
   "mulsc3.c",
   "mulsf3.c",
-  "multf3.c",
   "multi3.c",
   "mulvdi3.c",
   "mulvsi3.c",
@@ -132,10 +129,8 @@ files = [
   "popcountti2.c",
   "powidf2.c",
   "powisf2.c",
-  "powitf2.c",
   "subdf3.c",
   "subsf3.c",
-  "subtf3.c",
   "subvdi3.c",
   "subvsi3.c",
   "subvti3.c",
@@ -153,71 +148,172 @@ files = [
   "umodti3.c",
 ]
 
+generic_tf_sources = [
+  "addtf3.c",
+  "comparetf2.c",
+  "divtc3.c",
+  "divtf3.c",
+  "extenddftf2.c",
+  "extendhftf2.c",
+  "extendsftf2.c",
+  "fixtfdi.c",
+  "fixtfsi.c",
+  "fixtfti.c",
+  "fixunstfdi.c",
+  "fixunstfsi.c",
+  "fixunstfti.c",
+  "floatditf.c",
+  "floatsitf.c",
+  "floattitf.c",
+  "floatunditf.c",
+  "floatunsitf.c",
+  "floatuntitf.c",
+  "multc3.c",
+  "multf3.c",
+  "powitf2.c",
+  "subtf3.c",
+  "trunctfdf2.c",
+  "trunctfhf2.c",
+  "trunctfsf2.c",
+]
+
+armv7m_only_sources = [
+  "addsf3.c",
+  ## Assembly equivalent version of these following sources are
+  ## provided by arm_or_thumb2_base_sources
+  #  "bswapdi2.c",
+  #  "bswapsi2.c",
+  #  "clzdi2.c",
+  #  "clzsi2.c",
+  #  "comparesf2.c",
+  #  "divmodsi4.c",
+  #  "divsi3.c",
+  #  "fp_mode.c",
+  #  "modsi3.c",
+  #  "udivmodsi4.c",
+  #  "udivsi3.c",
+  #  "umodsi3.c",
+]
+
+armv6m_only_sources = [
+  "bswapdi2.c",
+  "bswapsi2.c",
+  "clzdi2.c",
+  "clzsi2.c",
+  "divmodsi4.c",
+  "fp_mode.c",
+  "modsi3.c",
+  "udivmodsi4.c",
+  "umodsi3.c",
+
+  ## Assembly equivalent version of these following sources are
+  ## provided by thumb1_base_sources
+  # "addsf3.c",
+  # "divsi3.c",
+  # "udivsi3.c",
+  # "comparesf2.c",
+]
+
+arm_or_thumb2_base_sources = [
+  "arm/bswapdi2.S",
+  "arm/bswapsi2.S",
+  "arm/clzdi2.S",
+  "arm/clzsi2.S",
+  "arm/comparesf2.S",
+  "arm/divmodsi4.S",
+  "arm/divsi3.S",
+  "arm/fp_mode.c",
+  "arm/modsi3.S",
+  "arm/udivmodsi4.S",
+  "arm/udivsi3.S",
+  "arm/umodsi3.S",
+]
+
+arm_sync_sources = [
+  "arm/sync_fetch_and_add_4.S",
+  "arm/sync_fetch_and_add_8.S",
+  "arm/sync_fetch_and_and_4.S",
+  "arm/sync_fetch_and_and_8.S",
+  "arm/sync_fetch_and_max_4.S",
+  "arm/sync_fetch_and_max_8.S",
+  "arm/sync_fetch_and_min_4.S",
+  "arm/sync_fetch_and_min_8.S",
+  "arm/sync_fetch_and_nand_4.S",
+  "arm/sync_fetch_and_nand_8.S",
+  "arm/sync_fetch_and_or_4.S",
+  "arm/sync_fetch_and_or_8.S",
+  "arm/sync_fetch_and_sub_4.S",
+  "arm/sync_fetch_and_sub_8.S",
+  "arm/sync_fetch_and_umax_4.S",
+  "arm/sync_fetch_and_umax_8.S",
+  "arm/sync_fetch_and_umin_4.S",
+  "arm/sync_fetch_and_umin_8.S",
+  "arm/sync_fetch_and_xor_4.S",
+  "arm/sync_fetch_and_xor_8.S",
+]
+
+# builtin support for Thumb-only targets with very limited Thumb2 technology,
+# such as v6-m and v8-m.baseline
+thumb1_base_sources = [
+  "arm/addsf3.S",
+  "arm/comparesf2.S",
+  "arm/divsi3.S",
+  "arm/udivsi3.S",
+]
+
+arm_eabi_sources = [
+  "arm/aeabi_cdcmp.S",
+  "arm/aeabi_cdcmpeq_check_nan.c",
+  "arm/aeabi_cfcmp.S",
+  "arm/aeabi_cfcmpeq_check_nan.c",
+  "arm/aeabi_dcmp.S",
+  "arm/aeabi_div0.c",
+  "arm/aeabi_drsub.c",
+  "arm/aeabi_fcmp.S",
+  "arm/aeabi_frsub.c",
+  "arm/aeabi_idivmod.S",
+  "arm/aeabi_ldivmod.S",
+  "arm/aeabi_memcmp.S",
+  "arm/aeabi_memcpy.S",
+  "arm/aeabi_memmove.S",
+  "arm/aeabi_memset.S",
+  "arm/aeabi_uidivmod.S",
+  "arm/aeabi_uldivmod.S",
+]
+
+arm_thumb1_jt_sources = [
+  "arm/switch16.S",
+  "arm/switch32.S",
+  "arm/switch8.S",
+  "arm/switchu8.S",
+]
+
+arm_thumb1_icache_sources = [ "arm/sync_synchronize.S" ]
+
+# thumb1 calling into Arm to cover support
+arm_thumb1_sources = arm_thumb1_jt_sources + arm_thumb1_icache_sources
+
+arm_sources = arm_or_thumb2_base_sources + arm_sync_sources + arm_eabi_sources +
+              arm_thumb1_sources + generic_sources + armv7m_only_sources +
+              generic_tf_sources
+
+thumb1_sources = thumb1_base_sources + arm_eabi_sources + generic_sources +
+                 armv6m_only_sources + generic_tf_sources
+
+armv6m_sources = thumb1_sources
+armv7m_sources = arm_sources
+
+# ARM builtins for ARMv7-M.
 # Because this is unconditionally added to all clang-based ARM toolchains,
 # this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
 # not configured.
-pw_source_set("arm_builtins") {
+pw_source_set("arm_builtins_armv7m") {
   configs = [ ":no-warnings" ]
   remove_configs = [ "//pw_build:extra_strict_warnings" ]
 
   sources = []
 
-  arm_files = [
-    "arm/aeabi_cdcmp.S",
-    "arm/aeabi_cdcmpeq_check_nan.c",
-    "arm/aeabi_cfcmp.S",
-    "arm/aeabi_cfcmpeq_check_nan.c",
-    "arm/aeabi_dcmp.S",
-    "arm/aeabi_div0.c",
-    "arm/aeabi_drsub.c",
-    "arm/aeabi_fcmp.S",
-    "arm/aeabi_frsub.c",
-    "arm/aeabi_idivmod.S",
-    "arm/aeabi_ldivmod.S",
-    "arm/aeabi_memcmp.S",
-    "arm/aeabi_memcpy.S",
-    "arm/aeabi_memmove.S",
-    "arm/aeabi_memset.S",
-    "arm/aeabi_uidivmod.S",
-    "arm/aeabi_uldivmod.S",
-    "arm/bswapdi2.S",
-    "arm/bswapsi2.S",
-    "arm/clzdi2.S",
-    "arm/clzsi2.S",
-    "arm/comparesf2.S",
-    "arm/divmodsi4.S",
-    "arm/divsi3.S",
-    "arm/fp_mode.c",
-    "arm/modsi3.S",
-    "arm/switch16.S",
-    "arm/switch32.S",
-    "arm/switch8.S",
-    "arm/switchu8.S",
-    "arm/sync_fetch_and_add_4.S",
-    "arm/sync_fetch_and_add_8.S",
-    "arm/sync_fetch_and_and_4.S",
-    "arm/sync_fetch_and_and_8.S",
-    "arm/sync_fetch_and_max_4.S",
-    "arm/sync_fetch_and_max_8.S",
-    "arm/sync_fetch_and_min_4.S",
-    "arm/sync_fetch_and_min_8.S",
-    "arm/sync_fetch_and_nand_4.S",
-    "arm/sync_fetch_and_nand_8.S",
-    "arm/sync_fetch_and_or_4.S",
-    "arm/sync_fetch_and_or_8.S",
-    "arm/sync_fetch_and_sub_4.S",
-    "arm/sync_fetch_and_sub_8.S",
-    "arm/sync_fetch_and_umax_4.S",
-    "arm/sync_fetch_and_umax_8.S",
-    "arm/sync_fetch_and_umin_4.S",
-    "arm/sync_fetch_and_umin_8.S",
-    "arm/sync_fetch_and_xor_4.S",
-    "arm/sync_fetch_and_xor_8.S",
-    "arm/sync_synchronize.S",
-    "arm/udivmodsi4.S",
-    "arm/udivsi3.S",
-    "arm/umodsi3.S",
-  ]
+  arm_files = armv7m_sources
 
   if (dir_pw_third_party_llvm_builtins != "") {
     effective_arm_files =
@@ -230,30 +326,47 @@ pw_source_set("arm_builtins") {
   }
 }
 
+# ARM builtins for ARMv6-M.
 # Because this is unconditionally added to all clang-based ARM toolchains,
 # this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
 # not configured.
-pw_static_library("llvm_builtins") {
-  add_global_link_deps = false
-
+pw_source_set("arm_builtins_armv6m") {
   configs = [ ":no-warnings" ]
   remove_configs = [ "//pw_build:extra_strict_warnings" ]
 
   sources = []
 
+  arm_files = armv6m_sources
+
   if (dir_pw_third_party_llvm_builtins != "") {
-    effective_files =
-        filter_exclude(files, pw_third_party_llvm_builtins_ignore_list)
-    foreach(file, effective_files) {
+    effective_arm_files =
+        filter_exclude(arm_files, pw_third_party_llvm_builtins_ignore_list)
+    foreach(file, effective_arm_files) {
       sources += [ "$dir_pw_third_party_llvm_builtins/$file" ]
     }
   } else {
-    not_needed([ "files" ])
+    not_needed([ "arm_files" ])
   }
+}
+
+# TODO(b/331260098): Remove this old source set definition once it's uses are removed.
+pw_source_set("arm_builtins") {
+  deps = [ ":arm_builtins_armv7m" ]
+}
+
+# Because this is unconditionally added to all clang-based ARM toolchains,
+# this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
+# not configured.
+pw_static_library("llvm_builtins") {
+  add_global_link_deps = false
+  configs = [ ":no-warnings" ]
+  remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  sources = []
 
   # Architecture specific pw_source_set created from LLVM builtins
-  # source files. e.g. arm_builtins. If this property is not set, no
-  # architecture specific builtin functions will be included from the repo.
+  # source files. e.g. arm_builtins_armv6m.
+  # If this property is not set, no architecture specific builtin
+  # functions will be included from the repo.
   if (pw_third_party_llvm_builtins_TARGET_BUILTINS != "") {
     deps = [ pw_third_party_llvm_builtins_TARGET_BUILTINS ]
   }

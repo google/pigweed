@@ -41,11 +41,11 @@ GN
   LLVM compiler-rt checkout directory.
 
   For example, you can add the following in your args.gn or .gn file to use the
-  builtins for ARM32 architecture.
+  builtins for ARMv7-M targets.
 
   .. code-block::
 
-     pw_third_party_llvm_builtins_TARGET_BUILTINS = "$dir_pw_third_party/llvm_builtins:arm_builtins"
+     pw_third_party_llvm_builtins_TARGET_BUILTINS = "$dir_pw_third_party/llvm_builtins:arm_builtins_armv7m"
 
 * Set the optional ``pw_third_party_llvm_builtins_ignore_list`` to the list of
   files included in pw_source_sets in ``$dir_pw_third_party/llvm_builtins/BUILD.gn`` file.
