@@ -48,6 +48,13 @@ class ArduinoCore(pw_package.package_manager.Package):
         cipd_package_subpath += core_name
         cipd_package_subpath += '/${platform}'
 
+        def _run_command(command):
+            _LOG.debug('Running: `%s`', ' '.join(command))
+            result = subprocess.run(command, capture_output=True)
+            _LOG.debug(
+                'Output:\n%s', result.stdout.decode() + result.stderr.decode()
+            )
+
         # Check if teensy cipd package is readable
         with tempfile.NamedTemporaryFile(
             prefix='cipd', delete=True, dir=core_cache_path
@@ -61,7 +68,8 @@ class ArduinoCore(pw_package.package_manager.Package):
                 '-json-output',
                 str(temp_json_path),
             ]
-            subprocess.run(cipd_acl_check_command, capture_output=True)
+
+            _run_command(cipd_acl_check_command)
 
             # Return if cipd_package_subpath does not exist or is not readable
             # by the current user.
@@ -73,13 +81,6 @@ class ArduinoCore(pw_package.package_manager.Package):
             if 'result' not in result_dict:
                 # Return and proceed with normal installation.
                 return
-
-        def _run_command(command):
-            _LOG.debug('Running: `%s`', ' '.join(command))
-            result = subprocess.run(command, capture_output=True)
-            _LOG.debug(
-                'Output:\n%s', result.stdout.decode() + result.stderr.decode()
-            )
 
         _run_command(['cipd', 'init', '-force', core_cache_path.as_posix()])
         _run_command(
