@@ -17,8 +17,8 @@
 # used to generate a C++ header from this file.
 
 [$default byte_order: "LittleEndian"]
-
 [(cpp) namespace: "pw::bluetooth::emboss"]
+
 
 enum H4PacketType:
   -- The HCI UART Transport Layer defines the following HCI packet indicators as
@@ -26,9 +26,9 @@ enum H4PacketType:
   -- Section 2.
   [maximum_bits: 8]
   # Note UNKNOWN is not part of spec. It is added to detect if unset.
-  UNKNOWN  = 0x00
-  COMMAND  = 0x01
+  UNKNOWN   = 0x00
+  COMMAND   = 0x01
   ACL_DATA  = 0x02
   SYNC_DATA = 0x03
-  EVENT    = 0x04
+  EVENT     = 0x04
   ISO_DATA  = 0x05

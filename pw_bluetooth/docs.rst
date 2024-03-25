@@ -97,10 +97,12 @@ destroying objects returned by the API. Additionally, callbacks must not block.
 Emboss Packet Definitions
 -------------------------
 ``pw_bluetooth`` contains `Emboss <https://github.com/google/emboss>`_ packet
-definitions. So far, packets from the following protocols are defined:
+definitions. So far, some packets and enums from the following protocols are
+defined:
 
 - HCI
 - L2CAP
+- H4
 
 Usage
 =====
@@ -147,6 +149,23 @@ Usage
    You need to build your project to resolve this. Similarly, you need to build
    in order for .emb file updates to be reflected in the generated headers.
 
+
+Contributing
+============
+Emboss `.emb` files can be edited to add additional packets and enums.
+
+Emboss files should be formatted by running the following from the Pigweed root.
+
+.. code-block::
+
+   (export EMBOSS_PATH=/ssd2/dev2/pigweed/environment/packages/emboss &&
+       export "PYTHONPATH=$PYTHONPATH:$EMBOSS_PATH" &&
+       python3 $EMBOSS_PATH/compiler/front_end/format.py pw_bluetooth/public/pw_bluetooth/*.emb)
+
+If adding files note GN, Bazel, and CMake build rules all need to be updated.
+Presubmit will run tests on all three.
+
+
 Size Report
 ===========
 Delta of +972 when constructing the first packet view and reading/writing a
@@ -161,9 +180,9 @@ Delta of +96 when adding a second packet view and reading/writing a field.
 -------
 Roadmap
 -------
+- Bluetooth Proxy (WIP in in :ref:`module-pw_bluetooth_proxy`)
+- Add automated emboss file formatting to `pw format` (`b/331195584 <https://pwbug.dev/331195584>`_)
 - Create a backend for the Bluetooth API using Fuchsia's Bluetooth stack
-  (sapphire).
+  (Sapphire).
 - Stabilize the Bluetooth API.
 - Add BR/EDR APIs.
-- Bazel support
-- CMake support
