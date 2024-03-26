@@ -94,9 +94,11 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
 
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
-      EXPECT_TRUE(channel.is_open());
+      EXPECT_TRUE(channel.is_read_open());
+      EXPECT_TRUE(channel.is_write_open());
       EXPECT_EQ(pw::async2::Ready(pw::OkStatus()), channel.PollClose(cx));
-      EXPECT_FALSE(channel.is_open());
+      EXPECT_FALSE(channel.is_read_open());
+      EXPECT_FALSE(channel.is_write_open());
 
       EXPECT_EQ(pw::Status::FailedPrecondition(),
                 channel.PollRead(cx)->status());
@@ -119,15 +121,15 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
 #if PW_NC_TEST(InvalidOrdering)
 PW_NC_EXPECT("Properties must be specified in the following order");
 bool Illegal(pw::channel::ByteChannel<kReadable, pw::channel::kReliable>& foo) {
-  return foo.is_open();
+  return foo.is_read_open();
 }
 #elif PW_NC_TEST(NoProperties)
 PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
-bool Illegal(pw::channel::ByteChannel<>& foo) { return foo.is_open(); }
+bool Illegal(pw::channel::ByteChannel<>& foo) { return foo.is_read_open(); }
 #elif PW_NC_TEST(NoReadOrWrite)
 PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
 bool Illegal(pw::channel::ByteChannel<pw::channel::kReliable>& foo) {
-  return foo.is_open();
+  return foo.is_read_open();
 }
 #elif PW_NC_TEST(TooMany)
 PW_NC_EXPECT("Too many properties given");
@@ -135,12 +137,12 @@ bool Illegal(
     pw::channel::
         ByteChannel<kReliable, kReliable, kReliable, kReadable, kWritable>&
             foo) {
-  return foo.is_open();
+  return foo.is_read_open();
 }
 #elif PW_NC_TEST(Duplicates)
 PW_NC_EXPECT("duplicates");
 bool Illegal(pw::channel::ByteChannel<kReadable, kReadable>& foo) {
-  return foo.is_open();
+  return foo.is_read_open();
 }
 #endif  // PW_NC_TEST
 

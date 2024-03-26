@@ -156,7 +156,9 @@ class AnyChannel {
     return (properties_ & Property::kWritable) != 0;
   }
 
-  [[nodiscard]] constexpr bool is_open() const { return open_; }
+  [[nodiscard]] constexpr bool is_read_open() const { return read_open_; }
+
+  [[nodiscard]] constexpr bool is_write_open() const { return write_open_; }
 
   /// Read API
 
@@ -177,12 +179,12 @@ class AnyChannel {
   ///   ``Seek`` ing backwards, but no more new data will be produced. The
   ///   channel is still open; writes and seeks may succeed.
   async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx) {
-    if (!is_open()) {
+    if (!is_read_open()) {
       return Status::FailedPrecondition();
     }
     async2::Poll<Result<multibuf::MultiBuf>> result = DoPollRead(cx);
     if (result.IsReady() && result->status().IsFailedPrecondition()) {
-      set_closed();
+      set_read_closed();
     }
     return result;
   }
@@ -202,7 +204,7 @@ class AnyChannel {
   /// Note: this method will always return ``Ready`` for non-writeable
   /// channels.
   async2::Poll<> PollReadyToWrite(pw::async2::Context& cx) {
-    if (!is_open()) {
+    if (!is_write_open()) {
       return async2::Ready();
     }
     return DoPollReadyToWrite(cx);
@@ -245,12 +247,12 @@ class AnyChannel {
   ///   to unreliable channels).
   /// * FAILED_PRECONDITION - The channel is closed.
   Result<WriteToken> Write(multibuf::MultiBuf&& data) {
-    if (!is_open()) {
+    if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
     Result<WriteToken> result = DoWrite(std::move(data));
     if (result.status().IsFailedPrecondition()) {
-      set_closed();
+      set_write_closed();
     }
     return result;
   }
@@ -265,10 +267,14 @@ class AnyChannel {
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
   /// * Pending - Data remains to be flushed.
   async2::Poll<Result<WriteToken>> PollFlush(async2::Context& cx) {
-    if (!is_open()) {
+    if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    return DoPollFlush(cx);
+    async2::Poll<Result<WriteToken>> result = DoPollFlush(cx);
+    if (result.IsReady() && result->status().IsFailedPrecondition()) {
+      set_write_closed();
+    }
+    return result;
   }
 
   /// Seek changes the position in the stream.
@@ -302,12 +308,13 @@ class AnyChannel {
   /// * FAILED_PRECONDITION - Channel was already closed, which can happen
   ///   out-of-band due to errors.
   async2::Poll<pw::Status> PollClose(async2::Context& cx) {
-    if (!is_open()) {
+    if (!is_read_open() && !is_write_open()) {
       return Status::FailedPrecondition();
     }
     auto result = DoPollClose(cx);
     if (result.IsReady()) {
-      set_closed();
+      set_read_closed();
+      set_write_closed();
     }
     return result;
   }
@@ -317,10 +324,17 @@ class AnyChannel {
     return WriteToken(value);
   }
 
-  // Marks the channel as closed, but does nothing else. PollClose() always
-  // marks the channel closed when DoPollClose() returns Ready(), regardless of
-  // the status.
-  void set_closed() { open_ = false; }
+  // Marks the channel as closed for reading, but does nothing else.
+  //
+  // PollClose() always marks the channel closed when DoPollClose() returns
+  // Ready(), regardless of the status.
+  void set_read_closed() { read_open_ = false; }
+
+  // Marks the channel as closed for writing, but does nothing else.
+  //
+  // PollClose() always marks the channel closed when DoPollClose() returns
+  // Ready(), regardless of the status.
+  void set_write_closed() { write_open_ = false; }
 
  private:
   template <DataType, Property...>
@@ -362,7 +376,10 @@ class AnyChannel {
 
   // `AnyChannel` may only be constructed by deriving from `Channel`.
   explicit constexpr AnyChannel(DataType type, uint8_t properties)
-      : open_(true), data_type_(type), properties_(properties) {}
+      : read_open_(true),
+        write_open_(true),
+        data_type_(type),
+        properties_(properties) {}
 
   // Virtual interface
 
@@ -392,7 +409,8 @@ class AnyChannel {
   // Common functions
   virtual async2::Poll<Status> DoPollClose(async2::Context& cx) = 0;
 
-  bool open_;
+  bool read_open_;
+  bool write_open_;
   DataType data_type_;
   uint8_t properties_;
 };
