@@ -29,7 +29,6 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
         "pw_log",
-        "pw_log_tokenized",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
@@ -45,6 +44,7 @@ cc_library_static {
         "pw_base64",
         "pw_bytes",
         "pw_containers",
+        "pw_log_tokenized",
         "pw_polyfill",
         "pw_preprocessor",
         "pw_result",
@@ -80,15 +80,14 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_log_tokenized",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_log_tokenized",
     ],
     static_libs: [
         "pw_containers",
+        "pw_log_tokenized",
         "pw_polyfill",
         "pw_preprocessor",
         "pw_span",
@@ -96,6 +95,7 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "pw_containers",
+        "pw_log_tokenized",
         "pw_polyfill",
         "pw_preprocessor",
         "pw_span",
