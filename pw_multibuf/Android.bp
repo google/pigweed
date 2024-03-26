@@ -18,17 +18,20 @@ package {
 
 filegroup {
     name: "pw_multibuf_src_files",
+}
+
+cc_library_static {
+    name: "pw_multibuf",
     srcs: [
         "chunk.cc",
         "multibuf.cc",
     ],
-}
-
-cc_library_headers {
-    name: "pw_multibuf",
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
+    ],
+    defaults: [
+        "pw_android_common_backends",
     ],
     header_libs: [
         "pw_assert",
@@ -44,20 +47,6 @@ cc_library_headers {
     ],
     vendor_available: true,
     host_supported: true,
-}
-
-cc_defaults {
-    name: "pw_multibuf_defaults",
-    cpp_std: "c++20",
-    srcs: [
-        ":pw_multibuf_src_files",
-    ],
-    header_libs: [
-        "pw_multibuf",
-    ],
-    export_header_lib_headers: [
-        "pw_multibuf",
-    ],
     static_libs: [
         "pw_bytes",
     ],
