@@ -33,18 +33,17 @@ cc_library_static {
         "pw_assert",
         "pw_chrono",
         "pw_log",
-        "pw_result",
         "pw_sync",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_result",
         "pw_sync",
     ],
     static_libs: [
         "pw_bytes",
         "pw_preprocessor",
+        "pw_result",
         "pw_span",
         "pw_status",
         "pw_sync.binary_semaphore_thread_notification",
@@ -52,6 +51,7 @@ cc_library_static {
     export_static_lib_headers: [
         "pw_bytes",
         "pw_preprocessor",
+        "pw_result",
         "pw_span",
         "pw_status",
     ],

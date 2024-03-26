@@ -26,20 +26,20 @@ cc_library_static {
     ],
     header_libs: [
         "pw_assert",
-        "pw_result",
         "pw_toolchain",
     ],
     export_header_lib_headers: [
         "pw_assert",
-        "pw_result",
         "pw_toolchain",
     ],
     whole_static_libs: [
         "pw_function",
+        "pw_result",
         "pw_status",
     ],
     export_static_lib_headers: [
         "pw_function",
+        "pw_result",
         "pw_status",
     ],
     export_include_dirs: [
