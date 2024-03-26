@@ -54,3 +54,7 @@ Channel implementations
 .. doxygengroup:: pw_channel_forwarding
    :content-only:
    :members:
+
+.. doxygengroup:: pw_channel_loopback
+   :content-only:
+   :members:

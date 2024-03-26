@@ -75,3 +75,26 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "loopback_channel",
+    srcs = ["loopback_channel.cc"],
+    hdrs = ["public/pw_channel/loopback_channel.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_channel",
+        "//pw_multibuf:allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "loopback_channel_test",
+    srcs = ["loopback_channel_test.cc"],
+    deps = [
+        ":loopback_channel",
+        "//pw_allocator:testing",
+        "//pw_multibuf:header_chunk_region_tracker",
+        "//pw_multibuf:simple_allocator",
+        "//pw_unit_test",
+    ],
+)

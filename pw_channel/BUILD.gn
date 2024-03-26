@@ -64,6 +64,26 @@ pw_test("forwarding_channel_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
 }
 
+pw_source_set("loopback_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/loopback_channel.h" ]
+  sources = [ "loopback_channel.cc" ]
+  public_deps = [
+    ":pw_channel",
+    "$dir_pw_multibuf:allocator",
+  ]
+}
+
+pw_test("loopback_channel_test") {
+  sources = [ "loopback_channel_test.cc" ]
+  deps = [
+    ":loopback_channel",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_multibuf:simple_allocator",
+  ]
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
@@ -72,6 +92,7 @@ pw_test_group("tests") {
   tests = [
     ":channel_test",
     ":forwarding_channel_test",
+    ":loopback_channel_test",
   ]
 }
 
