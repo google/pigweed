@@ -286,9 +286,7 @@ class AnyChannel {
   ///   longer capable of seeking to this position (partially seekable
   ///   channels only).
   /// * OUT_OF_RANGE - The seek went beyond the end of the stream.
-  async2::Poll<Status> Seek(async2::Context& cx,
-                            ptrdiff_t position,
-                            Whence whence);
+  Status Seek(async2::Context& cx, ptrdiff_t position, Whence whence);
 
   /// Returns the current position in the stream, or `kUnknownPosition` if
   /// unsupported.
