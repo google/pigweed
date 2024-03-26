@@ -118,7 +118,8 @@ generated at the final link step of any binaries that depend on that library
 (whether directly or transitively). Those binaries will be able to read the
 build ID by calling ``pw::build_info::BuildId()``. Note that the build ID
 is not a string, but raw binary data, so to print it you'll need to convert
-it to hex or base64.
+it to hex or base64. It is possible to call ``pw::build_info::LogBuildId()``
+function to print it (as hexadecimal).
 
 Python API reference
 ====================

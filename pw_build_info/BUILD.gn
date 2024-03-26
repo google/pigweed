@@ -57,9 +57,19 @@ if (current_os == "mac" || current_os == "win") {
   # empty span.
   pw_source_set("build_id_or_noop") {
     public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_build_info/build_id.h" ]
-    sources = [ "build_id_noop.cc" ]
-    deps = [ dir_pw_span ]
+    public = [
+      "public/pw_build_info/build_id.h",
+      "public/pw_build_info/util.h",
+    ]
+    sources = [
+      "build_id_noop.cc",
+      "util.cc",
+    ]
+    deps = [
+      dir_pw_log,
+      dir_pw_span,
+      dir_pw_string,
+    ]
   }
 } else {
   pw_source_set("build_id") {
@@ -68,11 +78,19 @@ if (current_os == "mac" || current_os == "win") {
       ":linker_script",
     ]
     public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_build_info/build_id.h" ]
-    sources = [ "build_id.cc" ]
+    public = [
+      "public/pw_build_info/build_id.h",
+      "public/pw_build_info/util.h",
+    ]
+    sources = [
+      "build_id.cc",
+      "util.cc",
+    ]
     deps = [
+      dir_pw_log,
       dir_pw_preprocessor,
       dir_pw_span,
+      dir_pw_string,
     ]
   }
 

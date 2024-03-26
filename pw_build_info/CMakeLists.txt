@@ -34,8 +34,11 @@ else()
       -Wl,--build-id=sha1
     SOURCES
       build_id.cc
+      util.cc
     PRIVATE_DEPS
+      pw_log
       pw_preprocessor
+      pw_string
   )
 endif()
 

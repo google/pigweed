@@ -25,6 +25,7 @@ cc_library(
     name = "build_id_header",
     hdrs = [
         "public/pw_build_info/build_id.h",
+        "public/pw_build_info/util.h",
     ],
     includes = ["public"],
     deps = [
@@ -36,6 +37,7 @@ cc_library(
     name = "build_id",
     srcs = [
         "build_id.cc",
+        "util.cc",
     ],
     # Automatically add the gnu build ID linker sections when building for
     # Linux. macOS and Windows executables are not supported, and embedded
@@ -62,8 +64,10 @@ cc_library(
         "//conditions:default": [],
     }) + [
         ":build_id_header",
+        "//pw_log",
         "//pw_preprocessor",
         "//pw_span",
+        "//pw_string",
     ],
 )
 
@@ -71,10 +75,13 @@ cc_library(
     name = "build_id_noop",
     srcs = [
         "build_id_noop.cc",
+        "util.cc",
     ],
     deps = [
         ":build_id_header",
+        "//pw_log",
         "//pw_span",
+        "//pw_string",
     ],
 )
 
