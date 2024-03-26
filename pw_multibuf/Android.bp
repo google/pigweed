@@ -36,21 +36,21 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_span",
         "pw_sync",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_span",
         "pw_sync",
     ],
     vendor_available: true,
     host_supported: true,
     static_libs: [
         "pw_bytes",
+        "pw_span",
     ],
     export_static_lib_headers: [
         "pw_bytes",
+        "pw_span",
     ],
 }

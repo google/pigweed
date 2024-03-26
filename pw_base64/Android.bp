@@ -24,13 +24,9 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_span",
     ],
     defaults: [
         "pw_android_common_backends",
-    ],
-    export_header_lib_headers: [
-        "pw_span",
     ],
     host_supported: true,
     srcs: [
@@ -38,9 +34,11 @@ cc_library_static {
     ],
     static_libs: [
         "pw_preprocessor",
+        "pw_span",
         "pw_string",
     ],
     export_static_lib_headers: [
+        "pw_span",
         "pw_string",
     ],
 }

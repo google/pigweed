@@ -26,17 +26,16 @@ cc_library {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_span",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_span",
     ],
     static_libs: [
         "pw_base64",
         "pw_containers",
         "pw_preprocessor",
+        "pw_span",
         "pw_tokenizer",
         "pw_tokenizer_base64",
     ],
@@ -44,6 +43,7 @@ cc_library {
         "pw_base64",
         "pw_containers",
         "pw_preprocessor",
+        "pw_span",
         "pw_tokenizer",
         "pw_tokenizer_base64",
     ],

@@ -28,14 +28,12 @@ cc_library_static {
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
         "pw_toolchain",
     ],
     header_libs: [
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
         "pw_toolchain",
     ],
     host_supported: true,
@@ -46,11 +44,13 @@ cc_library_static {
         "pw_bytes",
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
         "pw_status",
     ],
     export_static_lib_headers: [
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
     ],
 }
 
@@ -66,14 +66,12 @@ cc_library_static {
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
         "pw_toolchain",
     ],
     header_libs: [
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
         "pw_toolchain",
     ],
     srcs: [
@@ -83,12 +81,14 @@ cc_library_static {
         "pw_bytes",
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
         "pw_status",
         "pw_stream",
     ],
     export_static_lib_headers: [
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
         "pw_stream",
     ],
 }

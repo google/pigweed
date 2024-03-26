@@ -77,21 +77,21 @@ cc_library_static {
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
     ],
     static_libs: [
         "pw_polyfill",
         "pw_preprocessor",
         "pw_rpc_transport_rpc_transport",
+        "pw_span",
     ],
     export_static_lib_headers: [
         "pw_rpc_transport_rpc_transport",
+        "pw_span",
     ],
     srcs: [
         "simple_framing.cc",

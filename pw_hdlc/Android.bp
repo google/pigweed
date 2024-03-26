@@ -27,18 +27,17 @@ cc_library {
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
     ],
     static_libs: [
         "pw_bytes",
         "pw_checksum",
         "pw_preprocessor",
+        "pw_span",
         "pw_status",
         "pw_stream",
         "pw_varint",
@@ -46,6 +45,7 @@ cc_library {
     export_static_lib_headers: [
         "pw_bytes",
         "pw_checksum",
+        "pw_span",
         "pw_status",
         "pw_stream",
         "pw_varint",

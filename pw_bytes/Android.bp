@@ -23,11 +23,9 @@ cc_library_static {
     export_include_dirs: ["public"],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_span",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_span",
     ],
     host_supported: true,
     srcs: [
@@ -40,6 +38,10 @@ cc_library_static {
         "pw_containers",
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
         "pw_status",
+    ],
+    export_static_lib_headers: [
+        "pw_span",
     ],
 }

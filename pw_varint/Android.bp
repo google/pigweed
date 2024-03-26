@@ -30,7 +30,6 @@ cc_library_static {
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_span",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
@@ -39,6 +38,7 @@ cc_library_static {
         "pw_bytes",
         "pw_polyfill",
         "pw_preprocessor",
+        "pw_span",
         "pw_status",
         "pw_stream",
     ],
