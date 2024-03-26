@@ -124,8 +124,6 @@ cc_defaults {
     defaults: [
         "pw_android_common_backends",
         "pw_rpc_defaults",
-        "pw_thread_defaults",
-        "pw_thread_stl_defaults",
     ],
     header_libs: [
         "pw_assert",

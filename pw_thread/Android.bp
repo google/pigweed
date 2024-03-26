@@ -16,6 +16,33 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
+// To use the pw_thread facade, add it to the defaults list of the library or
+// binary that uses it, then include the pw_android_common_backends to the
+// defaults list, which adds the pw_thread_stl backend, or add include your
+// custom backend.
+cc_defaults {
+    name: "pw_thread",
+    cpp_std: "c++20",
+    header_libs: [
+        "pw_chrono",
+        "pw_thread_include_dirs",
+        "pw_function",
+        "pw_preprocessor",
+    ],
+    export_header_lib_headers: [
+        "pw_chrono",
+        "pw_thread_include_dirs",
+    ],
+    static_libs: [
+        "pw_status",
+    ],
+    srcs: [
+        ":pw_thread_src_files",
+    ],
+}
+
+// Do not include these since they are for the pw_thread cc_defaults. Depend on
+// the pw_thread facade instead.
 cc_library_headers {
     name: "pw_thread_include_dirs",
     cpp_std: "c++20",
@@ -26,30 +53,13 @@ cc_library_headers {
     host_supported: true,
 }
 
+// Do not include these since they are for the pw_thread cc_defaults. Depend on
+// the pw_thread facade instead.
 filegroup {
     name: "pw_thread_src_files",
     srcs: [
         "sleep.cc",
         "thread.cc",
         "yield.cc",
-    ],
-}
-
-cc_defaults {
-    name: "pw_thread_defaults",
-    cpp_std: "c++20",
-    header_libs: [
-        "pw_thread_include_dirs",
-        "pw_function",
-        "pw_preprocessor",
-    ],
-    export_header_lib_headers: [
-        "pw_thread_include_dirs",
-    ],
-    static_libs: [
-        "pw_status",
-    ],
-    srcs: [
-        ":pw_thread_src_files",
     ],
 }

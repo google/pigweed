@@ -22,11 +22,16 @@ package {
 cc_defaults {
     name: "pw_android_common_backends",
     cpp_std: "c++20",
+
+    // Note for maintainers:
+    // Update the common backends list in the documentation when updating this
+    // list.
     whole_static_libs: [
         "pw_assert_log",
         "pw_chrono_stl",
         "pw_log_android",
         "pw_sync_stl",
+        "pw_thread_stl",
     ],
     shared_libs: [
         "liblog",

@@ -89,6 +89,8 @@ This table lists the backends selected by this rule:
      - :ref:`module-pw_chrono_stl`
    * - :ref:`module-pw_sync`
      - :ref:`module-pw_sync_stl`
+   * - :ref:`module-pw_thread`
+     - :ref:`module-pw_thread_stl`
 
 .. _module-pw_build_android-module-libraries:
 
