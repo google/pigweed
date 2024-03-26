@@ -349,11 +349,6 @@ pw_source_set("arm_builtins_armv6m") {
   }
 }
 
-# TODO(b/331260098): Remove this old source set definition once it's uses are removed.
-pw_source_set("arm_builtins") {
-  deps = [ ":arm_builtins_armv7m" ]
-}
-
 # Because this is unconditionally added to all clang-based ARM toolchains,
 # this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
 # not configured.
