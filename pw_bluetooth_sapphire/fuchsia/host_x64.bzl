@@ -16,4 +16,4 @@
 
 load("@host_metadata//:host_metadata.bzl", "HOST_ARCH")
 
-MANUAL_IF_NOT_HOST_X64 = [] if HOST_ARCH == "arm64" else ["manual"]
+MANUAL_IF_NOT_HOST_X64 = [] if HOST_ARCH == "amd64" else ["manual"]

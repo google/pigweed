@@ -46,13 +46,30 @@ To build the example stub package, use the following command:
 
    bazel build //pw_bluetooth_sapphire/fuchsia/hello_world:pkg
 
+Start an emulator
+=================
+To run an emulator, use the following command:
+
+.. code-block::
+
+   bazel run @fuchsia_products//:core.x64.emu -- --headless
+
 Run the component
 =================
-To run the example stub component, use the following command:
+To run the example stub component, first start an emulator and then use the
+following command:
 
 .. code-block::
 
    bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:pkg.component
+
+Stop the emulator
+=================
+To stop the running emulator, use the following command:
+
+.. code-block::
+
+   bazel run @fuchsia_sdk//:ffx -- emu stop --all
 
 -------
 Roadmap

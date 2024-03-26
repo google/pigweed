@@ -173,10 +173,12 @@ install_deps()
 # Used in modules: //pw_bluetooth_sapphire.
 # NOTE: These blocks cannot feasibly be moved into a macro.
 # See https://github.com/bazelbuild/bazel/issues/1550
+FUCHSIA_SDK_VERSION = "version:19.20240326.0.1"
+
 cipd_repository(
     name = "fuchsia_sdk",
     path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-amd64",
-    tag = "version:19.20240315.0.1",
+    tag = FUCHSIA_SDK_VERSION,
 )
 
 load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
@@ -184,6 +186,19 @@ load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
 rules_fuchsia_deps()
 
 register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
+
+cipd_repository(
+    name = "fuchsia_products_metadata",
+    path = "fuchsia/development/product_bundles/v2",
+    tag = FUCHSIA_SDK_VERSION,
+)
+
+load("@fuchsia_sdk//fuchsia:products.bzl", "fuchsia_products_repository")
+
+fuchsia_products_repository(
+    name = "fuchsia_products",
+    metadata_file = "@fuchsia_products_metadata//:product_bundles.json",
+)
 
 load("@fuchsia_sdk//fuchsia:clang.bzl", "fuchsia_clang_repository")
 
