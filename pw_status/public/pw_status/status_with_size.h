@@ -142,6 +142,12 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   // Returns the size. The size is always present, even if status() is an error.
   [[nodiscard]] constexpr size_t size() const { return size_ & kSizeMask; }
 
+  // Returns the size if the status() == OkStatus(), or the given default value
+  // if status() is an error.
+  [[nodiscard]] constexpr size_t size_or(size_t default_value) {
+    return ok() ? size() : default_value;
+  }
+
   // The maximum valid value for size.
   [[nodiscard]] static constexpr size_t max_size() { return kSizeMask; }
 
