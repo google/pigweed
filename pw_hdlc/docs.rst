@@ -163,4 +163,3 @@ And decoding looks like this:
    design
    size
    rpc_example/docs
-   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_hdlc/>
