@@ -403,7 +403,6 @@ constexpr OpCode kWriteClassOfDevice = ControllerAndBasebandOpCode(0x0024);
 
 // =============================================
 // Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
-
 constexpr OpCode kWriteAutomaticFlushTimeout =
     ControllerAndBasebandOpCode(0x0028);
 
@@ -2379,8 +2378,7 @@ constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
 constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
 
 // ======= Vendor Command =======
-// The OGF of 0x3F is reserved for vendor-specific debug commands (see Core Spec
-// v5.0, Vol 2, Part E, Section 5.4.1).
+// Core Spec v5.0, Vol 2, Part E, Section 5.4.1
 constexpr uint8_t kVendorOGF = 0x3F;
 constexpr OpCode VendorOpCode(const uint16_t ocf) {
   return DefineOpCode(kVendorOGF, ocf);
