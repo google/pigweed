@@ -25,10 +25,10 @@ cc_library_static {
         "public_overrides",
     ],
     host_supported: true,
-    header_libs: [
+    static_libs: [
         "pw_preprocessor",
     ],
-    export_header_lib_headers: [
+    export_static_lib_headers: [
         "pw_preprocessor",
     ],
 }

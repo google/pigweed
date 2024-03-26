@@ -29,7 +29,6 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
         "pw_span",
     ],
@@ -39,6 +38,7 @@ cc_library_static {
     whole_static_libs: [
         "pw_bytes",
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_status",
         "pw_stream",
     ],

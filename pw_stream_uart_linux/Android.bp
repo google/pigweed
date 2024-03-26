@@ -24,7 +24,6 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
         "pw_span",
         "pw_toolchain",
@@ -32,7 +31,6 @@ cc_library_static {
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
         "pw_span",
     ],
@@ -41,12 +39,14 @@ cc_library_static {
     ],
     static_libs: [
         "pw_bytes",
+        "pw_preprocessor",
         "pw_polyfill",
         "pw_status",
         "pw_stream",
     ],
     export_static_lib_headers: [
         "pw_bytes",
+        "pw_preprocessor",
         "pw_status",
         "pw_stream",
     ],

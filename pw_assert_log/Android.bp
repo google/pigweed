@@ -29,17 +29,19 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
     ],
     whole_static_libs: [
         // Explicitly depend on the pw_log_android since pw_assert_log is a part
         // of pw_android_common_backends.
         "pw_log_android",
+        "pw_preprocessor",
+    ],
+    export_static_lib_headers: [
+        "pw_preprocessor",
     ],
     srcs: [
         "assert_log.cc",

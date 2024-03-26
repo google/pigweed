@@ -23,7 +23,6 @@ cc_library_static {
     export_include_dirs: ["public"],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_preprocessor",
         "pw_span",
     ],
     export_header_lib_headers: [
@@ -40,6 +39,7 @@ cc_library_static {
     static_libs: [
         "pw_containers",
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_status",
     ],
 }

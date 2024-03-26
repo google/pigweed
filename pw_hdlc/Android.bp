@@ -26,7 +26,6 @@ cc_library {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
         "pw_span",
     ],
@@ -39,6 +38,7 @@ cc_library {
     static_libs: [
         "pw_bytes",
         "pw_checksum",
+        "pw_preprocessor",
         "pw_status",
         "pw_stream",
         "pw_varint",

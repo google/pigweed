@@ -44,7 +44,6 @@ cc_library_static {
     ],
     header_libs: [
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
     ],
     export_header_lib_headers: [
@@ -54,6 +53,7 @@ cc_library_static {
     static_libs: [
         "pw_containers",
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_rpc_transport_rpc_transport",
     ],
     export_static_lib_headers: [
@@ -76,7 +76,6 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_result",
         "pw_span",
     ],
@@ -88,6 +87,7 @@ cc_library_static {
     ],
     static_libs: [
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_rpc_transport_rpc_transport",
     ],
     export_static_lib_headers: [

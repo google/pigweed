@@ -24,7 +24,6 @@ cc_library_static {
     header_libs: [
         "pw_assert",
         "pw_log",
-        "pw_preprocessor",
         "pw_span",
     ],
     defaults: [
@@ -38,6 +37,7 @@ cc_library_static {
         "base64.cc",
     ],
     static_libs: [
+        "pw_preprocessor",
         "pw_string",
     ],
     export_static_lib_headers: [
