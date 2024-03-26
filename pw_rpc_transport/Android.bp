@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_headers {
+cc_library_static {
     name: "pw_rpc_transport_rpc_transport",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
@@ -47,18 +47,18 @@ cc_library_static {
         "pw_polyfill",
         "pw_preprocessor",
         "pw_result",
-        "pw_rpc_transport_rpc_transport",
     ],
     export_header_lib_headers: [
         "pw_log",
         "pw_result",
-        "pw_rpc_transport_rpc_transport",
     ],
     static_libs: [
         "pw_containers",
+        "pw_rpc_transport_rpc_transport",
     ],
     export_static_lib_headers: [
         "pw_containers",
+        "pw_rpc_transport_rpc_transport",
     ],
     srcs: [
         "local_rpc_egress.cc",
@@ -79,15 +79,19 @@ cc_library_static {
         "pw_polyfill",
         "pw_preprocessor",
         "pw_result",
-        "pw_rpc_transport_rpc_transport",
         "pw_span",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
         "pw_result",
-        "pw_rpc_transport_rpc_transport",
         "pw_span",
+    ],
+    static_libs: [
+        "pw_rpc_transport_rpc_transport",
+    ],
+    export_static_lib_headers: [
+        "pw_rpc_transport_rpc_transport",
     ],
     srcs: [
         "simple_framing.cc",
@@ -125,23 +129,23 @@ cc_defaults {
         "pw_assert",
         "pw_chrono",
         "pw_log",
-        "pw_rpc_transport_rpc_transport",
         "pw_sync",
     ],
     export_header_lib_headers: [
         "pw_assert",
         "pw_log",
-        "pw_rpc_transport_rpc_transport",
         "pw_sync",
     ],
     static_libs: [
         "pw_hdlc",
         "pw_metric",
+        "pw_rpc_transport_rpc_transport",
         "pw_sync.binary_semaphore_thread_notification",
     ],
     export_static_lib_headers: [
         "pw_hdlc",
         "pw_metric",
+        "pw_rpc_transport_rpc_transport",
     ],
     srcs: [
         ":pw_rpc_transport_egress_ingress_src_files",
