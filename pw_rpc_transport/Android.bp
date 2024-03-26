@@ -20,18 +20,14 @@ cc_library_headers {
     name: "pw_rpc_transport_rpc_transport",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
-    header_libs: [
-        "pw_function",
-    ],
-    export_header_lib_headers: [
-        "pw_function",
-    ],
     static_libs: [
         "pw_bytes",
+        "pw_function",
         "pw_status",
     ],
     export_static_lib_headers: [
         "pw_bytes",
+        "pw_function",
         "pw_status",
     ],
     host_supported: true,

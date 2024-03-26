@@ -114,7 +114,6 @@ cc_defaults {
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
-        "pw_function",
         "pw_log",
         "pw_polyfill",
         "pw_preprocessor",
@@ -128,7 +127,6 @@ cc_defaults {
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
-        "pw_function",
         "pw_log",
         "pw_polyfill",
         "pw_preprocessor",
@@ -141,6 +139,7 @@ cc_defaults {
     static_libs: [
         "pw_bytes",
         "pw_containers",
+        "pw_function",
         "pw_protobuf",
         "pw_status",
         "pw_stream",
@@ -151,6 +150,7 @@ cc_defaults {
     export_static_lib_headers: [
         "pw_bytes",
         "pw_containers",
+        "pw_function",
         "pw_protobuf",
         "pw_status",
         "pw_stream",

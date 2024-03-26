@@ -28,7 +28,6 @@ cc_library_static {
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
-        "pw_function",
         "pw_log",
         "pw_polyfill",
         "pw_preprocessor",
@@ -38,7 +37,6 @@ cc_library_static {
     ],
     export_header_lib_headers: [
         "pw_assert",
-        "pw_function",
         "pw_log",
         "pw_preprocessor",
         "pw_result",
@@ -56,6 +54,7 @@ cc_library_static {
     static_libs: [
         "pw_bytes",
         "pw_containers",
+        "pw_function",
         "pw_status",
         "pw_stream",
         "pw_string",
@@ -64,6 +63,7 @@ cc_library_static {
     export_static_lib_headers: [
         "pw_bytes",
         "pw_containers",
+        "pw_function",
         "pw_status",
         "pw_stream",
         "pw_varint",

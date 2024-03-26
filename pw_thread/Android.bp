@@ -26,7 +26,6 @@ cc_defaults {
     header_libs: [
         "pw_chrono",
         "pw_thread_include_dirs",
-        "pw_function",
         "pw_preprocessor",
     ],
     export_header_lib_headers: [
@@ -34,6 +33,7 @@ cc_defaults {
         "pw_thread_include_dirs",
     ],
     static_libs: [
+        "pw_function",
         "pw_status",
     ],
     srcs: [
