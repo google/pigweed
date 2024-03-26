@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library {
+cc_library_static {
     name: "pw_router_static_router",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
@@ -28,31 +28,31 @@ cc_library {
     ],
     header_libs: [
         "pw_log",
-        "pw_router_egress",
-        "pw_router_packet_parser",
     ],
     export_header_lib_headers: [
         "pw_log",
-        "pw_router_egress",
-        "pw_router_packet_parser",
     ],
     static_libs: [
         "pw_base64",
         "pw_containers",
         "pw_metric",
+        "pw_router.egress",
+        "pw_router.packet_parser",
         "pw_status",
         "pw_tokenizer_base64",
     ],
     export_static_lib_headers: [
         "pw_metric",
+        "pw_router.egress",
+        "pw_router.packet_parser",
         "pw_status",
     ],
     host_supported: true,
     vendor_available: true,
 }
 
-cc_library_headers {
-    name: "pw_router_egress",
+cc_library_static {
+    name: "pw_router.egress",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
     host_supported: true,
@@ -65,8 +65,8 @@ cc_library_headers {
     ],
 }
 
-cc_library_headers {
-    name: "pw_router_packet_parser",
+cc_library_static {
+    name: "pw_router.packet_parser",
     cpp_std: "c++20",
     export_include_dirs: ["public"],
     host_supported: true,
