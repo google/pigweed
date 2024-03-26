@@ -21,6 +21,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::allocator {
 
@@ -209,30 +210,102 @@ class Allocator {
   /// @param[in]  layout      Describes the previously-allocated memory.
   /// @param[in]  new_size    Requested new size for the memory allocation.
   void* Reallocate(void* ptr, Layout layout, size_t new_size) {
-    return new_size != 0 ? DoReallocate(ptr, layout, new_size) : nullptr;
+    if (new_size == 0) {
+      return nullptr;
+    }
+    if (ptr == nullptr) {
+      return Allocate(Layout(new_size, layout.alignment()));
+    }
+    return DoReallocate(ptr, layout, new_size);
+  }
+
+  /// Returns the total amount of memory allocatable by this object.
+  ///
+  /// This is an optional method. Some allocators may not have an easily defined
+  /// defined capacity, e.g. the system allocator. If implemented, the returned
+  /// capacity may be less than the memory originally given to an allocator,
+  /// e.g. if the allocator must align the region of memory, its capacity may be
+  /// reduced.
+  StatusWithSize GetCapacity() const { return DoGetCapacity(); }
+
+  /// Returns the layout that was requested when allocating a given pointer.
+  ///
+  /// This optional method can recover details about what memory was requested
+  /// from a pointer previously allocated by this allocator. The requested
+  /// layout may differ from either the layout of usable memory, the layout of
+  /// memory used to fulfill the request, or both.
+  ///
+  /// For example, it may have a smaller size than the usable memory if the
+  /// latter was padded to an alignment boundary, or may have a less strict
+  /// alignment than the actual memory.
+  ///
+  /// @retval OK                Returns the originally requested layout.
+  /// @retval NOT_FOUND         The allocator does not recognize the pointer
+  ///                           as one of its allocations.
+  /// @retval UNIMPLEMENTED     Allocator cannot recover allocation details.
+  Result<Layout> GetRequestedLayout(const void* ptr) const {
+    if (ptr == nullptr) {
+      return Status::NotFound();
+    }
+    return DoGetRequestedLayout(ptr);
+  }
+
+  /// Returns the layout of the usable memory associated with a given pointer.
+  ///
+  /// This optional method can recover details about what memory is usable for a
+  /// pointer previously allocated by this allocator. The usable layout may
+  /// from either the requested layout, the layout of memory used to fulfill the
+  /// request, or both.
+  ///
+  /// For example, it may have a larger size than the requested layout if it
+  /// was padded to an alignment boundary, but may be less than the acutal
+  /// memory if the allocator includes some overhead for metadata.
+  ///
+  /// @retval OK                Returns the layout of usable memory.
+  /// @retval NOT_FOUND         The allocator does not recognize the pointer
+  ///                           as one of its allocations.
+  /// @retval UNIMPLEMENTED     Allocator cannot recover allocation details.
+  Result<Layout> GetUsableLayout(const void* ptr) const {
+    if (ptr == nullptr) {
+      return Status::NotFound();
+    }
+    return DoGetUsableLayout(ptr);
+  }
+
+  /// Returns the layout of the memory used to allocate a given pointer.
+  ///
+  /// This optional method can recover details about what memory is usable for a
+  /// pointer previously allocated by this allocator. The layout of memory used
+  /// to fulfill a request may differ from either the requested layout, the
+  /// layout of the usable memory, or both.
+  ///
+  /// For example, it may have a larger size than the requested layout or the
+  /// layout of usable memory if the allocator includes some overhead for
+  /// metadata.
+  ///
+  /// @retval OK                Returns the layout of usable memory.
+  /// @retval NOT_FOUND         The allocator does not recognize the pointer
+  ///                           as one of its allocations.
+  /// @retval UNIMPLEMENTED     Allocator cannot recover allocation details.
+  Result<Layout> GetAllocatedLayout(const void* ptr) const {
+    if (ptr == nullptr) {
+      return Status::NotFound();
+    }
+    return DoGetAllocatedLayout(ptr);
   }
 
   /// Returns the layout used to allocate a given pointer.
   ///
-  /// Some allocators may be designed to integrate with a `malloc`-style
-  /// interface, wherein `Layout` details can be recovered from an allocated
-  /// pointer. This can facilitate calling `Deallocate`, `Resize`, and
-  /// `Reallocate` insituations where only an allocated `void*` is available.
+  /// NOTE: This method will eventually be deprecated. Use `GetAllocatedLayout`
+  /// instead.
   ///
-  /// The returned layout for a given allocated pointer is not required to
-  /// be identical to the one provided to the call to `Allocate` that produced
-  /// that pointer. Instead, the layout is merely guaranteed to be valid for
-  /// passing to `Deallocate`, `Resize`, and `Reallocate` with the same pointer.
-  ///
-  /// For example, an allocator that uses `Block`s to track allocations may
-  /// return a layout describing the correct alignment, but a larger size
-  /// corresponding to the block used.
-  ///
-  /// @retval UNIMPLEMENTED   This allocator cannot recover layouts.
-  /// @retval NOT_FOUND       The allocator does not recognize the pointer
-  ///                         as one of its allocations.
-  /// @retval OK              This result contains the requested layout.
-  Result<Layout> GetLayout(const void* ptr) const { return DoGetLayout(ptr); }
+  /// @retval OK                Returns the actual layout of allocated memory.
+  /// @retval NOT_FOUND         The allocator does not recognize the pointer
+  ///                           as one of its allocations.
+  /// @retval UNIMPLEMENTED     Allocator cannot recover allocation details.
+  Result<Layout> GetLayout(const void* ptr) const {
+    return GetAllocatedLayout(ptr);
+  }
 
   /// Asks the allocator if it is capable of realloating or deallocating a given
   /// pointer.
@@ -297,7 +370,7 @@ class Allocator {
   /// resizing is not supported.
   ///
   /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
-  /// @param[in]  old_layout    Describes the previously-allocated memory.
+  /// @param[in]  layout        Describes the previously-allocated memory.
   /// @param[in]  new_size      Requested size, guaranteed to be non-zero and
   ///                           differ from ``old_layout.size()``.
   virtual bool DoResize(void* /*ptr*/, Layout /*layout*/, size_t /*new_size*/) {
@@ -310,16 +383,50 @@ class Allocator {
   /// unsuccessful, it will allocate an entirely new block, copy existing data,
   /// and deallocate the given block.
   ///
-  /// @param[in]  ptr           Pointer to memory..
-  /// @param[in]  old_layout    Describes the previously-allocated memory.
+  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
+  /// @param[in]  layout        Describes the previously-allocated memory.
   /// @param[in]  new_size      Requested size, guaranteed to be non-zero.
   virtual void* DoReallocate(void* ptr, Layout layout, size_t new_size);
 
-  /// Virtual `Query` function that can be overridden by derived classes.
+  /// Virtual `GetCapacity` function that can be overridden by derived classes.
+  ///
+  /// The default implementation of this method simply returns `UNIMPLEMENTED`,
+  /// indicating the allocator does not know its capacity.
+  ///
+  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
+  virtual StatusWithSize DoGetCapacity() const {
+    return StatusWithSize::Unimplemented();
+  }
+
+  /// Virtual `GetRequested` function that can be overridden by derived classes.
   ///
   /// The default implementation of this method simply returns `UNIMPLEMENTED`,
   /// indicating the allocator cannot recover layouts from allocated pointers.
-  virtual Result<Layout> DoGetLayout(const void*) const {
+  ///
+  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
+  virtual Result<Layout> DoGetRequestedLayout(const void*) const {
+    return Status::Unimplemented();
+  }
+
+  /// Virtual `GetUsableLayout` function that can be overridden by derived
+  /// classes.
+  ///
+  /// The default implementation of this method simply returns `UNIMPLEMENTED`,
+  /// indicating the allocator cannot recover layouts from allocated pointers.
+  ///
+  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
+  virtual Result<Layout> DoGetUsableLayout(const void*) const {
+    return Status::Unimplemented();
+  }
+
+  /// Virtual `GetAllocatedLayout` function that can be overridden by derived
+  /// classes.
+  ///
+  /// The default implementation of this method simply returns `UNIMPLEMENTED`,
+  /// indicating the allocator cannot recover layouts from allocated pointers.
+  ///
+  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
+  virtual Result<Layout> DoGetAllocatedLayout(const void*) const {
     return Status::Unimplemented();
   }
 

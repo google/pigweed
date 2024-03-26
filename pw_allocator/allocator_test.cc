@@ -25,7 +25,10 @@ namespace {
 
 TEST(AllocatorTest, HasFlags) {
   test::AllocatorForTest<256> allocator;
-  EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetLayout));
+  EXPECT_FALSE(
+      allocator.HasCapability(Capability::kImplementsGetRequestedLayout));
+  EXPECT_TRUE(
+      allocator.HasCapability(Capability::kImplementsGetAllocatedLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsQuery));
 }
 

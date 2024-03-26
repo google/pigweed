@@ -60,8 +60,17 @@ class AllocatorForTestImpl : public Allocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
-  /// @copydoc Allocator::GetLayout
-  Result<Layout> DoGetLayout(const void* ptr) const override;
+  /// @copydoc Allocator::GetCapacity
+  StatusWithSize DoGetCapacity() const override;
+
+  /// @copydoc Allocator::GetRequestedLayout
+  Result<Layout> DoGetRequestedLayout(const void* ptr) const override;
+
+  /// @copydoc Allocator::GetUsableLayout
+  Result<Layout> DoGetUsableLayout(const void* ptr) const override;
+
+  /// @copydoc Allocator::GetAllocatedLayout
+  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
 
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override;
@@ -138,9 +147,24 @@ class AllocatorForTest : public Allocator {
     return tracker_.Resize(ptr, layout, new_size);
   }
 
-  /// @copydoc Allocator::GetLayout
-  Result<Layout> DoGetLayout(const void* ptr) const override {
-    return tracker_.GetLayout(ptr);
+  /// @copydoc Allocator::GetCapacity
+  StatusWithSize DoGetCapacity() const override {
+    return tracker_.GetCapacity();
+  }
+
+  /// @copydoc Allocator::GetRequestedLayout
+  Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
+    return tracker_.GetRequestedLayout(ptr);
+  }
+
+  /// @copydoc Allocator::GetUsableLayout
+  Result<Layout> DoGetUsableLayout(const void* ptr) const override {
+    return tracker_.GetUsableLayout(ptr);
+  }
+
+  /// @copydoc Allocator::GetAllocatedLayout
+  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
+    return tracker_.GetAllocatedLayout(ptr);
   }
 
   /// @copydoc Allocator::Query

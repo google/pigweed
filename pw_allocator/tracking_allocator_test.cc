@@ -42,7 +42,7 @@ class TrackingAllocatorTest : public ::testing::Test {
     allocator_->Reset();
   }
 
-  WithBuffer<AllocatorType, kCapacity> allocator_;
+  WithBuffer<AllocatorType, kCapacity, BlockType::kAlignment> allocator_;
   TrackingAllocatorImpl<AllMetrics> tracker_;
 };
 
@@ -59,6 +59,12 @@ TEST_F(TrackingAllocatorTest, InitialValues) {
   EXPECT_EQ(metrics.num_resizes.value(), 0U);
   EXPECT_EQ(metrics.num_reallocations.value(), 0U);
   EXPECT_EQ(metrics.num_failures.value(), 0U);
+}
+
+TEST_F(TrackingAllocatorTest, GetCapacity) {
+  StatusWithSize capacity = tracker_.GetCapacity();
+  EXPECT_EQ(capacity.status(), OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {

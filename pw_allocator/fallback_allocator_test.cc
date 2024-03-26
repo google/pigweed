@@ -34,6 +34,12 @@ class FallbackAllocatorTest : public ::testing::Test {
 
 // Unit tests.
 
+TEST_F(FallbackAllocatorTest, GetCapacity) {
+  StatusWithSize capacity = allocator_.GetCapacity();
+  EXPECT_EQ(capacity.status(), OkStatus());
+  EXPECT_EQ(capacity.size(), 256U);
+}
+
 TEST_F(FallbackAllocatorTest, QueryValidPrimary) {
   Layout layout = Layout::Of<uint32_t>();
   void* ptr = primary_.Allocate(layout);

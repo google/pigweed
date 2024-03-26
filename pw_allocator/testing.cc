@@ -36,8 +36,22 @@ bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
   return allocator_.Resize(ptr, layout, new_size);
 }
 
-Result<Layout> AllocatorForTestImpl::DoGetLayout(const void* ptr) const {
-  return allocator_.GetLayout(ptr);
+StatusWithSize AllocatorForTestImpl::DoGetCapacity() const {
+  return allocator_.GetCapacity();
+}
+
+Result<Layout> AllocatorForTestImpl::DoGetRequestedLayout(
+    const void* ptr) const {
+  return allocator_.GetRequestedLayout(ptr);
+}
+
+Result<Layout> AllocatorForTestImpl::DoGetUsableLayout(const void* ptr) const {
+  return allocator_.GetUsableLayout(ptr);
+}
+
+Result<Layout> AllocatorForTestImpl::DoGetAllocatedLayout(
+    const void* ptr) const {
+  return allocator_.GetAllocatedLayout(ptr);
 }
 
 Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {

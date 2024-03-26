@@ -322,13 +322,8 @@ class Block {
     return block == nullptr ? nullptr : block->Prev();
   }
 
-  /// Returns the layout of a used block.
-  Result<Layout> GetLayout() const {
-    if (!Used()) {
-      return Status::FailedPrecondition();
-    }
-    return Layout(InnerSize(), info_.alignment);
-  }
+  /// Returns the current alignment of a block.
+  size_t Alignment() const { return Used() ? info_.alignment : 1; }
 
   /// Indicates whether the block is in use.
   ///

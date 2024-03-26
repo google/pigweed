@@ -232,7 +232,7 @@ class TestFixture {
   }
 
  private:
-  WithBuffer<BlockAllocatorType, kCapacity> allocator_;
+  WithBuffer<BlockAllocatorType, kCapacity, BlockType::kAlignment> allocator_;
   std::array<void*, kNumPtrs> ptrs_;
 };
 
@@ -279,6 +279,14 @@ void CanExplicitlyInit(TestFixtureType& test_fixture) {
   EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 TEST_FOREACH_STRATEGY(CanExplicitlyInit)
+
+template <typename TestFixtureType>
+void GetCapacity(TestFixtureType& test_fixture) {
+  auto& allocator = test_fixture.GetAllocator();
+  StatusWithSize capacity = allocator.GetCapacity();
+  EXPECT_EQ(capacity.status(), OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
+}
 
 template <typename TestFixtureType>
 void AllocateLarge(TestFixtureType& test_fixture) {
@@ -818,7 +826,7 @@ void CannotGetLayoutFromInvalidPointer(TestFixtureType& test_fixture) {
   });
 
   Result<Layout> result0 = allocator.GetLayout(nullptr);
-  EXPECT_EQ(result0.status(), Status::OutOfRange());
+  EXPECT_EQ(result0.status(), Status::NotFound());
 
   for (const auto& block : allocator.blocks()) {
     if (!block->Used()) {

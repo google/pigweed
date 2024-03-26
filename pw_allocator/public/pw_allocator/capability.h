@@ -26,8 +26,10 @@ namespace pw::allocator {
 /// ``Capability``s using logical operations.
 enum Capability : uint32_t {
   // clang-format off
-  kImplementsGetLayout = 1 << 0,
-  kImplementsQuery     = 1 << 1,
+  kImplementsGetRequestedLayout = 1 << 0,
+  kImplementsGetUsableLayout    = 1 << 1,
+  kImplementsGetAllocatedLayout = 1 << 2,
+  kImplementsQuery              = 1 << 3,
   // clang-format on
 };
 
@@ -58,18 +60,20 @@ enum Capability : uint32_t {
 /// @endcode
 class Capabilities {
  public:
+  static constexpr size_t kNumCapabilities = 4;
+
   constexpr Capabilities() : bits_(0) {}
   constexpr Capabilities(uint32_t bits) : bits_(bits) {}
 
   bool has(Capability capability) const {
-    std::bitset<2> bits(capability);
+    std::bitset<kNumCapabilities> bits(capability);
     return (bits_ & bits) == bits;
   }
 
   uint32_t bits() const { return bits_.to_ulong(); }
 
  private:
-  const std::bitset<2> bits_;
+  const std::bitset<kNumCapabilities> bits_;
 };
 
 inline Capabilities operator|(const Capabilities& lhs,

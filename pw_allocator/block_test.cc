@@ -906,7 +906,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetConstBlockFromUsableSpace) {
   EXPECT_EQ(block1, block2);
 }
 
-TEST_FOR_EACH_BLOCK_TYPE(CanGetLayoutFromUsedBlock) {
+TEST_FOR_EACH_BLOCK_TYPE(CanGetAlignmentFromUsedBlock) {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 128;
   constexpr size_t kSplit2 = 512;
@@ -921,18 +921,11 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetLayoutFromUsedBlock) {
   BlockType* block2 = block1->Next();
   EXPECT_EQ(BlockType::AllocFirst(block2, kSplit2, kAlign * 2), OkStatus());
 
-  Result<Layout> result1 = block1->GetLayout();
-  ASSERT_EQ(result1.status(), OkStatus());
-  EXPECT_EQ(result1->size(), kSplit1);
-  EXPECT_EQ(result1->alignment(), kAlign);
-
-  Result<Layout> result2 = block2->GetLayout();
-  ASSERT_EQ(result2.status(), OkStatus());
-  EXPECT_EQ(result2->size(), kSplit2);
-  EXPECT_EQ(result2->alignment(), kAlign * 2);
+  EXPECT_EQ(block1->Alignment(), kAlign);
+  EXPECT_EQ(block2->Alignment(), kAlign * 2);
 }
 
-TEST_FOR_EACH_BLOCK_TYPE(CannotGetLayoutFromFreeBlock) {
+TEST_FOR_EACH_BLOCK_TYPE(FreeBlockAlignmentIsAlwaysOne) {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 128;
   constexpr size_t kAlign = 32;
@@ -944,8 +937,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotGetLayoutFromFreeBlock) {
 
   EXPECT_EQ(BlockType::AllocFirst(block1, kSplit1, kAlign), OkStatus());
   block1->MarkFree();
-  Result<Layout> result1 = block1->GetLayout();
-  EXPECT_EQ(result1.status(), Status::FailedPrecondition());
+  EXPECT_EQ(block1->Alignment(), 1U);
 }
 
 }  // namespace pw::allocator

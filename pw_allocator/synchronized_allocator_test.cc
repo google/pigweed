@@ -123,6 +123,25 @@ class Background final {
 // deadlock.
 
 template <typename LockType>
+void TestGetCapacity() {
+  test::AllocatorForTest<kCapacity> allocator;
+  SynchronizedAllocator<LockType> synchronized(allocator);
+  Background background(synchronized);
+
+  StatusWithSize capacity = synchronized.GetCapacity();
+  EXPECT_EQ(capacity.status(), OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
+}
+
+TEST(SynchronizedAllocatorTest, GetCapacitySpinLock) {
+  TestGetCapacity<sync::InterruptSpinLock>();
+}
+
+TEST(SynchronizedAllocatorTest, GetCapacityMutex) {
+  TestGetCapacity<sync::Mutex>();
+}
+
+template <typename LockType>
 void TestAllocate() {
   test::AllocatorForTest<kCapacity> allocator;
   SynchronizedAllocator<LockType> synchronized(allocator);

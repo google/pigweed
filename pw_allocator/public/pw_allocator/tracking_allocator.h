@@ -99,9 +99,24 @@ class TrackingAllocatorImpl : public Allocator {
     return new_ptr;
   }
 
-  /// @copydoc Allocator::GetLayout
-  Result<Layout> DoGetLayout(const void* ptr) const override {
-    return allocator_.GetLayout(ptr);
+  /// @copydoc Allocator::GetCapacity
+  StatusWithSize DoGetCapacity() const override {
+    return allocator_.GetCapacity();
+  }
+
+  /// @copydoc Allocator::GetRequestedLayout
+  Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
+    return allocator_.GetRequestedLayout(ptr);
+  }
+
+  /// @copydoc Allocator::GetUsableLayout
+  Result<Layout> DoGetUsableLayout(const void* ptr) const override {
+    return allocator_.GetUsableLayout(ptr);
+  }
+
+  /// @copydoc Allocator::GetAllocatedLayout
+  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
+    return allocator_.GetAllocatedLayout(ptr);
   }
 
   /// @copydoc Allocator::Query
