@@ -100,3 +100,22 @@ pw_cc_test(
     srcs = ["dispatcher_test.cc"],
     deps = [":dispatcher"],
 )
+
+cc_library(
+    name = "pend_func_task",
+    hdrs = [
+        "public/pw_async2/pend_func_task.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "pend_func_task_test",
+    srcs = ["pend_func_task_test.cc"],
+    deps = [":pend_func_task"],
+)

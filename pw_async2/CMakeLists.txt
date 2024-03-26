@@ -26,6 +26,13 @@ pw_add_library(pw_async2.poll INTERFACE
     public
 )
 
+pw_add_test(pw_async2.poll_test
+  SOURCES
+    poll_test.cc
+  PRIVATE_DEPS
+    pw_async2.poll
+)
+
 pw_add_library(pw_async2.dispatcher_base STATIC
   HEADERS
     public/pw_async2/dispatcher_base.h
@@ -54,17 +61,26 @@ pw_add_facade(pw_async2.dispatcher INTERFACE
     pw_async2.dispatcher_base
 )
 
-pw_add_test(pw_async2.poll_test
-  SOURCES
-    poll_test.cc
-  PRIVATE_DEPS
-    pw_async2.poll
-)
-
 pw_add_test(pw_async2.dispatcher_test
   SOURCES
     dispatcher_test.cc
   PRIVATE_DEPS
     pw_async2.dispatcher
     pw_containers.vector
+)
+
+pw_add_library(pw_async2.pend_func_task INTERFACE
+  HEADERS
+    public/pw_async2/pend_func_task.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.pend_func_task_test
+  SOURCES
+    pend_func_task_test.cc
+  PRIVATE_DEPS
+    pw_async2.pend_func_task
 )
