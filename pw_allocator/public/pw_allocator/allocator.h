@@ -203,6 +203,9 @@ class Allocator {
   /// if the `new_layout` has a size of 0, the given pointer will NOT be
   /// deallocated.
   ///
+  /// TODO(b/331290408): This error condition needs to be better communicated to
+  /// module users, who may assume the pointer is freed.
+  ///
   /// Unlike `Resize`, providing a null pointer or a `old_layout` with a size of
   /// 0 will return a new allocation.
   ///
@@ -296,7 +299,7 @@ class Allocator {
 
   /// Returns the layout used to allocate a given pointer.
   ///
-  /// NOTE: This method will eventually be deprecated. Use `GetAllocatedLayout`
+  /// NOTE: This method will eventually be deprecated. Use `GetUsableLayout`
   /// instead.
   ///
   /// @retval OK                Returns the actual layout of allocated memory.

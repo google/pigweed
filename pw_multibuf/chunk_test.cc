@@ -56,7 +56,7 @@ TEST(Chunk, IsImplicitlyConvertibleToSpan) {
 
 TEST(OwnedChunk, ReleaseDestroysChunkRegion) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   auto tracker =
       HeaderChunkRegionTracker::AllocateRegion(allocator, kArbitraryChunkSize);
   ASSERT_NE(tracker, nullptr);
@@ -76,7 +76,7 @@ TEST(OwnedChunk, ReleaseDestroysChunkRegion) {
 
 TEST(OwnedChunk, DestructorDestroysChunkRegion) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   auto tracker =
       HeaderChunkRegionTracker::AllocateRegion(allocator, kArbitraryChunkSize);
   ASSERT_NE(tracker, nullptr);
@@ -174,7 +174,7 @@ TEST(Chunk, SliceRemovesSidesOfSpan) {
 
 TEST(Chunk, RegionPersistsUntilAllChunksReleased) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   std::optional<OwnedChunk> chunk_opt =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator,
                                                       kArbitraryChunkSize);

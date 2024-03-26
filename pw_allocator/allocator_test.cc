@@ -27,8 +27,7 @@ TEST(AllocatorTest, HasFlags) {
   test::AllocatorForTest<256> allocator;
   EXPECT_FALSE(
       allocator.HasCapability(Capability::kImplementsGetRequestedLayout));
-  EXPECT_TRUE(
-      allocator.HasCapability(Capability::kImplementsGetAllocatedLayout));
+  EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetUsableLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsQuery));
 }
 

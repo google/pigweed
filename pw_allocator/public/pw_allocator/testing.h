@@ -85,8 +85,25 @@ namespace test {
 // A token that can be used in tests.
 constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
+/// This metrics struct enables all metrics for tests except those related to
+/// `requested_bytes`, since `TrackingAllocator` adds additional overhead if the
+/// `requested_bytes` are enabled.
+struct TestMetrics {
+  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
+
+  PW_ALLOCATOR_METRICS_ENABLE(num_allocations);
+  PW_ALLOCATOR_METRICS_ENABLE(num_deallocations);
+  PW_ALLOCATOR_METRICS_ENABLE(num_resizes);
+  PW_ALLOCATOR_METRICS_ENABLE(num_reallocations);
+
+  PW_ALLOCATOR_METRICS_ENABLE(num_failures);
+  PW_ALLOCATOR_METRICS_ENABLE(unfulfilled_bytes);
+};
+
 /// An `AllocatorForTest` that is automatically initialized on construction.
-template <size_t kBufferSize>
+template <size_t kBufferSize, typename MetricsType = TestMetrics>
 class AllocatorForTest : public Allocator {
  public:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;
@@ -109,7 +126,7 @@ class AllocatorForTest : public Allocator {
   const metric::Group& metric_group() const { return tracker_.metric_group(); }
   metric::Group& metric_group() { return tracker_.metric_group(); }
 
-  const AllMetrics& metrics() const { return tracker_.metrics(); }
+  const MetricsType& metrics() const { return tracker_.metrics(); }
 
   size_t allocate_size() const { return params_.allocate_size; }
   void* deallocate_ptr() const { return params_.deallocate_ptr; }
@@ -175,7 +192,7 @@ class AllocatorForTest : public Allocator {
   WithBuffer<AllocatorType, kBufferSize> allocator_;
   internal::RecordedParameters params_;
   internal::AllocatorForTestImpl recorder_;
-  TrackingAllocatorImpl<AllMetrics> tracker_;
+  TrackingAllocatorImpl<MetricsType> tracker_;
 };
 
 }  // namespace test

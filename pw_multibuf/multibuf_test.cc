@@ -36,7 +36,7 @@ TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
 
 TEST(MultiBuf, WithOneChunkReleases) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   MultiBuf buf;
   buf.PushFrontChunk(MakeChunk(allocator, kArbitraryChunkSize));
   EXPECT_EQ(metrics.num_allocations.value(), 2U);
@@ -46,7 +46,7 @@ TEST(MultiBuf, WithOneChunkReleases) {
 
 TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(allocator, kArbitraryChunkSize));
@@ -57,7 +57,7 @@ TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
 
 TEST(MultiBuf, WithMultipleChunksReleasesAllOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
-  const allocator::AllMetrics& metrics = allocator.metrics();
+  const auto& metrics = allocator.metrics();
   {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(allocator, kArbitraryChunkSize));
