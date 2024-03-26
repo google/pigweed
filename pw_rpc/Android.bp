@@ -117,7 +117,6 @@ cc_defaults {
         "pw_log",
         "pw_rpc_include_dirs",
         "pw_sync",
-        "pw_toolchain",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_fit",
@@ -126,7 +125,6 @@ cc_defaults {
         "pw_log",
         "pw_rpc_include_dirs",
         "pw_sync",
-        "pw_toolchain",
     ],
     static_libs: [
         "pw_bytes",
@@ -141,6 +139,7 @@ cc_defaults {
         "pw_stream",
         "pw_string",
         "pw_sync_baremetal",
+        "pw_toolchain",
         "pw_varint",
     ],
     export_static_lib_headers: [
@@ -156,6 +155,7 @@ cc_defaults {
         "pw_stream",
         "pw_string",
         "pw_sync_baremetal",
+        "pw_toolchain",
         "pw_varint",
     ],
     generated_headers: [

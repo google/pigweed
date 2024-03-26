@@ -29,7 +29,6 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
         "pw_log",
-        "pw_toolchain",
     ],
     export_header_lib_headers: [
         "pw_assert",
@@ -55,6 +54,7 @@ cc_library_static {
         "pw_status",
         "pw_stream",
         "pw_string",
+        "pw_toolchain",
         "pw_varint",
     ],
     export_static_lib_headers: [
@@ -66,6 +66,7 @@ cc_library_static {
         "pw_span",
         "pw_status",
         "pw_stream",
+        "pw_toolchain",
         "pw_varint",
     ],
 }
