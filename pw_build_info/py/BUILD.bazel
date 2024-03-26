@@ -20,6 +20,9 @@ py_library(
         "pw_build_info/__init__.py",
         "pw_build_info/build_id.py",
     ],
+    deps = [
+        "@python_packages_pyelftools//:pkg",
+    ],
 )
 
 # This test attempts to run subprocesses directly in the source tree, which is

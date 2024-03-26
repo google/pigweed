@@ -105,6 +105,7 @@ py_library(
         "@python_packages_jinja2//:pkg",
         "@python_packages_prompt_toolkit//:pkg",
         "@python_packages_ptpython//:pkg",
+        "@python_packages_pygments//:pkg",
         "@python_packages_pyperclip//:pkg",
         "@python_packages_pyyaml//:pkg",
         "@python_packages_websockets//:pkg",

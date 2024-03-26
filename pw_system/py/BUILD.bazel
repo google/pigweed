@@ -49,6 +49,7 @@ py_library(
         "//pw_unit_test:unit_test_py_pb2",
         "//pw_unit_test/py:pw_unit_test",
         "@python_packages_ipython//:pkg",
+        "@python_packages_pyserial//:pkg",
     ],
 )
 
