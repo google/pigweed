@@ -24,13 +24,17 @@ cc_library_headers {
     host_supported: true,
     header_libs: [
         "pw_chrono",
-        "pw_polyfill",
         "pw_preprocessor",
     ],
     export_header_lib_headers: [
         "pw_chrono",
-        "pw_polyfill",
         "pw_preprocessor",
+    ],
+    static_libs: [
+        "pw_polyfill",
+    ],
+    export_static_lib_headers: [
+        "pw_polyfill",
     ],
 }
 

@@ -29,19 +29,21 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
         "pw_log",
-        "pw_polyfill",
         "pw_preprocessor",
         "pw_result",
         "pw_span",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
-        "pw_polyfill",
     ],
     whole_static_libs: [
         "pw_bytes",
+        "pw_polyfill",
         "pw_status",
         "pw_stream",
+    ],
+    export_static_lib_headers: [
+        "pw_polyfill",
     ],
     srcs: [
         "stream.cc",

@@ -22,10 +22,10 @@ cc_library_headers {
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public"],
-    header_libs: [
+    static_libs: [
         "pw_polyfill",
     ],
-    export_header_lib_headers: [
+    export_static_lib_headers: [
         "pw_polyfill",
     ],
 }
