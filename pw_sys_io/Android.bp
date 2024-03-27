@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,53 +16,48 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-// To use the pw_log_basic facade, add pw_log_basic_no_backends to the defaults
-// list of the library or binary that uses it and provide the pw_sys_io backend
-// and its backend as dependencies.
+// To use the pw_sys_io facade, add pw_sys_io_no_backends to the defaults list
+// of the library or binary that uses it and provide its backend as a
+// dependency.
 cc_defaults {
-    name: "pw_log_basic_no_backends",
+    name: "pw_sys_io_no_backends",
     cpp_std: "c++20",
-    defaults: [
-        "pw_sys_io_no_backends",
-    ],
     header_libs: [
-        "pw_log",
-        "pw_log_basic_include_dirs",
         "pw_sys_io_include_dirs",
     ],
     export_header_lib_headers: [
-        "pw_log_basic_include_dirs",
+        "pw_sys_io_include_dirs",
     ],
     static_libs: [
-        "pw_preprocessor",
-        "pw_string",
+        "pw_bytes",
+        "pw_status",
     ],
     export_static_lib_headers: [
-        "pw_preprocessor",
+        "pw_bytes",
+        "pw_status",
     ],
     srcs: [
-        ":pw_log_basic_scr_files",
+        ":pw_sys_io_scr_files",
     ],
 }
 
-// Do not include these since they are for pw_log_basic_no_backends. Depend on
-// pw_log_basic_no_backends instead.
+// Do not include these since they are for the pw_sys_io cc_defaults. Depend
+// on pw_sys_io_no_backends instead.
 cc_library_headers {
-    name: "pw_log_basic_include_dirs",
+    name: "pw_sys_io_include_dirs",
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
-        "public_overrides",
     ],
     vendor_available: true,
     host_supported: true,
 }
 
-// Do not include these since they are for pw_log_basic_no_backends. Depend on
-// pw_log_basic_no_backends instead.
+// Do not include these since they are for the pw_sys_io cc_defaults. Depend
+// on pw_sys_io_no_backends instead.
 filegroup {
-    name: "pw_log_basic_scr_files",
+    name: "pw_sys_io_scr_files",
     srcs: [
-        "log_basic.cc",
+        "sys_io.cc",
     ],
 }
