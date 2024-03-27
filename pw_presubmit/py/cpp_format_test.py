@@ -13,7 +13,7 @@
 # the License.
 """Tests for the clang-format formatter."""
 
-import os
+import importlib.resources
 from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
@@ -23,14 +23,12 @@ import unittest
 from pw_presubmit.format.core import ToolRunner
 from pw_presubmit.format.cpp import ClangFormatFormatter
 
+_TEST_DATA_FILES = importlib.resources.files('pw_presubmit.format.test_data')
 
-# TODO: b/326309165 - Better manage test resources when this is usable from the
-# Bazel build.
-_TEST_SRC_FILE = Path(__file__).parent / 'test_data' / 'cpp_test_data.cc'
-_TEST_GOLDEN = Path(__file__).parent / 'test_data' / 'cpp_test_data_golden.cc'
+_TEST_SRC_FILE = _TEST_DATA_FILES / 'cpp_test_data.cc'
+_TEST_GOLDEN = _TEST_DATA_FILES / 'cpp_test_data_golden.cc'
 
-# TODO: b/326309165 - Properly inject this into the tool.
-_CLANG_FORMAT_CONFIG_PATH = Path(os.environ['PW_ROOT']) / '.clang-format'
+_CLANG_FORMAT_CONFIG_PATH = _TEST_DATA_FILES / 'clang_format_config'
 _CLANG_FORMAT_ARGS: Final[Sequence[str]] = (
     f'--style=file:{_CLANG_FORMAT_CONFIG_PATH}',
 )
