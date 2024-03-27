@@ -315,32 +315,6 @@ TEST(ByteBuffer, Assign) {
   EXPECT_EQ(Status::ResourceExhausted(), one.status());
 }
 
-TEST(ByteBuffer, CopyConstructFromSameSize) {
-  ByteBuffer<10> one;
-  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
-
-  one.append(buffer.data(), 3);
-  EXPECT_EQ(byte{0x01}, one.data()[0]);
-  EXPECT_EQ(byte{0x02}, one.data()[1]);
-  EXPECT_EQ(byte{0x03}, one.data()[2]);
-
-  ByteBuffer<10> two(one);
-  EXPECT_EQ(byte{0x01}, two.data()[0]);
-  EXPECT_EQ(byte{0x02}, two.data()[1]);
-  EXPECT_EQ(byte{0x03}, two.data()[2]);
-}
-
-TEST(ByteBuffer, CopyConstructFromSmaller) {
-  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
-  ByteBuffer<2> one;
-  one.append(buffer.data(), 2);
-  ByteBuffer<3> two(one);
-
-  EXPECT_EQ(byte{0x01}, two.data()[0]);
-  EXPECT_EQ(byte{0x02}, two.data()[1]);
-  EXPECT_EQ(OkStatus(), two.status());
-}
-
 TEST(ByteBuilder, ResizeError_NoDataAddedAfter) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<8> bb;

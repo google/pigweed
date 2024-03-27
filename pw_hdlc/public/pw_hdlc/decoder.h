@@ -166,6 +166,14 @@ class DecoderBuffer : public Decoder {
  public:
   DecoderBuffer() : Decoder(frame_buffer_) {}
 
+  /// DecoderBuffer is not movable, as the decoder stores pointers into the
+  /// frame buffer.
+  DecoderBuffer(DecoderBuffer&&) = delete;
+
+  /// DecoderBuffer is not movable, as the decoder stores pointers into the
+  /// frame buffer.
+  DecoderBuffer& operator=(DecoderBuffer&&) = delete;
+
   // Returns the maximum length of the bytes that can be inserted in the bytes
   // buffer.
   static constexpr size_t max_size() { return kSizeBytes; }

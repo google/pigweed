@@ -357,6 +357,12 @@ class StringBuffer : public StringBuilder {
     return *this;
   }
 
+  /// StringBuffers are not movable: the underlying data must be copied.
+  StringBuffer(StringBuffer&& other) = delete;
+
+  /// StringBuffers are not movable: the underlying data must be copied.
+  StringBuffer& operator=(StringBuffer&& other) = delete;
+
   // Returns the maximum length of the string, excluding the null terminator.
   static constexpr size_t max_size() { return kSizeBytes - 1; }
 

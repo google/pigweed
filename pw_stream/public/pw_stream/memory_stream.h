@@ -91,6 +91,18 @@ class MemoryWriterBuffer final : public MemoryWriter {
  public:
   constexpr MemoryWriterBuffer() : MemoryWriter(buffer_) {}
 
+  /// MemoryWriterBuffer is not movable, as MemoryWriter stores a pointer to
+  /// the current buffer.
+  ///
+  /// The buffer could be copied, but this is usually undesirable.
+  MemoryWriterBuffer(MemoryWriterBuffer&&) = delete;
+
+  /// MemoryWriterBuffer is not movable, as MemoryWriter stores a pointer to
+  /// the current buffer.
+  ///
+  /// The buffer could be copied, but this is usually undesirable.
+  MemoryWriterBuffer& operator=(MemoryWriter&&) = delete;
+
  private:
   std::array<std::byte, kSizeBytes> buffer_;
 };
