@@ -549,7 +549,8 @@ See :ref:`seed-0102`.
 
 Creating a new Pigweed module
 -----------------------------
-To create a new Pigweed module, follow the below steps.
+New Pigweed modules can be easily created using
+``pw module create MODULE_NAME`` (refer to the `Module name`_ guidelines).
 
 .. tip::
 
@@ -560,45 +561,28 @@ To create a new Pigweed module, follow the below steps.
   accidentally duplicating work, or avoiding writing code that won't get
   accepted.
 
-1. Create module folder following `Module name`_ guidelines.
-2. Add `C++ public headers`_ files in
+This command will create a folder with the provided module name as well as a
+number of basic build files. After this command has run, new code should be
+added in the following locations:
+
+1. Add `C++ public headers`_ files in
    ``{pw_module_dir}/public/{pw_module_name}/``
-3. Add `C++ implementation files`_ files in ``{pw_module_dir}/``
-4. Add module documentation
+2. Add `C++ implementation files`_ files in ``{pw_module_dir}/``
+3. Add module documentation to ``{pw_module_dir}/docs.rst``. See
+   :ref:`seed-0102` for additional documentation options.
+4. Add GN build targets to ``{pw_module_dir}/BUILD.gn``.
 
-   - Add ``{pw_module_dir}/README.md`` that has a module summary
-   - Add ``{pw_module_dir}/docs.rst`` that contains the main module
-     documentation
-   - Add optional documentation as described in :ref:`seed-0102`
+   - Add new ``pw_test`` targets to the list in ``pw_test_group("tests")``.
+   - Add any additional ``.rst`` documentation files to
+     ``pw_docs_group("docs")``.
 
-5. Add GN build support in ``{pw_module_dir}/BUILD.gn``
+5. Add Bazel build targets to ``{pw_module_dir}/BUILD.bazel``.
 
-   - Declare tests in ``pw_test_group("tests")``
-   - Declare docs in ``pw_docs_group("docs")``
+6. Add CMake build targets to ``{pw_module_dir}/CMakeLists.txt``.
 
-   Both ``tests`` and ``docs`` are required, even if the module is empty!
-
-6. Add Bazel build support in ``{pw_module_dir}/BUILD.bazel``
-
-7. Add CMake build support in ``{pw_module_dir}/CMakeLists.txt``
-
-8. Add the new module to the ``/PIGWEED_MODULES`` list
-
-   Modules must be listed one per line with no extra spaces or comments. This
-   automatically adds the new module, its tests, and its docs, to the GN build.
-
-9. Update the generated Pigweed modules lists file
-
-   .. code-block:: bash
-
-      ninja -C out update_modules
-
-10. Add the new module to CMake build
-
-    - In ``/CMakeLists.txt`` add ``add_subdirectory(pw_new)``
-
-11. Run :ref:`module-pw_module-module-check`
+7. Run :ref:`module-pw_module-module-check` to ensure that the new module has
+   been properly configured.
 
     - ``$ pw module check {pw_module_dir}``
 
-12. Contribute your module to upstream Pigweed (optional but encouraged!)
+8. Contribute your module to upstream Pigweed (optional but encouraged!)

@@ -808,6 +808,8 @@ def _basic_module_setup(
 ) -> _ModuleContext:
     """Creates the basic layout of a Pigweed module."""
     module_dir.mkdir()
+    public_dir = module_dir / 'public' / module_name.full
+    public_dir.mkdir(parents=True)
 
     ctx = _ModuleContext(
         name=module_name,
@@ -825,6 +827,72 @@ def _basic_module_setup(
     _create_main_docs_file(ctx)
 
     return ctx
+
+
+def _add_to_pigweed_modules_file(
+    project_root: Path,
+    module_name: _ModuleName,
+) -> None:
+    modules_file = project_root / 'PIGWEED_MODULES'
+    if not modules_file.exists():
+        _LOG.error(
+            'Could not locate PIGWEED_MODULES file; '
+            'your repository may be in a bad state.'
+        )
+        return
+
+    modules_gni_file = (
+        project_root / 'pw_build' / 'generated_pigweed_modules_lists.gni'
+    )
+
+    # Cut off the extra newline at the end of the file.
+    modules_list = modules_file.read_text().split('\n')[:-1]
+    modules_list.append(module_name.full)
+    modules_list.sort()
+    modules_list.append('')
+    modules_file.write_text('\n'.join(modules_list))
+    print('  modify  ' + str(modules_file.relative_to(Path.cwd())))
+
+    generate_modules_lists.main(
+        root=project_root,
+        modules_list=modules_file,
+        modules_gni_file=modules_gni_file,
+        mode=generate_modules_lists.Mode.UPDATE,
+    )
+    print('  modify  ' + str(modules_gni_file.relative_to(Path.cwd())))
+
+
+def _add_to_root_cmakelists(
+    project_root: Path,
+    module_name: _ModuleName,
+) -> None:
+    new_line = f'add_subdirectory({module_name.full} EXCLUDE_FROM_ALL)\n'
+
+    path = project_root / 'CMakeLists.txt'
+    if not path.exists():
+        _LOG.error('Could not locate root CMakeLists.txt file.')
+        return
+
+    lines = []
+    with path.open() as f:
+        lines = f.readlines()
+
+    add_subdir_start = 0
+    while add_subdir_start < len(lines):
+        if lines[add_subdir_start].startswith('add_subdirectory'):
+            break
+        add_subdir_start += 1
+
+    insert_point = add_subdir_start
+    while (
+        lines[insert_point].startswith('add_subdirectory')
+        and lines[insert_point] < new_line
+    ):
+        insert_point += 1
+
+    lines.insert(insert_point, new_line)
+    path.write_text(''.join(lines))
+    print('  modify  ' + str(path.relative_to(Path.cwd())))
 
 
 def _create_module(
@@ -876,33 +944,9 @@ def _create_module(
         build_file.write()
 
     if is_upstream:
-        modules_file = project_root / 'PIGWEED_MODULES'
-        if not modules_file.exists():
-            _LOG.error(
-                'Could not locate PIGWEED_MODULES file; '
-                'your repository may be in a bad state.'
-            )
-            return
-
-        modules_gni_file = (
-            project_root / 'pw_build' / 'generated_pigweed_modules_lists.gni'
-        )
-
-        # Cut off the extra newline at the end of the file.
-        modules_list = modules_file.read_text().split('\n')[:-1]
-        modules_list.append(module_name.full)
-        modules_list.sort()
-        modules_list.append('')
-        modules_file.write_text('\n'.join(modules_list))
-        print('  modify  ' + str(modules_file.relative_to(Path.cwd())))
-
-        generate_modules_lists.main(
-            root=project_root,
-            modules_list=modules_file,
-            modules_gni_file=modules_gni_file,
-            mode=generate_modules_lists.Mode.UPDATE,
-        )
-        print('  modify  ' + str(modules_gni_file.relative_to(Path.cwd())))
+        _add_to_pigweed_modules_file(project_root, module_name)
+        if 'cmake' in build_systems:
+            _add_to_root_cmakelists(project_root, module_name)
 
     print()
     _LOG.info(
@@ -921,9 +965,9 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             'Comma-separated list of build systems the module supports. '
             f'Options: {", ".join(_BUILD_FILES.keys())}'
         ),
-        type=csv,
+        choices=_BUILD_FILES.keys(),
         default=_BUILD_FILES.keys(),
-        metavar='BUILD[,BUILD,...]',
+        type=csv,
     )
     parser.add_argument(
         '--languages',
@@ -931,9 +975,9 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             'Comma-separated list of languages the module will use. '
             f'Options: {", ".join(_LANGUAGE_GENERATORS.keys())}'
         ),
-        type=csv,
+        choices=_LANGUAGE_GENERATORS.keys(),
         default=[],
-        metavar='LANG[,LANG,...]',
+        type=csv,
     )
     parser.add_argument(
         'module', help='Name of the module to create.', metavar='MODULE_NAME'
