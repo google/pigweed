@@ -761,7 +761,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             # Force Ninja to output ANSI colors
             env['CLICOLOR_FORCE'] = '1'
 
-        build_succeded = False
+        build_succeeded = False
         cfg.reset_status()
         cfg.status.mark_started()
         for command_step in cfg.steps:
@@ -771,20 +771,10 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
                 additional_bazel_build_args=self.extra_bazel_build_args,
             )
 
-            # Verify that the build output directories exist.
-            if (
-                command_step.build_system_command is not None
-                and cfg.build_dir
-                and (not cfg.build_dir.is_dir())
-            ):
-                self.abort_callback(
-                    'Build directory does not exist: %s', cfg.build_dir
-                )
-
             quoted_command_args = ' '.join(
                 shlex.quote(arg) for arg in command_args
             )
-            build_succeded = True
+            build_succeeded = True
             if command_step.should_run():
                 cfg.log.info(
                     '%s %s %s',
@@ -792,7 +782,18 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
                     self.color.blue('Run ==>'),
                     quoted_command_args,
                 )
-                build_succeded = self.execute_command(
+
+                # Verify that the build output directories exist.
+                if (
+                    command_step.build_system_command is not None
+                    and cfg.build_dir
+                    and (not cfg.build_dir.is_dir())
+                ):
+                    self.abort_callback(
+                        'Build directory does not exist: %s', cfg.build_dir
+                    )
+
+                build_succeeded = self.execute_command(
                     command_args, env, cfg, cfg.log, None
                 )
             else:
@@ -805,17 +806,17 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
             BUILDER_CONTEXT.mark_progress_step_complete(cfg)
             # Don't run further steps if a command fails.
-            if not build_succeded:
+            if not build_succeeded:
                 break
 
         # If all steps were skipped the return code will not be set. Force
         # status to passed in this case.
-        if build_succeded and not cfg.status.passed():
+        if build_succeeded and not cfg.status.passed():
             cfg.status.set_passed()
 
         cfg.status.mark_done()
 
-        return build_succeded
+        return build_succeeded
 
     def print_pass_fail_banner(
         self,
