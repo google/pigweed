@@ -55,3 +55,19 @@ def run_action(env=None):
             cwd=repo_root,
             env=npm_env,
         )
+
+        subprocess.run(
+            [
+                npm,
+                "run",
+                "log-viewer-setup",
+                "--quiet",
+                "--no-progress",
+                "--loglevel=error",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            cwd=repo_root,
+            env=npm_env,
+        )

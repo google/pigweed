@@ -15,7 +15,7 @@
     "pw_protobuf_compiler": "./dist/bin/pw_protobuf_compiler.js"
   },
   "scripts": {
-    "postinstall": "cd pw_web/log-viewer && npm install --quiet --no-progress --loglevel=error",
+    "log-viewer-setup": "cd pw_web/log-viewer && npm install --quiet --no-progress --loglevel=error",
     "prebuild": "rimraf dist && npm run build-protos",
     "build-protos": "ts-node -P tsconfig.json ts/buildprotos.ts",
     "build": "npm run rollup",
