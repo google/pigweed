@@ -7,6 +7,29 @@ pw_minimal_cpp_stdlib
 
    **Do not use this module** unless you have consulted with the Pigweed team.
 
+-----------
+Maintenance
+-----------
+If you discovered this module because of a build failure in a
+``pw_strict_host_clang_size_optimized_minimal_cpp_stdlib`` or similar target,
+the important thing to know is that a small set of Pigweed targets are expected
+to compile using a limited set of C++ Standard Library features and headers
+that have been polyfilled by this module in order to support environments
+without a C++ stdlib.
+
+Failed ``#include`` lines should be solved by either eliminating the dependency
+from the target (strongly preferred) or by adding a (minimal) polyfill of the
+relevant C++ header to this module.
+
+Polyfills may assume a C++17 (or greater) compiler but with only a C (not C++)
+stdlib. As this target does not support tests, polyfills can only be checked for
+compilation; this can be done by building the root
+``build_with_pw_minimal_cpp_stdlib group``
+(e.g. ``ninja -C out build_with_pw_minimal_cpp_stdlib``).
+
+-------
+Purpose
+-------
 The ``pw_minimal_cpp_stdlib`` module provides an extremely limited, incomplete
 implementation of the C++ Standard Library. This module is only intended for
 testing and development when compiling with C++17 or newer, but without access
