@@ -37,3 +37,22 @@ cc_defaults {
         "liblog",
     ],
 }
+
+// Temporary list of common Android backends included as static libraries to avoid
+// duplicate symbols when multiple libraries depend these backends.
+// TODO: b/331458726 - Investigate how to avoid duplicate symbols, or stop including
+// the backends as whole_static.
+cc_defaults {
+    name: "pw_android_common_backends_no_whole_libs",
+    cpp_std: "c++20",
+    static_libs: [
+        "pw_assert_log",
+        "pw_chrono_stl",
+        "pw_log_android",
+        "pw_sync_stl",
+        "pw_thread_stl",
+    ],
+    shared_libs: [
+        "liblog",
+    ],
+}
