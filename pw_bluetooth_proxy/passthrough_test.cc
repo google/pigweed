@@ -54,8 +54,8 @@ CreateToControllerBuffer() {
   EXPECT_TRUE(packet_view.IsComplete());
   // TODO: b/330064223 - Move to using opcode constants once we have them in
   // pw_bluetooth.
-  packet_view.header().opcode().ogf().Write(0x01);    // Link Control commands
-  packet_view.header().opcode().ocf().Write(0x0001);  // Inquiry Command
+  packet_view.header().opcode_full().Write(
+      emboss::OpCode::LINK_KEY_REQUEST_REPLY);
   return h4_array;
 }
 
