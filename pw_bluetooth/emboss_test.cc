@@ -42,5 +42,48 @@ TEST(EmbossTest, CheckIsoHeaderSize) {
   EXPECT_EQ(emboss::IsoDataFrameHeader::MaxSizeInBytes(), 12);
 }
 
+// Test and demonstrate various ways of reading opcodes.
+TEST(EmbossTest, ReadOpcodes) {
+  // First two bytes will be used as opcode.
+  std::array<uint8_t, 4> buffer = {0x00, 0x00, 0x02, 0x03};
+  auto view = emboss::MakeTestCommandPacketView(&buffer);
+  EXPECT_TRUE(view.IsComplete());
+  auto header = view.header();
+
+  EXPECT_EQ(header.opcode_full().Read(), emboss::OpCode::UNSPECIFIED);
+  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x0000);
+  EXPECT_EQ(header.opcode().ogf().Read(), 0x00);
+  EXPECT_EQ(header.opcode().ocf().Read(), 0x00);
+
+  // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
+  header.opcode_full().Write(emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.opcode_full().Read(),
+            emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x040B);
+  EXPECT_EQ(header.opcode().ogf().Read(), 0x01);
+  EXPECT_EQ(header.opcode().ocf().Read(), 0x0B);
+}
+
+// Test and demonstrate various ways of writing opcodes.
+TEST(EmbossTest, WriteOpcodes) {
+  std::array<uint8_t, 4> buffer = {};
+  buffer.fill(0xFF);
+  auto view = emboss::MakeTestCommandPacketView(&buffer);
+  EXPECT_TRUE(view.IsComplete());
+  auto header = view.header();
+
+  header.opcode_full().Write(emboss::OpCode::UNSPECIFIED);
+  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x0000);
+
+  header.opcode().ocf().Write(0x0B);
+  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x000B);
+
+  header.opcode().ogf().Write(0x01);
+  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x040B);
+  // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
+  EXPECT_EQ(header.opcode_full().Read(),
+            emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth
