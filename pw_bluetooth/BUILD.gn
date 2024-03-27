@@ -208,11 +208,8 @@ pw_test("emboss_test") {
   enable_if = dir_pw_third_party_emboss != ""
   sources = [ "emboss_test.cc" ]
   deps = [
-    ":emboss_hci_commands",
-    ":emboss_hci_data",
-    ":emboss_hci_events",
+    ":emboss_hci_group",
     ":emboss_hci_test",
-    ":emboss_hci_vendor",
     ":emboss_l2cap_frames",
   ]
 }
