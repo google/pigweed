@@ -149,6 +149,12 @@ class PW_NODISCARD_STR(
   }
   constexpr T&& operator*() && noexcept { return std::move(*value_); }
 
+  /// Ignores the ``Poll`` value.
+  ///
+  /// This method does nothing except prevent ``no_discard`` or
+  /// unused variable warnings from firing.
+  constexpr void IgnorePoll() const {}
+
  private:
   template <typename U>
   friend class Poll;

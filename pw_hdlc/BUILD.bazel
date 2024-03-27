@@ -151,3 +151,40 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "router",
+    srcs = ["router.cc"],
+    hdrs = ["public/pw_hdlc/router.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_hdlc",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
+        "//pw_bytes",
+        "//pw_channel",
+        "//pw_containers:inline_queue",
+        "//pw_containers:vector",
+        "//pw_log",
+        "//pw_multibuf",
+        "//pw_multibuf:allocator",
+        "//pw_multibuf:stream",
+        "//pw_result",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_test(
+    name = "router_test",
+    srcs = ["router_test.cc"],
+    deps = [
+        ":router",
+        "//pw_allocator:testing",
+        "//pw_async2:pend_func_task",
+        "//pw_channel:forwarding_channel",
+        "//pw_channel:loopback_channel",
+        "//pw_multibuf:simple_allocator",
+        "//pw_unit_test",
+    ],
+)

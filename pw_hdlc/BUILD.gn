@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_async2/backend.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
@@ -130,12 +131,49 @@ pw_source_set("hdlc_sys_io_system_server") {
   sources = [ "hdlc_sys_io_system_server.cc" ]
 }
 
+pw_source_set("router") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    ":decoder",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:poll",
+    "$dir_pw_containers:vector",
+    "$dir_pw_multibuf:allocator",
+    dir_pw_channel,
+    dir_pw_multibuf,
+    dir_pw_status,
+  ]
+  deps = [
+    ":encoder",
+    "$dir_pw_multibuf:stream",
+    dir_pw_log,
+    dir_pw_result,
+    dir_pw_stream,
+  ]
+  public = [ "public/pw_hdlc/router.h" ]
+  sources = [ "router.cc" ]
+}
+
+pw_test("router_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":router",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_channel:forwarding_channel",
+    "$dir_pw_channel:loopback_channel",
+    "$dir_pw_multibuf:simple_allocator",
+  ]
+  sources = [ "router_test.cc" ]
+}
+
 pw_test_group("tests") {
   tests = [
+    ":encoded_size_test",
     ":encoder_test",
     ":decoder_test",
+    ":router_test",
     ":rpc_channel_test",
-    ":encoded_size_test",
     ":wire_packet_parser_test",
   ]
   group_deps = [
@@ -231,6 +269,7 @@ pw_doc_group("docs") {
     "design.rst",
     "docs.rst",
     "guide.rst",
+    "router.rst",
     "rpc_example/docs.rst",
     "size.rst",
   ]

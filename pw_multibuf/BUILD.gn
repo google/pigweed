@@ -152,8 +152,8 @@ pw_source_set("simple_allocator") {
   public_deps = [
     ":allocator",
     ":pw_multibuf",
-    "//pw_allocator:allocator",
-    "//pw_containers:intrusive_list",
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_containers:intrusive_list",
   ]
 }
 

@@ -152,6 +152,15 @@ And decoding looks like this:
 
       A step-by-step example of sending RPCs over HDLC
 
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`workflow` Experimental async router
+      :link: module-pw_hdlc-router
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      An experimental asynchronous HDLC router using ``pw_channel``
+
 .. pw_hdlc-nav-end
 
 .. toctree::
@@ -163,3 +172,5 @@ And decoding looks like this:
    design
    size
    rpc_example/docs
+   router
+   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_hdlc/>

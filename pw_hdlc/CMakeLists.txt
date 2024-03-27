@@ -126,6 +126,30 @@ pw_add_library(pw_hdlc.hdlc_sys_io_system_server STATIC
     hdlc_sys_io_system_server.cc
 )
 
+pw_add_library(pw_hdlc.router STATIC
+  HEADERS
+    public/pw_hdlc/router.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc.decoder
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_containers.vector
+    pw_multibuf.allocator
+    pw_channel
+    pw_multibuf
+    pw_status
+  PRIVATE_DEPS
+    pw_hdlc.encoder
+    pw_multibuf.stream
+    pw_log
+    pw_result
+    pw_stream
+  SOURCES
+    router.cc
+)
+
 pw_add_test(pw_hdlc.decoder_test
   SOURCES
     decoder_test.cc
@@ -155,6 +179,21 @@ pw_add_test(pw_hdlc.wire_packet_parser_test
   PRIVATE_DEPS
     pw_bytes
     pw_hdlc.packet_parser
+  GROUPS
+    modules
+    pw_hdlc
+)
+
+pw_add_test(pw_hdlc.router_test
+  SOURCES
+    router_test.cc
+  PRIVATE_DEPS
+    pw_hdlc.router
+    pw_allocator.testing
+    pw_async2.pend_func_task
+    pw_channel.forwarding_channel
+    pw_channel.loopback_channel
+    pw_multibuf.simple_allocator
   GROUPS
     modules
     pw_hdlc

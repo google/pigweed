@@ -304,6 +304,9 @@ class MultiBufAllocationFuture {
                            bool needs_contiguous)
       : waiter_(allocator, min_size, desired_size, needs_contiguous) {}
   async2::Poll<std::optional<MultiBuf>> Pend(async2::Context& cx);
+  size_t min_size() const { return waiter_.min_size(); }
+  size_t desired_size() const { return waiter_.desired_size(); }
+  bool needs_contiguous() const { return waiter_.needs_contiguous(); }
 
  private:
   friend class MultiBufAllocator;

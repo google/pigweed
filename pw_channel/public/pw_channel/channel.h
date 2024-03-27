@@ -160,6 +160,10 @@ class AnyChannel {
 
   [[nodiscard]] constexpr bool is_write_open() const { return write_open_; }
 
+  [[nodiscard]] constexpr bool is_read_or_write_open() const {
+    return read_open_ || write_open_;
+  }
+
   /// Read API
 
   /// Returns a `pw::multibuf::MultiBuf` with read data, if available. If data
@@ -225,7 +229,7 @@ class AnyChannel {
 
   /// Writes using a previously allocated MultiBuf. Returns a token that
   /// refers to this write. These tokens are monotonically increasing, and
-  /// FlushPoll() returns the value of the latest token it has flushed.
+  /// PollFlush() returns the value of the latest token it has flushed.
   ///
   /// The ``MultiBuf`` argument to ``Write`` may consist of either:
   ///   (1) A single ``MultiBuf`` allocated by ``GetWriteAllocator()``
@@ -308,7 +312,7 @@ class AnyChannel {
   /// * FAILED_PRECONDITION - Channel was already closed, which can happen
   ///   out-of-band due to errors.
   async2::Poll<pw::Status> PollClose(async2::Context& cx) {
-    if (!is_read_open() && !is_write_open()) {
+    if (!is_read_or_write_open()) {
       return Status::FailedPrecondition();
     }
     auto result = DoPollClose(cx);
@@ -393,11 +397,12 @@ class AnyChannel {
 
   virtual multibuf::MultiBufAllocator& DoGetWriteAllocator() = 0;
 
-  virtual async2::Poll<> DoPollReadyToWrite(async2::Context& cx) = 0;
+  virtual pw::async2::Poll<> DoPollReadyToWrite(async2::Context& cx) = 0;
 
   virtual Result<WriteToken> DoWrite(multibuf::MultiBuf&& buffer) = 0;
 
-  virtual async2::Poll<Result<WriteToken>> DoPollFlush(async2::Context& cx) = 0;
+  virtual pw::async2::Poll<Result<WriteToken>> DoPollFlush(
+      async2::Context& cx) = 0;
 
   // Seek functions
   /// TODO: b/323622630 - `Seek` and `Position` are not yet implemented.

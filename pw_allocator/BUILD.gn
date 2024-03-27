@@ -142,40 +142,10 @@ pw_source_set("libc_allocator") {
   sources = [ "libc_allocator.cc" ]
 }
 
-pw_source_set("multiplex_allocator") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/multiplex_allocator.h" ]
-  public_deps = [
-    ":allocator",
-    "$dir_pw_containers:flat_map",
-    dir_pw_result,
-    dir_pw_status,
-    dir_pw_tokenizer,
-  ]
-}
-
 pw_source_set("null_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
   public_deps = [ ":allocator" ]
-}
-
-pw_source_set("simple_allocator") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/simple_allocator.h" ]
-  public_deps = [
-    ":allocator",
-    ":block",
-    dir_pw_bytes,
-    dir_pw_result,
-    dir_pw_status,
-  ]
-}
-
-pw_source_set("split_free_list_allocator") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/split_free_list_allocator.h" ]
-  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("synchronized_allocator") {
