@@ -13,7 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "TRN"
-#define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
+#define PW_LOG_LEVEL PW_TRANSFER_CONFIG_LOG_LEVEL
 
 #include "pw_transfer/internal/context.h"
 
@@ -23,7 +23,9 @@
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
+#include "pw_log/rate_limited.h"
 #include "pw_protobuf/serialized_size.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/transfer.pwpb.h"
 #include "pw_transfer/transfer_thread.h"
 #include "pw_varint/varint.h"
@@ -210,9 +212,6 @@ void Context::SetTransferParameters(Chunk& parameters) {
 void Context::UpdateAndSendTransferParameters(TransmitAction action) {
   UpdateTransferParameters();
 
-  PW_LOG_INFO("Transfer rate: %u B/s",
-              static_cast<unsigned>(transfer_rate_.GetRateBytesPerSecond()));
-
   return SendTransferParameters(action);
 }
 
@@ -235,13 +234,28 @@ void Context::SendTransferParameters(TransmitAction action) {
   parameters.set_session_id(session_id_);
   SetTransferParameters(parameters);
 
-  PW_LOG_DEBUG(
-      "Transfer %u sending transfer parameters: "
-      "offset=%u, window_end_offset=%u, max_chunk_size=%u",
-      static_cast<unsigned>(session_id_),
-      static_cast<unsigned>(offset_),
-      static_cast<unsigned>(window_end_offset_),
-      static_cast<unsigned>(max_chunk_size_bytes_));
+  PW_LOG_EVERY_N_DURATION(
+      PW_LOG_LEVEL_INFO,
+      log_rate_limit_,
+      "Transfer rate: %u B/s",
+      static_cast<unsigned>(transfer_rate_.GetRateBytesPerSecond()));
+
+  PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_INFO,
+                          log_rate_limit_,
+                          "Transfer %u sending transfer parameters: "
+                          "offset=%u, window_end_offset=%u, max_chunk_size=%u",
+                          static_cast<unsigned>(session_id_),
+                          static_cast<unsigned>(offset_),
+                          static_cast<unsigned>(window_end_offset_),
+                          static_cast<unsigned>(max_chunk_size_bytes_));
+
+  if (log_chunks_before_rate_limit_ > 0) {
+    log_chunks_before_rate_limit_--;
+
+    if (log_chunks_before_rate_limit_ == 0) {
+      log_rate_limit_ = log_rate_limit_cfg_;
+    }
+  }
 
   EncodeAndSendChunk(parameters);
 }
@@ -249,9 +263,21 @@ void Context::SendTransferParameters(TransmitAction action) {
 void Context::EncodeAndSendChunk(const Chunk& chunk) {
   last_chunk_sent_ = chunk.type();
 
-  PW_LOG_DEBUG("Transfer %u sending chunk type %u",
-               id_for_log(),
-               static_cast<unsigned>(last_chunk_sent_));
+#if PW_TRANSFER_CONFIG_DEBUG_CHUNKS
+  if ((chunk.remaining_bytes().has_value() &&
+       chunk.remaining_bytes().value() == 0) ||
+      (chunk.type() != Chunk::Type::kData &&
+       chunk.type() != Chunk::Type::kParametersContinue)) {
+    chunk.LogChunk(false, pw::chrono::SystemClock::duration::zero());
+  }
+#endif
+
+#if PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS
+  if (chunk.type() == Chunk::Type::kData ||
+      chunk.type() == Chunk::Type::kParametersContinue) {
+    chunk.LogChunk(false, log_rate_limit_);
+  }
+#endif
 
   Result<ConstByteSpan> data = chunk.Encode(thread_->encode_buffer());
   if (!data.ok()) {
@@ -323,6 +349,7 @@ void Context::Initialize(const NewTransferEvent& new_transfer) {
   interchunk_delay_ = chrono::SystemClock::for_at_least(
       std::chrono::microseconds(kDefaultChunkDelayMicroseconds));
   next_timeout_ = kNoTimeout;
+  log_chunks_before_rate_limit_ = log_chunks_before_rate_limit_cfg_;
 
   transfer_rate_.Reset();
 }
@@ -340,13 +367,26 @@ void Context::HandleChunkEvent(const ChunkEvent& event) {
   retries_ = 0;
   flags_ |= kFlagsContactMade;
 
+#if PW_TRANSFER_CONFIG_DEBUG_CHUNKS
+  if (chunk.type() != Chunk::Type::kData &&
+      chunk.type() != Chunk::Type::kParametersContinue) {
+    chunk.LogChunk(true, pw::chrono::SystemClock::duration::zero());
+  }
+#endif
+#if PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS
+  if (chunk.type() == Chunk::Type::kData ||
+      chunk.type() == Chunk::Type::kParametersContinue) {
+    chunk.LogChunk(true, log_rate_limit_);
+  }
+#endif
+
   if (chunk.IsTerminatingChunk()) {
     if (active()) {
       HandleTermination(chunk.status().value());
     } else {
-      PW_LOG_DEBUG("Got final status %d for completed transfer %d",
-                   static_cast<int>(chunk.status().value().code()),
-                   static_cast<int>(session_id_));
+      PW_LOG_INFO("Got final status %d for completed transfer %d",
+                  static_cast<int>(chunk.status().value().code()),
+                  static_cast<int>(session_id_));
     }
     return;
   }
@@ -572,12 +612,23 @@ void Context::HandleTransferParametersUpdate(const Chunk& chunk) {
         std::chrono::microseconds(chunk.min_delay_microseconds().value()));
   }
 
-  PW_LOG_DEBUG(
-      "Transfer %u received parameters type=%s offset=%u window_end_offset=%u",
-      static_cast<unsigned>(session_id_),
-      retransmit ? "RETRANSMIT" : "CONTINUE",
-      static_cast<unsigned>(chunk.offset()),
-      static_cast<unsigned>(window_end_offset_));
+  if (retransmit) {
+    PW_LOG_INFO(
+        "Transfer %u received parameters type=RETRANSMIT offset=%u "
+        "window_end_offset=%u",
+        static_cast<unsigned>(session_id_),
+        static_cast<unsigned>(chunk.offset()),
+        static_cast<unsigned>(window_end_offset_));
+  } else {
+    PW_LOG_EVERY_N_DURATION(
+        PW_LOG_LEVEL_INFO,
+        std::chrono::seconds(3),
+        "Transfer %u received parameters type=CONTINUE offset=%u "
+        "window_end_offset=%u",
+        static_cast<unsigned>(session_id_),
+        static_cast<unsigned>(chunk.offset()),
+        static_cast<unsigned>(window_end_offset_));
+  }
 
   // Parsed all of the parameters; start sending the window.
   set_transfer_state(TransferState::kTransmitting);
@@ -625,12 +676,12 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
     chunk.set_remaining_bytes(0);
     window_end_offset_ = offset_;
 
-    PW_LOG_DEBUG("Transfer %u sending final chunk with remaining_bytes=0",
-                 static_cast<unsigned>(session_id_));
+    PW_LOG_INFO("Transfer %u sending final chunk with remaining_bytes=0",
+                static_cast<unsigned>(session_id_));
   } else if (data.ok()) {
     if (offset_ == window_end_offset_) {
       if (retransmit_requested) {
-        PW_LOG_DEBUG(
+        PW_LOG_ERROR(
             "Transfer %u: received an empty retransmit request, but there is "
             "still data to send; aborting with RESOURCE_EXHAUSTED",
             id_for_log());
@@ -740,6 +791,9 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
               static_cast<unsigned>(session_id_),
               static_cast<unsigned>(chunk.offset()));
 
+          log_chunks_before_rate_limit_ = log_chunks_before_rate_limit_cfg_;
+          log_rate_limit_ = kNoRateLimit;
+
           UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
           if (DataTransferComplete()) {
             return;
@@ -821,15 +875,15 @@ void Context::HandleReceivedData(const Chunk& chunk) {
     transfer_rate_.Update(chunk.payload().size());
   }
 
+  // Update the transfer state.
+  offset_ += chunk.payload().size();
+
   // When the client sets remaining_bytes to 0, it indicates completion of the
   // transfer. Acknowledge the completion through a status chunk and clean up.
   if (chunk.IsFinalTransmitChunk()) {
     TerminateTransfer(OkStatus());
     return;
   }
-
-  // Update the transfer state.
-  offset_ += chunk.payload().size();
 
   if (chunk.window_end_offset() != 0) {
     if (chunk.window_end_offset() < offset_) {
@@ -913,9 +967,10 @@ void Context::TerminateTransfer(Status status, bool with_resource_id) {
 
   Finish(status);
 
-  PW_LOG_INFO("Transfer %u terminating with status %u",
+  PW_LOG_INFO("Transfer %u terminating with status: %u, offset: %u",
               static_cast<unsigned>(session_id_),
-              status.code());
+              status.code(),
+              static_cast<unsigned>(offset_));
 
   if (ShouldSkipCompletionHandshake()) {
     set_transfer_state(TransferState::kCompleted);
@@ -953,9 +1008,9 @@ void Context::SendFinalStatusChunk(bool with_resource_id) {
   PW_DCHECK(transfer_state_ == TransferState::kCompleted ||
             transfer_state_ == TransferState::kTerminating);
 
-  PW_LOG_DEBUG("Sending final chunk for transfer %u with status %u",
-               static_cast<unsigned>(session_id_),
-               status_.code());
+  PW_LOG_INFO("Sending final chunk for transfer %u with status %u",
+              static_cast<unsigned>(session_id_),
+              status_.code());
 
   Chunk chunk =
       Chunk::Final(configured_protocol_version_, session_id_, status_);

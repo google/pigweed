@@ -21,6 +21,22 @@
 
 #include "pw_chrono/system_clock.h"
 
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_TRANSFER_CONFIG_LOG_LEVEL
+#define PW_TRANSFER_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO
+#endif  // PW_TRANSFER_CONFIG_LOG_LEVEL
+
+// Turns on logging of individual chunks. Data and parameter chunk logging has
+// additional configuration
+#ifndef PW_TRANSFER_CONFIG_DEBUG_CHUNKS
+#define PW_TRANSFER_CONFIG_DEBUG_CHUNKS 0
+#endif  // PW_TRANSFER_CONFIG_DEBUG_CHUNKS
+
+// Turns on logging of data and parameter chunks.
+#ifndef PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS
+#define PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS 0
+#endif  // PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS
+
 #ifdef PW_TRANSFER_DEFAULT_MAX_RETRIES
 #pragma message(                                      \
     "PW_TRANSFER_DEFAULT_MAX_RETRIES is deprecated; " \
@@ -151,6 +167,27 @@ static_assert(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS > 0);
 
 static_assert(PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR > 1);
 
+// Number of chunks to send repetitative logs at full rate before reducing to
+// rate_limit. Retransmit parameter chunks will restart at this chunk count
+// limit.
+// Default is first 10 parameter logs will be sent, then reduced to one log
+// every `RATE_PERIOD_MS`
+#ifndef PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT
+#define PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT 10
+#endif  // PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT
+
+static_assert(PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT > 0);
+
+// The minimum time between repetative logs after the rate limit has been
+// applied (after CHUNKS_BEFORE_RATE_LIMIT parameter chunks).
+// Default is to reduce repetative logs to once every 10 seconds after
+// `CHUNKS_BEFORE_RATE_LIMIT` parameter chunks have been sent.
+#ifndef PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS
+#define PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS 10000
+#endif  // PW_TRANSFER_DEFAULT_MIN_RATE_PERIOD_MS
+
+static_assert(PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS >= 0);
+
 namespace pw::transfer::cfg {
 
 inline constexpr uint8_t kDefaultMaxClientRetries =
@@ -173,5 +210,11 @@ inline constexpr chrono::SystemClock::duration kDefaultInitialChunkTimeout =
 
 inline constexpr uint32_t kDefaultExtendWindowDivisor =
     PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR;
+
+inline constexpr uint16_t kLogDefaultChunksBeforeRateLimit =
+    PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT;
+inline constexpr chrono::SystemClock::duration kLogDefaultRateLimit =
+    chrono::SystemClock::for_at_least(
+        std::chrono::milliseconds(PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS));
 
 }  // namespace pw::transfer::cfg

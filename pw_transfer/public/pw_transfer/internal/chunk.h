@@ -16,6 +16,7 @@
 #include <optional>
 
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_result/result.h"
 #include "pw_transfer/internal/protocol.h"
 #include "pw_transfer/transfer.pwpb.h"
@@ -89,6 +90,10 @@ class Chunk {
   // Returns the size of the serialized chunk based on the fields currently set
   // within the chunk object.
   size_t EncodedSize() const;
+
+  void LogChunk(bool received,
+                pw::chrono::SystemClock::duration rate_limit =
+                    chrono::SystemClock::duration::zero()) const;
 
   constexpr Chunk& set_session_id(uint32_t session_id) {
     session_id_ = session_id;

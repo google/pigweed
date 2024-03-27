@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "TRN"
+#define PW_LOG_LEVEL PW_TRANSFER_CONFIG_LOG_LEVEL
 
 #include "pw_transfer/transfer_thread.h"
 
@@ -20,6 +21,7 @@
 #include "pw_log/log.h"
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/client_context.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/event.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();

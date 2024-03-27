@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "TRN"
+#define PW_LOG_LEVEL PW_TRANSFER_CONFIG_LOG_LEVEL
 
 #include "pw_transfer/client.h"
 

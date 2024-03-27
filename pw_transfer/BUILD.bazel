@@ -66,6 +66,7 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_containers:intrusive_list",
         "//pw_log",
+        "//pw_log:rate_limited",
         "//pw_preprocessor",
         "//pw_protobuf",
         "//pw_result",

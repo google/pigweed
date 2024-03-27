@@ -36,6 +36,7 @@ pw_add_library(pw_transfer INTERFACE
     pw_transfer.proto.raw_rpc
   PRIVATE_DEPS
     pw_log
+    pw_log.rate_limited
     pw_transfer.proto.pwpb
 )
 

@@ -24,6 +24,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/chunk.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/event.h"
 #include "pw_transfer/internal/protocol.h"
 #include "pw_transfer/rate_estimate.h"
@@ -133,7 +134,12 @@ class Context {
         initial_chunk_timeout_(chrono::SystemClock::duration::zero()),
         interchunk_delay_(chrono::SystemClock::for_at_least(
             std::chrono::microseconds(kDefaultChunkDelayMicroseconds))),
-        next_timeout_(kNoTimeout) {}
+        next_timeout_(kNoTimeout),
+        log_rate_limit_cfg_(cfg::kLogDefaultRateLimit),
+        log_rate_limit_(kNoRateLimit),
+        log_chunks_before_rate_limit_cfg_(
+            cfg::kLogDefaultChunksBeforeRateLimit),
+        log_chunks_before_rate_limit_(0) {}
 
   constexpr TransferType type() const {
     return static_cast<TransferType>(flags_ & kFlagsType);
@@ -365,6 +371,9 @@ class Context {
   static constexpr chrono::SystemClock::time_point kNoTimeout =
       chrono::SystemClock::time_point(chrono::SystemClock::duration(0));
 
+  static constexpr chrono::SystemClock::duration kNoRateLimit =
+      chrono::SystemClock::duration::zero();
+
   uint32_t session_id_;
   uint32_t resource_id_;
 
@@ -413,6 +422,14 @@ class Context {
 
   // Timestamp at which the transfer will next time out, or kNoTimeout.
   chrono::SystemClock::time_point next_timeout_;
+
+  // Rate limit for repetitive logs
+  chrono::SystemClock::duration log_rate_limit_cfg_;
+  chrono::SystemClock::duration log_rate_limit_;
+
+  // chunk delay to start rate limiting
+  uint16_t log_chunks_before_rate_limit_cfg_;
+  uint16_t log_chunks_before_rate_limit_;
 
   RateEstimate transfer_rate_;
 };

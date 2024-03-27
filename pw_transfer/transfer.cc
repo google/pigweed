@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "TRN"
+#define PW_LOG_LEVEL PW_TRANSFER_CONFIG_LOG_LEVEL
+
 #include "pw_transfer/transfer.h"
 
 #include "public/pw_transfer/transfer.h"
@@ -19,6 +22,7 @@
 #include "pw_log/log.h"
 #include "pw_status/try.h"
 #include "pw_transfer/internal/chunk.h"
+#include "pw_transfer/internal/config.h"
 
 namespace pw::transfer {
 

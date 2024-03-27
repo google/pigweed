@@ -391,11 +391,41 @@ more details.
   requested data has been received, a divisor of three will extend at a third
   of the window, and so on.
 
+.. c:macro:: PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT
+
+  Number of chunks to send repetitive logs at full rate before reducing to
+  rate_limit. Retransmit parameter chunks will restart at this chunk count
+  limit.
+  Default is first 10 parameter logs will be sent, then reduced to one log
+  every ``PW_TRANSFER_RATE_PERIOD_MS``
+
+.. c:macro:: PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS
+
+  The minimum time between repetative logs after the rate limit has been
+  applied (after CHUNKS_BEFORE_RATE_LIMIT parameter chunks).
+  Default is to reduce repetative logs to once every 10 seconds after
+  CHUNKS_BEFORE_RATE_LIMIT parameter chunks have been sent.
+
+.. c:macro:: PW_TRANSFER_CONFIG_LOG_LEVEL
+
+  Configurable log level for the entire transfer module.
+
+.. c:macro:: PW_TRANSFER_CONFIG_DEBUG_CHUNKS
+
+  Turns on logging of individual non-data or non-parameter chunks. Default is
+  false, to disable logging.
+
+.. c:macro:: PW_TRANSFER_CONFIG_DEBUG_DATA_CHUNKS
+
+  Turns on logging of individual data and parameter chunks. Default is false to
+  disable logging. These chunks are moderated (rate-limited) by the same
+  ``PW_TRANSFER_RATE_PERIOD_MS`` as other repetitive logs.
+
 .. _pw_transfer-nonzero-transfers:
 
 Non-zero Starting Offset Transfers
 ----------------------------------
-`pw_transfer` provides for transfers which read from or
+``pw_transfer`` provides for transfers which read from or
 write to a server resource starting from a point after the beginning.
 Handling of read/write/erase boundaries of the resource storage backend must
 be handled by the user through the transfer handler interfaces of `GetStatus`

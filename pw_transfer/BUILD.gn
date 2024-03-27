@@ -95,6 +95,7 @@ pw_source_set("core") {
     dir_pw_stream,
   ]
   deps = [
+    "$dir_pw_log:rate_limited",
     dir_pw_log,
     dir_pw_protobuf,
     dir_pw_varint,
