@@ -216,6 +216,13 @@
       "Starlark"
     ]
   },
+  "pw_uart": {
+    "tagline": "UART interface for communication",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_unit_test": {
     "tagline": "GoogleTest for embedded",
     "status": "stable"

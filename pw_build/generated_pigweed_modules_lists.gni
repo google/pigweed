@@ -199,6 +199,7 @@ declare_args() {
   dir_pw_trace = get_path_info("../pw_trace", "abspath")
   dir_pw_trace_tokenized = get_path_info("../pw_trace_tokenized", "abspath")
   dir_pw_transfer = get_path_info("../pw_transfer", "abspath")
+  dir_pw_uart = get_path_info("../pw_uart", "abspath")
   dir_pw_unit_test = get_path_info("../pw_unit_test", "abspath")
   dir_pw_unit_test_zephyr = get_path_info("../pw_unit_test_zephyr", "abspath")
   dir_pw_varint = get_path_info("../pw_varint", "abspath")
@@ -370,6 +371,7 @@ declare_args() {
     dir_pw_trace,
     dir_pw_trace_tokenized,
     dir_pw_transfer,
+    dir_pw_uart,
     dir_pw_unit_test,
     dir_pw_unit_test_zephyr,
     dir_pw_varint,
@@ -538,6 +540,7 @@ declare_args() {
     "$dir_pw_trace:tests",
     "$dir_pw_trace_tokenized:tests",
     "$dir_pw_transfer:tests",
+    "$dir_pw_uart:tests",
     "$dir_pw_unit_test:tests",
     "$dir_pw_unit_test_zephyr:tests",
     "$dir_pw_varint:tests",
@@ -706,6 +709,7 @@ declare_args() {
     "$dir_pw_trace:docs",
     "$dir_pw_trace_tokenized:docs",
     "$dir_pw_transfer:docs",
+    "$dir_pw_uart:docs",
     "$dir_pw_unit_test:docs",
     "$dir_pw_unit_test_zephyr:docs",
     "$dir_pw_varint:docs",

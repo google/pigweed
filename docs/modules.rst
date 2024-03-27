@@ -109,6 +109,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_toolchain_bazel/docs
    pw_trace/docs
    pw_transfer/docs
+   pw_uart/docs
    pw_unit_test/docs
    pw_unit_test_zephyr/docs
    pw_varint/docs

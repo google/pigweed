@@ -156,6 +156,7 @@ pw_toolchain_bazel
 pw_trace
 pw_trace_tokenized
 pw_transfer
+pw_uart
 pw_unit_test
 pw_unit_test_zephyr
 pw_varint
