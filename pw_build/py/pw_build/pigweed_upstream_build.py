@@ -55,8 +55,6 @@ def pigweed_upstream_main() -> int:
        pw build -C out --watch
     """
     default_bazel_targets = ['//...:all']
-    bazel_root = Path('out/bazel')
-    bazel_root.mkdir(parents=True, exist_ok=True)
 
     default_gn_gen_command = [
         'gn',
@@ -83,7 +81,7 @@ def pigweed_upstream_main() -> int:
             ],
         ),
         BuildRecipe(
-            build_dir=bazel_root,
+            build_dir=Path('out/bazel'),
             title='default_bazel',
             steps=[
                 BuildCommand(

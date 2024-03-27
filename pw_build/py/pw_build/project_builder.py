@@ -764,6 +764,10 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         build_succeeded = False
         cfg.reset_status()
         cfg.status.mark_started()
+
+        if cfg.auto_create_build_dir:
+            cfg.build_dir.mkdir(parents=True, exist_ok=True)
+
         for command_step in cfg.steps:
             command_args = command_step.get_args(
                 additional_ninja_args=self.extra_ninja_args,

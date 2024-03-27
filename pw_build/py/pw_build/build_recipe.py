@@ -435,12 +435,15 @@ class BuildRecipe:
             is set for all included steps.
         steps: List of BuildCommands to run.
         title: Custom title. The build_dir is used if this is ommited.
+        auto_create_build_dir: Auto create the build directory and all necessary
+            parent directories before running any build commands.
     """
 
     build_dir: Path
     steps: list[BuildCommand] = field(default_factory=list)
     title: str | None = None
     enabled: bool = True
+    auto_create_build_dir: bool = True
 
     def __hash__(self):
         return hash((self.build_dir, self.title, len(self.steps)))
