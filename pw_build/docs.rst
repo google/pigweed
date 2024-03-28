@@ -32,3 +32,4 @@ these to Pigweed's Bazel build integration.
    gn
    cmake
    bazel
+   project_builder

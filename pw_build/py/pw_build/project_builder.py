@@ -18,23 +18,25 @@ more build directories.
 
 Examples:
 
-  # Build the default target in out/ using ninja.
-  python -m pw_build.project_builder -C out
+.. code-block: sh
 
-  # Build pw_run_tests.modules in the out/cmake directory
-  python -m pw_build.project_builder -C out/cmake pw_run_tests.modules
+   # Build the default target in out/ using ninja.
+   python -m pw_build.project_builder -C out
 
-  # Build the default target in out/ and pw_apps in out/cmake
-  python -m pw_build.project_builder -C out -C out/cmake pw_apps
+   # Build pw_run_tests.modules in the out/cmake directory
+   python -m pw_build.project_builder -C out/cmake pw_run_tests.modules
 
-  # Build python.tests in out/ and pw_apps in out/cmake/
-  python -m pw_build.project_builder python.tests -C out/cmake pw_apps
+   # Build the default target in out/ and pw_apps in out/cmake
+   python -m pw_build.project_builder -C out -C out/cmake pw_apps
 
-  # Run 'bazel build' and 'bazel test' on the target '//...' in outbazel/
-  python -m pw_build.project_builder --run-command 'mkdir -p outbazel'
-  -C outbazel '//...'
-  --build-system-command outbazel 'bazel build'
-  --build-system-command outbazel 'bazel test'
+   # Build python.tests in out/ and pw_apps in out/cmake/
+   python -m pw_build.project_builder python.tests -C out/cmake pw_apps
+
+   # Run 'bazel build' and 'bazel test' on the target '//...' in outbazel/
+   python -m pw_build.project_builder --run-command 'mkdir -p outbazel'
+   -C outbazel '//...'
+   --build-system-command outbazel 'bazel build'
+   --build-system-command outbazel 'bazel test'
 """
 
 from __future__ import annotations
@@ -914,9 +916,16 @@ def run_recipe(
 
 
 def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> int:
-    """Execute build steps in the ProjectBuilder and print a summary.
+    """Execute all build recipe steps.
 
-    Returns: 1 for a failed build, 0 for success."""
+    Args:
+      project_builder: A ProjectBuilder instance
+      workers: The number of build recipes that should be run in
+        parallel. Defaults to 1 or no parallel execution.
+
+    Returns:
+      1 for a failed build, 0 for success.
+    """
     num_builds = len(project_builder)
     _LOG.info('Starting build with %d directories', num_builds)
     if project_builder.default_logfile:

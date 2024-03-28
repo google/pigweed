@@ -367,6 +367,7 @@ pw_doc_group("docs") {
     "cmake.rst",
     "docs.rst",
     "gn.rst",
+    "project_builder.rst",
     "python.rst",
   ]
 }
