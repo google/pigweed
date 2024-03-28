@@ -857,8 +857,10 @@ struct CommandHeader:
   -- HCI Command packet header.
   0     [+2]  OpCode      opcode_full
     -- Full HCI command opcode.
+
   0     [+2]  OpCodeBits  opcode
     -- Access opcode ogf or ocf sub-fields.
+
   $next [+1]  UInt        parameter_total_size
 
 
