@@ -27,6 +27,16 @@
 namespace pw::bluetooth {
 namespace {
 
+// Examples are used in docs.rst.
+TEST(EmbossExamples, MakeView) {
+  // DOCSTAG: [pw_bluetooth-examples-make_view]
+  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
+  auto view = emboss::MakeTestCommandPacketView(&buffer);
+  EXPECT_TRUE(view.IsComplete());
+  EXPECT_EQ(view.payload().Read(), 0x03);
+  // DOCSTAG: [pw_bluetooth-examples-make_view]
+}
+
 TEST(EmbossTest, MakeView) {
   std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
   auto view = emboss::MakeTestCommandPacketView(&buffer);

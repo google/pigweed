@@ -27,6 +27,8 @@ config("public_include_path") {
 }
 
 pw_doc_group("docs") {
+  # Also, sources with doxygen comment blocks must be added to //docs/BUILD.gn
+  inputs = [ "emboss_test.cc" ]
   sources = [ "docs.rst" ]
 
   report_deps = [
