@@ -36,8 +36,8 @@ from typing import (
     Collection,
     Iterable,
     NamedTuple,
+    Optional,
     Pattern,
-    Sequence,
     TextIO,
 )
 
@@ -64,6 +64,7 @@ from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.gn import GnFormatter
+from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.tools import (
     exclude_paths,
     file_summary,
@@ -327,90 +328,34 @@ def _enumerate_black_configs() -> Iterable[Path]:
         yield Path(directory, 'pyproject.toml')
 
 
-def _black_config_args() -> Sequence[str | Path]:
+def _select_black_config_file() -> Optional[Path]:
     config = None
     for config_location in _enumerate_black_configs():
         if config_location.is_file():
             config = config_location
             break
-
-    config_args: Sequence[str | Path] = ()
-    if config:
-        config_args = ('--config', config)
-    return config_args
-
-
-def _black_multiple_files(ctx: _Context) -> tuple[str, ...]:
-    black = ctx.format_options.black_path
-    changed_paths: list[str] = []
-    for line in (
-        log_run(
-            [black, '--check', *_black_config_args(), *ctx.paths],
-            capture_output=True,
-        )
-        .stderr.decode()
-        .splitlines()
-    ):
-        if match := re.search(r'^would reformat (.*)\s*$', line):
-            changed_paths.append(match.group(1))
-    return tuple(changed_paths)
+    return config
 
 
 def check_py_format_black(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    errors: dict[Path, str] = {}
-
-    # Run black --check on the full list of paths and then only run black
-    # individually on the files that black found issue with.
-    paths: tuple[str, ...] = _black_multiple_files(ctx)
-
-    def _format_temp(path: Path | str, data: bytes) -> bytes:
-        # black doesn't have an option to output the changed file, so copy the
-        # file to a temp location, run buildifier on it, read that modified
-        # copy, and return its contents.
-        with tempfile.TemporaryDirectory(dir=ctx.output_dir) as temp:
-            build = Path(temp) / os.path.basename(path)
-            build.write_bytes(data)
-
-            proc = log_run(
-                [ctx.format_options.black_path, *_black_config_args(), build],
-                capture_output=True,
-            )
-            if proc.returncode:
-                stderr = proc.stderr.decode(errors='replace')
-                stderr = stderr.replace(str(build), str(path))
-                errors[Path(path)] = stderr
-            return build.read_bytes()
-
-    result = _check_files(
-        [x for x in ctx.paths if str(x).endswith(paths)],
-        _format_temp,
-        ctx.dry_run,
+    formatter = BlackFormatter(
+        _select_black_config_file(), tool_runner=PresubmitToolRunner()
     )
-    result.update(errors)
-    return result
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
+    )
 
 
 def fix_py_format_black(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    errors: dict[Path, str] = {}
-
-    # Run black --check on the full list of paths and then only run black
-    # individually on the files that black found issue with.
-    paths: tuple[str, ...] = _black_multiple_files(ctx)
-
-    for path in ctx.paths:
-        if not str(path).endswith(paths):
-            continue
-
-        proc = log_run(
-            [ctx.format_options.black_path, *_black_config_args(), path],
-            capture_output=True,
-        )
-        print_format_fix(proc.stdout)
-        if proc.returncode:
-            errors[path] = proc.stderr.decode()
-    return errors
+    formatter = BlackFormatter(
+        _select_black_config_file(), tool_runner=PresubmitToolRunner()
+    )
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_py_format(ctx: _Context) -> dict[Path, str]:

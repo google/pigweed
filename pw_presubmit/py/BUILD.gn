@@ -32,6 +32,7 @@ pw_python_package("py") {
     "pw_presubmit/format/core.py",
     "pw_presubmit/format/cpp.py",
     "pw_presubmit/format/gn.py",
+    "pw_presubmit/format/python.py",
     "pw_presubmit/format/test_data/__init__.py",
     "pw_presubmit/format_code.py",
     "pw_presubmit/git_repo.py",
@@ -64,6 +65,8 @@ pw_python_package("py") {
     "pw_presubmit/format/test_data/gn_test_data.gn",
     "pw_presubmit/format/test_data/gn_test_data_golden.gn",
     "pw_presubmit/format/test_data/malformed_file.txt",
+    "pw_presubmit/format/test_data/python_test_data.py",
+    "pw_presubmit/format/test_data/python_test_data_golden.py",
   ]
   tests = [
     "bazel_parser_test.py",
@@ -79,6 +82,7 @@ pw_python_package("py") {
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",
+    "python_format_test.py",
     "owners_checks_test.py",
     "todo_check_test.py",
     "tools_test.py",

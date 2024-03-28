@@ -44,3 +44,7 @@ Formatters
 .. autoclass:: pw_presubmit.format.gn.GnFormatter
    :members:
    :noindex:
+
+.. autoclass:: pw_presubmit.format.python.BlackFormatter
+   :members:
+   :noindex:
