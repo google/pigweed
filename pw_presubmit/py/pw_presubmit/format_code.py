@@ -132,6 +132,7 @@ def _check_files(
 def _make_formatting_diff_dict(
     diffs: Iterable[FormattedDiff],
 ) -> dict[Path, str]:
+    """Adapts the formatting check API to work with this presubmit tooling."""
     return {
         result.file_path: (
             result.diff if result.ok else str(result.error_message)
@@ -143,6 +144,7 @@ def _make_formatting_diff_dict(
 def _make_format_fix_error_output_dict(
     statuses: Iterable[tuple[Path, FormatFixStatus]],
 ) -> dict[Path, str]:
+    """Adapts the formatter API to work with this presubmit tooling."""
     return {
         file_path: str(status.error_message) for file_path, status in statuses
     }

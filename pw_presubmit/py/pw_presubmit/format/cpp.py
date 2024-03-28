@@ -15,7 +15,6 @@
 
 from pathlib import Path
 from typing import Final, Iterable, Iterator, Sequence
-from subprocess import PIPE  # DO NOT use subprocess.run()!
 
 from pw_presubmit.format.core import (
     FileFormatter,
@@ -36,11 +35,19 @@ class ClangFormatFormatter(FileFormatter):
     def format_file_in_memory(
         self, file_path: Path, file_contents: bytes
     ) -> FormattedFileContents:
+        """Uses ``clang-format`` to check the formatting of the requested file.
+
+        The file at ``file_path`` is NOT modified by this check.
+
+        Returns:
+            A populated
+            :py:class:`pw_presubmit.format.core.FormattedFileContents` that
+            contains either the result of formatting the file, or an error
+            message.
+        """
         proc = self.run_tool(
             'clang-format',
             self.clang_format_flags + [file_path],
-            stdout=PIPE,
-            stderr=PIPE,
         )
         return FormattedFileContents(
             ok=proc.returncode == 0,
@@ -51,6 +58,11 @@ class ClangFormatFormatter(FileFormatter):
         )
 
     def format_file(self, file_path: Path) -> FormatFixStatus:
+        """Formats the provided file in-place using ``clang-format``.
+
+        Returns:
+            A FormatFixStatus that contains relevant errors/warnings.
+        """
         self.format_files([file_path])
         # `clang-format` doesn't emit errors, and will always try its best to
         # format malformed files.
@@ -59,10 +71,18 @@ class ClangFormatFormatter(FileFormatter):
     def format_files(
         self, paths: Iterable[Path], keep_warnings: bool = True
     ) -> Iterator[tuple[Path, FormatFixStatus]]:
+        """Uses ``clang-format`` to format the specified files in-place.
+
+        Returns:
+            An iterator of ``Path`` and
+            :py:class:`pw_presubmit.format.core.FormatFixStatus` pairs for each
+            file that was not successfully formatted. If ``keep_warnings`` is
+            ``True``, any successful format operations with warnings will also
+            be returned.
+        """
         self.run_tool(
             'clang-format',
             ['-i'] + self.clang_format_flags + list(paths),
-            stdout=PIPE,
             check=True,
         )
 

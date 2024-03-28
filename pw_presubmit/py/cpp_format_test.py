@@ -38,7 +38,7 @@ class CapturingToolRunner(ToolRunner):
     def __init__(self):
         self.command_history: list[str] = []
 
-    def __call__(
+    def _run_tool(
         self, tool: str, args, **kwargs
     ) -> subprocess.CompletedProcess:
         cmd = [tool] + args

@@ -248,7 +248,7 @@ def log_run(
 class PresubmitToolRunner(ToolRunner):
     """A simple ToolRunner that runs a process via `log_run()`."""
 
-    def __call__(
+    def _run_tool(
         self, tool: str, args, **kwargs
     ) -> subprocess.CompletedProcess:
         """Run the requested tool as a subprocess."""
