@@ -29,6 +29,10 @@
           "module": "pw_emu.__main__",
           "function": "main"
         },
+        "ffx": {
+          "module": "pw_cli.pigweed_aliases",
+          "function": "ffx"
+        },
         "format": {
           "module": "pw_presubmit.format_code",
           "function": "main"

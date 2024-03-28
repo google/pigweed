@@ -23,6 +23,7 @@ py_library(
     srcs = [
         "pw_cli/__init__.py",
         "pw_cli/__main__.py",
+        "pw_cli/aliases.py",
         "pw_cli/argument_types.py",
         "pw_cli/arguments.py",
         "pw_cli/branding.py",
@@ -30,6 +31,7 @@ py_library(
         "pw_cli/env.py",
         "pw_cli/envparse.py",
         "pw_cli/log.py",
+        "pw_cli/pigweed_aliases.py",
         "pw_cli/plugins.py",
         "pw_cli/process.py",
         "pw_cli/pw_command_plugins.py",

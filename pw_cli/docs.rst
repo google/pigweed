@@ -184,6 +184,41 @@ The function is now available through the ``pw`` command, and will be listed in
      -h, --help       show this help message and exit
      --device DEVICE  Set which device to target
 
+Defining a simple alias
+-----------------------
+For simpler ``pw`` subcommands that effectively only need to act as command line
+aliases, the ``pw_cli.alias`` python module can be reused for simplicity.
+
+First, create a python module that defines the alias:
+
+.. code-block:: python
+
+   # my_package/aliases.py
+
+   from pw_cli.aliases import alias
+
+   foo = alias("bar", "baz")
+
+The remaining step needed is to add a new plugin to ``pigweed.json``:
+
+.. code-block::
+
+   {
+     "pw": {
+       "pw_cli": {
+         "plugins": {
+           "foo": {
+             "module": "my_package.aliases",
+             "function": "foo"
+           },
+           ...
+         }
+       }
+     }
+   }
+
+In this case, the command ``pw foo abc`` will effectively run ``bar baz abc``.
+
 Branding Pigweed's tooling
 ==========================
 An important part of starting a new project is picking a name, and in the case
