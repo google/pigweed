@@ -309,13 +309,13 @@ class TemporaryEmulator(Emulator):
         config_path: Path | None = None,
         cleanup: bool = True,
     ) -> None:
-        self._temp = tempfile.TemporaryDirectory()
+        self._temp = tempfile.TemporaryDirectory(prefix="pw_emu_")
         self._cleanup = cleanup
         super().__init__(Path(self._temp.name), config_path)
 
     def __enter__(self):
         # Interoperability with pw emu cli.
-        os.environ["PW_EMU_WDIR"] = self._wdir
+        os.environ["PW_EMU_WDIR"] = str(self._wdir)
         return self
 
     def __exit__(self, exc, value, traceback) -> None:
