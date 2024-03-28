@@ -251,14 +251,7 @@ def fix_bazel_format(ctx: _Context) -> dict[Path, str]:
                 '--lint=fix',
                 # These warnings are safe to enable because they can always be
                 # auto-fixed.
-                (
-                    '--warnings='
-                    'load,'
-                    'load-on-top,'
-                    'native-build,'
-                    'same-origin-load,'
-                    'out-of-order-load'
-                ),
+                ('--warnings=load,native-build'),
                 path,
             ],
             capture_output=True,
