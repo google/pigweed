@@ -26,7 +26,7 @@ from pathlib import Path
 import re
 import sys
 
-from typing import Any, Iterable, Type
+from typing import Any, Collection, Iterable, Type
 
 from pw_build import generate_modules_lists
 
@@ -895,13 +895,32 @@ def _add_to_root_cmakelists(
     print('  modify  ' + str(path.relative_to(Path.cwd())))
 
 
-def _create_module(
-    module: str, languages: Iterable[str], build_systems: Iterable[str]
-) -> None:
+def _project_root() -> Path:
+    """Returns the path to the root directory of the current project."""
     project_root = Path(os.environ.get('PW_PROJECT_ROOT', ''))
-    assert project_root.is_dir()
+    if not project_root.is_dir():
+        _LOG.error(
+            'Expected env var PW_PROJECT_ROOT to point to a directory, but '
+            'found `%s` which is not a directory.',
+            project_root,
+        )
+        sys.exit(1)
+    return project_root
 
-    is_upstream = os.environ.get('PW_ROOT') == str(project_root)
+
+def _is_upstream() -> bool:
+    """Returns whether this command is being run within Pigweed itself."""
+    return os.environ.get('PW_ROOT') == str(_project_root())
+
+
+def _create_module(
+    module: str,
+    languages: Iterable[str],
+    build_systems: Iterable[str],
+    owners: Collection[str] | None = None,
+) -> None:
+    project_root = _project_root()
+    is_upstream = _is_upstream()
 
     module_name = _check_module_name(module, is_upstream)
     if not module_name:
@@ -927,9 +946,39 @@ def _create_module(
         )
         sys.exit(1)
 
+    if owners is not None:
+        if len(owners) < 2:
+            _LOG.error(
+                'New modules must have at least two owners, but only `%s` was '
+                'provided.',
+                owners,
+            )
+            sys.exit(1)
+        for owner in owners:
+            if '@' not in owner:
+                _LOG.error(
+                    'Owners should be email addresses, but found `%s`', owner
+                )
+                sys.exit(1)
+        root_owners = (project_root / 'OWNERS').read_text().split('\n')
+        if not any(owner in root_owners for owner in owners):
+            root_owners_str = '\n'.join(root_owners)
+            _LOG.error(
+                'Module owners must include at least one root owner, but only '
+                '`%s` was provided. Root owners include:\n%s',
+                owners,
+                root_owners_str,
+            )
+            sys.exit(1)
+
     ctx = _basic_module_setup(
         module_name, module_dir, build_systems, is_upstream
     )
+
+    if owners is not None:
+        owners_file = module_dir / 'OWNERS'
+        owners_file.write_text('\n'.join(owners))
+        print('  create  ' + str(owners_file.relative_to(Path.cwd())))
 
     try:
         generators = list(_LANGUAGE_GENERATORS[lang](ctx) for lang in languages)
@@ -957,6 +1006,7 @@ def _create_module(
 
 
 def register_subcommand(parser: argparse.ArgumentParser) -> None:
+    """Registers the module `create` subcommand with `parser`."""
     csv = lambda s: s.split(',')
 
     parser.add_argument(
@@ -979,6 +1029,19 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
         default=[],
         type=csv,
     )
+    if _is_upstream():
+        parser.add_argument(
+            '--owners',
+            help=(
+                'Comma-separated list of emails of the people who will own and '
+                'maintain the new module. This list must contain at least two '
+                'entries, and at least one user must be a top-level OWNER '
+                '(listed in `{_project_root()}/OWNERS`).'
+            ),
+            required=True,
+            metavar='firstownername@google.com,secondownername@foo.net',
+            type=csv,
+        )
     parser.add_argument(
         'module', help='Name of the module to create.', metavar='MODULE_NAME'
     )
