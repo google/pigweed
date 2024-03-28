@@ -562,7 +562,9 @@ export class LogList extends LitElement {
       <td ?hidden=${!isVisible}>
         <div class="cell-content">
           <span class="cell-text"
-            >${this.highlightMatchedText(field.value.toString())}</span
+            >${field.value
+              ? this.highlightMatchedText(field.value.toString())
+              : ''}</span
           >
         </div>
         ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
