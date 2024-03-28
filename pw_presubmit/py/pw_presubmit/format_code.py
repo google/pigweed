@@ -62,6 +62,7 @@ from pw_presubmit import (
 )
 from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
 from pw_presubmit.format.cpp import ClangFormatFormatter
+from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.tools import (
     exclude_paths,
     file_summary,
@@ -201,22 +202,19 @@ def typescript_format_fix(ctx: _Context) -> dict[Path, str]:
 
 def check_gn_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    return _check_files(
-        ctx.paths,
-        lambda _, data: log_run(
-            ['gn', 'format', '--stdin'],
-            input=data,
-            stdout=subprocess.PIPE,
-            check=True,
-        ).stdout,
-        ctx.dry_run,
+    formatter = GnFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
     )
 
 
 def fix_gn_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    log_run(['gn', 'format', *ctx.paths], check=True)
-    return {}
+    formatter = GnFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_bazel_format(ctx: _Context) -> dict[Path, str]:

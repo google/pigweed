@@ -1,0 +1,6 @@
+This is just a text file with random contents!
+Some formatters will take this and gracefully try to format it, others will
+flag that this file has syntax errors (which is unsurprising).
+
+Use this file to ensure errors are properly propagated.
+Some characters to potentially cause breakages: [[{\\\\**

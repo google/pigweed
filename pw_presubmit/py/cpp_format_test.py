@@ -15,12 +15,11 @@
 
 import importlib.resources
 from pathlib import Path
-import subprocess
 from tempfile import TemporaryDirectory
 from typing import Final, Sequence
 import unittest
 
-from pw_presubmit.format.core import ToolRunner
+from format_testing_utils import CapturingToolRunner
 from pw_presubmit.format.cpp import ClangFormatFormatter
 
 _TEST_DATA_FILES = importlib.resources.files('pw_presubmit.format.test_data')
@@ -32,18 +31,6 @@ _CLANG_FORMAT_CONFIG_PATH = _TEST_DATA_FILES / 'clang_format_config'
 _CLANG_FORMAT_ARGS: Final[Sequence[str]] = (
     f'--style=file:{_CLANG_FORMAT_CONFIG_PATH}',
 )
-
-
-class CapturingToolRunner(ToolRunner):
-    def __init__(self):
-        self.command_history: list[str] = []
-
-    def _run_tool(
-        self, tool: str, args, **kwargs
-    ) -> subprocess.CompletedProcess:
-        cmd = [tool] + args
-        self.command_history.append(' '.join([str(arg) for arg in cmd]))
-        return subprocess.run(cmd, **kwargs)
 
 
 class TestClangFormatFormatter(unittest.TestCase):

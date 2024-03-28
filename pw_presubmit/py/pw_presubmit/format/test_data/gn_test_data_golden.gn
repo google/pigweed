@@ -1,0 +1,28 @@
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("my_library") {
+  public = [ "public/my_library/foo.h" ]
+  deps = [
+    ":an",
+    ":list",
+    ":unsorted",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
+}

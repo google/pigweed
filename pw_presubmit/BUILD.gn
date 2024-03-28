@@ -27,6 +27,7 @@ pw_doc_group("docs") {
     "py/pw_presubmit/cli.py",
     "py/pw_presubmit/format/core.py",
     "py/pw_presubmit/format/cpp.py",
+    "py/pw_presubmit/format/gn.py",
     "py/pw_presubmit/presubmit.py",
   ]
 }

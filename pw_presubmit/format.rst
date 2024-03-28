@@ -36,3 +36,7 @@ Formatters
 .. autoclass:: pw_presubmit.format.cpp.ClangFormatFormatter
    :members:
    :noindex:
+
+.. autoclass:: pw_presubmit.format.gn.GnFormatter
+   :members:
+   :noindex:
