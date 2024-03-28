@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -164,8 +164,9 @@ pw_seed("0116") {
 pw_seed("0117") {
   changelist = 178350
   title = "pw_i3c"
-  status = "Open for Comments"
+  status = "Last Call"
   author = "Jack Chen"
+  facilitator = "Alexei Frolov"
 }
 
 pw_seed("0118") {
