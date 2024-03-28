@@ -27,6 +27,8 @@ from pw_ide.cpp import (
     CppCompilationDatabasesMap,
     CppCompileCommand,
     CppCompileCommandDict,
+    CppIdeFeaturesTarget,
+    CppIdeFeaturesState,
     infer_target,
     _infer_target_pos,
 )
@@ -1105,7 +1107,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
             'isosceles_debug',
         ]
 
-        settings = self.make_ide_settings(targets=targets)
+        settings = self.make_ide_settings(targets_include=targets)
 
         # pylint: disable=line-too-long
         raw_db: list[CppCompileCommandDict] = [
@@ -1258,7 +1260,8 @@ class TestCppCompilationDatabasesMap(PwIdeTestCase):
 
     def test_cascade_disabled(self):
         settings = self.make_ide_settings(
-            cascade_targets=False, targets=['test_target_1', 'test_target_2']
+            cascade_targets=False,
+            targets_include=['test_target_1', 'test_target_2'],
         )
         target1 = 'test_target_1'
         target2 = 'test_target_2'
@@ -1270,7 +1273,8 @@ class TestCppCompilationDatabasesMap(PwIdeTestCase):
 
     def test_cascade_enabled(self):
         settings = self.make_ide_settings(
-            cascade_targets=True, targets=['test_target_1', 'test_target_2']
+            cascade_targets=True,
+            targets_include=['test_target_1', 'test_target_2'],
         )
         target1 = 'test_target_1'
         target2 = 'test_target_2'
@@ -1279,6 +1283,46 @@ class TestCppCompilationDatabasesMap(PwIdeTestCase):
         db_set[target2] = self.fixture_2(target2)
         result = db_set._compdb_to_write(target1)
         self.assertCountEqual(result._db, [*db_set[target1], *db_set[target2]])
+
+
+class TestCppIdeFeaturesState(PwIdeTestCase):
+    """Test CppIdeFeaturesState"""
+
+    def test_targets_all(self):
+        all_targets = {
+            "a": CppIdeFeaturesTarget("a", Path("/dev/null"), 1),
+            "b": CppIdeFeaturesTarget("b", Path("/dev/null"), 1),
+            "c": CppIdeFeaturesTarget("c", Path("/dev/null"), 1),
+        }
+
+        settings = self.make_ide_settings()
+        state = CppIdeFeaturesState(settings)
+        state.targets = all_targets
+        self.assertListEqual(list(state.targets.keys()), ["a", "b", "c"])
+
+    def test_targets_exclude(self):
+        all_targets = {
+            "a": CppIdeFeaturesTarget("a", Path("/dev/null"), 1),
+            "b": CppIdeFeaturesTarget("b", Path("/dev/null"), 1),
+            "c": CppIdeFeaturesTarget("c", Path("/dev/null"), 1),
+        }
+
+        settings = self.make_ide_settings(targets_exclude=["a"])
+        state = CppIdeFeaturesState(settings)
+        state.targets = all_targets
+        self.assertListEqual(list(state.targets.keys()), ["b", "c"])
+
+    def test_targets_include(self):
+        all_targets = {
+            "a": CppIdeFeaturesTarget("a", Path("/dev/null"), 1),
+            "b": CppIdeFeaturesTarget("b", Path("/dev/null"), 1),
+            "c": CppIdeFeaturesTarget("c", Path("/dev/null"), 1),
+        }
+
+        settings = self.make_ide_settings(targets_include=["a"])
+        state = CppIdeFeaturesState(settings)
+        state.targets = all_targets
+        self.assertListEqual(list(state.targets.keys()), ["a"])
 
 
 if __name__ == '__main__':

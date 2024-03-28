@@ -30,8 +30,9 @@ files have the same schema, in which these options can be configured:
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.working_dir
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.compdb_gen_cmd
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.compdb_search_paths
-.. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.target_inference
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets_include
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets_exclude
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.default_target
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.cascade_targets
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.sync

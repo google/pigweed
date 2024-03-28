@@ -150,7 +150,8 @@ class PwIdeTestCase(TempDirTestCase):
     def make_ide_settings(
         self,
         working_dir: str | Path | None = None,
-        targets: list[str] | None = None,
+        targets_include: list[str] | None = None,
+        targets_exclude: list[str] | None = None,
         cascade_targets: bool = False,
     ) -> PigweedIdeSettings:
         """Make settings that wrap provided paths in the temp path."""
@@ -160,8 +161,11 @@ class PwIdeTestCase(TempDirTestCase):
         else:
             working_dir_path = self.temp_dir_path
 
-        if targets is None:
-            targets = []
+        if targets_include is None:
+            targets_include = []
+
+        if targets_exclude is None:
+            targets_exclude = []
 
         return PigweedIdeSettings(
             False,
@@ -169,7 +173,8 @@ class PwIdeTestCase(TempDirTestCase):
             False,
             default_config={
                 'working_dir': str(working_dir_path),
-                'targets': targets,
+                'targets_include': targets_include,
+                'targets_exclude': targets_exclude,
                 'cascade_targets': cascade_targets,
             },
         )

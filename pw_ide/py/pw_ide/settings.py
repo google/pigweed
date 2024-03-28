@@ -54,7 +54,8 @@ _DEFAULT_CONFIG: dict[str, Any] = {
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
     'sync': ['pw --no-banner ide cpp --process'],
-    'targets': [],
+    'targets_exclude': [],
+    'targets_include': [],
     'target_inference': _DEFAULT_TARGET_INFERENCE,
     'working_dir': PW_IDE_DEFAULT_DIR,
 }
@@ -128,6 +129,15 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
             environment_var='PW_IDE_CONFIG_FILE',
         )
 
+    def __repr__(self) -> str:
+        return str(
+            {
+                key: getattr(self, key)
+                for key, value in self.__class__.__dict__.items()
+                if isinstance(value, property)
+            }
+        )
+
     @property
     def working_dir(self) -> Path:
         """Path to the ``pw_ide`` working directory.
@@ -165,12 +175,29 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return [
             _parse_compdb_search_path(search_path, self.target_inference)
             for search_path in self._config.get(
-                'compdb_search_paths', _DEFAULT_BUILD_DIR
+                'compdb_search_paths', [_DEFAULT_BUILD_DIR]
             )
         ]
 
     @property
-    def targets(self) -> list[str]:
+    def targets_exclude(self) -> list[str]:
+        """The list of targets that should not be enabled for code analysis.
+
+        In this case, "target" is analogous to a GN target, i.e., a particular
+        build configuration. By default, all available targets are enabled. By
+        adding targets to this list, you can disable/hide targets that should
+        not be available for code analysis.
+
+        Target names need to match the name of the directory that holds the
+        build system artifacts for the target. For example, GN outputs build
+        artifacts for the ``pw_strict_host_clang_debug`` target in a directory
+        with that name in its output directory. So that becomes the canonical
+        name for the target.
+        """
+        return self._config.get('targets_exclude', list())
+
+    @property
+    def targets_include(self) -> list[str]:
         """The list of targets that should be enabled for code analysis.
 
         In this case, "target" is analogous to a GN target, i.e., a particular
@@ -186,7 +213,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         with that name in its output directory. So that becomes the canonical
         name for the target.
         """
-        return self._config.get('targets', list())
+        return self._config.get('targets_include', list())
 
     @property
     def target_inference(self) -> str:
@@ -402,7 +429,14 @@ _docstring_set_default(
     literal=True,
 )
 _docstring_set_default(
-    PigweedIdeSettings.targets, _DEFAULT_CONFIG['targets'], literal=True
+    PigweedIdeSettings.targets_exclude,
+    _DEFAULT_CONFIG['targets_exclude'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.targets_include,
+    _DEFAULT_CONFIG['targets_include'],
+    literal=True,
 )
 _docstring_set_default(
     PigweedIdeSettings.default_target,

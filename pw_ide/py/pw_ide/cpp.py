@@ -222,7 +222,22 @@ class CppIdeFeaturesState:
     @property
     def targets(self) -> dict[str, CppIdeFeaturesTarget]:
         with self._file() as state:
-            return state.targets
+            exclude_predicate = (
+                lambda x: x not in self.settings.targets_exclude
+                if len(self.settings.targets_exclude) > 0
+                else lambda x: True
+            )
+            include_predicate = (
+                lambda x: x in self.settings.targets_include
+                if len(self.settings.targets_include) > 0
+                else lambda x: True
+            )
+
+            return {
+                name: target
+                for (name, target) in state.targets.items()
+                if exclude_predicate(name) and include_predicate(name)
+            }
 
     @targets.setter
     def targets(self, new_targets: dict[str, CppIdeFeaturesTarget]) -> None:
