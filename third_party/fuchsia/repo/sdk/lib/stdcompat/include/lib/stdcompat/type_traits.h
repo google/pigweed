@@ -7,10 +7,9 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <utility>
 
-#include "internal/type_traits.h"
-#include "version.h"
+#include "internal/type_traits.h"  // IWYU pragma: keep
+#include "version.h"               // IWYU pragma: keep
 
 namespace cpp17 {
 

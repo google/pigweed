@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <type_traits>
+#include <utility>
 
 namespace cpp17 {
 namespace internal {

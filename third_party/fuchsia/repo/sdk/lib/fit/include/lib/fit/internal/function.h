@@ -429,6 +429,9 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
 
   using ops_type = const target_ops<Result, Args...>*;
 
+ public:
+  ~function_base() = default;
+
  protected:
   using result_type = Result;
 

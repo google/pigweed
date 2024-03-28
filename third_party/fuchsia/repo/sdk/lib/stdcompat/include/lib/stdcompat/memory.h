@@ -45,7 +45,7 @@ constexpr T* to_address(T* pointer) noexcept {
   return pointer;
 }
 
-// TODO(fxbug.dev/70523): This std::pointer_traits stuff is only to be bug-compatible with the
+// TODO(https://fxbug.dev/42149777): This std::pointer_traits stuff is only to be bug-compatible with the
 // standard library implementations; switch back to auto when the linked bug is resolved.
 template <typename T>
 constexpr typename std::pointer_traits<T>::element_type* to_address(const T& pointer) noexcept {
@@ -54,7 +54,7 @@ constexpr typename std::pointer_traits<T>::element_type* to_address(const T& poi
                    typename std::pointer_traits<T>::element_type*>::value,
       "For compatibility with libc++ and libstdc++, operator->() must return "
       "typename std::pointer_traits<T>::element_type*. 'Chaining' operator->() in "
-      "cpp20::to_address() will not be permitted until https://fxbug.dev/70523 is resolved.");
+      "cpp20::to_address() will not be permitted until https://fxbug.dev/42149777 is resolved.");
 
   return to_address(pointer.operator->());
 }
