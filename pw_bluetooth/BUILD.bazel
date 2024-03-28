@@ -226,6 +226,7 @@ pw_cc_test(
         ":emboss_hci",
         ":emboss_hci_test",
         ":emboss_l2cap_frames",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 

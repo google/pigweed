@@ -14,6 +14,7 @@
 
 // All emboss headers are listed (even if they don't have explicit tests) to
 // ensure they are compiled.
+#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_commands.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -93,6 +94,11 @@ TEST(EmbossTest, WriteOpcodes) {
   // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
   EXPECT_EQ(header.opcode_full().Read(),
             emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+}
+
+// Test and demonstrate using to_underlying with OpCodes enums
+TEST(EmbossTest, OPCodeEnumsWithToUnderlying) {
+  EXPECT_EQ(0x0000, cpp23::to_underlying(emboss::OpCode::UNSPECIFIED));
 }
 
 }  // namespace

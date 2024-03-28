@@ -213,6 +213,7 @@ pw_test("emboss_test") {
     ":emboss_hci_group",
     ":emboss_hci_test",
     ":emboss_l2cap_frames",
+    "$dir_pw_third_party/fuchsia:stdcompat",
   ]
 }
 

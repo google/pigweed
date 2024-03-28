@@ -184,6 +184,7 @@ pw_add_test(pw_bluetooth.emboss_test
     pw_bluetooth.emboss_hci_group
     pw_bluetooth.emboss_hci_test
     pw_bluetooth.emboss_l2cap_frames
+    pw_third_party.fuchsia.stdcompat
   GROUPS
     pw_bluetooth
 )
