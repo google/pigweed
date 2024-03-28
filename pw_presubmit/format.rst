@@ -33,6 +33,10 @@ Core
 
 Formatters
 ==========
+.. autoclass:: pw_presubmit.format.bazel.BuildifierFormatter
+   :members:
+   :noindex:
+
 .. autoclass:: pw_presubmit.format.cpp.ClangFormatFormatter
    :members:
    :noindex:

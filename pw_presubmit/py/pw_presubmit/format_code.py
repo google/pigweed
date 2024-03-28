@@ -62,6 +62,7 @@ from pw_presubmit import (
 )
 from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
 from pw_presubmit.format.cpp import ClangFormatFormatter
+from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.tools import (
     exclude_paths,
@@ -219,46 +220,19 @@ def fix_gn_format(ctx: _Context) -> dict[Path, str]:
 
 def check_bazel_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    errors: dict[Path, str] = {}
-
-    def _format_temp(path: Path | str, data: bytes) -> bytes:
-        # buildifier doesn't have an option to output the changed file, so
-        # copy the file to a temp location, run buildifier on it, read that
-        # modified copy, and return its contents.
-        with tempfile.TemporaryDirectory(dir=ctx.output_dir) as temp:
-            build = Path(temp) / os.path.basename(path)
-            build.write_bytes(data)
-
-            proc = log_run(['buildifier', build], capture_output=True)
-            if proc.returncode:
-                stderr = proc.stderr.decode(errors='replace')
-                stderr = stderr.replace(str(build), str(path))
-                errors[Path(path)] = stderr
-            return build.read_bytes()
-
-    result = _check_files(ctx.paths, _format_temp, ctx.dry_run)
-    result.update(errors)
-    return result
+    formatter = BuildifierFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
+    )
 
 
 def fix_bazel_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    errors = {}
-    for path in ctx.paths:
-        proc = log_run(
-            [
-                'buildifier',
-                '--lint=fix',
-                # These warnings are safe to enable because they can always be
-                # auto-fixed.
-                ('--warnings=load,native-build'),
-                path,
-            ],
-            capture_output=True,
-        )
-        if proc.returncode:
-            errors[path] = proc.stderr.decode()
-    return errors
+    formatter = BuildifierFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_owners_format(ctx: _Context) -> dict[Path, str]:

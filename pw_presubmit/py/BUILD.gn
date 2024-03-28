@@ -28,6 +28,7 @@ pw_python_package("py") {
     "pw_presubmit/cli.py",
     "pw_presubmit/cpp_checks.py",
     "pw_presubmit/format/__init__.py",
+    "pw_presubmit/format/bazel.py",
     "pw_presubmit/format/core.py",
     "pw_presubmit/format/cpp.py",
     "pw_presubmit/format/gn.py",
@@ -55,6 +56,8 @@ pw_python_package("py") {
     "pw_presubmit/tools.py",
   ]
   inputs = [
+    "pw_presubmit/format/test_data/bazel_test_data.bazel",
+    "pw_presubmit/format/test_data/bazel_test_data_golden.bazel",
     "pw_presubmit/format/test_data/clang_format_config",
     "pw_presubmit/format/test_data/cpp_test_data.cc",
     "pw_presubmit/format/test_data/cpp_test_data_golden.cc",
@@ -64,6 +67,7 @@ pw_python_package("py") {
   ]
   tests = [
     "bazel_parser_test.py",
+    "bazel_format_test.py",
     "context_test.py",
     "cpp_checks_test.py",
     "cpp_format_test.py",
