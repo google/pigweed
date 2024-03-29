@@ -1,6 +1,6 @@
 {
   "name": "pigweedjs",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "An open source collection of embedded-targeted libraries",
   "author": "The Pigweed Authors",
   "license": "Apache-2.0",
