@@ -20,6 +20,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -83,6 +84,20 @@ pw_test("dispatcher_test") {
   sources = [ "dispatcher_test.cc" ]
 }
 
+pw_test("dispatcher_thread_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != "" &&
+              pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+              pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+              pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  deps = [
+    ":dispatcher",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+    dir_pw_function,
+  ]
+  sources = [ "dispatcher_thread_test.cc" ]
+}
+
 pw_source_set("pend_func_task") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async2/pend_func_task.h" ]
@@ -101,6 +116,7 @@ pw_test("pend_func_task_test") {
 pw_test_group("tests") {
   tests = [
     ":dispatcher_test",
+    ":dispatcher_thread_test",
     ":poll_test",
     ":pend_func_task_test",
   ]

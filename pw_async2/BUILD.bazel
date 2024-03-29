@@ -91,6 +91,7 @@ cc_library(
     name = "dispatcher_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
+        "@platforms//os:linux": ["//pw_async2_epoll:dispatcher"],
         "//conditions:default": ["//pw_async2_basic:dispatcher"],
     }),
 )
@@ -99,6 +100,17 @@ pw_cc_test(
     name = "dispatcher_test",
     srcs = ["dispatcher_test.cc"],
     deps = [":dispatcher"],
+)
+
+pw_cc_test(
+    name = "dispatcher_thread_test",
+    srcs = ["dispatcher_thread_test.cc"],
+    deps = [
+        ":dispatcher",
+        "@pigweed//pw_function",
+        "@pigweed//pw_thread:sleep",
+        "@pigweed//pw_thread:thread",
+    ],
 )
 
 cc_library(

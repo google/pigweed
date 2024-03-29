@@ -69,6 +69,16 @@ pw_add_test(pw_async2.dispatcher_test
     pw_containers.vector
 )
 
+pw_add_test(pw_async2.dispatcher_thread_test
+  SOURCES
+    dispatcher_thread_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_function
+    pw_thread.sleep
+    pw_thread.thread
+)
+
 pw_add_library(pw_async2.pend_func_task INTERFACE
   HEADERS
     public/pw_async2/pend_func_task.h
