@@ -60,7 +60,6 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_hdlc/docs
    pw_hex_dump/docs
    pw_i2c/docs
-   pw_i2c_rp2040/docs
    pw_ide/docs
    pw_interrupt/docs
    pw_intrusive_ptr/docs

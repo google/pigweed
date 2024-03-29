@@ -1,8 +1,10 @@
 .. _module-pw_i2c_mcuxpresso:
 
------------------
+=================
 pw_i2c_mcuxpresso
------------------
+=================
+.. pigweed-module::
+   :name: pw_i2c_mcuxpresso
 
 ``pw_i2c_mcuxpresso`` implements the ``pw_i2c`` interface using the
 NXP MCUXpresso SDK.
@@ -10,8 +12,9 @@ NXP MCUXpresso SDK.
 The implementation is based on the i2c driver in SDK. I2C transfers use
 non-blocking driver API.
 
+-----
 Setup
-=====
+-----
 This module requires following setup:
 
 1. Use ``pw_build_mcuxpresso`` to create a ``pw_source_set`` for an
@@ -24,8 +27,9 @@ This module requires following setup:
    ``pw::i2c::RegisterDevice`` interface to access the I2C devices connected to
    target.
 
+-----
 Usage
-=====
+-----
 .. code-block:: cpp
 
    constexpr uint32_t kI2CBaudRate = 100000;

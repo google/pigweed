@@ -27,62 +27,82 @@ namespace pw::i2c {
 /// style of interface an I2C "master", <!-- inclusive-language: disable -->
 /// "central", or "controller".
 ///
-/// `Initiator` isn't required to support 10-bit addressing. If only 7-bit
-/// addressing is supported, `Initiator` asserts when given an address
-/// that is out of 7-bit address range.
+/// `pw::i2c::Initiator` isn't required to support 10-bit addressing. If only
+/// 7-bit addressing is supported, `pw::i2c::Initiator` fails a runtime
+/// assertion when given an address that is out of 7-bit address range.
 ///
 /// The implementer of this pure virtual interface is responsible for ensuring
 /// thread safety and enabling functionality such as initialization,
-/// configuration, enabling/disabling, unsticking SDA, and detecting device
+/// configuration, enabling and disabling, unsticking SDA, and detecting device
 /// address registration collisions.
 ///
-/// @note `Initiator` uses internal synchronization, so it's safe to
-/// initiate transactions from multiple threads. However, write+read
-/// transactions may not be atomic with multiple controllers on the bus.
-/// Furthermore, devices may require specific sequences of transactions, and
-/// application logic must provide the synchronization to execute these
-/// sequences correctly.
+/// @note `pw::i2c::Initiator` uses internal synchronization, so it's safe to
+/// initiate transactions from multiple threads. However, a combined write and
+/// read transaction may not be atomic when there are multiple initiators on
+/// the bus. Furthermore, devices may require specific sequences of
+/// transactions, and application logic must provide the synchronization to
+/// execute these sequences correctly.
 class Initiator {
  public:
   virtual ~Initiator() = default;
 
-  // Write bytes and then read bytes as either one atomic or two independent I2C
-  // transaction. If the I2C bus is a multi-initiator bus then the implementer
-  // MUST ensure it is a single atomic I2C transaction.
-  // The signal on the bus should appear as follows:
-  // 1) Write Only:
-  //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES + STOP
-  // 2) Read Only:
-  //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
-  // 3A) Write + Read (atomic):
-  //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES +
-  //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
-  // 3B) Write + Read (separate):
-  //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES + STOP
-  //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
-  //
-  // The timeout defines the maximum duration one may block waiting for both
-  // exclusive bus access and the completion of the I2C transaction.
-  //
-  // Preconditions:
-  // The Address must be supported by the Initiator, i.e. do not use a 10
-  //     address if the Initiator only supports 7 bit. This will assert.
-  //
-  // Returns:
-  // Ok - Success.
-  // InvalidArgument - device_address is larger than the 10 bit address space.
-  // DeadlineExceeded - Was unable to acquire exclusive Initiator access
-  //   and complete the I2C transaction in time.
-  // Unavailable - NACK condition occurred, meaning the addressed device did
-  //   not respond or was unable to process the request.
-  // FailedPrecondition - The interface is not currently initialized and/or
-  //    enabled.
+  /// Writes bytes to an I2C device and then reads bytes from that same
+  /// device as either one atomic I2C transaction or two independent I2C
+  /// transactions.
+  ///
+  /// If the I2C bus is a multi-initiator then the implementer of this
+  /// class **must** ensure it's a single-atomic transaction.
+  ///
+  /// The signal on the bus for the atomic transaction should look like this:
+  ///
+  /// @code
+  ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES +
+  ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
+  /// @endcode
+  ///
+  /// The signal on the bus for the two independent transactions should look
+  /// like this:
+  ///
+  /// @code
+  ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES + STOP
+  ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
+  /// @endcode
+  ///
+  /// @param[in] device_address The address of the I2C device.
+  ///
+  /// @param[in] tx_buffer The transmit buffer.
+  ///
+  /// @param[out] rx_buffer The receive buffer.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction or
+  /// transactions.
+  ///
+  /// @pre The provided address must be supported by the initiator. I.e.
+  /// don't use a 10-bit address if the initiator only supports 7-bit
+  /// addresses. This method fails a runtime assertion if this precondition
+  /// isn't met.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The transaction or transactions succeeded.
+  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
+  ///   than 10 bits.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
+  ///   initiator access and complete the I2C transaction in time.
+  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
+  ///   addressed device didn't respond or was unable to process the request.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
+  ///   enabled.
   Status WriteReadFor(Address device_address,
                       ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
                       chrono::SystemClock::duration timeout) {
     return DoWriteReadFor(device_address, tx_buffer, rx_buffer, timeout);
   }
+
+  /// A variation of `pw::i2c::Initiator::WriteReadFor` that accepts explicit
+  /// sizes for the amount of bytes to write to the device and read from the
+  /// device.
   Status WriteReadFor(Address device_address,
                       const void* tx_buffer,
                       size_t tx_size_bytes,
@@ -96,30 +116,45 @@ class Initiator {
         timeout);
   }
 
-  // Write bytes. The signal on the bus should appear as follows:
-  //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES + STOP
-  //
-  // The timeout defines the maximum duration one may block waiting for both
-  // exclusive bus access and the completion of the I2C transaction.
-  //
-  // Preconditions:
-  // The Address must be supported by the Initiator, i.e. do not use a 10
-  //     address if the Initiator only supports 7 bit. This will assert.
-  //
-  // Returns:
-  // Ok - Success.
-  // InvalidArgument - device_address is larger than the 10 bit address space.
-  // DeadlineExceeded - Was unable to acquire exclusive Initiator access
-  //   and complete the I2C transaction in time.
-  // Unavailable - NACK condition occurred, meaning the addressed device did
-  //   not respond or was unable to process the request.
-  // FailedPrecondition - The interface is not currently initialized and/or
-  //    enabled.
+  /// Write bytes to the I2C device.
+  ///
+  /// The signal on the bus should look like this:
+  ///
+  /// @code
+  ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES + STOP
+  /// @endcode
+  ///
+  /// @param[in] device_address The address of the I2C device.
+  ///
+  /// @param[in] tx_buffer The transmit buffer.
+  ///
+  /// @param[out] rx_buffer The receive buffer.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @pre The provided address must be supported by the initiator. I.e.
+  /// don't use a 10-bit address if the initiator only supports 7-bit
+  /// addresses. This method fails a runtime assertion if this precondition
+  /// isn't met.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The transaction succeeded.
+  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
+  ///   than 10 bits.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
+  ///   initiator access and complete the I2C transaction in time.
+  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
+  ///   addressed device didn't respond or was unable to process the request.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
+  ///   enabled.
   Status WriteFor(Address device_address,
                   ConstByteSpan tx_buffer,
                   chrono::SystemClock::duration timeout) {
     return WriteReadFor(device_address, tx_buffer, ByteSpan(), timeout);
   }
+  /// A variation of `pw::i2c::Initiator::WriteFor` that accepts an explicit
+  /// size for the amount of bytes to write to the device.
   Status WriteFor(Address device_address,
                   const void* tx_buffer,
                   size_t tx_size_bytes,
@@ -130,30 +165,43 @@ class Initiator {
         timeout);
   }
 
-  // Read bytes. The signal on the bus should appear as follows:
-  //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
-  //
-  // The timeout defines the maximum duration one may block waiting for both
-  // exclusive bus access and the completion of the I2C transaction.
-  //
-  // Preconditions:
-  // The Address must be supported by the Initiator, i.e. do not use a 10
-  //     address if the Initiator only supports 7 bit. This will assert.
-  //
-  // Returns:
-  // Ok - Success.
-  // InvalidArgument - device_address is larger than the 10 bit address space.
-  // DeadlineExceeded - Was unable to acquire exclusive Initiator access
-  //   and complete the I2C transaction in time.
-  // Unavailable - NACK condition occurred, meaning the addressed device did
-  //   not respond or was unable to process the request.
-  // FailedPrecondition - The interface is not currently initialized and/or
-  //    enabled.
+  /// Reads bytes from an I2C device.
+  ///
+  /// The signal on the bus should look like this:
+  ///
+  /// @code
+  ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
+  /// @endcode
+  ///
+  /// @param[in] device_address The address of the I2C device.
+  ///
+  /// @param[out] rx_buffer The receive buffer.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @pre The provided address must be supported by the initiator. I.e.
+  /// don't use a 10-bit address if the initiator only supports 7-bit
+  /// addresses. This method fails a runtime assertion if this precondition
+  /// isn't met.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The transaction succeeded.
+  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
+  ///   than 10 bits.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
+  ///   initiator access and complete the I2C transaction in time.
+  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
+  ///   addressed device didn't respond or was unable to process the request.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
+  ///   enabled.
   Status ReadFor(Address device_address,
                  ByteSpan rx_buffer,
                  chrono::SystemClock::duration timeout) {
     return WriteReadFor(device_address, ConstByteSpan(), rx_buffer, timeout);
   }
+  /// A variation of `pw::i2c::Initiator::ReadFor` that accepts an explicit
+  /// size for the amount of bytes to read from the device.
   Status ReadFor(Address device_address,
                  void* rx_buffer,
                  size_t rx_size_bytes,
@@ -163,25 +211,30 @@ class Initiator {
                    timeout);
   }
 
-  // Probes the device for an I2C ACK after only writing the address.
-  // This is done by attempting to read a single byte from the specified device.
-  //
-  // The timeout defines the maximum duration one may block waiting for both
-  // exclusive bus access and the completion of the I2C transaction.
-  //
-  // Preconditions:
-  // The Address must be supported by the Initiator, i.e. do not use a 10
-  //     address if the Initiator only supports 7 bit. This will assert.
-  //
-  // Returns:
-  // Ok - Success.
-  // InvalidArgument - device_address is larger than the 10 bit address space.
-  // DeadlineExceeded - Was unable to acquire exclusive Initiator access
-  //   and complete the I2C transaction in time.
-  // Unavailable - NACK condition occurred, meaning the addressed device did
-  //   not respond or was unable to process the request.
-  // FailedPrecondition - The interface is not currently initialized and/or
-  //    enabled.
+  /// Probes the device for an I2C ACK after only writing the address.
+  /// This is done by attempting to read a single byte from the specified
+  /// device.
+  ///
+  /// @param[in] device_address The address of the I2C device.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @pre The provided address must be supported by the initiator. I.e.
+  /// don't use a 10-bit address if the initiator only supports 7-bit
+  /// addresses. This method fails a runtime assertion if this precondition
+  /// isn't met.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The transaction succeeded.
+  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
+  ///   than 10 bits.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
+  ///   initiator access and complete the I2C transaction in time.
+  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
+  ///   addressed device didn't respond or was unable to process the request.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
+  ///   enabled.
   Status ProbeDeviceFor(Address device_address,
                         chrono::SystemClock::duration timeout) {
     std::byte ignored_buffer[1] = {};  // Read a byte to probe.

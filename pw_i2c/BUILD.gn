@@ -192,5 +192,7 @@ pw_doc_group("docs") {
   sources = [
     "backends.rst",
     "docs.rst",
+    "guides.rst",
+    "reference.rst",
   ]
 }

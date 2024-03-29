@@ -1,21 +1,26 @@
 .. _module-pw_i2c_linux:
 
----------------------
+============
 pw_i2c_linux
----------------------
+============
+.. pigweed-module::
+   :name: pw_i2c_linux
+
 ``pw_i2c_linux`` implements the ``pw_i2c`` interface using the Linux userspace
 ``i2c-dev`` driver. Transfers are executed using blocking ``ioctl`` calls.
 Write+read transactions are implemented atomically using a single system call,
 and a retry mechanism is used to support bus arbitration between multiple
 controllers.
 
-C++
-===
+-------------
+API reference
+-------------
 .. doxygenclass:: pw::i2c::LinuxInitiator
    :members:
 
+--------
 Examples
-========
+--------
 A simple example illustrating the usage:
 
 .. code-block:: C++
@@ -77,8 +82,9 @@ can be done by initializing a function-local static variable with a lambda:
    pw::i2c::Device device(*initiator, address);
    // Use device to talk to address.
 
+-------
 Caveats
-=======
+-------
 Only 7-bit addresses are supported right now, but it should be possible to add
 support for 10-bit addresses with minimal changes - as long as the Linux driver
 supports 10-bit addresses.

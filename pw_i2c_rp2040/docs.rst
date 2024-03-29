@@ -3,15 +3,11 @@
 -------------
 pw_i2c_rp2040
 -------------
+.. pigweed-module::
+   :name: pw_i2c_rp2040
 
-``pw_i2c_rp2040`` implements the ``pw_i2c`` interface using the
-Raspberry Pi Pico SDK.
+.. pw_i2c_rp2040-example-start
 
-The implementation is based on the i2c driver in pico_sdk. I2C transfers use
-the blocking driver API which uses busy waiting under the hood.
-
-Usage
-=====
 .. code-block:: cpp
 
    #include "pw_i2c_rp2040/initiator.h"
@@ -25,19 +21,26 @@ Usage
    };
 
     pw::i2c::Rp2040Initiator i2c_bus(ki2cConfig, i2c0);
-    # This will call:
-    #   gpio_set_function(8, GPIO_FUNC_I2C);
-    #   gpio_set_function(9, GPIO_FUNC_I2C);
+    // Calls these Pico SDK functions:
+    // * gpio_set_function(8, GPIO_FUNC_I2C)
+    // * gpio_set_function(9, GPIO_FUNC_I2C)
     i2c_bus.Enable();
 
-Implementation Callouts
-=======================
+.. pw_i2c_rp2040-example-end
 
-The ``Enable()`` function will call `gpio_set_function
+``pw_i2c_rp2040`` implements the :ref:`module-pw_i2c` interface using the
+Raspberry Pi Pico SDK.
+
+The implementation is based on the I2C driver in the Pico SDK. I2C transfers
+use the blocking driver API which uses busy waiting under the hood.
+
+Implementation notes
+====================
+The ``Enable()`` function calls `gpio_set_function
 <https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#rpipc56748afaf477c99958b>`_
-from the pico_sdk.
+from the Pico SDK.
 
-Under the hood this implementation uses these pico_sdk functions which only
+Under the hood this implementation uses the following Pico SDK functions which only
 allow specifying timeouts in microseconds:
 
 - `i2c_read_blocking_until <https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#rpip9cd3e6e1aeea56af6388>`_
@@ -47,4 +50,4 @@ allow specifying timeouts in microseconds:
 
 One additional microsecond is added to each timeout value to ensure reads and
 writes wait at least the full duration. Ideally a single clock tick would be
-added but that is not currently possible with the pico_sdk APIs.
+added but that is not currently possible with the Pico SDK APIs.

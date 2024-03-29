@@ -23,11 +23,20 @@
 
 namespace pw::i2c {
 
-// Represents a complete parameter set for the Initiator::DoWriteReadFor().
+/// Base class for creating transaction instances. For read-only,
+/// write-only, or probe transactions, improve code readability
+/// by using one of the following helpers instead:
+///
+/// * `pw::i2c::ReadTransaction`
+/// * `pw::i2c::WriteTransaction`
+/// * `pw::i2c::ProbeTransaction`
+///
+/// If you need to create a write-then-read transaction, you can
+/// use this class.
 class Transaction {
  public:
-  // Same set of parameters as  Initiator::DoWriteReadFor(), with the exception
-  // of optional parameter timeout.
+  /// Constructor for creating write-only, read-only, or write-then-read
+  /// transactions.
   constexpr Transaction(
       Status expected_return_value,
       Address device_address,
@@ -40,7 +49,7 @@ class Transaction {
         address_(device_address),
         timeout_(timeout) {}
 
-  // Alternate Transaction constructor for use in ProbeTransaction.
+  /// Alternative constructor for creating probe transactions.
   constexpr Transaction(
       Status expected_return_value,
       Address device_address,
@@ -51,21 +60,21 @@ class Transaction {
                     ignored_buffer_,
                     timeout) {}
 
-  // Gets the buffer that is virtually read.
+  /// Gets the buffer that is virtually read.
   ConstByteSpan read_buffer() const { return read_buffer_; }
 
-  // Gets the buffer that should be written by the driver.
+  /// Gets the buffer that the I2C device should write to.
   ConstByteSpan write_buffer() const { return write_buffer_; }
 
-  // Gets the min duration for a blocking i2c transaction.
+  /// Gets the minimum duration to wait for a blocking I2C transaction.
   std::optional<chrono::SystemClock::duration> timeout() const {
     return timeout_;
   }
 
-  // Gets the i2c address that the i2c transaction is targetting.
+  /// Gets the I2C address that the I2C transaction is targeting.
   Address address() const { return address_; }
 
-  // Gets the expected return value.
+  /// Gets the expected return value for the transaction.
   Status return_value() const { return return_value_; }
 
  private:
@@ -77,7 +86,8 @@ class Transaction {
   const std::optional<chrono::SystemClock::duration> timeout_;
 };
 
-// Read transaction is a helper that constructs a read only transaction.
+/// A helper that constructs a read-only I2C transaction.
+/// Used for testing read transactions with `pw::i2c::MockInitiator`.
 constexpr Transaction ReadTransaction(
     Status expected_return_value,
     Address device_address,
@@ -90,7 +100,8 @@ constexpr Transaction ReadTransaction(
                      timeout);
 }
 
-// WriteTransaction is a helper that constructs a write only transaction.
+/// A helper that constructs a write-only I2C transaction.
+/// Used for testing write transactions with `pw::i2c::MockInitiator`.
 constexpr Transaction WriteTransaction(
     Status expected_return_value,
     Address device_address,
@@ -103,8 +114,8 @@ constexpr Transaction WriteTransaction(
                      timeout);
 }
 
-// ProbeTransaction is a helper that constructs a one-byte read transaction.
-// For use in testing Probe transactions with the Mock Initiator.
+/// A helper that constructs a one-byte read I2C transaction.
+/// Used for testing probe transactions with `pw::i2c::MockInitiator`.
 constexpr Transaction ProbeTransaction(
     Status expected_return_value,
     Address device_address,
@@ -112,23 +123,62 @@ constexpr Transaction ProbeTransaction(
   return Transaction(expected_return_value, device_address, timeout);
 }
 
-// MockInitiator takes a series of read and/or write transactions and
-// compares them against user/driver input.
-//
-// This mock uses Gtest to ensure that the transactions instantiated meet
-// expectations. This MockedInitiator should be instantiated inside a Gtest test
-// frame.
+/// A generic mocked backend for `pw::i2c::Initiator` that's specifically
+/// designed to make it easier to develop I2C device drivers.
+/// `pw::i2c::MockInitiator` compares actual I2C transactions against expected
+/// transactions. The expected transactions are represented as a list of
+/// `pw::i2c::Transaction` instances that are passed as arguments in the
+/// `pw::i2c::MockInitiator` constructor. Each consecutive call to
+/// `pw::i2c::MockInitiator` iterates to the next expected transaction.
+/// `pw::i2c::MockInitiator::Finalize()` indicates whether the actual
+/// transactions matched the expected transactions.
+///
+/// `pw::i2c::MockInitiator` is intended to be used within GoogleTest tests.
+/// See @rstref{module-pw_unit_test}.
+///
+/// @code{.cpp}
+///   #include <chrono>
+///
+///   #include "pw_bytes/array.h"
+///   #include "pw_i2c/address.h"
+///   #include "pw_i2c/initiator_mock.h"
+///   #include "pw_result/result.h"
+///   #include "pw_unit_test/framework.h"
+///
+///   using namespace std::chrono_literals;
+///
+///   namespace {
+///
+///   TEST(I2CTestSuite, I2CWriteTestCase) {
+///     constexpr pw::i2c::Address kAddress =
+///     pw::i2c::Address::SevenBit<0x01>(); constexpr auto kExpectedWrite =
+///     pw::bytes::Array<1, 2, 3>(); auto expected_transactions =
+///     pw::i2c::MakeExpectedTransactionArray(
+///       {pw::i2c::WriteTransaction(pw::OkStatus(), kAddress, kExpectedWrite,
+///       1ms)}
+///     );
+///     pw::i2c::MockInitiator initiator(expected_transactions);
+///     pw::ConstByteSpan kActualWrite = pw::bytes::Array<1, 2, 3>();
+///     pw::Status status = initiator.WriteFor(kAddress, kActualWrite, 1ms);
+///     EXPECT_EQ(initiator.Finalize(), pw::OkStatus());
+///   }
+///
+///   }
+/// @endcode
 class MockInitiator : public Initiator {
  public:
   explicit constexpr MockInitiator(span<Transaction> transaction_list)
       : expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
-  // Should be called at the end of the test to ensure that all expected
-  // transactions have been met.
-  // Returns:
-  // Ok - Success.
-  // OutOfRange - The mocked set of transactions has not been exhausted.
+  /// Indicates whether the actual I2C transactions matched the expected
+  /// transactions. Should be called at the end of the test.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The actual transactions matched the expected
+  ///   transactions.
+  /// * @pw_status{OUT_OF_RANGE} - The mocked set of transactions hasn't been
+  ///   exhausted.
   Status Finalize() const {
     if (expected_transaction_index_ != expected_transactions_.size()) {
       return Status::OutOfRange();
@@ -136,7 +186,8 @@ class MockInitiator : public Initiator {
     return Status();
   }
 
-  // Runs Finalize() regardless of whether it was already optionally finalized.
+  /// Runs `pw::i2c::MockInitiator::Finalize()` regardless of whether it was
+  /// already optionally finalized.
   ~MockInitiator() override;
 
  private:

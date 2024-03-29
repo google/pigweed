@@ -17,44 +17,80 @@
 
 namespace pw::i2c {
 
-// The Address is a helper class which represents I2C addresses which is
-// used by pw::i2c APIs.
-//
-// Example usage:
-//   constexpr Address foo = Address::SevenBit<0x42>();
-//   uint8_t foo_raw_address = foo.GetSevenBit();
-//
-//   const Address bar(0x200);  // 10 bit address.
-//   uint16_t bar_raw_address = bar.GetTenBit();
-//   // Note that bar.GetSevenBit() would assert here.
-//
+/// A helper class that represents I2C addresses.
+///
+/// @code{.cpp}
+///   #include "pw_i2c/address.h"
+///
+///   constexpr pw::i2c::Address kAddress1 = pw::i2c::Address::SevenBit<0x42>();
+///   uint8_t raw_address_1 = kAddress1.GetSevenBit();
+///
+///   const pw::i2c::Address kAddress2(0x200);  // 10-bit
+///   uint16_t raw_address_2 = kAddress2.GetTenBit();
+///   // Note: kAddress2.GetSevenBit() would fail an assertion here.
+/// @endcode
 class Address {
  public:
   static constexpr uint8_t kMaxSevenBitAddress = (1 << 7) - 1;
   static constexpr uint16_t kMaxTenBitAddress = (1 << 10) - 1;
 
-  // Helper constructor to ensure the address fits in the address space at
-  // compile time, skipping the construction time assert.
+  /// Creates a `pw::i2c::Address` instance for an address that's 10 bits
+  /// or less.
+  ///
+  /// This constant expression does a compile-time assertion to ensure that the
+  /// provided address is 10 bits or less.
+  ///
+  /// @code{.cpp}
+  ///   constexpr pw::i2c::Address kAddress = pw::i2c::Address::TenBit(0x200);
+  /// @endcode
+  ///
+  /// @returns A `pw::i2c::Address` instance.
   template <uint16_t kAddress>
   static constexpr Address TenBit() {
     static_assert(kAddress <= kMaxTenBitAddress);
     return Address(kAddress, kAlreadyCheckedAddress);
   }
 
-  // Helper constructor to ensure the address fits in the address space at
-  // compile time, skipping the construction time assert.
+  /// Creates a `pw::i2c::Address` instance for an address that's 7 bits
+  /// or less.
+  ///
+  /// This constant expression does a compile-time assertion to ensure that the
+  /// provided address is 7 bits or less.
+  ///
+  /// @code{.cpp}
+  ///   constexpr pw::i2c::Address kAddress = pw::i2c::Address::SevenBit(0x42);
+  /// @endcode
+  ///
+  /// @returns A `pw::i2c::Address` instance.
   template <uint8_t kAddress>
   static constexpr Address SevenBit() {
     static_assert(kAddress <= kMaxSevenBitAddress);
     return Address(kAddress, kAlreadyCheckedAddress);
   }
 
-  // Precondition: The address is at least a valid ten bit address.
+  /// Creates a `pw::i2c::Address` instance.
+  ///
+  /// @param[in] address A 10-bit address as an unsigned integer. This method
+  /// does a runtime assertion to ensure that `address` is 10 bits or less.
+  ///
+  /// @code{.cpp}
+  ///   constexpr pw::i2c::Address kAddress(0x200);
+  /// @endcode
+  ///
+  /// @returns A `pw::i2c::Address` instance.
   explicit Address(uint16_t address);
 
-  // Precondition: The address is a valid 7 bit address.
+  /// Gets the 7-bit address that was provided when this instance was created.
+  ///
+  /// This method does a runtime assertion to ensure that the address is 7 bits
+  /// or less.
+  ///
+  /// @returns A 7-bit address as an unsigned integer.
   uint8_t GetSevenBit() const;
 
+  /// Gets the 10-bit address that was provided when this instance was created.
+  ///
+  /// @returns A 10-bit address as an unsigned integer.
   uint16_t GetTenBit() const { return address_; }
 
  private:

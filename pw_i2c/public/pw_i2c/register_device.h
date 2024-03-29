@@ -236,7 +236,7 @@ class RegisterDevice : public Device {
                         uint8_t register_data,
                         chrono::SystemClock::duration timeout);
 
-  /// Variant of `pw::i2c::RegisterDevince::WriteRegister()` that writes exactly
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegister()` that writes exactly
   /// 16 bits.
   Status WriteRegister16(uint32_t register_address,
                          uint16_t register_data,

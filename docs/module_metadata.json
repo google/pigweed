@@ -117,6 +117,34 @@
       "TypeScript"
     ]
   },
+  "pw_i2c": {
+    "tagline": "Cross-platform I2C API with interactive debugging",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_i2c_linux": {
+    "tagline": "Linux userspace implementation for pw_i2c",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_i2c_mcuxpresso": {
+    "tagline": "NXP MCUXpresso SDK implementation for pw_i2c",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
+  "pw_i2c_rp2040": {
+    "tagline": "Raspberry Pi Pico SDK implementation for pw_i2c",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_json": {
     "tagline": "Simple, efficient C++ JSON serialization",
     "status": "stable",
