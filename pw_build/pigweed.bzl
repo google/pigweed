@@ -253,6 +253,7 @@ def _pw_cc_blob_library_impl(ctx):
         [src],
         [hdr],
         deps = ctx.attr.deps,
+        alwayslink = ctx.attr.alwayslink,
         includes = [ctx.bin_dir.path + "/" + ctx.label.package],
         defines = [],
     )
@@ -285,11 +286,13 @@ pw_cc_blob_library = rule(
                     exactly as it is written here to reference the byte arrays.
 
         namespace: The C++ namespace in which to place the generated blobs.
+        alwayslink: Whether this library should always be linked.
     """,
     attrs = {
         "blobs": attr.label_list(providers = [CcBlobInfo]),
         "out_header": attr.string(),
         "namespace": attr.string(),
+        "alwayslink": attr.bool(default = False),
         "_python_runtime": attr.label(
             default = Label("//:python3_interpreter"),
             allow_single_file = True,

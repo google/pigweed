@@ -55,7 +55,8 @@ def compile_cc(
         includes = [],
         defines = [],
         local_defines = [],
-        user_compile_flags = []):
+        user_compile_flags = [],
+        alwayslink = False):
     """Compiles a list C++ source files.
 
     Args:
@@ -67,6 +68,7 @@ def compile_cc(
         defines: List of preprocessor defines to use
         local_defines: List of preprocessor defines to use only on this unit.
         user_compile_flags: Extra compiler flags to pass when compiling.
+        alwayslink: Whether this library should always be linked.
 
     Returns:
       A CcInfo provider.
@@ -110,6 +112,7 @@ def compile_cc(
             compilation_outputs = compilation_outputs,
             linking_contexts = linking_contexts,
             disallow_dynamic_library = True,
+            alwayslink = alwayslink,
             name = ctx.label.name,
         )
 

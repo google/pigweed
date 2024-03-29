@@ -236,6 +236,7 @@ Arguments
 * ``out_header``: The header file to generate. Users will include this file
   exactly as it is written here to reference the byte arrays.
 * ``namespace``: C++ namespace to place the generated blobs within.
+* ``alwayslink``: Whether this library should always be linked. Defaults to false.
 
 Example
 ^^^^^^^
