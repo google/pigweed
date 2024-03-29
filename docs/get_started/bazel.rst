@@ -29,11 +29,11 @@ Setup
       If you use this workflow, remember that Bazel will only be available
       in the version of Node that's currently activated through NVM.
 
-#. Clone `the project <https://pigweed.googlesource.com/example/echo/+/refs/heads/main>`_:
+#. Clone `the project <https://pigweed.googlesource.com/pigweed/quickstart/bazel/+/refs/heads/main>`_:
 
    .. code-block:: console
 
-      $ git clone --recursive https://pigweed.googlesource.com/example/echo
+      $ git clone --recursive https://pigweed.googlesource.com/pigweed/quickstart/bazel
 
    .. tip::
 
@@ -41,7 +41,7 @@ Setup
       ``git submodule update --init``.
 
 All subsequent commands that you see in this guide should be run from the
-root directory of your new ``echo`` repo.
+root directory of your new ``quickstart`` repo.
 
 -----------------
 Build the project
