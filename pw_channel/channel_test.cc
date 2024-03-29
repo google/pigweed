@@ -52,18 +52,18 @@ class ReliableByteReaderWriterStub
   // Read functions
 
   // The max_bytes argument is ignored for datagram-oriented channels.
-  pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPollRead(
+  pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPendRead(
       pw::async2::Context&) override {
     return pw::async2::Pending();
   }
 
   // Write functions
-  pw::async2::Poll<> DoPollReadyToWrite(pw::async2::Context&) override {
+  pw::async2::Poll<> DoPendReadyToWrite(pw::async2::Context&) override {
     return pw::async2::Pending();
   }
 
   pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
-    // ``DoPollReadyToWrite`` will never return ``Ready``, so this is not
+    // ``DoPendReadyToWrite`` will never return ``Ready``, so this is not
     // callable.
     PW_CHECK(false);
   }
@@ -73,14 +73,14 @@ class ReliableByteReaderWriterStub
     return pw::Status::Unimplemented();
   }
 
-  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPollFlush(
+  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPendFlush(
       pw::async2::Context&) override {
     return pw::async2::Ready(
         pw::Result<pw::channel::WriteToken>(pw::Status::Unimplemented()));
   }
 
   // Common functions
-  pw::async2::Poll<pw::Status> DoPollClose(pw::async2::Context&) override {
+  pw::async2::Poll<pw::Status> DoPendClose(pw::async2::Context&) override {
     return pw::OkStatus();
   }
 };
@@ -96,19 +96,19 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
       EXPECT_TRUE(channel.is_read_open());
       EXPECT_TRUE(channel.is_write_open());
-      EXPECT_EQ(pw::async2::Ready(pw::OkStatus()), channel.PollClose(cx));
+      EXPECT_EQ(pw::async2::Ready(pw::OkStatus()), channel.PendClose(cx));
       EXPECT_FALSE(channel.is_read_open());
       EXPECT_FALSE(channel.is_write_open());
 
       EXPECT_EQ(pw::Status::FailedPrecondition(),
-                channel.PollRead(cx)->status());
-      EXPECT_EQ(pw::async2::Ready(), channel.PollReadyToWrite(cx));
+                channel.PendRead(cx)->status());
+      EXPECT_EQ(pw::async2::Ready(), channel.PendReadyToWrite(cx));
       EXPECT_EQ(pw::Status::FailedPrecondition(),
                 channel.Write(pw::multibuf::MultiBuf()).status());
       EXPECT_EQ(pw::Status::FailedPrecondition(),
-                channel.PollFlush(cx)->status());
+                channel.PendFlush(cx)->status());
       EXPECT_EQ(pw::async2::Ready(pw::Status::FailedPrecondition()),
-                channel.PollClose(cx));
+                channel.PendClose(cx));
 
       return pw::async2::Ready();
     }
@@ -159,7 +159,7 @@ class TestByteReader : public ByteChannel<kReliable, kReadable> {
   }
 
  private:
-  Poll<pw::Result<MultiBuf>> DoPollRead(Context& cx) override {
+  Poll<pw::Result<MultiBuf>> DoPendRead(Context& cx) override {
     if (data_.empty()) {
       read_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
       return Pending();
@@ -167,7 +167,7 @@ class TestByteReader : public ByteChannel<kReliable, kReadable> {
     return std::move(data_);
   }
 
-  Poll<pw::Status> DoPollClose(Context&) override {
+  Poll<pw::Status> DoPendClose(Context&) override {
     return Ready(pw::OkStatus());
   }
 
@@ -201,7 +201,7 @@ class TestDatagramWriter : public DatagramWriter {
   }
 
  private:
-  Poll<> DoPollReadyToWrite(Context& cx) override {
+  Poll<> DoPendReadyToWrite(Context& cx) override {
     if (state_ == kReadyToWrite) {
       return Ready();
     }
@@ -224,7 +224,7 @@ class TestDatagramWriter : public DatagramWriter {
     return alloc_;
   }
 
-  Poll<pw::Result<pw::channel::WriteToken>> DoPollFlush(Context& cx) override {
+  Poll<pw::Result<pw::channel::WriteToken>> DoPendFlush(Context& cx) override {
     if (state_ != kReadyToFlush) {
       waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
       return Pending();
@@ -234,7 +234,7 @@ class TestDatagramWriter : public DatagramWriter {
         pw::Result<pw::channel::WriteToken>(CreateWriteToken(last_flush_)));
   }
 
-  Poll<pw::Status> DoPollClose(Context&) override {
+  Poll<pw::Status> DoPendClose(Context&) override {
     return Ready(pw::OkStatus());
   }
 
@@ -272,7 +272,7 @@ TEST(Channel, TestByteReader) {
 
    private:
     Poll<> DoPend(Context& cx) override {
-      auto result = channel.PollRead(cx);
+      auto result = channel.PendRead(cx);
       if (!result.IsReady()) {
         return Pending();
       }
@@ -324,7 +324,7 @@ TEST(Channel, TestDatagramWriter) {
     Poll<> DoPend(Context& cx) override {
       switch (state_) {
         case kWaitUntilReady: {
-          if (channel_.PollReadyToWrite(cx).IsPending()) {
+          if (channel_.PendReadyToWrite(cx).IsPending()) {
             return Pending();
           }
           if (!allocation_future_.has_value()) {
@@ -350,7 +350,7 @@ TEST(Channel, TestDatagramWriter) {
           [[fallthrough]];
         }
         case kFlushPacket: {
-          auto result = channel_.PollFlush(cx);
+          auto result = channel_.PendFlush(cx);
           if (result.IsPending() || **result < write_token_) {
             return Pending();
           }

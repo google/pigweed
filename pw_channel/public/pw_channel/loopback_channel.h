@@ -52,10 +52,10 @@ class LoopbackChannel<DataType::kDatagram>
   LoopbackChannel& operator=(LoopbackChannel&&) = default;
 
  private:
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
+  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPollReadyToWrite(async2::Context& cx) final;
+  async2::Poll<> DoPendReadyToWrite(async2::Context& cx) final;
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {
     return *write_allocator_;
@@ -63,9 +63,9 @@ class LoopbackChannel<DataType::kDatagram>
 
   Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) final;
 
-  async2::Poll<Result<channel::WriteToken>> DoPollFlush(async2::Context&) final;
+  async2::Poll<Result<channel::WriteToken>> DoPendFlush(async2::Context&) final;
 
-  async2::Poll<Status> DoPollClose(async2::Context&) final;
+  async2::Poll<Status> DoPendClose(async2::Context&) final;
 
   multibuf::MultiBufAllocator* write_allocator_;
   std::optional<multibuf::MultiBuf> queue_;
@@ -85,10 +85,10 @@ class LoopbackChannel<DataType::kByte> : public ByteReaderWriter {
   LoopbackChannel& operator=(LoopbackChannel&&) = default;
 
  private:
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
+  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPollReadyToWrite(async2::Context&) final {
+  async2::Poll<> DoPendReadyToWrite(async2::Context&) final {
     return async2::Ready();
   }
 
@@ -98,9 +98,9 @@ class LoopbackChannel<DataType::kByte> : public ByteReaderWriter {
 
   Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) final;
 
-  async2::Poll<Result<channel::WriteToken>> DoPollFlush(async2::Context&) final;
+  async2::Poll<Result<channel::WriteToken>> DoPendFlush(async2::Context&) final;
 
-  async2::Poll<Status> DoPollClose(async2::Context&) final;
+  async2::Poll<Status> DoPendClose(async2::Context&) final;
 
   multibuf::MultiBufAllocator* write_allocator_;
   multibuf::MultiBuf queue_;

@@ -69,7 +69,7 @@ class SendDatagrams : public Task {
  private:
   Poll<> DoPend(Context& cx) final {
     while (!to_send_.empty()) {
-      if (channel_.PollReadyToWrite(cx).IsPending()) {
+      if (channel_.PendReadyToWrite(cx).IsPending()) {
         return Pending();
       }
       EXPECT_EQ(channel_.Write(std::move(to_send_.front())).status(),
@@ -93,7 +93,7 @@ class ReceiveDatagramsUntilClosed : public Task {
  private:
   Poll<> DoPend(Context& cx) final {
     while (true) {
-      Poll<Result<MultiBuf>> result = channel_.PollRead(cx);
+      Poll<Result<MultiBuf>> result = channel_.PendRead(cx);
       if (result.IsPending()) {
         return Pending();
       }
@@ -231,7 +231,7 @@ TEST(Router, PendOnClosedIoChannelReturnsReady) {
   // Close the underlying byte channel.
   Waker null_waker;
   Context null_cx(dispatcher, null_waker);
-  EXPECT_EQ(byte_pair.second().PollClose(null_cx), Ready(OkStatus()));
+  EXPECT_EQ(byte_pair.second().PendClose(null_cx), Ready(OkStatus()));
 
   // Both the router and the receive task should complete.
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());

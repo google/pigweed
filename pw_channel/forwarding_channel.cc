@@ -17,7 +17,7 @@
 namespace pw::channel::internal {
 
 async2::Poll<Result<multibuf::MultiBuf>>
-ForwardingChannel<DataType::kDatagram>::DoPollRead(async2::Context& cx)
+ForwardingChannel<DataType::kDatagram>::DoPendRead(async2::Context& cx)
     PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
@@ -32,7 +32,7 @@ ForwardingChannel<DataType::kDatagram>::DoPollRead(async2::Context& cx)
   std::move(sibling_.waker_).Wake();
   return read_data;
 }
-async2::Poll<> ForwardingChannel<DataType::kDatagram>::DoPollReadyToWrite(
+async2::Poll<> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
     async2::Context& cx) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
@@ -59,7 +59,7 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kDatagram>::DoPollFlush(async2::Context&) {
+ForwardingChannel<DataType::kDatagram>::DoPendFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
     return Status::FailedPrecondition();
@@ -67,7 +67,7 @@ ForwardingChannel<DataType::kDatagram>::DoPollFlush(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
-async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPollClose(
+async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
     async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
@@ -80,7 +80,7 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPollClose(
 }
 
 async2::Poll<Result<multibuf::MultiBuf>>
-ForwardingChannel<DataType::kByte>::DoPollRead(async2::Context& cx) {
+ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
     return Status::FailedPrecondition();
@@ -110,7 +110,7 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kByte>::DoPollFlush(async2::Context&) {
+ForwardingChannel<DataType::kByte>::DoPendFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
     return Status::FailedPrecondition();
@@ -118,7 +118,7 @@ ForwardingChannel<DataType::kByte>::DoPollFlush(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
-async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPollClose(
+async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPendClose(
     async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {

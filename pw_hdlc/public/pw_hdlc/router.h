@@ -211,7 +211,7 @@ class Router final {
   /// ``io_channel_``.
   ///
   /// This will contain an allocation future if and only if
-  /// ``io_channel->PollReadyToWrite`` returned true but
+  /// ``io_channel->PendReadyToWrite`` returned true but
   /// ``outgoing_allocation_future_`` did not immediately return an output
   /// buffer to send.
   std::optional<pw::multibuf::MultiBufAllocationFuture>

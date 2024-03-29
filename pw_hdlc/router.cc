@@ -151,7 +151,7 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
     incoming_allocation_future_ = std::nullopt;
     return Ready();
   }
-  if (channel->channel->PollReadyToWrite(cx).IsPending()) {
+  if (channel->channel->PendReadyToWrite(cx).IsPending()) {
     return Pending();
   }
   if (!incoming_allocation_future_.has_value()) {
@@ -195,7 +195,7 @@ void Router::DecodeAndWriteIncoming(Context& cx) {
     }
 
     while (incoming_data_.empty()) {
-      Poll<Result<MultiBuf>> incoming = io_channel_.PollRead(cx);
+      Poll<Result<MultiBuf>> incoming = io_channel_.PendRead(cx);
       if (incoming.IsPending()) {
         return;
       }
@@ -222,7 +222,7 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
   for (size_t i = 0; i < channel_datas_.size(); ++i) {
     ChannelData& cd =
         channel_datas_[(next_first_read_index_ + i) % channel_datas_.size()];
-    Poll<Result<MultiBuf>> buf = cd.channel->PollRead(cx);
+    Poll<Result<MultiBuf>> buf = cd.channel->PendRead(cx);
     if (buf.IsPending()) {
       continue;
     }
@@ -249,7 +249,7 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
 
 void Router::WriteOutgoingMessages(Context& cx) {
   while (io_channel_.is_write_open() &&
-         io_channel_.PollReadyToWrite(cx).IsReady()) {
+         io_channel_.PendReadyToWrite(cx).IsReady()) {
     TryFillBufferToEncodeAndSend(cx);
     if (!buffer_to_encode_and_send_.has_value()) {
       // No channels have new data to send.
@@ -342,10 +342,10 @@ Poll<> Router::PendClose(Context& cx) {
     // We ignore the status value from close.
     // If one or more channels are unable to close, they will remain after
     // `RemoveClosedChannels` and `channel_datas_.size()` will be nonzero.
-    cd.channel->PollClose(cx).IgnorePoll();
+    cd.channel->PendClose(cx).IgnorePoll();
   }
   RemoveClosedChannels();
-  if (io_channel_.PollClose(cx).IsPending()) {
+  if (io_channel_.PendClose(cx).IsPending()) {
     return Pending();
   }
   if (channel_datas_.empty()) {

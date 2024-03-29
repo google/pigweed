@@ -110,10 +110,10 @@ class ForwardingChannel<DataType::kDatagram>
                               ForwardingChannel* sibling)
       : pair_(pair), sibling_(*sibling), write_token_(0) {}
 
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
+  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPollReadyToWrite(async2::Context& cx) override;
+  async2::Poll<> DoPendReadyToWrite(async2::Context& cx) override;
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
     return pair_.allocator_;
@@ -121,10 +121,10 @@ class ForwardingChannel<DataType::kDatagram>
 
   Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPollFlush(
+  async2::Poll<Result<channel::WriteToken>> DoPendFlush(
       async2::Context&) override;
 
-  async2::Poll<Status> DoPollClose(async2::Context&) override;
+  async2::Poll<Status> DoPendClose(async2::Context&) override;
 
   // The two channels share one mutex. Lock safty analysis doesn't understand
   // that, so has to be disabled for some functions.
@@ -153,10 +153,10 @@ class ForwardingChannel<DataType::kByte> : public ByteReaderWriter {
                               ForwardingChannel* sibling)
       : pair_(pair), sibling_(*sibling), write_token_(0) {}
 
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
+  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPollReadyToWrite(async2::Context&) override {
+  async2::Poll<> DoPendReadyToWrite(async2::Context&) override {
     return async2::Ready();
   }
 
@@ -166,10 +166,10 @@ class ForwardingChannel<DataType::kByte> : public ByteReaderWriter {
 
   Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPollFlush(
+  async2::Poll<Result<channel::WriteToken>> DoPendFlush(
       async2::Context&) override;
 
-  async2::Poll<Status> DoPollClose(async2::Context&) override;
+  async2::Poll<Status> DoPendClose(async2::Context&) override;
 
   ForwardingChannelPair<DataType::kByte>& pair_;
   ForwardingChannel& sibling_;

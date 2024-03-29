@@ -172,15 +172,15 @@ class Conversions {
 // Macros that stub out read/write/seek and hide them if unsupported.
 #define _PW_CHANNEL_READABLE_READ static_assert(true)
 #define _PW_CHANNEL_READABLE_SKIP                                              \
-  async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(async2::Context&)        \
+  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(async2::Context&)        \
       final {                                                                  \
     return async2::Ready(Result<multibuf::MultiBuf>(Status::Unimplemented())); \
   }                                                                            \
-  using AnyChannel::PollRead
+  using AnyChannel::PendRead
 
 #define _PW_CHANNEL_WRITABLE_WRTE static_assert(true)
 #define _PW_CHANNEL_WRITABLE_SKIP                                         \
-  async2::Poll<> DoPollReadyToWrite(async2::Context&) final {             \
+  async2::Poll<> DoPendReadyToWrite(async2::Context&) final {             \
     return async2::Ready(); /* Should this be Ready() correct here? */    \
   }                                                                       \
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
@@ -189,12 +189,12 @@ class Conversions {
   Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&&) final {       \
     return Status::Unimplemented();                                       \
   }                                                                       \
-  async2::Poll<Result<WriteToken>> DoPollFlush(async2::Context&) final {  \
+  async2::Poll<Result<WriteToken>> DoPendFlush(async2::Context&) final {  \
     return async2::Ready(Result<WriteToken>(Status::Unimplemented()));    \
   }                                                                       \
-  using AnyChannel::PollReadyToWrite;                                     \
+  using AnyChannel::PendReadyToWrite;                                     \
   using AnyChannel::Write;                                                \
-  using AnyChannel::PollFlush
+  using AnyChannel::PendFlush
 
 #define _PW_CHANNEL_SEEKABLE_SEEK static_assert(true)
 // TODO: b/323622630 - Implement DoSeek() and DoPosition()

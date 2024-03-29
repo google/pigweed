@@ -95,38 +95,38 @@ TEST(ForwardingDatagramChannel, ForwardsEmptyDatagrams) {
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
       // No data yet
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send datagram first->second
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       auto result = pair->first().Write({});  // Write empty datagram
       EXPECT_EQ(pw::OkStatus(), result.status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollReadyToWrite(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
 
-      auto empty_chunk_result = pair->second().PollRead(cx);
+      auto empty_chunk_result = pair->second().PendRead(cx);
       EXPECT_TRUE(empty_chunk_result.IsReady());
       EXPECT_TRUE(empty_chunk_result->ok());
       EXPECT_EQ((*empty_chunk_result)->size(), 0u);
 
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send datagram second->first
-      EXPECT_EQ(pw::async2::Ready(), pair->second().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->second().PendReadyToWrite(cx));
       result = pair->second().Write({});  // Write empty datagram
       EXPECT_EQ(pw::OkStatus(), result.status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollReadyToWrite(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
-      empty_chunk_result = pair->first().PollRead(cx);
+      empty_chunk_result = pair->first().PendRead(cx);
       EXPECT_TRUE(empty_chunk_result.IsReady());
       EXPECT_TRUE(empty_chunk_result->ok());
       EXPECT_EQ((*empty_chunk_result)->size(), 0u);
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
 
       test_completed += 1;
       return pw::async2::Ready();
@@ -154,23 +154,23 @@ TEST(ForwardingDatagramChannel, ForwardsNonEmptyDatagrams) {
       InitializedMultiBuf b2("world!");
 
       // Send datagram first->second
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write(b1.Take()).status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendReadyToWrite(cx));
 
-      EXPECT_EQ(CopyToString(pair->second().PollRead(cx).value().value()),
+      EXPECT_EQ(CopyToString(pair->second().PendRead(cx).value().value()),
                 "Hello");
 
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       EXPECT_EQ(pw::OkStatus(), pair->first().Write(b2.Take()).status());
-      EXPECT_EQ(CopyToString(pair->second().PollRead(cx).value().value()),
+      EXPECT_EQ(CopyToString(pair->second().PendRead(cx).value().value()),
                 "world!");
 
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
 
       test_completed += 1;
       return pw::async2::Ready();
@@ -195,38 +195,38 @@ TEST(ForwardingDatagramChannel, ForwardsDatagrams) {
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
       // No data yet
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send datagram first->second
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       auto result = pair->first().Write({});  // Write empty datagram
       EXPECT_EQ(pw::OkStatus(), result.status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollReadyToWrite(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
 
-      auto empty_chunk_result = pair->second().PollRead(cx);
+      auto empty_chunk_result = pair->second().PendRead(cx);
       EXPECT_TRUE(empty_chunk_result.IsReady());
       EXPECT_TRUE(empty_chunk_result->ok());
       EXPECT_EQ((*empty_chunk_result)->size(), 0u);
 
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send datagram second->first
-      EXPECT_EQ(pw::async2::Ready(), pair->second().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->second().PendReadyToWrite(cx));
       result = pair->second().Write({});  // Write empty datagram
       EXPECT_EQ(pw::OkStatus(), result.status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollReadyToWrite(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
-      empty_chunk_result = pair->first().PollRead(cx);
+      empty_chunk_result = pair->first().PendRead(cx);
       EXPECT_TRUE(empty_chunk_result.IsReady());
       EXPECT_TRUE(empty_chunk_result->ok());
       EXPECT_EQ((*empty_chunk_result)->size(), 0u);
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
 
       test_completed += 1;
       return pw::async2::Ready();
@@ -239,14 +239,14 @@ TEST(ForwardingDatagramChannel, ForwardsDatagrams) {
   EXPECT_EQ(test_task.test_completed, 1);
 }
 
-TEST(ForwardingDatagramchannel, PollCloseAwakensAndClosesPeer) {
+TEST(ForwardingDatagramchannel, PendCloseAwakensAndClosesPeer) {
   class TryToReadUntilClosed : public Task {
    public:
     TryToReadUntilClosed(DatagramReader& reader) : reader_(reader) {}
 
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
-      Poll<Result<MultiBuf>> read = reader_.PollRead(cx);
+      Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
         return Pending();
       }
@@ -266,7 +266,7 @@ TEST(ForwardingDatagramchannel, PollCloseAwakensAndClosesPeer) {
 
   Waker empty_waker;
   Context empty_cx(dispatcher, empty_waker);
-  EXPECT_EQ(pair->second().PollClose(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
@@ -283,24 +283,24 @@ TEST(ForwardingByteChannel, IgnoresEmptyWrites) {
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
       // No data yet
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send nothing first->second
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write({}).status());
 
       // Still no data
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       // Send nothing second->first
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write({}).status());
 
       // Still no data
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       test_completed += 1;
       return pw::async2::Ready();
@@ -325,35 +325,35 @@ TEST(ForwardingByteChannel, WriteData) {
    private:
     pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
       // No data yet
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       InitializedMultiBuf b1("hello");
       InitializedMultiBuf b2(" ");
       InitializedMultiBuf b3("world");
 
       // Send "hello world" first->second
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write(b1.Take()).status());
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write(b2.Take()).status());
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write(b3.Take()).status());
 
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
 
-      auto hello_world_result = pair->second().PollRead(cx);
+      auto hello_world_result = pair->second().PendRead(cx);
       EXPECT_TRUE(hello_world_result.IsReady());
 
       EXPECT_EQ(CopyToString(hello_world_result->value()), "hello world");
 
       // Send nothing second->first
-      EXPECT_EQ(pw::async2::Ready(), pair->first().PollReadyToWrite(cx));
+      EXPECT_EQ(pw::async2::Ready(), pair->first().PendReadyToWrite(cx));
       EXPECT_EQ(pw::OkStatus(), pair->first().Write({}).status());
 
       // Still no data
-      EXPECT_EQ(pw::async2::Pending(), pair->first().PollRead(cx));
-      EXPECT_EQ(pw::async2::Pending(), pair->second().PollRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->first().PendRead(cx));
+      EXPECT_EQ(pw::async2::Pending(), pair->second().PendRead(cx));
 
       test_completed += 1;
       return pw::async2::Ready();
@@ -366,14 +366,14 @@ TEST(ForwardingByteChannel, WriteData) {
   EXPECT_EQ(test_task.test_completed, 1);
 }
 
-TEST(ForwardingByteChannel, PollCloseAwakensAndClosesPeer) {
+TEST(ForwardingByteChannel, PendCloseAwakensAndClosesPeer) {
   class TryToReadUntilClosed : public Task {
    public:
     TryToReadUntilClosed(ByteReader& reader) : reader_(reader) {}
 
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
-      Poll<Result<MultiBuf>> read = reader_.PollRead(cx);
+      Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
         return Pending();
       }
@@ -393,7 +393,7 @@ TEST(ForwardingByteChannel, PollCloseAwakensAndClosesPeer) {
 
   Waker empty_waker;
   Context empty_cx(dispatcher, empty_waker);
-  EXPECT_EQ(pair->second().PollClose(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }

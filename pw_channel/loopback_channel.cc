@@ -26,7 +26,7 @@ using ::pw::async2::WaitReason;
 using ::pw::channel::WriteToken;
 using ::pw::multibuf::MultiBuf;
 
-Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPollRead(
+Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPendRead(
     Context& cx) {
   if (!queue_.has_value()) {
     waker_ = cx.GetWaker(WaitReason::Unspecified());
@@ -38,7 +38,7 @@ Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPollRead(
   return data;
 }
 
-Poll<> LoopbackChannel<DataType::kDatagram>::DoPollReadyToWrite(Context& cx) {
+Poll<> LoopbackChannel<DataType::kDatagram>::DoPendReadyToWrite(Context& cx) {
   if (queue_.has_value()) {
     waker_ = cx.GetWaker(WaitReason::Unspecified());
     return Pending();
@@ -56,17 +56,17 @@ Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kDatagram>::DoPollFlush(async2::Context&) {
+LoopbackChannel<DataType::kDatagram>::DoPendFlush(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
-async2::Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPollClose(
+async2::Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendClose(
     async2::Context&) {
   queue_.reset();
   return OkStatus();
 }
 
-Poll<Result<MultiBuf>> LoopbackChannel<DataType::kByte>::DoPollRead(
+Poll<Result<MultiBuf>> LoopbackChannel<DataType::kByte>::DoPendRead(
     Context& cx) {
   if (queue_.empty()) {
     read_waker_ = cx.GetWaker(WaitReason::Unspecified());
@@ -88,11 +88,11 @@ Result<WriteToken> LoopbackChannel<DataType::kByte>::DoWrite(MultiBuf&& data) {
 }
 
 async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kByte>::DoPollFlush(async2::Context&) {
+LoopbackChannel<DataType::kByte>::DoPendFlush(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
-async2::Poll<Status> LoopbackChannel<DataType::kByte>::DoPollClose(
+async2::Poll<Status> LoopbackChannel<DataType::kByte>::DoPendClose(
     async2::Context&) {
   queue_.Release();
   return OkStatus();

@@ -125,7 +125,7 @@ class [[nodiscard]] WriteToken {
 /// datagrams.
 ///
 /// Note that this channel should be used from only one ``pw::async::Task``
-/// at a time, as the ``Poll`` methods are only required to remember the
+/// at a time, as the ``Pend`` methods are only required to remember the
 /// latest ``pw::async2::Context`` that was provided.
 class AnyChannel {
  public:
@@ -182,11 +182,11 @@ class AnyChannel {
   ///   of as reaching the end of a file. Future reads may succeed after
   ///   ``Seek`` ing backwards, but no more new data will be produced. The
   ///   channel is still open; writes and seeks may succeed.
-  async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx) {
+  async2::Poll<Result<multibuf::MultiBuf>> PendRead(async2::Context& cx) {
     if (!is_read_open()) {
       return Status::FailedPrecondition();
     }
-    async2::Poll<Result<multibuf::MultiBuf>> result = DoPollRead(cx);
+    async2::Poll<Result<multibuf::MultiBuf>> result = DoPendRead(cx);
     if (result.IsReady() && result->status().IsFailedPrecondition()) {
       set_read_closed();
     }
@@ -207,11 +207,11 @@ class AnyChannel {
   ///
   /// Note: this method will always return ``Ready`` for non-writeable
   /// channels.
-  async2::Poll<> PollReadyToWrite(pw::async2::Context& cx) {
+  async2::Poll<> PendReadyToWrite(pw::async2::Context& cx) {
     if (!is_write_open()) {
       return async2::Ready();
     }
-    return DoPollReadyToWrite(cx);
+    return DoPendReadyToWrite(cx);
   }
 
   /// Gives access to an allocator for write buffers. The MultiBufAllocator
@@ -229,7 +229,7 @@ class AnyChannel {
 
   /// Writes using a previously allocated MultiBuf. Returns a token that
   /// refers to this write. These tokens are monotonically increasing, and
-  /// PollFlush() returns the value of the latest token it has flushed.
+  /// PendFlush() returns the value of the latest token it has flushed.
   ///
   /// The ``MultiBuf`` argument to ``Write`` may consist of either:
   ///   (1) A single ``MultiBuf`` allocated by ``GetWriteAllocator()``
@@ -270,11 +270,11 @@ class AnyChannel {
   /// * Ready(UNIMPLEMENTED) - The channel does not support writing.
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
   /// * Pending - Data remains to be flushed.
-  async2::Poll<Result<WriteToken>> PollFlush(async2::Context& cx) {
+  async2::Poll<Result<WriteToken>> PendFlush(async2::Context& cx) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    async2::Poll<Result<WriteToken>> result = DoPollFlush(cx);
+    async2::Poll<Result<WriteToken>> result = DoPendFlush(cx);
     if (result.IsReady() && result->status().IsFailedPrecondition()) {
       set_write_closed();
     }
@@ -285,7 +285,7 @@ class AnyChannel {
   ///
   /// TODO: b/323622630 - `Seek` and `Position` are not yet implemented.
   ///
-  /// Any ``PollRead`` or ``Write`` calls following a call to ``Seek`` will be
+  /// Any ``PendRead`` or ``Write`` calls following a call to ``Seek`` will be
   /// relative to the new position. Already-written data still being flushed
   /// will be output relative to the old position.
   ///
@@ -311,11 +311,11 @@ class AnyChannel {
   ///   data was delivered.
   /// * FAILED_PRECONDITION - Channel was already closed, which can happen
   ///   out-of-band due to errors.
-  async2::Poll<pw::Status> PollClose(async2::Context& cx) {
+  async2::Poll<pw::Status> PendClose(async2::Context& cx) {
     if (!is_read_or_write_open()) {
       return Status::FailedPrecondition();
     }
-    auto result = DoPollClose(cx);
+    auto result = DoPendClose(cx);
     if (result.IsReady()) {
       set_read_closed();
       set_write_closed();
@@ -330,13 +330,13 @@ class AnyChannel {
 
   // Marks the channel as closed for reading, but does nothing else.
   //
-  // PollClose() always marks the channel closed when DoPollClose() returns
+  // PendClose() always marks the channel closed when DoPendClose() returns
   // Ready(), regardless of the status.
   void set_read_closed() { read_open_ = false; }
 
   // Marks the channel as closed for writing, but does nothing else.
   //
-  // PollClose() always marks the channel closed when DoPollClose() returns
+  // PendClose() always marks the channel closed when DoPendClose() returns
   // Ready(), regardless of the status.
   void set_write_closed() { write_open_ = false; }
 
@@ -390,18 +390,18 @@ class AnyChannel {
   // Read functions
 
   // The max_bytes argument is ignored for datagram-oriented channels.
-  virtual async2::Poll<Result<multibuf::MultiBuf>> DoPollRead(
+  virtual async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) = 0;
 
   // Write functions
 
   virtual multibuf::MultiBufAllocator& DoGetWriteAllocator() = 0;
 
-  virtual pw::async2::Poll<> DoPollReadyToWrite(async2::Context& cx) = 0;
+  virtual pw::async2::Poll<> DoPendReadyToWrite(async2::Context& cx) = 0;
 
   virtual Result<WriteToken> DoWrite(multibuf::MultiBuf&& buffer) = 0;
 
-  virtual pw::async2::Poll<Result<WriteToken>> DoPollFlush(
+  virtual pw::async2::Poll<Result<WriteToken>> DoPendFlush(
       async2::Context& cx) = 0;
 
   // Seek functions
@@ -412,7 +412,7 @@ class AnyChannel {
   // virtual size_t DoPosition() const = 0;
 
   // Common functions
-  virtual async2::Poll<Status> DoPollClose(async2::Context& cx) = 0;
+  virtual async2::Poll<Status> DoPendClose(async2::Context& cx) = 0;
 
   bool read_open_;
   bool write_open_;

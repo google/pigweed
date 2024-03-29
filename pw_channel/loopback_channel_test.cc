@@ -74,7 +74,7 @@ class ReaderTask : public Task {
   Poll<> DoPend(Context& cx) final {
     ++poll_count;
     while (true) {
-      auto result = channel_.PollRead(cx);
+      auto result = channel_.PendRead(cx);
       if (result.IsPending()) {
         return Pending();
       }
