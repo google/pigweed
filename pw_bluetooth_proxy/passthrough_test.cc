@@ -14,8 +14,8 @@
 
 #include <cstdint>
 #include <numeric>
-#include <type_traits>
 
+#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
@@ -30,13 +30,6 @@ namespace {
 
 // Util functions
 
-// Equivalent to C++23 std::to_underlying.
-// TODO: b/330064223 - Move to pw::to_underlying once landed.
-template <typename E>
-constexpr auto to_underlying(E e) noexcept {
-  return static_cast<std::underlying_type_t<E>>(e);
-}
-
 // Create pw::span on the HCI portion of an H4 buffer.
 template <typename C>
 constexpr const pw::span<uint8_t> HciSubspanOfH4Buffer(C&& container) {
@@ -48,7 +41,7 @@ std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
 CreateToControllerBuffer() {
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array;
   std::iota(h4_array.begin(), h4_array.end(), 100);
-  h4_array[0] = to_underlying(emboss::H4PacketType::COMMAND);
+  h4_array[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
   const auto hci_span = HciSubspanOfH4Buffer(h4_array);
   auto packet_view = emboss::MakeInquiryCommandView(&hci_span);
   EXPECT_TRUE(packet_view.IsComplete());
@@ -65,7 +58,7 @@ CreateToHostBuffer() {
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
       h4_array;
   std::iota(h4_array.begin(), h4_array.end(), 100);
-  h4_array[0] = to_underlying(emboss::H4PacketType::EVENT);
+  h4_array[0] = cpp23::to_underlying(emboss::H4PacketType::EVENT);
   const auto hci_span = HciSubspanOfH4Buffer(h4_array);
   auto packet_view = emboss::MakeInquiryCompleteEventView(&hci_span);
   EXPECT_TRUE(packet_view.IsComplete());

@@ -59,6 +59,7 @@ pw_test("proxy_passthrough_test") {
   sources = [ "passthrough_test.cc" ]
   deps = [
     ":pw_bluetooth_proxy",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     "//pw_bluetooth:emboss_hci_commands",
     "//pw_bluetooth:emboss_hci_common",
     "//pw_bluetooth:emboss_hci_events",
