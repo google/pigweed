@@ -14,3 +14,24 @@
 
 # The Fuchsia bt-host component will eventually be migrated here:
 # https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
+
+load(
+    "@fuchsia_infra//infra:infra.bzl",
+    "FUCHSIA_TEST_TARGET",
+    "fuchsia_test_group",
+)
+load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_HOST_X64")
+
+qemu_tests = [
+    "//pw_bluetooth_sapphire/fuchsia/hello_world:test_pkg",
+]
+
+fuchsia_test_group(
+    name = "tests_qemu",
+    # Disable luci-auth as the CQ builder environment is not authenticated.
+    luci_auth_enabled = False,
+    product_bundle = "@fuchsia_products//:core.x64",
+    tags = MANUAL_IF_NOT_HOST_X64,
+    test_target = FUCHSIA_TEST_TARGET.QEMU,
+    deps = qemu_tests,
+)

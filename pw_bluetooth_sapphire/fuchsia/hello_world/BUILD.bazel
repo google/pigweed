@@ -75,10 +75,9 @@ fuchsia_unittest_package(
     package_name = "hello_cpp_test",
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
-    # TODO: b/42178254 - Reenable after we've rolled gtest.
-    # tags = MANUAL_IF_NOT_HOST_X64,
     tags = ["manual"],
     unit_tests = [
         ":hello_gtest",
     ],
+    visibility = ["//pw_bluetooth_sapphire/fuchsia:__pkg__"],
 )

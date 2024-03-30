@@ -63,13 +63,51 @@ following command:
 
    bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:pkg.component
 
+Run unit tests
+==============
+To run the example component's unit tests, first start an emulator and then use
+the following command:
+
+.. code-block::
+
+   bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:test_pkg
+
 Stop the emulator
 =================
 To stop the running emulator, use the following command:
 
 .. code-block::
 
-   bazel run @fuchsia_sdk//:ffx -- emu stop --all
+   pw ffx emu stop --all
+
+Add a target test to presubmits
+===============================
+To add new test packages to presubmits, add the test package targets to
+``//pw_bluetooth_sapphire/fuchsia/BUILD.bazel``.
+
+Example:
+
+.. code-block::
+
+   # pw_bluetooth_sapphire/fuchsia/BUILD.bazel
+
+   qemu_tests = [
+       "//pw_bluetooth_sapphire/fuchsia/src:test_pkg",
+       ...
+   ]
+
+Run Fuchsia presubmit tests
+===========================
+To run the Fuchsia target tests that are typically run under presubmit, use the
+following command.
+
+.. code-block::
+
+   bazel run //pw_bluetooth_sapphire/fuchsia:tests_qemu
+
+.. note::
+   You do not need to start an emulator beforehand to to run all tests this way.
+   This test target will automatically provision one before running all tests.
 
 -------
 Roadmap
