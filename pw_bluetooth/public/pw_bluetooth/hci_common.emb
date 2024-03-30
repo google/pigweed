@@ -103,303 +103,381 @@ enum OpCode:
 
   [maximum_bits: 16]
 
-  UNSPECIFIED                          = 0x0000
+  UNSPECIFIED                                                  = 0x0000
     -- No OpCode set
 
   ### Link Control Commands - Core Spec v5.0, Vol 2, Part E, Section 7.1 (OGF 0x01)
 
-  INQUIRY                              = 0x0401
+  INQUIRY                                                      = 0x0401
     -- Inquiry Command (v1.1) (BR/EDR)
 
-  INQUIRY_CANCEL                       = 0x0402
+  INQUIRY_CANCEL                                               = 0x0402
     -- Inquiry Cancel Command (v1.1) (BR/EDR)
 
-  CREATE_CONNECTION                    = 0x0405
+  CREATE_CONNECTION                                            = 0x0405
     -- Create Connection (v1.1) (BR/EDR)
 
-  DISCONNECT                           = 0x0406
+  DISCONNECT                                                   = 0x0406
     -- Disconnect Command (v1.1) (BR/EDR & LE)
 
-  CREATE_CONNECTION_CANCEL             = 0x0408
+  CREATE_CONNECTION_CANCEL                                     = 0x0408
     -- Create Connection Cancel (v1.1) (BR/EDR)
 
-  ACCEPT_CONNECTION_REQUEST            = 0x0409
+  ACCEPT_CONNECTION_REQUEST                                    = 0x0409
     -- Accept Connection Request (v1.1) (BR/EDR)
 
-  REJECT_CONNECTION_REQUEST            = 0x040A
+  REJECT_CONNECTION_REQUEST                                    = 0x040A
     -- Reject Connection Request (v1.1) (BR/EDR)
 
-  LINK_KEY_REQUEST_REPLY               = 0x040B
+  LINK_KEY_REQUEST_REPLY                                       = 0x040B
     -- Link Key Request Reply Command (v1.1) (BR/EDR)
 
-  LINK_KEY_REQUEST_NEGATIVE_REPLY      = 0x040C
+  LINK_KEY_REQUEST_NEGATIVE_REPLY                              = 0x040C
     -- Link Key Request Negative Reply Command (v1.1) (BR/EDR)
 
-  AUTHENTICATION_REQUESTED             = 0x0411
+  AUTHENTICATION_REQUESTED                                     = 0x0411
     -- Authentication Requested Command (v1.1) (BR/EDR)
 
-  SET_CONNECTION_ENCRYPTION            = 0x0413
+  SET_CONNECTION_ENCRYPTION                                    = 0x0413
     -- Set Connection Encryption Command (v1.1) (BR/EDR)
 
-  REMOTE_NAME_REQUEST                  = 0x0419
+  REMOTE_NAME_REQUEST                                          = 0x0419
     -- Remote Name Request Command (v1.1) (BR/EDR)
 
-  READ_REMOTE_SUPPORTED_FEATURES       = 0x041B
+  READ_REMOTE_SUPPORTED_FEATURES                               = 0x041B
     -- Read Remote Supported Features Command (v1.1) (BR/EDR)
 
-  READ_REMOTE_EXTENDED_FEATURES        = 0x041C
+  READ_REMOTE_EXTENDED_FEATURES                                = 0x041C
     -- Read Remote Extended Features Command (v1.2) (BR/EDR)
 
-  READ_REMOTE_VERSION_INFO             = 0x041D
+  READ_REMOTE_VERSION_INFO                                     = 0x041D
     -- Read Remote Version Information Command (v1.1) (BR/EDR & LE)
 
-  IO_CAPABILITY_REQUEST_REPLY          = 0x042B
+  IO_CAPABILITY_REQUEST_REPLY                                  = 0x042B
     -- IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
 
-  USER_CONFIRMATION_REQUEST_REPLY      = 0x042C
+  USER_CONFIRMATION_REQUEST_REPLY                              = 0x042C
     -- User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
 
-  USER_PASSKEY_REQUEST_REPLY           = 0x042E
+  USER_PASSKEY_REQUEST_REPLY                                   = 0x042E
     -- User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
 
-  USER_PASSKEY_REQUEST_NEGATIVE_REPLY  = 0x042F
+  USER_PASSKEY_REQUEST_NEGATIVE_REPLY                          = 0x042F
     -- User Passkey Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 
-  IO_CAPABILITY_REQUEST_NEGATIVE_REPLY = 0x0434
+  IO_CAPABILITY_REQUEST_NEGATIVE_REPLY                         = 0x0434
     -- IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 
   ### Controller & Baseband Commands - Core Spec v5.0 Vol 2, Part E, Section 7.3 (OGF 0x03)
 
-  SET_EVENT_MASK                       = 0x0C01
+  SET_EVENT_MASK                                               = 0x0C01
     -- Set Event Mask Command (v1.1)
 
-  RESET                                = 0x0C03
+  RESET                                                        = 0x0C03
     -- Reset Command (v1.1)
 
-  WRITE_LOCAL_NAME                     = 0x0C13
+  WRITE_LOCAL_NAME                                             = 0x0C13
     -- Write Local Name Command (v1.1) (BR/EDR)
 
-  READ_LOCAL_NAME                      = 0x0C14
+  READ_LOCAL_NAME                                              = 0x0C14
     -- Read Local Name Command (v1.1) (BR/EDR)
 
-  WRITE_PAGE_TIMEOUT                   = 0x0C18
+  WRITE_PAGE_TIMEOUT                                           = 0x0C18
     -- Write Page Timeout Command (v1.1) (BR/EDR)
 
-  READ_SCAN_ENABLE                     = 0x0C19
+  READ_SCAN_ENABLE                                             = 0x0C19
     -- Read Scan Enable Command (v1.1) (BR/EDR)
 
-  WRITE_SCAN_ENABLE                    = 0x0C1A
+  WRITE_SCAN_ENABLE                                            = 0x0C1A
     -- Write Scan Enable Command (v1.1) (BR/EDR)
 
-  READ_PAGE_SCAN_ACTIVITY              = 0x0C1B
+  READ_PAGE_SCAN_ACTIVITY                                      = 0x0C1B
     -- Read Page Scan Activity Command (v1.1) (BR/EDR)
 
-  WRITE_PAGE_SCAN_ACTIVITY             = 0x0C1C
+  WRITE_PAGE_SCAN_ACTIVITY                                     = 0x0C1C
     -- Write Page Scan Activity Command (v1.1) (BR/EDR)
 
-  READ_INQUIRY_SCAN_ACTIVITY           = 0x0C1D
+  READ_INQUIRY_SCAN_ACTIVITY                                   = 0x0C1D
     -- Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
 
-  READ_CLASS_OFDEVICE                  = 0x0C23
+  READ_CLASS_OFDEVICE                                          = 0x0C23
     -- Read Class of Device Command (v1.1) (BR/EDR)
 
-  WRITE_CLASS_OFDEVICE                 = 0x0C24
+  WRITE_CLASS_OFDEVICE                                         = 0x0C24
     -- Write Class Of Device Command (v1.1) (BR/EDR)
 
-  READ_TRANSMIT_POWER_LEVEL            = 0x0C2D
+  READ_TRANSMIT_POWER_LEVEL                                    = 0x0C2D
     -- Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
 
-  READ_INQUIRY_SCAN_TYPE               = 0x0C42
+  READ_INQUIRY_SCAN_TYPE                                       = 0x0C42
     -- Read Inquiry Scan Type (v1.2) (BR/EDR)
 
-  WRITE_INQUIRY_SCAN_TYPE              = 0x0C43
+  WRITE_INQUIRY_SCAN_TYPE                                      = 0x0C43
     -- Write Inquiry Scan Type (v1.2) (BR/EDR)
 
-  READ_INQUIRY_MODE                    = 0x0C44
+  READ_INQUIRY_MODE                                            = 0x0C44
     -- Read Inquiry Mode (v1.2) (BR/EDR)
 
-  WRITE_INQUIRY_MODE                   = 0x0C45
+  WRITE_INQUIRY_MODE                                           = 0x0C45
     -- Write Inquiry Mode (v1.2) (BR/EDR)
 
-  READ_PAGE_SCAN_TYPE                  = 0x0C46
+  READ_PAGE_SCAN_TYPE                                          = 0x0C46
     -- Read Page Scan Type (v1.2) (BR/EDR)
 
-  WRITE_PAGE_SCAN_TYPE                 = 0x0C47
+  WRITE_PAGE_SCAN_TYPE                                         = 0x0C47
     -- Write Page Scan Type (v1.2) (BR/EDR)
 
-  READ_SIMPLE_PAIRING_MODE             = 0x0C55
+  READ_SIMPLE_PAIRING_MODE                                     = 0x0C55
     -- Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 
-  WRITE_SIMPLE_PAIRING_MODE            = 0x0C56
+  WRITE_SIMPLE_PAIRING_MODE                                    = 0x0C56
     -- Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 
-  SET_EVENT_MASK_PAGE2                 = 0x0C63
+  SET_EVENT_MASK_PAGE2                                         = 0x0C63
     -- Set Event Mask Page 2 Command (v3.0 + HS)
 
-  READ_FLOW_CONTROL_MODE               = 0x0C66
+  READ_FLOW_CONTROL_MODE                                       = 0x0C66
     -- Read Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
 
-  WRITE_FLOW_CONTROL_MODE              = 0x0C67
+  WRITE_FLOW_CONTROL_MODE                                      = 0x0C67
     -- Write Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
 
-  READ_LE_HOST_SUPPORT                 = 0x0C6C
+  READ_LE_HOST_SUPPORT                                         = 0x0C6C
     -- Read LE Host Support Command (v4.0) (BR/EDR)
 
-  WRITE_LE_HOST_SUPPORT                = 0x0C6D
+  WRITE_LE_HOST_SUPPORT                                        = 0x0C6D
     -- Write LE Host Support Command (v4.0) (BR/EDR)
 
   ### Informational Parameters - Core Spec v5.0 Vol 2, Part E, Section 7.4 (OGF 0x04)
 
-  READ_LOCAL_VERSION_INFO              = 0x1001
+  READ_LOCAL_VERSION_INFO                                      = 0x1001
     -- Read Local Version Information Command (v1.1)
 
-  READ_LOCAL_EXTENDED_FEATURES         = 0x1004
+  READ_LOCAL_EXTENDED_FEATURES                                 = 0x1004
     -- Read Local Extended Features Command (v1.2) (BR/EDR)
 
-  READ_BUFFER_SIZE                     = 0x1005
+  READ_BUFFER_SIZE                                             = 0x1005
     -- Read Buffer Size Command (v1.1)
 
-  READ_BD_ADDR                         = 0x1009
+  READ_BD_ADDR                                                 = 0x1009
     -- Read BD_ADDR Command (v1.1) (BR/EDR, LE)
 
-  READ_DATA_BLOCK_SIZE                 = 0x100A
+  READ_DATA_BLOCK_SIZE                                         = 0x100A
     -- Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
 
   ### Status Parameters - Core Spec v5.0, Vol 2, Part E, Section 7.5 (OGF 0x05)
 
-  READ_RSSI                            = 0x1405
+  READ_RSSI                                                    = 0x1405
     -- Read RSSI Command (v1.1)
 
-  READ_ENCRYPTION_KEY_SIZE             = 0x1408
+  READ_ENCRYPTION_KEY_SIZE                                     = 0x1408
     -- Read Encryption Key Size (v1.1) (BR/EDR)
 
   ### LE Controller Commands - Core Spec v5.0 Vol 2, Part E, Section 7.8 (OGF 0x08)
 
-  LE_SET_EVENT_MASK                    = 0x2001
+  LE_SET_EVENT_MASK                                            = 0x2001
     -- LE Set Event Mask Command (v4.0) (LE)
 
-  LE_READ_BUFFER_SIZE_V1               = 0x2002
+  LE_READ_BUFFER_SIZE_V1                                       = 0x2002
     -- LE Read Buffer Size [v1] Command (v4.0) (LE)
 
-  LE_SET_RANDOM_ADDRESS                = 0x2005
+  LE_SET_RANDOM_ADDRESS                                        = 0x2005
     -- LE Set Random Address Command (v4.0) (LE)
 
-  LE_SET_ADVERTISING_DATA              = 0x2008
+  LE_SET_ADVERTISING_DATA                                      = 0x2008
     -- LE Set Advertising Data Command (v4.0) (LE)
 
-  LE_SET_SCAN_RESPONSE_DATA            = 0x2009
+  LE_SET_SCAN_RESPONSE_DATA                                    = 0x2009
     -- LE Set Scan Response Data Command (v4.0) (LE)
 
-  LE_SET_ADVERTISING_ENABLE            = 0x200A
+  LE_SET_ADVERTISING_ENABLE                                    = 0x200A
     -- LE Set Advertising Enable Command (v4.0) (LE)
 
-  LE_SET_SCAN_PARAMETERS               = 0x200B
+  LE_SET_SCAN_PARAMETERS                                       = 0x200B
     -- LE Set Scan Parameters Command (v4.0) (LE)
 
-  LE_SET_SCAN_ENABLE                   = 0x200C
+  LE_SET_SCAN_ENABLE                                           = 0x200C
     -- LE Set Scan Enable Command (v4.0) (LE)
 
-  LE_CREATE_CONNECTION                 = 0x200D
+  LE_CREATE_CONNECTION                                         = 0x200D
     -- LE Create Connection Command (v4.0) (LE)
 
-  LE_CREATE_CONNECTION_CANCEL          = 0x200E
+  LE_CREATE_CONNECTION_CANCEL                                  = 0x200E
     -- LE Create Connection Cancel Command (v4.0) (LE)
 
-  LE_CLEAR_FILTER_ACCEPT_LIST          = 0x2010
+  LE_CLEAR_FILTER_ACCEPT_LIST                                  = 0x2010
     -- LE Clear Filter Accept List Command (v4.0) (LE)
 
-  LE_CONNECTION_UPDATE                 = 0x2013
+  LE_CONNECTION_UPDATE                                         = 0x2013
     -- LE Connection Update Command (v4.0) (LE)
 
-  LE_READ_CHANNEL_MAP                  = 0x2015
+  LE_READ_CHANNEL_MAP                                          = 0x2015
     -- LE Read Channel Map Command (v4.0) (LE)
 
-  LE_READ_REMOTE_FEATURES              = 0x2016
+  LE_READ_REMOTE_FEATURES                                      = 0x2016
     -- LE Read Remote Features Command (v4.0) (LE)
 
-  LE_ENCRYPT                           = 0x2017
+  LE_ENCRYPT                                                   = 0x2017
     -- LE Encrypt Command (v4.0) (LE)
 
-  LE_RAND                              = 0x2018
+  LE_RAND                                                      = 0x2018
     -- LE Rand Command (v4.0) (LE)
 
-  LE_START_ENCRYPTION                  = 0x2019
+  LE_START_ENCRYPTION                                          = 0x2019
     -- LE Start Encryption Command (v4.0) (LE)
 
-  LE_LONG_TERM_KEY_REQUEST_REPLY       = 0x201A
+  LE_LONG_TERM_KEY_REQUEST_REPLY                               = 0x201A
     -- LE Long Term Key Request Reply Command (v4.0) (LE)
 
-  LE_READ_SUPPORTED_STATES             = 0x201C
+  LE_READ_SUPPORTED_STATES                                     = 0x201C
     -- LE Read Supported States Command (v4.0) (LE)
 
-  LE_RECEIVER_TEST                     = 0x201D
+  LE_RECEIVER_TEST                                             = 0x201D
     -- LE Receiver Test Command (v4.0) (LE)
 
-  LE_TRANSMITTER_TEST                  = 0x201E
+  LE_TRANSMITTER_TEST                                          = 0x201E
     -- LE Transmitter Test Command (v4.0) (LE)
 
-  LE_TEST_END                          = 0x201F
+  LE_TEST_END                                                  = 0x201F
     -- LE Test End Command (v4.0) (LE)
 
-  LE_SET_DATA_LENGTH                   = 0x2022
+  LE_SET_DATA_LENGTH                                           = 0x2022
     -- LE Set Data Length Command (v4.2) (LE)
 
-  LE_READ_LOCAL_P256_PUBLIC_KEY        = 0x2025
+  LE_READ_LOCAL_P256_PUBLIC_KEY                                = 0x2025
     -- LE Read Local P-256 Public Key Command (v4.2) (LE)
 
-  LE_GENERATE_DH_KEY                   = 0x2026
+  LE_GENERATE_DH_KEY                                           = 0x2026
     -- LE Generate DH Key Command (v4.2) (LE)
 
-  LE_CLEAR_RESOLVING_LIST              = 0x2029
+  LE_CLEAR_RESOLVING_LIST                                      = 0x2029
     -- LE Clear Resolving List Command (v4.2) (LE)
 
-  LE_READ_RESOLVING_LIST_SIZE          = 0x202A
+  LE_READ_RESOLVING_LIST_SIZE                                  = 0x202A
     -- LE Read Resolving List Size Command (v4.2) (LE)
 
-  LE_READ_MAXIMUM_DATA_LENGTH          = 0x202F
+  LE_READ_MAXIMUM_DATA_LENGTH                                  = 0x202F
     -- LE Read Maximum Data Length Command (v4.2) (LE)
 
-  LE_READ_PHY                          = 0x2030
+  LE_READ_PHY                                                  = 0x2030
     -- LE Read PHY Command (v5.0) (LE)
 
-  LE_SET_DEFAULT_PHY                   = 0x2031
+  LE_SET_DEFAULT_PHY                                           = 0x2031
     -- LE Set Default PHY Command (v5.0) (LE)
 
-  LE_SET_PHY                           = 0x2032
+  LE_SET_PHY                                                   = 0x2032
     -- LE Set PHY Command (v5.0) (LE)
 
-  LE_ENHANCED_RECEIVER_TEXT            = 0x2033
+  LE_ENHANCED_RECEIVER_TEXT                                    = 0x2033
     -- LE Enhanced Receiver Test Command (v5.0) (LE)
 
-  LE_ENHANCED_TRANSMITTER_TEST         = 0x2034
+  LE_ENHANCED_TRANSMITTER_TEST                                 = 0x2034
     -- LE Enhanced Transmitter Test Command (v5.0) (LE)
 
-  LE_REMOVE_ADVERTISING_SET            = 0x203C
+  LE_REMOVE_ADVERTISING_SET                                    = 0x203C
     -- LE Remove Advertising Set Command (v5.0) (LE)
 
-  LE_CLEAR_ADVERTISING_SETS            = 0x203D
+  LE_CLEAR_ADVERTISING_SETS                                    = 0x203D
     -- LE Clear Advertising Sets Command (v5.0) (LE)
 
-  LE_SET_EXTENDED_SCAN_ENABLE          = 0x2042
+  LE_SET_EXTENDED_SCAN_ENABLE                                  = 0x2042
     -- LE Set Extended Scan Enable Command (v5.0) (LE)
 
-  LE_READ_TRANSMIT_POWER               = 0x204B
+  LE_READ_TRANSMIT_POWER                                       = 0x204B
     -- LE Read Transmit Power Command (v5.0) (LE)
 
-  LE_READ_RF_PATH_COMPENSATION         = 0x204C
+  LE_READ_RF_PATH_COMPENSATION                                 = 0x204C
     -- LE Read RF Path Compensation Command (v5.0) (LE)
 
-  LE_WRITE_RF_PATH_COMPENSATION        = 0x204D
+  LE_WRITE_RF_PATH_COMPENSATION                                = 0x204D
     -- LE Write RF Path Compensation Command (v5.0) (LE)
 
-  LE_SET_PRIVACY_MODE                  = 0x204E
+  LE_SET_PRIVACY_MODE                                          = 0x204E
     -- LE Set Privacy Mode Command (v5.0) (LE)
 
-  LE_READ_BUFFER_SIZE_V2               = 0x2060
+  LE_SET_PERIODIC_ADVERTISING_RECEIVE_ENABLE                   = 0x2059
+    -- LE Set Periodic Advertising Receive Enable Command (v5.1) (LE)
+
+  LE_PERIODIC_ADVERTISING_SYNC_TRANSFER                        = 0x205A
+    -- LE Periodic Advertising Sync Transfer Command (v5.1) (LE)
+
+  LE_PERIODIC_ADVERTISING_SET_INFO_TRANSFER                    = 0x205B
+    -- LE Periodic Advertising Set Info Transfer Command (v5.1) (LE)
+
+  LE_SET_PERIODIC_ADVERTISING_SYNC_TRANSFER_PARAMETERS         = 0x205C
+    -- LE Set Periodic Advertising Sync Transfer Parameters Command (v5.1) (LE)
+
+  LE_SET_DEFAULT_PERIODIC_ADVERTISING_SYNC_TRANSFER_PARAMETERS = 0x205D
+    -- LE Set Default Periodic Advertising Sync Transfer Parameters Command (v5.1) (LE)
+
+  LE_MODIFY_SLEEP_CLOCK_ACCURACY                               = 0x205F
+    -- LE Modify Sleep Clock Accuracy Command (v5.1) (LE)
+
+  LE_READ_BUFFER_SIZE_V2                                       = 0x2060
     -- LE Read Buffer Size [v2] Command (v5.2) (LE)
 
-  LE_SET_HOST_FEATURE                  = 0x2074
+  LE_READ_ISO_TX_SYNC                                          = 0x2061
+    -- LE Read ISO TX Sync Command (v5.2) (LE)
+
+  LE_SET_CIG_PARAMETERS                                        = 0x2062
+    -- LE Set CIG Parameters Command (v5.2) (LE)
+
+  LE_SET_CIG_PARAMETERS_TEST                                   = 0x2063
+    -- LE Set CIG Parameters Test Command (v5.2) (LE)
+
+  LE_CREATE_CIS                                                = 0x2064
+    -- LE Create CIS Command (v5.2) (LE)
+
+  LE_REMOVE_CIG                                                = 0x2065
+    -- LE Remove CIG Command (v5.2) (LE)
+
+  LE_ACCEPT_CIS_REQUEST                                        = 0x2066
+    -- LE Accept CIS Request Command (v5.2) (LE)
+
+  LE_REJECT_CIS_REQUEST                                        = 0x2067
+    -- LE Reject CIS Request Command (v5.2) (LE)
+
+  LE_CREATE_BIG                                                = 0x2068
+    -- LE Create BIG Command (v5.2) (LE)
+
+  LE_CREATE_BIG_TEST                                           = 0x2069
+    -- LE Create BIG Test Command (v5.2) (LE)
+
+  LE_TERMINATE_BIG                                             = 0x206A
+    -- LE Terminate BIG Command (v5.2) (LE)
+
+  LE_BIG_CREATE_SYNC                                           = 0x206B
+    -- LE BIG Create Sync Command (v5.2) (LE)
+
+  LE_BIG_TERMINATE_SYNC                                        = 0x206C
+    -- LE BIG Terminate Sync Command (v5.2) (LE)
+
+  LE_REQUEST_PEER_SCA                                          = 0x206D
+    -- LE Request Peer SCA Command (v5.2) (LE)
+
+  LE_SETUP_ISO_DATA_PATH                                       = 0x206E
+    -- LE Setup ISO Data Path Command (v5.2) (LE)
+
+  LE_REMOVE_ISO_DATA_PATH                                      = 0x206F
+    -- LE Remove ISO Data Path Command (v5.2) (LE)
+
+  LE_ISO_TRANSMIT_TEST                                         = 0x2070
+    -- LE ISO Transmit Test Command (v5.2) (LE)
+
+  LE_ISO_RECEIVE_TEST                                          = 0x2071
+    -- LE ISO Receive Test Command (v5.2) (LE)
+
+  LE_ISO_READ_TEST_COUNTERS                                    = 0x2072
+    -- LE ISO Read Test Counters Command (v5.2) (LE)
+
+  LE_ISO_TEST_END                                              = 0x2073
+    -- LE ISO Test End Command (v5.2) (LE)
+
+  LE_SET_HOST_FEATURE                                          = 0x2074
     -- LE Set Host Feature Command (v5.2) (LE)
+
+  LE_READ_ISO_LINK_QUALITY                                     = 0x2075
+    -- LE Read ISO Link Quality Command (v5.2) (LE)
 
 
 enum MajorDeviceClass:
