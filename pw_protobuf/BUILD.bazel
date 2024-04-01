@@ -217,6 +217,11 @@ py_proto_library(
     deps = [":common_proto"],
 )
 
+java_proto_library(
+    name = "common_java_proto",
+    deps = [":common_proto"],
+)
+
 java_lite_proto_library(
     name = "common_java_proto_lite",
     deps = [":common_proto"],
