@@ -18,6 +18,7 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::multibuf {
 
@@ -194,7 +195,7 @@ class MultiBufAllocator {
   void RemoveWaiterLocked(internal::AllocationWaiter*)
       PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
-  sync::Mutex lock_;
+  sync::InterruptSpinLock lock_;
   internal::AllocationWaiter* first_waiter_ PW_GUARDED_BY(lock_) = nullptr;
 };
 

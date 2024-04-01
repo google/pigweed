@@ -17,6 +17,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::multibuf {
 
@@ -150,7 +151,7 @@ class SimpleAllocator final : public MultiBufAllocator {
     }
   }
 
-  pw::sync::Mutex lock_;
+  pw::sync::InterruptSpinLock lock_;
   IntrusiveList<internal::LinkedRegionTracker> regions_ PW_GUARDED_BY(lock_);
   pw::allocator::Allocator& metadata_alloc_;
   const ByteSpan data_area_;

@@ -29,7 +29,7 @@ pw_source_set("chunk") {
   public = [ "public/pw_multibuf/chunk.h" ]
   sources = [ "chunk.cc" ]
   public_deps = [
-    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:interrupt_spin_lock",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_preprocessor,
