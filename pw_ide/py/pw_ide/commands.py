@@ -22,6 +22,7 @@ import sys
 from typing import cast, Set
 
 from pw_cli.env import pigweed_environment
+from pw_cli.status_reporter import LoggingStatusReporter, StatusReporter
 
 from pw_ide.cpp import (
     COMPDB_FILE_NAME,
@@ -47,8 +48,6 @@ from pw_ide.settings import (
     PigweedIdeSettings,
     SupportedEditor,
 )
-
-from pw_ide.status_reporter import LoggingStatusReporter, StatusReporter
 
 from pw_ide import vscode
 from pw_ide.vscode import (
