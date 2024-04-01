@@ -16,6 +16,7 @@ and routes the decoded packets to local datagram-oriented channels.
 API
 ---
 .. doxygenclass:: pw::hdlc::Router
+   :members:
 
 -----------------
 More pw_hdlc docs
