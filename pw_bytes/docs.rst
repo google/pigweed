@@ -66,6 +66,21 @@ This module exports a single ``_b`` literal, making it easier to create
 
 .. cpp:function:: constexpr std::byte operator"" _b(unsigned long long value)
 
+.. note::
+   This should not be used in header files, as it requires a ``using``
+   declaration that will be publicly exported at whatever level it is
+   used.
+
+Example:
+
+.. code-block:: cpp
+
+   #include "pw_bytes/units.h"
+
+   using ::pw::operator""_b;
+
+   constexpr std::byte kValue = 5_b;
+
 pw_bytes/units.h
 ================
 Constants, functions and user-defined literals for specifying a number of bytes
