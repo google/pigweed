@@ -180,8 +180,8 @@ class Conversions {
 
 #define _PW_CHANNEL_WRITABLE_WRTE static_assert(true)
 #define _PW_CHANNEL_WRITABLE_SKIP                                         \
-  async2::Poll<> DoPendReadyToWrite(async2::Context&) final {             \
-    return async2::Ready(); /* Should this be Ready() correct here? */    \
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context&) final {       \
+    return Status::Unimplemented();                                       \
   }                                                                       \
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
     PW_ASSERT(false); /* shouldn't be called on non-writeable channels */ \

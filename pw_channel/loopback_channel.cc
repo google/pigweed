@@ -38,12 +38,13 @@ Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPendRead(
   return data;
 }
 
-Poll<> LoopbackChannel<DataType::kDatagram>::DoPendReadyToWrite(Context& cx) {
+Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendReadyToWrite(
+    Context& cx) {
   if (queue_.has_value()) {
     waker_ = cx.GetWaker(WaitReason::Unspecified());
     return Pending();
   }
-  return Ready();
+  return Ready(OkStatus());
 }
 
 Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoWrite(

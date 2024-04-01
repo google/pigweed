@@ -113,7 +113,7 @@ class ForwardingChannel<DataType::kDatagram>
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPendReadyToWrite(async2::Context& cx) override;
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) override;
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
     return pair_.allocator_;
@@ -156,8 +156,8 @@ class ForwardingChannel<DataType::kByte> : public ByteReaderWriter {
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPendReadyToWrite(async2::Context&) override {
-    return async2::Ready();
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context&) override {
+    return async2::Ready(OkStatus());
   }
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() override {

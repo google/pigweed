@@ -200,18 +200,26 @@ class AnyChannel {
   /// This should be called before attempting to ``Write``, and may be called
   /// before allocating a write buffer if trying to reduce memory pressure.
   ///
-  /// If ``Ready`` is returned, a *single* caller may proceed to ``Write``.
+  /// This method will return:
   ///
-  /// If ``Pending`` is returned, ``cx`` will be awoken when the channel
-  /// becomes writeable again.
+  /// * Ready(OK) - The channel is currently writeable, and a single caller
+  ///   may proceed to ``Write``.
+  /// * Ready(UNIMPLEMENTED) - The channel does not support writing.
+  /// * Ready(FAILED_PRECONDITION) - The channel is closed for writing.
+  /// * Pending - ``cx`` will be awoken when the channel becomes writeable
+  ///   again.
   ///
   /// Note: this method will always return ``Ready`` for non-writeable
   /// channels.
-  async2::Poll<> PendReadyToWrite(pw::async2::Context& cx) {
+  async2::Poll<Status> PendReadyToWrite(pw::async2::Context& cx) {
     if (!is_write_open()) {
-      return async2::Ready();
+      return Status::FailedPrecondition();
     }
-    return DoPendReadyToWrite(cx);
+    async2::Poll<Status> result = DoPendReadyToWrite(cx);
+    if (result.IsReady() && result->IsFailedPrecondition()) {
+      set_write_closed();
+    }
+    return result;
   }
 
   /// Gives access to an allocator for write buffers. The MultiBufAllocator
@@ -397,7 +405,7 @@ class AnyChannel {
 
   virtual multibuf::MultiBufAllocator& DoGetWriteAllocator() = 0;
 
-  virtual pw::async2::Poll<> DoPendReadyToWrite(async2::Context& cx) = 0;
+  virtual pw::async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) = 0;
 
   virtual Result<WriteToken> DoWrite(multibuf::MultiBuf&& buffer) = 0;
 

@@ -33,6 +33,17 @@ pw_add_library(pw_channel INTERFACE
     public
 )
 
+pw_add_test(pw_channel.channel_test
+  SOURCES
+    channel_test.cc
+  PRIVATE_DEPS
+    pw_channel
+    pw_allocator.testing
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_preprocessor
+    pw_multibuf.simple_allocator
+)
+
 pw_add_library(pw_channel.forwarding_channel STATIC
   HEADERS
     public/pw_channel/forwarding_channel.h

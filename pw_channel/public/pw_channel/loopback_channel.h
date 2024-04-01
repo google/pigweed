@@ -55,7 +55,7 @@ class LoopbackChannel<DataType::kDatagram>
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPendReadyToWrite(async2::Context& cx) final;
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) final;
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {
     return *write_allocator_;
@@ -88,8 +88,8 @@ class LoopbackChannel<DataType::kByte> : public ByteReaderWriter {
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
-  async2::Poll<> DoPendReadyToWrite(async2::Context&) final {
-    return async2::Ready();
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context&) final {
+    return async2::Ready(OkStatus());
   }
 
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {

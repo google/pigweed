@@ -60,6 +60,7 @@ pw_test("forwarding_channel_test") {
     "$dir_pw_allocator:testing",
     "$dir_pw_multibuf:header_chunk_region_tracker",
     "$dir_pw_multibuf:simple_allocator",
+    dir_pw_preprocessor,
   ]
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
 }

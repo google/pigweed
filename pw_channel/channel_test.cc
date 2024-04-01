@@ -21,6 +21,7 @@
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/simple_allocator.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace {
 
@@ -58,9 +59,15 @@ class ReliableByteReaderWriterStub
   }
 
   // Write functions
-  pw::async2::Poll<> DoPendReadyToWrite(pw::async2::Context&) override {
+
+  // Disable maybe-uninitialized: this check fails erroniously on Windows GCC.
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
+  pw::async2::Poll<pw::Status> DoPendReadyToWrite(
+      pw::async2::Context&) override {
     return pw::async2::Pending();
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 
   pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
     // ``DoPendReadyToWrite`` will never return ``Ready``, so this is not
@@ -102,9 +109,8 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
 
       EXPECT_EQ(pw::Status::FailedPrecondition(),
                 channel.PendRead(cx)->status());
-      EXPECT_EQ(pw::async2::Ready(), channel.PendReadyToWrite(cx));
-      EXPECT_EQ(pw::Status::FailedPrecondition(),
-                channel.Write(pw::multibuf::MultiBuf()).status());
+      EXPECT_EQ(Ready(pw::Status::FailedPrecondition()),
+                channel.PendReadyToWrite(cx));
       EXPECT_EQ(pw::Status::FailedPrecondition(),
                 channel.PendFlush(cx)->status());
       EXPECT_EQ(pw::async2::Ready(pw::Status::FailedPrecondition()),
@@ -201,9 +207,9 @@ class TestDatagramWriter : public DatagramWriter {
   }
 
  private:
-  Poll<> DoPendReadyToWrite(Context& cx) override {
+  Poll<pw::Status> DoPendReadyToWrite(Context& cx) override {
     if (state_ == kReadyToWrite) {
-      return Ready();
+      return Ready(pw::OkStatus());
     }
 
     waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());

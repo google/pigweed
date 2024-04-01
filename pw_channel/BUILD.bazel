@@ -48,6 +48,7 @@ pw_cc_test(
         "//pw_allocator:testing",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_multibuf:simple_allocator",
+        "//pw_preprocessor",
         "//pw_unit_test",
     ],
 )

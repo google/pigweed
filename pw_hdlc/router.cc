@@ -151,8 +151,16 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
     incoming_allocation_future_ = std::nullopt;
     return Ready();
   }
-  if (channel->channel->PendReadyToWrite(cx).IsPending()) {
+  Poll<Status> ready_to_write = channel->channel->PendReadyToWrite(cx);
+  if (ready_to_write.IsPending()) {
     return Pending();
+  }
+  if (!ready_to_write->ok()) {
+    PW_LOG_ERROR("Channel at incoming HDLC address %" PRIu64
+                 " became unwriteable. Status: %d",
+                 channel->receive_address,
+                 ready_to_write->code());
+    return Ready();
   }
   if (!incoming_allocation_future_.has_value()) {
     incoming_allocation_future_ =

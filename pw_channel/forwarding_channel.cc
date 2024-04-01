@@ -32,17 +32,18 @@ ForwardingChannel<DataType::kDatagram>::DoPendRead(async2::Context& cx)
   std::move(sibling_.waker_).Wake();
   return read_data;
 }
-async2::Poll<> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
+
+async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
     async2::Context& cx) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (pair_.closed_) {
-    return async2::Ready();
+    return Status::FailedPrecondition();
   }
   if (sibling_.read_queue_.has_value()) {
     waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
-  return async2::Ready();
+  return async2::Ready(OkStatus());
 }
 
 Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
