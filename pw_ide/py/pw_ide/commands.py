@@ -13,6 +13,7 @@
 # the License.
 """pw_ide CLI command handlers."""
 
+from glob import iglob
 import logging
 from pathlib import Path
 import shlex
@@ -318,24 +319,20 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     # Associate processed compilation databases with their original sources
     all_processed_compdbs: dict[Path, CppCompilationDatabasesMap] = {}
 
-    # Get a list of paths to search for compilation databases.
-    compdb_search_paths: list[
-        tuple[Path, str]
-    ] = pw_ide_settings.compdb_search_paths
-    # Get the list of files for each search path, tupled with the search path.
-    compdb_file_path_groups = [
-        (search_path, list(search_path[0].rglob(str(COMPDB_FILE_NAME))))
-        for search_path in compdb_search_paths
-    ]
-    # Flatten that list.
-    compdb_file_paths: list[tuple[Path, Path, str]] = [
-        (search_path, file_path, target_inference)
-        for (
-            (search_path, target_inference),
-            file_path_group,
-        ) in compdb_file_path_groups
-        for file_path in file_path_group
-    ]
+    # Find all compilation databases in the paths defined in settings, and
+    # associate them with their target inference pattern.
+    compdb_file_paths: list[tuple[Path, Path, str]] = []
+    settings_search_paths = pw_ide_settings.compdb_search_paths
+
+    # Get all compdb_search_paths entries from settings
+    for search_path_glob, target_inference in settings_search_paths:
+        # Expand the search path globs to get all concrete search paths
+        for search_path in (Path(p) for p in iglob(str(search_path_glob))):
+            # Search each path for compilation database files
+            for compdb_file in search_path.rglob(str(COMPDB_FILE_NAME)):
+                compdb_file_paths.append(
+                    (Path(search_path), compdb_file, target_inference)
+                )
 
     for (
         compdb_root_dir,

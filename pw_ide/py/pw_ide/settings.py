@@ -171,6 +171,9 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         inference pattern will be used. Or entries can be tuples of a directory
         and a target inference pattern. See the documentation for
         ``target_inference`` for more information.
+
+        Finally, the directories can be concrete paths, or they can be globs
+        that expand to multiple paths.
         """
         return [
             _parse_compdb_search_path(search_path, self.target_inference)
