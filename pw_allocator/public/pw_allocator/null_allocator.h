@@ -37,7 +37,7 @@ class NullAllocator : public Allocator {
   void* DoAllocate(Layout) override { return nullptr; }
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void*, Layout) override {}
+  void DoDeallocate(void*) override {}
 };
 
 }  // namespace pw::allocator

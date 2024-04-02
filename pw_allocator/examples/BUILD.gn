@@ -48,7 +48,10 @@ pw_source_set("custom_allocator") {
   public = [ "custom_allocator.h" ]
   public_deps = [ "$dir_pw_allocator:allocator" ]
   sources = [ "custom_allocator.cc" ]
-  deps = [ dir_pw_log ]
+  deps = [
+    dir_pw_log,
+    dir_pw_result,
+  ]
 }
 
 pw_source_set("custom_allocator_test_harness") {

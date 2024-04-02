@@ -41,8 +41,7 @@ template <typename T>
 void my_delete(T* t) {
   if (t != nullptr) {
     std::destroy_at(t);
-    pw::Result<pw::allocator::Layout> layout = allocator.GetLayout(t);
-    allocator.Deallocate(t, layout.value());
+    allocator.Deallocate(t);
   }
 }
 
@@ -52,10 +51,7 @@ void* my_malloc(size_t size) {
       pw::allocator::Layout(size, alignof(std::max_align_t)));
 }
 
-void my_free(void* ptr) {
-  pw::Result<pw::allocator::Layout> layout = allocator.GetLayout(ptr);
-  allocator.Deallocate(ptr, layout.value());
-}
+void my_free(void* ptr) { allocator.Deallocate(ptr); }
 // DOCSTAG: [pw_allocator-examples-block_allocator-malloc_free]
 
 }  // namespace examples

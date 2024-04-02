@@ -133,10 +133,10 @@ class BlockAllocator : public GenericBlockAllocator {
   void* DoAllocate(Layout layout) override;
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override;
+  void DoDeallocate(void* ptr) override;
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
+  bool DoResize(void* ptr, size_t new_size) override;
 
   /// @copydoc Allocator::GetUsableLayout
   StatusWithSize DoGetCapacity() const override {
@@ -150,7 +150,7 @@ class BlockAllocator : public GenericBlockAllocator {
   Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
 
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override;
+  Status DoQuery(const void* ptr) const override;
 
   /// Selects a free block to allocate from.
   ///
@@ -468,7 +468,7 @@ void* BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoAllocate(
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
-    void* ptr, Layout) {
+    void* ptr) {
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     return;
@@ -490,7 +490,7 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
-    void* ptr, Layout, size_t new_size) {
+    void* ptr, size_t new_size) {
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     return false;
@@ -536,7 +536,7 @@ BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetAllocatedLayout(
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 Status BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoQuery(
-    const void* ptr, Layout) const {
+    const void* ptr) const {
   return FromUsableSpace(ptr).status();
 }
 

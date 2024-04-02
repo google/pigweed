@@ -78,20 +78,16 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
  protected:
   void Destroy() final {
     std::byte* ptr = reinterpret_cast<std::byte*>(this);
-    auto layout = allocator::Layout::Of<HeaderChunkRegionTracker>().Extend(
-        region_.size());
     auto alloc = alloc_;
     std::destroy_at(this);
-    alloc->Deallocate(ptr, layout);
+    alloc->Deallocate(ptr);
   }
 
   void* AllocateChunkClass() final {
     return alloc_->Allocate(allocator::Layout::Of<Chunk>());
   }
 
-  void DeallocateChunkClass(void* ptr) final {
-    alloc_->Deallocate(ptr, allocator::Layout::Of<Chunk>());
-  }
+  void DeallocateChunkClass(void* ptr) final { alloc_->Deallocate(ptr); }
 
  private:
   ByteSpan region_;

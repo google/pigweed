@@ -159,7 +159,7 @@ void TestAllocate() {
 
   for (const auto& allocation : allocations) {
     EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
-    synchronized.Deallocate(allocation.ptr, allocation.layout);
+    synchronized.Deallocate(allocation.ptr);
   }
 }
 
@@ -170,37 +170,6 @@ TEST(SynchronizedAllocatorTest, AllocateDeallocateInterruptSpinLock) {
 TEST(SynchronizedAllocatorTest, AllocateDeallocateMutex) {
   TestAllocate<sync::Mutex>();
 }
-
-template <typename LockType>
-void TestQuery() {
-  test::AllocatorForTest<kCapacity> allocator;
-  SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background(synchronized);
-
-  Vector<Allocation, kNumAllocations> allocations;
-  while (!allocations.full()) {
-    Layout layout(kSize, kAlignment);
-    void* ptr = synchronized.Allocate(layout);
-    Allocation allocation{ptr, layout};
-    allocation.Paint();
-    allocations.push_back(allocation);
-    this_thread::yield();
-  }
-
-  for (const auto& allocation : allocations) {
-    if (allocation.ptr != nullptr) {
-      EXPECT_EQ(synchronized.Query(allocation.ptr, allocation.layout),
-                OkStatus());
-    }
-    this_thread::yield();
-  }
-}
-
-TEST(SynchronizedAllocatorTest, QueryInterruptSpinLock) {
-  TestQuery<sync::InterruptSpinLock>();
-}
-
-TEST(SynchronizedAllocatorTest, QueryMutex) { TestQuery<sync::Mutex>(); }
 
 template <typename LockType>
 void TestResize() {
@@ -222,7 +191,7 @@ void TestResize() {
   for (auto& allocation : allocations) {
     EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
     size_t new_size = allocation.layout.size() / 2;
-    if (!synchronized.Resize(allocation.ptr, allocation.layout, new_size)) {
+    if (!synchronized.Resize(allocation.ptr, new_size)) {
       continue;
     }
     allocation.layout = Layout(new_size, allocation.layout.alignment());
@@ -234,7 +203,7 @@ void TestResize() {
   for (auto& allocation : allocations) {
     EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
     size_t old_size = allocation.layout.size() * 2;
-    if (!synchronized.Resize(allocation.ptr, allocation.layout, old_size)) {
+    if (!synchronized.Resize(allocation.ptr, old_size)) {
       continue;
     }
     allocation.layout = Layout(old_size, allocation.layout.alignment());

@@ -20,12 +20,25 @@
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/testing.h"
 #include "pw_log/log.h"
+#include "pw_metric/metric.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {
 
-// Test fixture.
+// Test fixtures.
+
+class TrackingAllocatorForTest : public TrackingAllocatorImpl<AllMetrics> {
+ public:
+  TrackingAllocatorForTest(metric::Token token, Allocator& allocator)
+      : TrackingAllocatorImpl<AllMetrics>(token, allocator) {}
+
+  // Expose the protected ``GetAllocatedLayout`` method for test purposes.
+  Result<Layout> GetAllocatedLayout(const void* ptr) const {
+    return Allocator::GetAllocatedLayout(*this, ptr);
+  }
+};
+
 class TrackingAllocatorTest : public ::testing::Test {
  protected:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;
@@ -48,7 +61,7 @@ class TrackingAllocatorTest : public ::testing::Test {
   }
 
   WithBuffer<AllocatorType, kCapacity, BlockType::kAlignment> allocator_;
-  TrackingAllocatorImpl<AllMetrics> tracker_;
+  TrackingAllocatorForTest tracker_;
 };
 
 struct ExpectedValues {
@@ -137,7 +150,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocate) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr1, layout1);
+  tracker_.Deallocate(ptr1);
   expected.requested_bytes -= layout1.size();
   expected.allocated_bytes -= ptr1_allocated;
   expected.num_deallocations += 1;
@@ -178,7 +191,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr1, layout1);
+  tracker_.Deallocate(ptr1);
   expected.requested_bytes -= layout1.size();
   expected.allocated_bytes -= ptr1_allocated;
   expected.num_deallocations += 1;
@@ -193,13 +206,13 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr3, layout3);
+  tracker_.Deallocate(ptr3);
   expected.requested_bytes -= layout3.size();
   expected.allocated_bytes -= ptr3_allocated;
   expected.num_deallocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr2, layout2);
+  tracker_.Deallocate(ptr2);
   expected.requested_bytes -= layout2.size();
   expected.allocated_bytes -= ptr2_allocated;
   expected.num_deallocations += 1;
@@ -219,16 +232,16 @@ TEST_F(TrackingAllocatorTest, ResizeLarger) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  constexpr Layout layout2 = Layout::Of<uint32_t[5]>();
-  EXPECT_TRUE(tracker_.Resize(ptr, layout1, layout2.size()));
+  constexpr size_t size2 = sizeof(uint32_t[5]);
+  EXPECT_TRUE(tracker_.Resize(ptr, size2));
   size_t ptr_allocated2 = tracker_.GetAllocatedLayout(ptr)->size();
-  expected.AddRequestedBytes(layout2.size() - layout1.size());
+  expected.AddRequestedBytes(size2 - layout1.size());
   expected.AddAllocatedBytes(ptr_allocated2 - ptr_allocated1);
   expected.num_resizes += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr, layout1);
-  expected.requested_bytes -= layout2.size();
+  tracker_.Deallocate(ptr);
+  expected.requested_bytes -= size2;
   expected.allocated_bytes -= ptr_allocated2;
   expected.num_deallocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
@@ -247,16 +260,16 @@ TEST_F(TrackingAllocatorTest, ResizeSmaller) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  constexpr Layout layout2 = Layout::Of<uint32_t[1]>();
-  EXPECT_TRUE(tracker_.Resize(ptr, layout1, layout2.size()));
+  constexpr size_t size2 = sizeof(uint32_t[1]);
+  EXPECT_TRUE(tracker_.Resize(ptr, size2));
   size_t ptr_allocated2 = tracker_.GetAllocatedLayout(ptr)->size();
-  expected.requested_bytes -= layout1.size() - layout2.size();
+  expected.requested_bytes -= layout1.size() - size2;
   expected.allocated_bytes -= ptr_allocated1 - ptr_allocated2;
   expected.num_resizes += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr, layout2);
-  expected.requested_bytes -= layout2.size();
+  tracker_.Deallocate(ptr);
+  expected.requested_bytes -= size2;
   expected.allocated_bytes -= ptr_allocated2;
   expected.num_deallocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
@@ -266,7 +279,7 @@ TEST_F(TrackingAllocatorTest, ResizeFailure) {
   const AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
-  constexpr Layout layout = Layout::Of<uint32_t[2]>();
+  constexpr Layout layout = Layout::Of<uint32_t[4]>();
   void* ptr1 = tracker_.Allocate(layout);
   ASSERT_NE(ptr1, nullptr);
   size_t ptr1_allocated = tracker_.GetAllocatedLayout(ptr1)->size();
@@ -283,7 +296,7 @@ TEST_F(TrackingAllocatorTest, ResizeFailure) {
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  EXPECT_FALSE(tracker_.Resize(ptr1, layout, layout.size() * 2));
+  EXPECT_FALSE(tracker_.Resize(ptr1, layout.size() * 2));
   expected.num_failures += 1;
   expected.unfulfilled_bytes += layout.size() * 2;
   EXPECT_METRICS_EQ(expected, metrics);
@@ -304,7 +317,7 @@ TEST_F(TrackingAllocatorTest, Reallocate) {
 
   // If `Reallocate` just resizes, no extra memory is allocated
   constexpr Layout layout2 = Layout::Of<uint32_t[4]>();
-  void* ptr2 = tracker_.Reallocate(ptr1, layout1, layout2.size());
+  void* ptr2 = tracker_.Reallocate(ptr1, layout2);
   EXPECT_EQ(ptr2, ptr1);
   size_t ptr2_allocated = tracker_.GetAllocatedLayout(ptr2)->size();
   expected.AddRequestedBytes(layout2.size() - layout1.size());
@@ -325,7 +338,7 @@ TEST_F(TrackingAllocatorTest, Reallocate) {
   // If `Reallocate` must copy to a new location, it allocates before
   // deallocating and results in higher peaks.
   constexpr Layout layout4 = Layout::Of<uint32_t[8]>();
-  void* ptr4 = tracker_.Reallocate(ptr2, layout2, layout4.size());
+  void* ptr4 = tracker_.Reallocate(ptr2, layout4);
   EXPECT_NE(ptr4, ptr2);
   size_t ptr4_allocated = tracker_.GetAllocatedLayout(ptr4)->size();
   expected.AddRequestedBytes(layout4.size() - layout2.size());
@@ -334,13 +347,13 @@ TEST_F(TrackingAllocatorTest, Reallocate) {
   expected.num_reallocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr3, layout3);
+  tracker_.Deallocate(ptr3);
   expected.requested_bytes -= layout3.size();
   expected.allocated_bytes -= ptr3_allocated;
   expected.num_deallocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  tracker_.Deallocate(ptr4, layout4);
+  tracker_.Deallocate(ptr4);
   expected.requested_bytes -= layout4.size();
   expected.allocated_bytes -= ptr4_allocated;
   expected.num_deallocations += 1;
@@ -351,19 +364,20 @@ TEST_F(TrackingAllocatorTest, ReallocateFailure) {
   const AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
-  constexpr Layout layout = Layout::Of<uint32_t[4]>();
-  void* ptr1 = tracker_.Allocate(layout);
+  constexpr Layout layout1 = Layout::Of<uint32_t[4]>();
+  void* ptr1 = tracker_.Allocate(layout1);
   ASSERT_NE(ptr1, nullptr);
   size_t ptr1_allocated = tracker_.GetAllocatedLayout(ptr1)->size();
-  expected.AddRequestedBytes(layout.size());
+  expected.AddRequestedBytes(layout1.size());
   expected.AddAllocatedBytes(ptr1_allocated);
   expected.num_allocations += 1;
   EXPECT_METRICS_EQ(expected, metrics);
 
-  void* ptr2 = tracker_.Reallocate(ptr1, layout, 0x10000000U);
+  constexpr Layout layout2 = Layout(0x10000000U, 1);
+  void* ptr2 = tracker_.Reallocate(ptr1, layout2);
   EXPECT_EQ(ptr2, nullptr);
   expected.num_failures += 1;
-  expected.unfulfilled_bytes += 0x10000000U;
+  expected.unfulfilled_bytes += layout2.size();
   EXPECT_METRICS_EQ(expected, metrics);
 }
 

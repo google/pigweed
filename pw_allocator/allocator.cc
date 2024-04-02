@@ -19,20 +19,40 @@
 
 namespace pw::allocator {
 
-void* Allocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {
-  if (new_size == 0) {
-    return nullptr;
-  }
-  if (Resize(ptr, layout, new_size)) {
+void* Allocator::DoReallocate(void* ptr, Layout new_layout) {
+  if (Resize(ptr, new_layout.size())) {
     return ptr;
   }
-  void* new_ptr = DoAllocate(Layout(new_size, layout.alignment()));
+  Result<Layout> allocated = DoGetAllocatedLayout(ptr);
+  if (!allocated.ok()) {
+    return nullptr;
+  }
+  void* new_ptr = DoAllocate(new_layout);
   if (new_ptr == nullptr) {
     return nullptr;
   }
-  if (ptr != nullptr && layout.size() != 0) {
-    std::memcpy(new_ptr, ptr, std::min(new_size, layout.size()));
-    DoDeallocate(ptr, layout);
+  if (ptr != nullptr) {
+    std::memcpy(new_ptr, ptr, std::min(new_layout.size(), allocated->size()));
+    DoDeallocate(ptr);
+  }
+  return new_ptr;
+}
+
+void* Allocator::DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
+  if (Resize(ptr, old_layout, new_size)) {
+    return ptr;
+  }
+  Result<Layout> allocated = DoGetAllocatedLayout(ptr);
+  if (!allocated.ok()) {
+    return nullptr;
+  }
+  void* new_ptr = DoAllocate(Layout(new_size, old_layout.alignment()));
+  if (new_ptr == nullptr) {
+    return nullptr;
+  }
+  if (ptr != nullptr) {
+    std::memcpy(new_ptr, ptr, std::min(new_size, allocated->size()));
+    DoDeallocate(ptr, *allocated);
   }
   return new_ptr;
 }

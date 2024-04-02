@@ -46,19 +46,18 @@ class FallbackAllocator : public Allocator {
   }
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override {
-    if (primary_.Query(ptr, layout).ok()) {
-      primary_.Deallocate(ptr, layout);
+  void DoDeallocate(void* ptr) override {
+    if (Query(primary_, ptr).ok()) {
+      primary_.Deallocate(ptr);
     } else {
-      secondary_.Deallocate(ptr, layout);
+      secondary_.Deallocate(ptr);
     }
   }
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, Layout layout, size_t new_size) override {
-    return primary_.Query(ptr, layout).ok()
-               ? primary_.Resize(ptr, layout, new_size)
-               : secondary_.Resize(ptr, layout, new_size);
+  bool DoResize(void* ptr, size_t new_size) override {
+    return Query(primary_, ptr).ok() ? primary_.Resize(ptr, new_size)
+                                     : secondary_.Resize(ptr, new_size);
   }
 
   /// @copydoc Allocator::GetCapacity
@@ -76,32 +75,32 @@ class FallbackAllocator : public Allocator {
 
   /// @copydoc Allocator::GetRequestedLayout
   Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    Result<Layout> primary = primary_.GetRequestedLayout(ptr);
+    Result<Layout> primary = GetRequestedLayout(primary_, ptr);
     return primary.ok() ? primary
                         : CombineResults(primary.status(),
-                                         secondary_.GetRequestedLayout(ptr));
+                                         GetRequestedLayout(secondary_, ptr));
   }
 
   /// @copydoc Allocator::GetUsableLayout
   Result<Layout> DoGetUsableLayout(const void* ptr) const override {
-    Result<Layout> primary = primary_.GetUsableLayout(ptr);
+    Result<Layout> primary = GetUsableLayout(primary_, ptr);
     return primary.ok() ? primary
                         : CombineResults(primary.status(),
-                                         secondary_.GetUsableLayout(ptr));
+                                         GetUsableLayout(secondary_, ptr));
   }
 
   /// @copydoc Allocator::GetAllocatedLayout
   Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
-    Result<Layout> primary = primary_.GetAllocatedLayout(ptr);
+    Result<Layout> primary = GetAllocatedLayout(primary_, ptr);
     return primary.ok() ? primary
                         : CombineResults(primary.status(),
-                                         secondary_.GetAllocatedLayout(ptr));
+                                         GetAllocatedLayout(secondary_, ptr));
   }
 
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    Status status = primary_.Query(ptr, layout);
-    return status.ok() ? status : secondary_.Query(ptr, layout);
+  Status DoQuery(const void* ptr) const override {
+    Status status = Query(primary_, ptr);
+    return status.ok() ? status : Query(secondary_, ptr);
   }
 
   /// Combines a secondary result with a primary, non-ok status.

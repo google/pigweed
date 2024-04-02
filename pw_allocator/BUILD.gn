@@ -187,7 +187,6 @@ pw_source_set("testing") {
     dir_pw_unit_test,
   ]
   deps = [ dir_pw_assert ]
-  sources = [ "testing.cc" ]
 }
 
 pw_source_set("test_harness") {

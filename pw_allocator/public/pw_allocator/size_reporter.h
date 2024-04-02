@@ -85,21 +85,17 @@ class SizeReporter final {
     void* ptr = allocator.Allocate(layout);
 
     // Measure `Reallocate`.
-    allocator.Resize(ptr, layout, sizeof(Bar));
+    allocator.Resize(ptr, sizeof(Bar));
 
     // Measure `Reallocate`.
-    ptr = allocator.Reallocate(ptr, layout, sizeof(Baz));
+    ptr = allocator.Reallocate(ptr, Layout::Of<Baz>());
 
     // Measure `GetLayout`.
     Result<Layout> result = allocator.GetLayout(ptr);
     layout = result.ok() ? result.value() : Layout::Of<Bar>();
 
-    // Measure `Query`.
-    Status status = allocator.Query(ptr, layout);
-    PW_ASSERT(ptr == nullptr || status.ok() || status.IsUnimplemented());
-
     // Measure `Deallocate`.
-    allocator.Deallocate(ptr, layout);
+    allocator.Deallocate(ptr);
 
     // Measure `New`.
     Foo* foo = allocator.template New<Foo>();

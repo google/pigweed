@@ -19,6 +19,7 @@
 
 #include "pw_allocator/capability.h"
 #include "pw_log/log.h"
+#include "pw_result/result.h"
 
 namespace examples {
 
@@ -34,19 +35,25 @@ void* CustomAllocator::DoAllocate(Layout layout) {
     return nullptr;
   }
   size_t prev = used_;
-  used_ += layout.size();
+  pw::Result<Layout> allocated = GetAllocatedLayout(allocator_, ptr);
+  if (allocated.ok()) {
+    used_ += allocated->size();
+  }
   if (prev <= threshold_ && threshold_ < used_) {
     PW_LOG_INFO("more than %zu bytes allocated.", threshold_);
   }
   return ptr;
 }
 
-void CustomAllocator::DoDeallocate(void* ptr, Layout layout) {
+void CustomAllocator::DoDeallocate(void* ptr) {
   if (ptr == nullptr) {
     return;
   }
-  used_ -= layout.size();
-  allocator_.Deallocate(ptr, layout);
+  pw::Result<Layout> allocated = GetAllocatedLayout(allocator_, ptr);
+  if (allocated.ok()) {
+    used_ -= allocated->size();
+  }
+  allocator_.Deallocate(ptr);
 }
 
 }  // namespace examples

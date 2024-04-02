@@ -28,58 +28,6 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
-namespace internal {
-
-struct RecordedParameters {
-  size_t allocate_size = 0;
-  void* deallocate_ptr = nullptr;
-  size_t deallocate_size = 0;
-  void* resize_ptr = nullptr;
-  size_t resize_old_size = 0;
-  size_t resize_new_size = 0;
-};
-
-/// Simple memory allocator for testing.
-///
-/// This allocator records the most recent parameters passed to the `Allocator`
-/// interface methods, and returns them via accessors.
-class AllocatorForTestImpl : public Allocator {
- public:
-  AllocatorForTestImpl(Allocator& allocator, RecordedParameters& params)
-      : Allocator(allocator.capabilities()),
-        allocator_(allocator),
-        params_(params) {}
-
- private:
-  /// @copydoc Allocator::Allocate
-  void* DoAllocate(Layout layout) override;
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override;
-
-  /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
-
-  /// @copydoc Allocator::GetCapacity
-  StatusWithSize DoGetCapacity() const override;
-
-  /// @copydoc Allocator::GetRequestedLayout
-  Result<Layout> DoGetRequestedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override;
-
-  Allocator& allocator_;
-  RecordedParameters& params_;
-};
-
-}  // namespace internal
 namespace test {
 
 // A token that can be used in tests.
@@ -103,16 +51,15 @@ struct TestMetrics {
 };
 
 /// An `AllocatorForTest` that is automatically initialized on construction.
-template <size_t kBufferSize, typename MetricsType = TestMetrics>
+template <size_t kBufferSize, typename MetricsType = AllMetrics>
 class AllocatorForTest : public Allocator {
  public:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;
   using BlockType = AllocatorType::BlockType;
 
   AllocatorForTest()
-      : Allocator(AllocatorType::kCapabilities),
-        recorder_(*allocator_, params_),
-        tracker_(kToken, recorder_) {
+      : Allocator(AllocatorType::kCapabilities), tracker_(kToken, *allocator_) {
+    ResetParameters();
     EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
   }
 
@@ -128,15 +75,22 @@ class AllocatorForTest : public Allocator {
 
   const MetricsType& metrics() const { return tracker_.metrics(); }
 
-  size_t allocate_size() const { return params_.allocate_size; }
-  void* deallocate_ptr() const { return params_.deallocate_ptr; }
-  size_t deallocate_size() const { return params_.deallocate_size; }
-  void* resize_ptr() const { return params_.resize_ptr; }
-  size_t resize_old_size() const { return params_.resize_old_size; }
-  size_t resize_new_size() const { return params_.resize_new_size; }
+  size_t allocate_size() const { return allocate_size_; }
+  void* deallocate_ptr() const { return deallocate_ptr_; }
+  size_t deallocate_size() const { return deallocate_size_; }
+  void* resize_ptr() const { return resize_ptr_; }
+  size_t resize_old_size() const { return resize_old_size_; }
+  size_t resize_new_size() const { return resize_new_size_; }
 
   /// Resets the recorded parameters to an initial state.
-  void ResetParameters() { params_ = internal::RecordedParameters{}; }
+  void ResetParameters() {
+    allocate_size_ = 0;
+    deallocate_ptr_ = nullptr;
+    deallocate_size_ = 0;
+    resize_ptr_ = nullptr;
+    resize_old_size_ = 0;
+    resize_new_size_ = 0;
+  }
 
   /// Allocates all the memory from this object.
   void Exhaust() {
@@ -147,21 +101,26 @@ class AllocatorForTest : public Allocator {
 
  private:
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(Layout layout) override { return tracker_.Allocate(layout); }
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override {
-    tracker_.Deallocate(ptr, layout);
+  void* DoAllocate(Layout layout) override {
+    allocate_size_ = layout.size();
+    return tracker_.Allocate(layout);
   }
 
-  /// @copydoc Allocator::Reallocate
-  void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
-    return tracker_.Reallocate(ptr, layout, new_size);
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr) override {
+    Result<Layout> requested = GetRequestedLayout(tracker_, ptr);
+    deallocate_ptr_ = ptr;
+    deallocate_size_ = requested.ok() ? requested->size() : 0;
+    tracker_.Deallocate(ptr);
   }
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, Layout layout, size_t new_size) override {
-    return tracker_.Resize(ptr, layout, new_size);
+  bool DoResize(void* ptr, size_t new_size) override {
+    Result<Layout> requested = GetRequestedLayout(tracker_, ptr);
+    resize_ptr_ = ptr;
+    resize_old_size_ = requested.ok() ? requested->size() : 0;
+    resize_new_size_ = new_size;
+    return tracker_.Resize(ptr, new_size);
   }
 
   /// @copydoc Allocator::GetCapacity
@@ -171,28 +130,32 @@ class AllocatorForTest : public Allocator {
 
   /// @copydoc Allocator::GetRequestedLayout
   Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    return tracker_.GetRequestedLayout(ptr);
+    return GetRequestedLayout(tracker_, ptr);
   }
 
   /// @copydoc Allocator::GetUsableLayout
   Result<Layout> DoGetUsableLayout(const void* ptr) const override {
-    return tracker_.GetUsableLayout(ptr);
+    return GetUsableLayout(tracker_, ptr);
   }
 
   /// @copydoc Allocator::GetAllocatedLayout
   Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
-    return tracker_.GetAllocatedLayout(ptr);
+    return GetAllocatedLayout(tracker_, ptr);
   }
 
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    return tracker_.Query(ptr, layout);
+  Status DoQuery(const void* ptr) const override {
+    return Query(tracker_, ptr);
   }
 
   WithBuffer<AllocatorType, kBufferSize> allocator_;
-  internal::RecordedParameters params_;
-  internal::AllocatorForTestImpl recorder_;
   TrackingAllocatorImpl<MetricsType> tracker_;
+  size_t allocate_size_;
+  void* deallocate_ptr_;
+  size_t deallocate_size_;
+  void* resize_ptr_;
+  size_t resize_old_size_;
+  size_t resize_new_size_;
 };
 
 }  // namespace test

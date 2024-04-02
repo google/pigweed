@@ -32,7 +32,7 @@ class CustomAllocator : public pw::allocator::Allocator {
   void* DoAllocate(Layout layout) override;
 
   /// @copydoc pw::allocator::Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override;
+  void DoDeallocate(void* ptr) override;
 
   Allocator& allocator_;
   size_t used_ = 0;

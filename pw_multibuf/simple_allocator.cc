@@ -50,8 +50,7 @@ void* LinkedRegionTracker::AllocateChunkClass() {
 }
 
 void LinkedRegionTracker::DeallocateChunkClass(void* ptr) {
-  return parent_.metadata_alloc_.Deallocate(ptr,
-                                            allocator::Layout::Of<Chunk>());
+  return parent_.metadata_alloc_.Deallocate(ptr);
 }
 
 }  // namespace internal

@@ -169,7 +169,7 @@ pw_add_library(pw_allocator.tracking_allocator INTERFACE
 
 # Test support
 
-pw_add_library(pw_allocator.testing STATIC
+pw_add_library(pw_allocator.testing INTERFACE
   HEADERS
     public/pw_allocator/testing.h
   PUBLIC_INCLUDES
@@ -186,8 +186,6 @@ pw_add_library(pw_allocator.testing STATIC
     pw_unit_test
   PRIVATE_DEPS
     pw_assert
-  SOURCES
-    testing.cc
 )
 
 pw_add_library(pw_allocator.test_harness STATIC

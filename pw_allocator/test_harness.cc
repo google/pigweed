@@ -128,19 +128,18 @@ void AllocatorTestHarnessGeneric::HandleRequest(
         } else if constexpr (std::is_same_v<T, DeallocationRequest>) {
           if (!allocations_.empty()) {
             Allocation old = RemoveAllocation(r.index);
-            allocator_->Deallocate(old.ptr, old.layout);
+            allocator_->Deallocate(old.ptr);
           }
 
         } else if constexpr (std::is_same_v<T, ReallocationRequest>) {
           if (!allocations_.empty()) {
             Allocation old = RemoveAllocation(r.index);
-            void* new_ptr =
-                allocator_->Reallocate(old.ptr, old.layout, r.new_size);
+            Layout new_layout = Layout(r.new_size, old.layout.alignment());
+            void* new_ptr = allocator_->Reallocate(old.ptr, new_layout);
             if (new_ptr == nullptr) {
               AddAllocation(old.ptr, old.layout);
             } else {
-              AddAllocation(new_ptr,
-                            Layout(r.new_size, old.layout.alignment()));
+              AddAllocation(new_ptr, new_layout);
             }
           }
         } else {
@@ -155,7 +154,7 @@ void AllocatorTestHarnessGeneric::Reset() {
     return;
   }
   for (const Allocation& old : allocations_) {
-    allocator_->Deallocate(old.ptr, old.layout);
+    allocator_->Deallocate(old.ptr);
   }
   allocations_.clear();
 }

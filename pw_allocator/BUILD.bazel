@@ -212,9 +212,6 @@ cc_library(
 cc_library(
     name = "testing",
     testonly = True,
-    srcs = [
-        "testing.cc",
-    ],
     hdrs = [
         "public/pw_allocator/testing.h",
     ],

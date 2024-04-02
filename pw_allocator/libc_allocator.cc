@@ -29,19 +29,13 @@ void* LibCAllocator::DoAllocate(Layout layout) {
              : nullptr;
 }
 
-void LibCAllocator::DoDeallocate(void* ptr, Layout) { std::free(ptr); }
+void LibCAllocator::DoDeallocate(void* ptr) { std::free(ptr); }
 
-bool LibCAllocator::DoResize(void*, Layout layout, size_t new_size) {
-  // `realloc` may move memory, even when shrinking. Only return true if no
-  // change is needed.
-  return layout.size() == new_size;
-}
-
-void* LibCAllocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {
+void* LibCAllocator::DoReallocate(void* ptr, Layout new_layout) {
   // TODO: b/301930507 - `aligned_alloc` is not portable. Return null for larger
   // allocations for now.
-  return layout.alignment() <= alignof(std::max_align_t)
-             ? std::realloc(ptr, new_size)
+  return new_layout.alignment() <= alignof(std::max_align_t)
+             ? std::realloc(ptr, new_layout.size())
              : nullptr;
 }
 

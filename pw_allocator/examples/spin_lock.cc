@@ -54,7 +54,7 @@ class MyTask final {
       counter = 0;
       for (auto& value : values) {
         PW_CHECK_INT_EQ(value->value(), ++counter);
-        allocator_.Deallocate(value, Layout::Of<NamedU32>());
+        allocator_.Deallocate(value);
       }
     }
 

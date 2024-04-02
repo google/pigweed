@@ -100,13 +100,13 @@ class TrackingAllocatorImpl : public Allocator {
   void* DoAllocate(Layout layout) override;
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout layout) override;
+  void DoDeallocate(void* ptr) override;
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
+  bool DoResize(void* ptr, size_t new_size) override;
 
   /// @copydoc Allocator::Reallocate
-  void* DoReallocate(void* ptr, Layout layout, size_t new_size) override;
+  void* DoReallocate(void* ptr, Layout new_layout) override;
 
   /// @copydoc Allocator::GetCapacity
   StatusWithSize DoGetCapacity() const override {
@@ -129,8 +129,8 @@ class TrackingAllocatorImpl : public Allocator {
   Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
 
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    return allocator_.Query(ptr, layout);
+  Status DoQuery(const void* ptr) const override {
+    return Query(allocator_, ptr);
   }
 
   /// Returns a layout that includes storage for an allocation and its stored
@@ -174,7 +174,8 @@ void* TrackingAllocatorImpl<MetricsType>::DoAllocate(Layout layout) {
     metrics_.RecordFailure(requested.size());
     return nullptr;
   }
-  Layout allocated = internal::UnwrapLayout(GetAllocatedLayout(new_ptr));
+  Layout allocated =
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, new_ptr));
   metrics_.IncrementAllocations();
   metrics_.ModifyRequested(requested.size(), 0);
   metrics_.ModifyAllocated(allocated.size(), 0);
@@ -183,31 +184,30 @@ void* TrackingAllocatorImpl<MetricsType>::DoAllocate(Layout layout) {
 }
 
 template <typename MetricsType>
-void TrackingAllocatorImpl<MetricsType>::DoDeallocate(void* ptr,
-                                                      Layout layout) {
+void TrackingAllocatorImpl<MetricsType>::DoDeallocate(void* ptr) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
-  Layout allocated = internal::UnwrapLayout(allocator_.GetAllocatedLayout(ptr));
-  allocator_.Deallocate(ptr, layout);
+  Layout allocated =
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  allocator_.Deallocate(ptr);
   metrics_.IncrementDeallocations();
   metrics_.ModifyRequested(0, requested.size());
   metrics_.ModifyAllocated(0, allocated.size());
 }
 
 template <typename MetricsType>
-bool TrackingAllocatorImpl<MetricsType>::DoResize(void* ptr,
-                                                  Layout layout,
-                                                  size_t new_size) {
+bool TrackingAllocatorImpl<MetricsType>::DoResize(void* ptr, size_t new_size) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
-  Layout allocated = internal::UnwrapLayout(allocator_.GetAllocatedLayout(ptr));
+  Layout allocated =
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
   Layout new_requested(new_size, requested.alignment());
-  if (!allocator_.Resize(ptr, layout, ReserveStorage(new_requested).size())) {
+  if (!allocator_.Resize(ptr, ReserveStorage(new_requested).size())) {
     metrics_.RecordFailure(new_size);
     return false;
   }
   Layout new_allocated =
-      internal::UnwrapLayout(allocator_.GetAllocatedLayout(ptr));
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
   metrics_.IncrementResizes();
   metrics_.ModifyRequested(new_requested.size(), requested.size());
   metrics_.ModifyAllocated(new_allocated.size(), allocated.size());
@@ -217,14 +217,13 @@ bool TrackingAllocatorImpl<MetricsType>::DoResize(void* ptr,
 
 template <typename MetricsType>
 void* TrackingAllocatorImpl<MetricsType>::DoReallocate(void* ptr,
-                                                       Layout layout,
-                                                       size_t new_size) {
+                                                       Layout new_layout) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
-  Layout allocated = internal::UnwrapLayout(allocator_.GetAllocatedLayout(ptr));
-  Layout new_requested(new_size, requested.alignment());
-  void* new_ptr =
-      allocator_.Reallocate(ptr, layout, ReserveStorage(new_requested).size());
+  Layout allocated =
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  Layout new_requested(new_layout.size(), requested.alignment());
+  void* new_ptr = allocator_.Reallocate(ptr, ReserveStorage(new_requested));
   if (new_ptr == nullptr) {
     metrics_.RecordFailure(new_requested.size());
     return nullptr;
@@ -232,7 +231,7 @@ void* TrackingAllocatorImpl<MetricsType>::DoReallocate(void* ptr,
   metrics_.IncrementReallocations();
   metrics_.ModifyRequested(new_requested.size(), requested.size());
   Layout new_allocated =
-      internal::UnwrapLayout(allocator_.GetAllocatedLayout(new_ptr));
+      internal::UnwrapLayout(GetAllocatedLayout(allocator_, new_ptr));
   if (ptr != new_ptr) {
     // Reallocate performed "alloc, copy, free". Increment and decrement
     // seperately in order to ensure "peak" metrics are correct.
@@ -249,7 +248,7 @@ void* TrackingAllocatorImpl<MetricsType>::DoReallocate(void* ptr,
 template <typename MetricsType>
 Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetRequestedLayoutImpl(
     const void* ptr) const {
-  Result<Layout> requested = allocator_.GetRequestedLayout(ptr);
+  Result<Layout> requested = GetRequestedLayout(allocator_, ptr);
   if (requested.ok()) {
     return requested;
   }
@@ -265,7 +264,7 @@ template <typename MetricsType>
 Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetUsableLayout(
     const void* ptr) const {
   ptr = FromUsableSpace(ptr);
-  Result<Layout> usable = allocator_.GetUsableLayout(ptr);
+  Result<Layout> usable = GetUsableLayout(allocator_, ptr);
   if constexpr (has_requested_bytes<MetricsType>::value) {
     if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout)) {
       if (usable.ok()) {
@@ -282,7 +281,7 @@ template <typename MetricsType>
 Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetAllocatedLayout(
     const void* ptr) const {
   ptr = FromUsableSpace(ptr);
-  return allocator_.GetAllocatedLayout(ptr);
+  return GetAllocatedLayout(allocator_, ptr);
 }
 
 template <typename MetricsType>
@@ -347,7 +346,7 @@ template <typename MetricsType>
 void* TrackingAllocatorImpl<MetricsType>::GetRequestedStorage(
     const void* ptr) const {
   if constexpr (has_requested_bytes<MetricsType>::value) {
-    Result<Layout> usable = allocator_.GetUsableLayout(ptr);
+    Result<Layout> usable = GetUsableLayout(allocator_, ptr);
     auto addr = reinterpret_cast<uintptr_t>(ptr);
     if (usable.ok()) {
       PW_ASSERT(!PW_ADD_OVERFLOW(addr, usable->size(), &addr));

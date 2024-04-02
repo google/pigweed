@@ -30,7 +30,7 @@ void* AllocateNamedU32(Allocator& allocator) {
 
 // DOCSTAG: [pw_allocator-examples-basic-deallocate]
 void DeallocateNamedU32(Allocator& allocator, void* ptr) {
-  allocator.Deallocate(ptr, Layout::Of<NamedU32>());
+  allocator.Deallocate(ptr);
 }
 // DOCSTAG: [pw_allocator-examples-basic-deallocate]
 
