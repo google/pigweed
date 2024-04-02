@@ -20,17 +20,24 @@ import argparse
 import dataclasses
 from dataclasses import dataclass
 import datetime
+import functools
 import logging
-import os
 from pathlib import Path
 import re
 import sys
-
 from typing import Any, Collection, Iterable, Type
 
-from pw_build import generate_modules_lists
+from prompt_toolkit import prompt
 
+from pw_build import generate_modules_lists
+import pw_cli.color
+import pw_cli.env
+from pw_cli.status_reporter import StatusReporter
+
+_COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
+_PW_ENV = pw_cli.env.pigweed_environment()
+_PW_ROOT = _PW_ENV.PW_ROOT
 
 _PIGWEED_LICENSE = f"""
 # Copyright {datetime.datetime.now().year} The Pigweed Authors
@@ -48,6 +55,51 @@ _PIGWEED_LICENSE = f"""
 # the License.""".lstrip()
 
 _PIGWEED_LICENSE_CC = _PIGWEED_LICENSE.replace('#', '//')
+
+_CREATE = _COLOR.green('create    ')
+_REPLACE = _COLOR.green('replace   ')
+_UPDATE = _COLOR.yellow('update    ')
+_UNCHANGED = _COLOR.blue('unchanged ')
+_REPORT = StatusReporter()
+
+
+def _report_write_file(file_path: Path) -> None:
+    """Print a notification when a file is newly created or replaced."""
+    relative_file_path = str(file_path.relative_to(_PW_ROOT))
+    if file_path.is_file():
+        _REPORT.info(_REPLACE + relative_file_path)
+        return
+    _REPORT.new(_CREATE + relative_file_path)
+
+
+def _report_unchanged_file(file_path: Path) -> None:
+    """Print a notification a file was not updated/changed."""
+    relative_file_path = str(file_path.relative_to(_PW_ROOT))
+    _REPORT.ok(_UNCHANGED + relative_file_path)
+
+
+def _report_edited_file(file_path: Path) -> None:
+    """Print a notification a file was modified/edited."""
+    relative_file_path = str(file_path.relative_to(_PW_ROOT))
+    _REPORT.new(_UPDATE + relative_file_path)
+
+
+def _prompt_user_yes(message: str) -> bool:
+    """Returns true if the user enters 'y' or 'Y'."""
+    decision = prompt(f'{message} [y/N] ')
+    if decision.lower().startswith('y'):
+        return True
+    return False
+
+
+def _prompt_overwrite(file_path: Path) -> bool:
+    """Returns true if a file should be written, prompts the user if needed."""
+    if file_path.is_file():
+        _REPORT.wrn(f'{file_path.relative_to(_PW_ROOT)} already exists.')
+        if not _prompt_user_yes('Overwrite?'):
+            _report_unchanged_file(file_path)
+            return False
+    return True
 
 
 # TODO(frolv): Adapted from pw_protobuf. Consolidate them.
@@ -84,8 +136,9 @@ class _OutputFile:
         return ''.join(self._content)
 
     def write(self) -> None:
-        print('  create  ' + str(self._file.relative_to(Path.cwd())))
-        self._file.write_text(self.content)
+        if _prompt_overwrite(self._file):
+            _report_write_file(self._file)
+            self._file.write_text(self.content)
 
     class _IndentationContext:
         """Context that increases the output's indentation when it is active."""
@@ -102,11 +155,32 @@ class _OutputFile:
 
 
 class _ModuleName:
-    _MODULE_NAME_REGEX = '(^[a-zA-Z]{2,})((_[a-zA-Z0-9]+)+)$'
+    _MODULE_NAME_REGEX = re.compile(
+        # Match the two letter character module prefix e.g. 'pw':
+        r'^(?P<prefix>[a-zA-Z]{2,})'
+        # The rest of the module name consisting of multiple groups of a single
+        # underscore followed by alphanumeric characters. This prevents multiple
+        # underscores from appearing in a row and the name from ending in a an
+        # underscore.
+        r'(?P<main>'
+        r'(_[a-zA-Z0-9]+)+'
+        r')$'
+    )
 
-    def __init__(self, prefix: str, main: str) -> None:
+    def __init__(self, prefix: str, main: str, path: Path) -> None:
         self._prefix = prefix
-        self._main = main
+        self._main = main.lstrip('_')  # Remove the leading underscore
+        self._path = path
+
+    @property
+    def path(self) -> str:
+        # Check if there are no parent directories for the full path.
+        # Note: This relies on Path('pw_module').parents returning Path('.') for
+        # paths that have no parent directories:
+        # https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.parents
+        if self._path == Path('.'):
+            return self.full
+        return (self._path / self.full).as_posix()
 
     @property
     def full(self) -> str:
@@ -135,11 +209,14 @@ class _ModuleName:
 
     @classmethod
     def parse(cls, name: str) -> _ModuleName | None:
-        match = re.fullmatch(_ModuleName._MODULE_NAME_REGEX, name)
+        module_path = Path(name)
+        module_name = module_path.name
+        match = _ModuleName._MODULE_NAME_REGEX.fullmatch(module_name)
         if not match:
             return None
 
-        return cls(match.group(1), match.group(2)[1:])
+        parts = match.groupdict()
+        return cls(parts['prefix'], parts['main'], module_path.parents[0])
 
 
 @dataclass
@@ -678,7 +755,7 @@ class _CcLanguageGenerator(_LanguageGenerator):
         self._headers_dir = self._public_dir / ctx.name.full
 
     def create_source_files(self) -> None:
-        self._headers_dir.mkdir(parents=True)
+        self._headers_dir.mkdir(parents=True, exist_ok=True)
 
         main_header = self._new_header(self._ctx.name.main)
         main_source = self._new_source(self._ctx.name.main)
@@ -807,9 +884,9 @@ def _basic_module_setup(
     is_upstream: bool,
 ) -> _ModuleContext:
     """Creates the basic layout of a Pigweed module."""
-    module_dir.mkdir()
+    module_dir.mkdir(parents=True, exist_ok=True)
     public_dir = module_dir / 'public' / module_name.full
-    public_dir.mkdir(parents=True)
+    public_dir.mkdir(parents=True, exist_ok=True)
 
     ctx = _ModuleContext(
         name=module_name,
@@ -846,12 +923,15 @@ def _add_to_pigweed_modules_file(
     )
 
     # Cut off the extra newline at the end of the file.
-    modules_list = modules_file.read_text().split('\n')[:-1]
-    modules_list.append(module_name.full)
+    modules_list = modules_file.read_text().splitlines()
+    if module_name.path in modules_list:
+        _report_unchanged_file(modules_file)
+        return
+    modules_list.append(module_name.path)
     modules_list.sort()
     modules_list.append('')
     modules_file.write_text('\n'.join(modules_list))
-    print('  modify  ' + str(modules_file.relative_to(Path.cwd())))
+    _report_edited_file(modules_file)
 
     generate_modules_lists.main(
         root=project_root,
@@ -859,23 +939,24 @@ def _add_to_pigweed_modules_file(
         modules_gni_file=modules_gni_file,
         mode=generate_modules_lists.Mode.UPDATE,
     )
-    print('  modify  ' + str(modules_gni_file.relative_to(Path.cwd())))
+    _report_edited_file(modules_gni_file)
 
 
 def _add_to_root_cmakelists(
     project_root: Path,
     module_name: _ModuleName,
 ) -> None:
-    new_line = f'add_subdirectory({module_name.full} EXCLUDE_FROM_ALL)\n'
+    new_line = f'add_subdirectory({module_name.path} EXCLUDE_FROM_ALL)\n'
 
     path = project_root / 'CMakeLists.txt'
     if not path.exists():
         _LOG.error('Could not locate root CMakeLists.txt file.')
         return
 
-    lines = []
-    with path.open() as f:
-        lines = f.readlines()
+    lines = path.read_text().splitlines(keepends=True)
+    if new_line in lines:
+        _report_unchanged_file(path)
+        return
 
     add_subdir_start = 0
     while add_subdir_start < len(lines):
@@ -892,15 +973,15 @@ def _add_to_root_cmakelists(
 
     lines.insert(insert_point, new_line)
     path.write_text(''.join(lines))
-    print('  modify  ' + str(path.relative_to(Path.cwd())))
+    _report_edited_file(path)
 
 
 def _project_root() -> Path:
     """Returns the path to the root directory of the current project."""
-    project_root = Path(os.environ.get('PW_PROJECT_ROOT', ''))
+    project_root = _PW_ENV.PW_PROJECT_ROOT
     if not project_root.is_dir():
         _LOG.error(
-            'Expected env var PW_PROJECT_ROOT to point to a directory, but '
+            'Expected env var $PW_PROJECT_ROOT to point to a directory, but '
             'found `%s` which is not a directory.',
             project_root,
         )
@@ -910,7 +991,7 @@ def _project_root() -> Path:
 
 def _is_upstream() -> bool:
     """Returns whether this command is being run within Pigweed itself."""
-    return os.environ.get('PW_ROOT') == str(_project_root())
+    return _PW_ROOT == _project_root()
 
 
 def _create_module(
@@ -936,8 +1017,9 @@ def _create_module(
     module_dir = project_root / module
 
     if module_dir.is_dir():
-        _LOG.error('Module %s already exists', module)
-        sys.exit(1)
+        _REPORT.wrn(f'Directory {module} already exists.')
+        if not _prompt_user_yes('Continue?'):
+            sys.exit(1)
 
     if module_dir.is_file():
         _LOG.error(
@@ -977,8 +1059,9 @@ def _create_module(
 
     if owners is not None:
         owners_file = module_dir / 'OWNERS'
-        owners_file.write_text('\n'.join(owners))
-        print('  create  ' + str(owners_file.relative_to(Path.cwd())))
+        if _prompt_overwrite(owners_file):
+            _report_write_file(owners_file)
+            owners_file.write_text('\n'.join(owners))
 
     try:
         generators = list(_LANGUAGE_GENERATORS[lang](ctx) for lang in languages)
@@ -998,16 +1081,24 @@ def _create_module(
             _add_to_root_cmakelists(project_root, module_name)
 
     print()
-    _LOG.info(
-        'Module %s created at %s',
-        module_name,
-        module_dir.relative_to(Path.cwd()),
-    )
+    _REPORT.new(f'{module_name} created at: {module_dir.relative_to(_PW_ROOT)}')
 
 
 def register_subcommand(parser: argparse.ArgumentParser) -> None:
     """Registers the module `create` subcommand with `parser`."""
     csv = lambda s: s.split(',')
+
+    def csv_with_choices(choices: list[str], string) -> list[str]:
+        chosen_items = list(string.split(','))
+        invalid_items = set(chosen_items) - set(choices)
+        if invalid_items:
+            raise argparse.ArgumentTypeError(
+                '\n'
+                f'  invalid items: [ {", ".join(invalid_items)} ].\n'
+                f'  choose from: [ {", ".join(choices)} ]'
+            )
+
+        return chosen_items
 
     parser.add_argument(
         '--build-systems',
@@ -1015,9 +1106,8 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             'Comma-separated list of build systems the module supports. '
             f'Options: {", ".join(_BUILD_FILES.keys())}'
         ),
-        choices=_BUILD_FILES.keys(),
         default=_BUILD_FILES.keys(),
-        type=csv,
+        type=functools.partial(csv_with_choices, _BUILD_FILES.keys()),
     )
     parser.add_argument(
         '--languages',
@@ -1025,9 +1115,8 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             'Comma-separated list of languages the module will use. '
             f'Options: {", ".join(_LANGUAGE_GENERATORS.keys())}'
         ),
-        choices=_LANGUAGE_GENERATORS.keys(),
         default=[],
-        type=csv,
+        type=functools.partial(csv_with_choices, _LANGUAGE_GENERATORS.keys()),
     )
     if _is_upstream():
         parser.add_argument(
@@ -1036,7 +1125,7 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
                 'Comma-separated list of emails of the people who will own and '
                 'maintain the new module. This list must contain at least two '
                 'entries, and at least one user must be a top-level OWNER '
-                '(listed in `{_project_root()}/OWNERS`).'
+                f'(listed in `{_project_root()}/OWNERS`).'
             ),
             required=True,
             metavar='firstownername@google.com,secondownername@foo.net',
