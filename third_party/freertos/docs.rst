@@ -92,10 +92,9 @@ file when building through ``$dir_pw_third_party/freertos`` in GN and through
 As a helper ``PW_THIRD_PARTY_FREERTOS_NO_STATICS=1`` is defined when statics are
 disabled to help manage conditional configuration.
 
-We highly recommend
-:ref:`our configASSERT wrapper <third_party-freertos_config_assert>` when  using
-this configuration, which correctly sets ``configASSERT`` to use ``PW_CHECK` and
-``PW_ASSERT`` for you.
+We highly recommend :ref:`our configASSERT wrapper
+<third_party-freertos_config_assert>` when  using this configuration, which
+correctly sets ``configASSERT`` to use ``PW_CHECK`` and ``PW_ASSERT`` for you.
 
 -----------------------------
 OS Abstraction Layers Support
