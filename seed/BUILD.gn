@@ -232,6 +232,13 @@ pw_seed("0125") {
   author = "Erik Staats"
 }
 
+pw_seed("0126") {
+  changelist = 200910
+  title = "Key-Value Store Interfaces"
+  status = "Draft"
+  author = "Wenji Li"
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -264,5 +271,6 @@ pw_seed_index("seeds") {
     ":0123",
     ":0124",
     ":0125",
+    ":0126",
   ]
 }
