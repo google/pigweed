@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_spi/linux_spi.h"
+#include "pw_spi_linux/spi.h"
 
 #include <fcntl.h>
 #include <linux/spi/spidev.h>
@@ -23,9 +23,6 @@
 #include <cstring>
 
 #include "pw_log/log.h"
-#include "pw_spi/chip_selector.h"
-#include "pw_spi/device.h"
-#include "pw_spi/initiator.h"
 #include "pw_status/try.h"
 
 namespace pw::spi {

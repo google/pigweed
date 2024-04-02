@@ -204,6 +204,14 @@
       "C++20"
     ]
   },
+  "pw_spi_linux": {
+    "tagline": "SPI interface for Linux userspace",
+    "status": "unstable",
+    "languages": [
+      "C++17",
+      "C++20"
+    ]
+  },
   "pw_status": {
     "tagline": "Exception-free error propagation for embedded",
     "status": "stable",

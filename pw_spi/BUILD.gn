@@ -29,9 +29,6 @@ group("pw_spi") {
     ":device",
     ":initiator",
   ]
-  if (host_os == "linux") {
-    deps += [ ":linux_spi" ]
-  }
 }
 
 pw_source_set("initiator") {
@@ -102,33 +99,11 @@ pw_source_set("mock") {
   ]
 }
 
-# Linux-specific spidev implementation.
-pw_source_set("linux_spi") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_spi/linux_spi.h" ]
-  public_deps = [
-    ":device",
-    "$dir_pw_bytes",
-    "$dir_pw_log",
-    "$dir_pw_status",
-    "$dir_pw_sync:borrow",
-    "$dir_pw_sync:mutex",
-  ]
-  sources = [ "linux_spi.cc" ]
-}
-
 pw_test_group("tests") {
   tests = [
     ":spi_test",
     ":initiator_mock_test",
   ]
-  if (current_os == "linux") {
-    tests += [ ":linux_spi_test" ]
-  }
-}
-pw_test("linux_spi_test") {
-  sources = [ "linux_spi_test.cc" ]
-  deps = [ ":linux_spi" ]
 }
 
 pw_test("spi_test") {

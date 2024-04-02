@@ -148,6 +148,7 @@ declare_args() {
   dir_pw_software_update = get_path_info("../pw_software_update", "abspath")
   dir_pw_span = get_path_info("../pw_span", "abspath")
   dir_pw_spi = get_path_info("../pw_spi", "abspath")
+  dir_pw_spi_linux = get_path_info("../pw_spi_linux", "abspath")
   dir_pw_spi_mcuxpresso = get_path_info("../pw_spi_mcuxpresso", "abspath")
   dir_pw_spi_rp2040 = get_path_info("../pw_spi_rp2040", "abspath")
   dir_pw_status = get_path_info("../pw_status", "abspath")
@@ -328,6 +329,7 @@ declare_args() {
     dir_pw_software_update,
     dir_pw_span,
     dir_pw_spi,
+    dir_pw_spi_linux,
     dir_pw_spi_mcuxpresso,
     dir_pw_spi_rp2040,
     dir_pw_status,
@@ -498,6 +500,7 @@ declare_args() {
     "$dir_pw_software_update:tests",
     "$dir_pw_span:tests",
     "$dir_pw_spi:tests",
+    "$dir_pw_spi_linux:tests",
     "$dir_pw_spi_mcuxpresso:tests",
     "$dir_pw_spi_rp2040:tests",
     "$dir_pw_status:tests",
@@ -668,6 +671,7 @@ declare_args() {
     "$dir_pw_software_update:docs",
     "$dir_pw_span:docs",
     "$dir_pw_spi:docs",
+    "$dir_pw_spi_linux:docs",
     "$dir_pw_spi_mcuxpresso:docs",
     "$dir_pw_spi_rp2040:docs",
     "$dir_pw_status:docs",

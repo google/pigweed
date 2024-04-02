@@ -16,8 +16,10 @@
 
 #include <cstdint>
 
+#include "pw_bytes/span.h"
 #include "pw_spi/chip_selector.h"
 #include "pw_spi/initiator.h"
+#include "pw_status/status.h"
 
 namespace pw::spi {
 

@@ -112,6 +112,7 @@ pw_snapshot
 pw_software_update
 pw_span
 pw_spi
+pw_spi_linux
 pw_spi_mcuxpresso
 pw_spi_rp2040
 pw_status

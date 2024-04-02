@@ -130,37 +130,3 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
-
-# Linux-specific spidev implementation.
-cc_library(
-    name = "linux_spi",
-    srcs = ["linux_spi.cc"],
-    hdrs = ["public/pw_spi/linux_spi.h"],
-    includes = ["public"],
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    deps = [
-        ":device",
-        "//pw_bytes",
-        "//pw_chrono:system_clock",
-        "//pw_log",
-        "//pw_status",
-        "//pw_sync:borrow",
-        "//pw_sync:mutex",
-    ],
-)
-
-pw_cc_test(
-    name = "linux_spi_test",
-    srcs = [
-        "linux_spi_test.cc",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    deps = [
-        ":linux_spi",
-        "//pw_unit_test",
-    ],
-)

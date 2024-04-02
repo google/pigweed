@@ -8,4 +8,5 @@ pw_spi backends
 .. toctree::
    :maxdepth: 1
 
+   Linux <../pw_spi_linux/docs>
    MCUXpresso <../pw_spi_mcuxpresso/docs>

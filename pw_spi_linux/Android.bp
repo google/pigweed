@@ -17,7 +17,7 @@ package {
 }
 
 cc_library_static {
-    name: "pw_spi",
+    name: "pw_spi_linux",
     cpp_std: "c++20",
     vendor_available: true,
     defaults: [
@@ -26,22 +26,25 @@ cc_library_static {
     export_include_dirs: [
         "public",
     ],
+    srcs: [
+        "spi.cc",
+    ],
     header_libs: [
-        "pw_assert",
-        "pw_sync",
+        "pw_log",
     ],
     export_header_lib_headers: [
-        "pw_assert",
-        "pw_sync",
+        "pw_log",
     ],
     static_libs: [
         "pw_bytes",
         "pw_span",
+        "pw_spi",
         "pw_status",
     ],
     export_static_lib_headers: [
         "pw_bytes",
         "pw_span",
+        "pw_spi",
         "pw_status",
     ],
 }
