@@ -20,6 +20,8 @@ pw_add_library(pw_allocator.allocator STATIC
   HEADERS
     public/pw_allocator/allocator.h
     public/pw_allocator/capability.h
+    public/pw_allocator/layout.h
+    public/pw_allocator/unique_ptr.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -29,6 +31,7 @@ pw_add_library(pw_allocator.allocator STATIC
     pw_status
   SOURCES
     allocator.cc
+    unique_ptr.cc
 )
 
 pw_add_library(pw_allocator.block STATIC

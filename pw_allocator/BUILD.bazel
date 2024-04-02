@@ -27,10 +27,13 @@ cc_library(
     name = "allocator",
     srcs = [
         "allocator.cc",
+        "unique_ptr.cc",
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
         "public/pw_allocator/capability.h",
+        "public/pw_allocator/layout.h",
+        "public/pw_allocator/unique_ptr.h",
     ],
     includes = ["public"],
     deps = [

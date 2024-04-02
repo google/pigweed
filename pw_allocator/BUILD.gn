@@ -42,6 +42,8 @@ pw_source_set("allocator") {
   public = [
     "public/pw_allocator/allocator.h",
     "public/pw_allocator/capability.h",
+    "public/pw_allocator/layout.h",
+    "public/pw_allocator/unique_ptr.h",
   ]
   public_deps = [
     dir_pw_assert,
@@ -49,7 +51,10 @@ pw_source_set("allocator") {
     dir_pw_result,
     dir_pw_status,
   ]
-  sources = [ "allocator.cc" ]
+  sources = [
+    "allocator.cc",
+    "unique_ptr.cc",
+  ]
 }
 
 pw_source_set("block") {
