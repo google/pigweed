@@ -1,9 +1,16 @@
 .. _docs-pw-style:
 
-===========
-Style Guide
-===========
-.. grid:: 1
+============
+Style guides
+============
+.. tip::
+
+   Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
+   formatting checks. To speed up the review process, consider adding ``pw
+   presubmit`` as a git push hook using the following command:
+   ``pw presubmit --install``
+
+.. grid:: 2
 
    .. grid-item-card:: :octicon:`diff-added` C++ style
       :link: docs-pw-style-cpp
@@ -13,7 +20,6 @@ Style Guide
       Our C++ style guide: an extension of the Google C++ style with further
       restrictions and guidance for embedded
 
-.. grid:: 2
 
    .. grid-item-card:: :octicon:`pencil` Commit messages
       :link: docs-pw-style-commit-message
@@ -22,21 +28,7 @@ Style Guide
 
       How to format commit messages for Pigweed
 
-   .. grid-item-card:: :octicon:`code-square` Sphinx
-      :link: docs-pw-style-sphinx
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Our website and module documentation is built with Sphinx
-
 .. grid:: 2
-
-   .. grid-item-card:: :octicon:`code-square` Doxygen
-      :link: docs-pw-style-doxygen
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      How to structure reference documentation for C++ code
 
    .. grid-item-card:: :octicon:`code-square` Protobuf
       :link: docs-pw-style-protobuf
@@ -44,8 +36,6 @@ Style Guide
       :class-item: sales-pitch-cta-secondary
 
       How to structure reference documentation for C++ code
-
-.. grid:: 2
 
    .. grid-item-card:: :octicon:`terminal` CLI style
       :link: docs-pw-style-cli
@@ -55,11 +45,10 @@ Style Guide
       How to style your CLI program so that it behaves
       consistently with other Pigweed CLI programs
 
-.. tip::
-   Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
-   formatting checks. To speed up the review process, consider adding ``pw
-   presubmit`` as a git push hook using the following command:
-   ``pw presubmit --install``
+--------------------------
+Documentation style guides
+--------------------------
+See the :ref:`documentation contributors homepage <docs-contrib-docs>`.
 
 .. todo-check: disable
 
@@ -285,6 +274,7 @@ This plugin will, by default, act upon any file named "OWNERS".
    C++ <style/cpp>
    Commit message <style/commit_message>
    CLI <style/cli>
-   Doxygen documentation <style/doxygen>
    Protobuf <style/protobuf>
-   Sphinx documentation <style/sphinx>
+   reStructuredText <style/rest>
+   Doxygen <style/doxygen>
+   Writing <style/writing>

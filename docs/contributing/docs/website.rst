@@ -3,8 +3,9 @@
 ===========
 pigweed.dev
 ===========
-Guides and resources for people who want to make changes to Pigweed's
-documentation website, ``pigweed.dev``.
+How to make frontend and backend website changes to ``pigweed.dev``,
+Pigweed's main documentationw website, and how to change the functionality
+of Sphinx, the website generator that powers ``pigweed.dev``.
 
 .. _docs-contrib-docs-website-redirects:
 

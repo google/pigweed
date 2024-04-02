@@ -1,8 +1,8 @@
 .. _docs-contrib-docs-changelog:
 
-==============================
-Contributing changelog updates
-==============================
+=================
+Changelog updates
+=================
 This page describes how to write a bi-weekly :ref:`changelog <docs-changelog>`
 update.
 

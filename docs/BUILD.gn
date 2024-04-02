@@ -75,7 +75,8 @@ pw_doc_group("core_docs") {
     "style/cpp.rst",
     "style/doxygen.rst",
     "style/protobuf.rst",
-    "style/sphinx.rst",
+    "style/rest.rst",
+    "style/writing.rst",
     "style_guide.rst",
   ]
 }

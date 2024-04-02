@@ -1,28 +1,39 @@
-.. _docs-pw-style-sphinx:
+.. _docs-pw-style-rest:
 
-==========================
-Sphinx documentation style
-==========================
-.. note::
+============================
+reStructuredText style guide
+============================
+.. inclusive-language: disable
+.. _reStructuredText: https://docutils.sourceforge.io/rst.html
+.. _Sphinx: https://www.sphinx-doc.org/en/master/
+.. inclusive-language: enable
 
-   Pigweed's documentation style guide came after much of the documentation was
-   written, so Pigweed doesn't entirely conform to our own style guide. When
-   updating docs, please update them to match the style guide.
+This style guide defines Pigweed's conventions for `reStructuredText`_ (reST).
+``pigweed.dev`` documentation is authored in reST, not Markdown. Pigweed
+uses `Sphinx`_ to convert the ``.rst`` files into HTML.
 
-.. note::
+.. _docs-pw-style-rest-overview:
 
-   We are moving to the `Google Developer Documentation Style Guide (GDDSG)
-   <https://developers.google.com/style>`_ for the English language conventions
-   (rather than technical style for RST usage, etc). Currently, most of our
-   documentation does not adhere.
+--------
+Overview
+--------
 
-Pigweed documentation is written using the `reStructuredText
-<https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
-`Sphinx`_. We use the `Furo theme <https://github.com/pradyunsg/furo>`_ along
-with the `sphinx-design <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
-extension.
+.. _docs-pw-style-rest-scope:
 
-.. _Sphinx: https://www.sphinx-doc.org/
+Scope
+=====
+This style guide applies to all content that's intended to be published to
+``pigweed.dev``.
+
+.. _docs-pw-style-rest-other:
+
+Other documentation-related style guides
+========================================
+This style guide is narrowly focused on Pigweed's usage of reStructuredText.
+See the following style guides for other aspects of Pigweed's documentation:
+
+* :ref:`docs-pw-style-writing`
+* :ref:`docs-pw-style-doxygen`
 
 Syntax Reference Links
 ======================
