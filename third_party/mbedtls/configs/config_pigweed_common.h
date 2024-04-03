@@ -48,4 +48,19 @@
 #undef MBEDTLS_HAVE_TIME
 #undef MBEDTLS_HAVE_TIME_DATE
 
+#if defined(_PW_MBEDTLS_IS_HOST) && !_PW_MBEDTLS_IS_HOST
+#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
+
+#include <stdio.h>
+#define MBEDTLS_PLATFORM_SNPRINTF_ALT
+#define MBEDTLS_PLATFORM_STD_SNPRINTF snprintf
+#define MBEDTLS_PLATFORM_VSNPRINTF_ALT
+#define MBEDTLS_PLATFORM_STD_VSNPRINTF vsnprintf
+
+#define MBEDTLS_PLATFORM_FPRINTF_MACRO(stream, format, ...) (0)
+#define MBEDTLS_PLATFORM_PRINTF_MACRO(format, ...) (0)
+#define MBEDTLS_PLATFORM_EXIT_MACRO(exit_code)
+#endif  // defined(_PW_MBEDTLS_IS_HOST) && !_PW_MBEDTLS_IS_HOST
+
 #include "mbedtls/check_config.h"
