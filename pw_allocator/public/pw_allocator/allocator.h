@@ -361,12 +361,7 @@ class Allocator {
 
   /// Deprecated version of `DoDeallocate` that takes a `Layout`.
   /// Do not use this method. It will be removed.
-  virtual void DoDeallocate(void*, Layout) {
-    // This method will be removed once consumer migrate to the version that
-    // does not takes a `Layout` parameter. In the meantime, the check that
-    // this method is implemented is deferred to run-time.
-    PW_ASSERT(false);
-  }
+  virtual void DoDeallocate(void* ptr, Layout) { DoDeallocate(ptr); }
 
   /// Virtual `Resize` function implemented by derived classes.
   ///

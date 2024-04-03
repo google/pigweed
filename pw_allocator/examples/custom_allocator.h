@@ -34,6 +34,9 @@ class CustomAllocator : public pw::allocator::Allocator {
   /// @copydoc pw::allocator::Allocator::Deallocate
   void DoDeallocate(void* ptr) override;
 
+  /// @copydoc pw::allocator::Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
   Allocator& allocator_;
   size_t used_ = 0;
   size_t threshold_ = 0;

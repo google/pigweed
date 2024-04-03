@@ -37,6 +37,9 @@ class LibCAllocator : public Allocator {
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr) override;
 
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout new_layout) override;
 };

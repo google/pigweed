@@ -102,6 +102,9 @@ class TrackingAllocatorImpl : public Allocator {
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr) override;
 
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override;
 

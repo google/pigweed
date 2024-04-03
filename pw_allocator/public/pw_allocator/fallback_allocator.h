@@ -54,6 +54,9 @@ class FallbackAllocator : public Allocator {
     }
   }
 
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override {
     return Query(primary_, ptr).ok() ? primary_.Resize(ptr, new_size)

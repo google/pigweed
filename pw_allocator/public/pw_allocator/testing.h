@@ -114,6 +114,9 @@ class AllocatorForTest : public Allocator {
     tracker_.Deallocate(ptr);
   }
 
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override {
     Result<Layout> requested = GetRequestedLayout(tracker_, ptr);
