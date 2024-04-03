@@ -27,8 +27,8 @@ import subprocess
 import sys
 from typing import Callable, Iterable, Sequence, TextIO
 
+from pw_cli.plural import plural
 import pw_package.pigweed_packages
-
 from pw_presubmit import (
     build,
     cli,
@@ -59,8 +59,7 @@ from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
 )
-from pw_presubmit.tools import log_run, plural
-
+from pw_presubmit.tools import log_run
 from pw_presubmit.install_hook import install_git_hook
 
 _LOG = logging.getLogger(__name__)
@@ -1467,6 +1466,7 @@ def main() -> int:
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
+        # pylint: disable=ungrouped-imports
         from pw_cli import log
 
         log.install(logging.INFO)

@@ -70,10 +70,9 @@ from typing import (
 
 import pw_cli.color
 import pw_cli.env
+from pw_cli.plural import plural
 from pw_package import package_manager
-
 from pw_presubmit import git_repo, tools
-from pw_presubmit.tools import plural
 from pw_presubmit.presubmit_context import (
     FormatContext,
     FormatOptions,

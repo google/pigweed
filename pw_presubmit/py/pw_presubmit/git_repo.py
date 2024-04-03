@@ -18,7 +18,8 @@ from pathlib import Path
 import subprocess
 from typing import Collection, Iterable, Pattern
 
-from pw_presubmit.tools import log_run, plural
+from pw_cli.plural import plural
+from pw_presubmit.tools import log_run
 
 _LOG = logging.getLogger(__name__)
 

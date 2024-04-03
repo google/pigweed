@@ -43,6 +43,7 @@ from typing import (
 
 import pw_cli.color
 import pw_cli.env
+from pw_cli.plural import plural
 import pw_env_setup.config_file
 from pw_presubmit.presubmit import (
     FileFilter,
@@ -69,7 +70,6 @@ from pw_presubmit.tools import (
     exclude_paths,
     file_summary,
     log_run,
-    plural,
     PresubmitToolRunner,
     colorize_diff,
 )
@@ -985,6 +985,7 @@ def main() -> int:
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
+        # pylint: disable=ungrouped-imports
         from pw_cli import log
 
         log.install(logging.INFO)

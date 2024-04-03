@@ -35,6 +35,7 @@ pw_python_package("py") {
     "pw_cli/log.py",
     "pw_cli/pigweed_aliases.py",
     "pw_cli/plugins.py",
+    "pw_cli/plural.py",
     "pw_cli/process.py",
     "pw_cli/pw_command_plugins.py",
     "pw_cli/requires.py",
@@ -47,6 +48,7 @@ pw_python_package("py") {
   tests = [
     "envparse_test.py",
     "plugins_test.py",
+    "plural_test.py",
   ]
   python_deps = [ "$dir_pw_env_setup/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"

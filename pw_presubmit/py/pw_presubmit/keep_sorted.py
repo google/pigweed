@@ -29,6 +29,7 @@ from typing import (
 )
 
 import pw_cli
+from pw_cli.plural import plural
 from . import cli, git_repo, presubmit, presubmit_context, tools
 
 DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
@@ -371,7 +372,7 @@ def _process_files(
     if not errors:
         return errors
 
-    ctx.fail(f'Found {tools.plural(errors, "file")} with keep-sorted errors:')
+    ctx.fail(f'Found {plural(errors, "file")} with keep-sorted errors:')
 
     with ctx.failure_summary_log.open('w') as outs:
         for path, diffs in errors.items():

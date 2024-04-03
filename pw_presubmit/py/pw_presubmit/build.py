@@ -41,6 +41,7 @@ from typing import (
 )
 
 import pw_cli.color
+from pw_cli.plural import plural
 from pw_presubmit.presubmit import (
     call,
     Check,
@@ -60,7 +61,6 @@ from pw_presubmit import (
     ninja_parser,
 )
 from pw_presubmit.tools import (
-    plural,
     log_run,
     format_command,
 )
