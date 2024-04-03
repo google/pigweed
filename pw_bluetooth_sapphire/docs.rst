@@ -32,19 +32,20 @@ Why use Sapphire?
 ---------------
 Fuchsia support
 ---------------
-``//pw_bluetooth_sapphire/fuchsia`` currently contains stub boilerplate to
+``//pw_bluetooth_sapphire/fuchsia`` currently contains a stub bt-host to
 demonstrate building, running, and testing Fuchsia components and packages with
 the Fuchsia SDK.
 
-It will eventually be replaced by the `bt-host component`_ once that's migrated.
+It will eventually be filled with the real `bt-host component`_ once that's
+migrated. See https://fxbug.dev/321267390.
 
 Build the package
 =================
-To build the example stub package, use the following command:
+To build the bt-host package, use the following command:
 
 .. code-block::
 
-   bazel build //pw_bluetooth_sapphire/fuchsia/hello_world:pkg
+   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg
 
 Start an emulator
 =================
@@ -56,21 +57,21 @@ To run an emulator, use the following command:
 
 Run the component
 =================
-To run the example stub component, first start an emulator and then use the
+To run the bt-host component, first start an emulator and then use the following
+command:
+
+.. code-block::
+
+   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.component
+
+Run unit tests
+==============
+To run the bt-host unit tests, first start an emulator and then use the
 following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:pkg.component
-
-Run unit tests
-==============
-To run the example component's unit tests, first start an emulator and then use
-the following command:
-
-.. code-block::
-
-   bazel run //pw_bluetooth_sapphire/fuchsia/hello_world:test_pkg
+   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:test_pkg
 
 Stop the emulator
 =================
@@ -92,22 +93,36 @@ Example:
    # pw_bluetooth_sapphire/fuchsia/BUILD.bazel
 
    qemu_tests = [
-       "//pw_bluetooth_sapphire/fuchsia/src:test_pkg",
+       "//pw_bluetooth_sapphire/fuchsia/bt_host:integration_test_pkg",
        ...
    ]
 
 Run Fuchsia presubmit tests
 ===========================
-To run the Fuchsia target tests that are typically run under presubmit, use the
-following command.
+Presubmits for bt-host are captured in a dedicated separate builder, rather than
+existing ones such as ``pigweed-linux-bazel-noenv``.
+These presubmits can be replicated with the following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia:tests_qemu
+   bazel run //pw_bluetooth_sapphire/fuchsia:infra.test_all
 
 .. note::
    You do not need to start an emulator beforehand to to run all tests this way.
    This test target will automatically provision one before running all tests.
+
+Uploading to CIPD
+=================
+Pigweed infrastructure uploads bt-host's artifacts by building bt-host's top
+level infra target:
+
+.. code-block::
+
+   bazel build --output_groups=builder_manifest //pw_bluetooth_sapphire/fuchsia:infra
+
+The resulting file contains a ``cipd_manifests`` json field which references a
+sequence of json files specifying the CIPD package path and package file
+contents.
 
 -------
 Roadmap

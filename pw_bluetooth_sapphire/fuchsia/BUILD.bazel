@@ -12,18 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# The Fuchsia bt-host component will eventually be migrated here:
-# https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
-
 load(
     "@fuchsia_infra//infra:infra.bzl",
     "FUCHSIA_TEST_TARGET",
+    "fuchsia_builder_group",
     "fuchsia_test_group",
 )
+load("@rules_license//rules:license.bzl", "license")
 load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_HOST_X64")
 
+license(
+    name = "license_fuchsia",
+    package_name = "pw_bluetooth_sapphire (Fuchsia)",
+    license_text = "//:LICENSE",
+)
+
 qemu_tests = [
-    "//pw_bluetooth_sapphire/fuchsia/hello_world:test_pkg",
+    "//pw_bluetooth_sapphire/fuchsia/bt_host:unittest_pkg",
 ]
 
 fuchsia_test_group(
@@ -31,7 +36,20 @@ fuchsia_test_group(
     # Disable luci-auth as the CQ builder environment is not authenticated.
     luci_auth_enabled = False,
     product_bundle = "@fuchsia_products//:core.x64",
-    tags = MANUAL_IF_NOT_HOST_X64,
     test_target = FUCHSIA_TEST_TARGET.QEMU,
     deps = qemu_tests,
+)
+
+# buildifier: leave-alone
+fuchsia_builder_group(
+    name = "infra",
+    build_only = [
+    ],
+    test_groups = [
+        ":tests_qemu",
+    ],
+    cipd_uploads = [
+        "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_cipd",
+    ],
+    tags = MANUAL_IF_NOT_HOST_X64,
 )

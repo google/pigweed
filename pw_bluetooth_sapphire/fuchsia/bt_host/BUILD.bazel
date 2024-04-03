@@ -12,8 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# An example component for demonstrative purposes.
+# Contains a stub Fuchsia bt-host component.
+# Eventually the real bt-host component will be migrated here:
+# https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
+# See https://fxbug.dev/321267390.
 
+load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
     "fuchsia_cc_binary",
@@ -24,7 +28,18 @@ load(
     "fuchsia_platforms",
     "fuchsia_unittest_package",
 )
-load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_HOST_X64")
+load(
+    "@fuchsia_sdk//fuchsia:licenses.bzl",
+    "fuchsia_licenses_collection",
+    "fuchsia_licenses_spdx",
+)
+
+package(
+    default_applicable_licenses = ["//pw_bluetooth_sapphire/fuchsia:license_fuchsia"],
+    default_visibility = ["//pw_bluetooth_sapphire/fuchsia:__pkg__"],
+)
+
+exports_files(["README.fuchsia.md"])
 
 fuchsia_cc_binary(
     name = "hello_world",
@@ -39,7 +54,7 @@ fuchsia_cc_binary(
 
 fuchsia_component_manifest(
     name = "manifest",
-    src = "meta/hello_world.cml",
+    src = "meta/bt-host.cml",
 )
 
 fuchsia_component(
@@ -50,13 +65,13 @@ fuchsia_component(
 
 fuchsia_package(
     name = "pkg",
-    package_name = "hello_cpp",
+    package_name = "bt-host",
     components = [
         ":component",
     ],
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
-    tags = MANUAL_IF_NOT_HOST_X64,
+    tags = ["manual"],
 )
 
 fuchsia_cc_test(
@@ -71,13 +86,36 @@ fuchsia_cc_test(
 )
 
 fuchsia_unittest_package(
-    name = "test_pkg",
-    package_name = "hello_cpp_test",
+    name = "unittest_pkg",
+    package_name = "bt-host-unittests",
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
     tags = ["manual"],
     unit_tests = [
         ":hello_gtest",
     ],
-    visibility = ["//pw_bluetooth_sapphire/fuchsia:__pkg__"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt-host_pkg_licenses_collection",
+    root_target = ":pkg",
+)
+
+fuchsia_licenses_spdx(
+    name = "bt-host_licenses.spdx.json",
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt-host_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "bt-host",
+)
+
+fuchsia_cipd_releases(
+    name = "bt_host_cipd",
+    cipd_prefix = "fuchsia/drivers/bt-host",
+    extra_content = {
+        ":bt-host_licenses.spdx.json": "licenses.spdx.json",
+        ":README.fuchsia.md": "README.fuchsia",
+    },
+    pkg = ":pkg",
 )

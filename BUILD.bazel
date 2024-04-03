@@ -16,6 +16,12 @@ load("@python3//:defs.bzl", "interpreter")
 
 licenses(["notice"])
 
+# Needed for releasing //pw_bluetooth_sapphire/fuchsia/bt_host.
+exports_files(
+    ["LICENSE"],
+    visibility = [":__subpackages__"],
+)
+
 alias(
     name = "python3_interpreter",
     actual = interpreter,
