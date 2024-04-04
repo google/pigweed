@@ -53,6 +53,8 @@ Pigweed:
          curl https://pigweed.googlesource.com/pigweed/examples/+/main/tools/setup_windows_prerequisites.bat?format=TEXT > setup_pigweed_prerequisites.b64 && certutil -decode -f setup_pigweed_prerequisites.b64 setup_pigweed_prerequisites.bat && del setup_pigweed_prerequisites.b64
          setup_pigweed_prerequisites.bat
 
+         This script requires admin privileges.
+
       .. admonition:: Note
          :class: warning
 
