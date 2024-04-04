@@ -26,10 +26,20 @@ pw_python_package("py") {
     "pw_module/__main__.py",
     "pw_module/check.py",
     "pw_module/create.py",
+    "pw_module/templates/__init__.py",
+    "pw_module/templates/helpers/__init__.py",
   ]
   python_deps = [
     "$dir_pw_build/py",
     "$dir_pw_cli/py",
+    "$dir_pw_presubmit/py",
+  ]
+  inputs = [
+    "pw_module/templates/BUILD.bazel.jinja",
+    "pw_module/templates/helpers/bazel.jinja",
+    "pw_module/templates/docs.rst.jinja",
+    "pw_module/templates/CMakeLists.txt.jinja",
+    "pw_module/templates/helpers/cmake.jinja",
   ]
   tests = [ "check_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"

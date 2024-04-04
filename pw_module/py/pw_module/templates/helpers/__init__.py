@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,25 +11,4 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-[metadata]
-name = pw_module
-version = 0.0.1
-author = Pigweed Authors
-author_email = pigweed-developers@googlegroups.com
-description = Meta-module for Pigweed
-
-[options]
-packages = find:
-zip_safe = False
-install_requires =
-    jinja2
-    prompt-toolkit
-
-[options.package_data]
-pw_module =
-    py.typed
-    templates/BUILD.bazel.jinja
-    templates/CMakeLists.txt.jinja
-    templates/docs.rst.jinja
-    templates/helpers/bazel.jinja
-    templates/helpers/cmake.jinja
+"""Jinja template helper macros."""

@@ -23,6 +23,7 @@ import datetime
 import difflib
 from enum import Enum
 import functools
+import json
 import logging
 from pathlib import Path
 import re
@@ -36,6 +37,8 @@ import pw_cli.color
 import pw_cli.env
 from pw_cli.status_reporter import StatusReporter
 from pw_presubmit.tools import colorize_diff
+
+from pw_module.templates import get_template
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
@@ -212,10 +215,28 @@ class _OutputFile:
     def content(self) -> str:
         return ''.join(self._content)
 
-    def write(self) -> None:
-        if _prompt_overwrite(self._file, new_contents=self.content):
+    def write(self, content: str | None = None) -> None:
+        """Write file contents. Prompts the user if necessary.
+
+        Args:
+          content: If provided will write this text to the file instead of
+              calling self.content.
+        """
+        output_text = self.content
+        if content:
+            output_text = content
+
+        if not output_text.endswith('\n'):
+            output_text += '\n'
+
+        if _prompt_overwrite(self._file, new_contents=output_text):
             _report_write_file(self._file)
-            self._file.write_text(self.content)
+            self._file.write_text(output_text)
+
+    def write_template(self, template_name: str, **template_args) -> None:
+        template = get_template(template_name)
+        rendered_template = template.render(**template_args)
+        self.write(content=rendered_template)
 
     class _IndentationContext:
         """Context that increases the output's indentation when it is active."""
@@ -277,6 +298,10 @@ class _ModuleName:
 
     def upper_camel_case(self) -> str:
         return ''.join(s.capitalize() for s in self._main.split('_'))
+
+    @property
+    def header_line(self) -> str:
+        return '=' * len(self.full)
 
     def __str__(self) -> str:
         return self.full
@@ -368,6 +393,29 @@ class _BuildFile:
 
     def add_cc_test(self, target: CcTarget) -> None:
         self._cc_tests.append(target)
+
+    @property
+    def get_license(self) -> str:
+        if self._ctx.is_upstream:
+            return _PIGWEED_LICENSE
+        return ''
+
+    @property
+    def docs_sources(self) -> list[str]:
+        return self._docs_sources
+
+    @property
+    def cc_targets(self) -> list[_BuildFile.CcTarget]:
+        return self._cc_targets
+
+    @property
+    def cc_tests(self) -> list[_BuildFile.CcTarget]:
+        return self._cc_tests
+
+    def relative_file(self, file_path: Path | str) -> str:
+        if isinstance(file_path, str):
+            return file_path
+        return str(file_path.relative_to(self._path.parent))
 
     def write(self) -> None:
         """Writes the contents of the build file to disk."""
@@ -649,90 +697,39 @@ class _BazelBuildFile(_BuildFile):
     ):
         super().__init__(directory / filename, ctx)
 
+    def write(self) -> None:
+        """Writes the contents of the build file to disk."""
+        file = _OutputFile(self._path)
+        file.write_template('BUILD.bazel.jinja', build=self, module=self._ctx)
+
     def _indent_width(self) -> int:
         return 4
 
+    # TODO(tonymd): Remove these functions once all file types are created with
+    # templates.
     def _write_preamble(self, file: _OutputFile) -> None:
-        imports = ['//pw_build:pigweed.bzl']
-        if self._cc_tests:
-            imports.append('pw_cc_test')
-
-        # Add a load statement, but only if there are any symbols to load.
-        if len(imports) > 1:
-            file.line('load(')
-            with file.indent():
-                for imp in sorted(imports):
-                    file.line(f'"{imp}",')
-            file.line(')\n')
-
-        file.line('package(default_visibility = ["//visibility:public"])\n')
-        file.line('licenses(["notice"])')
+        pass
 
     def _write_cc_target(
         self,
         file: _OutputFile,
         target: _BuildFile.CcTarget,
     ) -> None:
-        _BazelBuildFile._target(
-            file,
-            'cc_library',
-            target.name,
-            {
-                'srcs': list(target.rebased_sources(self.dir)),
-                'hdrs': list(target.rebased_headers(self.dir)),
-                'includes': ['public'],
-            },
-        )
+        pass
 
     def _write_cc_test(
         self,
         file: _OutputFile,
         target: _BuildFile.CcTarget,
     ) -> None:
-        _BazelBuildFile._target(
-            file,
-            'pw_cc_test',
-            target.name,
-            {
-                'srcs': list(target.rebased_sources(self.dir)),
-                'deps': target.deps,
-            },
-        )
+        pass
 
     def _write_docs_target(
         self,
         file: _OutputFile,
         docs_sources: list[str],
     ) -> None:
-        file.line('# Bazel does not yet support building docs.')
-        _BazelBuildFile._target(
-            file, 'filegroup', 'docs', {'srcs': docs_sources}
-        )
-
-    @staticmethod
-    def _target(
-        file: _OutputFile,
-        target_type: str,
-        name: str,
-        keys: dict[str, list[str]],
-    ) -> None:
-        file.line(f'{target_type}(')
-
-        with file.indent():
-            file.line(f'name = "{name}",')
-
-            for k, vals in keys.items():
-                if len(vals) == 1:
-                    file.line(f'{k} = ["{vals[0]}"],')
-                    continue
-
-                file.line(f'{k} = [')
-                with file.indent():
-                    for val in sorted(vals):
-                        file.line(f'"{val}",')
-                file.line('],')
-
-        file.line(')')
+        pass
 
 
 class _CmakeBuildFile(_BuildFile):
@@ -746,69 +743,41 @@ class _CmakeBuildFile(_BuildFile):
     ):
         super().__init__(directory / filename, ctx)
 
+    def write(self) -> None:
+        """Writes the contents of the build file to disk."""
+        file = _OutputFile(self._path)
+        file.write_template(
+            'CMakeLists.txt.jinja', build=self, module=self._ctx
+        )
+
     def _indent_width(self) -> int:
         return 2
 
+    # TODO(tonymd): Remove these functions once all file types are created with
+    # templates.
     def _write_preamble(self, file: _OutputFile) -> None:
-        file.line('include($ENV{PW_ROOT}/pw_build/pigweed.cmake)')
+        pass
 
     def _write_cc_target(
         self,
         file: _OutputFile,
         target: _BuildFile.CcTarget,
     ) -> None:
-        if target.name == self._ctx.name.full:
-            target_name = target.name
-        else:
-            target_name = f'{self._ctx.name.full}.{target.name}'
-
-        _CmakeBuildFile._target(
-            file,
-            'pw_add_module_library',
-            target_name,
-            {
-                'sources': list(target.rebased_sources(self.dir)),
-                'headers': list(target.rebased_headers(self.dir)),
-                'public_includes': ['public'],
-            },
-        )
+        pass
 
     def _write_cc_test(
         self,
         file: _OutputFile,
         target: _BuildFile.CcTarget,
     ) -> None:
-        _CmakeBuildFile._target(
-            file,
-            'pw_auto_add_module_tests',
-            self._ctx.name.full,
-            {'private_deps': []},
-        )
+        pass
 
     def _write_docs_target(
         self,
         file: _OutputFile,
         docs_sources: list[str],
     ) -> None:
-        file.line('# CMake does not yet support building docs.')
-
-    @staticmethod
-    def _target(
-        file: _OutputFile,
-        target_type: str,
-        name: str,
-        keys: dict[str, list[str]],
-    ) -> None:
-        file.line(f'{target_type}({name}')
-
-        with file.indent():
-            for k, vals in keys.items():
-                file.line(k.upper())
-                with file.indent():
-                    for val in sorted(vals):
-                        file.line(val)
-
-        file.line(')')
+        pass
 
 
 class _LanguageGenerator:
@@ -940,18 +909,12 @@ def _check_module_name(
 def _create_main_docs_file(ctx: _ModuleContext) -> None:
     """Populates the top-level docs.rst file within a new module."""
 
+    template = get_template('docs.rst.jinja')
+    rendered_template = template.render(module=ctx)
+
     docs_file = _OutputFile(ctx.dir / 'docs.rst')
-    docs_file.line(f'.. _module-{ctx.name}:\n')
-
-    title = '=' * len(ctx.name.full)
-    docs_file.line(title)
-    docs_file.line(ctx.name.full)
-    docs_file.line(title)
-    docs_file.line(f'This is the main documentation file for {ctx.name}.')
-
     ctx.add_docs_file(docs_file.path)
-
-    docs_file.write()
+    docs_file.write(content=rendered_template)
 
 
 def _basic_module_setup(
@@ -981,6 +944,41 @@ def _basic_module_setup(
     _create_main_docs_file(ctx)
 
     return ctx
+
+
+def _add_to_module_metadata(
+    project_root: Path,
+    module_name: _ModuleName,
+    languages: Iterable[str] | None = None,
+) -> None:
+    """Update sphinx module metadata."""
+    module_metadata_file = project_root / 'docs/module_metadata.json'
+    metadata_dict = json.loads(module_metadata_file.read_text())
+
+    language_tags = []
+    if languages:
+        for lang in languages:
+            if lang == 'cc':
+                language_tags.append('C++')
+
+    # Add the new entry if it doesn't exist
+    if module_name.full not in metadata_dict:
+        metadata_dict[module_name.full] = dict(
+            status='experimental',
+            languages=language_tags,
+        )
+
+    # Sort by module name.
+    sorted_metadata = dict(
+        sorted(metadata_dict.items(), key=lambda item: item[0])
+    )
+    output_text = json.dumps(sorted_metadata, sort_keys=False, indent=2)
+    output_text += '\n'
+
+    # Write the file.
+    if _prompt_overwrite(module_metadata_file, new_contents=output_text):
+        _report_write_file(module_metadata_file)
+        module_metadata_file.write_text(output_text)
 
 
 def _add_to_pigweed_modules_file(
@@ -1156,6 +1154,7 @@ def _create_module(
 
     if is_upstream:
         _add_to_pigweed_modules_file(project_root, module_name)
+        _add_to_module_metadata(project_root, module_name, languages)
         if 'cmake' in build_systems:
             _add_to_root_cmakelists(project_root, module_name)
 

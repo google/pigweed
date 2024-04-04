@@ -1,0 +1,55 @@
+{#
+Copyright 2024 The Pigweed Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+#}
+{% import 'helpers/bazel.jinja' as bazel %}
+{{ build.get_license }}
+
+{% set bazel_imports = [] %}
+{% do bazel_imports.append('pw_cc_test') if build.cc_tests %}
+{% if bazel_imports|length > 0 %}
+load(
+    "//pw_build:pigweed.bzl",
+    {% for i in bazel_imports|sort %}
+    "{{ i }}",
+    {% endfor %}
+)
+{% endif %}
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+{% for target in build.cc_targets %}
+cc_library(
+    name = "{{ target.name }}",
+    srcs = {{ bazel.file_list(build, target.sources) }}
+    hdrs = {{ bazel.file_list(build, target.headers) }}
+    includes = ["public"],
+)
+{% endfor %}
+
+{% for target in build.cc_tests %}
+pw_cc_test(
+    name = "{{ target.name }}",
+    srcs = {{ bazel.file_list(build, target.sources) }}
+    deps = {{ bazel.deps_list(target.deps) }}
+)
+{% endfor %}
+
+# Bazel does not yet support building docs.
+filegroup(
+    name = "docs",
+    srcs = {{ bazel.file_list(build, build.docs_sources) }}
+)
