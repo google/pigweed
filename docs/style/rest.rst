@@ -1,4 +1,4 @@
-.. _docs-pw-style-rest:
+.. _docs-style-rest:
 
 ============================
 reStructuredText style guide
@@ -10,496 +10,347 @@ reStructuredText style guide
 
 This style guide defines Pigweed's conventions for `reStructuredText`_ (reST).
 ``pigweed.dev`` documentation is authored in reST, not Markdown. Pigweed
-uses `Sphinx`_ to convert the ``.rst`` files into HTML.
+uses `Sphinx`_ to convert reST into HTML.
 
-.. _docs-pw-style-rest-overview:
+.. tip:: ``pw format`` detects reST style issues.
+
+.. _docs-style-rest-overview:
 
 --------
 Overview
 --------
 
-.. _docs-pw-style-rest-scope:
+.. _docs-style-rest-scope:
 
 Scope
 =====
-This style guide applies to all content that's intended to be published to
-``pigweed.dev``.
+This style guide applies to all reST markup that's intended to be published to
+``pigweed.dev``. reST markup is mainly found in ``.rst`` files but it's also
+possible to embed reST within other types of files.
 
-.. _docs-pw-style-rest-other:
+.. _docs-style-rest-other:
 
-Other documentation-related style guides
-========================================
+Related style guides
+====================
 This style guide is narrowly focused on Pigweed's usage of reStructuredText.
-See the following style guides for other aspects of Pigweed's documentation:
+See :ref:`docs-contrib-docs` for other aspects of Pigweed documentation style.
 
-* :ref:`docs-pw-style-writing`
-* :ref:`docs-pw-style-doxygen`
+.. _docs-style-rest-headings:
 
-Syntax Reference Links
-======================
-.. admonition:: See also
-   :class: seealso
-
-   - `reStructuredText Primer`_
-
-   - `reStructuredText Directives <https://docutils.sourceforge.io/docs/ref/rst/directives.html>`_
-
-   - `Furo Reference <https://pradyunsg.me/furo/reference/>`_
-
-   - `Sphinx-design Reference <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
-
-ReST is flexible, supporting formatting the same logical document in a few ways
-(for example headings, blank lines). Pigweed has the following restrictions to
-make our documentation consistent.
-
-.. inclusive-language: disable
-
-.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
-
-.. inclusive-language: enable
-
+--------
 Headings
-========
-Use headings according to the following hierarchy, with the shown characters
-for the ReST heading syntax.
+--------
+Use the following syntax for headings.
 
 .. code-block:: rst
 
-   ==================================
-   Document Title: Two Bars of Equals
-   ==================================
-   Document titles use equals ("====="), above and below. Capitalize the words
-   in the title, except for 'a', 'of', and 'the'.
+   ==================
+   H1: Document title
+   ==================
+   In HTML the heading above is rendered as an H1 node. A page must have
+   exactly one H1 node. The H1 text must have equals signs (``=``) above
+   and below it.
 
-   ---------------------------
-   Major Sections Within a Doc
-   ---------------------------
-   Major sections use hyphens ("----"), above and below. Capitalize the words in
-   the title, except for 'a', 'of', and 'the'.
+   ------------
+   H2: Sections
+   ------------
+   In HTML the heading above is rendered as an H2 node. The H2 text must have
+   minus signs (``-``) above and below it. H2 headings are conceptually similar
+   to chapters in a book.
 
-   Heading 1 - For Sections Within a Doc
-   =====================================
-   These should be title cased. Use a single equals bar ("====").
+   H3: Subsections
+   ===============
+   In HTML the heading above is rendered as an H3 node. The H3 text must
+   have equals signs (``=``) below it. H3 headings are conceptually similar to
+   sections within a chapter of a book.
 
-   Heading 2 - for subsections
-   ---------------------------
-   Subsections use hyphens ("----"). In many cases, these headings may be
-   sentence-like. In those cases, only the first letter should be capitalized.
-   For example, FAQ subsections would have a title with "Why does the X do the
-   Y?"; note the sentence capitalization (but not title capitalization).
+   H4: Subsubsections
+   ------------------
+   In HTML the heading above is rendered as an H4 node. The H4 text must have
+   minus signs (``-``) below it. H4 headings are used rarely.
 
-   Heading 3 - for subsubsections
-   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   Use the caret symbol ("^^^^") for subsubsections.
+   H5: Subsubsubsections
+   ^^^^^^^^^^^^^^^^^^^^^
+   In HTML the heading above is rendered as an H5 node. The H5 text must have
+   caret symbols (``^``) below it. H5 headings are used very rarely.
 
-   Note: Generally don't go beyond heading 3.
+   H6: Subsubsubsubsections
+   ........................
+   In HTML the heading above is rendered as an H6 node. The H6 text must have
+   period symbols (``.``) below it. H6 headings are practically never used and
+   are an indicator that a document probably needs refactoring.
 
-   Heading 4 - for subsubsubsections
-   .................................
-   Don't use this heading level, but if you must, use period characters
-   ("....") for the heading.
+.. _docs-style-rest-headings-order:
 
-Do not put blank lines after headings.
---------------------------------------
-.. admonition:: **Yes**: No blank after heading
+Heading levels
+==============
+Headings must be used in hierarchical order. No level can be skipped. For
+example, you can't use an H1 heading followed by an H3. See
+`Headings and titles <https://developers.google.com/style/accessibility#headings-and-titles>`_.
+
+.. _docs-style-rest-headings-whitespace-after:
+
+No blank lines after headings
+=============================
+Don't put whitespace between a heading and the content that follows it.
+
+.. admonition:: **Yes**
    :class: checkmark
 
    .. code-block:: rst
 
-      Here is a heading
-      -----------------
-      Note that there is no blank line after the heading separator!
+      Example heading
+      ===============
+      This paragraph is positioned correctly.
 
-.. admonition:: **No**: Unnecessary blank line
+.. admonition:: **No**
    :class: error
 
    .. code-block:: rst
 
-      Here is a heading
-      -----------------
+      Example heading
+      ===============
 
-      There is a totally unnecessary blank line above this one. Don't do this.
+      This paragraph isn't positioned correctly. There shouldn't be a blank
+      line above it.
 
-Do not put multiple blank lines before a heading.
--------------------------------------------------
-.. admonition:: **Yes**: Just one blank after section content before the next heading
+.. _docs-style-rest-headings-whitespace-before:
+
+One blank line before a heading
+===============================
+Put one blank line between a heading and the content that comes before it.
+
+.. admonition:: **Yes**
    :class: checkmark
 
    .. code-block:: rst
 
-      There is some text here in the section before the next. It's just here to
-      illustrate the spacing standard. Note that there is just one blank line
-      after this paragraph.
+      This paragraph is positioned correctly.
 
-      Just one blank!
+      Example heading
       ---------------
-      There is just one blank line before the heading.
+      ...
 
-.. admonition:: **No**: Extra blank lines
+.. admonition:: **No**
    :class: error
 
    .. code-block:: rst
 
-      There is some text here in the section before the next. It's just here to
-      illustrate the spacing standard. Note that there are too many blank lines
-      after this paragraph; there should be just one.
+      This paragraph isn't positioned correctly. There's too much whitespace
+      below it.
 
 
 
-      Too many blanks
+      Example heading
       ---------------
-      There are too many blanks before the heading for this section.
+      ...
 
+.. _docs-style-rest-directives:
+
+----------
 Directives
-==========
-Indent directives 3 spaces; and put a blank line between the directive and the
-content. This aligns the directive content with the directive name.
+----------
+Indent directive content and attributes 3 spaces so that they align
+with the directive name.
 
-.. admonition:: **Yes**: Three space indent for directives; and nested
+.. admonition:: **Yes**
    :class: checkmark
-
-   .. code-block:: none
-
-      Here is a paragraph that has some content. After this content is a
-      directive.
-
-      .. my_directive::
-
-         Note that this line's start aligns with the "m" above. The 3-space
-         alignment accounts for the ".. " prefix for directives, to vertically
-         align the directive name with the content.
-
-         This indentation must continue for nested directives.
-
-         .. nested_directive::
-
-            Here is some nested directive content.
-
-.. admonition:: **No**: One space, two spaces, four spaces, or other indents
-   for directives
-   :class: error
-
-   .. code-block:: none
-
-      Here is a paragraph with some content.
-
-      .. my_directive::
-
-        The indentation here is incorrect! It's one space short; doesn't align
-        with the directive name above.
-
-        .. nested_directive::
-
-            This isn't indented correctly either; it's too much (4 spaces).
-
-.. admonition:: **No**: Missing blank between directive and content.
-   :class: error
-
-   .. code-block:: none
-
-      Here is a paragraph with some content.
-
-      .. my_directive::
-         Note the lack of blank line above here.
-
-Tables
-======
-Consider using ``.. list-table::`` syntax, which is more maintainable and
-easier to edit for complex tables (`details
-<https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`_).
-
-Code Snippets
-=============
-Use code blocks from actual source code files wherever possible. This helps keep
-documentation fresh and removes duplicate code examples. There are a few ways to
-do this with Sphinx.
-
-The `literalinclude`_ directive creates a code blocks from source files. Entire
-files can be included or a just a subsection. The best way to do this is with
-the ``:start-after:`` and ``:end-before:`` options.
-
-Example:
-
-.. card::
-
-   Documentation Source (``.rst`` file)
-   ^^^
 
    .. code-block:: rst
 
-      .. literalinclude:: run_doxygen.py
-         :start-after: [doxygen-environment-variables]
-         :end-before: [doxygen-environment-variables]
+      .. my-directive::
+         :my-attr: This attribute is positioned correctly.
 
-.. card::
+         This paragraph is positioned correctly.
 
-   Source File
-   ^^^
+         .. my-nested-directive::
 
-   .. code-block::
+            This paragraph is positioned correctly.
 
-      # DOCSTAG: [doxygen-environment-variables]
-      env = os.environ.copy()
-      env['PW_DOXYGEN_OUTPUT_DIRECTORY'] = str(output_dir.resolve())
-      env['PW_DOXYGEN_INPUT'] = ' '.join(pw_module_list)
-      env['PW_DOXYGEN_PROJECT_NAME'] = 'Pigweed'
-      # DOCSTAG: [doxygen-environment-variables]
+.. admonition:: **No**
+   :class: error
 
-.. card::
+   .. code-block:: rst
 
-   Rendered Output
-   ^^^
+      .. my-directive::
 
-   .. code-block::
+        This paragraph isn't positioned correctly. It has too few spaces.
 
-      env = os.environ.copy()
-      env['PW_DOXYGEN_OUTPUT_DIRECTORY'] = str(output_dir.resolve())
-      env['PW_DOXYGEN_INPUT'] = ' '.join(pw_module_list)
-      env['PW_DOXYGEN_PROJECT_NAME'] = 'Pigweed'
+      .. my-directive::
 
-.. inclusive-language: disable
+          This paragraph isn't positioned correctly. It has too many spaces.
 
-.. _literalinclude: https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-literalinclude
+Put a blank line between the directive and its content. Don't put space
+between a directive name and its attributes.
 
-.. inclusive-language: enable
+.. admonition:: **Yes**
+   :class: checkmark
 
-Generating API documentation from source
-========================================
-Whenever possible, document APIs in the source code and use Sphinx to generate
-documentation for them. This keeps the documentation in sync with the code and
-reduces duplication.
+   .. code-block:: rst
 
-C/C++
------
-Doxygen comments in C and C++ are surfaced in Sphinx using the Breathe
-extension. See :ref:`docs-pw-style-doxygen` for usage.
+      .. my-directive::
+         :my-attr: This attribute is positioned correctly.
 
-Python
+         This paragraph is positioned correctly.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: rst
+
+      .. my-directive::
+         This paragraph isn't positioned correctly. There should be a blank
+         line above it.
+
+.. _docs-style-rest-tables:
+
 ------
-Include Python API documentation from docstrings with `autodoc directives`_.
-Example:
+Tables
+------
+.. _csv-table: https://docutils.sourceforge.io/docs/ref/rst/directives.html#csv-table-1
+.. _list-table: https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table
+.. _table: https://docutils.sourceforge.io/docs/ref/rst/directives.html#table
 
+Prefer `list-table`_ and `csv-table`_. Avoid `table`_. ``list-table`` and
+``csv-table`` are easier to maintain.
+
+.. _docs-style-rest-includes:
+
+-------------
+Code includes
+-------------
+Prefer including code snippets from actual source code files that are built
+and tested regularly.
+
+To include a portion of a file:
+
+.. code-block:: rst
+
+   .. literalinclude:: my_source_file.py
+      :start-after: my-start-text
+      :end-before: my-end-text
+
+``mw-start-text`` and ``my-end-text`` are the exclusive delimiters that must
+appear verbatim in the source file.
+
+.. _docs-style-rest-includes-python:
+
+Python code includes
+====================
 .. inclusive-language: disable
-
-.. _autodoc directives: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directives
-
+.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directives
 .. inclusive-language: enable
 
+Use `autodoc`_.
+
+Python code includes for CLI args
+---------------------------------
+Use `argparse <https://sphinx-argparse.readthedocs.io/en/latest/usage.html>`_.
+
+.. _docs-style-rest-code-blocks:
+
+-----------
+Code blocks
+-----------
+.. _Languages: https://pygments.org/languages/
+.. inclusive-language: disable
+.. _code-block: https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-code-block
+.. inclusive-language: enable
+
+Use `code-block`_. See `Languages`_ for the list of valid language
+keywords.
+
+If Google has a style guide for the programming language in your code block,
+your code should match Google's style guide.
+
 .. code-block:: rst
 
-   .. automodule:: pw_cli.log
-      :members:
+   .. code-block:: c++
 
-   .. automodule:: pw_console.embed
-      :members: PwConsoleEmbed
-      :undoc-members:
-      :show-inheritance:
+      // ...
 
-   .. autoclass:: pw_console.log_store.LogStore
-      :members: __init__
-      :undoc-members:
-      :show-inheritance:
+.. _docs-style-rest-toc:
 
-Include argparse command line help with the `argparse
-<https://sphinx-argparse.readthedocs.io/en/latest/usage.html>`_
-directive. Example:
-
-.. code-block:: rst
-
-   .. argparse::
-      :module: pw_watch.watch
-      :func: get_parser
-      :prog: pw watch
-      :nodefaultconst:
-      :nodescription:
-      :noepilog:
-
-Customize the depth of a page's table of contents
-=================================================
+-------------------------------------
+Table of contents depth customization
+-------------------------------------
 Put ``:tocdepth: X`` on the first line of the page, where ``X`` equals how many
 levels of section heading you want to show in the page's table of contents. See
 ``//docs/changelog.rst`` for an example.
 
-Changelog
-=========
-This section explains how we update the changelog.
+.. _docs-style-rest-cta:
 
-#. On the Friday before Pigweed Live, use
-   `changelog <https://kaycebasques.github.io/changelog/>`_ to generate a first
-   draft of the changelog.
-
-#. Copy-paste the reStructuredText output from the changelog tool to the top
-   of ``//docs/changelog.rst``.
-
-#. Delete these lines from the previous update in ``changelog.rst``
-   (which is no longer the latest update):
-
-   * ``.. _docs-changelog-latest:``
-   * ``.. changelog_highlights_start``
-   * ``.. changelog_highlights_end``
-
-#. Polish up the auto-generated first draft into something more readable:
-
-   * Don't change the section headings. The text in each section heading
-     should map to one of the categories that we allow in our commit
-     messages, such as ``bazel``, ``docs``, ``pw_base64``, and so on.
-   * Add a 1-paragraph summary to each section.
-   * Focus on features, important bug fixes, and breaking changes. Delete
-     internal commits that Pigweed customers won't care about.
-
-#. Push your change up to Gerrit and kick off a dry run. After a few minutes
-   the docs will get staged.
-
-#. Copy the rendered content from the staging site into the Pigweed Live
-   Google Doc.
-
-#. Make sure to land the changelog updates the same week as Pigweed Live.
-
-There is no need to update ``//docs/index.rst``. The ``What's new in Pigweed``
-content on the homepage is pulled from the changelog (that's what the
-``docs-changelog-latest``, ``changelog_highlights_start``, and
-``changelog_highlights_end`` labels are for).
-
-Why "changelog" and not "release notes"?
-----------------------------------------
-Because Pigweed doesn't have releases.
-
-Why organize by module / category?
-----------------------------------
-Why is the changelog organized by category / module? Why not the usual
-3 top-level sections: features, fixes, breaking changes?
-
-* Because some Pigweed customers only use a few modules. Organizing by module
-  helps them filter out all the changes that aren't relevant to them faster.
-* If we keep the changelog section heading text fairly structured, we may
-  be able to present the changelog in other interesting ways. For example,
-  it should be possible to collect every ``pw_base64`` section in the changelog
-  and then provide a changelog for only ``pw_base64`` over in the ``pw_base64``
-  docs.
-* The changelog tool is easily able to organize by module / category due to
-  how we annotate our commits. We will not be able to publish changelog updates
-  every 2 weeks if there is too much manual work involved.
-
-.. _docs-site-scroll:
-
-Site nav scrolling
-==================
-We have had recurring issues with scrolling on pigweed.dev. This section
-provides context on the issue and fix(es).
-
-
-The behavior we want:
-
-* The page that you're currently on should be visible in the site nav.
-* URLs with deep links (e.g. ``pigweed.dev/pw_allocator/#size-report``) should
-  instantly jump to the target section (e.g. ``#size-report``).
-* There should be no scrolling animations anywhere on the site. Scrolls should
-  happen instantly.
-
-.. _furo.js: https://github.com/pradyunsg/furo/blob/main/src/furo/assets/scripts/furo.js
-
-A few potential issues at play:
-
-* Our theme (Furo) has non-configurable scrolling logic. See `furo.js`_.
-* There seems to be a race condition between Furo's scrolling behavior and our
-  text-to-diagram tool, Mermaid, which uses JavaScript to render the diagrams
-  on page load. However, we also saw issues on pages that didn't have any
-  diagrams, so that can't be the site-wide root cause.
-
-.. _scrollTop: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollTop
-.. _scrollIntoView: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
-.. _scroll-behavior: https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
-
-Our current fix:
-
-* In ``//docs/_static/js/pigweed.js`` we manually scroll the site nav and main
-  content via `scrollTop`_. Note that we previously tried `scrollIntoView`_
-  but it was not an acceptable fix because the main content would always scroll
-  down about 50 pixels, even when a deep link was not present in the URL.
-  We also manually control when Mermaid renders its diagrams.
-* In ``//docs/_static/css/pigweed.css`` we use an aggressive CSS rule
-  to ensure that `scroll-behavior`_ is set to ``auto`` (i.e. instant scrolling)
-  for all elements on the site.
-
-Background:
-
-* `Tracking issue <https://issues.pigweed.dev/issues/303261476>`_
-* `First fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410>`_
-* `Second fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162990>`_
-* `Third fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168555>`_
-* `Fourth fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178591>`_
-
-.. _docs-pw-style-cta:
-
-Call-to-action buttons on sales pitch pages (docs.rst)
-======================================================
-Use the following directive to put call-to-action buttons on a ``docs.rst``
-page:
+----------------------
+Call-to-action buttons
+----------------------
+Use ``grid`` and ``grid-item-card``.
 
 .. code-block::
 
    .. grid:: 2
 
-      .. grid-item-card:: :octicon:`zap` Get started & guides
+      .. grid-item-card:: :octicon:`<ICON>` <TITLE>
          :link: <REF>
-         :link-type: ref
-         :class-item: sales-pitch-cta-primary
+         :link-type: <TYPE>
+         :class-item: <CLASS>
 
-         Learn how to integrate <MODULE> into your project and implement
-         common use cases.
+         <DESCRIPTION>
 
-      .. grid-item-card:: :octicon:`info` API reference
-         :link: <REF>
-         :link-type: ref
-         :class-item: sales-pitch-cta-secondary
+.. _Octicons: https://primer.style/foundations/icons
+.. inclusive-language: disable
+.. _ref: https://www.sphinx-doc.org/en/master/usage/referencing.html#ref-role
+.. inclusive-language: enable
 
-         Get detailed reference information about the <MODULE> API.
+* See `Octicons`_ for the list of valid ``<ICON>`` values.
+* ``<REF>`` can either be a `ref`_ or a full URL.
+* ``<TYPE>`` must be either ``ref`` or ``url``.
+* ``<CLASS>`` must be either ``sales-pitch-cta-primary`` or
+  ``sales-pitch-cta-secondary``. The top-left or top card should use
+  ``sales-pitch-cta-primary``; all the others should use
+  ``sales-pitch-cta-secondary``. The motivation is to draw extra attention to
+  the primary card.
+* ``<DESCRIPTION>`` should be reStructuredText describing what kind of
+  content you'll see if you click the card.
 
-   .. grid:: 2
+.. _docs-style-rest-tabs:
 
-      .. grid-item-card:: :octicon:`info` CLI reference
-         :link: <REF>
-         :link-type: ref
-         :class-item: sales-pitch-cta-secondary
+----
+Tabs
+----
+.. _Tabs: https://sphinx-design.readthedocs.io/en/furo-theme/tabs.html
 
-         Get usage information about <MODULE> command line utilities.
+Use ``tab-set`` and ``tab-item``. See `Tabs`_.
 
-      .. grid-item-card:: :octicon:`table` Design
-         :link: <REF>
-         :link-type: ref
-         :class-item: sales-pitch-cta-secondary
+.. code-block:: rst
 
-         Read up on how <MODULE> is designed.
+   .. tab-set::
 
-* Remove cards for content that does not exist. For example, if the module
-  doesn't have a CLI reference, remove the card for that doc.
-* Replace ``<REF>`` and ``<MODULE>``. Don't change anything else. We want
-  a consistent call-to-action experience across all the modules.
+      .. tab-item:: Linux
 
-Copy-to-clipboard feature on code blocks
-========================================
+         Linux instructions...
 
-.. _sphinx-copybutton: https://sphinx-copybutton.readthedocs.io/en/latest/
-.. _Remove copybuttons using a CSS selector: https://sphinx-copybutton.readthedocs.io/en/latest/use.html#remove-copybuttons-using-a-css-selector
+      .. tab-item:: Windows
 
-The copy-to-clipboard feature on code blocks is powered by `sphinx-copybutton`_.
+         Windows instructions...
 
-``sphinx-copybutton`` recognizes ``$`` as an input prompt and automatically
-removes it.
+Rendered output:
 
-There is a workflow for manually removing the copy-to-clipboard button for a
-particular code block but it has not been implemented yet. See
-`Remove copybuttons using a CSS selector`_.
+.. tab-set::
 
-Grouping related content with tabs
-==================================
-Use the ``tab-set`` directive to group related content together. This feature is
-powered by `sphinx-design Tabs
-<https://sphinx-design.readthedocs.io/en/furo-theme/tabs.html>`_
+   .. tab-item:: Linux
+
+      Linux instructions...
+
+   .. tab-item:: Windows
+
+      Windows instructions...
+
+.. _docs-style-rest-tabs-code:
 
 Tabs for code-only content
---------------------------
-Use the ``tabs`` and ``code-tab`` directives together. Example:
+==========================
+Use ``tab-set-code``. See `Languages`_ for the list of
+valid language keywords.
 
 .. code-block:: rst
 
@@ -525,146 +376,63 @@ Rendered output:
 
       # Python code...
 
-Tabs for all other content
---------------------------
-Use the ``tabs`` and ``tab-item`` directives together. Example:
-
-.. code-block:: rst
-
-   .. tab-set::
-
-      .. tab-item:: Linux
-
-         Linux instructions...
-
-      .. tab-item:: Windows
-
-         Windows instructions...
-
-Rendered output:
-
-.. tab-set::
-
-   .. tab-item:: Linux
-
-      Linux instructions...
-
-   .. tab-item:: Windows
-
-      Windows instructions...
+.. _docs-style-rest-tabs-sync:
 
 Tab synchronization
--------------------
-Tabs are synchronized in two ways:
+===================
+Use the ``:sync:`` attribute to synchronize tabs for non-code content. See
+**Rendered output** below for an example.
 
-1. ``tab-set-code::`` ``code-block`` languages names.
-2. ``tab-item::`` ``:sync:`` values.
-
-For Example:
+``tab-set-code`` tabs automatically synchronize by code language.
 
 .. code-block:: rst
-
-   .. tabs-set-code::
-
-      .. code-block:: c++
-
-         // C++ code...
-
-      .. code-block:: py
-
-         # Python code...
-
-   .. tabs-set-code::
-
-      .. code-block:: c++
-
-         // More C++ code...
-
-      .. code-block:: py
-
-         # More Python code...
 
    .. tab-set::
 
       .. tab-item:: Linux
-         :sync: key1
+         :sync: linux
 
          Linux instructions...
 
       .. tab-item:: Windows
-         :sync: key2
+         :sync: windows
 
          Windows instructions...
 
    .. tab-set::
 
       .. tab-item:: Linux
-         :sync: key1
+         :sync: linux
 
          More Linux instructions...
 
       .. tab-item:: Windows
-         :sync: key2
+         :sync: windows
 
          More Windows instructions...
 
 Rendered output:
 
-.. tab-set-code::
-
-   .. code-block:: c++
-
-      // C++ code...
-
-   .. code-block:: py
-
-      # Python code...
-
-.. tab-set-code::
-
-   .. code-block:: c++
-
-      // More C++ code...
-
-   .. code-block:: py
-
-      # More Python code...
-
 .. tab-set::
 
    .. tab-item:: Linux
-      :sync: key1
+      :sync: linux
 
       Linux instructions...
 
    .. tab-item:: Windows
-      :sync: key2
+      :sync: windows
 
       Windows instructions...
 
 .. tab-set::
 
    .. tab-item:: Linux
-      :sync: key1
+      :sync: linux
 
       More Linux instructions...
 
    .. tab-item:: Windows
-      :sync: key2
+      :sync: windows
 
       More Windows instructions...
-
-Auto-generated source code and issues URLS
-==========================================
-In the site nav there's a ``Source code`` and ``Issues`` URL for each module.
-These links are auto-generated. The auto-generation logic lives in
-``//pw_docgen/py/pw_docgen/sphinx/module_metadata.py``.
-
-Breadcrumbs
-===========
-.. _breadcrumbs: https://en.wikipedia.org/wiki/Breadcrumb_navigation
-
-The `breadcrumbs`_ at the top of each page (except the homepage) is implemented
-in ``//docs/layout/page.html``. The CSS for this UI is in
-``//docs/_static/css/pigweed.css`` under the ``.breadcrumbs`` and
-``.breadcrumb`` classes.

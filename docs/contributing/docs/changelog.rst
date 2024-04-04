@@ -6,6 +6,9 @@ Changelog updates
 This page describes how to write a bi-weekly :ref:`changelog <docs-changelog>`
 update.
 
+The :ref:`docs-contrib-docs-changelog-appendix` contains some general
+information about how Pigweed approaches changelogs.
+
 --------
 Overview
 --------
@@ -69,3 +72,28 @@ Changelog tool
    <!-- Use a relative path here so that the changelog tool also works when
         you preview the page locally on a `file:///...` path. -->
    <script src="../../../_static/js/changelog.js"></script>
+
+.. _docs-contrib-docs-changelog-appendix:
+
+--------
+Appendix
+--------
+
+Why "changelog" and not "release notes"?
+========================================
+Because Pigweed doesn't have releases.
+
+Why organize by module and category?
+====================================
+Why not organize by features, fixes, and breaking changes?
+
+* Because some Pigweed customers only use a few modules. Organizing by module
+  helps them filter out all the changes that aren't relevant to them faster.
+* If we keep the changelog section heading text fairly structured, we may
+  be able to present the changelog in other interesting ways. For example,
+  it should be possible to collect every ``pw_base64`` section in the changelog
+  and then provide a changelog for only ``pw_base64`` over in the ``pw_base64``
+  docs.
+* The changelog tool is easily able to organize by module and category due to
+  how we annotate our commits. We will not be able to publish changelog updates
+  every 2 weeks if there is too much manual work involved.

@@ -29,11 +29,8 @@ This style guide applies to all written content that's published to
 Other documentation-related style guides
 ========================================
 This style guide is narrowly focused on writing conventions such as how to
-capitalize a document title. See the following style guides for other aspects
-of Pigweed's documentation:
-
-* :ref:`docs-pw-style-rest`
-* :ref:`docs-pw-style-doxygen`
+capitalize a document title. See :ref:`docs-contrib-docs` for other aspects
+of Pigweed's documentation.
 
 .. _docs-pw-style-writing-usage:
 

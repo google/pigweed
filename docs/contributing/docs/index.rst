@@ -24,7 +24,7 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`checklist` reStructuredText style guide
-      :link: docs-pw-style-rest
+      :link: docs-style-rest
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
