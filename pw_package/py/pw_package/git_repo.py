@@ -91,7 +91,7 @@ class GitRepo(pw_package.package_manager.Package):
             return False
 
         commit = git_stdout('rev-parse', 'HEAD', repo=path)
-        if self._commit and self._commit != commit:
+        if self._commit and self._commit != 'HEAD' and self._commit != commit:
             _LOG.debug(
                 "%s: commits don't match expected %s actual %s",
                 self.name,

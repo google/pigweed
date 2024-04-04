@@ -41,7 +41,7 @@ Create a Pigweed-based project
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`code` Examples
-      :link: https://pigweed.googlesource.com/pigweed/examples/+/main/README.md
+      :link: https://pigweed.dev/examples/index.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 
