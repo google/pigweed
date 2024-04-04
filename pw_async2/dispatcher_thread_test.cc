@@ -29,9 +29,9 @@ using namespace std::chrono_literals;
 class MockTask : public Task {
  public:
   std::atomic_bool should_complete = false;
-  int polled = 0;
-  int destroyed = 0;
-  std::optional<Waker> last_waker = std::nullopt;
+  std::atomic_int polled = 0;
+  std::atomic_int destroyed = 0;
+  Waker last_waker;
 
  private:
   Poll<> DoPend(Context& cx) override {
@@ -65,7 +65,7 @@ TEST(Dispatcher, RunToCompletion_SleepsUntilWoken) {
   FunctionThread delayed_wake([&task]() {
     this_thread::sleep_for(100ms);
     task.should_complete = true;
-    std::move(*task.last_waker).Wake();
+    std::move(task.last_waker).Wake();
   });
 
   thread::Thread work_thread(thread::stl::Options(), delayed_wake);
