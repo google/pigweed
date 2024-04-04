@@ -87,6 +87,18 @@ TEST(Poll, ConstructorInfersValueType) {
   EXPECT_STREQ(res.value(), "hello");
 }
 
+TEST(Poll, ReadinessOnReadyValueReturnsReadyWithoutValue) {
+  Poll<int> v = Ready(5);
+  Poll<> readiness = v.Readiness();
+  EXPECT_TRUE(readiness.IsReady());
+}
+
+TEST(Poll, ReadinessOnPendingValueReturnsPendingWithoutValue) {
+  Poll<int> v = Pending();
+  Poll<> readiness = v.Readiness();
+  EXPECT_TRUE(readiness.IsPending());
+}
+
 TEST(Poll, ReadyToString) {
   char buffer[128] = {};
   Poll<> v = Ready();
