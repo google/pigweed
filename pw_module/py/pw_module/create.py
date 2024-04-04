@@ -20,6 +20,8 @@ import argparse
 import dataclasses
 from dataclasses import dataclass
 import datetime
+import difflib
+from enum import Enum
 import functools
 import logging
 from pathlib import Path
@@ -33,6 +35,7 @@ from pw_build import generate_modules_lists
 import pw_cli.color
 import pw_cli.env
 from pw_cli.status_reporter import StatusReporter
+from pw_presubmit.tools import colorize_diff
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
@@ -60,6 +63,7 @@ _CREATE = _COLOR.green('create    ')
 _REPLACE = _COLOR.green('replace   ')
 _UPDATE = _COLOR.yellow('update    ')
 _UNCHANGED = _COLOR.blue('unchanged ')
+_IDENTICAL = _COLOR.blue('identical ')
 _REPORT = StatusReporter()
 
 
@@ -78,28 +82,101 @@ def _report_unchanged_file(file_path: Path) -> None:
     _REPORT.ok(_UNCHANGED + relative_file_path)
 
 
+def _report_identical_file(file_path: Path) -> None:
+    """Print a notification a file is identical."""
+    relative_file_path = str(file_path.relative_to(_PW_ROOT))
+    _REPORT.ok(_IDENTICAL + relative_file_path)
+
+
 def _report_edited_file(file_path: Path) -> None:
     """Print a notification a file was modified/edited."""
     relative_file_path = str(file_path.relative_to(_PW_ROOT))
     _REPORT.new(_UPDATE + relative_file_path)
 
 
-def _prompt_user_yes(message: str) -> bool:
-    """Returns true if the user enters 'y' or 'Y'."""
-    decision = prompt(f'{message} [y/N] ')
+class PromptChoice(Enum):
+    """Possible prompt responses."""
+
+    YES = 'yes'
+    NO = 'no'
+    DIFF = 'diff'
+
+
+def _prompt_user(message: str, allow_diff: bool = False) -> PromptChoice:
+    """Prompt the user for to choose between yes, no and optionally diff.
+
+    If the user presses enter with no text the response is assumed to be NO.
+    If the user presses ctrl-c call sys.exit(1).
+
+    Args:
+      message: The message to display at the start of the prompt.
+      allow_diff: If true add a 'd' to the help text in the prompt line.
+
+    Returns:
+      A PromptChoice enum value.
+    """
+    help_text = '[y/N]'
+    if allow_diff:
+        help_text = '[y/N/d]'
+
+    try:
+        decision = prompt(f'{message} {help_text} ')
+    except KeyboardInterrupt:
+        sys.exit(1)  # Ctrl-C pressed
+
+    if not decision or decision.lower().startswith('n'):
+        return PromptChoice.NO
     if decision.lower().startswith('y'):
-        return True
-    return False
+        return PromptChoice.YES
+    if decision.lower().startswith('d'):
+        return PromptChoice.DIFF
+
+    return PromptChoice.NO
 
 
-def _prompt_overwrite(file_path: Path) -> bool:
+def _print_diff(file_name: Path | str, in_text: str, out_text: str) -> None:
+    result_diff = list(
+        difflib.unified_diff(
+            in_text.splitlines(True),
+            out_text.splitlines(True),
+            f'{file_name}  (original)',
+            f'{file_name}  (updated)',
+        )
+    )
+    if not result_diff:
+        return
+    print()
+    print(''.join(colorize_diff(result_diff)))
+
+
+def _prompt_overwrite(file_path: Path, new_contents: str) -> bool:
     """Returns true if a file should be written, prompts the user if needed."""
-    if file_path.is_file():
-        _REPORT.wrn(f'{file_path.relative_to(_PW_ROOT)} already exists.')
-        if not _prompt_user_yes('Overwrite?'):
-            _report_unchanged_file(file_path)
-            return False
-    return True
+    # File does not exist
+    if not file_path.is_file():
+        return True
+
+    # File exists but is identical.
+    old_contents = file_path.read_text(encoding='utf-8')
+    if new_contents and old_contents == new_contents:
+        _report_identical_file(file_path)
+        return False
+
+    file_name = file_path.relative_to(_PW_ROOT)
+    # File exists and is different.
+    _REPORT.wrn(f'{file_name} already exists.')
+
+    while True:
+        choice = _prompt_user('Overwrite?', allow_diff=True)
+        if choice == PromptChoice.DIFF:
+            _print_diff(file_name, old_contents, new_contents)
+        else:
+            if choice == PromptChoice.YES:
+                return True
+            break
+
+    # By default do not overwrite.
+    _report_unchanged_file(file_path)
+    return False
 
 
 # TODO(frolv): Adapted from pw_protobuf. Consolidate them.
@@ -136,7 +213,7 @@ class _OutputFile:
         return ''.join(self._content)
 
     def write(self) -> None:
-        if _prompt_overwrite(self._file):
+        if _prompt_overwrite(self._file, new_contents=self.content):
             _report_write_file(self._file)
             self._file.write_text(self.content)
 
@@ -1018,7 +1095,7 @@ def _create_module(
 
     if module_dir.is_dir():
         _REPORT.wrn(f'Directory {module} already exists.')
-        if not _prompt_user_yes('Continue?'):
+        if _prompt_user('Continue?') == PromptChoice.NO:
             sys.exit(1)
 
     if module_dir.is_file():
@@ -1059,9 +1136,11 @@ def _create_module(
 
     if owners is not None:
         owners_file = module_dir / 'OWNERS'
-        if _prompt_overwrite(owners_file):
+        owners_text = '\n'.join(sorted(owners))
+        owners_text += '\n'
+        if _prompt_overwrite(owners_file, new_contents=owners_text):
             _report_write_file(owners_file)
-            owners_file.write_text('\n'.join(owners))
+            owners_file.write_text(owners_text)
 
     try:
         generators = list(_LANGUAGE_GENERATORS[lang](ctx) for lang in languages)
