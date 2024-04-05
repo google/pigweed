@@ -41,28 +41,42 @@ migrated. See https://fxbug.dev/321267390.
 
 Build the package
 =================
-To build the bt-host package, use the following command:
+To build the bt-host package, use one of the following commands:
 
 .. code-block::
 
-   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg
+   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64
+   # OR
+   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64
 
 Start an emulator
 =================
-To run an emulator, use the following command:
+To run an emulator, use one of the following commands:
 
 .. code-block::
 
    bazel run @fuchsia_products//:core.x64.emu -- --headless
+   # OR
+   bazel run @fuchsia_products//:minimal.arm64.emu -- --headless
 
-Run the component
-=================
-To run the bt-host component, first start an emulator and then use the following
-command:
+Flash a device
+==============
+To flash a vim3, use the following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.component
+   bazel run @fuchsia_products//:core.vim3.flash -- --target <device_serial_num>
+
+Run the component
+=================
+To run the bt-host component, first provision a Fuchsia target and then use one
+of the following command:
+
+.. code-block::
+
+   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64.component
+   # OR
+   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64.component
 
 Run unit tests
 ==============
@@ -118,6 +132,10 @@ level infra target:
 
 .. code-block::
 
+   # Ensure all dependencies are built.
+   bazel build //pw_bluetooth_sapphire/fuchsia:infra
+
+   # Get builder manifest file.
    bazel build --output_groups=builder_manifest //pw_bluetooth_sapphire/fuchsia:infra
 
 The resulting file contains a ``cipd_manifests`` json field which references a

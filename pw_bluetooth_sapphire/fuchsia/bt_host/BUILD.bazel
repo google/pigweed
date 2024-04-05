@@ -63,17 +63,6 @@ fuchsia_component(
     deps = [":hello_world"],
 )
 
-fuchsia_package(
-    name = "pkg",
-    package_name = "bt-host",
-    components = [
-        ":component",
-    ],
-    fuchsia_api_level = "HEAD",
-    platform = fuchsia_platforms.x64,
-    tags = ["manual"],
-)
-
 fuchsia_cc_test(
     name = "hello_gtest",
     size = "small",
@@ -96,26 +85,76 @@ fuchsia_unittest_package(
     ],
 )
 
+fuchsia_package(
+    name = "pkg.x64",
+    package_name = "bt-host",
+    components = [
+        ":component",
+    ],
+    fuchsia_api_level = "HEAD",
+    platform = fuchsia_platforms.x64,
+    tags = ["manual"],
+)
+
+fuchsia_package(
+    name = "pkg.arm64",
+    package_name = "bt-host",
+    components = [
+        ":component",
+    ],
+    fuchsia_api_level = "HEAD",
+    platform = fuchsia_platforms.arm64,
+    tags = ["manual"],
+)
+
 fuchsia_licenses_collection(
-    name = "bt-host_pkg_licenses_collection",
-    root_target = ":pkg",
+    name = "bt_host_x64_pkg_licenses_collection",
+    root_target = ":pkg.x64",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt_host_arm64_pkg_licenses_collection",
+    root_target = ":pkg.arm64",
+    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
-    name = "bt-host_licenses.spdx.json",
+    name = "bt_host_x64_licenses.spdx.json",
     document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
-    licenses = ":bt-host_pkg_licenses_collection",
+    licenses = ":bt_host_x64_pkg_licenses_collection",
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "bt-host",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_spdx(
+    name = "bt_host_arm64_licenses.spdx.json",
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt_host_arm64_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "bt-host",
+    tags = ["manual"],
 )
 
 fuchsia_cipd_releases(
-    name = "bt_host_cipd",
+    name = "bt_host_x64_cipd",
     cipd_prefix = "fuchsia/drivers/bt-host",
     extra_content = {
-        ":bt-host_licenses.spdx.json": "licenses.spdx.json",
+        ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
         ":README.fuchsia.md": "README.fuchsia",
     },
-    pkg = ":pkg",
+    pkg = ":pkg.x64",
+)
+
+fuchsia_cipd_releases(
+    name = "bt_host_arm64_cipd",
+    cipd_prefix = "fuchsia/drivers/bt-host",
+    extra_content = {
+        ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
+        ":README.fuchsia.md": "README.fuchsia",
+    },
+    pkg = ":pkg.arm64",
 )
