@@ -1066,6 +1066,19 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
 
 
+struct LEReadMaximumAdvertisingDataLengthCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.57 LE Read Maximum Advertising Data
+  -- Length command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      max_advertising_data_length
+    -- The maximum length of data supported by the Controller for use as
+    -- advertisement data or scan response data in an advertising event or as
+    -- periodic advertisement data
+    [requires: 0x001F <= this <= 0x0672]
+
+
 struct LESetupISODataPathCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.109 LE Setup ISO Data Path command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
