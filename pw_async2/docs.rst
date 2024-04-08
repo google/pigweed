@@ -155,6 +155,9 @@ C++ Utilities
 .. doxygenclass:: pw::async2::PendFuncTask
   :members:
 
+.. doxygenclass:: pw::async2::PendableAsTask
+  :members:
+
 .. toctree::
    :hidden:
    :maxdepth: 1
