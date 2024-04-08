@@ -26,6 +26,7 @@ else()
   pw_add_library(pw_build_info.build_id STATIC
     HEADERS
       public/pw_build_info/build_id.h
+      public/pw_build_info/util.h
     PUBLIC_INCLUDES
       public
     PUBLIC_DEPS
