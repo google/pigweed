@@ -109,6 +109,9 @@ cc_library_static {
     host_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_backends",
+    ],
     srcs: [
         "base64.cc",
     ],

@@ -25,8 +25,7 @@ cc_library_static {
         "public",
     ],
     defaults: [
-        // TODO: b/331458726 - List common backends as static_libs.
-        "pw_android_common_backends_no_whole_libs",
+        "pw_android_common_backends",
     ],
     header_libs: [
         "pw_assert",
