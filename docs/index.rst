@@ -88,6 +88,8 @@ and log viewer for each new project!
 
    Using pw_console to interact with a device
 
+.. _docs-root-changelog:
+
 ---------------------
 What's new in Pigweed
 ---------------------

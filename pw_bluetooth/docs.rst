@@ -104,6 +104,8 @@ defined:
 - L2CAP
 - H4
 
+.. _module-pw_bluetooth-usage:
+
 Usage
 =====
 1. Add Emboss to your project as described in
@@ -158,6 +160,7 @@ Usage
    resolve this. Similarly, you need to rebuild in order for .emb file updates
    to be reflected in the generated headers.
 
+.. _module-pw_bluetooth-contributing:
 
 Contributing
 ============

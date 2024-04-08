@@ -184,6 +184,8 @@ The function is now available through the ``pw`` command, and will be listed in
      -h, --help       show this help message and exit
      --device DEVICE  Set which device to target
 
+.. _module-pw_cli-aliases:
+
 Defining a simple alias
 -----------------------
 For simpler ``pw`` subcommands that effectively only need to act as command line

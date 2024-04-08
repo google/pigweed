@@ -9,10 +9,16 @@ update.
 The :ref:`docs-contrib-docs-changelog-appendix` contains some general
 information about how Pigweed approaches changelogs.
 
+.. _docs-contrib-docs-changelog-timeline:
+
 --------
-Overview
+Timeline
 --------
+.. _//pw_docgen/py/pw_docgen/sphinx/pigweed_live.py: https://cs.opensource.google/pigweed/pigweed/+/main:pw_docgen/py/pw_docgen/sphinx/pigweed_live.py
+
 #. You should start working on the update on the Thursday before Pigweed Live.
+   The Pigweed Live schedule is listed in
+   `//pw_docgen/py/pw_docgen/sphinx/pigweed_live.py`_.
    Follow the :ref:`docs-contrib-docs-changelog-instructions`.
 
 #. You should have a rough draft pushed up to Gerrit and ready for review by
@@ -26,9 +32,10 @@ Overview
 Instructions
 ------------
 #. Use the :ref:`changelog tool <docs-contrib-docs-changelog-tool>` to kickstart
-   your rough draft. This tool grabs all the commits between the start and end
-   dates that you specify, organizes them, and then outputs reStructuredText
-   (reST).
+   your rough draft.
+
+   This tool grabs all the commits between the start and end dates that you
+   specify, organizes them, and then outputs reStructuredText (reST).
 
 #. Copy-paste the reST into ``//docs/changelog.rst``. The new text should go
    right below the line that says ``.. _docs-changelog-latest:``.
@@ -36,19 +43,30 @@ Instructions
 #. Go to the last bi-weekly update (the one that was at the top before you added
    your new text) and delete the line that contains
    ``.. changelog_highlights_start`` and also the line that contains
-   ``.. changelog_highlights_end``. ``//docs/index.rst`` uses these comments
-   to automatically pull the latest changelog highlights onto the homepage.
+   ``.. changelog_highlights_end``.
+
+   These comments are how the :ref:`docs-root-changelog` section on
+   the homepage (``https://pigweed.dev``) is populated.
 
 #. Review each section of the new text:
 
-   * Add a short 1-paragraph summary describing notable changes. Examples of
-     notable changes include API changes or a unified collection of commits
-     representing a larger body of work.
+   * Review each commit. You just need to get a sense of whether there were
+     any notable customer-facing updates; you don't need to understand every
+     detail of the changes.
 
-   * If the commits were trivial or obvious, you don't need to add a summary.
+   * Add a short 1-paragraph summary describing notable changes such as new
+     methods or a collection of commits representing a larger body of work.
+
+   * If the commits were trivial or obvious, don't add a summary.
+
+.. tip::
+
+   In the commit message or the updated documentation there's usually
+   a sentence that accurately sums up the change. When you find accurate
+   summaries like this, you can use that content as your changelog description.
 
 When in doubt about anything, look at ``//docs/changelog.rst`` and follow the
-previous precedents.
+previous content.
 
 .. _docs-contrib-docs-changelog-tool:
 
@@ -79,9 +97,13 @@ Changelog tool
 Appendix
 --------
 
+.. _docs-contrib-docs-changelog-release-notes:
+
 Why "changelog" and not "release notes"?
 ========================================
 Because Pigweed doesn't have releases.
+
+.. _docs-contrib-docs-changelog-organization:
 
 Why organize by module and category?
 ====================================
