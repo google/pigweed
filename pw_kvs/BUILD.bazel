@@ -91,6 +91,15 @@ cc_library(
 )
 
 cc_library(
+    name = "test_key_value_store",
+    hdrs = ["public/pw_kvs/test_key_value_store.h"],
+    deps = [
+        ":pw_kvs",
+        "//pw_sync:borrow",
+    ],
+)
+
+cc_library(
     name = "fake_flash",
     srcs = [
         "fake_flash_memory.cc",
@@ -331,6 +340,86 @@ pw_cc_test(
         ":pw_kvs",
         "//pw_log",
         "//pw_random",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "flash_partition_test_100_iterations",
+    testonly = True,
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=100",
+        "PW_FLASH_TEST_WRITE_SIZE=1",
+    ],
+    deps = [
+        ":flash_test_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "flash_partition_test_2_iterations",
+    testonly = True,
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=2",
+        "PW_FLASH_TEST_WRITE_SIZE=1",
+    ],
+    deps = [
+        ":flash_test_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "flash_partition_test_100_iterations_256_write",
+    testonly = True,
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=100",
+        "PW_FLASH_TEST_WRITE_SIZE=256",
+    ],
+    deps = [
+        ":flash_test_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "flash_partition_test_2_iterations_256_write",
+    testonly = True,
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=2",
+        "PW_FLASH_TEST_WRITE_SIZE=256",
+    ],
+    deps = [
+        ":flash_test_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "key_value_store_initialized_test",
+    testonly = True,
+    srcs = ["key_value_store_initialized_test.cc"],
+    deps = [
+        ":crc16",
+        ":flash_test_partition",
+        ":pw_kvs",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_log",
+        "//pw_string:builder",
         "//pw_unit_test",
     ],
 )
