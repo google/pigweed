@@ -59,6 +59,7 @@ pw_doc_group("core_docs") {
     "get_started/first_time_setup.rst",
     "get_started/index.rst",
     "get_started/upstream.rst",
+    "get_started/zephyr.rst",
     "glossary.rst",
     "infra/ci_cq_intro.rst",
     "infra/index.rst",

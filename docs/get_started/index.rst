@@ -38,7 +38,17 @@ Create a Pigweed-based project
       Fork our minimal, Bazel-based starter code. Bazel is the recommended
       build system for new projects using Pigweed.
 
-.. grid:: 2
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`rocket` Zephyr
+      :link: docs-quickstart-zephyr
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Learn how to set up a C++-based Zephyr project that is ready to use
+      Pigweed and then build the app with Zephyr's ``native_sim`` board.
+
+.. grid:: 1
 
    .. grid-item-card:: :octicon:`code` Examples
       :link: https://pigweed.dev/examples/index.html
@@ -50,6 +60,9 @@ Create a Pigweed-based project
       recommended build system for new projects using Pigweed, whereas the
       examples repo uses GN.
 
+
+.. grid:: 2
+
    .. grid-item-card:: :octicon:`code` Kudzu
       :link: docs-kudzu
       :link-type: ref
@@ -57,15 +70,6 @@ Create a Pigweed-based project
 
       Study the code of Kudzu, a just-for-fun Maker Faire 2023 project that
       demonstrates complex Pigweed usage. This project also uses GN.
-
-.. grid:: 2
-
-   .. grid-item-card:: :octicon:`list-ordered` Zephyr
-      :link: docs-os-zephyr-get-started
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Instructions on how to use Pigweed in a Zephyr-based project.
 
    .. grid-item-card:: :octicon:`list-ordered` Upstream Pigweed
       :link: docs-get-started-upstream
@@ -81,6 +85,7 @@ Create a Pigweed-based project
    First-time setup <first_time_setup>
    Bazel quickstart <bazel>
    Bazel integration <bazel_integration>
+   Zephyr quickstart <zephyr>
    Upstream Pigweed <upstream>
 
 ------------------------------------------
