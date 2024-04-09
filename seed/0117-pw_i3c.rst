@@ -1,0 +1,715 @@
+.. _seed-0117:
+
+=============
+0117: I3C
+=============
+.. seed::
+   :number: 117
+   :name: I3C
+   :status: Accepted
+   :proposal_date: 2023-10-30
+   :authors: Jack Chen
+   :cl: 178350
+   :facilitator: Alexei Frolov
+
+-------
+Summary
+-------
+A new peripheral protocol, I3C (pronounced eye-three-see) was introduced to
+electronic world and it has been widely accepted by SoC and sensor
+manufacturers. This seed is to propose a new front-end library pw_i3c, to help
+communicate with devices on I3C bus.
+
+----------
+Motivation
+----------
+Though widely used, I²C peripheral bus has several significant shortages, for
+example the low bus speed, extra physical line to carry interrupt from each
+device on the I²C bus, etc. To cope with higher requirements and to address
+shortages of I²C, MIPI proposed a new fast, low-power and two-wire peripheral
+protocol, I3C.
+
+I3C could be regarded as improved I²C. But in the meantime, it is a new protocol
+which is different to I²C in both hardware and software. Some important
+differences include:
+
+1. I3C SDA uses open-drain mode when necessary for legacy I²C compatibility,
+   but switches to push-pull outputs whenever possible.
+2. I3C SCL runs in only in pull-pull mode and can only be driven by I3C
+   initiator.
+3. I3C devices supports dynamic address assignment (DAA) and has higher address
+   requirements.
+4. I3C needs bus initialization and DAA before it is ready to use.
+5. I3C has a standardized command set, called common command codes (CCC).
+6. I3C supports In-Band interrupt and hot-join.
+7. I3C device is identified by a 48-bit Provisioned ID (Manufacturer ID + Part
+   ID + Instance ID).
+
+In conclusion, it is worth providing an independent library pw_i3c to help
+initialize I3C initiator and communicate with I3C devices on the bus.
+
+--------------------------
+Proposal (Detailed design)
+--------------------------
+Since I3C is very similar to I²C, following proposal is to create a standalone
+library pw_i3c, which shares a similar structure as pw_i2c.
+
+device type
+-----------
+
+The ``DeviceType`` is used to help differentiate legacy I²C devices and I3C
+devices on one I3C bus.
+
+.. code-block:: c++
+
+   enum class DeviceType : bool {
+     kI2c,
+     kI3c,
+   };
+
+Address
+-------
+
+The ``Address`` is a helper class to represent addresses which are used by
+``pw_i3c`` APIs. In I3C protocol, addresses are differentiated by I²C (static)
+address and I3C (active or dynamic) address. The reason why device type is
+embedded into address is that transactions for I²C and I3C devices are
+different. So ``Initiator`` could tell the device type just by the provided
+``Address`` object.
+
+Apart from creating and checking ``Address`` at compile time, a helper
+constructor to create and check ``Address`` at runtime is created, with
+following reasons:
+
+1. A new active/dynamic address could be assigned to I3C devices at run time.
+2. New devices could hot-join the bus at run time.
+
+.. code-block:: c++
+
+   class Address {
+    public:
+     static constexpr uint8_t kHotJoinAddress = 0x02;
+     static constexpr uint8_t kBroadcastAddress = 0x7E;
+     static constexpr uint8_t kStaticMaxAddress = 0x7F;
+     // For I3C, the active (dynamic) address restriction is dynamic (depending
+     // on devices on the bus, details can be found in "MIPI I3C Basic
+     // Specification Version 1.1.1" chapter 5.1.2.2.5). But to simplify the
+     // design, the strictest rule is applied. And there will be 108 addresses
+     // free for dynamic address chosen.
+     static constexpr uint8_t kDynamicMinAddress = 0x08;
+     static constexpr uint8_t kDynamicMaxAddress = 0x7D;
+
+     // Helper constructor to ensure the address fits in the address space at
+     // compile time, skipping the construction time assert.
+     template <DeviceType kDeviceType, uint8_t kAddress>
+     static constexpr Address Create() {
+       static_assert(!IsOutOfRange(kDeviceType, kAddress));
+       static_assert((DeviceType::kI2c == kDeviceType) ||
+                     !SingleBitErrorDetection(kAddress));
+       return Address{kDeviceType, kAddress};
+     }
+
+     // Helper constructor to create the address at run time.
+     // Returns std::nullopt if provided type and address does not fit address
+     // rules.
+     static constexpr std::optional<Address> Create(
+         DeviceType device_type, uint8_t address) {
+       if (IsOutOfRange(device_type, address)) {
+         return std::nullopt;
+       }
+       if (DeviceType::kI3c == device_type && SingleBitErrorDetection(address)) {
+         return std::nullopt;
+       }
+       return Address{type, address};
+     }
+
+     // Return the type of address.
+     constexpr DeviceType GetType() const;
+
+     // Return the address.
+     constexpr uint8_t GetAddress() const;
+
+    private:
+     static constexpr uint8_t kAddressMask = 0x7F;
+     static constexpr int kTypeShift = 7;
+     static constexpr uint8_t kTypeMask = 0x01;
+
+     constexpr Address(DeviceType type, uint8_t address)
+         : packed_address_{Pack(type, address)} {}
+
+     uint8_t packed_address_;
+   };
+
+Ccc
+---
+
+Common Command Codes are categorized into broadcast(Command Codes from 0x00 to
+0x7F) and direct(Command Codes from 0x80 to 0xFE). The rational behind it is
+broadcast CCC can only be write and is executed in one transaction, but direct
+CCC can be both write and read, and is executed in two transactions. We can
+eliminate extra CCC type check in initiator CCC API.
+
+.. code-block:: c++
+
+   enum class CccBroadcast : uint8_t {
+     kEnc = 0x00,
+     kDisec = 0x01,
+     kEntdas0 = 0x02,
+     ...
+     kSetxtime = 0x28,
+     kSetaasa = 0x29,
+   }
+
+   enum class CccDirect : uint8_t {
+     kEnc = 0x80,
+     kDisec = 0x81,
+     kEntas0 = 0x82,
+     ...
+     kSetxtime = 0x98,
+     kGetxtime = 0x99,
+   };
+
+   inline constexpr uint8_t kCccDirectBit = 7;
+
+   enum class CccAction : bool {
+     kWrite,
+     kRead,
+   };
+
+Initiator
+---------
+
+.. inclusive-language: disable
+
+Similar as ``pw::i2c``, ``Initiator`` is the common, base driver interface for
+initiating thread-safe transactions with devices on an I3C bus. Other
+documentation may call this style of interface an “master”, “central”, or
+“controller”.
+
+.. inclusive-language: enable
+
+The main difference by comparison with I²C, is I3C initiator needs a bus
+initialization and dynamic address assignment (DAA) step, before it is fully
+functional. And after first bus initialization, I3C initiator should be able to
+do bus re-initialization anytime when the bus is free. However, different
+backend implementations may deal with this part differently. For example, Linux
+does not expose I3C bus to userspace, which means users cannot control bus
+initialization. NXP Mcuxpresso SDK exposes I3C as a pure library to users, so it
+is users' responsibility to initialize the bus and perform DAA to get a usable
+initiator. Zephyr provides more functions than Linux regarding I3C, which
+makes I3C usage in Zephyr looks more likely to NXP Mcuxpresso SDK.
+
+Considering the complexity of different backend implementations of I3C bus, it
+is better to have an "Initiator Maker" to take care of making an I3C
+``Initiator``. And this is not considered in the first version of ``pw_i3c``
+design.
+
+.. code-block:: c++
+
+   // PID is the unique identifier to an I3C device.
+   struct Pid {
+     uint16_t manuf_id = 0;
+     uint16_t part_id = 0;
+     uint16_t instance_id = 0;
+
+     friend constexpr bool operator==(Pid const& lhs, Pid const& rhs) {
+       return (lhs.manuf_id == rhs.manuf_id) && (lhs.part_id == rhs.part_id) &&
+              (lhs.instance_id == rhs.instance_id);
+     }
+     friend constexpr bool operator!=(Pid const& lhs, Pid const& rhs) {
+       return (lhs.manuf_id != rhs.manuf_id) || (lhs.part_id != rhs.part_id) ||
+              (lhs.instance_id != rhs.instance_id);
+     }
+
+    // Concat manuf_id, part_id and instance_id to a pid in 64-bit.
+    constexpr uint64_t AsUint64(Pid const pid) {
+      return (static_cast<uint64_t>(pid.manuf_id) << 33) |
+             (static_cast<uint64_t>(pid.part_id) << 16) |
+             (static_cast<uint64_t>(pid.instance_id) << 12);
+    }
+
+    // Split a 64-bit pid into manuf_id, part_id and instance_id (struct Pid).
+    static constexpr Pid FromUint64(const uint64_t pid) {
+      return Pid{
+          .manuf_id = ExtractBits<uint16_t, 47, 33>(pid),
+          .part_id = ExtractBits<uint16_t, 31, 16>(pid),
+          .instance_id = ExtractBits<uint16_t, 15, 12>(pid)};
+    }
+
+  };
+
+  // I3C supports in-band interrupt (IBI), but generalize the name to cover
+  // traditional interrupts.
+  // For IBI, the argument can be used to store data transferred.
+  // If the handler is queued in a workqueue, the data could be of any length.
+  // If the handler is executed inside CPU ISR directly, the data should only
+  // be mandatory data byte.
+  using InterruptHandler = ::pw::Function<void(ByteSpan)>;
+
+  class Initiator {
+   public:
+    virtual ~Initiator() = default;
+
+    // Pid is the unique identifier to an I3C device and it should be known to
+    // users through datasheets, like static addresses to I²C or I3C devices.
+    // But active (dynamic) address to an I3C device is changeable during
+    // run-time. Users could use this API to retrieve active address through
+    // PID.
+    //
+    // There are other information which users may be interested to know about
+    // an I3C device, like Bus Characteristics Register (BCR) and Device
+    // Characteristic Register(s) (DCR). But they can be read through direct
+    // read CCC API (ReadDirectCcc).
+    //
+    // Returns:
+    // Dynamic Address - Success.
+    // NOT_FOUND - Provided pid does not match with any active i3c device.
+    Result<Address> RetrieveDynamicAddressByPid(Pid pid);
+
+    // Perform a broadcast CCC transaction.
+    // ccc_id: the broadcast CCC ID.
+    // buffer: payload to broadcast.
+    //
+    // Returns:
+    // OK - Success.
+    // INVALID_ARGUMENT - provided ccc_id is not supported.
+    // UNAVAILABLE - NACK condition occurred, meaning there are no active I3C
+    //   devices on the bus.
+    // Other status codes as defined by backend.
+    Status WriteBroadcastCcc(CccBroadcast ccc_id, ConstByteSpan buffer);
+    Status WriteBroadcastCcc(CccBroadcast ccc_id,
+			     const void* buffer,
+			     size_t size_bytes);
+
+    // Perform a direct write CCC transaction.
+    // ccc_id: the direct CCC ID.
+    // device_address: the address which the CCC targets for.
+    // buffer: payload to write.
+    //
+    // Returns:
+    // OK - Success.
+    // INVALID_ARGUMENT - provided ccc_id is not supported, or device_address is
+    //   for I3C devices.
+    // UNAVAILABLE - NACK condition occurred, meaning there is no active I3C
+    //   device with the provided device_address or it is busy now.
+    // Other status codes as defined by backend.
+    Status WriteDirectCcc(CccDirect ccc_id,
+                          Address device_address,
+                          ConstByteSpan buffer);
+    Status WriteDirectCcc(CccDirect ccc_id,
+                          Address device_address,
+                          const void* buffer,
+                          size_t size_bytes);
+
+    // Perform a direct read CCC transaction.
+    // ccc_id: the direct CCC ID.
+    // device_address: the address which the CCC targets for.
+    // buffer: payload to read.
+    //
+    // Returns:
+    // OK - Success.
+    // INVALID_ARGUMENT - provided ccc_id is not supported, or device_address is
+    //   for I3C devices.
+    // UNAVAILABLE - NACK condition occurred, meaning there is no active I3C
+    //   device with the provided device_address or it is busy now.
+    // Other status codes as defined by backend.
+    Status ReadDirectCcc(CccDirect ccc_id,
+                         Address device_address,
+                         ByteSpan buffer);
+    Status ReadDirectCcc(CccDirect ccc_id,
+                         Address device_address,
+                         void* buffer,
+                         size_t size_bytes);
+
+    // Write bytes and read bytes (this is normally executed in two independent
+    // transactions).
+    //
+    // Timeout is no longer needed in I3C transactions because only I3C
+    // initiator drives the clock in push-pull mode, and devices on the bus
+    // cannot stretch the clock.
+    //
+    // Returns:
+    // Ok - Success.
+    // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+    //   not respond or was unable to process the request.
+    // Other status codes as defined by backend.
+    Status WriteReadFor(Address device_address,
+                        ConstByteSpan tx_buffer,
+                        ByteSpan rx_buffer);
+    Status WriteReadFor(I3cResponder device,
+                        const void* tx_buffer,
+                        size_t tx_size_bytes,
+                        void* rx_buffer,
+                        size_t rx_size_bytes);
+
+    // Write bytes.
+    //
+    // Returns:
+    // OK - Success.
+    // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+    //   not respond or was unable to process the request.
+    // Other status codes as defined by backend.
+    Status WriteFor(Address device_address, ConstByteSpan tx_buffer);
+    Status WriteFor(Address device_address,
+                    const void* tx_buffer,
+                    size_t tx_size_bytes);
+
+    // Read bytes.
+    //
+    // Returns:
+    // OK - Success.
+    // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+    //   not respond or was unable to process the request.
+    // Other status codes as defined by backend.
+    Status ReadFor(Address device_address, ByteSpan rx_buffer);
+    Status ReadFor(Address device_address,
+                   void* rx_buffer,
+                   size_t rx_size_bytes);
+
+    // Probes the device for an ACK after only writing the address.
+    // This is done by attempting to read a single byte from the specified
+    // device.
+    //
+    // Returns:
+    // OK - Success.
+    // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+    //   not respond or was unable to process the request.
+    Status ProbeDeviceFor(Address device_address);
+
+    // Sets a (IBI) handler to execute when an interrupt is triggered from a
+    // device with the provided address. Handler for one address should be
+    // registered only once, unless it is cleared. Registration twice with
+    // same address should fail.
+    //
+    // Note that hot-join handler could be registered with this function since
+    // hot-join is sent through IBI.
+    //
+    // This handler is finally executed by I3C initiator, which means it may
+    // include any valid I3C actions (write and read). When I3C write/read
+    // happens, the interrupt handler is more like an I3C transaction than a
+    // traditional interrupt. Different I3C initiators may execute the handler
+    // in different ways. Some may queue the work on a workqueue and some may
+    // execute the handler directly inside IBI IRQ. Users should be aware of the
+    // backend algorithm and when execution happens in IBI IRQ, they should just
+    // read the mandatory data byte out through the handler and perform other
+    // actions in a different thread.
+    //
+    // Warning:
+    // This method is not thread-safe and cannot be used in interrupt handlers.
+    //
+    // Returns:
+    // OK - The interrupt handler was configured.
+    // INVALID_ARGUMENT - The handler is empty, or the handler is for IBI but
+    //   the address is not for an I3C device.
+    // Other status codes as defined by the backend.
+    Status SetInterruptHandler(Address device_address,
+                               InterruptHandler&& handler);
+
+    // Clears the interrupt handler.
+    //
+    // Warning:
+    // This method is not thread-safe and cannot be used in interrupt handlers.
+    //
+    // Returns:
+    // OK - The interrupt handler was cleared
+    // INVALID_ARGUMENT - the handler is for IBI but the address is not for an
+    //    I3C device.
+    // Other status codes as defined by the backend.
+    Status ClearInterruptHandler(Address device_address);
+
+    // Enables interrupts which will trigger the interrupt handler.
+    //
+    // Warning:
+    // This method is not thread-safe and cannot be used in interrupt handlers.
+    //
+    // Preconditions:
+    // A handler has been set using `SetInterruptHandler()`.
+    //
+    // Returns:
+    // OK - The interrupt handler was enabled.
+    // INVALID_ARGUMENT - the handler is for IBI but the address is not for an
+    //    I3C device.
+    // Other status codes as defined by the backend.
+    Status EnableInterruptHandler(Address device_address);
+
+    // Disables interrupts which will trigger the interrupt handler.
+    //
+    // Warning:
+    // This method is not thread-safe and cannot be used in interrupt handlers.
+    //
+    // Preconditions:
+    // A handler has been set using `SetInterruptHandler()`.
+    //
+    // Returns:
+    // OK - The interrupt handler was disabled.
+    // INVALID_ARGUMENT - the handler is for IBI but the address is not for an
+    //    I3C device.
+    // Other status codes as defined by the backend.
+    Status DisableInterruptHandler(Address device_address);
+
+   private:
+    virtual Result<Address> DoRetrieveDynamicAddressByPid(Pid pid) = 0;
+    virtual Status DoTransferCcc(CccAction read_or_write,
+                                 uint8_t ccc_id,
+                                 std::optional<Address> device_address,
+                                 ByteSpan buffer) = 0;
+    virtual Status DoWriteReadFor(Address device_address,
+                                  ConstByteSpan tx_buffer,
+                                  ByteSpan rx_buffer) = 0;
+    virtual Status DoSetInterruptHandler(Address address,
+                                         InterruptHandler&& handler) = 0;
+    virtual Status DoEnableInterruptHandler(Address address, bool enable) = 0;
+  };
+
+Device
+------
+
+Same as ``pw::i2c::Device``, a ``Device`` class is used in ``pw::i3c`` to
+write/read arbitrary chunks of data over a bus to a specific device, or perform
+other I3C operations, e.g. direct CCC.
+Though PID is the unique identifier for I3C devices, considering backward
+compatibility with I²C devices, this object also wraps the Initiator API with
+an active ``Address``. Application should initiate or be notified the
+``Address`` change and update the ``Address`` in ``Device`` object.
+
+.. code-block:: c++
+
+   class Device {
+    public:
+     // It is users' responsibility to get and pass the active (dynamic) address
+     // when creating a ``Device``. If the dynamic address of an I3C device is
+     // unknown, users could get it through initiator:
+     // pw::i3c::Initiator::RetrieveDynamicAddressByPid();
+     constexpr Device(Initiator& initiator, Address device_address, Pid pid)
+        : initiator_(initiator),
+          device_address_(device_address),
+          pid_(pid) {}
+
+     // For I2C devices connected to I3C bus, pid_ is default-initialized to be
+     // std::nullopt.
+     constexpr Device(Initiator& initiator, Address device_address)
+        : initiator_(initiator),
+          device_address_(device_address) {}
+
+     Device(const Device&) = delete;
+     Device(Device&&) = default;
+     ~Device() = default;
+
+     // Perform a direct write CCC transaction.
+     // ccc_id: the direct CCC ID.
+     // buffer: payload to write.
+     //
+     // Returns:
+     // OK - Success.
+     // INVALID_ARGUMENT - provided ccc_id is not supported, or device_address_
+     //   is not for I3C devices.
+     // UNAVAILABLE - NACK condition occurred, meaning there is no active I3C
+     //   device with the provided device_address or it is busy now.
+     // Other status codes as defined by backend.
+     Status WriteDirectCcc(CccDirect ccc_id, ConstByteSpan buffer);
+     Status WriteDirectCcc(CccDirect ccc_id,
+                           const void* buffer,
+                           size_t size_bytes);
+
+     // Perform a direct read CCC transaction.
+     // ccc_id: the direct CCC ID.
+     // buffer: payload to read.
+     //
+     // Returns:
+     // OK - Success.
+     // INVALID_ARGUMENT - provided ccc_id is not supported, or device_address_
+     //   is not for I3C devices.
+     // UNAVAILABLE - NACK condition occurred, meaning there is no active I3C
+     //   device with the provided device_address or it is busy now.
+     // Other status codes as defined by backend.
+     Status ReadDirectCcc(CccDirect ccc_id, ByteSpan buffer);
+     Status ReadDirectCcc(CccDirect ccc_id,
+                          const void* buffer,
+                          size_t size_bytes);
+
+     // Write bytes and read bytes (this is normally executed in two independent
+     // transactions).
+     //
+     // Timeout is no longer needed in I3C transactions because only I3C
+     // initiator drives the clock in push-pull mode, and devices on the bus
+     // cannot stretch the clock.
+     //
+     // Returns:
+     // OK - Success.
+     // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+     //   not respond or was unable to process the request.
+     // Other status codes as defined by backend.
+     Status WriteReadFor(ConstByteSpan tx_buffer, ByteSpan rx_buffer);
+     Status WriteReadFor(const void* tx_buffer,
+                         size_t tx_size_bytes,
+                         void* rx_buffer,
+                         size_t rx_size_bytes);
+
+     // Write bytes.
+     //
+     // Returns:
+     // OK - Success.
+     // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+     //   not respond or was unable to process the request.
+     // Other status codes as defined by backend.
+     Status WriteFor(ConstByteSpan tx_buffer);
+     Status WriteFor(const void* tx_buffer, size_t tx_size_bytes);
+
+     // Read bytes.
+     //
+     // Returns:
+     // Ok - Success.
+     // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+     //   not respond or was unable to process the request.
+     // Other status codes as defined by backend.
+     Status ReadFor(ByteSpan rx_buffer);
+     Status ReadFor(void* rx_buffer, size_t rx_size_bytes);
+
+     // Probes the device for an ACK after only writing the address.
+     // This is done by attempting to read a single byte from this device.
+     //
+     // Returns:
+     // Ok - Success.
+     // UNAVAILABLE - NACK condition occurred, meaning the addressed device did
+     //   not respond or was unable to process the request.
+     Status ProbeFor();
+
+     // Sets a (IBI) handler to execute when an interrupt is triggered from a
+     // device with the provided address. Handler for one address should be
+     // registered only once, unless it is cleared. Registration twice with
+     // same address should fail.
+     //
+     // This handler is finally executed by I3C initiator, which means it may
+     // include any valid I3C actions (write and read). When I3C write/read
+     // happens, the interrupt handler is more like an I3C transaction than a
+     // traditional interrupt. Different I3C initiators may execute the handler
+     // in different ways. Some may queue the work on a workqueue and some may
+     // execute the handler directly inside IBI IRQ. Users should be aware of the
+     // backend algorithm and when execution happens in IBI IRQ, they should just
+     // read the mandatory data byte out through the handler and perform other
+     // actions in a different thread.
+     //
+     // Warning:
+     // This method is not thread-safe and cannot be used in interrupt handlers.
+     // Do not register hot-join handler for I3C devices as hot-join handler is
+     // initiator specific, not for a single device.
+     //
+     // Returns:
+     // OK - The interrupt handler was configured.
+     // INVALID_ARGUMENT - The handler is empty, or the handler is for IBI but
+     //   the device is an I3C device.
+     // Other status codes as defined by the backend.
+     Status SetInterruptHandler(InterruptHandler&& handler);
+
+     // Clears the interrupt handler.
+     //
+     // Warning:
+     // This method is not thread-safe and cannot be used in interrupt handlers.
+     //
+     // Returns:
+     // OK - The interrupt handler was cleared
+     // INVALID_ARGUMENT - the handler is for IBI but the device is an I3C device.
+     // Other status codes as defined by the backend.
+     Status ClearInterruptHandler();
+
+     // Enables interrupts which will trigger the interrupt handler.
+     //
+     // Warning:
+     // This method is not thread-safe and cannot be used in interrupt handlers.
+     //
+     // Preconditions:
+     // A handler has been set using `SetInterruptHandler()`.
+     //
+     // Returns:
+     // OK - The interrupt handler was enabled.
+     // INVALID_ARGUMENT - the handler is for IBI but the device is an I3C device.
+     // Other status codes as defined by the backend.
+     Status EnableInterruptHandler();
+
+     // Disables interrupts which will trigger the interrupt handler.
+     //
+     // Warning:
+     // This method is not thread-safe and cannot be used in interrupt handlers.
+     //
+     // Preconditions:
+     // A handler has been set using `SetInterruptHandler()`.
+     //
+     // Returns:
+     // OK - The interrupt handler was disabled.
+     // INVALID_ARGUMENT - the handler is for IBI but the device is an I3C device.
+     // Other status codes as defined by the backend.
+     Status DisableInterruptHandler();
+
+     // Update device address during run-time actively.
+     //
+     // Warning:
+     // This function is dedicatedly to I3C devices.
+     void UpdateAddressActively(Address new_address);
+
+     // Update device address during run-time Passively.
+     // initiator_ will be responsible for retrieving the dynamic address and
+     // substitute the device_address_.
+     //
+     // Warning:
+     // This function is dedicatedly to I3C devices.
+     //
+     // Returns:
+     // OK - Success.
+     // UNIMPLEMENTED - pid is empty (I²C device).
+     // NOT_FOUND - initiator_ fails to retrieve dynamic address based on pid_.
+     Status UpdateAddressPassively();
+
+    private:
+     Initiator& initiator_;
+     Address device_address_;
+     std::optional<Pid> pid_;
+   };
+
+------------
+Alternatives
+------------
+Since I3C is similar to I²C and pw_i3c is similar to pw_i2c, instead of creating
+a standalone library, an alternative solution is to combine pw_i3c and pw_i2c,
+and providing a single library pw_ixc, or other suitable names. And in this
+comprehensive library, I3C-related features could be designed to be optional.
+
+On one hand, this solution could reuse a lot of code and simplify some work in
+user level, if users want to abstract usage of I²C and I3C in application.
+On the other hand, it also brings churn to existing projects using pw_i2c, and
+ambiguity and confusion in the long run (I²C is mature, but I3C is new and
+actively improving).
+
+--------------
+Open Questions
+--------------
+1. As mentioned in the description of I3C ``Initiator`` class, the creation of a
+   fully functional ``Initiator`` would be handled by a different class.
+
+2. Because there are two types of ``Address`` in I3C, the static and dynamic,
+   the ``pw::i3c::Address`` is not compatible with ``pw::i2c::Address``. So when
+   users try to create an ``Address`` for an I²C device, they need to carefully
+   choose the correct class depending on which bus the device is connected to.
+   This class may cause bigger concern if ``Address`` is needed to be shared
+   through interface in application code.
+   But the problem is resolvable by templating ``Address`` in caller code.
+   Also, we can have a helper function in ``pw::i3c::Address``, which consumes a
+   ``pw::i2c::Addres``s and create a ``pw::i3c::Address``. This helper will be
+   added and discussed further in a following patch.
+
+3. ``DeviceType`` is embedded into ``Address``. So ``pw::i3c::Initiator`` could
+   tell the device type (I²C or I3C) based on provided ``Address``. But this is
+   not necessary because Initiator has performed DAA during initialization so it
+   should know which addresses have been assigned to I3C devices.
+   In this case, the only advantage of this design is to help applying address
+   restriction during creating ``Address`` object. Should address restriction be
+   taken care of by HAL? Though fewer, I²C has reserved addresses, too, but they
+   are not checked in ``pw::i2c::Address``.
+
+4. ``RegisterDevice`` for I3C is the same as I²C, in protocol. To read/write
+   from a register, the ``Initiator`` sends an active address on the bus. Once
+   acknowledged, it will send the register address followed by data.
+   So the ideal design is to abstract ``RegisterDevice`` across I²C and I3C, or
+   maybe even other peripheral buses (e.g. SPI and DSI). However, the underlying
+   register operation functions are different. It is better to be handled in a
+   separate SEED.
+

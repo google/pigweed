@@ -162,9 +162,9 @@ pw_seed("0116") {
 }
 
 pw_seed("0117") {
-  changelist = 178350
+  sources = [ "0117-pw_i3c.rst" ]
   title = "pw_i3c"
-  status = "Last Call"
+  status = "Accepted"
   author = "Jack Chen"
   facilitator = "Alexei Frolov"
 }
