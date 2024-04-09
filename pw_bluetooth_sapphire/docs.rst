@@ -127,8 +127,8 @@ These presubmits can be replicated with the following command:
 
 Uploading to CIPD
 =================
-Pigweed infrastructure uploads bt-host's artifacts by building bt-host's top
-level infra target:
+Pigweed infrastructure uploads bt-host's artifacts to
+`fuchsia/prebuilt/bt-host`_ by building bt-host's top level infra target:
 
 .. code-block::
 
@@ -155,3 +155,4 @@ Roadmap
 * Add CLI for controlling stack over RPC
 
 .. _bt-host component: https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
+.. _fuchsia/prebuilt/bt-host: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-host

@@ -141,7 +141,7 @@ fuchsia_licenses_spdx(
 
 fuchsia_cipd_releases(
     name = "bt_host_x64_cipd",
-    cipd_prefix = "fuchsia/drivers/bt-host",
+    cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
         ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
         ":README.fuchsia.md": "README.fuchsia",
@@ -151,7 +151,7 @@ fuchsia_cipd_releases(
 
 fuchsia_cipd_releases(
     name = "bt_host_arm64_cipd",
-    cipd_prefix = "fuchsia/drivers/bt-host",
+    cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
         ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
         ":README.fuchsia.md": "README.fuchsia",
