@@ -21,6 +21,7 @@ import {
   LogViewConfig,
   State,
   SourceData,
+  ColumnOrder,
 } from '../shared/interfaces';
 import { LocalStorageState, StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
@@ -56,13 +57,21 @@ export class LogViewer extends LitElement {
   @state()
   _stateStore: StateStore;
 
+  /** An array that stores the preferred column order of columns  */
+  @state()
+  _columnOrder: ColumnOrder;
+
   /** A map containing data from present log sources */
   private _sources: Map<string, SourceData> = new Map();
 
   private _state: State;
 
-  constructor(state: StateStore = new LocalStorageState()) {
+  constructor(
+    state: StateStore = new LocalStorageState(),
+    columnOrder: ColumnOrder,
+  ) {
     super();
+    this._columnOrder = columnOrder;
     this._stateStore = state;
     this._state = this._stateStore.getState();
   }
@@ -190,6 +199,7 @@ export class LogViewer extends LitElement {
               .sources=${this._sources}
               .isOneOfMany=${this._logViews.length > 1}
               .stateStore=${this._stateStore}
+              .columnOrder=${this._columnOrder}
               @add-view="${this.addLogView}"
             ></log-view>
           `,

@@ -148,7 +148,7 @@ describe('browser-log-source', () => {
           { key: 'severity', value: expectedSeverity },
           { key: 'time', value: match.typeOf('string') },
           { key: 'message', value: `Test message (${method})` },
-          { key: 'file', value: 'log-source.test.js:142' },
+          { key: 'file', value: 'log-source.test.js:143' },
         ],
       });
     });

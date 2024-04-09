@@ -76,6 +76,10 @@ export class LogView extends LitElement {
   @state()
   _stateStore: StateStore = new LocalStorageState();
 
+  /** Preferred column order to reference */
+  @state()
+  columnOrder: string[] = [];
+
   @query('log-list') _logList!: LogList;
 
   /** A map containing data from present log sources */
@@ -118,7 +122,8 @@ export class LogView extends LitElement {
     // Get column data from local storage, if it exists
     if (index !== -1) {
       const storedColumnData = viewConfigArr[index].columnData;
-      this._columnData = storedColumnData;
+      this.updateColumnOrder(storedColumnData);
+      this._columnData = this.updateColumnRender(storedColumnData);
     }
 
     // Update view title with log source names if a view title isn't already provided
@@ -213,15 +218,81 @@ export class LogView extends LitElement {
     newLogs.forEach((log) => {
       log.fields.forEach((field) => {
         if (!this._columnData.some((col) => col.fieldName === field.key)) {
-          this._columnData.push({
+          const newColumnData = {
             fieldName: field.key,
             characterLength: 0,
             manualWidth: null,
             isVisible: true,
-          });
+          };
+          this.updateColumnOrder([newColumnData]);
+          this._columnData = this.updateColumnRender([
+            newColumnData,
+            ...this._columnData,
+          ]);
         }
       });
     });
+  }
+
+  /**
+   * Orders fields by the following: severity, init defined fields, undefined fields, and message
+   * @param columnData ColumnData is used to check for undefined fields.
+   */
+  private updateColumnOrder(columnData: TableColumn[]) {
+    const columnOrder = [...new Set(this.columnOrder)];
+    if (this.columnOrder.length !== columnOrder.length) {
+      console.warn(
+        'Log View had duplicate columns defined, duplicates were removed.',
+      );
+      this.columnOrder = columnOrder;
+    }
+
+    if (this.columnOrder.indexOf('severity') != 0) {
+      const index = this.columnOrder.indexOf('severity');
+      if (index != -1) {
+        this.columnOrder.splice(index, 1);
+      }
+      this.columnOrder.unshift('severity');
+    }
+
+    if (this.columnOrder.indexOf('message') != this.columnOrder.length) {
+      const index = this.columnOrder.indexOf('message');
+      if (index != -1) {
+        this.columnOrder.splice(index, 1);
+      }
+      this.columnOrder.push('message');
+    }
+
+    columnData.forEach((tableColumn) => {
+      if (!this.columnOrder.includes(tableColumn.fieldName)) {
+        this.columnOrder.splice(
+          this.columnOrder.length - 1,
+          0,
+          tableColumn.fieldName,
+        );
+      }
+    });
+  }
+
+  /**
+   * Updates order of columnData based on columnOrder for log viewer to render
+   * @param columnData ColumnData to order
+   * @returns Ordered list of ColumnData
+   */
+  private updateColumnRender(columnData: TableColumn[]): TableColumn[] {
+    const orderedColumns: TableColumn[] = [];
+    const columnFields = columnData.map((column) => {
+      return column.fieldName;
+    });
+
+    this.columnOrder.forEach((field: string) => {
+      const index = columnFields.indexOf(field);
+      if (index > -1) {
+        orderedColumns.push(columnData[index]);
+      }
+    });
+
+    return orderedColumns;
   }
 
   public getFields(): string[] {

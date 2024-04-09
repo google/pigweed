@@ -199,7 +199,7 @@ autocomplete. Here's how to run the web console locally:
    $ npm install
    $ npm run dev
 
-Log viewer component
+Log Viewer Component
 ====================
 The NPM package also includes a log viewer component that can be embedded in any
 webapp. The component works with Pigweed's RPC stack out-of-the-box but also
@@ -289,6 +289,29 @@ After this, you just need to pass your custom log source object
 to `createLogViewer()`. See implementation of
 `PigweedRPCLogSource <https://cs.opensource.google/pigweed/pigweed/+/main:ts/logging_source_rpc.ts>`_
 for reference.
+
+Column Order
+------------
+Column Order can be defined on initialization with the optional ``columnOrder`` parameter.
+Only fields that exist in the Log Source will render as columns in the Log Viewer.
+
+.. code-block:: typescript
+
+   createLogViewer(logSource, root, state, logStore, columnOrder)
+
+``columnOrder`` accepts an ``string[]`` and defaults to ``[log_source, time, timestamp]``
+
+.. code-block:: typescript
+
+   createLogViewer(logSource, root, state, logStore, ['log_source', 'time', 'timestamp'])
+
+Note, columns will always start with ``severity`` and end with ``message``, these fields do not need to be defined.
+Columns are ordered in the following format:
+
+1. ``severity``
+2. ``columnOrder``
+3. Fields that exist in Log Source but not listed will be added here.
+4. ``message``
 
 Color Scheme
 ------------
