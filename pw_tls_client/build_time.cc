@@ -14,7 +14,10 @@
 
 #include "build_time.h"
 
+#include <time.h>
+#if __has_include(<sys/time.h>)
 #include <sys/time.h>
+#endif  // __has_include(<sys/time.h>)
 
 namespace {
 constexpr uint64_t kMicrosecondsPerSecond = 1'000'000;
@@ -33,6 +36,8 @@ time_t __wrap_time(time_t* t) {
   return ret;
 }
 
+#if __has_include(<sys/time.h>)
+
 int __wrap_gettimeofday(struct timeval* tv, void* tz) {
   // The use of the timezone structure is obsolete (see docs "man
   // gettimeofday"). Thus we don't consider it.
@@ -41,6 +46,8 @@ int __wrap_gettimeofday(struct timeval* tv, void* tz) {
   tv->tv_usec = kBuildTimeMicrosecondsUTC % kMicrosecondsPerSecond;
   return 0;
 }
+
+#endif  // __has_include(<sys/time.h>)
 
 #if __cplusplus
 }
