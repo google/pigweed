@@ -117,6 +117,9 @@ pw_add_library_generic(pw_build.pedantic_warnings INTERFACE
     # Allow empty ... arguments in macros, which are permitted in C++20 but
     # widely supported prior.
     "-Wno-gnu-zero-variadic-macro-arguments"
+
+    # TODO: b/333712899 - Enable C23 extension warnings.
+    "-Wno-c23-extensions"
 )
 
 pw_add_library_generic(pw_build.cpp17 INTERFACE

@@ -210,6 +210,9 @@ config("pedantic_warnings") {
     # Allow C++17 attributes in C++14, since Pigweed targets C++17 or newer.
     cflags += [ "-Wno-c++17-attribute-extensions" ]
   }
+
+  # TODO: b/333712899 - Enable C23 extension warnings.
+  cflags += [ "-Wno-c23-extensions" ]
 }
 
 # Numeric conversion warnings.
