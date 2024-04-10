@@ -84,7 +84,7 @@ PW_CONSTEVAL bool CanBeRepresentedAsByteType(const U& value) {
 template <typename B = std::byte, typename... Args>
 PW_CONSTEVAL auto Concat(Args... args) {
   std::array<B, (internal::SizeOfBytes(args) + ...)> bytes{};
-  internal::CopyBytes(bytes.begin(), args...);
+  internal::CopyBytes(bytes.data(), args...);
   return bytes;
 }
 

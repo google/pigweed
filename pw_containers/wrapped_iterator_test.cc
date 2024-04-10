@@ -32,7 +32,8 @@ constexpr std::array<int, 6> kArray{0, 2, 4, 6, 8, 10};
 
 TEST(WrappedIterator, IterateForwards) {
   int expected = 0;
-  for (HalfIterator it(kArray.begin()); it != HalfIterator(kArray.end());
+  for (HalfIterator it(kArray.data());
+       it != HalfIterator(kArray.data() + kArray.size());
        ++it) {
     EXPECT_EQ(*it, expected);
     expected += 1;
@@ -40,39 +41,39 @@ TEST(WrappedIterator, IterateForwards) {
 }
 
 TEST(WrappedIterator, IterateBackwards) {
-  HalfIterator it(kArray.end());
+  HalfIterator it(kArray.data() + kArray.size());
 
   int expected = 5;
   do {
     --it;
     EXPECT_EQ(*it, expected);
     expected -= 1;
-  } while (it != HalfIterator(kArray.begin()));
+  } while (it != HalfIterator(kArray.data()));
 }
 
 TEST(WrappedIterator, PostIncrement) {
-  HalfIterator it(kArray.begin());
-  EXPECT_EQ(it++, HalfIterator(kArray.begin()));
-  EXPECT_EQ(it, HalfIterator(kArray.begin() + 1));
+  HalfIterator it(kArray.data());
+  EXPECT_EQ(it++, HalfIterator(kArray.data()));
+  EXPECT_EQ(it, HalfIterator(kArray.data() + 1));
   EXPECT_EQ(*it, 1);
 }
 
 TEST(WrappedIterator, PreIncrement) {
-  HalfIterator it(kArray.begin());
-  EXPECT_EQ(++it, HalfIterator(kArray.begin() + 1));
+  HalfIterator it(kArray.data());
+  EXPECT_EQ(++it, HalfIterator(kArray.data() + 1));
   EXPECT_EQ(*it, 1);
 }
 
 TEST(WrappedIterator, PostDecrement) {
-  HalfIterator it(kArray.end());
-  EXPECT_EQ(it--, HalfIterator(kArray.end()));
-  EXPECT_EQ(it, HalfIterator(kArray.end() - 1));
+  HalfIterator it(kArray.data() + kArray.size());
+  EXPECT_EQ(it--, HalfIterator(kArray.data() + kArray.size()));
+  EXPECT_EQ(it, HalfIterator(kArray.data() + kArray.size() - 1));
   EXPECT_EQ(*it, 5);
 }
 
 TEST(WrappedIterator, PreDecrement) {
-  HalfIterator it(kArray.end());
-  EXPECT_EQ(--it, HalfIterator(kArray.end() - 1));
+  HalfIterator it(kArray.data() + kArray.size());
+  EXPECT_EQ(--it, HalfIterator(kArray.data() + kArray.size() - 1));
   EXPECT_EQ(*it, 5);
 }
 
