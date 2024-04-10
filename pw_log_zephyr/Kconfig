@@ -47,6 +47,7 @@ menuconfig PIGWEED_LOG_TOKENIZED
     select PIGWEED_SYS_IO
     select PIGWEED_TOKENIZER
     select LOG_CUSTOM_HEADER
+    select SHELL_CUSTOM_HEADER
     help
       Map all the Zephyr log macros to use Pigweed's then use the
       :ref:`module-pw_log_tokenized` target as the logging backend in order to
@@ -57,6 +58,7 @@ config PIGWEED_LOG_TOKENIZED_LIB
     bool "Tokenize logging and implement your own pw_log_tokenized_HandleLog"
     select PIGWEED_TOKENIZER
     select LOG_CUSTOM_HEADER
+    select SHELL_CUSTOM_HEADER
     help
       Same as PIGWEED_LOG_TOKENIZED but you'll need to implement
       pw_log_tokenized_HandleLog. This gives you flexiblity to access handlers
@@ -80,6 +82,7 @@ menuconfig PIGWEED_LOG_TOKENIZED_RPC
     select PIGWEED_THREAD_ITERATION
     select PIGWEED_TOKENIZER
     select LOG_CUSTOM_HEADER
+    select SHELL_CUSTOM_HEADER
     depends on CONSOLE_GETCHAR
     help
       Enable tokenized logging over RPC by using the system log backend.

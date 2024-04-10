@@ -37,6 +37,7 @@ pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_ZEPHYR
 pw_add_library(pw_log_zephyr.tokenized_lib INTERFACE
   HEADERS
     zephyr_public_overrides/zephyr_custom_log.h
+    zephyr_public_overrides/zephyr_custom_shell.h
   PUBLIC_INCLUDES
     zephyr_public_overrides
   PUBLIC_DEPS
@@ -72,6 +73,7 @@ pw_add_library(pw_log_zephyr.tokenized_rpc_handler INTERFACE
     pw_system.log_backend
   HEADERS
     zephyr_public_overrides/zephyr_custom_log.h
+    zephyr_public_overrides/zephyr_custom_shell.h
 )
 
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED_RPC
