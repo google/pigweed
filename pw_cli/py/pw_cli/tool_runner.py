@@ -34,8 +34,8 @@ class ToolRunner(abc.ABC):
         self,
         tool: str,
         args: Iterable[str | Path],
-        stdout: int = subprocess.PIPE,
-        stderr: int = subprocess.PIPE,
+        stdout: int | None = subprocess.PIPE,
+        stderr: int | None = subprocess.PIPE,
         **kwargs,
     ) -> subprocess.CompletedProcess:
         """Calls ``tool`` with the provided ``args``.
