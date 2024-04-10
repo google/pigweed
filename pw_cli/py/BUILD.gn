@@ -44,6 +44,7 @@ pw_python_package("py") {
     "pw_cli/shell_completion/zsh/pw/__init__.py",
     "pw_cli/shell_completion/zsh/pw_build/__init__.py",
     "pw_cli/status_reporter.py",
+    "pw_cli/tool_runner.py",
   ]
   tests = [
     "envparse_test.py",

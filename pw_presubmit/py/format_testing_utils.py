@@ -16,7 +16,7 @@
 import subprocess
 from typing import List
 
-from pw_presubmit.format.core import ToolRunner
+from pw_cli.tool_runner import ToolRunner
 
 
 class CapturingToolRunner(ToolRunner):

@@ -50,6 +50,13 @@
       "C++20"
     ]
   },
+  "pw_cli": {
+    "tagline": "Enhance and accelerate custom command-line tooling",
+    "status": "stable",
+    "languages": [
+      "Python"
+    ]
+  },
   "pw_console": {
     "tagline": "Multi-purpose pluggable interactive console for dev & manufacturing",
     "status": "stable",

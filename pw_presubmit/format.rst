@@ -27,10 +27,6 @@ Core
    :special-members: DiffCallback
    :noindex:
 
-   .. autoclass:: pw_presubmit.format.core.ToolRunner
-      :special-members: +__call__
-      :private-members: +_run_tool
-
 Formatters
 ==========
 .. autoclass:: pw_presubmit.format.bazel.BuildifierFormatter

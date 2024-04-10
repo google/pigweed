@@ -18,8 +18,9 @@ from dataclasses import dataclass
 import difflib
 import logging
 from pathlib import Path
-import subprocess
 from typing import Callable, Iterable, Iterator
+
+from pw_cli.tool_runner import ToolRunner, BasicSubprocessRunner
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -113,67 +114,6 @@ class FormatFixStatus:
 
     ok: bool
     error_message: str | None
-
-
-class ToolRunner(abc.ABC):
-    """A callable interface that runs the requested tool as a subprocess.
-
-    This class is used to support subprocess-like semantics while allowing
-    injection of wrappers that enable testing, finer granularity identifying
-    where tools fail, and stricter control of which binaries are called.
-
-    By default, all subprocess output is captured.
-    """
-
-    def __call__(
-        self,
-        tool: str,
-        args: Iterable[str | Path],
-        stdout: int = subprocess.PIPE,
-        stderr: int = subprocess.PIPE,
-        **kwargs,
-    ) -> subprocess.CompletedProcess:
-        """Calls ``tool`` with the provided ``args``.
-
-        ``**kwargs`` are forwarded to the underlying ``subprocess.run()``
-        for the requested tool.
-
-        By default, all subprocess output is captured.
-
-        Returns:
-            The ``subprocess.CompletedProcess`` result of running the requested
-            tool.
-        """
-        return self._run_tool(
-            tool,
-            args,
-            stderr=stderr,
-            stdout=stdout,
-            **kwargs,
-        )
-
-    @abc.abstractmethod
-    def _run_tool(
-        self, tool: str, args, **kwargs
-    ) -> subprocess.CompletedProcess:
-        """Implements the subprocess runner logic.
-
-        Calls ``tool`` with the provided ``args``. ``**kwargs`` are forwarded to
-        the underlying ``subprocess.run()`` for the requested tool.
-
-        Returns:
-            The ``subprocess.CompletedProcess`` result of running the requested
-            tool.
-        """
-
-
-class BasicSubprocessRunner(ToolRunner):
-    """A simple ToolRunner that calls subprocess.run()."""
-
-    def _run_tool(
-        self, tool: str, args, **kwargs
-    ) -> subprocess.CompletedProcess:
-        return subprocess.run([tool] + args, **kwargs)
 
 
 class FileChecker(abc.ABC):

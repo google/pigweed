@@ -1,8 +1,29 @@
 .. _module-pw_cli:
 
-------
+======
 pw_cli
-------
+======
+.. pigweed-module::
+   :name: pw_cli
+
+   - **Add some flair**: Build out consistent experiences with building blocks
+     for command-line utilities.
+   - **Accelerate workflows**: Create custom ``pw`` commands to streamline
+     common developer workflows.
+
+.. pw_cli-nav-start
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`code-square` API reference
+      :link: module-pw_cli-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Reference details about the ``pw_cli`` Python API
+
+.. pw_cli-nav-end
+
 This directory contains the ``pw`` command line interface (CLI) that facilitates
 working with Pigweed. The CLI module adds several subcommands prefixed with
 ``pw``, and provides a mechanism for other Pigweed modules to behave as
@@ -24,8 +45,9 @@ the Pigweed environment, these commands will be available for use.
 
 To see an up-to-date list of ``pw`` subcommands, run ``pw --help``.
 
+----------------
 Invoking  ``pw``
-================
+----------------
 ``pw`` subcommands are invoked by providing the command name. Arguments prior to
 the command are interpreted by ``pw`` itself; all arguments after the command
 name are interpreted by the command.
@@ -46,8 +68,9 @@ Here are some example invocations of ``pw``:
    # Display help for the watch command
    $ pw watch -h
 
+--------------------------
 Registering ``pw`` plugins
-==========================
+--------------------------
 Projects can register their own Python scripts as ``pw`` commands. ``pw``
 plugins are registered by providing the command name, module, and function in
 the ``pigweed.json`` file. ``pigweed.json`` files can add new commands or
@@ -56,7 +79,7 @@ be defined in Python packages that are installed in the Pigweed virtual
 environment.
 
 pigweed.json file format
----------------------------
+========================
 ``pigweed.json`` contains plugin entries in the following format:
 
 .. code-block::
@@ -101,7 +124,7 @@ The following example registers three commands:
    }
 
 Defining a plugin function
---------------------------
+==========================
 Any function without required arguments may be used as a plugin function. The
 function should return an int, which the ``pw`` uses as the exit code. The
 ``pw`` tool uses the function docstring as the help string for the command.
@@ -112,7 +135,7 @@ so plugins can behave the same whether they are executed independently or
 through ``pw``.
 
 Example
-^^^^^^^
+-------
 This example shows a function that is registered as a ``pw`` plugin.
 
 .. code-block:: python
@@ -187,7 +210,7 @@ The function is now available through the ``pw`` command, and will be listed in
 .. _module-pw_cli-aliases:
 
 Defining a simple alias
------------------------
+=======================
 For simpler ``pw`` subcommands that effectively only need to act as command line
 aliases, the ``pw_cli.alias`` python module can be reused for simplicity.
 
@@ -221,8 +244,9 @@ The remaining step needed is to add a new plugin to ``pigweed.json``:
 
 In this case, the command ``pw foo abc`` will effectively run ``bar baz abc``.
 
+--------------------------
 Branding Pigweed's tooling
-==========================
+--------------------------
 An important part of starting a new project is picking a name, and in the case
 of Pigweed, designing a banner for the project. Pigweed supports configuring
 the banners by setting environment variables:
@@ -269,7 +293,7 @@ The branding is not purely visual; it serves to make it clear which project an
 engineer is working with.
 
 Making the ASCII / ANSI art
----------------------------
+===========================
 The most direct way to make the ASCII art is to create it with a text editor.
 However, there are some tools to make the process faster and easier.
 
@@ -297,7 +321,7 @@ options as of mid-2020:
   including supporting full-color multi-character fonts.
 
 Future branding improvements
-----------------------------
+============================
 Branding the ``pw`` tool is a great start, but more changes are planned:
 
 - Supporting branding the ``bootstrap/activate`` banner, which for technical
@@ -308,75 +332,8 @@ Branding the ``pw`` tool is a great start, but more changes are planned:
   ``foo`` in this case.
 - Re-coloring the log headers from the ``pw`` tool.
 
-pw_cli Python package
-=====================
-The ``pw_cli`` Pigweed module includes the ``pw_cli`` Python package, which
-provides utilities for creating command line tools with Pigweed.
+.. toctree::
+   :hidden:
+   :maxdepth: 1
 
-pw_cli.log
-----------
-.. automodule:: pw_cli.log
-  :members:
-
-pw_cli.plugins
---------------
-:py:mod:`pw_cli.plugins` provides general purpose plugin functionality. The
-module can be used to create plugins for command line tools, interactive
-consoles, or anything else. Pigweed's ``pw`` command uses this module for its
-plugins.
-
-To use plugins, create a :py:class:`pw_cli.plugins.Registry`. The registry may
-have an optional validator function that checks plugins before they are
-registered (see :py:meth:`pw_cli.plugins.Registry.__init__`).
-
-Plugins may be registered in a few different ways.
-
-* **Direct function call.** Register plugins by calling
-  :py:meth:`pw_cli.plugins.Registry.register` or
-  :py:meth:`pw_cli.plugins.Registry.register_by_name`.
-
-  .. code-block:: python
-
-     registry = pw_cli.plugins.Registry()
-
-     registry.register('plugin_name', my_plugin)
-     registry.register_by_name('plugin_name', 'module_name', 'function_name')
-
-* **Decorator.** Register using the :py:meth:`pw_cli.plugins.Registry.plugin`
-  decorator.
-
-  .. code-block:: python
-
-     _REGISTRY = pw_cli.plugins.Registry()
-
-     # This function is registered as the "my_plugin" plugin.
-     @_REGISTRY.plugin
-     def my_plugin():
-         pass
-
-     # This function is registered as the "input" plugin.
-     @_REGISTRY.plugin(name='input')
-     def read_something():
-         pass
-
-  The decorator may be aliased to give a cleaner syntax (e.g. ``register =
-  my_registry.plugin``).
-
-* **Plugins files.** Plugins files use a simple format:
-
-  .. code-block::
-
-     # Comments start with "#". Blank lines are ignored.
-     name_of_the_plugin module.name module_member
-
-     another_plugin some_module some_function
-
-  These files are placed in the file system and apply similarly to Git's
-  ``.gitignore`` files. From Python, these files are registered using
-  :py:meth:`pw_cli.plugins.Registry.register_file` and
-  :py:meth:`pw_cli.plugins.Registry.register_directory`.
-
-pw_cli.plugins module reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: pw_cli.plugins
-  :members:
+   api

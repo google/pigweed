@@ -37,6 +37,7 @@ py_library(
         "pw_cli/process.py",
         "pw_cli/pw_command_plugins.py",
         "pw_cli/requires.py",
+        "pw_cli/tool_runner.py",
     ],
     imports = ["."],
 )

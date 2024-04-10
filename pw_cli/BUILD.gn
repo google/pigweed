@@ -18,7 +18,10 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "api.rst",
+    "docs.rst",
+  ]
   other_deps = [ "py" ]
 }
 

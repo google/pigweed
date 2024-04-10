@@ -30,7 +30,7 @@ from typing import (
 
 import pw_cli.color
 from pw_cli.plural import plural
-from pw_presubmit.format.core import ToolRunner
+from pw_cli.tool_runner import ToolRunner
 from pw_presubmit.presubmit_context import PRESUBMIT_CONTEXT
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -205,7 +205,7 @@ class PresubmitToolRunner(ToolRunner):
         self, tool: str, args, **kwargs
     ) -> subprocess.CompletedProcess:
         """Run the requested tool as a subprocess."""
-        return log_run([tool] + args, **kwargs)
+        return log_run([tool, *args], **kwargs)
 
 
 def flatten(*items) -> Iterator:
