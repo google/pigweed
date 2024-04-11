@@ -12,16 +12,31 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
-
-pw_test_group("tests") {
-  tests = []
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  group_deps = [ "py:docs" ]
-}
+mapping:
+  "deps":
+    sequence:
+     - type: str
+  "compatible":
+    required: true
+    mapping:
+      "org":
+        type: str
+        required: true
+      "part":
+        type: str
+        required: true
+  "channels":
+    mapping:
+      "regex;(\\w+)":
+        mapping:
+          "name":
+            type: str
+          "description":
+            type: str
+          "indicies":
+            sequence:
+              - "mapping":
+                  "name":
+                    type: str
+                  "description":
+                    type: str

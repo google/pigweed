@@ -11,17 +11,4 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
-
-pw_test_group("tests") {
-  tests = []
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  group_deps = [ "py:docs" ]
-}
+"""Tooling for managing sensor metadata and code generation"""

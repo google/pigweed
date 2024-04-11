@@ -14,14 +14,31 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_action_test.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
 
-pw_test_group("tests") {
-  tests = []
+pw_python_package("py") {
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+  ]
+  sources = [
+    "pw_sensor/__init__.py",
+    "pw_sensor/validator.py",
+  ]
+  tests = [ "validator_test.py" ]
+  python_test_deps = [ "$dir_pw_build/py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+  inputs = [
+    "pw_sensor/dependency_schema.yaml",
+    "pw_sensor/metadata_schema.yaml",
+  ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  group_deps = [ "py:docs" ]
+  other_deps = [ ":py" ]
 }
