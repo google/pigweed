@@ -2306,24 +2306,23 @@ struct LESetExtendedAdvertisingParametersV1Command:
 struct LESetExtendedAdvertisingDataCommand:
   -- 7.8.54 LE Set Extended Advertising Data command (v5.0) (LE)
   -- HCI_LE_Set_Extended_Advertising_Data
-
   let hdr_size = hci.CommandHeader.$size_in_bytes
-
   0     [+hdr_size]  hci.CommandHeader                header
-
   $next [+1]         UInt                             advertising_handle
     -- Handle used to identify an advertising set.
 
   $next [+1]         LESetExtendedAdvDataOp           operation
-
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the Controller as to whether advertising data should be fragmented.
 
+  let advertising_data_length_max = 251
   $next [+1]         UInt                             advertising_data_length (sz)
-    -- Length of the advertising data included in this command packet, up to
-    -- kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses legacy advertising
-    -- PDUs that support advertising data then this shall not exceed kMaxLEAdvertisingDataLength
-    -- bytes.
+    -- Length of the advertising data included in this command packet. If the
+    -- advertising set uses legacy advertising PDUs that support advertising
+    -- data then this shall not exceed kMaxLEAdvertisingDataLength bytes.
+    # NOTE(https://github.com/google/emboss/issues/124): Emboss doesn't
+    # currently support referring to other fields (i.e. virtual fields) when
+    # [requires] itself is set on a field.
     [requires: 0 <= this <= 251]
 
   $next [+sz]        UInt:8[sz]                       advertising_data
@@ -2343,8 +2342,14 @@ struct LESetExtendedScanResponseDataCommand:
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the controller as to whether advertising data should be fragmented
 
+  let scan_response_data_length_max = 251
   $next [+1]         UInt                             scan_response_data_length (sz)
-    -- The number of octets in the scan_response_data parameter
+    -- Length of the scan response data included in this command packet. If the
+    -- advertising set uses legacy advertising PDUs that support advertising
+    -- data then this shall not exceed kMaxLEAdvertisingDataLength bytes.
+    # NOTE(https://github.com/google/emboss/issues/124): Emboss doesn't
+    # currently support referring to other fields (i.e. virtual fields) when
+    # [requires] itself is set on a field.
     [requires: 0 <= this <= 251]
 
   $next [+sz]        UInt:8[sz]                       scan_response_data

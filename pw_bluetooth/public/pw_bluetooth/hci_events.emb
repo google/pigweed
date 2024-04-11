@@ -1678,8 +1678,13 @@ struct LEExtendedAdvertisingReportData:
     -- TargetA field in the advertisement or either Public Identity Address or Random (static)
     -- Identity Address of the target device.
 
+  let data_length_max = 229
   $next [+1]                                               UInt                            data_length
     -- Length of the |data| field.
+    # NOTE(https://github.com/google/emboss/issues/124): Emboss doesn't
+    # currently support referring to other fields (i.e. virtual fields) when
+    # [requires] itself is set on a field.
+    [requires: 0 <= this <= 229]
 
   $next [+data_length]                                     UInt:8[data_length]             data
     -- |data_length| octets of advertising or scan response data formatted as defined in
