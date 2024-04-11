@@ -89,6 +89,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_rpc/docs
    pw_rpc_transport/docs
    pw_rust/docs
+   pw_sensor/docs
    pw_snapshot/docs
    pw_software_update/docs
    pw_span/docs
