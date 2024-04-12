@@ -165,8 +165,10 @@ thread and registered with the system's RPC server.
 
    // In a write transfer, the maximum number of bytes to receive at one time
    // (potentially across multiple chunks), unless specified otherwise by the
-   // transfer handler's stream::Writer.
-   constexpr size_t kDefaultMaxBytesToReceive = 1024;
+   // transfer handler's stream::Writer. Should be set reasonably high; the
+   // transfer will attempt to determine an optimal window size based on the
+   // link.
+   constexpr size_t kDefaultMaxBytesToReceive = 16384;
 
    pw::transfer::TransferService transfer_service(
        GetSystemTransferThread(), kDefaultMaxBytesToReceive);
@@ -247,8 +249,16 @@ is used to manage the transfer. These handles support the following operations:
    // RPC channel on which transfers should be run.
    constexpr uint32_t kChannelId = 42;
 
-   pw::transfer::Client transfer_client(
-       GetSystemRpcClient(), kChannelId, GetSystemTransferThread());
+   // In a read transfer, the maximum number of bytes to receive at one time
+   // (potentially across multiple chunks), unless specified otherwise by the
+   // transfer's stream. Should be set reasonably high; the transfer will
+   // attempt to determine an optimal window size based on the link.
+   constexpr size_t kDefaultMaxBytesToReceive = 16384;
+
+   pw::transfer::Client transfer_client(GetSystemRpcClient(),
+                                        kChannelId,
+                                        GetSystemTransferThread(),
+                                        kDefaultMaxBytesToReceive);
 
    }  // namespace
 
@@ -614,6 +624,25 @@ operation, which typically involves opening a data stream, alongside any
 additional user-specified setup. The server accepts the client's session ID,
 then responds to the client with a ``START_ACK`` chunk containing the resource,
 session, and configured protocol version for the transfer.
+
+Windowing
+=========
+Throughout a transfer, the receiver maintains a window of how much data it can
+receive at a given time. This window is a multiple of the maximum size of a
+single data chunk, and is adjusted dynamically in response to the ongoing status
+of the transfer.
+
+pw_transfer uses a congestion control algorithm similar to that of TCP
+`(RFC 5681 §3.1) <https://datatracker.ietf.org/doc/html/rfc5681#section-3.1>`_,
+adapted to pw_transfer's mode of operation that tunes parameters per window.
+
+Once a portion of a window has successfully been received, it is acknowledged by
+the reciever and the window size is extended. Transfers begin in a "slow start"
+phase, during which the window is doubled on each ACK. This continues until the
+transfer detects a packet loss. Once this occurs, the window size is halved and
+the transfer enters a "congestion avoidance" phase for the remainder of its run.
+During this phase, successful ACKs increase the window size by a single chunk,
+whereas packet loss continues to half it.
 
 Transfer completion
 ===================

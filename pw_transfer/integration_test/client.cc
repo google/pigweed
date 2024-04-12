@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -57,6 +57,8 @@ namespace {
 // smaller receive buffer size.
 constexpr int kMaxSocketSendBufferSize = 1;
 
+constexpr size_t kDefaultMaxWindowSizeBytes = 16384;
+
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
   return options;
@@ -91,7 +93,8 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
 
   pw::transfer::Client client(rpc::integration_test::client(),
                               rpc::integration_test::kChannelId,
-                              transfer_thread);
+                              transfer_thread,
+                              kDefaultMaxWindowSizeBytes);
 
   client.set_max_retries(config.max_retries());
   client.set_max_lifetime_retries(config.max_lifetime_retries());

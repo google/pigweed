@@ -35,35 +35,41 @@ class TransferThread;
 
 class TransferParameters {
  public:
-  constexpr TransferParameters(uint32_t pending_bytes,
+  constexpr TransferParameters(uint32_t max_window_size_bytes,
                                uint32_t max_chunk_size_bytes,
                                uint32_t extend_window_divisor)
-      : pending_bytes_(pending_bytes),
+      : max_window_size_bytes_(max_window_size_bytes),
         max_chunk_size_bytes_(max_chunk_size_bytes),
         extend_window_divisor_(extend_window_divisor) {
-    PW_ASSERT(pending_bytes > 0);
+    PW_ASSERT(max_window_size_bytes > 0);
     PW_ASSERT(max_chunk_size_bytes > 0);
     PW_ASSERT(extend_window_divisor > 1);
   }
 
-  uint32_t pending_bytes() const { return pending_bytes_; }
-  void set_pending_bytes(uint32_t pending_bytes) {
-    pending_bytes_ = pending_bytes;
+  constexpr uint32_t max_window_size_bytes() const {
+    return max_window_size_bytes_;
+  }
+  constexpr void set_max_window_size_bytes(uint32_t max_window_size_bytes) {
+    max_window_size_bytes_ = max_window_size_bytes;
   }
 
-  uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
-  void set_max_chunk_size_bytes(uint32_t max_chunk_size_bytes) {
+  constexpr uint32_t max_chunk_size_bytes() const {
+    return max_chunk_size_bytes_;
+  }
+  constexpr void set_max_chunk_size_bytes(uint32_t max_chunk_size_bytes) {
     max_chunk_size_bytes_ = max_chunk_size_bytes;
   }
 
-  uint32_t extend_window_divisor() const { return extend_window_divisor_; }
-  void set_extend_window_divisor(uint32_t extend_window_divisor) {
+  constexpr uint32_t extend_window_divisor() const {
+    return extend_window_divisor_;
+  }
+  constexpr void set_extend_window_divisor(uint32_t extend_window_divisor) {
     PW_DASSERT(extend_window_divisor > 1);
     extend_window_divisor_ = extend_window_divisor;
   }
 
  private:
-  uint32_t pending_bytes_;
+  uint32_t max_window_size_bytes_;
   uint32_t max_chunk_size_bytes_;
   uint32_t extend_window_divisor_;
 };
@@ -126,6 +132,8 @@ class Context {
         window_size_(0),
         window_end_offset_(0),
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()),
+        window_size_multiplier_(1),
+        transmit_phase_(TransmitPhase::kSlowStart),
         max_parameters_(nullptr),
         thread_(nullptr),
         last_chunk_sent_(Chunk::Type::kData),
@@ -194,11 +202,17 @@ class Context {
   enum class TransmitAction {
     // Start of a new transfer.
     kBegin,
+    // First parameters chunk of a transfer.
+    kFirstParameters,
     // Extend the current window length.
     kExtend,
     // Retransmit from a specified offset.
     kRetransmit,
   };
+
+  // Slow start and congestion avoidance are analogues to the equally named
+  // phases in TCP congestion control.
+  enum class TransmitPhase : bool { kSlowStart, kCongestionAvoidance };
 
   void set_transfer_state(TransferState state) { transfer_state_ = state; }
 
@@ -300,7 +314,7 @@ class Context {
 
   // Updates the current receive transfer parameters based on the context's
   // configuration.
-  void UpdateTransferParameters();
+  void UpdateTransferParameters(TransmitAction action);
 
   // Populates the transfer parameters fields on a chunk object.
   void SetTransferParameters(Chunk& parameters);
@@ -399,6 +413,9 @@ class Context {
   uint32_t window_size_;
   uint32_t window_end_offset_;
   uint32_t max_chunk_size_bytes_;
+
+  uint32_t window_size_multiplier_;
+  TransmitPhase transmit_phase_;
 
   const TransferParameters* max_parameters_;
   TransferThread* thread_;

@@ -110,7 +110,7 @@ void Context::InitiateTransferAsClient() {
   // Receive transfers should prepare their initial parameters to be send in the
   // initial chunk.
   if (type() == TransferType::kReceive) {
-    UpdateTransferParameters();
+    UpdateTransferParameters(TransmitAction::kBegin);
   }
 
   if (desired_protocol_version_ == ProtocolVersion::kLegacy) {
@@ -190,16 +190,64 @@ void Context::SendInitialLegacyTransmitChunk() {
   EncodeAndSendChunk(chunk);
 }
 
-void Context::UpdateTransferParameters() {
-  size_t pending_bytes =
-      std::min(max_parameters_->pending_bytes(),
-               static_cast<uint32_t>(writer().ConservativeWriteLimit()));
-
-  window_size_ = pending_bytes;
-  window_end_offset_ = offset_ + pending_bytes;
-
+void Context::UpdateTransferParameters(TransmitAction action) {
   max_chunk_size_bytes_ = MaxWriteChunkSize(
       max_parameters_->max_chunk_size_bytes(), rpc_writer_->channel_id());
+  uint32_t window_size = 0;
+
+  if (max_chunk_size_bytes_ > max_parameters_->max_window_size_bytes()) {
+    window_size =
+        std::min(max_parameters_->max_window_size_bytes(),
+                 static_cast<uint32_t>(writer().ConservativeWriteLimit()));
+  } else {
+    // Adjust the window size based on the latest event in the transfer.
+    switch (action) {
+      case TransmitAction::kBegin:
+      case TransmitAction::kFirstParameters:
+        // A transfer always begins with a window size of one chunk, set during
+        // initialization. No further handling is required.
+        break;
+
+      case TransmitAction::kExtend:
+        // Window was received succesfully without packet loss and should grow.
+        // Double the window size during slow start, or increase it by a single
+        // chunk in congestion avoidance.
+        if (transmit_phase_ == TransmitPhase::kCongestionAvoidance) {
+          window_size_multiplier_ += 1;
+        } else {
+          window_size_multiplier_ *= 2;
+        }
+
+        // The window size can never exceed the user-specified maximum bytes. If
+        // it does, reduce the multiplier to the largest size that fits.
+        if (window_size_multiplier_ * max_chunk_size_bytes_ >
+            max_parameters_->max_window_size_bytes()) {
+          window_size_multiplier_ =
+              max_parameters_->max_window_size_bytes() / max_chunk_size_bytes_;
+        }
+        break;
+
+      case TransmitAction::kRetransmit:
+        // A packet was lost: shrink the window size. Additionally, after the
+        // first packet loss, transition from the slow start to the congestion
+        // avoidance phase of the transfer.
+        if (transmit_phase_ == TransmitPhase::kSlowStart) {
+          transmit_phase_ = TransmitPhase::kCongestionAvoidance;
+        }
+        window_size_multiplier_ =
+            std::max(window_size_multiplier_ / static_cast<uint32_t>(2),
+                     static_cast<uint32_t>(1));
+        break;
+    }
+
+    window_size =
+        std::min({window_size_multiplier_ * max_chunk_size_bytes_,
+                  max_parameters_->max_window_size_bytes(),
+                  static_cast<uint32_t>(writer().ConservativeWriteLimit())});
+  }
+
+  window_size_ = window_size;
+  window_end_offset_ = offset_ + window_size;
 }
 
 void Context::SetTransferParameters(Chunk& parameters) {
@@ -210,7 +258,7 @@ void Context::SetTransferParameters(Chunk& parameters) {
 }
 
 void Context::UpdateAndSendTransferParameters(TransmitAction action) {
-  UpdateTransferParameters();
+  UpdateTransferParameters(action);
 
   return SendTransferParameters(action);
 }
@@ -222,6 +270,7 @@ void Context::SendTransferParameters(TransmitAction action) {
     case TransmitAction::kBegin:
       type = Chunk::Type::kStart;
       break;
+    case TransmitAction::kFirstParameters:
     case TransmitAction::kRetransmit:
       type = Chunk::Type::kParametersRetransmit;
       break;
@@ -339,6 +388,9 @@ void Context::Initialize(const NewTransferEvent& new_transfer) {
   window_end_offset_ = 0;
   max_chunk_size_bytes_ = new_transfer.max_parameters->max_chunk_size_bytes();
 
+  window_size_multiplier_ = 1;
+  transmit_phase_ = TransmitPhase::kSlowStart;
+
   max_parameters_ = new_transfer.max_parameters;
   thread_ = new_transfer.transfer_thread;
 
@@ -440,7 +492,7 @@ void Context::PerformInitialHandshake(const Chunk& chunk) {
         // In a receive transfer, tag the initial transfer parameters onto the
         // confirmation chunk so that the server can immediately begin sending
         // data.
-        UpdateTransferParameters();
+        UpdateTransferParameters(TransmitAction::kFirstParameters);
         SetTransferParameters(start_ack_confirmation);
       }
 
@@ -828,7 +880,7 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
 
 void Context::HandleReceivedData(const Chunk& chunk) {
   if (chunk.offset() != offset_) {
-    // Bad offset; reset pending_bytes to send another parameters chunk.
+    // Bad offset; reset window size to send another parameters chunk.
     PW_LOG_DEBUG(
         "Transfer %u expected offset %u, received %u; entering recovery state",
         static_cast<unsigned>(session_id_),
@@ -844,7 +896,7 @@ void Context::HandleReceivedData(const Chunk& chunk) {
 
   if (chunk.offset() + chunk.payload().size() > window_end_offset_) {
     // End the transfer, as this indicates a bug with the client implementation
-    // where it doesn't respect pending_bytes. Trying to recover from here
+    // where it doesn't respect the window size. Trying to recover from here
     // could potentially result in an infinite transfer loop.
     PW_LOG_ERROR(
         "Transfer %u received more data than what was requested (%u received "
@@ -915,9 +967,15 @@ void Context::HandleReceivedData(const Chunk& chunk) {
 
   SetTimeout(chunk_timeout_);
 
+  if (chunk.type() == Chunk::Type::kStartAckConfirmation) {
+    // Send the first parameters in the receive transfer.
+    UpdateAndSendTransferParameters(TransmitAction::kFirstParameters);
+    return;
+  }
+
   if (offset_ == window_end_offset_) {
     // Received all pending data. Advance the transfer parameters.
-    UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
+    UpdateAndSendTransferParameters(TransmitAction::kExtend);
     return;
   }
 
@@ -929,7 +987,6 @@ void Context::HandleReceivedData(const Chunk& chunk) {
 
   if (extend_window) {
     UpdateAndSendTransferParameters(TransmitAction::kExtend);
-    return;
   }
 }
 
@@ -1114,7 +1171,7 @@ void Context::Retry() {
         "Receive transfer %u timed out waiting for chunk; resending parameters",
         static_cast<unsigned>(session_id_));
 
-    SendTransferParameters(TransmitAction::kRetransmit);
+    UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
     return;
   }
 
@@ -1246,9 +1303,9 @@ void Context::LogTransferConfiguration() {
               .count()));
 
   PW_LOG_DEBUG(
-      "Local transfer windowing configuration: "
-      "pending_bytes=%u, extend_window_divisor=%u, max_chunk_size_bytes=%u",
-      static_cast<unsigned>(max_parameters_->pending_bytes()),
+      "Local transfer windowing configuration: max_window_size_bytes=%u, "
+      "extend_window_divisor=%u, max_chunk_size_bytes=%u",
+      static_cast<unsigned>(max_parameters_->max_window_size_bytes()),
       static_cast<unsigned>(max_parameters_->extend_window_divisor()),
       static_cast<unsigned>(max_parameters_->max_chunk_size_bytes()));
 }

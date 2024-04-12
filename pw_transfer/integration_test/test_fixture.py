@@ -374,7 +374,7 @@ class TransferIntegrationTest(unittest.TestCase):
     def default_server_config() -> config_pb2.ServerConfig:
         return config_pb2.ServerConfig(
             chunk_size_bytes=216,
-            pending_bytes=32 * 1024,
+            pending_bytes=64 * 1024,
             chunk_timeout_seconds=5,
             transfer_service_retries=4,
             extend_window_divisor=32,
