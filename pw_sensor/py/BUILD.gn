@@ -33,8 +33,8 @@ pw_python_package("py") {
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
   inputs = [
-    "pw_sensor/dependency_schema.yaml",
-    "pw_sensor/metadata_schema.yaml",
+    "pw_sensor/dependency_schema.json",
+    "pw_sensor/metadata_schema.json",
   ]
 }
 

@@ -12,7 +12,7 @@ for Pigweed sensor drivers.
 Using the package
 -----------------
 Typical users of ``pw_sensor`` begin by writing a YAML description of their
-sensor using the `metadata_schema.yaml`_ format, e.g.:
+sensor using the `metadata_schema.json`_ format, e.g.:
 
 .. code:: yaml
 
@@ -167,4 +167,4 @@ This means that ``channels/cakes`` will be automatically filled with:
      is not explicitly specified
    - ``symbol: "cake"``: attained from definition file
 
-.. _metadata_schema.yaml: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/metadata_schema.yaml
+.. _metadata_schema.json: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/metadata_schema.json

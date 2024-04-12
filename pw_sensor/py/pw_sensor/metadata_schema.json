@@ -1,0 +1,80 @@
+{
+  "title": "Sensor descriptor",
+  "description": "Detailed description of a sensor",
+  "type": "object",
+  "properties": {
+    "deps": {
+      "type": "array",
+      "description": "A list of definition files",
+      "items": {
+        "type": "string",
+        "description": "A definition file to include"
+      }
+    },
+    "compatible": {
+      "type": "object",
+      "description": "A unique identifier of the sensor",
+      "properties": {
+        "org": {
+          "type": "string",
+          "description": "The organization that developed the sensor"
+        },
+        "part": {
+          "type": "string",
+          "description": "The part number or identifier"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "org",
+        "part"
+      ]
+    },
+    "channels": {
+      "type": "object",
+      "description": "A set of channels supported by this sensor",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A supported channel",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "A name override for the channel"
+            },
+            "description": {
+              "type": "string",
+              "description": "A description override for the channel"
+            },
+            "indicies": {
+              "type": "array",
+              "description": "A list specifying each instance of this channel, if not specified then it is assumed to be 1 with the same properties as the parent channel",
+              "items": {
+                "type": "object",
+                "description": "A single instance of a sensor channel",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "A name override for the channel instance"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A description override for the channel instance"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "compatible"
+  ]
+}

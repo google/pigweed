@@ -12,28 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import importlib.resources
-import io
-import pykwalify.core
-import pykwalify.errors
-import re
-import sys
-import subprocess
-import tempfile
-import typing
-import yaml
-from pathlib import Path
 import logging
-import os
-import importlib
+import importlib.resources
+from pathlib import Path
 from collections.abc import Sequence
+import jsonschema
+import jsonschema.exceptions
+import yaml
+import importlib
 
 _METADATA_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "metadata_schema.yaml")
+    importlib.resources.read_text("pw_sensor", "metadata_schema.json")
 )
 
 _DEPENDENCY_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "dependency_schema.yaml")
+    importlib.resources.read_text("pw_sensor", "dependency_schema.json")
 )
 
 
@@ -98,10 +91,8 @@ class Validator:
           FileNotFoundError: One of the dependencies was not found.
         """
         try:
-            pykwalify.core.Core(
-                source_data=metadata, schema_data=_METADATA_SCHEMA
-            ).validate()
-        except pykwalify.errors.SchemaError as e:
+            jsonschema.validate(instance=metadata, schema=_METADATA_SCHEMA)
+        except jsonschema.exceptions.ValidationError as e:
             raise RuntimeError(
                 "ERROR: Malformed sensor metadata YAML: "
                 f"{yaml.safe_dump(metadata, indent=2)}"
@@ -143,10 +134,10 @@ class Validator:
             with open(dep_file, mode="r", encoding="utf-8") as dep_yaml_file:
                 dep_yaml = yaml.safe_load(dep_yaml_file)
                 try:
-                    pykwalify.core.Core(
-                        source_data=dep_yaml, schema_data=_DEPENDENCY_SCHEMA
-                    ).validate()
-                except pykwalify.errors.SchemaError as e:
+                    jsonschema.validate(
+                        instance=dep_yaml, schema=_DEPENDENCY_SCHEMA
+                    )
+                except jsonschema.exceptions.ValidationError as e:
                     raise RuntimeError(
                         "ERROR: Malformed dependency YAML: "
                         f"{yaml.safe_dump(dep_yaml, indent=2)}"

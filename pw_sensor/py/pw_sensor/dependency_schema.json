@@ -1,0 +1,73 @@
+{
+  "title": "Sensor dependency",
+  "description": "A dependency definition of channels and attributes",
+  "type": "object",
+  "properties": {
+    "channels": {
+      "type": "object",
+      "description": "A mapping of channels to their definitions",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A channel definition",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "A user friendly name for the channel, the channel ID will be used if undefined"
+            },
+            "description": {
+              "type": "string",
+              "description": "A description of the channel, the channel ID will be used if undefined"
+            },
+            "units": {
+              "type": "object",
+              "description": "Details for how the channel is measured",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "A user friendly name for the units"
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "The units used to represent the value"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "symbol"
+              ]
+            },
+            "sub-channels": {
+              "type": "object",
+              "description": "Additional channels of a similar type",
+              "patternProperties": {
+                "^\\w+$": {
+                  "type": "object",
+                  "description": "A channel definition using the parent as a prefix, the resulting channel ID is <parent_id>_<child_id>",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The name of the channel, will use the ID if undefined"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "A description of the channel, will use the ID if undefined"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "units"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

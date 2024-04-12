@@ -28,7 +28,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={},
             exception_string="ERROR: Malformed sensor metadata YAML: {}",
-            cause_substrings=["Cannot find required key 'compatible'."],
+            cause_substrings=["'compatible' is a required property"],
         )
 
     def test_invalid_compatible_type(self) -> None:
@@ -37,33 +37,26 @@ class ValidatorTest(unittest.TestCase):
             metadata={"compatible": {}},
             exception_string="ERROR: Malformed sensor metadata YAML: compatible: {}",
             cause_substrings=[
-                "Cannot find required key 'org'. Path: '/compatible'.",
-                "Cannot find required key 'part'. Path: '/compatible'.: Path: '/'",
+                "'org' is a required property",
             ],
         )
 
         self._check_with_exception(
             metadata={"compatible": []},
             exception_string="ERROR: Malformed sensor metadata YAML: compatible: []",
-            cause_substrings=[
-                "Value '[]' is not a dict. Value path: '/compatible'.: Path: '/'"
-            ],
+            cause_substrings=["[] is not of type 'object'"],
         )
 
         self._check_with_exception(
             metadata={"compatible": 1},
             exception_string="ERROR: Malformed sensor metadata YAML: compatible: 1",
-            cause_substrings=[
-                "Value '1' is not a dict. Value path: '/compatible'.: Path: '/'"
-            ],
+            cause_substrings=["1 is not of type 'object'"],
         )
 
         self._check_with_exception(
             metadata={"compatible": ""},
             exception_string="ERROR: Malformed sensor metadata YAML: compatible: ''",
-            cause_substrings=[
-                "Value '' is not a dict. Value path: '/compatible'.: Path: '/'"
-            ],
+            cause_substrings=[" is not of type 'object'"],
         )
 
     def test_empty_dependency_list(self) -> None:
@@ -79,15 +72,11 @@ class ValidatorTest(unittest.TestCase):
         metadata = {
             "compatible": {"org": "google", "part": "foo"},
             "deps": [],
-            "channels": {},
         }
         Validator().validate(metadata=metadata)
         self.assertEqual(metadata, expected)
 
-        metadata = {
-            "compatible": {"org": "google", "part": "foo"},
-            "channels": {},
-        }
+        metadata = {"compatible": {"org": "google", "part": "foo"}}
         Validator().validate(metadata=metadata)
         self.assertEqual(metadata, expected)
 
