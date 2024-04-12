@@ -30,6 +30,7 @@ pw_python_package("py") {
     "pw_cli/arguments.py",
     "pw_cli/branding.py",
     "pw_cli/color.py",
+    "pw_cli/decorators.py",
     "pw_cli/env.py",
     "pw_cli/envparse.py",
     "pw_cli/log.py",
@@ -47,6 +48,7 @@ pw_python_package("py") {
     "pw_cli/tool_runner.py",
   ]
   tests = [
+    "decorators_test.py",
     "envparse_test.py",
     "plugins_test.py",
     "plural_test.py",
