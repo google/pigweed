@@ -64,3 +64,36 @@ Example code to use Linux SPI:
      PW_TRY(initiator.WriteRead(tx_data, rx_data));
    }
 
+----------------------
+Command-Line Interface
+----------------------
+This module also provides a tool also named ``pw_spi_linux_cli`` which
+provides a basic command-line interface to the library.
+
+Usage:
+
+.. code-block:: none
+
+   Usage: pw_spi_linux_cli -D DEVICE -F FREQ [flags]
+
+   Required flags:
+     -D/--device   SPI device path (e.g. /dev/spidev0.0
+     -F/--freq     SPI clock frequency in Hz (e.g. 24000000)
+
+   Optional flags:
+     -b/--bits     Bits per word, default: 8
+     -h/--human    Human-readable output (default: binary, unless output to stdout tty)
+     -i/--input    Input file, or - for stdin
+                   If not given, no data is sent.
+     -l/--lsb      LSB first (default: MSB first)
+     -m/--mode     SPI mode (0-3), default: 0
+     -o/--output   Output file (default: stdout)
+     -r/--rx-count Number of bytes to receive (defaults to size of input)
+
+Example:
+
+.. code-block:: none
+
+   $ echo -n "Hello world" | pw_spi_linux_cli --device=/dev/spidev1.0 \
+     --freq=24000000 --mode=3 --input=- | hexdump -Cv
+

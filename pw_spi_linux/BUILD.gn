@@ -34,6 +34,16 @@ pw_source_set("pw_spi_linux") {
   sources = [ "spi.cc" ]
 }
 
+pw_executable("pw_spi_linux_cli") {
+  sources = [ "cli.cc" ]
+  deps = [
+    ":pw_spi_linux",
+    "$dir_pw_log",
+    "$dir_pw_preprocessor",
+    "$dir_pw_result",
+  ]
+}
+
 pw_test("linux_spi_test") {
   enable_if = current_os == "linux"
   sources = [ "spi_test.cc" ]

@@ -48,3 +48,29 @@ cc_library_static {
         "pw_status",
     ],
 }
+
+cc_binary {
+    name: "pw_spi_linux_cli",
+    cpp_std: "c++20",
+    vendor_available: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    srcs: [
+        "cli.cc",
+    ],
+    header_libs: [
+        "pw_log",
+    ],
+    static_libs: [
+        "pw_preprocessor",
+        "pw_result",
+        "pw_spi_linux",
+        "pw_status",
+    ],
+    whole_static_libs: [
+        // Force logs to stderr rather than logd.
+        // NOTE: Only use this on cc_binary() targets.
+        "pw_log_android_stderr",
+    ],
+}

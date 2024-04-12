@@ -38,6 +38,23 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "pw_spi_linux_cli",
+    srcs = [
+        "cli.cc",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    deps = [
+        ":pw_spi_linux",
+        "//pw_assert:backend_impl",
+        "//pw_log",
+        "//pw_preprocessor",
+        "//pw_result",
+    ],
+)
+
 pw_cc_test(
     name = "spi_test",
     srcs = [
