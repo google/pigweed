@@ -14,7 +14,12 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_blob_store INTERFACE
+pw_add_library(pw_blob_store STATIC
+  HEADERS
+    public/pw_blob_store/blob_store.h
+    public/pw_blob_store/internal/metadata_format.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_bytes
     pw_containers
@@ -22,12 +27,15 @@ pw_add_library(pw_blob_store INTERFACE
     pw_span
     pw_status
     pw_stream
+    pw_sync.borrow
   PRIVATE_DEPS
     pw_assert
     pw_checksum
     pw_log
     pw_random
     pw_string
+  SOURCES
+    blob_store.cc
 )
 
 pw_add_library(pw_blob_store.flat_file_system_entry INTERFACE
