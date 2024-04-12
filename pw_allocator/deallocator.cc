@@ -14,10 +14,14 @@
 
 #include "pw_allocator/deallocator.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator {
 
-void BaseUniquePtr::Deallocate(Deallocator* deallocator, void* ptr) {
-  deallocator->Deallocate(ptr);
+StatusWithSize Deallocator::DoGetCapacity() const {
+  return StatusWithSize::Unimplemented();
 }
 
-}  // namespace pw::allocator::internal
+Status Deallocator::DoQuery(const void*) const {
+  return Status::Unimplemented();
+}
+
+}  // namespace pw::allocator

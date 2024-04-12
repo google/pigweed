@@ -19,21 +19,45 @@
 
 namespace pw::allocator {
 
+Result<Layout> Allocator::GetRequestedLayout(const Allocator& allocator,
+                                             const void* ptr) {
+  if (ptr == nullptr) {
+    return Status::NotFound();
+  }
+  return allocator.DoGetRequestedLayout(ptr);
+}
+
+Result<Layout> Allocator::GetUsableLayout(const Allocator& allocator,
+                                          const void* ptr) {
+  if (ptr == nullptr) {
+    return Status::NotFound();
+  }
+  return allocator.DoGetUsableLayout(ptr);
+}
+
+Result<Layout> Allocator::GetAllocatedLayout(const Allocator& allocator,
+                                             const void* ptr) {
+  if (ptr == nullptr) {
+    return Status::NotFound();
+  }
+  return allocator.DoGetAllocatedLayout(ptr);
+}
+
 void* Allocator::DoReallocate(void* ptr, Layout new_layout) {
   if (Resize(ptr, new_layout.size())) {
     return ptr;
   }
-  Result<Layout> allocated = DoGetAllocatedLayout(ptr);
+  Result<Layout> allocated = GetAllocatedLayout(*this, ptr);
   if (!allocated.ok()) {
     return nullptr;
   }
-  void* new_ptr = DoAllocate(new_layout);
+  void* new_ptr = Allocate(new_layout);
   if (new_ptr == nullptr) {
     return nullptr;
   }
   if (ptr != nullptr) {
     std::memcpy(new_ptr, ptr, std::min(new_layout.size(), allocated->size()));
-    DoDeallocate(ptr);
+    Deallocate(ptr);
   }
   return new_ptr;
 }
@@ -52,9 +76,21 @@ void* Allocator::DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
   }
   if (ptr != nullptr) {
     std::memcpy(new_ptr, ptr, std::min(new_size, allocated->size()));
-    DoDeallocate(ptr, *allocated);
+    Deallocate(ptr, *allocated);
   }
   return new_ptr;
+}
+
+Result<Layout> Allocator::DoGetRequestedLayout(const void*) const {
+  return Status::Unimplemented();
+}
+
+Result<Layout> Allocator::DoGetUsableLayout(const void*) const {
+  return Status::Unimplemented();
+}
+
+Result<Layout> Allocator::DoGetAllocatedLayout(const void*) const {
+  return Status::Unimplemented();
 }
 
 }  // namespace pw::allocator

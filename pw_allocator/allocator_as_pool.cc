@@ -12,12 +12,19 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/deallocator.h"
+#include "pw_allocator/allocator_as_pool.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator {
 
-void BaseUniquePtr::Deallocate(Deallocator* deallocator, void* ptr) {
-  deallocator->Deallocate(ptr);
+AllocatorAsPool::AllocatorAsPool(Allocator& allocator, const Layout& layout)
+    : Pool(allocator.capabilities(), layout), allocator_(allocator) {}
+
+void* AllocatorAsPool::DoAllocate() { return allocator_.Allocate(layout()); }
+
+void AllocatorAsPool::DoDeallocate(void* ptr) { allocator_.Deallocate(ptr); }
+
+Status AllocatorAsPool::DoQuery(const void* ptr) const {
+  return Deallocator::Query(allocator_, ptr);
 }
 
-}  // namespace pw::allocator::internal
+}  // namespace pw::allocator

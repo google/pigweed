@@ -13,8 +13,9 @@
 // the License.
 #pragma once
 
-#include <bitset>
 #include <cstdint>
+
+#include "pw_assert/assert.h"
 
 namespace pw::allocator {
 
@@ -60,35 +61,48 @@ enum Capability : uint32_t {
 /// @endcode
 class Capabilities {
  public:
-  static constexpr size_t kNumCapabilities = 4;
+  static constexpr uint32_t kAll =
+      kImplementsGetRequestedLayout | kImplementsGetUsableLayout |
+      kImplementsGetAllocatedLayout | kImplementsQuery;
 
-  constexpr Capabilities() : bits_(0) {}
-  constexpr Capabilities(uint32_t bits) : bits_(bits) {}
-
-  bool has(Capability capability) const {
-    std::bitset<kNumCapabilities> bits(capability);
-    return (bits_ & bits) == bits;
+  constexpr Capabilities() : capabilities_(0) {}
+  constexpr Capabilities(uint32_t capabilities) : capabilities_(capabilities) {
+    PW_ASSERT((capabilities & ~kAll) == 0);
   }
 
-  uint32_t bits() const { return bits_.to_ulong(); }
+  constexpr bool has(Capability capability) const {
+    return (capabilities_ & capability) == capability;
+  }
+
+  constexpr uint32_t get() const { return capabilities_; }
 
  private:
-  const std::bitset<kNumCapabilities> bits_;
+  const uint32_t capabilities_;
 };
 
-inline Capabilities operator|(const Capabilities& lhs,
-                              const Capabilities& rhs) {
-  return Capabilities(lhs.bits() | rhs.bits());
+inline constexpr bool operator==(const Capabilities& lhs,
+                                 const Capabilities& rhs) {
+  return lhs.get() == rhs.get();
 }
 
-inline Capabilities operator&(const Capabilities& lhs,
-                              const Capabilities& rhs) {
-  return Capabilities(lhs.bits() & rhs.bits());
+inline constexpr bool operator!=(const Capabilities& lhs,
+                                 const Capabilities& rhs) {
+  return lhs.get() != rhs.get();
 }
 
-inline Capabilities operator^(const Capabilities& lhs,
-                              const Capabilities& rhs) {
-  return Capabilities(lhs.bits() ^ rhs.bits());
+inline constexpr Capabilities operator|(const Capabilities& lhs,
+                                        const Capabilities& rhs) {
+  return Capabilities(lhs.get() | rhs.get());
+}
+
+inline constexpr Capabilities operator&(const Capabilities& lhs,
+                                        const Capabilities& rhs) {
+  return Capabilities(lhs.get() & rhs.get());
+}
+
+inline constexpr Capabilities operator^(const Capabilities& lhs,
+                                        const Capabilities& rhs) {
+  return Capabilities(lhs.get() ^ rhs.get());
 }
 
 }  // namespace pw::allocator

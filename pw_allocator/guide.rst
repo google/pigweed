@@ -214,11 +214,12 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
     strategies, while fragmenting memory less by co-locating allocations of
     similar sizes.
 
+- :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
+  destroys objects of a single given type.
+
 .. TODO: b/328076428 - Add MonotonicAllocator.
 
 .. TODO: b/328076428 - Add BuddyAllocator.
-
-.. TODO: b/328076428 - Add SlabAllocator.
 
 Forwarding allocator implementations
 ====================================

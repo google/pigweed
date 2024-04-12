@@ -19,26 +19,26 @@
 namespace pw::allocator {
 
 // Forward declaration.
-class Allocator;
+class Deallocator;
 
 namespace internal {
 
 /// This class simply provides a type-erased static method to deallocate the
 /// memory in a unique pointer. This allows ``UniquePtr<T>`` to be declared
-/// without a complete declaration of ``Allocator``, breaking the
+/// without a complete declaration of ``Deallocator``, breaking the
 /// dependency cycle between ``UniquePtr<T>` and ``Allocator::MakeUnique<T>()``.
 class BaseUniquePtr {
  protected:
-  static void Deallocate(Allocator* allocator, void* ptr);
+  static void Deallocate(Deallocator* deallocator, void* ptr);
 };
 
 }  // namespace internal
 
 /// An RAII pointer to a value of type ``T`` stored in memory provided by a
-/// ``Allocator``.
+/// ``Deallocator``.
 ///
 /// This is analogous to ``std::unique_ptr``, but includes a few differences
-/// in order to support ``Allocator`` and encourage safe usage. Most
+/// in order to support ``Deallocator`` and encourage safe usage. Most
 /// notably, ``UniquePtr<T>`` cannot be constructed from a ``T*``.
 template <typename T>
 class UniquePtr : public internal::BaseUniquePtr {
@@ -46,23 +46,23 @@ class UniquePtr : public internal::BaseUniquePtr {
   /// Creates an empty (``nullptr``) instance.
   ///
   /// NOTE: Instances of this type are most commonly constructed using
-  /// ``Allocator::MakeUnique``.
-  constexpr UniquePtr() : value_(nullptr), allocator_(nullptr) {}
+  /// ``Deallocator::MakeUnique``.
+  constexpr UniquePtr() : value_(nullptr), deallocator_(nullptr) {}
 
   /// Creates an empty (``nullptr``) instance.
   ///
   /// NOTE: Instances of this type are most commonly constructed using
-  /// ``Allocator::MakeUnique``.
+  /// ``Deallocator::MakeUnique``.
   constexpr UniquePtr(std::nullptr_t) : UniquePtr() {}
 
   /// Move-constructs a ``UniquePtr<T>`` from a ``UniquePtr<U>``.
   ///
   /// This allows not only pure move construction where ``T == U``, but also
   /// converting construction where ``T`` is a base class of ``U``, like
-  /// ``UniquePtr<Base> base(allocator.MakeUnique<Child>());``.
+  /// ``UniquePtr<Base> base(deallocator.MakeUnique<Child>());``.
   template <typename U>
   UniquePtr(UniquePtr<U>&& other) noexcept
-      : value_(other.value_), allocator_(other.allocator_) {
+      : value_(other.value_), deallocator_(other.deallocator_) {
     static_assert(
         std::is_assignable_v<T*&, U*>,
         "Attempted to construct a UniquePtr<T> from a UniquePtr<U> where "
@@ -84,7 +84,7 @@ class UniquePtr : public internal::BaseUniquePtr {
   ///
   /// This allows not only pure move assignment where ``T == U``, but also
   /// converting assignment where ``T`` is a base class of ``U``, like
-  /// ``UniquePtr<Base> base = allocator.MakeUnique<Child>();``.
+  /// ``UniquePtr<Base> base = deallocator.MakeUnique<Child>();``.
   template <typename U>
   UniquePtr& operator=(UniquePtr<U>&& other) noexcept {
     static_assert(std::is_assignable_v<T*&, U*>,
@@ -92,7 +92,7 @@ class UniquePtr : public internal::BaseUniquePtr {
                   "U* is not assignable to T*.");
     Reset();
     value_ = other.value_;
-    allocator_ = other.allocator_;
+    deallocator_ = other.deallocator_;
     other.Release();
     return *this;
   }
@@ -107,9 +107,8 @@ class UniquePtr : public internal::BaseUniquePtr {
   /// Destructs and deallocates any currently-held value.
   ~UniquePtr() { Reset(); }
 
-  /// Returns a pointer to the allocator that produced this unique
-  /// pointer.
-  Allocator* allocator() const { return allocator_; }
+  /// Returns a pointer to the object that can destroy the value.
+  Deallocator* deallocator() const { return deallocator_; }
 
   /// Releases a value from the ``UniquePtr`` without destructing or
   /// deallocating it.
@@ -118,7 +117,7 @@ class UniquePtr : public internal::BaseUniquePtr {
   T* Release() {
     T* value = value_;
     value_ = nullptr;
-    allocator_ = nullptr;
+    deallocator_ = nullptr;
     return value;
   }
 
@@ -129,7 +128,7 @@ class UniquePtr : public internal::BaseUniquePtr {
   void Reset() {
     if (value_ != nullptr) {
       std::destroy_at(value_);
-      internal::BaseUniquePtr::Deallocate(allocator_, value_);
+      internal::BaseUniquePtr::Deallocate(deallocator_, value_);
       Release();
     }
   }
@@ -170,9 +169,9 @@ class UniquePtr : public internal::BaseUniquePtr {
   /// A pointer to the contained value.
   T* value_;
 
-  /// The ``allocator_`` which provided the memory for  ``value_``.
+  /// The ``deallocator_`` which provided the memory for  ``value_``.
   /// This must be tracked in order to deallocate the memory upon destruction.
-  Allocator* allocator_;
+  Deallocator* deallocator_;
 
   /// Allow converting move constructor and assignment to access fields of
   /// this class.
@@ -192,13 +191,13 @@ class UniquePtr : public internal::BaseUniquePtr {
   /// Constructs a ``UniquePtr`` from an already-allocated value.
   ///
   /// NOTE: Instances of this type are most commonly constructed using
-  /// ``Allocator::MakeUnique``.
-  UniquePtr(PrivateConstructorType, T* value, Allocator* allocator)
-      : value_(value), allocator_(allocator) {}
+  /// ``Deallocator::MakeUnique``.
+  UniquePtr(PrivateConstructorType, T* value, Deallocator* deallocator)
+      : value_(value), deallocator_(deallocator) {}
 
   // Allow construction with ``kPrivateConstructor`` to the implementation
   // of ``MakeUnique``.
-  friend class Allocator;
+  friend class Deallocator;
 };
 
 }  // namespace pw::allocator

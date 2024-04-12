@@ -39,22 +39,23 @@ group("pw_allocator") {
 
 pw_source_set("allocator") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_allocator/allocator.h",
-    "public/pw_allocator/capability.h",
-    "public/pw_allocator/layout.h",
-    "public/pw_allocator/unique_ptr.h",
-  ]
+  public = [ "public/pw_allocator/allocator.h" ]
   public_deps = [
-    dir_pw_assert,
-    dir_pw_preprocessor,
+    ":deallocator",
     dir_pw_result,
+  ]
+  sources = [ "allocator.cc" ]
+}
+
+pw_source_set("allocator_as_pool") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/allocator_as_pool.h" ]
+  public_deps = [
+    ":allocator",
+    ":pool",
     dir_pw_status,
   ]
-  sources = [
-    "allocator.cc",
-    "unique_ptr.cc",
-  ]
+  sources = [ "allocator_as_pool.cc" ]
 }
 
 pw_source_set("block") {
@@ -99,6 +100,41 @@ pw_source_set("buffer") {
   ]
   deps = [ "$dir_pw_bytes:alignment" ]
   sources = [ "buffer.cc" ]
+}
+
+pw_source_set("chunk_pool") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/chunk_pool.h" ]
+  public_deps = [
+    ":pool",
+    dir_pw_bytes,
+    dir_pw_result,
+  ]
+  deps = [
+    ":buffer",
+    "$dir_pw_assert:check",
+  ]
+  sources = [ "chunk_pool.cc" ]
+}
+
+pw_source_set("deallocator") {
+  sources = [
+    "deallocator.cc",
+    "unique_ptr.cc",
+  ]
+  public = [
+    "public/pw_allocator/capability.h",
+    "public/pw_allocator/deallocator.h",
+    "public/pw_allocator/layout.h",
+    "public/pw_allocator/unique_ptr.h",
+  ]
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_preprocessor,
+    dir_pw_result,
+    dir_pw_status,
+  ]
 }
 
 pw_source_set("fallback_allocator") {
@@ -153,6 +189,16 @@ pw_source_set("null_allocator") {
   public_deps = [ ":allocator" ]
 }
 
+pw_source_set("pool") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/pool.h" ]
+  public_deps = [
+    ":deallocator",
+    dir_pw_bytes,
+    dir_pw_result,
+  ]
+}
+
 pw_source_set("synchronized_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/synchronized_allocator.h" ]
@@ -174,6 +220,17 @@ pw_source_set("tracking_allocator") {
     dir_pw_status,
   ]
   deps = [ dir_pw_assert ]
+}
+
+pw_source_set("typed_pool") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/typed_pool.h" ]
+  public_deps = [
+    ":allocator",
+    ":chunk_pool",
+    dir_pw_bytes,
+    dir_pw_result,
+  ]
 }
 
 # Test support
@@ -218,6 +275,14 @@ pw_source_set("fuzzing") {
 }
 
 # Tests
+
+pw_test("allocator_as_pool_test") {
+  deps = [
+    ":allocator_as_pool",
+    ":testing",
+  ]
+  sources = [ "allocator_as_pool_test.cc" ]
+}
 
 pw_test("allocator_test") {
   deps = [
@@ -264,6 +329,14 @@ pw_test("buffer_test") {
     dir_pw_result,
   ]
   sources = [ "buffer_test.cc" ]
+}
+
+pw_test("chunk_pool_test") {
+  deps = [
+    ":chunk_pool",
+    ":testing",
+  ]
+  sources = [ "chunk_pool_test.cc" ]
 }
 
 pw_test("fallback_allocator_test") {
@@ -346,6 +419,14 @@ pw_test("tracking_allocator_test") {
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
 }
 
+pw_test("typed_pool_test") {
+  deps = [
+    ":typed_pool",
+    "$dir_pw_bytes:alignment",
+  ]
+  sources = [ "typed_pool_test.cc" ]
+}
+
 pw_test("unique_ptr_test") {
   deps = [ ":testing" ]
   sources = [ "unique_ptr_test.cc" ]
@@ -353,15 +434,18 @@ pw_test("unique_ptr_test") {
 
 pw_test_group("tests") {
   tests = [
+    ":allocator_as_pool_test",
     ":allocator_test",
     ":block_allocator_test",
     ":block_test",
     ":buffer_test",
+    ":chunk_pool_test",
     ":fallback_allocator_test",
     ":freelist_test",
     ":freelist_heap_test",
     ":libc_allocator_test",
     ":null_allocator_test",
+    ":typed_pool_test",
     ":synchronized_allocator_test",
     ":tracking_allocator_test",
     ":unique_ptr_test",

@@ -20,41 +20,74 @@ This module provides the following:
 - Test utilities for testing allocator implementations. These are typically used
   by allocator implementers.
 
-.. _module-pw_allocator-api-allocator:
-
-------------------------
-pw::allocator::Allocator
-------------------------
-.. doxygenclass:: pw::allocator::Allocator
-   :members:
+---------------
+Core interfaces
+---------------
+This module defines several types as part of a generic interface for memory
+users.
 
 .. _module-pw_allocator-api-layout:
 
 Layout
 ======
+A request for memory includes a requested size and alignment as a ``Layout``:
+
 .. doxygenclass:: pw::allocator::Layout
    :members:
 
-.. _module-pw_allocator-api-unique_ptr:
+.. _module-pw_allocator-api-allocator:
 
-UniquePtr
+Allocator
 =========
-.. doxygenclass:: pw::allocator::UniquePtr
+``Allocator`` is the most commonly used interface. It can be used to request
+memory of different layouts:
+
+.. doxygenclass:: pw::allocator::Allocator
+   :members:
+
+.. _module-pw_allocator-api-pool:
+
+Pool
+====
+``Pool`` differs from ``Allocator`` in that it can be used to request memory of
+a single, fixed layout:
+
+.. doxygenclass:: pw::allocator::Pool
+   :members:
+
+.. _module-pw_allocator-api-deallocator:
+
+Deallocator
+===========
+Both ``Allocator`` and ``Pool`` derive from and extend ``Deallocator``. This
+type is intended for allocator implementers and not for module consumers.
+
+.. doxygenclass:: pw::allocator::Deallocator
    :members:
 
 .. _module-pw_allocator-api-capabilities:
 
 Capabilities
 ============
-This modules includes types for communicating about optional methods and
-behaviors. It is intended for allocator implementers and not for module
-consumers.
+Types deriving from ``MemoryResource`` can communicate about their optional
+methods and behaviors using ``Capabilities``. This type is intended for
+allocator implementers and not for module consumers.
 
 .. doxygenclass:: pw::allocator::Capabilities
    :members:
 
+.. _module-pw_allocator-api-unique_ptr:
+
+UniquePtr
+=========
+The ``UniquePtr`` smart pointer type can be created by any type deriving from
+``MemoryResource``.
+
+.. doxygenclass:: pw::allocator::UniquePtr
+   :members:
+
 -------------------------
-Allocator Implementations
+Allocator implementations
 -------------------------
 This module provides several concrete allocator implementations of the
 :ref:`module-pw_allocator-api-allocator` interface:
@@ -101,6 +134,13 @@ DualFirstFitBlockAllocator
 .. doxygenclass:: pw::allocator::DualFirstFitBlockAllocator
    :members:
 
+.. _module-pw_allocator-api-chunk_pool:
+
+ChunkPool
+=========
+.. doxygenclass:: pw::allocator::ChunkPool
+   :members:
+
 .. _module-pw_allocator-api-libc_allocator:
 
 LibCAllocator
@@ -115,6 +155,13 @@ NullAllocator
 .. doxygenclass:: pw::allocator::NullAllocator
    :members:
 
+.. _module-pw_allocator-api-typed_pool:
+
+TypedPool
+=========
+.. doxygenclass:: pw::allocator::TypedPool
+   :members:
+
 .. TODO: b/328076428 - Update FreeListHeap or remove
 
 ---------------------
@@ -122,6 +169,13 @@ Forwarding Allocators
 ---------------------
 This module provides several "forwarding" allocators, as described in
 :ref:`module-pw_allocator-design-forwarding`.
+
+.. _module-pw_allocator-api-allocator_as_pool:
+
+AllocatorAsPool
+===============
+.. doxygenclass:: pw::allocator::AllocatorAsPool
+   :members:
 
 .. _module-pw_allocator-api-fallback_allocator:
 

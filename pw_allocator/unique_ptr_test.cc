@@ -161,7 +161,7 @@ TEST(UniquePtr, CanRelease) {
   {
     UniquePtr<Size> ptr = allocator.MakeUnique<Size>(Size{.value = 1});
     ASSERT_NE(ptr, nullptr);
-    EXPECT_EQ(ptr.allocator(), &allocator);
+    EXPECT_EQ(ptr.deallocator(), &allocator);
     size_ptr = ptr.Release();
 
     // Allocator pointer parameter is optional. Re-releasing returns null.

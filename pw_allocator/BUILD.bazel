@@ -27,19 +27,29 @@ cc_library(
     name = "allocator",
     srcs = [
         "allocator.cc",
-        "unique_ptr.cc",
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
-        "public/pw_allocator/capability.h",
-        "public/pw_allocator/layout.h",
-        "public/pw_allocator/unique_ptr.h",
     ],
     includes = ["public"],
     deps = [
-        "//pw_assert",
-        "//pw_preprocessor",
+        ":deallocator",
         "//pw_result",
+    ],
+)
+
+cc_library(
+    name = "allocator_as_pool",
+    srcs = [
+        "allocator_as_pool.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator_as_pool.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":pool",
         "//pw_status",
     ],
 )
@@ -92,6 +102,45 @@ cc_library(
         "//pw_bytes",
         "//pw_bytes:alignment",
         "//pw_result",
+    ],
+)
+
+cc_library(
+    name = "chunk_pool",
+    srcs = [
+        "chunk_pool.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/chunk_pool.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":buffer",
+        ":pool",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_result",
+    ],
+)
+
+cc_library(
+    name = "deallocator",
+    srcs = [
+        "deallocator.cc",
+        "unique_ptr.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/capability.h",
+        "public/pw_allocator/deallocator.h",
+        "public/pw_allocator/layout.h",
+        "public/pw_allocator/unique_ptr.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_preprocessor",
+        "//pw_result",
+        "//pw_status",
     ],
 )
 
@@ -158,21 +207,6 @@ cc_library(
 )
 
 cc_library(
-    name = "multiplex_allocator",
-    hdrs = [
-        "public/pw_allocator/multiplex_allocator.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        "//pw_containers:flat_map",
-        "//pw_result",
-        "//pw_status",
-        "//pw_tokenizer",
-    ],
-)
-
-cc_library(
     name = "null_allocator",
     hdrs = [
         "public/pw_allocator/null_allocator.h",
@@ -180,6 +214,17 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
+    ],
+)
+
+cc_library(
+    name = "pool",
+    hdrs = ["public/pw_allocator/pool.h"],
+    includes = [":default_config"],
+    deps = [
+        ":deallocator",
+        "//pw_bytes",
+        "//pw_result",
     ],
 )
 
@@ -207,6 +252,20 @@ cc_library(
         "//pw_assert",
         "//pw_metric:metric",
         "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "typed_pool",
+    hdrs = [
+        "public/pw_allocator/typed_pool.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":chunk_pool",
+        "//pw_bytes",
+        "//pw_result",
     ],
 )
 
@@ -271,6 +330,18 @@ cc_library(
 # Tests
 
 pw_cc_test(
+    name = "allocator_as_pool_test",
+    srcs = [
+        "allocator_as_pool_test.cc",
+    ],
+    deps = [
+        ":allocator_as_pool",
+        ":testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "allocator_test",
     srcs = [
         "allocator_test.cc",
@@ -317,6 +388,18 @@ pw_cc_test(
         ":buffer",
         "//pw_bytes",
         "//pw_result",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "chunk_pool_test",
+    srcs = [
+        "chunk_pool_test.cc",
+    ],
+    deps = [
+        ":chunk_pool",
+        ":testing",
         "//pw_unit_test",
     ],
 )
@@ -409,6 +492,18 @@ pw_cc_test(
     deps = [
         ":testing",
         ":tracking_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "typed_pool_test",
+    srcs = [
+        "typed_pool_test.cc",
+    ],
+    deps = [
+        ":typed_pool",
+        "//pw_bytes:alignment",
         "//pw_unit_test",
     ],
 )
