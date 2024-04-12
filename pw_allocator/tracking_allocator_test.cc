@@ -28,10 +28,10 @@ namespace {
 
 // Test fixtures.
 
-class TrackingAllocatorForTest : public TrackingAllocatorImpl<AllMetrics> {
+class TrackingAllocatorForTest : public TrackingAllocator<AllMetrics> {
  public:
   TrackingAllocatorForTest(metric::Token token, Allocator& allocator)
-      : TrackingAllocatorImpl<AllMetrics>(token, allocator) {}
+      : TrackingAllocator<AllMetrics>(token, allocator) {}
 
   // Expose the protected ``GetAllocatedLayout`` method for test purposes.
   Result<Layout> GetAllocatedLayout(const void* ptr) const {
@@ -129,7 +129,7 @@ TEST_F(TrackingAllocatorTest, GetCapacity) {
 
 TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {
   constexpr static metric::Token kChildToken = 2U;
-  TrackingAllocatorImpl<NoMetrics> child(
+  TrackingAllocator<NoMetrics> child(
       kChildToken, tracker_, kAddTrackingAllocatorAsChild);
   IntrusiveList<metric::Group>& children = tracker_.metric_group().children();
   ASSERT_FALSE(children.empty());

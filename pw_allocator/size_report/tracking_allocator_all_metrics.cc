@@ -22,7 +22,7 @@ int main() {
   reporter.SetBaseline();
 
   pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
-  pw::allocator::TrackingAllocatorImpl<pw::allocator::AllMetrics> tracker(
+  pw::allocator::TrackingAllocator<pw::allocator::AllMetrics> tracker(
       1, allocator);
   reporter.Measure(tracker);
 

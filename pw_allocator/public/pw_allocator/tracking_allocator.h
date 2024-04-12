@@ -73,20 +73,20 @@ static constexpr struct AddTrackingAllocatorAsChild {
 /// If the `requested_bytes` metric is disabled, no additional overhead will be
 /// added.
 template <typename MetricsType>
-class TrackingAllocatorImpl : public Allocator {
+class TrackingAllocator : public Allocator {
  public:
   using metric_type = MetricsType;
 
-  TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
+  TrackingAllocator(metric::Token token, Allocator& allocator)
       : Allocator(allocator.capabilities() | kImplementsGetRequestedLayout),
         allocator_(allocator),
         metrics_(token) {}
 
   template <typename OtherMetrics>
-  TrackingAllocatorImpl(metric::Token token,
-                        TrackingAllocatorImpl<OtherMetrics>& parent,
-                        const AddTrackingAllocatorAsChild&)
-      : TrackingAllocatorImpl(token, parent) {
+  TrackingAllocator(metric::Token token,
+                    TrackingAllocator<OtherMetrics>& parent,
+                    const AddTrackingAllocatorAsChild&)
+      : TrackingAllocator(token, parent) {
     parent.metric_group().Add(metric_group());
   }
 
@@ -170,7 +170,7 @@ inline Layout UnwrapLayout(const Result<Layout>& result) {
 }  // namespace internal
 
 template <typename MetricsType>
-void* TrackingAllocatorImpl<MetricsType>::DoAllocate(Layout layout) {
+void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
   Layout requested = layout;
   void* new_ptr = allocator_.Allocate(ReserveStorage(requested));
   if (new_ptr == nullptr) {
@@ -187,7 +187,7 @@ void* TrackingAllocatorImpl<MetricsType>::DoAllocate(Layout layout) {
 }
 
 template <typename MetricsType>
-void TrackingAllocatorImpl<MetricsType>::DoDeallocate(void* ptr) {
+void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
   Layout allocated =
@@ -199,7 +199,7 @@ void TrackingAllocatorImpl<MetricsType>::DoDeallocate(void* ptr) {
 }
 
 template <typename MetricsType>
-bool TrackingAllocatorImpl<MetricsType>::DoResize(void* ptr, size_t new_size) {
+bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
   Layout allocated =
@@ -219,8 +219,8 @@ bool TrackingAllocatorImpl<MetricsType>::DoResize(void* ptr, size_t new_size) {
 }
 
 template <typename MetricsType>
-void* TrackingAllocatorImpl<MetricsType>::DoReallocate(void* ptr,
-                                                       Layout new_layout) {
+void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
+                                                   Layout new_layout) {
   ptr = FromUsableSpace(ptr);
   Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
   Layout allocated =
@@ -249,7 +249,7 @@ void* TrackingAllocatorImpl<MetricsType>::DoReallocate(void* ptr,
 }
 
 template <typename MetricsType>
-Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetRequestedLayoutImpl(
+Result<Layout> TrackingAllocator<MetricsType>::DoGetRequestedLayoutImpl(
     const void* ptr) const {
   Result<Layout> requested = GetRequestedLayout(allocator_, ptr);
   if (requested.ok()) {
@@ -264,7 +264,7 @@ Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetRequestedLayoutImpl(
 }
 
 template <typename MetricsType>
-Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetUsableLayout(
+Result<Layout> TrackingAllocator<MetricsType>::DoGetUsableLayout(
     const void* ptr) const {
   ptr = FromUsableSpace(ptr);
   Result<Layout> usable = GetUsableLayout(allocator_, ptr);
@@ -281,14 +281,14 @@ Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetUsableLayout(
 }
 
 template <typename MetricsType>
-Result<Layout> TrackingAllocatorImpl<MetricsType>::DoGetAllocatedLayout(
+Result<Layout> TrackingAllocator<MetricsType>::DoGetAllocatedLayout(
     const void* ptr) const {
   ptr = FromUsableSpace(ptr);
   return GetAllocatedLayout(allocator_, ptr);
 }
 
 template <typename MetricsType>
-Layout TrackingAllocatorImpl<MetricsType>::ReserveStorage(Layout requested) {
+Layout TrackingAllocator<MetricsType>::ReserveStorage(Layout requested) {
   size_t size = requested.size();
   size_t alignment = requested.alignment();
   if constexpr (has_requested_bytes<MetricsType>::value) {
@@ -305,7 +305,7 @@ Layout TrackingAllocatorImpl<MetricsType>::ReserveStorage(Layout requested) {
 }
 
 template <typename MetricsType>
-void* TrackingAllocatorImpl<MetricsType>::ToUsableSpace(
+void* TrackingAllocator<MetricsType>::ToUsableSpace(
     void* ptr, const Layout& requested) const {
   auto addr = reinterpret_cast<uintptr_t>(ptr);
   if constexpr (has_requested_bytes<MetricsType>::value) {
@@ -319,7 +319,7 @@ void* TrackingAllocatorImpl<MetricsType>::ToUsableSpace(
 
 template <typename MetricsType>
 template <typename PtrType>
-PtrType TrackingAllocatorImpl<MetricsType>::FromUsableSpace(PtrType ptr) const {
+PtrType TrackingAllocator<MetricsType>::FromUsableSpace(PtrType ptr) const {
   auto addr = reinterpret_cast<uintptr_t>(ptr);
   if constexpr (has_requested_bytes<MetricsType>::value) {
     if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout) &&
@@ -336,8 +336,8 @@ PtrType TrackingAllocatorImpl<MetricsType>::FromUsableSpace(PtrType ptr) const {
 }
 
 template <typename MetricsType>
-void TrackingAllocatorImpl<MetricsType>::SetRequested(void* ptr,
-                                                      const Layout& requested) {
+void TrackingAllocator<MetricsType>::SetRequested(void* ptr,
+                                                  const Layout& requested) {
   if constexpr (has_requested_bytes<MetricsType>::value) {
     if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout)) {
       std::memcpy(GetRequestedStorage(ptr), &requested, sizeof(requested));
@@ -346,7 +346,7 @@ void TrackingAllocatorImpl<MetricsType>::SetRequested(void* ptr,
 }
 
 template <typename MetricsType>
-void* TrackingAllocatorImpl<MetricsType>::GetRequestedStorage(
+void* TrackingAllocator<MetricsType>::GetRequestedStorage(
     const void* ptr) const {
   if constexpr (has_requested_bytes<MetricsType>::value) {
     Result<Layout> usable = GetUsableLayout(allocator_, ptr);
@@ -365,36 +365,19 @@ void* TrackingAllocatorImpl<MetricsType>::GetRequestedStorage(
   }
 }
 
-// TODO(b/326509341): This is an interim class to facilitate refactoring
+// TODO(b/326509341): This is an interim alias to facilitate refactoring
 // downstream consumers of `TrackingAllocator` to add a template parameter.
 //
-// The migration will be performed as follows:
+// The following migration steps are complete:
 // 1. Downstream consumers will be updated to use `TrackingAllocatorImpl<...>`.
 // 2. The iterim `TrackingAllocator` class will be removed.
 // 3. `TrackingAllocatorImpl<...>` will be renamed to `TrackingAllocator<...>`,
 //    with a `TrackingAllocatorImpl<...>` alias pointing to it.
+//
+// The following migration steps remain:
 // 4. Downstream consumers will be updated to use `TrackingAllocator<...>`.
 // 5. The `TrackingAllocatorImpl<...>` alias will be removed.
-class TrackingAllocator : public TrackingAllocatorImpl<AllMetrics> {
- public:
-  TrackingAllocator(metric::Token token, Allocator& allocator)
-      : TrackingAllocatorImpl<AllMetrics>(token, allocator) {}
-  uint32_t allocated_bytes() const { return metrics().allocated_bytes.value(); }
-  uint32_t peak_allocated_bytes() const {
-    return metrics().peak_allocated_bytes.value();
-  }
-  uint32_t cumulative_allocated_bytes() const {
-    return metrics().cumulative_allocated_bytes.value();
-  }
-  uint32_t num_allocations() const { return metrics().num_allocations.value(); }
-  uint32_t num_deallocations() const {
-    return metrics().num_deallocations.value();
-  }
-  uint32_t num_resizes() const { return metrics().num_resizes.value(); }
-  uint32_t num_reallocations() const {
-    return metrics().num_reallocations.value();
-  }
-  uint32_t num_failures() const { return metrics().num_failures.value(); }
-};
+template <typename MetricsType>
+using TrackingAllocatorImpl = TrackingAllocator<MetricsType>;
 
 }  // namespace pw::allocator

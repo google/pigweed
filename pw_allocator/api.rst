@@ -141,7 +141,7 @@ SynchronizedAllocator
 
 TrackingAllocator
 =================
-.. doxygenclass:: pw::allocator::TrackingAllocatorImpl
+.. doxygenclass:: pw::allocator::TrackingAllocator
    :members:
 
 ---------------

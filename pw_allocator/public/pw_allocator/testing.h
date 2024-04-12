@@ -152,7 +152,7 @@ class AllocatorForTest : public Allocator {
   }
 
   WithBuffer<AllocatorType, kBufferSize> allocator_;
-  TrackingAllocatorImpl<MetricsType> tracker_;
+  TrackingAllocator<MetricsType> tracker_;
   size_t allocate_size_;
   void* deallocate_ptr_;
   size_t deallocate_size_;
