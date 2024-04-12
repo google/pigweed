@@ -50,6 +50,13 @@ function(emboss_cc_library NAME)
   pw_add_library_generic("${NAME}._includes" INTERFACE PUBLIC_INCLUDES
     "${out_dir}" PUBLIC_DEPS ${include_deps})
 
+  # Expose a list of our sources so that other generate steps can depend on
+  # them.
+  pw_add_library_generic("${NAME}._sources" INTERFACE
+    HEADERS
+      ${arg_SOURCES}
+  )
+
   # Setup the emboss command:
   # python3 $runner $embossc --generate cc --output-path $out_dir \
   # --import-dir ... --import-dir ... $source
@@ -65,6 +72,20 @@ function(emboss_cc_library NAME)
 
   list(APPEND emboss_cmd "${arg_SOURCES}")
 
+  # Build up a list of other `emb` sources the generate step depends on. We
+  # use this rather than the full emboss_cc_library so that the generate steps
+  # can run in parallel.
+  set(source_deps "${arg_DEPS}")
+  list(TRANSFORM source_deps APPEND ._sources)
+
+  # We need to extract the actual files from the targets for them to work
+  # as proper dependencies for `add_custom_command`.
+  set(dependent_sources "")
+  foreach(dep IN LISTS source_deps)
+    get_target_property(sources ${dep} SOURCES)
+    list(APPEND dependent_sources ${sources})
+  endforeach()
+
   # Define the command to generate $outputs
   add_custom_command(
     COMMAND
@@ -72,18 +93,20 @@ function(emboss_cc_library NAME)
     DEPENDS
       ${runner}
       ${arg_SOURCES}
-      ${arg_DEPS}
+      ${dependent_sources}
     OUTPUT
       ${outputs})
   # Tie a target to $outputs that will trigger the command
   add_custom_target("${NAME}._generate" DEPENDS ${outputs})
+
   # Export a library that exposes the generated outputs
   pw_add_library_generic("${NAME}" INTERFACE
     PUBLIC_INCLUDES
       "${out_dir}/public"
       "${output_include_path}"
     PUBLIC_DEPS
-      pw_third_party.emboss.cpp_utils)
+      pw_third_party.emboss.cpp_utils
+      ${arg_DEPS})
   # Tie in the generated outputs as a dep of the library
   add_dependencies("${NAME}" "${NAME}._generate")
 endfunction(emboss_cc_library)

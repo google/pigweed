@@ -127,16 +127,6 @@ emboss_cc_library(pw_bluetooth.emboss_hci_h4
     public
 )
 
-emboss_cc_library(pw_bluetooth.emboss_hci_test
-  SOURCES
-    public/pw_bluetooth/hci_test.emb
-  IMPORT_DIRS
-    public
-  DEPS
-    pw_bluetooth.emboss_hci_common
-    pw_bluetooth.emboss_l2cap_frames
-)
-
 emboss_cc_library(pw_bluetooth.emboss_hci_vendor
   SOURCES
     public/pw_bluetooth/hci_vendor.emb
@@ -154,6 +144,16 @@ emboss_cc_library(pw_bluetooth.emboss_hci_data
 emboss_cc_library(pw_bluetooth.emboss_l2cap_frames
   SOURCES
     public/pw_bluetooth/l2cap_frames.emb
+)
+
+emboss_cc_library(pw_bluetooth.emboss_hci_test
+  SOURCES
+    public/pw_bluetooth/hci_test.emb
+  IMPORT_DIRS
+    public
+  DEPS
+    pw_bluetooth.emboss_hci_common
+    pw_bluetooth.emboss_l2cap_frames
 )
 
 pw_add_library("pw_bluetooth.emboss_hci_group" INTERFACE
