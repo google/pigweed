@@ -33,6 +33,7 @@ pw_python_package("py") {
     "pw_cli/decorators.py",
     "pw_cli/env.py",
     "pw_cli/envparse.py",
+    "pw_cli/git_repo.py",
     "pw_cli/log.py",
     "pw_cli/pigweed_aliases.py",
     "pw_cli/plugins.py",
@@ -50,6 +51,7 @@ pw_python_package("py") {
   tests = [
     "decorators_test.py",
     "envparse_test.py",
+    "git_repo_test.py",
     "plugins_test.py",
     "plural_test.py",
   ]

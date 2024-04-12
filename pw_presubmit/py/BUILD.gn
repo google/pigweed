@@ -76,7 +76,6 @@ pw_python_package("py") {
     "cpp_format_test.py",
     "format_testing_utils.py",
     "format_core_test.py",
-    "git_repo_test.py",
     "gitmodules_test.py",
     "gn_format_test.py",
     "keep_sorted_test.py",

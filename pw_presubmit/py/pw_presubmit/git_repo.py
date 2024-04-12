@@ -13,28 +13,35 @@
 # the License.
 """Helpful commands for working with a Git repository."""
 
-import logging
 from pathlib import Path
 import subprocess
-from typing import Collection, Iterable, Pattern
+from typing import Collection, Pattern
 
-from pw_cli.plural import plural
-from pw_presubmit.tools import log_run
+from pw_cli import git_repo
+from pw_cli.decorators import deprecated
+from pw_presubmit.tools import PresubmitToolRunner
 
-_LOG = logging.getLogger(__name__)
-
-TRACKING_BRANCH_ALIAS = '@{upstream}'
-_TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
-_NON_TRACKING_FALLBACK = 'HEAD~10'
+# Moved to pw_cli.git_repo.
+TRACKING_BRANCH_ALIAS = git_repo.TRACKING_BRANCH_ALIAS
 
 
+class LoggingGitRepo(git_repo.GitRepo):
+    """A version of GitRepo that defaults to using a PresubmitToolRunner."""
+
+    def __init__(self, repo_root: Path):
+        super().__init__(repo_root, PresubmitToolRunner())
+
+
+@deprecated('Extend GitRepo to expose needed functionality.')
 def git_stdout(
     *args: Path | str, show_stderr=False, repo: Path | str = '.'
 ) -> str:
+    """Runs a git command in the specified repo."""
+    tool_runner = PresubmitToolRunner()
     return (
-        log_run(
-            ['git', '-C', str(repo), *args],
-            stdout=subprocess.PIPE,
+        tool_runner(
+            'git',
+            ['-C', str(repo), *args],
             stderr=None if show_stderr else subprocess.DEVNULL,
             check=True,
             ignore_dry_run=True,
@@ -44,36 +51,12 @@ def git_stdout(
     )
 
 
-def _ls_files(args: Collection[Path | str], repo: Path) -> Iterable[Path]:
-    """Returns results of git ls-files as absolute paths."""
-    git_root = repo.resolve()
-    for file in git_stdout('ls-files', '--', *args, repo=repo).splitlines():
-        full_path = git_root / file
-        # Modified submodules will show up as directories and should be ignored.
-        if full_path.is_file():
-            yield full_path
+def find_git_repo(path_in_repo: Path) -> git_repo.GitRepo:
+    """Tries to find the root of the git repo that owns path_in_repo."""
+    return git_repo.find_git_repo(path_in_repo, PresubmitToolRunner())
 
 
-def _diff_names(
-    commit: str, pathspecs: Collection[Path | str], repo: Path
-) -> Iterable[Path]:
-    """Returns absolute paths of files changed since the specified commit."""
-    git_root = root(repo)
-    for file in git_stdout(
-        'diff',
-        '--name-only',
-        '--diff-filter=d',
-        commit,
-        '--',
-        *pathspecs,
-        repo=repo,
-    ).splitlines():
-        full_path = git_root / file
-        # Modified submodules will show up as directories and should be ignored.
-        if full_path.is_file():
-            yield full_path
-
-
+@deprecated('Use GitRepo().tracking_branch().')
 def tracking_branch(
     repo_path: Path | None = None,
     fallback: str | None = None,
@@ -92,26 +75,11 @@ def tracking_branch(
     Returns:
       the remote tracking branch name or None if there is none
     """
-    if repo_path is None:
-        repo_path = Path.cwd()
-
-    if not is_repo(repo_path or Path.cwd()):
-        raise ValueError(f'{repo_path} is not within a Git repository')
-
-    # This command should only error out if there's no upstream branch set.
-    try:
-        return git_stdout(
-            'rev-parse',
-            '--abbrev-ref',
-            '--symbolic-full-name',
-            TRACKING_BRANCH_ALIAS,
-            repo=repo_path,
-        )
-
-    except subprocess.CalledProcessError:
-        return fallback
+    repo = repo_path if repo_path is not None else Path.cwd()
+    return find_git_repo(repo).tracking_branch(fallback)
 
 
+@deprecated('Use GitRepo().list_files().')
 def list_files(
     commit: str | None = None,
     pathspecs: Collection[Path | str] = (),
@@ -127,152 +95,56 @@ def list_files(
     Returns:
       A sorted list of absolute paths
     """
-    if repo_path is None:
-        repo_path = Path.cwd()
-
-    if commit in _TRACKING_BRANCH_ALIASES:
-        commit = tracking_branch(repo_path, fallback=_NON_TRACKING_FALLBACK)
-
-    if commit:
-        try:
-            return sorted(_diff_names(commit, pathspecs, repo_path))
-        except subprocess.CalledProcessError:
-            _LOG.warning(
-                'Error comparing with base revision %s of %s, listing all '
-                'files instead of just changed files',
-                commit,
-                repo_path,
-            )
-
-    return sorted(_ls_files(pathspecs, repo_path))
+    repo = repo_path if repo_path is not None else Path.cwd()
+    return find_git_repo(repo).list_files(commit, pathspecs)
 
 
+@deprecated('Use GitRepo.has_uncommitted_changes().')
 def has_uncommitted_changes(repo: Path | None = None) -> bool:
     """Returns True if the Git repo has uncommitted changes in it.
 
     This does not check for untracked files.
     """
-    if repo is None:
-        repo = Path.cwd()
-
-    # Refresh the Git index so that the diff-index command will be accurate.
-    # The `git update-index` command isn't reliable when run in parallel with
-    # other processes that may touch files in the repo directory, so retry a
-    # few times before giving up. The hallmark of this failure mode is the lack
-    # of an error message on stderr, so if we see something there we can assume
-    # it's some other issue and raise.
-    retries = 6
-    for i in range(retries):
-        try:
-            log_run(
-                ['git', '-C', repo, 'update-index', '-q', '--refresh'],
-                capture_output=True,
-                check=True,
-                ignore_dry_run=True,
-            )
-        except subprocess.CalledProcessError as err:
-            if err.stderr or i == retries - 1:
-                raise
-            continue
-    # diff-index exits with 1 if there are uncommitted changes.
-    return (
-        log_run(
-            ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD', '--'],
-            ignore_dry_run=True,
-        ).returncode
-        == 1
-    )
-
-
-def _describe_constraints(
-    git_root: Path,
-    repo_path: Path,
-    commit: str | None,
-    pathspecs: Collection[Path | str],
-    exclude: Collection[Pattern[str]],
-) -> Iterable[str]:
-    if not git_root.samefile(repo_path):
-        yield (
-            f'under the {repo_path.resolve().relative_to(git_root.resolve())} '
-            'subdirectory'
-        )
-
-    if commit in _TRACKING_BRANCH_ALIASES:
-        commit = tracking_branch(git_root)
-        if commit is None:
-            _LOG.warning(
-                'Attempted to list files changed since the remote tracking '
-                'branch, but the repo is not tracking a branch'
-            )
-
-    if commit:
-        yield f'that have changed since {commit}'
-
-    if pathspecs:
-        paths_str = ', '.join(str(p) for p in pathspecs)
-        yield f'that match {plural(pathspecs, "pathspec")} ({paths_str})'
-
-    if exclude:
-        yield (
-            f'that do not match {plural(exclude, "pattern")} ('
-            + ', '.join(p.pattern for p in exclude)
-            + ')'
-        )
+    return LoggingGitRepo(
+        repo if repo is not None else Path.cwd()
+    ).has_uncommitted_changes()
 
 
 def describe_files(
-    git_root: Path,
-    repo_path: Path,
+    git_root: Path,  # pylint: disable=unused-argument
+    working_dir: Path,
     commit: str | None,
     pathspecs: Collection[Path | str],
     exclude: Collection[Pattern],
     project_root: Path | None = None,
 ) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
-    constraints = list(
-        _describe_constraints(git_root, repo_path, commit, pathspecs, exclude)
+    return git_repo.describe_git_pattern(
+        working_dir=working_dir,
+        commit=commit,
+        pathspecs=pathspecs,
+        exclude=exclude,
+        tool_runner=PresubmitToolRunner(),
+        project_root=project_root,
     )
 
-    name = git_root.name
-    if project_root and project_root != git_root:
-        name = str(git_root.relative_to(project_root))
 
-    if not constraints:
-        return f'all files in the {name} repo'
-
-    msg = f'files in the {name} repo'
-    if len(constraints) == 1:
-        return f'{msg} {constraints[0]}'
-
-    return msg + ''.join(f'\n    - {line}' for line in constraints)
-
-
-def root(repo_path: Path | str = '.', *, show_stderr: bool = True) -> Path:
+@deprecated('Use find_git_repo().root().')
+def root(repo_path: Path | str = '.') -> Path:
     """Returns the repository root as an absolute path.
 
     Raises:
       FileNotFoundError: the path does not exist
       subprocess.CalledProcessError: the path is not in a Git repo
     """
-    repo_path = Path(repo_path)
-    if not repo_path.exists():
-        raise FileNotFoundError(f'{repo_path} does not exist')
-
-    return Path(
-        git_stdout(
-            'rev-parse',
-            '--show-toplevel',
-            repo=repo_path if repo_path.is_dir() else repo_path.parent,
-            show_stderr=show_stderr,
-        )
-    )
+    return find_git_repo(Path(repo_path)).root()
 
 
 def within_repo(repo_path: Path | str = '.') -> Path | None:
     """Similar to root(repo_path), returns None if the path is not in a repo."""
     try:
-        return root(repo_path, show_stderr=False)
-    except subprocess.CalledProcessError:
+        return root(repo_path)
+    except git_repo.GitError:
         return None
 
 
@@ -290,25 +162,27 @@ def path(
     return root(repo).joinpath(repo_path, *additional_repo_paths)
 
 
+@deprecated('Use GitRepo.commit_message().')
 def commit_message(commit: str = 'HEAD', repo: Path | str = '.') -> str:
-    return git_stdout('log', '--format=%B', '-n1', commit, repo=repo)
+    """Returns the commit message of the revision."""
+    return LoggingGitRepo(Path(repo)).commit_message(commit)
 
 
+@deprecated('Use GitRepo.commit_author().')
 def commit_author(commit: str = 'HEAD', repo: Path | str = '.') -> str:
-    return git_stdout('log', '--format=%ae', '-n1', commit, repo=repo)
+    """Returns the commit author of the revision."""
+    return LoggingGitRepo(Path(repo)).commit_author(commit)
 
 
+@deprecated('Use GitRepo.commit_hash().')
 def commit_hash(
     rev: str = 'HEAD', short: bool = True, repo: Path | str = '.'
 ) -> str:
     """Returns the commit hash of the revision."""
-    args = ['rev-parse']
-    if short:
-        args += ['--short']
-    args += [rev]
-    return git_stdout(*args, repo=repo)
+    return LoggingGitRepo(Path(repo)).commit_hash(rev, short)
 
 
+@deprecated('Use GitRepo.list_submodules().')
 def discover_submodules(
     superproject_dir: Path, excluded_paths: Collection[Pattern | str] = ()
 ) -> list[Path]:
@@ -325,26 +199,6 @@ def discover_submodules(
         List of "Path"s which were found but not excluded, this includes
         superproject_dir unless excluded.
     """
-    discovery_report = git_stdout(
-        'submodule',
-        'foreach',
-        '--quiet',
-        '--recursive',
-        'echo $toplevel/$sm_path',
-        repo=superproject_dir,
-    )
-    module_dirs = [Path(line) for line in discovery_report.split()]
-    # The superproject is omitted in the prior scan.
-    module_dirs.append(superproject_dir)
-
-    for exclude in excluded_paths:
-        if isinstance(exclude, Pattern):
-            for module_dir in reversed(module_dirs):
-                if exclude.fullmatch(module_dir.as_posix()):
-                    module_dirs.remove(module_dir)
-        else:
-            for module_dir in reversed(module_dirs):
-                if exclude == module_dir.as_posix():
-                    module_dirs.remove(module_dir)
-
-    return module_dirs
+    return LoggingGitRepo(superproject_dir).list_submodules(excluded_paths) + [
+        superproject_dir.resolve()
+    ]
