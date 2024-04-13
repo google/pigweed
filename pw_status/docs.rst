@@ -67,6 +67,8 @@ and `gRPC <https://grpc.io>`_ (`doc/statuscodes.md
 
       Detailed description of pw_status's methods.
 
+.. _module-pw_status-quickref:
+
 ---------------
 Quick reference
 ---------------

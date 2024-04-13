@@ -319,7 +319,7 @@ API reference
 =============
 The API reference should:
 
-* Be auto-generated from :ref:`docs-pw-style-doxygen` (for C++ / C APIs) or
+* Be auto-generated from :ref:`docs-style-doxygen` (for C++ / C APIs) or
   autodoc (for Python APIs).
 * Provide a code example demonstrating how to use the class, at minimum.
   Consider whether it's also helpful to provide more granular examples

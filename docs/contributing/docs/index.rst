@@ -32,7 +32,7 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
       ``pigweed.dev`` docs.
 
    .. grid-item-card:: :octicon:`checklist` Doxygen style guide
-      :link: docs-pw-style-doxygen
+      :link: docs-style-doxygen
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 

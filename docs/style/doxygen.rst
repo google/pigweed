@@ -1,324 +1,559 @@
-.. _docs-pw-style-doxygen:
+.. _docs-style-doxygen:
 
-===========================
-Doxygen documentation style
-===========================
-Doxygen comments in C, C++, and Java are surfaced in Sphinx using `Breathe
-<https://breathe.readthedocs.io/en/latest/index.html>`_.
+===================
+Doxygen style guide
+===================
+.. _Doxygen: https://www.doxygen.nl/index.html
 
-.. caution::
+``pigweed.dev`` uses `Doxygen`_ to auto-generate C and C++ API references
+from code comments in header files. These specially formatted comments are
+called **Doxygen comments**. This style guide shows you how to format Doxygen
+comments and other related documentation.
 
-   Sources with doxygen comment blocks must be added to the
-   ``_doxygen_input_files`` list in ``//docs/BUILD.gn`` to be processed.
+.. _docs-style-doxygen-quickstart:
 
-.. note::
-
-   We are moving to the `Google Developer Documentation Style Guide (GDDSG)
-   <https://developers.google.com/style>`_ for the English language conventions
-   (rather than technical style for Doxygen and RST usage). Currently, most of
-   our documentation does not adhere to the GDDSG.
-
-   See the `GDDSG section on API reference code comments
-   <https://developers.google.com/style/api-reference-comments>`_ for English
-   style that applies to Pigweed's Doxygen content.
-
-Breathe provides various `directives
-<https://breathe.readthedocs.io/en/latest/directives.html>`_ for bringing
-Doxygen comments into Sphinx. These include the following:
-
-- `doxygengroup
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygengroup>`_ --
-  Documents features within a `Doxygen group
-  <https://www.doxygen.nl/manual/grouping.html>`_. Doxygen groups are created
-  with `@defgroup <https://www.doxygen.nl/manual/commands.html#cmddefgroup>`_ or
-  `@addtogroup <https://www.doxygen.nl/manual/commands.html#cmdaddtogroup>`_ and
-  ``@{`` / ``@}``. Inidividual items can be grouped with `@ingroup
-  <https://www.doxygen.nl/manual/commands.html#cmdingroup>`_.
-
-  .. code-block:: cpp
-
-     namespace the_namespace {
-
-     /// @defgroup your_group_name Optional group title
-     /// @{
-
-     // ... everything is added to the group
-
-     // @}
-
-     }  // namespace the_namespace
-
-  Do not include namespaces in groups since Breathe does not handle them
-  properly (see `GitHub issue 772
-  <https://github.com/breathe-doc/breathe/issues/772>`_). The namespace must be
-  specified in Sphinx instead.
-
-  .. code-block:: rst
-
-     .. cpp:namespace:: the_namespace
-
-     .. doxygengroup:: your_group_name
-        :content-only:
-        :members:
-
-- `doxygenfile
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_ --
-  Documents a source file. May limit to specific types of symbols with
-  ``:sections:``.
-
-  .. code-block:: rst
-
-     .. doxygenfile:: pw_rpc/internal/config.h
-        :sections: define, func
-
-  .. note::
-
-     Breathe currently treats C++ namespaces like typedefs, resulting in
-     duplicate definition errors (see `GitHub issue 772
-     <https://github.com/breathe-doc/breathe/issues/772>`_). Because of this,
-     ``:sections:`` must be specified for files that define commonly used
-     namespaces (such as ``pw``). Consider grouping symbols with a
-     ``doxygengroup`` instead.
-
-- `doxygenclass
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_ --
-  Documents a class and optionally its members.
-
-  .. code-block:: rst
-
-     .. doxygenclass:: pw::sync::BinarySemaphore
-        :members:
-
-- `doxygentypedef
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygentypedef>`_ --
-  Documents an alias (``typedef`` or ``using`` statement).
-
-  .. code-block:: rst
-
-     .. doxygentypedef:: pw::Function
-
-- `doxygenfunction
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfunction>`_ --
-  Documents a source file. Can be filtered to limit to specific types of
-  symbols.
-
-  .. code-block:: rst
-
-     .. doxygenfunction:: pw::tokenizer::EncodeArgs
-
-- `doxygendefine
-  <https://breathe.readthedocs.io/en/latest/directives.html#doxygendefine>`_ --
-  Documents a preprocessor macro.
-
-  .. code-block:: rst
-
-     .. doxygendefine:: PW_TOKENIZE_STRING
-
-.. tip::
-
-   Prefer `doxygengroup
-   <https://breathe.readthedocs.io/en/latest/directives.html#doxygengroup>`_ or
-   `doxygenfile
-   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_
-   over listing symbols individually, which is error prone and harder to
-   maintain.
-
------------------------------
-Example Doxygen comment block
------------------------------
-Start a Doxygen comment block using ``///`` (three forward slashes).
-
-.. code-block:: cpp
-
-   /// This is the documentation comment for the `PW_LOCK_RETURNED()` macro. It
-   /// describes how to use the macro.
-   ///
-   /// Doxygen comments can refer to other symbols using Sphinx cross
-   /// references. For example, @cpp_class{pw::InlineBasicString}, which is
-   /// shorthand for @crossref{cpp,class,pw::InlineBasicString}, links to a C++
-   /// class. @crossref{py,func,pw_tokenizer.proto.detokenize_fields} links to a
-   /// Python function.
-   ///
-   /// @param[out] dest The memory area to copy to.
-   /// @param[in]  src  The memory area to copy from.
-   /// @param[in]  n    The number of bytes to copy
-   ///
-   /// @retval OK KVS successfully initialized.
-   /// @retval DATA_LOSS KVS initialized and is usable, but contains corrupt data.
-   /// @retval UNKNOWN Unknown error. KVS is not initialized.
-   ///
-   /// @rst
-   /// The ``@rst`` and ``@endrst`` commands form a block block of
-   /// reStructuredText that is rendered in Sphinx.
-   ///
-   /// .. warning::
-   ///    this is a warning admonition
-   ///
-   /// .. code-block:: cpp
-   ///
-   ///    void release(ptrdiff_t update = 1);
-   /// @endrst
-   ///
-   /// Example code block using Doxygen markup below. To override the language
-   /// use `@code{.cpp}`
-   ///
-   /// @code
-   ///   class Foo {
-   ///    public:
-   ///     Mutex* mu() PW_LOCK_RETURNED(mu) { return &mu; }
-   ///
-   ///    private:
-   ///     Mutex mu;
-   ///   };
-   /// @endcode
-   ///
-   /// @b The first word in this sentence is bold (The).
-   ///
-   #define PW_LOCK_RETURNED(x) __attribute__((lock_returned(x)))
-
---------------
-Doxygen syntax
---------------
-Pigweed prefers to use RST wherever possible, but there are a few Doxygen
-syntatic elements that may be needed.
-
-Common Doxygen commands for use within a comment block:
-
-- ``@rst`` To start a reStructuredText block. This is a custom alias for
-  ``\verbatim embed:rst:leading-asterisk``. This must be paired with
-  ``@endrst``.
-- `@code <https://www.doxygen.nl/manual/commands.html#cmdcode>`_ Start a code
-  block. This must be paired with ``@endcode``.
-- `@param <https://www.doxygen.nl/manual/commands.html#cmdparam>`_ Document
-  parameters, this may be repeated.
-- `@pre <https://www.doxygen.nl/manual/commands.html#cmdpre>`_ Starts a
-  paragraph where the precondition of an entity can be described.
-- `@post <https://www.doxygen.nl/manual/commands.html#cmdpost>`_ Starts a
-  paragraph where the postcondition of an entity can be described.
-- `@return <https://www.doxygen.nl/manual/commands.html#cmdreturn>`_ Single
-  paragraph to describe return value(s).
-- `@retval <https://www.doxygen.nl/manual/commands.html#cmdretval>`_ Document
-  return values by name. This is rendered as a definition list.
-- `@note <https://www.doxygen.nl/manual/commands.html#cmdnote>`_ Add a note
-  admonition to the end of documentation.
-- `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
-
-.. tip:
-
-   Did you add Doxygen comments and now your build is failing because Doxygen
-   says it can't find the class you decorated? Make sure your ``@code`` blocks
-   are paired with ``@endcode`` blocks and your ``@rst`` blocks are paired
-   with ``@endrst`` blocks!
-
-Doxygen provides `structural commands
-<https://doxygen.nl/manual/docblocks.html#structuralcommands>`_ that associate a
-comment block with a particular symbol. Example of these include ``@class``,
-``@struct``, ``@def``, ``@fn``, and ``@file``. Do not use these unless
-necessary, since they are redundant with the declarations themselves.
-
-One case where structural commands are necessary is when a single comment block
-describes multiple symbols. To group multiple symbols into a single comment
-block, include a structural commands for each symbol on its own line. For
-example, the following comment documents two macros:
-
-.. code-block:: cpp
-
-   /// @def PW_ASSERT_EXCLUSIVE_LOCK
-   /// @def PW_ASSERT_SHARED_LOCK
-   ///
-   /// Documents functions that dynamically check to see if a lock is held, and
-   /// fail if it is not held.
-
-.. seealso:: `All Doxygen commands <https://www.doxygen.nl/manual/commands.html>`_
-
-----------------
-Cross-references
-----------------
-Pigweed provides Doxygen aliases for creating Sphinx cross references within
-Doxygen comments. These should be used when referring to other symbols, such as
-functions, classes, or macros.
+----------
+Quickstart
+----------
+Auto-generating an API reference on ``pigweed.dev`` requires interacting with
+a few different tools. This section provides an overview of when you interact
+with each tool, using ``pw_i2c`` as an example.
 
 .. inclusive-language: disable
 
-The basic alias is ``@crossref``, which supports any `Sphinx domain
-<https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html>`_.
-For readability, aliases for commonnly used types are provided.
+.. _//pw_i2c/public/pw_i2c/device.h: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:pw_i2c/public/pw_i2c/device.h
+.. _Breathe directives: https://breathe.readthedocs.io/en/latest/directives.html
+.. _Sphinx: https://www.sphinx-doc.org/en/master/
+.. _//pw_i2c/reference.rst: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:pw_i2c/reference.rst;l=44
+.. _//docs/BUILD.gn: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:docs/BUILD.gn;l=192
 
 .. inclusive-language: enable
 
-- ``@crossref{domain,type,identifier}`` Inserts a cross reference of any type in
-  any Sphinx domain. For example, ``@crossref{c,func,foo}`` is equivalent to
-  ``:c:func:`foo``` and links to the documentation for the C function ``foo``,
-  if it exists.
-- ``@c_macro{identifier}`` Equivalent to ``:c:macro:`identifier```.
-- ``@cpp_func{identifier}`` Equivalent to ``:cpp:func:`identifier```.
-- ``@cpp_class{identifier}`` Equivalent to ``:cpp:class:`identifier```.
-- ``@cpp_type{identifier}`` Equivalent to ``:cpp:type:`identifier```.
+#. Annotate your header file using `Doxygen`_ syntax. All of the comments
+   that start with triple slashes (``///``) are Doxygen comments. Doxygen
+   ignores double slash (``//``) comments.
 
-.. note::
+   Example: `//pw_i2c/public/pw_i2c/device.h`_
 
-   Use the `@` aliases described above for all cross references. Doxygen
-   provides other methods for cross references, but Sphinx cross references
-   offer several advantages:
+#. Include the API reference content into a reStructuredText file using
+   `Breathe directives`_. Breathe is the bridge between Doxygen and `Sphinx`_,
+   the documentation generator that powers ``pigweed.dev``. See
+   :ref:`docs-style-doxygen-breathe-overview` for more explanation.
 
-   - Sphinx cross references work for all identifiers known to Sphinx, including
-     those documented with e.g. ``.. cpp:class::`` or extracted from Python.
-     Doxygen references can only refer to identifiers known to Doxygen.
-   - Sphinx cross references always use consistent formatting. Doxygen cross
-     references sometimes render as plain text instead of code-style monospace,
-     or include ``()`` in macros that shouldn't have them.
-   - Sphinx cross references can refer to symbols that have not yet been
-     documented. They will be formatted correctly and become links once the
-     symbols are documented.
-   - Using Sphinx cross references in Doxygen comments makes cross reference
-     syntax more consistent within Doxygen comments and between RST and
-     Doxygen.
+   Example: `//pw_i2c/reference.rst`_
 
-Create cross reference links elsewhere in the document to symbols documented
-with Doxygen using standard Sphinx cross references, such as ``:cpp:class:`` and
-``:cpp:func:``.
+#. Add your header file's path to the ``_doxygen_input_files`` list in
+   ``//docs/BUILD.gn``. The docs build system throws a "symbol not found"
+   errors if you forget this step.
 
-.. code-block:: rst
+   Example: `//docs/BUILD.gn`_
 
-   - :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
-   - :cpp:func:`pw::sync::BinarySemaphore::try_acquire`
+.. _docs-style-doxygen-writing:
 
-.. seealso::
-   - `C++ cross reference link syntax`_
-   - `C cross reference link syntax`_
-   - `Python cross reference link syntax`_
+---------------------------
+API reference writing style
+---------------------------
+.. _API reference code comments: https://developers.google.com/style/api-reference-comments
 
-.. inclusive-language: disable
+Follow the guidance in `API reference code comments`_.
 
-.. _C++ cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing
-.. _C cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-c-constructs
-.. _Python cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects
+.. _docs-style-doxygen-comment-style:
 
-.. inclusive-language: enable
+---------------------
+Doxygen comment style
+---------------------
+This section explains how you should style the comments within header files
+that Doxygen converts into API references.
 
---------------------------------
-Status codes in Doxygen comments
---------------------------------
+.. _docs-style-doxygen-comment-syntax:
+
+Comment syntax
+==============
+Use the triple slash (``///``) syntax.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// ...
+      /// ...
+
+.. _docs-style-doxygen-special-command-syntax:
+
+Special command syntax
+======================
+.. _Special commands: https://www.doxygen.nl/manual/commands.html
+
+`Special commands`_ like ``@code`` and ``@param`` are the core annotation
+tools of Doxygen. Doxygen recognizes words that begin with either backslashes
+(``\``) or at symbols (``@``) as special commands. For example, ``\code`` and
+``@code`` are synonyms. Always use the at symbol (``@``) format.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @param[out] dest The memory area to copy to.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: none
+
+      /// \param dest The memory area to copy to.
+
+.. _docs-style-doxygen-structural-commands:
+
+Structural commands
+===================
+.. _Doxygen structural commands: https://doxygen.nl/manual/docblocks.html#structuralcommands
+
+`Doxygen structural commands`_ like ``@struct``, ``@fn``, ``@class``, and ``@file``
+associate a comment to a symbol. Don't use structural commands if they're not
+needed. In other words, if your Doxygen comment renders correctly without the
+structural command, don't use it.
+
+Code examples
+=============
+Use ``@code{.cpp}`` followed by the code example followed by ``@endcode``.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @code{.cpp}
+      ///   #include "pw_kvs/key_value_store.h"
+      ///   #include "pw_kvs/flash_test_partition.h"
+      ///
+      ///   ...
+      /// @endcode
+
+Omit or change ``{.cpp}`` if your code example isn't C++ code.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @code
+      ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES + STOP
+      ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
+      /// @endcode
+
+.. _docs-style-doxygen-params:
+
+Parameters
+==========
+Use ``@param[<direction>] <name> <description>`` for each parameter.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @param[out] dest The memory area to copy to.
+      /// @param[in] src The memory area to copy from.
+      /// @param[in] n The number of bytes to copy.
+
+Put a newline between the parameters if you need multi-line descriptions.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @param[out] dest Lorem ipsum dolor sit amet, consectetur adipiscing
+      /// elit, sed do eiusmod tempor incididunt ut labore et dolore magna...
+      ///
+      /// @param[in] src The memory area to copy from.
+      ///
+      /// @param[in] n The number of bytes to copy.
+
+The direction annotation is required.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: none
+
+      /// @param dest The memory area to copy to.
+      /// @param src The memory area to copy from.
+      /// @param n The number of bytes to copy.
+
+   ``<direction>`` must be specified and the value must be either ``in`` or
+   ``out``.
+
+.. _docs-style-doxygen-pre:
+
+Preconditions
+=============
+Use ``@pre <description>``.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @pre Description of a precondition that must be satisifed before
+      /// invoking this function.
+
+.. _docs-style-doxygen-pw_status:
+
+pw_status codes
+===============
 Use the following syntax when referring to ``pw_status`` codes in Doxygen
 comments:
 
-.. code-block::
+.. admonition:: **Yes**
+   :class: checkmark
 
-   @pw_status{YOUR_STATUS_CODE_HERE}
+   .. code-block:: none
 
-Replace ``YOUR_STATUS_CODE_HERE`` with a valid ``pw_status`` code.
+      @pw_status{...}
 
-This syntax ensures that Doxygen links back to the status code's
-reference documentation in :ref:`module-pw_status`.
+Replace ``...`` with a valid ``pw_status`` code. See
+:ref:`module-pw_status-quickref`.
 
-.. note::
+Doxygen converts this alias into a link to the status code's reference
+documentation.
 
-   The guidance in this section only applies to Doxygen comments in C++ header
-   files.
+.. _docs-style-doxygen-doxygen-pw_status-return:
+
+Methods that return pw_status codes
+===================================
+Use ``@return A `pw::Status` object with one of the following statuses:``
+followed by a bullet list of the relevant statuses and a description
+of each scenario.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @returns A `pw::Status` object with one of the following statuses:
+      /// * @pw_status{...} - <description of scenario>
+      /// * @pw_status{...} - <description of scenario>
+      /// * @pw_status{...} - <description of scenario>
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: none
+
+      /// @returns A `pw::Status` object with one of the following statuses:
+      ///
+      /// * @pw_status{...} - <description of scenario>
+      /// * @pw_status{...} - <description of scenario>
+      /// * @pw_status{...} - <description of scenario>
+
+   Don't put a blank line between the ``@returns`` line and the line after it.
+   The list won't render in the correct place.
+
+.. _docs-style-doxygen-namespaces:
+
+Use fully namespaced names
+==========================
+In general, write out the full namespace to Pigweed classes, methods, and
+so on. If you're writing a code sample, and that code sample clearly shows
+where the item comes from via a ``using`` statement, you don't need to use
+full namespacing.
+
+.. admonition:: Discussion
+
+   Pigweed has over 160 modules. It can be overwhelming for beginners
+   to figure out where an item is coming from.
+
+.. _docs-style-doxygen-multisymbol:
+
+Single comment block for multiple symbols
+=========================================
+Use ``@def <symbol>`` followed by the comment block.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      /// @def PW_ASSERT_EXCLUSIVE_LOCK
+      /// @def PW_ASSERT_SHARED_LOCK
+      ///
+      /// Documents functions that dynamically check to see if a lock is held, and
+      /// fail if it is not held.
+
+.. _docs-style-doxygen-xrefs:
+
+Cross-references (x-refs)
+=========================
+
+.. _docs-style-doxygen-xrefs-comments:
+
+X-refs in Doxygen comments
+--------------------------
+For C or C++ x-refs, use one of the following aliases:
+
+.. csv-table::
+   :header: Alias, reStructuredText equivalent
+
+   ``@c_macro{<identifier>}``, ``:c:macro:`<identifier>```
+   ``@cpp_func{<identifier>}``, ``:cpp:func:`<identifier>```
+   ``@cpp_class{<identifier>}``, ``:cpp:class:`<identifier>```
+   ``@cpp_type{<identifier>}``, ``:cpp:type:`<identifier>```
+
+.. inclusive-language: disable
+
+.. _Sphinx Domain: https://www.sphinx-doc.org/en/master/usage/domains/index.html
+
+.. inclusive-language: enable
+
+For all other x-refs, use Pigweed's custom basic alias,
+``@crossref{<domain>,<type>,<identifier>}``. ``<domain>`` must be a valid
+`Sphinx Domain`_ and ``<type>`` must be a valid type within that domain.
+``@crossref`` can be used with any domain.
+
+Avoid Doxygen x-refs
+^^^^^^^^^^^^^^^^^^^^
+Always use Pigweed's custom aliases for x-refs unless you have specific
+reasons not to do so. Pigweed's x-ref aliases are built on top of Sphinx.
+Doxygen provides its own features for x-refs but they should be avoided
+because Sphinx's are better:
+
+* Sphinx x-refs work for all identifiers known to Sphinx, including
+  those documented with directives like ``.. cpp:class::`` or extracted from
+  Python. Doxygen references can only refer to identifiers known to Doxygen.
+* Sphinx x-refs always use consistent formatting. Doxygen
+  x-refs sometimes render as plaintext instead of code-style
+  monospace, or include ``()`` in macros that shouldn’t have them.
+* Sphinx x-refs can refer to symbols that haven't yet been documented.
+  They will be formatted correctly and become links once the symbols are
+  documented.
+
+Using Sphinx x-refs in Doxygen comments makes x-ref syntax more consistent
+within Doxygen comments and between reStructuredText and Doxygen.
+
+.. _docs-style-doxygen-xrefs-rest:
+
+Cross-references in reST to Doxygen symbols
+-------------------------------------------
+After you've used Doxygen to generate API references, you can link to those
+symbols from your reStructuredText with standard Sphinx x-ref
+syntax.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
+
+.. inclusive-language: disable
+
+.. _domain: https://www.sphinx-doc.org/en/master/usage/domains/index.html
+.. _C++ Domain: https://www.sphinx-doc.org/en/master/usage/domains/cpp.html
+.. _C Domain: https://www.sphinx-doc.org/en/master/usage/domains/c.html
+.. _Python Domain: https://www.sphinx-doc.org/en/master/usage/domains/python.html
+
+.. inclusive-language: enable
+
+In the Sphinx docs the reference documentation for x-ref syntax is
+provided in the `domain`_ docs:
+
+* `C++ Domain`_
+* `C Domain`_
+* `Python Domain`_
+
+.. _docs-style-doxygen-embedded-rest:
+
+Embedded reStructuredText
+=========================
+To use reStructuredText (reST) within a Doxygen comment, wrap the reST
+in ``@rst`` and ``@endrst``.
+
+.. _docs-style-doxygen-breathe:
+
+-------
+Breathe
+-------
+.. _Breathe: https://breathe.readthedocs.io
+
+This section provides guidance on how `Breathe`_ should and shouldn't be used
+when authoring ``pigweed.dev`` docs.
+
+.. _docs-style-doxygen-breathe-overview:
+
+Overview
+========
+.. inclusive-language: disable
+
+.. _Breathe directives: https://breathe.readthedocs.io/en/latest/directives.html
+.. _Sphinx: https://www.sphinx-doc.org/en/master/
+
+.. inclusive-language: enable
+
+After you annotate your header comments as Doxygen comments, you need to
+specify where to render the API reference within the ``pigweed.dev`` docs.
+The reStructuredText files distributed across the main Pigweed repo are
+the source code for ``pigweed.dev``. Updating these ``.rst`` files is how
+you surface the API reference on ``pigweed.dev``. Doxygen doesn't natively
+interact with `Sphinx`_, the documentation generator that powers
+``pigweed.dev``. `Breathe`_ is the bridge and API that enables ``pigweed.dev``
+and Doxygen to work together.
+
+.. _docs-style-doxygen-breathe-doxygenclass:
+
+doxygenclass
+============
+.. _doxygenclass: https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass
+
+OK to use. `doxygenclass`_ documents a class and its members.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. doxygenclass:: pw::sync::BinarySemaphore
+         :members:
+
+Classes that are a major part of a Pigweed module's API should have their
+own section so that they're easy to find in the right-side page nav on
+``pigweed.dev``.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. _module-pw_<name>-reference:
+
+      =========
+      Reference
+      =========
+      .. pigweed-module-subpage::
+         :name: pw_<name>
+
+      ...
+
+      .. _module-pw_<name>-reference-<class>:
+
+      -------------------
+      pw::<name>::<class>
+      -------------------
+      .. doxygenclass:: pw::<name>::<class>
+         :members:
+
+.. _docs-style-doxygen-breathe-doxygenfunction:
+
+doxygenfunction
+===============
+.. _doxygenfunction: https://breathe.readthedocs.io/en/latest/directives.html#doxygenfunction
+
+OK to use. `doxygenfunction` documents a single function or method.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. doxygenfunction:: pw::tokenizer::EncodeArgs
+
+.. _docs-style-doxygen-breathe-doxygendefine:
+
+doxygendefine
+=============
+.. _doxygendefine: https://breathe.readthedocs.io/en/latest/directives.html#doxygendefine
+
+OK to use. `doxygendefine`_ documents a preprocessor macro.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. doxygendefine:: PW_TOKENIZE_STRING
+
+.. _docs-style-doxygen-breathe-doxygengroup:
+
+doxygengroup
+============
+.. _doxygengroup: https://breathe.readthedocs.io/en/latest/directives.html#doxygengroup
+
+`doxygengroup`_ lets you manually mark a set of symbols as belonging to the same
+conceptual group.
+
+``doxygengroup`` is OK to use when a simple
+:ref:`docs-style-doxygen-breathe-doxygenclass`-based organization
+doesn't work well for your module.
+
+.. _@defgroup: https://www.doxygen.nl/manual/commands.html#cmddefgroup
+.. _@addtogroup: https://www.doxygen.nl/manual/commands.html#cmdaddtogroup
+.. _@ingroup: https://www.doxygen.nl/manual/commands.html#cmdingroup
+
+To create a group, annotate your Doxygen comments with `@defgroup`_,
+`@addtogroup`_, and `@ingroup`_. You can wrap a set of contiguous comments
+in ``@{`` and ``@}`` to indicate that they all belong to a group.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      /// @defgroup <name> <description>
+      /// @{
+      /// ...
+      /// @}
+
+.. _issue #772: https://github.com/breathe-doc/breathe/issues/772
+
+Don't include namespaces in ``doxygengroup`` because Breathe doesn't handle
+them correctly. See `issue #772`_.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. cpp:namespace:: my_namespace
+
+      .. doxygengroup:: my_group
+         :content-only:
+         :members:
+
+.. _docs-style-doxygen-breathe-doxygentypedef:
+
+doxygentypedef
+==============
+.. _doxygentypedef: https://breathe.readthedocs.io/en/latest/directives.html#doxygentypedef
+
+OK to use. `doxygentypedef`_ documents a ``typedef`` or ``using`` statement.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: rst
+
+      .. doxygentypedef:: pw::Function
+
+.. _docs-style-doxygen-breathe-doxygenfile:
+
+doxygenfile
+===========
+.. _doxygenfile: https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile
+
+Don't use `doxygenfile`_. Use :ref:`docs-style-doxygen-breathe-doxygengroup`
+instead.
+
+.. _docs-style-doxygen-disabled-include:
 
 -----------------------------------------------
 Disabled auto-generated ``#include`` statements
 -----------------------------------------------
+.. note::
+
+   This is an FYI section. There's no prescriptive rule here.
+
 Doxygen and Breathe have the ability to auto-generate ``#include`` statements
 for class references. These have been disabled because:
 
