@@ -394,7 +394,7 @@ export class LogView extends LitElement {
       log.fields.forEach((field, columnIndex) => {
         maxWidths[columnIndex] = Math.max(
           maxWidths[columnIndex],
-          field.value.toString().length,
+          field.value ? field.value.toString().length : 0,
         );
       });
     });
@@ -405,7 +405,9 @@ export class LogView extends LitElement {
     const separator = '';
     const logRows = this.logs.map((log) => {
       const values = log.fields.map((field, columnIndex) =>
-        field.value.toString().padEnd(maxWidths[columnIndex]),
+        (field.value ? field.value.toString() : '').padEnd(
+          maxWidths[columnIndex],
+        ),
       );
       return values.join('\t');
     });
