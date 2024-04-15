@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -123,6 +123,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         initial_response_timeout_s: float = 4.0,
         max_retries: int = 3,
         max_lifetime_retries: int = 1500,
+        max_chunk_size_bytes: int = 1024,
         default_protocol_version=ProtocolVersion.VERSION_TWO,
     ):
         """Initializes a Manager on top of a TransferService.
@@ -132,17 +133,21 @@ class Manager:  # pylint: disable=too-many-instance-attributes
           default_response_timeout_s: max time to wait between receiving packets
           initial_response_timeout_s: timeout for the first packet; may be
               longer to account for transfer handler initialization
-          max_retires: number of times to retry a single package after a timeout
+          max_retries: number of times to retry a single package after a timeout
           max_lifetime_retires: Cumulative maximum number of times to retry over
               the course of the transfer before giving up.
-          default_protocol_version: Defaults to V2, can be set to legacy for
-              projects which use legacy devices.
+          max_chunk_size_bytes: In a read transfer, the maximum size of data the
+              server should send within a single packet.
+          default_protocol_version: Version of the pw_transfer protocol to use.
+              Defaults to the latest, but can be set to legacy for projects
+              which use legacy devices.
         """
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
         self._initial_response_timeout_s = initial_response_timeout_s
         self.max_retries = max_retries
         self.max_lifetime_retries = max_lifetime_retries
+        self._max_chunk_size_bytes = max_chunk_size_bytes
         self._default_protocol_version = default_protocol_version
 
         # Ongoing transfers in the service by resource ID.
@@ -259,6 +264,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self.max_retries,
             self.max_lifetime_retries,
             protocol_version,
+            max_chunk_size=self._max_chunk_size_bytes,
             progress_callback=progress_callback,
             initial_offset=initial_offset,
         )
