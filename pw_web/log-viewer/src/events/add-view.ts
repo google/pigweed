@@ -12,7 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-interface AddViewEvent extends CustomEvent {}
+import { TableColumn } from '../shared/interfaces';
+
+interface AddViewEvent extends CustomEvent {
+  detail: {
+    columnData: TableColumn[];
+  };
+}
 
 declare global {
   interface GlobalEventHandlersEventMap {

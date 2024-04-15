@@ -66,7 +66,7 @@ export class LogView extends LitElement {
 
   /** The field keys (column values) for the incoming log entries. */
   @state()
-  private _columnData: TableColumn[] = [];
+  public columnData: TableColumn[] = [];
 
   /** A string representing the value contained in the search field. */
   @state()
@@ -123,7 +123,7 @@ export class LogView extends LitElement {
     if (index !== -1) {
       const storedColumnData = viewConfigArr[index].columnData;
       this.updateColumnOrder(storedColumnData);
-      this._columnData = this.updateColumnRender(storedColumnData);
+      this.columnData = this.updateColumnRender(storedColumnData);
     }
 
     // Update view title with log source names if a view title isn't already provided
@@ -211,13 +211,13 @@ export class LogView extends LitElement {
   }
 
   private updateFieldsFromNewLogs(newLogs: LogEntry[]): void {
-    if (!this._columnData) {
-      this._columnData = [];
+    if (!this.columnData) {
+      this.columnData = [];
     }
 
     newLogs.forEach((log) => {
       log.fields.forEach((field) => {
-        if (!this._columnData.some((col) => col.fieldName === field.key)) {
+        if (!this.columnData.some((col) => col.fieldName === field.key)) {
           const newColumnData = {
             fieldName: field.key,
             characterLength: 0,
@@ -225,9 +225,9 @@ export class LogView extends LitElement {
             isVisible: true,
           };
           this.updateColumnOrder([newColumnData]);
-          this._columnData = this.updateColumnRender([
+          this.columnData = this.updateColumnRender([
             newColumnData,
-            ...this._columnData,
+            ...this.columnData,
           ]);
         }
       });
@@ -296,7 +296,7 @@ export class LogView extends LitElement {
   }
 
   public getFields(): string[] {
-    return this._columnData
+    return this.columnData
       .filter((column) => column.isVisible)
       .map((column) => column.fieldName);
   }
@@ -317,7 +317,7 @@ export class LogView extends LitElement {
     }
 
     // Find the relevant column in _columnData
-    const column = this._columnData.find(
+    const column = this.columnData.find(
       (col) => col.fieldName === event.detail.field,
     );
 
@@ -329,7 +329,7 @@ export class LogView extends LitElement {
     column.isVisible = event.detail.isChecked;
 
     // Clear the manually-set width of the last visible column
-    const lastVisibleColumn = this._columnData
+    const lastVisibleColumn = this.columnData
       .slice()
       .reverse()
       .find((col) => col.isVisible);
@@ -338,7 +338,7 @@ export class LogView extends LitElement {
     }
 
     // Trigger the change in column data and request an update
-    this._columnData = [...this._columnData];
+    this.columnData = [...this.columnData];
     this._logList.requestUpdate();
   }
 
@@ -369,7 +369,7 @@ export class LogView extends LitElement {
   }
 
   private updateColumnData(event: CustomEvent) {
-    this._columnData = event.detail;
+    this.columnData = event.detail;
   }
 
   private updateTitle() {
@@ -422,7 +422,7 @@ export class LogView extends LitElement {
 
   render() {
     return html` <log-view-controls
-        .columnData=${this._columnData}
+        .columnData=${this.columnData}
         .viewId=${this.id}
         .viewTitle=${this.viewTitle}
         .hideCloseButton=${!this.isOneOfMany}
@@ -437,7 +437,7 @@ export class LogView extends LitElement {
       </log-view-controls>
 
       <log-list
-        .columnData=${[...this._columnData]}
+        .columnData=${[...this.columnData]}
         .lineWrap=${this._lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}

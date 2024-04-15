@@ -211,6 +211,7 @@ export class LogViewControls extends LitElement {
 
   private handleAddView() {
     const addView = new CustomEvent('add-view', {
+      detail: { columnData: this.columnData },
       bubbles: true,
       composed: true,
     });

@@ -21,7 +21,6 @@ import {
   LogViewConfig,
   State,
   SourceData,
-  ColumnOrder,
 } from '../shared/interfaces';
 import { LocalStorageState, StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
@@ -29,6 +28,7 @@ import { themeDark } from '../themes/dark';
 import { themeLight } from '../themes/light';
 import { LogView } from './log-view/log-view';
 import CloseViewEvent from '../events/close-view';
+import AddViewEvent from '../events/add-view';
 
 type ColorScheme = 'dark' | 'light';
 
@@ -59,7 +59,7 @@ export class LogViewer extends LitElement {
 
   /** An array that stores the preferred column order of columns  */
   @state()
-  _columnOrder: ColumnOrder;
+  _columnOrder: string[];
 
   /** A map containing data from present log sources */
   private _sources: Map<string, SourceData> = new Map();
@@ -68,7 +68,7 @@ export class LogViewer extends LitElement {
 
   constructor(
     state: StateStore = new LocalStorageState(),
-    columnOrder: ColumnOrder,
+    columnOrder: string[],
   ) {
     super();
     this._columnOrder = columnOrder;
@@ -135,19 +135,27 @@ export class LogViewer extends LitElement {
   }
 
   /** Creates a new log view in the `_logViews` arrray. */
-  private addLogView() {
+  private addLogView(event?: AddViewEvent) {
     const newView = new LogView();
-    const newViewState = this.addLogViewState(newView);
-    const viewStates: State = { logViewConfig: this._state.logViewConfig };
-    viewStates.logViewConfig.push(newViewState);
+    const newViewState = this.addLogViewState(
+      newView,
+      event?.detail.columnData,
+    );
+
+    const viewStates: State = {
+      logViewConfig: [...this._state.logViewConfig, newViewState],
+    };
     this._logViews = [...this._logViews, newView];
     this._stateStore.setState(viewStates);
     this._state = viewStates;
   }
 
   /** Creates a new log view state to store in the state object. */
-  private addLogViewState(view: LogView): LogViewConfig {
-    const fieldColumns = [];
+  private addLogViewState(
+    view: LogView,
+    existingColumnData?: TableColumn[],
+  ): LogViewConfig {
+    let fieldColumns = [];
     const fields = view.getFields();
 
     for (const i in fields) {
@@ -158,6 +166,10 @@ export class LogViewer extends LitElement {
         manualWidth: null,
       };
       fieldColumns.push(col);
+    }
+
+    if (existingColumnData) {
+      fieldColumns = existingColumnData;
     }
 
     const obj = {
