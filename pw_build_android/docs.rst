@@ -144,9 +144,11 @@ Module libraries with custom backends
 If a Pigweed module needs to be used with a backend different than the common
 Android backend, it should be defined as a ``cc_defaults`` rule following the
 ``pw_<MODULE_NAME>_no_backends`` name format, with the source files listed in a
-``filegroup`` following the ``pw_<MODULE_NAME>_files`` name format. A
-``cc_static_library`` with the common Android backend should still be provided,
-which uses the mentioned ``cc_defaults``.
+``filegroup`` following the ``pw_<MODULE_NAME>_src_files`` name format and the
+include directories defined as a ``cc_library_headers`` following the
+``pw_<MODULE_NAME>_include_dirs`` name format. A ``cc_static_library`` with the
+common Android backend should still be provided, which uses the mentioned
+``cc_defaults``.
 
 .. note::
 
@@ -156,11 +158,20 @@ which uses the mentioned ``cc_defaults``.
 .. code-block:: javascript
 
    filegroup {
-       name: "pw_<MODULE_NAME>_files",
+       name: "pw_<MODULE_NAME>_src_files",
        srcs: [
            // List of source (.cc) files.
        ],
    }
+
+    cc_library_headers {
+        name: "pw_<MODULE_NAME>_include_dirs",
+        export_include_dirs: [
+            "public",
+        ],
+        vendor_available: true,
+        host_supported: true,
+    }
 
    cc_defaults {
        name: "pw_<MODULE_NAME>_no_backends",
@@ -169,6 +180,7 @@ which uses the mentioned ``cc_defaults``.
 
        header_libs: [
            // Header library list for all the libraries in #include directives.
+           "pw_<MODULE_NAME>_include_dirs"
        ],
        export_header_lib_headers: [
            // Header library list for all the libraries in #include directives
@@ -186,7 +198,7 @@ which uses the mentioned ``cc_defaults``.
            // These entries must also be present in whole_static_libs.
        ],
        srcs: [
-           "pw_<MODULE_NAME>_files",
+           "pw_<MODULE_NAME>_src_files",
        ],
    }
 

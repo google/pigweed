@@ -73,6 +73,8 @@ filegroup {
     ],
 }
 
+// Do not use this directly. It is used by the pw_rpc_defaults to keep the
+// path to the "public" directory relative to this module.
 cc_library_headers {
     name: "pw_rpc_include_dirs",
     export_include_dirs: [
