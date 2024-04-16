@@ -38,6 +38,7 @@ from typing import (
     Mapping,
     Sequence,
     Set,
+    TextIO,
 )
 
 import pw_cli.color
@@ -68,7 +69,13 @@ from pw_presubmit.tools import (
 _LOG = logging.getLogger(__name__)
 
 
-def bazel(ctx: PresubmitContext, cmd: str, *args: str, **kwargs) -> None:
+def bazel(
+    ctx: PresubmitContext,
+    cmd: str,
+    *args: str,
+    stdout: TextIO | None = None,
+    **kwargs,
+) -> None:
     """Invokes Bazel with some common flags set.
 
     Intended for use with bazel build and test. May not work with others.
@@ -82,10 +89,14 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str, **kwargs) -> None:
     if ctx.continue_after_build_error:
         keep_going.append('--keep_going')
 
-    bazel_stdout = ctx.output_dir / 'bazel.stdout'
     ctx.output_dir.mkdir(exist_ok=True, parents=True)
     try:
-        with bazel_stdout.open('w') as outs:
+        with contextlib.ExitStack() as stack:
+            if not stdout:
+                stdout = stack.enter_context(
+                    (ctx.output_dir / f'bazel.{cmd}.stdout').open('w')
+                )
+
             call(
                 'bazel',
                 cmd,
@@ -97,16 +108,17 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str, **kwargs) -> None:
                 *keep_going,
                 *args,
                 cwd=ctx.root,
-                tee=outs,
+                tee=stdout,
                 call_annotation={'build_system': 'bazel'},
                 **kwargs,
             )
 
     except PresubmitFailure as exc:
-        failure = bazel_parser.parse_bazel_stdout(bazel_stdout)
-        if failure:
-            with ctx.failure_summary_log.open('w') as outs:
-                outs.write(failure)
+        if stdout:
+            failure = bazel_parser.parse_bazel_stdout(Path(stdout.name))
+            if failure:
+                with ctx.failure_summary_log.open('w') as outs:
+                    outs.write(failure)
 
         raise exc
 
