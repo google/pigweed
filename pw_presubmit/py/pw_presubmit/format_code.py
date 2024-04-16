@@ -43,12 +43,10 @@ from typing import (
 
 import pw_cli.color
 import pw_cli.env
+from pw_cli.file_filter import FileFilter
 from pw_cli.plural import plural
 import pw_env_setup.config_file
-from pw_presubmit.presubmit import (
-    FileFilter,
-    filter_paths,
-)
+from pw_presubmit.presubmit import filter_paths
 from pw_presubmit.presubmit_context import (
     FormatContext,
     FormatOptions,
@@ -985,8 +983,7 @@ def main() -> int:
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
-        # pylint: disable=ungrouped-imports
-        from pw_cli import log
+        from pw_cli import log  # pylint: disable=ungrouped-imports
 
         log.install(logging.INFO)
     except ImportError:

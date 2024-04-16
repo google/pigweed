@@ -14,71 +14,9 @@
 # the License.
 """Tests for presubmit tools."""
 
-import dataclasses
-import re
 import unittest
 
 from pw_presubmit import presubmit
-
-
-class TestFileFilter(unittest.TestCase):
-    """Test FileFilter class"""
-
-    @dataclasses.dataclass
-    class TestData:
-        filter: presubmit.FileFilter
-        value: str
-        expected: bool
-
-    test_scenarios = (
-        TestData(presubmit.FileFilter(endswith=('bar', 'foo')), 'foo', True),
-        TestData(presubmit.FileFilter(endswith=('bar', 'boo')), 'foo', False),
-        TestData(
-            presubmit.FileFilter(exclude=(re.compile('a/.+'),), name=('foo',)),
-            '/a/b/c/foo',
-            False,
-        ),
-        TestData(
-            presubmit.FileFilter(exclude=(re.compile('x/.+'),), name=('foo',)),
-            '/a/b/c/foo',
-            True,
-        ),
-        TestData(
-            presubmit.FileFilter(exclude=(re.compile('a+'), re.compile('b+'))),
-            'cccc',
-            True,
-        ),
-        TestData(presubmit.FileFilter(name=('foo',)), 'foo', True),
-        TestData(presubmit.FileFilter(name=('foo',)), 'food', False),
-        TestData(presubmit.FileFilter(name=(re.compile('foo'),)), 'foo', True),
-        TestData(
-            presubmit.FileFilter(name=(re.compile('foo'),)), 'food', False
-        ),
-        TestData(presubmit.FileFilter(name=(re.compile('fo+'),)), 'foo', True),
-        TestData(presubmit.FileFilter(name=(re.compile('fo+'),)), 'fd', False),
-        TestData(
-            presubmit.FileFilter(suffix=('.exe',)), 'a/b.py/foo.exe', True
-        ),
-        TestData(
-            presubmit.FileFilter(suffix=('.py',)), 'a/b.py/foo.exe', False
-        ),
-        TestData(
-            presubmit.FileFilter(suffix=('.exe',)), 'a/b.py/foo.py.exe', True
-        ),
-        TestData(
-            presubmit.FileFilter(suffix=('.py',)), 'a/b.py/foo.py.exe', False
-        ),
-        TestData(presubmit.FileFilter(suffix=('.a', '.b')), 'foo.b', True),
-        TestData(presubmit.FileFilter(suffix=('.a', '.b')), 'foo.c', False),
-    )
-
-    def test_matches(self):
-        for test_num, test_data in enumerate(self.test_scenarios):
-            with self.subTest(i=test_num):
-                self.assertEqual(
-                    test_data.filter.matches(test_data.value),
-                    test_data.expected,
-                )
 
 
 def _fake_function_1(_):

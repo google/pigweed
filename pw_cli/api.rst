@@ -12,6 +12,12 @@ pw_cli.decorators
 .. automodule:: pw_cli.decorators
    :members:
 
+------------------
+pw_cli.file_filter
+------------------
+.. automodule:: pw_cli.file_filter
+   :members:
+
 ---------------
 pw_cli.git_repo
 ---------------

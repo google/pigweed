@@ -71,6 +71,7 @@ from typing import (
 import pw_cli.color
 import pw_cli.env
 from pw_cli.plural import plural
+from pw_cli.file_filter import FileFilter
 from pw_package import package_manager
 from pw_presubmit import git_repo, tools
 from pw_presubmit.presubmit_context import (
@@ -279,81 +280,6 @@ def archive_cas_artifact(
             tmp_digest_file.seek(0)
             uploaded_digest = tmp_digest_file.read()
             return uploaded_digest
-
-
-class FileFilter:
-    """Allows checking if a path matches a series of filters.
-
-    Positive filters (e.g. the file name matches a regex) and negative filters
-    (path does not match a regular expression) may be applied.
-    """
-
-    def __init__(
-        self,
-        *,
-        exclude: Iterable[Pattern | str] = (),
-        endswith: Iterable[str] = (),
-        name: Iterable[Pattern | str] = (),
-        suffix: Iterable[str] = (),
-    ) -> None:
-        """Creates a FileFilter with the provided filters.
-
-        Args:
-            endswith: True if the end of the path is equal to any of the passed
-                      strings
-            exclude: If any of the passed regular expresion match return False.
-                     This overrides and other matches.
-            name: Regexs to match with file names(pathlib.Path.name). True if
-                  the resulting regex matches the entire file name.
-            suffix: True if final suffix (as determined by pathlib.Path) is
-                    matched by any of the passed str.
-        """
-        self.exclude = tuple(re.compile(i) for i in exclude)
-
-        self.endswith = tuple(endswith)
-        self.name = tuple(re.compile(i) for i in name)
-        self.suffix = tuple(suffix)
-
-    def matches(self, path: str | Path) -> bool:
-        """Returns true if the path matches any filter but not an exclude.
-
-        If no positive filters are specified, any paths that do not match a
-        negative filter are considered to match.
-
-        If 'path' is a Path object it is rendered as a posix path (i.e.
-        using "/" as the path seperator) before testing with 'exclude' and
-        'endswith'.
-        """
-
-        posix_path = path.as_posix() if isinstance(path, Path) else path
-        if any(bool(exp.search(posix_path)) for exp in self.exclude):
-            return False
-
-        # If there are no positive filters set, accept all paths.
-        no_filters = not self.endswith and not self.name and not self.suffix
-
-        path_obj = Path(path)
-        return (
-            no_filters
-            or path_obj.suffix in self.suffix
-            or any(regex.fullmatch(path_obj.name) for regex in self.name)
-            or any(posix_path.endswith(end) for end in self.endswith)
-        )
-
-    def filter(self, paths: Sequence[str | Path]) -> Sequence[Path]:
-        return [Path(x) for x in paths if self.matches(x)]
-
-    def apply_to_check(self, always_run: bool = False) -> Callable:
-        def wrapper(func: Callable) -> Check:
-            if isinstance(func, Check):
-                clone = copy.copy(func)
-                clone.filter = self
-                clone.always_run = clone.always_run or always_run
-                return clone
-
-            return Check(check=func, path_filter=self, always_run=always_run)
-
-        return wrapper
 
 
 def _print_ui(*args) -> None:

@@ -30,6 +30,7 @@ py_library(
         "pw_cli/color.py",
         "pw_cli/env.py",
         "pw_cli/envparse.py",
+        "pw_cli/file_filter.py",
         "pw_cli/log.py",
         "pw_cli/pigweed_aliases.py",
         "pw_cli/plugins.py",
@@ -57,6 +58,17 @@ py_test(
     size = "small",
     srcs = [
         "envparse_test.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
+)
+
+py_test(
+    name = "file_filter_test",
+    size = "small",
+    srcs = [
+        "file_filter_test.py",
     ],
     deps = [
         ":pw_cli",

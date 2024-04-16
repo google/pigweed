@@ -43,10 +43,10 @@ from typing import (
 
 import pw_cli.color
 from pw_cli.plural import plural
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.presubmit import (
     call,
     Check,
-    FileFilter,
     filter_paths,
     install_package,
     PresubmitResult,

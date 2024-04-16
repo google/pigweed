@@ -28,6 +28,7 @@ import sys
 from typing import Callable, Iterable, Sequence, TextIO
 
 from pw_cli.plural import plural
+from pw_cli.file_filter import FileFilter
 import pw_package.pigweed_packages
 from pw_presubmit import (
     build,
@@ -49,7 +50,6 @@ from pw_presubmit import (
     todo_check,
 )
 from pw_presubmit.presubmit import (
-    FileFilter,
     Programs,
     call,
     filter_paths,
@@ -143,7 +143,7 @@ def gn_clang_build(ctx: PresubmitContext):
 _HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(file_filter=_BUILD_FILE_FILTER)
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
     build.gn_gen(ctx)
@@ -236,7 +236,7 @@ coverage = PigweedGnGenNinja(
 )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(file_filter=_BUILD_FILE_FILTER)
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
@@ -1333,7 +1333,7 @@ def todo_check_with_exceptions(ctx: PresubmitContext):
     todo_check.create(todo_check.BUGS_OR_USERNAMES)(ctx)
 
 
-@format_code.OWNERS_CODE_FORMAT.filter.apply_to_check()
+@filter_paths(file_filter=format_code.OWNERS_CODE_FORMAT.filter)
 def owners_lint_checks(ctx: PresubmitContext):
     """Runs OWNERS linter."""
     owners_checks.presubmit_check(ctx.paths)
@@ -1548,8 +1548,7 @@ def main() -> int:
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
-        # pylint: disable=ungrouped-imports
-        from pw_cli import log
+        from pw_cli import log  # pylint: disable=ungrouped-imports
 
         log.install(logging.INFO)
     except ImportError:
