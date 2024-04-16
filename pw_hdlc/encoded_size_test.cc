@@ -271,7 +271,7 @@ TEST(DecodedSize, BigAddress_SaturatedPayload) {
       EXPECT_EQ(frame->address(), kNoEscapeAddress);
       EXPECT_EQ(frame->data().size(), kNoEscapePayload.size());
       EXPECT_TRUE(std::memcmp(frame->data().data(),
-                              kNoEscapePayload.begin(),
+                              kNoEscapePayload.data(),
                               kNoEscapePayload.size()) == 0);
     }
   }

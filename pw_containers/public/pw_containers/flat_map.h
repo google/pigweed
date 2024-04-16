@@ -74,7 +74,7 @@ class FlatMap {
     using reference = value_type&;
     using iterator_category = std::bidirectional_iterator_tag;
 
-    constexpr mapped_iterator() = default;
+    constexpr mapped_iterator() : current_{} {}
 
     constexpr mapped_iterator(const mapped_iterator& other) = default;
     constexpr mapped_iterator& operator=(const mapped_iterator& other) =
@@ -122,7 +122,7 @@ class FlatMap {
 
     constexpr mapped_iterator(FlatMap::iterator current) : current_(current) {}
 
-    FlatMap::iterator current_{nullptr};
+    FlatMap::iterator current_;
   };
 
   constexpr FlatMap(const std::array<value_type, kArraySize>& items)
@@ -244,7 +244,10 @@ class FlatMap {
       return;
     }
 
-    for (iterator it = data + 1, end = data + size; it < end; ++it) {
+    for (iterator it = data + 1,
+                  end = data + static_cast<difference_type>(size);
+         it < end;
+         ++it) {
       if (it->first < it[-1].first) {
         // Rotate the value into place.
         value_type temp = std::move(*it);

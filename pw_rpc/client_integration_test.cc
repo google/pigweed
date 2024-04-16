@@ -44,7 +44,7 @@ class StringReceiver {
  public:
   const char* Wait() {
     PW_CHECK(sem_.try_acquire_for(10s));
-    return reinterpret_cast<const char*>(buffer_.begin());
+    return reinterpret_cast<const char*>(buffer_.data());
   }
 
   Function<void(ConstByteSpan, Status)> UnaryOnCompleted() {

@@ -115,7 +115,7 @@ TEST(FlatMap, Iterate) {
   char value = 'a';
   for (const auto& item : kOddMap) {
     EXPECT_EQ(value, item.second);
-    EXPECT_EQ(&item, kOddMap.find(item.first));
+    EXPECT_EQ(&item, &(*kOddMap.find(item.first)));
     value += 1;
   }
 }

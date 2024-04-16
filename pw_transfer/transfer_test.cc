@@ -320,8 +320,8 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
 
   ASSERT_EQ(ctx_.total_responses(), 4u);
   Chunk chunk = DecodeChunk(ctx_.responses()[2]);
-  EXPECT_TRUE(
-      pw::containers::Equal(span(&kData[17], kData.end()), chunk.payload()));
+  EXPECT_TRUE(pw::containers::Equal(
+      span(&kData[17], kData.data() + kData.size()), chunk.payload()));
 }
 
 TEST_F(ReadTransfer, OutOfOrder_SeekingNotSupported_EndsWithUnimplemented) {

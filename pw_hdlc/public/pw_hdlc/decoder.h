@@ -108,8 +108,7 @@ class Decoder {
     for (std::byte b : data) {
       auto result = Process(b);
       if (result.status() != Status::Unavailable()) {
-        std::invoke(
-            std::forward<F>(callback), std::forward<Args>(args)..., result);
+        callback(std::forward<Args>(args)..., result);
       }
     }
   }
