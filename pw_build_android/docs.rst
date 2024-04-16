@@ -176,7 +176,6 @@ common Android backend should still be provided, which uses the mentioned
    cc_defaults {
        name: "pw_<MODULE_NAME>_no_backends",
        cpp_std: "c++20",
-       export_include_dirs: ["public"],
 
        header_libs: [
            // Header library list for all the libraries in #include directives.
@@ -202,7 +201,7 @@ common Android backend should still be provided, which uses the mentioned
        ],
    }
 
-   cc_defaults {
+   cc_library_static {
        name: "pw_<MODULE_NAME>",
        cpp_std: "c++20",
        export_include_dirs: ["public"],
@@ -214,6 +213,82 @@ common Android backend should still be provided, which uses the mentioned
        host_supported: true,
    }
 
+Module libraries with configurable build flags
+----------------------------------------------
+If a Pigweed module provides user-configurable build flags it should be defined
+as a ``cc_defaults`` rule following the ``pw_<MODULE_NAME>_defaults`` name
+format. This hints the user that the rule must be initialized with the desired
+build flag values. Source files must be listed in a ``filegroup`` following the
+``pw_<MODULE_NAME>_src_files`` name format and the include directories defined
+as a ``cc_library_headers`` following the ``pw_<MODULE_NAME>_include_dirs`` name
+format.
+
+.. code-block:: javascript
+
+   filegroup {
+       name: "pw_<MODULE_NAME>_src_files",
+       srcs: [
+           // List of source (.cc) files.
+       ],
+   }
+
+    cc_library_headers {
+        name: "pw_<MODULE_NAME>_include_dirs",
+        export_include_dirs: [
+            "public",
+        ],
+        vendor_available: true,
+        host_supported: true,
+    }
+
+   cc_defaults {
+       name: "pw_<MODULE_NAME>_defaults",
+       cpp_std: "c++20",
+
+       header_libs: [
+           // Header library list for all the libraries in #include directives.
+           "pw_<MODULE_NAME>_include_dirs"
+       ],
+       export_header_lib_headers: [
+           // Header library list for all the libraries in #include directives
+           // in public header files only.
+           // These entries must also be present in header_libs.
+       ],
+       whole_static_libs: [
+           // Static library list for all static library dependencies, listed as
+           // whole libraries to avoid dropping symbols in transitive
+           // dependencies.
+       ],
+       export_static_lib_headers: [
+           // Static library list for static libraries in #include directives in
+           // public header files only.
+           // These entries must also be present in whole_static_libs.
+       ],
+       srcs: [
+           "pw_<MODULE_NAME>_src_files",
+       ],
+   }
+
+A downstream user can instantiate the ``pw_<MODULE_NAME>_defaults`` rule as
+follows.
+
+.. note::
+
+   To avoid collisions the rule using the ``cc_defaults`` must have a unique
+   name that distinguishes it from other rule names in Pigweed and other
+   projects. It is recommended to suffix the project name.
+
+.. code-block:: javascript
+
+   cc_library_static {
+       name: "pw_<MODULE_NAME>_<PROJECT_NAME>",
+       cflags: [
+           "-DPW_<MODULE_NAME>_<FLAG_NAME>=<FLAG_VALUE>",
+       ],
+       defaults: [
+           "pw_<MODULE_NAME>_defaults",
+       ],
+   }
 
 -------
 Facades
