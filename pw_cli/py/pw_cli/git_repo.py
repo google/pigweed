@@ -126,11 +126,14 @@ class GitRepo:
         commit: str | None = None,
         pathspecs: Collection[Path | str] = (),
     ) -> list[Path]:
-        """Lists files with ``git ls-files`` or ``git diff --name-only``.
+        """Lists files modified since the specified commit.
+
+        If ``commit`` is not found in the current repo, all files in the
+        repository are listed.
 
         Arugments:
-            commit: commit to use as a base for ``git diff``
-            pathspecs: Git pathspecs to use in ``git ls-files`` or ``git diff``
+            commit: The Git hash to start from when listing modified files
+            pathspecs: Git pathspecs use when filtering results
 
         Returns:
             A sorted list of absolute paths.
@@ -142,7 +145,7 @@ class GitRepo:
         if commit:
             try:
                 return sorted(self._diff_names(commit, pathspecs))
-            except subprocess.CalledProcessError:
+            except GitError:
                 _LOG.warning(
                     'Error comparing with base revision %s of %s, listing all '
                     'files instead of just changed files',
