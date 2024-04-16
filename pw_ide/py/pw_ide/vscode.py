@@ -110,6 +110,7 @@ def _local_python_settings() -> dict[str, Any]:
 # alternative of instantiating with a list of tuples.
 _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
     {
+        "cmake.format.allowOptionalArgumentIndentation": True,
         "editor.detectIndentation": False,
         "editor.rulers": [80],
         "editor.tabSize": 2,
