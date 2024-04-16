@@ -1445,10 +1445,6 @@ LINTFORMAT = (
 QUICK = (
     _LINTFORMAT,
     gn_quick_build_check,
-    # TODO: b/34884583 - Re-enable CMake and Bazel for Mac after we have fixed
-    # the clang issues. The problem is that all clang++ invocations need the
-    # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
-    cmake_clang if sys.platform != 'darwin' else (),
 )
 
 FULL = (
