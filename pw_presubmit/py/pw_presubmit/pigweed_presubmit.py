@@ -772,6 +772,34 @@ def bazel_test(ctx: PresubmitContext) -> None:
     )
 
 
+def bthost_package(ctx: PresubmitContext) -> None:
+    target = '//pw_bluetooth_sapphire/fuchsia:infra'
+    build.bazel(ctx, 'build', target)
+    build.bazel(ctx, 'test', f'{target}.test_all')
+
+    stdout_path = ctx.output_dir / 'bazel.manifest.stdout'
+    with open(stdout_path, 'w') as outs:
+        build.bazel(
+            ctx,
+            'build',
+            '--output_groups=builder_manifest',
+            target,
+            stdout=outs,
+        )
+
+    manifest_path: Path | None = None
+    for line in stdout_path.read_text().splitlines():
+        line = line.strip()
+        if line.endswith('infrabuilder_manifest.json'):
+            manifest_path = Path(line)
+            break
+    else:
+        raise PresubmitFailure('no manifest found in output')
+
+    _LOG.debug('manifest: %s', manifest_path)
+    shutil.copyfile(manifest_path, ctx.output_dir / 'builder_manifest.json')
+
+
 @filter_paths(
     endswith=(
         *format_code.C_FORMAT.extensions,
@@ -1345,6 +1373,7 @@ SOURCE_FILES_FILTER_CMAKE_EXCLUDE = FileFilter(
 OTHER_CHECKS = (
     # keep-sorted: start
     bazel_test,
+    bthost_package,
     build.gn_gen_check,
     cmake_clang,
     cmake_gcc,
