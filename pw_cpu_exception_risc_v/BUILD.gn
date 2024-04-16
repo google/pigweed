@@ -1,0 +1,103 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_cpu_exception_risc_v_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+pw_source_set("config") {
+  public_deps = [ pw_cpu_exception_risc_v_CONFIG ]
+  public = [ "pw_cpu_exception_risc_v_private/config.h" ]
+  visibility = [ ":*" ]
+}
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("support") {
+  deps = [
+    ":config",
+    "$dir_pw_cpu_exception:support.facade",
+    "$dir_pw_preprocessor:arch",
+    dir_pw_log,
+    dir_pw_span,
+    dir_pw_string,
+  ]
+  sources = [ "support.cc" ]
+}
+
+pw_source_set("proto_dump") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":cpu_state",
+    dir_pw_protobuf,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  public = [ "public/pw_cpu_exception_risc_v/proto_dump.h" ]
+  deps = [
+    ":config",
+    ":cpu_state_protos.pwpb",
+  ]
+  sources = [ "proto_dump.cc" ]
+}
+
+pw_proto_library("cpu_state_protos") {
+  sources = [ "pw_cpu_exception_risc_v_protos/cpu_state.proto" ]
+}
+
+pw_source_set("cpu_state") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_cpu_exception_risc_v/cpu_state.h" ]
+}
+
+pw_source_set("snapshot") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":cpu_state",
+    ":cpu_state_protos.pwpb",
+    "$dir_pw_thread:protos.pwpb",
+    "$dir_pw_thread:snapshot",
+    dir_pw_protobuf,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_cpu_exception_risc_v/snapshot.h" ]
+  sources = [ "snapshot.cc" ]
+  deps = [
+    ":config",
+    ":proto_dump",
+    dir_pw_log,
+  ]
+}
+
+pw_test_group("tests") {
+  tests = []
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

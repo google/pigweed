@@ -9,3 +9,4 @@ pw_cpu_exception backends
    :maxdepth: 1
 
    Cortex-M <../pw_cpu_exception_cortex_m/docs>
+   RISCV <../pw_cpu_exception_risc_v/docs>
