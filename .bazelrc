@@ -127,6 +127,12 @@ build:stm32f429i --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_ba
 common:non_hermetic --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=0
 common:non_hermetic --extra_toolchains=@local_config_cc_toolchains//...
 
+# Use the remote cache. This will only work for users who have permission to access it.
+common:remote_cache --remote_cache=grpcs://remotebuildexecution.googleapis.com
+common:remote_cache --google_default_credentials=true
+common:remote_cache --remote_instance_name=projects/pigweed-rbe-open/instances/default-instance
+common:remote_cache --remote_upload_local_results=false
+
 # Specifies desired output mode for running tests.
 # Valid values are
 #   'summary' to output only test status summary

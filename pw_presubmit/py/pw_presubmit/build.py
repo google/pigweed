@@ -73,6 +73,7 @@ def bazel(
     ctx: PresubmitContext,
     cmd: str,
     *args: str,
+    use_remote_cache: bool = False,
     stdout: TextIO | None = None,
     **kwargs,
 ) -> None:
@@ -88,6 +89,14 @@ def bazel(
     keep_going: list[str] = []
     if ctx.continue_after_build_error:
         keep_going.append('--keep_going')
+
+    remote_cache: list[str] = []
+    if use_remote_cache and ctx.luci:
+        remote_cache.append('--config=remote_cache')
+        if ctx.luci.is_ci:
+            # Only CI builders should attempt to write to the cache. Try
+            # builders will be denied permission if they do so.
+            remote_cache.append('--remote_upload_local_results=true')
 
     ctx.output_dir.mkdir(exist_ok=True, parents=True)
     try:
@@ -106,6 +115,7 @@ def bazel(
                 f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
                 *num_jobs,
                 *keep_going,
+                *remote_cache,
                 *args,
                 cwd=ctx.root,
                 tee=stdout,

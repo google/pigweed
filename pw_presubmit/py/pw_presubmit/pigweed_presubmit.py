@@ -95,6 +95,10 @@ class PigweedGnGenNinja(build.GnGenNinja):
         args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)
 
 
+def build_bazel(*args, **kwargs) -> None:
+    build.bazel(*args, use_remote_cache=True, **kwargs)
+
+
 #
 # Build presubmit checks
 #
@@ -589,7 +593,7 @@ def docs_build(ctx: PresubmitContext) -> None:
     build.gn_check(ctx)
 
     # Build Rust docs through Bazel.
-    build.bazel(
+    build_bazel(
         ctx,
         'build',
         '--',
@@ -743,7 +747,7 @@ def cmake_gcc(ctx: PresubmitContext):
 )
 def bazel_test(ctx: PresubmitContext) -> None:
     """Runs bazel test on the entire repo."""
-    build.bazel(
+    build_bazel(
         ctx,
         'test',
         '--',
@@ -753,7 +757,7 @@ def bazel_test(ctx: PresubmitContext) -> None:
     # Run tests for non-default config options
 
     # pw_rpc
-    build.bazel(
+    build_bazel(
         ctx,
         'test',
         '--//pw_rpc:config_override='
@@ -763,7 +767,7 @@ def bazel_test(ctx: PresubmitContext) -> None:
     )
 
     # pw_grpc
-    build.bazel(
+    build_bazel(
         ctx,
         'test',
         '--//pw_rpc:config_override=//pw_grpc:pw_rpc_config',
@@ -774,12 +778,12 @@ def bazel_test(ctx: PresubmitContext) -> None:
 
 def bthost_package(ctx: PresubmitContext) -> None:
     target = '//pw_bluetooth_sapphire/fuchsia:infra'
-    build.bazel(ctx, 'build', target)
-    build.bazel(ctx, 'test', f'{target}.test_all')
+    build_bazel(ctx, 'build', target)
+    build_bazel(ctx, 'test', f'{target}.test_all')
 
     stdout_path = ctx.output_dir / 'bazel.manifest.stdout'
     with open(stdout_path, 'w') as outs:
-        build.bazel(
+        build_bazel(
             ctx,
             'build',
             '--output_groups=builder_manifest',
@@ -813,7 +817,7 @@ def bthost_package(ctx: PresubmitContext) -> None:
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build for each supported platform."""
     # Build everything with the default flags.
-    build.bazel(
+    build_bazel(
         ctx,
         'build',
         '--',
@@ -833,7 +837,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
 
     for cxxversion in ('c++17', 'c++20'):
         # Explicitly build for each supported C++ version.
-        build.bazel(
+        build_bazel(
             ctx,
             'build',
             f"--cxxopt=-std={cxxversion}",
@@ -842,7 +846,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
         )
 
         for platforms, targets in targets_for_platform.items():
-            build.bazel(
+            build_bazel(
                 ctx,
                 'build',
                 f'--platforms={platforms}',
@@ -857,7 +861,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     #
     # TODO: b/271465588 - Eventually just build the entire repo for this
     # platform.
-    build.bazel(
+    build_bazel(
         ctx,
         'build',
         '--platforms=//pw_build/platforms:testonly_freertos',
@@ -868,7 +872,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_cpu_exception/...',
     )
 
-    build.bazel(
+    build_bazel(
         ctx,
         'build',
         '--//pw_thread_freertos:config_override=//pw_build:test_module_config',
@@ -877,7 +881,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     )
 
     # Build the pw_system example for the Discovery board using STM32Cube.
-    build.bazel(
+    build_bazel(
         ctx,
         'build',
         '--config=stm32f429i',
@@ -888,7 +892,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     #
     # TODO: b/324652164 - This doesn't work on MacOS yet.
     if sys.platform != 'darwin':
-        build.bazel(
+        build_bazel(
             ctx,
             'build',
             '--config=fuzztest',
@@ -902,7 +906,7 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     This test is not part of the regular bazel build because it's slow and
     intended to run in CI only.
     """
-    build.bazel(
+    build_bazel(
         ctx,
         'test',
         '//pw_transfer/integration_test:cross_language_small_test',
