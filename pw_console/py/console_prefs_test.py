@@ -37,8 +37,7 @@ def _create_tempfile(content: str) -> Path:
 class TestConsolePrefs(unittest.TestCase):
     """Tests for ConsolePrefs."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_load_no_existing_files(self) -> None:
         prefs = ConsolePrefs(

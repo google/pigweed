@@ -74,9 +74,10 @@ def make_log(**kwargs):
 class TestTableView(unittest.TestCase):
     """Tests for rendering log lines into tables."""
 
+    maxDiff = None
+
     def setUp(self):
         # Show large diffs
-        self.maxDiff = None  # pylint: disable=invalid-name
         self.prefs = ConsolePrefs(
             project_file=False, project_user_file=False, user_file=False
         )

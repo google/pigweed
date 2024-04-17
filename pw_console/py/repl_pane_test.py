@@ -45,8 +45,7 @@ if _PYTHON_3_8:
     class TestReplPane(IsolatedAsyncioTestCase):
         """Tests for ReplPane."""
 
-        def setUp(self):  # pylint: disable=invalid-name
-            self.maxDiff = None  # pylint: disable=invalid-name
+        maxDiff = None
 
         def test_repl_code_return_values(self) -> None:
             """Test stdout, return values, and exceptions can be returned from

@@ -38,8 +38,7 @@ def _create_log_store():
 class TestLogStore(unittest.TestCase):
     """Tests for LogStore."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_get_total_count(self) -> None:
         log_store, viewer = _create_log_store()

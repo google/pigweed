@@ -26,8 +26,7 @@ from pw_build.build_recipe import BuildCommand
 class TestBuildRecipe(unittest.TestCase):
     """Tests for creating BuildRecipes."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     @parameterized.expand(
         [

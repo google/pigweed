@@ -42,8 +42,7 @@ def _create_tempfile(content: str) -> Path:
 class TestProjectBuilderPrefs(unittest.TestCase):
     """Tests for ProjectBuilderPrefs."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_load_no_existing_files(self) -> None:
         # Create a prefs instance with no loaded config.

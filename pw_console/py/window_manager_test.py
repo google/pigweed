@@ -130,8 +130,7 @@ class TestWindowManager(unittest.TestCase):
     # pylint: disable=protected-access
     """Tests for window management functions."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_find_window_list_and_pane(self) -> None:
         """Test getting the window list for a given pane."""

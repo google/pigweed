@@ -75,8 +75,9 @@ def _create_fake_python_package(
 class TestCreatePythonTree(unittest.TestCase):
     """Integration tests for create_python_tree."""
 
+    maxDiff = None
+
     def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
         # Save the starting working directory for returning to later.
         self.start_dir = Path.cwd()
         # Create a temp out directory

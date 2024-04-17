@@ -28,8 +28,7 @@ from pw_console.text_formatting import (
 class TestTextFormatting(unittest.TestCase):
     """Tests for manipulating prompt_toolkit formatted text tuples."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     @parameterized.expand(
         [

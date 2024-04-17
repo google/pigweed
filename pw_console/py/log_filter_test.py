@@ -33,8 +33,7 @@ from pw_console.log_filter import (
 class TestLogFilter(unittest.TestCase):
     """Tests for LogFilter."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     # pylint: disable=anomalous-backslash-in-string
     @parameterized.expand(

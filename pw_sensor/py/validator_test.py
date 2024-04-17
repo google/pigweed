@@ -23,9 +23,7 @@ from pw_sensor.validator import Validator
 class ValidatorTest(unittest.TestCase):
     """Tests the Validator class."""
 
-    def __init__(self, methodName: str = "runTest") -> None:
-        super().__init__(methodName)
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_missing_compatible(self) -> None:
         """Check that missing 'compatible' key throws exception"""

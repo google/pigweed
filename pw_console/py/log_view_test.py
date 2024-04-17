@@ -54,11 +54,7 @@ def _create_log_view():
 class TestLogView(unittest.TestCase):
     """Tests for LogView."""
 
-    # pylint: disable=invalid-name
-    def setUp(self):
-        self.maxDiff = None
-
-    # pylint: enable=invalid-name
+    maxDiff = None
 
     def _create_log_view_with_logs(self, log_count=100):
         log_view, log_pane = _create_log_view()
@@ -460,11 +456,7 @@ if _PYTHON_3_8:
     ):  # pylint: disable=undefined-variable
         """Test LogView log filtering capabilities."""
 
-        # pylint: disable=invalid-name
-        def setUp(self):
-            self.maxDiff = None
-
-        # pylint: enable=invalid-name
+        maxDiff = None
 
         def _create_log_view_from_list(self, log_messages):
             log_view, log_pane = _create_log_view()

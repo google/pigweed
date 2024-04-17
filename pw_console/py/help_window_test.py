@@ -44,8 +44,7 @@ def _create_app_mock():
 class TestHelpWindow(unittest.TestCase):
     """Tests for HelpWindow text and keybind lists."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     def test_instantiate(self) -> None:
         app = _create_app_mock()

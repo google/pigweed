@@ -29,8 +29,7 @@ from pw_env_setup.cipd_setup.update import (
 class TestCipdSetupUpdate(unittest.TestCase):
     """Tests for cipd_setup.update logic."""
 
-    def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+    maxDiff = None
 
     @parameterized.expand(
         [
