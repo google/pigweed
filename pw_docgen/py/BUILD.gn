@@ -31,8 +31,10 @@ pw_python_package("py") {
     "pw_docgen/sphinx/kconfig.py",
     "pw_docgen/sphinx/module_metadata.py",
     "pw_docgen/sphinx/pigweed_live.py",
+    "pw_docgen/sphinx/pw_status_codes.py",
     "pw_docgen/sphinx/seed_metadata.py",
   ]
+  python_deps = [ "$dir_pw_status/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
 }

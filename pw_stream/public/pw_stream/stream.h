@@ -99,16 +99,24 @@ class Stream {
   /// Derived classes should NOT try to override these public read methods.
   /// Instead, provide an implementation by overriding DoRead().
   ///
-  /// @retval OK Between 1 and `dest.size_bytes()` were successfully
-  ///            read. Returns the span of read bytes.
-  /// @retval UNIMPLEMENTED This stream does not support reading.
-  /// @retval FAILED_PRECONDITION The Reader is not in state to read data.
-  /// @retval RESOURCE_EXHAUSTED Unable to read any bytes at this time. No
-  ///                            bytes read. Try again once bytes become
-  ///                            available.
-  /// @retval OUT_OF_RANGE Reader has been exhausted, similar to EOF. No bytes
-  ///                      were read, no more will be read.
+  /// @returns @rst
   ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Between 1 and ``dest.size_bytes()`` were successfully
+  ///    read. Returns the span of read bytes.
+  ///
+  ///    UNIMPLEMENTED: This stream does not support reading.
+  ///
+  ///    FAILED_PRECONDITION: The Reader is not in state to read data.
+  ///
+  ///    RESOURCE_EXHAUSTED: Unable to read any bytes at this time. No
+  ///    bytes read. Try again once bytes become available.
+  ///
+  ///    OUT_OF_RANGE: Reader has been exhausted, similar to EOF. No bytes
+  ///    were read, no more will be read.
+  ///
+  /// @endrst
   Result<ByteSpan> Read(ByteSpan dest) {
     PW_DASSERT(dest.empty() || dest.data() != nullptr);
     StatusWithSize result = DoRead(dest);
@@ -142,13 +150,23 @@ class Stream {
   /// Derived classes should NOT try to override the public Write methods.
   /// Instead, provide an implementation by overriding DoWrite().
   ///
-  /// @retval OK Data was successfully accepted by the stream.
-  /// @retval UNIMPLEMENTED This stream does not support writing.
-  /// @retval FAILED_PRECONDITION The writer is not in a state to accept data.
-  /// @retval RESOURCE_EXHAUSTED The writer was unable to write all of requested
-  ///                            data at this time. No data was written.
-  /// @retval OUT_OF_RANGE The Writer has been exhausted, similar to EOF. No
-  ///                      data was written; no more will be written.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Data was successfully accepted by the stream.
+  ///
+  ///    UNIMPLEMENTED: This stream does not support writing.
+  ///
+  ///    FAILED_PRECONDITION: The writer is not in a state to accept data.
+  ///
+  ///    RESOURCE_EXHAUSTED: The writer was unable to write all of requested
+  ///    data at this time. No data was written.
+  ///
+  ///    OUT_OF_RANGE: The Writer has been exhausted, similar to EOF. No
+  ///    data was written; no more will be written.
+  ///
+  /// @endrst
   Status Write(ConstByteSpan data) {
     PW_DASSERT(data.empty() || data.data() != nullptr);
     return DoWrite(data);
@@ -167,10 +185,18 @@ class Stream {
   /// the end of a stream is determined by the implementation. The
   /// implementation could fail with OUT_OF_RANGE or append bytes to the stream.
   ///
-  /// @retval OK Successfully updated the position.
-  /// @retval UNIMPLEMENTED Seeking is not supported for this stream.
-  /// @retval OUT_OF_RANGE Attempted to seek beyond the bounds of the
-  ///                      stream. The position is unchanged.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Successfully updated the position.
+  ///
+  ///    UNIMPLEMENTED: Seeking is not supported for this stream.
+  ///
+  ///    OUT_OF_RANGE: Attempted to seek beyond the bounds of the
+  ///    stream. The position is unchanged.
+  ///
+  /// @endrst
   Status Seek(ptrdiff_t offset, Whence origin = kBeginning) {
     return DoSeek(offset, origin);
   }

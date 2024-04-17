@@ -53,20 +53,41 @@ class ChipSelector {
   /// activate the chip-select signal, and `false` will deactivate the
   /// chip-select signal.
   ///
-  /// @retval OkStatus() on success
-  /// @retval implementation-specific-values on failure.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Success.
+  ///
+  /// Returns other implementation-specific values on failure.
+  ///
+  /// @endrst
   virtual Status SetActive(bool active) = 0;
 
   /// Helper method to activate the chip-select signal.
   ///
-  /// @retval OkStatus() on success
-  /// @retval implementation-specific-values on failure.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Success.
+  ///
+  /// Returns other implementation-specific values on failure.
+  ///
+  /// @endrst
   Status Activate() { return SetActive(true); }
 
   /// Helper method to deactivate the chip-select signal.
   ///
-  /// @retval OkStatus() on success
-  /// @retval implementation-specific-values on failure.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Success.
+  ///
+  /// Returns other implementation-specific values on failure.
+  ///
+  /// @endrst
   Status Deactivate() { return SetActive(false); }
 };
 

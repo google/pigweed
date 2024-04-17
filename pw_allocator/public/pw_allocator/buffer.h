@@ -70,9 +70,16 @@ class WithBuffer {
 
 /// Returns the largest aligned subspan of a given byte span.
 ///
-/// @retval OK                  Returns the aligned subspan.
-/// @retval RESOURCE_EXHAUSTED  The given span does not contain an alignment
-///                             boundary.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: Returns the aligned subspan.
+///
+///    RESOURCE_EXHAUSTED: The given span does not contain an alignment
+///    boundary.
+///
+/// @endrst
 Result<ByteSpan> GetAlignedSubspan(ByteSpan bytes, size_t alignment);
 
 /// Returns whether one region is completely contained within another.

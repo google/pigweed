@@ -141,10 +141,16 @@ class JsonValue {
   /// `StartObject` was called on the `JsonBuilder`. Setting the `JsonValue` to
   /// a JSON object or array is also an error.
   ///
-  /// @returns
-  /// - @pw_status{OK} if the value serialized successfully
-  /// - @pw_status{RESOURCE_EXHAUSTED} if there is insufficient buffer space to
-  ///   serialize
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The value serialized successfully.
+  ///
+  ///    RESOURCE_EXHAUSTED: There is insufficient buffer space to
+  ///    serialize.
+  ///
+  /// @endrst
   template <typename T>
   constexpr Status Set(const T& value);
 
@@ -236,9 +242,15 @@ class JsonObject {
   /// It is an error to call `Add()` if the underlying `JsonBuilder` is no
   /// longer an object.
   ///
-  /// @returns
-  /// - @pw_status{OK} the value was appended successfully
-  /// - @pw_status{RESOURCE_EXHAUSTED} insufficient buffer space to serialize
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The value was appended successfully.
+  ///
+  ///    RESOURCE_EXHAUSTED: Insufficient buffer space to serialize.
+  ///
+  /// @endrst
   template <typename T>
   constexpr JsonObject& Add(std::string_view key, const T& value);
 
@@ -305,9 +317,15 @@ class JsonBuilder : private JsonValue, private JsonArray, private JsonObject {
   /// status remains until it is reset with `clear`, `clear_status`, or
   /// `SetValue`.
   ///
-  /// @returns
-  /// - @pw_status{OK} if the all previous updates have succeeded
-  /// - @pw_status{RESOURCE_EXHAUSTED} if an update did not fit in the buffer
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: All previous updates have succeeded.
+  ///
+  ///    RESOURCE_EXHAUSTED: An update did not fit in the buffer.
+  ///
+  /// @endrst
   constexpr Status status() const { return static_cast<Status::Code>(status_); }
 
   /// Returns the status from the most recent change to the JSON. This is set

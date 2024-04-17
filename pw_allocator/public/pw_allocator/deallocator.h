@@ -118,9 +118,17 @@ class Deallocator {
   /// @param[in]  ptr           The pointer to be queried.
   /// @param[in]  layout        Describes the memory pointed at by `ptr`.
   ///
-  /// @retval OK                This object can re/deallocate the pointer.
-  /// @retval OUT_OF_RANGE      Pointer cannot be re/deallocated by this object.
-  /// @retval UNIMPLEMENTED     This object cannot recognize allocated pointers.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: This object can re/deallocate the pointer.
+  ///
+  ///    OUT_OF_RANGE: Pointer cannot be re/deallocated by this object.
+  ///
+  ///    UNIMPLEMENTED: This object cannot recognize allocated pointers.
+  ///
+  /// @endrst
   static Status Query(const Deallocator& deallocator, const void* ptr) {
     return deallocator.DoQuery(ptr);
   }

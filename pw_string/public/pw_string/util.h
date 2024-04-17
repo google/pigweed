@@ -72,8 +72,16 @@ constexpr std::string_view ClampedCString(const char* str, size_t max_len) {
 ///
 /// @pre The string shall be at a valid pointer.
 ///
-/// @returns the null-terminated length of the string excluding the null
-/// terminator or `OutOfRange` if the string is not null-terminated.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: Returns the null-terminated length of the string excluding the null
+///    terminator.
+///
+///    OUT_OF_RANGE: The string is not null-terminated.
+///
+/// @endrst
 constexpr Result<size_t> NullTerminatedLength(span<const char> str) {
   PW_DASSERT(str.data() != nullptr);
 
@@ -98,8 +106,16 @@ constexpr Result<size_t> NullTerminatedLength(const char* str, size_t max_len) {
 /// @pre The destination and source shall not overlap. The source
 /// shall be a valid pointer.
 ///
-/// @returns the number of characters written, excluding the null terminator. If
-/// the string is truncated, the status is `RESOURCE_EXHAUSTED`.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: Returns the number of characters written, excluding the null
+///    terminator.
+///
+///    RESOURCE_EXHAUSTED: The string is truncated.
+///
+/// @endrst
 template <typename Span>
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
                                               Span&& dest) {
@@ -129,9 +145,16 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
 /// string's requested size exceeds its capacity; `pw::string::Assign()`
 /// returns a `Status` instead.
 ///
-/// @return `OK` if the entire `std::string_view` was copied to the end of the
-/// `pw::InlineString`. `RESOURCE_EXHAUSTED` if the `std::string_view` was
-/// truncated to fit.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: The entire ``std::string_view`` was copied to the end of the
+///    ``pw::InlineString``.
+///
+///    RESOURCE_EXHAUSTED: The ``std::string_view`` was truncated to fit.
+///
+/// @endrst
 inline Status Assign(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied =
       std::min(view.size(), static_cast<size_t>(string.capacity()));
@@ -150,8 +173,15 @@ inline Status Assign(InlineString<>& string, const char* c_string) {
 /// string's requested size exceeds its capacity; `pw::string::Append()` returns
 /// a `Status` instead.
 ///
-/// @return `OK` if the entire `std::string_view` was assigned.
-/// `RESOURCE_EXHAUSTED` if the `std::string_view` was truncated to fit.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: The entire ``std::string_view`` was assigned.
+///
+///    RESOURCE_EXHAUSTED: The ``std::string_view`` was truncated to fit.
+///
+/// @endrst
 inline Status Append(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied = std::min(
       view.size(), static_cast<size_t>(string.capacity() - string.size()));

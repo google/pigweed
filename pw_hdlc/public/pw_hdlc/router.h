@@ -82,11 +82,18 @@ class Router final {
   /// @param[in] send_address    Data read from ``channel`` will be written
   ///  to ``io_channel`` with the HDLC address ``send_address``.
   ///
-  /// @retval OK              ``Channel`` was successfully registered.
-  /// @retval ALREADY_EXISTS  A registration already exists for either
-  ///  ``channel``, ``receive_address``, or ``send_address``. Channels may
-  ///  not be registered with multiple addresses, nor may addresses be
-  ///  used with multiple channels.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: ``Channel`` was successfully registered.
+  ///
+  ///    ALREADY_EXISTS: A registration already exists for either
+  ///    ``channel``, ``receive_address``, or ``send_address``. Channels may
+  ///    not be registered with multiple addresses, nor may addresses be
+  ///    used with multiple channels.
+  ///
+  /// @endrst
   Status AddChannel(pw::channel::DatagramReaderWriter& channel,
                     uint64_t receive_address,
                     uint64_t send_address);
@@ -94,9 +101,16 @@ class Router final {
   /// Removes a previously registered ``Channel`` tied to the provided
   /// addresses.
   ///
-  /// @retval OK         The channel was successfully deregistered.
-  /// @retval NOT_FOUND  A registration of the channel for the provided
-  ///  addresses was not found.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The channel was successfully deregistered.
+  ///
+  ///    NOT_FOUND: A registration of the channel for the provided
+  ///    addresses was not found.
+  ///
+  /// @endrst
   Status RemoveChannel(pw::channel::DatagramReaderWriter& channel,
                        uint64_t receive_address,
                        uint64_t send_address);

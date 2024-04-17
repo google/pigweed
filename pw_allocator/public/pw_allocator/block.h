@@ -118,11 +118,20 @@ class Block {
 
   /// @brief Creates the first block for a given memory region.
   ///
-  /// @retval OK                    Returns a block representing the region.
-  /// @retval INVALID_ARGUMENT      The region is null.
-  /// @retval RESOURCE_EXHAUSTED    The region is too small for a block.
-  /// @retval OUT_OF_RANGE          The region is too big to be addressed using
-  ///                               `OffsetType`.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns a block representing the region.
+  ///
+  ///    INVALID_ARGUMENT: The region is null.
+  ///
+  ///    RESOURCE_EXHAUSTED: The region is too small for a block.
+  ///
+  ///    OUT_OF_RANGE: The region is too big to be addressed using
+  ///    ``OffsetType``.
+  ///
+  /// @endrst
   static Result<Block*> Init(ByteSpan region);
 
   /// @returns  A pointer to a `Block`, given a pointer to the start of the
@@ -169,10 +178,18 @@ class Block {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @retval   OK                  The split would complete successfully.
-  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
-  /// @retval   OUT_OF_RANGE        The requested size plus padding needed for
-  ///                               alignment is greater than the current size.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The split would complete successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
+  ///
+  ///    OUT_OF_RANGE: The requested size plus padding needed for alignment
+  ///    is greater than the current size.
+  ///
+  /// @endrst
   Status CanAllocFirst(size_t inner_size, size_t alignment) const;
 
   /// Splits an aligned block from the start of the block, and marks it as used.
@@ -188,10 +205,18 @@ class Block {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @retval   OK                  The split completed successfully.
-  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
-  /// @retval   OUT_OF_RANGE        The requested size plus padding needed for
-  ///                               alignment is greater than the current size.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The split completed successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
+  ///
+  ///    OUT_OF_RANGE: The requested size plus padding needed for alignment
+  ///    is greater than the current size.
+  ///
+  /// @endrst
   static Status AllocFirst(Block*& block, size_t inner_size, size_t alignment);
 
   /// Checks if an aligned block could be split from the end of the block.
@@ -201,12 +226,20 @@ class Block {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @retval   OK                  The split completed successfully.
-  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
-  /// @retval   OUT_OF_RANGE        The requested size is greater than the
-  ///                               current size.
-  /// @retval   RESOURCE_EXHAUSTED  The remaining space is too small to hold a
-  ///                               new block.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The split completed successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
+  ///
+  ///    OUT_OF_RANGE: The requested size is greater than the current size.
+  ///
+  ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
+  ///    new block.
+  ///
+  /// @endrst
   Status CanAllocLast(size_t inner_size, size_t alignment) const;
 
   /// Splits an aligned block from the end of the block, and marks it as used.
@@ -221,12 +254,20 @@ class Block {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @retval   OK                  The split completed successfully.
-  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
-  /// @retval   OUT_OF_RANGE        The requested size is greater than the
-  ///                               current size.
-  /// @retval   RESOURCE_EXHAUSTED  The remaining space is too small to hold a
-  ///                               new block.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The split completed successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
+  ///
+  ///    OUT_OF_RANGE: The requested size is greater than the current size.
+  ///
+  ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a new
+  ///    block.
+  ///
+  /// @endrst
   static Status AllocLast(Block*& block, size_t inner_size, size_t alignment);
 
   /// Marks the block as free and merges it with any free neighbors.
@@ -248,10 +289,17 @@ class Block {
   ///
   /// @pre The block must be in use.
   ///
-  /// @retval   OK                  The resize completed successfully.
-  /// @retval   FAILED_PRECONDITION This block is not in use.
-  /// @retval   OUT_OF_RANGE        The requested size is greater than the
-  ///                               available space.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The resize completed successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is not in use.
+  ///
+  ///    OUT_OF_RANGE: The requested size is greater than the available space.
+  ///
+  /// @endrst
   static Status Resize(Block*& block, size_t new_inner_size);
 
   /// Attempts to split this block.
@@ -269,12 +317,21 @@ class Block {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @retval   OK                  The split completed successfully.
-  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
-  /// @retval   OUT_OF_RANGE        The requested size for this block is greater
-  ///                               than the current `inner_size`.
-  /// @retval   RESOURCE_EXHAUSTED  The remaining space is too small to hold a
-  ///                               new block.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The split completed successfully.
+  ///
+  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
+  ///
+  ///    OUT_OF_RANGE: The requested size for this block is greater
+  ///    than the current ``inner_size``.
+  ///
+  ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
+  ///    new block.
+  ///
+  /// @endrst
   static Result<Block*> Split(Block*& block, size_t new_inner_size);
 
   /// Merges this block with the one that comes after it.
@@ -284,9 +341,17 @@ class Block {
   ///
   /// @pre The blocks must not be in use.
   ///
-  /// @retval   OK                  The merge was successful.
-  /// @retval   OUT_OF_RANGE        The given block is the last block.
-  /// @retval   FAILED_PRECONDITION One or more of the blocks is in use.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The merge was successful.
+  ///
+  ///    OUT_OF_RANGE: The given block is the last block.
+  ///
+  ///    FAILED_PRECONDITION: One or more of the blocks is in use.
+  ///
+  /// @endrst
   static Status MergeNext(Block*& block);
 
   /// Fetches the block immediately after this one.

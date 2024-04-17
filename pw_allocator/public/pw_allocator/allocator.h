@@ -139,10 +139,18 @@ class Allocator : public Deallocator {
   /// NOTE: This method will eventually be deprecated. Use `GetAllocatedLayout`
   /// instead.
   ///
-  /// @retval OK                Returns the actual layout of allocated memory.
-  /// @retval NOT_FOUND         The allocator does not recognize the pointer
-  ///                           as one of its allocations.
-  /// @retval UNIMPLEMENTED     Allocator cannot recover allocation details.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns the actual layout of allocated memory.
+  ///
+  ///    NOT_FOUND: The allocator does not recognize the pointer as one of
+  ///    its allocations.
+  ///
+  ///    UNIMPLEMENTED: Allocator cannot recover allocation details.
+  ///
+  /// @endrst
   Result<Layout> GetLayout(const void* ptr) const {
     return GetAllocatedLayout(*this, ptr);
   }
@@ -172,11 +180,18 @@ class Allocator : public Deallocator {
   /// @param[in]  allocator   The object that provided ``ptr``.
   /// @param[in]  ptr           A pointer to previously allocated memory.
   ///
-  /// @retval OK                Returns the originally requested layout.
-  /// @retval NOT_FOUND         The allocator does not recognize the pointer
-  ///                           as one of its allocations.
-  /// @retval UNIMPLEMENTED     Implementation cannot recover allocation
-  ///                           details.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns the originally requested layout.
+  ///
+  ///    NOT_FOUND: The allocator does not recognize the pointer
+  ///    as one of its allocations.
+  ///
+  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
+  ///
+  /// @endrst
   static Result<Layout> GetRequestedLayout(const Allocator& allocator,
                                            const void* ptr);
 
@@ -198,11 +213,18 @@ class Allocator : public Deallocator {
   /// @param[in]  allocator      The object that provided ``ptr``.
   /// @param[in]  ptr           A pointer to previously allocated memory.
   ///
-  /// @retval OK                Returns the layout of usable memory.
-  /// @retval NOT_FOUND         The allocator does not recognize the pointer
-  ///                           as one of its allocations.
-  /// @retval UNIMPLEMENTED     Implementation cannot recover allocation
-  ///                           details.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns the layout of usable memory.
+  ///
+  ///    NOT_FOUND: The allocator does not recognize the pointer as one of its
+  ///    allocations.
+  ///
+  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
+  ///
+  /// @endrst
   static Result<Layout> GetUsableLayout(const Allocator& allocator,
                                         const void* ptr);
 
@@ -224,11 +246,18 @@ class Allocator : public Deallocator {
   /// @param[in]  allocator   The object that provided ``ptr``.
   /// @param[in]  ptr           A pointer to previously allocated memory.
   ///
-  /// @retval OK                Returns the layout of usable memory.
-  /// @retval NOT_FOUND         The allocator does not recognize the pointer
-  ///                           as one of its allocations.
-  /// @retval UNIMPLEMENTED     Implementation cannot recover allocation
-  ///                           details.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns the layout of usable memory.
+  ///
+  ///    NOT_FOUND: The allocator does not recognize the pointer as one of
+  ///    its allocations.
+  ///
+  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
+  ///
+  /// @endrst
   static Result<Layout> GetAllocatedLayout(const Allocator& allocator,
                                            const void* ptr);
 

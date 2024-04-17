@@ -218,13 +218,20 @@ class ByteBuilder {
   /// Returns the ByteBuilder's status, which reflects the most recent error
   /// that occurred while updating the bytes. After an update fails, the status
   /// remains non-OK until it is cleared with clear() or clear_status().
-  /// Returns:
   ///
-  ///     OK if no errors have occurred
-  ///     RESOURCE_EXHAUSTED if output to the ByteBuilder was truncated
-  ///     INVALID_ARGUMENT if printf-style formatting failed
-  ///     OUT_OF_RANGE if an operation outside the buffer was attempted
+  /// @returns @rst
   ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: No errors have occurred.
+  ///
+  ///    RESOURCE_EXHAUSTED: Output to the ``ByteBuilder`` was truncated.
+  ///
+  ///    INVALID_ARGUMENT: ``printf``-style formatting failed.
+  ///
+  ///    OUT_OF_RANGE: An operation outside the buffer was attempted.
+  ///
+  /// @endrst
   Status status() const { return status_; }
 
   /// Returns status() and size() as a StatusWithSize.

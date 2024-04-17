@@ -44,6 +44,7 @@ extensions = [
     'pw_docgen.sphinx.kconfig',
     'pw_docgen.sphinx.module_metadata',
     'pw_docgen.sphinx.pigweed_live',
+    'pw_docgen.sphinx.pw_status_codes',
     'pw_docgen.sphinx.seed_metadata',
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings

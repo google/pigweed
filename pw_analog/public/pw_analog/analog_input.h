@@ -46,11 +46,19 @@ class AnalogInput {
   ///
   /// This method is thread safe.
   ///
-  /// @returns
-  /// * A sample on success.
-  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
-  /// * Other statuses left up to the implementer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns a sample.
+  ///
+  ///    RESOURCE_EXHAUSTED: ADC peripheral in use.
+  ///
+  ///    DEADLINE_EXCEEDED: Timed out waiting for a sample.
+  ///
+  /// Other statuses left up to the implementer.
+  ///
+  /// @endrst
   Result<int32_t> TryReadFor(chrono::SystemClock::duration timeout) {
     return TryReadUntil(chrono::SystemClock::TimePointAfterAtLeast(timeout));
   }
@@ -60,11 +68,19 @@ class AnalogInput {
   ///
   /// This method is thread safe.
   ///
-  /// @returns
-  /// * A sample on success.
-  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
-  /// * Other statuses left up to the implementer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns a sample on success.
+  ///
+  ///    RESOURCE_EXHAUSTED: ADC peripheral in use.
+  ///
+  ///    DEADLINE_EXCEEDED: Timed out waiting for a sample.
+  ///
+  /// Other statuses left up to the implementer.
+  ///
+  /// @endrst
   virtual Result<int32_t> TryReadUntil(
       chrono::SystemClock::time_point deadline) = 0;
 

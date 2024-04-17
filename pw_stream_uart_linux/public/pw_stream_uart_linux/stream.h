@@ -45,11 +45,19 @@ class UartStreamLinux : public NonSeekableReaderWriter {
   /// @param[in] path Path to the TTY device.
   /// @param[in] baud_rate Baud rate to use for the device.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The device was successfully opened and configured.
-  /// * @pw_status{INVALID_ARGUMENT} - An unsupported baud rate was supplied.
-  /// * @pw_status{FAILED_PRECONDITION} - A device was already open.
-  /// * @pw_status{UNKNOWN} - An error was returned by the operating system.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The device was successfully opened and configured.
+  ///
+  ///    INVALID_ARGUMENT: An unsupported baud rate was supplied.
+  ///
+  ///    FAILED_PRECONDITION: A device was already open.
+  ///
+  ///    UNKNOWN: An error was returned by the operating system.
+  ///
+  /// @endrst
   Status Open(const char* path, uint32_t baud_rate);
   void Close();
 

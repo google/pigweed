@@ -82,10 +82,17 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - An active or inactive state.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns an active or inactive state.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns Other status codes as defined by the backend.
+  ///
+  /// @endrst
   Result<State> GetState() { return DoGetState(); }
 
   /// Sets the state of the line.
@@ -96,10 +103,17 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The state has been set.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The state has been set.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status SetState(State state) { return DoSetState(state); }
 
   /// Checks if the line is in the active state.
@@ -110,11 +124,17 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - `true` if the line is in the active state, otherwise
-  ///   `false`.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: ``true`` if the line is in the active state, otherwise ``false``.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Result<bool> IsStateActive() {
     PW_TRY_ASSIGN(const State state, GetState());
     return state == State::kActive;
@@ -129,10 +149,17 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The state has been set.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The state has been set.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status SetStateActive() { return SetState(State::kActive); }
 
   /// Sets the line to the inactive state. Equivalent to
@@ -144,10 +171,17 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The state has been set.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The state has been set.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status SetStateInactive() { return SetState(State::kInactive); }
 
   /// Sets an interrupt handler to execute when an interrupt is triggered, and
@@ -167,10 +201,17 @@ class DigitalIoOptional {
   ///
   /// @pre No handler is currently set.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was configured.
-  /// * @pw_status{INVALID_ARGUMENT} - The handler is empty.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was configured.
+  ///
+  ///    INVALID_ARGUMENT: The handler is empty.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status SetInterruptHandler(InterruptTrigger trigger,
                              InterruptHandler&& handler) {
     if (handler == nullptr) {
@@ -185,9 +226,15 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was cleared.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was cleared.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status ClearInterruptHandler() {
     PW_TRY(DisableInterruptHandler());
     return DoSetInterruptHandler(InterruptTrigger::kActivatingEdge, nullptr);
@@ -200,10 +247,17 @@ class DigitalIoOptional {
   ///
   /// @pre A handler has been set using `SetInterruptHandler()`.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was configured.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was configured.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status EnableInterruptHandler() { return DoEnableInterruptHandler(true); }
 
   /// Disables the interrupt handler. This is a no-op if interrupts are
@@ -214,9 +268,15 @@ class DigitalIoOptional {
   /// backend-specific. There may be queued events that will trigger the handler
   /// again after this call returns.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was disabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was disabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status DisableInterruptHandler() { return DoEnableInterruptHandler(false); }
 
   /// Enables the line to initialize it into the default state as determined by
@@ -230,9 +290,15 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The line is enabled and ready for use.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The line is enabled and ready for use.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status Enable() { return DoEnable(true); }
 
   /// Disables the line to power down any pull-up/down resistors and disconnect
@@ -244,9 +310,15 @@ class DigitalIoOptional {
   /// @warning This method is not thread-safe and cannot be used in interrupt
   /// handlers.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The line is disabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The line is disabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   Status Disable() {
     if (provides_interrupt()) {
       PW_TRY(DisableInterruptHandler());
@@ -284,19 +356,32 @@ class DigitalIoOptional {
   /// @pre This method cannot be used in interrupt contexts.
   /// @pre When disabling, the interrupt handler must already be disabled.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The line is enabled and ready for use.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The line is enabled and ready for use.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   virtual Status DoEnable(bool enable) = 0;
 
   /// Gets the state of the line.
   ///
   /// @pre This method cannot be used in interrupt contexts.
   ///
-  /// @returns
-  /// * @pw_status{OK} - An active or inactive state.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: An active or inactive state.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   virtual Result<State> DoGetState() = 0;
 
   /// Sets the state of the line.
@@ -306,10 +391,17 @@ class DigitalIoOptional {
   ///
   /// @pre This method cannot be used in interrupt contexts.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The state has been set.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The state has been set.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   virtual Status DoSetState(State level) = 0;
 
   /// Sets or clears an interrupt handler to execute when an interrupt is
@@ -333,9 +425,15 @@ class DigitalIoOptional {
   /// @pre If setting a handler, no handler is permitted to be currently set.
   /// @pre When cleaing a handler, the interrupt handler must be disabled.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was configured.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was configured.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   virtual Status DoSetInterruptHandler(InterruptTrigger trigger,
                                        InterruptHandler&& handler) = 0;
 
@@ -349,10 +447,17 @@ class DigitalIoOptional {
   ///      `DoSetInterruptHandler()`.
   /// @pre Interrupt handler enabling cannot be used in interrupt contexts.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The interrupt handler was configured.
-  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
-  /// * Other status codes as defined by the backend.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The interrupt handler was configured.
+  ///
+  ///    FAILED_PRECONDITION: The line has not been enabled.
+  ///
+  /// Returns other status codes as defined by the backend.
+  ///
+  /// @endrst
   virtual Status DoEnableInterruptHandler(bool enable) = 0;
 
   // The configuration of this line.

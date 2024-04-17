@@ -45,11 +45,19 @@ class MicrovoltInput : public AnalogInput {
   ///
   /// This method is thread-safe.
   ///
-  /// @returns
-  /// * A voltage sample in microvolts (uV) on success.
-  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
-  /// * Other statuses left up to the implementer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns a voltage sample in microvolts (uV) on success.
+  ///
+  ///    RESOURCE_EXHAUSTED: ADC peripheral in use.
+  ///
+  ///    DEADLINE_EXCEEDED: Timed out waiting for a sample.
+  ///
+  /// Other statuses left up to the implementer.
+  ///
+  /// @endrst
   Result<int32_t> TryReadMicrovoltsFor(chrono::SystemClock::duration timeout) {
     return TryReadMicrovoltsUntil(
         chrono::SystemClock::TimePointAfterAtLeast(timeout));
@@ -60,11 +68,19 @@ class MicrovoltInput : public AnalogInput {
   ///
   /// This method is thread-safe.
   ///
-  /// @returns
-  /// * A voltage sample in microvolts (uV) on success.
-  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
-  /// * Other statuses left up to the implementer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns a voltage sample in microvolts (uV) on success.
+  ///
+  ///    RESOURCE_EXHAUSTED: ADC peripheral in use.
+  ///
+  ///    DEADLINE_EXCEEDED: Timed out waiting for a sample.
+  ///
+  /// Other statuses left up to the implementer.
+  ///
+  /// @endrst
   Result<int32_t> TryReadMicrovoltsUntil(
       chrono::SystemClock::time_point deadline) {
     PW_TRY_ASSIGN(const int32_t sample, TryReadUntil(deadline));

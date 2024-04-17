@@ -47,10 +47,15 @@ class Uart {
   /// interface parameters, enable the associated pins, setup the internal
   /// TX and RX buffers, etc...
   ///
-  /// @returns
-  /// * @pw_status{OK} - The UART module has been succesfully initialized.
-  /// * @pw_status{Internal} - Internal errors  within the hardware abstraction
-  /// layer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The UART module has been succesfully initialized.
+  ///
+  ///    INTERNAL: Internal errors within the hardware abstraction layer.
+  ///
+  /// @endrst
   Status Enable() { return DoEnable(true); }
 
   /// Disables the UART module on the microcontroller. Disabling the UART
@@ -60,10 +65,15 @@ class Uart {
   /// This is usually done to save power. Interrupt handlers should also be
   /// disabled.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The UART module has been succesfully initialized.
-  /// * @pw_status{Internal} - Internal errors  within the hardware abstraction
-  /// layer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The UART module has been succesfully initialized.
+  ///
+  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
+  ///
+  /// @endrst
   Status Disable() { return DoEnable(false); }
 
   /// Configures the UART communication baud rate.
@@ -72,12 +82,18 @@ class Uart {
   /// Whether the baud rate can be changed while the UART is enabled depends on
   /// the specific implementation.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The UART has been succesfully initialized.
-  /// * @pw_status{FailedPrecondition} - The device is enabled and does not
-  ///                                    support changing settings on the fly.
-  /// * @pw_status{Internal} - Internal errors  within the hardware abstraction
-  /// layer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The UART has been succesfully initialized.
+  ///
+  ///    FAILED_PRECONDITION: The device is enabled and does not support
+  ///    changing settings on the fly.
+  ///
+  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
+  ///
+  /// @endrst
   Status SetBaudRate(uint32_t baud_rate) { return DoSetBaudRate(baud_rate); }
 
   /// Reads data from the UART into a provided buffer.
@@ -87,9 +103,15 @@ class Uart {
   ///
   /// @param rx_buffer  The buffer to read data into.
   ///
-  /// @returns
-  /// * pw_status{OK}- The operation was successful.
-  /// * Other implementation specific status codes.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   Status Read(ByteSpan rx_buffer) {
     return DoTryReadFor(rx_buffer, std::nullopt).status();
   }
@@ -104,12 +126,19 @@ class Uart {
   ///                   the function will immediately return with at least one
   ///                   hardware read operation attempt.
   ///
-  /// @returns
-  /// * @StatusWithSize{OK} - The operation was successful and the entire buffer
-  ///                         has been filled with data.
-  /// * @StatusWithSize{DeadlineExceeded} - The operation timed out before the
-  ///                                       entire buffer could be filled.
-  /// * Other implementation specific status codes
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful and the entire buffer has been filled
+  ///    with data.
+  ///
+  ///    DEADLINE_EXCEEDED: The operation timed out before the entire buffer
+  ///    could be filled.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   StatusWithSize TryReadFor(ByteSpan rx_buffer,
                             chrono::SystemClock::duration timeout) {
     return DoTryReadFor(rx_buffer, timeout);
@@ -120,9 +149,15 @@ class Uart {
   ///
   /// @param tx_buffer - The buffer to write data from.
   ///
-  /// @returns
-  /// * @pw_status{OK} - If the operations has been succesfull.
-  /// * Other implementation specific status codes.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   Status Write(ConstByteSpan tx_buffer) {
     return DoTryWriteFor(tx_buffer, std::nullopt).status();
   }
@@ -136,12 +171,19 @@ class Uart {
   ///                   If zero, the function will immediately return with at
   ///                   least one hardware write operation attempt.
   ///
-  /// @returns
-  /// * @StatusWithSize{OK} - The operation was successful and the entire buffer
-  ///                         has been written.
-  /// * @StatusWithSize{DeadlineExceeded} - The operation timed out before the
-  ///                                       entire buffer could be written.
-  /// * Other implementation specific status codes.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful and the entire buffer has been
+  ///    written.
+  ///
+  ///    DEADLINE_EXCEEDED: The operation timed out before the entire buffer
+  ///    could be written.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   StatusWithSize TryWriteFor(ConstByteSpan tx_buffer,
                              chrono::SystemClock::duration timeout) {
     return DoTryWriteFor(tx_buffer, timeout);
@@ -163,9 +205,15 @@ class Uart {
   /// has been transmitted. Any data enqueued after calling this function will
   /// be transmitted immediately.
   ///
-  /// @returns
-  /// * @pw_status{OK} - If the operations has been succesfull.
-  /// * Other implementation specific status codes.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   Status FlushOutput() { return DoFlushOutput(); }
 
   /// Empties the UART's receive buffer and discards any unread data.
@@ -174,9 +222,15 @@ class Uart {
   /// buffer to an empty state. This is useful for situations where you want to
   /// disregard any previously received data and resynchronize.
   ///
-  /// @returns
-  /// * @pw_status{OK} - If the operations has been succesfull.
-  /// * Other implementation specific status codes.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   Status ClearPendingReceiveBytes() { return DoClearPendingReceiveBytes(); }
 
  private:
@@ -197,12 +251,19 @@ class Uart {
   ///                   hardware read operation attempt. If not specified, the
   ///                   function blocks untill the buffer is full.
   ///
-  /// @returns
-  /// * @StatusWithSize{OK} - The operation was successful and the entire buffer
-  ///                         has been filled with data.
-  /// * @StatusWithSize{DeadlineExceeded} - The operation timed out before the
-  ///                                       entire buffer could be filled.
-  /// * Other implementation specific status codes
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful and the entire buffer has been
+  ///    filled with data.
+  ///
+  ///    DEADLINE_EXCEEDED: The operation timed out before the entire buffer
+  ///    could be filled.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   virtual StatusWithSize DoTryReadFor(
       ByteSpan rx_buffer,
       std::optional<chrono::SystemClock::duration> timeout) = 0;
@@ -222,12 +283,19 @@ class Uart {
   ///                   hardware write operation attempt. If not specified, the
   ///                   function blocks until the buffer is empty.
   ///
-  /// @returns
-  /// * @StatusWithSize{OK} - The operation was successful and the entire buffer
-  ///                         has been written.
-  /// * @StatusWithSize{DeadlineExceeded} - The operation timed out before the
-  ///                                       entire buffer could be written.
-  /// * Other implementation-specific status codes
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful and the entire buffer has been
+  ///    written.
+  ///
+  ///    DEADLINE_EXCEEDED: The operation timed out before the entire buffer
+  ///    could be written.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
   virtual StatusWithSize DoTryWriteFor(
       ConstByteSpan tx_buffer,
       std::optional<chrono::SystemClock::duration> timeout) = 0;

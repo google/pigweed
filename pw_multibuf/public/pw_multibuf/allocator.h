@@ -176,14 +176,20 @@ class MultiBufAllocator {
   /// Attempts to allocate a ``MultiBuf`` of at least ``min_size`` bytes and at
   /// most ``desired_size`` bytes.
   ///
-  /// @retval Ok(buffer) if the allocation was successful.
-  /// @retval @pw_status{RESOURCE_EXHAUSTED} if insufficient memory is available
-  /// currently.
-  /// @retval @pw_status{OUT_OF_RANGE} if this amount of memory will not become
-  /// possible to
-  ///     allocate in the future, or if this allocator is unable to signal via
-  ///     ``MoreMemoryAvailable`` (this will result in asynchronous allocations
-  ///     failing immediately on OOM).
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Returns the buffer if the allocation was successful.
+  ///
+  ///    RESOURCE_EXHAUSTED: Insufficient memory is available currently.
+  ///
+  ///    OUT_OF_RANGE: This amount of memory will not become possible to
+  ///    allocate in the future, or this allocator is unable to signal via
+  ///    ``MoreMemoryAvailable`` (this will result in asynchronous allocations
+  ///    failing immediately on OOM).
+  ///
+  /// @endrst
   virtual pw::Result<MultiBuf> DoAllocate(size_t min_size,
                                           size_t desired_size,
                                           bool needs_contiguous) = 0;

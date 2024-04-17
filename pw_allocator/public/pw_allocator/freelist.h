@@ -66,10 +66,16 @@ class FreeList {
 
   /// Adds a chunk to this freelist.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The chunk was added successfully.
-  /// * @pw_status{OUT_OF_RANGE} - The chunk could not be added for size
-  ///   reasons (e.g. the chunk is too small to store the `FreeListNode`).
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The chunk was added successfully.
+  ///
+  ///    OUT_OF_RANGE: The chunk could not be added for size reasons (e.g. the
+  ///    chunk is too small to store the ``FreeListNode``).
+  ///
+  /// @endrst
   Status AddChunk(span<std::byte> chunk);
 
   /// Finds an eligible chunk for an allocation of size `size`.
@@ -85,9 +91,15 @@ class FreeList {
 
   /// Removes a chunk from this freelist.
   ///
-  /// @returns
-  /// * @pw_status{OK} - The chunk was removed successfully.
-  /// * @pw_status{NOT_FOUND} - The chunk could not be found in this freelist.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The chunk was removed successfully.
+  ///
+  ///    NOT_FOUND: The chunk could not be found in this freelist.
+  ///
+  /// @endrst
   Status RemoveChunk(span<std::byte> chunk);
 
  private:

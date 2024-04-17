@@ -95,10 +95,20 @@ class BlockAllocator : public GenericBlockAllocator {
   /// This method will instantiate an initial block using the memory region.
   ///
   /// @param[in]  region              The memory region for this allocator.
-  /// @retval     OK                  The allocator is initialized.
-  /// @retval     INVALID_ARGUMENT    The memory region is null.
-  /// @retval     RESOURCE_EXHAUSTED  The region is too small for `BlockType`.
-  /// @retval     OUT_OF_RANGE        The region too large for `BlockType`.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The allocator is initialized.
+  ///
+  ///    INVALID_ARGUMENT: The memory region is null.
+  ///
+  ///    RESOURCE_EXHAUSTED: The region is too small for ``BlockType``.
+  ///
+  ///    OUT_OF_RANGE: The region too large for ``BlockType``.
+  ///
+  /// @endrst
   Status Init(ByteSpan region);
 
   /// Sets the blocks to be used by this allocator.
@@ -107,8 +117,16 @@ class BlockAllocator : public GenericBlockAllocator {
   /// `end` is not provided, the sequence extends to a block marked "last".
   ///
   /// @param[in]  region              The memory region for this allocator.
-  /// @retval     OK                  The allocator is initialized.
-  /// @retval     INVALID_ARGUMENT    The block sequence is empty.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The allocator is initialized.
+  ///
+  ///    INVALID_ARGUMENT: The block sequence is empty.
+  ///
+  /// @endrst
   Status Init(BlockType* begin, BlockType* end = nullptr);
 
   /// Initializes the allocator with preconfigured blocks.
@@ -170,8 +188,16 @@ class BlockAllocator : public GenericBlockAllocator {
   /// in uncovering the underlying bug.
   ///
   /// @param  ptr           Pointer to an allocated block's usable space.
-  /// @retval OK            Result contains a pointer to the block.
-  /// @retval OUT_OF_RANGE  Given pointer is outside the allocator's memory.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Result contains a pointer to the block.
+  ///
+  ///    OUT_OF_RANGE: Given pointer is outside the allocator's memory.
+  ///
+  /// @endrst
   template <typename PtrType,
             typename BlockPtrType = std::conditional_t<
                 std::is_const_v<std::remove_pointer_t<PtrType>>,

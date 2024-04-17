@@ -204,8 +204,7 @@ Use ``@pre <description>``.
 
 pw_status codes
 ===============
-Use the following syntax when referring to ``pw_status`` codes in Doxygen
-comments:
+Use the following syntax when referring to ``pw_status`` codes:
 
 .. admonition:: **Yes**
    :class: checkmark
@@ -220,37 +219,94 @@ Replace ``...`` with a valid ``pw_status`` code. See
 Doxygen converts this alias into a link to the status code's reference
 documentation.
 
-.. _docs-style-doxygen-doxygen-pw_status-return:
+Don't use this syntax for functions or methods that return a set of
+status codes. Use ``pw-status-codes``. See :ref:`pw-status-codes`.
 
-Methods that return pw_status codes
-===================================
-Use ``@return A `pw::Status` object with one of the following statuses:``
-followed by a bullet list of the relevant statuses and a description
-of each scenario.
+.. _pw-status-codes:
+
+Functions and methods that return pw::Status codes
+==================================================
+Use ``pw-status-codes`` to present the set of codes and descriptions as a
+two-column table:
 
 .. admonition:: **Yes**
    :class: checkmark
 
    .. code-block:: none
 
-      /// @returns A `pw::Status` object with one of the following statuses:
-      /// * @pw_status{...} - <description of scenario>
-      /// * @pw_status{...} - <description of scenario>
-      /// * @pw_status{...} - <description of scenario>
+      /// @returns @rst
+      ///
+      /// .. pw-status-codes::
+      ///
+      ///    <code>: <description>
+      ///
+      ///    <code>: <description>
+      ///
+      /// @endrst
+
+Example:
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @returns @rst
+      ///
+      /// .. pw-status-codes::
+      ///
+      ///    OK: The bulk read was successful.
+      ///
+      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
+      ///    new block.
+      ///
+      /// @endrst
+
+* Each ``<code>`` must be a valid :ref:`status code <module-pw_status-codes>`.
+  The part before the colon must be plaintext.
+* Each ``<description>`` should explain further what the code means in this
+  particular scenario. The description must be a single paragraph. It can use
+  inline reStructuredText features such as code formatting and cross-references.
+* ``pw-status-codes`` needs to be wrapped in ``@rst`` and ``@endrst``
+  because it's a reStructuredText directive and Doxygen doesn't natively
+  support reST. The implementation is at
+  ``//pw_docgen/py/pw_docgen/sphinx/pw_status_codes.py``.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @returns @rst
+      ///
+      /// .. pw-status-codes::
+      ///
+      ///    OK: Data successfully written to ``buffer``.
+      ///
+      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
+      ///    new block. See :ref:`module-pw_example-troubleshooting`.
+      ///
+      /// @endrst
+
+   It's OK to use reStructuredText features like code formatting and
+   cross-references within the descriptions. The status code itself
+   must be plaintext.
 
 .. admonition:: **No**
    :class: error
 
    .. code-block:: none
 
-      /// @returns A `pw::Status` object with one of the following statuses:
+      /// @returns @rst
       ///
-      /// * @pw_status{...} - <description of scenario>
-      /// * @pw_status{...} - <description of scenario>
-      /// * @pw_status{...} - <description of scenario>
+      /// .. pw-status-codes::
+      ///
+      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
+      ///                        new block.
+      ///
+      /// @endrst
 
-   Don't put a blank line between the ``@returns`` line and the line after it.
-   The list won't render in the correct place.
+   For items that span multiple lines, don't use whitespace like this.
 
 .. _docs-style-doxygen-namespaces:
 

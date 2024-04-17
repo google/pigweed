@@ -175,13 +175,22 @@ class AnyChannel {
   ///
   /// Channels only support one read operation / waker at a time.
   ///
-  /// * OK - Data was read into a MultiBuf.
-  /// * UNIMPLEMENTED - The channel does not support reading.
-  /// * FAILED_PRECONDITION - The channel is closed.
-  /// * OUT_OF_RANGE - The end of the stream was reached. This may be though
-  ///   of as reaching the end of a file. Future reads may succeed after
-  ///   ``Seek`` ing backwards, but no more new data will be produced. The
-  ///   channel is still open; writes and seeks may succeed.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Data was read into a MultiBuf.
+  ///
+  ///    UNIMPLEMENTED: The channel does not support reading.
+  ///
+  ///    FAILED_PRECONDITION: The channel is closed.
+  ///
+  ///    OUT_OF_RANGE: The end of the stream was reached. This may be though
+  ///    of as reaching the end of a file. Future reads may succeed after
+  ///    ``Seek`` ing backwards, but no more new data will be produced. The
+  ///    channel is still open; writes and seeks may succeed.
+  ///
+  /// @endrst
   async2::Poll<Result<multibuf::MultiBuf>> PendRead(async2::Context& cx) {
     if (!is_read_open()) {
       return Status::FailedPrecondition();
@@ -251,13 +260,21 @@ class AnyChannel {
   /// specialize ``GetWriteAllocator`` to return the next section of the
   /// buffer available for writing.
   ///
+  /// @returns @rst
   /// May fail with the following error codes:
   ///
-  /// * OK - Data was accepted by the channel
-  /// * UNIMPLEMENTED - The channel does not support writing.
-  /// * UNAVAILABLE - The write failed due to a transient error (only applies
-  ///   to unreliable channels).
-  /// * FAILED_PRECONDITION - The channel is closed.
+  /// .. pw-status-codes::
+  ///
+  ///    OK: Data was accepted by the channel.
+  ///
+  ///    UNIMPLEMENTED: The channel does not support writing.
+  ///
+  ///    UNAVAILABLE: The write failed due to a transient error (only applies
+  ///    to unreliable channels).
+  ///
+  ///    FAILED_PRECONDITION: The channel is closed.
+  ///
+  /// @endrst
   Result<WriteToken> Write(multibuf::MultiBuf&& data) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
@@ -297,13 +314,23 @@ class AnyChannel {
   /// relative to the new position. Already-written data still being flushed
   /// will be output relative to the old position.
   ///
-  /// * OK - The current position was successfully changed.
-  /// * UNIMPLEMENTED - The channel does not support seeking.
-  /// * FAILED_PRECONDITION - The channel is closed.
-  /// * NOT_FOUND - The seek was to a valid position, but the channel is no
-  ///   longer capable of seeking to this position (partially seekable
-  ///   channels only).
-  /// * OUT_OF_RANGE - The seek went beyond the end of the stream.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The current position was successfully changed.
+  ///
+  ///    UNIMPLEMENTED: The channel does not support seeking.
+  ///
+  ///    FAILED_PRECONDITION: The channel is closed.
+  ///
+  ///    NOT_FOUND: The seek was to a valid position, but the channel is no
+  ///    longer capable of seeking to this position (partially seekable
+  ///    channels only).
+  ///
+  ///    OUT_OF_RANGE: The seek went beyond the end of the stream.
+  ///
+  /// @endrst
   Status Seek(async2::Context& cx, ptrdiff_t position, Whence whence);
 
   /// Returns the current position in the stream, or `kUnknownPosition` if
@@ -314,11 +341,19 @@ class AnyChannel {
 
   /// Closes the channel, flushing any data.
   ///
-  /// * OK - The channel was closed and all data was sent successfully.
-  /// * DATA_LOSS - The channel was closed, but not all previously written
-  ///   data was delivered.
-  /// * FAILED_PRECONDITION - Channel was already closed, which can happen
-  ///   out-of-band due to errors.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The channel was closed and all data was sent successfully.
+  ///
+  ///    DATA_LOSS: The channel was closed, but not all previously written
+  ///    data was delivered.
+  ///
+  ///    FAILED_PRECONDITION: Channel was already closed, which can happen
+  ///    out-of-band due to errors.
+  ///
+  /// @endrst
   async2::Poll<pw::Status> PendClose(async2::Context& cx) {
     if (!is_read_or_write_open()) {
       return Status::FailedPrecondition();

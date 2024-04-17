@@ -83,16 +83,23 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns A `pw::Status` object with one of the following statuses:
-  /// * @pw_status{OK} - The transaction or transactions succeeded.
-  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
-  ///   than 10 bits.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
-  ///   initiator access and complete the I2C transaction in time.
-  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
-  ///   addressed device didn't respond or was unable to process the request.
-  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
-  ///   enabled.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transaction or transactions succeeded.
+  ///
+  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
+  ///
+  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///    and complete the I2C transaction in time.
+  ///
+  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///    didn't respond or was unable to process the request.
+  ///
+  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  /// @endrst
   Status WriteReadFor(Address device_address,
                       ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
@@ -138,16 +145,23 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns A `pw::Status` object with one of the following statuses:
-  /// * @pw_status{OK} - The transaction succeeded.
-  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
-  ///   than 10 bits.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
-  ///   initiator access and complete the I2C transaction in time.
-  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
-  ///   addressed device didn't respond or was unable to process the request.
-  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
-  ///   enabled.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transaction succeeded.
+  ///
+  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
+  ///
+  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///    and complete the I2C transaction in time.
+  ///
+  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///    didn't respond or was unable to process the request.
+  ///
+  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  /// @endrst
   Status WriteFor(Address device_address,
                   ConstByteSpan tx_buffer,
                   chrono::SystemClock::duration timeout) {
@@ -185,16 +199,23 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns A `pw::Status` object with one of the following statuses:
-  /// * @pw_status{OK} - The transaction succeeded.
-  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
-  ///   than 10 bits.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
-  ///   initiator access and complete the I2C transaction in time.
-  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
-  ///   addressed device didn't respond or was unable to process the request.
-  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
-  ///   enabled.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transaction succeeded.
+  ///
+  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
+  ///
+  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///    and complete the I2C transaction in time.
+  ///
+  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///    didn't respond or was unable to process the request.
+  ///
+  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  /// @endrst
   Status ReadFor(Address device_address,
                  ByteSpan rx_buffer,
                  chrono::SystemClock::duration timeout) {
@@ -225,16 +246,23 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns A `pw::Status` object with one of the following statuses:
-  /// * @pw_status{OK} - The transaction succeeded.
-  /// * @pw_status{INVALID_ARGUMENT} - The device address provided is bigger
-  ///   than 10 bits.
-  /// * @pw_status{DEADLINE_EXCEEDED} - Was unable to acquire exclusive
-  ///   initiator access and complete the I2C transaction in time.
-  /// * @pw_status{UNAVAILABLE} - A NACK condition occurred, meaning the
-  ///   addressed device didn't respond or was unable to process the request.
-  /// * @pw_status{FAILED_PRECONDITION} - The interface isn't initialized or
-  ///   enabled.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transaction succeeded.
+  ///
+  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
+  ///
+  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///    and complete the I2C transaction in time.
+  ///
+  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///    didn't respond or was unable to process the request.
+  ///
+  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  /// @endrst
   Status ProbeDeviceFor(Address device_address,
                         chrono::SystemClock::duration timeout) {
     std::byte ignored_buffer[1] = {};  // Read a byte to probe.

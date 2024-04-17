@@ -46,8 +46,13 @@ class AtomicFileTransferHandler : public ReadWriteHandler {
   /// @pre The read transfer has not been initialized before the call to this
   /// method.
   ///
-  /// @returns A `pw::Status` object indicating whether
-  /// `AtomicFileTransferHandler` is ready for the transfer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: ``AtomicFileTransferHandler`` is ready for the transfer.
+  ///
+  /// @endrst
   Status PrepareRead() override;
   /// Handler function that is called by the transfer thread after a read
   /// transfer completes.
@@ -62,15 +67,25 @@ class AtomicFileTransferHandler : public ReadWriteHandler {
   /// @pre The write transfer has not been initialized before the call to this
   /// method.
   ///
-  /// @returns A `pw::Status` object indicating whether
-  /// `AtomicFileTransferHandler` is ready for the transfer.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: ``AtomicFileTransferHandler`` is ready for the transfer.
+  ///
+  /// @endrst
   Status PrepareWrite() override;
   /// Indicates whether the write transfer was successful.
   ///
   /// @pre The write transfer is done.
   ///
-  /// @returns A `pw::Status` object indicating whether the transfer data was
-  /// successfully written.
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transfer data was successfully written.
+  ///
+  /// @endrst
   Status FinalizeWrite(Status) override;
 
  private:

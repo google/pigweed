@@ -53,9 +53,15 @@ namespace pw::sys_io {
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns
-/// * @pw_status{OK} - A byte was successfully read and is in `dest`.
-/// * @pw_status{RESOURCE_EXHAUSTED} - The underlying source vanished.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: A byte was successfully read and is in ``dest``.
+///
+///    RESOURCE_EXHAUSTED: The underlying source vanished.
+///
+/// @endrst
 Status ReadByte(std::byte* dest);
 
 /// Reads a single byte from the `pw_sys_io` backend, if available.
@@ -64,10 +70,17 @@ Status ReadByte(std::byte* dest);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns
-/// * @pw_status{OK} - A byte was successfully read and is in `dest`.
-/// * @pw_status{UNAVAILABLE} - No byte is available to read; try later.
-/// * @pw_status{UNIMPLEMENTED} - The function is not supported on this target.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: A byte was successfully read and is in ``dest``.
+///
+///    UNAVAILABLE: No byte is available to read; try later.
+///
+///    UNIMPLEMENTED: The function is not supported on this target.
+///
+/// @endrst
 Status TryReadByte(std::byte* dest);
 
 /// Writes a single byte out the `pw_sys_io` backend. The function blocks until
@@ -77,8 +90,13 @@ Status TryReadByte(std::byte* dest);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns
-/// * @pw_status{OK} - A byte was successfully written.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: A byte was successfully written.
+///
+/// @endrst
 Status WriteByte(std::byte b);
 
 /// Writes a string out the `pw_sys_io` backend.
@@ -91,10 +109,17 @@ Status WriteByte(std::byte b);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns
-/// * @pw_status{OK} if all the bytes from the source string were successfully
-///   written. In all cases, the number of bytes successfully written are
-///   returned as part of the `StatusWithSize`.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: All the bytes from the source string were successfully
+///    written.
+///
+/// In all cases, the number of bytes successfully written are returned as
+/// part of the ``StatusWithSize``.
+///
+/// @endrst
 StatusWithSize WriteLine(const std::string_view& s);
 
 /// Fills a byte span from the `pw_sys_io` backend using `ReadByte()`.
@@ -105,10 +130,16 @@ StatusWithSize WriteLine(const std::string_view& s);
 /// undefined. This function blocks until either an error occurs or all bytes
 /// are successfully read from the backend's `ReadByte()` implementation.
 ///
-/// @returns
-/// * @pw_status{OK} if the destination span was successfully filled. In all
-///   cases, the number of bytes successuflly read to the destination span are
-///   returned as part of the `StatusWithSize`.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: The destination span was successfully filled.
+///
+/// In all cases, the number of bytes successuflly read to the destination
+/// span are returned as part of the ``StatusWithSize``.
+///
+/// @endrst
 StatusWithSize ReadBytes(ByteSpan dest);
 
 /// Writes a span of bytes out the `pw_sys_io` backend using `WriteByte()`.
@@ -119,10 +150,16 @@ StatusWithSize ReadBytes(ByteSpan dest);
 /// until either an error occurs, or all bytes are successfully written from the
 /// backend's `WriteByte()` implementation.
 ///
-/// @returns
-/// * @pw_status{OK} if all the bytes from the source span were successfully
-///   written. In all cases, the number of bytes successfully written are
-///   returned as part of the `StatusWithSize`.
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: All the bytes from the source span were successfully written.
+///
+/// In all cases, the number of bytes successfully written are returned as
+/// part of the ``StatusWithSize``.
+///
+/// @endrst
 StatusWithSize WriteBytes(ConstByteSpan src);
 
 }  // namespace pw::sys_io
