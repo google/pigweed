@@ -25,7 +25,7 @@ class ValidatorTest(unittest.TestCase):
 
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName)
-        self.maxDiff = None
+        self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_missing_compatible(self) -> None:
         """Check that missing 'compatible' key throws exception"""
@@ -39,7 +39,9 @@ class ValidatorTest(unittest.TestCase):
         """Check that incorrect type of 'compatible' throws exception"""
         self._check_with_exception(
             metadata={"compatible": {}},
-            exception_string="ERROR: Malformed sensor metadata YAML: compatible: {}",
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML: compatible: {}"
+            ),
             cause_substrings=[
                 "'org' is a required property",
             ],
@@ -47,19 +49,25 @@ class ValidatorTest(unittest.TestCase):
 
         self._check_with_exception(
             metadata={"compatible": []},
-            exception_string="ERROR: Malformed sensor metadata YAML: compatible: []",
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML: compatible: []"
+            ),
             cause_substrings=["[] is not of type 'object'"],
         )
 
         self._check_with_exception(
             metadata={"compatible": 1},
-            exception_string="ERROR: Malformed sensor metadata YAML: compatible: 1",
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML: compatible: 1"
+            ),
             cause_substrings=["1 is not of type 'object'"],
         )
 
         self._check_with_exception(
             metadata={"compatible": ""},
-            exception_string="ERROR: Malformed sensor metadata YAML: compatible: ''",
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML: compatible: ''"
+            ),
             cause_substrings=[" is not of type 'object'"],
         )
 
@@ -143,7 +151,9 @@ class ValidatorTest(unittest.TestCase):
                             },
                             "soap": {
                                 "name": "The soap",
-                                "description": "Measurement of how clean something is",
+                                "description": (
+                                    "Measurement of how clean something is"
+                                ),
                                 "units": {"symbol": "sqeaks"},
                             },
                             "laundry": {
@@ -328,8 +338,12 @@ class ValidatorTest(unittest.TestCase):
                         "channels": {
                             "bar": expected_sensor_channel_bar,
                             "soap": expected_sensor_channel_soap,
-                            "laundry_shirts": expected_sensor_channel_laundry_shirts,
-                            "laundry_pants": expected_sensor_channel_laundry_pants,
+                            "laundry_shirts": (
+                                expected_sensor_channel_laundry_shirts
+                            ),
+                            "laundry_pants": (
+                                expected_sensor_channel_laundry_pants
+                            ),
                             "laundry": expected_sensor_channel_laundry,
                         },
                     },

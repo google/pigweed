@@ -11,17 +11,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""CLI to describe a yaml sensor definition."""
 
 import argparse
 from collections.abc import Sequence
 from dataclasses import dataclass
+import importlib.resources
 import logging
 from pathlib import Path
 import subprocess
 import sys
-import importlib.resources
-import jsonschema
-import jsonschema.exceptions
+
+import jsonschema  # type: ignore
+import jsonschema.exceptions  # type: ignore
 from pw_sensor.validator import Validator
 import yaml
 

@@ -11,14 +11,15 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Sensor schema validation tooling."""
 
-import logging
-import importlib.resources
-from pathlib import Path
 from collections.abc import Sequence
 import importlib
-import jsonschema
-import jsonschema.exceptions
+import logging
+from pathlib import Path
+
+import jsonschema  # type: ignore
+import jsonschema.exceptions  # type: ignore
 import yaml
 
 _METADATA_SCHEMA = yaml.safe_load(
@@ -62,7 +63,7 @@ class Validator:
           log_level: A desired logging level (defaults to logging.WARNING)
         """
         self._include_paths = include_paths if include_paths else []
-        self._logger = logging.getLogger(__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._logger.setLevel(log_level)
 
     def validate(self, metadata: dict) -> dict:
@@ -189,7 +190,8 @@ class Validator:
         self._backfill_channels(declarations=declarations, out=out)
         self._backfill_attributes(declarations=declarations, out=out)
 
-    def _backfill_attributes(self, declarations: dict, out: dict) -> None:
+    @staticmethod
+    def _backfill_attributes(declarations: dict, out: dict) -> None:
         """
         Move attributes from 'delcarations' to 'out' while also filling in any
         default values.
@@ -215,7 +217,8 @@ class Validator:
             if not attribute["units"].get("name"):
                 attribute["units"]["name"] = attribute["units"]["symbol"]
 
-    def _backfill_channels(self, declarations: dict, out: dict) -> None:
+    @staticmethod
+    def _backfill_channels(declarations: dict, out: dict) -> None:
         """
         Move channels from 'declarations' to 'out' while also filling in any
         default values.
@@ -372,9 +375,8 @@ class Validator:
 
         raise FileNotFoundError(error_string)
 
-    def _check_scalar_name(
-        self, name: str, haystack: dict, overrides: dict
-    ) -> dict:
+    @staticmethod
+    def _check_scalar_name(name: str, haystack: dict, overrides: dict) -> dict:
         """
         Given a name and the resolved list of dependencies, try to find
         the full definition of a scalar (channel or attribute) with the name,

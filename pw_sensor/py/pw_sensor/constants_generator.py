@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Tooling to generate C++ constants from a yaml sensor definition."""
 
 import argparse
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ from collections.abc import Sequence
 import io
 import re
 import sys
+
 import yaml
 
 
@@ -90,8 +92,9 @@ class CppHeader:
                 f"constexpr ::pw::sensor::MeasurementType k{variable_name} =\n"
             )
             writer.write(
-                f"    PW_SENSOR_MEASUREMENT_TYPE(\"PW_SENSOR_MEASUREMENT_TYPE\", "
-                f"\"{units.name}\", \"{units.symbol}\");\n"
+                '    PW_SENSOR_MEASUREMENT_TYPE'
+                '("PW_SENSOR_MEASUREMENT_TYPE", '
+                f'"{units.name}", "{units.symbol}");\n'
             )
 
     def _print_footer(self, writer: io.TextIOWrapper) -> None:
