@@ -2378,16 +2378,21 @@ struct LESetExtendedAdvertisingParametersV1Command:
 struct LESetExtendedAdvertisingDataCommand:
   -- 7.8.54 LE Set Extended Advertising Data command (v5.0) (LE)
   -- HCI_LE_Set_Extended_Advertising_Data
+
   let hdr_size = hci.CommandHeader.$size_in_bytes
+
   0     [+hdr_size]  hci.CommandHeader                header
+
   $next [+1]         UInt                             advertising_handle
     -- Handle used to identify an advertising set.
 
   $next [+1]         LESetExtendedAdvDataOp           operation
+
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the Controller as to whether advertising data should be fragmented.
 
   let advertising_data_length_max = 251
+
   $next [+1]         UInt                             advertising_data_length (sz)
     -- Length of the advertising data included in this command packet. If the
     -- advertising set uses legacy advertising PDUs that support advertising
@@ -2404,17 +2409,22 @@ struct LESetExtendedAdvertisingDataCommand:
 struct LESetExtendedScanResponseDataCommand:
   -- 7.8.55 LE Set Extended Scan Response Data command (v5.0) (LE)
   -- HCI_LE_Set_Extended_Scan_Response_Data
+
   let hdr_size = hci.CommandHeader.$size_in_bytes
+
   0     [+hdr_size]  hci.CommandHeader                header
+
   $next [+1]         UInt                             advertising_handle
     -- Used to identify an advertising set
     [requires: 0x00 <= this <= 0xEF]
 
   $next [+1]         LESetExtendedAdvDataOp           operation
+
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the controller as to whether advertising data should be fragmented
 
   let scan_response_data_length_max = 251
+
   $next [+1]         UInt                             scan_response_data_length (sz)
     -- Length of the scan response data included in this command packet. If the
     -- advertising set uses legacy advertising PDUs that support advertising

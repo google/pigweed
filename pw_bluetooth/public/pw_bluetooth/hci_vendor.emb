@@ -51,8 +51,34 @@ struct LEGetVendorCapabilitiesCommand:
 
 
 struct LEGetVendorCapabilitiesCommandCompleteEvent:
+  # NOTE: There can be various versions of this command complete event sent by
+  # the Controller. As fields are added, the version_supported field is
+  # incremented to signify which fields are available. The version_supported
+  # field was only introduced into the command in Version 0.95. Controllers that
+  # use the base version, Version 0.55, don't have the version_supported field.
+  #
+  # NOTE(https://pwrev.dev/203950): In a previous undertaking, we attempted to
+  # use Emboss' conditional fields feature to conditionally define fields based
+  # on the version they are included in. However, in practice
+  # (https://fxbug.dev/332924195#comment6), we've found vendors sometimes send
+  # the wrong number of bytes for the version they are claiming to send. To
+  # tolerate these types of errors without issue, we simply define all the
+  # fields in Emboss and do error checking more manually.
+  #
+  # NOTE: Android's definition for this command complete event is available in
+  # AOSP: LeGetVendorCapabilitiesComplete and friends
+  # https://cs.android.com/android/platform/superproject/+/main:packages/modules/Bluetooth/system/gd/hci/hci_packets.pdl
+  #
+  # NOTE: An example implementation of how this command is filled in by a
+  # Controller is available within AOSP:
+  # le_get_vendor_capabilities_handler(...)
+  # https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/Bluetooth/system/gd/hci/controller.cc
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  # Version 0.55
+  # NOTE(https://github.com/google/emboss/issues/132): Emboss doesn't currently
+  # support using the $next keyword here.
+  let version_0_55_size = command_complete.$size_in_bytes+9
   $next [+1]         hci.StatusCode            status
   $next [+1]         UInt                      max_advt_instances
     -- Number of advertisement instances supported
@@ -77,6 +103,8 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   $next [+1]         Capability                activity_energy_info_support
     -- Supports reporting of activity and energy information
 
+  # Version 0.95
+  let version_0_95_size = version_0_55_size+6
   $next [+2]         bits                      version_supported:
     -- Specifies the version of the Google feature spec supported
     0     [+8]  UInt  major_number
@@ -91,15 +119,21 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   $next [+1]         Capability                debug_logging_supported
     -- Supports logging of binary debug information from controller
 
+  # Version 0.96
+  let version_0_96_size = version_0_95_size+1
   $next [+1]         Capability                le_address_generation_offloading_support
     -- Deprecated in Google feature spec v0.98 and higher
 
+  # Version 0.98
+  let version_0_98_size = version_0_96_size+5
   $next [+4]  bits:
     0     [+5]       AudioCodecSupportMask     a2dp_source_offload_capability_mask
 
   $next [+1]         Capability                bluetooth_quality_report_support
     -- Supports reporting of Bluetooth Quality events
 
+  # Version 1.03
+  let version_1_03_size = version_0_98_size+4
   $next [+4]  bits:
     0     [+5]       AudioCodecSupportMask     dynamic_audio_buffer_support
 

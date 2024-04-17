@@ -1679,6 +1679,7 @@ struct LEExtendedAdvertisingReportData:
     -- Identity Address of the target device.
 
   let data_length_max = 229
+
   $next [+1]                                               UInt                            data_length
     -- Length of the |data| field.
     # NOTE(https://github.com/google/emboss/issues/124): Emboss doesn't
