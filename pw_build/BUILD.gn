@@ -216,6 +216,9 @@ config("pedantic_warnings") {
 
   # TODO: b/335021928 - Enable C++ 20 extension warnings.
   cflags += [ "-Wno-c++20-extensions" ]
+
+  # TODO: b/335328444 - Enable C++ 20 extension warnings.
+  cflags += [ "-Wno-deprecated-pragma" ]
 }
 
 # Numeric conversion warnings.
