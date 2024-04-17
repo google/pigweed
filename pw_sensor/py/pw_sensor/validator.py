@@ -94,6 +94,8 @@ class Validator:
           FileNotFoundError: One of the dependencies was not found.
         """
         result: dict = {
+            "attributes": {},
+            "channels": {},
             "sensors": {},
         }
         metadata = metadata.copy()
@@ -109,14 +111,21 @@ class Validator:
         # list of channel and attribute specifiers
         self._resolve_dependencies(metadata=metadata, out=result)
 
+        self._logger.debug(yaml.safe_dump(result, indent=2))
+
         # Resolve all channel entries
         self._resolve_channels(metadata=metadata, out=result)
 
+        # Resolve all attribute entries
+        self._resolve_attributes(metadata=metadata, out=result)
+
         compatible = metadata.pop("compatible")
         channels = metadata.pop("channels")
+        attributes = metadata.pop("attributes")
         result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
             "compatible": compatible,
             "channels": channels,
+            "attributes": attributes,
         }
 
         try:
@@ -151,9 +160,9 @@ class Validator:
         if not deps:
             self._logger.debug("No dependencies found, skipping imports")
             out["channels"] = {}
+            out["attributes"] = {}
             return
 
-        resolved_deps: dict = {}
         for dep in deps:
             dep_file = self._get_dependency_file(dep)
             with open(dep_file, mode="r", encoding="utf-8") as dep_yaml_file:
@@ -167,32 +176,9 @@ class Validator:
                         "ERROR: Malformed dependency YAML: "
                         f"{yaml.safe_dump(dep_yaml, indent=2)}"
                     ) from e
-                self._backfill_declarations(declarations=dep_yaml)
-                for chan_id, channel in dep_yaml.get("channels", {}).items():
-                    if channel.get("name") is None:
-                        channel["name"] = chan_id
-                    if channel.get("description") is None:
-                        channel["description"] = ""
-                    if channel["units"].get("name") is None:
-                        channel["units"]["name"] = channel["units"]["symbol"]
-                    resolved_deps[chan_id] = channel
-                    for sub, sub_channel in channel.get(
-                        "sub-channels", {}
-                    ).items():
-                        subchan_id = f"{chan_id}_{sub}"
-                        if sub_channel.get("name") is None:
-                            sub_channel["name"] = subchan_id
-                        if sub_channel.get("description") is None:
-                            sub_channel["description"] = channel.get(
-                                "description"
-                            )
-                        sub_channel["units"] = channel["units"]
-                        resolved_deps[subchan_id] = sub_channel
-                    channel.pop("sub-channels", None)
+                self._backfill_declarations(declarations=dep_yaml, out=out)
 
-        out["channels"] = resolved_deps
-
-    def _backfill_declarations(self, declarations: dict) -> None:
+    def _backfill_declarations(self, declarations: dict, out: dict) -> None:
         """
         Add any missing properties of a declaration object.
 
@@ -200,10 +186,54 @@ class Validator:
           declarations: The top level declarations dictionary loaded from the
             dependency file.
         """
+        self._backfill_channels(declarations=declarations, out=out)
+        self._backfill_attributes(declarations=declarations, out=out)
+
+    def _backfill_attributes(self, declarations: dict, out: dict) -> None:
+        """
+        Move attributes from 'delcarations' to 'out' while also filling in any
+        default values.
+
+        Args:
+          declarations: The original YAML declaring attributes.
+          out: Output dictionary where we'll add the key "attributes" with the
+            result.
+        """
+        if out.get("attributes") is None:
+            out["attributes"] = {}
+        resolved_attributes: dict = out["attributes"]
+        if not declarations.get("attributes"):
+            return
+
+        for attr_id, attribute in declarations["attributes"].items():
+            assert resolved_attributes.get(attr_id) is None
+            resolved_attributes[attr_id] = attribute
+            if not attribute.get("name"):
+                attribute["name"] = attr_id
+            if not attribute.get("description"):
+                attribute["description"] = ""
+            if not attribute["units"].get("name"):
+                attribute["units"]["name"] = attribute["units"]["symbol"]
+
+    def _backfill_channels(self, declarations: dict, out: dict) -> None:
+        """
+        Move channels from 'declarations' to 'out' while also filling in any
+        default values.
+
+        Args:
+          declarations: The original YAML declaring channels.
+          out: Output dictionary where we'll add the key "channels" with the
+            result.
+        """
+        if out.get("channels") is None:
+            out["channels"] = {}
+        resolved_channels: dict = out["channels"]
         if not declarations.get("channels"):
             return
 
         for chan_id, channel in declarations["channels"].items():
+            assert resolved_channels.get(chan_id) is None
+            resolved_channels[chan_id] = channel
             if not channel.get("name"):
                 channel["name"] = chan_id
             if not channel.get("description"):
@@ -211,6 +241,59 @@ class Validator:
             units = channel["units"]
             if not units.get("name"):
                 units["name"] = units["symbol"]
+            # Resolve sub-channels
+            for sub, sub_channel in channel.get("sub-channels", {}).items():
+                subchan_id = f"{chan_id}_{sub}"
+                if sub_channel.get("name") is None:
+                    sub_channel["name"] = subchan_id
+                if sub_channel.get("description") is None:
+                    sub_channel["description"] = channel.get("description")
+                sub_channel["units"] = channel["units"]
+                resolved_channels[subchan_id] = sub_channel
+            channel.pop("sub-channels", None)
+
+    def _resolve_attributes(self, metadata: dict, out: dict) -> None:
+        """
+        For each attribute in the metadta, find the matching definition in the
+        'out/attributes' entry and use the data to fill any missing information.
+        For example, if an entry exists that looks like:
+            sample_rate: {}
+
+        We would then try and find the 'sample_rate' key in the out/attributes
+        list (which was already validated by _resolve_dependencies). Since the
+        example above does not override any fields, we would copy the 'name',
+        'description', and 'units' from the definition into the attribute entry.
+
+        Args:
+          metadata: The full sensor metadata passed to the validate function
+          out: The current output, used to get channel definitions
+
+        Raises:
+          RuntimeError: An error in the schema validation or a missing
+            definition.
+        """
+        attributes: dict | None = metadata.get("attributes")
+        if not attributes:
+            metadata["attributes"] = {}
+            self._logger.debug("No attributes found, skipping")
+            return
+
+        for attribute_name, attribute_value in attributes.items():
+            # Check if the attribute_name exists in 'out/attributes', we can
+            # assume 'out/attributes' exists because _resolve_dependencies() is
+            # required to have been called first.
+            attribute = self._check_scalar_name(
+                name=attribute_name,
+                haystack=out["attributes"],
+                overrides=attribute_value,
+            )
+            # The content of 'attribute' came from the 'out/attributes' list
+            # which was already validated and every field added if missing. At
+            # this point it's safe to access the attribute's name, description,
+            # and units.
+            attribute_value["name"] = attribute["name"]
+            attribute_value["description"] = attribute["description"]
+            attribute_value["units"] = attribute["units"]
 
     def _resolve_channels(self, metadata: dict, out: dict) -> None:
         """
@@ -239,19 +322,20 @@ class Validator:
             return
 
         for channel_name, channel_values in channels.items():
-            # Check if the channel_name exists in 'deps', we can assume 'deps'
-            # exists because _resolve_dependencies() is required to have been
-            # called first.
-            channel = self._check_channel_name(
-                channel_name=channel_name, channels=out["channels"]
+            # Check if the channel_name exists in 'out/channels', we can assume
+            # 'out/channels' exists because _resolve_dependencies() is required
+            # to have been called first.
+            channel = self._check_scalar_name(
+                name=channel_name,
+                haystack=out["channels"],
+                overrides=channel_values,
             )
-            # The content of 'channel' came from the 'deps' list which was
-            # already validated and every field added if missing. At this point
-            # it's safe to access the channel's name, description, and units.
-            if not channel_values.get("name"):
-                channel_values["name"] = channel["name"]
-            if not channel_values.get("description"):
-                channel_values["description"] = channel["description"]
+            # The content of 'channel' came from the 'out/channels' list which
+            # was already validated and every field added if missing. At this
+            # point it's safe to access the channel's name, description, and
+            # units.
+            channel_values["name"] = channel["name"]
+            channel_values["description"] = channel["description"]
             channel_values["units"] = channel["units"]
 
             if not channel_values.get("indicies"):
@@ -288,17 +372,19 @@ class Validator:
 
         raise FileNotFoundError(error_string)
 
-    def _check_channel_name(self, channel_name: str, channels: dict) -> dict:
+    def _check_scalar_name(
+        self, name: str, haystack: dict, overrides: dict
+    ) -> dict:
         """
-        Given a channel name and the resolved list of dependencies, try to find
-        the full definition of the channel with the name, description, and
-        units.
+        Given a name and the resolved list of dependencies, try to find
+        the full definition of a scalar (channel or attribute) with the name,
+        description, and units.
 
         Args:
-          channel_name: The name of the channel to search for in the
+          name: The name of the channel/attribute to search for in the
             dependencies
-          channels: The dictionary of resolved channels which define the
-            available channels
+          haystack: The dictionary of resolved properties which define the
+            available channels/attributes
 
         Returns:
           A dictionary with the following structure:
@@ -309,18 +395,20 @@ class Validator:
               symbol: string
 
         Raises:
-          RuntimeError: If the channel name isn't in the dependency list
+          RuntimeError: If the 'name' isn't in the dependency list
         """
-        # Check if we can find 'channel_name' in the 'channels' dictionary
-        if not channels.get(channel_name):
+        # Check if we can find 'name' in the 'haystack' dictionary
+        if not haystack.get(name):
             raise RuntimeError(
-                f"Failed to find a channel defenition for {channel_name}, "
-                "did you forget a dependency?"
+                f"Failed to find a definition for '{name}', did you forget a "
+                "dependency?"
             )
 
-        channel = channels[channel_name]
-        name = channel.get("name", channel_name)
-        description = channel.get("description", "")
+        channel = haystack[name]
+        name = overrides.get("name", channel.get("name", name))
+        description = overrides.get(
+            "description", channel.get("description", "")
+        )
         units = {
             "name": channel["units"].get("name", channel["units"]["symbol"]),
             "symbol": channel["units"]["symbol"],

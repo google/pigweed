@@ -120,6 +120,32 @@ channel. Otherwise, we might have something like:
             - name: "X"
                description: "temperature measured in the +X direction"
 
+What are attributes?
+====================
+Attributes are used to change the behavior of a sensor. They're defined using
+the ``attributes`` key and are structured similarly to ``channels`` since they
+can usually be measured in some way. Here's an example:
+
+.. code:: yaml
+
+   attributes:
+      sample_rate:
+         name: "sample rate"
+         description: "frequency at which samples are collected"
+         units:
+            name: "frequency"
+            symbol: "Hz"
+
+When associated with a ``sensor``, ``attributes`` again behave like ``channels``
+but without the ``indicies``:
+
+.. code:: yaml
+
+   compatible: ...
+   channels: ...
+   attributes:
+      sample_rate: {}
+
 The ``Validator`` class
 -----------------------
 The ``Validator`` class is used to take a sensor spec YAML file and expand it

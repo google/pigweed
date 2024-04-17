@@ -118,6 +118,7 @@ def main() -> None:
         include_paths=args.include_paths, log_level=args.log_level
     )
     superset: dict = {
+        "attributes": {},
         "channels": {},
         "sensors": {},
     }
@@ -138,6 +139,10 @@ def main() -> None:
         for chan_id, chan_spec in content["channels"].items():
             assert superset["channels"].get(chan_id) is None
             superset["channels"][chan_id] = chan_spec
+        # Add attributes
+        for attr_id, attr_spec in content["attributes"].items():
+            assert superset["attributes"].get(attr_id) is None
+            superset["attributes"][attr_id] = attr_spec
 
     _LOG.debug("Final descriptor:\n%s", yaml.safe_dump(superset, indent=2))
     _LOG.info("Validating...")

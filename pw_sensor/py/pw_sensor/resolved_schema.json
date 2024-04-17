@@ -3,6 +3,52 @@
   "description": "Fully resolved definitions of multiple sensors",
   "type": "object",
   "properties": {
+    "attributes": {
+      "type": "object",
+      "description": "All supported attributes",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A supported attribute",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "A name override for the attribute"
+            },
+            "description": {
+              "type": "string",
+              "description": "A description override for the attribute"
+            },
+            "units": {
+              "type": "object",
+              "description": "The units used to measure this attribute",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the units"
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "Symbol used to represent the unit"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "symbol"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "units"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "channels": {
       "type": "object",
       "description": "All supported channels",
@@ -154,6 +200,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "sensors"
+    "sensors",
+    "attributes"
   ]
 }

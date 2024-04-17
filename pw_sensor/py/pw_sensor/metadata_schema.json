@@ -30,6 +30,28 @@
         "part"
       ]
     },
+    "attributes": {
+      "type": "object",
+      "description": "A set of attributes supported by this sensor",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A supported channel",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "A name override for the channel"
+            },
+            "description": {
+              "type": "string",
+              "description": "A description override for the channel"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
     "channels": {
       "type": "object",
       "description": "A set of channels supported by this sensor",

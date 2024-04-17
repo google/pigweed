@@ -73,9 +73,11 @@ class ValidatorTest(unittest.TestCase):
                 "google,foo": {
                     "compatible": {"org": "google", "part": "foo"},
                     "channels": {},
+                    "attributes": {},
                 },
             },
             "channels": {},
+            "attributes": {},
         }
         metadata = {
             "compatible": {"org": "google", "part": "foo"},
@@ -113,12 +115,16 @@ class ValidatorTest(unittest.TestCase):
                 "compatible": {"org": "google", "part": "foo"},
                 "channels": {"bar": {}},
             },
-            exception_string="Failed to find a channel defenition for bar, did"
+            exception_string="Failed to find a definition for 'bar', did"
             " you forget a dependency?",
             cause_substrings=[],
         )
 
     def test_channel_info_from_deps(self) -> None:
+        """
+        End to end test resolving a dependency file and setting the right
+        default attribute values.
+        """
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".yaml", encoding="utf-8", delete=False
         ) as dep:
@@ -126,6 +132,11 @@ class ValidatorTest(unittest.TestCase):
             dep.write(
                 yaml.safe_dump(
                     {
+                        "attributes": {
+                            "sample_rate": {
+                                "units": {"symbol": "Hz"},
+                            },
+                        },
                         "channels": {
                             "bar": {
                                 "units": {"symbol": "sandwiches"},
@@ -156,6 +167,9 @@ class ValidatorTest(unittest.TestCase):
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
                 "deps": [dep_filename.name],
+                "attributes": {
+                    "sample_rate": {},
+                },
                 "channels": {
                     "bar": {},
                     "soap": {
@@ -172,6 +186,11 @@ class ValidatorTest(unittest.TestCase):
                 },
             }
         )
+        expected_attribute_sample_rate = {
+            "name": "sample_rate",
+            "description": "",
+            "units": {"name": "Hz", "symbol": "Hz"},
+        }
         expected_channel_bar = {
             "name": "bar",
             "description": "",
@@ -289,6 +308,7 @@ class ValidatorTest(unittest.TestCase):
         self.assertEqual(
             metadata,
             {
+                "attributes": {"sample_rate": expected_attribute_sample_rate},
                 "channels": {
                     "bar": expected_channel_bar,
                     "soap": expected_channel_soap,
@@ -301,6 +321,9 @@ class ValidatorTest(unittest.TestCase):
                         "compatible": {
                             "org": "google",
                             "part": "foo",
+                        },
+                        "attributes": {
+                            "sample_rate": expected_attribute_sample_rate,
                         },
                         "channels": {
                             "bar": expected_sensor_channel_bar,

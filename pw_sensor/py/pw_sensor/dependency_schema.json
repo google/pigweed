@@ -67,6 +67,49 @@
         }
       },
       "additionalProperties": false
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Mapping of attributes to their definition",
+      "patternProperties": {
+        "^[a-zA-Z]\\w*$": {
+          "type": "object",
+          "description": "An attribute definition",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "A user friendly name for the attribute, the attribute ID will be used if undefined"
+            },
+            "description": {
+              "type": "string",
+              "description": "A description of the attribute, the attribute ID will be used if undefined"
+            },
+            "units": {
+              "type": "object",
+              "description": "Details for how the attribute is measured",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "A user friendly name for the units"
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "The units used to represent the value"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "symbol"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "units"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
