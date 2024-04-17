@@ -21,8 +21,10 @@ from pathlib import Path
 from typing import BinaryIO, TextIO, Callable
 import pw_tokenizer
 import pw_cpu_exception_cortex_m
+import pw_cpu_exception_risc_v
 import pw_build_info.build_id
 from pw_snapshot_metadata import metadata
+from pw_snapshot_metadata_proto import snapshot_metadata_pb2
 from pw_snapshot_protos import snapshot_pb2
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_thread import thread_analyzer
@@ -65,12 +67,6 @@ def process_snapshot(
 
     output = [_BRANDING]
 
-    captured_metadata = metadata.process_snapshot(
-        serialized_snapshot, detokenizer
-    )
-    if captured_metadata:
-        output.append(captured_metadata)
-
     # Open a symbolizer.
     snapshot = snapshot_pb2.Snapshot()
     snapshot.ParseFromString(serialized_snapshot)
@@ -86,11 +82,32 @@ def process_snapshot(
             llvm_symbolizer_binary=llvm_symbolizer_binary
         )
 
-    cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
-        serialized_snapshot, symbolizer
+    captured_metadata = metadata.process_snapshot(
+        serialized_snapshot, detokenizer
     )
-    if cortex_m_cpu_state:
-        output.append(cortex_m_cpu_state)
+    if captured_metadata:
+        output.append(captured_metadata)
+
+    # Create MetadataProcessor
+    snapshot_metadata = snapshot_metadata_pb2.SnapshotBasicInfo()
+    snapshot_metadata.ParseFromString(serialized_snapshot)
+    metadata_processor = metadata.MetadataProcessor(
+        snapshot_metadata.metadata, detokenizer
+    )
+
+    # Check which CPU architecture to process the snapshot with.
+    if metadata_processor.cpu_arch().startswith("RV"):
+        risc_v_cpu_state = pw_cpu_exception_risc_v.process_snapshot(
+            serialized_snapshot, symbolizer
+        )
+        if risc_v_cpu_state:
+            output.append(risc_v_cpu_state)
+    else:
+        cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
+            serialized_snapshot, symbolizer
+        )
+        if cortex_m_cpu_state:
+            output.append(cortex_m_cpu_state)
 
     thread_info = thread_analyzer.process_snapshot(
         serialized_snapshot, detokenizer, symbolizer

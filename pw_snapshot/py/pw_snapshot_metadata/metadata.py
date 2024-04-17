@@ -118,6 +118,14 @@ class MetadataProcessor:
     def snapshot_uuid(self) -> str:
         return self._metadata.snapshot_uuid.hex()
 
+    def cpu_arch(self) -> str:
+        descriptor = (
+            snapshot_metadata_pb2.CpuArchitecture.DESCRIPTOR.enum_types_by_name[
+                'Enum'
+            ]
+        )
+        return descriptor.values_by_number[self._metadata.cpu_arch].name
+
     def fw_build_uuid(self) -> str:
         return self._metadata.software_build_uuid.hex()
 
@@ -153,6 +161,9 @@ class MetadataProcessor:
 
         if self._metadata.device_name:
             output.append(f'Device:            {self.device_name()}')
+
+        if self._metadata.cpu_arch:
+            output.append(f'CPU Arch:          {self.cpu_arch()}')
 
         if self._metadata.software_version:
             output.append(f'Device FW version: {self.device_fw_version()}')

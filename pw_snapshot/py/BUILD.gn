@@ -56,6 +56,7 @@ pw_python_package("pw_snapshot") {
     "$dir_pw_chrono:protos.python",
     "$dir_pw_chrono/py",
     "$dir_pw_cpu_exception_cortex_m/py",
+    "$dir_pw_cpu_exception_risc_v/py",
     "$dir_pw_symbolizer/py",
     "$dir_pw_thread:protos.python",
     "$dir_pw_thread/py",

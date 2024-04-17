@@ -65,6 +65,7 @@ pw_proto_library("snapshot_proto") {
     ":metadata_proto",
     "$dir_pw_chrono:protos",
     "$dir_pw_cpu_exception_cortex_m:cpu_state_protos",
+    "$dir_pw_cpu_exception_risc_v:cpu_state_protos",
     "$dir_pw_log:protos",
     "$dir_pw_thread:protos",
   ]
