@@ -133,10 +133,14 @@ Status SnapshotThread(
   // TODO: b/234890430 - Update this once we add support for ascending stacks.
   static_assert(portSTACK_GROWTH < 0, "Ascending stacks are not yet supported");
 
-  // If the thread is active, the stack pointer in the TCB is stale.
+  // If running_thread_stack_pointer is null, always use the stack pointer
+  // stored to the TCB.
+  bool use_running_thread_stack_pointer =
+      (thread_state == eRunning && running_thread_stack_pointer != nullptr);
+
   const uintptr_t stack_pointer = reinterpret_cast<uintptr_t>(
-      thread_state == eRunning ? running_thread_stack_pointer
-                               : tcb.pxTopOfStack);
+      use_running_thread_stack_pointer ? running_thread_stack_pointer
+                                       : tcb.pxTopOfStack);
   const uintptr_t stack_low_addr = reinterpret_cast<uintptr_t>(tcb.pxStack);
 
 #if ((portSTACK_GROWTH > 0) || (configRECORD_STACK_HIGH_ADDRESS == 1))

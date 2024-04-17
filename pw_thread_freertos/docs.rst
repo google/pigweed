@@ -265,6 +265,11 @@ captured. For ARM Cortex-M CPUs, you can do something like this:
    pw::thread::threadx::SnapshotThread(my_thread, thread_state, stack_ptr,
                                        snapshot_encoder, cb);
 
+Some FreeRTOS ports (e.g. RISC-V) automatically store the stack pointer back
+into the running thread's TCB upon exception entry, so there's no need to inject
+an updated stack pointer. If you're unsure of your platform's behavior, inject
+an updated stack pointer captured upon exception entry to be safe.
+
 ``SnapshotThreads()`` wraps the singular thread capture to instead captures
 all created threads to a ``pw::thread::proto::SnapshotThreadInfo`` message
 which also captures the thread state for you. This proto

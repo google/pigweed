@@ -28,10 +28,10 @@ namespace pw::thread::freertos {
 // Note: this requires the pw_thread_freertos:freertos_tskcb backend to be
 // set in order to access the stack limits inside of tskTCB.
 //
-// An updated running_thread_stack_pointer must be provided in order for the
-// running thread's context to reflect the running state. In addition a task
-// status buffer must be provided which can fit uxTaskGetNumberOfTasks()
-// entries. For ARM, you might do something like this:
+// An updated running_thread_stack_pointer can be provided in order for the
+// running thread's context to reflect the running state. Some platforms store
+// the last running stack pointer back into TCB to be retrieved. For ARM, you
+// might do something like this:
 //
 //    // Capture PSP.
 //    void* stack_ptr = 0;
@@ -41,14 +41,25 @@ namespace pw::thread::freertos {
 //           pw::ConstByteSpan stack) -> pw::Status {
 //      return encoder.WriteRawStack(stack);
 //    };
-//    pw::thread::freertos::SnapshotThread(stack_ptr, snapshot_encoder, cb,
-//                                         task_status_buffer);
+//    pw::thread::freertos::SnapshotThreads(stack_ptr, snapshot_encoder, cb);
 //
 // Warning: This is only safe to use when the scheduler and interrupts are
 // disabled.
 Status SnapshotThreads(void* running_thread_stack_pointer,
                        proto::pwpb::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& thread_stack_callback);
+
+// If you are unable to capture a more recent stack pointer when snapshotting
+// threads (or if your port does not require it), fall back to this overload of
+// SnapshotThreads().
+//
+// WARNING: Using this version of SnapshotThreads() may not properly capture
+// some of the running thread's context. Only use if you know what you're doing.
+inline Status SnapshotThreads(
+    proto::pwpb::SnapshotThreadInfo::StreamEncoder& encoder,
+    ProcessThreadStackCallback& thread_stack_callback) {
+  return SnapshotThreads(nullptr, encoder, thread_stack_callback);
+}
 
 // Captures only the provided thread handle as a pw::thread::Thread proto
 // message.
