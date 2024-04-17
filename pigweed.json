@@ -68,6 +68,10 @@
         "west": {
           "module": "pw_env_setup_zephyr.zephyr",
           "function": "main"
+        },
+        "sensor-desc": {
+          "module": "pw_sensor.sensor_desc",
+          "function": "main"
         }
       }
     },

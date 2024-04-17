@@ -26,6 +26,8 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_sensor/__init__.py",
+    "pw_sensor/constants_generator.py",
+    "pw_sensor/sensor_desc.py",
     "pw_sensor/validator.py",
   ]
   tests = [ "validator_test.py" ]
@@ -35,6 +37,7 @@ pw_python_package("py") {
   inputs = [
     "pw_sensor/dependency_schema.json",
     "pw_sensor/metadata_schema.json",
+    "pw_sensor/resolved_schema.json",
   ]
 }
 

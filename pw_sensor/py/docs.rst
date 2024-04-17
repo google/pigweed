@@ -28,7 +28,8 @@ sensor using the `metadata_schema.json`_ format, e.g.:
 
 
 ``pw_sensor`` provides a validator which will resolve any 'inherited' properties
-and make the final YAML easier for code generators to consume.
+and make the final YAML easier for code generators to consume. The returned
+dictionary uses the `resolved_schema.json`_ format.
 
 Every platform/language may implement their own generator.
 Generators consume the validated (schema-compliant) YAML and may produce
@@ -37,13 +38,26 @@ or a Zephyr header of definitions describing the sensor.
 
 Describing a sensor
 -------------------
-When describing a sensor from the user's perspective, there are 2 primary points
+When describing a sensor from the user's perspective, there are 3 primary points
 of interaction:
-1. channels
-2. attributes
+#. compatible descriptor
+#. channels
+#. attributes
 
-Both are covered in :ref:`seed-0120`. We need a way to describe a sensor in a
-platform and language agnostic way.
+.. note::
+   Compatible string in Linux's devicetree are used to detail what a hardware
+   device is. They include a manufacturer and a model name in the format:
+   ``<manufacturer>,<model>``. In order to make this a bit more generic and
+   still functional with devicetree, Pigweed's compatible node consists of 2
+   separate properties instead of a single string: ``org`` and ``part``. This
+   abstracts away the devicetree model such that generators may produce other
+   targeted code. To read more about the compatible property, see
+   `Understanding the compatible Property`_
+
+Both *channels* and *attributes* covered in :ref:`seed-0120`, while the
+*compatible* descriptor allows us to have a unique identifier for each sensor.
+Next, we need a way to describe a sensor in a platform and language agnostic
+way.
 
 What are channels?
 ==================
@@ -167,4 +181,76 @@ This means that ``channels/cakes`` will be automatically filled with:
      is not explicitly specified
    - ``symbol: "cake"``: attained from definition file
 
+Output
+======
+The resulting output is verbose and is intended to allow callers of the
+validation function to avoid having to cross reference values. Currently, there
+will be 2 keys in the returned dictionary: ``sensors`` and ``channels``.
+
+The ``sensors`` key is a dictionary mapping unique identifiers generated from
+the sensor's compatible string to the resolved values. There will always be
+exactly 1 of these since each sensor spec is required to only describe a single
+sensor (we'll see an example soon for how these are merged to create a project
+level sensor description). Each ``sensor`` will contain: ``name``,
+``description``, ``compatible`` struct, and a ``channels`` dictionary.
+
+The difference between the ``/sensors/channels`` and ``/channels`` dictionaries
+is the inclusion of ``indicies`` in the former. The ``indicies`` can be thought
+of as instantiations of the ``/channels``. All other channel properties will be
+exactly the same.
+
+Sensor descriptor script
+------------------------
+A descriptor script is added to Pigweed via the ``pw sensor-desc`` subcommand.
+This command allows validating multiple sensor descriptors and passing the
+unified descriptor to a generator.
+
+.. list-table:: CLI Flags
+   :header-rows: 1
+
+   * - Flag(s)
+     - Description
+   * - ``--include-path``, ``-I``
+     - Directories in which to search for dependency files.
+   * - ``--verbose``, ``-v``
+     - Increase the verbosity level (can be used multiple times). Default
+       verbosity is WARNING, so additional flags increase it to INFO then DEBUG.
+   * - ``--generator``, ``-g``
+     - Generator ommand to run along with any flags. Data will be passed into
+       the generator as YAML through stdin.
+   * - ``-o``
+     - Write output to file instead of stdout.
+
+What are the include paths used for?
+====================================
+The sensor descriptor includes a ``deps`` list with file names which define
+various attributes used by the sensor. We wouldn't want to check in absolute
+paths in these lists, so instead, it's possible to list a relative path to the
+root of the project, then add include paths to the tool which will help resolve
+the dependencies. This should look familiar to header file resolution in C/C++.
+
+What is a generator?
+====================
+The sensor descriptor script validates each sensor descriptor file then creates
+a superset of all sensors and channels (making sure there aren't conflicts).
+Once complete, it will call the generator (if available) and pass the string
+YAML representation of the superset into the generator via stdin. Some ideas for
+generators:
+
+- Create a header with a list of all channels, assigning each channel a unique
+  ID.
+- Generate RST file with documentation on each supported sensor.
+- Generate stub driver implementation by knowing which channels and attributes
+  are supported.
+
+Example run (prints to stdout):
+
+.. code:: bash
+
+   $ pw --no-banner sensor-desc -I pw_sensor/ \
+     -g "python3 pw_sensor/py/pw_sensor/constants_generator.py --package pw.sensor" \
+     pw_sensor/sensor.yaml
+
+.. _Understanding the compatible Property: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
 .. _metadata_schema.json: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/metadata_schema.json
+.. _resolved_schema.json: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/resolved_schema.json

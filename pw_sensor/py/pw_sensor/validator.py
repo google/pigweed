@@ -16,10 +16,10 @@ import logging
 import importlib.resources
 from pathlib import Path
 from collections.abc import Sequence
+import importlib
 import jsonschema
 import jsonschema.exceptions
 import yaml
-import importlib
 
 _METADATA_SCHEMA = yaml.safe_load(
     importlib.resources.read_text("pw_sensor", "metadata_schema.json")
@@ -27,6 +27,10 @@ _METADATA_SCHEMA = yaml.safe_load(
 
 _DEPENDENCY_SCHEMA = yaml.safe_load(
     importlib.resources.read_text("pw_sensor", "dependency_schema.json")
+)
+
+_RESOLVED_SCHEMA = yaml.safe_load(
+    importlib.resources.read_text("pw_sensor", "resolved_schema.json")
 )
 
 
@@ -78,18 +82,21 @@ class Validator:
             die_temperature: {}
 
         Args:
-          metadata: Structured sensor data, this will be modified
+          metadata: Structured sensor data, this will NOT be modified
 
         Returns:
-          The same modified metadata that was passed into the function. Used
-          primarily as a convinience such that metadata can be defined inline
-          and the result captured.
+          A set of channels and a single sensor which match the schema in
+          resolved_schema.json.
 
         Raises:
           RuntimeError: An error in the schema validation or a missing
             definition.
           FileNotFoundError: One of the dependencies was not found.
         """
+        result: dict = {
+            "sensors": {},
+        }
+        metadata = metadata.copy()
         try:
             jsonschema.validate(instance=metadata, schema=_METADATA_SCHEMA)
         except jsonschema.exceptions.ValidationError as e:
@@ -100,22 +107,40 @@ class Validator:
 
         # Resolve all the dependencies, after this, 'resolved' will have a
         # list of channel and attribute specifiers
-        self._resolve_dependencies(metadata=metadata)
+        self._resolve_dependencies(metadata=metadata, out=result)
 
         # Resolve all channel entries
-        self._resolve_channels(metadata=metadata)
-        return metadata
+        self._resolve_channels(metadata=metadata, out=result)
 
-    def _resolve_dependencies(self, metadata: dict) -> None:
+        compatible = metadata.pop("compatible")
+        channels = metadata.pop("channels")
+        result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
+            "compatible": compatible,
+            "channels": channels,
+        }
+
+        try:
+            jsonschema.validate(instance=result, schema=_RESOLVED_SCHEMA)
+        except jsonschema.exceptions.ValidationError as e:
+            raise RuntimeError(
+                "ERROR: Malformed output YAML: "
+                f"{yaml.safe_dump(result, indent=2)}"
+            ) from e
+
+        return result
+
+    def _resolve_dependencies(self, metadata: dict, out: dict) -> None:
         """
         Given a list of dependencies, ensure that each of them exists and
         matches the schema provided in dependency_schema.yaml. Once loaded, the
-        content of the definition file replace the entry in the dependency list.
-        Additionally, any default values are filled in such that after the
-        function returns, the dictionary is as verbose as possible.
+        content of the definition file will be resolved (filling in any missing
+        fields that can be inherited) and the final result will be placed in the
+        'out' dictionary.
 
         Args:
           metadata: The full sensor metadata passed to the validate function
+          out: Output dictionary where the resolved dependencies should be
+            stored
 
         Raises:
           RuntimeError: An error in the schema validation or a missing
@@ -125,10 +150,10 @@ class Validator:
         deps: None | list[str] = metadata.get("deps")
         if not deps:
             self._logger.debug("No dependencies found, skipping imports")
-            metadata["deps"] = []
+            out["channels"] = {}
             return
 
-        resolved_deps: list[dict] = []
+        resolved_deps: dict = {}
         for dep in deps:
             dep_file = self._get_dependency_file(dep)
             with open(dep_file, mode="r", encoding="utf-8") as dep_yaml_file:
@@ -142,29 +167,70 @@ class Validator:
                         "ERROR: Malformed dependency YAML: "
                         f"{yaml.safe_dump(dep_yaml, indent=2)}"
                     ) from e
-                resolved_deps.append(dep_yaml)
+                self._backfill_declarations(declarations=dep_yaml)
+                for chan_id, channel in dep_yaml.get("channels", {}).items():
+                    if channel.get("name") is None:
+                        channel["name"] = chan_id
+                    if channel.get("description") is None:
+                        channel["description"] = ""
+                    if channel["units"].get("name") is None:
+                        channel["units"]["name"] = channel["units"]["symbol"]
+                    resolved_deps[chan_id] = channel
+                    for sub, sub_channel in channel.get(
+                        "sub-channels", {}
+                    ).items():
+                        subchan_id = f"{chan_id}_{sub}"
+                        if sub_channel.get("name") is None:
+                            sub_channel["name"] = subchan_id
+                        if sub_channel.get("description") is None:
+                            sub_channel["description"] = channel.get(
+                                "description"
+                            )
+                        sub_channel["units"] = channel["units"]
+                        resolved_deps[subchan_id] = sub_channel
+                    channel.pop("sub-channels", None)
 
-        metadata["deps"] = resolved_deps
+        out["channels"] = resolved_deps
 
-    def _resolve_channels(self, metadata: dict) -> None:
+    def _backfill_declarations(self, declarations: dict) -> None:
+        """
+        Add any missing properties of a declaration object.
+
+        Args:
+          declarations: The top level declarations dictionary loaded from the
+            dependency file.
+        """
+        if not declarations.get("channels"):
+            return
+
+        for chan_id, channel in declarations["channels"].items():
+            if not channel.get("name"):
+                channel["name"] = chan_id
+            if not channel.get("description"):
+                channel["description"] = ""
+            units = channel["units"]
+            if not units.get("name"):
+                units["name"] = units["symbol"]
+
+    def _resolve_channels(self, metadata: dict, out: dict) -> None:
         """
         For each channel in the metadata, find the matching definition in the
-        'deps' entry and use the data to fill any missing information. For
-        example, if an entry exists that looks like:
+        'out/channels' entry and use the data to fill any missing information.
+        For example, if an entry exists that looks like:
             acceleration: {}
 
-        We would then try and find the 'acceleration' key in the dependencies
+        We would then try and find the 'acceleration' key in the out/channels
         list (which was already validated by _resolve_dependencies). Since the
         example above does not override any fields, we would copy the 'name',
         'description', and 'units' from the definition into the channel entry.
 
         Args:
           metadata: The full sensor metadata passed to the validate function
+          out: The current output, used to get channel definitions
 
         Raises:
           RuntimeError: An error in the schema validation or a missing
             definition.
-          FileNotFoundError: One of the dependencies was not found.
         """
         channels: dict | None = metadata.get("channels")
         if not channels:
@@ -177,7 +243,7 @@ class Validator:
             # exists because _resolve_dependencies() is required to have been
             # called first.
             channel = self._check_channel_name(
-                channel_name=channel_name, deps=metadata["deps"]
+                channel_name=channel_name, channels=out["channels"]
             )
             # The content of 'channel' came from the 'deps' list which was
             # already validated and every field added if missing. At this point
@@ -222,7 +288,7 @@ class Validator:
 
         raise FileNotFoundError(error_string)
 
-    def _check_channel_name(self, channel_name: str, deps: list[dict]) -> dict:
+    def _check_channel_name(self, channel_name: str, channels: dict) -> dict:
         """
         Given a channel name and the resolved list of dependencies, try to find
         the full definition of the channel with the name, description, and
@@ -231,8 +297,8 @@ class Validator:
         Args:
           channel_name: The name of the channel to search for in the
             dependencies
-          deps: The list of resolved dependencies which define the available
-            channels
+          channels: The dictionary of resolved channels which define the
+            available channels
 
         Returns:
           A dictionary with the following structure:
@@ -245,65 +311,22 @@ class Validator:
         Raises:
           RuntimeError: If the channel name isn't in the dependency list
         """
-        for dep in deps:
-            channels: dict | None = dep.get("channels")
-            if not channels:
-                continue
-            # Check if we can find 'channel_name' in the 'channels' dictionary
-            if channels.get(channel_name):
-                channel = channels[channel_name]
-                name = channel.get("name", channel_name)
-                description = channel.get("description", "")
-                units = {
-                    "name": channel["units"].get(
-                        "name", channel["units"]["symbol"]
-                    ),
-                    "symbol": channel["units"]["symbol"],
-                }
-                return {
-                    "name": name,
-                    "description": description,
-                    "units": units,
-                }
-            # Check if we have sub-channels
-            for key in channels:
-                channel = channels[key]
-                if not (
-                    channel_name.startswith(key + "_")
-                    and channel_name != key
-                    and channel.get("sub-channels")
-                ):
-                    # The channel cannot be a sub-channel, skip it
-                    continue
+        # Check if we can find 'channel_name' in the 'channels' dictionary
+        if not channels.get(channel_name):
+            raise RuntimeError(
+                f"Failed to find a channel defenition for {channel_name}, "
+                "did you forget a dependency?"
+            )
 
-                # It's possible we have a match, check the sub-channels
-                sub_channel_name = channel_name.removeprefix(key + "_")
-                sub_channel = channel["sub-channels"].get(sub_channel_name)
-                if not sub_channel:
-                    # Couldn't find the right sub-channel, skip it
-                    continue
-
-                # Resolve the name, description, and units. Fill in the defaults
-                # according to the override chain.
-                name = sub_channel.get(
-                    "name", channel.get("name", channel_name)
-                )
-                description = sub_channel.get(
-                    "description", channel.get("description", "")
-                )
-                units = {
-                    "name": channel["units"].get(
-                        "name", channel["units"]["symbol"]
-                    ),
-                    "symbol": channel["units"]["symbol"],
-                }
-                return {
-                    "name": name,
-                    "description": description,
-                    "units": units,
-                }
-
-        raise RuntimeError(
-            f"Failed to find a channel defenition for {channel_name}, "
-            "did you forget a dependency?"
-        )
+        channel = channels[channel_name]
+        name = channel.get("name", channel_name)
+        description = channel.get("description", "")
+        units = {
+            "name": channel["units"].get("name", channel["units"]["symbol"]),
+            "symbol": channel["units"]["symbol"],
+        }
+        return {
+            "name": name,
+            "description": description,
+            "units": units,
+        }

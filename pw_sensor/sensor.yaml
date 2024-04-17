@@ -11,22 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-[metadata]
-name = pw_sensor
-version = 0.0.1
-author = Pigweed Authors
-author_email = pigweed-developers@googlegroups.com
-description = Tools for working with sensors
 
-[options]
-packages = pw_sensor
-zip_safe = False
-install_requires =
-    pykwalify>=1.8.0
-
-[options.package_data]
-pw_sensor =
-  py.typed
-  pw_sensor/dependency_schema.json
-  pw_sensor/metadata_schema.json
-  pw_sensor/resolved_schema.json
+deps:
+  - "channels.yaml"
+compatible:
+  org: "Google"
+  part: "pigweed"
