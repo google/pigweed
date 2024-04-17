@@ -96,3 +96,14 @@ py_test(
         ":pw_cli",
     ],
 )
+
+py_test(
+    name = "tool_runner_test",
+    size = "small",
+    srcs = [
+        "tool_runner_test.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
+)

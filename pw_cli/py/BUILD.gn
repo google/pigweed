@@ -56,6 +56,7 @@ pw_python_package("py") {
     "file_filter_test.py",
     "plugins_test.py",
     "plural_test.py",
+    "tool_runner_test.py",
   ]
   python_deps = [ "$dir_pw_env_setup/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"

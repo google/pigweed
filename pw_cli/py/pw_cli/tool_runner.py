@@ -78,4 +78,4 @@ class BasicSubprocessRunner(ToolRunner):
     def _run_tool(
         self, tool: str, args, **kwargs
     ) -> subprocess.CompletedProcess:
-        return subprocess.run([tool] + args, **kwargs)
+        return subprocess.run([tool, *args], **kwargs)
