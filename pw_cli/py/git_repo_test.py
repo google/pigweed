@@ -47,17 +47,17 @@ def git_ok(cmd: str, stdout: str) -> CompletedProcess:
     return CompletedProcess(
         args=cmd,
         returncode=0,
-        stderr=None,
+        stderr='',
         stdout=stdout.encode(),
     )
 
 
-def git_err(cmd: str, stderr: str) -> CompletedProcess:
+def git_err(cmd: str, stderr: str, returncode: int = 1) -> CompletedProcess:
     return CompletedProcess(
         args=cmd,
-        returncode=0,
+        returncode=returncode,
         stderr=stderr.encode(),
-        stdout=None,
+        stdout='',
     )
 
 
@@ -196,6 +196,16 @@ class TestGitRepo(unittest.TestCase):
         )
         paths = repo.list_files(commit='something')
         self.assertIn(expected_file_path, paths)
+
+    def test_fake_uncommitted_changes(self):
+        index_update = 'update-index -q --refresh'
+        diff_index = 'diff-index --quiet HEAD --'
+        cmds = {
+            index_update: git_ok(index_update, ''),
+            diff_index: git_err(diff_index, '', returncode=1),
+        }
+        repo = self.make_fake_git_repo(cmds)
+        self.assertTrue(repo.has_uncommitted_changes())
 
 
 if __name__ == '__main__':

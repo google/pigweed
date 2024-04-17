@@ -53,9 +53,13 @@ class _GitTool:
         )
 
         if proc.returncode != 0:
-            raise GitError(proc.stderr.decode().strip(), proc.returncode)
+            if not proc.stderr:
+                err = '(no output)'
+            else:
+                err = proc.stderr.decode().strip()
+            raise GitError(err, proc.returncode)
 
-        return proc.stdout.decode().strip()
+        return '' if not proc.stdout else proc.stdout.decode().strip()
 
 
 class GitRepo:
@@ -174,7 +178,9 @@ class GitRepo:
         for i in range(retries):
             try:
                 self._git(
-                    ['update-index', '-q', '--refresh'],
+                    'update-index',
+                    '-q',
+                    '--refresh',
                     ignore_dry_run=True,  # Relevant for pw_presubmit.
                 )
             except subprocess.CalledProcessError as err:
@@ -184,7 +190,10 @@ class GitRepo:
 
         try:
             self._git(
-                ['diff-index', '--quiet', 'HEAD', '--'],
+                'diff-index',
+                '--quiet',
+                'HEAD',
+                '--',
                 ignore_dry_run=True,  # Relevant for pw_presubmit.
             )
         except GitError as err:
