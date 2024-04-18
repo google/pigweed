@@ -137,6 +137,10 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   $next [+4]  bits:
     0     [+5]       AudioCodecSupportMask     dynamic_audio_buffer_support
 
+  # Version 1.04
+  let version_1_04_size = version_1_03_size+1
+  $next [+1]         Capability                a2dp_offload_v2_support
+
 # ----------------------- A2DP Offloading --------------------------------------
 
 
