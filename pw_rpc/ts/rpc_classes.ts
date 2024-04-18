@@ -92,7 +92,11 @@ export class PendingCalls {
     request?: Message,
   ): Call | undefined {
     const previous = this.open(rpc, call);
-    const packet = packets.encodeRequest(rpc.getIdSet(call.callId), request);
+    const packet = packets.encodeRequest(
+      rpc.getIdSet(call.callId),
+      request,
+      rpc.method.customRequestSerializer,
+    );
     try {
       rpc.channel.send(packet);
     } catch (error) {
@@ -121,7 +125,13 @@ export class PendingCalls {
     if (this.getPending(rpc, callId) === undefined) {
       throw new Error(`Attempt to send client stream for inactive RPC: ${rpc}`);
     }
-    rpc.channel.send(packets.encodeClientStream(rpc.getIdSet(callId), message));
+    rpc.channel.send(
+      packets.encodeClientStream(
+        rpc.getIdSet(callId),
+        message,
+        rpc.method.customRequestSerializer,
+      ),
+    );
   }
 
   sendClientStreamEnd(rpc: Rpc, callId: number) {

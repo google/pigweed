@@ -25,7 +25,7 @@ import { ProtoCollection } from 'pigweedjs/protos/collection';
 import { Request, Response } from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
 import { Client } from './client';
-import { Channel, Method } from './descriptors';
+import { Channel, Method, Service } from './descriptors';
 import {
   BidirectionalStreamingMethodStub,
   ClientStreamingMethodStub,
@@ -1131,6 +1131,163 @@ describe('RPC', () => {
             expect(reason.status).toEqual(Status.UNAVAILABLE);
             expect(stream.error).toEqual(Status.UNAVAILABLE);
           });
+      }
+    });
+  });
+});
+
+describe('RPC with custom serializers', () => {
+  let client: Client;
+  let lastPacketSent: RpcPacket | undefined;
+  let requests: RpcPacket[] = [];
+  let nextPackets: [Uint8Array, Status][] = [];
+  let responseLock = false;
+  let sendResponsesAfterPackets = 0;
+  let outputException: Error | undefined;
+  const requestSerializeFn = jest.fn();
+  const responseDeserializeFn = jest.fn();
+
+  beforeEach(async () => {
+    const channels = [
+      new Channel(1, handlePacket),
+      new Channel(2, () => {
+        // Do nothing.
+      }),
+    ];
+    const services = [
+      new Service('pw.rpc.test1.TheTestService', [
+        {
+          name: 'SomeUnary',
+          requestType: Request,
+          responseType: Response,
+          customRequestSerializer: {
+            serialize: (msg) => {
+              requestSerializeFn(msg);
+              return msg.serializeBinary();
+            },
+            deserialize: Request.deserializeBinary,
+          },
+          customResponseSerializer: {
+            serialize: (msg) => {
+              return msg.serializeBinary();
+            },
+            deserialize: (bytes) => {
+              responseDeserializeFn(bytes);
+              return Response.deserializeBinary(bytes);
+            },
+          },
+        },
+      ]),
+    ];
+    client = new Client(channels, services);
+    lastPacketSent = undefined;
+    requests = [];
+    nextPackets = [];
+    responseLock = false;
+    sendResponsesAfterPackets = 0;
+    outputException = undefined;
+  });
+
+  function lastRequest(): RpcPacket {
+    if (requests.length == 0) {
+      throw Error('Tried to fetch request from empty list');
+    }
+    return requests[requests.length - 1];
+  }
+
+  function newRequest(magicNumber = 123): Message {
+    const request = new Request();
+    request.setMagicNumber(magicNumber);
+    return request;
+  }
+
+  function newResponse(payload = '._.'): Message {
+    const response = new Response();
+    response.setPayload(payload);
+    return response;
+  }
+
+  function handlePacket(data: Uint8Array): void {
+    if (outputException !== undefined) {
+      throw outputException;
+    }
+    requests.push(packets.decode(data));
+
+    if (sendResponsesAfterPackets > 1) {
+      sendResponsesAfterPackets -= 1;
+      return;
+    }
+
+    processEnqueuedPackets();
+  }
+
+  function processEnqueuedPackets(): void {
+    // Avoid infinite recursion when processing a packet causes another packet
+    // to send.
+    if (responseLock) return;
+    responseLock = true;
+    for (const [packet, status] of nextPackets) {
+      expect(client.processPacket(packet)).toEqual(status);
+    }
+    nextPackets = [];
+    responseLock = false;
+  }
+
+  function enqueueResponse(
+    channelId: number,
+    method: Method,
+    status: Status,
+    callId: number,
+    response?: Message,
+  ) {
+    const packet = new RpcPacket();
+    packet.setType(PacketType.RESPONSE);
+    packet.setChannelId(channelId);
+    packet.setServiceId(method.service.id);
+    packet.setMethodId(method.id);
+    packet.setCallId(callId);
+    packet.setStatus(status);
+    if (response === undefined) {
+      packet.setPayload(new Uint8Array(0));
+    } else {
+      packet.setPayload(response.serializeBinary());
+    }
+    nextPackets.push([packet.serializeBinary(), Status.OK]);
+  }
+
+  function sentPayload(messageType: typeof Message): any {
+    return messageType.deserializeBinary(lastRequest().getPayload_asU8());
+  }
+
+  describe('Unary', () => {
+    let unaryStub: UnaryMethodStub;
+
+    beforeEach(async () => {
+      unaryStub = client
+        .channel()
+        ?.methodStub(
+          'pw.rpc.test1.TheTestService.SomeUnary',
+        ) as UnaryMethodStub;
+    });
+
+    it('blocking call', async () => {
+      for (let i = 0; i < 3; i++) {
+        enqueueResponse(
+          1,
+          unaryStub.method,
+          Status.ABORTED,
+          unaryStub.rpcs.nextCallId,
+          newResponse('0_o'),
+        );
+        const [status, response] = await unaryStub.call(newRequest(6));
+
+        expect(sentPayload(Request).getMagicNumber()).toEqual(6);
+        expect(status).toEqual(Status.ABORTED);
+        expect(response).toEqual(newResponse('0_o'));
+        expect(requestSerializeFn).toBeCalledWith(newRequest(6));
+        expect(responseDeserializeFn).toBeCalledWith(
+          newResponse('0_o').serializeBinary(),
+        );
       }
     });
   });

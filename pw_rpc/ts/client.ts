@@ -149,7 +149,7 @@ export class Client {
       const packageName = fileDescriptor.getPackage()!;
       fileDescriptor.getServiceList().forEach((serviceDescriptor) => {
         services = services.concat(
-          new Service(serviceDescriptor, protoSet, packageName),
+          Service.fromProtoDescriptor(serviceDescriptor, protoSet, packageName),
         );
       });
     });
@@ -209,7 +209,11 @@ export class Client {
     }
 
     const payload = packet.getPayload_asU8();
-    return packets.decodePayload(payload, rpc.method.responseType);
+    return packets.decodePayload(
+      payload,
+      rpc.method.responseType,
+      rpc.method.customResponseSerializer,
+    );
   }
 
   private sendClientError(

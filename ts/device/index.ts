@@ -141,8 +141,8 @@ export class Device {
     methodName: string,
     fullMethodPath: string,
   ) {
-    const requestType = realMethod.method.descriptor
-      .getInputType()
+    const requestType = realMethod.method
+      .descriptor!.getInputType()
       .replace(/^\./, '');
     const requestProtoDescriptor =
       this.protoCollection.getDescriptorProto(requestType)!;
@@ -173,8 +173,8 @@ export class Device {
     methodName: string,
     fullMethodPath: string,
   ) {
-    const requestType = realMethod.method.descriptor
-      .getInputType()
+    const requestType = realMethod.method
+      .descriptor!.getInputType()
       .replace(/^\./, '');
     const requestProtoDescriptor =
       this.protoCollection.getDescriptorProto(requestType)!;

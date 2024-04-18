@@ -12,7 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { ProtoCollection } from 'pigweedjs/pw_protobuf_compiler';
+import {
+  MessageCreator,
+  ProtoCollection,
+} from 'pigweedjs/pw_protobuf_compiler';
+import { Message } from 'google-protobuf';
 import {
   MethodDescriptorProto,
   ServiceDescriptorProto,
@@ -50,22 +54,48 @@ export class Service {
   readonly methods = new Map<number, Method>();
   readonly methodsByName = new Map<string, Method>();
 
-  constructor(
+  constructor(serviceName: string, methodsList: RPCMethodDescriptor[]) {
+    this.name = serviceName;
+    this.id = hash(this.name);
+    methodsList.forEach((methodDescriptor) => {
+      const method = new Method(this, methodDescriptor);
+      this.methods.set(method.id, method);
+      this.methodsByName.set(method.name, method);
+    });
+  }
+  static fromProtoDescriptor(
     descriptor: ServiceDescriptorProto,
     protoCollection: ProtoCollection,
     packageName: string,
   ) {
-    this.name = packageName + '.' + descriptor.getName()!;
-    this.id = hash(this.name);
-    descriptor
+    const name = packageName + '.' + descriptor.getName()!;
+    const methodList = descriptor
       .getMethodList()
-      .forEach((methodDescriptor: MethodDescriptorProto) => {
-        const method = new Method(methodDescriptor, protoCollection, this);
-        this.methods.set(method.id, method);
-        this.methodsByName.set(method.name, method);
-      });
+      .map((methodDescriptor: MethodDescriptorProto) =>
+        Method.protoDescriptorToRPCMethodDescriptor(
+          methodDescriptor,
+          protoCollection,
+        ),
+      );
+    return new Service(name, methodList);
   }
 }
+
+export type MessageSerializer = {
+  serialize: (message: Message) => Uint8Array;
+  deserialize: (bytes: Uint8Array) => Message;
+};
+
+export type RPCMethodDescriptor = {
+  name: string;
+  requestType: MessageCreator;
+  responseType: MessageCreator;
+  customRequestSerializer?: MessageSerializer;
+  customResponseSerializer?: MessageSerializer;
+  clientStreaming?: boolean;
+  serverStreaming?: boolean;
+  protoDescriptor?: MethodDescriptorProto;
+};
 
 export enum MethodType {
   UNARY,
@@ -83,30 +113,58 @@ export class Method {
   readonly serverStreaming: boolean;
   readonly requestType: any;
   readonly responseType: any;
-  readonly descriptor: MethodDescriptorProto;
+  readonly descriptor?: MethodDescriptorProto;
+  readonly customRequestSerializer?: MessageSerializer;
+  readonly customResponseSerializer?: MessageSerializer;
 
-  constructor(
-    descriptor: MethodDescriptorProto,
-    protoCollection: ProtoCollection,
-    service: Service,
-  ) {
-    this.name = descriptor.getName()!;
+  constructor(service: Service, methodDescriptor: RPCMethodDescriptor) {
+    this.name = methodDescriptor.name;
     this.id = hash(this.name);
     this.service = service;
-    this.descriptor = descriptor;
-    this.serverStreaming = descriptor.getServerStreaming()!;
-    this.clientStreaming = descriptor.getClientStreaming()!;
+    this.serverStreaming = methodDescriptor.serverStreaming || false;
+    this.clientStreaming = methodDescriptor.clientStreaming || false;
 
+    this.requestType = methodDescriptor.requestType;
+    this.responseType = methodDescriptor.responseType;
+    this.descriptor = methodDescriptor.protoDescriptor;
+    this.customRequestSerializer = methodDescriptor.customRequestSerializer;
+    this.customResponseSerializer = methodDescriptor.customResponseSerializer;
+  }
+
+  static protoDescriptorToRPCMethodDescriptor(
+    descriptor: MethodDescriptorProto,
+    protoCollection: ProtoCollection,
+  ): RPCMethodDescriptor {
     const requestTypePath = descriptor.getInputType()!;
     const responseTypePath = descriptor.getOutputType()!;
 
     // Remove leading period if it exists.
-    this.requestType = protoCollection.getMessageCreator(
+    const requestType = protoCollection.getMessageCreator(
       requestTypePath.replace(/^\./, ''),
     )!;
-    this.responseType = protoCollection.getMessageCreator(
+    const responseType = protoCollection.getMessageCreator(
       responseTypePath.replace(/^\./, ''),
     )!;
+
+    return {
+      name: descriptor.getName()!,
+      serverStreaming: descriptor.getServerStreaming()!,
+      clientStreaming: descriptor.getClientStreaming()!,
+      requestType: requestType,
+      responseType: responseType,
+      protoDescriptor: descriptor,
+    };
+  }
+
+  static fromProtoDescriptor(
+    descriptor: MethodDescriptorProto,
+    protoCollection: ProtoCollection,
+    service: Service,
+  ) {
+    return new Method(
+      service,
+      Method.protoDescriptorToRPCMethodDescriptor(descriptor, protoCollection),
+    );
   }
 
   get type(): MethodType {
