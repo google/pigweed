@@ -20,7 +20,7 @@ namespace pw::bluetooth::internal {
 
 // Helper deleter struct to call the OnDestroy template parameter method when
 // RaiiPtr<Api, OnDestroy> is destroyed.
-template <class Api, void (Api::*OnDestroy)()>
+template <class Api, void (Api::* OnDestroy)()>
 struct RaiiPtrDeleter {
   void operator()(Api* api) { (api->*OnDestroy)(); }
 };
@@ -61,7 +61,7 @@ struct RaiiPtrDeleter {
 //    BackendImplementation backend_impl;
 //    SomeApi::Ptr GetResource() { ...; return &backend_impl; }
 //
-template <class Api, void (Api::*OnDestroy)()>
+template <class Api, void (Api::* OnDestroy)()>
 using RaiiPtr = std::unique_ptr<Api, RaiiPtrDeleter<Api, OnDestroy>>;
 
 }  // namespace pw::bluetooth::internal
