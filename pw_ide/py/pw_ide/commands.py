@@ -84,7 +84,7 @@ def _make_working_dir(
     reporter: StatusReporter, settings: PigweedIdeSettings, quiet: bool = False
 ) -> None:
     if not settings.working_dir.exists():
-        settings.working_dir.mkdir()
+        settings.working_dir.mkdir(parents=True)
         if not quiet:
             reporter.new(
                 'Initialized the Pigweed IDE working directory at '

@@ -147,7 +147,11 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         deleted or manipulated by other processes (e.g. the GN ``out``
         directory) nor should it be committed to source control.
         """
-        return Path(self._config.get('working_dir', PW_IDE_DEFAULT_DIR))
+        return Path(
+            _expand_any_vars_str(
+                self._config.get('working_dir', PW_IDE_DEFAULT_DIR)
+            )
+        )
 
     @property
     def compdb_gen_cmd(self) -> str | None:
