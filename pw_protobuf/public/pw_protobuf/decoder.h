@@ -15,7 +15,9 @@
 
 #include <string_view>
 
+#include "pw_bytes/span.h"
 #include "pw_protobuf/wire_format.h"
+#include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_varint/varint.h"
@@ -145,11 +147,40 @@ class Decoder {
   }
 
  private:
+  // Allow only the FindRaw function to access the raw bytes of the field.
+  friend Result<ConstByteSpan> FindRaw(ConstByteSpan, uint32_t);
+
+  // Returns the raw field value. The decoder MUST be at a valid field.
+  ConstByteSpan RawFieldBytes() { return GetFieldSize().ValueBytes(proto_); }
+
   // Advances the cursor to the next field in the proto.
   Status SkipField();
 
-  // Returns the size of the current field, or 0 if the field is invalid.
-  size_t FieldSize() const;
+  // Stores the size of a field.
+  class FieldSize {
+   public:
+    static constexpr FieldSize Invalid() { return {0, 0}; }
+
+    constexpr FieldSize(size_t key_size, size_t value_size)
+        : key_size_bytes_(key_size), value_size_bytes_(value_size) {}
+
+    bool ok() const { return key_size_bytes_ != 0; }
+
+    // Total size of the field (key and value); 0 if ok() is false.
+    size_t total() const { return key_size_bytes_ + value_size_bytes_; }
+
+    ConstByteSpan ValueBytes(ConstByteSpan field) const {
+      PW_DASSERT(ok());
+      return field.subspan(key_size_bytes_, value_size_bytes_);
+    }
+
+   private:
+    size_t key_size_bytes_;    // size of key + length (if delimited field)
+    size_t value_size_bytes_;  // size of raw value only
+  };
+
+  // Returns the size of the current field as a FieldSize object.
+  FieldSize GetFieldSize() const;
 
   Status ConsumeKey(WireType expected_type);
 

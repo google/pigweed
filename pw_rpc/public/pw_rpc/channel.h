@@ -26,10 +26,60 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
+namespace internal {
 
-// Extracts the channel ID from a pw_rpc packet. Returns DATA_LOSS if the
-// packet is corrupt and the channel ID could not be found.
+Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128);
+
+}  // namespace internal
+
+/// @defgroup pw_rpc_channel_functions
+/// @{
+
+/// Extracts the channel ID from a pw_rpc packet.
+///
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: returns the channel ID in the packet
+///
+///    DATA_LOSS: the packet is corrupt and the channel ID could not be found.
+///
+/// @endrst
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet);
+
+/// Rewrites an encoded packet's channel ID in place. Both channel IDs MUST be
+/// less than 128.
+///
+/// @returns @rst
+///
+/// .. pw-status-codes::
+///
+///    OK: Successfully replaced the channel ID
+///
+///    DATA_LOSS: parsing the packet failed
+///
+///    OUT_OF_RANGE: the encoded packet's channel ID was 128 or larger
+///
+/// @endrst
+template <uint32_t kNewChannelId>
+Status ChangeEncodedChannelId(ByteSpan rpc_packet) {
+  static_assert(kNewChannelId < 128u,
+                "Channel IDs must be less than 128 to avoid needing to "
+                "re-encode the packet");
+  return internal::OverwriteChannelId(rpc_packet, kNewChannelId);
+}
+
+/// Version of `ChangeEncodedChannelId` with a runtime variable channel ID.
+/// Prefer the template parameter version when possible to avoid a runtime check
+/// on the new channel ID.
+inline Status ChangeEncodedChannelId(ByteSpan rpc_packet,
+                                     uint32_t new_channel_id) {
+  PW_ASSERT(new_channel_id < 128);
+  return internal::OverwriteChannelId(rpc_packet, new_channel_id);
+}
+
+/// @}
 
 // Returns the maximum size of the payload of an RPC packet. This can be used
 // when allocating response encode buffers for RPC services.

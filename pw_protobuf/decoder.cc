@@ -31,7 +31,7 @@ Status Decoder::Next() {
     return Status::OutOfRange();
   }
   previous_field_consumed_ = false;
-  return FieldSize() == 0 ? Status::DataLoss() : OkStatus();
+  return GetFieldSize().ok() ? OkStatus() : Status::DataLoss();
 }
 
 Status Decoder::SkipField() {
@@ -39,7 +39,7 @@ Status Decoder::SkipField() {
     return Status::OutOfRange();
   }
 
-  size_t bytes_to_skip = FieldSize();
+  size_t bytes_to_skip = GetFieldSize().total();
   if (bytes_to_skip == 0) {
     return Status::DataLoss();
   }
@@ -115,11 +115,11 @@ Status Decoder::ReadString(std::string_view* out) {
   return OkStatus();
 }
 
-size_t Decoder::FieldSize() const {
+Decoder::FieldSize Decoder::GetFieldSize() const {
   uint64_t key;
   size_t key_size = varint::Decode(proto_, &key);
   if (key_size == 0 || !FieldKey::IsValidKey(key)) {
-    return 0;
+    return FieldSize::Invalid();
   }
 
   span<const std::byte> remainder = proto_.subspan(key_size);
@@ -131,19 +131,20 @@ size_t Decoder::FieldSize() const {
     case WireType::kVarint:
       expected_size = varint::Decode(remainder, &value);
       if (expected_size == 0) {
-        return 0;
+        return FieldSize::Invalid();
       }
       break;
 
-    case WireType::kDelimited:
+    case WireType::kDelimited: {
       // Varint at cursor indicates size of the field.
-      expected_size = varint::Decode(remainder, &value);
-      if (expected_size == 0) {
-        return 0;
+      const size_t delimited_size = varint::Decode(remainder, &value);
+      if (delimited_size == 0) {
+        return FieldSize::Invalid();
       }
+      key_size += delimited_size;
       expected_size += value;
       break;
-
+    }
     case WireType::kFixed32:
       expected_size = sizeof(uint32_t);
       break;
@@ -154,10 +155,10 @@ size_t Decoder::FieldSize() const {
   }
 
   if (remainder.size() < expected_size) {
-    return 0;
+    return FieldSize::Invalid();
   }
 
-  return key_size + expected_size;
+  return FieldSize{key_size, expected_size};
 }
 
 Status Decoder::ConsumeKey(WireType expected_type) {

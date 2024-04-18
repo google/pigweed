@@ -459,6 +459,19 @@ with the ``ABORTED`` status.
    // on_error callbacks with ABORTED status.
    client->CloseChannel(1);
 
+Remapping channels
+==================
+Some pw_rpc deployments may find it helpful to remap channel IDs in RPC packets.
+This can remove the need for globally known channel IDs. Clients can use a
+generic channel ID. The server remaps the generic channel ID to an ID associated
+with the transport the client is using.
+
+.. doxygengroup:: pw_rpc_channel_functions
+   :content-only:
+
+A future revision of the pw_rpc protocol will remove the need for global channel
+IDs without requiring remapping.
+
 --------
 Services
 --------

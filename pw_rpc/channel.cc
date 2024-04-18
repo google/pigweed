@@ -18,20 +18,41 @@
 #include "pw_rpc/internal/channel.h"
 // clang-format on
 
+#include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
+#include "pw_protobuf/find.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/encoding_buffer.h"
+#include "pw_rpc/internal/packet.pwpb.h"
+
+using pw::rpc::internal::pwpb::RpcPacket::Fields;
 
 namespace pw::rpc {
+namespace internal {
+
+Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128) {
+  Result<ConstByteSpan> raw_field =
+      protobuf::FindRaw(rpc_packet, Fields::kChannelId);
+  if (!raw_field.ok()) {
+    return Status::DataLoss();  // Unexpected packet format
+  }
+  if (raw_field->size() != 1u) {
+    return Status::OutOfRange();
+  }
+  const_cast<std::byte*>(raw_field->data())[0] =
+      static_cast<std::byte>(channel_id_under_128);
+  return OkStatus();
+}
+
+}  // namespace internal
 
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
   protobuf::Decoder decoder(packet);
 
   while (decoder.Next().ok()) {
-    if (static_cast<internal::pwpb::RpcPacket::Fields>(decoder.FieldNumber()) !=
-        internal::pwpb::RpcPacket::Fields::kChannelId) {
+    if (static_cast<Fields>(decoder.FieldNumber()) != Fields::kChannelId) {
       continue;
     }
     uint32_t channel_id;

@@ -1028,4 +1028,17 @@ inline Result<ConstByteSpan> FindSubmessage(ConstByteSpan message, T field) {
   return FindSubmessage(message, static_cast<uint32_t>(field));
 }
 
+/// Returns a span containing the raw bytes of the value.
+inline Result<ConstByteSpan> FindRaw(ConstByteSpan message,
+                                     uint32_t field_number) {
+  Decoder decoder(message);
+  PW_TRY(internal::AdvanceToField(decoder, field_number));
+  return decoder.RawFieldBytes();
+}
+
+template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
+Result<ConstByteSpan> FindRaw(ConstByteSpan message, T field) {
+  return FindRaw(message, static_cast<uint32_t>(field));
+}
+
 }  // namespace pw::protobuf
