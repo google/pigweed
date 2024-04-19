@@ -648,7 +648,7 @@ def docs_build(ctx: PresubmitContext) -> None:
 
     # Copy rust docs from Bazel's out directory into where the GN build
     # put the main docs.
-    rust_docs_bazel_dir = ctx.output_dir / '.bazel-bin/pw_rust/docs.rustdoc'
+    rust_docs_bazel_dir = ctx.output_dir / 'bazel-bin/pw_rust/docs.rustdoc'
     rust_docs_output_dir = ctx.output_dir / 'docs/gen/docs/html/rustdoc'
 
     # Copy the doxygen html output to the main docs location.

@@ -112,7 +112,7 @@ def bazel(
                 '--verbose_failures',
                 '--verbose_explanations',
                 '--worker_verbose',
-                f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
+                f'--symlink_prefix={ctx.output_dir / "bazel-"}',
                 *num_jobs,
                 *keep_going,
                 *remote_cache,
