@@ -36,6 +36,7 @@ pw_add_library(pw_tokenizer STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_base64
     pw_containers
     pw_result
     pw_span
