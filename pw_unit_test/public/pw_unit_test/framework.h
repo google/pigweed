@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_unit_test/framework_backend.h"
+#include "pw_unit_test/framework_backend.h"  // IWYU pragma: export
 // Check that the backend defined the following.
 
 #ifndef GTEST_TEST

@@ -17,4 +17,4 @@
 // using pw_unit_test as a backend.
 #pragma once
 
-#include "pw_unit_test/framework.h"
+#include "pw_unit_test/framework.h"  // IWYU pragma: export

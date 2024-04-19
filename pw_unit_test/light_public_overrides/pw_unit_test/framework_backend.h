@@ -15,6 +15,8 @@
 // The Pigweed unit test framework requires C++17 to use its full functionality.
 #pragma once
 
+// IWYU pragma: private, include "pw_unit_test/framework.h"
+
 #if defined(GTEST_TEST)
 #error \
     "GTEST_TEST is already defined. Make sure googletest headers are not " \
