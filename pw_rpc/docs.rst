@@ -459,6 +459,8 @@ with the ``ABORTED`` status.
    // on_error callbacks with ABORTED status.
    client->CloseChannel(1);
 
+.. _module-pw_rpc-remap:
+
 Remapping channels
 ==================
 Some pw_rpc deployments may find it helpful to remap channel IDs in RPC packets.

@@ -625,6 +625,8 @@ additional user-specified setup. The server accepts the client's session ID,
 then responds to the client with a ``START_ACK`` chunk containing the resource,
 session, and configured protocol version for the transfer.
 
+.. _module-pw_transfer-windowing:
+
 Windowing
 =========
 Throughout a transfer, the receiver maintains a window of how much data it can

@@ -64,8 +64,10 @@ Example code to use Linux SPI:
      PW_TRY(initiator.WriteRead(tx_data, rx_data));
    }
 
+.. _module-pw_spi_linux-cli:
+
 ----------------------
-Command-Line Interface
+Command-line interface
 ----------------------
 This module also provides a tool also named ``pw_spi_linux_cli`` which
 provides a basic command-line interface to the library.
