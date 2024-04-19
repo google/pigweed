@@ -30,7 +30,7 @@ template <auto>
 class MemberPointerTraits;  // undefined base case for
                             // non-pointers-to-data-member
 
-template <typename ClassT, typename MemberT, MemberT ClassT::*PointerToMember>
+template <typename ClassT, typename MemberT, MemberT ClassT::* PointerToMember>
 class MemberPointerTraits<PointerToMember> {
  public:
   // For class InnerClass declared within OuterClass, this will be deduced as

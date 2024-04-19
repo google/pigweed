@@ -103,7 +103,7 @@ class RetireLog final {
   template <size_t NumQuantiles, typename ElementT, size_t... Indexes>
   [[nodiscard]] std::optional<std::array<ElementT, NumQuantiles>>
   ComputeQuantilesImpl(std::array<double, NumQuantiles> partitions,
-                       ElementT Retired::*element_ptr,
+                       ElementT Retired::* element_ptr,
                        std::index_sequence<Indexes...> /*unused*/) const {
     if (depth() < min_depth_) {
       return std::nullopt;

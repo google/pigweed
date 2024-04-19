@@ -103,7 +103,7 @@ class DeviceInfoServiceImpl {
   // A struct for describing each one of the optional characteristics available.
   struct FieldDescriptor {
     DeviceInfo::Field field_value;
-    span<const std::byte> DeviceInfo::*field_pointer;
+    span<const std::byte> DeviceInfo::* field_pointer;
     bluetooth::Uuid characteristic_type;
   };
 
