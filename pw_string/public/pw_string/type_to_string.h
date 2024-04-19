@@ -17,6 +17,7 @@
 // types to character buffers. Generally, the generic ToString function defined
 // in "pw_string/to_string.h" should be used instead of these functions.
 
+#include <array>
 #include <cstdint>
 #include <string_view>
 #include <type_traits>
