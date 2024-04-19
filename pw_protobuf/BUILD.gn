@@ -298,6 +298,13 @@ pw_proto_library("codegen_test_deps_protos") {
   inputs = [ "pw_protobuf_test_deps_protos/imported.options" ]
 }
 
+pw_proto_library("codegen_test_deps_protos_prefix") {
+  sources = [ "pw_protobuf_test_deps_protos/test_prefix_imported.proto" ]
+  inputs = [ "pw_protobuf_test_deps_protos/test_prefix_imported.options" ]
+  prefix = "test_prefix"
+  strip_prefix = "pw_protobuf_test_deps_protos"
+}
+
 pw_proto_library("codegen_test_protos") {
   sources = [
     "pw_protobuf_test_protos/full_test.proto",
@@ -317,6 +324,7 @@ pw_proto_library("codegen_test_protos") {
   ]
   deps = [
     ":codegen_test_deps_protos",
+    ":codegen_test_deps_protos_prefix",
     ":common_protos",
   ]
 }

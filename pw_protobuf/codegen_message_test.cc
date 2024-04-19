@@ -1261,7 +1261,8 @@ TEST(CodegenMessage, ReadImportedFromDepsOptions) {
   TestMessage::StreamDecoder test_message(reader);
 
   // The options file for the imported proto is applied, making the string
-  // field a vector rather than requiring a callback.
+  // fields a vector rather than requiring a callback. This will not compile if
+  // the .options files aren't applied correctly.
   TestMessage::Message message{};
   const auto status = test_message.Read(message);
   ASSERT_EQ(status, OkStatus());
@@ -1273,6 +1274,7 @@ TEST(CodegenMessage, ReadImportedFromDepsOptions) {
                         kExpectedMessage.data(),
                         kExpectedMessage.size()),
             0);
+  EXPECT_EQ(message.prefix_debug.message.size(), 0U);
 }
 
 class BreakableDecoder : public KeyValuePair::StreamDecoder {

@@ -384,6 +384,22 @@ def _proto_compiler_aspect_impl(target, ctx):
         args.add("--custom_opt=-I{}".format(options_file_include_path))
 
     for plugin_option in ctx.attr._plugin_options:
+        # if import_prefix is set, the .proto is placed under a virtual include path
+        # prefixed by `import_prefix`. That path is what is given to the proto
+        # plugin via plugin_pb2.CodeGeneratorRequest.proto_file.name, so the include
+        # paths we give to the plugin need to be able find the .options files based
+        # on the following logic in pw_protobuf/options.py:
+        #
+        #   options_file_name = include_path / proto_file_name.with_suffix(".options")
+        #
+        # This means that in order for the plugin to find the .options file, we need
+        # to let the plugin know the import prefix so it can modify the `proto_file_name`
+        # back to the original to be able to find the .options file.
+        if plugin_option == "--import-prefix={}":
+            if ctx.rule.attr.import_prefix:
+                plugin_option = plugin_option.format(ctx.rule.attr.import_prefix)
+            else:
+                continue
         args.add("--custom_opt={}".format(plugin_option))
 
     args.add("--custom_out={}".format(out_path))
@@ -514,7 +530,7 @@ def _impl_pw_proto_library(ctx):
 _pwpb_proto_compiler_aspect = _proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
-    ["--no-legacy-namespace"],
+    ["--no-legacy-namespace", "--import-prefix={}"],
 )
 
 _pwpb_proto_library = rule(

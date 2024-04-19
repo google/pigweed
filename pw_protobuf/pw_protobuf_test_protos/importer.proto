@@ -16,6 +16,7 @@ syntax = "proto3";
 import 'pw_protobuf_test_deps_protos/imported.proto';
 import 'pw_protobuf_test_protos/imported.proto';
 import 'pw_protobuf_protos/common.proto';
+import 'test_prefix/test_prefix_imported.proto';
 
 package pw.protobuf.test;
 
@@ -36,5 +37,6 @@ message TestMessage {
   oneof level {
     imported.Notice notice = 1;
     imported.Debug debug = 2;
+    imported.PrefixDebug prefix_debug = 3;
   }
 }

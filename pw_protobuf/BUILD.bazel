@@ -266,10 +266,27 @@ pw_proto_filegroup(
     options_files = ["pw_protobuf_test_deps_protos/imported.options"],
 )
 
+pw_proto_filegroup(
+    name = "codegen_import_test_deps_protos_and_options",
+    srcs = [
+        "pw_protobuf_test_deps_protos/test_prefix_imported.proto",
+    ],
+    options_files = ["pw_protobuf_test_deps_protos/test_prefix_imported.options"],
+)
+
 proto_library(
     name = "codegen_test_deps_protos",
     srcs = [":codegen_test_deps_protos_and_options"],
     strip_import_prefix = "/pw_protobuf",
+)
+
+# Test that options files are applied even on protos that are given an import path
+# that doesn't correspond to their real file path.
+proto_library(
+    name = "codegen_test_deps_protos_test_prefix",
+    srcs = [":codegen_import_test_deps_protos_and_options"],
+    import_prefix = "test_prefix",
+    strip_import_prefix = "/pw_protobuf/pw_protobuf_test_deps_protos",
 )
 
 pw_proto_filegroup(
@@ -298,6 +315,7 @@ proto_library(
     strip_import_prefix = "/pw_protobuf",
     deps = [
         ":codegen_test_deps_protos",
+        ":codegen_test_deps_protos_test_prefix",
         ":common_proto",
     ],
 )
@@ -336,11 +354,16 @@ pw_cc_test(
     ],
 )
 
-# TODO(tpudlik): Figure out how to add options file support to Bazel.
-filegroup(
+pw_cc_test(
     name = "codegen_message_test",
     srcs = [
         "codegen_message_test.cc",
+    ],
+    deps = [
+        ":codegen_test_proto_cc.pwpb",
+        ":pw_protobuf",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
