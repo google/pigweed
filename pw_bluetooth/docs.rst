@@ -170,7 +170,7 @@ Emboss files should be formatted by running the following from the Pigweed root.
 
 .. code-block:: bash
 
-   (export EMBOSS_PATH="/ssd2/dev2/pigweed/environment/packages/emboss" &&
+   (export EMBOSS_PATH="environment/packages/emboss" &&
        export PYTHONPATH+=":${EMBOSS_PATH}" &&
        python3 "${EMBOSS_PATH}/compiler/front_end/format.py" pw_bluetooth/public/pw_bluetooth/*.emb)
 
