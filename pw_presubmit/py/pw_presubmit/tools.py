@@ -201,11 +201,19 @@ def log_run(
 class PresubmitToolRunner(ToolRunner):
     """A simple ToolRunner that runs a process via `log_run()`."""
 
+    @staticmethod
+    def _custom_args() -> Iterable[str]:
+        return ['pw_presubmit_ignore_dry_run']
+
     def _run_tool(
-        self, tool: str, args, **kwargs
+        self, tool: str, args, pw_presubmit_ignore_dry_run=False, **kwargs
     ) -> subprocess.CompletedProcess:
         """Run the requested tool as a subprocess."""
-        return log_run([tool, *args], **kwargs)
+        return log_run(
+            [tool, *args],
+            **kwargs,
+            ignore_dry_run=pw_presubmit_ignore_dry_run,
+        )
 
 
 def flatten(*items) -> Iterator:

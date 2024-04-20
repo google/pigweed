@@ -44,7 +44,7 @@ def git_stdout(
             ['-C', str(repo), *args],
             stderr=None if show_stderr else subprocess.DEVNULL,
             check=True,
-            ignore_dry_run=True,
+            pw_presubmit_ignore_dry_run=True,
         )
         .stdout.decode()
         .strip()

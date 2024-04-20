@@ -49,13 +49,35 @@ class ToolRunner(abc.ABC):
             The ``subprocess.CompletedProcess`` result of running the requested
             tool.
         """
+        additional_kwargs = set(self._custom_args())
+        allowed_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if not key.startswith('pw_') or key in additional_kwargs
+        }
+
         return self._run_tool(
             tool,
             args,
             stderr=stderr,
             stdout=stdout,
-            **kwargs,
+            **allowed_kwargs,
         )
+
+    @staticmethod
+    def _custom_args() -> Iterable[str]:
+        """List of additional keyword arguments accepted by this tool.
+
+        By default, all kwargs passed into a tool are forwarded to
+        ``subprocess.run()``. However, some tools have extra arguments custom
+        to them, which are not valid for ``subprocess.run()``. Tools requiring
+        these custom args should override this method, listing the arguments
+        they accept.
+
+        To make filtering custom arguments possible, they must be prefixed
+        with  ``pw_``.
+        """
+        return []
 
     @abc.abstractmethod
     def _run_tool(
@@ -63,8 +85,9 @@ class ToolRunner(abc.ABC):
     ) -> subprocess.CompletedProcess:
         """Implements the subprocess runner logic.
 
-        Calls ``tool`` with the provided ``args``. ``**kwargs`` are forwarded to
-        the underlying ``subprocess.run()`` for the requested tool.
+        Calls ``tool`` with the provided ``args``. ``**kwargs`` not listed in
+        ``_custom_args`` are forwarded to the underlying ``subprocess.run()``
+        for the requested tool.
 
         Returns:
             The ``subprocess.CompletedProcess`` result of running the requested

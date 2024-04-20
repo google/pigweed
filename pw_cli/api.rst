@@ -117,4 +117,4 @@ pw_cli.tool_runner
 
    .. autoclass:: pw_cli.tool_runner.ToolRunner
       :special-members: +__call__
-      :private-members: +_run_tool
+      :private-members: +_run_tool, _custom_args

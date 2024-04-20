@@ -181,7 +181,7 @@ class GitRepo:
                     'update-index',
                     '-q',
                     '--refresh',
-                    ignore_dry_run=True,  # Relevant for pw_presubmit.
+                    pw_presubmit_ignore_dry_run=True,
                 )
             except subprocess.CalledProcessError as err:
                 if err.stderr or i == retries - 1:
@@ -194,7 +194,7 @@ class GitRepo:
                 '--quiet',
                 'HEAD',
                 '--',
-                ignore_dry_run=True,  # Relevant for pw_presubmit.
+                pw_presubmit_ignore_dry_run=True,
             )
         except GitError as err:
             # diff-index exits with 1 if there are uncommitted changes.
