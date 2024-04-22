@@ -5,6 +5,8 @@ Pigweed
 =======
 *Modern software development for embedded systems*
 
+Hello, world!
+
 .. raw:: html
 
    <!-- Add a little space between the H2 and the cards. This is an edge case
