@@ -31,12 +31,18 @@ cc_library(
         "public/pw_spi_mcuxpresso/flexspi.h",
         "public/pw_spi_mcuxpresso/spi.h",
     ],
+    includes = ["public"],
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
-        "//pw_digital_io:facade",
+        "//pw_digital_io",
+        "//pw_log",
         "//pw_preprocessor",
+        "//pw_spi:chip_selector",
+        "//pw_spi:initiator",
+        "//pw_sync:binary_semaphore",
+        "//pw_sync:mutex",
         "@pigweed//targets:mcuxpresso_sdk",
     ],
 )
