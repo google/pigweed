@@ -95,53 +95,39 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 #. If you haven't already, clone the Pigweed repository and set it up locally,
    following the :ref:`docs-get-started-upstream` guide.
 
-#. Claim a number for your SEED. This should be the next sequential number
-   listed within the ``pw_seed_index`` in ``seed/BUILD.gn``. (We will use 5309
-   for our example.)
-
-   .. _SEED index: https://cs.opensource.google/pigweed/pigweed/+/main:seed/0000-index.rst
-
-#. Create a new RST file for your SEED. Name the file with the number of your
-   SEED followed by the lowercase title of the proposal, with words separated by
-   hyphens.
+#. Check out a clean Git branch off of ``main`` for your SEED.
 
    .. code-block:: sh
 
-      touch seed/5309-pw_rpc-over-smoke-signals.rst
+      git checkout -b seed-rpc-smoke-signals
 
-#. Commit your RST document and push it up to Gerrit, marking it as a
-   Work-In-Progress change, following the :ref:`docs-contributing` guide.
+#. From an activated Pigweed environment, run the command ``pw seed create`` to
+   interactively create a SEED.
 
-   Your change will be assigned a number, which can be found in the Gerrit UI
-   and in its URL. For example, if your change is located at
-   ``http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/987654``, its CL
-   number is ``987654``.
+   This command will prompt you for a SEED number (use the default it provides
+   unless you have a specific reason not to), title, and list of authors. Using
+   these, it will generate a SEED document and add it to the build, as well as
+   automatically creating two CLs in Gerrit: one claiming your SEED number, and
+   the second being the actual CL in which your SEED will be reviewed.
 
-#. Add a SEED entry to the GN build pointing to your CL by modifying
-   ``seed/BUILD.gn``.
+   .. code-block:: none
 
-   .. code-block::
+      Created two CLs for SEED-5309:
 
-      # Define a target for your SEED.
-      pw_seed("5309") {
-        changelist = 987654
-        title = "pw_rpc Over Smoke Signals"
-        status = "Draft"
-        author = "Your Name"
-      }
+      -  SEED-5309: Claim SEED number
+         <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/999998>
 
-      # Insert your dependency to the doc group at the bottom of the file.
-      pw_seed_index("seeds") {
-        seeds = [
-          ":0001",
-          ...
-          ":5308",
-          ":5309",
-        ]
-      }
+      -  SEED-5309: Pigweed RPC Over Smoke Signals
+         <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/999999>
 
-#. Push a separate change to Gerrit with your SEED's GN build additions and add
-   GWSQ as a reviewer. Set ``Pigweed-Auto-Submit`` to +1.
+   .. warning::
+
+      ``pw seed create`` will create and push Git commits for you. Make sure to
+      run it from a clean branch.
+
+#. Open the "Claim SEED number" CL and add GWSQ as a reviewer. Set
+   ``Pigweed-Auto-Submit`` to +1. This change will be approved promptly and
+   lock in your assigned SEED number.
 
    .. image:: 0001-the-seed-process/seed-index-gerrit.png
 

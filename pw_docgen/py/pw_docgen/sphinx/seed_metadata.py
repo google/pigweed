@@ -32,6 +32,7 @@ def status_choice(arg) -> str:
     return directives.choice(
         arg,
         (
+            'draft',
             'open_for_comments',
             'intent_approved',
             'last_call',

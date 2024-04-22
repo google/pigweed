@@ -15,6 +15,7 @@
 
 import logging
 from pathlib import Path
+import re
 import subprocess
 from typing import Collection, Iterable, Pattern
 
@@ -94,6 +95,13 @@ class GitRepo:
 
         except GitError:
             return fallback
+
+    def current_branch(self) -> str | None:
+        """Returns the current branch, or None if it cannot be determined."""
+        try:
+            return self._git('rev-parse', '--abbrev-ref', 'HEAD')
+        except GitError:
+            return None
 
     def _ls_files(self, pathspecs: Collection[Path | str]) -> Iterable[Path]:
         """Returns results of git ls-files as absolute paths."""
@@ -289,6 +297,22 @@ class GitRepo:
             args += ['--short']
         args += [commit]
         return self._git(*args)
+
+    def commit_change_id(self, commit: str = 'HEAD') -> str | None:
+        """Returns the Gerrit Change-Id of the specified commit.
+
+        Defaults to ``HEAD`` if no commit specified.
+
+        Returns:
+            Change-Id as a string, or ``None`` if it does not exist.
+        """
+        message = self.commit_message(commit)
+        regex = re.compile(
+            'Change-Id: (I[a-fA-F0-9]+)',
+            re.MULTILINE,
+        )
+        match = regex.search(message)
+        return match.group(1) if match else None
 
 
 def find_git_repo(path_in_repo: Path, tool_runner: ToolRunner) -> GitRepo:

@@ -61,6 +61,10 @@
           "module": "pw_hdlc.rpc_console",
           "function": "main"
         },
+        "seed": {
+          "module": "pw_module.seed",
+          "function": "main"
+        },
         "update": {
           "module": "pw_software_update.cli",
           "function": "main"
