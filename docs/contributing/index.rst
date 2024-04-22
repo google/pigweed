@@ -112,6 +112,25 @@ our focus, we cannot adopt incomplete CLs.
 
 .. _gerrit-commit-hook:
 
+Build System Support
+--------------------
+Pigweed users are split across a number of build systems including:
+
+* `Bazel <https://bazel.build/>`_
+* `GN (a ninja generator) <https://gn.googlesource.com/gn/>`_
+* `CMake <https://cmake.org/>`_
+* `Soong (Android's build system) <https://source.android.com/docs/setup/build>`_
+
+In order to ensure parity between different build systems, contributions must
+include support for at least Bazel (``BUILD.bazel``), GN (``BUILD.gn``) and
+CMake (``CMakeLists.txt``).
+
+We understand that most people don't have experience with all of the build
+systems Pigweed supports, and that this requirement is a burden on contributors.
+We find most people are able to follow the patterns in existing build files to
+add support for their changes; but not always. We're happy to help with build
+questions on Discord for that reason. Don't be shy if you need help!
+
 Gerrit Commit Hook
 ------------------
 Gerrit requires all changes to have a ``Change-Id`` tag at the bottom of each
