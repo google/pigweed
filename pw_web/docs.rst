@@ -203,7 +203,8 @@ Log Viewer Component
 ====================
 The NPM package also includes a log viewer component that can be embedded in any
 webapp. The component works with Pigweed's RPC stack out-of-the-box but also
-supports defining your own log source.
+supports defining your own log source. See :ref:`module-pw_web-log-viewer` for
+component interaction details.
 
 The component is composed of the component itself and a log source. Here is a
 simple example app that uses a mock log source:
@@ -409,3 +410,4 @@ Guides
   :maxdepth: 1
 
   testing
+  log_viewer
