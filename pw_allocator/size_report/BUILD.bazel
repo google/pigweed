@@ -38,6 +38,15 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
+    name = "bump_allocator",
+    srcs = ["bump_allocator.cc"],
+    deps = [
+        "//pw_allocator:bump_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
     name = "dual_first_fit_block_allocator",
     srcs = ["dual_first_fit_block_allocator.cc"],
     deps = [

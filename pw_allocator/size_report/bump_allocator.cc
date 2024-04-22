@@ -12,17 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/deallocator.h"
+#include "pw_allocator/bump_allocator.h"
 
-namespace pw::allocator::internal {
+#include "pw_allocator/size_reporter.h"
 
-bool BaseUniquePtr::HasCapability(Deallocator* deallocator,
-                                  Capability capability) {
-  return deallocator->HasCapability(capability);
+int main() {
+  pw::allocator::SizeReporter reporter;
+  reporter.SetBaseline();
+
+  pw::allocator::BumpAllocator allocator(reporter.buffer());
+  reporter.Measure(allocator);
+
+  return 0;
 }
-
-void BaseUniquePtr::Deallocate(Deallocator* deallocator, void* ptr) {
-  deallocator->Deallocate(ptr);
-}
-
-}  // namespace pw::allocator::internal

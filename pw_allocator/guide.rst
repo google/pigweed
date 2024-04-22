@@ -186,6 +186,9 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
   functions.
 - :ref:`module-pw_allocator-api-null_allocator`: Always fails. This may be
   useful if allocations should be disallowed under specific circumstances.
+- :ref:`module-pw_allocator-api-bump_allocator`: Allocates objects out of a
+  region of memory and only frees them all at once when the allocator is
+  destroyed.
 - :ref:`module-pw_allocator-api-block_allocator`: Tracks memory using
   :ref:`module-pw_allocator-api-block`. Derived types use specific strategies
   for how to choose a block to use to satisfy a request. See also
@@ -216,8 +219,6 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
 
 - :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
   destroys objects of a single given type.
-
-.. TODO: b/328076428 - Add MonotonicAllocator.
 
 .. TODO: b/328076428 - Add BuddyAllocator.
 

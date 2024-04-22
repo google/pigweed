@@ -102,6 +102,16 @@ pw_source_set("buffer") {
   sources = [ "buffer.cc" ]
 }
 
+pw_source_set("bump_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/bump_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_bytes,
+  ]
+  deps = [ ":buffer" ]
+  sources = [ "bump_allocator.cc" ]
+}
 pw_source_set("chunk_pool") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/chunk_pool.h" ]
@@ -331,6 +341,11 @@ pw_test("buffer_test") {
   sources = [ "buffer_test.cc" ]
 }
 
+pw_test("bump_allocator_test") {
+  deps = [ ":bump_allocator" ]
+  sources = [ "bump_allocator_test.cc" ]
+}
+
 pw_test("chunk_pool_test") {
   deps = [
     ":chunk_pool",
@@ -439,6 +454,7 @@ pw_test_group("tests") {
     ":block_allocator_test",
     ":block_test",
     ":buffer_test",
+    ":bump_allocator_test",
     ":chunk_pool_test",
     ":fallback_allocator_test",
     ":freelist_test",
@@ -483,6 +499,11 @@ pw_size_diff("concrete_allocators_size_report") {
       target = "size_report:best_fit_block_allocator"
       base = "size_report:null_allocator"
       label = "BestFitBlockAllocator"
+    },
+    {
+      target = "size_report:bump_allocator"
+      base = "size_report:null_allocator"
+      label = "BumpAllocator"
     },
     {
       target = "size_report:dual_first_fit_block_allocator"

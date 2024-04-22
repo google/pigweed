@@ -23,12 +23,13 @@ class Deallocator;
 
 namespace internal {
 
-/// This class simply provides a type-erased static method to deallocate the
-/// memory in a unique pointer. This allows ``UniquePtr<T>`` to be declared
-/// without a complete declaration of ``Deallocator``, breaking the
+/// This class simply provides type-erased static methods to check capabilities
+/// and deallocate memory in a unique pointer. This allows ``UniquePtr<T>`` to
+/// be declared without a complete declaration of ``Deallocator``, breaking the
 /// dependency cycle between ``UniquePtr<T>` and ``Allocator::MakeUnique<T>()``.
 class BaseUniquePtr {
  protected:
+  static bool HasCapability(Deallocator* deallocator, Capability capability);
   static void Deallocate(Deallocator* deallocator, void* ptr);
 };
 
@@ -126,11 +127,14 @@ class UniquePtr : public internal::BaseUniquePtr {
   /// After this function returns, this ``UniquePtr`` will be in an "empty"
   /// (``nullptr``) state until a new value is assigned.
   void Reset() {
-    if (value_ != nullptr) {
-      std::destroy_at(value_);
-      internal::BaseUniquePtr::Deallocate(deallocator_, value_);
-      Release();
+    if (value_ == nullptr) {
+      return;
     }
+    if (!internal::BaseUniquePtr::HasCapability(deallocator_, kSkipsDestroy)) {
+      std::destroy_at(value_);
+    }
+    internal::BaseUniquePtr::Deallocate(deallocator_, value_);
+    Release();
   }
 
   /// ``operator bool`` is not provided in order to ensure that there is no

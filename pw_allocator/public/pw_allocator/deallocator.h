@@ -63,7 +63,9 @@ class Deallocator {
   /// @param[in] ptr      Pointer to previously-allocated object.
   template <typename T>
   void Delete(T* ptr) {
-    std::destroy_at(ptr);
+    if (!capabilities_.has(kSkipsDestroy)) {
+      std::destroy_at(ptr);
+    }
     Deallocate(ptr);
   }
 

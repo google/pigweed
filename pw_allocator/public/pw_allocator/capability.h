@@ -31,6 +31,7 @@ enum Capability : uint32_t {
   kImplementsGetUsableLayout    = 1 << 1,
   kImplementsGetAllocatedLayout = 1 << 2,
   kImplementsQuery              = 1 << 3,
+  kSkipsDestroy                 = 1 << 4,
   // clang-format on
 };
 
@@ -61,14 +62,8 @@ enum Capability : uint32_t {
 /// @endcode
 class Capabilities {
  public:
-  static constexpr uint32_t kAll =
-      kImplementsGetRequestedLayout | kImplementsGetUsableLayout |
-      kImplementsGetAllocatedLayout | kImplementsQuery;
-
   constexpr Capabilities() : capabilities_(0) {}
-  constexpr Capabilities(uint32_t capabilities) : capabilities_(capabilities) {
-    PW_ASSERT((capabilities & ~kAll) == 0);
-  }
+  constexpr Capabilities(uint32_t capabilities) : capabilities_(capabilities) {}
 
   constexpr bool has(Capability capability) const {
     return (capabilities_ & capability) == capability;

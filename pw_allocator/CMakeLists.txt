@@ -92,6 +92,20 @@ pw_add_library(pw_allocator.buffer STATIC
     buffer.cc
 )
 
+pw_add_library(pw_allocator.bump_allocator STATIC
+  HEADERS
+    public/pw_allocator/bump_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_bytes
+  PRIVATE_DEPS
+    pw_allocator.buffer
+  SOURCES
+    bump_allocator.cc
+)
+
 pw_add_library(pw_allocator.chunk_pool STATIC
   HEADERS
     public/pw_allocator/chunk_pool.h
@@ -133,7 +147,6 @@ pw_add_library(pw_allocator.fallback_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.tracking_allocator
     pw_metric
     pw_result
     pw_status
@@ -343,15 +356,22 @@ pw_add_test(pw_allocator.buffer_test
     pw_allocator
 )
 
+pw_add_test(pw_allocator.bump_allocator_test
+  PRIVATE_DEPS
+    pw_allocator.bump_allocator
+  SOURCES
+    bump_allocator_test.cc
+  GROUPS
+    modules
+    pw_allocator
+)
+
 pw_add_test(pw_allocator.chunk_pool_test
   PRIVATE_DEPS
     pw_allocator.chunk_pool
     pw_allocator.testing
   SOURCES
     chunk_pool_test.cc
-  GROUPS
-    modules
-    pw_allocator
 )
 
 pw_add_test(pw_allocator.fallback_allocator_test

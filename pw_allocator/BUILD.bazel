@@ -106,6 +106,22 @@ cc_library(
 )
 
 cc_library(
+    name = "bump_allocator",
+    srcs = [
+        "bump_allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/bump_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":buffer",
+        "//pw_bytes",
+    ],
+)
+
+cc_library(
     name = "chunk_pool",
     srcs = [
         "chunk_pool.cc",
@@ -152,7 +168,6 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":tracking_allocator",
         "//pw_metric:metric",
         "//pw_result",
         "//pw_status",
@@ -393,6 +408,17 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "bump_allocator_test",
+    srcs = [
+        "bump_allocator_test.cc",
+    ],
+    deps = [
+        ":bump_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "chunk_pool_test",
     srcs = [
         "chunk_pool_test.cc",
@@ -400,7 +426,6 @@ pw_cc_test(
     deps = [
         ":chunk_pool",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
