@@ -32,7 +32,7 @@ pw_add_library(pw_third_party.emboss.config_assert INTERFACE
 pw_add_library(pw_third_party.emboss._disable_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     -Wno-unused-parameter
-    -Wno-deprecated-copy
+    $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
     -Wno-format-invalid-specifier
 )
 
