@@ -68,6 +68,7 @@ proto_library(
         ":metadata_proto",
         "//pw_chrono:chrono_proto",
         "//pw_cpu_exception_cortex_m:cpu_state_protos",
+        "//pw_cpu_exception_risc_v:cpu_state_protos",
         "//pw_log:log_proto",
         "//pw_thread:thread_proto",
     ],
