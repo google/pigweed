@@ -26,8 +26,8 @@ use syn::{
 };
 
 use pw_format::macros::{
-    generate_printf, Arg, FormatAndArgs, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
-    Result,
+    generate_printf, Arg, FormatAndArgsFlavor, PrintfFormatMacroGenerator,
+    PrintfFormatStringFragment, PrintfFormatStringParser, Result,
 };
 use pw_tokenizer_core::TOKENIZER_ENTRY_MAGIC;
 
@@ -104,14 +104,14 @@ pub fn _token(tokens: TokenStream) -> TokenStream {
 #[derive(Debug)]
 struct TokenizeToBufferArgs {
     buffer: Expr,
-    format_and_args: FormatAndArgs,
+    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
 }
 
 impl Parse for TokenizeToBufferArgs {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let buffer: Expr = input.parse()?;
         input.parse::<Token![,]>()?;
-        let format_and_args: FormatAndArgs = input.parse()?;
+        let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
         Ok(TokenizeToBufferArgs {
             buffer,
@@ -223,7 +223,7 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
     // Hard codes domain to "".
     let generator = TokenizeToBufferGenerator::new("", &input.buffer);
 
-    match generate_printf(generator, input.format_and_args) {
+    match generate_printf(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
         Err(e) => e.to_compile_error().into(),
     }
@@ -234,14 +234,14 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
 #[derive(Debug)]
 struct TokenizeToWriterArgs {
     ty: Type,
-    format_and_args: FormatAndArgs,
+    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
 }
 
 impl Parse for TokenizeToWriterArgs {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let ty: Type = input.parse()?;
         input.parse::<Token![,]>()?;
-        let format_and_args: FormatAndArgs = input.parse()?;
+        let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
         Ok(Self {
             ty,
@@ -347,7 +347,7 @@ pub fn _tokenize_to_writer(tokens: TokenStream) -> TokenStream {
     // Hard codes domain to "".
     let generator = TokenizeToWriterGenerator::new("", &input.ty);
 
-    match generate_printf(generator, input.format_and_args) {
+    match generate_printf(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
         Err(e) => e.to_compile_error().into(),
     }

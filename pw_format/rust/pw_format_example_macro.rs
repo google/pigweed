@@ -14,7 +14,8 @@
 
 use proc_macro::TokenStream;
 use pw_format::macros::{
-    generate, Arg, FormatAndArgs, FormatMacroGenerator, IntegerDisplayType, Result,
+    generate, Arg, FormatAndArgsFlavor, FormatMacroGenerator, IntegerDisplayType,
+    PrintfFormatStringParser, Result,
 };
 use quote::quote;
 use syn::{
@@ -28,7 +29,8 @@ type TokenStream2 = proc_macro2::TokenStream;
 #[derive(Debug)]
 struct MacroArgs {
     prefix: Expr,
-    format_and_args: FormatAndArgs,
+    // Select printf style format strings.
+    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
 }
 
 // Implement `Parse` for our argument struct.
@@ -39,7 +41,7 @@ impl Parse for MacroArgs {
         input.parse::<Token![,]>()?;
 
         // Prase the remaining arguments as a format string and arguments.
-        let format_and_args: FormatAndArgs = input.parse()?;
+        let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
         Ok(MacroArgs {
             prefix,
@@ -142,7 +144,7 @@ pub fn example_macro(tokens: TokenStream) -> TokenStream {
     let generator = Generator::new(input.prefix);
 
     // Call into `generate()` to handle the code generation.
-    match generate(generator, input.format_and_args) {
+    match generate(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
         Err(e) => e.to_compile_error().into(),
     }

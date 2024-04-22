@@ -28,9 +28,13 @@ rust_library(
 rust_library(
     name = "pw_format",
     srcs = [
+        "pw_format/core_fmt.rs",
         "pw_format/lib.rs",
         "pw_format/macros.rs",
-        "pw_format/tests.rs",
+        "pw_format/printf.rs",
+        "pw_format/tests/core_fmt.rs",
+        "pw_format/tests/mod.rs",
+        "pw_format/tests/printf.rs",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -106,9 +110,9 @@ rust_proc_macro(
 )
 
 rust_library(
-    name = "pw_format_test_macros_test",
+    name = "pw_format_test_macros_printf_test",
     srcs = [
-        "pw_format_test_macros_test.rs",
+        "pw_format_test_macros_printf_test.rs",
     ],
     proc_macro_deps = [
         ":pw_format_test_macros",
@@ -122,6 +126,27 @@ rust_library(
 )
 
 rust_test(
-    name = "pw_format_test_macros_test_test",
-    crate = ":pw_format_test_macros_test",
+    name = "pw_format_test_macros_printf_test_test",
+    crate = ":pw_format_test_macros_printf_test",
+)
+
+rust_library(
+    name = "pw_format_test_macros_core_fmt_test",
+    srcs = [
+        "pw_format_test_macros_core_fmt_test.rs",
+    ],
+    proc_macro_deps = [
+        ":pw_format_test_macros",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_format",
+        ":pw_format_core",
+        "//pw_bytes/rust:pw_bytes",
+    ],
+)
+
+rust_test(
+    name = "pw_format_test_macros_core_fmt_test_test",
+    crate = ":pw_format_test_macros_core_fmt_test",
 )

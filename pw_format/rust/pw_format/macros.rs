@@ -15,7 +15,7 @@
 //! The `macro` module provides helpers that simplify writing proc macros
 //! that take format strings and arguments.  This is accomplish with three
 //! main constructs:
-//! * [`FormatAndArgs`]: A struct that implements [syn::parse::Parse] to
+//! * [`FormatAndArgsFlavor`]: A struct that implements [syn::parse::Parse] to
 //!   parse a format string and its following arguments.
 //! * [`FormatMacroGenerator`]: A trait used to implement the macro specific
 //!   logic to generate code.
@@ -34,6 +34,7 @@
 //!
 
 use std::collections::VecDeque;
+use std::marker::PhantomData;
 
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
@@ -221,11 +222,38 @@ impl ToTokens for Arg {
     }
 }
 
+/// A trait for parsing a string into a [`FormatString`].
+pub trait FormatStringParser {
+    /// Parse `format_string` and return the results as a `[FormatString]`.
+    fn parse_format_string(format_string: &str) -> std::result::Result<FormatString, String>;
+}
+
+/// An implementation of [`FormatStringParser`] that parsers `printf` style format strings.
+#[derive(Debug)]
+pub struct PrintfFormatStringParser;
+impl FormatStringParser for PrintfFormatStringParser {
+    fn parse_format_string(format_string: &str) -> std::result::Result<FormatString, String> {
+        FormatString::parse_printf(format_string)
+    }
+}
+
+/// An implementation of [`FormatStringParser`] that parsers `core::fmt` style format strings.
+#[derive(Debug)]
+pub struct CoreFmtFormatStringParser;
+impl FormatStringParser for CoreFmtFormatStringParser {
+    fn parse_format_string(format_string: &str) -> std::result::Result<FormatString, String> {
+        FormatString::parse_core_fmt(format_string)
+    }
+}
+
 /// A parsed format string and it's arguments.
 ///
-/// `FormatAndArgs` implements [`syn::parse::Parse`] and can be used to parse
-/// arguments to proc maros that take format strings.  Arguments are parsed
-/// according to the pattern: `($format_string:literal, $($args:expr),*)`
+/// To parse a `FormatAndArgs`, use the [`FormatAndArgsFlavor`] variant which
+/// is generic over [`FormatStringParser`] to allow parsing either `printf` or
+/// `core::fmt` style format strings.
+///
+/// Arguments are parsed according to the pattern:
+/// `($format_string:literal, $($args:expr),*)`
 ///
 /// To support uses where format strings need to be built by macros at compile
 /// time, the format string can be specified as a set of string literals
@@ -237,7 +265,28 @@ pub struct FormatAndArgs {
     args: VecDeque<Arg>,
 }
 
-impl Parse for FormatAndArgs {
+/// A variant of [`FormatAndArgs`] that is generic over format string flavor.
+///
+/// `FormatAndArgsFlavor` implements [`syn::parse::Parse`] for it's specified
+/// format string flavor.  Instantiate `FormatAndArgsFlavor` with either
+/// [`PrintfFormatStringParser`] or [`CoreFmtFormatStringParser`] to specify
+/// which format string flavor should be used.
+///
+/// `FormatAndArgsFlavor` trivially converts into [`FormatAndArgs`] with the
+/// [`From`] trait.
+#[derive(Debug)]
+pub struct FormatAndArgsFlavor<T: FormatStringParser> {
+    format_and_args: FormatAndArgs,
+    phantom: PhantomData<T>,
+}
+
+impl<T: FormatStringParser> From<FormatAndArgsFlavor<T>> for FormatAndArgs {
+    fn from(val: FormatAndArgsFlavor<T>) -> Self {
+        val.format_and_args
+    }
+}
+
+impl<T: FormatStringParser> Parse for FormatAndArgsFlavor<T> {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let punctuated =
             Punctuated::<LitStr, keywords::PW_FMT_CONCAT>::parse_separated_nonempty(input)?;
@@ -261,17 +310,20 @@ impl Parse for FormatAndArgs {
             punctuated.into_iter().collect()
         };
 
-        let parsed = FormatString::parse(&format_string.value()).map_err(|e| {
+        let parsed = T::parse_format_string(&format_string.value()).map_err(|e| {
             syn::Error::new_spanned(
                 format_string.to_token_stream(),
                 format!("Error parsing format string {e}"),
             )
         })?;
 
-        Ok(FormatAndArgs {
-            format_string,
-            parsed,
-            args,
+        Ok(FormatAndArgsFlavor {
+            format_and_args: FormatAndArgs {
+                format_string,
+                parsed,
+                args,
+            },
+            phantom: PhantomData,
         })
     }
 }
@@ -372,6 +424,10 @@ fn handle_conversion(
 
         // TODO: b/281862333 - Support pointers.
         Specifier::Pointer => Err(Error::new("Pointer types are not supported.")),
+        Specifier::Debug => todo!(),
+        Specifier::HexDebug => todo!(),
+        Specifier::UpperHexDebug => todo!(),
+        Specifier::Binary => todo!(),
     }
 }
 
@@ -390,7 +446,6 @@ pub fn generate(
         let result = match fragment {
             FormatFragment::Conversion(spec) => handle_conversion(&mut generator, &spec, &mut args),
             FormatFragment::Literal(string) => generator.string_fragment(&string),
-            FormatFragment::Percent => generator.string_fragment("%"),
         };
         if let Err(e) = result {
             errors.push(syn::Error::new_spanned(

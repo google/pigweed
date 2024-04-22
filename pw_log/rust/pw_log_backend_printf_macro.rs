@@ -21,8 +21,8 @@ use syn::{
 };
 
 use pw_format::macros::{
-    generate_printf, Arg, FormatAndArgs, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
-    Result,
+    generate_printf, Arg, FormatAndArgsFlavor, PrintfFormatMacroGenerator,
+    PrintfFormatStringFragment, PrintfFormatStringParser, Result,
 };
 
 type TokenStream2 = proc_macro2::TokenStream;
@@ -32,14 +32,14 @@ type TokenStream2 = proc_macro2::TokenStream;
 #[derive(Debug)]
 struct PwLogfArgs {
     log_level: Expr,
-    format_and_args: FormatAndArgs,
+    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
 }
 
 impl Parse for PwLogfArgs {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let log_level: Expr = input.parse()?;
         input.parse::<Token![,]>()?;
-        let format_and_args: FormatAndArgs = input.parse()?;
+        let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
         Ok(PwLogfArgs {
             log_level,
@@ -133,7 +133,7 @@ pub fn _pw_logf_backend(tokens: TokenStream) -> TokenStream {
 
     let generator = LogfGenerator::new(&input.log_level);
 
-    match generate_printf(generator, input.format_and_args) {
+    match generate_printf(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
         Err(e) => e.to_compile_error().into(),
     }

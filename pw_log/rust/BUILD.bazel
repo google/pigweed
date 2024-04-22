@@ -118,13 +118,6 @@ rust_library(
         "backend_tests.rs",
         "printf_backend_test.rs",
     ],
-    target_compatible_with = select({
-        # This test is only compatible with POSIX platforms.
-        "@platforms//os:linux": [],
-        # Test times out on MacOS.
-        # "@platforms//os:macos": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         ":pw_log_backend_api",

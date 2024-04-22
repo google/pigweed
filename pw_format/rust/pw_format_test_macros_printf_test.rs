@@ -43,11 +43,14 @@ pub enum PrintfTestGeneratorOps {
 #[cfg(test)]
 mod tests {
     use pw_format_test_macros::{
-        char_sub_core_fmt_generator_test_macro, char_sub_printf_generator_test_macro,
-        core_fmt_generator_test_macro, generator_test_macro,
-        integer_sub_core_fmt_generator_test_macro, integer_sub_printf_generator_test_macro,
-        printf_generator_test_macro, string_sub_core_fmt_generator_test_macro,
-        string_sub_printf_generator_test_macro,
+        char_sub_printf_format_core_fmt_generator_test_macro,
+        char_sub_printf_format_printf_generator_test_macro,
+        integer_sub_printf_format_core_fmt_generator_test_macro,
+        integer_sub_printf_format_printf_generator_test_macro,
+        printf_format_core_fmt_generator_test_macro, printf_format_generator_test_macro,
+        printf_format_printf_generator_test_macro,
+        string_sub_printf_format_core_fmt_generator_test_macro,
+        string_sub_printf_format_printf_generator_test_macro,
     };
 
     // Create an alias to ourselves so that the proc macro can name our crate.
@@ -58,7 +61,7 @@ mod tests {
     #[test]
     fn generate_calls_generator_correctly() {
         assert_eq!(
-            generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
+            printf_format_generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
             vec![
                 TestGeneratorOps::StringFragment("test ".to_string()),
                 TestGeneratorOps::IntegerConversion {
@@ -80,7 +83,7 @@ mod tests {
     #[test]
     fn generate_printf_calls_generator_correctly() {
         assert_eq!(
-            printf_generator_test_macro!(
+            printf_format_printf_generator_test_macro!(
                 "test %ld %s %c %v %v",
                 5,
                 "test",
@@ -118,7 +121,12 @@ mod tests {
     #[test]
     fn generate_printf_substitutes_integer_conversion() {
         assert_eq!(
-            integer_sub_printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            integer_sub_printf_format_printf_generator_test_macro!(
+                "test %ld %s %c",
+                5,
+                "test",
+                'c'
+            ),
             (
                 "test %K %s %c",
                 vec![
@@ -142,7 +150,7 @@ mod tests {
     #[test]
     fn generate_printf_substitutes_string_conversion() {
         assert_eq!(
-            string_sub_printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            string_sub_printf_format_printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
             (
                 // %ld gets converted to %d because they are equivalent for 32 bit
                 // systems.
@@ -168,7 +176,7 @@ mod tests {
     #[test]
     fn generate_printf_substitutes_char_conversion() {
         assert_eq!(
-            char_sub_printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            char_sub_printf_format_printf_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
             (
                 // %ld gets converted to %d because they are equivalent for 32 bit
                 // systems.
@@ -192,7 +200,7 @@ mod tests {
     #[test]
     fn generate_core_fmt_calls_generator_correctly() {
         assert_eq!(
-            core_fmt_generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
+            printf_format_core_fmt_generator_test_macro!("test %ld %s %c %v", 5, "test", 'c', 1),
             (
                 "test {} {} {} {}",
                 vec![
@@ -218,7 +226,12 @@ mod tests {
     #[test]
     fn generate_core_fmt_substitutes_integer_conversion() {
         assert_eq!(
-            integer_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            integer_sub_printf_format_core_fmt_generator_test_macro!(
+                "test %ld %s %c",
+                5,
+                "test",
+                'c'
+            ),
             (
                 "test {:?} {} {}",
                 vec![
@@ -242,7 +255,12 @@ mod tests {
     #[test]
     fn generate_core_fmt_substitutes_string_conversion() {
         assert_eq!(
-            string_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            string_sub_printf_format_core_fmt_generator_test_macro!(
+                "test %ld %s %c",
+                5,
+                "test",
+                'c'
+            ),
             (
                 "test {} {:?} {}",
                 vec![
@@ -266,7 +284,7 @@ mod tests {
     #[test]
     fn generate_core_fmt_substitutes_char_conversion() {
         assert_eq!(
-            char_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            char_sub_printf_format_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
             (
                 "test {} {} {:?}",
                 vec![
@@ -288,7 +306,7 @@ mod tests {
     #[test]
     fn multiple_format_strings_are_concatenated() {
         assert_eq!(
-            generator_test_macro!("a" PW_FMT_CONCAT "b"),
+            printf_format_generator_test_macro!("a" PW_FMT_CONCAT "b"),
             vec![
                 TestGeneratorOps::StringFragment("ab".to_string()),
                 TestGeneratorOps::Finalize
