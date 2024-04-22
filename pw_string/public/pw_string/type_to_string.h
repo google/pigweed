@@ -114,7 +114,7 @@ StatusWithSize PointerToString(const void* pointer, span<char> buffer);
 //
 // Returns the number of characters written, excluding the null terminator. If
 // the string is truncated, the status is RESOURCE_EXHAUSTED.
-inline StatusWithSize CopyStringOrNull(const std::string_view& value,
+inline StatusWithSize CopyStringOrNull(std::string_view value,
                                        span<char> buffer) {
   return Copy(value, buffer);
 }
@@ -133,7 +133,7 @@ inline StatusWithSize CopyStringOrNull(const char* value, span<char> buffer) {
 // Returns the number of characters written, excluding the null terminator. If
 // the full string does not fit, only a null terminator is written and the
 // status is RESOURCE_EXHAUSTED.
-StatusWithSize CopyEntireStringOrNull(const std::string_view& value,
+StatusWithSize CopyEntireStringOrNull(std::string_view value,
                                       span<char> buffer);
 
 // Same as the string_view form of CopyEntireString, except that if value is a

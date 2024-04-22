@@ -42,7 +42,7 @@ static_assert([] {
       .Add("dynamic allocation", false);
 
   pw::NestedJsonArray nested_array = object.AddNestedArray("features");
-  for (const std::string_view& feature : features) {
+  for (const std::string_view feature : features) {
     nested_array.Append(feature);
   }
   // DOCTSAG: [pw-json-builder-example-1]

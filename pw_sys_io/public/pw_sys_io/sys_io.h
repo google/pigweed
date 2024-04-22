@@ -101,9 +101,9 @@ Status WriteByte(std::byte b);
 
 /// Writes a string out the `pw_sys_io` backend.
 ///
-/// This function takes a null-terminated string and writes it out the
-/// `pw_sys_io` backend, adding any platform-specific newline character(s)
-/// (these are accounted for in the returned `StatusWithSize`).
+/// This function takes a `string_view` and writes it out the `pw_sys_io`
+/// backend, adding any platform-specific newline character(s) (these are
+/// accounted for in the returned `StatusWithSize`).
 ///
 /// @pre This function must be implemented by the `pw_sys_io` backend.
 ///
@@ -120,7 +120,7 @@ Status WriteByte(std::byte b);
 /// part of the ``StatusWithSize``.
 ///
 /// @endrst
-StatusWithSize WriteLine(const std::string_view& s);
+StatusWithSize WriteLine(std::string_view s);
 
 /// Fills a byte span from the `pw_sys_io` backend using `ReadByte()`.
 ///

@@ -75,7 +75,7 @@ StatusWithSize PointerToString(const void* pointer, span<char> buffer) {
   return IntToHexString(reinterpret_cast<uintptr_t>(pointer), buffer);
 }
 
-StatusWithSize CopyEntireStringOrNull(const std::string_view& value,
+StatusWithSize CopyEntireStringOrNull(std::string_view value,
                                       span<char> buffer) {
   if (value.size() >= buffer.size()) {
     return internal::HandleExhaustedBuffer(buffer);

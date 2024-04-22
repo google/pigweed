@@ -209,12 +209,12 @@ class StringBuilder {
   StringBuilder& append(const char* str);
 
   /// Appends a `std::string_view` to the end of the `StringBuilder`.
-  StringBuilder& append(const std::string_view& str);
+  StringBuilder& append(std::string_view str);
 
   /// Appends a substring from the `std::string_view` to the `StringBuilder`.
   /// Copies up to count characters starting from `pos` to the end of the
   /// `StringBuilder`. If `pos > str.size()`, sets the status to `OUT_OF_RANGE`.
-  StringBuilder& append(const std::string_view& str,
+  StringBuilder& append(std::string_view str,
                         size_t pos,
                         size_t count = std::string_view::npos);
 

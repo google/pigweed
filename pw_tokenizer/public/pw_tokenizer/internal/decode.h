@@ -91,9 +91,9 @@ class DecodedArg {
 
   // Constructs a DecodedArg that encountered an error during decoding.
   DecodedArg(ArgStatus error,
-             const std::string_view& spec,
+             std::string_view spec,
              size_t raw_size_bytes = 0u,
-             const std::string_view& value = {});
+             std::string_view value = {});
 
   // This argument's value as a string. If an error occurred while decoding this
   // argument, value() will be an error message.
@@ -129,7 +129,7 @@ class StringSegment {
   static StringSegment ParseFormatSpec(const char* format);
 
   // Creates a StringSegment that represents a piece of plain text.
-  StringSegment(const std::string_view& text) : StringSegment(text, kLiteral) {}
+  StringSegment(std::string_view text) : StringSegment(text, kLiteral) {}
 
   // Returns the DecodedArg with this StringSegment decoded according to the
   // provided arguments.
@@ -165,10 +165,10 @@ class StringSegment {
 
   StringSegment() : type_(kLiteral) {}
 
-  StringSegment(const std::string_view& text, Type type)
+  StringSegment(std::string_view text, Type type)
       : StringSegment(text, type, VarargSize<void*>()) {}
 
-  StringSegment(const std::string_view& text, Type type, ArgSize local_size)
+  StringSegment(std::string_view text, Type type, ArgSize local_size)
       : text_(text), type_(type), local_size_(local_size) {}
 
   DecodedArg DecodeString(const span<const uint8_t>& arguments) const;
@@ -232,7 +232,7 @@ class FormatString {
   // returns a string.
   DecodedFormatString Format(span<const uint8_t> arguments) const;
 
-  DecodedFormatString Format(const std::string_view& arguments) const {
+  DecodedFormatString Format(std::string_view arguments) const {
     return Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
                        arguments.size()));
   }

@@ -293,7 +293,7 @@ To do more complex testing, such as on-device testing:
       // pw_unit_test:light requires an event handler to be configured.
       #include "pw_unit_test/simple_printing_event_handler.h"
 
-      void WriteString(const std::string_view& string, bool newline) {
+      void WriteString(std::string_view string, bool newline) {
         printf("%s", string.data());
         if (newline) {
           printf("\n");

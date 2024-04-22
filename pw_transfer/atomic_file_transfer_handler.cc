@@ -37,8 +37,8 @@ pw::Status EnsureDirectoryExists(std::string_view filepath) {
 
 // Copy file and remove on succes.
 // If the copy fails, the file `input_target` is not removed.
-pw::Status CopyFile(const std::string_view input_target,
-                    const std::string_view output_target) {
+pw::Status CopyFile(std::string_view input_target,
+                    std::string_view output_target) {
   auto err = std::error_code{};
   std::filesystem::copy(input_target,
                         output_target,
@@ -60,8 +60,8 @@ pw::Status CopyFile(const std::string_view input_target,
 
 // Uses the same approach as unix `mv` command. First try to rename. If we get
 // a cross-device link error, copies then deletes input_target.
-pw::Status RenameFile(const std::string_view input_target,
-                      const std::string_view output_target) {
+pw::Status RenameFile(std::string_view input_target,
+                      std::string_view output_target) {
   auto err = std::error_code{};
   std::filesystem::rename(input_target, output_target, err);
   if (err && err.value() == CROSS_DEVICE_LINK_ERROR) {

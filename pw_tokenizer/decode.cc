@@ -61,8 +61,8 @@ std::array<char, 2> ReadLengthModifier(const char* str) {
 // Returns the error message that is used in place of a decoded arg when an
 // error occurs.
 std::string ErrorMessage(ArgStatus status,
-                         const std::string_view& spec,
-                         const std::string_view& value) {
+                         std::string_view spec,
+                         std::string_view value) {
   const char* message;
   if (status.HasError(ArgStatus::kSkipped)) {
     message = "SKIPPED";
@@ -93,9 +93,9 @@ std::string ErrorMessage(ArgStatus status,
 }  // namespace
 
 DecodedArg::DecodedArg(ArgStatus error,
-                       const std::string_view& spec,
+                       std::string_view spec,
                        size_t raw_size_bytes,
-                       const std::string_view& value)
+                       std::string_view value)
     : value_(ErrorMessage(error, spec, value)),
       spec_(spec),
       raw_data_size_bytes_(raw_size_bytes),

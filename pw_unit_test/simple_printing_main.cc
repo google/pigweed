@@ -21,7 +21,7 @@
 
 int main() {
   pw::unit_test::SimplePrintingEventHandler handler(
-      [](const std::string_view& s, bool append_newline) {
+      [](std::string_view s, bool append_newline) {
         if (append_newline) {
           pw::sys_io::WriteLine(s).IgnoreError();
         } else {

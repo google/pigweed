@@ -107,7 +107,7 @@ struct Args {
 };
 
 template <class T>
-std::optional<T> ParseNumber(const std::string_view& str) {
+std::optional<T> ParseNumber(std::string_view str) {
   T value{};
   const auto* str_end = str.data() + str.size();
   auto [ptr, ec] = std::from_chars(str.data(), str_end, value);

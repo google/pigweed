@@ -34,8 +34,8 @@ namespace pw {
 namespace string {
 namespace internal {
 
-PW_CONSTEXPR_CPP20 inline StatusWithSize CopyToSpan(
-    const std::string_view& source, span<char> dest) {
+PW_CONSTEXPR_CPP20 inline StatusWithSize CopyToSpan(std::string_view source,
+                                                    span<char> dest) {
   if (dest.empty()) {
     return StatusWithSize::ResourceExhausted();
   }
@@ -117,7 +117,7 @@ constexpr Result<size_t> NullTerminatedLength(const char* str, size_t max_len) {
 ///
 /// @endrst
 template <typename Span>
-PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
+PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(std::string_view source,
                                               Span&& dest) {
   static_assert(
       !std::is_base_of_v<InlineString<>, std::decay_t<Span>>,
@@ -155,7 +155,7 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
 ///    RESOURCE_EXHAUSTED: The ``std::string_view`` was truncated to fit.
 ///
 /// @endrst
-inline Status Assign(InlineString<>& string, const std::string_view& view) {
+inline Status Assign(InlineString<>& string, std::string_view view) {
   const size_t chars_copied =
       std::min(view.size(), static_cast<size_t>(string.capacity()));
   string.assign(view, 0, static_cast<string_impl::size_type>(chars_copied));
@@ -182,7 +182,7 @@ inline Status Assign(InlineString<>& string, const char* c_string) {
 ///    RESOURCE_EXHAUSTED: The ``std::string_view`` was truncated to fit.
 ///
 /// @endrst
-inline Status Append(InlineString<>& string, const std::string_view& view) {
+inline Status Append(InlineString<>& string, std::string_view view) {
   const size_t chars_copied = std::min(
       view.size(), static_cast<size_t>(string.capacity() - string.size()));
   string.append(view, 0, static_cast<string_impl::size_type>(chars_copied));
@@ -200,8 +200,8 @@ inline Status Append(InlineString<>& string, const char* c_string) {
 /// Copies the `source` string to the `dest` string with same behavior as
 /// `pw::string::Copy`, with the difference that any non-printable characters
 /// are changed to `.`.
-PW_CONSTEXPR_CPP20 inline StatusWithSize PrintableCopy(
-    const std::string_view& source, span<char> dest) {
+PW_CONSTEXPR_CPP20 inline StatusWithSize PrintableCopy(std::string_view source,
+                                                       span<char> dest) {
   StatusWithSize copy_result = Copy(source, dest);
   for (size_t i = 0; i < copy_result.size(); i++) {
     dest[i] = std::isprint(dest[i]) ? dest[i] : '.';

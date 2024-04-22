@@ -34,7 +34,7 @@ namespace pw::unit_test {
 ///   // pw_unit_test:light requires an event handler to be configured.
 ///   #include "pw_unit_test/simple_printing_event_handler.h"
 ///
-///   void WriteString(const std::string_view& string, bool newline) {
+///   void WriteString(std::string_view string, bool newline) {
 ///     printf("%s", string.data());
 ///     if (newline) {
 ///       printf("\n");
@@ -64,8 +64,7 @@ namespace pw::unit_test {
 class SimplePrintingEventHandler : public GoogleTestStyleEventHandler {
  public:
   // Function for writing output as a string.
-  using WriteFunction = void (*)(const std::string_view& string,
-                                 bool append_newline);
+  using WriteFunction = void (*)(std::string_view string, bool append_newline);
 
   // Instantiates an event handler with a function to which to output results.
   // If verbose is set, information for successful tests is written as well as

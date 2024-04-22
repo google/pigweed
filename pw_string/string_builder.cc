@@ -47,11 +47,11 @@ StringBuilder& StringBuilder::append(const char* str) {
   return append(string::ClampedCString(str, buffer_.size() - size()));
 }
 
-StringBuilder& StringBuilder::append(const std::string_view& str) {
+StringBuilder& StringBuilder::append(std::string_view str) {
   return append(str.data(), str.size());
 }
 
-StringBuilder& StringBuilder::append(const std::string_view& str,
+StringBuilder& StringBuilder::append(std::string_view str,
                                      size_t pos,
                                      size_t count) {
   if (pos > str.size()) {

@@ -113,7 +113,7 @@ Status WriteByte(std::byte b) {
 }
 
 // Writes a string using pw::sys_io, and add newline characters at the end.
-StatusWithSize WriteLine(const std::string_view& s) {
+StatusWithSize WriteLine(std::string_view s) {
   StatusWithSize result = WriteBytes(as_bytes(span(s)));
   if (!result.ok()) {
     return result;
