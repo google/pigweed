@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_spi_mcuxpresso/flexspi.h"
+#include "pw_spi_mcuxpresso/flexio_spi.h"
 
 #include "board.h"
 #include "pw_bytes/array.h"

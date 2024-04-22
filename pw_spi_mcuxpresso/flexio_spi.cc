@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_spi_mcuxpresso/flexspi.h"
+#include "pw_spi_mcuxpresso/flexio_spi.h"
 
 #include <cinttypes>
 #include <mutex>
@@ -50,7 +50,8 @@ Status ToPwStatus(int32_t status) {
     // Intentional fall-through
     case kStatus_Fail:
     default:
-      PW_LOG_ERROR("Mcuxpresso FlexSPI unknown error code: %" PRId32, status);
+      PW_LOG_ERROR("Mcuxpresso FlexIO_SPI unknown error code: %" PRId32,
+                   status);
       return Status::Unknown();
   }
 }
@@ -195,7 +196,7 @@ Status McuxpressoFlexIoInitiator::WriteRead(ConstByteSpan write_buffer,
 
   std::lock_guard lock(mutex_);
   if (!current_config_) {
-    PW_LOG_ERROR("Mcuxpresso FlexSPI must be configured before use.");
+    PW_LOG_ERROR("Mcuxpresso FlexIO_SPI must be configured before use.");
     return Status::FailedPrecondition();
   }
   if (blocking_) {

@@ -25,7 +25,7 @@ config("default_config") {
 
 group("pw_spi_mcuxpresso") {
   deps = [
-    ":flexspi",
+    ":flexio_spi",
     ":spi",
   ]
 }
@@ -50,9 +50,9 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "spi.cc" ]
   }
 
-  pw_source_set("flexspi") {
+  pw_source_set("flexio_spi") {
     public_configs = [ ":default_config" ]
-    public = [ "public/pw_spi_mcuxpresso/flexspi.h" ]
+    public = [ "public/pw_spi_mcuxpresso/flexio_spi.h" ]
     public_deps = [
       "$dir_pw_digital_io",
       "$dir_pw_spi:device",
@@ -66,7 +66,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "$dir_pw_chrono:system_clock",
       "$dir_pw_log",
     ]
-    sources = [ "flexspi.cc" ]
+    sources = [ "flexio_spi.cc" ]
   }
 
   pw_test("spi_test") {
@@ -83,16 +83,16 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     ]
   }
 
-  pw_test("flexspi_test") {
+  pw_test("flexio_spi_test") {
     enable_if =
         pw_third_party_mcuxpresso_SDK ==
         "//targets/mimxrt595_evk_freertos:sdk" &&
         (pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_debug" ||
          pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_size_optimized" ||
          pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_speed_optimized")
-    sources = [ "flexspi_test.cc" ]
+    sources = [ "flexio_spi_test.cc" ]
     deps = [
-      ":flexspi",
+      ":flexio_spi",
       "//targets/mimxrt595_evk_freertos:sdk",
     ]
   }
@@ -100,7 +100,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
   pw_test_group("tests") {
     tests = [
       ":spi_test",
-      ":flexspi_test",
+      ":flexio_spi_test",
     ]
   }
 } else {
