@@ -200,6 +200,18 @@ Use ``@pre <description>``.
       /// @pre Description of a precondition that must be satisifed before
       /// invoking this function.
 
+Deprecated features
+===================
+Use ``@deprecated <description>``.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: none
+
+      /// @deprecated This function, class, or other entity is deprecated. Use
+      /// the replacement instead.
+
 .. _docs-style-doxygen-pw_status:
 
 pw_status codes
