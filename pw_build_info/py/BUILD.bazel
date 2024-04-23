@@ -17,9 +17,9 @@ package(default_visibility = ["//visibility:public"])
 py_library(
     name = "pw_build_info",
     srcs = [
-        "pw_build_info/__init__.py",
         "pw_build_info/build_id.py",
     ],
+    imports = ["."],
     deps = [
         "@python_packages_pyelftools//:pkg",
     ],
