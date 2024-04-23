@@ -83,6 +83,13 @@ Detokenization
 --------------
 .. tab-set::
 
+   .. tab-item:: C++ / C
+      :sync: cpp
+
+      .. doxygengroup:: pw_tokenizer_detokenize
+         :content-only:
+         :members:
+
    .. tab-item:: Python
       :sync: py
 

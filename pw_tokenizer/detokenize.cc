@@ -149,12 +149,15 @@ bool IsBetterResult(const DecodingResult& lhs, const DecodingResult& rhs) {
 DetokenizedString::DetokenizedString(
     uint32_t token,
     const span<const TokenizedStringEntry>& entries,
-    const span<const uint8_t>& arguments)
+    const span<const std::byte>& arguments)
     : token_(token), has_token_(true) {
   std::vector<DecodingResult> results;
 
   for (const auto& [format, date_removed] : entries) {
-    results.push_back(DecodingResult{format.Format(arguments), date_removed});
+    results.push_back(DecodingResult{
+        format.Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
+                           arguments.size())),
+        date_removed});
   }
 
   std::sort(results.begin(), results.end(), IsBetterResult);
@@ -183,7 +186,7 @@ Detokenizer::Detokenizer(const TokenDatabase& database) {
 }
 
 Result<Detokenizer> Detokenizer::FromElfSection(
-    span<const uint8_t> elf_section) {
+    span<const std::byte> elf_section) {
   size_t index = 0;
   std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>> database;
 
@@ -213,7 +216,7 @@ Result<Detokenizer> Detokenizer::FromElfSection(
 }
 
 DetokenizedString Detokenizer::Detokenize(
-    const span<const uint8_t>& encoded) const {
+    const span<const std::byte>& encoded) const {
   // The token is missing from the encoded data; there is nothing to do.
   if (encoded.empty()) {
     return DetokenizedString();
@@ -228,7 +231,7 @@ DetokenizedString Detokenizer::Detokenize(
       token,
       result == database_.end() ? span<TokenizedStringEntry>()
                                 : span(result->second),
-      encoded.size() < sizeof(token) ? span<const uint8_t>()
+      encoded.size() < sizeof(token) ? span<const std::byte>()
                                      : encoded.subspan(sizeof(token)));
 }
 
