@@ -110,7 +110,6 @@ def bazel(
                 'bazel',
                 cmd,
                 '--verbose_failures',
-                '--verbose_explanations',
                 '--worker_verbose',
                 f'--symlink_prefix={ctx.output_dir / "bazel-"}',
                 *num_jobs,
