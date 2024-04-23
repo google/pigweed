@@ -38,6 +38,12 @@ class NestedMessageDetokenizer {
     }
   }
 
+  bool OutputChangedSinceLastCheck() {
+    const bool changed = output_changed_;
+    output_changed_ = false;
+    return changed;
+  }
+
   void Detokenize(char next_char) {
     switch (state_) {
       case kNonMessage:
@@ -69,7 +75,9 @@ class NestedMessageDetokenizer {
       HandleEndOfMessage();
       state_ = kNonMessage;
     }
-    return std::move(output_);
+    std::string output(std::move(output_));
+    output_.clear();
+    return output;
   }
 
  private:
@@ -77,6 +85,7 @@ class NestedMessageDetokenizer {
     if (auto result = detokenizer_.DetokenizeBase64Message(message_buffer_);
         result.ok()) {
       output_ += result.BestString();
+      output_changed_ = true;
     } else {
       output_ += message_buffer_;  // Keep the original if it doesn't decode.
     }
@@ -87,7 +96,8 @@ class NestedMessageDetokenizer {
   std::string output_;
   std::string message_buffer_;
 
-  enum { kNonMessage, kMessage } state_ = kNonMessage;
+  enum : uint8_t { kNonMessage, kMessage } state_ = kNonMessage;
+  bool output_changed_ = false;
 };
 
 std::string UnknownTokenMessage(uint32_t value) {
@@ -229,10 +239,23 @@ DetokenizedString Detokenizer::DetokenizeBase64Message(
   return Detokenize(buffer);
 }
 
-std::string Detokenizer::DetokenizeBase64(std::string_view text) const {
-  NestedMessageDetokenizer nested_detokenizer(*this);
-  nested_detokenizer.Detokenize(text);
-  return nested_detokenizer.Flush();
+std::string Detokenizer::DetokenizeText(std::string_view text,
+                                        const unsigned max_passes) const {
+  NestedMessageDetokenizer detokenizer(*this);
+  detokenizer.Detokenize(text);
+
+  std::string result;
+  unsigned pass = 1;
+
+  while (true) {
+    result = detokenizer.Flush();
+    if (pass >= max_passes || !detokenizer.OutputChangedSinceLastCheck()) {
+      break;
+    }
+    detokenizer.Detokenize(result);
+    pass += 1;
+  }
+  return result;
 }
 
 }  // namespace pw::tokenizer

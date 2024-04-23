@@ -73,8 +73,8 @@ class DetokenizedString {
   std::vector<DecodedFormatString> matches_;
 };
 
-// Decodes and detokenizes strings from a TokenDatabase. This class builds a
-// hash table from the TokenDatabase to give O(1) token lookups.
+// Decodes and detokenizes from a TokenDatabase. This class builds a hash table
+// from the TokenDatabase to give O(1) token lookups.
 class Detokenizer {
  public:
   // Constructs a detokenizer from a TokenDatabase. The TokenDatabase is not
@@ -99,10 +99,24 @@ class Detokenizer {
   // DetokenizedString that stores all possible detokenized string results.
   DetokenizedString DetokenizeBase64Message(std::string_view text) const;
 
-  // Decodes and detokenizes nested Base64 messages in a string. Returns the
-  // original string with Base64 tokenized messages decoded in context. Messages
-  // that fail to decode are left as is.
-  std::string DetokenizeBase64(std::string_view text) const;
+  // Decodes and detokenizes nested tokenized messages in a string. Returns the
+  // original string with nested tokenized messages decoded in context. Messages
+  // that fail to decode are left as-is.
+  //
+  // `DetokenizeText` supports recursive detokenization. Tokens can expand to
+  // other tokens. The maximum number of detokenization passes is specified by
+  // `max_passes` (0 is equivalent to 1).
+  //
+  // This function currently only supports Base64 nested tokenized messages.
+  // Support for hexadecimal-encoded string literals will be added.
+  std::string DetokenizeText(std::string_view text,
+                             unsigned max_passes = 3) const;
+
+  // Deprecated version of DetokenizeText.
+  [[deprecated("Use DetokenizeText() instead")]] std::string DetokenizeBase64(
+      std::string_view text) const {
+    return DetokenizeText(text, 1);
+  }
 
   DetokenizedString Detokenize(std::string_view encoded) const {
     return Detokenize(encoded.data(), encoded.size());

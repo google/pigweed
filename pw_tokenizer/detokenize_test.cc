@@ -40,23 +40,26 @@ auto TestCases(Args... args) {
 //   0x00000005: "TWO",
 //   0x000000ff: "333",
 //   0xDDEEEEFF: "One",
+//   0xEEEEEEEE: "$AQAAAA==",  # Nested Base64 token for "One"
 // }
-constexpr char kBasicData[] =
+constexpr char kTestDatabase[] =
     "TOKENS\0\0"
-    "\x04\x00\x00\x00"
+    "\x05\x00\x00\x00"
     "\0\0\0\0"
     "\x01\x00\x00\x00----"
     "\x05\x00\x00\x00----"
     "\xFF\x00\x00\x00----"
     "\xFF\xEE\xEE\xDD----"
+    "\xEE\xEE\xEE\xEE----"
     "One\0"
     "TWO\0"
     "333\0"
-    "FOUR";
+    "FOUR\0"
+    "$AQAAAA==";
 
 class Detokenize : public ::testing::Test {
  protected:
-  Detokenize() : detok_(TokenDatabase::Create<kBasicData>()) {}
+  Detokenize() : detok_(TokenDatabase::Create<kTestDatabase>()) {}
   Detokenizer detok_;
 };
 
@@ -133,11 +136,12 @@ TEST_F(Detokenize, BestStringWithErrors_UnknownToken_ErrorMessage) {
             ERR("unknown token fedcba98"));
 }
 
-// Base64 versions of the four tokens
+// Base64 versions of the tokens
 #define ONE "$AQAAAA=="
 #define TWO "$BQAAAA=="
 #define THREE "$/wAAAA=="
 #define FOUR "$/+7u3Q=="
+#define NEST_ONE "$7u7u7g=="
 
 TEST_F(Detokenize, Base64_NoArguments) {
   for (auto [data, expected] : TestCases(
@@ -154,8 +158,11 @@ TEST_F(Detokenize, Base64_NoArguments) {
            Case{"12" THREE FOUR ", 56", "12333FOUR, 56"},
            Case{"$0" ONE, "$0One"},
            Case{"$/+7u3Q=", "$/+7u3Q="},  // incomplete message (missing "=")
-           Case{"$123456==" FOUR, "$123456==FOUR"})) {
-    EXPECT_EQ(detok_.DetokenizeBase64(data), expected);
+           Case{"$123456==" FOUR, "$123456==FOUR"},
+           Case{NEST_ONE, "One"},
+           Case{NEST_ONE NEST_ONE NEST_ONE, "OneOneOne"},
+           Case{FOUR "$" ONE NEST_ONE "?", "FOUR$OneOne?"})) {
+    EXPECT_EQ(detok_.DetokenizeText(data), expected);
   }
 }
 
