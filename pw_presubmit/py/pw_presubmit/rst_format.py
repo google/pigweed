@@ -21,21 +21,17 @@ import difflib
 from functools import cached_property
 from pathlib import Path
 import textwrap
+from typing import Iterable
 
 from pw_presubmit.tools import colorize_diff
 
-DEFAULT_TAB_WIDTH = 8
+TAB_WIDTH = 8  # Number of spaces to use for \t replacement
 CODE_BLOCK_INDENTATION = 3
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument(
-        '--tab-width',
-        default=DEFAULT_TAB_WIDTH,
-        help='Number of spaces to use when converting tab characters.',
-    )
     parser.add_argument(
         '--diff',
         action='store_true',
@@ -62,20 +58,16 @@ def _indent_amount(line: str) -> int:
     return len(line) - len(line.lstrip())
 
 
-def _reindent(input_text: str, amount: int) -> str:
-    text = ''
+def _reindent(input_text: str, amount: int) -> Iterable[str]:
     for line in textwrap.dedent(input_text).splitlines():
         if len(line.strip()) == 0:
-            text += '\n'
+            yield '\n'
             continue
-        text += ' ' * amount
-        text += line
-        text += '\n'
-    return text
+        yield f'{" " * amount}{line}\n'
 
 
-def _strip_trailing_whitespace(line: str) -> str:
-    return line.rstrip() + '\n'
+def _fix_whitespace(line: str) -> str:
+    return line.rstrip().replace('\t', ' ' * TAB_WIDTH) + '\n'
 
 
 @dataclass
@@ -147,88 +139,90 @@ class CodeBlock:
             self.first_line_indent = _indent_amount(line)
 
         # Save this line as code.
-        self.code_lines.append(line.rstrip())
+        self.code_lines.append(self._clean_up_line(line))
+
+    def _clean_up_line(self, line: str) -> str:
+        line = line.rstrip()
+        if not self._keep_codeblock_tabs:
+            line = line.replace('\t', ' ' * TAB_WIDTH)
+        return line
+
+    @cached_property
+    def _keep_codeblock_tabs(self) -> bool:
+        """True if tabs should NOT be replaced; keep for 'none' or 'go'."""
+        return 'none' in self.directive_line or 'go' in self.directive_line
 
     @cached_property
     def directive_indent_amount(self) -> int:
         return _indent_amount(self.directive_line)
 
-    def options_block_text(self) -> str:
-        return _reindent(
+    def options_block_lines(self) -> Iterable[str]:
+        yield from _reindent(
             input_text='\n'.join(self.option_lines),
             amount=self.directive_indent_amount + CODE_BLOCK_INDENTATION,
         )
 
-    def code_block_text(self) -> str:
-        return _reindent(
+    def code_block_lines(self) -> Iterable[str]:
+        yield from _reindent(
             input_text='\n'.join(self.code_lines),
             amount=self.directive_indent_amount + CODE_BLOCK_INDENTATION,
         )
 
-    def to_text(self) -> str:
-        text = ''
-        text += self.directive_line
+    def lines(self) -> Iterable[str]:
+        """Yields the code block directives's lines."""
+        yield self.directive_line
         if self.option_lines:
-            text += self.options_block_text()
-        text += '\n'
-        text += self.code_block_text()
-        text += '\n'
-        return text
+            yield from self.options_block_lines()
+        yield '\n'
+        yield from self.code_block_lines()
+        yield '\n'
 
     def __repr__(self) -> str:
-        return self.to_text()
+        return ''.join(self.lines())
 
 
-def reindent_code_blocks(in_text: str) -> str:
-    """Reindent code blocks to 3 spaces."""
-    out_text = ''
+def _parse_and_format_rst(in_text: str) -> Iterable[str]:
+    """Reindents code blocks to 3 spaces and fixes whitespace."""
     current_block: CodeBlock | None = None
     for index, line in enumerate(in_text.splitlines(keepends=True)):
         # If a code block is active, process this line.
         if current_block:
             current_block.append_line(index, line)
             if current_block.finished():
-                out_text += current_block.to_text()
+                yield from current_block.lines()
                 # This line wasn't part of the code block, process as normal.
-                out_text += _strip_trailing_whitespace(line)
+                yield _fix_whitespace(line)
                 # Erase this code_block variable
                 current_block = None
         # Check for new code block start
-        elif line.lstrip().startswith('.. code-block'):
+        elif line.lstrip().startswith(('.. code-block::', '.. code::')):
             current_block = CodeBlock(
-                directive_lineno=index, directive_line=line
+                directive_lineno=index,
+                # Change `.. code::` to Sphinx's `.. code-block::`.
+                directive_line=line.replace('code::', 'code-block::'),
             )
             continue
         else:
-            out_text += _strip_trailing_whitespace(line)
+            yield _fix_whitespace(line)
     # If the document ends with a code block it may still need to be written.
     if current_block is not None:
-        out_text += current_block.to_text()
-    return out_text
+        yield from current_block.lines()
 
 
 def reformat_rst(
     file_name: Path,
     diff: bool = False,
     in_place: bool = False,
-    tab_width: int = DEFAULT_TAB_WIDTH,
     suppress_stdout: bool = False,
 ) -> list[str]:
-    """Reformat an rst file.
-
-    Returns a list of diff lines."""
+    """Reformats an rst file and returns a list of diff lines."""
     in_text = file_name.read_text()
-
-    # Replace tabs with spaces
-    out_text = in_text.replace('\t', ' ' * tab_width)
-
-    # Indent .. code-block:: directives.
-    out_text = reindent_code_blocks(in_text)
+    out_lines = list(_parse_and_format_rst(in_text))
 
     result_diff = list(
         difflib.unified_diff(
             in_text.splitlines(True),
-            out_text.splitlines(True),
+            out_lines,
             f'{file_name}  (original)',
             f'{file_name}  (reformatted)',
         )
@@ -238,7 +232,7 @@ def reformat_rst(
             print(''.join(colorize_diff(result_diff)))
 
     if in_place:
-        file_name.write_text(out_text)
+        file_name.write_text(''.join(out_lines))
 
     return result_diff
 
@@ -247,10 +241,9 @@ def rst_format_main(
     rst_files: list[Path],
     diff: bool = False,
     in_place: bool = False,
-    tab_width: int = DEFAULT_TAB_WIDTH,
 ) -> None:
     for rst_file in rst_files:
-        reformat_rst(rst_file, diff, in_place, tab_width)
+        reformat_rst(rst_file, diff, in_place)
 
 
 if __name__ == '__main__':

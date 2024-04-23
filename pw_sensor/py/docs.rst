@@ -14,7 +14,7 @@ Using the package
 Typical users of ``pw_sensor`` begin by writing a YAML description of their
 sensor using the `metadata_schema.json`_ format, e.g.:
 
-.. code:: yaml
+.. code-block:: yaml
 
    deps:
       - "pw_sensor/channels.yaml"
@@ -78,7 +78,7 @@ verbose logging is needed or when generating documentation we might want to also
 associate a name and a longer description for the channel. This leaves us with
 the following structure for a channel:
 
-.. code:: yaml
+.. code-block:: yaml
 
    <channel_id>:
       "name": "string"
@@ -94,7 +94,7 @@ always have the same units as ``illuminance_red``, ``illuminance_green``,
 ``illuminance_blue``, etc. These are described with a ``sub-channels`` key that
 allows only ``name`` and ``description`` overrides:
 
-.. code:: yaml
+.. code-block:: yaml
 
    <channel_id>:
       ...
@@ -110,7 +110,7 @@ This happens at times with temperature sensors. In these cases, we can use the
 the ``indicies`` is ommitted, it will be assumed that there's 1 instance of the
 channel. Otherwise, we might have something like:
 
-.. code:: yaml
+.. code-block:: yaml
 
    channels:
       ambient_temperature:
@@ -126,7 +126,7 @@ Attributes are used to change the behavior of a sensor. They're defined using
 the ``attributes`` key and are structured similarly to ``channels`` since they
 can usually be measured in some way. Here's an example:
 
-.. code:: yaml
+.. code-block:: yaml
 
    attributes:
       sample_rate:
@@ -139,7 +139,7 @@ can usually be measured in some way. Here's an example:
 When associated with a ``sensor``, ``attributes`` again behave like ``channels``
 but without the ``indicies``:
 
-.. code:: yaml
+.. code-block:: yaml
 
    compatible: ...
    channels: ...
@@ -164,7 +164,7 @@ The following YAML file is used to create a sensor which counts cakes. The
 sensor provides the ability to get the total cake count or a separate
 large/small cake count (for a total of 3 channels):
 
-.. code:: yaml
+.. code-block:: yaml
 
    # File: my/org/sensors/channels.yaml
    channels:
@@ -182,7 +182,7 @@ The above YAML file will enable a 3 new channels: ``cakes``, ``cakes_small``,
 and ``cakes_large``. All 3 channels will use a unit ``cake``. A sensor
 implementing this channel would provide a definition file:
 
-.. code:: yaml
+.. code-block:: yaml
 
    # File: my/org/sensors/cake/sensor.yaml
    deps:
@@ -271,7 +271,7 @@ generators:
 
 Example run (prints to stdout):
 
-.. code:: bash
+.. code-block:: bash
 
    $ pw --no-banner sensor-desc -I pw_sensor/ \
      -g "python3 pw_sensor/py/pw_sensor/constants_generator.py --package pw.sensor" \

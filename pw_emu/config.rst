@@ -144,13 +144,13 @@ The following list explains the valid schema for the ``pw_emu`` dict in
 
       * ``channels`` (dict) - Channel options for this target.
 
-	* ``chardevs`` (dict) - QEMU chardev device configuration. Usually
+        * ``chardevs`` (dict) - QEMU chardev device configuration. Usually
           serial ports.
 
-	  * ``<channel-name>`` (dict) - The configuration for a single channel.
+          * ``<channel-name>`` (dict) - The configuration for a single channel.
             Replace ``<channel-name>`` with a descriptive name.
 
-	    * ``id`` (string) - The ID of the QEMU chardev.
+            * ``id`` (string) - The ID of the QEMU chardev.
 
             * ``type`` (string) - The :ref:`channel type
               <module-pw_emu-config-channel-types>`. Optional.

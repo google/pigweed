@@ -278,8 +278,8 @@ design.
     // Other status codes as defined by backend.
     Status WriteBroadcastCcc(CccBroadcast ccc_id, ConstByteSpan buffer);
     Status WriteBroadcastCcc(CccBroadcast ccc_id,
-			     const void* buffer,
-			     size_t size_bytes);
+                             const void* buffer,
+                             size_t size_bytes);
 
     // Perform a direct write CCC transaction.
     // ccc_id: the direct CCC ID.

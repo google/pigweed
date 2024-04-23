@@ -72,7 +72,7 @@ easy to log in a human readable manner when leveraging tokenized logging.
 Additionally, the final measurement type (being the concatination of 2 tokens)
 is represented as a ``uint32_t``.
 
-.. code:: c++
+.. code-block:: c++
 
    union MeasurementType {
      struct {
@@ -92,7 +92,7 @@ is represented as a ``uint32_t``.
 
 Pigweed would include some common measurement types:
 
-.. code:: c++
+.. code-block:: c++
 
    constexpr MeasurementType kAcceleration =
        PW_SENSOR_MEASUREMENT_TYPE("PW_SENSOR_MEASUREMENT_TYPE", "acceleration", "m/s2");
@@ -106,7 +106,7 @@ Pigweed would include some common measurement types:
 Applications can add their own unique units which will not collide as long as
 they have a unique domain, name, or unit representation:
 
-.. code:: c++
+.. code-block:: c++
 
    /// A measurement of how many pancakes something is worth.
    constexpr MeasurementType kPancakes =
@@ -118,7 +118,7 @@ Attribute types are much simpler that ``MeasurementTypes`` since they derive
 their units from the measurement type. Instead, they'll just be
 represented via a single token:
 
-.. code:: c++
+.. code-block:: c++
 
    using AttributeType = uint32_t;
 
@@ -128,7 +128,7 @@ represented via a single token:
 Similar to the ``MeasurementType``, Pigweed will define a few common attribute
 types:
 
-.. code:: c++
+.. code-block:: c++
 
    constexpr AttributeType kOffset =
        PW_SENSOR_ATTRIBUTE_TYPE("PW_SENSOR_ATTRIBUTE_TYPE", "offset");
@@ -142,7 +142,7 @@ Attributes
 A single ``Attribute`` representation is the combination of 3 fields:
 measurement type, attribute type, and value.
 
-.. code:: c++
+.. code-block:: c++
 
    class Attribute : public pw::IntrusiveList<Attribute>::Item {
     public:
@@ -193,7 +193,7 @@ the desired configuration. The second option is to first query the sensor's
 attribute values, then manipulate them, and finally set the new values using the
 same ``Sensor::SetConfiguration()`` function.
 
-.. code:: c++
+.. code-block:: c++
 
    using Configuration = pw::alloc::Vector<Attribute>;
 
