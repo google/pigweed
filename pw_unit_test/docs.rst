@@ -228,10 +228,13 @@ Create test suites and test cases:
 
    }
 
-The ``pw_unit_test`` API is the same as the upstream GoogleTest API except the
-default backend (``pw_unit_test:light``) only implements a subset of the
-upstream API. It's possible to access the full upstream API by using the
-``pw_unit_test:googletest`` backend. See :ref:`module-pw_unit_test-backends`.
+``pw_unit_test`` provides a standard set of ``TEST``, ``EXPECT``, ``ASSERT``
+and ``FAIL`` macros. The default backend, ``pw_unit_test:light``, offers an
+embedded-friendly implementation which prioritizes small code size.
+
+Alternativley, users can opt into a larger set of assertion macros, matchers,
+and more detailed error messages by using the ``pw_unit_test:googletest``
+backend. See :ref:`module-pw_unit_test-backends`.
 
 See `GoogleTest Primer <https://google.github.io/googletest/primer.html>`_ for
 the basics of using GoogleTest.
@@ -542,34 +545,24 @@ C++ API reference
 
 ``pw_unit_test:light`` API compatibility
 ========================================
-``pw_unit_test:light`` implements a subset of GoogleTest.
-
-Supported features include:
-
-* Test and test suite declarations.
-* Most ``EXPECT`` and ``ASSERT`` macros, including ``EXPECT_OK`` and
-  ``ASSERT_OK`` for functions returning a status.
-* ``ASSERT_OK_AND_ASSIGN`` to test assigning a value when status is ``OK``.
-* ``StatusIs`` matcher to expect a specific ``pw::Status`` other than ``OK``.
-* ``IsOkAndHolds`` matcher to expect an object's status is ``OK`` and the value
-  matches an expected value.
-* Stream-style expectation messages (e.g.
-  ``EXPECT_EQ(val, 5) << "Inputs: " << input``). Messages are currently
-  ignored.
+``pw_unit_test:light`` offers a number of primitives for test declaration,
+assertion, event handlers, and configuration.
 
 .. note::
 
-   The ``googletest_test_matchers`` library which provides ``StatusIs`` and
-   ``IsOkAndHolds`` isn't part of the ``pw_unit_test:light`` backend. It's
-   intended to simplify working with common Pigweed objects when using the
-   full upstream GoogleTest backend.
+   The ``googletest_test_matchers`` target which provides Pigweed-specific
+   ``StatusIs``, ``IsOkAndHolds``, ``ASSERT_OK``, and ``ASSERT_OK_AND_ASSIGN``
+   isn't part of the ``pw_unit_test:light`` backend. These matchers are only
+   usable when including the full upstream GoogleTest backend.
 
 Missing features include:
 
-* GoogleMock (e.g. :c:macro:`EXPECT_THAT`).
+* GoogleMock and matchers (e.g. :c:macro:`EXPECT_THAT`).
 * Death tests (e.g. :c:macro:`EXPECT_DEATH`). ``EXPECT_DEATH_IF_SUPPORTED``
   does nothing but silently passes.
 * Value-parameterized tests.
+* Stream messages (e.g. ``EXPECT_TRUE(...) << "My message"``) will compile, but
+  no message will be logged.
 
 See :ref:`module-pw_unit_test-upstream` for guidance on using the
 upstream GoogleTest backend (``pw_unit_test:googletest``) instead of
