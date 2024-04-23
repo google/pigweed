@@ -1,128 +1,178 @@
 .. _docs-contrib-docs-modules:
 
-===========
-Module docs
-===========
-This page provides guidelines on how to write documentation for a single
-Pigweed module.
+==================================
+Module docs contributor guidelines
+==================================
+Read this page if you're writing documentation for a Pigweed module.
+This page shows you how to create high-quality module documentation.
 
-These guidelines are a work-in-progress. Most of the guidelines are
-recommendations, not requirements, because we're still figuring out which
-guidelines are truly universal to all modules and which ones only work for
-certain types of modules.
+.. _#docs: https://discord.com/channels/691686718377558037/1111766977950797824
 
----------------------
-Choose your adventure
----------------------
-Our guidance for you changes depending on the nature of the module you're
-documenting. This flowchart summarizes the decision path:
+Please start a discussion in the `#docs`_ channel of the Pigweed Discord
+for any questions or comments related to writing module docs.
 
-.. mermaid::
+.. _docs-contrib-docs-modules-quickstart:
 
-   flowchart TD
-     A[Start] --> B{Simple module or complex?}
-     B -->|Complex| C[Talk to the Pigweed team]
-     B -->|Simple| D{A little content or a lot?}
-     D -->|A little| E[Use the single-page approach]
-     D -->|A lot| F[Use the multi-page approach]
+----------
+Quickstart
+----------
+Follow these instructions and you're 95% done!
 
-.. _docs-contrib-docs-modules-moduletypes:
+.. _docs-contrib-docs-modules-quickstart-goldens:
 
--------------------------------------
-Simple modules versus complex modules
--------------------------------------
-We're currently focused on updating the docs for "simple" modules. Here's our
-general definition for a simple module:
+Emulate the golden module docs
+==============================
+Decide whether your module falls into the "simple", "backend", or "complex"
+category, and then just emulate the provided "golden examples" when writing
+your own module's docs:
 
-* The module's API is end-user-facing or HAL-facing, not
-  infrastructure-facing.
-* The module does not use :ref:`facades <docs-glossary-facade>`.
-* The module's API surface is small or medium in size.
-* The module's API is in a single programming language.
+* **Simple** modules generally have small API surfaces, support only one
+  programming language, and can be completely documented in less than 2000
+  words. Golden examples:
 
-If your module doesn't meet these criteria, it's probably a "complex" module.
-`Create an issue <https://issues.pigweed.dev/issues/new>`_ before attempting
-to refactor a complex module's docs.
+  * :ref:`module-pw_span`
+  * :ref:`module-pw_result`
+  * :ref:`module-pw_alignment`
 
-.. note::
+* **Backend** modules implement the facade or interface of another module.
+  Golden examples:
 
-   Why the focus on simple modules? We tried refactoring complex modules to
-   adhere to :ref:`SEED-0102 <seed-0102>`. The migrations were difficult and
-   the resulting docs weren't an obvious improvement. We learned that it's more
-   effective to focus on simple modules for now and take more time to figure out
-   what works for complex modules.
+  * :ref:`module-pw_i2c_rp2040`
 
-Examples of simple modules:
+* **Complex** modules are everything else. In other words, if it's not a
+  simple module or a backend module, then it's a complex module. Golden
+  examples:
 
-* :ref:`module-pw_string`
-* :ref:`module-pw_i2c`
+  * :ref:`module-pw_hdlc`
+  * :ref:`module-pw_status`
+  * :ref:`module-pw_unit_test`
 
-Examples of complex modules:
+Simple and backend modules should only have one page of documentation,
+``//pw_*/docs.rst``. Complex modules might need multiple pages of
+documentation. See :ref:`docs-contrib-docs-modules-theory-multi`.
 
-* :ref:`module-pw_tokenizer`
+.. _docs-contrib-docs-modules-metadata:
 
-.. _docs-contrib-docs-modules-simple:
+Add metadata
+============
+Create your module's metadata:
 
-------------------------
-Simple module guidelines
-------------------------
-Follow these guidelines if you're writing docs for a
-:ref:`simple module <docs-contrib-docs-modules-moduletypes>`.
+1. Add a ``pigweed-module`` directive right after the title in your
+   module's ``docs.rst`` page:
 
-Single-page approach versus multi-page approach
-===============================================
-If your module meets the following criteria then you should *probably* use
-the :ref:`docs-contrib-docs-modules-singlepage`:
+   .. code-block:: rst
 
-* There is less than 1000 words of content in total.
-* The API has 2 classes or less.
-* The API has 10 methods or less.
+      ====
+      pw_*
+      ====
+      .. pigweed-module::
+         :name: pw_*
 
-If your module doesn't meet all these criteria, then you should *probably*
-use the :ref:`docs-contrib-docs-modules-multipage`. As you can tell by our use of
-*probably*, this is just a soft guideline. E.g. if you have 2000 words of
-content but you feel strongly that the single-page approach is better for your
-module, then go for it!
+2. Add metadata for your module in ``//docs/module_metadata.json``.
+   See ``//docs/module_metadata_schema.json`` for the schema
+   definition.
 
-The content that you write mostly stays the same whether you use the single-page
-or multi-page approach. All modules must have
-:ref:`docs-contrib-docs-modules-sales` content for example. The only
-difference is that in the single-page approach this is the first *section* of
-content whereas in the multi-page approach it's the first *page* of content.
+   .. code-block:: json
 
-.. _docs-contrib-docs-modules-singlepage:
+      {
+        "pw_alignment": {
+          "tagline": "Natural object alignment, guaranteed",
+          "status": "stable",
+          "languages": [
+            "C++17"
+          ]
+        }
+      }
 
-Single-page approach
+   The ``tagline`` should concisely summarize your module's value proposition.
+
+3. Add a ``pigweed-module-subpage`` directive right after the title
+   in each of your other docs pages (if your module has multiple docs
+   pages):
+
+   .. code-block:: rst
+
+      =============
+      API reference
+      =============
+      .. pigweed-module-subpage::
+         :name: pw_*
+
+.. _docs-contrib-docs-modules-quickstart-usage:
+
+Demonstrate basic code usage
+============================
+If your module provides an API, provide a code example after your
+module metadata that demonstrates basic usage of your API.
+
+.. _docs-contrib-docs-modules-quickstart-build:
+
+Show build system setup
+=======================
+If your module requires build system setup, make sure your
+quickstart section provides setup instructions for *all* of
+Pigweed's supported build systems:
+
+* Bazel
+* GN
+* CMake
+
+.. _docs-contrib-docs-modules-quickstart-reference:
+
+Auto-generate complete API references
+=====================================
+.. inclusive-language: disable
+
+.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+
+.. inclusive-language: enable
+
+If your module has a C++ API, use :ref:`Doxygen <docs-style-doxygen>` to
+auto-generate your API reference. For a Python API use `autodoc`_.
+
+.. tip::
+
+   Code samples make your class, function, and method references **much**
+   more usable and helpful!
+
+.. _docs-contrib-docs-modules-theory:
+
+-------------------
+Theory of operation
+-------------------
+This section explains the theory behind the module docs contributor
+guidelines. It's intended for the maintainers of the guidelines. If
+you're just writing docs for a module you own you don't need to read the
+theory of operation. But if you're curious about details, history, and
+rationale, you'll find that context here.
+
+.. _docs-contrib-docs-modules-theory-single:
+
+Single-page ordering
 ====================
-When using the single-page approach, this is the default ordering of
-sections in ``docs.rst``:
+If the module only has a single page of documentation (``docs.rst``)
+the sections should be ordered like this:
 
-* :ref:`docs-contrib-docs-modules-sales`
-* :ref:`docs-contrib-docs-modules-getstarted`
-* :ref:`docs-contrib-docs-modules-guides`
-* :ref:`docs-contrib-docs-modules-reference`
-* :ref:`docs-contrib-docs-modules-design`
-* :ref:`docs-contrib-docs-modules-roadmap`
-* :ref:`docs-contrib-docs-modules-size`
+* :ref:`docs-contrib-docs-modules-theory-sales`
+* :ref:`docs-contrib-docs-modules-theory-quickstart`
+* :ref:`docs-contrib-docs-modules-theory-guides`
+* :ref:`docs-contrib-docs-modules-theory-reference`
+* :ref:`docs-contrib-docs-modules-theory-design`
+* :ref:`docs-contrib-docs-modules-theory-roadmap`
+* :ref:`docs-contrib-docs-modules-theory-size`
 
-The sales pitch must come first, followed by the getting started instructions.
-Everything else beyond that is optional. The sections can be re-arranged if
-you feel strongly about it, but we've found this is an intuitive ordering.
+The sales pitch must come first, followed by the quickstart instructions.
+Everything else beyond that is optional and can be rearranged in whatever way
+seems to flow best.
 
-The file must be located at ``//pw_<name>/docs.rst``, where ``<name>`` is
-replaced with the actual name of your module.
+The file must be located at ``//pw_*/docs.rst``.
 
-Examples:
+.. _docs-contrib-docs-modules-theory-multi:
 
-* :ref:`module-pw_alignment`
-* :ref:`module-pw_perf_test`
-
-.. _docs-contrib-docs-modules-multipage:
-
-Multi-page approach
+Multi-page ordering
 ===================
-When using the multi-page approach, this is the default ordering of
-pages:
+If the module has multiple pages of documentation the pages should
+be ordered like this:
 
 .. list-table::
    :header-rows: 1
@@ -130,134 +180,35 @@ pages:
    * - Page Title
      - Filename
      - Description
-   * - ``pw_<name>``
+   * - ``pw_*``
      - ``docs.rst``
-     - The :ref:`docs-contrib-docs-modules-sales` content.
-   * - ``Get Started & Guides``
+     - The :ref:`docs-contrib-docs-modules-theory-sales` content.
+   * - ``Quickstart & guides``
      - ``guides.rst``
-     - The :ref:`docs-contrib-docs-modules-getstarted` content followed by the
-       :ref:`docs-contrib-docs-modules-guides` content. See the note below.
-   * - ``API Reference``
+     - The :ref:`docs-contrib-docs-modules-theory-quickstart` content followed
+       by the :ref:`docs-contrib-docs-modules-theory-guides` content. See the
+       note below.
+   * - ``API reference``
      - ``api.rst``
-     - The :ref:`docs-contrib-docs-modules-reference` content.
-   * - ``Design & Roadmap``
+     - The :ref:`docs-contrib-docs-modules-theory-reference` content.
+   * - ``Design & roadmap``
      - ``design.rst``
-     - The :ref:`docs-contrib-docs-modules-design` content. See the note below.
-   * - ``Code Size Analysis``
+     - The :ref:`docs-contrib-docs-modules-theory-design` content. See the
+       note below.
+   * - ``Code size analysis``
      - ``size.rst``
-     - The :ref:`docs-contrib-docs-modules-size` content.
+     - The :ref:`docs-contrib-docs-modules-theory-size` content.
 
-The sales pitch and getting started instructions are required. Everything else
-is optional. The sections can be re-arranged if you feel strongly about it,
-but we've found that this is an intuitive ordering.
+The sales pitch and quickstart instructions are required. Everything else
+is optional and can be rearranged in whatever way seems to flow best.
 
-You can split ``Get Started & Guides`` into 2 docs if that works better for
+You can split ``Quickstart & guides`` into 2 docs if that works better for
 your module. The filenames should be ``get_started.rst`` and ``guides.rst``.
 
-``Design & Roadmap`` can also be split into 2 docs. The filenames should be
+``Design & roadmap`` can also be split into 2 docs. The filenames should be
 ``design.rst`` and ``roadmap.rst``.
 
-Link each doc to all other docs in the set
-------------------------------------------
-Each doc must link to all other docs in the set. Here's how we currently do it.
-We may adjust our approach in the future if we find a better solution.
-
-#. Create a grid of nav cards at the bottom of ``docs.rst``. Example:
-
-   .. code-block::
-
-      .. pw_<name>-nav-start
-
-      .. grid:: 1
-
-         .. grid-item-card:: :octicon:`rocket` Get started & guides
-            :link: module-pw_emu-guide
-            :link-type: ref
-            :class-item: sales-pitch-cta-primary
-
-            How to set up and use ``pw_<name>``
-
-      .. grid:: 2
-
-         .. grid-item-card:: :octicon:`terminal` CLI reference
-            :link: module-pw_emu-cli
-            :link-type: ref
-            :class-item: sales-pitch-cta-secondary
-
-            Reference details about the ``pw_<name>`` command line interface
-
-         .. grid-item-card:: :octicon:`code-square` API reference
-            :link: module-pw_emu-api
-            :link-type: ref
-            :class-item: sales-pitch-cta-secondary
-
-            Reference details about the ``pw_<name>`` Python API
-
-      .. pw_<name>-nav-end
-
-   Note the ``.. pw_<name>-nav-start`` and ``.. pw_<name>-nav-end`` comments.
-   You'll use these in the next step.
-
-#. Add the following H2 section to the bottom of every other doc in the set.
-
-   .. code-block::
-
-      -------------------
-      More pw_<name> docs
-      -------------------
-      .. include:: docs.rst
-         :start-after: .. pw_<name>-nav-start
-         :end-before: .. pw_<name>-nav-end
-
-Examples:
-
-* :ref:`module-pw_emu`
-
-------------------
-Content guidelines
-------------------
-The following sections provide instructions on how to write each content type.
-
-.. note::
-
-   We call them "content types" because in the
-   :ref:`docs-contrib-docs-modules-singlepage` each of these things represent a
-   section of content on ``docs.rst`` whereas in the
-   :ref:`docs-contrib-docs-modules-multipage` they might be an entire page of
-   content or a section within a page.
-
-.. _docs-contrib-docs-modules-metadata:
-
-Module metadata
-===============
-1. Add a ``pigweed-module`` directive right after the title in your
-   ``docs.rst``:
-
-   .. code-block::
-
-      ==========
-      pw_example
-      ==========
-      .. pigweed-module::
-         :name: pw_example
-
-2. Add metadata for your module in ``//docs/module_metadata.json``.
-   See ``//docs/module_metadata_schema.json`` for the schema
-   definition.
-
-3. Add a ``pigweed-module-subpage`` directive right after the title
-   in each of your other docs pages (if your module has multiple docs
-   pages):
-
-   .. code-block::
-
-      =============
-      API reference
-      =============
-      .. pigweed-module-subpage::
-         :name: pw_example
-
-.. _docs-contrib-docs-modules-sales:
+.. _docs-contrib-docs-modules-theory-sales:
 
 Sales pitch
 ===========
@@ -270,16 +221,11 @@ The sales pitch should:
   problems the module solves. (Only required for modules that expose
   an API.)
 
-Examples:
+.. _docs-contrib-docs-modules-theory-quickstart:
 
-* :ref:`module-pw_string`
-* :ref:`module-pw_tokenizer`
-
-.. _docs-contrib-docs-modules-getstarted:
-
-Get started
-===========
-The get started instructions should:
+Quickstart
+==========
+The quickstart instructions should:
 
 * Show how to get set up in Bazel, GN, and CMake.
 * Present Bazel instructions first.
@@ -289,18 +235,14 @@ The get started instructions should:
   presented in the first tab, the GN instructions in the next, and so on.
 * Demonstrate how to complete a common use case. See the next paragraph.
 
-If your get started content is on the same page as your guides, then the get
-started section doesn't need to demonstrate a common use case. The reader can
-just scroll down and see how to complete common tasks. If your get started
+If your quickstart content is on the same page as your guides, then the
+quickstart section doesn't need to demonstrate a common use case. The reader
+can just scroll down and see how to complete common tasks. If your quickstart
 content is a standalone page, it should demonstrate how to complete a common
 task. The reader shouldn't have to dig around multiple docs just to figure out
 how to do something useful with the module.
 
-Examples:
-
-* :ref:`module-pw_string-get-started` (pw_string)
-
-.. _docs-contrib-docs-modules-guides:
+.. _docs-contrib-docs-modules-theory-guides:
 
 Guides
 ======
@@ -309,18 +251,14 @@ The guides should:
 * Focus on how to solve real-world problems with the module. See
   `About how-to guides <https://diataxis.fr/how-to-guides/>`_.
 
-Examples:
-
-* :ref:`module-pw_string-guide-stringbuilder`
-
-.. _docs-contrib-docs-modules-reference:
+.. _docs-contrib-docs-modules-theory-reference:
 
 API reference
 =============
 The API reference should:
 
 * Be auto-generated from :ref:`docs-style-doxygen` (for C++ / C APIs) or
-  autodoc (for Python APIs).
+  `autodoc`_ (for Python APIs).
 * Provide a code example demonstrating how to use the class, at minimum.
   Consider whether it's also helpful to provide more granular examples
   demonstrating how to use each method, variable, etc.
@@ -330,12 +268,7 @@ group classes logically according to the tasks they're related to. We don't
 have a hard guideline here because we're not sure one of these approaches is
 universally better than the other.
 
-Examples:
-
-* :ref:`module-pw_string-api` (pw_string)
-* :ref:`module-pw_tokenizer-api` (pw_tokenizer)
-
-.. _docs-contrib-docs-modules-design:
+.. _docs-contrib-docs-modules-theory-design:
 
 Design
 ======
@@ -344,11 +277,7 @@ The design content should:
 * Focus on `theory of operation <https://en.wikipedia.org/wiki/Theory_of_operation>`_
   or `explanation <https://diataxis.fr/explanation/>`_.
 
-Examples:
-
-* :ref:`module-pw_string-design-inlinestring` (pw_string)
-
-.. _docs-contrib-docs-modules-roadmap:
+.. _docs-contrib-docs-modules-theory-roadmap:
 
 Roadmap
 =======
@@ -363,11 +292,7 @@ The roadmap should not:
   certain date. You can get an exception if you really need to do this, but
   it should be avoided in most cases.
 
-Examples:
-
-* :ref:`module-pw_string-roadmap` (pw_string)
-
-.. _docs-contrib-docs-modules-size:
+.. _docs-contrib-docs-modules-theory-size:
 
 Size analysis
 =============
@@ -376,9 +301,5 @@ The size analysis should:
 * Be auto-generated. See the ``pw_size_diff`` targets in ``//pw_string/BUILD.gn``
   for examples.
 
-We elevate the size analysis to its own section or page because it's a very
+The size analysis is elevated to its own section or page because it's a very
 important consideration for many embedded developers.
-
-Examples:
-
-* :ref:`module-pw_string-size-reports` (pw_string)
