@@ -95,7 +95,7 @@ def install_git_hook(
     try:
         hook_path.parent.mkdir(exist_ok=True)
     except FileExistsError as exc:
-        logging.warning('Failed to install %s hook: %s', hook, exc)
+        _LOG.warning('Failed to install %s hook: %s', hook, exc)
         return
 
     hook_stdin_args = _stdin_args_for_hook(hook)
@@ -124,9 +124,7 @@ def install_git_hook(
         line(command_str)
 
     hook_path.chmod(0o755)
-    logging.info(
-        'Installed %s hook for `%s` at %s', hook, command_str, hook_path
-    )
+    _LOG.info('Installed %s hook for `%s` at %s', hook, command_str, hook_path)
 
 
 def argument_parser(
