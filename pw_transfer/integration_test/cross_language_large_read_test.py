@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2022 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -57,13 +57,14 @@ class LargeReadTransferIntegrationTest(TransferIntegrationTest):
     def test_1mb_read_dropped_data(self, client_type):
         server_config = config_pb2.ServerConfig(
             chunk_size_bytes=216,
-            pending_bytes=32 * 1024,
+            pending_bytes=128 * 1024,
             chunk_timeout_seconds=5,
             transfer_service_retries=4,
-            extend_window_divisor=32,
+            extend_window_divisor=8,
         )
         client_config = config_pb2.ClientConfig(
             max_retries=5,
+            max_lifetime_retries=1500,
             initial_chunk_timeout_ms=10000,
             chunk_timeout_ms=4000,
         )
@@ -92,13 +93,14 @@ class LargeReadTransferIntegrationTest(TransferIntegrationTest):
     def test_1mb_read_reordered_data(self, client_type):
         server_config = config_pb2.ServerConfig(
             chunk_size_bytes=216,
-            pending_bytes=32 * 1024,
+            pending_bytes=128 * 1024,
             chunk_timeout_seconds=5,
             transfer_service_retries=4,
-            extend_window_divisor=32,
+            extend_window_divisor=8,
         )
         client_config = config_pb2.ClientConfig(
             max_retries=5,
+            max_lifetime_retries=1500,
             initial_chunk_timeout_ms=10000,
             chunk_timeout_ms=4000,
         )

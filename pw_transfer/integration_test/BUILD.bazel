@@ -140,6 +140,7 @@ py_test(
     ],
     deps = [
         ":integration_test_fixture",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -159,6 +160,7 @@ py_test(
     ],
     deps = [
         ":integration_test_fixture",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 

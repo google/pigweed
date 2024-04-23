@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -117,7 +117,7 @@ public final class TransferClientTest {
     receiveReadChunks(legacyDataChunk(1, TEST_DATA_100B, 0, 50));
 
     assertThat(lastChunks())
-        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 1)
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 1)
                              .setOffset(50)
                              .setPendingBytes(50)
                              .setWindowEndOffset(100)
@@ -220,32 +220,151 @@ public final class TransferClientTest {
 
     receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123)
                           .setOffset(0)
-                          .setData(range(0, 20))
-                          .setRemainingBytes(70),
-        newLegacyChunk(Chunk.Type.DATA, 123).setOffset(20).setData(range(20, 40)));
+                          .setData(range(0, 10))
+                          .setRemainingBytes(90),
+        newLegacyChunk(Chunk.Type.DATA, 123).setOffset(10).setData(range(10, 30)));
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
-                             .setOffset(40)
-                             .setPendingBytes(50)
+                             .setOffset(30)
+                             .setPendingBytes(30)
+                             .setMaxChunkSizeBytes(30)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(30).setData(range(30, 60)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(60)
+                             .setPendingBytes(30)
                              .setMaxChunkSizeBytes(30)
                              .setWindowEndOffset(90)
                              .build());
 
-    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(40).setData(range(40, 70)));
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(60).setData(range(60, 90)));
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
-                             .setOffset(70)
-                             .setPendingBytes(50)
+                             .setOffset(90)
+                             .setPendingBytes(30)
                              .setMaxChunkSizeBytes(30)
                              .setWindowEndOffset(120)
                              .build());
 
     receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123)
-                          .setOffset(70)
-                          .setData(range(70, 100))
+                          .setOffset(90)
+                          .setData(range(90, 100))
                           .setRemainingBytes(0));
+
+    assertThat(lastChunks()).containsExactly(legacyFinalChunk(123, Status.OK));
+
+    assertThat(future.get()).isEqualTo(TEST_DATA_100B.toByteArray());
+  }
+
+  @Test
+  public void legacy_read_adaptiveWindow_slowStart() throws Exception {
+    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
+    TransferParameters params = TransferParameters.create(80, 20, 0);
+    ListenableFuture<byte[]> future = transferClient.read(123, params);
+
+    assertThat(lastChunks()).containsExactly(initialLegacyReadChunk(123, params));
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(0).setData(range(0, 20)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(20)
+                             .setPendingBytes(40) // Doubles.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(20).setData(range(20, 40)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(40)
+                             .setPendingBytes(80) // Doubles.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(40).setData(range(40, 60)),
+        newLegacyChunk(Chunk.Type.DATA, 123).setOffset(60).setData(range(60, 80)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(80)
+                             .setPendingBytes(80) // Doesn't grow beyond max.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(160)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123)
+                          .setOffset(80)
+                          .setData(range(80, 100))
+                          .setRemainingBytes(0));
+
+    assertThat(lastChunks()).containsExactly(legacyFinalChunk(123, Status.OK));
+
+    assertThat(future.get()).isEqualTo(TEST_DATA_100B.toByteArray());
+  }
+
+  @Test
+  public void legacy_read_adaptiveWindow_congestionAvoidance() throws Exception {
+    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
+    TransferParameters params = TransferParameters.create(80, 20, 0);
+    ListenableFuture<byte[]> future = transferClient.read(123, params);
+
+    assertThat(lastChunks()).containsExactly(initialLegacyReadChunk(123, params));
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(0).setData(range(0, 20)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(20)
+                             .setPendingBytes(40) // Doubles.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(20).setData(range(20, 40)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(40)
+                             .setPendingBytes(80) // Doubles.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    // Send bad offset.
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(60).setData(range(60, 80)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
+                             .setOffset(40)
+                             .setPendingBytes(40) // Halves.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(80)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(40).setData(range(40, 60)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(60)
+                             .setPendingBytes(60) // Increases by one chunk.
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(60).setData(range(60, 80)),
+        newLegacyChunk(Chunk.Type.DATA, 123)
+            .setOffset(80)
+            .setData(range(80, 100))
+            .setRemainingBytes(0));
 
     assertThat(lastChunks()).containsExactly(legacyFinalChunk(123, Status.OK));
 
@@ -297,20 +416,29 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(50)
+                             .setPendingBytes(30)
+                             .setWindowEndOffset(30)
                              .setMaxChunkSizeBytes(30)
                              .setOffset(0)
                              .build());
 
-    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(0).setData(range(0, 30)),
-        newLegacyChunk(Chunk.Type.DATA, 123).setOffset(30).setData(range(30, 50)));
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(0).setData(range(0, 30)));
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
                              .setOffset(30)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(80)
+                             .setPendingBytes(30)
+                             .setWindowEndOffset(60)
+                             .setMaxChunkSizeBytes(30)
+                             .build());
+
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(30).setData(range(30, 60)));
+
+    assertThat(lastChunks())
+        .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
+                             .setOffset(60)
+                             .setPendingBytes(30)
+                             .setWindowEndOffset(90)
                              .setMaxChunkSizeBytes(30)
                              .build());
 
@@ -321,23 +449,23 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
-                             .setOffset(50)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(100)
+                             .setOffset(60)
+                             .setPendingBytes(30)
+                             .setWindowEndOffset(90)
                              .setMaxChunkSizeBytes(30)
                              .build());
 
-    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(50).setData(range(50, 80)),
+    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 123).setOffset(60).setData(range(60, 90)),
         newLegacyChunk(Chunk.Type.DATA, 123)
-            .setOffset(80)
-            .setData(range(80, 100))
+            .setOffset(90)
+            .setData(range(90, 100))
             .setRemainingBytes(0));
 
     assertThat(lastChunks())
         .containsExactly(newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123)
-                             .setOffset(80)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(130)
+                             .setOffset(90)
+                             .setPendingBytes(30)
+                             .setWindowEndOffset(120)
                              .setMaxChunkSizeBytes(30)
                              .build(),
             legacyFinalChunk(123, Status.OK));
@@ -1069,7 +1197,7 @@ public final class TransferClientTest {
     receiveReadChunks(dataChunk(transfer.getSessionId(), TEST_DATA_100B, 0, 50));
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, transfer.getSessionId())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
                              .setOffset(50)
                              .setWindowEndOffset(100)
                              .setMaxChunkSizeBytes(50)
@@ -1179,31 +1307,157 @@ public final class TransferClientTest {
 
     receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
                           .setOffset(0)
-                          .setData(range(0, 20))
-                          .setRemainingBytes(70),
-        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(20).setData(range(20, 40)));
+                          .setData(range(0, 10))
+                          .setRemainingBytes(90),
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(10).setData(range(10, 30)));
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
-                             .setOffset(40)
+                             .setOffset(30)
+                             .setMaxChunkSizeBytes(30)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(30).setData(range(30, 60)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(60)
                              .setMaxChunkSizeBytes(30)
                              .setWindowEndOffset(90)
                              .build());
 
     receiveReadChunks(
-        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(40).setData(range(40, 70)));
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(60).setData(range(60, 90)));
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
-                             .setOffset(70)
+                             .setOffset(90)
                              .setMaxChunkSizeBytes(30)
                              .setWindowEndOffset(120)
                              .build());
 
     receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
-                          .setOffset(70)
-                          .setData(range(70, 100))
+                          .setOffset(90)
+                          .setData(range(90, 100))
                           .setRemainingBytes(0));
+
+    performReadCompletionHandshake(transfer.getSessionId(), Status.OK);
+
+    assertThat(future.get()).isEqualTo(TEST_DATA_100B.toByteArray());
+  }
+
+  @Test
+  public void read_adaptiveWindow_slowStart() throws Exception {
+    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
+    TransferParameters params = TransferParameters.create(80, 20, 0);
+    ListenableFuture<byte[]> future = transferClient.read(7, params);
+    ReadTransfer transfer = transferClient.getReadTransferForTest(future);
+
+    performReadStartHandshake(transfer);
+
+    receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
+                          .setOffset(0)
+                          .setData(range(0, 20))
+                          .setRemainingBytes(80));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(20)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(20).setData(range(20, 40)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(40)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(40).setData(range(40, 60)),
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(60).setData(range(60, 80)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(80)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(160)
+                             .build());
+
+    receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
+                          .setOffset(80)
+                          .setData(range(80, 100))
+                          .setRemainingBytes(0));
+
+    performReadCompletionHandshake(transfer.getSessionId(), Status.OK);
+
+    assertThat(future.get()).isEqualTo(TEST_DATA_100B.toByteArray());
+  }
+
+  @Test
+  public void read_adaptiveWindow_congestionAvoidance() throws Exception {
+    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
+    TransferParameters params = TransferParameters.create(80, 20, 0);
+    ListenableFuture<byte[]> future = transferClient.read(7, params);
+    ReadTransfer transfer = transferClient.getReadTransferForTest(future);
+
+    performReadStartHandshake(transfer);
+
+    receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
+                          .setOffset(0)
+                          .setData(range(0, 20))
+                          .setRemainingBytes(80));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(20)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(60)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(20).setData(range(20, 40)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(40)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    // Send bad offset.
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(60).setData(range(60, 80)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, transfer.getSessionId())
+                             .setOffset(40)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(80)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(40).setData(range(40, 60)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(60)
+                             .setMaxChunkSizeBytes(20)
+                             .setWindowEndOffset(120)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(60).setData(range(60, 80)),
+        newChunk(Chunk.Type.DATA, transfer.getSessionId())
+            .setOffset(80)
+            .setData(range(80, 100))
+            .setRemainingBytes(0));
 
     performReadCompletionHandshake(transfer.getSessionId(), Status.OK);
 
@@ -1227,34 +1481,37 @@ public final class TransferClientTest {
             .setResourceId(7)
             .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
 
+    // Grow the window to its max size.
+    enqueueReadChunks(1, newChunk(Chunk.Type.DATA, id).setOffset(0).setData(range(0, 10)));
+    enqueueReadChunks(1, newChunk(Chunk.Type.DATA, id).setOffset(10).setData(range(10, 20)));
+    enqueueReadChunks(1,
+        newChunk(Chunk.Type.DATA, id).setOffset(20).setData(range(20, 30)),
+        newChunk(Chunk.Type.DATA, id).setOffset(30).setData(range(30, 40)));
+
     // Window 1: server waits for START_ACK_CONFIRMATION, drops 2nd packet
     enqueueReadChunks(1,
-        newChunk(Chunk.Type.DATA, id).setOffset(0).setData(range(0, 10)),
-        newChunk(Chunk.Type.DATA, id).setOffset(20).setData(range(20, 30)),
-        newChunk(Chunk.Type.DATA, id).setOffset(30).setData(range(30, 40)),
-        newChunk(Chunk.Type.DATA, id).setOffset(40).setData(range(40, 50)));
+        newChunk(Chunk.Type.DATA, id).setOffset(40).setData(range(40, 50)),
+        newChunk(Chunk.Type.DATA, id).setOffset(60).setData(range(60, 70)),
+        newChunk(Chunk.Type.DATA, id).setOffset(70).setData(range(70, 80)),
+        newChunk(Chunk.Type.DATA, id).setOffset(80).setData(range(80, 90)));
+
+    enqueueReadChunks(1,
+        newChunk(Chunk.Type.DATA, id).setOffset(50).setData(range(50, 60)),
+        newChunk(Chunk.Type.DATA, id).setOffset(60).setData(range(60, 70)));
 
     // Window 2: server waits for retransmit, drops 1st packet
     enqueueReadChunks(1,
-        newChunk(Chunk.Type.DATA, id).setOffset(20).setData(range(20, 30)),
-        newChunk(Chunk.Type.DATA, id).setOffset(30).setData(range(30, 40)),
-        newChunk(Chunk.Type.DATA, id).setOffset(40).setData(range(40, 50)),
-        newChunk(Chunk.Type.DATA, id).setOffset(50).setData(range(50, 60)));
+        newChunk(Chunk.Type.DATA, id).setOffset(80).setData(range(80, 90)),
+        newChunk(Chunk.Type.DATA, id).setOffset(90).setData(range(90, 100)),
+        newChunk(Chunk.Type.DATA, id).setOffset(100).setData(range(100, 110)));
 
-    // Window 3: server waits for retransmit, drops last packet
+    // Window 3: server waits for continue and retransmit, normal window.
+    enqueueReadChunks(1, newChunk(Chunk.Type.DATA, id).setOffset(70).setData(range(70, 80)));
     enqueueReadChunks(1,
-        newChunk(Chunk.Type.DATA, id).setOffset(10).setData(range(10, 20)),
-        newChunk(Chunk.Type.DATA, id).setOffset(20).setData(range(20, 30)),
-        newChunk(Chunk.Type.DATA, id).setOffset(30).setData(range(30, 40)),
-        newChunk(Chunk.Type.DATA, id).setOffset(40).setData(range(40, 50)));
-
-    // Window 4: server waits for continue and retransmit, normal window.
-    enqueueReadChunks(2,
-        newChunk(Chunk.Type.DATA, id).setOffset(50).setData(range(50, 60)),
-        newChunk(Chunk.Type.DATA, id).setOffset(60).setData(range(60, 70)),
-        newChunk(Chunk.Type.DATA, id).setOffset(70).setData(range(70, 80)),
         newChunk(Chunk.Type.DATA, id).setOffset(80).setData(range(80, 90)),
         newChunk(Chunk.Type.DATA, id).setOffset(90).setData(range(90, 100)));
+
+    // Window 4: retry.
     enqueueReadChunks(2, // Ignore continue and retransmit chunks, retry last packet in window
         newChunk(Chunk.Type.DATA, id).setOffset(90).setData(range(90, 100)),
         newChunk(Chunk.Type.DATA, id).setOffset(90).setData(range(90, 100)));
@@ -1277,48 +1534,63 @@ public final class TransferClientTest {
             initialReadChunk(transfer),
             readStartAckConfirmation(id, params),
             readStartAckConfirmation(id, params),
-            // Window 1: send one transfer parameters update after the drop
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id)
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
                 .setOffset(10)
+                .setWindowEndOffset(30)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
+                .setOffset(20)
                 .setWindowEndOffset(60)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            // Window 2: send one transfer parameters update after the drop
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id)
-                .setOffset(10)
-                .setWindowEndOffset(60)
-                .setMaxChunkSizeBytes(10)
-                .build(),
-            // Window 3: send one transfer parameters update after the drop, then continue packet
-            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id) // Not seen by server
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
                 .setOffset(40)
                 .setWindowEndOffset(90)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent after timeout
+            // Window 1: send one transfer parameters update after the drop
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id)
                 .setOffset(50)
+                .setWindowEndOffset(70)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
+                .setOffset(60)
+                .setWindowEndOffset(90)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 2: send one transfer parameters update after the drop
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id)
+                .setOffset(70)
+                .setWindowEndOffset(80)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 3: normal operation.
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
+                .setOffset(80)
                 .setWindowEndOffset(100)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            // Window 4: send one transfer parameters update after the drop, then continue packet
-            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id) // Ignored by server
-                .setOffset(80)
-                .setWindowEndOffset(130)
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id)
+                .setOffset(90)
+                .setWindowEndOffset(120)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent after last packet
+            // Window 4: retry.
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Timeout
                 .setOffset(100)
-                .setWindowEndOffset(150)
+                .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated packet
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated paket
                 .setOffset(100)
-                .setWindowEndOffset(150)
+                .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated packet
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated paket
                 .setOffset(100)
-                .setWindowEndOffset(150)
+                .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)
                 .build(),
             // Window 5: final packet and closing handshake
@@ -1382,19 +1654,18 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, transfer.getSessionId())
-                             .setWindowEndOffset(50)
+                             .setWindowEndOffset(30)
                              .setMaxChunkSizeBytes(30)
                              .setOffset(0)
                              .build());
 
     receiveReadChunks(
-        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(0).setData(range(0, 30)),
-        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(30).setData(range(30, 50)));
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(0).setData(range(0, 30)));
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
                              .setOffset(30)
-                             .setWindowEndOffset(80)
+                             .setWindowEndOffset(60)
                              .setMaxChunkSizeBytes(30)
                              .build());
 
@@ -1405,24 +1676,34 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, transfer.getSessionId())
-                             .setOffset(50)
-                             .setWindowEndOffset(100)
+                             .setOffset(30)
+                             .setWindowEndOffset(60)
                              .setMaxChunkSizeBytes(30)
                              .build());
 
     receiveReadChunks(
-        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(50).setData(range(50, 80)));
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(30).setData(range(30, 60)));
 
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
-                             .setOffset(80)
-                             .setWindowEndOffset(130)
+                             .setOffset(60)
+                             .setWindowEndOffset(90)
+                             .setMaxChunkSizeBytes(30)
+                             .build());
+
+    receiveReadChunks(
+        newChunk(Chunk.Type.DATA, transfer.getSessionId()).setOffset(60).setData(range(60, 90)));
+
+    assertThat(lastChunks())
+        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
+                             .setOffset(90)
+                             .setWindowEndOffset(120)
                              .setMaxChunkSizeBytes(30)
                              .build());
 
     receiveReadChunks(newChunk(Chunk.Type.DATA, transfer.getSessionId())
-                          .setOffset(80)
-                          .setData(range(80, 100))
+                          .setOffset(90)
+                          .setData(range(90, 100))
                           .setRemainingBytes(0));
 
     performReadCompletionHandshake(transfer.getSessionId(), Status.OK);
@@ -2457,8 +2738,8 @@ public final class TransferClientTest {
     Chunk.Builder chunk =
         newLegacyChunk(Chunk.Type.START, transfer.getResourceId())
             .setResourceId(transfer.getResourceId())
-            .setPendingBytes(transfer.getParametersForTest().maxPendingBytes())
-            .setWindowEndOffset(transfer.getParametersForTest().maxPendingBytes())
+            .setPendingBytes(transfer.getParametersForTest().maxChunkSizeBytes())
+            .setWindowEndOffset(transfer.getParametersForTest().maxChunkSizeBytes())
             .setMaxChunkSizeBytes(transfer.getParametersForTest().maxChunkSizeBytes())
             .setOffset(0);
     if (transfer.getDesiredProtocolVersion() != ProtocolVersion.LEGACY) {
@@ -2478,8 +2759,8 @@ public final class TransferClientTest {
   private static Chunk initialLegacyReadChunk(int resourceId, TransferParameters params) {
     Chunk.Builder chunk = newLegacyChunk(Chunk.Type.START, resourceId)
                               .setResourceId(resourceId)
-                              .setPendingBytes(params.maxPendingBytes())
-                              .setWindowEndOffset(params.maxPendingBytes())
+                              .setPendingBytes(params.maxChunkSizeBytes())
+                              .setWindowEndOffset(params.maxChunkSizeBytes())
                               .setMaxChunkSizeBytes(params.maxChunkSizeBytes())
                               .setOffset(0);
     if (params.chunkDelayMicroseconds() > 0) {
@@ -2490,7 +2771,7 @@ public final class TransferClientTest {
 
   private static Chunk readStartAckConfirmation(int sessionId, TransferParameters params) {
     Chunk.Builder chunk = newChunk(Chunk.Type.START_ACK_CONFIRMATION, sessionId)
-                              .setWindowEndOffset(params.maxPendingBytes())
+                              .setWindowEndOffset(params.maxChunkSizeBytes())
                               .setMaxChunkSizeBytes(params.maxChunkSizeBytes())
                               .setOffset(0)
                               .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal());

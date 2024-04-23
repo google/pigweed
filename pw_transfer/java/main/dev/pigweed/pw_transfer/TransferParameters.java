@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -19,23 +19,36 @@ import com.google.auto.value.AutoValue;
 /**
  * Transfer parameters set by the receiver.
  *
- * <p>In a client, these are only used for read transfers. These values can be adjusted to optimize
+ * <p>
+ * In a client, these are only used for read transfers. These values can be
+ * adjusted to optimize
  * for the service/client limitations and the transport between them.
  */
 @AutoValue
 public abstract class TransferParameters {
   public static TransferParameters create(
-      int maxPendingBytes, int maxChunkSizeBytes, int chunkDelayMicroseconds) {
+      int maxWindowSizeBytes, int maxChunkSizeBytes, int chunkDelayMicroseconds) {
     return new AutoValue_TransferParameters(
-        maxPendingBytes, maxChunkSizeBytes, chunkDelayMicroseconds);
+        maxWindowSizeBytes, maxChunkSizeBytes, chunkDelayMicroseconds);
   }
 
-  /** Max number of bytes to request at once. Should be a multiple of maxChunkSizeBytes. */
-  public abstract int maxPendingBytes();
+  /**
+   * Max number of bytes to request at once. Should be a multiple of
+   * maxChunkSizeBytes.
+   */
+  public abstract int maxWindowSizeBytes();
 
-  /** Max number of bytes to send in a single chunk. Should be a factor of maxPendingBytes. */
+  /**
+   * Max number of bytes to send in a single chunk. Should be a factor of
+   * maxWindowSizeBytes.
+   */
   public abstract int maxChunkSizeBytes();
 
   /** How long to require the sender to wait between sending chunks. */
   public abstract int chunkDelayMicroseconds();
+
+  /** Maximum number of complete chunks that can fit into a receiver window. */
+  public int maxChunksInWindow() {
+    return maxWindowSizeBytes() / maxChunkSizeBytes();
+  }
 }
