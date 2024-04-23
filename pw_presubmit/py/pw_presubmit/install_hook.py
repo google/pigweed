@@ -92,7 +92,11 @@ def install_git_hook(
 
         hook_path = root.joinpath(match.group(1), 'hooks', hook).resolve()
 
-    hook_path.parent.mkdir(exist_ok=True)
+    try:
+        hook_path.parent.mkdir(exist_ok=True)
+    except FileExistsError as exc:
+        logging.warning('Failed to install %s hook: %s', hook, exc)
+        return
 
     hook_stdin_args = _stdin_args_for_hook(hook)
     read_stdin_command = 'read ' + ' '.join(hook_stdin_args)
