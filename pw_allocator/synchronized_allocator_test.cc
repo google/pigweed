@@ -14,6 +14,10 @@
 
 #include "pw_allocator/synchronized_allocator.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+
 #include "pw_allocator/test_harness.h"
 #include "pw_allocator/testing.h"
 #include "pw_containers/vector.h"
@@ -22,7 +26,6 @@
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/mutex.h"
-#include "pw_sync/virtual_basic_lockable.h"
 #include "pw_thread/test_thread_context.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/thread_core.h"
@@ -72,12 +75,21 @@ struct Allocation {
 /// Test fixture that manages a background allocation thread.
 class Background final {
  public:
-  Background(Allocator& allocator) : background_(allocator) {
+  Background(Allocator& allocator)
+      : Background(allocator, 1, std::numeric_limits<size_t>::max()) {}
+
+  Background(Allocator& allocator, uint64_t seed, size_t iterations)
+      : background_(allocator, seed, iterations) {
     background_thread_ = thread::Thread(context_.options(), background_);
   }
 
   ~Background() {
     background_.Stop();
+    Await();
+  }
+
+  void Await() {
+    background_.Await();
     if (background_thread_.joinable()) {
       background_thread_.join();
     }
@@ -93,22 +105,31 @@ class Background final {
   /// allocations on a synchronous allocator.
   class BackgroundThreadCore : public thread::ThreadCore {
    public:
-    BackgroundThreadCore(Allocator& allocator) : prng_(1) {
+    BackgroundThreadCore(Allocator& allocator, uint64_t seed, size_t iterations)
+        : prng_(seed), iterations_(iterations) {
       test_harness_.allocator = &allocator;
     }
 
     void Stop() { semaphore_.release(); }
 
+    void Await() {
+      semaphore_.acquire();
+      semaphore_.release();
+    }
+
    private:
     void Run() override {
-      while (!semaphore_.try_acquire()) {
+      for (size_t i = 0; i < iterations_ && !semaphore_.try_acquire(); ++i) {
         test_harness_.GenerateRequests(prng_, kMaxSize, kBackgroundRequests);
+        this_thread::yield();
       }
+      semaphore_.release();
     }
 
     TestHarness test_harness_;
     random::XorShiftStarRng64 prng_;
     sync::BinarySemaphore semaphore_;
+    size_t iterations_;
   } background_;
 
   thread::test::TestThreadContext context_;
@@ -217,6 +238,61 @@ TEST(SynchronizedAllocatorTest, ResizeInterruptSpinLock) {
 }
 
 TEST(SynchronizedAllocatorTest, ResizeMutex) { TestResize<sync::Mutex>(); }
+
+template <typename LockType>
+void TestReallocate() {
+  test::AllocatorForTest<kCapacity> allocator;
+  SynchronizedAllocator<LockType> synchronized(allocator);
+  Background background(synchronized);
+
+  Vector<Allocation, kNumAllocations> allocations;
+  while (!allocations.full()) {
+    Layout layout(kSize, kAlignment);
+    void* ptr = synchronized.Allocate(layout);
+    Allocation allocation{ptr, layout};
+    allocation.Paint();
+    allocations.push_back(allocation);
+    this_thread::yield();
+  }
+
+  for (auto& allocation : allocations) {
+    EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
+    Layout new_layout = allocation.layout.Extend(1);
+    if (!synchronized.Reallocate(allocation.ptr, new_layout)) {
+      continue;
+    }
+    allocation.layout = new_layout;
+    allocation.Paint();
+    this_thread::yield();
+  }
+}
+
+TEST(SynchronizedAllocatorTest, ReallocateInterruptSpinLock) {
+  TestReallocate<sync::InterruptSpinLock>();
+}
+
+TEST(SynchronizedAllocatorTest, ReallocateMutex) {
+  TestReallocate<sync::Mutex>();
+}
+
+template <typename LockType>
+void TestGenerateRequests() {
+  constexpr size_t kNumIterations = 10000;
+  test::AllocatorForTest<kCapacity> allocator;
+  SynchronizedAllocator<LockType> synchronized(allocator);
+  Background background1(synchronized, 1, kNumIterations);
+  Background background2(synchronized, 2, kNumIterations);
+  background1.Await();
+  background2.Await();
+}
+
+TEST(SynchronizedAllocatorTest, GenerateRequestsSpinLock) {
+  TestGenerateRequests<sync::InterruptSpinLock>();
+}
+
+TEST(SynchronizedAllocatorTest, GenerateRequestsMutex) {
+  TestGenerateRequests<sync::Mutex>();
+}
 
 }  // namespace
 }  // namespace pw::allocator

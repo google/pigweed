@@ -36,17 +36,17 @@ class SynchronizedAllocator : public Allocator {
       : Allocator(allocator.capabilities()), borrowable_(allocator, lock_) {}
 
  private:
-  using pointer_type = sync::BorrowedPointer<Allocator, LockType>;
+  using Pointer = sync::BorrowedPointer<Allocator, LockType>;
 
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return allocator->Allocate(layout);
   }
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr) override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return allocator->Deallocate(ptr);
   }
 
@@ -55,37 +55,42 @@ class SynchronizedAllocator : public Allocator {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return allocator->Resize(ptr, new_size);
+  }
+
+  void* DoReallocate(void* ptr, Layout new_layout) override {
+    Pointer allocator = borrowable_.acquire();
+    return allocator->Reallocate(ptr, new_layout);
   }
 
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr) const override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return Query(*allocator, ptr);
   }
 
   /// @copydoc Allocator::GetCapacity
   StatusWithSize DoGetCapacity() const override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return allocator->GetCapacity();
   }
 
   /// @copydoc Allocator::GetRequestedLayout
   Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return GetRequestedLayout(*allocator, ptr);
   }
 
   /// @copydoc Allocator::GetUsableLayout
   Result<Layout> DoGetUsableLayout(const void* ptr) const override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return GetUsableLayout(*allocator, ptr);
   }
 
   /// @copydoc Allocator::DoGetAllocatedLayout
   Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
-    pointer_type allocator = borrowable_.acquire();
+    Pointer allocator = borrowable_.acquire();
     return GetAllocatedLayout(*allocator, ptr);
   }
 

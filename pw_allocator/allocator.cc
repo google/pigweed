@@ -70,7 +70,7 @@ void* Allocator::DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
   if (!allocated.ok()) {
     return nullptr;
   }
-  void* new_ptr = DoAllocate(Layout(new_size, old_layout.alignment()));
+  void* new_ptr = Allocate(Layout(new_size, old_layout.alignment()));
   if (new_ptr == nullptr) {
     return nullptr;
   }
