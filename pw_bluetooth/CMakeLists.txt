@@ -164,7 +164,7 @@ pw_add_library("pw_bluetooth.emboss_hci_group" INTERFACE
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_bluetooth.emboss_hci_vendor
-    )
+)
 
 pw_target_link_targets("pw_bluetooth._public_config"
   INTERFACE
@@ -181,6 +181,9 @@ pw_add_test(pw_bluetooth.emboss_test
   SOURCES
     emboss_test.cc
   PRIVATE_DEPS
+
+    # All emboss targets are listed (even if they don't have explicit tests) to
+    # ensure they are compiled.
     pw_bluetooth.emboss_hci_group
     pw_bluetooth.emboss_hci_test
     pw_bluetooth.emboss_l2cap_frames

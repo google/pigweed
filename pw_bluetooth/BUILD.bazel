@@ -223,6 +223,8 @@ pw_cc_test(
     name = "emboss_test",
     srcs = ["emboss_test.cc"],
     deps = [
+        # All emboss targets are listed (even if they don't have explicit tests)
+        # to ensure they are compiled.
         ":emboss_hci",
         ":emboss_hci_test",
         ":emboss_l2cap_frames",

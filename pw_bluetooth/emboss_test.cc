@@ -12,9 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "lib/stdcompat/utility.h"
+#include "pw_unit_test/framework.h"  // IWYU pragma: keep
+
+// clang-format off
 // All emboss headers are listed (even if they don't have explicit tests) to
 // ensure they are compiled.
-#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_commands.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -23,7 +26,7 @@
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_bluetooth/hci_vendor.emb.h"    // IWYU pragma: keep
 #include "pw_bluetooth/l2cap_frames.emb.h"  // IWYU pragma: keep
-#include "pw_unit_test/framework.h"         // IWYU pragma: keep
+// clang-format on
 
 namespace pw::bluetooth {
 namespace {
