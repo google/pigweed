@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block_allocator.h"
-
+#include "pw_allocator/block_allocator_base.h"
 #include "pw_assert/check.h"
 
 namespace pw::allocator::internal {

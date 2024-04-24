@@ -96,7 +96,7 @@ This module provides several concrete allocator implementations of the
 
 BlockAllocator
 ==============
-.. doxygenclass:: pw::allocator::internal::BlockAllocator
+.. doxygenclass:: pw::allocator::BlockAllocator
    :members:
 
 .. _module-pw_allocator-api-first_fit_block_allocator:

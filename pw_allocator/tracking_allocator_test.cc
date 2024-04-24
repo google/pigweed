@@ -16,7 +16,6 @@
 #include <cstdint>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/block_allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/testing.h"
 #include "pw_log/log.h"

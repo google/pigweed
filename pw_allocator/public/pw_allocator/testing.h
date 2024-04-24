@@ -17,8 +17,8 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
-#include "pw_allocator/block_allocator.h"
 #include "pw_allocator/buffer.h"
+#include "pw_allocator/first_fit_block_allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_bytes/span.h"
