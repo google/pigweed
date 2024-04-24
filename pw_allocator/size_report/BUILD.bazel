@@ -38,6 +38,15 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
+    name = "buddy_allocator",
+    srcs = ["buddy_allocator.cc"],
+    deps = [
+        "//pw_allocator:buddy_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
     name = "bump_allocator",
     srcs = ["bump_allocator.cc"],
     deps = [

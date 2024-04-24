@@ -77,7 +77,8 @@ struct [[gnu::aligned(bit_ceil(sizeof(T)))]] NaturallyAligned : public T {
   template <class U>
   NaturallyAligned(const U& u) : T(u) {}
   NaturallyAligned& operator=(T other) {
-    return T::operator=(other);
+    T::operator=(other);
+    return *this;
   }  // namespace pw
 };
 

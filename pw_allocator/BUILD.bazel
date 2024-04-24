@@ -90,6 +90,42 @@ cc_library(
 )
 
 cc_library(
+    name = "bucket",
+    srcs = [
+        "bucket.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/bucket.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_function",
+        "//pw_span",
+    ],
+)
+
+cc_library(
+    name = "buddy_allocator",
+    srcs = [
+        "buddy_allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/buddy_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":bucket",
+        ":buffer",
+        "//pw_alignment",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_containers:vector",
+    ],
+)
+
+cc_library(
     name = "buffer",
     srcs = [
         "buffer.cc",
@@ -99,6 +135,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_assert",
         "//pw_bytes",
         "//pw_bytes:alignment",
         "//pw_result",
@@ -395,6 +432,17 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "buddy_allocator_test",
+    srcs = [
+        "buddy_allocator_test.cc",
+    ],
+    deps = [
+        ":buddy_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "buffer_test",
     srcs = [
         "buffer_test.cc",
@@ -403,7 +451,6 @@ pw_cc_test(
         ":buffer",
         "//pw_bytes",
         "//pw_result",
-        "//pw_unit_test",
     ],
 )
 

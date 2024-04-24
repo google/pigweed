@@ -91,6 +91,34 @@ pw_source_set("block_allocator") {
   sources = [ "block_allocator.cc" ]
 }
 
+pw_source_set("bucket") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/bucket.h" ]
+  public_deps = [
+    dir_pw_function,
+    dir_pw_span,
+  ]
+  deps = [ dir_pw_assert ]
+  sources = [ "bucket.cc" ]
+}
+
+pw_source_set("buddy_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/buddy_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":bucket",
+    "$dir_pw_containers:vector",
+    dir_pw_alignment,
+    dir_pw_bytes,
+  ]
+  deps = [
+    ":buffer",
+    dir_pw_assert,
+  ]
+  sources = [ "buddy_allocator.cc" ]
+}
+
 pw_source_set("buffer") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/buffer.h" ]
@@ -98,7 +126,10 @@ pw_source_set("buffer") {
     dir_pw_bytes,
     dir_pw_result,
   ]
-  deps = [ "$dir_pw_bytes:alignment" ]
+  deps = [
+    "$dir_pw_bytes:alignment",
+    dir_pw_assert,
+  ]
   sources = [ "buffer.cc" ]
 }
 
@@ -354,6 +385,11 @@ pw_test("chunk_pool_test") {
   sources = [ "chunk_pool_test.cc" ]
 }
 
+pw_test("buddy_allocator_test") {
+  deps = [ ":buddy_allocator" ]
+  sources = [ "buddy_allocator_test.cc" ]
+}
+
 pw_test("fallback_allocator_test") {
   deps = [
     ":fallback_allocator",
@@ -453,6 +489,7 @@ pw_test_group("tests") {
     ":allocator_test",
     ":block_allocator_test",
     ":block_test",
+    ":buddy_allocator_test",
     ":buffer_test",
     ":bump_allocator_test",
     ":chunk_pool_test",
@@ -499,6 +536,11 @@ pw_size_diff("concrete_allocators_size_report") {
       target = "size_report:best_fit_block_allocator"
       base = "size_report:null_allocator"
       label = "BestFitBlockAllocator"
+    },
+    {
+      target = "size_report:buddy_allocator"
+      base = "size_report:null_allocator"
+      label = "BuddyAllocator"
     },
     {
       target = "size_report:bump_allocator"

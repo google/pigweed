@@ -114,7 +114,7 @@ class SizeReporter final {
   // Include a NullAllocator to bake in the costs of the base `Allocator`.
   NullAllocator allocator_;
 #endif  // PW_ALLOCATOR_SIZE_REPORTER_BASE
-  std::array<std::byte, 128> buffer_;
+  std::array<std::byte, 0x400> buffer_;
 };
 
 }  // namespace pw::allocator

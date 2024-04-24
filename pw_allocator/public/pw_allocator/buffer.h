@@ -70,6 +70,8 @@ class WithBuffer {
 
 /// Returns the largest aligned subspan of a given byte span.
 ///
+/// The subspan will start and end on alignment boundaries.
+///
 /// @returns @rst
 ///
 /// .. pw-status-codes::

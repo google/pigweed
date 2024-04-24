@@ -134,7 +134,12 @@ DualFirstFitBlockAllocator
 .. doxygenclass:: pw::allocator::DualFirstFitBlockAllocator
    :members:
 
-.. _module-pw_allocator-api-chunk_pool:
+.. _module-pw_allocator-api-buddy_allocator:
+
+BuddyAllocator
+==============
+.. doxygenclass:: pw::allocator::BuddyAllocator
+   :members:
 
 .. _module-pw_allocator-api-bump_allocator:
 
@@ -142,6 +147,8 @@ BumpAllocator
 =============
 .. doxygenclass:: pw::allocator::BumpAllocator
    :members:
+
+.. _module-pw_allocator-api-chunk_pool:
 
 ChunkPool
 =========

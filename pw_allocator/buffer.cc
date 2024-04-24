@@ -23,12 +23,15 @@ Result<ByteSpan> GetAlignedSubspan(ByteSpan bytes, size_t alignment) {
   if (bytes.data() == nullptr) {
     return Status::ResourceExhausted();
   }
-  auto addr = reinterpret_cast<uintptr_t>(bytes.data());
-  auto aligned = AlignUp(addr, alignment);
-  if (addr + bytes.size() <= aligned) {
+  auto unaligned_start = reinterpret_cast<uintptr_t>(bytes.data());
+  auto aligned_start = AlignUp(unaligned_start, alignment);
+  auto unaligned_end = unaligned_start + bytes.size();
+  auto aligned_end = AlignDown(unaligned_end, alignment);
+  if (aligned_end <= aligned_start) {
     return Status::ResourceExhausted();
   }
-  return bytes.subspan(aligned - addr);
+  return bytes.subspan(aligned_start - unaligned_start,
+                       aligned_end - aligned_start);
 }
 
 bool IsWithin(const void* ptr, size_t size, ConstByteSpan outer) {

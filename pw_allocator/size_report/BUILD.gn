@@ -35,6 +35,15 @@ pw_executable("best_fit_block_allocator") {
   ]
 }
 
+pw_executable("buddy_allocator") {
+  include_dirs = [ "../public" ]
+  sources = [ "buddy_allocator.cc" ]
+  deps = [
+    "..:buddy_allocator",
+    "..:size_reporter",
+  ]
+}
+
 pw_executable("bump_allocator") {
   include_dirs = [ "../public" ]
   sources = [ "bump_allocator.cc" ]
