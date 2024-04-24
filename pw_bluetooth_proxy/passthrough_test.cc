@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <numeric>
 
+#include "emboss_util.h"
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_common.emb.h"
@@ -29,12 +30,6 @@ namespace pw::bluetooth::proxy {
 namespace {
 
 // Util functions
-
-// Create pw::span on the HCI portion of an H4 buffer.
-template <typename C>
-constexpr const pw::span<uint8_t> HciSubspanOfH4Buffer(C&& container) {
-  return pw::span(container.data() + 1, container.size() - 1);
-}
 
 // Simple struct for returning a H4 array and an emboss view on its HCI packet.
 template <typename EmbossT>
@@ -52,8 +47,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
   EmbossViewWithH4Buffer<EmbossT> view_arr;
   std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
   view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
-  const auto hci_span = HciSubspanOfH4Buffer(view_arr.arr);
-  view_arr.view = EmbossT(&hci_span);
+  view_arr.view = MakeEmboss<EmbossT>(H4HciSubspan(view_arr.arr));
   EXPECT_TRUE(view_arr.view.IsComplete());
   view_arr.view.header().opcode_full().Write(opcode);
   return view_arr;
@@ -77,8 +71,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
   EmbossViewWithH4Buffer<EmbossT> view_arr;
   std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
   view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::EVENT);
-  const auto hci_span = HciSubspanOfH4Buffer(view_arr.arr);
-  view_arr.view = EmbossT(&hci_span);
+  view_arr.view = MakeEmboss<EmbossT>(H4HciSubspan(view_arr.arr));
   view_arr.view.header().event_code().Write(event_code);
   view_arr.view.status().Write(status_code);
   EXPECT_TRUE(view_arr.view.IsComplete());

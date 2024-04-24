@@ -21,6 +21,8 @@ licenses(["notice"])
 filegroup(
     name = "files_not_in_bazel_yet",
     srcs = [
+        "emboss_util.h",
+        "emboss_util_test.cc",
         "hci_proxy.cc",
         "passthrough_test.cc",
         "public/pw_bluetooth_proxy/common.h",

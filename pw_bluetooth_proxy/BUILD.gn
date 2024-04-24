@@ -34,7 +34,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":proxy_passthrough_test" ]
+  tests = [
+    ":pw_bluetooth_proxy_test",
+    ":emboss_util_test",
+  ]
 }
 
 pw_source_set("pw_bluetooth_proxy") {
@@ -53,10 +56,29 @@ pw_source_set("pw_bluetooth_proxy") {
   sources = [ "hci_proxy.cc" ]
 }
 
-pw_test("proxy_passthrough_test") {
+pw_test("emboss_util_test") {
   enable_if =
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
-  sources = [ "passthrough_test.cc" ]
+  sources = [
+    "emboss_util.h",
+    "emboss_util_test.cc",
+  ]
+  include_dirs = [ "." ]
+  deps = [
+    ":pw_bluetooth_proxy",
+    "//pw_bluetooth:emboss_hci_test",
+    "//pw_span",
+  ]
+}
+
+pw_test("pw_bluetooth_proxy_test") {
+  enable_if =
+      dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [
+    "emboss_util.h",
+    "passthrough_test.cc",
+  ]
+  include_dirs = [ "." ]
   deps = [
     ":pw_bluetooth_proxy",
     "$dir_pw_third_party/fuchsia:stdcompat",
