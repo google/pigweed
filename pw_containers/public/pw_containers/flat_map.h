@@ -44,8 +44,20 @@ Pair(T1, T2) -> Pair<T1, T2>;
 
 // A simple, fixed-size associative array with lookup by key or value.
 //
-// FlatMaps are initialized with a std::array of Pair<K, V> objects:
-//   FlatMap<char, int, 3> map({{{'A', 1}, {'B', 2}, {'C', 3}}});
+// FlatMaps can be initialized by:
+// 1. A std::array of Pair<K, V> objects.
+//    FlatMap<char, int, 3> map({{{'A', 1}, {'B', 2}, {'C', 3}}});
+//    FlatMap map(std::array{
+//        Pair<char, int>{'A', 1},
+//        Pair<char, int>{'B', 2},
+//        Pair<char, int>{'C', 3},
+//    });
+// 2. Pair<K, V> objects.
+//    FlatMap map = {
+//        Pair<char, int>{'A', 1},
+//        Pair<char, int>{'B', 2},
+//        Pair<char, int>{'C', 3},
+//    };
 //
 // The keys do not need to be sorted as the constructor will sort the items
 // if need be.
@@ -129,6 +141,13 @@ class FlatMap {
       : items_(items) {
     ConstexprSort(items_.begin(), kArraySize);
   }
+
+  // Omits explicit here to support assignment-like syntax, which is common to
+  // initialize a container.
+  template <typename... Items,
+            typename = std::enable_if_t<
+                std::conjunction_v<std::is_same<Items, value_type>...>>>
+  constexpr FlatMap(const Items&... items) : FlatMap(std::array{items...}) {}
 
   FlatMap(FlatMap&) = delete;
   FlatMap& operator=(FlatMap&) = delete;
@@ -272,5 +291,9 @@ class FlatMap {
 
   std::array<value_type, kArraySize> items_;
 };
+
+template <typename K, typename V, typename... Items>
+FlatMap(const Pair<K, V>& item1,
+        const Items&... items) -> FlatMap<K, V, 1 + sizeof...(items)>;
 
 }  // namespace pw::containers

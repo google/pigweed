@@ -279,6 +279,28 @@ The underlying array in ``pw::containers::FlatMap`` does not need to be sorted.
 During construction, ``pw::containers::FlatMap`` will perform a constexpr
 insertion sort.
 
+To create a ``FlatMap``, there are some options. The following example defines
+a ``FlatMap`` with two items.
+
+.. code-block:: cpp
+
+   // Initiates by a std::array of Pair<K, V> objects.
+   FlatMap<int, char, 2> map({{
+       {1, 'a'},
+       {-3, 'b'},
+   }});
+
+   FlatMap map(std::array{
+       Pair<int, char>{1, 'a'},
+       Pair<int, char>{-3, 'b'},
+   });
+
+   // Initiates by Pair<K, V> objects.
+   FlatMap map = {
+       Pair<int, char>{1, 'a'},
+       Pair<int, char>{-3, 'b'},
+   };
+
 ----------------------------
 pw::containers::FilteredView
 ----------------------------
