@@ -97,6 +97,7 @@ class Validator:
         result: dict = {
             "attributes": {},
             "channels": {},
+            "triggers": {},
             "sensors": {},
         }
         metadata = metadata.copy()
@@ -104,7 +105,7 @@ class Validator:
             jsonschema.validate(instance=metadata, schema=_METADATA_SCHEMA)
         except jsonschema.exceptions.ValidationError as e:
             raise RuntimeError(
-                "ERROR: Malformed sensor metadata YAML: "
+                "ERROR: Malformed sensor metadata YAML:\n"
                 f"{yaml.safe_dump(metadata, indent=2)}"
             ) from e
 
@@ -120,13 +121,18 @@ class Validator:
         # Resolve all attribute entries
         self._resolve_attributes(metadata=metadata, out=result)
 
+        # Resolve all trigger entries
+        self._resolve_triggers(metadata=metadata, out=result)
+
         compatible = metadata.pop("compatible")
         channels = metadata.pop("channels")
         attributes = metadata.pop("attributes")
+        triggers = metadata.pop("triggers")
         result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
             "compatible": compatible,
             "channels": channels,
             "attributes": attributes,
+            "triggers": triggers,
         }
 
         try:
@@ -162,6 +168,7 @@ class Validator:
             self._logger.debug("No dependencies found, skipping imports")
             out["channels"] = {}
             out["attributes"] = {}
+            out["triggers"] = {}
             return
 
         for dep in deps:
@@ -189,6 +196,7 @@ class Validator:
         """
         self._backfill_channels(declarations=declarations, out=out)
         self._backfill_attributes(declarations=declarations, out=out)
+        self._backfill_triggers(declarations=declarations, out=out)
 
     @staticmethod
     def _backfill_attributes(declarations: dict, out: dict) -> None:
@@ -255,6 +263,31 @@ class Validator:
                 resolved_channels[subchan_id] = sub_channel
             channel.pop("sub-channels", None)
 
+    @staticmethod
+    def _backfill_triggers(declarations: dict, out: dict) -> None:
+        """
+        Move triggers from 'delcarations' to 'out' while also filling in any
+        default values.
+
+        Args:
+          declarations: The original YAML declaring triggers.
+          out: Output dictionary where we'll add the key "triggers" with the
+            result.
+        """
+        if out.get("triggers") is None:
+            out["triggers"] = {}
+        resolved_triggers: dict = out["triggers"]
+        if not declarations.get("triggers"):
+            return
+
+        for trigger_id, trigger in declarations["triggers"].items():
+            assert resolved_triggers.get(trigger_id) is None
+            resolved_triggers[trigger_id] = trigger
+            if not trigger.get("name"):
+                trigger["name"] = trigger_id
+            if not trigger.get("description"):
+                trigger["description"] = ""
+
     def _resolve_attributes(self, metadata: dict, out: dict) -> None:
         """
         For each attribute in the metadta, find the matching definition in the
@@ -306,7 +339,7 @@ class Validator:
             acceleration: {}
 
         We would then try and find the 'acceleration' key in the out/channels
-        list (which was already validated by _resolve_dependencies). Since the
+        dict (which was already validated by _resolve_dependencies). Since the
         example above does not override any fields, we would copy the 'name',
         'description', and 'units' from the definition into the channel entry.
 
@@ -333,7 +366,7 @@ class Validator:
                 haystack=out["channels"],
                 overrides=channel_values,
             )
-            # The content of 'channel' came from the 'out/channels' list which
+            # The content of 'channel' came from the 'out/channels' dict which
             # was already validated and every field added if missing. At this
             # point it's safe to access the channel's name, description, and
             # units.
@@ -348,6 +381,47 @@ class Validator:
                     index["name"] = channel_values["name"]
                 if not index.get("description"):
                     index["description"] = channel_values["description"]
+
+    def _resolve_triggers(self, metadata: dict, out: dict) -> None:
+        """
+        For each trigger in the metadata, find the matching definition in the
+        'out/triggers' entry and use the data to fill any missing information.
+        For example, if an entry exists that looks like:
+            data_ready: {}
+
+        We would then try and find the 'data_ready' key in the out/triggers
+        dict (which was already validated by _resolve_dependencies). Since the
+        example above does not override any fields, we would copy the 'name' and
+        'description' from the definition into the trigger entry.
+
+        Args:
+          metadata: The full sensor metadata passed to the validate function
+          out: The current output, used to get trigger definitions
+
+        Raises:
+          RuntimeError: An error in the schema validation or a missing
+            definition.
+        """
+        triggers: dict | None = metadata.get("triggers")
+        if not triggers:
+            metadata["triggers"] = {}
+            self._logger.debug("No triggers found, skipping")
+            return
+
+        for trigger_name, trigger_value in triggers.items():
+            # Check if the trigger_name exists in 'out/triggers', we can
+            # assume 'out/triggers' exists because _resolve_dependencies() is
+            # required to have been called first.
+            trigger = self._check_scalar_name(
+                name=trigger_name,
+                haystack=out["triggers"],
+                overrides=trigger_value,
+            )
+            # The content of 'trigger' came from the 'out/triggers' dict
+            # which was already validated and every field added if missing. At
+            # this point it's safe to access the trigger's name and description.
+            trigger_value["name"] = trigger["name"]
+            trigger_value["description"] = trigger["description"]
 
     def _get_dependency_file(self, dep: str) -> Path:
         """
@@ -380,18 +454,22 @@ class Validator:
         """
         Given a name and the resolved list of dependencies, try to find
         the full definition of a scalar (channel or attribute) with the name,
-        description, and units.
+        description, and units OR trigger with just a name/description.
+
+        We rely on the schema to ensure that channels and attributes have units
+        so if we can't find units, then we must be looking for a trigger.
 
         Args:
-          name: The name of the channel/attribute to search for in the
+          name: The name of the channel/attribute/trigger to search for in the
             dependencies
           haystack: The dictionary of resolved properties which define the
-            available channels/attributes
+            available channels/attributes/triggers
 
         Returns:
           A dictionary with the following structure:
             name: string
             description: string
+            (optional)
             units:
               name: string
               symbol: string
@@ -406,14 +484,18 @@ class Validator:
                 "dependency?"
             )
 
-        channel = haystack[name]
-        name = overrides.get("name", channel.get("name", name))
-        description = overrides.get(
-            "description", channel.get("description", "")
-        )
+        item = haystack[name]
+        name = overrides.get("name", item.get("name", name))
+        description = overrides.get("description", item.get("description", ""))
+        if item.get("units") is None:
+            return {
+                "name": name,
+                "description": description,
+            }
+
         units = {
-            "name": channel["units"].get("name", channel["units"]["symbol"]),
-            "symbol": channel["units"]["symbol"],
+            "name": item["units"].get("name", item["units"]["symbol"]),
+            "symbol": item["units"]["symbol"],
         }
         return {
             "name": name,

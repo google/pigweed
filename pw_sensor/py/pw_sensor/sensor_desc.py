@@ -122,6 +122,7 @@ def main() -> None:
     superset: dict = {
         "attributes": {},
         "channels": {},
+        "triggers": {},
         "sensors": {},
     }
     for descriptor_file in args.descriptor_paths:
@@ -145,6 +146,10 @@ def main() -> None:
         for attr_id, attr_spec in content["attributes"].items():
             assert superset["attributes"].get(attr_id) is None
             superset["attributes"][attr_id] = attr_spec
+        # Add triggers
+        for trig_id, trig_spec in content["triggers"].items():
+            assert superset["triggers"].get(trig_id) is None
+            superset["triggers"][trig_id] = trig_spec
 
     _LOG.debug("Final descriptor:\n%s", yaml.safe_dump(superset, indent=2))
     _LOG.info("Validating...")

@@ -95,6 +95,32 @@
       },
       "additionalProperties": false
     },
+    "triggers": {
+      "type": "object",
+      "description": "A mapping of triggers to their definitions",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A trigger definition",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the trigger"
+            },
+            "description": {
+              "type": "string",
+              "description": "The description of the trigger"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "sensors": {
       "type": "object",
       "description": "Set of sensors using their compatible string as a key in the format 'org','part'",
@@ -191,6 +217,78 @@
                 }
               },
               "additionalProperties": false
+            },
+            "attributes": {
+              "type": "object",
+              "description": "Mapping of attributes to their definition",
+              "patternProperties": {
+                "^[a-zA-Z_]\\w*$": {
+                  "type": "object",
+                  "description": "An attribute definition",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "A user friendly name for the attribute, the attribute ID will be used if undefined"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "A description of the attribute, the attribute ID will be used if undefined"
+                    },
+                    "units": {
+                      "type": "object",
+                      "description": "Details for how the attribute is measured",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "A user friendly name for the units"
+                        },
+                        "symbol": {
+                          "type": "string",
+                          "description": "The units used to represent the value"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "name",
+                        "symbol"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description",
+                    "units"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "triggers": {
+              "type": "object",
+              "description": "A mapping of triggers to their definitions",
+              "patternProperties": {
+                "^[a-zA-Z_]\\w*$": {
+                  "type": "object",
+                  "description": "A trigger definition",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The name of the trigger"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "The description of the trigger"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                }
+              },
+              "additionalProperties": false
             }
           }
         }
@@ -201,6 +299,8 @@
   "additionalProperties": false,
   "required": [
     "sensors",
-    "attributes"
+    "attributes",
+    "channels",
+    "triggers"
   ]
 }

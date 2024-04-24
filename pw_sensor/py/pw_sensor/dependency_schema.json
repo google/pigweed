@@ -72,7 +72,7 @@
       "type": "object",
       "description": "Mapping of attributes to their definition",
       "patternProperties": {
-        "^[a-zA-Z]\\w*$": {
+        "^[a-zA-Z_]\\w*$": {
           "type": "object",
           "description": "An attribute definition",
           "properties": {
@@ -107,6 +107,28 @@
           "required": [
             "units"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "triggers": {
+      "type": "object",
+      "description": "A mapping of triggers to their definitions",
+      "patternProperties": {
+        "^[a-zA-Z_]\\w*$": {
+          "type": "object",
+          "description": "A trigger definition",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the trigger"
+            },
+            "description": {
+              "type": "string",
+              "description": "The description of the trigger"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

@@ -29,7 +29,7 @@ class ValidatorTest(unittest.TestCase):
         """Check that missing 'compatible' key throws exception"""
         self._check_with_exception(
             metadata={},
-            exception_string="ERROR: Malformed sensor metadata YAML: {}",
+            exception_string="ERROR: Malformed sensor metadata YAML:\n{}",
             cause_substrings=["'compatible' is a required property"],
         )
 
@@ -38,7 +38,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={"compatible": {}},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML: compatible: {}"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: {}"
             ),
             cause_substrings=[
                 "'org' is a required property",
@@ -48,7 +48,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={"compatible": []},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML: compatible: []"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: []"
             ),
             cause_substrings=["[] is not of type 'object'"],
         )
@@ -56,7 +56,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={"compatible": 1},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML: compatible: 1"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: 1"
             ),
             cause_substrings=["1 is not of type 'object'"],
         )
@@ -64,7 +64,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={"compatible": ""},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML: compatible: ''"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: ''"
             ),
             cause_substrings=[" is not of type 'object'"],
         )
@@ -80,10 +80,12 @@ class ValidatorTest(unittest.TestCase):
                     "compatible": {"org": "google", "part": "foo"},
                     "channels": {},
                     "attributes": {},
+                    "triggers": {},
                 },
             },
             "channels": {},
             "attributes": {},
+            "triggers": {},
         }
         metadata = {
             "compatible": {"org": "google", "part": "foo"},
@@ -167,6 +169,11 @@ class ValidatorTest(unittest.TestCase):
                                 },
                             },
                         },
+                        "triggers": {
+                            "data_ready": {
+                                "description": "notify when new data is ready",
+                            },
+                        },
                     },
                 )
             )
@@ -192,8 +199,15 @@ class ValidatorTest(unittest.TestCase):
                         ]
                     },
                 },
-            }
+                "triggers": {
+                    "data_ready": {},
+                },
+            },
         )
+        expected_trigger_data_ready = {
+            "name": "data_ready",
+            "description": "notify when new data is ready",
+        }
         expected_attribute_sample_rate = {
             "name": "sample_rate",
             "description": "",
@@ -324,6 +338,9 @@ class ValidatorTest(unittest.TestCase):
                     "laundry_pants": expected_channel_laundry_pants,
                     "laundry": expected_channel_laundry,
                 },
+                "triggers": {
+                    "data_ready": expected_trigger_data_ready,
+                },
                 "sensors": {
                     "google,foo": {
                         "compatible": {
@@ -332,6 +349,9 @@ class ValidatorTest(unittest.TestCase):
                         },
                         "attributes": {
                             "sample_rate": expected_attribute_sample_rate,
+                        },
+                        "triggers": {
+                            "data_ready": expected_trigger_data_ready,
                         },
                         "channels": {
                             "bar": expected_sensor_channel_bar,

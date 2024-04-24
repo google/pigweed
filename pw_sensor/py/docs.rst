@@ -40,9 +40,11 @@ Describing a sensor
 -------------------
 When describing a sensor from the user's perspective, there are 3 primary points
 of interaction:
+
 #. compatible descriptor
 #. channels
 #. attributes
+#. triggers
 
 .. note::
    Compatible string in Linux's devicetree are used to detail what a hardware
@@ -146,6 +148,29 @@ but without the ``indicies``:
    attributes:
       sample_rate: {}
 
+What are triggers?
+==================
+Triggers are events that have an interrupt associated with them. We can define
+common triggers which sensors can individually subscribe to. The definition
+looks like:
+
+.. code-block:: yaml
+
+   triggers:
+      fifo_watermark:
+         name: "FIFO watermark"
+         description: "Interrupt when the FIFO watermark has been reached (set as an attribute)"
+
+When associated with a ``sensor``, we simply need to match the right key:
+
+.. code-block:: yaml
+
+   compatible: ...
+   channels: ...
+   attributes: ...
+   triggers:
+      fifo_watermark: {}
+
 The ``Validator`` class
 -----------------------
 The ``Validator`` class is used to take a sensor spec YAML file and expand it
@@ -211,19 +236,22 @@ Output
 ======
 The resulting output is verbose and is intended to allow callers of the
 validation function to avoid having to cross reference values. Currently, there
-will be 2 keys in the returned dictionary: ``sensors`` and ``channels``.
+will be 4 keys in the returned dictionary: ``sensors``, ``channels``,
+``attributes``, and ``triggers``.
 
 The ``sensors`` key is a dictionary mapping unique identifiers generated from
 the sensor's compatible string to the resolved values. There will always be
 exactly 1 of these since each sensor spec is required to only describe a single
 sensor (we'll see an example soon for how these are merged to create a project
-level sensor description). Each ``sensor`` will contain: ``name``,
-``description``, ``compatible`` struct, and a ``channels`` dictionary.
+level sensor description). Each ``sensor`` will contain: ``name`` string,
+``description`` description struct, ``compatible`` struct, ``channels``
+dictionary, ``attributes`` dictionary, and ``triggers`` dictionary.
 
 The difference between the ``/sensors/channels`` and ``/channels`` dictionaries
 is the inclusion of ``indicies`` in the former. The ``indicies`` can be thought
 of as instantiations of the ``/channels``. All other channel properties will be
-exactly the same.
+exactly the same. ``/attributes`` and ``/triggers`` are the same as in
+``/sensors/*``.
 
 Sensor descriptor script
 ------------------------

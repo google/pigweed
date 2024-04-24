@@ -12,10 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-deps:
-  - "pw_sensor/attributes.yaml"
-  - "pw_sensor/channels.yaml"
-  - "pw_sensor/triggers.yaml"
-compatible:
-  org: "Google"
-  part: "pigweed"
+triggers:
+  data_ready:
+    name: "data ready"
+    description: "new data is available"

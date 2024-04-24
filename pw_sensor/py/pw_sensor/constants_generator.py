@@ -24,12 +24,107 @@ import yaml
 
 
 @dataclass(frozen=True)
-class Units:
-    """A single unit representation"""
+class Printable:
+    """Common printable object"""
 
     id: str
     name: str
+    description: str | None
+
+    @property
+    def variable_name(self) -> str:
+        return "k" + ''.join(
+            ele.title() for ele in re.split(r"[\s_-]+", self.id)
+        )
+
+    def print(self, writer: io.TextIOWrapper) -> None:
+        writer.write(
+            f"""
+/// @var k{self.variable_name}
+/// @brief {self.name}
+"""
+        )
+        if self.description:
+            writer.write(
+                f"""///
+/// {self.description}
+"""
+            )
+
+
+@dataclass(frozen=True)
+class Units:
+    """A single unit representation"""
+
+    name: str
     symbol: str
+
+
+@dataclass(frozen=True)
+class Attribute(Printable):
+    """A single attribute representation."""
+
+    units: Units
+
+    def print(self, writer: io.TextIOWrapper) -> None:
+        """Print header definition for this attribute"""
+        super().print(writer=writer)
+        writer.write(
+            f"""
+PW_SENSOR_ATTRIBUTE_TYPE(
+    static,
+    {super().variable_name},
+    "PW_SENSOR_ATTRIBUTE_TYPE",
+    "{self.name}",
+    "{self.units.symbol}"
+);
+"""
+        )
+
+
+@dataclass(frozen=True)
+class Channel(Printable):
+    """A single channel representation."""
+
+    units: Units
+
+    def print(self, writer: io.TextIOWrapper) -> None:
+        """Print header definition for this channel"""
+        super().print(writer=writer)
+        writer.write(
+            f"""
+PW_SENSOR_MEASUREMENT_TYPE(
+    static,
+    {super().variable_name},
+    "PW_SENSOR_MEASUREMENT_TYPE",
+    "{self.name}",
+    "{self.units.symbol}"
+);
+"""
+        )
+
+
+@dataclass(frozen=True)
+class Trigger(Printable):
+    """A single trigger representation."""
+
+    id: str
+    name: str
+    description: str
+
+    def print(self, writer: io.TextIOWrapper) -> None:
+        """Print header definition for this trigger"""
+        super().print(writer=writer)
+        writer.write(
+            f"""
+PW_SENSOR_TRIGGER_TYPE(
+    static,
+    {super().variable_name},
+    "PW_SENSOR_TRIGGER_TYPE",
+    "{self.name}"
+);
+"""
+        )
 
 
 @dataclass
@@ -40,10 +135,51 @@ class Args:
     language: str
 
 
+def attribute_from_dict(attribute_id: str, definition: dict) -> Attribute:
+    """Construct an Attribute from a dictionary entry."""
+    return Attribute(
+        id=attribute_id,
+        name=definition["name"],
+        description=definition["description"],
+        units=Units(
+            name=definition["units"]["name"],
+            symbol=definition["units"]["symbol"],
+        ),
+    )
+
+
+def channel_from_dict(channel_id: str, definition: dict) -> Channel:
+    """Construct a Channel from a dictionary entry."""
+    return Channel(
+        id=channel_id,
+        name=definition["name"],
+        description=definition["description"],
+        units=Units(
+            name=definition["units"]["name"],
+            symbol=definition["units"]["symbol"],
+        ),
+    )
+
+
+def trigger_from_dict(trigger_id: str, definition: dict) -> Trigger:
+    """Construct a Trigger from a dictionary entry."""
+    return Trigger(
+        id=trigger_id,
+        name=definition["name"],
+        description=definition["description"],
+    )
+
+
 class CppHeader:
     """Generator for a C++ header"""
 
-    def __init__(self, package: Sequence[str], units: Sequence[Units]) -> None:
+    def __init__(
+        self,
+        package: Sequence[str],
+        attributes: Sequence[Attribute],
+        channels: Sequence[Channel],
+        triggers: Sequence[Trigger],
+    ) -> None:
         """
         Args:
           package: The package name used in the output. In C++ we'll convert
@@ -52,12 +188,14 @@ class CppHeader:
             ::pw::sensor::MeasurementType.
         """
         self._package: str = '::'.join(package)
-        self._units: Sequence[Units] = units
+        self._attributes: Sequence[Attribute] = attributes
+        self._channels: Sequence[Channel] = channels
+        self._triggers: Sequence[Trigger] = triggers
 
     def __str__(self) -> str:
         writer = io.StringIO()
         self._print_header(writer=writer)
-        self._print_units(writer=writer)
+        self._print_constants(writer=writer)
         self._print_footer(writer=writer)
         return writer.getvalue()
 
@@ -68,34 +206,36 @@ class CppHeader:
         Args:
           writer: Where to write the text to
         """
-        writer.write("/* Auto-generated file, do not edit */\n")
-        writer.write("#pragma once\n")
-        writer.write("\n")
-        writer.write("#include \"pw_sensor/types.h\"\n")
-        writer.write("\n")
+        writer.write(
+            "/* Auto-generated file, do not edit */\n"
+            "#pragma once\n"
+            "\n"
+            "#include \"pw_sensor/types.h\"\n"
+        )
         if self._package:
             writer.write(f"namespace {self._package} {{\n\n")
 
-    def _print_units(self, writer: io.TextIOWrapper) -> None:
+    def _print_constants(self, writer: io.TextIOWrapper) -> None:
         """
-        Print the unit definitions from self._units as
-        ::pw::sensor::MeasurementType
+        Print the constants definitions from self._attributes, self._channels,
+        and self._trigger
 
         Args:
             writer: Where to write the text
         """
-        for units in self._units:
-            variable_name = ''.join(
-                ele.title() for ele in re.split(r"[\s_-]+", units.id)
-            )
-            writer.write(
-                f"constexpr ::pw::sensor::MeasurementType k{variable_name} =\n"
-            )
-            writer.write(
-                '    PW_SENSOR_MEASUREMENT_TYPE'
-                '("PW_SENSOR_MEASUREMENT_TYPE", '
-                f'"{units.name}", "{units.symbol}");\n'
-            )
+
+        writer.write("namespace attributes {\n")
+        for attribute in self._attributes:
+            attribute.print(writer)
+        writer.write("}  // namespace attributes\n")
+        writer.write("namespace channels {\n")
+        for channel in self._channels:
+            channel.print(writer)
+        writer.write("}  // namespace channels\n")
+        writer.write("namespace triggers {\n")
+        for trigger in self._triggers:
+            trigger.print(writer)
+        writer.write("}  // namespace triggers\n")
 
     def _print_footer(self, writer: io.TextIOWrapper) -> None:
         """
@@ -105,7 +245,7 @@ class CppHeader:
             writer: Where to write the text
         """
         if self._package:
-            writer.write(f"\n}}  // {self._package}")
+            writer.write(f"\n}}  // namespace {self._package}")
 
 
 def main() -> None:
@@ -117,19 +257,36 @@ def main() -> None:
     - Print header
     """
     args = get_args()
-    definition = yaml.safe_load(sys.stdin)
-    all_units: set[Units] = set()
-    for channel_id, definition in definition["channels"].items():
-        unit = Units(
-            id=channel_id,
-            name=definition["units"]["name"],
-            symbol=definition["units"]["symbol"],
+    spec = yaml.safe_load(sys.stdin)
+    all_attributes: set[Attribute] = set()
+    all_channels: set[Channel] = set()
+    all_triggers: set[Trigger] = set()
+    for attribute_id, definition in spec["attributes"].items():
+        attribute = attribute_from_dict(
+            attribute_id=attribute_id, definition=definition
         )
-        assert not unit in all_units
-        all_units.add(unit)
+        assert not attribute in all_attributes
+        all_attributes.add(attribute)
+    for channel_id, definition in spec["channels"].items():
+        channel = channel_from_dict(
+            channel_id=channel_id, definition=definition
+        )
+        assert not channel in all_channels
+        all_channels.add(channel)
+    for trigger_id, definition in spec["triggers"].items():
+        trigger = trigger_from_dict(
+            trigger_id=trigger_id, definition=definition
+        )
+        assert not trigger in all_triggers
+        all_triggers.add(trigger)
 
     if args.language == "cpp":
-        out = CppHeader(package=args.package, units=list(all_units))
+        out = CppHeader(
+            package=args.package,
+            attributes=list(all_attributes),
+            channels=list(all_channels),
+            triggers=list(all_triggers),
+        )
     else:
         raise ValueError(f"Invalid language selected: '{args.language}'")
     print(out)
