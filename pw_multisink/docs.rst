@@ -25,6 +25,8 @@ more details.
   Disabling this will alter the entry precondition of the multisink,
   requiring that it not be called from an interrupt context.
 
+.. _module-pw_multisink-late_drain_attach:
+
 Late Drain Attach
 =================
 It is possible to push entries or inform the multisink of drops before any

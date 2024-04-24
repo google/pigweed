@@ -218,9 +218,9 @@ pw_seed("0123") {
 }
 
 pw_seed("0124") {
-  changelist = 188670
+  sources = [ "0124-multisink-size-info.rst" ]
   title = "Interfaces for Retrieving Size Information from Multisink"
-  status = "Draft"
+  status = "Intent Approved"
   author = "Jiacheng Lu"
   facilitator = "Carlos Chinchilla"
 }
