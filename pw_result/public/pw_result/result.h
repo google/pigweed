@@ -876,8 +876,8 @@ constexpr Status ConvertToStatus(const Result<T>& result) {
 }
 
 template <typename T>
-constexpr T ConvertToValue(Result<T>& result) {
-  return std::move(result.value());
+constexpr T&& ConvertToValue(Result<T>& result) {
+  return std::move(result).value();
 }
 
 }  // namespace internal

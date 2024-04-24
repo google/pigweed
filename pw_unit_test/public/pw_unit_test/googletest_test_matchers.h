@@ -213,7 +213,7 @@ inline internal::IsOkAndHoldsMatcher<InnerMatcher> IsOkAndHolds(
 //
 /// Example: Declaring and initializing a new value. E.g.:
 ///   ASSERT_OK_AND_ASSIGN(auto value, MaybeGetValue(arg));
-///   ASSERT_OK_AND_ASSIGN(const ValueType& value, MaybeGetValue(arg));
+///   ASSERT_OK_AND_ASSIGN(const ValueType value, MaybeGetValue(arg));
 ///   ASSERT_OK_AND_MOVE(auto ptr, MaybeGetUniquePtr(arg))
 ///
 /// Example: Assigning to an existing value
@@ -230,24 +230,37 @@ inline internal::IsOkAndHoldsMatcher<InnerMatcher> IsOkAndHolds(
 ///   an if statement without {})!
 #define ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
   ASSERT_OK_AND_ASSIGN_DETAIL(UNIQUE_IDENTIFIER_DETAIL(__LINE__), lhs, rexpr)
+
+/// Deprecated. Prefer ASSERT_OK_AND_ASSIGN, which will move if the rexpr is an
+/// rvalue (either an expression or `std::move(some_named_value)`).
 #define ASSERT_OK_AND_MOVE(lhs, rexpr) \
   ASSERT_OK_AND_MOVE_DETAIL(UNIQUE_IDENTIFIER_DETAIL(__LINE__), lhs, rexpr)
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
 // The suggestion would produce bad code.
-#define ASSERT_OK_AND_ASSIGN_DETAIL(result, lhs, rexpr) \
-  const auto& result = (rexpr);                         \
-  if (!result.ok()) {                                   \
-    FAIL() << #rexpr << " is not OK.";                  \
-  }                                                     \
-  lhs = ::pw::unit_test::internal::GetValue(result);
-#define ASSERT_OK_AND_MOVE_DETAIL(result, lhs, rexpr) \
-  auto&& result = (rexpr);                            \
-  if (!result.ok()) {                                 \
-    FAIL() << #rexpr << " is not OK.";                \
-  }                                                   \
+#define ASSERT_OK_AND_ASSIGN_DETAIL(result, lhs, rexpr)                 \
+  auto result = (rexpr);                                                \
+  if (!result.ok()) {                                                   \
+    FAIL() << "`" << #rexpr << "` is not OK: "                          \
+           << pw_StatusString(::pw::internal::ConvertToStatus(result)); \
+  }                                                                     \
+  lhs = ::pw::internal::ConvertToValue(result);
+
+#define ASSERT_OK_AND_MOVE_DETAIL(result, lhs, rexpr)                   \
+  auto&& result = (rexpr);                                              \
+  if (!result.ok()) {                                                   \
+    FAIL() << "`" << #rexpr << "` is not OK: "                          \
+           << pw_StatusString(::pw::internal::ConvertToStatus(result)); \
+  }                                                                     \
   lhs = ::pw::unit_test::internal::GetValue(std::move(result));
 // NOLINTEND(bugprone-macro-parentheses)
+
+#define _PW_TRY_ASSIGN(result, lhs, expr)           \
+  auto result = (expr);                             \
+  if (!result.ok()) {                               \
+    return ::pw::internal::ConvertToStatus(result); \
+  }                                                 \
+  lhs = ::pw::internal::ConvertToValue(result);
 
 #define UNIQUE_IDENTIFIER_DETAIL(line) UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line)
 #define UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line) \

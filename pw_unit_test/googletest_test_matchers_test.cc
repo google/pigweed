@@ -15,11 +15,17 @@
 
 #include <cstdlib>
 
+#include "gtest/gtest-spi.h"
 #include "pw_status/status.h"
 
-namespace pw::unit_test {
 namespace {
 
+using ::pw::OkStatus;
+using ::pw::Result;
+using ::pw::Status;
+using ::pw::StatusWithSize;
+using ::pw::unit_test::IsOkAndHolds;
+using ::pw::unit_test::StatusIs;
 using ::testing::Eq;
 using ::testing::Not;
 
@@ -115,50 +121,121 @@ TEST(TestMatchers, StatusIsSuccessResult) {
               StatusIs(Status::Unauthenticated()));
 }
 
-TEST(IsOkAndHoldsTest, StatusWithSize) {
+TEST(IsOkAndHolds, StatusWithSize) {
   const auto status_with_size = StatusWithSize{OkStatus(), 42};
   EXPECT_THAT(status_with_size, IsOkAndHolds(Eq(42u)));
 }
 
-TEST(IsOkAndHoldsTest, Result) {
+TEST(IsOkAndHolds, Result) {
   auto value = Result<int>{42};
   EXPECT_THAT(value, IsOkAndHolds(Eq(42)));
 }
 
-TEST(IsOkAndHoldsTest, BadStatusWithSize) {
+TEST(IsOkAndHolds, BadStatusWithSize) {
   const auto status_with_size = StatusWithSize{Status::InvalidArgument(), 0};
   EXPECT_THAT(status_with_size, Not(IsOkAndHolds(Eq(42u))));
 }
 
-TEST(IsOkAndHoldsTest, WrongStatusWithSize) {
+TEST(IsOkAndHolds, WrongStatusWithSize) {
   const auto status_with_size = StatusWithSize{OkStatus(), 100};
   EXPECT_THAT(status_with_size, IsOkAndHolds(Not(Eq(42u))));
   EXPECT_THAT(status_with_size, Not(IsOkAndHolds(Eq(42u))));
 }
 
-TEST(IsOkAndHoldsTest, BadResult) {
+TEST(IsOkAndHolds, BadResult) {
   const auto value = Result<int>{Status::InvalidArgument()};
   EXPECT_THAT(value, Not(IsOkAndHolds(Eq(42))));
 }
 
-TEST(IsOkAndHoldsTest, WrongResult) {
+TEST(IsOkAndHolds, WrongResult) {
   const auto value = Result<int>{100};
   EXPECT_THAT(value, IsOkAndHolds(Not(Eq(42))));
   EXPECT_THAT(value, Not(IsOkAndHolds(Eq(42))));
 }
 
-TEST(AssertOkAndAssignTest, OkResult) {
+TEST(AssertOkAndAssign, AssignsOkValueToNewLvalue) {
   const auto value = Result<int>(5);
+  ASSERT_OK_AND_ASSIGN(int declare_and_assign, value);
+  EXPECT_EQ(5, declare_and_assign);
+}
 
+TEST(AssertOkAndAssign, AssignsOkValueToExistingLvalue) {
+  const auto value = Result<int>(5);
   int existing_value = 0;
   ASSERT_OK_AND_ASSIGN(existing_value, value);
   EXPECT_EQ(5, existing_value);
+}
 
-  ASSERT_OK_AND_ASSIGN(int declare_and_assign, value);
-  EXPECT_EQ(5, declare_and_assign);
+TEST(AssertOkAndAssign, AssignsExistingLvalueToConstReference) {
+  const auto value = Result<int>(5);
+  ASSERT_OK_AND_ASSIGN(const auto& ref, value);
+  EXPECT_EQ(5, ref);
+}
 
-  ASSERT_OK_AND_ASSIGN(auto& declare_auto_ref_and_assign, value);
-  EXPECT_EQ(5, declare_auto_ref_and_assign);
+void AssertOkAndAssignInternally(Result<int> my_result_name) {
+  ASSERT_OK_AND_ASSIGN([[maybe_unused]] int _unused, my_result_name);
+}
+
+TEST(AssertOkAndAssign, AssertFailsOnNonOkStatus) {
+  EXPECT_FATAL_FAILURE(AssertOkAndAssignInternally(Status::InvalidArgument()),
+                       "`my_result_name` is not OK: INVALID_ARGUMENT");
+}
+
+class CopyMoveCounter {
+ public:
+  CopyMoveCounter() = delete;
+  CopyMoveCounter(int& copies, int& moves) : copies_(&copies), moves_(&moves) {}
+  CopyMoveCounter(const CopyMoveCounter& other)
+      : copies_(other.copies_), moves_(other.moves_) {
+    ++(*copies_);
+  }
+  CopyMoveCounter(CopyMoveCounter&& other)
+      : copies_(other.copies_), moves_(other.moves_) {
+    ++(*moves_);
+  }
+  CopyMoveCounter& operator=(const CopyMoveCounter& other) {
+    copies_ = other.copies_;
+    moves_ = other.moves_;
+    ++(*copies_);
+    return *this;
+  }
+  CopyMoveCounter& operator=(CopyMoveCounter&& other) {
+    copies_ = other.copies_;
+    moves_ = other.moves_;
+    ++(*moves_);
+    return *this;
+  }
+
+ private:
+  int* copies_;
+  int* moves_;
+};
+
+TEST(AssertOkAndAssign, OkRvalueDoesNotCopy) {
+  int copies = 0;
+  int moves = 0;
+  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm,
+                       Result(CopyMoveCounter(copies, moves)));
+  EXPECT_EQ(copies, 0);
+  EXPECT_EQ(moves, 2);
+}
+
+TEST(AssertOkAndAssign, OkLvalueMovedDoesNotCopy) {
+  int copies = 0;
+  int moves = 0;
+  Result result(CopyMoveCounter(copies, moves));
+  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm, std::move(result));
+  EXPECT_EQ(copies, 0);
+  EXPECT_EQ(moves, 3);
+}
+
+TEST(AssertOkAndAssign, OkLvalueCopiesOnce) {
+  int copies = 0;
+  int moves = 0;
+  Result result(CopyMoveCounter(copies, moves));
+  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm, result);
+  EXPECT_EQ(copies, 1);
+  EXPECT_EQ(moves, 2);
 }
 
 // The following test is commented out and is only for checking what
@@ -190,4 +267,3 @@ TEST(AssertOkAndAssignTest, OkResult) {
 // }
 
 }  // namespace
-}  // namespace pw::unit_test
