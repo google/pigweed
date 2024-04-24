@@ -72,7 +72,7 @@ CreateToHostBuffer() {
 // Tests
 
 // Example for docs.rst.
-TEST(ExampleUsage, Example) {
+TEST(Example, ExampleUsage) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
       h4_array_from_host = CreateToControllerBuffer();
@@ -115,7 +115,7 @@ TEST(ExampleUsage, Example) {
 }
 
 // Verify buffer is properly passed (is equal value) when we have no policies.
-TEST(WithNoPoliciesTheToControllerPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
       CreateToControllerBuffer();
@@ -146,7 +146,7 @@ TEST(WithNoPoliciesTheToControllerPassesEqualBuffer, PassthroughTest) {
   EXPECT_EQ(send_called, true);
 }
 
-TEST(WithOnePolicyTheToControllerPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithOnePolicyTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
       CreateToControllerBuffer();
@@ -177,7 +177,7 @@ TEST(WithOnePolicyTheToControllerPassesEqualBuffer, PassthroughTest) {
   EXPECT_EQ(send_called, true);
 }
 
-TEST(WithThreePoliciesTheToControllerPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithThreePoliciesTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
       CreateToControllerBuffer();
@@ -213,7 +213,7 @@ TEST(WithThreePoliciesTheToControllerPassesEqualBuffer, PassthroughTest) {
 
 // Verify buffer is passed to host callback with the same contents with no
 // policies.
-TEST(WithNoPoliciesTheToHostPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithNoPoliciesTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
       h4_array = CreateToHostBuffer();
@@ -244,7 +244,7 @@ TEST(WithNoPoliciesTheToHostPassesEqualBuffer, PassthroughTest) {
   EXPECT_EQ(send_called, true);
 }
 
-TEST(WithOnePolicyTheToHostPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithOnePolicyTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
       h4_array = CreateToHostBuffer();
@@ -276,7 +276,7 @@ TEST(WithOnePolicyTheToHostPassesEqualBuffer, PassthroughTest) {
   EXPECT_EQ(send_called, true);
 }
 
-TEST(WithThreePoliciesTheToHostPassesEqualBuffer, PassthroughTest) {
+TEST(PassthroughTest, WithThreePoliciesTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
       h4_array = CreateToHostBuffer();
