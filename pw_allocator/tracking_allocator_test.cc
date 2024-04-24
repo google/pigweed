@@ -28,10 +28,11 @@ namespace {
 
 // Test fixtures.
 
-class TrackingAllocatorForTest : public TrackingAllocator<AllMetrics> {
+class TrackingAllocatorForTest
+    : public TrackingAllocator<internal::AllMetrics> {
  public:
   TrackingAllocatorForTest(metric::Token token, Allocator& allocator)
-      : TrackingAllocator<AllMetrics>(token, allocator) {}
+      : TrackingAllocator<internal::AllMetrics>(token, allocator) {}
 
   // Expose the protected ``GetAllocatedLayout`` method for test purposes.
   Result<Layout> GetAllocatedLayout(const void* ptr) const {
@@ -90,7 +91,7 @@ struct ExpectedValues {
     cumulative_allocated_bytes += allocated_bytes_;
   }
 
-  void Check(const AllMetrics& metrics, int line) {
+  void Check(const internal::AllMetrics& metrics, int line) {
     EXPECT_EQ(metrics.requested_bytes.value(), requested_bytes);
     EXPECT_EQ(metrics.peak_requested_bytes.value(), peak_requested_bytes);
     EXPECT_EQ(metrics.cumulative_requested_bytes.value(),
@@ -116,7 +117,7 @@ struct ExpectedValues {
 // Unit tests.
 
 TEST_F(TrackingAllocatorTest, InitialValues) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;  // Initially all 0.
   EXPECT_METRICS_EQ(expected, metrics);
 }
@@ -138,7 +139,7 @@ TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {
 }
 
 TEST_F(TrackingAllocatorTest, AllocateDeallocate) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -158,7 +159,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocate) {
 }
 
 TEST_F(TrackingAllocatorTest, AllocateFailure) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout = Layout::Of<uint32_t[0x10000000U]>();
@@ -170,7 +171,7 @@ TEST_F(TrackingAllocatorTest, AllocateFailure) {
 }
 
 TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   Layout layout1 = Layout::Of<uint32_t[3]>();
@@ -220,7 +221,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeLarger) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[3]>();
@@ -248,7 +249,7 @@ TEST_F(TrackingAllocatorTest, ResizeLarger) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeSmaller) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -276,7 +277,7 @@ TEST_F(TrackingAllocatorTest, ResizeSmaller) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeFailure) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout = Layout::Of<uint32_t[4]>();
@@ -303,7 +304,7 @@ TEST_F(TrackingAllocatorTest, ResizeFailure) {
 }
 
 TEST_F(TrackingAllocatorTest, Reallocate) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -361,7 +362,7 @@ TEST_F(TrackingAllocatorTest, Reallocate) {
 }
 
 TEST_F(TrackingAllocatorTest, ReallocateFailure) {
-  const AllMetrics& metrics = tracker_.metrics();
+  const internal::AllMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[4]>();

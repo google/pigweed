@@ -33,25 +33,8 @@ namespace test {
 // A token that can be used in tests.
 constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
-/// This metrics struct enables all metrics for tests except those related to
-/// `requested_bytes`, since `TrackingAllocator` adds additional overhead if the
-/// `requested_bytes` are enabled.
-struct TestMetrics {
-  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
-
-  PW_ALLOCATOR_METRICS_ENABLE(num_allocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_deallocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_resizes);
-  PW_ALLOCATOR_METRICS_ENABLE(num_reallocations);
-
-  PW_ALLOCATOR_METRICS_ENABLE(num_failures);
-  PW_ALLOCATOR_METRICS_ENABLE(unfulfilled_bytes);
-};
-
 /// An `AllocatorForTest` that is automatically initialized on construction.
-template <size_t kBufferSize, typename MetricsType = AllMetrics>
+template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
 class AllocatorForTest : public Allocator {
  public:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;

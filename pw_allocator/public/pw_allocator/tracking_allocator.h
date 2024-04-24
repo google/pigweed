@@ -75,8 +75,6 @@ static constexpr struct AddTrackingAllocatorAsChild {
 template <typename MetricsType>
 class TrackingAllocator : public Allocator {
  public:
-  using metric_type = MetricsType;
-
   TrackingAllocator(metric::Token token, Allocator& allocator)
       : Allocator(allocator.capabilities() | kImplementsGetRequestedLayout),
         allocator_(allocator),

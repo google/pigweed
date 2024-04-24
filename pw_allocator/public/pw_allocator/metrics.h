@@ -87,29 +87,30 @@ PW_ALLOCATOR_METRICS_DECLARE(unfulfilled_bytes);
   static_assert(!::pw::allocator::has_##metric_name<void>::value); \
   PW_METRIC(metric_name, #metric_name, 0U)
 
-/// A predefined metric struct that enables all allocator metrics.
-struct AllMetrics {
-  PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(peak_requested_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(cumulative_requested_bytes);
-
-  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
-
-  PW_ALLOCATOR_METRICS_ENABLE(num_allocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_deallocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_resizes);
-  PW_ALLOCATOR_METRICS_ENABLE(num_reallocations);
-
-  PW_ALLOCATOR_METRICS_ENABLE(num_failures);
-  PW_ALLOCATOR_METRICS_ENABLE(unfulfilled_bytes);
-};
-
 /// A predefined metric struct that enables no allocator metrics.
 struct NoMetrics {};
 
 namespace internal {
+
+/// A metrics type that enables all metrics for testing.
+///
+/// Warning! Do not use in production code. If metrics are added to it later,
+/// code using this struct may unexpected grow in code size, memory usage,
+/// and/or performance overhead.
+struct AllMetrics {
+  PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(peak_requested_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(cumulative_requested_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(num_allocations);
+  PW_ALLOCATOR_METRICS_ENABLE(num_deallocations);
+  PW_ALLOCATOR_METRICS_ENABLE(num_resizes);
+  PW_ALLOCATOR_METRICS_ENABLE(num_reallocations);
+  PW_ALLOCATOR_METRICS_ENABLE(num_failures);
+  PW_ALLOCATOR_METRICS_ENABLE(unfulfilled_bytes);
+};
 
 /// Encapsulates the metrics struct for ``pw::allocator::TrackingAllocator``.
 ///
