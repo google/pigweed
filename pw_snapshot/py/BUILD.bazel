@@ -57,3 +57,26 @@ py_test(
         "//pw_tokenizer/py:pw_tokenizer",
     ],
 )
+
+py_test(
+    name = "processor_test",
+    srcs = ["processor_test.py"],
+
+    # TODO(b/336614211): Remove and re-enable tests.
+    tags = [
+        "manual",
+        "noenv-failure",
+    ],
+    deps = [
+        ":pw_snapshot",
+        ":pw_snapshot_metadata",
+        "//pw_build_info/py:pw_build_info",
+        "//pw_chrono/py:pw_chrono",
+        "//pw_cpu_exception_cortex_m/py:exception_analyzer",
+        "//pw_cpu_exception_risc_v/py:exception_analyzer",
+        "//pw_snapshot:snapshot_proto_py_pb2",
+        "//pw_symbolizer/py:pw_symbolizer",
+        "//pw_thread/py:pw_thread",
+        "//pw_tokenizer/py:pw_tokenizer",
+    ],
+)

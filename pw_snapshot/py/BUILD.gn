@@ -49,7 +49,10 @@ pw_python_package("pw_snapshot") {
     "pw_snapshot/__init__.py",
     "pw_snapshot/processor.py",
   ]
-  tests = [ "metadata_test.py" ]
+  tests = [
+    "metadata_test.py",
+    "processor_test.py",
+  ]
   python_deps = [
     ":pw_snapshot_metadata",
     "$dir_pw_build_info/py",
