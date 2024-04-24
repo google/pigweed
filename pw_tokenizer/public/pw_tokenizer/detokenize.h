@@ -147,6 +147,22 @@ class Detokenizer {
     return DetokenizeText(text, 1);
   }
 
+  /// Decodes data that may or may not be tokenized, such as proto fields marked
+  /// as optionally tokenized.
+  ///
+  /// This function currently only supports Base64 nested tokenized messages.
+  /// Support for hexadecimal-encoded string literals will be added.
+  ///
+  /// This function currently assumes when data is not tokenized it is printable
+  /// ASCII. Otherwise, the returned string will be base64-encoded.
+  ///
+  /// @param[in] optionally_tokenized_data Data optionally tokenized.
+  ///
+  /// @returns The decoded text if successfully detokenized or if the data is
+  /// printable, otherwise returns the data base64-encoded.
+  std::string DecodeOptionallyTokenizedData(
+      const span<const std::byte>& optionally_tokenized_data);
+
  private:
   std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>> database_;
 };

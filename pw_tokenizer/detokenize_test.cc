@@ -34,7 +34,7 @@ auto TestCases(Args... args) {
   return std::array<Case, sizeof...(Args)>{args...};
 }
 
-// Database with the following entries:
+// Database with the following entries and arbitrary token values:
 // {
 //   0x00000001: "One",
 //   0x00000005: "TWO",
@@ -44,18 +44,20 @@ auto TestCases(Args... args) {
 // }
 constexpr char kTestDatabase[] =
     "TOKENS\0\0"
-    "\x05\x00\x00\x00"
+    "\x06\x00\x00\x00"  // Number of tokens in this database.
     "\0\0\0\0"
     "\x01\x00\x00\x00----"
     "\x05\x00\x00\x00----"
     "\xFF\x00\x00\x00----"
     "\xFF\xEE\xEE\xDD----"
     "\xEE\xEE\xEE\xEE----"
+    "\x9D\xA7\x97\xF8----"
     "One\0"
     "TWO\0"
     "333\0"
     "FOUR\0"
-    "$AQAAAA==";
+    "$AQAAAA==\0"
+    "■msg♦This is $AQAAAA== message■module♦■file♦file.txt";
 
 class Detokenize : public ::testing::Test {
  protected:
@@ -163,6 +165,33 @@ TEST_F(Detokenize, Base64_NoArguments) {
            Case{NEST_ONE NEST_ONE NEST_ONE, "OneOneOne"},
            Case{FOUR "$" ONE NEST_ONE "?", "FOUR$OneOne?"})) {
     EXPECT_EQ(detok_.DetokenizeText(data), expected);
+  }
+}
+
+TEST_F(Detokenize, OptionallyTokenizedData) {
+  for (auto [data, expected] : TestCases(
+           Case{ONE, "One"},
+           Case{"\1\0\0\0", "One"},
+           Case{TWO, "TWO"},
+           Case{THREE, "333"},
+           Case{FOUR, "FOUR"},
+           Case{FOUR ONE ONE, "FOUROneOne"},
+           Case{ONE TWO THREE FOUR, "OneTWO333FOUR"},
+           Case{ONE "\r\n" TWO "\r\n" THREE "\r\n" FOUR "\r\n",
+                "One\r\nTWO\r\n333\r\nFOUR\r\n"},
+           Case{"123" FOUR, "123FOUR"},
+           Case{"123" FOUR ", 56", "123FOUR, 56"},
+           Case{"12" THREE FOUR ", 56", "12333FOUR, 56"},
+           Case{"$0" ONE, "$0One"},
+           Case{"$/+7u3Q=", "$/+7u3Q="},  // incomplete message (missing "=")
+           Case{"$123456==" FOUR, "$123456==FOUR"},
+           Case{NEST_ONE, "One"},
+           Case{NEST_ONE NEST_ONE NEST_ONE, "OneOneOne"},
+           Case{FOUR "$" ONE NEST_ONE "?", "FOUR$OneOne?"},
+           Case{"$naeX+A==",
+                "■msg♦This is One message■module♦■file♦file.txt"})) {
+    EXPECT_EQ(detok_.DecodeOptionallyTokenizedData(as_bytes(span(data))),
+              std::string(expected));
   }
 }
 

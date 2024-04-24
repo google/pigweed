@@ -15,7 +15,10 @@
 #include "pw_tokenizer/detokenize.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstring>
+#include <string_view>
+#include <vector>
 
 #include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
@@ -144,6 +147,22 @@ bool IsBetterResult(const DecodingResult& lhs, const DecodingResult& rhs) {
   return lhs.second > rhs.second;
 }
 
+// Returns true if all characters in data are printable, space, or if the string
+// is empty.
+constexpr bool IsPrintableAscii(std::string_view data) {
+  // This follows the logic in pw_tokenizer.decode_optionally_tokenized below:
+  //
+  //   if ''.join(text.split()).isprintable():
+  //     return text
+  //
+  for (int letter : data) {
+    if (std::isprint(letter) == 0 && std::isspace(letter) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 DetokenizedString::DetokenizedString(
@@ -259,6 +278,54 @@ std::string Detokenizer::DetokenizeText(std::string_view text,
     pass += 1;
   }
   return result;
+}
+
+std::string Detokenizer::DecodeOptionallyTokenizedData(
+    const ConstByteSpan& optionally_tokenized_data) {
+  // Try detokenizing as binary using the best result if available, else use
+  // the input data as a string.
+  const auto result = Detokenize(optionally_tokenized_data);
+  const bool found_matches = !result.matches().empty();
+  // Note: unlike pw_tokenizer.proto.decode_optionally_tokenized, this decoding
+  // process does not encode and decode UTF8 format, it is sufficient to check
+  // if the data is printable ASCII.
+  const std::string data =
+      found_matches
+          ? result.BestString()
+          : std::string(
+                reinterpret_cast<const char*>(optionally_tokenized_data.data()),
+                optionally_tokenized_data.size());
+
+  const bool is_data_printable = IsPrintableAscii(data);
+  if (!found_matches && !is_data_printable) {
+    // Assume the token is unknown or the data is corrupt.
+    std::vector<char> base64_encoding_buffer(
+        Base64EncodedBufferSize(optionally_tokenized_data.size()));
+    const size_t encoded_length = PrefixedBase64Encode(
+        optionally_tokenized_data, span(base64_encoding_buffer));
+    return std::string{base64_encoding_buffer.data(), encoded_length};
+  }
+
+  // Successfully detokenized, check if the field has more prefixed
+  // base64-encoded tokens.
+  const std::string field = DetokenizeText(data);
+  // If anything detokenized successfully, use that.
+  if (field != data) {
+    return field;
+  }
+
+  // Attempt to determine whether this is an unknown token or plain text.
+  // Any string with only printable or whitespace characters is plain text.
+  if (found_matches || is_data_printable) {
+    return data;
+  }
+
+  // Assume this field is tokenized data that could not be decoded.
+  std::vector<char> base64_encoding_buffer(
+      Base64EncodedBufferSize(optionally_tokenized_data.size()));
+  const size_t encoded_length = PrefixedBase64Encode(
+      optionally_tokenized_data, span(base64_encoding_buffer));
+  return std::string{base64_encoding_buffer.data(), encoded_length};
 }
 
 }  // namespace pw::tokenizer
