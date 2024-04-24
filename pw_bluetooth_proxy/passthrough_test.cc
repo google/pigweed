@@ -36,37 +36,63 @@ constexpr const pw::span<uint8_t> HciSubspanOfH4Buffer(C&& container) {
   return pw::span(container.data() + 1, container.size() - 1);
 }
 
-// Populate H4 buffer to send towards controller.
-std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
-CreateToControllerBuffer() {
-  std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array;
-  std::iota(h4_array.begin(), h4_array.end(), 100);
-  h4_array[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
-  const auto hci_span = HciSubspanOfH4Buffer(h4_array);
-  auto packet_view = emboss::MakeInquiryCommandView(&hci_span);
-  EXPECT_TRUE(packet_view.IsComplete());
-  // TODO: b/330064223 - Move to using opcode constants once we have them in
-  // pw_bluetooth.
-  packet_view.header().opcode_full().Write(
-      emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  return h4_array;
+// Simple struct for returning a H4 array and an emboss view on its HCI packet.
+template <typename EmbossT>
+struct EmbossViewWithH4Buffer {
+  // Size is +1 to accomidate the H4 packet type at the front.
+  std::array<uint8_t, EmbossT::SizeInBytes() + 1> arr;
+  EmbossT view;
+};
+
+// Return H4 command buffer and Emboss view using indicated Emboss type to send
+// towards controller.
+template <typename EmbossT>
+EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
+    emboss::OpCode opcode) {
+  EmbossViewWithH4Buffer<EmbossT> view_arr;
+  std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
+  view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+  const auto hci_span = HciSubspanOfH4Buffer(view_arr.arr);
+  view_arr.view = EmbossT(&hci_span);
+  EXPECT_TRUE(view_arr.view.IsComplete());
+  view_arr.view.header().opcode_full().Write(opcode);
+  return view_arr;
 }
 
-// Populate H4 buffer to send towards host.
+// Populate an H4 buffer to send towards controller. Type should be one
+// that none of our policies try to interact with.
+std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
+CreateNoninteractingToControllerBuffer() {
+  EmbossViewWithH4Buffer<emboss::InquiryCommandWriter> view_arr =
+      CreateToControllerBuffer<emboss::InquiryCommandWriter>(
+          emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  return view_arr.arr;
+}
+
+// Return H4 event buffer and Emboss view using indicated Emboss type to send
+// towards host.
+template <typename EmbossT>
+EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
+    uint event_code, emboss::StatusCode status_code) {
+  EmbossViewWithH4Buffer<EmbossT> view_arr;
+  std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
+  view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::EVENT);
+  const auto hci_span = HciSubspanOfH4Buffer(view_arr.arr);
+  view_arr.view = EmbossT(&hci_span);
+  view_arr.view.header().event_code().Write(event_code);
+  view_arr.view.status().Write(status_code);
+  EXPECT_TRUE(view_arr.view.IsComplete());
+  return view_arr;
+}
+
+// Populate an H4 buffer to send towards host. Type should be one
+// that none of our policies try to interact with.
 std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-CreateToHostBuffer() {
-  std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array;
-  std::iota(h4_array.begin(), h4_array.end(), 100);
-  h4_array[0] = cpp23::to_underlying(emboss::H4PacketType::EVENT);
-  const auto hci_span = HciSubspanOfH4Buffer(h4_array);
-  auto packet_view = emboss::MakeInquiryCompleteEventView(&hci_span);
-  EXPECT_TRUE(packet_view.IsComplete());
-  // TODO: b/330064223 - Move to using event code constants once we have them in
-  // pw_bluetooth.
-  packet_view.header().event_code().Write(0x01);
-  packet_view.status().Write(emboss::StatusCode::COMMAND_DISALLOWED);
-  return h4_array;
+CreateNonInteractingToHostBuffer() {
+  EmbossViewWithH4Buffer<emboss::InquiryCompleteEventWriter> view_arr =
+      CreateToHostBuffer<emboss::InquiryCompleteEventWriter>(
+          0x01, emboss::StatusCode::COMMAND_DISALLOWED);
+  return view_arr.arr;
 }
 
 // Tests
@@ -75,12 +101,12 @@ CreateToHostBuffer() {
 TEST(Example, ExampleUsage) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
-      h4_array_from_host = CreateToControllerBuffer();
+      h4_array_from_host = CreateNoninteractingToControllerBuffer();
   auto h4_span_from_host = pw::span(h4_array_from_host);
 
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array_from_controller = CreateToHostBuffer();
+      h4_array_from_controller = CreateNonInteractingToHostBuffer();
   auto h4_span_from_controller = pw::span(h4_array_from_controller);
 
   H4HciPacketSendFn containerSendToHostFn([](H4HciPacket packet) {});
@@ -118,7 +144,7 @@ TEST(Example, ExampleUsage) {
 TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
-      CreateToControllerBuffer();
+      CreateNoninteractingToControllerBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to
   // controller in this test).
@@ -149,7 +175,7 @@ TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
 TEST(PassthroughTest, WithOnePolicyTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
-      CreateToControllerBuffer();
+      CreateNoninteractingToControllerBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to
   // controller in this test).
@@ -180,7 +206,7 @@ TEST(PassthroughTest, WithOnePolicyTheToControllerPassesEqualBuffer) {
 TEST(PassthroughTest, WithThreePoliciesTheToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
-      CreateToControllerBuffer();
+      CreateNoninteractingToControllerBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to
   // controller in this test).
@@ -216,7 +242,7 @@ TEST(PassthroughTest, WithThreePoliciesTheToControllerPassesEqualBuffer) {
 TEST(PassthroughTest, WithNoPoliciesTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateToHostBuffer();
+      h4_array = CreateNonInteractingToHostBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to host
   // in this test).
@@ -247,7 +273,7 @@ TEST(PassthroughTest, WithNoPoliciesTheToHostPassesEqualBuffer) {
 TEST(PassthroughTest, WithOnePolicyTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateToHostBuffer();
+      h4_array = CreateNonInteractingToHostBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to host
   // in this test).
@@ -279,7 +305,7 @@ TEST(PassthroughTest, WithOnePolicyTheToHostPassesEqualBuffer) {
 TEST(PassthroughTest, WithThreePoliciesTheToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateToHostBuffer();
+      h4_array = CreateNonInteractingToHostBuffer();
 
   // Outbound callbacks where we verify packet is equal (just testing to host
   // in this test).
