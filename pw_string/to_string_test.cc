@@ -21,6 +21,7 @@
 #include <string>
 
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_string/internal/config.h"
 #include "pw_string/type_to_string.h"
@@ -306,5 +307,29 @@ TEST(ToString, ResultWithValue) {
   EXPECT_STREQ("Ok(27)", buffer);
 }
 
+TEST(ToString, EmptyArrayUsesIterableFormat) {
+  std::array<int, 0> v = {};
+  EXPECT_EQ(2u, ToString(v, buffer).size());
+  EXPECT_STREQ("[]", buffer);
+}
+
+TEST(ToString, ArrayUsesIterableFormat) {
+  std::array<int, 3> v = {1, 2, 3};
+  EXPECT_EQ(9u, ToString(v, buffer).size());
+  EXPECT_STREQ("[1, 2, 3]", buffer);
+}
+
+TEST(ToString, SpanUsesIterableFormat) {
+  std::array<int, 3> arr = {1, 2, 3};
+  span v(arr);
+  EXPECT_EQ(9u, ToString(v, buffer).size());
+  EXPECT_STREQ("[1, 2, 3]", buffer);
+}
+
+TEST(ToString, ArrayOfStringsUsesIterableFormat) {
+  std::array<const char*, 3> v({"foo", "bar", "baz"});
+  EXPECT_EQ(15u, ToString(v, buffer).size());
+  EXPECT_STREQ("[foo, bar, baz]", buffer);
+}
 }  // namespace
 }  // namespace pw
