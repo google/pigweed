@@ -40,7 +40,7 @@ fn main() -> ! {
     // `pw_log` messages
     pw_log_infof!("Bare string");
     pw_log_warnf!("Integer value %d", 42);
-    pw_log_infof!("generic arguments %v %v", 42u32, -42);
+    pw_log_infof!("generic arguments %v %v", 42 as u32, -42 as i32);
     debug::exit(debug::EXIT_SUCCESS);
     loop {}
 }
