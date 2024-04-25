@@ -179,7 +179,8 @@ fn conversion(input: &str) -> IResult<&str, ConversionSpec> {
     let (input, argument) = argument(input)?;
     let (input, spec) = opt(format_spec)(input)?;
     // Allow trailing whitespace.  Here we specifically match against Rust's
-    // idea of whitespace as it differs from nom's space0 combinator.
+    // idea of whitespace (specified in the Unicode Character Database) as it
+    // differs from nom's space0 combinator (just spaces and tabs).
     let (input, _) = take_while(|c: char| c.is_whitespace())(input)?;
     let (input, _) = tag("}")(input)?;
 
