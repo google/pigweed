@@ -246,6 +246,13 @@ pw_seed("0127") {
   author = "Yuval Peress"
 }
 
+pw_seed("0128") {
+  title = "Abstracting Thread Creation"
+  author = "Wyatt Hepler"
+  status = "Draft"
+  changelist = 206670
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -280,5 +287,6 @@ pw_seed_index("seeds") {
     ":0125",
     ":0126",
     ":0127",
+    ":0128",
   ]
 }
