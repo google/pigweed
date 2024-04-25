@@ -41,6 +41,7 @@ _NEW_SEED_TEMPLATE = '''.. _seed-{num:04d}:
    :status: {status}
    :proposal_date: {date}
    :cl: {changelist}
+   :authors: {authors}
    :facilitator: Unassigned
 
 -------
@@ -428,6 +429,7 @@ def _create_wip_seed_doc_change(
             title_underline=title_underline,
             num=new_seed.number,
             title=new_seed.title,
+            authors=new_seed.authors,
             status=new_seed.status,
             date=datetime.date.today().strftime('%Y-%m-%d'),
             changelist=0,
@@ -489,6 +491,7 @@ def _create_seed_doc_change(
             title_underline=title_underline,
             num=new_seed.number,
             title=new_seed.title,
+            authors=new_seed.authors,
             status=new_seed.status,
             date=datetime.date.today().strftime('%Y-%m-%d'),
             changelist=new_seed.changelist,
