@@ -1094,8 +1094,8 @@ def call(
     propagate_sigterm = kwargs.pop('propagate_sigterm', False)
 
     env = pw_cli.env.pigweed_environment()
-    kwargs['stdout'] = subprocess.PIPE
-    kwargs['stderr'] = subprocess.STDOUT
+    kwargs.setdefault('stdout', subprocess.PIPE)
+    kwargs.setdefault('stderr', subprocess.STDOUT)
 
     process = subprocess.Popen(args, **kwargs)
     assert process.stdout
