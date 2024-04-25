@@ -209,12 +209,12 @@ pw_source_set("fallback_allocator") {
   public = [ "public/pw_allocator/fallback_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":tracking_allocator",
-    dir_pw_metric,
+    ":deallocator",
     dir_pw_result,
     dir_pw_status,
-    dir_pw_tokenizer,
   ]
+  sources = [ "fallback_allocator.cc" ]
+  deps = [ "$dir_pw_assert:check" ]
 }
 
 pw_source_set("first_fit_block_allocator") {

@@ -226,16 +226,19 @@ cc_library(
 
 cc_library(
     name = "fallback_allocator",
+    srcs = [
+        "fallback_allocator.cc",
+    ],
     hdrs = [
         "public/pw_allocator/fallback_allocator.h",
     ],
     includes = ["public"],
     deps = [
         ":allocator",
-        "//pw_metric:metric",
+        ":deallocator",
+        "//pw_assert",
         "//pw_result",
         "//pw_status",
-        "//pw_tokenizer",
     ],
 )
 

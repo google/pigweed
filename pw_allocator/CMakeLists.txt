@@ -207,17 +207,20 @@ pw_add_library(pw_allocator.dual_first_fit_block_allocator INTERFACE
     pw_allocator.block_allocator_base
 )
 
-pw_add_library(pw_allocator.fallback_allocator INTERFACE
+pw_add_library(pw_allocator.fallback_allocator STATIC
+  SOURCES
+    fallback_allocator.cc
   HEADERS
     public/pw_allocator/fallback_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_metric
+    pw_allocator.deallocator
     pw_result
     pw_status
-    pw_tokenizer
+  PRIVATE_DEPS
+    pw_assert.check
 )
 
 pw_add_library(pw_allocator.first_fit_block_allocator INTERFACE
