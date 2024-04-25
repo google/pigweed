@@ -223,12 +223,6 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
 - :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
   destroys objects of a single given type.
 
-<<<<<<< HEAD
-.. TODO: b/328076428 - Add BuddyAllocator.
-=======
-.. TODO: b/328076428 - Add MonotonicAllocator.
->>>>>>> e4e6d6af8 (pw_allocator: Add BuddyAllocator)
-
 Forwarding allocator implementations
 ====================================
 This module provides several "forwarding" allocators, as described in
