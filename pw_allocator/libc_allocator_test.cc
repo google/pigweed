@@ -20,16 +20,8 @@
 
 namespace pw::allocator {
 
-// Test fixtures.
-
-class LibCAllocatorTest : public ::testing::Test {
- protected:
+TEST(LibCAllocatorTest, AllocateDeallocate) {
   LibCAllocator allocator;
-};
-
-// Unit tests.
-
-TEST_F(LibCAllocatorTest, AllocateDeallocate) {
   constexpr Layout layout = Layout::Of<std::byte[64]>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
@@ -38,7 +30,8 @@ TEST_F(LibCAllocatorTest, AllocateDeallocate) {
   allocator.Deallocate(ptr);
 }
 
-TEST_F(LibCAllocatorTest, AllocateLargeAlignment) {
+TEST(LibCAllocatorTest, AllocateLargeAlignment) {
+  LibCAllocator allocator;
   /// TODO: b/301930507 - `aligned_alloc` is not portable. As a result, this
   /// allocator has a maximum alignment of `std::align_max_t`.
   size_t size = 16;
@@ -47,7 +40,8 @@ TEST_F(LibCAllocatorTest, AllocateLargeAlignment) {
   EXPECT_EQ(ptr, nullptr);
 }
 
-TEST_F(LibCAllocatorTest, Reallocate) {
+TEST(LibCAllocatorTest, Reallocate) {
+  LibCAllocator allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[4]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_NE(ptr, nullptr);
