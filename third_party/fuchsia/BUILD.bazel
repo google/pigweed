@@ -34,6 +34,7 @@ cc_library(
         "repo/sdk/lib/fit/include/lib/fit/internal/utility.h",
     ],
     hdrs = [
+        "repo/sdk/lib/fit/include/lib/fit/defer.h",
         "repo/sdk/lib/fit/include/lib/fit/function.h",
         "repo/sdk/lib/fit/include/lib/fit/nullable.h",
         "repo/sdk/lib/fit/include/lib/fit/result.h",
