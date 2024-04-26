@@ -882,7 +882,8 @@ void Context::HandleReceivedData(const Chunk& chunk) {
   if (chunk.offset() != offset_) {
     // Bad offset; reset window size to send another parameters chunk.
     PW_LOG_DEBUG(
-        "Transfer %u expected offset %u, received %u; entering recovery state",
+        "Transfer %u expected offset %u, received %u; entering recovery "
+        "state",
         static_cast<unsigned>(session_id_),
         static_cast<unsigned>(offset_),
         static_cast<unsigned>(chunk.offset()));
@@ -895,16 +896,25 @@ void Context::HandleReceivedData(const Chunk& chunk) {
   }
 
   if (chunk.offset() + chunk.payload().size() > window_end_offset_) {
-    // End the transfer, as this indicates a bug with the client implementation
-    // where it doesn't respect the window size. Trying to recover from here
-    // could potentially result in an infinite transfer loop.
-    PW_LOG_ERROR(
+    PW_LOG_WARN(
         "Transfer %u received more data than what was requested (%u received "
-        "for %u pending); terminating transfer.",
+        "for %u pending); attempting to recover.",
         id_for_log(),
         static_cast<unsigned>(chunk.payload().size()),
         static_cast<unsigned>(window_end_offset_ - offset_));
-    TerminateTransfer(Status::Internal());
+
+    // To prevent an improperly implemented client which doesn't respect
+    // window_end_offset from entering an infinite retry loop, limit recovery
+    // attempts to the lifetime retry count.
+    lifetime_retries_++;
+    if (lifetime_retries_ <= max_lifetime_retries_) {
+      set_transfer_state(TransferState::kRecovery);
+      SetTimeout(chunk_timeout_);
+
+      UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
+    } else {
+      TerminateTransfer(Status::Internal());
+    }
     return;
   }
 

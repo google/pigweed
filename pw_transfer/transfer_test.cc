@@ -1269,7 +1269,7 @@ TEST_F(WriteTransfer, UnexpectedOffset) {
   EXPECT_EQ(std::memcmp(buffer.data(), kData.data(), kData.size()), 0);
 }
 
-TEST_F(WriteTransferMaxBytes16, TooMuchData) {
+TEST_F(WriteTransferMaxBytes16, TooMuchData_EntersRecovery) {
   ctx_.SendClientStream(EncodeChunk(
       Chunk(ProtocolVersion::kLegacy, Chunk::Type::kStart).set_session_id(7)));
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -1290,11 +1290,13 @@ TEST_F(WriteTransferMaxBytes16, TooMuchData) {
                       .set_payload(span(kData).first(24))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
+  // Transfer should resend a parameters chunk.
   ASSERT_EQ(ctx_.total_responses(), 2u);
   chunk = DecodeChunk(ctx_.responses().back());
   EXPECT_EQ(chunk.session_id(), 7u);
-  ASSERT_TRUE(chunk.status().has_value());
-  EXPECT_EQ(chunk.status().value(), Status::Internal());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.window_end_offset(), 16u);
 }
 
 TEST_F(WriteTransfer, UnregisteredHandler) {

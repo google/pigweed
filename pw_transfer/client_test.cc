@@ -20,6 +20,7 @@
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/test_helpers.h"
+#include "pw_status/status.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/internal/config.h"
@@ -404,7 +405,7 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
             0);
 }
 
-TEST_F(ReadTransferMaxBytes32, TooMuchData) {
+TEST_F(ReadTransferMaxBytes32, TooMuchData_EntersRecovery) {
   stream::MemoryWriterBuffer<32> writer;
   Status transfer_status = Status::Unknown();
 
@@ -455,10 +456,99 @@ TEST_F(ReadTransferMaxBytes32, TooMuchData) {
 
   ASSERT_EQ(payloads.size(), 4u);
 
+  // The device should resend a parameters chunk.
   Chunk c1 = DecodeChunk(payloads[3]);
   EXPECT_EQ(c1.session_id(), 8u);
-  ASSERT_TRUE(c1.status().has_value());
-  EXPECT_EQ(c1.status().value(), Status::Internal());
+  EXPECT_EQ(c1.type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(c1.offset(), 24u);
+  EXPECT_EQ(c1.window_end_offset(), 32u);
+
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kData)
+                      .set_session_id(8)
+                      .set_offset(24)
+                      .set_payload(data.subspan(24, 8))
+                      .set_remaining_bytes(0)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(transfer_status, OkStatus());
+}
+
+TEST_F(ReadTransferMaxBytes32, TooMuchData_HitsLifetimeRetries) {
+  stream::MemoryWriterBuffer<32> writer;
+  Status transfer_status = Status::Unknown();
+
+  constexpr int kLowMaxLifetimeRetries = 3;
+  legacy_client_.set_max_lifetime_retries(kLowMaxLifetimeRetries).IgnoreError();
+
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(8,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // First transfer parameters chunk is sent.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads[0]);
+  EXPECT_EQ(c0.session_id(), 8u);
+  EXPECT_EQ(c0.resource_id(), 8u);
+  EXPECT_EQ(c0.offset(), 0u);
+  ASSERT_EQ(c0.window_end_offset(), 32u);
+
+  constexpr ConstByteSpan data(kData64);
+
+  // pending_bytes == 32
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kData)
+                      .set_session_id(8)
+                      .set_offset(0)
+                      .set_payload(data.first(16))));
+
+  // pending_bytes == 16
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kData)
+                      .set_session_id(8)
+                      .set_offset(16)
+                      .set_payload(data.subspan(16, 8))));
+
+  // pending_bytes == 8, but send 16 several times.
+  for (int i = 0; i < kLowMaxLifetimeRetries; ++i) {
+    context_.server().SendServerStream<Transfer::Read>(
+        EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kData)
+                        .set_session_id(8)
+                        .set_offset(24)
+                        .set_payload(data.subspan(24, 16))));
+    transfer_thread_.WaitUntilEventIsProcessed();
+
+    ASSERT_EQ(payloads.size(), 4u + i);
+
+    // The device should resend a parameters chunk.
+    Chunk c = DecodeChunk(payloads.back());
+    EXPECT_EQ(c.session_id(), 8u);
+    EXPECT_EQ(c.type(), Chunk::Type::kParametersRetransmit);
+  }
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Send one more incorrectly-sized chunk. The transfer should fail.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kData)
+                      .set_session_id(8)
+                      .set_offset(24)
+                      .set_payload(data.subspan(24, 16))));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(payloads.size(), 7u);
+  Chunk error = DecodeChunk(payloads.back());
+  EXPECT_EQ(error.session_id(), 8u);
+  EXPECT_EQ(error.type(), Chunk::Type::kCompletion);
+  EXPECT_EQ(error.status(), Status::Internal());
 
   EXPECT_EQ(transfer_status, Status::Internal());
 }
