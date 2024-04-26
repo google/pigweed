@@ -15,6 +15,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread/id.h"
 #include "pw_thread_threadx/config.h"
 #include "pw_thread_threadx/context.h"
@@ -34,7 +35,8 @@ void Context::ThreadEntryPoint(ULONG void_context_ptr) {
   Context& context = *reinterpret_cast<Context*>(void_context_ptr);
 
   // Invoke the user's thread function. This may never return.
-  context.user_thread_entry_function_(context.user_thread_entry_arg_);
+  context.fn_();
+  context.fn_ = nullptr;
 
   // Raise our preemption threshold as a thread only critical section to guard
   // against join() and detach().
@@ -110,6 +112,54 @@ void Context::DeleteThread(Context& context) {
 #endif  // PW_THREAD_JOINING_ENABLED
 }
 
+void Context::CreateThread(const threadx::Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn) {
+  // Can't use a context more than once.
+  PW_DCHECK(!in_use());
+
+  // Reset the state of the static context in case it was re-used.
+  set_in_use(true);
+  set_detached(false);
+  set_thread_done(false);
+#if PW_THREAD_JOINING_ENABLED
+  static const char* join_event_group_name = "pw::Thread";
+  const UINT event_group_result = tx_event_flags_create(
+      &join_event_group(), const_cast<char*>(join_event_group_name));
+  PW_DCHECK_UINT_EQ(
+      TX_SUCCESS, event_group_result, "Failed to create the join event group");
+#endif  // PW_THREAD_JOINING_ENABLED
+
+  // Copy over the thread name.
+  set_name(options.name());
+
+  // In order to support functions which return and joining, a delegate is
+  // deep copied into the context with a small wrapping function to actually
+  // invoke the task with its arg.
+  set_thread_routine(std::move(thread_fn));
+
+  const UINT thread_result = tx_thread_create(&tcb(),
+                                              const_cast<char*>(name()),
+                                              Context::ThreadEntryPoint,
+                                              reinterpret_cast<ULONG>(this),
+                                              stack().data(),
+                                              stack().size_bytes(),
+                                              options.priority(),
+                                              options.preemption_threshold(),
+                                              options.time_slice_interval(),
+                                              TX_AUTO_START);
+  PW_CHECK_UINT_EQ(TX_SUCCESS, thread_result, "Failed to create the thread");
+}
+
+Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
+    : native_type_(nullptr) {
+  // Cast the generic facade options to the backend specific option of which
+  // only one type can exist at compile time.
+  auto options = static_cast<const threadx::Options&>(facade_options);
+  PW_DCHECK_NOTNULL(options.context(), "The Context is not optional");
+  native_type_ = options.context();
+  native_type_->CreateThread(options, std::move(entry));
+}
+
 Thread::Thread(const thread::Options& facade_options,
                ThreadRoutine entry,
                void* arg)
@@ -119,43 +169,7 @@ Thread::Thread(const thread::Options& facade_options,
   auto options = static_cast<const threadx::Options&>(facade_options);
   PW_DCHECK_NOTNULL(options.context(), "The Context is not optional");
   native_type_ = options.context();
-
-  // Can't use a context more than once.
-  PW_DCHECK(!native_type_->in_use());
-
-  // Reset the state of the static context in case it was re-used.
-  native_type_->set_in_use(true);
-  native_type_->set_detached(false);
-  native_type_->set_thread_done(false);
-#if PW_THREAD_JOINING_ENABLED
-  static const char* join_event_group_name = "pw::Thread";
-  const UINT event_group_result =
-      tx_event_flags_create(&options.context()->join_event_group(),
-                            const_cast<char*>(join_event_group_name));
-  PW_DCHECK_UINT_EQ(
-      TX_SUCCESS, event_group_result, "Failed to create the join event group");
-#endif  // PW_THREAD_JOINING_ENABLED
-
-  // Copy over the thread name.
-  native_type_->set_name(options.name());
-
-  // In order to support functions which return and joining, a delegate is
-  // deep copied into the context with a small wrapping function to actually
-  // invoke the task with its arg.
-  native_type_->set_thread_routine(entry, arg);
-
-  const UINT thread_result =
-      tx_thread_create(&options.context()->tcb(),
-                       const_cast<char*>(native_type_->name()),
-                       Context::ThreadEntryPoint,
-                       reinterpret_cast<ULONG>(native_type_),
-                       options.context()->stack().data(),
-                       options.context()->stack().size_bytes(),
-                       options.priority(),
-                       options.preemption_threshold(),
-                       options.time_slice_interval(),
-                       TX_AUTO_START);
-  PW_CHECK_UINT_EQ(TX_SUCCESS, thread_result, "Failed to create the thread");
+  native_type_->CreateThread(options, DeprecatedFnPtrAndArg{entry, arg});
 }
 
 void Thread::detach() {

@@ -22,6 +22,8 @@
 
 namespace pw::thread::freertos {
 
+class Context;
+
 // pw::thread::Options for FreeRTOS.
 //
 // Example usage:
@@ -94,7 +96,7 @@ class Options : public thread::Options {
   const char* name() const { return name_; }
 
  private:
-  friend thread::Thread;
+  friend Context;
   // FreeRTOS requires a valid name when asserts are enabled,
   // configMAX_TASK_NAME_LEN may be as small as one character.
   static constexpr char kDefaultName[] = "pw::Thread";

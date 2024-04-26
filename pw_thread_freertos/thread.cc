@@ -16,6 +16,7 @@
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread/id.h"
 #include "pw_thread_freertos/config.h"
 #include "pw_thread_freertos/context.h"
@@ -40,7 +41,8 @@ void Context::ThreadEntryPoint(void* void_context_ptr) {
   Context& context = *static_cast<Context*>(void_context_ptr);
 
   // Invoke the user's thread function. This may never return.
-  context.user_thread_entry_function_(context.user_thread_entry_arg_);
+  context.fn_();
+  context.fn_ = nullptr;
 
   // Use a task only critical section to guard against join() and detach().
   vTaskSuspendAll();
@@ -117,77 +119,88 @@ void Context::TerminateThread(Context& context) {
 #endif  // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
 }
 
-Thread::Thread(const thread::Options& facade_options,
-               ThreadRoutine entry,
-               void* arg)
-    : native_type_(nullptr) {
-  // Cast the generic facade options to the backend specific option of which
-  // only one type can exist at compile time.
-  auto options = static_cast<const freertos::Options&>(facade_options);
+void Context::AddToEventGroup() {
+#if PW_THREAD_JOINING_ENABLED
+  const EventGroupHandle_t event_group_handle =
+      xEventGroupCreateStatic(&join_event_group());
+  PW_DCHECK_PTR_EQ(event_group_handle,
+                   &join_event_group(),
+                   "Failed to create the joining event group");
+#endif  // PW_THREAD_JOINING_ENABLED
+}
+
+void Context::CreateThread(const freertos::Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Context*& native_type_out) {
+  TaskHandle_t task_handle;
   if (options.static_context() != nullptr) {
     // Use the statically allocated context.
-    native_type_ = options.static_context();
+    native_type_out = options.static_context();
     // Can't use a context more than once.
-    PW_DCHECK_PTR_EQ(native_type_->task_handle(), nullptr);
+    PW_DCHECK_PTR_EQ(native_type_out->task_handle(), nullptr);
     // Reset the state of the static context in case it was re-used.
-    native_type_->set_detached(false);
-    native_type_->set_thread_done(false);
-#if PW_THREAD_JOINING_ENABLED
-    const EventGroupHandle_t event_group_handle =
-        xEventGroupCreateStatic(&native_type_->join_event_group());
-    PW_DCHECK_PTR_EQ(event_group_handle,
-                     &native_type_->join_event_group(),
-                     "Failed to create the joining event group");
-#endif  // PW_THREAD_JOINING_ENABLED
+    native_type_out->set_detached(false);
+    native_type_out->set_thread_done(false);
+    native_type_out->AddToEventGroup();
 
     // In order to support functions which return and joining, a delegate is
     // deep copied into the context with a small wrapping function to actually
     // invoke the task with its arg.
-    native_type_->set_thread_routine(entry, arg);
-    const TaskHandle_t task_handle =
-        xTaskCreateStatic(Context::ThreadEntryPoint,
-                          options.name(),
-                          options.static_context()->stack().size(),
-                          native_type_,
-                          options.priority(),
-                          options.static_context()->stack().data(),
-                          &options.static_context()->tcb());
-    PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
-    native_type_->set_task_handle(task_handle);
+    native_type_out->set_thread_routine(std::move(thread_fn));
+    task_handle = xTaskCreateStatic(Context::ThreadEntryPoint,
+                                    options.name(),
+                                    options.static_context()->stack().size(),
+                                    native_type_out,
+                                    options.priority(),
+                                    options.static_context()->stack().data(),
+                                    &options.static_context()->tcb());
   } else {
 #if !PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
     PW_CRASH(
         "dynamic thread allocations are not enabled and no static_context "
         "was provided");
-#else  // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
+#else   // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
     // Dynamically allocate the context and the task.
-    native_type_ = new pw::thread::freertos::Context();
-    native_type_->set_dynamically_allocated();
-#if PW_THREAD_JOINING_ENABLED
-    const EventGroupHandle_t event_group_handle =
-        xEventGroupCreateStatic(&native_type_->join_event_group());
-    PW_DCHECK_PTR_EQ(event_group_handle,
-                     &native_type_->join_event_group(),
-                     "Failed to create the joining event group");
-#endif  // PW_THREAD_JOINING_ENABLED
+    native_type_out = new pw::thread::freertos::Context();
+    native_type_out->set_dynamically_allocated();
+    native_type_out->AddToEventGroup();
 
     // In order to support functions which return and joining, a delegate is
     // deep copied into the context with a small wrapping function to actually
     // invoke the task with its arg.
-    native_type_->set_thread_routine(entry, arg);
-    TaskHandle_t task_handle;
+    native_type_out->set_thread_routine(std::move(thread_fn));
     const BaseType_t result = xTaskCreate(Context::ThreadEntryPoint,
                                           options.name(),
                                           options.stack_size_words(),
-                                          native_type_,
+                                          native_type_out,
                                           options.priority(),
                                           &task_handle);
 
     // Ensure it succeeded.
     PW_CHECK_UINT_EQ(result, pdPASS);
-    native_type_->set_task_handle(task_handle);
 #endif  // !PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
   }
+  PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
+  native_type_out->set_task_handle(task_handle);
+}
+
+Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
+    : native_type_(nullptr) {
+  // Cast the generic facade options to the backend specific option of which
+  // only one type can exist at compile time.
+  auto options = static_cast<const freertos::Options&>(facade_options);
+  Context::CreateThread(options, std::move(entry), native_type_);
+}
+
+Thread::Thread(const thread::Options& facade_options,
+               ThreadRoutine routine,
+               void* arg)
+    : native_type_(nullptr) {
+  // Cast the generic facade options to the backend specific option of which
+  // only one type can exist at compile time.
+  auto options = static_cast<const freertos::Options&>(facade_options);
+  Context::CreateThread(
+      options, DeprecatedFnPtrAndArg{routine, arg}, native_type_);
 }
 
 void Thread::detach() {

@@ -86,6 +86,7 @@ cc_library(
         ":id",
         "//pw_assert",
         "//pw_string",
+        "//pw_thread:deprecated_or_new_thread_function",
         "//pw_thread:thread_facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties

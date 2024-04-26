@@ -22,10 +22,6 @@ using pw::thread::test::TestThreadContext;
 namespace pw::thread {
 namespace {
 
-static void ReleaseBinarySemaphore(void* arg) {
-  static_cast<sync::BinarySemaphore*>(arg)->release();
-}
-
 TEST(Thread, TestThreadContext) {
   TestThreadContext context_0;
   TestThreadContext context_1;
@@ -34,10 +30,10 @@ TEST(Thread, TestThreadContext) {
   sync::BinarySemaphore thread_ran_sem_0;
   sync::BinarySemaphore thread_ran_sem_1;
 
-  thread_0 =
-      Thread(context_0.options(), ReleaseBinarySemaphore, &thread_ran_sem_0);
-  thread_1 =
-      Thread(context_1.options(), ReleaseBinarySemaphore, &thread_ran_sem_1);
+  thread_0 = Thread(context_0.options(),
+                    [&thread_ran_sem_0] { thread_ran_sem_0.release(); });
+  thread_1 = Thread(context_1.options(),
+                    [&thread_ran_sem_1] { thread_ran_sem_1.release(); });
 
   EXPECT_NE(thread_0.get_id(), Id());
   EXPECT_TRUE(thread_0.joinable());

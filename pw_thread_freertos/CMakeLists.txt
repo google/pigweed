@@ -83,6 +83,7 @@ pw_add_library(pw_thread_freertos.thread STATIC
     pw_string
     pw_third_party.freertos
     pw_thread.id
+    pw_thread.deprecated_or_new_thread_function
     pw_thread.thread.facade
     pw_thread_freertos.config
   SOURCES

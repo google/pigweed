@@ -35,6 +35,10 @@ namespace internal {
 
 inline Thread::Thread() : native_type_() {}
 
+inline Thread::Thread(const Options&, Function<void()>&& entry) {
+  native_type_ = std::thread(std::move(entry));
+}
+
 inline Thread::Thread(const Options&, ThreadRoutine entry, void* arg) {
   native_type_ = std::thread(entry, arg);
 }

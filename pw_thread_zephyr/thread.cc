@@ -36,7 +36,8 @@ void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
   Context& context = *static_cast<Context*>(void_context_ptr);
 
   // Invoke the user's thread function. This may never return.
-  context.user_thread_entry_function_(context.user_thread_entry_arg_);
+  context.fn_();
+  context.fn_ = nullptr;
 
   k_spinlock_key_t key = k_spin_lock(&global_thread_done_lock);
   if (context.detached()) {
@@ -48,26 +49,22 @@ void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
   k_spin_unlock(&global_thread_done_lock, key);
 }
 
-Thread::Thread(const thread::Options& facade_options,
-               ThreadRoutine entry,
-               void* arg)
-    : native_type_(nullptr) {
-  // Cast the generic facade options to the backend specific option of which
-  // only one type can exist at compile time.
-  auto options = static_cast<const zephyr::Options&>(facade_options);
+void Context::CreateThread(const zephyr::Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Context*& native_type_out) {
   PW_CHECK(options.static_context() != nullptr);
 
   // Use the statically allocated context.
-  native_type_ = options.static_context();
+  native_type_out = options.static_context();
   // Can't use a context more than once.
-  PW_DCHECK_PTR_EQ(native_type_->task_handle(), nullptr);
+  PW_DCHECK_PTR_EQ(native_type_out->task_handle(), nullptr);
   // Reset the state of the static context in case it was re-used.
-  native_type_->set_detached(false);
-  native_type_->set_thread_done(false);
+  native_type_out->set_detached(false);
+  native_type_out->set_thread_done(false);
 
-  native_type_->set_thread_routine(entry, arg);
-  const k_tid_t task_handle =
-      k_thread_create(&native_type_->thread_info(),
+  native_type_out->set_thread_routine(std::move(thread_fn));
+  native_type_out->const k_tid_t task_handle =
+      k_thread_create(&native_type_out->thread_info(),
                       options.static_context()->stack(),
                       options.static_context()->available_stack_size(),
                       Context::ThreadEntryPoint,
@@ -78,7 +75,24 @@ Thread::Thread(const thread::Options& facade_options,
                       options.native_options(),
                       K_NO_WAIT);
   PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
-  native_type_->set_task_handle(task_handle);
+  native_type_out->set_task_handle(task_handle);
+}
+
+Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
+    : native_type_(nullptr) {
+  // Cast the generic facade options to the backend specific option of which
+  // only one type can exist at compile time.
+  auto options = static_cast<const zephyr::Options&>(facade_options);
+  Context::CreateThread(options, std::move(entry), native_type_);
+}
+
+Thread::Thread(const thread::Options& facade_options,
+               ThreadRoutine entry,
+               void* arg)
+    : native_type_(nullptr) {
+  auto options = static_cast<const zephyr::Options&>(facade_options);
+  Context::CreateThread(
+      options, DeprecatedFnPtrAndArg{entry, arg}, native_type_);
 }
 
 void Thread::detach() {

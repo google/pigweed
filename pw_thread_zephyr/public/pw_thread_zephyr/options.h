@@ -20,6 +20,8 @@
 
 namespace pw::thread::zephyr {
 
+class Context;
+
 // pw::thread::Options for Zephyr RTOS.
 //
 // Example usage:
@@ -57,6 +59,7 @@ class Options : public thread::Options {
 
  private:
   friend thread::Thread;
+  friend Context;
 
   int priority() const { return priority_; }
   uint32_t native_options() const { return native_options_; }

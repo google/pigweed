@@ -27,7 +27,8 @@ void Context::ThreadEntryPoint(void* void_context_ptr) {
   Context& context = *reinterpret_cast<Context*>(void_context_ptr);
 
   // Invoke the user's thread function. This may never return.
-  context.user_thread_entry_function_(context.user_thread_entry_arg_);
+  context.fn_();
+  context.fn_ = nullptr;
 
   // Use a task only critical section to guard against join() and detach().
   OS_SuspendAllTasks();
@@ -80,6 +81,47 @@ void Context::TerminateThread(Context& context) {
 #endif  // PW_THREAD_JOINING_ENABLED
 }
 
+void Context::CreateThread(const embos::Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn) {
+  // Can't use a context more than once.
+  PW_DCHECK(!in_use());
+
+  // Reset the state of the static context in case it was re-used.
+  set_in_use(true);
+  set_detached(false);
+  set_thread_done(false);
+#if PW_THREAD_JOINING_ENABLED
+  OS_EVENT_CreateEx(&join_event_object(), OS_EVENT_RESET_MODE_AUTO);
+#endif  // PW_THREAD_JOINING_ENABLED
+
+  // Copy over the thread name.
+  set_name(options.name());
+
+  // In order to support functions which return and joining, a delegate is
+  // deep copied into the context with a small wrapping function to actually
+  // invoke the task with its arg.
+  set_thread_routine(std::move(thread_fn));
+
+  OS_CreateTaskEx(&tcb(),
+                  name(),
+                  options.priority(),
+                  Context::ThreadEntryPoint,
+                  stack().data(),
+                  static_cast<OS_UINT>(stack().size_bytes()),
+                  options.time_slice_interval(),
+                  this);
+}
+
+Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
+    : native_type_(nullptr) {
+  // Cast the generic facade options to the backend specific option of which
+  // only one type can exist at compile time.
+  auto options = static_cast<const embos::Options&>(facade_options);
+  PW_DCHECK_NOTNULL(options.context(), "The Context is not optional");
+  native_type_ = options.context();
+  native_type_->CreateThread(options, std::move(entry));
+}
+
 Thread::Thread(const thread::Options& facade_options,
                ThreadRoutine entry,
                void* arg)
@@ -89,35 +131,7 @@ Thread::Thread(const thread::Options& facade_options,
   auto options = static_cast<const embos::Options&>(facade_options);
   PW_DCHECK_NOTNULL(options.context(), "The Context is not optional");
   native_type_ = options.context();
-
-  // Can't use a context more than once.
-  PW_DCHECK(!native_type_->in_use());
-
-  // Reset the state of the static context in case it was re-used.
-  native_type_->set_in_use(true);
-  native_type_->set_detached(false);
-  native_type_->set_thread_done(false);
-#if PW_THREAD_JOINING_ENABLED
-  OS_EVENT_CreateEx(&options.context()->join_event_object(),
-                    OS_EVENT_RESET_MODE_AUTO);
-#endif  // PW_THREAD_JOINING_ENABLED
-
-  // Copy over the thread name.
-  native_type_->set_name(options.name());
-
-  // In order to support functions which return and joining, a delegate is
-  // deep copied into the context with a small wrapping function to actually
-  // invoke the task with its arg.
-  native_type_->set_thread_routine(entry, arg);
-
-  OS_CreateTaskEx(&options.context()->tcb(),
-                  native_type_->name(),
-                  options.priority(),
-                  Context::ThreadEntryPoint,
-                  options.context()->stack().data(),
-                  static_cast<OS_UINT>(options.context()->stack().size_bytes()),
-                  options.time_slice_interval(),
-                  options.context());
+  native_type_->CreateThread(options, DeprecatedFnPtrAndArg{entry, arg});
 }
 
 void Thread::detach() {

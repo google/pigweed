@@ -96,6 +96,7 @@ cc_library(
         "//pw_assert",
         "//pw_string",
         "//pw_sync:binary_semaphore",
+        "//pw_thread:deprecated_or_new_thread_function",
         "//pw_thread:thread.facade",
     ],
 )

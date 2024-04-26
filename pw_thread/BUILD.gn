@@ -68,8 +68,20 @@ pw_facade("thread") {
   public_deps = [
     ":id",
     ":thread_core",
+    dir_pw_function,
   ]
   sources = [ "thread.cc" ]
+}
+
+pw_source_set("deprecated_or_new_thread_function") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/deprecated_or_new_thread_function.h" ]
+  public_deps = [ dir_pw_function ]
+}
+
+pw_test("deprecated_or_new_thread_function_test") {
+  sources = [ "deprecated_or_new_thread_function_test.cc" ]
+  deps = [ ":deprecated_or_new_thread_function" ]
 }
 
 pw_facade("test_thread_context") {
@@ -153,6 +165,7 @@ pw_source_set("thread_snapshot_service") {
 
 pw_test_group("tests") {
   tests = [
+    ":deprecated_or_new_thread_function_test",
     ":id_facade_test",
     ":sleep_facade_test",
     ":thread_info_test",

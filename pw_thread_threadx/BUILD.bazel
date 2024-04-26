@@ -64,6 +64,7 @@ cc_library(
         ":id",
         "//pw_assert",
         "//pw_string",
+        "//pw_thread:deprecated_or_new_thread_function",
         "//pw_thread:thread_facade",
     ],
 )

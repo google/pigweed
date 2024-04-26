@@ -130,12 +130,12 @@ class ClientServerTestContextThreaded
       TestPacketProcessor&& client_packet_processor = nullptr)
       : Base(std::move(server_packet_processor),
              std::move(client_packet_processor)),
-        thread_(options, Instance::Run, this) {}
+        thread_(options, [this] { Run(); }) {}
 
  private:
   using Base::ForwardNewPackets;
-  static void Run(void* arg) {
-    auto& ctx = *static_cast<Instance*>(arg);
+  void Run() {
+    auto& ctx = *static_cast<Instance*>(this);
     while (ctx.channel_output_.WaitForOutput()) {
       ctx.ForwardNewPackets();
     }

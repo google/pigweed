@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -18,47 +18,69 @@
 #include "pw_thread/thread.h"
 #include "pw_unit_test/framework.h"
 
-using pw::thread::test::TestOptionsThread0;
-using pw::thread::test::TestOptionsThread1;
-using pw::thread::test::WaitUntilDetachedThreadsCleanedUp;
-
-namespace pw::thread {
 namespace {
+
+using ::pw::sync::BinarySemaphore;
+using ::pw::thread::Id;
+using ::pw::thread::Thread;
+using ::pw::thread::ThreadCore;
+using ::pw::thread::test::TestOptionsThread0;
+using ::pw::thread::test::TestOptionsThread1;
+using ::pw::thread::test::WaitUntilDetachedThreadsCleanedUp;
 
 TEST(Thread, DefaultIds) {
   Thread not_executing_thread;
   EXPECT_EQ(not_executing_thread.get_id(), Id());
 }
 
-static void ReleaseBinarySemaphore(void* arg) {
-  static_cast<sync::BinarySemaphore*>(arg)->release();
-}
-
 #if PW_THREAD_JOINING_ENABLED
-TEST(Thread, Join) {
+TEST(Thread, DefaultConstructedThreadIsNotJoinable) {
   Thread thread;
   EXPECT_FALSE(thread.joinable());
-  sync::BinarySemaphore thread_ran_sem;
-  thread =
-      Thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran_sem);
+}
+
+TEST(Thread, JoinWaitsForLambdaCompletion) {
+  BinarySemaphore thread_ran;
+  Thread thread(TestOptionsThread0(), [&thread_ran] { thread_ran.release(); });
   EXPECT_TRUE(thread.joinable());
   thread.join();
   EXPECT_EQ(thread.get_id(), Id());
-  EXPECT_TRUE(thread_ran_sem.try_acquire());
+  EXPECT_TRUE(thread_ran.try_acquire());
+}
+
+static void ReleaseBinarySemaphore(void* arg) {
+  static_cast<BinarySemaphore*>(arg)->release();
+}
+
+TEST(Thread, JoinWaitsForDeprecatedFunctionPointerCompletion) {
+  BinarySemaphore thread_ran;
+  Thread thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran);
+  EXPECT_TRUE(thread.joinable());
+  thread.join();
+  EXPECT_EQ(thread.get_id(), Id());
+  EXPECT_TRUE(thread_ran.try_acquire());
 }
 #endif  // PW_THREAD_JOINING_ENABLED
 
-TEST(Thread, Detach) {
-  Thread thread;
-  sync::BinarySemaphore thread_ran_sem;
-  thread =
-      Thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran_sem);
-  EXPECT_NE(thread.get_id(), Id());
-  EXPECT_TRUE(thread.joinable());
-  thread.detach();
-  EXPECT_EQ(thread.get_id(), Id());
-  EXPECT_FALSE(thread.joinable());
-  thread_ran_sem.acquire();
+TEST(Thread, DetachAllowsThreadToRunAfterExitingScope) {
+  struct {
+    BinarySemaphore thread_blocker;
+    BinarySemaphore thread_finished;
+  } semaphores;
+  {
+    Thread thread(TestOptionsThread0(), [&semaphores] {
+      semaphores.thread_blocker.acquire();
+      semaphores.thread_finished.release();
+    });
+    EXPECT_NE(thread.get_id(), Id());
+    EXPECT_TRUE(thread.joinable());
+    thread.detach();
+    EXPECT_EQ(thread.get_id(), Id());
+    EXPECT_FALSE(thread.joinable());
+  }
+  EXPECT_FALSE(semaphores.thread_finished.try_acquire());
+  semaphores.thread_blocker.release();
+  semaphores.thread_finished.acquire();
 
   WaitUntilDetachedThreadsCleanedUp();
 }
@@ -75,9 +97,9 @@ TEST(Thread, SwapWithOneExecuting) {
   Thread thread_0;
   EXPECT_EQ(thread_0.get_id(), Id());
 
-  sync::BinarySemaphore thread_ran_sem;
-  Thread thread_1(
-      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_ran_sem);
+  BinarySemaphore thread_ran_sem;
+  Thread thread_1(TestOptionsThread1(),
+                  [&thread_ran_sem] { thread_ran_sem.release(); });
 
   EXPECT_NE(thread_1.get_id(), Id());
 
@@ -93,12 +115,12 @@ TEST(Thread, SwapWithOneExecuting) {
 }
 
 TEST(Thread, SwapWithTwoExecuting) {
-  sync::BinarySemaphore thread_a_ran_sem;
-  Thread thread_0(
-      TestOptionsThread0(), ReleaseBinarySemaphore, &thread_a_ran_sem);
-  sync::BinarySemaphore thread_b_ran_sem;
-  Thread thread_1(
-      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_b_ran_sem);
+  BinarySemaphore thread_a_ran_sem;
+  Thread thread_0(TestOptionsThread0(),
+                  [&thread_a_ran_sem] { thread_a_ran_sem.release(); });
+  BinarySemaphore thread_b_ran_sem;
+  Thread thread_1(TestOptionsThread1(),
+                  [&thread_b_ran_sem] { thread_b_ran_sem.release(); });
   const Id thread_a_id = thread_0.get_id();
   EXPECT_NE(thread_a_id, Id());
   const Id thread_b_id = thread_1.get_id();
@@ -123,9 +145,9 @@ TEST(Thread, MoveOperator) {
   Thread thread_0;
   EXPECT_EQ(thread_0.get_id(), Id());
 
-  sync::BinarySemaphore thread_ran_sem;
-  Thread thread_1(
-      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_ran_sem);
+  BinarySemaphore thread_ran_sem;
+  Thread thread_1(TestOptionsThread1(),
+                  [&thread_ran_sem] { thread_ran_sem.release(); });
   EXPECT_NE(thread_1.get_id(), Id());
 
   thread_0 = std::move(thread_1);
@@ -143,12 +165,12 @@ TEST(Thread, MoveOperator) {
 
 class SemaphoreReleaser : public ThreadCore {
  public:
-  pw::sync::BinarySemaphore& semaphore() { return semaphore_; }
+  BinarySemaphore& semaphore() { return semaphore_; }
 
  private:
   void Run() override { semaphore_.release(); }
 
-  sync::BinarySemaphore semaphore_;
+  BinarySemaphore semaphore_;
 };
 
 TEST(Thread, ThreadCore) {
@@ -163,5 +185,5 @@ TEST(Thread, ThreadCore) {
 
   WaitUntilDetachedThreadsCleanedUp();
 }
+
 }  // namespace
-}  // namespace pw::thread

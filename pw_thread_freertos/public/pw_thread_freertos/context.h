@@ -17,6 +17,7 @@
 
 #include "FreeRTOS.h"
 #include "pw_span/span.h"
+#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread_freertos/config.h"
 #include "task.h"
 #if PW_THREAD_JOINING_ENABLED
@@ -30,6 +31,8 @@ class Thread;  // Forward declare Thread which depends on Context.
 }  // namespace pw::thread
 
 namespace pw::thread::freertos {
+
+class Options;
 
 // FreeRTOS may be used for dynamic thread TCB and stack allocation, but
 // because we need some additional context beyond that the concept of a
@@ -48,16 +51,18 @@ class Context {
 
  private:
   friend Thread;
+  static void CreateThread(const freertos::Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Context*& native_type_out);
+  void AddToEventGroup();
 
   TaskHandle_t task_handle() const { return task_handle_; }
   void set_task_handle(const TaskHandle_t task_handle) {
     task_handle_ = task_handle;
   }
 
-  using ThreadRoutine = void (*)(void* arg);
-  void set_thread_routine(ThreadRoutine entry, void* arg) {
-    user_thread_entry_function_ = entry;
-    user_thread_entry_arg_ = arg;
+  void set_thread_routine(DeprecatedOrNewThreadFn&& rvalue) {
+    fn_ = std::move(rvalue);
   }
 
   bool detached() const { return detached_; }
@@ -79,8 +84,7 @@ class Context {
   static void TerminateThread(Context& context);
 
   TaskHandle_t task_handle_ = nullptr;
-  ThreadRoutine user_thread_entry_function_ = nullptr;
-  void* user_thread_entry_arg_ = nullptr;
+  DeprecatedOrNewThreadFn fn_;
 #if PW_THREAD_JOINING_ENABLED
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.
@@ -112,7 +116,7 @@ class StaticContext : public Context {
       : tcb_{}, stack_span_(stack_span) {}
 
  private:
-  friend Thread;
+  friend Context;
 
   StaticTask_t& tcb() { return tcb_; }
   span<StackType_t> stack() { return stack_span_; }

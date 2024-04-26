@@ -23,6 +23,8 @@
 
 namespace pw::thread::threadx {
 
+class Context;
+
 // pw::thread::Options for ThreadX.
 //
 // Example usage:
@@ -123,6 +125,7 @@ class Options : public thread::Options {
 
  private:
   friend thread::Thread;
+  friend Context;
   // Note that the default name may end up truncated due to
   // PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN.
   static constexpr char kDefaultName[] = "pw::Thread";

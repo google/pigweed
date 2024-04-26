@@ -149,18 +149,28 @@ Example
 .. _module-pw_thread-thread-creation:
 
 ---------------
-Thread Creation
+Thread creation
 ---------------
-The class ``pw::thread::Thread`` can represent a single thread of execution.
-Threads allow multiple functions to execute concurrently.
+The ``pw::thread::Thread`` can be used to create a thread, allowing
+multiple functions to execute concurrently.
 
-The Thread's API is C++11 STL
-`std::thread <https://en.cppreference.com/w/cpp/thread/thread>`_ like, meaning
+API reference
+=============
+.. doxygenclass:: pw::thread::Thread
+   :members:
+
+.. doxygenclass:: pw::thread::Options
+   :members:
+
+Differences from ``std::thread``
+================================
+The ``pw::thread:Thread`` API is similar to the C++11 STL
+`std::thread <https://en.cppreference.com/w/cpp/thread/thread>`_ class, meaning
 the object is effectively a thread handle and not an object which contains the
 thread's context. Unlike ``std::thread``, the API requires
-``pw::thread::Options`` as an argument and is limited to only work with
-``pw::thread::ThreadCore`` objects and functions which match the
-``pw::thread::Thread::ThreadRoutine`` signature.
+``pw::thread::Options`` as an argument. These options are platform-specific,
+and allow the user to specify details such as the thread's name, priority,
+stack size, and where the thread's memory will be stored.
 
 We recognize that the C++11's STL ``std::thread`` API has some drawbacks where
 it is easy to forget to join or detach the thread handle. Because of this, we
@@ -169,11 +179,12 @@ extend this by also adding a ``pw::thread::JoiningThread`` helper wrapper which
 will also have a lighter weight C++20 ``std::jthread`` like cooperative
 cancellation contract to make joining safer and easier.
 
+Execution order
+===============
 Threads may begin execution immediately upon construction of the associated
 thread object (pending any OS scheduling delays), starting at the top-level
-function provided as a constructor argument. The return value of the
-top-level function is ignored. The top-level function may communicate its
-return value by modifying shared variables (which may require
+function provided as a constructor argument. The top-level function may
+communicate its return value by modifying shared variables (which may require
 synchronization, see :ref:`module-pw_sync`)
 
 Thread objects may also be in the state that does not represent any thread
@@ -370,45 +381,25 @@ The arguments are directly forwarded to the Thread constructor and ergo exactly
 match the Thread constuctor arguments for creating a thread of execution.
 
 
-ThreadRoutine & ThreadCore
-==========================
-Threads must either be invoked through a
-``pw::thread::Thread::ThreadRoutine`` style function or implement the
+Thread functions and ThreadCore
+===============================
+Thread functions may be provided using either a ``pw::Function<void()>``
+(which may be a lambda or function pointer) or an implementation of the
 ``pw::thread::ThreadCore`` interface.
 
-.. code-block:: cpp
-
-   namespace pw::thread {
-
-   // This function may return.
-   using Thread::ThreadRoutine = void (*)(void* arg);
-
-   class ThreadCore {
-    public:
-     virtual ~ThreadCore() = default;
-
-     // The public API to start a ThreadCore, note that this may return.
-     void Start() { Run(); }
-
-    private:
-     // This function may return.
-     virtual void Run() = 0;
-   };
-
-   }  // namespace pw::thread;
-
-
-To use the ``pw::thread::Thread::ThreadRoutine``, your function must have the
-following signature:
+To use the ``pw::Function<void()>`` interface, provide a no-argument,
+void-returning lambda or other callable:
 
 .. code-block:: cpp
 
-   void example_thread_entry_function(void *arg);
+   Thread thread(options, []() {
+     // do some work in a thread.
+   });
 
-
-To invoke a member method of a class a static lambda closure can be used
-to ensure the dispatching closure is not destructed before the thread is
-done executing. For example:
+Note that lambdas can capture up to one pointer-sized argument (or more if
+dynamic allocation is enabled). This can be used to call methods on existing
+objects (though be sure that the objects' lifetime will outlive the thread,
+and note that synchronization may be needed).
 
 .. code-block:: cpp
 
@@ -418,22 +409,12 @@ done executing. For example:
    };
    Foo foo;
 
-   static auto invoke_foo_do_bar = [](void *void_foo_ptr) {
-       //  If needed, additional arguments could be set here.
-       static_cast<Foo*>(void_foo_ptr)->DoBar();
-   };
+   Thread thread(options, [&foo] {
+     foo.DoBar();
+   });
 
-   // Now use the lambda closure as the thread entry, passing the foo's
-   // this as the argument.
-   Thread thread(options, invoke_foo_do_bar, &foo);
-   thread.detach();
-
-
-Alternatively, the aforementioned ``pw::thread::ThreadCore`` interface can be
-be implemented by an object by overriding the private
-``void ThreadCore::Run();`` method. This makes it easier to create a thread, as
-a static lambda closure or function is not needed to dispatch to a member
-function without arguments. For example:
+Alternatively, you can extend the ``ThreadCore`` class in order to use a more
+explicit construction. For example:
 
 .. code-block:: cpp
 

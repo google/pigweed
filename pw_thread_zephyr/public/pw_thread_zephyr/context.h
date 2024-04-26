@@ -19,6 +19,7 @@
 #include <cstdint>
 
 #include "pw_span/span.h"
+#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread_zephyr/config.h"
 
 namespace pw::thread {
@@ -28,6 +29,8 @@ class Thread;  // Forward declare Thread which depends on Context.
 }  // namespace pw::thread
 
 namespace pw::thread::zephyr {
+
+class Options;
 
 // At the moment, Zephyr RTOS doesn't support dynamic thread stack allocation
 // (due to various alignment and size requirements on different architectures).
@@ -47,10 +50,14 @@ class Context {
  protected:
   // We can't use `= default` here, because it allows to create an Context
   // instance in C++17 with `pw::thread::zephyr::Context{}` syntax.
-  Context() {};
+  Context() {}
 
  private:
   friend Thread;
+
+  static void CreateThread(const Options& options,
+                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Context*& native_type_out);
 
   k_tid_t task_handle() const { return task_handle_; }
   void set_task_handle(const k_tid_t task_handle) {
@@ -59,10 +66,8 @@ class Context {
 
   k_thread& thread_info() { return thread_info_; }
 
-  using ThreadRoutine = void (*)(void* arg);
-  void set_thread_routine(ThreadRoutine entry, void* arg) {
-    user_thread_entry_function_ = entry;
-    user_thread_entry_arg_ = arg;
+  void set_thread_routine(DeprecatedOrNewThreadFn&& rvalue) {
+    fn_ = std::move(rvalue);
   }
 
   bool detached() const { return detached_; }
@@ -75,8 +80,7 @@ class Context {
 
   k_tid_t task_handle_ = nullptr;
   k_thread thread_info_;
-  ThreadRoutine user_thread_entry_function_ = nullptr;
-  void* user_thread_entry_arg_ = nullptr;
+  DeprecatedOrNewThreadFn fn;
   bool detached_ = false;
   bool thread_done_ = false;
 };

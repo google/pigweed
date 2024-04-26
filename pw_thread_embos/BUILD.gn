@@ -123,6 +123,7 @@ pw_source_set("thread") {
     "$dir_pw_assert",
     "$dir_pw_string",
     "$dir_pw_third_party/embos",
+    "$dir_pw_thread:deprecated_or_new_thread_function",
     "$dir_pw_thread:id",
     "$dir_pw_thread:thread.facade",
     dir_pw_span,

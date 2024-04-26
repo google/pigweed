@@ -15,16 +15,9 @@
 #include "pw_thread/thread.h"
 
 namespace pw::thread {
-namespace {
-
-void StartThreadCore(void* void_thread_core_ptr) {
-  static_cast<ThreadCore*>(void_thread_core_ptr)->Start();
-}
-
-}  // namespace
 
 // Delegating constructor which defers to the facade's constructor.
 Thread::Thread(const Options& options, ThreadCore& thread_core)
-    : Thread(options, StartThreadCore, &thread_core) {}
+    : Thread(options, [&thread_core] { thread_core.Start(); }) {}
 
 }  // namespace pw::thread

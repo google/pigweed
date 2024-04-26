@@ -148,6 +148,7 @@ pw_facade(
     deps = [
         ":id",
         ":thread_core",
+        "//pw_function",
     ],
 )
 
@@ -165,6 +166,25 @@ cc_library(
         "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:thread"],
         "//conditions:default": ["//pw_thread_stl:thread"],
     }),
+)
+
+cc_library(
+    name = "deprecated_or_new_thread_function",
+    hdrs = ["public/pw_thread/deprecated_or_new_thread_function.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_function",
+    ],
+)
+
+pw_cc_test(
+    name = "deprecated_or_new_thread_function_test",
+    srcs = [
+        "deprecated_or_new_thread_function_test.cc",
+    ],
+    deps = [
+        ":deprecated_or_new_thread_function",
+    ],
 )
 
 cc_library(
@@ -305,6 +325,7 @@ cc_library(
         "//pw_sync:binary_semaphore",
         "//pw_unit_test",
     ],
+    alwayslink = True,
 )
 
 pw_cc_test(
