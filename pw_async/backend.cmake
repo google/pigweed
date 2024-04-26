@@ -19,3 +19,4 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 # Backend for the pw_async module.
 pw_add_backend_variable(pw_async.task_BACKEND)
 pw_add_backend_variable(pw_async.dispatcher_BACKEND)
+pw_add_backend_variable(pw_async.fake_dispatcher_BACKEND)

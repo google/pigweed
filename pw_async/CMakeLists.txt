@@ -53,3 +53,27 @@ pw_add_facade(pw_async.dispatcher INTERFACE
     pw_function
     pw_status
 )
+
+pw_add_facade(pw_async.fake_dispatcher INTERFACE
+  BACKEND
+    pw_async.fake_dispatcher_BACKEND
+  HEADERS
+    public/pw_async/fake_dispatcher.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_async.dispatcher
+)
+
+pw_add_library(pw_async.heap_dispatcher STATIC
+  HEADERS
+    public/pw_async/heap_dispatcher.h
+  SOURCES
+    heap_dispatcher.cc
+  PRIVATE_DEPS
+    pw_result
+  PUBLIC_DEPS
+    pw_async.dispatcher
+    pw_async.task
+    pw_async.types
+)

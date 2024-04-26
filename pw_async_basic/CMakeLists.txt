@@ -41,3 +41,19 @@ pw_add_library(pw_async_basic.dispatcher_backend STATIC
     pw_sync.timed_thread_notification
     pw_thread.thread_core
 )
+
+pw_add_library(pw_async_basic.fake_dispatcher_backend STATIC
+  HEADERS
+    public/pw_async_basic/fake_dispatcher.h
+    public_overrides/pw_async_backend/fake_dispatcher.h
+  SOURCES
+    fake_dispatcher.cc
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_async_basic.task_backend
+    pw_async.fake_dispatcher.facade
+    pw_unit_test
+  PRIVATE_DEPS
+    pw_log
+)
