@@ -1284,9 +1284,12 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
   //
   //   TOTAL: 3 + encoded session_id + encoded offset + encoded data length
   //
+  // Use a lower bound of a single chunk for the window end offset, as it will
+  // always be at least in that range.
+  size_t window_end_offset = std::max(window_end_offset_, max_chunk_size_bytes);
   max_size -= 3;
   max_size -= varint::EncodedSize(session_id_);
-  max_size -= varint::EncodedSize(window_end_offset_);
+  max_size -= varint::EncodedSize(window_end_offset);
   max_size -= varint::EncodedSize(max_size);
 
   // A resulting value of zero (or less) renders write transfers unusable, as

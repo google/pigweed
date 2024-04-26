@@ -2976,5 +2976,100 @@ TEST_F(WriteTransferLargeData, Version2_AdaptiveWindow_CongestionAvoidance) {
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
 }
 
+class WriteTransferMultibyteVarintChunkSize : public ::testing::Test {
+ protected:
+  WriteTransferMultibyteVarintChunkSize()
+      : buffer{},
+        handler_(7, buffer),
+        transfer_thread_(chunk_buffer_, encode_buffer_),
+        system_thread_(TransferThreadOptions(), transfer_thread_),
+        ctx_(transfer_thread_,
+             kData256.size(),
+             // Use a long timeout to avoid accidentally triggering timeouts.
+             std::chrono::minutes(1),
+             /*max_retries=*/3) {
+    ctx_.service().RegisterHandler(handler_);
+
+    PW_CHECK(!handler_.prepare_write_called);
+    PW_CHECK(!handler_.finalize_write_called);
+
+    ctx_.call();  // Open the write stream
+    transfer_thread_.WaitUntilEventIsProcessed();
+  }
+
+  ~WriteTransferMultibyteVarintChunkSize() override {
+    transfer_thread_.Terminate();
+    system_thread_.join();
+  }
+
+  static constexpr auto kData256 =
+      bytes::Initialized<256>([](size_t i) { return i; });
+
+  std::array<std::byte, kData256.size()> buffer;
+  SimpleWriteTransfer handler_;
+
+  Thread<1, 1> transfer_thread_;
+  thread::Thread system_thread_;
+  std::array<std::byte, kData256.size()> chunk_buffer_;
+  std::array<std::byte, kData256.size()> encode_buffer_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write, 10) ctx_;
+};
+
+TEST_F(WriteTransferMultibyteVarintChunkSize,
+       AssumesMinimumWindowSizeInFirstParameters) {
+  ctx_.SendClientStream(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStart)
+                      .set_desired_session_id(kArbitrarySessionId)
+                      .set_resource_id(7)));
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_write_called);
+  EXPECT_FALSE(handler_.finalize_write_called);
+
+  // First, the server responds with a START_ACK, accepting the session ID and
+  // confirming the protocol version.
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStartAck);
+  EXPECT_EQ(chunk.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(chunk.resource_id(), 7u);
+
+  // Complete the handshake by confirming the server's ACK.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAckConfirmation)
+          .set_session_id(kArbitrarySessionId)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Server should respond by sending its initial transfer parameters.
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+
+  constexpr uint32_t kExpectedMaxChunkSize = 226;
+
+  chunk = DecodeChunk(ctx_.responses()[1]);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(chunk.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.window_end_offset(), kExpectedMaxChunkSize);
+  ASSERT_TRUE(chunk.max_chunk_size_bytes().has_value());
+  EXPECT_EQ(chunk.max_chunk_size_bytes().value(), kExpectedMaxChunkSize);
+
+  // Simulate a timeout, prompting the server to recalculate its transfer
+  // parameters. The max chunk size and window size should not change.
+  transfer_thread_.SimulateServerTimeout(kArbitrarySessionId);
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(chunk.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.window_end_offset(), kExpectedMaxChunkSize);
+  ASSERT_TRUE(chunk.max_chunk_size_bytes().has_value());
+  EXPECT_EQ(chunk.max_chunk_size_bytes().value(), kExpectedMaxChunkSize);
+}
+
 }  // namespace
 }  // namespace pw::transfer::test
