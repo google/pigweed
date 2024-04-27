@@ -80,7 +80,7 @@ class Context {
 
   k_tid_t task_handle_ = nullptr;
   k_thread thread_info_;
-  DeprecatedOrNewThreadFn fn;
+  DeprecatedOrNewThreadFn fn_;
   bool detached_ = false;
   bool thread_done_ = false;
 };
