@@ -163,14 +163,14 @@
       "version_file": ".versions/qemu.cipd_version"
     },
     {
-      "path": "fuchsia/third_party/sysroot/linux",
+      "path": "fuchsia/third_party/sysroot/bionic",
       "platforms": [
         "linux-amd64",
         "linux-arm64"
       ],
       "subdir": "clang_sysroot",
       "tags": [
-        "git_revision:5afa3a948160c2f058c1c6f886bc9e034d467cf5"
+        "git_revision:702eb9654703a7cec1cadf93a7e3aa269d053943"
       ]
     },
     {
