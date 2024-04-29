@@ -118,8 +118,16 @@ cc_library(
     name = "print_and_abort_check_backend",
     hdrs =
         ["print_and_abort_check_public_overrides/pw_assert_backend/check_backend.h"],
-    includes = ["print_and_abort_public_overrides"],
+    includes = ["print_and_abort_check_public_overrides"],
     deps = [":print_and_abort"],
+)
+
+cc_library(
+    name = "print_and_abort_assert_and_check_backend",
+    deps = [
+        ":print_and_abort_assert_backend",
+        ":print_and_abort_check_backend",
+    ],
 )
 
 cc_library(
