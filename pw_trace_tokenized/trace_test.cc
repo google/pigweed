@@ -430,7 +430,9 @@ TEST(TokenizedTrace, DisableAfterTrace) {
 TEST(TokenizedTrace, Scope) {
   TraceTestInterface test_interface;
 
-  { PW_TRACE_SCOPE("scoped trace"); }
+  {
+    PW_TRACE_SCOPE("scoped trace");
+  }
 
   // Check results
   EXPECT_TRACE(test_interface, PW_TRACE_TYPE_DURATION_START, "scoped trace");
@@ -441,7 +443,9 @@ TEST(TokenizedTrace, Scope) {
 TEST(TokenizedTrace, ScopeGroup) {
   TraceTestInterface test_interface;
 
-  { PW_TRACE_SCOPE("scoped group trace", "group"); }
+  {
+    PW_TRACE_SCOPE("scoped group trace", "group");
+  }
 
   // Check results
   EXPECT_TRACE(test_interface,

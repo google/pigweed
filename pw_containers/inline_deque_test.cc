@@ -135,7 +135,9 @@ TEST(InlineDeque, Destruct_MultipleEntries) {
   Counter value;
   Counter::Reset();
 
-  { InlineDeque<Counter, 128> deque(100, value); }
+  {
+    InlineDeque<Counter, 128> deque(100, value);
+  }
 
   EXPECT_EQ(Counter::created, 100);
   EXPECT_EQ(Counter::destroyed, 100);

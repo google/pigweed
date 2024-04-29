@@ -95,7 +95,11 @@ int main() {
   // Add five strings with either StringBuilder or std::snprintf.
   FORMAT_STRING("Three", "Three");
   FORMAT_STRING("point " << 1, "Three point %d", 1);
-  FORMAT_STRING("four " << "one" << ' ' << 5u, "four %s %u", "one", 5u);
+  FORMAT_STRING("four "
+                    << "one" << ' ' << 5u,
+                "four %s %u",
+                "one",
+                5u);
   FORMAT_STRING(string, "%s", string);
   FORMAT_STRING("-->" << string << string << string << ' ' << integer << ' '
                       << boolean << '!',
@@ -109,7 +113,11 @@ int main() {
   // Add five more strings with either StringBuilder or std::snprintf.
   FORMAT_STRING("Three", "Three");
   FORMAT_STRING("point " << 1, "Three point %d", 1);
-  FORMAT_STRING("four " << "one" << ' ' << 5u, "four %s %u", "one", 5u);
+  FORMAT_STRING("four "
+                    << "one" << ' ' << 5u,
+                "four %s %u",
+                "one",
+                5u);
   FORMAT_STRING(string, "%s", string);
   FORMAT_STRING(string << string << string << ' ' << integer << ' ' << boolean,
                 "%s%s%s %d %d",

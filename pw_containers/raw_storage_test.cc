@@ -55,7 +55,9 @@ TEST(RawStorage, Construct_MoveOnly) {
 TEST(RawStorage, Destruct) {
   Counter::Reset();
 
-  { [[maybe_unused]] internal::RawStorage<Counter, 128> destroyed; }
+  {
+    [[maybe_unused]] internal::RawStorage<Counter, 128> destroyed;
+  }
 
   EXPECT_EQ(Counter::created, 0);
   EXPECT_EQ(Counter::destroyed, 0);

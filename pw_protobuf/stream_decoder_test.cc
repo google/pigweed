@@ -408,7 +408,9 @@ TEST(StreamDecoder, Decode_Nested_SeeksToNextFieldOnDestruction) {
   // Create a nested encoder for the nested field, but don't use it.
   EXPECT_EQ(decoder.Next(), OkStatus());
   ASSERT_EQ(*decoder.FieldNumber(), 6u);
-  { StreamDecoder nested = decoder.GetNestedDecoder(); }
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+  }
 
   // The root decoder should still advance to the next field after the nested
   // decoder is closed.
@@ -449,7 +451,9 @@ TEST(StreamDecoder,
   // Create a nested encoder for the nested field, but don't use it.
   EXPECT_EQ(decoder.Next(), OkStatus());
   ASSERT_EQ(*decoder.FieldNumber(), 6u);
-  { StreamDecoder nested = decoder.GetNestedDecoder(); }
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+  }
 
   // The root decoder should still advance to the next field after the nested
   // decoder is closed.
@@ -485,7 +489,9 @@ TEST(StreamDecoder, Decode_Nested_LastField) {
   // the root proto.
   EXPECT_EQ(decoder.Next(), OkStatus());
   ASSERT_EQ(*decoder.FieldNumber(), 6u);
-  { StreamDecoder nested = decoder.GetNestedDecoder(); }
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+  }
 
   // Root decoder should correctly terminate after the nested decoder is closed.
   EXPECT_EQ(decoder.Next(), Status::OutOfRange());

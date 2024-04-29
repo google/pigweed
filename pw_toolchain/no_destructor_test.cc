@@ -53,11 +53,15 @@ class TrivialDestructor {
 TEST(NoDestructor, ShouldNotCallDestructor) {
   bool destructor_called = false;
 
-  { HasADestructor should_be_destroyed(destructor_called); }
+  {
+    HasADestructor should_be_destroyed(destructor_called);
+  }
 
   EXPECT_TRUE(destructor_called);
 
-  { NoDestructor<HasADestructor> should_not_be_destroyed(destructor_called); }
+  {
+    NoDestructor<HasADestructor> should_not_be_destroyed(destructor_called);
+  }
 
   EXPECT_FALSE(destructor_called);
 }

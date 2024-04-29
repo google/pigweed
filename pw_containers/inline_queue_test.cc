@@ -148,7 +148,9 @@ TEST(InlineQueue, Destruct_MultipleEntries) {
   Counter value;
   Counter::Reset();
 
-  { InlineQueue<Counter, 128> queue(100, value); }
+  {
+    InlineQueue<Counter, 128> queue(100, value);
+  }
 
   EXPECT_EQ(Counter::created, 100);
   EXPECT_EQ(Counter::destroyed, 100);

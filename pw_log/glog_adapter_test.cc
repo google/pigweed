@@ -72,8 +72,8 @@ TEST(Glog, Fatal) {
 
 TEST(Glog, ConditionalFatal) {
   conditional = false;
-  LOG_IF(FATAL, conditional)
-      << "LOG_IF(FATAL, false) compiles but you should " << "not see this log";
+  LOG_IF(FATAL, conditional) << "LOG_IF(FATAL, false) compiles but you should "
+                             << "not see this log";
 }
 
 TEST(Glog, Dfatal) {
@@ -94,8 +94,8 @@ TEST(Glog, ConditionalDfatal) {
                               << "PW_LOG_ERROR as NDEBUG is set";
 #endif  // defined(NDEBUG)
   conditional = false;
-  LOG_IF(DFATAL, conditional)
-      << "LOG_IF(DFATAL, false) compiles but you " << "should not see this log";
+  LOG_IF(DFATAL, conditional) << "LOG_IF(DFATAL, false) compiles but you "
+                              << "should not see this log";
 }
 
 }  // namespace

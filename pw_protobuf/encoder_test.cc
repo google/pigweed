@@ -496,7 +496,9 @@ TEST(StreamEncoder, WriteTooBig) {
 TEST(StreamEncoder, EmptyChildWrites) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);
-  { StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField); }
+  {
+    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+  }
   ASSERT_EQ(parent.status(), OkStatus());
   const size_t kExpectedSize =
       varint::EncodedSize(

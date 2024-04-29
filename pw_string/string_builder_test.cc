@@ -344,7 +344,9 @@ TEST(StringBuilder, StreamOutput_ExhaustBuffer_InOneString) {
   EXPECT_STREQ("01234567", sb.data());  // only can fit 8
   EXPECT_EQ(8u, sb.size());
 
-  sb << "no" << " more " << "room" << '?';
+  sb << "no"
+     << " more "
+     << "room" << '?';
   EXPECT_STREQ("01234567", sb.data());
 }
 

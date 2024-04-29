@@ -166,7 +166,9 @@ TEST(Vector, Construct_AggregateStringView) {
 TEST(Vector, Destruct_ZeroLength) {
   Counter::Reset();
 
-  { Vector<Counter, 0> destroyed; }
+  {
+    Vector<Counter, 0> destroyed;
+  }
   EXPECT_EQ(Counter::created, 0);
   EXPECT_EQ(Counter::destroyed, 0);
 }
@@ -174,7 +176,9 @@ TEST(Vector, Destruct_ZeroLength) {
 TEST(Vector, Destruct_Empty) {
   Counter::Reset();
 
-  { Vector<Counter, 128> destroyed; }
+  {
+    Vector<Counter, 128> destroyed;
+  }
   EXPECT_EQ(Counter::created, 0);
   EXPECT_EQ(Counter::destroyed, 0);
 }
@@ -183,7 +187,9 @@ TEST(Vector, Destruct_MultpileEntries) {
   Counter value;
   Counter::Reset();
 
-  { Vector<Counter, 128> destroyed(100, value); }
+  {
+    Vector<Counter, 128> destroyed(100, value);
+  }
 
   EXPECT_EQ(Counter::created, 100);
   EXPECT_EQ(Counter::destroyed, 100);
