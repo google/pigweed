@@ -253,6 +253,13 @@ pw_seed("0128") {
   changelist = 206670
 }
 
+pw_seed("0129") {
+  title = "pw_assert: Support PW_ASSERT with non-argument message"
+  author = "momoshen"
+  status = "Draft"
+  changelist = 207130
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -288,5 +295,6 @@ pw_seed_index("seeds") {
     ":0126",
     ":0127",
     ":0128",
+    ":0129",
   ]
 }
