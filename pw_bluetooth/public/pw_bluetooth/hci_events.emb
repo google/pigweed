@@ -1173,9 +1173,15 @@ struct LinkKeyNotificationEvent:
   $next [+1]                           KeyType          key_type
     -- Type of key used when pairing.
 
-# 7.7.25 Loopback Command event
-# HCI_Loopback_Command
-# TODO: b/265052417 - Definition needs to be added
+
+struct LoopbackCommandEvent:
+  -- 7.7.25 Loopback Command event (v5.3)
+  -- HCI_Loopback_Command
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]      hci.EventHeader    header
+  let payload_size = header.parameter_total_size
+    [requires: this >= hci.CommandHeader.$size_in_bytes]
+  $next [+payload_size]  UInt:8[payload_size]  command
 
 
 struct DataBufferOverflowEvent:
