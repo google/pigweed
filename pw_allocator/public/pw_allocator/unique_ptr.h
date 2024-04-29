@@ -103,7 +103,10 @@ class UniquePtr : public internal::BaseUniquePtr {
   ///
   /// After this function returns, this ``UniquePtr`` will be in an "empty"
   /// (``nullptr``) state until a new value is assigned.
-  UniquePtr& operator=(std::nullptr_t) { Reset(); }
+  UniquePtr& operator=(std::nullptr_t) {
+    Reset();
+    return *this;
+  }
 
   /// Destructs and deallocates any currently-held value.
   ~UniquePtr() { Reset(); }
