@@ -1015,6 +1015,18 @@ struct ReadLocalSupportedControllerDelayCommandCompleteEvent:
   $next [+3]         UInt                      max_controller_delay
 
 
+struct ReadRssiCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.5.4 Read RSSI command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+  $next [+1]         Int                       rssi
+    -- BR/EDR (Range: -128 to 127, Units: dB)
+    -- LE (Range: -127 to 20, 127, Units: dBm)
+
+
 struct LEReadBufferSizeV1CommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v1] command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes

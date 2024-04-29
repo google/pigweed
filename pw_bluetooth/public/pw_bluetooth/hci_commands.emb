@@ -1787,6 +1787,15 @@ struct ReadLocalSupportedControllerDelayCommand:
 # ========== 7.5 Status Parameters ==========
 
 
+struct ReadRssiCommand:
+  -- 7.5.4 Read RSSI (v5.3)
+  -- HCI_Read_RSSI
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]  hci.CommandHeader  header
+  $next [+2]         UInt               connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
 struct ReadEncryptionKeySizeCommand:
   -- 7.5.6 Read Encryption Key Size (v1.1) (BR/EDR)
   -- HCI_Read_Encryption_Key_Size
