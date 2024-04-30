@@ -48,6 +48,7 @@ export function createLogViewer(
   const logViewer = new RootComponent(state, columnOrder);
   root.appendChild(logViewer);
   let lastUpdateTimeoutId: NodeJS.Timeout;
+  logStore.setColumnOrder(columnOrder);
 
   const logEntryListener = (event: LogSourceEvent) => {
     if (event.type === 'log-entry') {

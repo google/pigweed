@@ -26,7 +26,7 @@ import { LocalStorageState, StateStore } from '../../shared/state';
 import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
 import '../log-view-controls/log-view-controls';
-import { titleCaseToKebabCase } from '../../utils/strings';
+import { downloadTextLogs } from '../../utils/download';
 
 type FilterFunction = (logEntry: LogEntry) => boolean;
 
@@ -277,7 +277,7 @@ export class LogView extends LitElement {
   /**
    * Updates order of columnData based on columnOrder for log viewer to render
    * @param columnData ColumnData to order
-   * @returns Ordered list of ColumnData
+   * @return Ordered list of ColumnData
    */
   private updateColumnRender(columnData: TableColumn[]): TableColumn[] {
     const orderedColumns: TableColumn[] = [];
@@ -385,41 +385,9 @@ export class LogView extends LitElement {
    * @param {CustomEvent} event - The click event.
    */
   private downloadLogs(event: CustomEvent) {
-    const headers = this.logs[0]?.fields.map((field) => field.key) || [];
-    const maxWidths = headers.map((header) => header.length);
+    const headers = this.columnData.map((column) => column.fieldName);
     const viewTitle = event.detail.viewTitle;
-    const fileName = viewTitle ? titleCaseToKebabCase(viewTitle) : 'logs';
-
-    this.logs.forEach((log) => {
-      log.fields.forEach((field, columnIndex) => {
-        maxWidths[columnIndex] = Math.max(
-          maxWidths[columnIndex],
-          field.value ? field.value.toString().length : 0,
-        );
-      });
-    });
-
-    const headerRow = headers
-      .map((header, columnIndex) => header.padEnd(maxWidths[columnIndex]))
-      .join('\t');
-    const separator = '';
-    const logRows = this.logs.map((log) => {
-      const values = log.fields.map((field, columnIndex) =>
-        (field.value ? field.value.toString() : '').padEnd(
-          maxWidths[columnIndex],
-        ),
-      );
-      return values.join('\t');
-    });
-
-    const formattedLogs = [headerRow, separator, ...logRows].join('\n');
-    const blob = new Blob([formattedLogs], { type: 'text/plain' });
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = `${fileName}.txt`;
-    downloadLink.click();
-
-    URL.revokeObjectURL(downloadLink.href);
+    downloadTextLogs(this.logs, headers, viewTitle);
   }
 
   render() {

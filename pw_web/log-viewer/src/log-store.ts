@@ -12,58 +12,65 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LogEntry } from './shared/interfaces';
-import { titleCaseToKebabCase } from './utils/strings';
+import { Field, LogEntry } from './shared/interfaces';
+import { downloadTextLogs } from './utils/download';
 
 export class LogStore {
-  private logs: LogEntry[];
-
-  constructor() {
-    this.logs = [];
-  }
+  private logs: LogEntry[] = [];
+  private columnOrder: string[] = [];
 
   addLogEntry(logEntry: LogEntry) {
     this.logs.push(logEntry);
   }
 
-  downloadLogs(event: CustomEvent) {
+  downloadLogs() {
     const logs = this.getLogs();
-    const headers = logs[0]?.fields.map((field) => field.key) || [];
-    const maxWidths = headers.map((header) => header.length);
-    const viewTitle = event.detail.viewTitle;
-    const fileName = viewTitle ? titleCaseToKebabCase(viewTitle) : 'logs';
-
-    logs.forEach((log) => {
-      log.fields.forEach((field, columnIndex) => {
-        maxWidths[columnIndex] = Math.max(
-          maxWidths[columnIndex],
-          field.value.toString().length,
-        );
-      });
-    });
-
-    const headerRow = headers
-      .map((header, columnIndex) => header.padEnd(maxWidths[columnIndex]))
-      .join('\t');
-    const separator = '';
-    const logRows = logs.map((log) => {
-      const values = log.fields.map((field, columnIndex) =>
-        field.value.toString().padEnd(maxWidths[columnIndex]),
-      );
-      return values.join('\t');
-    });
-
-    const formattedLogs = [headerRow, separator, ...logRows].join('\n');
-    const blob = new Blob([formattedLogs], { type: 'text/plain' });
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = `${fileName}.txt`;
-    downloadLink.click();
-
-    URL.revokeObjectURL(downloadLink.href);
+    const headers = this.getHeaders(logs[0]?.fields);
+    const fileName = 'logs';
+    downloadTextLogs(logs, headers, fileName);
   }
 
   getLogs(): LogEntry[] {
     return this.logs;
+  }
+
+  setColumnOrder(colOrder: string[]) {
+    this.columnOrder = [...new Set(colOrder)];
+  }
+
+  /**
+   * Helper to order header columns on download
+   * @param headerCol Header column from logs
+   * @return Ordered header columns
+   */
+  private getHeaders(headerCol: Field[]): string[] {
+    if (!headerCol) {
+      return [];
+    }
+
+    const order = this.columnOrder;
+    if (order.indexOf('severity') != 0) {
+      const index = order.indexOf('severity');
+      if (index != -1) {
+        order.splice(index, 1);
+      }
+      order.unshift('severity');
+    }
+
+    if (order.indexOf('message') != order.length) {
+      const index = order.indexOf('message');
+      if (index != -1) {
+        order.splice(index, 1);
+      }
+      order.push('message');
+    }
+
+    headerCol.forEach((field) => {
+      if (!order.includes(field.key)) {
+        order.splice(order.length - 1, 0, field.key);
+      }
+    });
+
+    return order;
   }
 }
