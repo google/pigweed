@@ -53,6 +53,21 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "interrupt_safe_writer",
+    srcs = ["interrupt_safe_writer.cc"],
+    hdrs = ["public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h"],
+    includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [
+        "//pw_status",
+        "//pw_stream",
+        "@pigweed//targets:mcuxpresso_sdk",
+    ],
+)
+
 pw_cc_test(
     name = "stream_test",
     srcs = ["stream_test.cc"],

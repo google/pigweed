@@ -37,12 +37,23 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public = [ "public/pw_stream_uart_mcuxpresso/dma_stream.h" ]
     public_deps = [ "$dir_pw_stream" ]
     deps = [
-      ":pw_preprocessor",
-      ":pw_sync:interrupt_spin_lock",
-      ":pw_sync:thread_notification",
+      "$dir_pw_preprocessor",
+      "$dir_pw_sync:interrupt_spin_lock",
+      "$dir_pw_sync:thread_notification",
       pw_third_party_mcuxpresso_SDK,
     ]
     sources = [ "dma_stream.cc" ]
+  }
+
+  pw_source_set("pw_stream_uart_interrupt_safe_writer_mcuxpresso") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h" ]
+    public_deps = [
+      "$dir_pw_status",
+      "$dir_pw_stream",
+    ]
+    deps = [ pw_third_party_mcuxpresso_SDK ]
+    sources = [ "interrupt_safe_writer.cc" ]
   }
 
   pw_test("stream_test") {

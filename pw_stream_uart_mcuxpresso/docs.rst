@@ -8,6 +8,10 @@ and writing to a UART using the NXP MCUXpresso SDK. ``UartStreamMcuxpresso``
 version uses the CPU to read and write to the UART, while ``UartDmaStreamMcuxpresso``
 uses DMA transfers to read and write to the UART minimizing the CPU utilization.
 
+``InterruptSafeUartWriterMcuxpresso`` implements an interrupt safe
+write-only stream to UART. Intended for use in fault handlers. It can be
+constructed ``constinit`` for use in pre-static constructor environments as well.
+
 .. note::
   This module will likely be superseded by a future ``pw_uart`` interface.
 
@@ -75,4 +79,13 @@ Usage
    auto stream = UartDmaStreamMcuxpresso{kConfig};
 
    PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
+
+``InterruptSafeUartWriterMcuxpresso`` example:
+
+.. code-block:: cpp
+
+   constinit InterruptSafeUartWriterMcuxpresso crash_safe_uart(
+       USART0_BASE, kCLOCK_Flexcomm0Clk, 115200);
+
+   PW_TRY(crash_safe_uart.Enable());
 
