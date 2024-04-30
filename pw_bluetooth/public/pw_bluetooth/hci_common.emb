@@ -663,6 +663,62 @@ struct BdAddr:
   0 [+6]  UInt  bd_addr
 
 
+enum CommonDataTypes:
+  -- Defined in section 2.3 of BT Core Specification Assigned Numbers
+  -- https://www.bluetooth.com/specifications/assigned-numbers/
+  [maximum_bits: 8]
+  FLAGS                                            = 0x01
+  INCOMPLETE_LIST_16_BIT_SERVICE_CLASS_UUIDS       = 0x02
+  COMPLETE_LIST_16_BIT_SERVICE_CLASS_UUIDS         = 0x03
+  INCOMPLETE_LIST_32_BIT_SERVICE_CLASS_UUIDS       = 0x04
+  COMPLETE_LIST_32_BIT_SERVICE_CLASS_UUIDS         = 0x05
+  INCOMPLETE_LIST_128_BIT_SERVICE_CLASS_UUIDS      = 0x06
+  COMPLETE_LIST_128_BIT_SERVICE_CLASS_UUIDS        = 0x07
+  SHORTENED_LOCAL_NAME                             = 0x08
+  COMPLETE_LOCAL_NAME                              = 0x09
+  TX_POWER_LEVEL                                   = 0x0A
+  CLASS_OF_DEVICE                                  = 0x0D
+  SIMPLE_PAIRING_HASH_C_192                        = 0x0E
+  SIMPLE_PAIRING_RANDOMIZER_R_192                  = 0x0F
+  DEVICE_ID                                        = 0x10
+  SECURITY_MANAGER_OUT_OF_BAND_FLAGS               = 0x11
+  PERIPHERAL_CONNECTION_INTERVAL_RANGE             = 0x12
+  LIST_16_BIT_SERVICE_SOLICITATION_UUIDS           = 0x14
+  LIST_128_BIT_SERVICE_SOLICITATION_UUIDS          = 0x15
+  SERVICE_DATA_16_BIT_UUID                         = 0x16
+  PUBLIC_TARGET_ADDRESS                            = 0x17
+  RANDOM_TARGET_ADDRESS                            = 0x18
+  APPEARANCE                                       = 0x19
+  ADVERTISING_INTERVAL                             = 0x1A
+  LE_BLUETOOTH_DEVICE_ADDRESS                      = 0x1B
+  LE_ROLE                                          = 0x1C
+  SIMPLE_PAIRING_HASH_C_256                        = 0x1D
+  SIMPLE_PAIRING_RANDOMIZER_R_256                  = 0x1E
+  LIST_32_BIT_SERVICE_SOLICITATION_UUIDS           = 0x1F
+  SERVICE_DATA_32_BIT_UUID                         = 0x20
+  SERVICE_DATA_128_BIT_UUID                        = 0x21
+  LE_SECURE_CONNECTIONS_CONFIRMATION_VALUE         = 0x22
+  LE_SECURE_CONNECTIONS_RANDOM_VALUE               = 0x23
+  URI                                              = 0x24
+  INDOOR_POSITIONING                               = 0x25
+  TRANSPORT_DISCOVERY_DATA                         = 0x26
+  LE_SUPPORTED_FEATURES                            = 0x27
+  CHANNEL_MAP_UPDATE_INFORMATION                   = 0x28
+  PB_ADV                                           = 0x29
+  MESH_MESSAGE                                     = 0x2A
+  MESH_BEACON                                      = 0x2B
+  BIG_INFO                                         = 0x2C
+  BROADCAST_CODE                                   = 0x2D
+  RESOLVABLE_IDENTIFIER                            = 0x2E
+  ADVERTISING_INTERVAL_LONG                        = 0x2F
+  BROADCAST_NAME                                   = 0x30
+  ENCRYPTED_ADVERTISING_DATA                       = 0x31
+  PERIODIC_ADVERTISING_RESPONSE_TIMING_INFORMATION = 0x32
+  ELECTRONIC_SHELF_LABEL                           = 0x34
+  INFORMATION_DATA_3D                              = 0x3D
+  MANUFACTURER_SPECIFIC_DATA                       = 0xFF
+
+
 bits ClassOfDevice:
   -- Defined in Assigned Numbers for the Baseband
   -- https://www.bluetooth.com/specifications/assigned-numbers/baseband
