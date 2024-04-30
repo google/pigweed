@@ -118,6 +118,17 @@ build:stm32f429i --//pw_log:backend=@pigweed//pw_log_tokenized
 build:stm32f429i --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
 build:stm32f429i --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
 
+# Config for the lm3s6965evb platform, used to build pw_rust/examples.
+#
+# TODO: b/301334234 - Make the platform set the flags below.
+build:lm3s6965evb --platforms=//pw_build/platforms:lm3s6965evb
+build:lm3s6965evb --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
+
+# Config for the microbit platform, used to build pw_rust/examples.
+#
+# TODO: b/301334234 - Make the platform set the flags below.
+build:microbit --platforms=//pw_build/platforms:lm3s6965evb
+build:microbit --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
 
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the

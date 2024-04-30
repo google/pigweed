@@ -826,12 +826,12 @@ def bazel_build(ctx: PresubmitContext) -> None:
 
     # Mapping from Bazel platforms to targets which should be built for those
     # platforms.
-    targets_for_platform = {
-        "//pw_build/platforms:lm3s6965evb": [
-            "//pw_rust/examples/embedded_hello:hello",
+    targets_for_config = {
+        "lm3s6965evb": [
+            "//pw_rust/...",
         ],
-        "//pw_build/platforms:microbit": [
-            "//pw_rust/examples/embedded_hello:hello",
+        "microbit": [
+            "//pw_rust/...",
         ],
     }
 
@@ -845,11 +845,11 @@ def bazel_build(ctx: PresubmitContext) -> None:
             '//...',
         )
 
-        for platforms, targets in targets_for_platform.items():
+        for config, targets in targets_for_config.items():
             build_bazel(
                 ctx,
                 'build',
-                f'--platforms={platforms}',
+                f'--config={config}',
                 f"--cxxopt='-std={cxxversion}'",
                 *targets,
             )

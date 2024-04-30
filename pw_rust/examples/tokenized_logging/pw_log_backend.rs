@@ -20,7 +20,6 @@
 #[doc(hidden)]
 pub mod __private {
     use cortex_m_semihosting::hprintln;
-    use pw_base64;
     use pw_log_backend_api::LogLevel;
     use pw_status::Result;
     use pw_stream::{Cursor, Write};
