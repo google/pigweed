@@ -79,6 +79,8 @@ void TransferService::GetResourceStatus(pw::ConstByteSpan request,
                                         pw::rpc::RawUnaryResponder& responder) {
   uint32_t resource_id;
   Status status;
+  std::array<std::byte, pwpb::ResourceStatus::kMaxEncodedSizeBytes> buffer = {};
+  pwpb::ResourceStatus::MemoryEncoder encoder(buffer);
 
   protobuf::Decoder decoder(request);
   if (status = decoder.Next(); status.IsOutOfRange()) {
@@ -98,8 +100,12 @@ void TransferService::GetResourceStatus(pw::ConstByteSpan request,
     return;
   }
 
+  encoder.WriteResourceId(resource_id).IgnoreError();
+
   if (TransferService::resource_responder_.active()) {
-    responder.Finish({}, Status::Unavailable()).IgnoreError();
+    PW_LOG_ERROR("Previous GetResourceStatus still being handled!");
+    responder.Finish(ConstByteSpan(encoder), Status::Unavailable())
+        .IgnoreError();
     return;
   }
 
@@ -116,22 +122,24 @@ void TransferService::ResourceStatusCallback(
     Status status, const internal::ResourceStatus& stats) {
   PW_ASSERT(resource_responder_.active());
 
-  if (!status.ok()) {
-    resource_responder_.Finish({}, status).IgnoreError();
-  }
-
   std::array<std::byte, pwpb::ResourceStatus::kMaxEncodedSizeBytes> buffer = {};
   pwpb::ResourceStatus::MemoryEncoder encoder(buffer);
 
   encoder.WriteResourceId(stats.resource_id).IgnoreError();
   encoder.WriteStatus(status.code()).IgnoreError();
+
+  if (!status.ok()) {
+    resource_responder_.Finish(ConstByteSpan(encoder), status).IgnoreError();
+  }
+
   encoder.WriteReadableOffset(stats.readable_offset).IgnoreError();
   encoder.WriteReadChecksum(stats.read_checksum).IgnoreError();
   encoder.WriteWriteableOffset(stats.writeable_offset).IgnoreError();
   encoder.WriteWriteChecksum(stats.write_checksum).IgnoreError();
 
   if (!encoder.status().ok()) {
-    resource_responder_.Finish({}, encoder.status()).IgnoreError();
+    resource_responder_.Finish(ConstByteSpan(encoder), encoder.status())
+        .IgnoreError();
     return;
   }
 
