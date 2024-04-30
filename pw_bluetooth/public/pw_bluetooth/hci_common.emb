@@ -663,7 +663,7 @@ struct BdAddr:
   0 [+6]  UInt  bd_addr
 
 
-enum CommonDataTypes:
+enum CommonDataType:
   -- Defined in section 2.3 of BT Core Specification Assigned Numbers
   -- https://www.bluetooth.com/specifications/assigned-numbers/
   [maximum_bits: 8]
