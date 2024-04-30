@@ -66,11 +66,7 @@ Status PwRpcHandler::OnMessage(StreamId id, ByteSpan message) {
                                               id,
                                               message,
                                               pw::OkStatus());
-      // TODO(b/319162657): Avoid this extra encode
-      PW_TRY_ASSIGN(auto size, packet.Encode(packet_encode_buffer_));
-
-      PW_TRY(packet_processor_.ProcessRpcPacket(
-          ConstByteSpan(packet_encode_buffer_.data(), size.size_bytes())));
+      PW_TRY(server_.ProcessPacket(packet));
       break;
     }
     case pw::rpc::MethodType::kClientStreaming:
@@ -83,9 +79,7 @@ Status PwRpcHandler::OnMessage(StreamId id, ByteSpan message) {
                                                 id,
                                                 {},
                                                 pw::OkStatus());
-        PW_TRY_ASSIGN(auto size, packet.Encode(packet_encode_buffer_));
-        PW_TRY(packet_processor_.ProcessRpcPacket(
-            ConstByteSpan(packet_encode_buffer_.data(), size.size_bytes())));
+        PW_TRY(server_.ProcessPacket(packet));
         MarkSentRequest(id);
       }
 
@@ -96,9 +90,7 @@ Status PwRpcHandler::OnMessage(StreamId id, ByteSpan message) {
                                               id,
                                               message,
                                               pw::OkStatus());
-      PW_TRY_ASSIGN(auto size, packet.Encode(packet_encode_buffer_));
-      PW_TRY(packet_processor_.ProcessRpcPacket(
-          ConstByteSpan(packet_encode_buffer_.data(), size.size_bytes())));
+      PW_TRY(server_.ProcessPacket(packet));
       break;
     }
     default:
@@ -135,15 +127,7 @@ void PwRpcHandler::OnHalfClose(StreamId id) {
                                   pw::OkStatus());
     ResetStream(id);
 
-    auto size = packet.Encode(packet_encode_buffer_);
-    if (!size.ok()) {
-      return;
-    }
-
-    packet_processor_
-        .ProcessRpcPacket(
-            ConstByteSpan(packet_encode_buffer_.data(), size->size_bytes()))
-        .IgnoreError();
+    server_.ProcessPacket(packet).IgnoreError();
   }
 }
 
@@ -163,15 +147,7 @@ void PwRpcHandler::OnCancel(StreamId id) {
                                           pw::Status::Cancelled());
   ResetStream(id);
 
-  auto size = packet.Encode(packet_encode_buffer_);
-  if (!size.ok()) {
-    return;
-  }
-
-  packet_processor_
-      .ProcessRpcPacket(
-          ConstByteSpan(packet_encode_buffer_.data(), size->size_bytes()))
-      .IgnoreError();
+  server_.ProcessPacket(packet).IgnoreError();
 }
 
 Result<PwRpcHandler::Stream> PwRpcHandler::LookupStream(StreamId id) {

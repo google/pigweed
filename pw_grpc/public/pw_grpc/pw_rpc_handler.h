@@ -32,14 +32,15 @@ namespace pw::grpc {
 class PwRpcHandler : public Connection::RequestCallbacks,
                      public GrpcChannelOutput::StreamCallbacks {
  public:
+  // TODO(afoxley): Remove after migration of downstream users.
   PwRpcHandler(uint32_t channel_id,
-               rpc::RpcPacketProcessor& packet_processor,
+               rpc::RpcPacketProcessor&,
                rpc::Server& server,
-               ByteSpan packet_encode_buffer)
-      : channel_id_(channel_id),
-        packet_processor_(packet_processor),
-        server_(server),
-        packet_encode_buffer_(packet_encode_buffer) {}
+               ByteSpan)
+      : channel_id_(channel_id), server_(server) {}
+
+  PwRpcHandler(uint32_t channel_id, rpc::Server& server)
+      : channel_id_(channel_id), server_(server) {}
 
   // GrpcChannelOutput::StreamCallbacks
   void OnClose(StreamId id) override;
@@ -73,9 +74,7 @@ class PwRpcHandler : public Connection::RequestCallbacks,
   sync::InlineBorrowable<std::array<Stream, internal::kMaxConcurrentStreams>>
       streams_;
   const uint32_t channel_id_;
-  rpc::RpcPacketProcessor& packet_processor_;
   rpc::Server& server_;
-  ByteSpan packet_encode_buffer_;
 };
 
 }  // namespace pw::grpc

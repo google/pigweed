@@ -102,7 +102,8 @@ class Server : public internal::Endpoint {
   friend class internal::Call;
   friend class ServerTestHelper;
 
-  // Give gRPC integration access to FindMethod
+  // Give gRPC integration access to FindMethod and internal::Packet version of
+  // ProcessPacket
   friend class pw::grpc::PwRpcHandler;
 
   // Give call classes access to OpenCall.
@@ -206,6 +207,9 @@ class Server : public internal::Endpoint {
   }
 
   void UnregisterServiceLocked() {}  // Base case; nothing left to do.
+
+  Status ProcessPacket(internal::Packet packet)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;

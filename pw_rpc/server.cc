@@ -36,7 +36,10 @@ using internal::pwpb::PacketType;
 Status Server::ProcessPacket(ConstByteSpan packet_data) {
   PW_TRY_ASSIGN(Packet packet,
                 Endpoint::ProcessPacket(packet_data, Packet::kServer));
+  return ProcessPacket(packet);
+}
 
+Status Server::ProcessPacket(internal::Packet packet) {
   internal::rpc_lock().lock();
 
   // Verbose log for debugging.

@@ -163,7 +163,6 @@ int main(int argc, char* argv[]) {
   std::setbuf(stdout, nullptr);  // unbuffered stdout
 
   pw::stream::ServerSocket server;
-  std::array<std::byte, 8192> packet_encode_buffer;
   pw::grpc::GrpcChannelOutput rpc_egress;
   std::array<pw::rpc::Channel, 1> tx_channels(
       {pw::rpc::Channel::Create<kTestChannelId>(&rpc_egress)});
@@ -173,9 +172,7 @@ int main(int argc, char* argv[]) {
   service_registry.RegisterService(echo_service);
 
   pw::grpc::PwRpcHandler handler(kTestChannelId,
-                                 service_registry,
-                                 service_registry.client_server().server(),
-                                 packet_encode_buffer);
+                                 service_registry.client_server().server());
   rpc_egress.set_callbacks(handler);
 
   PW_LOG_INFO("Main.Listen on port=%d", port);
