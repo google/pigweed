@@ -14,66 +14,15 @@
 
 #pragma once
 
-#include <sys/ioctl.h>
-#include <unistd.h>
-
 #include <cstdint>
 #include <memory>
 
 #include "pw_digital_io/digital_io.h"
 #include "pw_digital_io/polarity.h"
+#include "pw_digital_io_linux/internal/owned_fd.h"
 #include "pw_result/result.h"
 
 namespace pw::digital_io {
-
-// An "owned" file descriptor wrapper which closes the fd on destruction.
-// TODO(b/328262654): Move this to out a better place.
-class OwnedFd final {
- public:
-  explicit OwnedFd(int fd) : fd_(fd) {}
-  explicit OwnedFd() : OwnedFd(kInvalid) {}
-
-  ~OwnedFd() { Close(); }
-
-  // Delete copy constructor/assignment to prevent double close.
-  OwnedFd(const OwnedFd&) = delete;
-  OwnedFd& operator=(const OwnedFd&) = delete;
-
-  // Providing move constructor is required due to custom dtor.
-  OwnedFd(OwnedFd&& other) noexcept : fd_(std::exchange(other.fd_, kInvalid)) {}
-
-  OwnedFd& operator=(OwnedFd&& other) noexcept {
-    Close();
-    fd_ = std::exchange(other.fd_, kInvalid);
-    return *this;
-  }
-
-  OwnedFd& operator=(int fd) noexcept {
-    Close();
-    fd_ = fd;
-    return *this;
-  }
-
-  void Close() {
-    if (fd_ != kInvalid) {
-      close(fd_);
-    }
-    fd_ = kInvalid;
-  }
-
-  int fd() const { return fd_; }
-  bool valid() const { return fd_ != kInvalid; }
-
-  // Helper functions
-  template <typename... Args>
-  int ioctl(Args&&... args) {
-    return ::ioctl(fd_, std::forward<Args>(args)...);
-  }
-
- private:
-  static constexpr int kInvalid = -1;
-  int fd_ = kInvalid;
-};
 
 struct LinuxConfig {
   uint32_t index;
@@ -105,6 +54,7 @@ class LinuxDigitalOut;
 class LinuxDigitalIoChip final {
   friend class LinuxDigitalIn;
   friend class LinuxDigitalOut;
+  using OwnedFd = internal::OwnedFd;
 
  private:
   // Implementation
@@ -149,7 +99,7 @@ class LinuxDigitalIn final : public DigitalIn {
 
   std::shared_ptr<LinuxDigitalIoChip::Impl> chip_;
   LinuxInputConfig const config_;
-  OwnedFd fd_;
+  internal::OwnedFd fd_;
 };
 
 class LinuxDigitalOut final : public DigitalInOut {
@@ -168,7 +118,7 @@ class LinuxDigitalOut final : public DigitalInOut {
 
   std::shared_ptr<LinuxDigitalIoChip::Impl> chip_;
   LinuxOutputConfig const config_;
-  OwnedFd fd_;
+  internal::OwnedFd fd_;
 };
 
 }  // namespace pw::digital_io

@@ -25,6 +25,21 @@
 // TODO: https://pwbug.dev/328268007 - Add support for v2.
 
 namespace pw::digital_io {
+namespace {
+
+using internal::OwnedFd;
+
+Result<State> FdGetState(OwnedFd& fd) {
+  struct gpiohandle_data req = {};
+
+  if (fd.ioctl(GPIOHANDLE_GET_LINE_VALUES_IOCTL, &req) < 0) {
+    return Status::Internal();
+  }
+
+  return req.values[0] ? State::kActive : State::kInactive;
+}
+
+}  // namespace
 
 // TODO(jrreinhart): Support other flags, e.g.:
 // GPIOHANDLE_REQUEST_OPEN_DRAIN,
@@ -124,20 +139,6 @@ Status LinuxDigitalIn::DoEnable(bool enable) {
   }
   return OkStatus();
 }
-
-namespace {
-
-Result<State> FdGetState(OwnedFd& fd) {
-  struct gpiohandle_data req = {};
-
-  if (fd.ioctl(GPIOHANDLE_GET_LINE_VALUES_IOCTL, &req) < 0) {
-    return Status::Internal();
-  }
-
-  return req.values[0] ? State::kActive : State::kInactive;
-}
-
-}  // namespace
 
 Result<State> LinuxDigitalIn::DoGetState() { return FdGetState(fd_); }
 

@@ -23,7 +23,10 @@ config("public_includes") {
 
 pw_source_set("pw_digital_io_linux") {
   public_configs = [ ":public_includes" ]
-  public = [ "public/pw_digital_io_linux/digital_io.h" ]
+  public = [
+    "public/pw_digital_io_linux/digital_io.h",
+    "public/pw_digital_io_linux/internal/owned_fd.h",
+  ]
   public_deps = [
     "$dir_pw_digital_io",
     "$dir_pw_result",

@@ -18,6 +18,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_library(pw_digital_io_linux INTERFACE
   HEADERS
     public/pw_digital_io_linux/digital_io.h
+    public/pw_digital_io_linux/internal/owned_fd.h
   PUBLIC_INCLUDES
     public
   SOURCES

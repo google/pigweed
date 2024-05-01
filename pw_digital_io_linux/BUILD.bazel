@@ -28,6 +28,7 @@ cc_library(
     ],
     hdrs = [
         "public/pw_digital_io_linux/digital_io.h",
+        "public/pw_digital_io_linux/internal/owned_fd.h",
     ],
     includes = ["public"],
     target_compatible_with = ["@platforms//os:linux"],
