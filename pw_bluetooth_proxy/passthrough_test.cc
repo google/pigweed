@@ -48,7 +48,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
   view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
   view_arr.view = MakeEmboss<EmbossT>(H4HciSubspan(view_arr.arr));
   EXPECT_TRUE(view_arr.view.IsComplete());
-  view_arr.view.header().opcode_full().Write(opcode);
+  view_arr.view.header().opcode_enum().Write(opcode);
   return view_arr;
 }
 

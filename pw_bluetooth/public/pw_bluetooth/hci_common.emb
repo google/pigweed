@@ -989,11 +989,18 @@ bits OpCodeBits:
 
 struct CommandHeader:
   -- HCI Command packet header.
-  0     [+2]  OpCode      opcode_full
+
+  0     [+2]  OpCode      opcode_enum
     -- Full HCI command opcode.
 
-  0     [+2]  OpCodeBits  opcode
+  0     [+2]  OpCodeBits  opcode_bits
+    # Note that this field overlaps opcode_enum field.
     -- Access opcode ogf or ocf sub-fields.
+
+  let opcode = opcode_bits
+  # TODO: https://pwbug.dev/338068316 - Once Fuchsia has transitioned off using
+  # opcode for OpCodeBits, opcode_enum will be renamed to opcode and this alias
+  # will be dropped.
 
   $next [+1]  UInt        parameter_total_size
 
@@ -1008,9 +1015,17 @@ struct CommandCompleteEvent:
   -- Core Spec v5.3 Vol 4, Part E, Section 7.7.14
   -- EventHeader.opcode == 0xe
   let hdr_size = EventHeader.$size_in_bytes
-  0     [+hdr_size]  EventHeader  header
-  $next [+1]         UInt         num_hci_command_packets
-  $next [+2]         OpCodeBits   command_opcode
+  0          [+hdr_size]  EventHeader  header
+  hdr_size   [+1]         UInt         num_hci_command_packets
+  hdr_size+1 [+2]         OpCode       command_opcode_enum
+  hdr_size+1 [+2]         OpCodeBits   command_opcode_bits
+    # Note that this field overlaps command_opcode_enum field.
+    -- Access opcode ogf or ocf sub-fields.
+
+  let command_opcode = command_opcode_bits
+  # TODO: https://pwbug.dev/338068316 - Once Fuchsia has transitioned off using
+  # command_opcode for OpCodeBits, command_opcode_enum will be renamed to
+  # command_opcode and this alias will be dropped.
   let event_fixed_size = $size_in_bytes-hdr_size
   let return_parameters_size = header.parameter_total_size-event_fixed_size
 
