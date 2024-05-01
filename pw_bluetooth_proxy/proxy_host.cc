@@ -12,15 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_proxy/hci_proxy.h"
+#include "pw_bluetooth_proxy/proxy_host.h"
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth_proxy/common.h"
 
 namespace pw::bluetooth::proxy {
 
-HciProxy::HciProxy(H4HciPacketSendFn&& send_to_host_fn,
-                   H4HciPacketSendFn&& send_to_controller_fn)
+ProxyHost::ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
+                     H4HciPacketSendFn&& send_to_controller_fn)
     : outward_send_to_host_fn_(std::move(send_to_host_fn)),
       outward_send_to_controller_fn_(std::move(send_to_controller_fn)) {}
 

@@ -21,7 +21,7 @@
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_bluetooth_proxy/hci_proxy.h"
+#include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
 
 namespace pw::bluetooth::proxy {
@@ -107,11 +107,11 @@ TEST(Example, ExampleUsage) {
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 
-#include "pw_bluetooth_proxy/hci_proxy.h"
+#include "pw_bluetooth_proxy/proxy_host.h"
 
-  // Container creates HciProxy .
-  HciProxy proxy = HciProxy(std::move(containerSendToHostFn),
-                            std::move(containerSendToControllerFn));
+  // Container creates ProxyHost .
+  ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
+                              std::move(containerSendToControllerFn));
 
   // Container passes H4 packets from host through proxy. Proxy will in turn
   // call the container-provided `containerSendToControllerFn` to pass them on
@@ -146,8 +146,8 @@ TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
 
   H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
 
-  HciProxy proxy =
-      HciProxy(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
   proxy.ProcessH4HciFromHost(pw::span(h4_array));
 
@@ -176,8 +176,8 @@ TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   H4HciPacketSendFn send_to_controller_fn(
       []([[maybe_unused]] H4HciPacket packet) {});
 
-  HciProxy proxy =
-      HciProxy(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
   proxy.ProcessH4HciFromController(pw::span(h4_array));
 

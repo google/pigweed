@@ -19,24 +19,24 @@
 
 namespace pw::bluetooth::proxy {
 
-/// `HciProxy` acts as the main coordinator for proxy functionality. After
+/// `ProxyHost` acts as the main coordinator for proxy functionality. After
 /// creation, the container then passes packets through the proxy.
-class HciProxy {
+class ProxyHost {
  public:
-  /// Creates an `HciProxy` that will process HCI packets.
+  /// Creates an `ProxyHost` that will process HCI packets.
   /// @param[in] send_to_host_fn Callback that will be called when proxy wants
   /// to send HCI packet towards the host.
   /// @param[in] send_to_controller_fn - Callback that will be called when proxy
   /// wants to send HCI packet towards the controller.
-  HciProxy(H4HciPacketSendFn&& send_to_host_fn,
-           H4HciPacketSendFn&& send_to_controller_fn);
+  ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
+            H4HciPacketSendFn&& send_to_controller_fn);
 
-  HciProxy() = delete;
-  virtual ~HciProxy() = default;
-  HciProxy(const HciProxy&) = delete;
-  HciProxy& operator=(const HciProxy&) = delete;
-  HciProxy(HciProxy&&) = delete;
-  HciProxy& operator=(HciProxy&&) = delete;
+  ProxyHost() = delete;
+  virtual ~ProxyHost() = default;
+  ProxyHost(const ProxyHost&) = delete;
+  ProxyHost& operator=(const ProxyHost&) = delete;
+  ProxyHost(ProxyHost&&) = delete;
+  ProxyHost& operator=(ProxyHost&&) = delete;
 
   // Container APIs
 

@@ -23,10 +23,10 @@ filegroup(
     srcs = [
         "emboss_util.h",
         "emboss_util_test.cc",
-        "hci_proxy.cc",
         "passthrough_test.cc",
+        "proxy_host.cc",
         "public/pw_bluetooth_proxy/common.h",
-        "public/pw_bluetooth_proxy/hci_proxy.h",
+        "public/pw_bluetooth_proxy/proxy_host.h",
         "size_report/use_passthrough_proxy.cc",
     ],
 )

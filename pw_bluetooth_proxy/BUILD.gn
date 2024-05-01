@@ -44,14 +44,14 @@ pw_source_set("pw_bluetooth_proxy") {
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_bluetooth_proxy/common.h",
-    "public/pw_bluetooth_proxy/hci_proxy.h",
+    "public/pw_bluetooth_proxy/proxy_host.h",
   ]
   public_deps = [
     dir_pw_assert,
     dir_pw_function,
     dir_pw_span,
   ]
-  sources = [ "hci_proxy.cc" ]
+  sources = [ "proxy_host.cc" ]
 }
 
 pw_test("emboss_util_test") {

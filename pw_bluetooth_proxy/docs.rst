@@ -18,7 +18,7 @@ power usage).
 The proxy acts as a proxy of all host controller interface (HCI) packets between
 the host and the controller.
 
-:cpp:class:`pw::bluetooth::proxy::HciProxy` acts as the main coordinator for
+:cpp:class:`pw::bluetooth::proxy::ProxyHost` acts as the main coordinator for
 proxy functionality.
 
 .. literalinclude:: passthrough_test.cc
@@ -103,9 +103,9 @@ Get started
 API reference
 -------------
 
-pw::bluetooth::proxy::HciProxy
-==============================
-.. doxygenclass:: pw::bluetooth::proxy::HciProxy
+pw::bluetooth::proxy::ProxyHost
+===============================
+.. doxygenclass:: pw::bluetooth::proxy::ProxyHost
    :members:
 
 .. _module-pw_bluetooth_proxy-size-reports:
