@@ -32,13 +32,6 @@ namespace pw::grpc {
 class PwRpcHandler : public Connection::RequestCallbacks,
                      public GrpcChannelOutput::StreamCallbacks {
  public:
-  // TODO(afoxley): Remove after migration of downstream users.
-  PwRpcHandler(uint32_t channel_id,
-               rpc::RpcPacketProcessor&,
-               rpc::Server& server,
-               ByteSpan)
-      : channel_id_(channel_id), server_(server) {}
-
   PwRpcHandler(uint32_t channel_id, rpc::Server& server)
       : channel_id_(channel_id), server_(server) {}
 
