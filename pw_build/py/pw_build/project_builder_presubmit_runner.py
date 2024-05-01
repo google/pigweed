@@ -19,7 +19,6 @@ import argparse
 import fnmatch
 import logging
 from pathlib import Path
-from typing import Callable
 
 
 import pw_cli.log
@@ -36,7 +35,7 @@ from pw_presubmit.presubmit import (
     fetch_file_lists,
 )
 import pw_presubmit.pigweed_presubmit
-from pw_presubmit.build import GnGenNinja, gn_args, write_gn_args_file
+from pw_presubmit.build import GnGenNinja, gn_args
 from pw_presubmit.presubmit_context import get_check_traces, PresubmitCheckTrace
 from pw_presubmit.tools import file_summary
 
@@ -61,8 +60,9 @@ from pw_build.project_builder import (
 from pw_build.build_recipe import (
     BuildCommand,
     BuildRecipe,
-    create_build_recipes,
     UnknownBuildSystem,
+    create_build_recipes,
+    should_gn_gen,
 )
 from pw_build.project_builder_argparse import add_project_builder_arguments
 from pw_build.project_builder_prefs import ProjectBuilderPrefs
@@ -74,33 +74,6 @@ _LOG = logging.getLogger('pw_build')
 
 class PresubmitTraceAnnotationError(Exception):
     """Exception for malformed PresubmitCheckTrace annotations."""
-
-
-def should_gn_gen(out: Path) -> bool:
-    """Returns True if the gn gen command should be run."""
-    # gn gen only needs to run if build.ninja or args.gn files are missing.
-    expected_files = [
-        out / 'build.ninja',
-        out / 'args.gn',
-    ]
-    return any(not gen_file.is_file() for gen_file in expected_files)
-
-
-def should_gn_gen_with_args(gn_arg_dict: dict[str, str]) -> Callable:
-    """Returns a callable which writes an args.gn file prior to checks.
-
-    Returns:
-      Callable which takes a single Path argument and returns a bool
-      for True if the gn gen command should be run.
-    """
-
-    def _write_args_and_check(out: Path) -> bool:
-        # Always re-write the args.gn file.
-        write_gn_args_file(out / 'args.gn', **gn_arg_dict)
-
-        return should_gn_gen(out)
-
-    return _write_args_and_check
 
 
 def _pw_package_install_command(package_name: str) -> BuildCommand:
@@ -358,12 +331,13 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
     )
 
 
-def _get_parser(
+def get_parser(
     presubmit_programs: Programs | None = None,
     build_recipes: list[BuildRecipe] | None = None,
 ) -> argparse.ArgumentParser:
     """Setup argparse for pw_build.project_builder and optionally pw_watch."""
     parser = argparse.ArgumentParser(
+        prog='pw build',
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -665,7 +639,7 @@ def main(
 ) -> int:
     """Build upstream Pigweed presubmit steps."""
     # pylint: disable=too-many-locals
-    parser = _get_parser(presubmit_programs, build_recipes)
+    parser = get_parser(presubmit_programs, build_recipes)
     args = parser.parse_args()
 
     if args.tab_complete_option is not None:

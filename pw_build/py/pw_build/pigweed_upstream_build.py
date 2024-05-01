@@ -16,31 +16,151 @@
 Usage:
 
    pw build --list
-   pw build --recipe default_ninja
+   pw build --recipe default_gn
    pw build --recipe default_* --watch
    pw build --step gn_combined_build_check --step gn_python_*
    pw build -C out/gn --watch
 """
 
+import argparse
 import logging
 from pathlib import Path
 import shutil
 import sys
 
+import pw_cli.env
 import pw_presubmit.pigweed_presubmit
 from pw_presubmit.build import gn_args
 
 from pw_build.build_recipe import (
     BuildCommand,
     BuildRecipe,
+    should_gn_gen,
+    should_regenerate_cmake,
 )
 from pw_build.project_builder_presubmit_runner import (
-    should_gn_gen,
+    get_parser,
     main,
 )
 
 
 _LOG = logging.getLogger('pw_build')
+
+_PW_ENV = pw_cli.env.pigweed_environment()
+_REPO_ROOT = _PW_ENV.PW_PROJECT_ROOT
+_PACKAGE_ROOT = _PW_ENV.PW_PACKAGE_ROOT
+
+
+def gn_recipe() -> BuildRecipe:
+    """Return the default_gn recipe."""
+    default_gn_gen_command = [
+        'gn',
+        'gen',
+        # NOTE: Not an f-string. BuildRecipe will replace with the out dir.
+        '{build_dir}',
+        '--export-compile-commands',
+    ]
+
+    if shutil.which('ccache'):
+        default_gn_gen_command.append(gn_args(pw_command_launcher='ccache'))
+
+    return BuildRecipe(
+        build_dir=Path('out/gn'),
+        title='default_gn',
+        steps=[
+            BuildCommand(
+                run_if=should_gn_gen,
+                command=default_gn_gen_command,
+            ),
+            BuildCommand(
+                build_system_command='ninja',
+                targets=['default'],
+            ),
+        ],
+    )
+
+
+def bazel_recipe() -> BuildRecipe:
+    """Return the default_bazel recipe."""
+    default_bazel_targets = ['//...:all']
+
+    return BuildRecipe(
+        build_dir=Path('out/bazel'),
+        title='default_bazel',
+        steps=[
+            BuildCommand(
+                build_system_command='bazel',
+                build_system_extra_args=[
+                    'build',
+                    '--verbose_failures',
+                    '--worker_verbose',
+                ],
+                targets=default_bazel_targets,
+            ),
+            BuildCommand(
+                build_system_command='bazel',
+                build_system_extra_args=[
+                    'test',
+                    '--test_output=errors',
+                ],
+                targets=default_bazel_targets,
+            ),
+        ],
+    )
+
+
+def cmake_recipe() -> BuildRecipe:
+    """Construct the default_cmake recipe."""
+    toolchain_path = (
+        _REPO_ROOT / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
+    )
+
+    cmake_generate_command = [
+        'cmake',
+        '--fresh',
+        '--debug-output',
+        '-DCMAKE_MESSAGE_LOG_LEVEL=WARNING',
+        '-S',
+        str(_REPO_ROOT),
+        '-B',
+        # NOTE: Not an f-string. BuildRecipe will replace with the out dir.
+        '{build_dir}',
+        '-G',
+        'Ninja',
+        f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
+        '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
+        f'-Ddir_pw_third_party_nanopb={_PACKAGE_ROOT / "nanopb"}',
+        '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
+        f'-Ddir_pw_third_party_emboss={_PACKAGE_ROOT / "emboss"}',
+        f'-Ddir_pw_third_party_boringssl={_PACKAGE_ROOT / "boringssl"}',
+    ]
+
+    if shutil.which('ccache'):
+        cmake_generate_command.append("-DCMAKE_C_COMPILER_LAUNCHER=ccache")
+        cmake_generate_command.append("-DCMAKE_CXX_COMPILER_LAUNCHER=ccache")
+
+    pw_package_install_steps = [
+        BuildCommand(
+            command=['pw', '--no-banner', 'package', 'install', package],
+        )
+        for package in ['emboss', 'nanopb', 'boringssl']
+    ]
+
+    return BuildRecipe(
+        build_dir=Path('out/cmake'),
+        title='default_cmake',
+        steps=pw_package_install_steps
+        + [
+            BuildCommand(
+                run_if=should_regenerate_cmake(cmake_generate_command),
+                command=cmake_generate_command,
+            ),
+            BuildCommand(
+                build_system_command='ninja',
+                targets=pw_presubmit.pigweed_presubmit.CMAKE_CLANG_TARGETS,
+            ),
+        ],
+    )
 
 
 def pigweed_upstream_main() -> int:
@@ -59,68 +179,31 @@ def pigweed_upstream_main() -> int:
     .. code-block:: bash
 
        pw build --list
-       pw build --recipe default_ninja
+       pw build --recipe default_gn
        pw build --recipe default_* --watch
        pw build --step gn_combined_build_check --step gn_python_*
        pw build -C out/gn --watch
     """
-    default_bazel_targets = ['//...:all']
-
-    default_gn_gen_command = [
-        'gn',
-        'gen',
-        '{build_dir}',
-        '--export-compile-commands',
-    ]
-    if shutil.which('ccache'):
-        default_gn_gen_command.append(gn_args(pw_command_launcher='ccache'))
-
-    build_recipes = [
-        # Ninja build
-        BuildRecipe(
-            build_dir=Path('out/gn'),
-            title='default_ninja',
-            steps=[
-                BuildCommand(
-                    run_if=should_gn_gen,
-                    command=default_gn_gen_command,
-                ),
-                BuildCommand(
-                    build_system_command='ninja',
-                    targets=['default'],
-                ),
-            ],
-        ),
-        # Bazel build
-        BuildRecipe(
-            build_dir=Path('out/bazel'),
-            title='default_bazel',
-            steps=[
-                BuildCommand(
-                    build_system_command='bazel',
-                    build_system_extra_args=[
-                        'build',
-                        '--verbose_failures',
-                        '--worker_verbose',
-                    ],
-                    targets=default_bazel_targets,
-                ),
-                BuildCommand(
-                    build_system_command='bazel',
-                    build_system_extra_args=[
-                        'test',
-                        '--test_output=errors',
-                    ],
-                    targets=default_bazel_targets,
-                ),
-            ],
-        ),
-    ]
 
     return main(
         presubmit_programs=pw_presubmit.pigweed_presubmit.PROGRAMS,
-        build_recipes=build_recipes,
+        build_recipes=[
+            gn_recipe(),
+            bazel_recipe(),
+            cmake_recipe(),
+        ],
         default_root_logfile=Path('out/build.txt'),
+    )
+
+
+def _build_argument_parser() -> argparse.ArgumentParser:
+    return get_parser(
+        pw_presubmit.pigweed_presubmit.PROGRAMS,
+        [
+            gn_recipe(),
+            bazel_recipe(),
+            cmake_recipe(),
+        ],
     )
 
 

@@ -719,6 +719,21 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
     )
 
 
+CMAKE_CLANG_TARGETS = [
+    'pw_apps',
+    'pw_run_tests.modules',
+    'pw_run_tests.pw_bluetooth',
+    # TODO(erahm): Add pw_run_tests.pw_bluetooth_sapphire when CMake support
+    # lands.
+]
+
+
+CMAKE_GCC_TARGETS = [
+    'pw_apps',
+    'pw_run_tests.modules',
+]
+
+
 @filter_paths(
     endswith=(*format_code.C_FORMAT.extensions, '.cmake', 'CMakeLists.txt')
 )
@@ -726,9 +741,7 @@ def cmake_clang(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_clang')
     build.ninja(
         ctx,
-        'pw_apps',
-        'pw_run_tests.modules',
-        'pw_run_tests.pw_bluetooth',
+        *CMAKE_CLANG_TARGETS,
     )
     build.gn_check(ctx)
 
@@ -738,7 +751,7 @@ def cmake_clang(ctx: PresubmitContext):
 )
 def cmake_gcc(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_gcc')
-    build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
+    build.ninja(ctx, *CMAKE_GCC_TARGETS)
     build.gn_check(ctx)
 
 
