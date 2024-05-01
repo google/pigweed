@@ -20,7 +20,8 @@
     font-family: 'Material Symbols Rounded';
     font-style: normal;
     font-display: block;
-    src: url('./assets/material_symbols_rounded_subset.woff2') format('woff2');
+    src: url('./pw_web/log-viewer/src/assets/material_symbols_rounded_subset.woff2') format('woff2'),
+    url('./assets/material_symbols_rounded_subset.woff2') format('woff2');
 }
 
 :root {
