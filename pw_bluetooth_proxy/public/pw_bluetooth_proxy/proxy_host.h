@@ -40,24 +40,24 @@ class ProxyHost {
 
   // Container APIs
 
-  /// Called by container to ask proxy to process an H4 HCI packet sent from the
+  /// Called by container to ask proxy to handle a H4 HCI packet sent from the
   /// host side towards the controller side. Proxy will in turn call the
   /// `send_to_controller_fn` provided during construction to pass the packet on
   /// to the controller. Some packets may be modified, added, or removed.
-  void ProcessH4HciFromHost(H4HciPacket packet);
+  void HandleH4HciFromHost(H4HciPacket h4_packet);
 
-  /// Called by container to ask proxy to process HCI packet sent from the
+  /// Called by container to ask proxy to handle a H4 packet sent from the
   /// controller side towards the host side. Proxy will in turn call the
   /// `send_to_host_fn` provided during construction to pass the packet on to
   /// the host. Some packets may be modified, added, or removed.
-  void ProcessH4HciFromController(H4HciPacket packet);
+  void HandleH4HciFromController(H4HciPacket h4_packet);
 
  private:
   // Send packet onwards to host.
-  void SendToHost(H4HciPacket packet);
+  void SendToHost(H4HciPacket h4_packet);
 
   // Send packet onwards to controller.
-  void SendToController(H4HciPacket packet);
+  void SendToController(H4HciPacket h4_packet);
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // host.

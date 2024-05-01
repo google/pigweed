@@ -118,12 +118,12 @@ TEST(Example, ExampleUsage) {
   // Container passes H4 packets from host through proxy. Proxy will in turn
   // call the container-provided `containerSendToControllerFn` to pass them on
   // to the controller. Some packets may be modified, added, or removed.
-  proxy.ProcessH4HciFromHost(h4_span_from_host);
+  proxy.HandleH4HciFromHost(h4_span_from_host);
 
   // Container passes H4 packets from controller through proxy. Proxy will in
   // turn call the container-provided `containerSendToHostFn` to pass them on to
   // the controller. Some packets may be modified, added, or removed.
-  proxy.ProcessH4HciFromController(h4_span_from_controller);
+  proxy.HandleH4HciFromController(h4_span_from_controller);
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 }
@@ -151,7 +151,7 @@ TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
   ProxyHost proxy =
       ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
-  proxy.ProcessH4HciFromHost(pw::span(h4_array));
+  proxy.HandleH4HciFromHost(pw::span(h4_array));
 
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);
@@ -181,7 +181,7 @@ TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   ProxyHost proxy =
       ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
-  proxy.ProcessH4HciFromController(pw::span(h4_array));
+  proxy.HandleH4HciFromController(pw::span(h4_array));
 
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);

@@ -42,9 +42,9 @@ void UsePassthroughProxy() {
   ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
                               std::move(containerSendToControllerFn));
 
-  proxy.ProcessH4HciFromHost(h4_span_from_host);
+  proxy.HandleH4HciFromHost(h4_span_from_host);
 
-  proxy.ProcessH4HciFromController(h4_span_from_controller);
+  proxy.HandleH4HciFromController(h4_span_from_controller);
 }
 
 }  // namespace
