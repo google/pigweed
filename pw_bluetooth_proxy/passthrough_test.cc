@@ -22,7 +22,6 @@
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth_proxy/hci_proxy.h"
-#include "pw_bluetooth_proxy/passthrough_policy.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
 
 namespace pw::bluetooth::proxy {
@@ -54,7 +53,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
 }
 
 // Populate an H4 buffer to send towards controller. Type should be one
-// that none of our policies try to interact with.
+// that proxy host doesn't interact with.
 std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
 CreateNoninteractingToControllerBuffer() {
   EmbossViewWithH4Buffer<emboss::InquiryCommandWriter> view_arr =
@@ -79,7 +78,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
 }
 
 // Populate an H4 buffer to send towards host. Type should be one
-// that none of our policies try to interact with.
+// that proxy host doesn't interact with.
 std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
 CreateNonInteractingToHostBuffer() {
   EmbossViewWithH4Buffer<emboss::InquiryCompleteEventWriter> view_arr =
@@ -109,32 +108,26 @@ TEST(Example, ExampleUsage) {
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 
 #include "pw_bluetooth_proxy/hci_proxy.h"
-#include "pw_bluetooth_proxy/passthrough_policy.h"
 
-  // Container creates proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy{};
-  std::array<ProxyPolicy*, 1> policies{&passthrough_policy};
+  // Container creates HciProxy .
   HciProxy proxy = HciProxy(std::move(containerSendToHostFn),
-                            std::move(containerSendToControllerFn),
-                            policies);
+                            std::move(containerSendToControllerFn));
 
   // Container passes H4 packets from host through proxy. Proxy will in turn
   // call the container-provided `containerSendToControllerFn` to pass them on
-  // to the controller. Note depending on the policies, some packets may be
-  // modified, added, or removed.
+  // to the controller. Some packets may be modified, added, or removed.
   proxy.ProcessH4HciFromHost(h4_span_from_host);
 
   // Container passes H4 packets from controller through proxy. Proxy will in
-  // turn call the container-provided `containerSendToHostFn` to pass them
-  // on to the controller. Note depending on the policies, some packets may be
-  // modified, added, or removed.
+  // turn call the container-provided `containerSendToHostFn` to pass them on to
+  // the controller. Some packets may be modified, added, or removed.
   proxy.ProcessH4HciFromController(h4_span_from_controller);
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 }
 
-// Verify buffer is properly passed (is equal value) when we have no policies.
-TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
+// Verify buffer is properly passed (is equal value).
+TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
       CreateNoninteractingToControllerBuffer();
@@ -153,11 +146,8 @@ TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
 
   H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
 
-  // Create proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy{};
-  std::array<ProxyPolicy*, 0> policies{};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
+  HciProxy proxy =
+      HciProxy(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
   proxy.ProcessH4HciFromHost(pw::span(h4_array));
 
@@ -165,74 +155,8 @@ TEST(PassthroughTest, WithNoPoliciesTheToControllerPassesEqualBuffer) {
   EXPECT_EQ(send_called, true);
 }
 
-TEST(PassthroughTest, WithOnePolicyTheToControllerPassesEqualBuffer) {
-  // Populate H4 buffer to send towards controller.
-  std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
-      CreateNoninteractingToControllerBuffer();
-
-  // Outbound callbacks where we verify packet is equal (just testing to
-  // controller in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
-  H4HciPacketSendFn send_to_controller_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
-    EXPECT_TRUE(std::equal(packet.begin(),
-                           packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
-  });
-
-  H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
-
-  // Create proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy{};
-  std::array<ProxyPolicy*, 1> policies{&passthrough_policy};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
-
-  proxy.ProcessH4HciFromHost(pw::span(h4_array));
-
-  // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
-}
-
-TEST(PassthroughTest, WithThreePoliciesTheToControllerPassesEqualBuffer) {
-  // Populate H4 buffer to send towards controller.
-  std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
-      CreateNoninteractingToControllerBuffer();
-
-  // Outbound callbacks where we verify packet is equal (just testing to
-  // controller in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
-  H4HciPacketSendFn send_to_controller_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
-    EXPECT_TRUE(std::equal(packet.begin(),
-                           packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
-  });
-
-  H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
-
-  // Create proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy1{};
-  PassthroughPolicy passthrough_policy2{};
-  PassthroughPolicy passthrough_policy3{};
-  std::array<ProxyPolicy*, 3> policies{
-      &passthrough_policy1, &passthrough_policy2, &passthrough_policy3};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
-
-  proxy.ProcessH4HciFromHost(pw::span(h4_array));
-
-  // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
-}
-
-// Verify buffer is passed to host callback with the same contents with no
-// policies.
-TEST(PassthroughTest, WithNoPoliciesTheToHostPassesEqualBuffer) {
+// Verify buffer is passed to host callback with the same contents.
+TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
       h4_array = CreateNonInteractingToHostBuffer();
@@ -252,77 +176,8 @@ TEST(PassthroughTest, WithNoPoliciesTheToHostPassesEqualBuffer) {
   H4HciPacketSendFn send_to_controller_fn(
       []([[maybe_unused]] H4HciPacket packet) {});
 
-  // Create proxy with simple passthrough policy.
-  std::array<ProxyPolicy*, 0> policies{};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
-
-  proxy.ProcessH4HciFromController(pw::span(h4_array));
-
-  // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
-}
-
-TEST(PassthroughTest, WithOnePolicyTheToHostPassesEqualBuffer) {
-  // Populate H4 buffer to send towards host.
-  std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateNonInteractingToHostBuffer();
-
-  // Outbound callbacks where we verify packet is equal (just testing to host
-  // in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
-  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
-    EXPECT_TRUE(std::equal(packet.begin(),
-                           packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
-  });
-
-  H4HciPacketSendFn send_to_controller_fn(
-      []([[maybe_unused]] H4HciPacket packet) {});
-
-  // Create proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy{};
-  std::array<ProxyPolicy*, 1> policies{&passthrough_policy};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
-
-  proxy.ProcessH4HciFromController(pw::span(h4_array));
-
-  // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
-}
-
-TEST(PassthroughTest, WithThreePoliciesTheToHostPassesEqualBuffer) {
-  // Populate H4 buffer to send towards host.
-  std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateNonInteractingToHostBuffer();
-
-  // Outbound callbacks where we verify packet is equal (just testing to host
-  // in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
-  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
-    EXPECT_TRUE(std::equal(packet.begin(),
-                           packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
-  });
-
-  H4HciPacketSendFn send_to_controller_fn(
-      []([[maybe_unused]] H4HciPacket packet) {});
-
-  // Create proxy with simple passthrough policy.
-  PassthroughPolicy passthrough_policy1{};
-  PassthroughPolicy passthrough_policy2{};
-  PassthroughPolicy passthrough_policy3{};
-  std::array<ProxyPolicy*, 3> policies{
-      &passthrough_policy1, &passthrough_policy2, &passthrough_policy3};
-  HciProxy proxy = HciProxy(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), policies);
+  HciProxy proxy =
+      HciProxy(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
   proxy.ProcessH4HciFromController(pw::span(h4_array));
 

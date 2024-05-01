@@ -16,13 +16,10 @@ located on the application processor to instead be handled on the MCU (to reduce
 power usage).
 
 The proxy acts as a proxy of all host controller interface (HCI) packets between
-the host and the controller. Policies can then be added to the proxy to view,
-insert, or modify HCI packets to provide additional functionality.
+the host and the controller.
 
 :cpp:class:`pw::bluetooth::proxy::HciProxy` acts as the main coordinator for
-proxy functionality. To use it, instantiate it with
-:cpp:class:`pw::bluetooth::proxy::ProxyPolicy` instances that provide the proxy
-behavior you want. Then pass all HCI packets through the proxy.
+proxy functionality.
 
 .. literalinclude:: passthrough_test.cc
    :language: cpp
@@ -111,23 +108,12 @@ pw::bluetooth::proxy::HciProxy
 .. doxygenclass:: pw::bluetooth::proxy::HciProxy
    :members:
 
-pw::bluetooth::proxy::ProxyPolicy
-=================================
-.. doxygenclass:: pw::bluetooth::proxy::ProxyPolicy
-   :members:
-
-pw::bluetooth::proxy::PassthroughPolicy
-=======================================
-.. doxygenclass:: pw::bluetooth::proxy::PassthroughPolicy
-   :members:
-
-
 .. _module-pw_bluetooth_proxy-size-reports:
 
 ------------------
 Code size analysis
 ------------------
-Delta when constructing a passthrough proxy and sending packets through.
+Delta when constructing a proxy and just sending packets through.
 
 .. include:: use_passthrough_proxy_size_report
 

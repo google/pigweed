@@ -17,7 +17,6 @@
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_bluetooth_proxy/common.h"
 #include "pw_bluetooth_proxy/hci_proxy.h"
-#include "pw_bluetooth_proxy/passthrough_policy.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
@@ -40,11 +39,8 @@ void UsePassthroughProxy() {
   H4HciPacketSendFn containerSendToControllerFn(
       ([]([[maybe_unused]] H4HciPacket packet) {}));
 
-  PassthroughPolicy passthrough_policy{};
-  std::array<ProxyPolicy*, 1> policies{&passthrough_policy};
   HciProxy proxy = HciProxy(std::move(containerSendToHostFn),
-                            std::move(containerSendToControllerFn),
-                            policies);
+                            std::move(containerSendToControllerFn));
 
   proxy.ProcessH4HciFromHost(h4_span_from_host);
 

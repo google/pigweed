@@ -27,8 +27,6 @@ filegroup(
         "passthrough_test.cc",
         "public/pw_bluetooth_proxy/common.h",
         "public/pw_bluetooth_proxy/hci_proxy.h",
-        "public/pw_bluetooth_proxy/passthrough_policy.h",
-        "public/pw_bluetooth_proxy/proxy_policy.h",
         "size_report/use_passthrough_proxy.cc",
     ],
 )
