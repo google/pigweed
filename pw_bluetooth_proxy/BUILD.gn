@@ -28,7 +28,7 @@ config("public_include_path") {
 
 pw_doc_group("docs") {
   # Also, sources with doxygen comment blocks must be added to //docs/BUILD.gn
-  inputs = [ "passthrough_test.cc" ]
+  inputs = [ "proxy_host_test.cc" ]
   sources = [ "docs.rst" ]
   report_deps = [ ":use_passthrough_proxy_size_report" ]
 }
@@ -74,7 +74,7 @@ pw_test("pw_bluetooth_proxy_test") {
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [
     "emboss_util.h",
-    "passthrough_test.cc",
+    "proxy_host_test.cc",
   ]
   include_dirs = [ "." ]
   deps = [

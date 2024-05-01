@@ -21,7 +21,7 @@ the host and the controller.
 :cpp:class:`pw::bluetooth::proxy::ProxyHost` acts as the main coordinator for
 proxy functionality.
 
-.. literalinclude:: passthrough_test.cc
+.. literalinclude:: proxy_host_test.cc
    :language: cpp
    :start-after: [pw_bluetooth_proxy-examples-basic]
    :end-before: [pw_bluetooth_proxy-examples-basic]
