@@ -147,5 +147,31 @@ TEST(EmbossTest, ReadAndWriteOpcodesInCommandResponseHeader) {
   EXPECT_EQ(header.command_opcode().ocf().Read(), 0x0B);
 }
 
+TEST(EmbossTest, ReadAndWriteEventCodesInEventHeader) {
+  std::array<uint8_t, emboss::EventHeaderWriter::SizeInBytes()> buffer;
+  std::iota(buffer.begin(), buffer.end(), 100);
+  auto header = emboss::MakeEventHeaderView(&buffer);
+  EXPECT_TRUE(header.IsComplete());
+
+  header.event_code_uint().Write(
+      cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
+  EXPECT_EQ(header.event_code_enum().Read(),
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  EXPECT_EQ(
+      header.event_code_uint().Read(),
+      cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
+
+  // TODO: https://pwbug.dev/338068316 - Delete these event_code type
+  // UInt cases once event_code has type EventCode.
+  EXPECT_EQ(
+      header.event_code().Read(),
+      cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
+
+  header.event_code().Write(
+      cpp23::to_underlying(emboss::EventCode::CONNECTION_REQUEST));
+  EXPECT_EQ(header.event_code_uint().Read(),
+            cpp23::to_underlying(emboss::EventCode::CONNECTION_REQUEST));
+}
+
 }  // namespace
 }  // namespace pw::bluetooth

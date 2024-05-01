@@ -66,12 +66,12 @@ CreateNoninteractingToControllerBuffer() {
 // towards host.
 template <typename EmbossT>
 EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
-    uint event_code, emboss::StatusCode status_code) {
+    emboss::EventCode event_code, emboss::StatusCode status_code) {
   EmbossViewWithH4Buffer<EmbossT> view_arr;
   std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
   view_arr.arr[0] = cpp23::to_underlying(emboss::H4PacketType::EVENT);
   view_arr.view = MakeEmboss<EmbossT>(H4HciSubspan(view_arr.arr));
-  view_arr.view.header().event_code().Write(event_code);
+  view_arr.view.header().event_code_enum().Write(event_code);
   view_arr.view.status().Write(status_code);
   EXPECT_TRUE(view_arr.view.IsComplete());
   return view_arr;
@@ -83,7 +83,8 @@ std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
 CreateNonInteractingToHostBuffer() {
   EmbossViewWithH4Buffer<emboss::InquiryCompleteEventWriter> view_arr =
       CreateToHostBuffer<emboss::InquiryCompleteEventWriter>(
-          0x01, emboss::StatusCode::COMMAND_DISALLOWED);
+          emboss::EventCode::INQUIRY_COMPLETE,
+          emboss::StatusCode::COMMAND_DISALLOWED);
   return view_arr.arr;
 }
 

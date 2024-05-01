@@ -480,6 +480,64 @@ enum OpCode:
     -- LE Read ISO Link Quality Command (v5.2) (LE)
 
 
+enum EventCode:
+  -- HCI Event Codes. See Core Spec v5.0 Vol 2, Part E, Section 7.7.
+  [maximum_bits: 8]
+  INQUIRY_COMPLETE                            = 0x01
+  INQUIRY_RESULT                              = 0x02
+  CONNECTION_COMPLETE                         = 0x03
+  CONNECTION_REQUEST                          = 0x04
+  DISCONNECTION_COMPLETE                      = 0x05
+  AUTHENTICATION_COMPLETE                     = 0x06
+  REMOTE_NAME_REQUEST_COMPLETE                = 0x07
+  ENCRYPTION_CHANGE                           = 0x08
+  CHANGE_CONNECTION_LINK_KEY_COMPLETE         = 0x09
+  CENTRAL_LINK_KEY_COMPLETE                   = 0x0A
+  READ_REMOTE_SUPPORTED_FEATURES_COMPLETE     = 0x0B
+  READ_REMOTE_VERSION_INFORMATION_COMPLETE    = 0x0C
+  QOS_SETUP_COMPLETE                          = 0x0D
+  COMMAND_COMPLETE                            = 0x0E
+  COMMAND_STATUS                              = 0x0F
+  HARDWARE_ERROR                              = 0x10
+  FLUSH_OCCURRED                              = 0x11
+  ROLE_CHANGE                                 = 0x12
+  NUMBER_OF_COMPLETED_PACKETS                 = 0x13
+  MODE_CHANGE                                 = 0x14
+  RETURN_LINK_KEYS                            = 0x15
+  PIN_CODE_REQUEST                            = 0x16
+  LINK_KEY_REQUEST                            = 0x17
+  LINK_KEY_NOTIFICATION                       = 0x18
+  LOOPBACK_COMMAND                            = 0x19
+  DATA_BUFFER_OVERFLOW                        = 0x1A
+  MAX_SLOTS_CHANGE                            = 0x1B
+  READ_CLOCK_OFFSET_COMPLETE                  = 0x1C
+  CONNECTION_PACKET_TYPE_CHANGED              = 0x1D
+  QOS_VIOLATION                               = 0x1E
+  PAGE_SCAN_REPETITION_MODE_CHANGE            = 0x20
+  FLOW_SPECIFICATION_COMPLETE                 = 0x21
+  INQUIRY_RESULT_WITH_RSSI                    = 0x22
+  READ_REMOTE_EXTENDED_FEATURES_COMPLETE      = 0x23
+  SYNCHRONOUS_CONNECTION_COMPLETE             = 0x2C
+  SYNCHRONOUS_CONNECTION_CHANGED              = 0x2D
+  SNIFF_SUBRATING                             = 0x2E
+  EXTENDED_INQUIRY_RESULT                     = 0x2F
+  ENCRYPTION_KEY_REFRESH_COMPLETE             = 0x30
+  IO_CAPABILITY_REQUEST                       = 0x31
+  IO_CAPABILITY_RESPONSE                      = 0x32
+  USER_CONFIRMATION_REQUEST                   = 0x33
+  USER_PASSKEY_REQUEST                        = 0x34
+  REMOTE_OOB_DATA_REQUEST                     = 0x35
+  SIMPLE_PAIRING_COMPLETE                     = 0x36
+  LINK_SUPERVISION_TIMEOUT_CHANGED            = 0x38
+  ENHANCED_FLUSH_COMPLETE                     = 0x39
+  USER_PASSKEY_NOTIFICATION                   = 0x3B
+  KEYPRESS_NOTIFICATION                       = 0x3C
+  REMOTE_HOST_SUPPORTED_FEATURES_NOTIFICATION = 0x3D
+  LE_META_EVENT                               = 0x3E
+  NUMBER_OF_COMPLETED_DATA_BLOCKS             = 0x48
+  VENDOR_DEBUG                                = 0xFF
+
+
 enum MajorDeviceClass:
   [maximum_bits: 5]
   MISCELLANEOUS = 0x00
@@ -1007,8 +1065,18 @@ struct CommandHeader:
 
 struct EventHeader:
   -- HCI Event packet header.
-  0     [+1]  UInt  event_code
-  $next [+1]  UInt  parameter_total_size
+
+  0     [+1]  EventCode  event_code_enum
+
+  0     [+1]  UInt       event_code_uint
+  # Note that this field overlaps the event_code_enum field.
+
+  let event_code = event_code_uint
+  # TODO: https://pwbug.dev/338068316 - Once Fuchsia has transitioned off using
+  # event_code for UInt, event_code_enum will be renamed to event_code and
+  # this event_code_uint alias will be dropped.
+
+  $next [+1]  UInt       parameter_total_size
 
 
 struct CommandCompleteEvent:
