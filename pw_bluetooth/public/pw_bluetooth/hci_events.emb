@@ -880,18 +880,16 @@ struct SimpleCommandCompleteEvent:
   -- event.
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
 
 
 struct ReadLocalVersionInfoCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.1 Read Local Version Information command)
-
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
-
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
-
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
-
   $next [+1]         CoreSpecificationVersion  hci_version
     -- Version of the HCI Specification supported by the Controller. See
     -- Assigned Numbers
@@ -917,6 +915,7 @@ struct ReadLocalSupportedCommandsCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.2 Read Local Supported Commands command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
   $next [+1]         SupportedCommands(0)      supported_commands_0
   $next [+1]         SupportedCommands(1)      supported_commands_1
@@ -975,6 +974,8 @@ struct ReadBufferSizeCommandCompleteEvent:
 
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
 
+  let header = command_complete.header
+
   $next [+1]         hci.StatusCode            status
 
   $next [+2]         UInt                      acl_data_packet_length
@@ -1002,6 +1003,7 @@ struct ReadBdAddrCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.6 Read BD_ADDR command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]                          hci.StatusCode            status
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
 
@@ -1010,6 +1012,7 @@ struct ReadLocalSupportedControllerDelayCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.11 Read Local Supported Controller Delay command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
   $next [+3]         UInt                      min_controller_delay
   $next [+3]         UInt                      max_controller_delay
@@ -1032,6 +1035,7 @@ struct LEReadBufferSizeV1CommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v1] command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
   $next [+2]         UInt                      le_acl_data_packet_length
     -- Maximum length (in octets) of the data portion of each HCI ACL data packet,
@@ -1045,13 +1049,10 @@ struct LEReadBufferSizeV1CommandCompleteEvent:
 
 struct LEReadBufferSizeV2CommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v2] command)
-
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
-
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
-
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
-
   $next [+2]         UInt                      le_acl_data_packet_length
     -- Maximum length (in octets) of the data portion of each HCI ACL data packet,
     -- or 0 if no dedicated LE buffer exists.
@@ -1074,6 +1075,7 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.3 LE Read Local Supported Features command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]                      hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]                             hci.StatusCode            status
   $next [+8]  bits:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
@@ -1084,6 +1086,7 @@ struct LEReadMaximumAdvertisingDataLengthCommandCompleteEvent:
   -- Length command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
   $next [+2]         UInt                      max_advertising_data_length
     -- The maximum length of data supported by the Controller for use as
@@ -1096,6 +1099,7 @@ struct LESetupISODataPathCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.109 LE Setup ISO Data Path command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
   $next [+1]         hci.StatusCode            status
   $next [+2]         UInt                      connection_handle
 
