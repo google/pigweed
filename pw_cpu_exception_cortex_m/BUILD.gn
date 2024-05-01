@@ -207,7 +207,10 @@ group("cortex_m_constants_armv8m") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":cpu_exception_entry_test" ]
+  tests = [
+    ":cpu_exception_entry_test",
+    ":util_test",
+  ]
 }
 
 # TODO: b/234888156 - Add ARMv8-M mainline coverage.

@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_pw_cpu_exception_cortex_m/util.h"
+#include "pw_cpu_exception_cortex_m/util.h"
 
-#include "pw_pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m/cpu_state.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::pw_cpu_exception::cortex_m {
+namespace pw::cpu_exception::cortex_m {
 namespace {
 
 TEST(ActiveProcessorMode, HandlerModeMain) {
@@ -27,7 +27,7 @@ TEST(ActiveProcessorMode, HandlerModeMain) {
   // Bits 0:3 of EXC_RETURN:
   // 0b0001 - 0x1 Handler mode Main
   cpu_state.extended.exc_return = 0b0001;
-  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::HandlerMode);
+  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::kHandlerMode);
 }
 
 TEST(ActiveProcessorMode, ThreadModeMain) {
@@ -37,7 +37,7 @@ TEST(ActiveProcessorMode, ThreadModeMain) {
   // Bits 0:3 of EXC_RETURN:
   // 0b1001 - 0x9 Thread mode Main
   cpu_state.extended.exc_return = 0b1001;
-  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::ThreadMode);
+  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::kThreadMode);
 }
 
 TEST(ActiveProcessorMode, ThreadModeProcess) {
@@ -47,7 +47,7 @@ TEST(ActiveProcessorMode, ThreadModeProcess) {
   // Bits 0:3 of EXC_RETURN:
   // 0b1101 - 0xD Thread mode Process
   cpu_state.extended.exc_return = 0b1001;
-  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::ThreadMode);
+  EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::kThreadMode);
 }
 
 TEST(MainStackActive, HandlerModeMain) {
@@ -111,4 +111,4 @@ TEST(ProcessStackActive, ThreadModeProcess) {
 }
 
 }  // namespace
-}  // namespace pw::pw_cpu_exception::cortex_m
+}  // namespace pw::cpu_exception::cortex_m
