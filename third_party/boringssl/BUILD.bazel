@@ -13,6 +13,11 @@
 # the License.
 #
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+
 cc_library(
     name = "sysdeps",
     hdrs = ["sysdeps/sys/socket.h"],
@@ -20,6 +25,16 @@ cc_library(
     includes = ["sysdeps"],
     deps = [
         "//pw_assert",
-        "@boringssl//:bssl",
+        "@boringssl//:ssl",
+    ],
+)
+
+pw_cc_test(
+    name = "build_test",
+    srcs = [
+        "build_test.cc",
+    ],
+    deps = [
+        ":sysdeps",
     ],
 )

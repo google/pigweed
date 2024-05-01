@@ -99,10 +99,20 @@ if (pw_third_party_boringssl_ALIAS != "") {
 
     # Consume //third_party/boringssl via a Pigweed module only.
     visibility = [
+      ":*",
       "$dir_pw_bluetooth_sapphire/*",
       "$dir_pw_tls_client:*",
       "$dir_pw_tls_client_boringssl:*",
     ]
+  }
+
+  pw_test_group("tests") {
+    tests = [ ":build_test" ]
+  }
+
+  pw_test("build_test") {
+    sources = [ "build_test.cc" ]
+    deps = [ ":boringssl" ]
   }
 } else {
   group("boringssl") {
