@@ -16,6 +16,7 @@
 #include <array>
 #include <cstdint>
 
+#include "pw_allocator/allocator.h"
 #include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
@@ -74,6 +75,13 @@ inline constexpr uint32_t kMaxMethodNameSize = 127;
 // One thread should be dedicated to driving reads (ProcessFrame calls), while
 // another thread (implemented by SendQueue) handles all writes. Refer to
 // the ConnectionThread class for an implementation of this.
+//
+// By default, each gRPC message must be entirely contained within a single
+// HTTP2 DATA frame, as supporting fragmented messages requires buffering
+// up to the maximum message size per stream. To support fragmented messages,
+// provide a message_assembly_allocator, which will be used to allocate
+// temporary storage for fragmented gRPC messages when required. If no
+// allocator is provided, or allocation fails, the stream will be closed.
 class Connection {
  public:
   // Callbacks invoked on requests from the client. Called on same thread as
@@ -106,7 +114,8 @@ class Connection {
 
   Connection(stream::ReaderWriter& stream,
              SendQueue& send_queue,
-             RequestCallbacks& callbacks);
+             RequestCallbacks& callbacks,
+             allocator::Allocator* message_assembly_allocator = nullptr);
 
   // Reads from stream and processes required connection preface frames. Should
   // be called before ProcessFrame(). Return OK if connection preface was found.
@@ -171,11 +180,33 @@ class Connection {
     bool started_response;
     int32_t send_window;
 
+    // Fragmented gRPC message assembly, nullptr if not assembling a message.
+    std::byte* assembly_buffer;
+    union {
+      struct {
+        // Buffer for the length-prefix, if fragmented.
+        std::array<std::byte, 5> prefix_buffer;
+        // Bytes of the prefix received so far.
+        uint8_t prefix_received;
+      };
+      struct {
+        // Total length of the message.
+        uint32_t message_length;
+        // Length of the message received so far (during assembly).
+        uint32_t message_received;
+      };
+    };
+
     void Reset() {
       id = 0;
       half_closed = false;
       started_response = false;
       send_window = 0;
+
+      assembly_buffer = nullptr;
+      message_length = 0;
+      message_received = 0;
+      prefix_received = 0;
     }
   };
 
@@ -188,6 +219,9 @@ class Connection {
     // Stream state
     std::array<Stream, internal::kMaxConcurrentStreams> streams{};
     int32_t connection_send_window = kDefaultInitialWindowSize;
+
+    // Allocator for fragmented grpc message reassembly
+    allocator::Allocator* message_assembly_allocator_;
   };
 
   class Writer {
@@ -239,6 +273,11 @@ class Connection {
     return shared_state_.acquire();
   }
 
+  void UnlockState(sync::BorrowedPointer<SharedState>&& state) {
+    sync::BorrowedPointer<SharedState> moved_state = std::move(state);
+    static_cast<void>(moved_state);
+  }
+
   // Shared state that is thread-safe.
   stream::ReaderWriter& socket_;
   SendQueue& send_queue_;
@@ -258,8 +297,9 @@ class ConnectionThread : public Connection, public thread::ThreadCore {
   ConnectionThread(stream::NonSeekableReaderWriter& stream,
                    const thread::Options& send_thread_options,
                    RequestCallbacks& callbacks,
-                   ConnectionCloseCallback&& connection_close_callback)
-      : Connection(stream, send_queue_, callbacks),
+                   ConnectionCloseCallback&& connection_close_callback,
+                   allocator::Allocator* message_assembly_allocator = nullptr)
+      : Connection(stream, send_queue_, callbacks, message_assembly_allocator),
         send_queue_(stream),
         send_queue_thread_options_(send_thread_options),
         connection_close_callback_(std::move(connection_close_callback)) {}

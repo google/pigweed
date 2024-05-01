@@ -312,11 +312,14 @@ Status SendSettingsAck(SendQueue& send_queue) {
 
 Connection::Connection(stream::ReaderWriter& socket,
                        SendQueue& send_queue,
-                       RequestCallbacks& callbacks)
+                       RequestCallbacks& callbacks,
+                       allocator::Allocator* message_assembly_allocator)
     : socket_(socket),
       send_queue_(send_queue),
       reader_(*this, callbacks),
-      writer_(*this) {}
+      writer_(*this) {
+  LockState()->message_assembly_allocator_ = message_assembly_allocator;
+}
 
 Status Connection::Reader::ProcessFrame() {
   if (!received_connection_preface_) {
@@ -638,57 +641,110 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     payload = payload.subspan(1, payload.size() - pad_length - 1);
   }
 
-  // For now this assumes that each DATA frame contains whole messages
-  // only. Supporting partial messages is possible but requires buffering the
-  // partial messages, which in the worst case requires ~16kB per stream. The
-  // best way to do this buffering is TBD.
+  auto state = connection_.LockState();
+  auto maybe_stream = state->LookupStream(frame.stream_id);
+  if (!maybe_stream.ok()) {
+    return OkStatus();
+  }
+  Stream* stream = &maybe_stream->get();
 
+  // Parse repeated grpc Length-Prefix-Message.
+  // https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md#requests
   while (!payload.empty()) {
-    // Parse the grpc Length-Prefixed-Message.
-    // https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md#requests
-    if (payload.size() < 5) {
-      SendGoAway(Http2Error::PROTOCOL_ERROR);
-      return Status::Internal();
+    uint32_t message_length;
+
+    // If we aren't reassembling a message, read the next length prefix.
+    if (!stream->assembly_buffer) {
+      size_t read = std::min(5 - static_cast<size_t>(stream->prefix_received),
+                             payload.size());
+      std::copy(payload.begin(),
+                payload.begin() + read,
+                stream->prefix_buffer.data() + stream->prefix_received);
+      stream->prefix_received += read;
+      payload = payload.subspan(read);
+
+      // Read the length prefix.
+      if (stream->prefix_received < 5) {
+        continue;
+      }
+      stream->prefix_received = 0;
+
+      ByteBuilder builder(stream->prefix_buffer);
+      auto it = builder.begin();
+      auto message_compressed = it.ReadUint8();
+      message_length = it.ReadUint32(endian::big);
+      if (message_compressed != 0) {
+        PW_LOG_ERROR("Unsupported: grpc message is compressed");
+        PW_TRY(SendRstStreamAndClose(*stream, Http2Error::INTERNAL_ERROR));
+        return OkStatus();
+      }
+
+      if (message_length > payload.size()) {
+        // gRPC message is split across DATA frames, must allocate buffer.
+        if (!state->message_assembly_allocator_) {
+          PW_LOG_ERROR(
+              "Unsupported: split grpc message without allocator provided");
+          PW_TRY(SendRstStreamAndClose(*stream, Http2Error::INTERNAL_ERROR));
+          return OkStatus();
+        }
+
+        stream->assembly_buffer = static_cast<std::byte*>(
+            state->message_assembly_allocator_->Allocate(
+                allocator::Layout(message_length)));
+        if (stream->assembly_buffer == nullptr) {
+          PW_LOG_ERROR("Partial message reassembly buffer allocation failed");
+          PW_TRY(SendRstStreamAndClose(*stream, Http2Error::INTERNAL_ERROR));
+          return OkStatus();
+        }
+        stream->message_length = message_length;
+        stream->message_received = 0;
+        continue;
+      }
     }
 
-    ByteBuilder builder(payload);
-    auto it = builder.begin();
-    auto message_compressed = it.ReadUint8();
-    auto message_length = it.ReadUint32(endian::big);
-    if (message_compressed != 0) {
-      PW_LOG_ERROR("Unsupported: grpc message is compressed");
-      auto state = connection_.LockState();
-      auto stream = state->LookupStream(frame.stream_id);
-      if (!stream.ok()) {
-        return OkStatus();
+    pw::ByteSpan message;
+
+    // Reading message payload.
+    if (stream->assembly_buffer != nullptr) {
+      uint32_t read =
+          std::min(stream->message_length - stream->message_received,
+                   static_cast<uint32_t>(payload.size()));
+      std::copy(payload.begin(),
+                payload.begin() + read,
+                stream->assembly_buffer + stream->message_received);
+      payload = payload.subspan(read);
+      stream->message_received += read;
+      if (stream->message_received < stream->message_length) {
+        continue;
       }
-      PW_TRY(SendRstStreamAndClose(stream->get(), Http2Error::INTERNAL_ERROR));
+      // Fully received message.
+      message = pw::span(stream->assembly_buffer, stream->message_length);
+    } else {
+      message = payload.subspan(0, message_length);
+      payload = payload.subspan(message_length);
+    }
+
+    // Release state lock before callback, reacquire after.
+    connection_.UnlockState(std::move(state));
+    const auto status = callbacks_.OnMessage(frame.stream_id, message);
+    state = connection_.LockState();
+    auto maybe_stream = state->LookupStream(frame.stream_id);
+    if (!maybe_stream.ok()) {
       return OkStatus();
     }
-    payload = payload.subspan(5);
-    if (message_length > payload.size()) {
-      PW_LOG_ERROR("Unsupported: DATA frame contains a partial grpc message");
-      auto state = connection_.LockState();
-      auto stream = state->LookupStream(frame.stream_id);
-      if (!stream.ok()) {
-        return OkStatus();
-      }
-      PW_TRY(SendRstStreamAndClose(stream->get(), Http2Error::PROTOCOL_ERROR));
+    stream = &maybe_stream->get();
+
+    if (!status.ok()) {
+      PW_TRY(SendRstStreamAndClose(*stream, Http2Error::INTERNAL_ERROR));
       return OkStatus();
     }
 
-    if (const auto status = callbacks_.OnMessage(
-            frame.stream_id, payload.subspan(0, message_length));
-        !status.ok()) {
-      auto state = connection_.LockState();
-      auto stream = state->LookupStream(frame.stream_id);
-      if (!stream.ok()) {
-        return OkStatus();
-      }
-      PW_TRY(SendRstStreamAndClose(stream->get(), Http2Error::INTERNAL_ERROR));
-      return OkStatus();
+    if (stream->assembly_buffer != nullptr) {
+      state->message_assembly_allocator_->Deallocate(stream->assembly_buffer);
+      stream->assembly_buffer = nullptr;
+      stream->message_length = 0;
+      stream->message_received = 0;
     }
-    payload = payload.subspan(message_length);
   }
 
   // grpc requires every request stream to end with an empty DATA frame with
@@ -697,12 +753,8 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
   // accept the payload before ending the stream.
   // See: https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md.
   if ((frame.flags & FLAGS_END_STREAM) != 0) {
-    {
-      auto state = connection_.LockState();
-      if (auto stream = state->LookupStream(frame.stream_id); stream.ok()) {
-        stream->get().half_closed = true;
-      }
-    }
+    stream->half_closed = true;
+    connection_.UnlockState(std::move(state));
     callbacks_.OnHalfClose(frame.stream_id);
   }
 

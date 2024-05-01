@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"os/exec"
 	"strconv"
@@ -65,6 +66,55 @@ func TestUnaryEcho(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestFragmentedMessage(t *testing.T) {
+	// Test sending successively larger messages, larger than the maximum
+	// HTTP2 data frame size (16384), ensuring messages are fragmented across
+	// frames.
+	const num_connections = 1
+	cmd, reader, err := launchServer(t, num_connections)
+	if err != nil {
+		t.Errorf("Failed to launch %v", err)
+	}
+	defer cmd.Wait()
+
+	conn, echo_client, err := connectServer()
+	if err != nil {
+		t.Errorf("Failed to connect %v", err)
+	}
+	defer conn.Close()
+	go logServer(t, reader)
+
+	const num_calls = 4
+	for i := 0; i < num_calls; i++ {
+		t.Run(fmt.Sprintf("%d of %d", i+1, num_calls), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			msg := "crc32:" + strings.Repeat("testmessage!", 1500*(i+1))
+			checksum := strconv.FormatUint(uint64(crc32.ChecksumIEEE([]byte(msg))), 10)
+
+			done := make(chan struct{})
+			go func() {
+				t.Logf("call UnaryChecksum")
+				resp, err := echo_client.UnaryEcho(ctx, &pb.EchoRequest{Message: msg})
+				if err != nil {
+					t.Logf("... failed with error: %v", err.Error())
+					if msg != "quiet" || status.Convert(err).Code() != codes.Canceled {
+						t.Errorf("Error unexpected %v", err)
+					}
+				} else {
+					t.Logf("... Recv %v", resp)
+					if resp.Message != checksum {
+						t.Errorf("Unexpected response %v", resp)
+					}
+				}
+				close(done)
+			}()
+			<-done
+		})
+	}
 }
 
 func TestMultipleConnections(t *testing.T) {
