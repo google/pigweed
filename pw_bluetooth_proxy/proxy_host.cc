@@ -24,4 +24,22 @@ ProxyHost::ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
     : outward_send_to_host_fn_(std::move(send_to_host_fn)),
       outward_send_to_controller_fn_(std::move(send_to_controller_fn)) {}
 
+void ProxyHost::ProcessH4HciFromHost(H4HciPacket packet) {
+  SendToController(packet);
+}
+
+void ProxyHost::ProcessH4HciFromController(H4HciPacket packet) {
+  SendToHost(packet);
+}
+
+void ProxyHost::SendToHost(H4HciPacket packet) {
+  PW_DCHECK(outward_send_to_host_fn_ != nullptr);
+  outward_send_to_host_fn_(packet);
+}
+
+void ProxyHost::SendToController(H4HciPacket packet) {
+  PW_DCHECK(outward_send_to_controller_fn_ != nullptr);
+  outward_send_to_controller_fn_(packet);
+}
+
 }  // namespace pw::bluetooth::proxy

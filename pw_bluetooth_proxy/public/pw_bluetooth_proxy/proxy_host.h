@@ -44,28 +44,20 @@ class ProxyHost {
   /// host side towards the controller side. Proxy will in turn call the
   /// `send_to_controller_fn` provided during construction to pass the packet on
   /// to the controller. Some packets may be modified, added, or removed.
-  void virtual ProcessH4HciFromHost(H4HciPacket packet) {
-    sendToController(packet);
-  }
+  void ProcessH4HciFromHost(H4HciPacket packet);
 
   /// Called by container to ask proxy to process HCI packet sent from the
   /// controller side towards the host side. Proxy will in turn call the
   /// `send_to_host_fn` provided during construction to pass the packet on to
   /// the host. Some packets may be modified, added, or removed.
-  void virtual ProcessH4HciFromController(H4HciPacket packet) {
-    sendToHost(packet);
-  }
+  void ProcessH4HciFromController(H4HciPacket packet);
 
  private:
-  void sendToHost(H4HciPacket packet) {
-    PW_DCHECK(outward_send_to_host_fn_ != nullptr);
-    outward_send_to_host_fn_(packet);
-  }
+  // Send packet onwards to host.
+  void SendToHost(H4HciPacket packet);
 
-  void sendToController(H4HciPacket packet) {
-    PW_DCHECK(outward_send_to_controller_fn_ != nullptr);
-    outward_send_to_controller_fn_(packet);
-  }
+  // Send packet onwards to controller.
+  void SendToController(H4HciPacket packet);
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // host.
