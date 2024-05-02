@@ -110,3 +110,21 @@ pw_add_test(pw_async2.pendable_as_task_test
   PRIVATE_DEPS
     pw_async2.pendable_as_task
 )
+
+pw_add_library(pw_async2.allocate_task INTERFACE
+  HEADERS
+    public/pw_async2/allocate_task.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_allocator.allocator
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.allocate_task_test
+  SOURCES
+    allocate_task_test.cc
+  PRIVATE_DEPS
+    pw_async2.allocate_task
+    pw_allocator.testing
+)

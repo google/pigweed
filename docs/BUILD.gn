@@ -161,6 +161,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_async/public/pw_async/heap_dispatcher.h",
   "$dir_pw_async/public/pw_async/task.h",
   "$dir_pw_async/public/pw_async/task_function.h",
+  "$dir_pw_async2/public/pw_async2/allocate_task.h",
   "$dir_pw_async2/public/pw_async2/dispatcher.h",
   "$dir_pw_async2/public/pw_async2/dispatcher_base.h",
   "$dir_pw_async2/public/pw_async2/pend_func_task.h",

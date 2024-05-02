@@ -152,6 +152,10 @@ C++ API reference
 -------------
 C++ Utilities
 -------------
+.. doxygenfunction:: pw::async2::AllocateTask(pw::allocator::Allocator& allocator, Pendable&& pendable)
+
+.. doxygenfunction:: pw::async2::AllocateTask(pw::allocator::Allocator& allocator, Args&&... args)
+
 .. doxygenclass:: pw::async2::PendFuncTask
   :members:
 

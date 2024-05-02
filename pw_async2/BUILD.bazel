@@ -150,3 +150,26 @@ pw_cc_test(
     srcs = ["pendable_as_task_test.cc"],
     deps = [":pendable_as_task"],
 )
+
+cc_library(
+    name = "allocate_task",
+    hdrs = [
+        "public/pw_async2/allocate_task.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":dispatcher",
+        "//pw_allocator:allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "allocate_task_test",
+    srcs = ["allocate_task_test.cc"],
+    deps = [
+        ":allocate_task",
+        "//pw_allocator:testing",
+    ],
+)

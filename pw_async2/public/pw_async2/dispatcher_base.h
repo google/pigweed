@@ -550,7 +550,11 @@ class DispatcherImpl : public DispatcherBase {
       std::lock_guard lock(dispatcher_lock());
       task = PopWokenTask();
       if (task == nullptr) {
-        return RunOneTaskResult(false, false, false);
+        bool all_complete = first_woken_ == nullptr && sleeping_ == nullptr;
+        return RunOneTaskResult(
+            /*completed_all_tasks=*/all_complete,
+            /*completed_main_task=*/false,
+            /*ran_a_task=*/false);
       }
       task->state_ = Task::State::kRunning;
     }
