@@ -102,6 +102,15 @@ emboss_cc_library(pw_bluetooth.emboss_hci_common
     public/pw_bluetooth/hci_common.emb
 )
 
+emboss_cc_library(pw_bluetooth.emboss_hci_android
+  SOURCES
+    public/pw_bluetooth/hci_android.emb
+  IMPORT_DIRS
+    public
+  DEPS
+    pw_bluetooth.emboss_hci_common
+)
+
 emboss_cc_library(pw_bluetooth.emboss_hci_commands
   SOURCES
     public/pw_bluetooth/hci_commands.emb
@@ -127,15 +136,6 @@ emboss_cc_library(pw_bluetooth.emboss_hci_h4
     public
 )
 
-emboss_cc_library(pw_bluetooth.emboss_hci_vendor
-  SOURCES
-    public/pw_bluetooth/hci_vendor.emb
-  IMPORT_DIRS
-    public
-  DEPS
-    pw_bluetooth.emboss_hci_common
-)
-
 emboss_cc_library(pw_bluetooth.emboss_hci_data
   SOURCES
     public/pw_bluetooth/hci_data.emb
@@ -158,22 +158,22 @@ emboss_cc_library(pw_bluetooth.emboss_hci_test
 
 pw_add_library("pw_bluetooth.emboss_hci_group" INTERFACE
   PUBLIC_DEPS
+    pw_bluetooth.emboss_hci_android
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_data
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
-    pw_bluetooth.emboss_hci_vendor
 )
 
 pw_target_link_targets("pw_bluetooth._public_config"
   INTERFACE
+    pw_bluetooth.emboss_hci_android
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_data
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
-    pw_bluetooth.emboss_hci_vendor
     pw_bluetooth.emboss_l2cap_frames
 )
 

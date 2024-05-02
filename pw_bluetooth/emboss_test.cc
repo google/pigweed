@@ -26,7 +26,7 @@
 #include "pw_bluetooth/hci_events.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_h4.emb.h"      // IWYU pragma: keep
 #include "pw_bluetooth/hci_test.emb.h"
-#include "pw_bluetooth/hci_vendor.emb.h"    // IWYU pragma: keep
+#include "pw_bluetooth/hci_android.emb.h"    // IWYU pragma: keep
 #include "pw_bluetooth/l2cap_frames.emb.h"  // IWYU pragma: keep
 // clang-format on
 

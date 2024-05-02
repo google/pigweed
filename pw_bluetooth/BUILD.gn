@@ -89,6 +89,22 @@ if (dir_pw_third_party_emboss != "") {
     visibility = [ ":*" ]
   }
 
+  emboss_cc_library("emboss_hci_android") {
+    public_configs = [ ":emboss_include_path" ]
+    source = "public/pw_bluetooth/hci_android.emb"
+    imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    import_dirs = [ "public" ]
+    deps = [ ":emboss_hci_common" ]
+  }
+
+  # hci_vendor.emb.h is just used in bazel to allow soft transition for Fuchsia.
+  # Have it here also to make source_is_in_gn_build presubmit happy.
+  # TODO: https://pwbug.dev/338269786 - Delete once we no longer have file
+  pw_source_set("emboss_hci_vendor") {
+    public_configs = [ ":public_include_path" ]
+    public = [ "public/pw_bluetooth/hci_vendor.emb.h" ]
+  }
+
   emboss_cc_library("emboss_hci_common") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_common.emb"
@@ -122,14 +138,6 @@ if (dir_pw_third_party_emboss != "") {
     import_dirs = [ "public" ]
   }
 
-  emboss_cc_library("emboss_hci_vendor") {
-    public_configs = [ ":emboss_include_path" ]
-    source = "public/pw_bluetooth/hci_vendor.emb"
-    imports = [ "public/pw_bluetooth/hci_common.emb" ]
-    import_dirs = [ "public" ]
-    deps = [ ":emboss_hci_common" ]
-  }
-
   emboss_cc_library("emboss_hci_test") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_test.emb"
@@ -146,6 +154,7 @@ if (dir_pw_third_party_emboss != "") {
   group("emboss_hci_group") {
     public_configs = [ ":emboss_include_path" ]
     public_deps = [
+      ":emboss_hci_android",
       ":emboss_hci_commands",
       ":emboss_hci_common",
       ":emboss_hci_data",
@@ -155,6 +164,8 @@ if (dir_pw_third_party_emboss != "") {
     ]
   }
 } else {
+  group("emboss_hci_android") {
+  }
   group("emboss_hci_common") {
   }
   group("emboss_hci_commands") {
@@ -164,8 +175,6 @@ if (dir_pw_third_party_emboss != "") {
   group("emboss_hci_events") {
   }
   group("emboss_hci_h4") {
-  }
-  group("emboss_hci_vendor") {
   }
   group("emboss_hci_test") {
   }
