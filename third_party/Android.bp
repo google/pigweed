@@ -25,9 +25,21 @@ cc_library_headers {
     ],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
+        "pw_assert",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
+        "pw_assert",
+    ],
+    // Depend on the Android common backends for pw_assert (selected from
+    // pw_android_common_backends to avoid circular dependencies).
+    static_libs: [
+        "pw_assert_log",
+        "pw_log_android",
+    ],
+    export_static_lib_headers: [
+        "pw_assert_log",
+        "pw_log_android",
     ],
     host_supported: true,
 }
