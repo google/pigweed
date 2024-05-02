@@ -61,6 +61,7 @@ export const styles = css`
   }
 
   tr {
+    color: var(--md-sys-color-on-surface);
     border-bottom: 1px solid var(--sys-log-viewer-color-table-cell-outline);
     contain: content;
     display: grid;
