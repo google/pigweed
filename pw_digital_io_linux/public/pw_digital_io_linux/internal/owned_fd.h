@@ -45,12 +45,6 @@ class OwnedFd final {
     return *this;
   }
 
-  OwnedFd& operator=(int fd) noexcept {
-    Close();
-    fd_ = fd;
-    return *this;
-  }
-
   void Close() {
     if (fd_ != kInvalid) {
       close(fd_);

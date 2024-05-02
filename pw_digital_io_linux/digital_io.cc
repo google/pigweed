@@ -135,7 +135,7 @@ Status LinuxDigitalIn::DoEnable(bool enable) {
     PW_TRY_ASSIGN(fd_, chip_->GetLineHandle(config_.index, config_.GetFlags()));
   } else {
     // Close the open file handle and release the line request.
-    fd_ = {};
+    fd_.Close();
   }
   return OkStatus();
 }
@@ -157,7 +157,7 @@ Status LinuxDigitalOut::DoEnable(bool enable) {
         chip_->GetLineHandle(config_.index, config_.GetFlags(), default_value));
   } else {
     // Close the open file handle and release the line request.
-    fd_ = {};
+    fd_.Close();
   }
   return OkStatus();
 }
