@@ -94,7 +94,7 @@ class StaticContext : public Context {
       : stack_(stack), available_stack_size_(available_stack_size) {}
 
  private:
-  friend Thread;
+  friend Context;
 
   z_thread_stack_element* stack() { return stack_; }
   size_t available_stack_size() { return available_stack_size_; }

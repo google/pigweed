@@ -63,7 +63,7 @@ void Context::CreateThread(const zephyr::Options& options,
   native_type_out->set_thread_done(false);
 
   native_type_out->set_thread_routine(std::move(thread_fn));
-  native_type_out->const k_tid_t task_handle =
+  const k_tid_t task_handle =
       k_thread_create(&native_type_out->thread_info(),
                       options.static_context()->stack(),
                       options.static_context()->available_stack_size(),
