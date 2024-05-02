@@ -253,6 +253,12 @@ enum OpCode:
   READ_LOCAL_VERSION_INFO                                      = 0x1001
     -- Read Local Version Information Command (v1.1)
 
+  READ_LOCAL_SUPPORTED_COMMANDS                                = 0x1002
+    -- Read Local Supported Commands Command (v1.2)
+
+  READ_LOCAL_SUPPORTED_FEATURES                                = 0x1003
+    -- Read Local Supported Features Command (v1.1)
+
   READ_LOCAL_EXTENDED_FEATURES                                 = 0x1004
     -- Read Local Extended Features Command (v1.2) (BR/EDR)
 
@@ -264,6 +270,21 @@ enum OpCode:
 
   READ_DATA_BLOCK_SIZE                                         = 0x100A
     -- Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
+
+  READ_LOCAL_SUPPORTED_CODECS_V1                               = 0x100B
+    -- Read Local Supported Codecs Command [v1] (CSA2)
+
+  READ_LOCAL_SIMPLE_PAIRING_OPTIONS                            = 0x100C
+    -- Read Local Simple Pairing Options Command (Erratum 10734)
+
+  READ_LOCAL_SUPPORTED_CODECS_V2                               = 0x100D
+    -- Read Local Supported Codecs Command [v2] (v5.2)
+
+  READ_LOCAL_SUPPORTED_CODEC_CAPABILITIES                      = 0x100E
+    -- Read Local Supported Codec Capabilities Command (v5.2)
+
+  READ_LOCAL_SUPPORTED_CONTROLLER_DELAY                        = 0x100F
+    -- Read Local Supported Controller Delay Command (v5.2)
 
   ### Status Parameters - Core Spec v5.0, Vol 2, Part E, Section 7.5 (OGF 0x05)
 
