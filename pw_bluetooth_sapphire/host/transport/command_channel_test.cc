@@ -14,8 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 
+#include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_commands.emb.h>
-#include <pw_bluetooth/hci_vendor.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"

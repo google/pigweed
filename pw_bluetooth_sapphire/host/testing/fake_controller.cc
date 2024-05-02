@@ -16,7 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <endian.h>
-#include <pw_bluetooth/hci_vendor.emb.h>
+#include <pw_bluetooth/hci_android.emb.h>
 
 #include <cstddef>
 

@@ -17,8 +17,8 @@
 #include <cpp-string/string_printf.h>
 #include <endian.h>
 #include <lib/fit/defer.h>
+#include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_common.emb.h>
-#include <pw_bluetooth/hci_vendor.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

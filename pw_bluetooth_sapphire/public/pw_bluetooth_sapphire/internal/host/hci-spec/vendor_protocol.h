@@ -31,7 +31,7 @@
 // MutableBufferView::mutable_payload(), or CommandPacket::mutable_payload()
 // instead. Take extra care when accessing flexible array members.
 
-#include <pw_bluetooth/hci_vendor.emb.h>
+#include <pw_bluetooth/hci_android.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 

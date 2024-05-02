@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
-#include <pw_bluetooth/hci_vendor.emb.h>
+#include <pw_bluetooth/hci_android.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"

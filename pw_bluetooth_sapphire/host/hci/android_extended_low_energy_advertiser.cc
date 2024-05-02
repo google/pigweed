@@ -14,8 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
 
+#include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_common.emb.h>
-#include <pw_bluetooth/hci_vendor.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
