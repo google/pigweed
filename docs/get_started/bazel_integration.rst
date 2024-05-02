@@ -128,4 +128,3 @@ include a :ref:`module-pw_sys_io` backend suitable for your embedded platform,
 that's what you should do now.) See
 :ref:`docs-build_system-bazel_configuration` for a tutorial that dives deeper
 into facade configuration with Bazel.
-

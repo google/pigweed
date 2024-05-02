@@ -59,4 +59,3 @@ Example write using the FLEXIO_SPI initiator:
    spi.Configure(configuration);
 
    spi.WriteRead(source, destination);
-

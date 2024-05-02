@@ -159,4 +159,3 @@ To debug a new file, use ``file`` before ``load``.
 
 Debug console is available on the USB serial port, e.g. ``/dev/ttyACM0``
 (Linux) or ``/dev/tty.usbmodem*`` (Mac).
-

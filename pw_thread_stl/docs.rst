@@ -19,4 +19,3 @@ Windows
 
      ld.exe: pw_strict_host_gcc_debug/obj/pw_thread/test_thread_context_facade_test.lib.test_thread_context_facade_test.cc.o: in function `pw::thread::Thread::detach()':
      pw_thread_stl/public/pw_thread_stl/thread_inline.h:55: undefined reference to `pw::thread::internal::ErrorAttemptedToInvokeStdThreadDetachOnMinGW()'
-

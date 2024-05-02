@@ -164,4 +164,3 @@ Namespacing them within a message prevents these collisions.
        TAI_WALL_CLOCK = 4;
      };
    }
-

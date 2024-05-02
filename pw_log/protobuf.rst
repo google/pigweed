@@ -111,4 +111,3 @@ implementation that encodes the results to a protobuf.
        EmitProtoLogEntry(result.value());
      }
    }
-

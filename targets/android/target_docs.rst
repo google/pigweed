@@ -64,4 +64,3 @@ Or to build for a specific CPU target and optimization level:
 .. code-block:: sh
 
    ninja -C out arm64_android_size_optimized
-

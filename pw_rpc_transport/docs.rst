@@ -247,4 +247,3 @@ Node C setup is straightforward since it only needs to handle ingress from B:
 
    DetachedThread(/*...*/, c_to_b_transport);
    DetachedThread(/*...*/, local_egress);
-

@@ -324,4 +324,3 @@ by creating a light wrapper around
        """Runs the snapshot processor with a custom callback."""
        return pw_snapshot.processor.process_snapshots(
            serialized_snapshot, user_processing_callback=_process_hw_failures)
-

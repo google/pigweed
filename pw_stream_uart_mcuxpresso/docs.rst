@@ -88,4 +88,3 @@ Usage
        USART0_BASE, kCLOCK_Flexcomm0Clk, 115200);
 
    PW_TRY(crash_safe_uart.Enable());
-

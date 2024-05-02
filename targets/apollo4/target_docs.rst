@@ -163,4 +163,3 @@ Then call this script:
 .. code-block:: sh
 
    bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
-

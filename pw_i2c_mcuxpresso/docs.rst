@@ -40,4 +40,3 @@ Usage
    };
    McuxpressoInitiator initiator{kConfig};
    initiator.Enable();
-

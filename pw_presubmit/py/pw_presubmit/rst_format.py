@@ -219,6 +219,14 @@ def reformat_rst(
     in_text = file_name.read_text()
     out_lines = list(_parse_and_format_rst(in_text))
 
+    # Remove blank lines from the end of the output, if any.
+    while out_lines and not out_lines[-1].strip():
+        out_lines.pop()
+
+    # Add a trailing \n if needed.
+    if out_lines and not out_lines[-1].endswith('\n'):
+        out_lines[-1] += '\n'
+
     result_diff = list(
         difflib.unified_diff(
             in_text.splitlines(True),

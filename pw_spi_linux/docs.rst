@@ -98,4 +98,3 @@ Example:
 
    $ echo -n "Hello world" | pw_spi_linux_cli --device=/dev/spidev1.0 \
      --freq=24000000 --mode=3 --input=- | hexdump -Cv
-

@@ -451,5 +451,3 @@ be used as a reference when sizing external buffers for ``pw::Function``
 objects.
 
 .. include:: callable_size
-
-

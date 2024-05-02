@@ -356,4 +356,3 @@ Running the fuzzer should produce output similar to the following:
 .. _startup initialization: https://llvm.org/docs/LibFuzzer.html#startup-initialization
 .. _structure aware fuzzing: https://github.com/google/fuzzing/blob/HEAD/docs/structure-aware-fuzzing.md
 .. _valid options: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
-

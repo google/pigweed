@@ -536,4 +536,3 @@ you should produce the following four symbols in your linker script:
 
    PW_BLOAT_MEMORY_REGION_MAP(RAM, ITCM)
    PW_BLOAT_MEMORY_REGION_MAP(RAM, DTCM)
-

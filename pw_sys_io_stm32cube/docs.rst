@@ -90,4 +90,3 @@ Sample connection diagram
               RX o<---o PA9/USART1_TX
                  |    |
    --------------+    +-----------------------
-

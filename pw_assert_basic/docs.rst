@@ -97,4 +97,3 @@ you are responsible for using whatever APIs make sense for your use case(s).
      // Reboot the microcontroller.
      HAL_NVIC_SystemReset();
    }
-

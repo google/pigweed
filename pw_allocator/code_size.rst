@@ -40,4 +40,3 @@ by having the forwarding allocator wrap a
 relative to that implementation.
 
 .. include:: forwarding_allocators_size_report
-

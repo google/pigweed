@@ -29,5 +29,3 @@ To use the publicly-available Docker image, run
 from the root of your Pigweed checkout. You still need to run
 ``. ./bootstrap.sh`` within the Docker image, but it should complete much
 faster than on a vanilla Docker image.
-
-

@@ -263,5 +263,3 @@ of the constructor and cleaned up using ``vSemaphoreDelete`` in the destructor.
 .. Note::
   Static allocation support is required in your FreeRTOS configuration, i.e.
   ``configSUPPORT_STATIC_ALLOCATION == 1``.
-
-

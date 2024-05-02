@@ -191,4 +191,3 @@ Bidirectional Stream RPC
        .catch((reason) => {
          console.log(`Bidirectional stream error: ${reason}`);
        });
-

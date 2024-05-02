@@ -256,4 +256,3 @@ libraries.
      remove_configs = [ "$dir_pw_build:strict_warnings" ]
      deps += [ "$dir_pw_third_party/arduino:arduino_core_sources" ]
    }
-

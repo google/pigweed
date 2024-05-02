@@ -73,4 +73,3 @@ Example usage with enums:
    void LogColor(foo::Color color) {
      PW_LOG("Color: [" PW_LOG_TOKEN_FMT() "]", color)
    }
-

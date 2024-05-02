@@ -46,4 +46,3 @@ Usage
    pw::spi::Device spi_8_bit(borrowable_spi_initiator,
                              kSpiConfig8Bit,
                              spi_chip_selector);
-

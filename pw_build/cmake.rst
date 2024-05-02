@@ -196,4 +196,3 @@ If desired, modules can be included individually.
    - :bdg-ref-primary-line:`module-pw_fuzzer-guides-using_fuzztest-toolchain`
    - :bdg-ref-primary-line:`module-pw_protobuf_compiler-cmake`
    - :bdg-ref-primary-line:`module-pw_unit_test-cmake`
-

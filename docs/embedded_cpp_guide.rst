@@ -188,4 +188,3 @@ used.
 
    DoThingWithStatus().IgnoreError();
    std::ignore = DoThingWithReturnValue();
-

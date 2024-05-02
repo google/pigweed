@@ -74,4 +74,3 @@ print out the path of the tests they are scheduled to run.
    		log.Fatalf("Failed to start server: %v", err)
    	}
    }
-

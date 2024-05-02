@@ -712,4 +712,3 @@ Open Questions
    maybe even other peripheral buses (e.g. SPI and DSI). However, the underlying
    register operation functions are different. It is better to be handled in a
    separate SEED.
-

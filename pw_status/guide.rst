@@ -216,4 +216,3 @@ assigning the size from the ``pw::StatusWithSize`` on ok.
      // Do something that uses size_value. size_value is only assigned and this
      // following code executed if the PW_TRY_ASSIGN function above returns OK.
    }
-

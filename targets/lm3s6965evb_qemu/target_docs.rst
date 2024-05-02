@@ -62,4 +62,3 @@ In another window
    (gdb) target remote :3333
    (gdb) break SomeFunction()
    (gdb) continue
-

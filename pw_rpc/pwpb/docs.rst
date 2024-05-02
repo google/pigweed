@@ -280,4 +280,3 @@ service client and receive the response.
 
      // Do other stuff now that we have the room information.
    }
-

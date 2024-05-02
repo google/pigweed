@@ -75,4 +75,3 @@ Example code:
    DeviceInfoService<kUsedFields, pw::bluetooth::gatt::Handle{123}>
        device_info_service{device_info};
    device_info_service.PublishService(...);
-

@@ -354,4 +354,3 @@ repository.
 This label flag should point to a ``cc_library`` providing a timebase
 implementation. By default it points to the template included with STM's HAL
 repository.
-

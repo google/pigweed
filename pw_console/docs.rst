@@ -57,4 +57,3 @@ Guides
 .. _IPython: https://ipython.readthedocs.io/
 .. _prompt_toolkit: https://python-prompt-toolkit.readthedocs.io/
 .. _ptpython: https://github.com/prompt-toolkit/ptpython/
-

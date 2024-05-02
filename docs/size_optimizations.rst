@@ -712,4 +712,3 @@ script by passing the ``--sort-section=alignment`` option to the linker.
 
 See the `ld manual <https://sourceware.org/binutils/docs/ld/Input-Section-Wildcards.html>`_
 for more information.
-

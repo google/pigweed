@@ -355,4 +355,3 @@ Toolchains and platforms
 Pigweed provides clang-based host toolchains for Linux and Mac Arm gcc
 toolchain. The clang-based Linux and Arm gcc toolchains are entirely hermetic.
 We don't currently provide a host toolchain for Windows.
-

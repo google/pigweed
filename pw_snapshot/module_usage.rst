@@ -212,4 +212,3 @@ An in-memory snapshot's UUID may be read using ``ReadUuidFromSnapshot()``.
      }
      LogNewSnapshotUuid(result.value());
    }
-

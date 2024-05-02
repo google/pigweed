@@ -304,4 +304,3 @@ Here's an example of the error:
    ninja: build stopped: subcommand failed.
    FATAL ERROR: command exited with status 1: ~/zephyr-quickstart/environment/cipd/packages/cmake/bin/cmake
      --build ~/zephyr-quickstart/build --target run
-

@@ -158,4 +158,3 @@ printed out if it is found.
 
    $ python -m pw_build_info.build_id my_device_image.elf
    d43cce74f18522052f77a1fa3fb7a25fe33f40dd
-

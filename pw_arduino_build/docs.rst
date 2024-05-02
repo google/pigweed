@@ -67,4 +67,3 @@ details.
    <https://www.arduino.cc/reference/en/language/structure/sketch/setup/>`_, and
    `loop()
    <https://www.arduino.cc/reference/en/language/structure/sketch/loop/>`_.
-

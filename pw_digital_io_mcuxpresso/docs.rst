@@ -60,4 +60,3 @@ Example code to use GPIO pins from an NXP SDK board definition:
    McuxpressoDigitalIn in(
       BOARD_INITPINS_D9_GPIO, BOARD_INITPINS_D9_PORT, BOARD_INITPINS_D9_PIN);
    auto state = in.GetState();
-

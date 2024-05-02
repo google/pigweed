@@ -1114,4 +1114,3 @@ Will result in a build graph that looks like;
     |                     (Actual backend)
     v                                        |
    @pigweed//pw_chrono:pw_chrono.facade <---.
-

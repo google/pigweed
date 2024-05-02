@@ -93,4 +93,3 @@ cleaned up deterministically.
    symbolizer = pw_symbolizer.LlvmSymbolizer(Path('device_fw.elf'))
    sym = symbolizer.symbolize(0x2000ac21)
    print(f'You have a bug here: {sym}')
-
