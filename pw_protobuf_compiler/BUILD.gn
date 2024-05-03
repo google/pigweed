@@ -29,6 +29,7 @@ pw_test_group("tests") {
     ":nanopb_test",
     ":pwpb_test",
     ":nested_packages_test",
+    ":pwpb_no_prefix_test",
   ]
 }
 
@@ -67,4 +68,16 @@ pw_proto_library("test_protos") {
 pw_test("nested_packages_test") {
   deps = [ "pw_nested_packages:aggregate_wrapper.pwpb" ]
   sources = [ "nested_packages_test.cc" ]
+}
+
+pw_proto_library("pwpb_test_no_prefix_protos") {
+  sources =
+      [ "pw_protobuf_compiler_pwpb_protos_no_prefix/pwpb_test_no_prefix.proto" ]
+  strip_prefix = "pw_protobuf_compiler_pwpb_protos_no_prefix/"
+  deps = [ "$dir_pw_protobuf:common_protos" ]
+}
+
+pw_test("pwpb_no_prefix_test") {
+  sources = [ "pwpb_test_no_prefix.cc" ]
+  deps = [ ":pwpb_test_no_prefix_protos.pwpb" ]
 }

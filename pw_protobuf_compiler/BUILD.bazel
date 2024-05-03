@@ -14,7 +14,7 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pigweed.bzl", "pw_cc_test")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "nanopb_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "nanopb_proto_library", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,6 +36,35 @@ pw_cc_test(
     srcs = ["pwpb_test.cc"],
     deps = [
         "//pw_protobuf_compiler/pw_protobuf_compiler_pwpb_protos:pwpb_test_pw_proto.pwpb",
+        "//pw_string",
+        "//pw_unit_test",
+    ],
+)
+
+proto_library(
+    name = "pwpb_test_proto_no_prefix",
+    srcs = ["pw_protobuf_compiler_pwpb_protos_no_prefix/pwpb_test_no_prefix.proto"],
+    strip_import_prefix = "pw_protobuf_compiler_pwpb_protos_no_prefix/",
+    tags = ["manual"],
+    deps = [
+        "//pw_protobuf:field_options_proto",
+    ],
+)
+
+pw_proto_library(
+    name = "pwpb_test_pw_proto_no_prefix",
+    tags = ["manual"],
+    deps = [
+        ":pwpb_test_proto_no_prefix",
+    ],
+)
+
+pw_cc_test(
+    name = "pwpb_test_no_prefix",
+    srcs = ["pwpb_test_no_prefix.cc"],
+    tags = ["manual"],
+    deps = [
+        ":pwpb_test_pw_proto_no_prefix.pwpb",
         "//pw_string",
         "//pw_unit_test",
     ],
