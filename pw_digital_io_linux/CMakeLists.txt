@@ -28,11 +28,21 @@ pw_add_library(pw_digital_io_linux INTERFACE
     pw_status
 )
 
+# TODO(b/328262654): Move this to a more appropriate module.
+pw_add_library(pw_digital_io_linux.mock_vfs STATIC
+  HEADERS
+    mock_vfs.h
+  SOURCES
+    mock_vfs.cc
+  PRIVATE_DEPS
+    pw_log
+
 pw_add_test(pw_digital_io_linux.digital_io_test
   SOURCES
     digital_io_test.cc
   PRIVATE_DEPS
     pw_digital_io
+    pw_digital_io_linux.mock_vfs
   GROUPS
     modules
     pw_digital_io_linux

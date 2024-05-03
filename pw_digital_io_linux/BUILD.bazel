@@ -50,6 +50,16 @@ cc_binary(
     ],
 )
 
+# TODO(b/328262654): Move this to a more appropriate module.
+cc_library(
+    name = "mock_vfs",
+    srcs = ["mock_vfs.cc"],
+    hdrs = ["mock_vfs.h"],
+    deps = [
+        "//pw_log",
+    ],
+)
+
 pw_cc_test(
     name = "digital_io_test",
     srcs = ["digital_io_test.cc"],
@@ -58,6 +68,7 @@ pw_cc_test(
         "-Wl,--wrap=ioctl",
     ],
     deps = [
+        ":mock_vfs",
         ":pw_digital_io_linux",
         "//pw_log",
     ],

@@ -48,10 +48,19 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
+# TODO(b/328262654): Move this to a more appropriate module.
+pw_source_set("mock_vfs") {
+  public_configs = [ ":public_includes" ]
+  public = [ "mock_vfs.h" ]
+  public_deps = [ "$dir_pw_log" ]
+  sources = [ "mock_vfs.cc" ]
+}
+
 pw_test("digital_io_test") {
   enable_if = current_os == "linux"
   sources = [ "digital_io_test.cc" ]
   deps = [
+    ":mock_vfs",
     ":pw_digital_io_linux",
     "$dir_pw_log",
   ]

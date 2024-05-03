@@ -16,61 +16,177 @@
 #include <linux/gpio.h>
 
 #include <algorithm>
-#include <cstdarg>
 #include <functional>
+#include <memory>
+#include <vector>
 
+#include "mock_vfs.h"
 #include "pw_digital_io_linux/digital_io.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
 #include "pw_unit_test/framework.h"
 
-// close() and ioctl() are wrapped via --wrap
-extern "C" {
-decltype(close) __real_close;
-decltype(close) __wrap_close;
-
-// ioctl() is actually variadic (third arg is ...), but there's no way
-// (https://c-faq.com/varargs/handoff.html) to forward the args when invoked
-// that way, so we lie and use void*.
-int __real_ioctl(int fd, unsigned long request, void* arg);
-int __wrap_ioctl(int fd, unsigned long request, void* arg);
-}
-
 namespace pw::digital_io {
 namespace {
 
-class DigitalIoTest : public ::testing::Test {
- protected:
-  DigitalIoTest() : chip(kChipFd), chip_fd_open_(true) {}
+class DigitalIoTest;
 
-  void SetUp() override {
-    ASSERT_EQ(s_current, nullptr);
-    s_current = this;
+// Represents a mocked in-kernel GPIO line object.
+class Line {
+ public:
+  //
+  // Harness-side interface: Intended for use by DigitalIoTest and the
+  // MockFile subclasses.
+  //
+
+  explicit Line(uint32_t index) : index_(index) {}
+
+  // Get the logical value of the line, respecting active_low.
+  Result<bool> GetValue() const {
+    // Linux lets you read the value of an output.
+    if (requested_ == RequestedState::kNone) {
+      PW_LOG_ERROR("Cannot get value of unrequested line");
+      return Status::FailedPrecondition();
+    }
+    return physical_state_ ^ active_low_;
   }
 
-  void TearDown() override { s_current = nullptr; }
+  // Set the logical value of the line, respecting active_low.
+  // Returns OK on success; FAILED_PRECONDITION if not requested as output.
+  Status SetValue(bool value) {
+    if (requested_ != RequestedState::kOutput) {
+      PW_LOG_ERROR("Cannot set value of line not requested as output");
+      return Status::FailedPrecondition();
+    }
 
-  LinuxDigitalIoChip chip;
+    physical_state_ = value ^ active_low_;
+
+    PW_LOG_DEBUG("Set line %u to physical %u", index_, physical_state_);
+    return OkStatus();
+  }
+
+  Status RequestInput(bool active_low) {
+    return DoRequest(RequestedState::kInput, active_low);
+  }
+
+  Status RequestOutput(bool active_low) {
+    return DoRequest(RequestedState::kOutput, active_low);
+  }
+
+  void ClearRequest() { requested_ = RequestedState::kNone; }
+
+  //
+  // Test-side interface: Intended for use by the tests themselves.
+  //
+
+  enum class RequestedState {
+    kNone,    // Not requested by "userspace"
+    kInput,   // Requested by "userspace" as an input
+    kOutput,  // Requested by "userspace" as an output
+  };
+
+  RequestedState requested() const { return requested_; }
+
+  void ForcePhysicalState(bool state) { physical_state_ = state; }
+
+  bool physical_state() const { return physical_state_; }
 
  private:
-  static inline DigitalIoTest* s_current;
+  const uint32_t index_;
+  bool physical_state_ = false;
 
-  static constexpr int kChipFd = 8999;
-  bool chip_fd_open_ = false;
+  RequestedState requested_ = RequestedState::kNone;
+  bool active_low_ = false;
 
-  // Line 0: Input
-  static constexpr int kLine0InputFd = 9000;
-  uint8_t line0_value_ = 0;
-  bool line0_fd_open_ = false;
-  bool line0_active_low_ = false;
+  Status DoRequest(RequestedState request, bool active_low) {
+    if (requested_ != RequestedState::kNone) {
+      PW_LOG_ERROR("Cannot request already-requested line");
+      return Status::FailedPrecondition();
+    }
+    requested_ = request;
+    active_low_ = active_low;
+    return OkStatus();
+  }
+};
 
-  // Line 1: Output
-  static constexpr int kLine1OutputFd = 9001;
-  uint8_t line1_value_ = 0;
-  bool line1_fd_open_ = false;
-  bool line1_active_low_ = false;
+// Represents a GPIO line handle, the result of issuing
+// GPIO_GET_LINEHANDLE_IOCTL to an open chip file.
+class LineHandleFile : public MockFile {
+ public:
+  LineHandleFile(MockVfs& vfs, const std::string& name, Line& line)
+      : MockFile(vfs, name), line_(line) {}
 
-  int DoChipLinehandleIoctl(struct gpiohandle_request* req) {
+ private:
+  Line& line_;
+
+  //
+  // MockFile impl.
+  //
+
+  int DoClose() override {
+    line_.ClearRequest();
+    return 0;
+  }
+
+  int DoIoctl(unsigned long request, void* arg) override {
+    switch (request) {
+      case GPIOHANDLE_GET_LINE_VALUES_IOCTL:
+        return DoIoctlGetValues(static_cast<struct gpiohandle_data*>(arg));
+      case GPIOHANDLE_SET_LINE_VALUES_IOCTL:
+        return DoIoctlSetValues(static_cast<struct gpiohandle_data*>(arg));
+      default:
+        PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
+        return -1;
+    }
+  }
+
+  // Handle GPIOHANDLE_GET_LINE_VALUES_IOCTL
+  int DoIoctlGetValues(struct gpiohandle_data* data) {
+    auto result = line_.GetValue();
+    if (!result.ok()) {
+      return -1;
+    }
+
+    data->values[0] = *result;
+    return 0;
+  }
+
+  // Handle GPIOHANDLE_SET_LINE_VALUES_IOCTL
+  int DoIoctlSetValues(struct gpiohandle_data* data) {
+    auto status = line_.SetValue(data->values[0]);
+    if (!status.ok()) {
+      return -1;
+    }
+
+    return 0;
+  }
+};
+
+// Represents an open GPIO chip file, the result of opening /dev/gpiochip*.
+class ChipFile : public MockFile {
+ public:
+  ChipFile(MockVfs& vfs, const std::string& name, std::vector<Line>& lines)
+      : MockFile(vfs, name), lines_(lines) {}
+
+ private:
+  std::vector<Line>& lines_;
+
+  //
+  // MockFile impl.
+  //
+
+  int DoIoctl(unsigned long request, void* arg) override {
+    switch (request) {
+      case GPIO_GET_LINEHANDLE_IOCTL:
+        return DoLinehandleIoctl(static_cast<struct gpiohandle_request*>(arg));
+      default:
+        PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
+        return -1;
+    }
+  }
+
+  // Handle GPIO_GET_LINEHANDLE_IOCTL
+  int DoLinehandleIoctl(struct gpiohandle_request* req) {
     uint32_t const direction =
         req->flags & (GPIOHANDLE_REQUEST_OUTPUT | GPIOHANDLE_REQUEST_INPUT);
 
@@ -90,214 +206,133 @@ class DigitalIoTest : public ::testing::Test {
     uint8_t const default_value = req->default_values[0];
     bool const active_low = req->flags & GPIOHANDLE_REQUEST_ACTIVE_LOW;
 
-    switch (offset) {
-      case 0:
-        if (direction != GPIOHANDLE_REQUEST_INPUT) {
-          PW_LOG_ERROR("%s: Line 0 is input-only", __FUNCTION__);
-          return -1;
-        }
-        req->fd = kLine0InputFd;
-        line0_fd_open_ = true;
-        line0_active_low_ = active_low;
-        return 0;
-      case 1:
-        if (direction != GPIOHANDLE_REQUEST_OUTPUT) {
-          PW_LOG_ERROR("%s: Line 1 is output-only", __FUNCTION__);
-          return -1;
-        }
-        req->fd = kLine1OutputFd;
-        line1_fd_open_ = true;
-        line1_active_low_ = active_low;
-        line1_value_ = default_value ^ active_low;
-        return 0;
-      default:
-        PW_LOG_ERROR("%s: Line %u not supported", __FUNCTION__, offset);
-        return -1;
-    }
-  }
-
-  int DoChipIoctl(unsigned long request, void* arg) {
-    switch (request) {
-      case GPIO_GET_LINEHANDLE_IOCTL:
-        return DoChipLinehandleIoctl(
-            static_cast<struct gpiohandle_request*>(arg));
-      default:
-        PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
-        return -1;
-    }
-  }
-
-  int DoLinehandleGetValues(int fd, struct gpiohandle_data* data) {
-    uint8_t value;
-    switch (fd) {
-      case kLine0InputFd:
-        value = line0_value_ ^ line0_active_low_;
-        data->values[0] = value;
-        PW_LOG_DEBUG("Got line 0 as %u", value);
-        return 0;
-      case kLine1OutputFd:
-        value = line1_value_ ^ line1_active_low_;
-        data->values[0] = value;
-        PW_LOG_DEBUG("Got line 1 as %u", value);
-        return 0;
-      default:
-        PW_LOG_ERROR("%s: Incorrect fd=%d", __FUNCTION__, fd);
-        return -1;
-    }
-  }
-
-  int DoLinehandleSetValues(int fd, struct gpiohandle_data* data) {
-    if (fd != kLine1OutputFd) {
-      PW_LOG_ERROR("%s: Incorrect fd=%d", __FUNCTION__, fd);
+    if (offset >= lines_.size()) {
+      PW_LOG_ERROR("%s: Invalid line offset: %u", __FUNCTION__, offset);
       return -1;
     }
-    line1_value_ = data->values[0] ^ line1_active_low_;
-    PW_LOG_DEBUG("Set line 1 to %u", line1_value_);
+    Line& line = lines_[offset];
+
+    Status status = OkStatus();
+    switch (direction) {
+      case GPIOHANDLE_REQUEST_OUTPUT:
+        status.Update(line.RequestOutput(active_low));
+        status.Update(line.SetValue(default_value));
+        break;
+      case GPIOHANDLE_REQUEST_INPUT:
+        status.Update(line.RequestInput(active_low));
+        break;
+    }
+    if (!status.ok()) {
+      return -1;
+    }
+
+    req->fd = vfs_.InstallNewFile<LineHandleFile>("line-handle", line);
     return 0;
-  }
-
-  int DoLinehandleIoctl(int fd, unsigned long request, void* arg) {
-    switch (request) {
-      case GPIOHANDLE_GET_LINE_VALUES_IOCTL:
-        return DoLinehandleGetValues(fd,
-                                     static_cast<struct gpiohandle_data*>(arg));
-      case GPIOHANDLE_SET_LINE_VALUES_IOCTL:
-        return DoLinehandleSetValues(fd,
-                                     static_cast<struct gpiohandle_data*>(arg));
-      default:
-        PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
-        return -1;
-    }
-  }
-
-  int DoIoctl(int fd, unsigned long request, void* arg) {
-    PW_LOG_DEBUG(
-        "%s: fd=%d, request=0x%lX, arg=%p", __FUNCTION__, fd, request, arg);
-    if (fd == kChipFd) {
-      return DoChipIoctl(request, arg);
-    }
-    if (fd == kLine0InputFd || fd == kLine1OutputFd) {
-      return DoLinehandleIoctl(fd, request, arg);
-    }
-    return __real_ioctl(fd, request, arg);
-  }
-
-  int DoClose(int fd) {
-    PW_LOG_DEBUG("%s: fd=%d", __FUNCTION__, fd);
-    switch (fd) {
-      case kChipFd:
-        EXPECT_TRUE(chip_fd_open_);
-        chip_fd_open_ = false;
-        return 0;
-      case kLine0InputFd:
-        EXPECT_TRUE(line0_fd_open_);
-        line0_fd_open_ = false;
-        return 0;
-      case kLine1OutputFd:
-        EXPECT_TRUE(line1_fd_open_);
-        line1_fd_open_ = false;
-        return 0;
-    }
-    return __real_close(fd);
-  }
-
- public:
-  static int HandleIoctl(int fd, unsigned long request, void* arg) {
-    if (s_current) {
-      return s_current->DoIoctl(fd, request, arg);
-    }
-    return __real_ioctl(fd, request, arg);
-  }
-
-  static int HandleClose(int fd) {
-    if (s_current) {
-      return s_current->DoClose(fd);
-    }
-    return __real_close(fd);
-  }
-
-  void SetLine0State(bool state) { line0_value_ = state; }
-
-  bool GetLine1State() { return line1_value_; }
-
-  void ExpectAllFdsClosed() {
-    EXPECT_FALSE(chip_fd_open_);
-    EXPECT_FALSE(line0_fd_open_);
-    EXPECT_FALSE(line1_fd_open_);
   }
 };
 
-extern "C" int __wrap_close(int fd) { return DigitalIoTest::HandleClose(fd); }
+// Test fixture for all digtal io tests.
+class DigitalIoTest : public ::testing::Test {
+ protected:
+  void SetUp() override { GetMockVfs().Reset(); }
 
-extern "C" int __wrap_ioctl(int fd, unsigned long request, void* arg) {
-  return DigitalIoTest::HandleIoctl(fd, request, arg);
-}
+  void TearDown() override { EXPECT_TRUE(GetMockVfs().AllFdsClosed()); }
+
+  LinuxDigitalIoChip OpenChip() {
+    int fd = GetMockVfs().InstallNewFile<ChipFile>("chip", lines_);
+    return LinuxDigitalIoChip(fd);
+  }
+
+  Line& line0() { return lines_[0]; }
+  Line& line1() { return lines_[1]; }
+
+ private:
+  std::vector<Line> lines_ = std::vector<Line>{
+      Line(0),  // Input
+      Line(1),  // Output
+  };
+};
 
 //
 // Tests
 //
 
 TEST_F(DigitalIoTest, DoInput) {
+  LinuxDigitalIoChip chip = OpenChip();
+
+  auto& line = line0();
   LinuxInputConfig config(
       /* index= */ 0,
       /* polarity= */ Polarity::kActiveHigh);
 
   auto input_result = chip.GetInputLine(config);
   ASSERT_EQ(OkStatus(), input_result.status());
-  {
-    auto input = std::move(input_result.value());
+  auto input = std::move(input_result.value());
 
-    ASSERT_EQ(OkStatus(), input.Enable());
+  // Enable the input, and ensure it is requested.
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  ASSERT_EQ(OkStatus(), input.Enable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
 
-    Result<State> state;
+  Result<State> state;
 
-    SetLine0State(true);
-    state = input.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kActive, state.value());
+  // Force the line high and assert it is seen as active (active high).
+  line.ForcePhysicalState(true);
+  state = input.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kActive, state.value());
 
-    SetLine0State(false);
-    state = input.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kInactive, state.value());
+  // Force the line low and assert it is seen as inactive (active high).
+  line.ForcePhysicalState(false);
+  state = input.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kInactive, state.value());
 
-    ASSERT_EQ(OkStatus(), input.Disable());
-  }
-  chip.Close();
-  ExpectAllFdsClosed();
+  // Disable the line and ensure it is no longer requested.
+  ASSERT_EQ(OkStatus(), input.Disable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
 }
 
 TEST_F(DigitalIoTest, DoInputInvert) {
+  LinuxDigitalIoChip chip = OpenChip();
+
+  auto& line = line0();
   LinuxInputConfig config(
       /* index= */ 0,
       /* polarity= */ Polarity::kActiveLow);
 
   auto input_result = chip.GetInputLine(config);
   ASSERT_EQ(OkStatus(), input_result.status());
-  {
-    auto input = std::move(input_result.value());
+  auto input = std::move(input_result.value());
 
-    ASSERT_EQ(OkStatus(), input.Enable());
+  // Enable the input, and ensure it is requested.
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  ASSERT_EQ(OkStatus(), input.Enable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
 
-    Result<State> state;
+  Result<State> state;
 
-    SetLine0State(true);
-    state = input.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kInactive, state.value());
+  // Force the line high and assert it is seen as inactive (active low).
+  line.ForcePhysicalState(true);
+  state = input.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kInactive, state.value());
 
-    SetLine0State(false);
-    state = input.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kActive, state.value());
+  // Force the line low and assert it is seen as active (active low).
+  line.ForcePhysicalState(false);
+  state = input.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kActive, state.value());
 
-    ASSERT_EQ(OkStatus(), input.Disable());
-  }
-  chip.Close();
-  ExpectAllFdsClosed();
+  // Disable the line and ensure it is no longer requested.
+  ASSERT_EQ(OkStatus(), input.Disable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
 }
 
 TEST_F(DigitalIoTest, DoOutput) {
+  LinuxDigitalIoChip chip = OpenChip();
+
+  auto& line = line1();
   LinuxOutputConfig config(
       /* index= */ 1,
       /* polarity= */ Polarity::kActiveHigh,
@@ -305,26 +340,35 @@ TEST_F(DigitalIoTest, DoOutput) {
 
   auto output_result = chip.GetOutputLine(config);
   ASSERT_EQ(OkStatus(), output_result.status());
-  {
-    auto output = std::move(output_result.value());
+  auto output = std::move(output_result.value());
 
-    ASSERT_EQ(OkStatus(), output.Enable());
+  // Enable the output, and ensure it is requested.
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  ASSERT_EQ(OkStatus(), output.Enable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
 
-    ASSERT_TRUE(GetLine1State());  // default
+  // Expect the line to go high, due to default_state=kActive (active high).
+  ASSERT_TRUE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.SetStateInactive());
-    ASSERT_FALSE(GetLine1State());
+  // Set the output's state to inactive, and assert it goes low (active high).
+  ASSERT_EQ(OkStatus(), output.SetStateInactive());
+  ASSERT_FALSE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.SetStateActive());
-    ASSERT_TRUE(GetLine1State());
+  // Set the output's state to active, and assert it goes high (active high).
+  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  ASSERT_TRUE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.Disable());
-  }
-  chip.Close();
-  ExpectAllFdsClosed();
+  // Disable the line and ensure it is no longer requested.
+  ASSERT_EQ(OkStatus(), output.Disable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  // NOTE: We do not assert line.physical_state() here.
+  // See the warning on LinuxDigitalOut in docs.rst.
 }
 
 TEST_F(DigitalIoTest, DoOutputInvert) {
+  LinuxDigitalIoChip chip = OpenChip();
+
+  auto& line = line1();
   LinuxOutputConfig config(
       /* index= */ 1,
       /* polarity= */ Polarity::kActiveLow,
@@ -332,26 +376,36 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
 
   auto output_result = chip.GetOutputLine(config);
   ASSERT_EQ(OkStatus(), output_result.status());
-  {
-    auto output = std::move(output_result.value());
+  auto output = std::move(output_result.value());
 
-    ASSERT_EQ(OkStatus(), output.Enable());
+  // Enable the output, and ensure it is requested.
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  ASSERT_EQ(OkStatus(), output.Enable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
 
-    ASSERT_FALSE(GetLine1State());  // default
+  // Expect the line to stay low, due to default_state=kActive (active low).
+  ASSERT_FALSE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.SetStateInactive());
-    ASSERT_TRUE(GetLine1State());
+  // Set the output's state to inactive, and assert it goes high (active low).
+  ASSERT_EQ(OkStatus(), output.SetStateInactive());
+  ASSERT_TRUE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.SetStateActive());
-    ASSERT_FALSE(GetLine1State());
+  // Set the output's state to active, and assert it goes low (active low).
+  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  ASSERT_FALSE(line.physical_state());
 
-    ASSERT_EQ(OkStatus(), output.Disable());
-  }
-  chip.Close();
-  ExpectAllFdsClosed();
+  // Disable the line and ensure it is no longer requested.
+  ASSERT_EQ(OkStatus(), output.Disable());
+  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  // NOTE: We do not assert line.physical_state() here.
+  // See the warning on LinuxDigitalOut in docs.rst.
 }
 
+// Verify we can get the state of an output.
 TEST_F(DigitalIoTest, OutputGetState) {
+  LinuxDigitalIoChip chip = OpenChip();
+
+  auto& line = line1();
   LinuxOutputConfig config(
       /* index= */ 1,
       /* polarity= */ Polarity::kActiveHigh,
@@ -359,26 +413,26 @@ TEST_F(DigitalIoTest, OutputGetState) {
 
   auto output_result = chip.GetOutputLine(config);
   ASSERT_EQ(OkStatus(), output_result.status());
-  {
-    auto output = std::move(output_result.value());
+  auto output = std::move(output_result.value());
 
-    ASSERT_EQ(OkStatus(), output.Enable());
-    ASSERT_FALSE(GetLine1State());  // default
+  ASSERT_EQ(OkStatus(), output.Enable());
 
-    auto state = output.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kInactive, state.value());
+  // Expect the line to stay low, due to default_state=kInactive (active high).
+  ASSERT_FALSE(line.physical_state());
 
-    // Now set state active and get it again.
-    ASSERT_EQ(OkStatus(), output.SetStateActive());
-    ASSERT_TRUE(GetLine1State());
+  Result<State> state;
 
-    state = output.GetState();
-    ASSERT_EQ(OkStatus(), state.status());
-    ASSERT_EQ(State::kActive, state.value());
-  }
-  chip.Close();
-  ExpectAllFdsClosed();
+  // Verify GetState() returns the expected state: inactive (default_state).
+  state = output.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kInactive, state.value());
+
+  // Set the output's state to active, then verify GetState() returns the
+  // new expected state.
+  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  state = output.GetState();
+  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_EQ(State::kActive, state.value());
 }
 
 }  // namespace
