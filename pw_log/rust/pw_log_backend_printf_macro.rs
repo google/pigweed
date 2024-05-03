@@ -14,7 +14,7 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input, Expr, Token,
@@ -80,18 +80,20 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
         Ok(quote! {
           {
             use core::ffi::{c_int, c_uchar};
+            use __pw_log_backend_crate::{Arguments, VarArgs};
             // Prepend log level tag and append newline and null terminator for
             // C string validity.
             let format_string = __pw_log_backend_crate::concat_static_strs!(
               "[%s] ", #(#format_string_pieces),*, "\n\0"
             );
             unsafe {
-              extern "C" {
-                fn printf(fmt: *const c_uchar, ...) -> c_int;
-              }
-              printf(format_string.as_ptr(),
-                __pw_log_backend_crate::log_level_tag(#log_level).as_ptr(),
-                #(#args),*);
+              // Build up the argument type/value.
+              let args = ();
+              #(#args)*
+
+              // Call printf through the argument type/value.
+              args.call_printf(format_string.as_ptr(),
+                __pw_log_backend_crate::log_level_tag(#log_level).as_ptr());
             }
           }
         })
@@ -103,7 +105,9 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
     }
 
     fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
-        self.args.push(quote! {((#expression) as #ty)});
+        self.args.push(quote! {
+          let args = <#ty as Arguments<#ty>>::push_arg(args, &((#expression) as #ty));
+        });
         Ok(None)
     }
 
@@ -111,18 +115,34 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
         // In order to not convert Rust Strings to CStrings at runtime, we use
         // the "%.*s" specifier to explicitly bound the length of the
         // non-null-terminated Rust String.
-        self.args.push(quote! {((#expression) as &str).len()});
-        self.args.push(quote! {((#expression) as &str).as_ptr()});
+        self.args.push(quote! {
+          let args = <&str as Arguments<&str>>::push_arg(args, &((#expression) as &str));
+        });
         Ok(Some("%.*s".into()))
     }
 
     fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
-        self.args.push(quote! {((#expression) as char)});
+        self.args.push(quote! {
+          let args = <char as Arguments<char>>::push_arg(args, &((#expression) as char));
+        });
         Ok(None)
     }
 
     fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
-        self.args.push(quote! {(#expression) });
+        match &expression {
+            Arg::ExprCast(cast) => {
+                let ty = &cast.ty;
+                self.args.push(quote! {
+                  let args = <#ty as Arguments<#ty>>::push_arg(args, &(#expression));
+                });
+            }
+            Arg::Expr(_) => {
+                return Err(pw_format::macros::Error::new(&format!(
+                "Expected argument to untyped format (%v) to be a cast expression (e.g. x as i32), but found {}.",
+                expression.to_token_stream()
+              )));
+            }
+        }
         Ok(())
     }
 }

@@ -48,7 +48,6 @@ mod tests {
             "[INF] test test\n",
         );
     }
-
     #[test]
     fn character_argument_prints_to_stdout() {
         assert_eq!(
@@ -69,6 +68,14 @@ mod tests {
         assert_eq!(
             run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", 1 as u32)),
             "[INF] test 1\n",
+        );
+    }
+
+    #[test]
+    fn untyped_str_argument_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", "Pigweed" as &str)),
+            "[INF] test Pigweed\n",
         );
     }
 }
