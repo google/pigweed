@@ -333,10 +333,15 @@ def _proto_compiler_aspect_impl(target, ctx):
         for ext in ctx.attr._extensions:
             # Declare all output files, in target package dir.
             generated_filename = src.basename[:-len("proto")] + ext
-            out_file = ctx.actions.declare_file("{}/{}".format(
-                proto_dir,
-                generated_filename,
-            ))
+            if proto_dir:
+                out_file_name = "{}/{}".format(
+                    proto_dir,
+                    generated_filename,
+                )
+            else:
+                out_file_name = generated_filename
+
+            out_file = ctx.actions.declare_file(out_file_name)
 
             if ext.endswith(".h"):
                 hdrs.append(out_file)
