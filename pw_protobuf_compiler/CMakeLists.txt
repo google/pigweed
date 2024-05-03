@@ -20,6 +20,8 @@ pw_proto_library(pw_protobuf_compiler.pwpb_test_protos
     pw_protobuf_compiler_pwpb_protos/pwpb_test.proto
   INPUTS
     pw_protobuf_compiler_pwpb_protos/pwpb_test.options
+  DEPS
+    pw_protobuf.field_options_proto
 )
 
 pw_add_test(pw_protobuf_compiler.pwpb_test
