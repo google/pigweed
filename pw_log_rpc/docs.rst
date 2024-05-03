@@ -138,9 +138,9 @@ log stream flushing to the user's preferred method, as well as a ``FilterMap``
 to retrieve and modify filters. The client may also stop streaming the logs by
 calling ``Cancel()`` or ``RequestCompletion()`` using the ``RawClientReader``
 interface. Note that ``Cancel()`` may lead to dropped logs. To prevent dropped
-logs use ``RequestCompletion()`` and enable :c:macro:`PW_RPC_REQUEST_COMPLETION_CALLBACK`
-e.g. ``-DPW_RPC_REQUEST_COMPLETION_CALLBACK=1``.
-If ``PW_RPC_REQUEST_COMPLETION_CALLBACK`` is not enabled, RequestCompletion()
+logs use ``RequestCompletion()`` and enable :c:macro:`PW_RPC_COMPLETION_REQUEST_CALLBACK`
+e.g. ``-DPW_RPC_COMPLETION_REQUEST_CALLBACK=1``.
+If ``PW_RPC_COMPLETION_REQUEST_CALLBACK`` is not enabled, RequestCompletion()
 call will not stop the logging stream.
 
 RpcLogDrain

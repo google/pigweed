@@ -73,7 +73,7 @@ class ServerCall : public Call {
                   "The client stream end callback is disabled, so "
                   "set_on_completion_requested cannot be called. To "
                   "enable the client end "
-                  "callback, set PW_RPC_REQUEST_COMPLETION_CALLBACK to 1.");
+                  "callback, set PW_RPC_COMPLETION_REQUEST_CALLBACK to 1.");
 #if PW_RPC_COMPLETION_REQUEST_CALLBACK
     RpcLockGuard lock;
     on_client_requested_completion_ = std::move(on_client_requested_completion);

@@ -72,7 +72,7 @@ Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
 
   // Set a callback to close the drain when RequestCompletion() is requested by
   // the reader. This callback is only set and invoked if
-  // PW_RPC_REQUEST_COMPLETION_CALLBACK is enabled.
+  // PW_RPC_COMPLETION_REQUEST_CALLBACK is enabled.
   // TODO: b/274936558 - : Add unit tests to check that when this callback is
   // invoked, the stream is closed gracefully without dropping logs.
   server_writer_.set_on_completion_requested_if_enabled(
