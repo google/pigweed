@@ -85,7 +85,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # incompatible due to an ABI change.
     #
     # Pull the appropriate paths from our Pigweed env setup.
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++ $ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/lib/libc++.a")
+    set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -nostdlib++ $ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/lib/libc++.a")
+
+    # macOS uses llvm-libtool-darwin, which has different behavior.
+    set(LIBTOOL_TOOL llvm-libtool-darwin)
+    set(CMAKE_C_ARCHIVE_CREATE "${LIBTOOL_TOOL} -static -no_warning_for_no_symbols -o <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_CXX_ARCHIVE_CREATE "${LIBTOOL_TOOL} -static -no_warning_for_no_symbols -o <TARGET> <LINK_FLAGS> <OBJECTS>")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # Use the CIPD provided sysroot to make host builds more hermetic.
     set(CMAKE_SYSROOT "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/clang_sysroot")

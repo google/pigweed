@@ -90,9 +90,10 @@ pw_add_library(pw_string.to_string STATIC
     type_to_string.cc
 )
 
-pw_add_library(pw_string.util STATIC
+pw_add_library(pw_string.util INTERFACE
   HEADERS
     public/pw_string/util.h
+    public/pw_string/internal/length.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -101,8 +102,6 @@ pw_add_library(pw_string.util STATIC
     pw_span
     pw_status
     pw_string.string
-  SOURCES
-    public/pw_string/internal/length.h
 )
 
 pw_add_test(pw_string.format_test
