@@ -24,10 +24,10 @@
 //! configured backend implementaiton.
 //!
 //! ```
-//! use pw_log::{pw_logf, LogLevel};
+//! use pw_log::{logf, LogLevel};
 //!
-//! pw_logf!(LogLevel::Info, "Thank you for signing up for Log Facts!");
-//! pw_logf!(LogLevel::Info, "Log Fact: Logs can be either %s, %s, or %s sawn.",
+//! logf!(LogLevel::Info, "Thank you for signing up for Log Facts!");
+//! logf!(LogLevel::Info, "Log Fact: Logs can be either %s, %s, or %s sawn.",
 //!   "flat", "quarter", "rift");
 //! ```
 //!
@@ -53,17 +53,17 @@ pub mod __private {
 
 /// Emit a log message using `printf` format string semantics.
 ///
-/// `pw_logf` takes a [`LogLevel`], a `printf style format string, and necessary
+/// `logf` takes a [`LogLevel`], a `printf style format string, and necessary
 /// arguments to that string and emits a log message to the logging backend.
 ///
 /// ```
-/// use pw_log::{pw_logf, LogLevel};
+/// use pw_log::{logf, LogLevel};
 ///
-/// pw_logf!(LogLevel::Info, "Log fact: A %s log has a Janka hardness of %d lbf.",
+/// logf!(LogLevel::Info, "Log fact: A %s log has a Janka hardness of %d lbf.",
 ///     "Spruce Pine", 700);
 /// ```
 #[macro_export]
-macro_rules! pw_logf {
+macro_rules! logf {
   ($log_level:expr, $format_string:literal) => {{
     use $crate::__private as __pw_log_crate;
     $crate::__private::pw_logf_backend!($log_level, $format_string)
@@ -75,105 +75,161 @@ macro_rules! pw_logf {
   }};
 }
 
+/// Deprecated alias for [`logf!`].
+#[macro_export]
+macro_rules! pw_logf {
+  ($($args:expr),*) => {{
+    logf!($($args),*)
+  }}
+}
+
 /// Emit a debug level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{pw_log_debugf, LogLevel};
+/// use pw_log::{debugf, LogLevel};
 ///
-/// pw_log_debugf!("Log Fact: The American toy Lincoln Logs were inspired by the %s in %s.",
+/// debugf!("Log Fact: The American toy Lincoln Logs were inspired by the %s in %s.",
 ///     "Imperial Hotel", "Tokyo");
 /// ```
 #[macro_export]
-macro_rules! pw_log_debugf {
+macro_rules! debugf {
   ($($args:expr),*) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Debug, $($args),*)
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Debug, $($args),*)
   }};
+}
+
+/// Deprecated alias for [`debugf!`].
+#[macro_export]
+macro_rules! pw_log_debugf {
+  ($($args:expr),*) => {{
+    debugf!($($args),*)
+  }}
 }
 
 /// Emit an info level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{pw_log_infof, LogLevel};
+/// use pw_log::{infof, LogLevel};
 ///
-/// pw_log_infof!(
+/// infof!(
 ///     "Log Fact: The American president Abraham Lincoln (born %x) once lived in a log cabin.",
 /// 0x1809);
 /// ```
 #[macro_export]
-macro_rules! pw_log_infof {
+macro_rules! infof {
   ($($args:expr),*) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Info, $($args),*)
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Info, $($args),*)
   }};
+}
+
+/// Deprecated alias for [`infof!`].
+#[macro_export]
+macro_rules! pw_log_infof {
+  ($($args:expr),*) => {{
+    infof!($($args),*)
+  }}
 }
 
 /// Emit a warn level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{pw_log_warnf, LogLevel};
+/// use pw_log::{warnf, LogLevel};
 ///
-/// pw_log_warnf!(
+/// warnf!(
 ///     "Log Fact: Made from a log, an %d year old dugout canoe is the oldest discovered boat in %s.",
 ///     8000, "Africa");
 /// ```
 #[macro_export]
-macro_rules! pw_log_warnf {
+macro_rules! warnf {
   ($($args:expr),*) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Warn, $($args),*)
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Warn, $($args),*)
   }};
+}
+
+/// Deprecated alias for [`warnf!`].
+#[macro_export]
+macro_rules! pw_log_warnf {
+  ($($args:expr),*) => {{
+    warnf!($($args),*)
+  }}
 }
 
 /// Emit an error level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{pw_log_errorf, LogLevel};
+/// use pw_log::{errorf, LogLevel};
 ///
-/// pw_log_errorf!(
+/// errorf!(
 ///     "Log Fact: Before saws were invented, the %s was used prepare logs for use.",
 ///     "adze");
 /// ```
 #[macro_export]
-macro_rules! pw_log_errorf {
+macro_rules! errorf {
   ($($args:expr),*) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Error, $($args),*)
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Error, $($args),*)
   }};
+}
+
+/// Deprecated alias for [`errorf!`].
+#[macro_export]
+macro_rules! pw_log_errorf {
+  ($($args:expr),*) => {{
+    errorf!($($args),*)
+  }}
 }
 
 /// Emit a critical level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{pw_log_criticalf, LogLevel};
+/// use pw_log::{criticalf, LogLevel};
 ///
-/// pw_log_criticalf!(
+/// criticalf!(
 ///     "Log Fact: Until the %dth century, all ships' masts were made from a single log.",
 ///     19);
 /// ```
 #[macro_export]
-macro_rules! pw_log_criticalf {
+macro_rules! criticalf {
   ($($args:expr),*) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Critical, $($args),*)
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Critical, $($args),*)
   }};
+}
+
+/// Deprecated alias for [`criticalf!`].
+#[macro_export]
+macro_rules! pw_log_criticalf {
+  ($($args:expr),*) => {{
+    criticalf!($($args),*)
+  }}
 }
 
 /// Emit a fatal level log message using `printf` format string semantics.
 ///
-/// *Note*: `pw_log_fatalf` only emits a log message and does not cause a `panic!()`
+/// *Note*: `fatalf` only emits a log message and does not cause a `panic!()`
 ///
 /// ```
-/// use pw_log::{pw_log_fatalf, LogLevel};
+/// use pw_log::{fatalf, LogLevel};
 ///
-/// pw_log_fatalf!("Log Fact: All out of log facts! Timber!");
+/// fatalf!("Log Fact: All out of log facts! Timber!");
 /// ```
+#[macro_export]
+macro_rules! fatalf {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::logf!(__pw_log_crate::LogLevel::Fatal, $($args),*)
+  }};
+}
+
+/// Deprecated alias for [`fatalf!`].
 #[macro_export]
 macro_rules! pw_log_fatalf {
   ($($args:expr),*) => {{
-    use $crate::__private as __pw_log_crate;
-    __pw_log_crate::pw_logf!(__pw_log_crate::LogLevel::Fatal, $($args),*)
-  }};
+    fatalf!($($args),*)
+  }}
 }
 
 #[cfg(test)]

@@ -30,7 +30,7 @@ use cortex_m_rt::entry;
 // Semihosting support which is well supported for QEMU targets.
 use cortex_m_semihosting::{debug, hprintln};
 
-use pw_log::{pw_log_infof, pw_log_warnf};
+use pw_log::{infof, warnf};
 
 #[entry]
 fn main() -> ! {
@@ -38,9 +38,9 @@ fn main() -> ! {
     hprintln!("Hello, Pigweed!");
 
     // `pw_log` messages
-    pw_log_infof!("Bare string");
-    pw_log_warnf!("Integer value %d", 42);
-    pw_log_infof!("generic arguments %v %v", 42 as u32, -42 as i32);
+    infof!("Bare string");
+    warnf!("Integer value %d", 42);
+    infof!("generic arguments %v %v", 42 as u32, -42 as i32);
     debug::exit(debug::EXIT_SUCCESS);
     loop {}
 }
