@@ -21,7 +21,7 @@ import functools
 import logging
 from pathlib import Path
 import shlex
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, Mapping, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
@@ -578,7 +578,7 @@ def should_gn_gen(out: Path) -> bool:
 
 
 def should_gn_gen_with_args(
-    gn_arg_dict: dict[str, bool | str | list | tuple]
+    gn_arg_dict: Mapping[str, bool | str | list | tuple]
 ) -> Callable:
     """Returns a callable which writes an args.gn file prior to checks.
 
