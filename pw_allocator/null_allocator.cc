@@ -12,15 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/libc_allocator.h"
+#include "pw_allocator/null_allocator.h"
 
-#include "pw_allocator/size_reporter.h"
+namespace pw::allocator {
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
-
-  reporter.Measure(pw::allocator::GetLibCAllocator());
-
-  return 0;
+NullAllocator& GetNullAllocator() {
+  static NullAllocator kInstance;
+  return kInstance;
 }
+
+}  // namespace pw::allocator

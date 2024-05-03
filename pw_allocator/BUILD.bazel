@@ -304,6 +304,9 @@ cc_library(
 
 cc_library(
     name = "null_allocator",
+    srcs = [
+        "null_allocator.cc",
+    ],
     hdrs = [
         "public/pw_allocator/null_allocator.h",
     ],

@@ -19,7 +19,7 @@
 namespace pw::allocator {
 
 TEST(NullAllocatorTest, Allocate) {
-  NullAllocator allocator;
+  Allocator& allocator = GetNullAllocator();
   // Allocate should fail, regardless of size and alignment.
   for (size_t size = 1; size < 0x100; size <<= 1) {
     for (size_t alignment = 1; alignment < 0x100; alignment <<= 1) {

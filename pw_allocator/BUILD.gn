@@ -266,6 +266,7 @@ pw_source_set("null_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
   public_deps = [ ":allocator" ]
+  sources = [ "null_allocator.cc" ]
 }
 
 pw_source_set("pool") {

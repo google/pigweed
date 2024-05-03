@@ -39,4 +39,9 @@ void* LibCAllocator::DoReallocate(void* ptr, Layout new_layout) {
              : nullptr;
 }
 
+LibCAllocator& GetLibCAllocator() {
+  static LibCAllocator kInstance;
+  return kInstance;
+}
+
 }  // namespace pw::allocator

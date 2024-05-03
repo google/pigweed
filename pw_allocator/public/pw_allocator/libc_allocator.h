@@ -24,10 +24,13 @@ namespace pw::allocator {
 ///
 /// TODO: b/301930507 - `aligned_alloc` is not portable. As a result, this
 /// allocator has a maximum alignment of `std::align_max_t`.
-class LibCAllocator : public Allocator {
+class LibCAllocator final : public Allocator {
  public:
   static constexpr Capabilities kCapabilities = 0;
 
+  // TODO(b/326509341): Make the constructor private once downstream consumers
+  // are migrated.
+  friend LibCAllocator& GetLibCAllocator();
   constexpr LibCAllocator() : Allocator(kCapabilities) {}
 
  private:
@@ -42,6 +45,12 @@ class LibCAllocator : public Allocator {
 
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout new_layout) override;
+
+ private:
+  static LibCAllocator kSingleton;
 };
+
+/// Returns a reference to the LibCAllocator singleton.
+LibCAllocator& GetLibCAllocator();
 
 }  // namespace pw::allocator

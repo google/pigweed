@@ -30,6 +30,9 @@ class NullAllocator : public Allocator {
  public:
   static constexpr Capabilities kCapabilities = 0;
 
+  // TODO(b/326509341): Make the constructor private once downstream consumers
+  // are migrated.
+  friend NullAllocator& GetNullAllocator();
   constexpr NullAllocator() : Allocator(kCapabilities) {}
 
  private:
@@ -42,5 +45,8 @@ class NullAllocator : public Allocator {
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
 };
+
+/// Returns a reference to the NullAllocator singleton.
+NullAllocator& GetNullAllocator();
 
 }  // namespace pw::allocator

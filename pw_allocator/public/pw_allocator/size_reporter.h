@@ -66,7 +66,9 @@ class SizeReporter final {
     PW_ASSERT(foo != nullptr);
     std::destroy_at(foo);
 #ifndef PW_ALLOCATOR_SIZE_REPORTER_BASE
-    PW_ASSERT(allocator_.Allocate(Layout::Of<Foo>()) == nullptr);
+    // Include the NullAllocator to bake in the costs of the base `Allocator`.
+    Allocator& allocator = GetNullAllocator();
+    PW_ASSERT(allocator.Allocate(Layout::Of<Foo>()) == nullptr);
 #endif  // PW_ALLOCATOR_SIZE_REPORTER_BASE
   }
 
@@ -110,10 +112,6 @@ class SizeReporter final {
 #endif  // PW_ALLOCATOR_SIZE_REPORTER_BASE
 
  private:
-#ifndef PW_ALLOCATOR_SIZE_REPORTER_BASE
-  // Include a NullAllocator to bake in the costs of the base `Allocator`.
-  NullAllocator allocator_;
-#endif  // PW_ALLOCATOR_SIZE_REPORTER_BASE
   std::array<std::byte, 0x400> buffer_;
 };
 

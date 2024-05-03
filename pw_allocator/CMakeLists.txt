@@ -281,7 +281,9 @@ pw_add_library(pw_allocator.libc_allocator STATIC
     pw_allocator.allocator
 )
 
-pw_add_library(pw_allocator.null_allocator INTERFACE
+pw_add_library(pw_allocator.null_allocator STATIC
+  SOURCES
+    null_allocator.cc
   HEADERS
     public/pw_allocator/null_allocator.h
   PUBLIC_INCLUDES
