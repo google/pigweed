@@ -49,6 +49,7 @@ pw_source_set("pw_transfer") {
   public_deps = [
     ":core",
     ":proto.raw_rpc",
+    "$dir_pw_sync:mutex",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,

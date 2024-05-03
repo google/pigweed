@@ -18,6 +18,7 @@
 #include <limits>
 
 #include "pw_bytes/span.h"
+#include "pw_sync/mutex.h"
 #include "pw_transfer/handler.h"
 #include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/server_context.h"
@@ -124,8 +125,6 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     return OkStatus();
   }
 
-  rpc::RawUnaryResponder resource_responder_;
-
  private:
   void HandleChunk(ConstByteSpan message, internal::TransferType type);
   void ResourceStatusCallback(Status status,
@@ -137,6 +136,10 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   chrono::SystemClock::duration chunk_timeout_;
   uint8_t max_retries_;
   uint32_t max_lifetime_retries_;
+
+  sync::Mutex resource_responder_mutex_;
+  rpc::RawUnaryResponder resource_responder_
+      PW_GUARDED_BY(resource_responder_mutex_);
 };
 
 }  // namespace pw::transfer

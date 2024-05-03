@@ -12,10 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <mutex>
 #define PW_LOG_MODULE_NAME "TRN"
 #define PW_LOG_LEVEL PW_TRANSFER_CONFIG_LOG_LEVEL
-
-#include "pw_transfer/transfer.h"
 
 #include "public/pw_transfer/transfer.h"
 #include "pw_assert/check.h"
@@ -23,6 +22,7 @@
 #include "pw_status/try.h"
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/config.h"
+#include "pw_transfer/transfer.h"
 
 namespace pw::transfer {
 
@@ -102,14 +102,17 @@ void TransferService::GetResourceStatus(pw::ConstByteSpan request,
 
   encoder.WriteResourceId(resource_id).IgnoreError();
 
-  if (TransferService::resource_responder_.active()) {
-    PW_LOG_ERROR("Previous GetResourceStatus still being handled!");
-    responder.Finish(ConstByteSpan(encoder), Status::Unavailable())
-        .IgnoreError();
-    return;
-  }
+  {
+    std::lock_guard lock(resource_responder_mutex_);
+    if (TransferService::resource_responder_.active()) {
+      PW_LOG_ERROR("Previous GetResourceStatus still being handled!");
+      responder.Finish(ConstByteSpan(encoder), Status::Unavailable())
+          .IgnoreError();
+      return;
+    }
 
-  TransferService::resource_responder_ = std::move(responder);
+    TransferService::resource_responder_ = std::move(responder);
+  }
 
   thread_.EnqueueResourceEvent(
       resource_id,
@@ -120,6 +123,7 @@ void TransferService::GetResourceStatus(pw::ConstByteSpan request,
 
 void TransferService::ResourceStatusCallback(
     Status status, const internal::ResourceStatus& stats) {
+  std::lock_guard lock(resource_responder_mutex_);
   PW_ASSERT(resource_responder_.active());
 
   std::array<std::byte, pwpb::ResourceStatus::kMaxEncodedSizeBytes> buffer = {};
