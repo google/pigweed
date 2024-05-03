@@ -27,10 +27,9 @@ namespace examples {
 /// Threaded task that performs several allocations.
 class MyTask final {
  public:
-  using Allocator = pw::allocator::Allocator;
   using Layout = pw::allocator::Layout;
 
-  MyTask(Allocator& allocator, const pw::thread::Options& options)
+  MyTask(pw::Allocator& allocator, const pw::thread::Options& options)
       : thread_core_(allocator) {
     thread_ = pw::thread::Thread(options, thread_core_);
   }
@@ -40,7 +39,7 @@ class MyTask final {
  private:
   class MyThreadCore : public pw::thread::ThreadCore {
    public:
-    MyThreadCore(Allocator& allocator) : allocator_(allocator) {}
+    MyThreadCore(pw::Allocator& allocator) : allocator_(allocator) {}
 
    private:
     void Run() override {
@@ -58,15 +57,14 @@ class MyTask final {
       }
     }
 
-    Allocator& allocator_;
+    pw::Allocator& allocator_;
   } thread_core_;
 
   pw::thread::Thread thread_;
 };
 
 // DOCSTAG: [pw_allocator-examples-spin_lock]
-void RunTasks(pw::allocator::Allocator& allocator,
-              const pw::thread::Options& options) {
+void RunTasks(pw::Allocator& allocator, const pw::thread::Options& options) {
   pw::allocator::SynchronizedAllocator<pw::sync::InterruptSpinLock> synced(
       allocator);
   MyTask task1(synced, options);
@@ -78,15 +76,17 @@ void RunTasks(pw::allocator::Allocator& allocator,
 
 }  // namespace examples
 
-namespace pw::allocator {
+namespace {
+
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<2048>;
 
 TEST(SpinLockExample, RunTasks) {
   // TODO: b/328831791 - This example did a nice job of uncovering some
   // pathological fragmentation by `Block::AllocFirst`. Reduce the size of this
   // allocator once that is addressed.
-  test::AllocatorForTest<2048> allocator;
-  thread::test::TestThreadContext context;
+  AllocatorForTest allocator;
+  pw::thread::test::TestThreadContext context;
   examples::RunTasks(allocator, context.options());
 }
 
-}  // namespace pw::allocator
+}  // namespace

@@ -6,9 +6,9 @@ Design & roadmap
 .. pigweed-module-subpage::
    :name: pw_allocator
 
-----------------------------------
-Design of pw::allocator::Allocator
-----------------------------------
+-----------------------
+Design of pw::Allocator
+-----------------------
 Traditionally, most embedded firmware have laid out their systems’ memory usage
 statically, with every component’s buffers and resources set at compile time. As
 systems grow larger and more complex, dynamic allocation provides increasing
@@ -154,8 +154,8 @@ size or object size of the metrics adapter, and by extension,
 -------
 Roadmap
 -------
-While the ``pw::allocator::Allocator`` interface is almost stable, there are
-some outstanding features the Pigweed team would like to add to
+While the :ref:`module-pw_allocator-api-allocator` interface is almost stable,
+there are some outstanding features the Pigweed team would like to add to
 ``pw_allocator``:
 
 - **Asynchronous allocators**: Determine whether these should be provided, and

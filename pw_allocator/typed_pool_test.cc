@@ -22,8 +22,11 @@
 #include "pw_bytes/alignment.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
+
+// Test fixtures.
+
+using ::pw::allocator::TypedPool;
 
 class TypedPoolTest : public ::testing::Test {
  protected:
@@ -34,6 +37,8 @@ class TypedPoolTest : public ::testing::Test {
   static constexpr size_t kNumU32s = 4;
   TypedPool<U32>::Buffer<kNumU32s> buffer_;
 };
+
+// Unit tests.
 
 TEST_F(TypedPoolTest, LayoutNeeded) {
   EXPECT_EQ(TypedPool<std::byte[1]>::SizeNeeded(1), sizeof(void*));
@@ -61,7 +66,7 @@ TEST_F(TypedPoolTest, MakeUnique) {
   TypedPool<U32> allocator(buffer_);
 
   // Should be able allocate `kNumU32s`.
-  std::array<UniquePtr<U32>, kNumU32s> ptrs;
+  std::array<pw::UniquePtr<U32>, kNumU32s> ptrs;
   for (size_t i = 0; i < kNumU32s; ++i) {
     ptrs[i] = allocator.MakeUnique();
     ASSERT_NE(ptrs[i], nullptr);
@@ -72,7 +77,7 @@ TEST_F(TypedPoolTest, MakeUnique) {
 
   // Should be able to drop the ptrs and allocate `kNumU32s` more.
   for (size_t i = 0; i < kNumU32s; ++i) {
-    ptrs[i] = UniquePtr<U32>();
+    ptrs[i] = pw::UniquePtr<U32>();
   }
   for (size_t i = 0; i < kNumU32s; ++i) {
     ptrs[i] = allocator.MakeUnique();
@@ -81,4 +86,3 @@ TEST_F(TypedPoolTest, MakeUnique) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

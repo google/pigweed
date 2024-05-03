@@ -21,7 +21,7 @@
 #include "pw_allocator/unique_ptr.h"
 #include "pw_result/result.h"
 
-namespace pw::allocator {
+namespace pw {
 
 /// Abstract interface for variable-layout memory allocation.
 ///
@@ -313,4 +313,10 @@ class Allocator : public Deallocator {
   virtual Result<Layout> DoGetAllocatedLayout(const void*) const;
 };
 
-}  // namespace pw::allocator
+namespace allocator {
+
+// Alias for module consumers using the older name for the above type.
+using Allocator = ::pw::Allocator;
+
+}  // namespace allocator
+}  // namespace pw

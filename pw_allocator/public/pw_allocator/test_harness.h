@@ -39,7 +39,7 @@ struct ReallocationRequest {
   size_t new_size = 0;
 };
 
-using AllocatorRequest =
+using Request =
     std::variant<AllocationRequest, DeallocationRequest, ReallocationRequest>;
 
 /// Helper function to produce a valid alignment for a given `size` from an
@@ -49,19 +49,19 @@ size_t AlignmentFromLShift(size_t lshift, size_t size);
 /// Associates an `Allocator` with a vector to store allocated pointers.
 ///
 /// This class facilitates performing allocations from generated
-/// `AllocatorRequest`s, enabling the creation of performance, stress, and fuzz
+/// `Request`s, enabling the creation of performance, stress, and fuzz
 /// tests for various allocators.
 ///
 /// This class lacks a public constructor, and so cannot be used directly.
 /// Instead callers should use `WithAllocations`, which is templated on the
 /// size of the vector used to store allocated pointers.
-class AllocatorTestHarnessGeneric {
+class TestHarnessGeneric {
  public:
   /// Since this object has references passed to it that are typically owned by
   /// an object of a derived type, the destructor MUST NOT touch those
   /// references. Instead, it is the callers and/or the derived classes
   /// responsibility to call `Reset` before the object is destroyed, if desired.
-  virtual ~AllocatorTestHarnessGeneric() = default;
+  virtual ~TestHarnessGeneric() = default;
 
   /// Generates and handles a sequence of allocation requests.
   ///
@@ -83,7 +83,7 @@ class AllocatorTestHarnessGeneric {
   ///
   /// This method is useful for processing externally generated requests, e.g.
   /// from FuzzTest. It will call `Reset` before returning.
-  void HandleRequests(const Vector<AllocatorRequest>& requests);
+  void HandleRequests(const Vector<Request>& requests);
 
   /// Handles an allocator request.
   ///
@@ -101,7 +101,7 @@ class AllocatorTestHarnessGeneric {
   /// If the request is a reallocation request:
   /// * If the vector of previous allocations is empty, reallocates a `nullptr`.
   /// * Otherwise, removes a pointer from the vector and reallocates it.
-  void HandleRequest(const AllocatorRequest& request);
+  void HandleRequest(const Request& request);
 
   /// Deallocates any pointers stored in the vector of allocated pointers.
   void Reset();
@@ -113,7 +113,7 @@ class AllocatorTestHarnessGeneric {
     Layout layout;
   };
 
-  constexpr AllocatorTestHarnessGeneric(Vector<Allocation>& allocations)
+  constexpr TestHarnessGeneric(Vector<Allocation>& allocations)
       : allocations_(allocations) {}
 
  private:
@@ -160,25 +160,24 @@ class AllocatorTestHarnessGeneric {
 ///   constexpr size_t kMaxAllocations = 128;
 ///   constexpr size_t kMaxSize = 2048;
 ///
-///   class MyAllocatorFuzzer : public AllocatorTestHarness<kMaxAllocations> {
+///   class MyAllocatorFuzzer : public TestHarness<kMaxAllocations> {
 ///    private:
 ///     Allocator* Init() override { return &allocator_; }
 ///     MyAllocator allocator_;
 ///   };
 ///
-///   void MyAllocatorNeverCrashes(const Vector<AllocatorRequest>& requests) {
+///   void MyAllocatorNeverCrashes(const Vector<Request>& requests) {
 ///     static MyAllocatorFuzzer fuzzer;
 ///     fuzzer.HandleRequests(requests);
 ///   }
 ///
 ///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
-///     .WithDomains(ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
+///     .WithDomains(ArbitraryRequests<kMaxRequests, kMaxSize>());
 /// @endcode
 template <size_t kMaxConcurrentAllocations>
-class AllocatorTestHarness : public AllocatorTestHarnessGeneric {
+class TestHarness : public TestHarnessGeneric {
  public:
-  constexpr AllocatorTestHarness()
-      : AllocatorTestHarnessGeneric(allocations_) {}
+  constexpr TestHarness() : TestHarnessGeneric(allocations_) {}
 
  private:
   Vector<Allocation, kMaxConcurrentAllocations> allocations_;

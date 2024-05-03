@@ -17,15 +17,15 @@
 #include "pw_allocator/block_allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
 // Test fixtures.
 
-using BlockAllocatorTest = test::BlockAllocatorTest;
-using Preallocation = test::Preallocation;
+using ::pw::allocator::Layout;
+using ::pw::allocator::test::BlockAllocatorTest;
+using ::pw::allocator::test::Preallocation;
 using DualFirstFitBlockAllocatorType =
-    DualFirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+    ::pw::allocator::DualFirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
 
 // Minimum size of a "large" allocation; allocation less than this size are
 // considered "small" when using the DualFirstFit strategy.
@@ -164,4 +164,3 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerAcrossThreshold) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

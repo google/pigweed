@@ -16,10 +16,13 @@
 
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
+namespace {
+
+using ::pw::allocator::GetNullAllocator;
+using ::pw::allocator::Layout;
 
 TEST(NullAllocatorTest, Allocate) {
-  Allocator& allocator = GetNullAllocator();
+  pw::Allocator& allocator = GetNullAllocator();
   // Allocate should fail, regardless of size and alignment.
   for (size_t size = 1; size < 0x100; size <<= 1) {
     for (size_t alignment = 1; alignment < 0x100; alignment <<= 1) {
@@ -28,4 +31,4 @@ TEST(NullAllocatorTest, Allocate) {
   }
 }
 
-}  // namespace pw::allocator
+}  // namespace

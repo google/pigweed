@@ -18,13 +18,13 @@
 #include "pw_allocator/buffer.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
-using BlockAllocatorTest = test::BlockAllocatorTest;
-using Preallocation = test::Preallocation;
+using ::pw::allocator::Layout;
+using ::pw::allocator::test::BlockAllocatorTest;
+using ::pw::allocator::test::Preallocation;
 using FirstFitBlockAllocatorType =
-    FirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+    ::pw::allocator::FirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
 
 class FirstFitBlockAllocatorTest : public BlockAllocatorTest {
  public:
@@ -136,13 +136,14 @@ TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
 }
 
 TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
-  using PoisonedFirstFitBlockAllocator = FirstFitBlockAllocator<uintptr_t, 1>;
+  using PoisonedFirstFitBlockAllocator =
+      ::pw::allocator::FirstFitBlockAllocator<uintptr_t, 1>;
   using BlockType = PoisonedFirstFitBlockAllocator::BlockType;
 
-  WithBuffer<PoisonedFirstFitBlockAllocator,
-             FirstFitBlockAllocatorTest::kCapacity>
+  pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
+                            FirstFitBlockAllocatorTest::kCapacity>
       allocator;
-  EXPECT_EQ(allocator->Init(allocator.as_bytes()), OkStatus());
+  EXPECT_EQ(allocator->Init(allocator.as_bytes()), pw::OkStatus());
   constexpr Layout layout =
       Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
 
@@ -166,13 +167,14 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
 }
 
 TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
-  using PoisonedFirstFitBlockAllocator = FirstFitBlockAllocator<uintptr_t, 4>;
+  using PoisonedFirstFitBlockAllocator =
+      ::pw::allocator::FirstFitBlockAllocator<uintptr_t, 4>;
   using BlockType = PoisonedFirstFitBlockAllocator::BlockType;
 
-  WithBuffer<PoisonedFirstFitBlockAllocator,
-             FirstFitBlockAllocatorTest::kCapacity>
+  pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
+                            FirstFitBlockAllocatorTest::kCapacity>
       allocator;
-  EXPECT_EQ(allocator->Init(allocator.as_bytes()), OkStatus());
+  EXPECT_EQ(allocator->Init(allocator.as_bytes()), pw::OkStatus());
   constexpr Layout layout =
       Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
 
@@ -205,4 +207,3 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

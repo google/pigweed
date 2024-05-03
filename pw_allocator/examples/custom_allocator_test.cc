@@ -24,12 +24,14 @@
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
+namespace {
+
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
 
 // DOCSTAG: [pw_allocator-examples-custom_allocator-unit_test]
 // TODO: b/328076428 - Use pwrev/193642.
 TEST(CustomAllocatorExample, MakeUnique) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr size_t kThreshold = sizeof(examples::NamedU32) * 3;
   examples::CustomAllocator custom(allocator, kThreshold);
   // log_basic::test::LogCache<32> logs;
@@ -51,7 +53,7 @@ TEST(CustomAllocatorExample, MakeUnique) {
 // DOCSTAG: [pw_allocator-examples-custom_allocator-unit_test]
 
 // DOCSTAG: [pw_allocator-examples-custom_allocator-fuzz_test]
-void NeverCrashes(const Vector<test::AllocatorRequest>& requests) {
+void NeverCrashes(const pw::Vector<pw::allocator::test::Request>& requests) {
   static examples::CustomAllocatorTestHarness harness;
   harness.HandleRequests(requests);
 }
@@ -59,7 +61,8 @@ void NeverCrashes(const Vector<test::AllocatorRequest>& requests) {
 constexpr size_t kMaxRequests = 256;
 constexpr size_t kMaxSize = examples::CustomAllocatorTestHarness::kCapacity / 2;
 FUZZ_TEST(CustomAllocatorFuzzTest, NeverCrashes)
-    .WithDomains(test::ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
+    .WithDomains(
+        pw::allocator::test::ArbitraryRequests<kMaxRequests, kMaxSize>());
 // DOCSTAG: [pw_allocator-examples-custom_allocator-fuzz_test]
 
-}  // namespace pw::allocator
+}  // namespace

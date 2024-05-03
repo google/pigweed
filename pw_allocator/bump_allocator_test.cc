@@ -18,10 +18,12 @@
 
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
 // Test fixtures.
+
+using ::pw::allocator::BumpAllocator;
+using ::pw::allocator::Layout;
 
 class BumpAllocatorTest : public ::testing::Test {
  protected:
@@ -124,4 +126,3 @@ TEST_F(BumpAllocatorTest, MakeUniqueOwnedDestroys) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

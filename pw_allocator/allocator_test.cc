@@ -20,11 +20,14 @@
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
+using ::pw::allocator::Capability;
+using ::pw::allocator::Layout;
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
+
 TEST(AllocatorTest, HasFlags) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   EXPECT_FALSE(
       allocator.HasCapability(Capability::kImplementsGetRequestedLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetUsableLayout));
@@ -32,12 +35,12 @@ TEST(AllocatorTest, HasFlags) {
 }
 
 TEST(AllocatorTest, ResizeNull) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   EXPECT_FALSE(allocator.Resize(nullptr, sizeof(uint32_t)));
 }
 
 TEST(AllocatorTest, ResizeZero) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout layout = Layout::Of<uint32_t>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
@@ -45,7 +48,7 @@ TEST(AllocatorTest, ResizeZero) {
 }
 
 TEST(AllocatorTest, ResizeSame) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout layout = Layout::Of<uint32_t>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
@@ -56,7 +59,7 @@ TEST(AllocatorTest, ResizeSame) {
 }
 
 TEST(AllocatorTest, ReallocateNull) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t>();
   size_t new_size = old_layout.size();
   void* new_ptr = allocator.Reallocate(nullptr, new_size);
@@ -73,7 +76,7 @@ TEST(AllocatorTest, ReallocateNull) {
 }
 
 TEST(AllocatorTest, ReallocateZeroNewSize) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
@@ -96,7 +99,7 @@ TEST(AllocatorTest, ReallocateZeroNewSize) {
 }
 
 TEST(AllocatorTest, ReallocateSame) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_EQ(allocator.allocate_size(), layout.size());
@@ -122,7 +125,7 @@ TEST(AllocatorTest, ReallocateSame) {
 }
 
 TEST(AllocatorTest, ReallocateSmaller) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
@@ -149,7 +152,7 @@ TEST(AllocatorTest, ReallocateSmaller) {
 }
 
 TEST(AllocatorTest, ReallocateLarger) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
@@ -185,9 +188,9 @@ TEST(AllocatorTest, ReallocateLarger) {
 }
 
 // Test fixture for IsEqual tests.
-class BaseAllocator : public Allocator {
+class BaseAllocator : public pw::Allocator {
  public:
-  BaseAllocator(void* ptr) : Allocator(Capabilities()), ptr_(ptr) {}
+  BaseAllocator(void* ptr) : pw::Allocator(Capabilities()), ptr_(ptr) {}
 
  private:
   void* DoAllocate(Layout) override {
@@ -230,4 +233,3 @@ TEST(AllocatorTest, IsEqualSucceedsWithSameObject) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

@@ -17,15 +17,15 @@
 #include "pw_allocator/block_allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
 // Test fixtures.
 
-using BlockAllocatorTest = test::BlockAllocatorTest;
-using Preallocation = test::Preallocation;
+using ::pw::allocator::Layout;
+using ::pw::allocator::test::BlockAllocatorTest;
+using ::pw::allocator::test::Preallocation;
 using LastFitBlockAllocatorType =
-    LastFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+    ::pw::allocator::LastFitBlockAllocator<BlockAllocatorTest::OffsetType>;
 
 class LastFitBlockAllocatorTest : public BlockAllocatorTest {
  public:
@@ -115,4 +115,3 @@ TEST_F(LastFitBlockAllocatorTest, CannotGetLayoutFromInvalidPointer) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

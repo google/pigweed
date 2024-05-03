@@ -19,21 +19,28 @@
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
+
+// Test fxitures.
+
+using ::pw::allocator::AllocatorAsPool;
+using ::pw::allocator::Layout;
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
 
 struct U64 {
   std::byte bytes[8];
 };
 
+// Unit tests.
+
 TEST(AllocatorAsPoolTest, Capabilities) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   AllocatorAsPool pool(allocator, Layout::Of<U64>());
   EXPECT_EQ(pool.capabilities(), allocator.capabilities());
 }
 
 TEST(AllocatorAsPoolTest, AllocateDeallocate) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   AllocatorAsPool pool(allocator, Layout::Of<U64>());
 
   void* ptr = pool.Allocate();
@@ -42,4 +49,3 @@ TEST(AllocatorAsPoolTest, AllocateDeallocate) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

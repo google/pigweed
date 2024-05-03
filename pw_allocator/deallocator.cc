@@ -14,7 +14,7 @@
 
 #include "pw_allocator/deallocator.h"
 
-namespace pw::allocator {
+namespace pw {
 
 StatusWithSize Deallocator::DoGetCapacity() const {
   return StatusWithSize::Unimplemented();
@@ -24,4 +24,4 @@ Status Deallocator::DoQuery(const void*) const {
   return Status::Unimplemented();
 }
 
-}  // namespace pw::allocator
+}  // namespace pw

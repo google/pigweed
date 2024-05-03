@@ -18,10 +18,13 @@
 
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
+namespace {
+
+using ::pw::allocator::GetLibCAllocator;
+using ::pw::allocator::Layout;
 
 TEST(LibCAllocatorTest, AllocateDeallocate) {
-  Allocator& allocator = GetLibCAllocator();
+  pw::Allocator& allocator = GetLibCAllocator();
   constexpr Layout layout = Layout::Of<std::byte[64]>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
@@ -45,7 +48,7 @@ TEST(LibCAllocatorTest, AllocatorHasGlobalLifetime) {
 }
 
 TEST(LibCAllocatorTest, AllocateLargeAlignment) {
-  Allocator& allocator = GetLibCAllocator();
+  pw::Allocator& allocator = GetLibCAllocator();
   /// TODO: b/301930507 - `aligned_alloc` is not portable. As a result, this
   /// allocator has a maximum alignment of `std::align_max_t`.
   size_t size = 16;
@@ -55,7 +58,7 @@ TEST(LibCAllocatorTest, AllocateLargeAlignment) {
 }
 
 TEST(LibCAllocatorTest, Reallocate) {
-  Allocator& allocator = GetLibCAllocator();
+  pw::Allocator& allocator = GetLibCAllocator();
   constexpr Layout old_layout = Layout::Of<uint32_t[4]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_NE(ptr, nullptr);
@@ -65,4 +68,4 @@ TEST(LibCAllocatorTest, Reallocate) {
   allocator.Deallocate(new_ptr);
 }
 
-}  // namespace pw::allocator
+}  // namespace

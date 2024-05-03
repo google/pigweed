@@ -35,14 +35,6 @@ pw_source_set("named_u32") {
   ]
 }
 
-pw_test("block_allocator") {
-  deps = [
-    ":named_u32",
-    "$dir_pw_allocator:block_allocator",
-  ]
-  sources = [ "block_allocator.cc" ]
-}
-
 pw_source_set("custom_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "custom_allocator.h" ]
@@ -73,6 +65,14 @@ pw_test("basic") {
     "$dir_pw_allocator:testing",
   ]
   sources = [ "basic.cc" ]
+}
+
+pw_test("block_allocator") {
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:block_allocator",
+  ]
+  sources = [ "block_allocator.cc" ]
 }
 
 pw_test("custom_allocator_perf_test") {

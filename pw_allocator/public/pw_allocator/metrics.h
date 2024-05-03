@@ -116,8 +116,8 @@ struct AllMetrics {
 ///
 /// This class uses the type traits from ``PW_ALLOCATOR_METRICS_DECLARE`` to
 /// conditionally include or exclude code to update metrics based on calls to
-/// the ``pw::allocator::Allocator`` API. This minimizes code size without
-/// adding additional conditions to be evaluated at runtime.
+/// the ``pw::Allocator`` API. This minimizes code size without adding
+/// additional conditions to be evaluated at runtime.
 ///
 /// @tparam   MetricsType   The struct defining which metrics are enabled.
 template <typename MetricsType>

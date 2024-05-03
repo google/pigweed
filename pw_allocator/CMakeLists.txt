@@ -653,3 +653,5 @@ pw_add_test(pw_allocator.worst_fit_block_allocator_test
     modules
     pw_allocator
 )
+
+add_subdirectory(examples)

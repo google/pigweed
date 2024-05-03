@@ -18,37 +18,39 @@
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
-TEST(UniquePtr, DefaultInitializationIsNullptr) {
-  UniquePtr<int> empty;
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
+
+TEST(UniquePtrTest, DefaultInitializationIsNullptr) {
+  pw::UniquePtr<int> empty;
   EXPECT_EQ(empty.get(), nullptr);
 }
 
-TEST(UniquePtr, OperatorEqNullptrOnEmptyUniquePtrSucceeds) {
-  UniquePtr<int> empty;
+TEST(UniquePtrTest, OperatorEqNullptrOnEmptyUniquePtrSucceeds) {
+  pw::UniquePtr<int> empty;
   EXPECT_TRUE(empty == nullptr);
   EXPECT_FALSE(empty != nullptr);
 }
 
-TEST(UniquePtr, OperatorEqNullptrAfterMakeUniqueFails) {
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<int> ptr = allocator.MakeUnique<int>(5);
+TEST(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueFails) {
+  AllocatorForTest allocator;
+  pw::UniquePtr<int> ptr = allocator.MakeUnique<int>(5);
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(ptr == nullptr);
 }
 
-TEST(UniquePtr, OperatorEqNullptrAfterMakeUniqueNullptrTypeFails) {
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<std::nullptr_t> ptr = allocator.MakeUnique<std::nullptr_t>(nullptr);
+TEST(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueNullptrTypeFails) {
+  AllocatorForTest allocator;
+  pw::UniquePtr<std::nullptr_t> ptr =
+      allocator.MakeUnique<std::nullptr_t>(nullptr);
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(ptr == nullptr);
   EXPECT_TRUE(*ptr == nullptr);
   EXPECT_FALSE(*ptr != nullptr);
 }
 
-TEST(UniquePtr, MakeUniqueForwardsConstructorArguments) {
+TEST(UniquePtrTest, MakeUniqueForwardsConstructorArguments) {
   class MoveOnly {
    public:
     MoveOnly(int value) : value_(value) {}
@@ -70,24 +72,24 @@ TEST(UniquePtr, MakeUniqueForwardsConstructorArguments) {
     int value_;
   };
 
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   MoveOnly mo(6);
-  UniquePtr<BuiltWithMoveOnly> ptr =
+  pw::UniquePtr<BuiltWithMoveOnly> ptr =
       allocator.MakeUnique<BuiltWithMoveOnly>(std::move(mo));
   ASSERT_NE(ptr, nullptr);
   EXPECT_EQ(ptr->Value(), 6);
 }
 
-TEST(UniquePtr, MoveConstructsFromSubClassAndFreesTotalSize) {
+TEST(UniquePtrTest, MoveConstructsFromSubClassAndFreesTotalSize) {
   struct Base {};
   struct LargerSub : public Base {
     std::array<std::byte, 128> mem;
   };
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<LargerSub> ptr = allocator.MakeUnique<LargerSub>();
+  AllocatorForTest allocator;
+  pw::UniquePtr<LargerSub> ptr = allocator.MakeUnique<LargerSub>();
   ASSERT_NE(ptr, nullptr);
   EXPECT_EQ(allocator.allocate_size(), 128ul);
-  UniquePtr<Base> base_ptr(std::move(ptr));
+  pw::UniquePtr<Base> base_ptr(std::move(ptr));
 
   EXPECT_EQ(allocator.deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
@@ -96,16 +98,16 @@ TEST(UniquePtr, MoveConstructsFromSubClassAndFreesTotalSize) {
   EXPECT_EQ(allocator.deallocate_size(), 128ul);
 }
 
-TEST(UniquePtr, MoveAssignsFromSubClassAndFreesTotalSize) {
+TEST(UniquePtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
   struct Base {};
   struct LargerSub : public Base {
     std::array<std::byte, 128> mem;
   };
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<LargerSub> ptr = allocator.MakeUnique<LargerSub>();
+  AllocatorForTest allocator;
+  pw::UniquePtr<LargerSub> ptr = allocator.MakeUnique<LargerSub>();
   ASSERT_NE(ptr, nullptr);
   EXPECT_EQ(allocator.allocate_size(), 128ul);
-  UniquePtr<Base> base_ptr = std::move(ptr);
+  pw::UniquePtr<Base> base_ptr = std::move(ptr);
 
   EXPECT_EQ(allocator.deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
@@ -114,13 +116,13 @@ TEST(UniquePtr, MoveAssignsFromSubClassAndFreesTotalSize) {
   EXPECT_EQ(allocator.deallocate_size(), 128ul);
 }
 
-TEST(UniquePtr, MoveAssignsToExistingDeallocates) {
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<size_t> size1 = allocator.MakeUnique<size_t>(1);
+TEST(UniquePtrTest, MoveAssignsToExistingDeallocates) {
+  AllocatorForTest allocator;
+  pw::UniquePtr<size_t> size1 = allocator.MakeUnique<size_t>(1);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size1, 1U);
 
-  UniquePtr<size_t> size2 = allocator.MakeUnique<size_t>(2);
+  pw::UniquePtr<size_t> size2 = allocator.MakeUnique<size_t>(2);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size2, 2U);
 
@@ -130,7 +132,7 @@ TEST(UniquePtr, MoveAssignsToExistingDeallocates) {
   EXPECT_EQ(*size1, 2U);
 }
 
-TEST(UniquePtr, DestructorDestroysAndFrees) {
+TEST(UniquePtrTest, DestructorDestroysAndFrees) {
   int count = 0;
   class DestructorCounter {
    public:
@@ -140,8 +142,8 @@ TEST(UniquePtr, DestructorDestroysAndFrees) {
    private:
     int* count_;
   };
-  test::AllocatorForTest<256> allocator;
-  UniquePtr<DestructorCounter> ptr =
+  AllocatorForTest allocator;
+  pw::UniquePtr<DestructorCounter> ptr =
       allocator.MakeUnique<DestructorCounter>(count);
   ASSERT_NE(ptr, nullptr);
 
@@ -152,14 +154,14 @@ TEST(UniquePtr, DestructorDestroysAndFrees) {
   EXPECT_EQ(allocator.deallocate_size(), sizeof(DestructorCounter));
 }
 
-TEST(UniquePtr, CanRelease) {
+TEST(UniquePtrTest, CanRelease) {
   struct Size final {
     size_t value;
   };
   Size* size_ptr = nullptr;
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   {
-    UniquePtr<Size> ptr = allocator.MakeUnique<Size>(Size{.value = 1});
+    pw::UniquePtr<Size> ptr = allocator.MakeUnique<Size>(Size{.value = 1});
     ASSERT_NE(ptr, nullptr);
     EXPECT_EQ(ptr.deallocator(), &allocator);
     size_ptr = ptr.Release();
@@ -175,4 +177,3 @@ TEST(UniquePtr, CanRelease) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

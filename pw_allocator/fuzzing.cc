@@ -51,7 +51,7 @@ fuzzer::Domain<ReallocationRequest> ArbitraryReallocationRequest(
 
 }  // namespace
 
-fuzzer::Domain<AllocatorRequest> ArbitraryAllocatorRequest(size_t max_size) {
+fuzzer::Domain<Request> ArbitraryRequest(size_t max_size) {
   return fuzzer::VariantOf(ArbitraryAllocationRequest(max_size),
                            ArbitraryDeallocationRequest(),
                            ArbitraryReallocationRequest(max_size));

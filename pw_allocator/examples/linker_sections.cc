@@ -34,16 +34,14 @@ namespace examples {
 // DOCSTAG: [pw_allocator-examples-linker_sections-injection]
 class NamedU32Factory {
  public:
-  using Allocator = pw::allocator::Allocator;
-
-  explicit NamedU32Factory(Allocator& allocator) : allocator_(allocator) {}
+  explicit NamedU32Factory(pw::Allocator& allocator) : allocator_(allocator) {}
 
   auto MakeNamedU32(std::string_view name, uint32_t value) {
     return allocator_.MakeUnique<NamedU32>(name, value);
   }
 
  private:
-  Allocator& allocator_;
+  pw::Allocator& allocator_;
 };
 // DOCSTAG: [pw_allocator-examples-linker_sections-injection]
 

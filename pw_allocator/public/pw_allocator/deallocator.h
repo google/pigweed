@@ -20,11 +20,15 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-namespace pw::allocator {
+namespace pw {
 
 /// Abstract interface for releasing memory.
 class Deallocator {
  public:
+  using Capabilities = allocator::Capabilities;
+  using Capability = allocator::Capability;
+  using Layout = allocator::Layout;
+
   virtual ~Deallocator() = default;
 
   const Capabilities& capabilities() const { return capabilities_; }
@@ -63,7 +67,7 @@ class Deallocator {
   /// @param[in] ptr      Pointer to previously-allocated object.
   template <typename T>
   void Delete(T* ptr) {
-    if (!capabilities_.has(kSkipsDestroy)) {
+    if (!capabilities_.has(Capability::kSkipsDestroy)) {
       std::destroy_at(ptr);
     }
     Deallocate(ptr);
@@ -159,4 +163,10 @@ class Deallocator {
   const Capabilities capabilities_;
 };
 
-}  // namespace pw::allocator
+namespace allocator {
+
+// Alias for module consumers using the older name for the above type.
+using Deallocator = ::pw::Deallocator;
+
+}  // namespace allocator
+}  // namespace pw

@@ -408,9 +408,9 @@ For example, the following tests the custom allocator from
    :start-after: [pw_allocator-examples-custom_allocator-unit_test]
    :end-before: [pw_allocator-examples-custom_allocator-unit_test]
 
-You can also extend the :ref:`module-pw_allocator-api-allocator_test_harness` to
-perform pseudorandom sequences of allocations and deallocations, e.g. as part of
-a performance test:
+You can also extend the :ref:`module-pw_allocator-api-test_harness` to perform
+pseudorandom sequences of allocations and deallocations, e.g. as part of a
+performance test:
 
 .. literalinclude:: examples/custom_allocator_test_harness.h
    :language: cpp
@@ -423,8 +423,9 @@ a performance test:
    :start-after: [pw_allocator-examples-custom_allocator-perf_test]
 
 Even better, you can easily add fuzz tests for your allocator. This module
-uses the ``AllocatorTestHarness`` to integrate with :ref:`module-pw_fuzzer` and
-provide :ref:`module-pw_allocator-api-fuzzing_support`.
+uses the :ref:`module-pw_allocator-api-test_harness` to integrate with
+:ref:`module-pw_fuzzer` and provide
+:ref:`module-pw_allocator-api-fuzzing_support`.
 
 .. literalinclude:: examples/custom_allocator_test.cc
    :language: cpp

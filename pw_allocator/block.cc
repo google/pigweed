@@ -16,8 +16,7 @@
 
 #include "pw_assert/check.h"
 
-namespace pw::allocator {
-namespace internal {
+namespace pw::allocator::internal {
 
 // TODO: b/234875269 - Add stack tracing to locate which call to the heap
 // operation caused the corruption in the methods below.
@@ -50,5 +49,4 @@ void CrashPoisonCorrupted(uintptr_t addr) {
             reinterpret_cast<void*>(addr));
 }
 
-}  // namespace internal
-}  // namespace pw::allocator
+}  // namespace pw::allocator::internal

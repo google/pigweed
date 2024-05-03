@@ -42,7 +42,7 @@ Allocator
 ``Allocator`` is the most commonly used interface. It can be used to request
 memory of different layouts:
 
-.. doxygenclass:: pw::allocator::Allocator
+.. doxygenclass:: pw::Allocator
    :members:
 
 .. _module-pw_allocator-api-pool:
@@ -62,7 +62,7 @@ Deallocator
 Both ``Allocator`` and ``Pool`` derive from and extend ``Deallocator``. This
 type is intended for allocator implementers and not for module consumers.
 
-.. doxygenclass:: pw::allocator::Deallocator
+.. doxygenclass:: pw::Deallocator
    :members:
 
 .. _module-pw_allocator-api-capabilities:
@@ -83,7 +83,7 @@ UniquePtr
 The ``UniquePtr`` smart pointer type can be created by any type deriving from
 ``MemoryResource``.
 
-.. doxygenclass:: pw::allocator::UniquePtr
+.. doxygenclass:: pw::UniquePtr
    :members:
 
 -------------------------
@@ -290,17 +290,17 @@ AllocatorForTest
 .. doxygenclass:: pw::allocator::test::AllocatorForTest
    :members:
 
-.. _module-pw_allocator-api-allocator_test_harness:
+.. _module-pw_allocator-api-test_harness:
 
-AllocatorTestHarness
-====================
-.. doxygenclass:: pw::allocator::test::AllocatorTestHarness
+TestHarness
+===========
+.. doxygenclass:: pw::allocator::test::TestHarness
    :members:
 
 .. _module-pw_allocator-api-fuzzing_support:
 
 FuzzTest support
 ================
-.. doxygenfunction:: pw::allocator::test::ArbitraryAllocatorRequest
-.. doxygenfunction:: pw::allocator::test::ArbitraryAllocatorRequests
-.. doxygenfunction:: pw::allocator::test::MakeAllocatorRequest
+.. doxygenfunction:: pw::allocator::test::ArbitraryRequest
+.. doxygenfunction:: pw::allocator::test::ArbitraryRequests
+.. doxygenfunction:: pw::allocator::test::MakeRequest

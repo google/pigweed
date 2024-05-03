@@ -28,7 +28,7 @@ namespace pw::allocator::test {
 /// See https://github.com/google/fuzztest/blob/main/doc/domains-reference.md
 ///
 /// @param  max_size  Size of the largest allocation that can be requested.
-fuzzer::Domain<AllocatorRequest> ArbitraryAllocatorRequest(size_t max_size);
+fuzzer::Domain<Request> ArbitraryRequest(size_t max_size);
 
 /// Returns a FuzzTest domain for producing sequences of arbitrary allocator
 /// requests.
@@ -40,14 +40,14 @@ fuzzer::Domain<AllocatorRequest> ArbitraryAllocatorRequest(size_t max_size);
 ///
 /// @param  max_size  Size of the largest allocation that can be requested.
 template <size_t kMaxRequests, size_t kMaxSize>
-auto ArbitraryAllocatorRequests() {
-  return fuzzer::VectorOf<kMaxRequests>(ArbitraryAllocatorRequest(kMaxSize));
+auto ArbitraryRequests() {
+  return fuzzer::VectorOf<kMaxRequests>(ArbitraryRequest(kMaxSize));
 }
 
-/// Builds an AllocatorRequest from an index and values.
+/// Builds an Request from an index and values.
 ///
 /// Unfortunately, the reproducer emitted by FuzzTest for vectors of
-/// AllocatorRequests cannot simply be copied and pasted. To create a
+/// Requests cannot simply be copied and pasted. To create a
 /// reproducer, create a `pw::Vector` of the appropriate size, and populate it
 /// using this method with the correct index.
 ///
@@ -70,16 +70,16 @@ auto ArbitraryAllocatorRequests() {
 /// A valid reproducer might be:
 /// @code{.cpp}
 /// TEST(MyAllocatorFuzzTest, NeverCrashesU16Regression) {
-///   Vector<test::AllocatorRequest, 3> input({
-///     test::MakeAllocatorRequest<0>(0u, 1u),
-///     test::MakeAllocatorRequest<0>(1209u, 8u),
-///     test::MakeAllocatorRequest<2>(9223372036854775807u, 2048u),
+///   Vector<test::Request, 3> input({
+///     test::MakeRequest<0>(0u, 1u),
+///     test::MakeRequest<0>(1209u, 8u),
+///     test::MakeRequest<2>(9223372036854775807u, 2048u),
 ///   });
 ///   NeverCrashes(input);
 // }
 /// @endcode
 template <size_t kIndex, typename... Args>
-AllocatorRequest MakeAllocatorRequest(Args... args) {
+Request MakeRequest(Args... args) {
   if constexpr (kIndex == 0) {
     return AllocationRequest{static_cast<size_t>(args)...};
   }
@@ -89,7 +89,7 @@ AllocatorRequest MakeAllocatorRequest(Args... args) {
   if constexpr (kIndex == 2) {
     return ReallocationRequest{static_cast<size_t>(args)...};
   }
-  return AllocatorRequest();
+  return Request();
 }
 
 }  // namespace pw::allocator::test

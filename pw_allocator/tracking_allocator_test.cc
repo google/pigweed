@@ -22,35 +22,38 @@
 #include "pw_metric/metric.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
 
 // Test fixtures.
 
-class TrackingAllocatorForTest
-    : public TrackingAllocator<internal::AllMetrics> {
+using ::pw::allocator::Layout;
+using ::pw::allocator::NoMetrics;
+using ::pw::allocator::TrackingAllocator;
+using TestMetrics = ::pw::allocator::internal::AllMetrics;
+
+class TrackingAllocatorForTest : public TrackingAllocator<TestMetrics> {
  public:
-  TrackingAllocatorForTest(metric::Token token, Allocator& allocator)
-      : TrackingAllocator<internal::AllMetrics>(token, allocator) {}
+  TrackingAllocatorForTest(pw::metric::Token token, pw::Allocator& allocator)
+      : TrackingAllocator<TestMetrics>(token, allocator) {}
 
   // Expose the protected ``GetAllocatedLayout`` method for test purposes.
-  Result<Layout> GetAllocatedLayout(const void* ptr) const {
+  pw::Result<Layout> GetAllocatedLayout(const void* ptr) const {
     return Allocator::GetAllocatedLayout(*this, ptr);
   }
 };
 
 class TrackingAllocatorTest : public ::testing::Test {
  protected:
-  using AllocatorType = FirstFitBlockAllocator<uint32_t>;
+  using AllocatorType = ::pw::allocator::FirstFitBlockAllocator<uint32_t>;
   using BlockType = AllocatorType::BlockType;
 
   constexpr static size_t kCapacity = 256;
-  constexpr static metric::Token kToken = 1U;
+  constexpr static pw::metric::Token kToken = 1U;
 
   TrackingAllocatorTest() : ::testing::Test(), tracker_(kToken, *allocator_) {}
 
   void SetUp() override {
-    EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
+    EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), pw::OkStatus());
   }
 
   void TearDown() override {
@@ -60,7 +63,8 @@ class TrackingAllocatorTest : public ::testing::Test {
     allocator_->Reset();
   }
 
-  WithBuffer<AllocatorType, kCapacity, BlockType::kAlignment> allocator_;
+  pw::allocator::WithBuffer<AllocatorType, kCapacity, BlockType::kAlignment>
+      allocator_;
   TrackingAllocatorForTest tracker_;
 };
 
@@ -90,7 +94,7 @@ struct ExpectedValues {
     cumulative_allocated_bytes += allocated_bytes_;
   }
 
-  void Check(const internal::AllMetrics& metrics, int line) {
+  void Check(const TestMetrics& metrics, int line) {
     EXPECT_EQ(metrics.requested_bytes.value(), requested_bytes);
     EXPECT_EQ(metrics.peak_requested_bytes.value(), peak_requested_bytes);
     EXPECT_EQ(metrics.cumulative_requested_bytes.value(),
@@ -116,29 +120,30 @@ struct ExpectedValues {
 // Unit tests.
 
 TEST_F(TrackingAllocatorTest, InitialValues) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;  // Initially all 0.
   EXPECT_METRICS_EQ(expected, metrics);
 }
 
 TEST_F(TrackingAllocatorTest, GetCapacity) {
-  StatusWithSize capacity = tracker_.GetCapacity();
-  EXPECT_EQ(capacity.status(), OkStatus());
+  pw::StatusWithSize capacity = tracker_.GetCapacity();
+  EXPECT_EQ(capacity.status(), pw::OkStatus());
   EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {
-  constexpr static metric::Token kChildToken = 2U;
+  constexpr static pw::metric::Token kChildToken = 2U;
   TrackingAllocator<NoMetrics> child(
-      kChildToken, tracker_, kAddTrackingAllocatorAsChild);
-  IntrusiveList<metric::Group>& children = tracker_.metric_group().children();
+      kChildToken, tracker_, pw::allocator::kAddTrackingAllocatorAsChild);
+  pw::IntrusiveList<pw::metric::Group>& children =
+      tracker_.metric_group().children();
   ASSERT_FALSE(children.empty());
   EXPECT_EQ(children.size(), 1U);
   EXPECT_EQ(&(children.front()), &(child.metric_group()));
 }
 
 TEST_F(TrackingAllocatorTest, AllocateDeallocate) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -158,7 +163,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocate) {
 }
 
 TEST_F(TrackingAllocatorTest, AllocateFailure) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout = Layout::Of<uint32_t[0x10000000U]>();
@@ -170,7 +175,7 @@ TEST_F(TrackingAllocatorTest, AllocateFailure) {
 }
 
 TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   Layout layout1 = Layout::Of<uint32_t[3]>();
@@ -220,7 +225,7 @@ TEST_F(TrackingAllocatorTest, AllocateDeallocateMultiple) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeLarger) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[3]>();
@@ -248,7 +253,7 @@ TEST_F(TrackingAllocatorTest, ResizeLarger) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeSmaller) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -276,7 +281,7 @@ TEST_F(TrackingAllocatorTest, ResizeSmaller) {
 }
 
 TEST_F(TrackingAllocatorTest, ResizeFailure) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout = Layout::Of<uint32_t[4]>();
@@ -303,7 +308,7 @@ TEST_F(TrackingAllocatorTest, ResizeFailure) {
 }
 
 TEST_F(TrackingAllocatorTest, Reallocate) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[2]>();
@@ -361,7 +366,7 @@ TEST_F(TrackingAllocatorTest, Reallocate) {
 }
 
 TEST_F(TrackingAllocatorTest, ReallocateFailure) {
-  const internal::AllMetrics& metrics = tracker_.metrics();
+  const TestMetrics& metrics = tracker_.metrics();
   ExpectedValues expected;
 
   constexpr Layout layout1 = Layout::Of<uint32_t[4]>();
@@ -382,4 +387,3 @@ TEST_F(TrackingAllocatorTest, ReallocateFailure) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

@@ -19,8 +19,12 @@
 
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
+
+// Test fixtures.
+
+using ::pw::allocator::BuddyAllocator;
+using ::pw::allocator::Layout;
 
 class BuddyAllocatorTest : public ::testing::Test {
  protected:
@@ -29,6 +33,8 @@ class BuddyAllocatorTest : public ::testing::Test {
   static constexpr size_t kNumBuckets = 5;
   alignas(kMinChunkSize) std::array<std::byte, kBufferSize> buffer_;
 };
+
+// Unit tests.
 
 TEST_F(BuddyAllocatorTest, AllocateSmall) {
   BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
@@ -39,7 +45,7 @@ TEST_F(BuddyAllocatorTest, AllocateSmall) {
 
 TEST_F(BuddyAllocatorTest, AllocateAllChunks) {
   BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
-  Vector<void*, kBufferSize / kMinChunkSize> ptrs;
+  pw::Vector<void*, kBufferSize / kMinChunkSize> ptrs;
   while (true) {
     void* ptr = allocator.Allocate(Layout(1, 1));
     if (ptr == nullptr) {
@@ -73,4 +79,3 @@ TEST_F(BuddyAllocatorTest, AllocateExcessiveAlignment) {
 }
 
 }  // namespace
-}  // namespace pw::allocator

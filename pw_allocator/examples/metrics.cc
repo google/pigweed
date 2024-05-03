@@ -24,8 +24,6 @@
 
 namespace examples {
 
-using pw::allocator::Allocator;
-
 // DOCSTAG: [pw_allocator-examples-metrics-custom_metrics1]
 struct CustomMetrics {
   PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
@@ -34,7 +32,7 @@ struct CustomMetrics {
 };
 // DOCSTAG: [pw_allocator-examples-metrics-custom_metrics1]
 
-void CollectCustomMetrics(Allocator& allocator) {
+void CollectCustomMetrics(pw::Allocator& allocator) {
   // DOCSTAG: [pw_allocator-examples-metrics-custom_metrics2]
   constexpr pw::metric::Token kToken = PW_TOKENIZE_STRING("CustomMetrics");
   pw::allocator::TrackingAllocatorImpl<CustomMetrics> tracker(kToken,
@@ -50,7 +48,7 @@ void CollectCustomMetrics(Allocator& allocator) {
   // DOCSTAG: [pw_allocator-examples-metrics-dump]
 }
 
-void CollectMultipleTrackers(Allocator& allocator) {
+void CollectMultipleTrackers(pw::Allocator& allocator) {
   // DOCSTAG: [pw_allocator-examples-metrics-multiple_trackers]
   using MyTrackingAllocator =
       pw::allocator::TrackingAllocatorImpl<pw::allocator::internal::AllMetrics>;
@@ -80,9 +78,11 @@ void CollectMultipleTrackers(Allocator& allocator) {
 
 namespace pw::allocator {
 
+using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
+
 // TODO: b/328076428 - Use pwrev/193642.
 TEST(MetricsExample, CollectCustomMetrics) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   // log_basic::test::LogCache<32> logs;
   examples::CollectCustomMetrics(allocator);
 
@@ -99,7 +99,7 @@ TEST(MetricsExample, CollectCustomMetrics) {
 
 // TODO: b/328076428 - Use pwrev/193642.
 TEST(MetricsExample, CollectMultipleTrackers) {
-  test::AllocatorForTest<256> allocator;
+  AllocatorForTest allocator;
   // log_basic::test::LogCache<32> logs;
   examples::CollectMultipleTrackers(allocator);
 

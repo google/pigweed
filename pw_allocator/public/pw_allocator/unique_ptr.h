@@ -16,12 +16,12 @@
 #include <memory>
 #include <utility>
 
-namespace pw::allocator {
+namespace pw {
 
 // Forward declaration.
 class Deallocator;
 
-namespace internal {
+namespace allocator::internal {
 
 /// This class simply provides type-erased static methods to check capabilities
 /// and deallocate memory in a unique pointer. This allows ``UniquePtr<T>`` to
@@ -29,11 +29,13 @@ namespace internal {
 /// dependency cycle between ``UniquePtr<T>` and ``Allocator::MakeUnique<T>()``.
 class BaseUniquePtr {
  protected:
+  using Capability = ::pw::allocator::Capability;
+
   static bool HasCapability(Deallocator* deallocator, Capability capability);
   static void Deallocate(Deallocator* deallocator, void* ptr);
 };
 
-}  // namespace internal
+}  // namespace allocator::internal
 
 /// An RAII pointer to a value of type ``T`` stored in memory provided by a
 /// ``Deallocator``.
@@ -42,8 +44,10 @@ class BaseUniquePtr {
 /// in order to support ``Deallocator`` and encourage safe usage. Most
 /// notably, ``UniquePtr<T>`` cannot be constructed from a ``T*``.
 template <typename T>
-class UniquePtr : public internal::BaseUniquePtr {
+class UniquePtr : public allocator::internal::BaseUniquePtr {
  public:
+  using Base = ::pw::allocator::internal::BaseUniquePtr;
+
   /// Creates an empty (``nullptr``) instance.
   ///
   /// NOTE: Instances of this type are most commonly constructed using
@@ -133,10 +137,10 @@ class UniquePtr : public internal::BaseUniquePtr {
     if (value_ == nullptr) {
       return;
     }
-    if (!internal::BaseUniquePtr::HasCapability(deallocator_, kSkipsDestroy)) {
+    if (!Base::HasCapability(deallocator_, Capability::kSkipsDestroy)) {
       std::destroy_at(value_);
     }
-    internal::BaseUniquePtr::Deallocate(deallocator_, value_);
+    Base::Deallocate(deallocator_, value_);
     Release();
   }
 
@@ -207,4 +211,11 @@ class UniquePtr : public internal::BaseUniquePtr {
   friend class Deallocator;
 };
 
-}  // namespace pw::allocator
+namespace allocator {
+
+// Alias for module consumers using the older name for the above type.
+template <typename T>
+using UniquePtr = ::pw::UniquePtr<T>;
+
+}  // namespace allocator
+}  // namespace pw

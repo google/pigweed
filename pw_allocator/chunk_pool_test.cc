@@ -21,24 +21,27 @@
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
 namespace {
+
+// Test fixtures.
+
+using ::pw::allocator::Layout;
 
 struct U64 {
   std::byte bytes[8];
 };
 
-// ChunkPool unit tests.
+// Unit tests.
 
 TEST(ChunkPoolTest, Capabilities) {
   std::array<std::byte, 256> buffer;
-  ChunkPool pool(buffer, Layout::Of<U64>());
-  EXPECT_EQ(pool.capabilities(), ChunkPool::kCapabilities);
+  pw::allocator::ChunkPool pool(buffer, Layout::Of<U64>());
+  EXPECT_EQ(pool.capabilities(), pw::allocator::ChunkPool::kCapabilities);
 }
 
 TEST(ChunkPoolTest, AllocateDeallocate) {
   std::array<std::byte, 256> buffer;
-  ChunkPool pool(buffer, Layout::Of<U64>());
+  pw::allocator::ChunkPool pool(buffer, Layout::Of<U64>());
 
   void* ptr = pool.Allocate();
   ASSERT_NE(ptr, nullptr);
@@ -49,7 +52,7 @@ TEST(ChunkPoolTest, ExhaustTwice) {
   constexpr size_t kNumU64s = 32;
   constexpr size_t kBufferSize = sizeof(U64) * kNumU64s;
   std::array<std::byte, kBufferSize> buffer;
-  ChunkPool pool(buffer, Layout::Of<U64>());
+  pw::allocator::ChunkPool pool(buffer, Layout::Of<U64>());
 
   // Allocate everything.
   std::array<void*, kNumU64s> ptrs;
@@ -79,4 +82,3 @@ TEST(ChunkPoolTest, ExhaustTwice) {
 }
 
 }  // namespace
-}  // namespace pw::allocator
