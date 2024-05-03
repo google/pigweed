@@ -29,12 +29,12 @@ namespace pw::bluetooth::proxy {
 
 namespace {
 
-// Util functions
+// ########## Util functions
 
 // Simple struct for returning a H4 array and an emboss view on its HCI packet.
 template <typename EmbossT>
 struct EmbossViewWithH4Buffer {
-  // Size is +1 to accomidate the H4 packet type at the front.
+  // Size is +1 to accommodate the H4 packet type at the front.
   std::array<uint8_t, EmbossT::SizeInBytes() + 1> arr;
   EmbossT view;
 };
@@ -42,7 +42,7 @@ struct EmbossViewWithH4Buffer {
 // Return H4 command buffer and Emboss view using indicated Emboss type to send
 // towards controller.
 template <typename EmbossT>
-EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
+EmbossViewWithH4Buffer<EmbossT> CreateToControllerViewWithBuffer(
     emboss::OpCode opcode) {
   EmbossViewWithH4Buffer<EmbossT> view_arr;
   std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
@@ -58,7 +58,7 @@ EmbossViewWithH4Buffer<EmbossT> CreateToControllerBuffer(
 std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
 CreateNoninteractingToControllerBuffer() {
   EmbossViewWithH4Buffer<emboss::InquiryCommandWriter> view_arr =
-      CreateToControllerBuffer<emboss::InquiryCommandWriter>(
+      CreateToControllerViewWithBuffer<emboss::InquiryCommandWriter>(
           emboss::OpCode::LINK_KEY_REQUEST_REPLY);
   return view_arr.arr;
 }
@@ -66,7 +66,7 @@ CreateNoninteractingToControllerBuffer() {
 // Return H4 event buffer and Emboss view using indicated Emboss type to send
 // towards host.
 template <typename EmbossT>
-EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
+EmbossViewWithH4Buffer<EmbossT> CreateToHostEventViewWithBuffer(
     emboss::EventCode event_code, emboss::StatusCode status_code) {
   EmbossViewWithH4Buffer<EmbossT> view_arr;
   std::iota(view_arr.arr.begin(), view_arr.arr.end(), 100);
@@ -83,13 +83,13 @@ EmbossViewWithH4Buffer<EmbossT> CreateToHostBuffer(
 std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
 CreateNonInteractingToHostBuffer() {
   EmbossViewWithH4Buffer<emboss::InquiryCompleteEventWriter> view_arr =
-      CreateToHostBuffer<emboss::InquiryCompleteEventWriter>(
+      CreateToHostEventViewWithBuffer<emboss::InquiryCompleteEventWriter>(
           emboss::EventCode::INQUIRY_COMPLETE,
           emboss::StatusCode::COMMAND_DISALLOWED);
   return view_arr.arr;
 }
 
-// Tests
+// ########## Examples
 
 // Example for docs.rst.
 TEST(Example, ExampleUsage) {
@@ -128,22 +128,27 @@ TEST(Example, ExampleUsage) {
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 }
 
+// ########## PassthroughTest
+
 // Verify buffer is properly passed (is equal value).
 TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
-  // Populate H4 buffer to send towards controller.
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array;
+    bool send_called;
+  } send_capture;
+
+  send_capture.h4_array = CreateNoninteractingToControllerBuffer();
   std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1> h4_array =
       CreateNoninteractingToControllerBuffer();
 
-  // Outbound callbacks where we verify packet is equal (just testing to
-  // controller in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
+  send_capture.send_called = false;
   H4HciPacketSendFn send_to_controller_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
+    send_capture.send_called = true;
     EXPECT_TRUE(std::equal(packet.begin(),
                            packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
+                           send_capture.h4_array.begin(),
+                           send_capture.h4_array.end()));
   });
 
   H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
@@ -154,25 +159,27 @@ TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
   proxy.HandleH4HciFromHost(pw::span(h4_array));
 
   // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
+  EXPECT_EQ(send_capture.send_called, true);
 }
 
 // Verify buffer is passed to host callback with the same contents.
 TEST(PassthroughTest, ToHostPassesEqualBuffer) {
-  // Populate H4 buffer to send towards host.
-  std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array = CreateNonInteractingToHostBuffer();
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
+        h4_array;
+    bool send_called;
+  } send_capture;
 
-  // Outbound callbacks where we verify packet is equal (just testing to host
-  // in this test).
-  bool send_called = false;
-  auto send_capture = std::pair(&send_called, &h4_array);
+  send_capture.h4_array = CreateNonInteractingToHostBuffer();
+
+  send_capture.send_called = false;
   H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
-    *(send_capture.first) = true;
+    send_capture.send_called = true;
     EXPECT_TRUE(std::equal(packet.begin(),
                            packet.end(),
-                           send_capture.second->begin(),
-                           send_capture.second->end()));
+                           send_capture.h4_array.begin(),
+                           send_capture.h4_array.end()));
   });
 
   H4HciPacketSendFn send_to_controller_fn(
@@ -181,10 +188,317 @@ TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   ProxyHost proxy =
       ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
 
-  proxy.HandleH4HciFromController(pw::span(h4_array));
+  proxy.HandleH4HciFromController(pw::span(send_capture.h4_array));
 
   // Verify to controller callback was called.
-  EXPECT_EQ(send_called, true);
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+// Verify a command complete event (of a type that proxy doesn't act on) is
+// passed to host callback with the same contents.
+TEST(PassthroughTest, ToHostPassesEqualCommandComplete) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    EmbossViewWithH4Buffer<
+        emboss::ReadLocalVersionInfoCommandCompleteEventWriter>
+        view_arr;
+    bool send_called;
+  } send_capture;
+
+  send_capture.view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  send_capture.view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_LOCAL_VERSION_INFO);
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    EXPECT_TRUE(std::equal(packet.begin(),
+                           packet.end(),
+                           send_capture.view_arr.arr.begin(),
+                           send_capture.view_arr.arr.end()));
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.view_arr.arr));
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+// ########## BadPacketTest
+// The proxy should not affect buffers it can't process (it should just pass
+// them on).
+
+TEST(BadPacketTest, EmptyBufferToController) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, 0> h4_array;
+    bool send_called;
+  } send_capture;
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_controller_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    EXPECT_TRUE(packet.empty());
+  });
+
+  H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromHost(pw::span(send_capture.h4_array));
+
+  // Verify callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+TEST(BadPacketTest, EmptyBufferToHostIsPassedOn) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, 0> h4_array;
+    bool send_called;
+  } send_capture;
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    EXPECT_TRUE(packet.empty());
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.h4_array));
+
+  // Verify callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+TEST(BadPacketTest, TooShortEventToHost) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, emboss::EventHeaderView::SizeInBytes() - 1> short_array;
+    bool send_called;
+  } send_capture;
+
+  std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
+      valid_array = CreateNonInteractingToHostBuffer();
+
+  // Copy valid event into a short_array whose size is one less than a valid
+  // EventHeader.
+  std::copy_n(std::begin(valid_array),
+              emboss::EventHeaderView::SizeInBytes() - 1,
+              std::begin(send_capture.short_array));
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    EXPECT_TRUE(std::equal(packet.begin(),
+                           packet.end(),
+                           send_capture.short_array.begin(),
+                           send_capture.short_array.end()));
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.short_array));
+
+  // Verify callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+TEST(BadPacketTest, TooShortCommandCompleteEventToHost) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    std::array<uint8_t, emboss::CommandCompleteEventView::SizeInBytes() - 1>
+        short_array;
+    bool send_called;
+  } send_capture;
+
+  EmbossViewWithH4Buffer<emboss::ReadLocalVersionInfoCommandCompleteEventWriter>
+      view_arr;
+  view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_LOCAL_VERSION_INFO);
+
+  // Copy valid event into a short_array whose size is one less than a valid
+  // command complete event.
+  std::copy_n(std::begin(view_arr.arr),
+              emboss::CommandCompleteEventView::SizeInBytes() - 1,
+              std::begin(send_capture.short_array));
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    EXPECT_TRUE(std::equal(packet.begin(),
+                           packet.end(),
+                           send_capture.short_array.begin(),
+                           send_capture.short_array.end()));
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.short_array));
+
+  // Verify callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+// ########## ReserveLeAclCredits Tests
+
+// Proxy Host should reserve 2 ACL LE credits from controller's ACL LE credits.
+TEST(ReserveLeAclCredits, ProxyCreditsReservedFromControllerCredits) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    EmbossViewWithH4Buffer<emboss::ReadBufferSizeCommandCompleteEventWriter>
+        view_arr;
+    bool send_called;
+  } send_capture;
+
+  send_capture.view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadBufferSizeCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  send_capture.view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  send_capture.view_arr.view.total_num_acl_data_packets().Write(10);
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    // Should reserve 2 credits from original total of 10 (so 8 left for host).
+    EXPECT_EQ(send_capture.view_arr.view.total_num_acl_data_packets().Read(),
+              8);
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.view_arr.arr));
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+// If controller provides less than wanted 2 credits, we should reserve that
+// smaller amount.
+TEST(ReserveLeAclCredits, ProxyCreditsCappedByControllerCredits) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    EmbossViewWithH4Buffer<emboss::ReadBufferSizeCommandCompleteEventWriter>
+        view_arr;
+    bool send_called;
+  } send_capture;
+
+  send_capture.view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadBufferSizeCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  send_capture.view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  send_capture.view_arr.view.total_num_acl_data_packets().Write(1);
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    // Should reserve 1 credit from original total of 1 (so 0 left for host).
+    EXPECT_EQ(send_capture.view_arr.view.total_num_acl_data_packets().Read(),
+              0);
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.view_arr.arr));
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+// If controller has no credits, proxy should reserve none.
+TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenHostCreditsZero) {
+  // Struct for capturing because `pw::Function` can't fit multiple captures.
+  struct {
+    EmbossViewWithH4Buffer<emboss::ReadBufferSizeCommandCompleteEventWriter>
+        view_arr;
+    bool send_called;
+  } send_capture;
+
+  send_capture.view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadBufferSizeCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  send_capture.view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  send_capture.view_arr.view.total_num_acl_data_packets().Write(0);
+
+  send_capture.send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_capture](H4HciPacket packet) {
+    send_capture.send_called = true;
+    // Should reserve 0 credit from original total of 0 (so 0 left for host).
+    EXPECT_EQ(send_capture.view_arr.view.total_num_acl_data_packets().Read(),
+              0);
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  proxy.HandleH4HciFromController(pw::span(send_capture.view_arr.arr));
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(send_capture.send_called, true);
+}
+
+TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenNotInitialized) {
+  auto view_arr = CreateToHostEventViewWithBuffer<
+      emboss::ReadBufferSizeCommandCompleteEventWriter>(
+      emboss::EventCode::COMMAND_COMPLETE, emboss::StatusCode::SUCCESS);
+  view_arr.view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  view_arr.view.total_num_acl_data_packets().Write(0);
+
+  H4HciPacketSendFn send_to_host_fn([]([[maybe_unused]] H4HciPacket packet) {});
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn), std::move(send_to_controller_fn));
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 }
 
 }  // namespace

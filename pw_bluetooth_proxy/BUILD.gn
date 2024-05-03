@@ -43,15 +43,24 @@ pw_test_group("tests") {
 pw_source_set("pw_bluetooth_proxy") {
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_bluetooth_proxy/acl_data_channel.h",
     "public/pw_bluetooth_proxy/common.h",
     "public/pw_bluetooth_proxy/proxy_host.h",
   ]
   public_deps = [
+    "//pw_bluetooth:emboss_hci_common",
+    "//pw_bluetooth:emboss_hci_events",
+    "//pw_bluetooth:emboss_hci_h4",
     dir_pw_assert,
     dir_pw_function,
     dir_pw_span,
   ]
-  sources = [ "proxy_host.cc" ]
+  deps = [ dir_pw_log ]
+  sources = [
+    "acl_data_channel.cc",
+    "emboss_util.h",
+    "proxy_host.cc",
+  ]
 }
 
 pw_test("emboss_util_test") {
@@ -87,13 +96,27 @@ pw_test("pw_bluetooth_proxy_test") {
   ]
 }
 
-pw_size_diff("use_passthrough_proxy_size_report") {
-  title = "pw_bluetooth_proxy Passthrough Size Report"
-  base = "$dir_pw_bloat:bloat_base"
-  binaries = [
-    {
-      target = "size_report:use_passthrough_proxy"
-      label = "Create and use proxy as a simple passthrough"
-    },
-  ]
+# We depend on emboss, so we can only compute size when emboss is in the build.
+if (dir_pw_third_party_emboss != "") {
+  pw_size_diff("use_passthrough_proxy_size_report") {
+    title = "pw_bluetooth_proxy Passthrough Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "size_report:use_passthrough_proxy"
+        label = "Create and use proxy as a simple passthrough"
+      },
+    ]
+  }
+} else {
+  pw_size_diff("use_passthrough_proxy_size_report") {
+    title = "pw_bluetooth_proxy Passthrough Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "$dir_pw_bloat:bloat_base"
+        label = "Emboss not configured."
+      },
+    ]
+  }
 }

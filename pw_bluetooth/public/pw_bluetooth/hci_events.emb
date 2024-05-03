@@ -991,7 +991,6 @@ struct ReadBufferSizeCommandCompleteEvent:
   $next [+2]         UInt                      total_num_acl_data_packets
     -- Total number of HCI ACL Data packets that can be stored in the data
     -- buffers of the Controller.
-    [requires: 0x0001 <= this <= 0xFFFF]
 
   $next [+2]         UInt                      total_num_synchronous_data_packets
     -- Total number of HCI Synchronous Data packets that can be stored in the

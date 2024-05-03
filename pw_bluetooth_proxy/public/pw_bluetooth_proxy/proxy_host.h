@@ -15,6 +15,7 @@
 #pragma once
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
+#include "pw_bluetooth_proxy/acl_data_channel.h"
 #include "pw_bluetooth_proxy/common.h"
 
 namespace pw::bluetooth::proxy {
@@ -38,7 +39,7 @@ class ProxyHost {
   ProxyHost(ProxyHost&&) = delete;
   ProxyHost& operator=(ProxyHost&&) = delete;
 
-  // Container APIs
+  // ##### Container APIs
 
   /// Called by container to ask proxy to handle a H4 HCI packet sent from the
   /// host side towards the controller side. Proxy will in turn call the
@@ -52,7 +53,16 @@ class ProxyHost {
   /// the host. Some packets may be modified, added, or removed.
   void HandleH4HciFromController(H4HciPacket h4_packet);
 
+  // ##### Client APIs
+
+  /// Returns the number of available LE ACL send credits for the proxy.
+  // Can be zero if the controller has not yet been initialized by the host.
+  uint16_t GetNumFreeLeAclPackets() const;
+
  private:
+  // Process/update the packet.
+  void ProcessH4HciFromController(H4HciPacket h4_packet);
+
   // Send packet onwards to host.
   void SendToHost(H4HciPacket h4_packet);
 
@@ -66,6 +76,9 @@ class ProxyHost {
   // Function to call when proxy wants proxy container to pass a packet to the
   // controller.
   H4HciPacketSendFn outward_send_to_controller_fn_;
+
+  // Owns management of the HCI LE ACL data channel.
+  AclDataChannel acl_data_channel_;
 };
 
 }  // namespace pw::bluetooth::proxy
