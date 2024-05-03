@@ -397,6 +397,11 @@ class EditorSettingsFile(EditorSettingsDefinition):
         try:
             with self._path.open() as file:
                 settings: OrderedDict = self._format.load(file)
+        except ValueError as e:
+            raise ValueError(
+                f"Settings file {self} could not be parsed. "
+                "Check the file for syntax errors."
+            ) from e
         except FileNotFoundError:
             settings = OrderedDict()
 
