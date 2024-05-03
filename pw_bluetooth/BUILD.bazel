@@ -108,9 +108,9 @@ emboss_cc_library(
     deps = [":_emboss_hci_common"],
 )
 
+# emboss_cc_library doesn't support includes, so we need to wrap it.
 cc_library(
     name = "emboss_hci_android",
-    hdrs = ["public/pw_bluetooth/hci_vendor.emb.h"],
     includes = ["public"],
     deps = [":_emboss_hci_android"],
 )
@@ -121,7 +121,6 @@ emboss_cc_library(
     visibility = ["//visibility:private"],
 )
 
-# emboss_cc_library doesn't support includes, so we need to wrap it.
 cc_library(
     name = "emboss_hci_common",
     includes = ["public"],
