@@ -77,6 +77,21 @@ pw_cc_flag_set(
     ],
 )
 
+# This flag prevents Arm GCC from printing the resolved paths of symlinks,
+# which prevents compilation actions from being hermetic. See
+# https://github.com/bazelbuild/bazel/issues/21981 and
+# https://pwbug.dev/319665090.
+pw_cc_flag_set(
+    name = "no_canonical_system_headers",
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
+    flags = [
+        "-fno-canonical-system-headers",
+    ],
+)
+
 pw_cc_flag_set(
     name = "cortex_common",
     actions = [
@@ -247,6 +262,7 @@ pw_cc_toolchain(
         ":thumb_abi",
         ":cortex_common",
         ":cortex_common_link",
+        ":no_canonical_system_headers",
         ":warnings",
     ],
     target_compatible_with = select({
