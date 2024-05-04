@@ -24,6 +24,12 @@ import pw_package.package_manager
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
+_GIT_CONFIG = [
+    # Suppress "You are in 'detached HEAD' state" message
+    '-c',
+    'advice.detachedHead=false',
+]
+
 
 def git_stdout(
     *args: Path | str, show_stderr=False, repo: Path | str = '.'
@@ -31,7 +37,7 @@ def git_stdout(
     _LOG.debug('executing %r in %r', args, repo)
     return (
         subprocess.run(
-            ['git', '-C', repo, *args],
+            ['git'] + _GIT_CONFIG + ['-C', repo, *args],
             stdout=subprocess.PIPE,
             stderr=None if show_stderr else subprocess.DEVNULL,
             check=True,
@@ -45,7 +51,9 @@ def git(
     *args: Path | str, repo: Path | str = '.'
 ) -> subprocess.CompletedProcess:
     _LOG.debug('executing %r in %r', args, repo)
-    return subprocess.run(['git', '-C', repo, *args], check=True)
+    return subprocess.run(
+        ['git'] + _GIT_CONFIG + ['-C', repo, *args], check=True
+    )
 
 
 class GitRepo(pw_package.package_manager.Package):
@@ -143,12 +151,17 @@ class GitRepo(pw_package.package_manager.Package):
         # revision. If we later run commands that need history it will be
         # retrieved on-demand. For small repositories the effect is negligible
         # but for large repositories this should be a significant improvement.
+        # --filter=... causes progress messages to be printed to stderr even if
+        # using --quiet so we wrap our clone command in `get_stdout` to prevent
+        # the output from being emitted.
         _LOG.debug('%s: checkout_full', self.name)
         if self._commit:
-            git('clone', '--filter=blob:none', self._url, path)
+            git_stdout('clone', '--filter=blob:none', self._url, path)
             git('reset', '--hard', self._commit, repo=path)
         elif self._tag:
-            git('clone', '-b', self._tag, '--filter=blob:none', self._url, path)
+            git_stdout(
+                'clone', '-b', self._tag, '--filter=blob:none', self._url, path
+            )
 
     def checkout_sparse(self, path: Path) -> None:
         _LOG.debug('%s: checkout_sparse', self.name)
