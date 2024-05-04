@@ -26,8 +26,8 @@ use syn::{
 };
 
 use pw_format::macros::{
-    generate_printf, Arg, FormatAndArgsFlavor, PrintfFormatMacroGenerator,
-    PrintfFormatStringFragment, PrintfFormatStringParser, Result,
+    generate_printf, Arg, CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatStringParser,
+    PrintfFormatMacroGenerator, PrintfFormatStringFragment, PrintfFormatStringParser, Result,
 };
 use pw_tokenizer_core::TOKENIZER_ENTRY_MAGIC;
 
@@ -102,12 +102,12 @@ pub fn _token(tokens: TokenStream) -> TokenStream {
 // Args to tokenize to buffer that are parsed according to the pattern:
 //   ($buffer:expr, $format_string:literal, $($args:expr),*)
 #[derive(Debug)]
-struct TokenizeToBufferArgs {
+struct TokenizeToBufferArgs<T: FormatStringParser + core::fmt::Debug> {
     buffer: Expr,
-    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
+    format_and_args: FormatAndArgsFlavor<T>,
 }
 
-impl Parse for TokenizeToBufferArgs {
+impl<T: FormatStringParser + core::fmt::Debug> Parse for TokenizeToBufferArgs<T> {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let buffer: Expr = input.parse()?;
         input.parse::<Token![,]>()?;
@@ -205,20 +205,40 @@ impl<'a> PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'a> {
 
     fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
         self.encoding_fragments.push(quote! {
-          __pw_tokenizer_crate::internal::Encoder::encode(#expression, &mut cursor)?;
+          Argument::from(#expression)
         });
         Ok(())
     }
 }
 
-// Generates code to marshal a tokenized string and arguments into a buffer.
-// See [`pw_tokenizer::tokenize_to_buffer`] for details on behavior.
-//
-// Internally the [`AsMut<u8>`] is wrapped in a [`pw_stream::Cursor`] to
-// fill the buffer incrementally.
+/// Generates code to marshal a tokenized core::fmt format string and arguments
+/// into a buffer.  See [`pw_tokenizer::tokenize_core_fmt_to_buffer`] for details
+/// on behavior.
+///
+/// Internally the [`AsMut<u8>`] is wrapped in a [`pw_stream::Cursor`] to
+/// fill the buffer incrementally.
 #[proc_macro]
-pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as TokenizeToBufferArgs);
+pub fn _tokenize_core_fmt_to_buffer(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as TokenizeToBufferArgs<CoreFmtFormatStringParser>);
+
+    // Hard codes domain to "".
+    let generator = TokenizeToBufferGenerator::new("", &input.buffer);
+
+    match generate_printf(generator, input.format_and_args.into()) {
+        Ok(token_stream) => token_stream.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+/// Generates code to marshal a tokenized printf format string and arguments
+/// into a buffer.  See [`pw_tokenizer::tokenize_printf_to_buffer`] for details
+/// on behavior.
+///
+/// Internally the [`AsMut<u8>`] is wrapped in a [`pw_stream::Cursor`] to
+/// fill the buffer incrementally.
+#[proc_macro]
+pub fn _tokenize_printf_to_buffer(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as TokenizeToBufferArgs<PrintfFormatStringParser>);
 
     // Hard codes domain to "".
     let generator = TokenizeToBufferGenerator::new("", &input.buffer);
@@ -232,12 +252,12 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
 // Args to tokenize to buffer that are parsed according to the pattern:
 //   ($ty:ty, $format_string:literal, $($args:expr),*)
 #[derive(Debug)]
-struct TokenizeToWriterArgs {
+struct TokenizeToWriterArgs<T: FormatStringParser> {
     ty: Type,
-    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
+    format_and_args: FormatAndArgsFlavor<T>,
 }
 
-impl Parse for TokenizeToWriterArgs {
+impl<T: FormatStringParser> Parse for TokenizeToWriterArgs<T> {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let ty: Type = input.parse()?;
         input.parse::<Token![,]>()?;
@@ -340,9 +360,28 @@ impl<'a> PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'a> {
     }
 }
 
+/// Generates code to marshal a tokenized core::fmt format string and arguments
+/// into a [`pw_stream::Write`].  See [`pw_tokenizer::tokenize_core_fmt_to_writer`]
+/// for details on behavior.
 #[proc_macro]
-pub fn _tokenize_to_writer(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as TokenizeToWriterArgs);
+pub fn _tokenize_core_fmt_to_writer(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as TokenizeToWriterArgs<CoreFmtFormatStringParser>);
+
+    // Hard codes domain to "".
+    let generator = TokenizeToWriterGenerator::new("", &input.ty);
+
+    match generate_printf(generator, input.format_and_args.into()) {
+        Ok(token_stream) => token_stream.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+/// Generates code to marshal a tokenized printf format string and arguments
+/// into a [`pw_stream::Write`].  See [`pw_tokenizer::tokenize_printf_to_writer`]
+/// for details on behavior.
+#[proc_macro]
+pub fn _tokenize_printf_to_writer(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as TokenizeToWriterArgs<PrintfFormatStringParser>);
 
     // Hard codes domain to "".
     let generator = TokenizeToWriterGenerator::new("", &input.ty);

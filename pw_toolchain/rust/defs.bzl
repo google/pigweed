@@ -65,7 +65,7 @@ EXTRA_TARGETS = [
 CHANNELS = [
     {
         "name": "nightly",
-        "extra_rustc_flags": ["-Dwarnings"],
+        "extra_rustc_flags": ["-Dwarnings", "-Zmacro-backtrace"],
         "target_settings": ["@rules_rust//rust/toolchain/channel:nightly"],
     },
     {

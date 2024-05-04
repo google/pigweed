@@ -29,7 +29,6 @@
 //! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
 
 #![deny(missing_docs)]
-pub use pw_log_backend_printf_macro::_pw_logf_backend;
 
 pub mod varargs;
 
@@ -39,7 +38,7 @@ pub mod __private {
     use core::ffi::{c_int, c_uchar};
 
     pub use pw_bytes::concat_static_strs;
-    pub use pw_log_backend_printf_macro::_pw_logf_backend;
+    pub use pw_log_backend_printf_macro::{_pw_log_backend, _pw_logf_backend};
 
     use pw_log_backend_api::LogLevel;
 
@@ -123,10 +122,19 @@ pub mod __private {
 
 /// Implements the `pw_log` backend api.
 #[macro_export]
+macro_rules! pw_log_backend {
+    ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
+        use $crate::__private as __pw_log_backend_crate;
+        $crate::__private::_pw_log_backend!($log_level, $format_string,  $($args),*)
+    }};
+}
+
+/// Implements the `pw_log` backend api.
+#[macro_export]
 macro_rules! pw_logf_backend {
     ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
         use $crate::__private as __pw_log_backend_crate;
-        $crate::_pw_logf_backend!($log_level, $format_string,  $($args),*)
+        $crate::__private::_pw_logf_backend!($log_level, $format_string,  $($args),*)
     }};
 }
 

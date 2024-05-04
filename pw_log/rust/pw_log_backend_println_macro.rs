@@ -21,27 +21,27 @@ use syn::{
 };
 
 use pw_format::macros::{
-    generate_core_fmt, Arg, CoreFmtFormatMacroGenerator, FormatAndArgsFlavor,
-    PrintfFormatStringParser, Result,
+    generate_core_fmt, Arg, CoreFmtFormatMacroGenerator, CoreFmtFormatStringParser,
+    FormatAndArgsFlavor, FormatStringParser, PrintfFormatStringParser, Result,
 };
 
 type TokenStream2 = proc_macro2::TokenStream;
 
-// Arguments to `pw_logf_backend`.  A log level followed by a [`pw_format`]
+// Arguments to `pw_log[f]_backend`.  A log level followed by a [`pw_format`]
 // format string.
 #[derive(Debug)]
-struct PwLogfArgs {
+struct PwLogArgs<T: FormatStringParser> {
     log_level: Expr,
-    format_and_args: FormatAndArgsFlavor<PrintfFormatStringParser>,
+    format_and_args: FormatAndArgsFlavor<T>,
 }
 
-impl Parse for PwLogfArgs {
+impl<T: FormatStringParser> Parse for PwLogArgs<T> {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
         let log_level: Expr = input.parse()?;
         input.parse::<Token![,]>()?;
         let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
-        Ok(PwLogfArgs {
+        Ok(PwLogArgs {
             log_level,
             format_and_args,
         })
@@ -106,8 +106,20 @@ impl<'a> CoreFmtFormatMacroGenerator for LogfGenerator<'a> {
 }
 
 #[proc_macro]
+pub fn _pw_log_backend(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as PwLogArgs<CoreFmtFormatStringParser>);
+
+    let generator = LogfGenerator::new(&input.log_level);
+
+    match generate_core_fmt(generator, input.format_and_args.into()) {
+        Ok(token_stream) => token_stream.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+#[proc_macro]
 pub fn _pw_logf_backend(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as PwLogfArgs);
+    let input = parse_macro_input!(tokens as PwLogArgs<PrintfFormatStringParser>);
 
     let generator = LogfGenerator::new(&input.log_level);
 

@@ -14,11 +14,15 @@
 #[cfg(test)]
 mod tests {
     use crate::run_with_capture;
-    use pw_log_backend::pw_logf_backend;
+    use pw_log_backend::{pw_log_backend, pw_logf_backend};
     use pw_log_backend_api::LogLevel;
 
     #[test]
     fn no_argument_log_line_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "test")),
+            "[INF] test\n"
+        );
         assert_eq!(
             run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test")),
             "[INF] test\n"
@@ -59,12 +63,22 @@ mod tests {
     #[test]
     fn untyped_i32_argument_prints_to_stdout() {
         assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "test {}", -1 as i32)),
+            "[INF] test -1\n",
+        );
+
+        assert_eq!(
             run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", -1 as i32)),
             "[INF] test -1\n",
         );
     }
     #[test]
     fn untyped_u32_argument_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "test {}", 1 as u32)),
+            "[INF] test 1\n",
+        );
+
         assert_eq!(
             run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", 1 as u32)),
             "[INF] test 1\n",
@@ -73,6 +87,11 @@ mod tests {
 
     #[test]
     fn untyped_str_argument_prints_to_stdout() {
+        assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "test {}", "Pigweed" as &str)),
+            "[INF] test Pigweed\n",
+        );
+
         assert_eq!(
             run_with_capture(|| pw_logf_backend!(LogLevel::Info, "test %v", "Pigweed" as &str)),
             "[INF] test Pigweed\n",

@@ -26,7 +26,7 @@ pub mod __private {
     use pw_tokenizer::MessageWriter;
 
     // Re-export for use by the `pw_logf_backend!` macro.
-    pub use pw_tokenizer::tokenize_to_writer;
+    pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
 
     const ENCODE_BUFFER_SIZE: usize = 32;
 
@@ -80,16 +80,29 @@ pub mod __private {
 }
 
 // Implement the `pw_log` backend API.
+//
+// Since we're logging to a shared/ambient resource we can use
+// tokenize_*_to_writer!` instead of `tokenize_*_to_buffer!` and avoid the
+// overhead of initializing any intermediate buffers or objects.
+//
+// Uses `pw_format` special `PW_FMT_CONCAT` operator to prepend a place to
+// print the log level.
+#[macro_export]
+macro_rules! pw_log_backend {
+  ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
+    let _ = $crate::__private::tokenize_core_fmt_to_writer!(
+      $crate::__private::LogMessageWriter,
+      "[{}] " PW_FMT_CONCAT $format_string,
+      $crate::__private::log_level_tag($log_level) as &str,
+      $($args),*);
+  }};
+}
+
 #[macro_export]
 macro_rules! pw_logf_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
-    // Since we're logging to a shared/ambient resource we can use
-    // tokenize_to_writer!` instead of `tokenize_to_buffer!` and avoid the
-    // overhead of initializing any intermediate buffers or objects.
-    let _ = $crate::__private::tokenize_to_writer!(
+    let _ = $crate::__private::tokenize_printf_to_writer!(
       $crate::__private::LogMessageWriter,
-      // Use `pw_format` special `PW_FMT_CONCAT` operator to prepend a place to
-      // print the log level.
       "[%s] " PW_FMT_CONCAT $format_string,
       $crate::__private::log_level_tag($log_level),
       $($args),*);

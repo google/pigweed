@@ -30,17 +30,27 @@ use cortex_m_rt::entry;
 // Semihosting support which is well supported for QEMU targets.
 use cortex_m_semihosting::{debug, hprintln};
 
-use pw_log::{infof, warnf};
+use pw_log::{critical, infof, warnf};
 
 #[entry]
 fn main() -> ! {
     // Plain text printout without `pw_log`
     hprintln!("Hello, Pigweed!");
 
-    // `pw_log` messages
+    // printf style `pw_log` messages
     infof!("Bare string");
     warnf!("Integer value %d", 42);
-    infof!("generic arguments %v %v", 42 as u32, -42 as i32);
+
+    // core::fmt style `pw_log` messages
+    //
+    // Note the support for this is in progress with the following notes:
+    // * only `u32`, `i32`, and '&str' arguments are supported right now.
+    // * arguments must be annotated with `as <type>` to work with `stable`
+    //   toolchains.
+    //
+    // Both of these will be addressed in the future.
+    critical!("Generic rusty arguments {} {}", 42 as u32, -42 as i32);
+
     debug::exit(debug::EXIT_SUCCESS);
     loop {}
 }

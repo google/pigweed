@@ -19,11 +19,13 @@
 //! *Note*: This modules requires `std`.
 //!
 //! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
-pub use pw_log_backend_println_macro::_pw_logf_backend;
 
 #[doc(hidden)]
 pub mod __private {
+    pub use pw_log_backend_println_macro::{_pw_log_backend, _pw_logf_backend};
+
     use pw_log_backend_api::LogLevel;
+
     pub const fn log_level_tag(level: LogLevel) -> &'static str {
         match level {
             LogLevel::Debug => "DBG",
@@ -38,9 +40,17 @@ pub mod __private {
 
 // Implement the `pw_log` backend API.
 #[macro_export]
+macro_rules! pw_log_backend {
+  ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
+    use $crate::__private as __pw_log_backend_crate;
+    $crate::__private::_pw_log_backend!($log_level, $format_string, $($args),*);
+  }};
+}
+
+#[macro_export]
 macro_rules! pw_logf_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     use $crate::__private as __pw_log_backend_crate;
-    $crate::_pw_logf_backend!($log_level, $format_string, $($args),*);
+    $crate::__private::_pw_logf_backend!($log_level, $format_string, $($args),*);
   }};
 }

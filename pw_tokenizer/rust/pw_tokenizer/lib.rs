@@ -23,21 +23,35 @@
 //! For a more in depth explanation of the systems design and motivations,
 //! see [Pigweed's pw_tokenizer module documentation](https://pigweed.dev/pw_tokenizer/).
 //!
-//! # Example
+//! # Examples
+//!
+//! Pigweed's tokenization database uses `printf` style strings internally so
+//! those are supported directly.
 //!
 //! ```
-//! use pw_tokenizer::tokenize_to_buffer;
+//! use pw_tokenizer::tokenize_printf_to_buffer;
 //!
-//! # fn doctest() -> pw_status::Result<()> {
 //! let mut buffer = [0u8; 1024];
-//! let len = tokenize_to_buffer!(&mut buffer, "The answer is %d", 42)?;
+//! let len = tokenize_printf_to_buffer!(&mut buffer, "The answer is %d", 42)?;
 //!
 //! // 4 bytes used to encode the token and one to encode the value 42.  This
 //! // is a **3.5x** reduction in size compared to the raw string!
 //! assert_eq!(len, 5);
-//! # Ok(())
-//! # }
-//! # doctest().unwrap();
+//! # Ok::<(), pw_status::Error>(())
+//! ```
+//!
+//! We also support Rust's `core::fmt` style syntax.  These format strings are
+//! converted to `printf` style at compile time to maintain compatibly with the
+//! rest of the Pigweed tokenizer ecosystem.  The below example produces the
+//! same token and output as the above one.
+//!
+//! ```
+//! use pw_tokenizer::tokenize_core_fmt_to_buffer;
+//!
+//! let mut buffer = [0u8; 1024];
+//! let len = tokenize_core_fmt_to_buffer!(&mut buffer, "The answer is {}", 42 as i32)?;
+//! assert_eq!(len, 5);
+//! # Ok::<(), pw_status::Error>(())
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -63,7 +77,10 @@ pub mod __private {
     pub use pw_status::Result;
     pub use pw_stream::{Cursor, Seek, WriteInteger, WriteVarint};
     pub use pw_tokenizer_core::hash_string;
-    pub use pw_tokenizer_macro::{_token, _tokenize_to_buffer, _tokenize_to_writer};
+    pub use pw_tokenizer_macro::{
+        _token, _tokenize_core_fmt_to_buffer, _tokenize_core_fmt_to_writer,
+        _tokenize_printf_to_buffer, _tokenize_printf_to_writer,
+    };
 }
 
 /// Return the [`u32`] token for the specified string and add it to the token
@@ -101,8 +118,9 @@ macro_rules! token {
     }};
 }
 
-/// Tokenize a format string and arguments to an [`AsMut<u8>`] buffer and add
-/// the format string's token to the token database.
+/// Tokenize a `core::fmt` style format string and arguments to an [`AsMut<u8>`]
+/// buffer.  The format string is converted in to a `printf` and added token to
+/// the token database.
 ///
 /// See [`token`] for an explanation on how strings are tokenized and entries
 /// are added to the token database.
@@ -120,18 +138,18 @@ macro_rules! token {
 /// # Example
 ///
 /// ```
-/// use pw_tokenizer::tokenize_to_buffer;
+/// use pw_tokenizer::tokenize_core_fmt_to_buffer;
 ///
 /// // Tokenize a format string and argument into a buffer.
 /// let mut buffer = [0u8; 1024];
-/// let len = tokenize_to_buffer!(&mut buffer, "The answer is %d", 42)?;
+/// let len = tokenize_core_fmt_to_buffer!(&mut buffer, "The answer is {}", 42 as i32)?;
 ///
 /// // 4 bytes used to encode the token and one to encode the value 42.
 /// assert_eq!(len, 5);
 ///
 /// // The format string can be composed of multiple strings literals using
 /// // the custom`PW_FMT_CONCAT` operator.
-/// let len = tokenize_to_buffer!(&mut buffer, "Hello " PW_FMT_CONCAT "Pigweed")?;
+/// let len = tokenize_core_fmt_to_buffer!(&mut buffer, "Hello " PW_FMT_CONCAT "Pigweed")?;
 ///
 /// // Only a single 4 byte token is emitted after concatenation of the string
 /// // literals above.
@@ -139,10 +157,63 @@ macro_rules! token {
 /// # Ok::<(), pw_status::Error>(())
 /// ```
 #[macro_export]
-macro_rules! tokenize_to_buffer {
+macro_rules! tokenize_core_fmt_to_buffer {
     ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
+      __pw_tokenizer_crate::_tokenize_core_fmt_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
+    }};
+}
+
+/// Tokenize a printf format string and arguments to an [`AsMut<u8>`] buffer
+/// and add the format string's token to the token database.
+///
+/// See [`token`] for an explanation on how strings are tokenized and entries
+/// are added to the token database.  The token's domain is set to "".
+///
+/// Returns a [`pw_status::Result<usize>`] the number of bytes written to the buffer.
+///
+/// `tokenize_to_buffer!` supports concatenation of format strings as described
+/// in [`pw_format::macros::FormatAndArgs`].
+///
+/// # Errors
+/// - [`pw_status::Error::OutOfRange`] - Buffer is not large enough to fit
+///   tokenized data.
+/// - [`pw_status::Error::InvalidArgument`] - Invalid buffer was provided.
+///
+/// # Example
+///
+/// ```
+/// use pw_tokenizer::tokenize_printf_to_buffer;
+///
+/// // Tokenize a format string and argument into a buffer.
+/// let mut buffer = [0u8; 1024];
+/// let len = tokenize_printf_to_buffer!(&mut buffer, "The answer is %d", 42)?;
+///
+/// // 4 bytes used to encode the token and one to encode the value 42.
+/// assert_eq!(len, 5);
+///
+/// // The format string can be composed of multiple strings literals using
+/// // the custom`PW_FMT_CONCAT` operator.
+/// let len = tokenize_printf_to_buffer!(&mut buffer, "Hello " PW_FMT_CONCAT "Pigweed")?;
+///
+/// // Only a single 4 byte token is emitted after concatenation of the string
+/// // literals above.
+/// assert_eq!(len, 4);
+/// # Ok::<(), pw_status::Error>(())
+/// ```
+#[macro_export]
+macro_rules! tokenize_printf_to_buffer {
+    ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+      use $crate::__private as __pw_tokenizer_crate;
+      __pw_tokenizer_crate::_tokenize_printf_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
+    }};
+}
+
+/// Deprecated alias for [`tokenize_printf_to_buffer!`].
+#[macro_export]
+macro_rules! tokenize_to_buffer {
+    ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+      $crate::tokenize_printf_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
 }
 
@@ -155,7 +226,7 @@ macro_rules! tokenize_to_buffer {
 /// UART, or a shared buffer.
 ///
 /// See [`token`] for an explanation on how strings are tokenized and entries
-/// are added to the token database.
+/// are added to the token database.  The token's domain is set to "".
 ///
 /// Returns a [`pw_status::Result<()>`].
 ///
@@ -222,11 +293,28 @@ macro_rules! tokenize_to_buffer {
 /// # Ok::<(), pw_status::Error>(())
 /// ```
 #[macro_export]
-macro_rules! tokenize_to_writer {
+macro_rules! tokenize_core_fmt_to_writer {
     ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+      __pw_tokenizer_crate::_tokenize_core_fmt_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
+}
+
+/// DOCME
+#[macro_export]
+macro_rules! tokenize_printf_to_writer {
+    ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+      use $crate::__private as __pw_tokenizer_crate;
+      __pw_tokenizer_crate::_tokenize_printf_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+    }};
+}
+
+/// Deprecated alias for [`tokenize_printf_to_writer!`].
+#[macro_export]
+macro_rules! tokenize_to_writer {
+  ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+    $crate::tokenize_printf_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+  }};
 }
 
 /// A trait used by [`tokenize_to_writer!`] to output tokenized messages.
@@ -265,18 +353,30 @@ mod tests {
     fn test_token() {}
 
     macro_rules! tokenize_to_buffer_test {
-      ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
-        let mut buffer = [0u8; $buffer_len];
-        let len = tokenize_to_buffer!(&mut buffer, $fmt, $($args),*).unwrap();
-        assert_eq!(
-            &buffer[..len],
-            $expected_data,
-        );
+      ($expected_data:expr, $buffer_len:expr, $printf_fmt:literal, $core_fmt:literal $(, $args:expr)* $(,)?) => {{
+        if $printf_fmt != "" {
+          let mut buffer = [0u8; $buffer_len];
+          let len = tokenize_printf_to_buffer!(&mut buffer, $printf_fmt, $($args),*).unwrap();
+          assert_eq!(
+              &buffer[..len],
+              $expected_data,
+              "printf style input does not produce expected output",
+          );
+        }
+        if $core_fmt != "" {
+           let mut buffer = [0u8; $buffer_len];
+           let len = tokenize_core_fmt_to_buffer!(&mut buffer, $core_fmt, $($args),*).unwrap();
+           assert_eq!(
+               &buffer[..len],
+               $expected_data,
+              "core::fmt style input does not produce expected output",
+           );
+        }
       }}
     }
 
     macro_rules! tokenize_to_writer_test {
-      ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
+      ($expected_data:expr, $buffer_len:expr, $printf_fmt:literal, $core_fmt:literal $(, $args:expr)* $(,)?) => {{
         // The `MessageWriter` API is used in places like logging where it
         // accesses an shared/ambient resource (like stdio or an UART).  To test
         // it in a hermetic way we declare test specific `MessageWriter` that
@@ -315,20 +415,34 @@ mod tests {
           }
         }
 
-        tokenize_to_writer!(TestMessageWriter, $fmt, $($args),*).unwrap();
-        TEST_OUTPUT.with(|output| {
-            assert_eq!(
-                *output.borrow(),
-                Some($expected_data.to_vec()),
-            )
-        });
+        if $printf_fmt != "" {
+          TEST_OUTPUT.with(|output| *output.borrow_mut() = None);
+          tokenize_printf_to_writer!(TestMessageWriter, $printf_fmt, $($args),*).unwrap();
+          TEST_OUTPUT.with(|output| {
+              assert_eq!(
+                  *output.borrow(),
+                  Some($expected_data.to_vec()),
+              )
+          });
+        }
+
+        if $core_fmt != "" {
+          TEST_OUTPUT.with(|output| *output.borrow_mut() = None);
+          tokenize_core_fmt_to_writer!(TestMessageWriter, $core_fmt, $($args),*).unwrap();
+          TEST_OUTPUT.with(|output| {
+              assert_eq!(
+                  *output.borrow(),
+                  Some($expected_data.to_vec()),
+              )
+          });
+        }
       }}
     }
 
     macro_rules! tokenize_test {
-        ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
-            tokenize_to_buffer_test!($expected_data, $buffer_len, $fmt, $($args),*);
-            tokenize_to_writer_test!($expected_data, $buffer_len, $fmt, $($args),*);
+        ($expected_data:expr, $buffer_len:expr, $printf_fmt:literal, $core_fmt:literal $(, $args:expr)* $(,)?) => {{
+            tokenize_to_buffer_test!($expected_data, $buffer_len, $printf_fmt, $core_fmt, $($args),*);
+            tokenize_to_writer_test!($expected_data, $buffer_len, $printf_fmt, $core_fmt, $($args),*);
         }};
     }
 
@@ -337,30 +451,38 @@ mod tests {
         tokenize_test!(
             &[0xe0, 0x92, 0xe0, 0xa], // expected buffer
             64,                       // buffer size
-            "Hello Pigweed",
+            "Hello Pigweed",          // printf style
+            "Hello Pigweed",          // core::fmt style
         );
     }
+
     #[test]
     fn test_decimal_format() {
+        // "as casts" are used for the integer arguments below.  They are only
+        // need for the core::fmt style arguments but are added so that we can
+        // check that the printf and core::fmt style equivalents encode the same.
         tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %d!",
-            1
+            "The answer is %d!",            // printf style
+            "The answer is {}!",            // core::fmt style
+            1 as i32
         );
 
         tokenize_test!(
             &[0x36, 0xd0, 0xfb, 0x69, 0x1], // expected buffer
             64,                             // buffer size
-            "No! The answer is %d!",
-            -1
+            "No! The answer is %d!",        // printf style
+            "No! The answer is {}!",        // core::fmt style
+            -1 as i32
         );
 
         tokenize_test!(
-            &[0xa4, 0xad, 0x50, 0x54, 0x0], // expected buffer
-            64,                             // buffer size
-            "I think you'll find that the answer is %d!",
-            0
+            &[0xa4, 0xad, 0x50, 0x54, 0x0],               // expected buffer
+            64,                                           // buffer size
+            "I think you'll find that the answer is %d!", // printf style
+            "I think you'll find that the answer is {}!", // core::fmt style
+            0 as i32
         );
     }
 
@@ -370,7 +492,8 @@ mod tests {
         tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %d!",
+            "The answer is %d!",            // printf style
+            "",                             // no equivalent core::fmt style
             1
         );
 
@@ -379,35 +502,40 @@ mod tests {
         tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %i!",
+            "The answer is %i!",            // printf style
+            "",                             // no equivalent core::fmt style
             1
         );
 
         tokenize_test!(
             &[0x5d, 0x70, 0x12, 0xb4, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %o!",
+            "The answer is %o!",            // printf style
+            "",                             // no equivalent core::fmt style
             1u32
         );
 
         tokenize_test!(
             &[0x63, 0x58, 0x5f, 0x8f, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %u!",
+            "The answer is %u!",            // printf style
+            "",                             // no equivalent core::fmt style
             1u32
         );
 
         tokenize_test!(
             &[0x66, 0xcc, 0x05, 0x7d, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %x!",
+            "The answer is %x!",            // printf style
+            "",                             // no equivalent core::fmt style
             1u32
         );
 
         tokenize_test!(
             &[0x46, 0x4c, 0x16, 0x96, 0x2], // expected buffer
             64,                             // buffer size
-            "The answer is %X!",
+            "The answer is %X!",            // printf style
+            "",                             // no equivalent core::fmt style
             1u32
         );
     }
@@ -417,7 +545,8 @@ mod tests {
         tokenize_test!(
             b"\x25\xf6\x2e\x66\x07Pigweed", // expected buffer
             64,                             // buffer size
-            "Hello: %s!",
+            "Hello: %s!",                   // printf style
+            "",                             // no equivalent core::fmt style
             "Pigweed"
         );
     }
@@ -427,7 +556,8 @@ mod tests {
         tokenize_test!(
             b"\x25\xf6\x2e\x66\x83Pig", // expected buffer
             8,                          // buffer size
-            "Hello: %s!",
+            "Hello: %s!",               // printf style
+            "",                         // no equivalent core::fmt style
             "Pigweed"
         );
     }
@@ -437,22 +567,66 @@ mod tests {
         tokenize_test!(
             &[0x2e, 0x52, 0xac, 0xe4, 0x50], // expected buffer
             64,                              // buffer size
-            "Hello: %cigweed",
+            "Hello: %cigweed",               // printf style
+            "",                              // no equivalent core::fmt style
             "P".as_bytes()[0]
         );
     }
 
     #[test]
-    fn tokenizer_supports_concatenated_format_strings() {
+    fn test_untyped_format() {
+        tokenize_test!(
+            &[0x63, 0x58, 0x5f, 0x8f, 0x2], // expected buffer
+            64,                             // buffer size
+            "The answer is %u!",            // printf style
+            "The answer is {}!",            // core::fmt style
+            1 as u32
+        );
+
+        tokenize_test!(
+            &[0x36, 0xd0, 0xfb, 0x69, 0x1], // expected buffer
+            64,                             // buffer size
+            "No! The answer is %v!",        // printf style
+            "No! The answer is {}!",        // core::fmt style
+            -1 as i32
+        );
+
+        tokenize_test!(
+            b"\x25\xf6\x2e\x66\x07Pigweed", // expected buffer
+            64,                             // buffer size
+            "Hello: %v!",                   // printf style
+            "Hello: {}!",                   // core::fmt style
+            "Pigweed" as &str
+        );
+    }
+
+    #[test]
+    fn tokenizer_supports_concatenated_printf_format_strings() {
         // Since the no argument and some arguments cases are handled differently
         // by `tokenize_to_buffer!` we need to test both.
         let mut buffer = [0u8; 64];
-        let len = tokenize_to_buffer!(&mut buffer, "Hello" PW_FMT_CONCAT " Pigweed").unwrap();
+        let len =
+            tokenize_printf_to_buffer!(&mut buffer, "Hello" PW_FMT_CONCAT " Pigweed").unwrap();
         assert_eq!(&buffer[..len], &[0xe0, 0x92, 0xe0, 0xa]);
 
-        let len = tokenize_to_buffer!(&mut buffer, "Hello: " PW_FMT_CONCAT "%cigweed",
+        let len = tokenize_printf_to_buffer!(&mut buffer, "Hello: " PW_FMT_CONCAT "%cigweed",
           "P".as_bytes()[0])
         .unwrap();
         assert_eq!(&buffer[..len], &[0x2e, 0x52, 0xac, 0xe4, 0x50]);
+    }
+
+    #[test]
+    fn tokenizer_supports_concatenated_core_fmt_format_strings() {
+        // Since the no argument and some arguments cases are handled differently
+        // by `tokenize_to_buffer!` we need to test both.
+        let mut buffer = [0u8; 64];
+        let len =
+            tokenize_core_fmt_to_buffer!(&mut buffer, "Hello" PW_FMT_CONCAT " Pigweed").unwrap();
+        assert_eq!(&buffer[..len], &[0xe0, 0x92, 0xe0, 0xa]);
+
+        let len = tokenize_core_fmt_to_buffer!(&mut buffer, "The answer is " PW_FMT_CONCAT "{}!",
+          1 as i32)
+        .unwrap();
+        assert_eq!(&buffer[..len], &[0x52, 0x1c, 0xb0, 0x4c, 0x2]);
     }
 }

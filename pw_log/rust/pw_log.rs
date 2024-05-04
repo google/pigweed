@@ -21,19 +21,23 @@
 //! This flexibility is accomplished using Pigweed's
 //! [facade pattern](https://pigweed.dev/docs/facades.html),
 //! which uses build-system redirection to forward log invocations to the
-//! configured backend implementaiton.
+//! configured backend implementation.
 //!
 //! ```
-//! use pw_log::{logf, LogLevel};
+//! use pw_log::{log, info, LogLevel};
 //!
-//! logf!(LogLevel::Info, "Thank you for signing up for Log Facts!");
-//! logf!(LogLevel::Info, "Log Fact: Logs can be either %s, %s, or %s sawn.",
-//!   "flat", "quarter", "rift");
+//! log!(LogLevel::Info, "Thank you for signing up for Log Facts!");
+//! info!("Log Fact: Logs can be either {}, {}, or {} sawn.",
+//!   "flat" as &str, "quarter" as &str, "rift" as &str);
 //! ```
 //!
-//! Today `printf` style format strings are supported with Rust
-//! [`core::fmt`]/`println!()` style strings planned
+//! Today `printf` style format strings are well supported with Rust
+//! [`core::fmt`]/`println!()` style strings partially supported
 //! ([b/311232607](https://issues.pigweed.dev/issues/311232607)).
+//!
+//! Currently, when using a `stable` toolchain, "untyped" arguments (i.e.
+//! `{}` style) need to be in the form of an as-cast.  Users with nightly
+//! toolchains can enable the `nightly_tait` feature to remove this restriction.
 //!
 //! TODO: <pwbug.dev/311266298> - Document `pw_log`'s backend API.
 //!
@@ -47,13 +51,37 @@ pub use pw_log_backend_api::LogLevel;
 #[doc(hidden)]
 pub mod __private {
     pub use crate::*;
-    pub use pw_log_backend;
-    pub use pw_log_backend::pw_logf_backend;
+    // pub use pw_log_backend;
+    pub use pw_log_backend::{pw_log_backend, pw_logf_backend};
+}
+
+/// Emit a log message using `core::fmt` format string semantics.
+///
+/// `log` takes a [`LogLevel`], a `core::fmt` style format string, and necessary
+/// arguments to that string and emits a log message to the logging backend.
+///
+/// ```
+/// use pw_log::{log, LogLevel};
+///
+/// log!(LogLevel::Info, "Log fact: A {} log has a Janka hardness of {} lbf.",
+///      "Spruce Pine" as &str, 700 as i32);
+/// ```
+#[macro_export]
+macro_rules! log {
+  ($log_level:expr, $format_string:literal) => {{
+    use $crate::__private as __pw_log_crate;
+    $crate::__private::pw_log_backend!($log_level, $format_string)
+  }};
+
+  ($log_level:expr, $format_string:literal, $($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    $crate::__private::pw_log_backend!($log_level, $format_string, $($args),*)
+  }};
 }
 
 /// Emit a log message using `printf` format string semantics.
 ///
-/// `logf` takes a [`LogLevel`], a `printf style format string, and necessary
+/// `logf` takes a [`LogLevel`], a `printf` style format string, and necessary
 /// arguments to that string and emits a log message to the logging backend.
 ///
 /// ```
@@ -83,10 +111,26 @@ macro_rules! pw_logf {
   }}
 }
 
+/// Emit a debug level log message using `core:fmt` format string semantics.
+///
+/// ```
+/// use pw_log::debug;
+///
+/// debug!("Log Fact: The American toy Lincoln Logs were inspired by the {} in {}.",
+///     "Imperial Hotel" as &str, "Tokyo" as &str);
+/// ```
+#[macro_export]
+macro_rules! debug {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Debug, $($args),*)
+  }};
+}
+
 /// Emit a debug level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{debugf, LogLevel};
+/// use pw_log::debugf;
 ///
 /// debugf!("Log Fact: The American toy Lincoln Logs were inspired by the %s in %s.",
 ///     "Imperial Hotel", "Tokyo");
@@ -107,10 +151,27 @@ macro_rules! pw_log_debugf {
   }}
 }
 
+/// Emit an info level log message using `core:fmt` format string semantics.
+///
+/// ```
+/// use pw_log::info;
+///
+/// info!(
+///     "Log Fact: The American president Abraham Lincoln (born {}) once lived in a log cabin.",
+///     1809 as u32);
+/// ```
+#[macro_export]
+macro_rules! info {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Info, $($args),*)
+  }};
+}
+
 /// Emit an info level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{infof, LogLevel};
+/// use pw_log::infof;
 ///
 /// infof!(
 ///     "Log Fact: The American president Abraham Lincoln (born %x) once lived in a log cabin.",
@@ -132,10 +193,27 @@ macro_rules! pw_log_infof {
   }}
 }
 
+/// Emit a warn level log message using `core::fmt` format string semantics.
+///
+/// ```
+/// use pw_log::warn;
+///
+/// warn!(
+///     "Log Fact: Made from a log, an {} year old dugout canoe is the oldest discovered boat in {}.",
+///     8000 as i32, "Africa" as &str);
+/// ```
+#[macro_export]
+macro_rules! warn {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Warn, $($args),*)
+  }};
+}
+
 /// Emit a warn level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{warnf, LogLevel};
+/// use pw_log::warnf;
 ///
 /// warnf!(
 ///     "Log Fact: Made from a log, an %d year old dugout canoe is the oldest discovered boat in %s.",
@@ -157,10 +235,27 @@ macro_rules! pw_log_warnf {
   }}
 }
 
+/// Emit an error level log message using `core::fmt` format string semantics.
+///
+/// ```
+/// use pw_log::error;
+///
+/// error!(
+///     "Log Fact: Before saws were invented, the {} was used prepare logs for use.",
+///     "adze" as &str);
+/// ```
+#[macro_export]
+macro_rules! error {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Error, $($args),*)
+  }};
+}
+
 /// Emit an error level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{errorf, LogLevel};
+/// use pw_log::errorf;
 ///
 /// errorf!(
 ///     "Log Fact: Before saws were invented, the %s was used prepare logs for use.",
@@ -180,6 +275,23 @@ macro_rules! pw_log_errorf {
   ($($args:expr),*) => {{
     errorf!($($args),*)
   }}
+}
+
+/// Emit a critical level log message using `core::fmt` format string semantics.
+///
+/// ```
+/// use pw_log::critical;
+///
+/// critical!(
+///     "Log Fact: Until the {}th century, all ships' masts were made from a single log.",
+///     19 as u32);
+/// ```
+#[macro_export]
+macro_rules! critical {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Critical, $($args),*)
+  }};
 }
 
 /// Emit a critical level log message using `printf` format string semantics.
@@ -205,6 +317,23 @@ macro_rules! pw_log_criticalf {
   ($($args:expr),*) => {{
     criticalf!($($args),*)
   }}
+}
+
+/// Emit a fatal level log message using `core::fmt` format string semantics.
+///
+/// *Note*: `fatal` only emits a log message and does not cause a `panic!()`
+///
+/// ```
+/// use pw_log::fatal;
+///
+/// fatal!("Log Fact: All out of log facts! Timber!");
+/// ```
+#[macro_export]
+macro_rules! fatal {
+  ($($args:expr),*) => {{
+    use $crate::__private as __pw_log_crate;
+    __pw_log_crate::log!(__pw_log_crate::LogLevel::Fatal, $($args),*)
+  }};
 }
 
 /// Emit a fatal level log message using `printf` format string semantics.
