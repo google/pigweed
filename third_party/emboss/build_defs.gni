@@ -74,6 +74,7 @@ template("emboss_cc_library") {
       rebase_path("$dir_pw_third_party_emboss/embossc", root_build_dir),
       "--generate",
       "cc",
+      "--no-cc-enum-traits",
       "--output-path",
       rebase_path(output_path, root_build_dir),
       rebase_path(invoker.source, root_build_dir),

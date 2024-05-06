@@ -64,7 +64,8 @@ function(emboss_cc_library NAME)
   set(runner "$ENV{PW_ROOT}/third_party/emboss/embossc_runner.py")
 
   list(APPEND emboss_cmd python3
-    "${runner}" "${embossc}" "--generate" "cc" "--output-path" "${out_dir}")
+    "${runner}" "${embossc}" "--generate" "cc" "--no-cc-enum-traits"
+    "--output-path" "${out_dir}")
 
   foreach(impt IN LISTS DEFAULT_IMPORT_DIRS import_dirs)
     list(APPEND emboss_cmd "--import-dir" "${impt}")

@@ -103,6 +103,7 @@ pw_cc_test(
 emboss_cc_library(
     name = "_emboss_hci_android",
     srcs = ["public/pw_bluetooth/hci_android.emb"],
+    enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
@@ -118,6 +119,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_common",
     srcs = ["public/pw_bluetooth/hci_common.emb"],
+    enable_enum_traits = False,
     visibility = ["//visibility:private"],
 )
 
@@ -130,6 +132,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_commands",
     srcs = ["public/pw_bluetooth/hci_commands.emb"],
+    enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
@@ -144,6 +147,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_data",
     srcs = ["public/pw_bluetooth/hci_data.emb"],
+    enable_enum_traits = False,
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
 )
@@ -157,6 +161,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_events",
     srcs = ["public/pw_bluetooth/hci_events.emb"],
+    enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
@@ -171,6 +176,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_h4",
     srcs = ["public/pw_bluetooth/hci_h4.emb"],
+    enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
 )
@@ -184,6 +190,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_test",
     srcs = ["public/pw_bluetooth/hci_test.emb"],
+    enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
@@ -198,6 +205,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_l2cap_frames",
     srcs = ["public/pw_bluetooth/l2cap_frames.emb"],
+    enable_enum_traits = False,
     visibility = ["//visibility:private"],
 )
 
