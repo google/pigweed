@@ -25,3 +25,6 @@ prabhukr@google.com
 tonymd@google.com
 tpudlik@google.com
 zyecheng@google.com
+
+# Additional owners for updating emboss bazel dependencies
+per-file WORKSPACE=drees@google.com,erahm@google.com,benlawson@google.com
