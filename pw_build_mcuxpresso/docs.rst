@@ -58,6 +58,9 @@ These source sets sets are defined using the ``pw_mcuxpresso_sdk`` template.
 Provide the path to the ``manifest`` XML, along with the names of the components
 you wish to ``include``.
 
+For boards with multiple cores, pass the specific core to filter components for
+in ``device_core``.
+
 .. code-block:: text
 
    import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
@@ -69,6 +72,7 @@ you wish to ``include``.
        "project_template.evkmimxrt595.MIMXRT595S",
        "utility.debug_console.MIMXRT595S",
      ]
+     device_core = "cm33_MIMXRT595S"
    }
 
    pw_executable("hello_world") {
@@ -144,6 +148,7 @@ The ``--prefix`` option specifies the GN location of the SDK files.
        --include utility.debug_console.MIMXRT595S \
        --include component.serial_manager_uart.MIMXRT595S \
        --exclude middleware.freertos-kernel.MIMXRT595S \
+       --device-core cm33_MIMXRT595S \
        --prefix //path/to/sdk
 
 ---------------
@@ -164,7 +169,8 @@ create, along with the names of the components you wish to ``--include`` or
        --include project_template.evkmimxrt595.MIMXRT595S \
        --include utility.debug_console.MIMXRT595S \
        --include component.serial_manager_uart.MIMXRT595S \
-       --exclude middleware.freertos-kernel.MIMXRT595S
+       --exclude middleware.freertos-kernel.MIMXRT595S \
+       --device-core cm33_MIMXRT595S
 
 
 Place the resulting output in a ``BUILD`` file, and then modify your

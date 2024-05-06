@@ -19,25 +19,54 @@ import sys
 import xml.etree.ElementTree
 
 
+def _element_is_compatible_with_device_core(
+    element: xml.etree.ElementTree.Element, device_core: str | None
+) -> bool:
+    """Check whether element is compatible with the given core.
+
+    Args:
+        element: element to check.
+        device_core: name of core to filter sources for.
+
+    Returns:
+        True if element can be used, False otherwise.
+    """
+    if device_core is None:
+        return True
+
+    value = element.attrib.get('device_cores', None)
+    if value is None:
+        return True
+
+    device_cores = value.split()
+    return device_core in device_cores
+
+
 def get_component(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> tuple[xml.etree.ElementTree.Element | None, pathlib.Path | None]:
     """Parse <component> manifest stanza.
 
     Schema:
-        <component id="{component_id}" package_base_path="component">
+        <component id="{component_id}" package_base_path="component"
+                   device_cores="{device_core}...">
         </component>
 
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         (element, base_path) for the component, or (None, None).
     """
     xpath = f'./components/component[@id="{component_id}"]'
     component = root.find(xpath)
-    if component is None:
+    if component is None or not _element_is_compatible_with_device_core(
+        component, device_core
+    ):
         return (None, None)
 
     try:
@@ -48,25 +77,32 @@ def get_component(
 
 
 def parse_defines(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> list[str]:
     """Parse pre-processor definitions for a component.
 
     Schema:
         <defines>
-          <define name="EXAMPLE" value="1"/>
-          <define name="OTHER"/>
+          <define name="EXAMPLE" value="1" device_cores="{device_core}..."/>
+          <define name="OTHER" device_cores="{device_core}..."/>
         </defines>
 
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of str NAME=VALUE or NAME for the component.
     """
     xpath = f'./components/component[@id="{component_id}"]/defines/define'
-    return list(_parse_define(define) for define in root.findall(xpath))
+    return list(
+        _parse_define(define)
+        for define in root.findall(xpath)
+        if _element_is_compatible_with_device_core(define, device_core)
+    )
 
 
 def _parse_define(define: xml.etree.ElementTree.Element) -> str:
@@ -91,20 +127,24 @@ def _parse_define(define: xml.etree.ElementTree.Element) -> str:
 
 
 def parse_include_paths(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> list[pathlib.Path]:
     """Parse include directories for a component.
 
     Schema:
         <component id="{component_id}" package_base_path="component">
           <include_paths>
-            <include_path relative_path="./" type="c_include"/>
+            <include_path relative_path="./" type="c_include"
+                          device_cores="{device_core}..."/>
           </include_paths>
         </component>
 
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of include directories for the component.
@@ -120,6 +160,9 @@ def parse_include_paths(
         include_paths.extend(
             _parse_include_path(include_path, base_path)
             for include_path in component.findall(include_xpath)
+            if _element_is_compatible_with_device_core(
+                include_path, device_core
+            )
         )
     return include_paths
 
@@ -147,13 +190,16 @@ def _parse_include_path(
 
 
 def parse_headers(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> list[pathlib.Path]:
     """Parse header files for a component.
 
     Schema:
         <component id="{component_id}" package_base_path="component">
-          <source relative_path="./" type="c_include">
+          <source relative_path="./" type="c_include"
+                  device_cores="{device_core}...">
             <files mask="example.h"/>
           </source>
         </component>
@@ -161,21 +207,26 @@ def parse_headers(
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of header files for the component.
     """
-    return _parse_sources(root, component_id, 'c_include')
+    return _parse_sources(
+        root, component_id, 'c_include', device_core=device_core
+    )
 
 
 def parse_sources(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> list[pathlib.Path]:
     """Parse source files for a component.
 
     Schema:
         <component id="{component_id}" package_base_path="component">
-          <source relative_path="./" type="src">
+          <source relative_path="./" type="src" device_cores="{device_core}...">
             <files mask="example.cc"/>
           </source>
         </component>
@@ -183,24 +234,31 @@ def parse_sources(
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of source files for the component.
     """
     source_files = []
     for source_type in ('src', 'src_c', 'src_cpp', 'asm_include'):
-        source_files.extend(_parse_sources(root, component_id, source_type))
+        source_files.extend(
+            _parse_sources(
+                root, component_id, source_type, device_core=device_core
+            )
+        )
     return source_files
 
 
 def parse_libs(
-    root: xml.etree.ElementTree.Element, component_id: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    device_core: str | None = None,
 ) -> list[pathlib.Path]:
     """Parse pre-compiled libraries for a component.
 
     Schema:
         <component id="{component_id}" package_base_path="component">
-          <source relative_path="./" type="lib">
+          <source relative_path="./" type="lib" device_cores="{device_core}...">
             <files mask="example.a"/>
           </source>
         </component>
@@ -208,21 +266,26 @@ def parse_libs(
     Args:
         root: root of element tree.
         component_id: id of component to return.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of pre-compiler libraries for the component.
     """
-    return _parse_sources(root, component_id, 'lib')
+    return _parse_sources(root, component_id, 'lib', device_core=device_core)
 
 
 def _parse_sources(
-    root: xml.etree.ElementTree.Element, component_id: str, source_type: str
+    root: xml.etree.ElementTree.Element,
+    component_id: str,
+    source_type: str,
+    device_core: str | None = None,
 ) -> list[pathlib.Path]:
     """Parse <source> manifest stanza.
 
     Schema:
         <component id="{component_id}" package_base_path="component">
-          <source relative_path="./" type="{source_type}">
+          <source relative_path="./" type="{source_type}"
+                  device_cores="{device_core}...">
             <files mask="example.h"/>
           </source>
         </component>
@@ -231,6 +294,7 @@ def _parse_sources(
         root: root of element tree.
         component_id: id of component to return.
         source_type: type of source to search for.
+        device_core: name of core to filter sources for.
 
     Returns:
         list of source files for the component.
@@ -242,6 +306,9 @@ def _parse_sources(
     sources: list[pathlib.Path] = []
     source_xpath = f'./source[@type="{source_type}"]'
     for source in component.findall(source_xpath):
+        if not _element_is_compatible_with_device_core(source, device_core):
+            continue
+
         relative_path = pathlib.Path(source.attrib['relative_path'])
         if base_path is not None:
             relative_path = base_path / relative_path
@@ -326,6 +393,7 @@ def check_dependencies(
     component_id: str,
     include: list[str],
     exclude: list[str] | None = None,
+    device_core: str | None = None,
 ) -> bool:
     """Check the list of optional dependencies for a component.
 
@@ -337,13 +405,16 @@ def check_dependencies(
         component_id: id of component to check.
         include: list of component ids included in the project.
         exclude: list of component ids explicitly excluded from the project.
+        device_core: name of core to filter sources for.
 
     Returns:
         True if dependencies are satisfied, False if not.
     """
     xpath = f'./components/component[@id="{component_id}"]/dependencies/*'
     for dependency in root.findall(xpath):
-        if not _check_dependency(dependency, include, exclude=exclude):
+        if not _check_dependency(
+            dependency, include, exclude=exclude, device_core=device_core
+        ):
             return False
     return True
 
@@ -352,6 +423,7 @@ def _check_dependency(
     dependency: xml.etree.ElementTree.Element,
     include: list[str],
     exclude: list[str] | None = None,
+    device_core: str | None = None,
 ) -> bool:
     """Check a dependency for a component.
 
@@ -362,6 +434,7 @@ def _check_dependency(
         dependency: XML Element of dependency.
         include: list of component ids included in the project.
         exclude: list of component ids explicitly excluded from the project.
+        device_core: name of core to filter sources for.
 
     Returns:
         True if dependencies are satisfied, False if not.
@@ -373,12 +446,16 @@ def _check_dependency(
         )
     if dependency.tag == 'all':
         for subdependency in dependency:
-            if not _check_dependency(subdependency, include, exclude=exclude):
+            if not _check_dependency(
+                subdependency, include, exclude=exclude, device_core=device_core
+            ):
                 return False
         return True
     if dependency.tag == 'any_of':
         for subdependency in dependency:
-            if _check_dependency(subdependency, include, exclude=exclude):
+            if _check_dependency(
+                subdependency, include, exclude=exclude, device_core=device_core
+            ):
                 return True
 
         tree = xml.etree.ElementTree.tostring(dependency).decode('utf-8')
@@ -393,6 +470,7 @@ def create_project(
     root: xml.etree.ElementTree.Element,
     include: list[str],
     exclude: list[str] | None = None,
+    device_core: str | None = None,
 ) -> tuple[
     list[str],
     list[str],
@@ -407,6 +485,7 @@ def create_project(
         root: root of element tree.
         include: list of component ids included in the project.
         exclude: list of component ids excluded from the project.
+        device_core: name of core to filter sources for.
 
     Returns:
         (component_ids, defines, include_paths, headers, sources, libs) for the
@@ -430,34 +509,37 @@ def create_project(
         project_list,
         sum(
             (
-                parse_defines(root, component_id)
+                parse_defines(root, component_id, device_core=device_core)
                 for component_id in project_list
             ),
             [],
         ),
         sum(
             (
-                parse_include_paths(root, component_id)
+                parse_include_paths(root, component_id, device_core=device_core)
                 for component_id in project_list
             ),
             [],
         ),
         sum(
             (
-                parse_headers(root, component_id)
+                parse_headers(root, component_id, device_core=device_core)
                 for component_id in project_list
             ),
             [],
         ),
         sum(
             (
-                parse_sources(root, component_id)
+                parse_sources(root, component_id, device_core=device_core)
                 for component_id in project_list
             ),
             [],
         ),
         sum(
-            (parse_libs(root, component_id) for component_id in project_list),
+            (
+                parse_libs(root, component_id, device_core=device_core)
+                for component_id in project_list
+            ),
             [],
         ),
     )
@@ -482,6 +564,7 @@ class Project:
         manifest_path: pathlib.Path,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
+        device_core: str | None = None,
     ):
         """Create a self-contained project with the specified components.
 
@@ -489,16 +572,20 @@ class Project:
             manifest_path: path to SDK manifest XML.
             include: list of component ids included in the project.
             exclude: list of component ids excluded from the project.
+            device_core: name of core to filter sources for.
         """
         tree = xml.etree.ElementTree.parse(manifest_path)
         root = tree.getroot()
-        return cls(root, include=include, exclude=exclude)
+        return cls(
+            root, include=include, exclude=exclude, device_core=device_core
+        )
 
     def __init__(
         self,
         manifest: xml.etree.ElementTree.Element,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
+        device_core: str | None = None,
     ):
         """Create a self-contained project with the specified components.
 
@@ -506,6 +593,7 @@ class Project:
             manifest: parsed manifest XML.
             include: list of component ids included in the project.
             exclude: list of component ids excluded from the project.
+            device_core: name of core to filter sources for.
         """
         assert (
             include is not None
@@ -518,11 +606,17 @@ class Project:
             self.headers,
             self.sources,
             self.libs,
-        ) = create_project(manifest, include, exclude=exclude)
+        ) = create_project(
+            manifest, include, exclude=exclude, device_core=device_core
+        )
 
         for component_id in self.component_ids:
             if not check_dependencies(
-                manifest, component_id, self.component_ids, exclude=exclude
+                manifest,
+                component_id,
+                self.component_ids,
+                exclude=exclude,
+                device_core=device_core,
             ):
                 self.dependencies_satisfied = False
                 return

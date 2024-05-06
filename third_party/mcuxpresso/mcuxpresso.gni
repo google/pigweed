@@ -44,6 +44,8 @@ declare_args() {
 #
 #  exclude: Optional list of SDK components to exclude from the project.
 #
+#  device_core: Optional name of device core to filter components for.
+#
 #  allow_circular_includes_from, configs, deps, public_configs, public_deps:
 #    Optional extra properties for the source set.
 #
@@ -52,6 +54,7 @@ declare_args() {
 #   pw_mcuxpresso_sdk("sample_project_sdk") {
 #     manifest = "$dir_pw_third_party/mcuxpresso/EVK-MIMXRT595_manifest_v3_8.xml"
 #     include = [ "project_template.evkmimxrt595.MIMXRT595S" ]
+#     device_core = "cm33_MIMXRT595S"
 #   }
 #
 #   pw_executable("hello_world") {
@@ -90,6 +93,13 @@ template("pw_mcuxpresso_sdk") {
         dependency,
       ]
     }
+  }
+
+  if (defined(invoker.device_core)) {
+    _script_args += [
+      "--device_core",
+      invoker.device_core,
+    ]
   }
 
   # This script finds the components distributed with the SDK.

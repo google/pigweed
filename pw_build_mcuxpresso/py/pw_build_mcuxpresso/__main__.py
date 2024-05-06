@@ -41,6 +41,7 @@ def _parse_args() -> argparse.Namespace:
     subparser.add_argument('manifest_filename', type=pathlib.Path)
     subparser.add_argument('--include', type=str, action='append')
     subparser.add_argument('--exclude', type=str, action='append')
+    subparser.add_argument('--device-core', type=str)
     subparser.add_argument('--prefix', dest='path_prefix', type=str)
 
     subparser = subparsers.add_parser(
@@ -50,6 +51,7 @@ def _parse_args() -> argparse.Namespace:
     subparser.add_argument('--name', dest='bazel_name', type=str, required=True)
     subparser.add_argument('--include', type=str, action='append')
     subparser.add_argument('--exclude', type=str, action='append')
+    subparser.add_argument('--device-core', type=str)
     subparser.add_argument('--prefix', dest='path_prefix', type=str)
 
     return parser.parse_args()
@@ -63,6 +65,7 @@ def main():
         args.manifest_filename,
         include=args.include,
         exclude=args.exclude,
+        device_core=args.device_core,
     )
 
     if args.command == 'gn':

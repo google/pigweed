@@ -73,6 +73,43 @@ class GetComponentTest(unittest.TestCase):
         self.assertEqual(component, None)
         self.assertEqual(base_path, None)
 
+    def test_with_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test" package_base_path="test" device_cores="CORE0">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(
+            root, 'test', device_core='CORE0'
+        )
+
+        self.assertIsInstance(component, xml.etree.ElementTree.Element)
+        self.assertEqual(component.tag, 'component')
+        self.assertEqual(base_path, pathlib.Path('test'))
+
+    def test_device_core_not_found(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test" package_base_path="test" device_cores="CORE0">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(
+            root, 'test', device_core='CORE1'
+        )
+
+        self.assertEqual(component, None)
+        self.assertEqual(base_path, None)
+
 
 class ParseDefinesTest(unittest.TestCase):
     """parse_defines tests."""
@@ -108,6 +145,25 @@ class ParseDefinesTest(unittest.TestCase):
         defines = components.parse_defines(root, 'test')
 
         self.assertEqual(defines, [])
+
+    def test_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <defines>
+                <define name="TEST_WITH_CORE" device_cores="CORE0"/>
+                <define name="TEST_WITHOUT_CORE" device_cores="CORE1"/>
+                <define name="TEST_WITHOUT_CORES"/>
+              </defines>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        defines = components.parse_defines(root, 'test', device_core='CORE0')
+
+        self.assertEqual(defines, ['TEST_WITH_CORE', 'TEST_WITHOUT_CORES'])
 
 
 class ParseIncludePathsTest(unittest.TestCase):
@@ -184,6 +240,32 @@ class ParseIncludePathsTest(unittest.TestCase):
         include_paths = components.parse_include_paths(root, 'test')
 
         self.assertEqual(include_paths, [])
+
+    def test_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <include_paths>
+                <include_path relative_path="with_core" type="c_include"
+                              device_cores="CORE0"/>
+                <include_path relative_path="without_core" type="c_include"
+                              device_cores="CORE1"/>
+                <include_path relative_path="without_cores" type="c_include"/>
+              </include_paths>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(
+            root, 'test', device_core='CORE0'
+        )
+
+        self.assertEqual(
+            include_paths,
+            [pathlib.Path('with_core'), pathlib.Path('without_cores')],
+        )
 
 
 class ParseHeadersTest(unittest.TestCase):
@@ -276,6 +358,37 @@ class ParseHeadersTest(unittest.TestCase):
         headers = components.parse_headers(root, 'test')
 
         self.assertEqual(headers, [])
+
+    def test_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <source relative_path="with_core" type="c_include"
+                      device_cores="CORE0">
+                <files mask="test.h"/>
+              </source>
+              <source relative_path="without_core" type="c_include"
+                      device_cores="CORE1">
+                <files mask="test.h"/>
+              </source>
+              <source relative_path="without_cores" type="c_include">
+                <files mask="test.h"/>
+              </source>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test', device_core='CORE0')
+
+        self.assertEqual(
+            headers,
+            [
+                pathlib.Path('with_core/test.h'),
+                pathlib.Path('without_cores/test.h'),
+            ],
+        )
 
 
 class ParseSourcesTest(unittest.TestCase):
@@ -387,6 +500,36 @@ class ParseSourcesTest(unittest.TestCase):
 
         self.assertEqual(sources, [])
 
+    def test_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <source relative_path="with_core" type="src" device_cores="CORE0">
+                <files mask="main.cc"/>
+              </source>
+              <source relative_path="without_core" type="src"
+                      device_cores="CORE1">
+                <files mask="main.cc"/>
+              </source>
+              <source relative_path="without_cores" type="src">
+                <files mask="main.cc"/>
+              </source>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test', device_core='CORE0')
+
+        self.assertEqual(
+            sources,
+            [
+                pathlib.Path('with_core/main.cc'),
+                pathlib.Path('without_cores/main.cc'),
+            ],
+        )
+
 
 class ParseLibsTest(unittest.TestCase):
     """parse_libs tests."""
@@ -472,6 +615,36 @@ class ParseLibsTest(unittest.TestCase):
         libs = components.parse_libs(root, 'test')
 
         self.assertEqual(libs, [])
+
+    def test_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <source relative_path="with_core" type="lib" device_cores="CORE0">
+                <files mask="libtest.a"/>
+              </source>
+              <source relative_path="without_core" type="lib"
+                      device_cores="CORE1">
+                <files mask="libtest.a"/>
+              </source>
+              <source relative_path="without_cores" type="lib">
+                <files mask="libtest.a"/>
+              </source>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test', device_core='CORE0')
+
+        self.assertEqual(
+            libs,
+            [
+                pathlib.Path('with_core/libtest.a'),
+                pathlib.Path('without_cores/libtest.a'),
+            ],
+        )
 
 
 class ParseDependenciesTest(unittest.TestCase):
@@ -835,6 +1008,30 @@ class ProjectTest(unittest.TestCase):
               <include_paths>
                 <include_path relative_path="include" type="c_include"/>
               </include_paths>
+              <!-- core0 should be included in the project -->
+              <source relative_path="include" type="c_include"
+                      device_cores="CORE0">
+                <files mask="core0.h"/>
+              </source>
+              <source relative_path="src" type="src" device_cores="CORE0">
+                <files mask="core0.cc"/>
+              </source>
+              <!-- core1 should not be included in the project -->
+              <source relative_path="include" type="c_include"
+                      device_cores="CORE1">
+                <files mask="core1.h"/>
+              </source>
+              <source relative_path="src" type="src" device_cores="CORE1">
+                <files mask="core0.cc"/>
+              </source>
+              <!-- common should be -->
+              <source relative_path="include" type="c_include"
+                      device_cores="CORE0 CORE1">
+                <files mask="common.h"/>
+              </source>
+              <source relative_path="src" type="src" device_cores="CORE0 CORE1">
+                <files mask="common.cc"/>
+              </source>
             </component>
             <component id="bar" package_base_path="bar">
               <defines>
@@ -905,7 +1102,10 @@ class ProjectTest(unittest.TestCase):
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         project = components.Project(
-            root, ['test', 'frodo'], exclude=['baz', 'bilbo']
+            root,
+            ['test', 'frodo'],
+            exclude=['baz', 'bilbo'],
+            device_core='CORE0',
         )
 
         self.assertEqual(project.component_ids, ['test', 'frodo', 'foo', 'bar'])
@@ -923,6 +1123,8 @@ class ProjectTest(unittest.TestCase):
             [
                 pathlib.Path('frodo/include/frodo.h'),
                 pathlib.Path('foo/include/foo.h'),
+                pathlib.Path('foo/include/core0.h'),
+                pathlib.Path('foo/include/common.h'),
                 pathlib.Path('bar/include/bar.h'),
             ],
         )
@@ -931,6 +1133,8 @@ class ProjectTest(unittest.TestCase):
             [
                 pathlib.Path('frodo/src/frodo.cc'),
                 pathlib.Path('foo/src/foo.cc'),
+                pathlib.Path('foo/src/core0.cc'),
+                pathlib.Path('foo/src/common.cc'),
                 pathlib.Path('bar/src/bar.cc'),
             ],
         )
