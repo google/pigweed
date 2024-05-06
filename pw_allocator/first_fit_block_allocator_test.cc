@@ -21,26 +21,27 @@
 namespace {
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::test::BlockAllocatorTest;
 using ::pw::allocator::test::Preallocation;
-using FirstFitBlockAllocatorType =
-    ::pw::allocator::FirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+using FirstFitBlockAllocator =
+    ::pw::allocator::FirstFitBlockAllocator<uint16_t>;
+using BlockAllocatorTest =
+    ::pw::allocator::test::BlockAllocatorTest<FirstFitBlockAllocator>;
 
 class FirstFitBlockAllocatorTest : public BlockAllocatorTest {
  public:
   FirstFitBlockAllocatorTest() : BlockAllocatorTest(allocator_) {}
 
  private:
-  FirstFitBlockAllocatorType allocator_;
+  FirstFitBlockAllocator allocator_;
 };
 
 TEST_F(FirstFitBlockAllocatorTest, CanAutomaticallyInit) {
-  FirstFitBlockAllocatorType allocator(GetBytes());
+  FirstFitBlockAllocator allocator(GetBytes());
   CanAutomaticallyInit(allocator);
 }
 
 TEST_F(FirstFitBlockAllocatorTest, CanExplicitlyInit) {
-  FirstFitBlockAllocatorType allocator;
+  FirstFitBlockAllocator allocator;
   CanExplicitlyInit(allocator);
 }
 

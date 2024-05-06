@@ -22,10 +22,11 @@ namespace {
 // Test fixtures.
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::test::BlockAllocatorTest;
 using ::pw::allocator::test::Preallocation;
-using DualFirstFitBlockAllocatorType =
-    ::pw::allocator::DualFirstFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+using DualFirstFitBlockAllocator =
+    ::pw::allocator::DualFirstFitBlockAllocator<uint16_t>;
+using BlockAllocatorTest =
+    ::pw::allocator::test::BlockAllocatorTest<DualFirstFitBlockAllocator>;
 
 // Minimum size of a "large" allocation; allocation less than this size are
 // considered "small" when using the DualFirstFit strategy.
@@ -37,18 +38,18 @@ class DualFirstFitBlockAllocatorTest : public BlockAllocatorTest {
   DualFirstFitBlockAllocatorTest() : BlockAllocatorTest(allocator_) {}
 
  private:
-  DualFirstFitBlockAllocatorType allocator_;
+  DualFirstFitBlockAllocator allocator_;
 };
 
 // Unit tests.
 
 TEST_F(DualFirstFitBlockAllocatorTest, CanAutomaticallyInit) {
-  DualFirstFitBlockAllocatorType allocator(GetBytes(), kDualFitThreshold);
+  DualFirstFitBlockAllocator allocator(GetBytes(), kDualFitThreshold);
   CanAutomaticallyInit(allocator);
 }
 
 TEST_F(DualFirstFitBlockAllocatorTest, CanExplicitlyInit) {
-  DualFirstFitBlockAllocatorType allocator;
+  DualFirstFitBlockAllocator allocator;
   CanExplicitlyInit(allocator);
 }
 
@@ -77,7 +78,7 @@ TEST_F(DualFirstFitBlockAllocatorTest, AllocatesUsingThreshold) {
       {kSmallOuterSize, Preallocation::kIndexFree},
   });
   auto& dual_first_fit_block_allocator =
-      static_cast<DualFirstFitBlockAllocatorType&>(allocator);
+      static_cast<DualFirstFitBlockAllocator&>(allocator);
   dual_first_fit_block_allocator.set_threshold(kDualFitThreshold);
 
   Store(0, allocator.Allocate(Layout(kLargeInnerSize, 1)));

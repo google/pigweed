@@ -22,28 +22,28 @@ namespace {
 // Test fixtures.
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::test::BlockAllocatorTest;
 using ::pw::allocator::test::Preallocation;
-using LastFitBlockAllocatorType =
-    ::pw::allocator::LastFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+using LastFitBlockAllocator = ::pw::allocator::LastFitBlockAllocator<uint16_t>;
+using BlockAllocatorTest =
+    ::pw::allocator::test::BlockAllocatorTest<LastFitBlockAllocator>;
 
 class LastFitBlockAllocatorTest : public BlockAllocatorTest {
  public:
   LastFitBlockAllocatorTest() : BlockAllocatorTest(allocator_) {}
 
  private:
-  LastFitBlockAllocatorType allocator_;
+  LastFitBlockAllocator allocator_;
 };
 
 // Unit tests.
 
 TEST_F(LastFitBlockAllocatorTest, CanAutomaticallyInit) {
-  LastFitBlockAllocatorType allocator(GetBytes());
+  LastFitBlockAllocator allocator(GetBytes());
   CanAutomaticallyInit(allocator);
 }
 
 TEST_F(LastFitBlockAllocatorTest, CanExplicitlyInit) {
-  LastFitBlockAllocatorType allocator;
+  LastFitBlockAllocator allocator;
   CanExplicitlyInit(allocator);
 }
 

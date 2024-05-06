@@ -134,6 +134,13 @@ DualFirstFitBlockAllocator
 .. doxygenclass:: pw::allocator::DualFirstFitBlockAllocator
    :members:
 
+.. _module-pw_allocator-api-bucket_block_allocator:
+
+BucketBlockAllocator
+====================
+.. doxygenclass:: pw::allocator::BucketBlockAllocator
+   :members:
+
 .. _module-pw_allocator-api-buddy_allocator:
 
 BuddyAllocator
@@ -231,6 +238,13 @@ Block
    abstraction in this manner will limit your flexibility to change to a
    different allocator in the future.
 
+.. _module-pw_allocator-api-bucket:
+
+Bucket
+======
+.. doxygenclass:: pw::allocator::internal::Bucket
+   :members:
+
 .. _module-pw_allocator-api-metrics_adapter:
 
 Metrics
@@ -243,13 +257,7 @@ This class is templated on a ``MetricsType`` struct. See
 struct, this class, and :ref:`module-pw_allocator-api-tracking_allocator`
 interact.
 
-This modules also includes two concrete metrics types that can be used as the
-template parameter of this class:
-
-- ``AllMetrics``, which enables all metrics.
-- ``NoMetrics``, which disables all metrics.
-
-Additionally, module consumers can define their own metrics structs using the
+Module consumers can define their own metrics structs using the
 following macros:
 
 .. doxygendefine:: PW_ALLOCATOR_METRICS_DECLARE

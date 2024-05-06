@@ -38,6 +38,15 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
+    name = "bucket_block_allocator",
+    srcs = ["bucket_block_allocator.cc"],
+    deps = [
+        "//pw_allocator:bucket_block_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
     name = "buddy_allocator",
     srcs = ["buddy_allocator.cc"],
     deps = [

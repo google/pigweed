@@ -17,6 +17,7 @@
 #include <new>
 
 #include "pw_assert/check.h"
+#include "pw_assert/internal/check_impl.h"
 
 namespace pw::allocator::internal {
 

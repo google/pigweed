@@ -222,6 +222,9 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
     threshold value. This strategy preserves the speed of the two other
     strategies, while fragmenting memory less by co-locating allocations of
     similar sizes.
+  - :ref:`module-pw_allocator-api-bucket_block_allocator`: Sorts and stores
+    each free blocks in a :ref:`module-pw_allocator-api-bucket` with a given
+    maximum chunk size.
 
 - :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
   destroys objects of a single given type.

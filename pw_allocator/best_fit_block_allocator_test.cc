@@ -22,28 +22,28 @@ namespace {
 // Test fixtures.
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::test::BlockAllocatorTest;
 using ::pw::allocator::test::Preallocation;
-using BestFitBlockAllocatorType =
-    ::pw::allocator::BestFitBlockAllocator<BlockAllocatorTest::OffsetType>;
+using BestFitBlockAllocator = ::pw::allocator::BestFitBlockAllocator<uint16_t>;
+using BlockAllocatorTest =
+    ::pw::allocator::test::BlockAllocatorTest<BestFitBlockAllocator>;
 
 class BestFitBlockAllocatorTest : public BlockAllocatorTest {
  public:
   BestFitBlockAllocatorTest() : BlockAllocatorTest(allocator_) {}
 
  private:
-  BestFitBlockAllocatorType allocator_;
+  BestFitBlockAllocator allocator_;
 };
 
 // Unit tests.
 
 TEST_F(BestFitBlockAllocatorTest, CanAutomaticallyInit) {
-  BestFitBlockAllocatorType allocator(GetBytes());
+  BestFitBlockAllocator allocator(GetBytes());
   CanAutomaticallyInit(allocator);
 }
 
 TEST_F(BestFitBlockAllocatorTest, CanExplicitlyInit) {
-  BestFitBlockAllocatorType allocator;
+  BestFitBlockAllocator allocator;
   CanExplicitlyInit(allocator);
 }
 

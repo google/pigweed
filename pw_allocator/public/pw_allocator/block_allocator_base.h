@@ -93,6 +93,8 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// This method will instantiate an initial block using the memory region.
   ///
+  /// TODO(b/338389412): Make infallible.
+  ///
   /// @param[in]  region              The memory region for this allocator.
   ///
   /// @returns @rst
@@ -112,10 +114,34 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 
   /// Sets the blocks to be used by this allocator.
   ///
-  /// This method will use the sequence blocks as-is, which must be valid. If
-  /// `end` is not provided, the sequence extends to a block marked "last".
+  /// This method will use the sequence blocks as-is, which must be valid. The
+  /// sequence extends to a block marked "last".
   ///
-  /// @param[in]  region              The memory region for this allocator.
+  /// TODO(b/338389412): Make infallible.
+  ///
+  /// @param[in]  begin               The first block for this allocator.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The allocator is initialized.
+  ///
+  ///    INVALID_ARGUMENT: The first block is null.
+  ///
+  /// @endrst
+  Status Init(BlockType* begin) { return Init(begin, nullptr); }
+
+  /// Sets the blocks to be used by this allocator.
+  ///
+  /// This method will use the sequence blocks as-is, which must be valid.
+  ///
+  /// TODO(b/338389412): Make infallible.
+  ///
+  /// @param[in]  begin               The first block for this allocator.
+  /// @param[in]  end                 The last block for this allocator. May be
+  ///                                 null, in which case the sequence ends with
+  ///                                 the first block marked "last".
   ///
   /// @returns @rst
   ///
@@ -126,7 +152,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///    INVALID_ARGUMENT: The block sequence is empty.
   ///
   /// @endrst
-  Status Init(BlockType* begin, BlockType* end = nullptr);
+  virtual Status Init(BlockType* begin, BlockType* end);
 
   /// Initializes the allocator with preconfigured blocks.
   ///
@@ -179,6 +205,14 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @param  layout  Same as ``Allocator::Allocate``.
   virtual BlockType* ChooseBlock(Layout layout) = 0;
+
+  /// Makes this block available for allocation again.
+  ///
+  /// This method is called when a block is deallocated. By default, it does
+  /// nothing.
+  ///
+  /// @param  block   The block beind deallocated.
+  virtual void RecycleBlock(BlockType* block);
 
   /// Returns the block associated with a pointer.
   ///
@@ -306,6 +340,7 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
       unpoisoned_ = 0;
     }
   }
+  RecycleBlock(block);
 }
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
@@ -359,6 +394,10 @@ Status BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoQuery(
     const void* ptr) const {
   return FromUsableSpace(ptr).status();
 }
+
+template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::RecycleBlock(
+    BlockType*) {}
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 template <typename PtrType, typename BlockPtrType>

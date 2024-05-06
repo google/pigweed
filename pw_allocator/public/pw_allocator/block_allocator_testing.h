@@ -19,6 +19,9 @@
 
 #include "pw_allocator/block.h"
 #include "pw_allocator/block_allocator.h"
+#include "pw_assert/assert.h"
+#include "pw_bytes/alignment.h"
+#include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
@@ -27,15 +30,13 @@ namespace pw::allocator::test {
 struct Preallocation;
 
 /// Test fixture responsible for managing a memory region and an allocator that
-/// allocates from it.
-class BlockAllocatorTest : public ::testing::Test {
+/// allocates block of memory from it.
+///
+/// This base class contains all the code that does not depend specific
+/// `Block` or `BlockAllocator` types.
+class BlockAllocatorTestBase : public ::testing::Test {
  public:
-  using OffsetType = uint16_t;
-  using BlockType = Block<OffsetType>;
-  using BlockAllocatorType = BlockAllocator<OffsetType, 0, alignof(OffsetType)>;
-
-  static_assert(
-      std::is_same_v<BlockType, typename BlockAllocatorType::BlockType>);
+  static constexpr size_t kDefaultBlockOverhead = Block<>::kBlockOverhead;
 
   // Size of the memory region to use in the tests below.
   static constexpr size_t kCapacity = 1024;
@@ -43,41 +44,38 @@ class BlockAllocatorTest : public ::testing::Test {
   // The number of allocated pointers cached by the test fixture.
   static constexpr size_t kNumPtrs = 16;
 
-  // Represents the sizes of varios allocations.
+  // Represents the sizes of various allocations.
   static constexpr size_t kLargeInnerSize = kCapacity / 8;
   static constexpr size_t kLargeOuterSize =
-      BlockType::kBlockOverhead + kLargeInnerSize;
+      kDefaultBlockOverhead + kLargeInnerSize;
 
-  static constexpr size_t kSmallInnerSize = BlockType::kBlockOverhead * 2;
+  static constexpr size_t kSmallInnerSize = kDefaultBlockOverhead * 2;
   static constexpr size_t kSmallOuterSize =
-      BlockType::kBlockOverhead + kSmallInnerSize;
+      kDefaultBlockOverhead + kSmallInnerSize;
 
   static constexpr size_t kSmallerOuterSize = kSmallInnerSize;
   static constexpr size_t kLargerOuterSize =
       kLargeOuterSize + kSmallerOuterSize;
 
  protected:
-  BlockAllocatorTest(BlockAllocatorType& allocator);
-
   // Test fixtures.
-
   void SetUp() override;
 
   /// Returns the underlying memory region.
-  ByteSpan GetBytes();
+  virtual ByteSpan GetBytes() = 0;
 
   /// Initialize the allocator with a region of memory and return it.
-  BlockAllocatorType& GetAllocator();
+  virtual Allocator& GetAllocator() = 0;
 
   /// Initialize the allocator with a sequence of preallocated blocks and return
   /// it.
   ///
   /// See also ``Preallocation``.
-  BlockAllocatorType& GetAllocator(
-      std::initializer_list<Preallocation> preallocations);
+  virtual Allocator& GetAllocator(
+      std::initializer_list<Preallocation> preallocations) = 0;
 
   /// Gets the next allocation from an allocated pointer.
-  void* NextAfter(size_t index);
+  virtual void* NextAfter(size_t index) = 0;
 
   /// Store an allocated pointer in the test's cache of pointers.
   void Store(size_t index, void* ptr);
@@ -88,11 +86,7 @@ class BlockAllocatorTest : public ::testing::Test {
   /// Ensures the memory is usable by writing to it.
   void UseMemory(void* ptr, size_t size);
 
-  void TearDown() override;
-
   // Unit tests.
-  void CanAutomaticallyInit(BlockAllocatorType& allocator);
-  void CanExplicitlyInit(BlockAllocatorType& allocator);
   void GetCapacity();
   void AllocateLarge();
   void AllocateSmall();
@@ -101,7 +95,6 @@ class BlockAllocatorTest : public ::testing::Test {
   void AllocateAlignmentFailure();
   void DeallocateNull();
   void DeallocateShuffled();
-  void IterateOverBlocks();
   void ResizeNull();
   void ResizeLargeSame();
   void ResizeLargeSmaller();
@@ -112,12 +105,47 @@ class BlockAllocatorTest : public ::testing::Test {
   void ResizeSmallLarger();
   void ResizeSmallLargerFailure();
   void CanGetLayoutFromValidPointer();
+
+ private:
+  std::array<void*, kNumPtrs> ptrs_;
+};
+
+/// Test fixture responsible for managing a memory region and an allocator that
+/// allocates block of memory from it.
+///
+/// This derived class contains all the code that depends specific `Block` or
+/// `BlockAllocator` types.
+///
+/// @tparam BlockAllocatorType  The type of the `BlockAllocator` being tested.
+template <typename BlockAllocatorType>
+class BlockAllocatorTest : public BlockAllocatorTestBase {
+ public:
+  using BlockType = typename BlockAllocatorType::BlockType;
+
+ protected:
+  // Test fixtures.
+  BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {}
+
+  ByteSpan GetBytes() override { return ByteSpan(buffer_); }
+
+  Allocator& GetAllocator() override;
+
+  Allocator& GetAllocator(
+      std::initializer_list<Preallocation> preallocations) override;
+
+  void* NextAfter(size_t index) override;
+
+  void TearDown() override;
+
+  // Unit tests.
+  static void CanAutomaticallyInit(BlockAllocatorType& allocator);
+  void CanExplicitlyInit(BlockAllocatorType& allocator);
+  void IterateOverBlocks();
   void CannotGetLayoutFromInvalidPointer();
 
  private:
   BlockAllocatorType& allocator_;
   alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer_;
-  std::array<void*, kNumPtrs> ptrs_;
 };
 
 /// Represents an initial state for a memory block.
@@ -164,10 +192,187 @@ struct Preallocation {
 
   /// Special value indicating the block should be treated as unallocated,
   /// i.e. it's pointer should not be cached.
-  static constexpr size_t kIndexFree = BlockAllocatorTest::kNumPtrs + 1;
+  static constexpr size_t kIndexFree = BlockAllocatorTestBase::kNumPtrs + 1;
 
   /// Special value indicating to use the next available index.
-  static constexpr size_t kIndexNext = BlockAllocatorTest::kNumPtrs + 2;
+  static constexpr size_t kIndexNext = BlockAllocatorTestBase::kNumPtrs + 2;
 };
+
+// Test fixture template method implementations.
+
+template <typename BlockAllocatorType>
+Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
+  EXPECT_EQ(allocator_.Init(GetBytes()), OkStatus());
+  return allocator_;
+}
+
+template <typename BlockAllocatorType>
+Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
+    std::initializer_list<Preallocation> preallocations) {
+  // First, look if any blocks use kSizeRemaining, and calculate how large
+  // that will be.
+  size_t remaining_outer_size = kCapacity;
+  for (auto& preallocation : preallocations) {
+    if (preallocation.outer_size != Preallocation::kSizeRemaining) {
+      size_t outer_size =
+          AlignUp(preallocation.outer_size, BlockType::kAlignment);
+      PW_ASSERT(remaining_outer_size >= outer_size);
+      remaining_outer_size -= outer_size;
+    }
+  }
+
+  Result<BlockType*> result = BlockType::Init(GetBytes());
+  PW_ASSERT(result.ok());
+  BlockType* block = *result;
+  void* begin = block->UsableSpace();
+
+  // To prevent free blocks being merged back into the block of available
+  // space, treat the available space as being used.
+  block->MarkUsed();
+
+  size_t next_index = 0;
+  for (auto& preallocation : preallocations) {
+    PW_ASSERT(block != nullptr);
+
+    // Perform the allocation.
+    size_t outer_size = preallocation.outer_size;
+    if (outer_size == Preallocation::kSizeRemaining) {
+      outer_size = remaining_outer_size;
+      remaining_outer_size = 0;
+    }
+    size_t inner_size = outer_size - BlockType::kBlockOverhead;
+
+    block->MarkFree();
+    PW_ASSERT(BlockType::AllocFirst(block, inner_size, 1).ok());
+    if (!block->Last()) {
+      block->Next()->MarkUsed();
+    }
+
+    // Free the block or cache the allocated pointer.
+    if (preallocation.index == Preallocation::kIndexFree) {
+      BlockType::Free(block);
+
+    } else if (preallocation.index == Preallocation::kIndexNext) {
+      while (true) {
+        PW_ASSERT(next_index < kNumPtrs);
+        if (Fetch(next_index) == nullptr &&
+            std::all_of(preallocations.begin(),
+                        preallocations.end(),
+                        [next_index](const Preallocation& other) {
+                          return other.index != next_index;
+                        })) {
+          break;
+        }
+        ++next_index;
+      }
+      Store(next_index, block->UsableSpace());
+
+    } else {
+      Store(preallocation.index, block->UsableSpace());
+    }
+    block = block->Next();
+  }
+  if (block != nullptr) {
+    block->MarkFree();
+  }
+  block = BlockType::FromUsableSpace(begin);
+  PW_ASSERT(allocator_.Init(block).ok());
+  return allocator_;
+}
+
+template <typename BlockAllocatorType>
+void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
+  if (index > kNumPtrs) {
+    return nullptr;
+  }
+  auto* block = BlockType::FromUsableSpace(Fetch(index));
+  while (!block->Last()) {
+    block = block->Next();
+    if (block->Used()) {
+      return block->UsableSpace();
+    }
+  }
+  return nullptr;
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
+  for (size_t i = 0; i < kNumPtrs; ++i) {
+    if (Fetch(i) != nullptr) {
+      allocator_.Deallocate(Fetch(i));
+    }
+  }
+  allocator_.Reset();
+}
+
+// Unit tests template method implementations.
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::CanAutomaticallyInit(
+    BlockAllocatorType& allocator) {
+  EXPECT_NE(*(allocator.blocks().begin()), nullptr);
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::CanExplicitlyInit(
+    BlockAllocatorType& allocator) {
+  EXPECT_EQ(*(allocator.blocks().begin()), nullptr);
+  EXPECT_EQ(allocator.Init(GetBytes()), pw::OkStatus());
+  EXPECT_NE(*(allocator.blocks().begin()), nullptr);
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
+  Allocator& allocator = GetAllocator({
+      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize, Preallocation::kIndexNext},
+      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize, Preallocation::kIndexNext},
+      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize, Preallocation::kIndexNext},
+      {Preallocation::kSizeRemaining, Preallocation::kIndexFree},
+  });
+
+  // Count the blocks. The unallocated ones vary in size, but the allocated ones
+  // should all be the same.
+  size_t free_count = 0;
+  size_t used_count = 0;
+  auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);
+  for (auto* block : block_allocator.blocks()) {
+    if (block->Used()) {
+      EXPECT_EQ(block->OuterSize(), kLargeOuterSize);
+      ++used_count;
+    } else {
+      ++free_count;
+    }
+  }
+  EXPECT_EQ(used_count, 3U);
+  EXPECT_EQ(free_count, 4U);
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<
+    BlockAllocatorType>::CannotGetLayoutFromInvalidPointer() {
+  Allocator& allocator = GetAllocator({
+      {kLargerOuterSize, 0},
+      {kLargeOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize, 2},
+      {kSmallerOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize, 4},
+      {kLargeOuterSize, Preallocation::kIndexFree},
+      {kLargerOuterSize, 6},
+  });
+
+  Result<Layout> result0 = allocator.GetLayout(nullptr);
+  EXPECT_EQ(result0.status(), Status::NotFound());
+
+  auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);
+  for (const auto& block : block_allocator.blocks()) {
+    if (!block->Used()) {
+      Result<Layout> result1 = allocator.GetLayout(block->UsableSpace());
+      EXPECT_EQ(result1.status(), Status::FailedPrecondition());
+    }
+  }
+}
 
 }  // namespace pw::allocator::test
