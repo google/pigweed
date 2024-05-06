@@ -128,12 +128,6 @@ class Chunk {
   /// This method will acquire a mutex and is not IRQ safe.
   void DiscardPrefix(size_t bytes_to_discard);
 
-  // TODO(b/327033010): remove once all callers have migrated.
-  /// Deprecated alias for DiscardPrefix.
-  [[deprecated]] void DiscardFront(size_t bytes_to_discard) {
-    DiscardPrefix(bytes_to_discard);
-  }
-
   /// Shrinks this handle to refer to data in the range ``begin..<end``.
   ///
   /// Does not modify the underlying data.
