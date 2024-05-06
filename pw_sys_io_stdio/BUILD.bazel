@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -29,7 +24,11 @@ constraint_value(
 cc_library(
     name = "pw_sys_io_stdio",
     srcs = ["sys_io.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = select({
+        ":backend": [],
+        "//pw_sys_io:unspecified": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:pw_sys_io.facade",

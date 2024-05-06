@@ -21,7 +21,12 @@ Setup
 This module requires relatively minimal setup:
 
 1. Write code against the ``pw_sys_io`` facade.
-2. Direct the ``pw_sys_io_BACKEND`` GN build arg to point to this backend.
+2. Setup build system to point to this backend.
+
+ - For GN, direct the ``pw_sys_io_BACKEND`` GN build arg to point here.
+ - For Bazel, the default backend multiplexer will automatically pick this stdio
+   backend for host builds. To use this backend on non-host platforms, add the
+   ``@pigweed//pw_sys_io_stdio:backend`` constraint_value to your platform.
 
 Module usage
 ============

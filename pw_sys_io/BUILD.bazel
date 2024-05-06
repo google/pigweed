@@ -24,6 +24,12 @@ licenses(["notice"])
 
 constraint_setting(
     name = "backend_constraint_setting",
+    default_constraint_value = "unspecified",
+)
+
+constraint_value(
+    name = "unspecified",
+    constraint_setting = ":backend_constraint_setting",
 )
 
 # TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
@@ -69,6 +75,7 @@ alias(
         "//pw_sys_io_rp2040:backend": "@pigweed//pw_sys_io_rp2040",
         "//pw_sys_io_stm32cube:backend": "@pigweed//pw_sys_io_stm32cube",
         "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
+        ":unspecified": ":unspecified_backend",
         "//conditions:default": ":unspecified_backend",
     }),
     visibility = ["@pigweed//targets:__pkg__"],
