@@ -266,9 +266,11 @@ void TestReallocate() {
   for (auto& allocation : allocations) {
     EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
     Layout new_layout = allocation.layout.Extend(1);
-    if (!synchronized.Reallocate(allocation.ptr, new_layout)) {
+    void* new_ptr = synchronized.Reallocate(allocation.ptr, new_layout);
+    if (new_ptr == nullptr) {
       continue;
     }
+    allocation.ptr = new_ptr;
     allocation.layout = new_layout;
     allocation.Paint();
     pw::this_thread::yield();
