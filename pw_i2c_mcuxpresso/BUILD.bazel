@@ -43,3 +43,33 @@ pw_cc_test(
     srcs = ["initiator_test.cc"],
     deps = [":pw_i2c_mcuxpresso"],
 )
+
+cc_library(
+    name = "i3c_ccc",
+    hdrs = [
+        "public/pw_i2c_mcuxpresso/i3c_ccc.h",
+    ],
+    includes = ["public"],
+)
+
+cc_library(
+    name = "i3c_initiator",
+    srcs = ["i3c_initiator.cc"],
+    hdrs = [
+        "public/pw_i2c_mcuxpresso/i3c_initiator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":i3c_ccc",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_containers:vector",
+        "//pw_i2c:address",
+        "//pw_i2c:initiator",
+        "//pw_log",
+        "//pw_status",
+        "//pw_sync:mutex",
+        "//third_party/fuchsia:stdcompat",
+        "@pigweed//targets:mcuxpresso_sdk",
+    ],
+)

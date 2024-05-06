@@ -12,6 +12,10 @@ NXP MCUXpresso SDK.
 The implementation is based on the i2c driver in SDK. I2C transfers use
 non-blocking driver API.
 
+``I3cMcuxpressoInitiator`` implements the ``pw_i2c`` initiator interface using
+the MCUXpresso I3C driver. It exposes a few I3C specific API's for setting up
+the bus, allowing normal I2C API's to work after setup.
+
 -----
 Setup
 -----
@@ -40,3 +44,23 @@ Usage
    };
    McuxpressoInitiator initiator{kConfig};
    initiator.Enable();
+
+``I3cMcuxpressoInitiator`` example usage.
+
+.. code-block:: cpp
+
+   constexpr I3cMcuxpressoInitiator::Config kI3c0Config = {
+    .base_address = I3C0_BASE,
+    .i2c_baud_rate = kI3cI2cBaudRate,
+    .i3c_open_drain_baud_rate = kI3cOpenDrainBaudRate,
+    .i3c_push_pull_baud_rate = kI3cPushPullBaudRate,
+    .enable_open_drain_stop = false,  // NXP default
+    .enable_open_drain_high = true,   // necessary to allow bus to operate in
+                                      // mixed mode
+   };
+
+   I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config};
+
+   const std::array dynamic_address_list = {kDynamicAddress};
+   PW_TRY(i3c_initiator.SetDynamicAddressList(dynamic_address_list));
+   PW_TRY(i3c_initiator.Initialize());
