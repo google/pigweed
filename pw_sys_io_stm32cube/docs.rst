@@ -63,6 +63,11 @@ more details.
   The alternate function index to use for USART reception within the port set by
   ``PW_SYS_IO_STM32CUBE_GPIO_PORT``.
 
+.. c:macro:: PW_SYS_IO_STM32CUBE_GPIO_REMAP
+
+  Remap alternate function for USART reception (either ENABLE or DISABLE). It
+  only applies to the stm32f1xx family.
+
 .. c:macro:: PW_SYS_IO_STM32CUBE_USART_PREFIX
 
   The peripheral name prefix (either UART or USART) for the peripheral selected

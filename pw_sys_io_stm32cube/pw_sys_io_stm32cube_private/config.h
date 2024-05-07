@@ -53,6 +53,11 @@
 #define PW_SYS_IO_STM32CUBE_GPIO_AF 7
 #endif  // PW_SYS_IO_STM32CUBE_GPIO_AF
 
+// The remap to enable for configuring USART pins (stm32f1xx family only).
+#ifndef PW_SYS_IO_STM32CUBE_GPIO_REMAP
+#define PW_SYS_IO_STM32CUBE_GPIO_REMAP DISABLE
+#endif  // PW_SYS_IO_STM32CUBE_GPIO_REMAP
+
 // The type of this peripheral. "USART" or "UART".
 #ifndef PW_SYS_IO_STM32CUBE_USART_PREFIX
 #define PW_SYS_IO_STM32CUBE_USART_PREFIX USART
