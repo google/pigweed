@@ -66,6 +66,9 @@ Get started
 -----------
 .. repository: https://bazel.build/concepts/build-ref#repositories
 
+1. Add Emboss to your project as described in
+   :ref:`module-pw_third_party_emboss`.
+
 .. tab-set::
 
    .. tab-item:: Bazel
@@ -75,10 +78,7 @@ Get started
    .. tab-item:: GN
       :selected:
 
-      First add emboss to your project as described in
-      :ref:`module-pw_third_party_emboss`.
-
-      Then add ``$dir_pw_bluetooth_proxy`` to
+      2. Then add ``$dir_pw_bluetooth_proxy`` to
       the ``deps`` list in your ``pw_executable()`` build target:
 
       .. code-block::
@@ -94,8 +94,8 @@ Get started
 
    .. tab-item:: CMake
 
-      CMake isn't supported yet (but will be soon).
-
+      2. Then add ``pw_bluetooth_proxy`` to
+      the ``DEPS`` list in your cmake target:
 
 .. _module-pw_bluetooth_proxy-reference:
 

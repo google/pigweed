@@ -51,8 +51,8 @@ pw_source_set("pw_bluetooth_proxy") {
     "//pw_bluetooth:emboss_hci_common",
     "//pw_bluetooth:emboss_hci_events",
     "//pw_bluetooth:emboss_hci_h4",
-    dir_pw_assert,
     dir_pw_function,
+    dir_pw_log,
     dir_pw_span,
   ]
   deps = [ dir_pw_log ]
