@@ -156,7 +156,7 @@ pw_seed("0115") {
 pw_seed("0116") {
   changelist = 177696
   title = "pw_net Sockets"
-  status = "Open for Comments"
+  status = "On Hold"
   author = "Wyatt Hepler"
   facilitator = "Taylor Cramer"
 }
