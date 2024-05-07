@@ -277,7 +277,7 @@ family. To do so,
     .. code-block::
 
        build:stm32f429i --platforms=//targets/stm32f429i_disc1_stm32cube:platform
-       build:stm32f429i --@pigweed//third_party/stm32cube:stm32_hal_driver=@stm32f4xx_hal_driver//:hal_driver
+       build:stm32f429i --@pigweed//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
        build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
        build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
 
@@ -320,8 +320,8 @@ Optional
 --------
 These label flags can be used to further customize the behavior of STM32Cube.
 
-``//third_party/stm32cube:stm32_hal_driver``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``//third_party/stm32cube:hal_driver``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This label_flag introduces a layer of indirection useful when building a
 project that requires more than one STM32Cube package (see
 :ref:`module-pw_stm32cube_build-bazel-multifamily`). It should point to the
