@@ -29,7 +29,7 @@ use nom::{
 
 use crate::{
     fixed_width, precision, Alignment, Argument, ConversionSpec, Flag, FormatFragment,
-    FormatString, MinFieldWidth, Precision, Specifier,
+    FormatString, MinFieldWidth, Precision, Primitive, Style,
 };
 
 /// The `name` in a `{name}` format string.  Matches a Rust identifier.
@@ -66,26 +66,26 @@ fn argument(input: &str) -> IResult<&str, Argument> {
 /// An explicit formatting type
 ///
 /// i.e. the `x?` in `{:x?}
-fn explicit_type(input: &str) -> IResult<&str, Specifier> {
+fn explicit_type(input: &str) -> IResult<&str, Style> {
     alt((
-        value(Specifier::Debug, tag("?")),
-        value(Specifier::HexDebug, tag("x?")),
-        value(Specifier::UpperHexDebug, tag("X?")),
-        value(Specifier::Octal, tag("o")),
-        value(Specifier::Hex, tag("x")),
-        value(Specifier::UpperHex, tag("X")),
-        value(Specifier::Pointer, tag("p")),
-        value(Specifier::Binary, tag("b")),
-        value(Specifier::Exponential, tag("e")),
-        value(Specifier::UpperExponential, tag("E")),
+        value(Style::Debug, tag("?")),
+        value(Style::HexDebug, tag("x?")),
+        value(Style::UpperHexDebug, tag("X?")),
+        value(Style::Octal, tag("o")),
+        value(Style::Hex, tag("x")),
+        value(Style::UpperHex, tag("X")),
+        value(Style::Pointer, tag("p")),
+        value(Style::Binary, tag("b")),
+        value(Style::Exponential, tag("e")),
+        value(Style::UpperExponential, tag("E")),
     ))(input)
 }
 
 /// An optional explicit formatting type
 ///
 /// i.e. the `x?` in `{:x?} or no type as in `{:}`
-fn ty(input: &str) -> IResult<&str, Specifier> {
-    let (input, spec) = explicit_type(input).unwrap_or_else(|_| (input, Specifier::Untyped));
+fn style(input: &str) -> IResult<&str, Style> {
+    let (input, spec) = explicit_type(input).unwrap_or_else(|_| (input, Style::None));
 
     Ok((input, spec))
 }
@@ -156,7 +156,7 @@ fn format_spec(input: &str) -> IResult<&str, ConversionSpec> {
     let (input, flags) = flags(input)?;
     let (input, width) = opt(fixed_width)(input)?;
     let (input, precision) = precision(input)?;
-    let (input, specifier) = ty(input)?;
+    let (input, style) = style(input)?;
 
     Ok((
         input,
@@ -168,7 +168,8 @@ fn format_spec(input: &str) -> IResult<&str, ConversionSpec> {
             min_field_width: width.unwrap_or(MinFieldWidth::None),
             precision,
             length: None,
-            specifier,
+            primitive: Primitive::Untyped, // All core::fmt primitives are untyped.
+            style,
         },
     ))
 }
@@ -192,7 +193,8 @@ fn conversion(input: &str) -> IResult<&str, ConversionSpec> {
         min_field_width: MinFieldWidth::None,
         precision: Precision::None,
         length: None,
-        specifier: Specifier::Untyped,
+        primitive: Primitive::Untyped,
+        style: Style::None,
     });
 
     spec.argument = argument;
@@ -238,11 +240,11 @@ mod tests {
 
     #[test]
     fn type_parses_correctly() {
-        assert_eq!(ty(""), Ok(("", Specifier::Untyped)));
-        assert_eq!(ty("?"), Ok(("", Specifier::Debug)));
-        assert_eq!(ty("x?"), Ok(("", Specifier::HexDebug)));
-        assert_eq!(ty("X?"), Ok(("", Specifier::UpperHexDebug)));
-        assert_eq!(ty("o"), Ok(("", Specifier::Octal)));
+        assert_eq!(style(""), Ok(("", Style::None)));
+        assert_eq!(style("?"), Ok(("", Style::Debug)));
+        assert_eq!(style("x?"), Ok(("", Style::HexDebug)));
+        assert_eq!(style("X?"), Ok(("", Style::UpperHexDebug)));
+        assert_eq!(style("o"), Ok(("", Style::Octal)));
     }
 
     #[test]
@@ -316,7 +318,8 @@ mod tests {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: Specifier::Untyped,
+                    primitive: Primitive::Untyped,
+                    style: Style::None,
                 }
             ))
         );

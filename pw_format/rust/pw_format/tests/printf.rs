@@ -17,7 +17,7 @@ use crate::*;
 #[test]
 fn test_parse() {
     assert_eq!(
-        FormatString::parse_printf("long double %+ 4.2Lg is %-03hd%%."),
+        FormatString::parse_printf("long double %+ 4.2Lf is %-03hd%%."),
         Ok(FormatString {
             fragments: vec![
                 FormatFragment::Literal("long double ".to_string()),
@@ -29,7 +29,8 @@ fn test_parse() {
                     min_field_width: MinFieldWidth::Fixed(4),
                     precision: Precision::Fixed(2),
                     length: Some(Length::LongDouble),
-                    specifier: Specifier::SmallDouble
+                    primitive: Primitive::Float,
+                    style: Style::None,
                 }),
                 FormatFragment::Literal(" is ".to_string()),
                 FormatFragment::Conversion(ConversionSpec {
@@ -42,7 +43,8 @@ fn test_parse() {
                     min_field_width: MinFieldWidth::Fixed(3),
                     precision: Precision::None,
                     length: Some(Length::Short),
-                    specifier: Specifier::Decimal
+                    primitive: Primitive::Integer,
+                    style: Style::None,
                 }),
                 FormatFragment::Literal("%.".to_string()),
             ]
@@ -130,20 +132,20 @@ fn test_percent_with_star_precision_fails() {
     assert!(FormatString::parse_printf("%*%").is_err());
 }
 
-const INTEGERS: &'static [(&'static str, Specifier)] = &[
-    ("d", Specifier::Decimal),
-    ("i", Specifier::Integer),
-    ("o", Specifier::Octal),
-    ("u", Specifier::Unsigned),
-    ("x", Specifier::Hex),
-    ("X", Specifier::UpperHex),
+const INTEGERS: &'static [(&'static str, Primitive, Style)] = &[
+    ("d", Primitive::Integer, Style::None),
+    ("i", Primitive::Integer, Style::None),
+    ("o", Primitive::Unsigned, Style::Octal),
+    ("u", Primitive::Unsigned, Style::None),
+    ("x", Primitive::Unsigned, Style::Hex),
+    ("X", Primitive::Unsigned, Style::UpperHex),
     // While not strictly an integer pointers take the same args as integers.
-    ("p", Specifier::Pointer),
+    ("p", Primitive::Pointer, Style::Pointer),
 ];
 
 #[test]
 fn test_integer() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%{format_char}")),
             Ok(FormatString {
@@ -155,7 +157,8 @@ fn test_integer() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -164,7 +167,7 @@ fn test_integer() {
 
 #[test]
 fn test_integer_with_minus() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%-5{format_char}")),
             Ok(FormatString {
@@ -176,7 +179,8 @@ fn test_integer_with_minus() {
                     min_field_width: MinFieldWidth::Fixed(5),
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -185,7 +189,7 @@ fn test_integer_with_minus() {
 
 #[test]
 fn test_integer_with_plus() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%+{format_char}")),
             Ok(FormatString {
@@ -197,7 +201,8 @@ fn test_integer_with_plus() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -206,7 +211,7 @@ fn test_integer_with_plus() {
 
 #[test]
 fn test_integer_with_blank_space() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("% {format_char}")),
             Ok(FormatString {
@@ -218,7 +223,8 @@ fn test_integer_with_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -227,7 +233,7 @@ fn test_integer_with_blank_space() {
 
 #[test]
 fn test_integer_with_plus_and_blank_space_ignores_blank_space() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%+ {format_char}")),
             Ok(FormatString {
@@ -239,7 +245,8 @@ fn test_integer_with_plus_and_blank_space_ignores_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -255,7 +262,8 @@ fn test_integer_with_plus_and_blank_space_ignores_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -264,7 +272,7 @@ fn test_integer_with_plus_and_blank_space_ignores_blank_space() {
 
 #[test]
 fn test_integer_with_hash() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%#{format_char}")),
             Ok(FormatString {
@@ -276,7 +284,8 @@ fn test_integer_with_hash() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone(),
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -285,7 +294,7 @@ fn test_integer_with_hash() {
 
 #[test]
 fn test_integer_with_zero() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%0{format_char}")),
             Ok(FormatString {
@@ -297,7 +306,8 @@ fn test_integer_with_zero() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -306,7 +316,7 @@ fn test_integer_with_zero() {
 
 #[test]
 fn test_integer_with_length() {
-    for (format_char, specifier) in INTEGERS {
+    for (format_char, primitive, style) in INTEGERS {
         assert_eq!(
             FormatString::parse_printf(&format!("%hh{format_char}")),
             Ok(FormatString {
@@ -318,7 +328,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Char),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -334,7 +345,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Short),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -350,7 +362,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Long),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -366,7 +379,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::LongLong),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -382,7 +396,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::IntMax),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -398,7 +413,8 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Size),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -414,25 +430,23 @@ fn test_integer_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::PointerDiff),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
     }
 }
 
-const FLOATS: &'static [(&'static str, Specifier)] = &[
-    ("f", Specifier::Double),
-    ("F", Specifier::UpperDouble),
-    ("e", Specifier::Exponential),
-    ("E", Specifier::UpperExponential),
-    ("g", Specifier::SmallDouble),
-    ("G", Specifier::UpperSmallDouble),
+const FLOATS: &'static [(&'static str, Primitive, Style)] = &[
+    ("f", Primitive::Float, Style::None),
+    ("e", Primitive::Float, Style::Exponential),
+    ("E", Primitive::Float, Style::UpperExponential),
 ];
 
 #[test]
 fn test_float() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%{format_char}")),
             Ok(FormatString {
@@ -444,7 +458,8 @@ fn test_float() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -453,7 +468,7 @@ fn test_float() {
 
 #[test]
 fn test_float_with_minus() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%-10{format_char}")),
             Ok(FormatString {
@@ -465,7 +480,8 @@ fn test_float_with_minus() {
                     min_field_width: MinFieldWidth::Fixed(10),
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -474,7 +490,7 @@ fn test_float_with_minus() {
 
 #[test]
 fn test_float_with_plus() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%+{format_char}")),
             Ok(FormatString {
@@ -486,7 +502,8 @@ fn test_float_with_plus() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -495,7 +512,7 @@ fn test_float_with_plus() {
 
 #[test]
 fn test_float_with_blank_space() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("% {format_char}")),
             Ok(FormatString {
@@ -507,7 +524,8 @@ fn test_float_with_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -516,7 +534,7 @@ fn test_float_with_blank_space() {
 
 #[test]
 fn test_float_with_plus_and_blank_space_ignores_blank_space() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%+ {format_char}")),
             Ok(FormatString {
@@ -528,7 +546,8 @@ fn test_float_with_plus_and_blank_space_ignores_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -544,7 +563,8 @@ fn test_float_with_plus_and_blank_space_ignores_blank_space() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -553,7 +573,7 @@ fn test_float_with_plus_and_blank_space_ignores_blank_space() {
 
 #[test]
 fn test_float_with_hash() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%.0{format_char}")),
             Ok(FormatString {
@@ -565,7 +585,8 @@ fn test_float_with_hash() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::Fixed(0),
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -581,7 +602,8 @@ fn test_float_with_hash() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::Fixed(0),
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -590,7 +612,7 @@ fn test_float_with_hash() {
 
 #[test]
 fn test_float_with_zero() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%010{format_char}")),
             Ok(FormatString {
@@ -602,7 +624,8 @@ fn test_float_with_zero() {
                     min_field_width: MinFieldWidth::Fixed(10),
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -611,7 +634,7 @@ fn test_float_with_zero() {
 
 #[test]
 fn test_float_with_length() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%hh{format_char}")),
             Ok(FormatString {
@@ -623,7 +646,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Char),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -639,7 +663,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Short),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -655,7 +680,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Long),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -671,7 +697,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::LongLong),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -687,7 +714,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::IntMax),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -703,7 +731,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::Size),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -719,7 +748,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::PointerDiff),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -735,7 +765,8 @@ fn test_float_with_length() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: Some(Length::LongDouble),
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -744,7 +775,7 @@ fn test_float_with_length() {
 
 #[test]
 fn test_float_with_width() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%9{format_char}")),
             Ok(FormatString {
@@ -756,7 +787,8 @@ fn test_float_with_width() {
                     min_field_width: MinFieldWidth::Fixed(9),
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -765,7 +797,7 @@ fn test_float_with_width() {
 
 #[test]
 fn test_float_with_multidigit_width() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%10{format_char}")),
             Ok(FormatString {
@@ -777,7 +809,8 @@ fn test_float_with_multidigit_width() {
                     min_field_width: MinFieldWidth::Fixed(10),
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -786,7 +819,7 @@ fn test_float_with_multidigit_width() {
 
 #[test]
 fn test_float_with_star_width() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%*{format_char}")),
             Ok(FormatString {
@@ -798,7 +831,8 @@ fn test_float_with_star_width() {
                     min_field_width: MinFieldWidth::Variable,
                     precision: Precision::None,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -807,7 +841,7 @@ fn test_float_with_star_width() {
 
 #[test]
 fn test_float_with_precision() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%.4{format_char}")),
             Ok(FormatString {
@@ -819,7 +853,8 @@ fn test_float_with_precision() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::Fixed(4),
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -828,7 +863,7 @@ fn test_float_with_precision() {
 
 #[test]
 fn test_float_with_multidigit_precision() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%.10{format_char}")),
             Ok(FormatString {
@@ -840,7 +875,8 @@ fn test_float_with_multidigit_precision() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::Fixed(10),
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -849,7 +885,7 @@ fn test_float_with_multidigit_precision() {
 
 #[test]
 fn test_float_with_star_precision() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%.*{format_char}")),
             Ok(FormatString {
@@ -861,7 +897,8 @@ fn test_float_with_star_precision() {
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::Variable,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -870,7 +907,7 @@ fn test_float_with_star_precision() {
 
 #[test]
 fn test_float_with_star_width_and_star_precision() {
-    for (format_char, specifier) in FLOATS {
+    for (format_char, primitive, style) in FLOATS {
         assert_eq!(
             FormatString::parse_printf(&format!("%*.*{format_char}")),
             Ok(FormatString {
@@ -882,7 +919,8 @@ fn test_float_with_star_width_and_star_precision() {
                     min_field_width: MinFieldWidth::Variable,
                     precision: Precision::Variable,
                     length: None,
-                    specifier: specifier.clone()
+                    primitive: *primitive,
+                    style: *style,
                 })]
             })
         );
@@ -902,7 +940,8 @@ fn test_char() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -921,7 +960,8 @@ fn test_char_with_minus() {
                 min_field_width: MinFieldWidth::Fixed(5),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -966,7 +1006,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Char),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -982,7 +1023,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Short),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -998,7 +1040,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Long),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1014,7 +1057,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::LongLong),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1030,7 +1074,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::IntMax),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1046,7 +1091,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Size),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1062,7 +1108,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::PointerDiff),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1078,7 +1125,8 @@ fn test_char_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::LongDouble),
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1097,7 +1145,8 @@ fn test_char_with_width() {
                 min_field_width: MinFieldWidth::Fixed(5),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1116,7 +1165,8 @@ fn test_char_with_multidigit_width() {
                 min_field_width: MinFieldWidth::Fixed(10),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1135,7 +1185,8 @@ fn test_char_with_star_width() {
                 min_field_width: MinFieldWidth::Variable,
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::Char
+                primitive: Primitive::Character,
+                style: Style::None,
             })]
         })
     );
@@ -1172,7 +1223,8 @@ fn test_string() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1191,7 +1243,8 @@ fn test_string_with_minus() {
                 min_field_width: MinFieldWidth::Fixed(6),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1236,7 +1289,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Char),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1252,7 +1306,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Short),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1268,7 +1323,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Long),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1284,7 +1340,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::LongLong),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1300,7 +1357,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::IntMax),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1316,7 +1374,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::Size),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1332,7 +1391,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::PointerDiff),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1348,7 +1408,8 @@ fn test_string_with_length() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::None,
                 length: Some(Length::LongDouble),
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1367,7 +1428,8 @@ fn test_string_with_width() {
                 min_field_width: MinFieldWidth::Fixed(6),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1386,7 +1448,8 @@ fn test_string_with_multidigit_width() {
                 min_field_width: MinFieldWidth::Fixed(10),
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1405,7 +1468,8 @@ fn test_string_with_star_width() {
                 min_field_width: MinFieldWidth::Variable,
                 precision: Precision::None,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1424,7 +1488,8 @@ fn test_string_with_star_precision() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::Fixed(3),
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1443,7 +1508,8 @@ fn test_string_with_multidigit_precision() {
                 min_field_width: MinFieldWidth::None,
                 precision: Precision::Fixed(10),
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1462,7 +1528,8 @@ fn test_string_with_width_and_precision() {
                 min_field_width: MinFieldWidth::Fixed(10),
                 precision: Precision::Fixed(3),
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );
@@ -1481,7 +1548,8 @@ fn test_string_with_star_width_and_star_precision() {
                 min_field_width: MinFieldWidth::Variable,
                 precision: Precision::Variable,
                 length: None,
-                specifier: Specifier::String
+                primitive: Primitive::String,
+                style: Style::None,
             })]
         })
     );

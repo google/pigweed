@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use pw_format::macros::IntegerDisplayType;
+use pw_format::Style;
 
 // Used to record calls into the test generator from `generator_test_macro!`.
 #[derive(Debug, PartialEq)]
@@ -20,7 +20,8 @@ pub enum TestGeneratorOps {
     Finalize,
     StringFragment(String),
     IntegerConversion {
-        display_type: IntegerDisplayType,
+        style: Style,
+        signed: bool,
         type_width: u8,
         arg: String,
     },
@@ -65,7 +66,8 @@ mod tests {
             vec![
                 TestGeneratorOps::StringFragment("test ".to_string()),
                 TestGeneratorOps::IntegerConversion {
-                    display_type: IntegerDisplayType::Signed,
+                    style: Style::None,
+                    signed: true,
                     type_width: 32,
                     arg: "5".to_string(),
                 },

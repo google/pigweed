@@ -31,11 +31,11 @@
 //! ```
 //! use pw_format::{
 //!     Alignment, Argument, ConversionSpec, Flag, FormatFragment, FormatString,
-//!     Length, Precision, Specifier, MinFieldWidth,
+//!     Length, MinFieldWidth, Precision, Primitive, Style,
 //! };
 //!
 //! let format_string =
-//!   FormatString::parse_printf("long double %+ 4.2Lg is %-03hd%%.").unwrap();
+//!   FormatString::parse_printf("long double %+ 4.2Lf is %-03hd%%.").unwrap();
 //!
 //! assert_eq!(format_string, FormatString {
 //!   fragments: vec![
@@ -48,7 +48,8 @@
 //!           min_field_width: MinFieldWidth::Fixed(4),
 //!           precision: Precision::Fixed(2),
 //!           length: Some(Length::LongDouble),
-//!           specifier: Specifier::SmallDouble
+//!           primitive: Primitive::Float,
+//!           style: Style::None,
 //!       }),
 //!       FormatFragment::Literal(" is ".to_string()),
 //!       FormatFragment::Conversion(ConversionSpec {
@@ -61,7 +62,8 @@
 //!           min_field_width: MinFieldWidth::Fixed(3),
 //!           precision: Precision::None,
 //!           length: Some(Length::Short),
-//!           specifier: Specifier::Decimal
+//!           primitive: Primitive::Integer,
+//!           style: Style::None,
 //!       }),
 //!       FormatFragment::Literal("%.".to_string()),
 //!   ]
@@ -79,62 +81,61 @@ use nom::{
     combinator::{map, map_res},
     IResult,
 };
+use quote::{quote, ToTokens};
 
 pub mod macros;
 
 mod core_fmt;
 mod printf;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-/// A printf specifier (the 'd' in %d).
-pub enum Specifier {
-    /// `%d`
-    Decimal,
-
-    /// `%i`
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Primitive type of a conversion (integer, float, string, etc.)
+pub enum Primitive {
+    /// Signed integer primitive.
     Integer,
 
-    /// `%o`
-    Octal,
-
-    /// `%u`
+    /// Unsigned integer primitive.
     Unsigned,
 
-    /// `%x`
-    Hex,
+    /// Floating point primitive.
+    Float,
 
-    /// `%X`
-    UpperHex,
-
-    /// `%f`
-    Double,
-
-    /// `%F`
-    UpperDouble,
-
-    /// `%e`
-    Exponential,
-
-    /// `%E`
-    UpperExponential,
-
-    /// `%g`
-    SmallDouble,
-
-    /// `%G`
-    UpperSmallDouble,
-
-    /// `%c`
-    Char,
-
-    /// `%s`
+    /// String primitive.
     String,
 
-    /// `%p`
+    /// Character primitive.
+    Character,
+
+    /// Pointer primitive.
     Pointer,
 
-    /// `%v`
+    /// Untyped primitive.
     Untyped,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// The abstract formatting style for a conversion.
+pub enum Style {
+    /// No style specified, use defaults.
+    None,
+
+    /// Octal rendering (i.e. "%o" or "{:o}").
+    Octal,
+
+    /// Hexadecimal rendering (i.e. "%x" or "{:x}").
+    Hex,
+
+    /// Upper case hexadecimal rendering (i.e. "%X" or "{:X}").
+    UpperHex,
+
+    /// Exponential rendering (i.e. "%e" or "{:e}".
+    Exponential,
+
+    /// Upper case exponential rendering (i.e. "%E" or "{:E}".
+    UpperExponential,
+
+    /// Pointer type rendering (i.e. "%p" or "{:p}").
+    Pointer,
 
     /// `core::fmt`'s `{:?}`
     Debug,
@@ -145,8 +146,31 @@ pub enum Specifier {
     /// `core::fmt`'s `{:X?}`
     UpperHexDebug,
 
-    /// `core::fmt`'s `{:b}`
+    /// Unsupported binary rendering
+    ///
+    /// This variant exists so that the proc macros can give useful error
+    /// messages.
     Binary,
+}
+
+/// Implemented for testing through the pw_format_test_macros crate.
+impl ToTokens for Style {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let new_tokens = match self {
+            Style::None => quote!(pw_format::Style::None),
+            Style::Octal => quote!(pw_format::Style::Octal),
+            Style::Hex => quote!(pw_format::Style::Hex),
+            Style::UpperHex => quote!(pw_format::Style::UpperHex),
+            Style::Exponential => quote!(pw_format::Style::Exponential),
+            Style::UpperExponential => quote!(pw_format::Style::UpperExponential),
+            Style::Debug => quote!(pw_format::Style::Debug),
+            Style::HexDebug => quote!(pw_format::Style::HexDebug),
+            Style::UpperHexDebug => quote!(pw_format::Style::UpperHexDebug),
+            Style::Pointer => quote!(pw_format::Style::Pointer),
+            Style::Binary => quote!(pw_format::Style::Binary),
+        };
+        new_tokens.to_tokens(tokens);
+    }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -273,8 +297,10 @@ pub struct ConversionSpec {
     pub precision: Precision,
     /// ConversionSpec's [Length] argument.
     pub length: Option<Length>,
-    /// ConversionSpec's [Specifier].
-    pub specifier: Specifier,
+    /// ConversionSpec's [Primitive].
+    pub primitive: Primitive,
+    /// ConversionSpec's [Style].
+    pub style: Style,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

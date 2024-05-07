@@ -46,7 +46,8 @@ use syn::{
 };
 
 use crate::{
-    ConversionSpec, FormatFragment, FormatString, Length, MinFieldWidth, Precision, Specifier,
+    ConversionSpec, FormatFragment, FormatString, Length, MinFieldWidth, Precision, Primitive,
+    Style,
 };
 
 mod keywords {
@@ -76,57 +77,6 @@ impl Error {
 
 /// An alias for a Result with an ``Error``
 pub type Result<T> = core::result::Result<T, Error>;
-
-/// Style in which to display the an integer.
-///
-/// In order to maintain compatibility with `printf` style systems, sign
-/// and base are combined.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum IntegerDisplayType {
-    /// Signed integer
-    Signed,
-    /// Unsigned integer
-    Unsigned,
-    /// Unsigned octal
-    Octal,
-    /// Unsigned hex with lower case letters
-    Hex,
-    /// Unsigned hex with upper case letters
-    UpperHex,
-}
-
-impl TryFrom<crate::Specifier> for IntegerDisplayType {
-    type Error = Error;
-
-    fn try_from(value: Specifier) -> Result<Self> {
-        match value {
-            Specifier::Decimal | Specifier::Integer => Ok(Self::Signed),
-            Specifier::Unsigned => Ok(Self::Unsigned),
-            Specifier::Octal => Ok(Self::Octal),
-            Specifier::Hex => Ok(Self::Hex),
-            Specifier::UpperHex => Ok(Self::UpperHex),
-            _ => Err(Error::new("No valid IntegerDisplayType for {value:?}.")),
-        }
-    }
-}
-
-/// Implemented for testing through the pw_format_test_macros crate.
-impl ToTokens for IntegerDisplayType {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let new_tokens = match self {
-            IntegerDisplayType::Signed => quote!(pw_format::macros::IntegerDisplayType::Signed),
-            IntegerDisplayType::Unsigned => {
-                quote!(pw_format::macros::IntegerDisplayType::Unsigned)
-            }
-            IntegerDisplayType::Octal => quote!(pw_format::macros::IntegerDisplayType::Octal),
-            IntegerDisplayType::Hex => quote!(pw_format::macros::IntegerDisplayType::Hex),
-            IntegerDisplayType::UpperHex => {
-                quote!(pw_format::macros::IntegerDisplayType::UpperHex)
-            }
-        };
-        new_tokens.to_tokens(tokens);
-    }
-}
 
 /// A code generator for implementing a `pw_format` style macro.
 ///
@@ -159,7 +109,8 @@ pub trait FormatMacroGenerator {
     /// Process an integer conversion.
     fn integer_conversion(
         &mut self,
-        display: IntegerDisplayType,
+        style: Style,
+        signed: bool,
         type_width: u8, // This should probably be an enum
         expression: Arg,
     ) -> Result<()>;
@@ -343,13 +294,8 @@ fn handle_conversion(
     spec: &ConversionSpec,
     args: &mut VecDeque<Arg>,
 ) -> Result<()> {
-    match spec.specifier {
-        Specifier::Decimal
-        | Specifier::Integer
-        | Specifier::Octal
-        | Specifier::Unsigned
-        | Specifier::Hex
-        | Specifier::UpperHex => {
+    match spec.primitive {
+        Primitive::Integer | Primitive::Unsigned => {
             // TODO: b/281862660 - Support Width::Variable and Precision::Variable.
             if spec.min_field_width == MinFieldWidth::Variable {
                 return Err(Error::new(
@@ -361,6 +307,10 @@ fn handle_conversion(
                 return Err(Error::new(
                     "Variable precision '*' integer formats are not supported.",
                 ));
+            }
+
+            if spec.style == Style::Binary {
+                return Err(Error::new("Binary output style is not supported."));
             }
 
             let arg = next_arg(spec, args)?;
@@ -379,13 +329,14 @@ fn handle_conversion(
                 }
             };
 
-            let display: IntegerDisplayType =
-                spec.specifier.clone().try_into().expect(
-                    "Specifier is guaranteed to convert display type but enclosing match arm.",
-                );
-            generator.integer_conversion(display, bits, arg)
+            generator.integer_conversion(
+                spec.style,
+                spec.primitive == Primitive::Integer,
+                bits,
+                arg,
+            )
         }
-        Specifier::String => {
+        Primitive::String => {
             // TODO: b/281862660 - Support Width::Variable and Precision::Variable.
             if spec.min_field_width == MinFieldWidth::Variable {
                 return Err(Error::new(
@@ -402,32 +353,23 @@ fn handle_conversion(
             let arg = next_arg(spec, args)?;
             generator.string_conversion(arg)
         }
-        Specifier::Char => {
+        Primitive::Character => {
             let arg = next_arg(spec, args)?;
             generator.char_conversion(arg)
         }
 
-        Specifier::Untyped => {
+        Primitive::Untyped => {
             let arg = next_arg(spec, args)?;
             generator.untyped_conversion(arg)
         }
 
-        Specifier::Double
-        | Specifier::UpperDouble
-        | Specifier::Exponential
-        | Specifier::UpperExponential
-        | Specifier::SmallDouble
-        | Specifier::UpperSmallDouble => {
+        Primitive::Float => {
             // TODO: b/281862328 - Support floating point numbers.
             Err(Error::new("Floating point numbers are not supported."))
         }
 
         // TODO: b/281862333 - Support pointers.
-        Specifier::Pointer => Err(Error::new("Pointer types are not supported.")),
-        Specifier::Debug => todo!(),
-        Specifier::HexDebug => todo!(),
-        Specifier::UpperHexDebug => todo!(),
-        Specifier::Binary => todo!(),
+        Primitive::Pointer => Err(Error::new("Pointer types are not supported.")),
     }
 }
 
@@ -646,7 +588,8 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
 
     fn integer_conversion(
         &mut self,
-        display: IntegerDisplayType,
+        style: Style,
+        signed: bool,
         type_width: u8, // in bits
         expression: Arg,
     ) -> Result<()> {
@@ -663,12 +606,22 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
             }
         };
 
-        let (conversion, ty) = match display {
-            IntegerDisplayType::Signed => ("d", format_ident!("i{type_width}")),
-            IntegerDisplayType::Unsigned => ("u", format_ident!("u{type_width}")),
-            IntegerDisplayType::Octal => ("o", format_ident!("u{type_width}")),
-            IntegerDisplayType::Hex => ("x", format_ident!("u{type_width}")),
-            IntegerDisplayType::UpperHex => ("X", format_ident!("u{type_width}")),
+        let (conversion, ty) = match style {
+            Style::None => {
+                if signed {
+                    ("d", format_ident!("i{type_width}"))
+                } else {
+                    ("u", format_ident!("u{type_width}"))
+                }
+            }
+            Style::Octal => ("o", format_ident!("u{type_width}")),
+            Style::Hex => ("x", format_ident!("u{type_width}")),
+            Style::UpperHex => ("X", format_ident!("u{type_width}")),
+            _ => {
+                return Err(Error::new(&format!(
+                    "printf backend does not support formatting integers with {style:?} style",
+                )))
+            }
         };
 
         match self.inner.integer_conversion(ty, expression)? {
@@ -786,16 +739,27 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
 
     fn integer_conversion(
         &mut self,
-        display: IntegerDisplayType,
+        style: Style,
+        signed: bool,
         type_width: u8, // in bits
         expression: Arg,
     ) -> Result<()> {
-        let (conversion, ty) = match display {
-            IntegerDisplayType::Signed => ("{}", format_ident!("i{type_width}")),
-            IntegerDisplayType::Unsigned => ("{}", format_ident!("u{type_width}")),
-            IntegerDisplayType::Octal => ("{:o}", format_ident!("u{type_width}")),
-            IntegerDisplayType::Hex => ("{:x}", format_ident!("u{type_width}")),
-            IntegerDisplayType::UpperHex => ("{:X}", format_ident!("u{type_width}")),
+        let ty = if signed {
+            format_ident!("i{type_width}")
+        } else {
+            format_ident!("u{type_width}")
+        };
+
+        let conversion = match style {
+            Style::None => "{}",
+            Style::Octal => "{:o}",
+            Style::Hex => "{:x}",
+            Style::UpperHex => "{:X}",
+            _ => {
+                return Err(Error::new(&format!(
+                    "core::fmt backend does not support formatting integers with {style:?} style",
+                )))
+            }
         };
 
         match self.inner.integer_conversion(ty, expression)? {

@@ -26,32 +26,31 @@ use nom::{
 
 use crate::{
     precision, width, Alignment, Argument, ConversionSpec, Flag, FormatFragment, FormatString,
-    Length, Specifier,
+    Length, Primitive, Style,
 };
 
-fn map_specifier(value: char) -> Result<Specifier, String> {
+fn map_specifier(value: char) -> Result<(Primitive, Style), String> {
     match value {
-        'd' => Ok(Specifier::Decimal),
-        'i' => Ok(Specifier::Integer),
-        'o' => Ok(Specifier::Octal),
-        'u' => Ok(Specifier::Unsigned),
-        'x' => Ok(Specifier::Hex),
-        'X' => Ok(Specifier::UpperHex),
-        'f' => Ok(Specifier::Double),
-        'F' => Ok(Specifier::UpperDouble),
-        'e' => Ok(Specifier::Exponential),
-        'E' => Ok(Specifier::UpperExponential),
-        'g' => Ok(Specifier::SmallDouble),
-        'G' => Ok(Specifier::UpperSmallDouble),
-        'c' => Ok(Specifier::Char),
-        's' => Ok(Specifier::String),
-        'p' => Ok(Specifier::Pointer),
-        'v' => Ok(Specifier::Untyped),
+        'd' | 'i' => Ok((Primitive::Integer, Style::None)),
+        'o' => Ok((Primitive::Unsigned, Style::Octal)),
+        'u' => Ok((Primitive::Unsigned, Style::None)),
+        'x' => Ok((Primitive::Unsigned, Style::Hex)),
+        'X' => Ok((Primitive::Unsigned, Style::UpperHex)),
+        'f' => Ok((Primitive::Float, Style::None)),
+        'e' => Ok((Primitive::Float, Style::Exponential)),
+        'E' => Ok((Primitive::Float, Style::UpperExponential)),
+        'c' => Ok((Primitive::Character, Style::None)),
+        's' => Ok((Primitive::String, Style::None)),
+        'p' => Ok((Primitive::Pointer, Style::Pointer)),
+        'v' => Ok((Primitive::Untyped, Style::None)),
+        'F' => Err("%F is not supported because it does not have a core::fmt analog".to_string()),
+        'g' => Err("%g is not supported because it does not have a core::fmt analog".to_string()),
+        'G' => Err("%G is not supported because it does not have a core::fmt analog".to_string()),
         _ => Err(format!("Unsupported format specifier '{}'", value)),
     }
 }
 
-fn specifier(input: &str) -> IResult<&str, Specifier> {
+fn specifier(input: &str) -> IResult<&str, (Primitive, Style)> {
     map_res(anychar, map_specifier)(input)
 }
 
@@ -92,7 +91,7 @@ fn conversion_spec(input: &str) -> IResult<&str, ConversionSpec> {
     let (input, width) = width(input)?;
     let (input, precision) = precision(input)?;
     let (input, length) = length(input)?;
-    let (input, specifier) = specifier(input)?;
+    let (input, (primitive, style)) = specifier(input)?;
 
     Ok((
         input,
@@ -108,7 +107,8 @@ fn conversion_spec(input: &str) -> IResult<&str, ConversionSpec> {
             min_field_width: width,
             precision,
             length,
-            specifier,
+            primitive,
+            style,
         },
     ))
 }
