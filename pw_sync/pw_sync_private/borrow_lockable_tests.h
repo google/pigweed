@@ -62,7 +62,7 @@ struct has_locked : std::false_type {};
 
 template <typename Lock>
 struct has_locked<Lock, std::void_t<decltype(std::declval<Lock>().locked())>>
-    : std::true_type {};
+    : std::true_type{};
 /// @}
 
 /// Checks if a lock's state matches the expected state.

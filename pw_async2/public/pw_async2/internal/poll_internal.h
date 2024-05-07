@@ -39,7 +39,7 @@ void test(char (*)[sizeof(std::declval<U>().operator Poll<T>())]);
 
 template <typename T, typename U>
 struct HasConversionOperatorToPoll<T, U, decltype(test<T, U>(0))>
-    : std::true_type {};
+    : std::true_type{};
 
 // Detects whether `T` is constructible or convertible from `Poll<U>`.
 template <typename T, typename U>

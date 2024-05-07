@@ -75,7 +75,7 @@ template <typename T>
 struct is_std_optional : std::false_type {};
 
 template <typename T>
-struct is_std_optional<std::optional<T>> : std::true_type {};
+struct is_std_optional<std::optional<T>> : std::true_type{};
 
 template <typename, typename = void>
 constexpr bool is_iterable = false;

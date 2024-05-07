@@ -36,7 +36,7 @@ void test(char (*)[sizeof(std::declval<U>().operator Result<T>())]);
 
 template <typename T, typename U>
 struct HasConversionOperatorToResult<T, U, decltype(test<T, U>(0))>
-    : std::true_type {};
+    : std::true_type{};
 
 // Detects whether `T` is constructible or convertible from `Result<U>`.
 template <typename T, typename U>

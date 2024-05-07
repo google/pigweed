@@ -115,39 +115,44 @@ class TypedMetric;
 // A metric for floats. Does not offer an Increment() function, since it is too
 // easy to do unsafe operations like accumulating small values in floats.
 template <>
-class TypedMetric<float> : public Metric {
- public:
-  constexpr TypedMetric(Token name, float value) : Metric(name, value) {}
-  TypedMetric(Token name, float value, IntrusiveList<Metric>& metrics)
-      : Metric(name, value, metrics) {}
+class TypedMetric<float>
+    : public
+      Metric{public : constexpr TypedMetric(Token name, float value) :
+                 Metric(name, value){} TypedMetric(
+                     Token name, float value, IntrusiveList<Metric>& metrics) :
+                     Metric(name, value, metrics){}
 
-  void Set(float value) { SetFloat(value); }
-  float value() const { return Metric::as_float(); }
+             void Set(float value){SetFloat(value);
+}  // namespace pw::metric
+float value() const { return Metric::as_float(); }
 
- private:
-  // Shadow these accessors to hide them on the typed version of Metric.
-  float as_float() const { return 0.0; }
-  uint32_t as_int() const { return 0; }
-};
+private:
+// Shadow these accessors to hide them on the typed version of Metric.
+float as_float() const { return 0.0; }
+uint32_t as_int() const { return 0; }
+}
+;
 
 // A metric for uint32_ts. Offers both Set() and Increment().
 template <>
-class TypedMetric<uint32_t> : public Metric {
- public:
-  constexpr TypedMetric(Token name, uint32_t value) : Metric(name, value) {}
-  TypedMetric(Token name, uint32_t value, IntrusiveList<Metric>& metrics)
-      : Metric(name, value, metrics) {}
+class TypedMetric<uint32_t> : public Metric{
+  public : constexpr TypedMetric(Token name, uint32_t value) :
+      Metric(name, value){} TypedMetric(
+          Token name, uint32_t value, IntrusiveList<Metric>& metrics) :
+          Metric(name, value, metrics){}
 
-  void Increment(uint32_t amount = 1u) { Metric::Increment(amount); }
-  void Decrement(uint32_t amount = 1u) { Metric::Decrement(amount); }
-  void Set(uint32_t value) { SetInt(value); }
-  uint32_t value() const { return Metric::as_int(); }
+  void Increment(uint32_t amount = 1u){Metric::Increment(amount);
+}
+void Decrement(uint32_t amount = 1u) { Metric::Decrement(amount); }
+void Set(uint32_t value) { SetInt(value); }
+uint32_t value() const { return Metric::as_int(); }
 
- private:
-  // Shadow these accessors to hide them on the typed version of Metric.
-  float as_float() const { return 0.0; }
-  uint32_t as_int() const { return 0; }
-};
+private:
+// Shadow these accessors to hide them on the typed version of Metric.
+float as_float() const { return 0.0; }
+uint32_t as_int() const { return 0; }
+}
+;
 
 // A metric tree; consisting of children groups and leaf metrics.
 //

@@ -63,30 +63,30 @@ static constexpr bool is_aggregate_v = is_aggregate<T>::value;
 template <typename T>
 struct is_array : false_type {};
 template <typename T>
-struct is_array<T[]> : true_type {};
+struct is_array<T[]> : true_type{};
 template <typename T, decltype(sizeof(0)) kSize>
-struct is_array<T[kSize]> : true_type {};
+struct is_array<T[kSize]> : true_type{};
 template <typename T>
 inline constexpr bool is_array_v = is_array<T>::value;
 
 template <typename T>
 struct is_const : false_type {};
 template <typename T>
-struct is_const<const T> : true_type {};
+struct is_const<const T> : true_type{};
 template <typename T>
 inline constexpr bool is_const_v = is_const<T>::value;
 
 template <typename T>
 struct is_lvalue_reference : false_type {};
 template <typename T>
-struct is_lvalue_reference<T&> : true_type {};
+struct is_lvalue_reference<T&> : true_type{};
 template <typename T>
 inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<T>::value;
 
 template <typename T>
 struct is_rvalue_reference : false_type {};
 template <typename T>
-struct is_rvalue_reference<T&&> : true_type {};
+struct is_rvalue_reference<T&&> : true_type{};
 template <typename T>
 inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<T>::value;
 
@@ -99,11 +99,11 @@ template <typename T>
 struct is_floating_point : false_type {};
 
 template <>
-struct is_floating_point<float> : true_type {};
+struct is_floating_point<float> : true_type{};
 template <>
-struct is_floating_point<double> : true_type {};
+struct is_floating_point<double> : true_type{};
 template <>
-struct is_floating_point<long double> : true_type {};
+struct is_floating_point<long double> : true_type{};
 
 }  // namespace impl
 
@@ -120,32 +120,32 @@ template <typename T>
 struct is_integral : false_type {};
 
 template <>
-struct is_integral<bool> : true_type {};
+struct is_integral<bool> : true_type{};
 template <>
-struct is_integral<char> : true_type {};
+struct is_integral<char> : true_type{};
 template <>
-struct is_integral<char16_t> : true_type {};
+struct is_integral<char16_t> : true_type{};
 template <>
-struct is_integral<char32_t> : true_type {};
+struct is_integral<char32_t> : true_type{};
 template <>
-struct is_integral<wchar_t> : true_type {};
+struct is_integral<wchar_t> : true_type{};
 
 template <>
-struct is_integral<short> : true_type {};
+struct is_integral<short> : true_type{};
 template <>
-struct is_integral<unsigned short> : true_type {};
+struct is_integral<unsigned short> : true_type{};
 template <>
-struct is_integral<int> : true_type {};
+struct is_integral<int> : true_type{};
 template <>
-struct is_integral<unsigned int> : true_type {};
+struct is_integral<unsigned int> : true_type{};
 template <>
-struct is_integral<long> : true_type {};
+struct is_integral<long> : true_type{};
 template <>
-struct is_integral<unsigned long> : true_type {};
+struct is_integral<unsigned long> : true_type{};
 template <>
-struct is_integral<long long> : true_type {};
+struct is_integral<long long> : true_type{};
 template <>
-struct is_integral<unsigned long long> : true_type {};
+struct is_integral<unsigned long long> : true_type{};
 
 }  // namespace impl
 
@@ -168,7 +168,7 @@ template <typename T>
 struct is_null_pointer : false_type {};
 
 template <>
-struct is_null_pointer<decltype(nullptr)> : true_type {};
+struct is_null_pointer<decltype(nullptr)> : true_type{};
 
 template <typename T>
 inline constexpr bool is_null_pointer_v = is_null_pointer<T>::value;
@@ -177,7 +177,7 @@ template <typename T>
 struct is_pointer : false_type {};
 
 template <typename T>
-struct is_pointer<T*> : true_type {};
+struct is_pointer<T*> : true_type{};
 
 template <typename T>
 inline constexpr bool is_pointer_v = is_pointer<T>::value;
@@ -186,7 +186,7 @@ template <typename T, typename U>
 struct is_same : false_type {};
 
 template <typename T>
-struct is_same<T, T> : true_type {};
+struct is_same<T, T> : true_type{};
 
 template <typename T, typename U>
 inline constexpr bool is_same_v = is_same<T, U>::value;
@@ -197,7 +197,7 @@ template <typename T, bool = is_arithmetic<T>::value>
 struct is_signed : integral_constant<bool, T(-1) < T(0)> {};
 
 template <typename T>
-struct is_signed<T, false> : false_type {};
+struct is_signed<T, false> : false_type{};
 
 }  // namespace impl
 
@@ -238,10 +238,10 @@ template <typename...>
 struct conjunction;
 
 template <>
-struct conjunction<> : true_type {};
+struct conjunction<> : true_type{};
 
 template <typename T>
-struct conjunction<T> : T {};
+struct conjunction<T> : T{};
 
 template <typename First, typename... Others>
 struct conjunction<First, Others...>
@@ -254,10 +254,10 @@ template <typename...>
 struct disjunction;
 
 template <>
-struct disjunction<> : false_type {};
+struct disjunction<> : false_type{};
 
 template <typename T>
-struct disjunction<T> : T {};
+struct disjunction<T> : T{};
 
 template <typename First, typename... Others>
 struct disjunction<First, Others...>
