@@ -349,3 +349,27 @@ fn conversions_allow_trailing_whitespace() {
         })
     );
 }
+
+#[test]
+fn escaped_curly_braces_parse_correctly() {
+    assert_eq!(
+        FormatString::parse_core_fmt("Hello {{{:?}}}!"),
+        Ok(FormatString {
+            fragments: vec![
+                FormatFragment::Literal("Hello {".to_string()),
+                FormatFragment::Conversion(ConversionSpec {
+                    argument: Argument::None,
+                    fill: ' ',
+                    alignment: Alignment::None,
+                    flags: HashSet::new(),
+                    min_field_width: MinFieldWidth::None,
+                    precision: Precision::None,
+                    length: None,
+                    primitive: Primitive::Untyped,
+                    style: Style::Debug,
+                }),
+                FormatFragment::Literal("}!".to_string()),
+            ]
+        })
+    );
+}
