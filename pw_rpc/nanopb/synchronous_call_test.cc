@@ -34,6 +34,8 @@ namespace {
 using pw::rpc::test::pw_rpc::nanopb::TestService;
 using MethodInfo = internal::MethodInfo<TestService::TestUnaryRpc>;
 
+#if PW_THREAD_JOINING_ENABLED  // join() is required
+
 class SynchronousCallTest : public ::testing::Test {
  public:
   SynchronousCallTest()
@@ -231,5 +233,8 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallUntilTimeoutError) {
   EXPECT_TRUE(result.is_timeout());
   EXPECT_EQ(result.status(), Status::DeadlineExceeded());
 }
+
+#endif  // PW_THREAD_JOINING_ENABLED
+
 }  // namespace
 }  // namespace pw::rpc::test
