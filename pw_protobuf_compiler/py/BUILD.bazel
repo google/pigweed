@@ -39,8 +39,21 @@ py_test(
         ".",
     ],
     deps = [
-        ":pw_protobuf_compiler",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
+    ],
+)
+
+py_test(
+    name = "compiled_nanopb_protos_test",
+    size = "small",
+    srcs = [
+        "compiled_nanopb_protos_test.py",
+    ],
+    imports = [
+        ".",
+    ],
+    deps = [
+        "//pw_protobuf_compiler:pw_protobuf_compiler_nanopb_protos_py_pb2",
     ],
 )
 

@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,11 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+syntax = "proto3";
 
-pw.protobuf_compiler.Point.name max_size:16
+import "nanopb.proto";
 
-pw.protobuf_compiler.OptionsFileExample.thirty_two_chars max_size:32
-pw.protobuf_compiler.OptionsFileExample.forty_two_chars max_size:42
-// The `max_size` of the string `unspecified_length` is of course unspecified.
+package pw.protobuf_compiler.nanopb_test_protos;
 
-pw.protobuf_compiler.InlineOptionsExample.ten_chars_inline fixed_size:True
+message Point {
+  uint32 x = 1;
+  uint32 y = 2;
+  string name = 3 [(nanopb).max_size = 16];
+};

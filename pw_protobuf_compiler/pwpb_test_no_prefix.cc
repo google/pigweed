@@ -20,8 +20,8 @@ namespace pw::protobuf_compiler {
 namespace {
 
 TEST(Pwpb, InlineOptionsAppliedAndOverridden) {
-  pw::protobuf_compiler::pwpb::InlineOptionsExample::Message
-      inline_options_example;
+  pw::protobuf_compiler::pwpb_no_prefix_test_protos::pwpb::
+      InlineOptionsExample::Message inline_options_example;
 
   static_assert(
       std::is_same_v<decltype(inline_options_example.ten_chars_inline),

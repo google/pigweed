@@ -35,7 +35,7 @@ pw_cc_test(
     name = "pwpb_test",
     srcs = ["pwpb_test.cc"],
     deps = [
-        "//pw_protobuf_compiler/pw_protobuf_compiler_pwpb_protos:pwpb_test_pw_proto.pwpb",
+        "//pw_protobuf_compiler/pwpb_test_protos:pwpb_test_pw_proto.pwpb",
         "//pw_string",
         "//pw_unit_test",
     ],
@@ -43,8 +43,8 @@ pw_cc_test(
 
 proto_library(
     name = "pwpb_test_proto_no_prefix",
-    srcs = ["pw_protobuf_compiler_pwpb_protos_no_prefix/pwpb_test_no_prefix.proto"],
-    strip_import_prefix = "pw_protobuf_compiler_pwpb_protos_no_prefix/",
+    srcs = ["pwpb_no_prefix_test_protos/pwpb_test_no_prefix.proto"],
+    strip_import_prefix = "/pw_protobuf_compiler/pwpb_no_prefix_test_protos",
     deps = [
         "//pw_protobuf:field_options_proto",
     ],
@@ -83,13 +83,17 @@ proto_library(
 
 proto_library(
     name = "pw_protobuf_compiler_nanopb_protos",
-    srcs = ["pw_protobuf_compiler_nanopb_protos/nanopb_test.proto"],
-    strip_import_prefix = "/pw_protobuf_compiler",
+    srcs = ["nanopb_test_protos/nanopb_test.proto"],
     deps = ["@com_github_nanopb_nanopb//:nanopb_proto"],
 )
 
 nanopb_proto_library(
     name = "pw_protobuf_compiler_nanopb_protos_nanopb",
+    deps = [":pw_protobuf_compiler_nanopb_protos"],
+)
+
+py_proto_library(
+    name = "pw_protobuf_compiler_nanopb_protos_py_pb2",
     deps = [":pw_protobuf_compiler_nanopb_protos"],
 )
 

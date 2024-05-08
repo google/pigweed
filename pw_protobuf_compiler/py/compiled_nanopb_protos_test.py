@@ -16,7 +16,7 @@
 
 import unittest
 
-from pw_protobuf_compiler_nanopb_protos import nanopb_test_pb2
+from pw_protobuf_compiler.nanopb_test_protos import nanopb_test_pb2
 
 
 class TestCompileAndImport(unittest.TestCase):

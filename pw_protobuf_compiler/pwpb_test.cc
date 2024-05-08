@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_protobuf_compiler_pwpb_protos/pwpb_test.pwpb.h"
+#include "pw_protobuf_compiler/pwpb_test_protos/pwpb_test.pwpb.h"
 #include "pw_string/string.h"
 #include "pw_unit_test/framework.h"
 
@@ -20,7 +20,7 @@ namespace pw::protobuf_compiler {
 namespace {
 
 TEST(Pwpb, CompilesProtobufs) {
-  pwpb::Point::Message point = {4, 8, "point"};
+  pwpb_test_protos::pwpb::Point::Message point = {4, 8, "point"};
   EXPECT_EQ(point.x, 4u);
   EXPECT_EQ(point.y, 8u);
   EXPECT_EQ(point.name.size(), 5u);
@@ -28,7 +28,7 @@ TEST(Pwpb, CompilesProtobufs) {
 }
 
 TEST(Pwpb, OptionsFilesAreApplied) {
-  pwpb::OptionsFileExample::Message string_options_comparison;
+  pwpb_test_protos::pwpb::OptionsFileExample::Message string_options_comparison;
 
   static_assert(
       std::is_same_v<decltype(string_options_comparison.thirty_two_chars),
@@ -43,13 +43,14 @@ TEST(Pwpb, OptionsFilesAreApplied) {
   static_assert(
       std::is_same_v<
           decltype(string_options_comparison.unspecified_length),
-          pw::protobuf::Callback<pwpb::OptionsFileExample::StreamEncoder,
-                                 pwpb::OptionsFileExample::StreamDecoder>>,
+          pw::protobuf::Callback<
+              pwpb_test_protos::pwpb::OptionsFileExample::StreamEncoder,
+              pwpb_test_protos::pwpb::OptionsFileExample::StreamDecoder>>,
       "The field `unspecified_length` should be a `pw::protobuf::Callback`.");
 }
 
 TEST(Pwpb, InlineOptionsAppliedAndOverridden) {
-  pw::protobuf_compiler::pwpb::InlineOptionsExample::Message
+  pw::protobuf_compiler::pwpb_test_protos::pwpb::InlineOptionsExample::Message
       inline_options_example;
 
   static_assert(

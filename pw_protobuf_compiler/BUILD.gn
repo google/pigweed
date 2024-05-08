@@ -40,7 +40,8 @@ pw_test("nanopb_test") {
 }
 
 pw_proto_library("nanopb_test_protos") {
-  sources = [ "pw_protobuf_compiler_nanopb_protos/nanopb_test.proto" ]
+  sources = [ "nanopb_test_protos/nanopb_test.proto" ]
+  prefix = "pw_protobuf_compiler"
 
   if (dir_pw_third_party_nanopb != "") {
     deps = [ "$dir_pw_third_party/nanopb:proto" ]
@@ -53,8 +54,9 @@ pw_test("pwpb_test") {
 }
 
 pw_proto_library("pwpb_test_protos") {
-  sources = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.proto" ]
-  inputs = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.options" ]
+  sources = [ "pwpb_test_protos/pwpb_test.proto" ]
+  inputs = [ "pwpb_test_protos/pwpb_test.options" ]
+  prefix = "pw_protobuf_compiler"
   deps = [ "$dir_pw_protobuf:common_protos" ]
 }
 
@@ -70,14 +72,15 @@ pw_test("nested_packages_test") {
   sources = [ "nested_packages_test.cc" ]
 }
 
-pw_proto_library("pwpb_test_no_prefix_protos") {
-  sources =
-      [ "pw_protobuf_compiler_pwpb_protos_no_prefix/pwpb_test_no_prefix.proto" ]
-  strip_prefix = "pw_protobuf_compiler_pwpb_protos_no_prefix/"
+# This proto library intentionally strips the include path prefix for testing
+# purposes.
+pw_proto_library("pwpb_no_prefix_test_protos") {
+  sources = [ "pwpb_no_prefix_test_protos/pwpb_test_no_prefix.proto" ]
+  strip_prefix = "pwpb_no_prefix_test_protos/"
   deps = [ "$dir_pw_protobuf:common_protos" ]
 }
 
 pw_test("pwpb_no_prefix_test") {
   sources = [ "pwpb_test_no_prefix.cc" ]
-  deps = [ ":pwpb_test_no_prefix_protos.pwpb" ]
+  deps = [ ":pwpb_no_prefix_test_protos.pwpb" ]
 }

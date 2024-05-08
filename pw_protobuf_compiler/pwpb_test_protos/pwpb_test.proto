@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,12 +13,25 @@
 // the License.
 syntax = "proto3";
 
-import "nanopb.proto";
+package pw.protobuf_compiler.pwpb_test_protos;
 
-package pw.protobuf_compiler;
+import "pw_protobuf_protos/field_options.proto";
 
 message Point {
   uint32 x = 1;
   uint32 y = 2;
-  string name = 3 [(nanopb).max_size = 16];
+  string name = 3;
 };
+
+// Check that `.options` files work properly. Compare three strings, two of them
+// with different `max_size` values defined in the `.options` file and the third
+// with no specified `max_size`.
+message OptionsFileExample {
+  string thirty_two_chars = 1;
+  string forty_two_chars = 2;
+  string unspecified_length = 3;
+};
+
+message InlineOptionsExample {
+  string ten_chars_inline = 1 [(pw.protobuf.pwpb).max_size = 10];
+}

@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-package pw.protobuf_compiler;
+package pw.protobuf_compiler.pwpb_no_prefix_test_protos;
 
 import "pw_protobuf_protos/field_options.proto";
 

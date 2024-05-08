@@ -11,27 +11,11 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-syntax = "proto3";
 
-package pw.protobuf_compiler;
+pw.protobuf_compiler.pwpb_test_protos.Point.name max_size:16
 
-import "pw_protobuf_protos/field_options.proto";
+pw.protobuf_compiler.pwpb_test_protos.OptionsFileExample.thirty_two_chars max_size:32
+pw.protobuf_compiler.pwpb_test_protos.OptionsFileExample.forty_two_chars max_size:42
+// The `max_size` of the string `unspecified_length` is of course unspecified.
 
-message Point {
-  uint32 x = 1;
-  uint32 y = 2;
-  string name = 3;
-};
-
-// Check that `.options` files work properly. Compare three strings, two of them
-// with different `max_size` values defined in the `.options` file and the third
-// with no specified `max_size`.
-message OptionsFileExample {
-  string thirty_two_chars = 1;
-  string forty_two_chars = 2;
-  string unspecified_length = 3;
-};
-
-message InlineOptionsExample {
-  string ten_chars_inline = 1 [(pw.protobuf.pwpb).max_size = 10];
-}
+pw.protobuf_compiler.pwpb_test_protos.InlineOptionsExample.ten_chars_inline fixed_size:True
