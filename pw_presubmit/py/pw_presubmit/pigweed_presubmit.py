@@ -1008,9 +1008,9 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: end
     # Metadata
     # keep-sorted: start
+    r'\b.*OWNERS.*$',
     r'\bAUTHORS$',
     r'\bLICENSE$',
-    r'\bOWNERS$',
     r'\bPIGWEED_MODULES$',
     r'\bgo.(mod|sum)$',
     r'\bpackage-lock.json$',
