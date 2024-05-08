@@ -73,7 +73,7 @@ pub mod internal;
 pub mod __private {
     pub use crate::*;
     pub use pw_bytes::concat_static_strs;
-    pub use pw_format_core::PrintfFormatter;
+    pub use pw_format_core::{PrintfFormatter, PrintfHexFormatter, PrintfUpperHexFormatter};
     pub use pw_status::Result;
     pub use pw_stream::{Cursor, Seek, WriteInteger, WriteVarint};
     pub use pw_tokenizer_core::hash_string;

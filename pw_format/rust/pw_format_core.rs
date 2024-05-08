@@ -29,8 +29,48 @@ pub trait PrintfFormatter {
     const FORMAT_ARG: &'static str;
 }
 
-/// A helper to declare a [`PrintfFormatter`] trait for a given type.
+/// Trait used to produce printf style format strings for hex formatted untyped
+/// format specifiers.
+///
+/// The const [`PrintfHexFormatter::FORMAT_ARG`] is used to provide the printf
+/// format specifier (i.e. the `x` in `%02x`) for a given type in Rust.  This
+/// must be const so that it can be used to build static const format strings at
+/// compile time.
+pub trait PrintfHexFormatter {
+    /// The format specifier for this type.
+    const FORMAT_ARG: &'static str;
+}
+
+/// Trait used to produce printf style format strings for upper case hex
+/// formatted untyped format specifiers.
+///
+/// The const [`PrintfUpperHexFormatter::FORMAT_ARG`] is used to provide the
+/// printf format specifier (i.e. the `x` in `%02x`) for a given type in Rust.
+/// This must be const so that it can be used to build static const format
+/// strings at compile time.
+pub trait PrintfUpperHexFormatter {
+    /// The format specifier for this type.
+    const FORMAT_ARG: &'static str;
+}
+
+/// A helper to declare a [`PrintfFormatter`] trait and optionally
+/// [`PrintfHexFormatter`] and [`PrintfUpperHexFormatter`] traits for a given
+/// type.
 macro_rules! declare_formatter {
+    ($ty:ty, $specifier:literal, $hex_specifier:literal, $upper_hex_specifier:literal) => {
+        impl PrintfFormatter for $ty {
+            const FORMAT_ARG: &'static str = $specifier;
+        }
+
+        impl PrintfHexFormatter for $ty {
+            const FORMAT_ARG: &'static str = $hex_specifier;
+        }
+
+        impl PrintfUpperHexFormatter for $ty {
+            const FORMAT_ARG: &'static str = $upper_hex_specifier;
+        }
+    };
+
     ($ty:ty, $specifier:literal) => {
         impl PrintfFormatter for $ty {
             const FORMAT_ARG: &'static str = $specifier;
@@ -39,5 +79,5 @@ macro_rules! declare_formatter {
 }
 
 declare_formatter!(i32, "d");
-declare_formatter!(u32, "u");
+declare_formatter!(u32, "u", "x", "X");
 declare_formatter!(&str, "s");

@@ -15,7 +15,8 @@
 use proc_macro::TokenStream;
 use pw_format::{
     macros::{
-        generate, Arg, FormatAndArgsFlavor, FormatMacroGenerator, PrintfFormatStringParser, Result,
+        generate, Arg, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
+        PrintfFormatStringParser, Result,
     },
     Style,
 };
@@ -129,7 +130,7 @@ impl FormatMacroGenerator for Generator {
         Ok(())
     }
 
-    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg, _params: &FormatParams) -> Result<()> {
         self.code_fragments.push(quote! {
             result.push_str(&format!("{}", #expression));
         });

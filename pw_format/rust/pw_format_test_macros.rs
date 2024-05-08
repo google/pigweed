@@ -17,8 +17,9 @@ use proc_macro2::Ident;
 use pw_format::{
     macros::{
         generate, generate_core_fmt, generate_printf, Arg, CoreFmtFormatMacroGenerator,
-        CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatMacroGenerator, FormatStringParser,
-        PrintfFormatMacroGenerator, PrintfFormatStringFragment, PrintfFormatStringParser, Result,
+        CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
+        FormatStringParser, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
+        PrintfFormatStringParser, Result,
     },
     Style,
 };
@@ -98,7 +99,7 @@ impl FormatMacroGenerator for TestGenerator {
         Ok(())
     }
 
-    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg, _params: &FormatParams) -> Result<()> {
         let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::UntypedConversion(#expression.to_string()));

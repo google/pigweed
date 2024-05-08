@@ -78,6 +78,39 @@ impl Error {
 /// An alias for a Result with an ``Error``
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// Formatting parameters passed to an untyped conversion.
+pub struct FormatParams {
+    /// Style in which to print the corresponding argument.
+    pub style: Style,
+    // Future info such as field width and padding to go here.
+}
+
+impl FormatParams {
+    fn printf_format_trait(&self) -> Result<Ident> {
+        match self.style {
+            Style::None => Ok(format_ident!("PrintfFormatter")),
+            Style::Hex => Ok(format_ident!("PrintfHexFormatter")),
+            Style::UpperHex => Ok(format_ident!("PrintfUpperHexFormatter")),
+            _ => Err(Error::new(&format!(
+                "formatting untyped conversions with {:?} style is unsupported",
+                self.style
+            ))),
+        }
+    }
+
+    fn core_fmt_specifier(&self) -> Result<&str> {
+        match self.style {
+            Style::None => Ok("{}"),
+            Style::Hex => Ok("{:x}"),
+            Style::UpperHex => Ok("{:X}"),
+            _ => Err(Error::new(&format!(
+                "formatting untyped conversions with {:?} style is unsupported",
+                self.style
+            ))),
+        }
+    }
+}
+
 /// A code generator for implementing a `pw_format` style macro.
 ///
 /// This trait serves as the primary interface between `pw_format` and a
@@ -125,7 +158,7 @@ pub trait FormatMacroGenerator {
     fn char_conversion(&mut self, expression: Arg) -> Result<()>;
 
     /// Process an untyped conversion.
-    fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, _expression: Arg, _params: &FormatParams) -> Result<()> {
         Err(Error::new("untyped conversion (%v) not supported"))
     }
 }
@@ -360,7 +393,8 @@ fn handle_conversion(
 
         Primitive::Untyped => {
             let arg = next_arg(spec, args)?;
-            generator.untyped_conversion(arg)
+            let params = FormatParams { style: spec.style };
+            generator.untyped_conversion(arg, &params)
         }
 
         Primitive::Float => {
@@ -506,8 +540,15 @@ pub enum PrintfFormatStringFragment {
     /// A fragment that is a string.
     String(String),
 
-    /// An expressions that evaluates to a `const &str`.
-    Expr(Arg),
+    /// An expressions that can be converted to a `const &str`.
+    Expr {
+        /// Argument to convert.
+        arg: Arg,
+        /// Trait to used for getting the format specifier for the argument.
+        ///
+        /// One of `PrintfFormatter`, `PrintfHexFormatter`, `PrintfUpperHexFormatter
+        format_trait: Ident,
+    },
 }
 
 impl PrintfFormatStringFragment {
@@ -517,28 +558,28 @@ impl PrintfFormatStringFragment {
         match self {
             Self::String(s) => Ok(quote! {#s}),
             #[cfg(not(feature = "nightly_tait"))]
-            Self::Expr(arg) => {
+            Self::Expr { arg, format_trait } => {
                 let Arg::ExprCast(cast) = arg else {
                     return Err(Error::new(&format!(
-                      "Expected argument to untyped format (%v) to be a cast expression (e.g. x as i32), but found {}.",
+                      "Expected argument to untyped format (%v/{{}}) to be a cast expression (e.g. x as i32), but found {}.",
                       arg.to_token_stream()
                     )));
                 };
                 let ty = &cast.ty;
                 Ok(quote! {
                   {
-                    use #crate_name::PrintfFormatter;
-                    <#ty as PrintfFormatter>::FORMAT_ARG
+                    use #crate_name::#format_trait;
+                    <#ty as #format_trait>::FORMAT_ARG
                   }
                 })
             }
             #[cfg(feature = "nightly_tait")]
-            Self::Expr(expr) => Ok(quote! {
+            Self::Expr { expr, format_trait } => Ok(quote! {
               {
-                use #crate_name::PrintfFormatter;
-                type T = impl PrintfFormatter;
+                use #crate_name::#format_trait;
+                type T = impl #format_trait;
                 let _: &T = &(#expr);
-                let arg = <T as PrintfFormatter>::FORMAT_ARG;
+                let arg = <T as #format_trait>::FORMAT_ARG;
                 arg
               }
             }),
@@ -648,11 +689,14 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
         Ok(())
     }
 
-    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg, params: &FormatParams) -> Result<()> {
         self.inner.untyped_conversion(expression.clone())?;
         self.append_format_string("%");
         self.format_string_fragments
-            .push(PrintfFormatStringFragment::Expr(expression));
+            .push(PrintfFormatStringFragment::Expr {
+                arg: expression,
+                format_trait: params.printf_format_trait()?,
+            });
         Ok(())
     }
 }
@@ -713,7 +757,7 @@ pub trait CoreFmtFormatMacroGenerator {
 
     /// Process an untyped conversion.
     fn untyped_conversion(&mut self, _expression: Arg) -> Result<()> {
-        Err(Error::new("untyped conversion (%v) not supported"))
+        Err(Error::new("untyped conversion ({}) not supported"))
     }
 }
 
@@ -786,9 +830,9 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
         Ok(())
     }
 
-    fn untyped_conversion(&mut self, expression: Arg) -> Result<()> {
+    fn untyped_conversion(&mut self, expression: Arg, params: &FormatParams) -> Result<()> {
         self.inner.untyped_conversion(expression)?;
-        self.format_string.push_str("{}");
+        self.format_string.push_str(params.core_fmt_specifier()?);
         Ok(())
     }
 }

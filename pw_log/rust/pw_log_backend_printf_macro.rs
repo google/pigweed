@@ -150,7 +150,6 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
 #[proc_macro]
 pub fn _pw_log_backend(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as PwLogArgs<CoreFmtFormatStringParser>);
-
     let generator = LogfGenerator::new(&input.log_level);
 
     match generate_printf(generator, input.format_and_args.into()) {
@@ -162,7 +161,6 @@ pub fn _pw_log_backend(tokens: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn _pw_logf_backend(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as PwLogArgs<PrintfFormatStringParser>);
-
     let generator = LogfGenerator::new(&input.log_level);
 
     match generate_printf(generator, input.format_and_args.into()) {

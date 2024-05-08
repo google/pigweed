@@ -49,7 +49,11 @@ fn main() -> ! {
     //   toolchains.
     //
     // Both of these will be addressed in the future.
-    critical!("Generic rusty arguments {} {}", 42 as u32, -42 as i32);
+    critical!(
+        "Generic rusty arguments: 0x{:x} {}",
+        0xaa as u32,
+        -42 as i32
+    );
 
     debug::exit(debug::EXIT_SUCCESS);
     loop {}

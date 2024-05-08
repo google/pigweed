@@ -157,8 +157,8 @@ macro_rules! pw_log_debugf {
 /// use pw_log::info;
 ///
 /// info!(
-///     "Log Fact: The American president Abraham Lincoln (born {}) once lived in a log cabin.",
-///     1809 as u32);
+///     "Log Fact: The American president Abraham Lincoln (born {:x}) once lived in a log cabin.",
+///     0x1809 as u32);
 /// ```
 #[macro_export]
 macro_rules! info {

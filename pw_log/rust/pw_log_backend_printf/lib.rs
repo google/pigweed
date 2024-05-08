@@ -38,6 +38,7 @@ pub mod __private {
     use core::ffi::{c_int, c_uchar};
 
     pub use pw_bytes::concat_static_strs;
+    pub use pw_format_core::{PrintfHexFormatter, PrintfUpperHexFormatter};
     pub use pw_log_backend_printf_macro::{_pw_log_backend, _pw_logf_backend};
 
     use pw_log_backend_api::LogLevel;
@@ -66,6 +67,9 @@ pub mod __private {
 
     /// The printf uses its own formatter trait because it needs strings to
     /// resolve to `%.*s` instead of `%s`.
+    ///
+    /// The default [`PrintfHexFormatter`] and [`PrintfUpperHexFormatter`] are
+    /// used since they are not supported by strings.
     pub trait PrintfFormatter {
         /// The format specifier for this type.
         const FORMAT_ARG: &'static str;
