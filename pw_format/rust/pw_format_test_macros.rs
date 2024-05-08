@@ -14,14 +14,11 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use pw_format::{
-    macros::{
-        generate, generate_core_fmt, generate_printf, Arg, CoreFmtFormatMacroGenerator,
-        CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
-        FormatStringParser, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
-        PrintfFormatStringParser, Result,
-    },
-    Style,
+use pw_format::macros::{
+    generate, generate_core_fmt, generate_printf, Arg, CoreFmtFormatMacroGenerator,
+    CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
+    FormatStringParser, PrintfFormatMacroGenerator, PrintfFormatStringFragment,
+    PrintfFormatStringParser, Result,
 };
 use quote::{quote, ToTokens};
 use syn::parse_macro_input;
@@ -66,7 +63,7 @@ impl FormatMacroGenerator for TestGenerator {
     // This example ignores display type and width.
     fn integer_conversion(
         &mut self,
-        style: Style,
+        params: &FormatParams,
         signed: bool,
         type_width: u8, // in bits
         expression: Arg,
@@ -74,7 +71,7 @@ impl FormatMacroGenerator for TestGenerator {
         let expression = format!("{}", expression.to_token_stream());
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::IntegerConversion{
-                style: #style,
+                params: #params,
                 signed: #signed,
                 type_width: #type_width,
                 arg: #expression.to_string(),
@@ -392,7 +389,7 @@ pub fn printf_format_core_fmt_generator_test_macro(tokens: TokenStream) -> Token
 }
 
 #[proc_macro]
-pub fn printf_core_fmt_core_fmt_generator_test_macro(tokens: TokenStream) -> TokenStream {
+pub fn core_fmt_format_core_fmt_generator_test_macro(tokens: TokenStream) -> TokenStream {
     core_fmt_generator_test_macro_impl::<CoreFmtFormatStringParser>(tokens)
 }
 

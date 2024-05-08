@@ -50,7 +50,7 @@ fn main() -> ! {
     //
     // Both of these will be addressed in the future.
     critical!(
-        "Generic rusty arguments: 0x{:x} {}",
+        "Generic rusty arguments: 0x{:08x} {}",
         0xaa as u32,
         -42 as i32
     );

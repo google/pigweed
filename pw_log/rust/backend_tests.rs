@@ -109,4 +109,28 @@ mod tests {
             "[INF] DECAFBAD!\n",
         );
     }
+
+    #[test]
+    fn typed_min_fields_width_and_zero_padding_formats_correctly() {
+        assert_eq!(
+            run_with_capture(|| pw_logf_backend!(LogLevel::Info, "%8x", 0xcafe as u32)),
+            "[INF]     cafe\n",
+        );
+        assert_eq!(
+            run_with_capture(|| pw_logf_backend!(LogLevel::Info, "%08X!", 0xcafe as u32)),
+            "[INF] 0000CAFE!\n",
+        );
+    }
+
+    #[test]
+    fn untyped_min_fields_width_and_zero_padding_formats_correctly() {
+        assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "{:8x}", 0xcafe as u32)),
+            "[INF]     cafe\n",
+        );
+        assert_eq!(
+            run_with_capture(|| pw_log_backend!(LogLevel::Info, "{:08X}!", 0xcafe as u32)),
+            "[INF] 0000CAFE!\n",
+        );
+    }
 }

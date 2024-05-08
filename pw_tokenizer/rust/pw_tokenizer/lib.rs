@@ -676,6 +676,33 @@ mod tests {
     }
 
     #[test]
+    fn test_field_width_and_zero_pad_format() {
+        tokenize_test!(
+            &[0x3a, 0xc2, 0x1a, 0x05, 0xfc, 0xab, 0x06], // expected buffer
+            64,                                          // buffer size
+            "Lets go to the %x",                         // printf style
+            "Lets go to the {:x}",                       // core::fmt style
+            0xcafe as u32
+        );
+
+        tokenize_test!(
+            &[0xf3, 0x16, 0x03, 0x99, 0xfc, 0xab, 0x06], // expected buffer
+            64,                                          // buffer size
+            "Lets go to the %8x",                        // printf style
+            "Lets go to the {:8x}",                      // core::fmt style
+            0xcafe as u32
+        );
+
+        tokenize_test!(
+            &[0x44, 0xce, 0xa3, 0x7e, 0xfc, 0xab, 0x06], // expected buffer
+            64,                                          // buffer size
+            "Lets go to the %08x",                       // printf style
+            "Lets go to the {:08x}",                     // core::fmt style
+            0xcafe as u32
+        );
+    }
+
+    #[test]
     fn tokenizer_supports_concatenated_printf_format_strings() {
         // Since the no argument and some arguments cases are handled differently
         // by `tokenize_to_buffer!` we need to test both.

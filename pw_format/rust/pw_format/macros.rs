@@ -46,8 +46,8 @@ use syn::{
 };
 
 use crate::{
-    ConversionSpec, FormatFragment, FormatString, Length, MinFieldWidth, Precision, Primitive,
-    Style,
+    ConversionSpec, Flag, FormatFragment, FormatString, Length, MinFieldWidth, Precision,
+    Primitive, Style,
 };
 
 mod keywords {
@@ -79,10 +79,16 @@ impl Error {
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// Formatting parameters passed to an untyped conversion.
+#[derive(Clone, Debug, PartialEq)]
 pub struct FormatParams {
     /// Style in which to print the corresponding argument.
     pub style: Style,
-    // Future info such as field width and padding to go here.
+
+    /// Minimum field width.  (i.e. the `8` in `{:08x}`).
+    pub min_field_width: Option<u32>,
+
+    /// Zero padding.  (i.e. the existence of `0` in `{:08x}`).
+    pub zero_padding: bool,
 }
 
 impl FormatParams {
@@ -98,16 +104,82 @@ impl FormatParams {
         }
     }
 
-    fn core_fmt_specifier(&self) -> Result<&str> {
-        match self.style {
-            Style::None => Ok("{}"),
-            Style::Hex => Ok("{:x}"),
-            Style::UpperHex => Ok("{:X}"),
-            _ => Err(Error::new(&format!(
-                "formatting untyped conversions with {:?} style is unsupported",
-                self.style
-            ))),
+    fn field_params(&self) -> String {
+        let (zero_pad, min_field_width) = match self.min_field_width {
+            None => ("", "".to_string()),
+            Some(min_field_width) => (
+                if self.zero_padding { "0" } else { "" },
+                format!("{min_field_width}"),
+            ),
+        };
+
+        format!("{zero_pad}{min_field_width}")
+    }
+
+    fn core_fmt_specifier(&self) -> Result<String> {
+        // If no formatting options are needed, omit the `:`.
+        if self.style == Style::None && self.min_field_width.is_none() {
+            return Ok("{}".to_string());
         }
+
+        let format = match self.style {
+            Style::None => "",
+            Style::Octal => "o",
+            Style::Hex => "x",
+            Style::UpperHex => "X",
+            _ => {
+                return Err(Error::new(&format!(
+                    "formatting untyped conversions with {:?} style is unsupported",
+                    self.style
+                )))
+            }
+        };
+
+        let field_params = self.field_params();
+
+        Ok(format!("{{:{field_params}{format}}}"))
+    }
+}
+
+impl TryFrom<&ConversionSpec> for FormatParams {
+    type Error = Error;
+    fn try_from(spec: &ConversionSpec) -> core::result::Result<Self, Self::Error> {
+        let min_field_width = match spec.min_field_width {
+            MinFieldWidth::None => None,
+            MinFieldWidth::Fixed(len) => Some(len),
+            MinFieldWidth::Variable => {
+                return Err(Error::new(
+                    "Variable width '*' string formats are not supported.",
+                ))
+            }
+        };
+
+        Ok(FormatParams {
+            style: spec.style,
+            min_field_width,
+            zero_padding: spec.flags.contains(&Flag::LeadingZeros),
+        })
+    }
+}
+
+/// Implemented for testing through the pw_format_test_macros crate.
+impl ToTokens for FormatParams {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let style = self.style;
+        let min_field_width = match self.min_field_width {
+            None => quote! {None},
+            Some(val) => quote! {Some(#val)},
+        };
+        let zero_padding = self.zero_padding;
+
+        quote! {
+            pw_format::macros::FormatParams {
+                style: #style,
+                min_field_width: #min_field_width,
+                zero_padding: #zero_padding,
+            }
+        }
+        .to_tokens(tokens)
     }
 }
 
@@ -142,7 +214,7 @@ pub trait FormatMacroGenerator {
     /// Process an integer conversion.
     fn integer_conversion(
         &mut self,
-        style: Style,
+        params: &FormatParams,
         signed: bool,
         type_width: u8, // This should probably be an enum
         expression: Arg,
@@ -361,13 +433,9 @@ fn handle_conversion(
                     ))
                 }
             };
+            let params = spec.try_into()?;
 
-            generator.integer_conversion(
-                spec.style,
-                spec.primitive == Primitive::Integer,
-                bits,
-                arg,
-            )
+            generator.integer_conversion(&params, spec.primitive == Primitive::Integer, bits, arg)
         }
         Primitive::String => {
             // TODO: b/281862660 - Support Width::Variable and Precision::Variable.
@@ -393,7 +461,7 @@ fn handle_conversion(
 
         Primitive::Untyped => {
             let arg = next_arg(spec, args)?;
-            let params = FormatParams { style: spec.style };
+            let params = spec.try_into()?;
             generator.untyped_conversion(arg, &params)
         }
 
@@ -629,12 +697,12 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
 
     fn integer_conversion(
         &mut self,
-        style: Style,
+        params: &FormatParams,
         signed: bool,
         type_width: u8, // in bits
         expression: Arg,
     ) -> Result<()> {
-        let length_modifer = match type_width {
+        let length_modifier = match type_width {
             8 => "hh",
             16 => "h",
             32 => "",
@@ -647,7 +715,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
             }
         };
 
-        let (conversion, ty) = match style {
+        let (conversion, ty) = match params.style {
             Style::None => {
                 if signed {
                     ("d", format_ident!("i{type_width}"))
@@ -660,14 +728,20 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
             Style::UpperHex => ("X", format_ident!("u{type_width}")),
             _ => {
                 return Err(Error::new(&format!(
-                    "printf backend does not support formatting integers with {style:?} style",
+                    "printf backend does not support formatting integers with {:?} style",
+                    params.style
                 )))
             }
         };
 
         match self.inner.integer_conversion(ty, expression)? {
             Some(s) => self.append_format_string(&s),
-            None => self.append_format_string(&format!("%{}{}", length_modifer, conversion)),
+            None => self.append_format_string(&format!(
+                "%{}{}{}",
+                params.field_params(),
+                length_modifier,
+                conversion
+            )),
         }
 
         Ok(())
@@ -691,7 +765,8 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
 
     fn untyped_conversion(&mut self, expression: Arg, params: &FormatParams) -> Result<()> {
         self.inner.untyped_conversion(expression.clone())?;
-        self.append_format_string("%");
+
+        self.append_format_string(&format!("%{}", params.field_params()));
         self.format_string_fragments
             .push(PrintfFormatStringFragment::Expr {
                 arg: expression,
@@ -783,7 +858,7 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
 
     fn integer_conversion(
         &mut self,
-        style: Style,
+        params: &FormatParams,
         signed: bool,
         type_width: u8, // in bits
         expression: Arg,
@@ -794,21 +869,11 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
             format_ident!("u{type_width}")
         };
 
-        let conversion = match style {
-            Style::None => "{}",
-            Style::Octal => "{:o}",
-            Style::Hex => "{:x}",
-            Style::UpperHex => "{:X}",
-            _ => {
-                return Err(Error::new(&format!(
-                    "core::fmt backend does not support formatting integers with {style:?} style",
-                )))
-            }
-        };
+        let conversion = params.core_fmt_specifier()?;
 
         match self.inner.integer_conversion(ty, expression)? {
             Some(s) => self.format_string.push_str(&s),
-            None => self.format_string.push_str(conversion),
+            None => self.format_string.push_str(&conversion),
         }
 
         Ok(())
@@ -832,7 +897,7 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
 
     fn untyped_conversion(&mut self, expression: Arg, params: &FormatParams) -> Result<()> {
         self.inner.untyped_conversion(expression)?;
-        self.format_string.push_str(params.core_fmt_specifier()?);
+        self.format_string.push_str(&params.core_fmt_specifier()?);
         Ok(())
     }
 }

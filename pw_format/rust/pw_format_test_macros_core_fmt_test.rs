@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use pw_format::Style;
+use pw_format::macros::FormatParams;
 
 // Used to record calls into the test generator from `generator_test_macro!`.
 #[derive(Debug, PartialEq)]
@@ -20,7 +20,7 @@ pub enum TestGeneratorOps {
     Finalize,
     StringFragment(String),
     IntegerConversion {
-        style: Style,
+        params: FormatParams,
         signed: bool,
         type_width: u8,
         arg: String,
@@ -31,7 +31,7 @@ pub enum TestGeneratorOps {
 }
 
 // Used to record calls into the test generator from `printf_generator_test_macro!` and friends.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum PrintfTestGeneratorOps {
     Finalize,
     StringFragment(String),
@@ -44,7 +44,8 @@ pub enum PrintfTestGeneratorOps {
 #[cfg(test)]
 mod tests {
     use pw_format_test_macros::{
-        core_fmt_format_generator_test_macro, core_fmt_format_printf_generator_test_macro,
+        core_fmt_format_core_fmt_generator_test_macro, core_fmt_format_generator_test_macro,
+        core_fmt_format_printf_generator_test_macro,
     };
 
     // Create an alias to ourselves so that the proc macro can name our crate.
@@ -94,6 +95,74 @@ mod tests {
                     PrintfTestGeneratorOps::Finalize
                 ]
             )
+        );
+    }
+
+    #[test]
+    fn generate_printf_translates_field_width_and_leading_zeros_correctly() {
+        let expected_fragments = vec![
+            PrintfTestGeneratorOps::StringFragment("Test ".to_string()),
+            PrintfTestGeneratorOps::UntypedConversion("0x42 as u32".to_string()),
+            PrintfTestGeneratorOps::StringFragment(" test".to_string()),
+            PrintfTestGeneratorOps::Finalize,
+        ];
+
+        // No field width.
+        assert_eq!(
+            core_fmt_format_printf_generator_test_macro!("Test {:x} test", 0x42 as u32),
+            ("Test %x test", expected_fragments.clone())
+        );
+
+        // Field width without zero padding.
+        assert_eq!(
+            core_fmt_format_printf_generator_test_macro!("Test {:8x} test", 0x42 as u32),
+            ("Test %8x test", expected_fragments.clone())
+        );
+
+        // Field width with zero padding.
+        assert_eq!(
+            core_fmt_format_printf_generator_test_macro!("Test {:08x} test", 0x42 as u32),
+            ("Test %08x test", expected_fragments.clone())
+        );
+
+        // Test with no specified style.
+        assert_eq!(
+            core_fmt_format_printf_generator_test_macro!("Test {:08} test", 0x42 as u32),
+            ("Test %08u test", expected_fragments.clone())
+        );
+    }
+
+    #[test]
+    fn generate_core_fmt_translates_field_width_and_leading_zeros_correctly() {
+        let expected_fragments = vec![
+            PrintfTestGeneratorOps::StringFragment("Test ".to_string()),
+            PrintfTestGeneratorOps::UntypedConversion("0x42 as u32".to_string()),
+            PrintfTestGeneratorOps::StringFragment(" test".to_string()),
+            PrintfTestGeneratorOps::Finalize,
+        ];
+
+        // No field width.
+        assert_eq!(
+            core_fmt_format_core_fmt_generator_test_macro!("Test {:x} test", 0x42 as u32),
+            ("Test {:x} test", expected_fragments.clone())
+        );
+
+        // Field width without zero padding.
+        assert_eq!(
+            core_fmt_format_core_fmt_generator_test_macro!("Test {:8x} test", 0x42 as u32),
+            ("Test {:8x} test", expected_fragments.clone())
+        );
+
+        // Field width with zero padding.
+        assert_eq!(
+            core_fmt_format_core_fmt_generator_test_macro!("Test {:08x} test", 0x42 as u32),
+            ("Test {:08x} test", expected_fragments.clone())
+        );
+
+        // Test with no specified style.
+        assert_eq!(
+            core_fmt_format_core_fmt_generator_test_macro!("Test {:08} test", 0x42 as u32),
+            ("Test {:08} test", expected_fragments.clone())
         );
     }
 }

@@ -13,12 +13,9 @@
 // the License.
 
 use proc_macro::TokenStream;
-use pw_format::{
-    macros::{
-        generate, Arg, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
-        PrintfFormatStringParser, Result,
-    },
-    Style,
+use pw_format::macros::{
+    generate, Arg, FormatAndArgsFlavor, FormatMacroGenerator, FormatParams,
+    PrintfFormatStringParser, Result,
 };
 use quote::quote;
 use syn::{
@@ -105,7 +102,7 @@ impl FormatMacroGenerator for Generator {
     // This example ignores display type and width.
     fn integer_conversion(
         &mut self,
-        _style: Style,
+        _params: &FormatParams,
         _signed: bool,
         _type_width: u8, // in bits
         expression: Arg,
