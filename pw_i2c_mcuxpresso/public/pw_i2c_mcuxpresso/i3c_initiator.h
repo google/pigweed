@@ -77,7 +77,7 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   I3C_Type* base_;
   i3c_device_info_t* device_list_ = nullptr;
   uint8_t device_count_ = 0;
-  bool enabled_ = false PW_GUARDED_BY(mutex_);
+  bool enabled_ PW_GUARDED_BY(mutex_) = false;
   pw::sync::Mutex mutex_;
   std::optional<pw::Vector<uint8_t, I3C_MAX_DEVCNT>> i3c_dynamic_address_list_;
 };
