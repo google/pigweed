@@ -20,13 +20,6 @@
 
 namespace pw::bluetooth::proxy {
 
-namespace {
-
-// TODO: https://pwbug.dev/326499611 - Make this configurable by the container.
-const uint16_t kLeAclPacketCreditsToReserve = 2;
-
-}  // namespace
-
 // Acquire LE ACL credits for proxy host use by removing the amount needed from
 // the amount that is passed to the host.
 void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
@@ -42,7 +35,7 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
   uint16_t controller_max_le_acl_packets =
       read_buffer_event.total_num_acl_data_packets().Read();
   proxy_max_le_acl_packets_ =
-      std::min(controller_max_le_acl_packets, kLeAclPacketCreditsToReserve);
+      std::min(controller_max_le_acl_packets, le_acl_credits_to_reserve_);
   uint16_t host_max_le_acl_packets =
       controller_max_le_acl_packets - proxy_max_le_acl_packets_;
   read_buffer_event.total_num_acl_data_packets().Write(host_max_le_acl_packets);
@@ -51,12 +44,12 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
       proxy_max_le_acl_packets_,
       host_max_le_acl_packets);
 
-  if (proxy_max_le_acl_packets_ < kLeAclPacketCreditsToReserve) {
+  if (proxy_max_le_acl_packets_ < le_acl_credits_to_reserve_) {
     PW_LOG_ERROR(
         "Only was able to reserve %d acl data credits rather than the "
         "configured %d from the controller provided's data credits of %d. ",
         proxy_max_le_acl_packets_,
-        kLeAclPacketCreditsToReserve,
+        le_acl_credits_to_reserve_,
         controller_max_le_acl_packets, );
   }
 }

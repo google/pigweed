@@ -28,6 +28,14 @@ namespace pw::bluetooth::proxy {
 // buffers.
 class AclDataChannel {
  public:
+  AclDataChannel(uint16_t le_acl_credits_to_reserve)
+      : le_acl_credits_to_reserve_(le_acl_credits_to_reserve) {}
+
+  AclDataChannel(const AclDataChannel&) = delete;
+  AclDataChannel& operator=(const AclDataChannel&) = delete;
+  AclDataChannel(AclDataChannel&&) = delete;
+  AclDataChannel& operator=(AclDataChannel&&) = delete;
+
   void ProcessReadBufferSizeCommandCompleteEvent(
       emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event);
 
@@ -38,6 +46,9 @@ class AclDataChannel {
  private:
   // Set to true if channel has been initialized by the host.
   bool initialized_ = false;
+
+  // The amount of credits this channel will try to reserve.
+  const uint16_t le_acl_credits_to_reserve_;
 
   // The local number of HCI ACL Data packets that we have reserved for this
   // proxy host to use.

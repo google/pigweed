@@ -30,7 +30,8 @@ class ProxyHost {
   /// @param[in] send_to_controller_fn - Callback that will be called when proxy
   /// wants to send HCI packet towards the controller.
   ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
-            H4HciPacketSendFn&& send_to_controller_fn);
+            H4HciPacketSendFn&& send_to_controller_fn,
+            uint16_t le_acl_credits_to_reserve);
 
   ProxyHost() = delete;
   virtual ~ProxyHost() = default;
