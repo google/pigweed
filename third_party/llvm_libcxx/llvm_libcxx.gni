@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,12 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-cc_library(
-    name = "pw_libcxx",
-    srcs = [
-        "__cxa_deleted_virtual.cc",
-        "__cxa_pure_virtual.cc",
-        "operator_delete.cc",
-        "verbose_abort.cc",
-    ],
-)
+declare_args() {
+  # This variable is set to the path of llvm-libcxx. If set, pw_libcxx.a will
+  # be created using llvm-libcxx sources.
+  dir_pw_third_party_llvm_libcxx = ""
+}

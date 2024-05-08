@@ -1,0 +1,46 @@
+// Copyright 2024 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#pragma once
+
+// The libc++ internal header <__config> does #include <__config_site> to get
+// definitions that vary by operating system, machine, or configuration.
+
+#define _LIBCPP_ABI_VERSION 2
+#define _LIBCPP_ABI_NAMESPACE __pw
+#define _LIBCPP_ABI_FORCE_ITANIUM
+// TODO: https://pwbug.dev/298822102 - Ideally we would use
+// _LIBCPP_HAS_NO_THREADS but that disables std::lock_guard which is being used.
+#define _LIBCPP_HAS_THREAD_API_EXTERNAL
+#define _LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS
+#define _LIBCPP_HAS_NO_C11_ALIGNED_ALLOC
+#define _LIBCPP_HAS_NO_FILESYSTEM_LIBRARY
+// TODO: https://pwbug.dev/298822102 - Ideally we would use
+// _LIBCPP_HAS_NO_MONOTONIC_CLOCK which requires _LIBCPP_HAS_NO_THREADS.
+#define _LIBCPP_HAS_NO_RANDOM_DEVICE
+#define _LIBCPP_HAS_NO_LOCALIZATION
+#define _LIBCPP_HAS_NO_UNICODE
+#define _LIBCPP_HAS_NO_WIDE_CHARACTERS
+#define _LIBCPP_HAS_NO_STD_MODULES
+#define _LIBCPP_HAS_NO_TIME_ZONE_DATABASE
+#define _LIBCPP_HAS_NO_FSTREAM
+
+// PSTL backend
+#define _LIBCPP_PSTL_CPU_BACKEND_SERIAL
+
+// Hardening
+#define _LIBCPP_HARDENING_MODE_DEFAULT _LIBCPP_HARDENING_MODE_NONE
+
+// #undef _LIBCPP_BUILDING_LIBRARY
+#define _LIBCPP_REMOVE_TRANSITIVE_INCLUDES

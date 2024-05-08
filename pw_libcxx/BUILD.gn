@@ -15,14 +15,34 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/cc_library.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/llvm_libcxx/llvm_libcxx.gni")
 import("$dir_pw_unit_test/test.gni")
 
-pw_static_library("pw_libcxx") {
-  sources = [
-    "__cxa_deleted_virtual.cc",
-    "__cxa_pure_virtual.cc",
-    "operator_delete.cc",
-  ]
+if (dir_pw_third_party_llvm_libcxx != "") {
+  config("pw_libcxx_config") {
+    include_dirs = [
+      "include",
+      "$dir_pw_third_party_llvm_libcxx/include",
+    ]
+  }
+
+  pw_static_library("pw_libcxx") {
+    complete_static_lib = true
+    add_global_link_deps = false
+    public_configs = [ ":pw_libcxx_config" ]
+    sources = [
+      "__cxa_deleted_virtual.cc",
+      "__cxa_pure_virtual.cc",
+      "operator_delete.cc",
+      "verbose_abort.cc",
+    ]
+    remove_public_deps = [ dir_pw_libcxx ]
+  }
+} else {
+  pw_static_library("pw_libcxx") {
+    add_global_link_deps = false
+    remove_public_deps = [ dir_pw_libcxx ]
+  }
 }
 
 pw_test_group("tests") {

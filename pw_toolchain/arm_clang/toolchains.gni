@@ -32,6 +32,11 @@ _arm_clang_toolchain = {
 # These are the defaults automatically applied to every pw_toolchain_arm_clang*
 # toolchain.
 pigweed_arm_clang_defaults = {
+  # Add LLVM libc++ library as a dependency to all targets.
+  # If `dir_pw_third_party_llvm_libcxx` is not configured, this library will be
+  # empty.
+  default_public_deps = [ dir_pw_libcxx ]
+
   # Build LLVM builtins library from sources and link against it for each
   # target.
   # If `dir_pw_third_party_llvm_builtins` is not configured, this library will
