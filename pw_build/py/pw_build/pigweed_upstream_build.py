@@ -157,7 +157,7 @@ def cmake_recipe() -> BuildRecipe:
             ),
             BuildCommand(
                 build_system_command='ninja',
-                targets=pw_presubmit.pigweed_presubmit.CMAKE_CLANG_TARGETS,
+                targets=pw_presubmit.pigweed_presubmit.CMAKE_TARGETS,
             ),
         ],
     )

@@ -56,7 +56,7 @@ pw_add_test(pw_bluetooth.address_test
   PRIVATE_DEPS
     pw_bluetooth
   GROUPS
-    pw_bluetooth
+    modules
 )
 
 pw_add_test(pw_bluetooth.api_test
@@ -65,7 +65,7 @@ pw_add_test(pw_bluetooth.api_test
   PRIVATE_DEPS
     pw_bluetooth
   GROUPS
-    pw_bluetooth
+    modules
 )
 
 pw_add_test(pw_bluetooth.result_test
@@ -74,7 +74,7 @@ pw_add_test(pw_bluetooth.result_test
   PRIVATE_DEPS
     pw_bluetooth
   GROUPS
-    pw_bluetooth
+    modules
 )
 
 pw_add_test(pw_bluetooth.uuid_test
@@ -83,7 +83,7 @@ pw_add_test(pw_bluetooth.uuid_test
   PRIVATE_DEPS
     pw_bluetooth
   GROUPS
-    pw_bluetooth
+    modules
 )
 
 ###############################################################################
@@ -189,5 +189,5 @@ pw_add_test(pw_bluetooth.emboss_test
     pw_bluetooth.emboss_l2cap_frames
     pw_third_party.fuchsia.stdcompat
   GROUPS
-    pw_bluetooth
+    modules
 )
