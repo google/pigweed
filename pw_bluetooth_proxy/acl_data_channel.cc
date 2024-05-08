@@ -50,7 +50,7 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
         "configured %d from the controller provided's data credits of %d. ",
         proxy_max_le_acl_packets_,
         le_acl_credits_to_reserve_,
-        controller_max_le_acl_packets, );
+        controller_max_le_acl_packets);
   }
 }
 
