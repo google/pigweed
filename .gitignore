@@ -74,6 +74,9 @@ yarn-error.log
 # pw_emu
 .pw_emu
 
+# pw_ide
+.pw_ide.user.yaml
+
 # Emboss
 *.emb.h
 
