@@ -27,7 +27,8 @@ function(emboss_cc_library NAME)
     REQUIRED_ARGS
       SOURCES)
 
-  list(APPEND DEFAULT_IMPORT_DIRS $ENV{PW_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
+  # Include default import dirs with the user specified values.
+  list(APPEND arg_IMPORT_DIRS $ENV{PW_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
 
   set(out_dir "${CMAKE_CURRENT_BINARY_DIR}/${NAME}")
 
@@ -35,43 +36,23 @@ function(emboss_cc_library NAME)
   pw_rebase_paths(outputs ${out_dir} "${CMAKE_CURRENT_SOURCE_DIR}"
     "${arg_SOURCES}" ".emb.h")
 
-  # Make the import dir paths absolute
-  pw_rebase_paths(import_dirs "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}" "${arg_IMPORT_DIRS}" "")
-
   # Set the include path to export to the output file's directory.
   get_filename_component(output_include_path "${outputs}" DIRECTORY)
 
-  # Use INTERFACE libraries to track the proto include paths that are passed to
-  # protoc.
-  set(include_deps "${arg_DEPS}")
-  list(TRANSFORM include_deps APPEND ._includes)
-
-  pw_add_library_generic("${NAME}._includes" INTERFACE PUBLIC_INCLUDES
-    "${out_dir}" PUBLIC_DEPS ${include_deps})
+  # Make the import dir paths absolute
+  pw_rebase_paths(abs_import_dirs "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}" "${arg_IMPORT_DIRS}" "")
 
   # Expose a list of our sources so that other generate steps can depend on
   # them.
+  pw_rebase_paths(abs_sources "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}" "${arg_SOURCES}" "")
   pw_add_library_generic("${NAME}._sources" INTERFACE
     HEADERS
-      ${arg_SOURCES}
+      ${abs_sources}
+    PUBLIC_INCLUDES
+      ${abs_import_dirs}
   )
-
-  # Setup the emboss command:
-  # python3 $runner $embossc --generate cc --output-path $out_dir \
-  # --import-dir ... --import-dir ... $source
-  set(embossc "${dir_pw_third_party_emboss}/embossc")
-  set(runner "$ENV{PW_ROOT}/third_party/emboss/embossc_runner.py")
-
-  list(APPEND emboss_cmd python3
-    "${runner}" "${embossc}" "--generate" "cc" "--no-cc-enum-traits"
-    "--output-path" "${out_dir}")
-
-  foreach(impt IN LISTS DEFAULT_IMPORT_DIRS import_dirs)
-    list(APPEND emboss_cmd "--import-dir" "${impt}")
-  endforeach()
-
-  list(APPEND emboss_cmd "${arg_SOURCES}")
 
   # Build up a list of other `emb` sources the generate step depends on. We
   # use this rather than the full emboss_cc_library so that the generate steps
@@ -85,7 +66,26 @@ function(emboss_cc_library NAME)
   foreach(dep IN LISTS source_deps)
     get_target_property(sources ${dep} SOURCES)
     list(APPEND dependent_sources ${sources})
+    get_target_property(
+      imports ${dep}._public_config INTERFACE_INCLUDE_DIRECTORIES)
+    list(APPEND abs_import_dirs ${imports})
   endforeach()
+
+  # Setup the emboss command:
+  # python3 $runner $embossc --generate cc --output-path $out_dir \
+  # --import-dir ... --import-dir ... $source
+  set(embossc "${dir_pw_third_party_emboss}/embossc")
+  set(runner "$ENV{PW_ROOT}/third_party/emboss/embossc_runner.py")
+
+  list(APPEND emboss_cmd python3
+    "${runner}" "${embossc}" "--generate" "cc" "--no-cc-enum-traits"
+    "--output-path" "${out_dir}")
+
+  foreach(impt IN LISTS abs_import_dirs)
+    list(APPEND emboss_cmd "--import-dir" "${impt}")
+  endforeach()
+
+  list(APPEND emboss_cmd "${arg_SOURCES}")
 
   # Define the command to generate $outputs
   add_custom_command(
