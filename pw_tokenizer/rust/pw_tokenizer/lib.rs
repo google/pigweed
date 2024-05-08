@@ -123,7 +123,7 @@ macro_rules! token {
 /// the token database.
 ///
 /// See [`token`] for an explanation on how strings are tokenized and entries
-/// are added to the token database.
+/// are added to the token database.  The token's domain is set to `""`.
 ///
 /// Returns a [`pw_status::Result<usize>`] the number of bytes written to the buffer.
 ///
@@ -168,7 +168,7 @@ macro_rules! tokenize_core_fmt_to_buffer {
 /// and add the format string's token to the token database.
 ///
 /// See [`token`] for an explanation on how strings are tokenized and entries
-/// are added to the token database.  The token's domain is set to "".
+/// are added to the token database.  The token's domain is set to `""`.
 ///
 /// Returns a [`pw_status::Result<usize>`] the number of bytes written to the buffer.
 ///
@@ -217,32 +217,33 @@ macro_rules! tokenize_to_buffer {
     }};
 }
 
-/// Tokenize a format string and arguments to a [`MessageWriter`] and add the
-/// format string's token to the token database.
+/// Tokenize a `core::fmt` format string and arguments to a [`MessageWriter`].
+/// The format string is converted in to a `printf` and added token to the token
+/// database.
 ///
-/// `tokenize_to_writer!` and the accompanying [`MessageWriter`] trait provide
-/// an optimized API for use cases like logging where the output of the
+/// `tokenize_core_fmt_to_writer!` and the accompanying [`MessageWriter`] trait
+/// provide an optimized API for use cases like logging where the output of the
 /// tokenization will be written to a shared/ambient resource like stdio, a
 /// UART, or a shared buffer.
 ///
 /// See [`token`] for an explanation on how strings are tokenized and entries
-/// are added to the token database.  The token's domain is set to "".
+/// are added to the token database.  The token's domain is set to `""`.
 ///
 /// Returns a [`pw_status::Result<()>`].
 ///
-/// `tokenize_to_writer!` supports concatenation of format strings as described
-/// in [`pw_format::macros::FormatAndArgs`].
+/// `tokenize_core_fmt_to_writer!` supports concatenation of format strings as
+///  described in [`pw_format::macros::FormatAndArgs`].
 ///
 /// # Errors
 /// - [`pw_status::Error::OutOfRange`] - [`MessageWriter`] does not have enough
 ///   space to fit tokenized data.
-/// - others - `tokenize_to_write!` will pass on any errors returned by the
-///   [`MessageWriter`].
+/// - others - `tokenize_core_fmt_to_writer!` will pass on any errors returned
+///  by the [`MessageWriter`].
 ///
 /// # Code Size
 ///
 /// This data was collected by examining the disassembly of a test program
-/// built for an Cortex M0.
+/// built for a Cortex M0.
 ///
 /// | Tokenized Message   | Per Call-site Cost (bytes) |
 /// | --------------------| -------------------------- |
@@ -254,7 +255,7 @@ macro_rules! tokenize_to_buffer {
 /// ```
 /// use pw_status::Result;
 /// use pw_stream::{Cursor, Write};
-/// use pw_tokenizer::{MessageWriter, tokenize_to_writer};
+/// use pw_tokenizer::{MessageWriter, tokenize_core_fmt_to_writer};
 ///
 /// const BUFFER_LEN: usize = 32;
 ///
@@ -289,7 +290,7 @@ macro_rules! tokenize_to_buffer {
 ///
 /// // Tokenize a format string and argument into the writer.  Note how we
 /// // pass in the message writer's type, not an instance of it.
-/// let len = tokenize_to_writer!(TestMessageWriter, "The answer is %d", 42)?;
+/// let len = tokenize_core_fmt_to_writer!(TestMessageWriter, "The answer is {}", 42 as i32)?;
 /// # Ok::<(), pw_status::Error>(())
 /// ```
 #[macro_export]
@@ -300,7 +301,81 @@ macro_rules! tokenize_core_fmt_to_writer {
     }};
 }
 
-/// DOCME
+/// Tokenize a `printf` format string and arguments to a [`MessageWriter`] and
+/// add the format string's token to the token database.
+///
+/// `tokenize_printf_fmt_to_writer!` and the accompanying [`MessageWriter`] trait
+/// provide an optimized API for use cases like logging where the output of the
+/// tokenization will be written to a shared/ambient resource like stdio, a
+/// UART, or a shared buffer.
+///
+/// See [`token`] for an explanation on how strings are tokenized and entries
+/// are added to the token database.  The token's domain is set to `""`.
+///
+/// Returns a [`pw_status::Result<()>`].
+///
+/// `tokenize_core_fmt_to_writer!` supports concatenation of format strings as
+///  described in [`pw_format::macros::FormatAndArgs`].
+///
+/// # Errors
+/// - [`pw_status::Error::OutOfRange`] - [`MessageWriter`] does not have enough
+///   space to fit tokenized data.
+/// - others - `tokenize_printf_to_writer!` will pass on any errors returned
+///  by the [`MessageWriter`].
+///
+/// # Code Size
+///
+/// This data was collected by examining the disassembly of a test program
+/// built for a Cortex M0.
+///
+/// | Tokenized Message   | Per Call-site Cost (bytes) |
+/// | --------------------| -------------------------- |
+/// | no arguments        | 10                         |
+/// | one `i32` argument  | 18                         |
+///
+/// # Example
+///
+/// ```
+/// use pw_status::Result;
+/// use pw_stream::{Cursor, Write};
+/// use pw_tokenizer::{MessageWriter, tokenize_printf_to_writer};
+///
+/// const BUFFER_LEN: usize = 32;
+///
+/// // Declare a simple MessageWriter that uses a [`pw_status::Cursor`] to
+/// // maintain an internal buffer.
+/// struct TestMessageWriter {
+///   cursor: Cursor<[u8; BUFFER_LEN]>,
+/// }
+///
+/// impl MessageWriter for TestMessageWriter {
+///   fn new() -> Self {
+///       Self {
+///           cursor: Cursor::new([0u8; BUFFER_LEN]),
+///       }
+///   }
+///
+///   fn write(&mut self, data: &[u8]) -> Result<()> {
+///       self.cursor.write_all(data)
+///   }
+///
+///   fn remaining(&self) -> usize {
+///       self.cursor.remaining()
+///   }
+///
+///   fn finalize(self) -> Result<()> {
+///       let len = self.cursor.position();
+///       // 4 bytes used to encode the token and one to encode the value 42.
+///       assert_eq!(len, 5);
+///       Ok(())
+///   }
+/// }
+///
+/// // Tokenize a format string and argument into the writer.  Note how we
+/// // pass in the message writer's type, not an instance of it.
+/// let len = tokenize_printf_to_writer!(TestMessageWriter, "The answer is %d", 42)?;
+/// # Ok::<(), pw_status::Error>(())
+/// ```
 #[macro_export]
 macro_rules! tokenize_printf_to_writer {
     ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
