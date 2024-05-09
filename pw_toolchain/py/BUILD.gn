@@ -24,6 +24,7 @@ pw_python_package("py") {
   sources = [
     "pw_toolchain/__init__.py",
     "pw_toolchain/bad_toolchain.py",
+    "pw_toolchain/clang_apply_replacements.py",
     "pw_toolchain/clang_arm_toolchain.py",
     "pw_toolchain/clang_tidy.py",
     "pw_toolchain/copy_with_metadata.py",
