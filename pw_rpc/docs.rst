@@ -468,11 +468,42 @@ This can remove the need for globally known channel IDs. Clients can use a
 generic channel ID. The server remaps the generic channel ID to an ID associated
 with the transport the client is using.
 
+.. cpp:namespace-push:: pw::rpc
+
 .. doxygengroup:: pw_rpc_channel_functions
    :content-only:
 
+.. cpp:namespace-pop::
+
 A future revision of the pw_rpc protocol will remove the need for global channel
 IDs without requiring remapping.
+
+Example deployment
+------------------
+This section describes a hypothetical pw_rpc deployment that supports arbitrary
+pw_rpc clients with one pw_rpc server. Note that this assumes that the
+underlying transport provides some sort of addressing that the server-side can
+associate with a channel ID.
+
+- A pw_rpc server is running on one core. A variable number of pw_rpc clients
+  need to call RPCs on the server from a different core.
+- The client core opens a socket (or similar feature) to connect to the server
+  core.
+- The server core detects the inbound connection and allocates a new channel ID.
+  It creates a new channel by calling :cpp:func:`pw::rpc::Server::OpenChannel`
+  with the channel ID and a :cpp:class:`pw::rpc::ChannelOutput` associated with
+  the new connection.
+- The server maintains a mapping between channel IDs and pw_rpc client
+  connections.
+- On the client core, pw_rpc clients all use the same channel ID (e.g.  ``1``).
+- As packets arrive from pw_rpc client connections, the server-side code calls
+  :cpp:func:`pw::rpc::ChangeEncodedChannelId` on the encoded packet to replace
+  the generic channel ID (``1``) with the server-side channel ID allocated when
+  the client connected. The encoded packet is then passed to
+  :cpp:func:`pw::rpc::Server::ProcessPacket`.
+- When the server sends pw_rpc packets, the :cpp:class:`pw::rpc::ChannelOutput`
+  calls :cpp:func:`pw::rpc::ChangeEncodedChannelId` to set the channel ID back
+  to the generic ``1``.
 
 --------
 Services
@@ -1879,10 +1910,10 @@ interface.
 
 Evolution
 =========
-Concurrent requests were not initially supported in pw_rpc (added in
-`C++ <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/109077>`,
-`Python <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/139610>`,
-and
-`TypeScript <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160792>`).
-As a result, some user-written service implementations may not expect or
-correctly support concurrent requests.
+Concurrent requests were not initially supported in pw_rpc (added in `C++
+<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/109077>`_, `Python
+<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/139610>`_, and
+`TypeScript
+<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160792>`_). As a
+result, some user-written service implementations may not expect or correctly
+support concurrent requests.
