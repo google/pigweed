@@ -22,18 +22,13 @@
 // run AFTER memory initialization has completed unless it is ABSOLUTELY
 // NECESSARY to modify the way memory is initialized.
 //
-// This file is similar to a traditional assembly startup file. It turns out
-// that everything typically done in ARMv7-M assembly startup can be done
-// straight from C code. This makes startup code easier to maintain, modify,
-// and read.
-//
 // When execution begins due to SoC power-on (or the device is reset), three
 // key things must happen to properly enter C++ execution context:
 //   1. Static variables must be loaded from flash to RAM.
 //   2. Zero-initialized variables must be zero-initialized.
 //   3. Statically allocated objects must have their constructors run.
 // The SoC doesn't inherently have a notion of how to do this, so this is
-// handled in StaticInit();
+// handled in StaticMemoryInit();
 //
 // Following this, execution is handed over to pw_PreMainInit() to facilitate
 // platform, project, or application pre-main initialization. When
@@ -41,8 +36,9 @@
 //
 // The simple flow is as follows:
 //   1. Power on
-//   2. PC and SP set (from vector_table by SoC, or by bootloader)
+//   2. PC (and maybe SP) set (from vector_table by SoC, or by bootloader)
 //   3. pw_boot_Entry()
+//     3.0. Initialize critical registers (VTOR, SP)
 //     3.1. pw_boot_PreStaticMemoryInit();
 //     3.2. Static-init memory (.data, .bss)
 //     3.3. pw_boot_PreStaticConstructorInit();
@@ -107,42 +103,55 @@ void StaticMemoryInit(void) {
 //
 // This function runs immediately at boot because it is at index 1 of the
 // interrupt vector table.
+//
+// This initial stage is written in assembly in a function with no
+// prologue/epilogue because it cannot assume a valid stack pointer has been
+// set up.
+PW_NO_PROLOGUE
 void pw_boot_Entry(void) {
-  // Disable interrupts.
-  //
-  // Until pw_boot_PreStaticMemoryInit() has completed, depending on the
-  // bootloader (or lack thereof), there is no guarantee that the vector
-  // table has been correctly set up, so it's not safe to run interrupts
-  // until after this function returns.
-  //
-  // Until StaticMemoryInit() has completed, interrupt handlers cannot use
-  // either statically initialized RAM or zero initialized RAM. Since most
-  // interrupt handlers need one or the other to change system state, it's
-  // not safe to run handlers until after this function returns.
-  asm volatile("cpsid i");
+  // No C code allowed here due to PW_NO_PROLOGUE, and don't use extended
+  // asm that might try to spill a register to the stack. See
+  // https://gcc.gnu.org/onlinedocs/gcc-14.1.0/gcc/ARM-Function-Attributes.html
+  asm volatile(
+      // Disable interrupts.
+      //
+      // Until pw_boot_PreStaticMemoryInit() has completed, depending on the
+      // bootloader (or lack thereof), there is no guarantee that the vector
+      // table has been correctly set up, so it's not safe to run interrupts
+      // until after this function returns.
+      //
+      // Until StaticMemoryInit() has completed, interrupt handlers cannot use
+      // either statically initialized RAM or zero initialized RAM. Since most
+      // interrupt handlers need one or the other to change system state, it's
+      // not safe to run handlers until after this function returns.
+      "cpsid i                           \n"
 
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
-  // Set VTOR to the location of the vector table.
-  //
-  // Devices with a bootloader will often set VTOR after parsing the loaded
-  // binary and prior to launching it. When no bootloader is present, or if
-  // launched directly from memory after a reset, VTOR will be zero and must
-  // be assigned the correct value.
-  volatile uint32_t* vtor = (volatile uint32_t*)0xE000ED08u;
-  *vtor = (uintptr_t)&pw_boot_vector_table_addr;
+      // Set VTOR to the location of the vector table.
+      //
+      // Devices with a bootloader will often set VTOR after parsing the loaded
+      // binary and prior to launching it. When no bootloader is present, or if
+      // launched directly from memory after a reset, VTOR will be zero and must
+      // be assigned the correct value.
+      "ldr r0, =0xE000ED08               \n"
+      "ldr r1, =pw_boot_vector_table_addr\n"
+      "str r1, [r0]                      \n"
 
-  // Configure MSP and MSPLIM.
-  asm volatile(
-      "msr msp, %0    \n"
-      "msr msplim, %1 \n"
-      // clang-format off
-      : /*output=*/
-      : /*input=*/ "r"(&pw_boot_stack_high_addr), "r"(&pw_boot_stack_low_addr)
-      : /*clobbers=*/
-      // clang-format on
-  );
+      // Configure MSP and MSPLIM.
+      "ldr r0, =pw_boot_stack_high_addr  \n"
+      "msr msp, r0                       \n"
+
+      "ldr r0, =pw_boot_stack_low_addr   \n"
+      "msr msplim, r0                    \n"
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
 
+      // We have a stack; proceed to actual C code.
+      "b _pw_boot_Entry                  \n");
+}
+
+// C continuation of pw_boot_Entry, this cannot be marked static because
+// it is only referenced by asm and may be optimized away.
+void _pw_boot_Entry(void) {
   // Run any init that must be done before static init of RAM which preps the
   // .data (static values not yet loaded into ram) and .bss sections (not yet
   // zero-initialized).
