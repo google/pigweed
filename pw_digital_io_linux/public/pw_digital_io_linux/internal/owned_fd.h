@@ -13,13 +13,10 @@
 // the License.
 #pragma once
 
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
 #include <utility>
-
-#include "pw_status/status.h"
 
 namespace pw::digital_io::internal {
 
@@ -63,24 +60,8 @@ class OwnedFd final {
 
   ssize_t read(void* buf, size_t nbytes) { return ::read(fd_, buf, nbytes); }
 
-  Status SetBlocking(bool blocking) {
-    int flags = ::fcntl(fd_, F_GETFL);
-    if (flags < 0) {
-      return Status::Internal();
-    }
-
-    if (blocking) {
-      flags &= ~O_NONBLOCK;
-    } else {
-      flags |= O_NONBLOCK;
-    }
-
-    int rc = ::fcntl(fd_, F_SETFL, flags);
-    if (rc < 0) {
-      return Status::Internal();
-    }
-
-    return OkStatus();
+  ssize_t write(const void* buf, size_t nbytes) {
+    return ::write(fd_, buf, nbytes);
   }
 
  private:
