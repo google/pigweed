@@ -93,8 +93,7 @@ genrule {
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--protoc=$(location aprotoc) && " +
-        // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
-        // but following all the layers of pigweed wrappers around protoc is too difficult.
+        // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +
         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.pwpb.h', '$(out)')\"",
     out: [
@@ -127,8 +126,7 @@ genrule {
         "--language pwpb_rpc " +
         "--no-experimental-proto3-optional " +
         "--protoc=$(location aprotoc) && " +
-        // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
-        // but following all the layers of pigweed wrappers around protoc is too difficult.
+        // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +
         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.rpc.pwpb.h', '$(out)')\"",
     out: [
@@ -161,8 +159,7 @@ genrule {
         "--language raw_rpc " +
         "--no-experimental-proto3-optional " +
         "--protoc=$(location aprotoc) && " +
-        // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
-        // but following all the layers of pigweed wrappers around protoc is too difficult.
+        // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +
         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.raw_rpc.pb.h', '$(out)')\"",
     out: [
