@@ -58,7 +58,10 @@ pw_source_set("mock_vfs") {
 
 pw_test("digital_io_test") {
   enable_if = current_os == "linux"
-  sources = [ "digital_io_test.cc" ]
+  sources = [
+    "digital_io_test.cc",
+    "test_utils.h",
+  ]
   deps = [
     ":mock_vfs",
     ":pw_digital_io_linux",

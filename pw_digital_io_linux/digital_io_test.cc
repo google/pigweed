@@ -25,6 +25,7 @@
 #include "pw_log/log.h"
 #include "pw_result/result.h"
 #include "pw_unit_test/framework.h"
+#include "test_utils.h"
 
 namespace pw::digital_io {
 namespace {
@@ -265,13 +266,11 @@ TEST_F(DigitalIoTest, DoInput) {
       /* index= */ 0,
       /* polarity= */ Polarity::kActiveHigh);
 
-  auto input_result = chip.GetInputLine(config);
-  ASSERT_EQ(OkStatus(), input_result.status());
-  auto input = std::move(input_result.value());
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
-  ASSERT_EQ(OkStatus(), input.Enable());
+  ASSERT_OK(input.Enable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
 
   Result<State> state;
@@ -279,17 +278,17 @@ TEST_F(DigitalIoTest, DoInput) {
   // Force the line high and assert it is seen as active (active high).
   line.ForcePhysicalState(true);
   state = input.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 
   // Force the line low and assert it is seen as inactive (active high).
   line.ForcePhysicalState(false);
   state = input.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_EQ(OkStatus(), input.Disable());
+  ASSERT_OK(input.Disable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
 }
 
@@ -301,13 +300,11 @@ TEST_F(DigitalIoTest, DoInputInvert) {
       /* index= */ 0,
       /* polarity= */ Polarity::kActiveLow);
 
-  auto input_result = chip.GetInputLine(config);
-  ASSERT_EQ(OkStatus(), input_result.status());
-  auto input = std::move(input_result.value());
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
-  ASSERT_EQ(OkStatus(), input.Enable());
+  ASSERT_OK(input.Enable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
 
   Result<State> state;
@@ -315,17 +312,17 @@ TEST_F(DigitalIoTest, DoInputInvert) {
   // Force the line high and assert it is seen as inactive (active low).
   line.ForcePhysicalState(true);
   state = input.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Force the line low and assert it is seen as active (active low).
   line.ForcePhysicalState(false);
   state = input.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_EQ(OkStatus(), input.Disable());
+  ASSERT_OK(input.Disable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
 }
 
@@ -338,28 +335,26 @@ TEST_F(DigitalIoTest, DoOutput) {
       /* polarity= */ Polarity::kActiveHigh,
       /* default_state= */ State::kActive);
 
-  auto output_result = chip.GetOutputLine(config);
-  ASSERT_EQ(OkStatus(), output_result.status());
-  auto output = std::move(output_result.value());
+  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
-  ASSERT_EQ(OkStatus(), output.Enable());
+  ASSERT_OK(output.Enable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
 
   // Expect the line to go high, due to default_state=kActive (active high).
   ASSERT_TRUE(line.physical_state());
 
   // Set the output's state to inactive, and assert it goes low (active high).
-  ASSERT_EQ(OkStatus(), output.SetStateInactive());
+  ASSERT_OK(output.SetStateInactive());
   ASSERT_FALSE(line.physical_state());
 
   // Set the output's state to active, and assert it goes high (active high).
-  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  ASSERT_OK(output.SetStateActive());
   ASSERT_TRUE(line.physical_state());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_EQ(OkStatus(), output.Disable());
+  ASSERT_OK(output.Disable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
@@ -374,28 +369,26 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
       /* polarity= */ Polarity::kActiveLow,
       /* default_state= */ State::kActive);
 
-  auto output_result = chip.GetOutputLine(config);
-  ASSERT_EQ(OkStatus(), output_result.status());
-  auto output = std::move(output_result.value());
+  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
-  ASSERT_EQ(OkStatus(), output.Enable());
+  ASSERT_OK(output.Enable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
 
   // Expect the line to stay low, due to default_state=kActive (active low).
   ASSERT_FALSE(line.physical_state());
 
   // Set the output's state to inactive, and assert it goes high (active low).
-  ASSERT_EQ(OkStatus(), output.SetStateInactive());
+  ASSERT_OK(output.SetStateInactive());
   ASSERT_TRUE(line.physical_state());
 
   // Set the output's state to active, and assert it goes low (active low).
-  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  ASSERT_OK(output.SetStateActive());
   ASSERT_FALSE(line.physical_state());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_EQ(OkStatus(), output.Disable());
+  ASSERT_OK(output.Disable());
   ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
@@ -411,11 +404,9 @@ TEST_F(DigitalIoTest, OutputGetState) {
       /* polarity= */ Polarity::kActiveHigh,
       /* default_state= */ State::kInactive);
 
-  auto output_result = chip.GetOutputLine(config);
-  ASSERT_EQ(OkStatus(), output_result.status());
-  auto output = std::move(output_result.value());
+  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
-  ASSERT_EQ(OkStatus(), output.Enable());
+  ASSERT_OK(output.Enable());
 
   // Expect the line to stay low, due to default_state=kInactive (active high).
   ASSERT_FALSE(line.physical_state());
@@ -424,14 +415,14 @@ TEST_F(DigitalIoTest, OutputGetState) {
 
   // Verify GetState() returns the expected state: inactive (default_state).
   state = output.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Set the output's state to active, then verify GetState() returns the
   // new expected state.
-  ASSERT_EQ(OkStatus(), output.SetStateActive());
+  ASSERT_OK(output.SetStateActive());
   state = output.GetState();
-  ASSERT_EQ(OkStatus(), state.status());
+  ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 }
 

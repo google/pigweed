@@ -62,7 +62,10 @@ cc_library(
 
 pw_cc_test(
     name = "digital_io_test",
-    srcs = ["digital_io_test.cc"],
+    srcs = [
+        "digital_io_test.cc",
+        "test_utils.h",
+    ],
     linkopts = [
         "-Wl,--wrap=close",
         "-Wl,--wrap=ioctl",
