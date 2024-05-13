@@ -348,6 +348,7 @@ cc_library(
         "//conditions:default": ["rpc_gtest_public"],
     }),
     deps = [
+        ":config",
         ":event_handler",
         ":pw_unit_test",
         ":unit_test_cc.pwpb",

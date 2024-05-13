@@ -283,6 +283,7 @@ pw_source_set("rpc_service") {
   testonly = pw_unit_test_TESTONLY
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":config",
     ":event_handler",
     ":pw_unit_test",
     ":unit_test_proto.pwpb",
