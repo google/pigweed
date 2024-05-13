@@ -134,6 +134,7 @@ void TransferService::ResourceStatusCallback(
 
   if (!status.ok()) {
     resource_responder_.Finish(ConstByteSpan(encoder), status).IgnoreError();
+    return;
   }
 
   encoder.WriteReadableOffset(stats.readable_offset).IgnoreError();
