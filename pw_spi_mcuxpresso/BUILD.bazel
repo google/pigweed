@@ -47,6 +47,28 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "responder",
+    srcs = ["responder.cc"],
+    hdrs = [
+        "public/pw_spi_mcuxpresso/responder.h",
+    ],
+    includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/chipset:imxrt500",
+    ],
+    deps = [
+        "//pw_dma_mcuxpresso",
+        "//pw_function",
+        "//pw_log",
+        "//pw_spi:initiator",
+        "//pw_spi:responder",
+        "//pw_status",
+        "//targets:mcuxpresso_sdk",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
 pw_cc_test(
     name = "spi_test",
     srcs = ["spi_test.cc"],

@@ -69,6 +69,26 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "flexio_spi.cc" ]
   }
 
+  pw_source_set("responder") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_spi_mcuxpresso/responder.h" ]
+    public_deps = [
+      "$dir_pw_digital_io",
+      "$dir_pw_spi:initiator",
+      "$dir_pw_spi:responder",
+      "$dir_pw_status",
+      "$dir_pw_sync:binary_semaphore",
+      "$dir_pw_sync:lock_annotations",
+      "$dir_pw_sync:mutex",
+      "$pw_third_party_mcuxpresso_SDK",
+    ]
+    deps = [
+      "$dir_pw_chrono:system_clock",
+      "$dir_pw_log",
+    ]
+    sources = [ "responder.cc" ]
+  }
+
   pw_test("spi_test") {
     enable_if =
         pw_third_party_mcuxpresso_SDK ==
