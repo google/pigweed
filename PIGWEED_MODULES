@@ -52,6 +52,7 @@ pw_digital_io
 pw_digital_io_linux
 pw_digital_io_mcuxpresso
 pw_digital_io_rp2040
+pw_dma_mcuxpresso
 pw_docgen
 pw_doctor
 pw_emu

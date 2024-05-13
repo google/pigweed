@@ -47,6 +47,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_cpu_exception/docs
    pw_crypto/docs
    pw_digital_io/docs
+   pw_dma_mcuxpresso/docs
    pw_docgen/docs
    pw_doctor/docs
    pw_emu/docs

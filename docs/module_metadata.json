@@ -72,6 +72,13 @@
       "C++17"
     ]
   },
+  "pw_dma_mcuxpresso": {
+    "tagline": "DMA helpers for MCUXpresso SDK",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_emu": {
     "tagline": "Flexible emulators frontend",
     "status": "experimental",
