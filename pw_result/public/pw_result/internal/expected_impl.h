@@ -769,7 +769,7 @@ class expected<T, E, std::enable_if_t<std::is_void_v<T>>> {
   constexpr expected& operator=(expected&& rhs) noexcept(
       std::is_nothrow_move_constructible_v<E> &&
       std::is_nothrow_move_assignable_v<E>) {
-    error_contents_ = std::move(rhs.error_contents);
+    error_contents_ = std::move(rhs.error_contents_);
     return *this;
   }
   template <class G>
