@@ -61,20 +61,40 @@ void ProxyHost::ProcessH4HciFromController(H4HciPacket h4_packet) {
     return;
   }
 
-  if (command_complete_event.command_opcode_enum().Read() !=
-      emboss::OpCode::LE_READ_BUFFER_SIZE_V1) {
-    return;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wswitch-enum"
+  switch (command_complete_event.command_opcode_enum().Read()) {
+    case emboss::OpCode::LE_READ_BUFFER_SIZE_V1: {
+      auto read_event =
+          MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
+              hci_buffer);
+      if (!read_event.IsComplete()) {
+        PW_LOG_ERROR(
+            "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
+            "event. So will not process.");
+        return;
+      }
+      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
+      break;
+    }
+    case emboss::OpCode::LE_READ_BUFFER_SIZE_V2: {
+      auto read_event =
+          MakeEmboss<emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
+              hci_buffer);
+      if (!read_event.IsComplete()) {
+        PW_LOG_ERROR(
+            "Buffer is too small for LE_READ_BUFFER_SIZE_V2 command complete "
+            "event. So will not process.");
+        return;
+      }
+      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
+      break;
+    }
+    default:
+      // Nothing to process
+      break;
   }
-  auto read_event =
-      MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-          hci_buffer);
-  if (!read_event.IsComplete()) {
-    PW_LOG_ERROR(
-        "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
-        "event. So will not process.");
-    return;
-  }
-  acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
+#pragma clang diagnostic pop
 }
 
 void ProxyHost::HandleH4HciFromController(H4HciPacket h4_packet) {

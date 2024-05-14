@@ -380,8 +380,8 @@ TEST(BadPacketTest, TooShortCommandCompleteEventToHost) {
 // ########## ReserveLeAclCredits Tests
 
 // Proxy Host should reserve requested ACL LE credits from controller's ACL LE
-// credits.
-TEST(ReserveLeAclCredits, ProxyCreditsReserveCredits) {
+// credits when using LEReadBufferSizeV1 command.
+TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
   std::array<
       uint8_t,
       emboss::LEReadBufferSizeV1CommandCompleteEventWriter::SizeInBytes() + 1>
@@ -399,6 +399,45 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCredits) {
     send_called = true;
     emboss::LEReadBufferSizeV1CommandCompleteEventWriter view =
         MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
+            H4HciSubspan(h4_packet));
+    // Should reserve 2 credits from original total of 10 (so 8 left for host).
+    EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 8);
+  });
+
+  H4HciPacketSendFn send_to_controller_fn(
+      []([[maybe_unused]] H4HciPacket packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+
+  proxy.HandleH4HciFromController(send_packet);
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(send_called, true);
+}
+
+// Proxy Host should reserve requested ACL LE credits from controller's ACL LE
+// credits when using LEReadBufferSizeV2 command.
+TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV2) {
+  std::array<
+      uint8_t,
+      emboss::LEReadBufferSizeV2CommandCompleteEventWriter::SizeInBytes() + 1>
+      send_packet;
+  emboss::LEReadBufferSizeV2CommandCompleteEventWriter view =
+      CreateAndPopulateToHostEventView<
+          emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
+          send_packet, emboss::EventCode::COMMAND_COMPLETE);
+  view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::LE_READ_BUFFER_SIZE_V2);
+  view.total_num_le_acl_data_packets().Write(10);
+
+  bool send_called = false;
+  H4HciPacketSendFn send_to_host_fn([&send_called](H4HciPacket h4_packet) {
+    send_called = true;
+    emboss::LEReadBufferSizeV2CommandCompleteEventWriter view =
+        MakeEmboss<emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
             H4HciSubspan(h4_packet));
     // Should reserve 2 credits from original total of 10 (so 8 left for host).
     EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 8);

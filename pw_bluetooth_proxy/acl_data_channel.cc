@@ -20,10 +20,9 @@
 
 namespace pw::bluetooth::proxy {
 
-// Acquire LE ACL credits for proxy host use by removing the amount needed from
-// the amount that is passed to the host.
-void AclDataChannel::ProcessLEReadBufferSizeCommandCompleteEvent(
-    emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event) {
+template <class EventT>
+void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
+    EventT read_buffer_event) {
   if (initialized_) {
     PW_LOG_WARN(
         "AclDataChannel is already initialized, but encountered another "
@@ -54,6 +53,16 @@ void AclDataChannel::ProcessLEReadBufferSizeCommandCompleteEvent(
         controller_max_le_acl_packets);
   }
 }
+
+template void
+AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
+    emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
+    emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event);
+
+template void
+AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
+    emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
+    emboss::LEReadBufferSizeV2CommandCompleteEventWriter read_buffer_event);
 
 uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
   // TODO: https://pwbug.dev/326499611 - Subtract pending packets once we have

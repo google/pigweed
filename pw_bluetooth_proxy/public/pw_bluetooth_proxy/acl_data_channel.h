@@ -36,8 +36,17 @@ class AclDataChannel {
   AclDataChannel(AclDataChannel&&) = delete;
   AclDataChannel& operator=(AclDataChannel&&) = delete;
 
+  // Acquires LE ACL credits for proxy host use by removing the amount needed
+  // from the amount that is passed to the host.
   void ProcessLEReadBufferSizeCommandCompleteEvent(
-      emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event);
+      emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event) {
+    ProcessSpecificLEReadBufferSizeCommandCompleteEvent(read_buffer_event);
+  }
+
+  void ProcessLEReadBufferSizeCommandCompleteEvent(
+      emboss::LEReadBufferSizeV2CommandCompleteEventWriter read_buffer_event) {
+    ProcessSpecificLEReadBufferSizeCommandCompleteEvent(read_buffer_event);
+  }
 
   // Returns the number of available LE ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.
@@ -54,6 +63,13 @@ class AclDataChannel {
   // proxy host to use.
   // TODO: https://pwbug.dev/326499611 - Mutex once we are using for sends.
   uint16_t proxy_max_le_acl_packets_ = 0;
+
+  // Instantiated in acl_data_channel.cc for
+  // `emboss::LEReadBufferSizeV1CommandCompleteEventWriter` and
+  // `emboss::LEReadBufferSizeV1CommandCompleteEventWriter`.
+  template <class EventT>
+  void ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
+      EventT read_buffer_event);
 };
 
 }  // namespace pw::bluetooth::proxy
