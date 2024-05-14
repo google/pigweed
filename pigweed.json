@@ -6,6 +6,7 @@
         "black_config_file": "$pw_env{PW_ROOT}/.black.toml",
         "exclude": [
           "\\bthird_party/fuchsia/repo",
+          "\\bthird_party/perfetto/repo",
           "\\bthird_party/.*\\.json$",
           "\\bpackage\\.lock$",
           "\\bpw_presubmit/py/pw_presubmit/format/test_data/.*",
