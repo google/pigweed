@@ -16,6 +16,21 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+cc_library(
+    name = "freertos_config",
+    hdrs = [
+        "config/FreeRTOSConfig.h",
+    ],
+    includes = ["config/"],
+    target_compatible_with = [":freertos_config_cv"],
+    deps = ["//third_party/freertos:config_assert"],
+)
+
+constraint_value(
+    name = "freertos_config_cv",
+    constraint_setting = "@freertos//:freertos_config_setting",
+)
+
 # This is just a stub to silence warnings saying that pico_logging_test_main.cc
 # is missing from the bazel build. There's no plans yet to do a Bazel build for
 # the Pi Pico.
@@ -39,10 +54,26 @@ cc_library(
 filegroup(
     name = "rp2040_files",
     srcs = [
-        "boot.cc",
-        "config/FreeRTOSConfig.h",
         "config/pigweed_module_config.h",
         "config/rp2040_hal_config.h",
         "unit_test_app.cc",
     ],
+)
+
+cc_library(
+    name = "pre_init",
+    srcs = [
+        "boot.cc",
+    ],
+    target_compatible_with = [":freertos_config_cv"],
+    deps = [
+        ":freertos_config",
+        "//pw_assert",
+        "//pw_string",
+        "//pw_system:init",
+        "@freertos",
+        "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
+        "@pigweed//pw_assert:backend_impl",
+    ],
+    alwayslink = 1,
 )

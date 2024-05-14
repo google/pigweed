@@ -53,6 +53,11 @@ constraint_value(
 )
 
 constraint_value(
+    name = "port_ARM_CM0",
+    constraint_setting = ":port",
+)
+
+constraint_value(
     name = "port_ARM_CM7",
     constraint_setting = ":port",
 )
@@ -77,6 +82,7 @@ cc_library(
             "portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c",
         ],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/port.c"],
+        ":port_ARM_CM0": ["portable/GCC/ARM_CM0/port.c"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/port.c"],
         ":port_Xtensa": [
             "portable/ThirdParty/XCC/Xtensa/mpu.S",
@@ -133,6 +139,7 @@ cc_library(
             "portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h",
         ],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
+        ":port_ARM_CM0": ["portable/GCC/ARM_CM0/portmacro.h"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
         ":port_Xtensa": [
             "portable/ThirdParty/XCC/Xtensa/portbenchmark.h",
@@ -149,6 +156,7 @@ cc_library(
     includes = select({
         ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
+        ":port_ARM_CM0": ["portable/GCC/ARM_CM0/"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
         ":port_Xtensa": ["portable/ThirdParty/XCC/Xtensa"],
         "//conditions:default": [],
