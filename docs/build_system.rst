@@ -629,8 +629,8 @@ Then, run:
 
       bazel test //your:test --platforms=//your/platform --run_under=//your_handler
 
-Test tag conventions
-~~~~~~~~~~~~~~~~~~~~
+Tag conventions
+~~~~~~~~~~~~~~~
 Pigweed observes the standard Bazel test `tag conventions
 <https://bazel.build/reference/test-encyclopedia#tag-conventions>`_. We also
 use the following additional tags:
@@ -645,6 +645,10 @@ use the following additional tags:
       bazel test --test_tag_filters=-integration //...
 
    will run all tests *except* for these integration tests.
+
+*  ``requires_cxx_20``: targets which can only be built with C++20.
+   `b/340568834 <https://issues.pigweed.dev/issues//340568834>`_
+   tracks replacing this with a proper upstream Bazel solution.
 
 .. _docs-build_system-bazel_coverage:
 

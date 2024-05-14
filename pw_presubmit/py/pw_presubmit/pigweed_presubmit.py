@@ -751,6 +751,8 @@ def bazel_test(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'test',
+        '--build_tag_filters=-requires_cxx_20',
+        '--test_tag_filters=-requires_cxx_20',
         '--',
         '//...',
     )
@@ -821,6 +823,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'build',
+        '--build_tag_filters=-requires_cxx_20',
         '--',
         '//...',
     )
@@ -838,13 +841,11 @@ def bazel_build(ctx: PresubmitContext) -> None:
 
     for cxxversion in ('c++17', 'c++20'):
         # Explicitly build for each supported C++ version.
-        build_bazel(
-            ctx,
-            'build',
-            f"--cxxopt=-std={cxxversion}",
-            '--',
-            '//...',
-        )
+        args = [ctx, 'build', f"--cxxopt=-std={cxxversion}"]
+        if cxxversion == 'c++17':
+            args += ['--build_tag_filters=-requires_cxx_20']
+        args += ['--', '//...']
+        build_bazel(*args)
 
         for config, targets in targets_for_config.items():
             build_bazel(

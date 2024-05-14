@@ -173,3 +173,30 @@ pw_cc_test(
         "//pw_allocator:testing",
     ],
 )
+
+cc_library(
+    name = "coro",
+    hdrs = [
+        "public/pw_async2/coro.h",
+    ],
+    includes = [
+        "public",
+    ],
+    tags = ["requires_cxx_20"],
+    deps = [
+        ":dispatcher",
+        "//pw_allocator:allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "coro_test",
+    srcs = ["coro_test.cc"],
+    tags = ["requires_cxx_20"],
+    deps = [
+        ":coro",
+        ":dispatcher",
+        "//pw_allocator:null_allocator",
+        "//pw_allocator:testing",
+    ],
+)

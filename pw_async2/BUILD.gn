@@ -21,6 +21,7 @@ import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -146,6 +147,28 @@ pw_test("allocate_task_test") {
   sources = [ "allocate_task_test.cc" ]
 }
 
+if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
+  pw_source_set("coro") {
+    public_configs = [ ":public_include_path" ]
+    public = [ "public/pw_async2/coro.h" ]
+    public_deps = [
+      ":dispatcher",
+      "$dir_pw_allocator:allocator",
+    ]
+  }
+
+  pw_test("coro_test") {
+    enable_if = pw_async2_DISPATCHER_BACKEND != ""
+    deps = [
+      ":coro",
+      ":dispatcher",
+      "$dir_pw_allocator:null_allocator",
+      "$dir_pw_allocator:testing",
+    ]
+    sources = [ "coro_test.cc" ]
+  }
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocate_task_test",
@@ -155,9 +178,14 @@ pw_test_group("tests") {
     ":pend_func_task_test",
     ":pendable_as_task_test",
   ]
+  if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
+    tests += [ ":coro_test" ]
+  }
+  group_deps = [ "examples" ]
 }
 
 pw_doc_group("docs") {
+  inputs = [ "examples/coro.cc" ]
   sources = [
     "backends.rst",
     "docs.rst",

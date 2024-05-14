@@ -97,31 +97,16 @@ method:
      return 0;
    }
 
--------
-Roadmap
--------
-Coming soon: C++20 users can also define tasks using coroutines!
+----------
+Coroutines
+----------
+C++20 users can also define tasks using coroutines!
 
-.. code-block:: cpp
-
-   #include "pw_async2/dispatcher.h"
-   #include "pw_async2/poll.h"
-
-   #include "pw_result/result.h"
-
-   using ::pw::async2::CoroutineTask;
-
-   CoroutineTask ReceiveAndSend(Receiver receiver, Sender sender) {
-     pw::Result<Data> data = co_await receiver.Receive(cx);
-     if (!data.ok()) {
-       PW_LOG_ERROR("Receiving failed: %s", data.status().str());
-       return;
-     }
-     pw::Status sent = co_await sender.Send(std::move(data));
-     if (!sent.ok()) {
-       PW_LOG_ERROR("Sending failed: %s", sent.str());
-     }
-   }
+.. literalinclude:: examples/coro.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-coro-injection]
+   :end-before: [pw_async2-examples-coro-injection]
 
 -----------------
 C++ API reference
@@ -147,6 +132,9 @@ C++ API reference
   :members:
 
 .. doxygenclass:: pw::async2::Dispatcher
+  :members:
+
+.. doxygenclass:: pw::async2::Coro
   :members:
 
 -------------

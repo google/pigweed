@@ -37,6 +37,11 @@ common --incompatible_default_to_explicit_init_py
 # Required for new toolchain resolution API.
 build --incompatible_enable_cc_toolchain_resolution
 
+# Skip building or testing C++20 targets by default
+# TODO: b/340568834 Remove when a proper solution is available.
+build --build_tag_filters=-requires_cxx_20
+test --test_tag_filters=-requires_cxx_20
+
 # Do not attempt to configure an autodetected (local) toolchain. We vendor all
 # our toolchains, and CI VMs may not have any local toolchain to detect.
 common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
