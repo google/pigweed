@@ -36,8 +36,8 @@ class AclDataChannel {
   AclDataChannel(AclDataChannel&&) = delete;
   AclDataChannel& operator=(AclDataChannel&&) = delete;
 
-  void ProcessReadBufferSizeCommandCompleteEvent(
-      emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event);
+  void ProcessLEReadBufferSizeCommandCompleteEvent(
+      emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event);
 
   // Returns the number of available LE ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.

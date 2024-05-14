@@ -62,18 +62,19 @@ void ProxyHost::ProcessH4HciFromController(H4HciPacket h4_packet) {
   }
 
   if (command_complete_event.command_opcode_enum().Read() !=
-      emboss::OpCode::READ_BUFFER_SIZE) {
+      emboss::OpCode::LE_READ_BUFFER_SIZE_V1) {
     return;
   }
   auto read_event =
-      MakeEmboss<emboss::ReadBufferSizeCommandCompleteEventWriter>(hci_buffer);
+      MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
+          hci_buffer);
   if (!read_event.IsComplete()) {
     PW_LOG_ERROR(
-        "Buffer is too small for READ_BUFFER_SIZE command complete event. So "
-        "will not process");
+        "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
+        "event. So will not process.");
     return;
   }
-  acl_data_channel_.ProcessReadBufferSizeCommandCompleteEvent(read_event);
+  acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
 }
 
 void ProxyHost::HandleH4HciFromController(H4HciPacket h4_packet) {

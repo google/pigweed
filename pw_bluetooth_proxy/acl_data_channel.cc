@@ -22,8 +22,8 @@ namespace pw::bluetooth::proxy {
 
 // Acquire LE ACL credits for proxy host use by removing the amount needed from
 // the amount that is passed to the host.
-void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
-    emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event) {
+void AclDataChannel::ProcessLEReadBufferSizeCommandCompleteEvent(
+    emboss::LEReadBufferSizeV1CommandCompleteEventWriter read_buffer_event) {
   if (initialized_) {
     PW_LOG_WARN(
         "AclDataChannel is already initialized, but encountered another "
@@ -33,12 +33,13 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
   initialized_ = true;
 
   uint16_t controller_max_le_acl_packets =
-      read_buffer_event.total_num_acl_data_packets().Read();
+      read_buffer_event.total_num_le_acl_data_packets().Read();
   proxy_max_le_acl_packets_ =
       std::min(controller_max_le_acl_packets, le_acl_credits_to_reserve_);
   uint16_t host_max_le_acl_packets =
       controller_max_le_acl_packets - proxy_max_le_acl_packets_;
-  read_buffer_event.total_num_acl_data_packets().Write(host_max_le_acl_packets);
+  read_buffer_event.total_num_le_acl_data_packets().Write(
+      host_max_le_acl_packets);
   PW_LOG_INFO(
       "Bluetooth Proxy reserved %d ACL data credits. Passed %d on to host.",
       proxy_max_le_acl_packets_,
