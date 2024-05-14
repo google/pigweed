@@ -80,11 +80,13 @@ CHANNELS = [
 ]
 
 # buildifier: disable=unnamed-macro
-def pw_rust_register_toolchain_and_target_repos(cipd_tag):
+def pw_rust_register_toolchain_and_target_repos(cipd_tag, pigweed_repo_name = "@pigweed"):
     """Declare and register CIPD repos for Rust toolchain and target rupport.
 
     Args:
       cipd_tag: Tag with which to select specific package versions.
+      pigweed_repo_name: The name of the pigweed used to reference build files
+        for the registered repositories.  Defaults to "@pigweed".
     """
     for host in HOSTS:
         cipd_os = host["os"]
@@ -93,14 +95,14 @@ def pw_rust_register_toolchain_and_target_repos(cipd_tag):
 
         cipd_repository(
             name = "rust_toolchain_host_{}_{}".format(host["os"], host["cpu"]),
-            build_file = "//pw_toolchain/rust:rust_toolchain.BUILD",
+            build_file = "{}//pw_toolchain/rust:rust_toolchain.BUILD".format(pigweed_repo_name),
             path = "fuchsia/third_party/rust/host/{}-{}".format(cipd_os, host["cipd_arch"]),
             tag = cipd_tag,
         )
 
         cipd_repository(
             name = "rust_toolchain_target_{}".format(host["triple"]),
-            build_file = "//pw_toolchain/rust:rust_stdlib.BUILD",
+            build_file = "{}//pw_toolchain/rust:rust_stdlib.BUILD".format(pigweed_repo_name),
             path = "fuchsia/third_party/rust/target/{}".format(host["triple"]),
             tag = cipd_tag,
         )
@@ -108,7 +110,7 @@ def pw_rust_register_toolchain_and_target_repos(cipd_tag):
     for target in EXTRA_TARGETS:
         cipd_repository(
             name = "rust_toolchain_target_{}".format(target["triple"]),
-            build_file = "//pw_toolchain/rust:rust_stdlib.BUILD",
+            build_file = "{}//pw_toolchain/rust:rust_stdlib.BUILD".format(pigweed_repo_name),
             path = "fuchsia/third_party/rust/target/{}".format(target["triple"]),
             tag = cipd_tag,
         )
