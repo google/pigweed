@@ -175,7 +175,10 @@ install_deps()
 # See https://github.com/bazelbuild/bazel/issues/1550
 git_repository(
     name = "fuchsia_infra",
-    commit = "8f25f36af3fa207f0142e842b3a2b777fc0f8f3a",
+    # ROLL: Warning: this entry is automatically updated.
+    # ROLL: Last updated 2024-05-14.
+    # ROLL: By https://cr-buildbucket.appspot.com/build/8747923693009132785.
+    commit = "315942c08df42b39f552b946b53d89f30081579c",
     remote = "https://fuchsia.googlesource.com/fuchsia-infra-bazel-rules",
 )
 
