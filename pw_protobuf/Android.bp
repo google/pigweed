@@ -86,6 +86,28 @@ cc_library_headers {
     ],
 }
 
+genrule {
+    name: "pw_protobuf_protos_common_nanopb_h",
+    srcs: [":pw_protobuf_common_proto_with_prefix"],
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+        "--proto-path=external/pigweed/pw_protobuf/ " +
+        "--out-dir=$$(dirname $(location pw_protobuf_protos/common.pb.h)) " +
+        "--plugin-path=$(location protoc-gen-nanopb) " +
+        "--compile-dir=$$(dirname $(in)) " +
+        "--sources $(in) " +
+        "--language nanopb " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc) ",
+    out: [
+        "pw_protobuf_protos/common.pb.h",
+    ],
+    tools: [
+        "aprotoc",
+        "protoc-gen-nanopb",
+        "pw_protobuf_compiler_py",
+    ],
+}
+
 // Copies the proto files to a prefix directory to add the prefix to the
 // compiled proto. The prefix is taken from the directory name of the first
 // item listen in out.
