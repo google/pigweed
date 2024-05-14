@@ -1,0 +1,135 @@
+/*
+ * Copyright 2024 The Pigweed Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+.sidebar-search-container {
+  position: relative;
+}
+
+.sidebar-search-container .results {
+  display: none;
+  position: absolute;
+  top: 35px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  text-align: left;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #cbcfe2 #c8cee7 #c4c7d7;
+  border-radius: 3px;
+  background-color: var(--color-background-secondary);
+  -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  -ms-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  -o-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-search-container .results li {
+  display: block
+}
+
+.sidebar-search-container .results li:first-child {
+  margin-top: -1px
+}
+
+.sidebar-search-container .results li:first-child:before,
+.sidebar-search-container .results li:first-child:after {
+  display: block;
+  content: '';
+  width: 0;
+  height: 0;
+  position: absolute;
+  left: 50%;
+  margin-left: -5px;
+  border: 5px outset transparent;
+}
+
+.sidebar-search-container .results li:first-child:before {
+  border-bottom: 5px solid #c4c7d7;
+  top: -11px;
+}
+
+.sidebar-search-container .results li:first-child:after {
+  border-bottom: 5px solid #fdfdfd;
+  top: -10px;
+}
+
+.sidebar-search-container .results li:first-child.hover:before,
+.sidebar-search-container .results li:first-child.hover:after {
+  display: none
+}
+
+.sidebar-search-container .results li:last-child {
+  margin-bottom: -1px
+}
+
+.sidebar-search-container .results a {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 0 -1px;
+  padding: 6px 40px 6px 10px;
+  color: var(--color-foreground-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.sidebar-search-container .results a span {
+  margin: 0.3rem 0rem;
+}
+
+.sidebar-search-container .results a span b {
+  font-weight: 900;
+  color: var(--color-sidebar-brand-text);
+}
+
+.sidebar-search-container .results a small {
+  font-family: var(--font-stack--monospace);
+}
+
+.sidebar-search-container .results a:before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  margin-top: -9px;
+}
+
+.sidebar-search-container .results a.hover {
+  text-decoration: none;
+  background-color: var(--sd-color-card-border-hover);
+  color: var(--color-foreground-primary);
+}
+
+body[data-theme=light] .sidebar-search-container .results a.hover {
+  color: var(--color-highlight-on-target);
+}
+:-moz-placeholder {
+  color: #a7aabc;
+  font-weight: 200;
+}
+
+::-webkit-input-placeholder {
+  color: #a7aabc;
+  font-weight: 200;
+}

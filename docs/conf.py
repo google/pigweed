@@ -40,21 +40,22 @@ pygments_style = 'pw_console.pigweed_code_style.PigweedCodeLightStyle'
 pygments_dark_style = 'pw_console.pigweed_code_style.PigweedCodeStyle'
 
 extensions = [
-    'pw_docgen.sphinx.google_analytics',  # Enables optional Google Analytics
-    'pw_docgen.sphinx.kconfig',
-    'pw_docgen.sphinx.module_metadata',
-    'pw_docgen.sphinx.pigweed_live',
-    'pw_docgen.sphinx.pw_status_codes',
-    'pw_docgen.sphinx.seed_metadata',
-    'sphinx.ext.autodoc',  # Automatic documentation for Python code
-    'sphinx.ext.napoleon',  # Parses Google-style docstrings
-    'sphinxarg.ext',  # Automatic documentation of Python argparse
-    'sphinxcontrib.mermaid',
-    'sphinx_design',
-    'breathe',
-    'sphinx_copybutton',  # Copy-to-clipboard button on code blocks
-    'sphinx_reredirects',
-    'sphinx_sitemap',
+    "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
+    "pw_docgen.sphinx.kconfig",
+    "pw_docgen.sphinx.module_metadata",
+    "pw_docgen.sphinx.pigweed_live",
+    "pw_docgen.sphinx.pw_status_codes",
+    "pw_docgen.sphinx.inlinesearch",
+    "pw_docgen.sphinx.seed_metadata",
+    "sphinx.ext.autodoc",  # Automatic documentation for Python code
+    "sphinx.ext.napoleon",  # Parses Google-style docstrings
+    "sphinxarg.ext",  # Automatic documentation of Python argparse
+    "sphinxcontrib.mermaid",
+    "sphinx_design",
+    "breathe",
+    "sphinx_copybutton",  # Copy-to-clipboard button on code blocks
+    "sphinx_reredirects",
+    "sphinx_sitemap",
 ]
 
 # When a user clicks the copy-to-clipboard button the `$ ` prompt should not be
@@ -108,14 +109,18 @@ html_static_path = ['docs/_static']
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
 html_css_files = [
-    'css/pigweed.css',
+    "css/pigweed.css",
     # Needed for Inconsolata font.
-    'https://fonts.googleapis.com/css2?family=Inconsolata&display=swap',
+    "https://fonts.googleapis.com/css2?family=Inconsolata&display=swap",
     # FontAwesome for mermaid and sphinx-design
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
 ]
 
-html_js_files = ['js/pigweed.js']
+html_js_files = [
+    "js/pigweed.js",
+    # Needed for sidebar search
+    "https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js",
+]
 
 # Furo color theme variables based on:
 # https://github.com/pradyunsg/furo/blob/main/src/furo/assets/styles/variables/_colors.scss
