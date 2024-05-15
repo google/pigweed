@@ -88,9 +88,9 @@ cc_library(
 cc_library(
     name = "build_id_or_noop",
     deps = select({
-        "@platforms//os:windows": [":build_id_noop"],
         "@platforms//os:ios": [":build_id_noop"],
         "@platforms//os:macos": [":build_id_noop"],
+        "@platforms//os:windows": [":build_id_noop"],
         "//conditions:default": [":build_id"],
     }),
 )

@@ -133,6 +133,10 @@ def _pw_cc_feature_impl(ctx):
 pw_cc_feature = rule(
     implementation = _pw_cc_feature_impl,
     attrs = {
+        "enabled": attr.bool(
+            mandatory = True,
+            doc = """Whether or not this feature is enabled by default.""",
+        ),
         "feature_name": attr.string(
             mandatory = True,
             doc = """The name of the feature that this rule implements.
@@ -164,27 +168,9 @@ While two features with the same `feature_name` may not be bound to the same
 toolchain, they can happily live alongside each other in the same BUILD file.
 """,
         ),
-        "enabled": attr.bool(
-            mandatory = True,
-            doc = """Whether or not this feature is enabled by default.""",
-        ),
         "flag_sets": attr.label_list(
             doc = """Flag sets that, when expanded, implement this feature.""",
             providers = [PwFlagSetInfo],
-        ),
-        "requires_any_of": attr.label_list(
-            doc = """A list of feature sets that define toolchain compatibility.
-
-If *at least one* of the listed `pw_cc_feature_set`s are fully satisfied (all
-features exist in the toolchain AND are currently enabled), this feature is
-deemed compatible and may be enabled.
-
-Note: Even if `pw_cc_feature.requires_any_of` is satisfied, a feature is not
-enabled unless another mechanism (e.g. command-line flags,
-`pw_cc_feature.implies`,`pw_cc_feature.enabled`) signals that the feature should
-actually be enabled.
-""",
-            providers = [PwFeatureSetInfo],
         ),
         "implies": attr.label_list(
             providers = [PwFeatureSetInfo],
@@ -225,6 +211,20 @@ Example:
     )
 
 """,
+        ),
+        "requires_any_of": attr.label_list(
+            doc = """A list of feature sets that define toolchain compatibility.
+
+If *at least one* of the listed `pw_cc_feature_set`s are fully satisfied (all
+features exist in the toolchain AND are currently enabled), this feature is
+deemed compatible and may be enabled.
+
+Note: Even if `pw_cc_feature.requires_any_of` is satisfied, a feature is not
+enabled unless another mechanism (e.g. command-line flags,
+`pw_cc_feature.implies`,`pw_cc_feature.enabled`) signals that the feature should
+actually be enabled.
+""",
+            providers = [PwFeatureSetInfo],
         ),
     },
     provides = [

@@ -33,28 +33,28 @@ PwFlagGroupInfo = FlagGroupInfo
 PwFlagSetInfo = provider(
     doc = "A type-safe version of @bazel_tools's FlagSetInfo",
     fields = {
-        "label": "Label: The label that defined this flag set. Put this in error messages for easy debugging",
         "actions": "Sequence[str]: The set of actions this is associated with",
-        "requires_any_of": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
-        "flag_groups": "Sequence[FlagGroupInfo]: Set of flag groups to include.",
         "env": "Mapping[str, str]: Environment variables to apply with the flags",
         "env_expand_if_available": "Option[str]: The build variable that needs to be available in order to expand the env entry.",
+        "flag_groups": "Sequence[FlagGroupInfo]: Set of flag groups to include.",
+        "label": "Label: The label that defined this flag set. Put this in error messages for easy debugging",
+        "requires_any_of": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
     },
 )
 
 PwFeatureInfo = provider(
     doc = "A type-safe version of @bazel_tools's FeatureInfo",
     fields = {
-        "label": "Label: The label that defined this feature. Put this in error messages for easy debugging",
-        "name": "str: The name of the feature",
         "enabled": "bool: Whether this feature is enabled by default",
         "flag_sets": "depset[FlagSetInfo]: Flag sets enabled by this feature",
-        "implies_features": "depset[FeatureInfo]: Set of features implied by this feature",
         "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this feature",
-        "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",
-        "provides": "Sequence[str]: Indicates that this feature is one of several mutually exclusive alternate features.",
+        "implies_features": "depset[FeatureInfo]: Set of features implied by this feature",
         "known": "bool: Whether the feature is a known feature. Known features are assumed to be defined elsewhere.",
+        "label": "Label: The label that defined this feature. Put this in error messages for easy debugging",
+        "name": "str: The name of the feature",
         "overrides": "FeatureInfo | None: The feature that this overrides",
+        "provides": "Sequence[str]: Indicates that this feature is one of several mutually exclusive alternate features.",
+        "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",
     },
 )
 PwFeatureSetInfo = provider(
@@ -66,8 +66,8 @@ PwFeatureSetInfo = provider(
 PwFeatureConstraintInfo = provider(
     doc = "A type-safe version of @bazel_tools's WithFeatureSetInfo",
     fields = {
-        "label": "Label: The label that defined this predicate. Put this in error messages for easy debugging",
         "all_of": "depset[FeatureInfo]: A set of features which must be enabled",
+        "label": "Label: The label that defined this predicate. Put this in error messages for easy debugging",
         "none_of": "depset[FeatureInfo]: A set of features, none of which can be enabled",
     },
 )
@@ -85,34 +85,34 @@ PwMutuallyExclusiveCategoryInfo = provider(
 PwActionConfigInfo = provider(
     doc = "A type-safe version of @bazel_tools's ActionConfigInfo",
     fields = {
-        "label": "Label: The label that defined this action config. Put this in error messages for easy debugging",
         "action_name": "str: The name of the action",
         "enabled": "bool: If True, this action is enabled unless a rule type explicitly marks it as unsupported",
-        "tools": "Sequence[ToolInfo]: The tool applied to the action will be the first tool in the sequence with a feature set that matches the feature configuration",
-        "flag_sets": "Sequence[FlagSetInfo]: Set of flag sets the action sets",
-        "implies_features": "depset[FeatureInfo]: Set of features implied by this action config",
-        "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this action config",
         "files": "depset[File]: The files required to run these actions",
+        "flag_sets": "Sequence[FlagSetInfo]: Set of flag sets the action sets",
+        "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this action config",
+        "implies_features": "depset[FeatureInfo]: Set of features implied by this action config",
+        "label": "Label: The label that defined this action config. Put this in error messages for easy debugging",
+        "tools": "Sequence[ToolInfo]: The tool applied to the action will be the first tool in the sequence with a feature set that matches the feature configuration",
     },
 )
 
 PwActionConfigSetInfo = provider(
     doc = "A set of action configs",
     fields = {
-        "label": "Label: The label that defined this action config set. Put this in error messages for easy debugging",
         "action_configs": "depset[ActionConfigInfo]: A set of action configs",
+        "label": "Label: The label that defined this action config set. Put this in error messages for easy debugging",
     },
 )
 
 PwToolInfo = provider(
     doc = "A type-safe version of @bazel_tool's ToolInfo",
     fields = {
-        "label": "Label: The label that defined this tool",
         "exe": "File | None: The file corresponding to the tool",
-        "path": "str | None: The path to the tool. Prefer tool (mutually exclusive with tool).",
-        "files": "Depset[File]: The files associated with the tool",
-        "requires_any_of": "Sequence[PwFeatureConstraintInfo]: A set of constraints required to enable the tool. Equivalent to with_features",
         "execution_requirements": "Sequence[str]: A set of execution requirements of the tool",
+        "files": "Depset[File]: The files associated with the tool",
+        "label": "Label: The label that defined this tool",
+        "path": "str | None: The path to the tool. Prefer tool (mutually exclusive with tool).",
+        "requires_any_of": "Sequence[PwFeatureConstraintInfo]: A set of constraints required to enable the tool. Equivalent to with_features",
     },
 )
 

@@ -150,16 +150,10 @@ pw_cc_toolchain(
         "@llvm_toolchain//:llvm-strip",
     ],
     builtin_sysroot = select({
-        "@platforms//os:macos": XCODE_SDK_PATH,
         "@platforms//os:linux": "external/linux_sysroot",
+        "@platforms//os:macos": XCODE_SDK_PATH,
     }),
     cxx_builtin_include_directories = select({
-        "@platforms//os:macos": [
-            "%sysroot%/usr/include",
-            "%sysroot%/System/Library/Frameworks/CoreFoundation.framework/Headers",
-            "%package(@llvm_toolchain//)%/include/c++/v1",
-            "%package(@llvm_toolchain//)%/lib/clang/18/include",
-        ],
         "@platforms//os:linux": [
             "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
             "%package(@llvm_toolchain//)%/include/c++/v1",
@@ -168,15 +162,21 @@ pw_cc_toolchain(
             "%sysroot%/usr/include/x86_64-linux-gnu",
             "%sysroot%/usr/include",
         ],
+        "@platforms//os:macos": [
+            "%sysroot%/usr/include",
+            "%sysroot%/System/Library/Frameworks/CoreFoundation.framework/Headers",
+            "%package(@llvm_toolchain//)%/include/c++/v1",
+            "%package(@llvm_toolchain//)%/lib/clang/18/include",
+        ],
     }),
     extra_action_files = [":sysroot_files"],
     flag_sets = select({
+        "@platforms//os:linux": [
+            ":linux_link_libs",
+        ],
         "@platforms//os:macos": [
             ":macos_link_libs",
             ":libtool_darwin_flags",
-        ],
-        "@platforms//os:linux": [
-            ":linux_link_libs",
         ],
     }) + [
         ":warnings",

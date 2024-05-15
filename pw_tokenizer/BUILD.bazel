@@ -142,8 +142,8 @@ pw_cc_binary(
     target_compatible_with = select(
         {
             "@platforms//os:linux": [],
-            "@platforms//os:windows": [],
             "@platforms//os:macos": [],
+            "@platforms//os:windows": [],
             "//conditions:default": ["@platforms//:incompatible"],
         },
     ),

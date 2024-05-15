@@ -143,8 +143,8 @@ fuchsia_cipd_releases(
     name = "bt_host_x64_cipd",
     cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
-        ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
         ":README.fuchsia.md": "README.fuchsia",
+        ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.x64",
 )
@@ -153,8 +153,8 @@ fuchsia_cipd_releases(
     name = "bt_host_arm64_cipd",
     cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
-        ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
         ":README.fuchsia.md": "README.fuchsia",
+        ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.arm64",
 )

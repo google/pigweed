@@ -37,39 +37,39 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
     "gcc": "Path to the tool to use for C compile actions",
     "gcov": "Path to the tool to use for generating code coverage data",
     "ld": "Path to the tool to use for link actions",
-    "strip": "Path to the tool to use for strip actions",
     "objcopy": "Path to the tool to use for objcopy actions",
     "objdump": "Path to the tool to use for objdump actions",
+    "strip": "Path to the tool to use for strip actions",
 }
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
+    "abi_libc_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "abi_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
-    "flag_sets": "List of `pw_cc_flag_set`s to unconditionally apply to their respective action configs",
-    "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
+    "builtin_sysroot": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "cc_target_os": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "compiler": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "cxx_builtin_include_directories": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "extra_action_files": "Files that are required to run specific actions.",
+    "flag_sets": "List of `pw_cc_flag_set`s to unconditionally apply to their respective action configs",
+    "host_system_name": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "target_cpu": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "target_libc": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "target_system_name": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "host_system_name": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "target_system_name": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "target_cpu": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "target_libc": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "compiler": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "abi_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "abi_libc_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "cc_target_os": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "builtin_sysroot": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "cxx_builtin_include_directories": "See documentation for cc_common.create_cc_toolchain_config_info()",
 }
 
 PW_CC_TOOLCHAIN_SHARED_ATTRS = ["toolchain_identifier"]
 
 PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
-    "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
     "artifact_name_patterns": "pw_cc_toolchain does not yet support artifact name patterns",
     "features": "Use toolchain_features to add pw_cc_toolchain_feature deps to the toolchain",
-    "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"action_configs\" to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
+    "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"action_configs\" to set toolchain tools",
+    "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
 }
 
 def _pw_cc_toolchain_config_impl(ctx):
@@ -130,24 +130,24 @@ def _pw_cc_toolchain_config_impl(ctx):
 pw_cc_toolchain_config = rule(
     implementation = _pw_cc_toolchain_config_impl,
     attrs = {
+        "abi_libc_version": attr.string(),
+        "abi_version": attr.string(),
         # Attributes new to this rule.
         "action_configs": attr.label_list(providers = [PwActionConfigSetInfo]),
-        "flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
-        "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
+        "builtin_sysroot": attr.string(),
+        "cc_target_os": attr.string(),
+        "compiler": attr.string(),
+        "cxx_builtin_include_directories": attr.string_list(),
         "extra_action_files": attr.label_list(providers = [PwExtraActionFilesSetInfo]),
+        "flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
+        "host_system_name": attr.string(),
+        "target_cpu": attr.string(),
+        "target_libc": attr.string(),
+        "target_system_name": attr.string(),
+        "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),
-        "host_system_name": attr.string(),
-        "target_system_name": attr.string(),
-        "target_cpu": attr.string(),
-        "target_libc": attr.string(),
-        "compiler": attr.string(),
-        "abi_version": attr.string(),
-        "abi_libc_version": attr.string(),
-        "cc_target_os": attr.string(),
-        "builtin_sysroot": attr.string(),
-        "cxx_builtin_include_directories": attr.string_list(),
         "_builtin_features": attr.label_list(default = BUILTIN_FEATURES),
     },
     provides = [CcToolchainConfigInfo, PwToolchainConfigInfo],
@@ -217,8 +217,8 @@ def _cc_file_collector_impl(ctx):
 _cc_file_collector = rule(
     implementation = _cc_file_collector_impl,
     attrs = {
-        "config": attr.label(providers = [PwToolchainConfigInfo], mandatory = True),
         "actions": attr.label_list(providers = [PwActionNameSetInfo], mandatory = True),
+        "config": attr.label(providers = [PwToolchainConfigInfo], mandatory = True),
     },
 )
 

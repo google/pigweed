@@ -18,32 +18,32 @@ load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
 
 HOSTS = [
     {
-        "cpu": "aarch64",
         "cipd_arch": "arm64",
+        "cpu": "aarch64",
+        "dylib_ext": ".so",
         "os": "linux",
         "triple": "aarch64-unknown-linux-gnu",
-        "dylib_ext": ".so",
     },
     {
-        "cpu": "x86_64",
         "cipd_arch": "amd64",
+        "cpu": "x86_64",
+        "dylib_ext": ".so",
         "os": "linux",
         "triple": "x86_64-unknown-linux-gnu",
-        "dylib_ext": ".so",
     },
     {
-        "cpu": "aarch64",
         "cipd_arch": "arm64",
+        "cpu": "aarch64",
+        "dylib_ext": ".dylib",
         "os": "macos",
         "triple": "aarch64-apple-darwin",
-        "dylib_ext": ".dylib",
     },
     {
-        "cpu": "x86_64",
         "cipd_arch": "amd64",
+        "cpu": "x86_64",
+        "dylib_ext": ".dylib",
         "os": "macos",
         "triple": "x86_64-apple-darwin",
-        "dylib_ext": ".dylib",
     },
 ]
 
@@ -64,17 +64,17 @@ EXTRA_TARGETS = [
 
 CHANNELS = [
     {
-        "name": "nightly",
         "extra_rustc_flags": ["-Dwarnings", "-Zmacro-backtrace"],
+        "name": "nightly",
         "target_settings": ["@rules_rust//rust/toolchain/channel:nightly"],
     },
     {
-        "name": "stable",
         # In order to approximate a stable toolchain with our nightly one, we
         # disable experimental features with the exception of `proc_macro_span`
         # because the `proc-marcro2` automatically detects the toolchain
         # as nightly and dynamically uses this feature.
         "extra_rustc_flags": ["-Dwarnings", "-Zallow-features=proc_macro_span"],
+        "name": "stable",
         "target_settings": ["@rules_rust//rust/toolchain/channel:stable"],
     },
 ]

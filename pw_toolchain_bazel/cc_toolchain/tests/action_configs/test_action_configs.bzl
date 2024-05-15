@@ -80,9 +80,9 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, extra_a
             ],
         ),
         {
-            "c-compile": [],
-            "c++-compile": ["clang_wrapper", "data.txt", "real_clang"],
             "assemble": ["clang_wrapper", "real_clang"],
+            "c++-compile": ["clang_wrapper", "data.txt", "real_clang"],
+            "c-compile": [],
         },
     )
 
@@ -102,8 +102,8 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, extra_a
 
     want_files = {
         "assemble": ["clang_wrapper.sh", "data.txt"],
-        "c-compile": ["data.txt"],
         "c++-compile": ["clang_wrapper.sh"],
+        "c-compile": ["data.txt"],
     }
     assert_eq(get_files(extra_action_files = [
         extra_action_files.c_compiler_data,

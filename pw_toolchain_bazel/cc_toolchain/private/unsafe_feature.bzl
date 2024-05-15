@@ -46,12 +46,12 @@ def _pw_cc_unsafe_feature_impl(ctx):
 pw_cc_unsafe_feature = rule(
     implementation = _pw_cc_unsafe_feature_impl,
     attrs = {
+        "builtin": attr.bool(
+            doc = "Whether the feature is builtin, and can be overridden",
+        ),
         "feature_name": attr.string(
             mandatory = True,
             doc = "The name of the feature",
-        ),
-        "builtin": attr.bool(
-            doc = "Whether the feature is builtin, and can be overridden",
         ),
     },
     provides = [PwFeatureInfo, PwFeatureSetInfo, PwFeatureConstraintInfo],

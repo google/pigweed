@@ -25,8 +25,8 @@ cc_library(
     name = "pw_sys_io_stdio",
     srcs = ["sys_io.cc"],
     target_compatible_with = select({
-        ":backend": [],
         "//pw_sys_io:unspecified": [],
+        ":backend": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [

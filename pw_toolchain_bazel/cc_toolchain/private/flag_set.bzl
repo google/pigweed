@@ -51,6 +51,12 @@ def _pw_cc_flag_group_impl(ctx):
 pw_cc_flag_group = rule(
     implementation = _pw_cc_flag_group_impl,
     attrs = {
+        "expand_if_available": attr.string(
+            doc = "Expands the expression in `flags` if the specified build variable is set.",
+        ),
+        "expand_if_not_available": attr.string(
+            doc = "Expands the expression in `flags` if the specified build variable is NOT set.",
+        ),
         "flags": attr.string_list(
             doc = """List of flags provided by this rule.
 
@@ -90,12 +96,6 @@ Example:
         iterate_over = "system_include_paths",
     )
 """,
-        ),
-        "expand_if_available": attr.string(
-            doc = "Expands the expression in `flags` if the specified build variable is set.",
-        ),
-        "expand_if_not_available": attr.string(
-            doc = "Expands the expression in `flags` if the specified build variable is NOT set.",
         ),
     },
     provides = [PwFlagGroupInfo],
@@ -187,6 +187,12 @@ pw_cc_flag_set = rule(
 See @pw_toolchain//actions:all for valid options.
 """,
         ),
+        "env": attr.string_dict(
+            doc = "Environment variables to be added to these actions",
+        ),
+        "env_expand_if_available": attr.string(
+            doc = "A build variable that needs to be available in order to expand the env entries",
+        ),
         "flag_groups": attr.label_list(
             doc = """Labels pointing to `pw_cc_flag_group` rules.
 
@@ -196,12 +202,6 @@ appearing earlier in the invocation of the underlying tool.
 
 Note: `flag_groups` and `flags` are mutually exclusive.
 """,
-        ),
-        "env": attr.string_dict(
-            doc = "Environment variables to be added to these actions",
-        ),
-        "env_expand_if_available": attr.string(
-            doc = "A build variable that needs to be available in order to expand the env entries",
         ),
         "flags": attr.string_list(
             doc = """Flags that should be applied to the specified actions.

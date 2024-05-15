@@ -25,10 +25,10 @@ rust_binary(
         "//pw_build/constraints/chipset:lm3s6965evb": "//pw_rust/examples/linker_scripts:qemu-rust-lm3s6965",
     }),
     target_compatible_with = select({
-        "@platforms//os:linux": ["@platforms//:incompatible"],
-        "@platforms//os:macos": ["@platforms//:incompatible"],
         "//pw_build/constraints/board:microbit": [],
         "//pw_build/constraints/chipset:lm3s6965evb": [],
+        "@platforms//os:linux": ["@platforms//:incompatible"],
+        "@platforms//os:macos": ["@platforms//:incompatible"],
     }),
     deps = [
         "//pw_log/rust:pw_log",

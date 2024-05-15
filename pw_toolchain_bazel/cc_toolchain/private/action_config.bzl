@@ -63,6 +63,35 @@ def _pw_cc_tool_impl(ctx):
 pw_cc_tool = rule(
     implementation = _pw_cc_tool_impl,
     attrs = {
+        "additional_files": attr.label_list(
+            allow_files = True,
+            doc = """Additional files that are required for this tool to correctly operate.
+
+These files are propagated up to the `pw_cc_toolchain` so you typically won't
+need to explicitly specify the `*_files` attributes on a `pw_cc_toolchain`.
+""",
+        ),
+        "execution_requirements": attr.string_list(
+            doc = "A list of strings that provide hints for execution environment compatibility (e.g. `requires-darwin`).",
+        ),
+        "path": attr.string(
+            doc = """An absolute path to a binary to use for this tool.
+
+Relative paths are also supported, but they are relative to the
+`pw_cc_toolchain` that uses this tool rather than relative to this `pw_cc_tool`
+rule.
+
+WARNING: This method of listing a tool is NOT recommended, and is provided as an
+escape hatch for edge cases. Prefer using `tool` whenever possible.
+""",
+        ),
+        "requires_any_of": attr.label_list(
+            providers = [PwFeatureConstraintInfo],
+            doc = """This will be enabled when any of the constraints are met.
+
+If omitted, this tool will be enabled unconditionally.
+""",
+        ),
         "tool": attr.label(
             allow_files = True,
             executable = True,
@@ -80,35 +109,6 @@ file must be referenced relative to the BUILD file that exports it. For example:
     * `//` is the directory of the BUILD file that exports the file of interest.
     * `bin/clang` is the path of the actual binary relative to the BUILD file of
       interest.
-""",
-        ),
-        "path": attr.string(
-            doc = """An absolute path to a binary to use for this tool.
-
-Relative paths are also supported, but they are relative to the
-`pw_cc_toolchain` that uses this tool rather than relative to this `pw_cc_tool`
-rule.
-
-WARNING: This method of listing a tool is NOT recommended, and is provided as an
-escape hatch for edge cases. Prefer using `tool` whenever possible.
-""",
-        ),
-        "execution_requirements": attr.string_list(
-            doc = "A list of strings that provide hints for execution environment compatibility (e.g. `requires-darwin`).",
-        ),
-        "requires_any_of": attr.label_list(
-            providers = [PwFeatureConstraintInfo],
-            doc = """This will be enabled when any of the constraints are met.
-
-If omitted, this tool will be enabled unconditionally.
-""",
-        ),
-        "additional_files": attr.label_list(
-            allow_files = True,
-            doc = """Additional files that are required for this tool to correctly operate.
-
-These files are propagated up to the `pw_cc_toolchain` so you typically won't
-need to explicitly specify the `*_files` attributes on a `pw_cc_toolchain`.
 """,
         ),
     },
@@ -238,17 +238,6 @@ will be enabled and used by default. This is the opposite of Bazel's native
 default.
 """,
         ),
-        "tools": attr.label_list(
-            mandatory = True,
-            cfg = "exec",
-            doc = """The tool to use for the specified actions.
-
-A tool can be a `pw_cc_tool`, or a binary.
-
-If multiple tools are specified, the first tool that has `with_features` that
-satisfy the currently enabled feature set is used.
-""",
-        ),
         "flag_sets": attr.label_list(
             providers = [PwFlagSetInfo],
             doc = """Labels that point to `pw_cc_flag_set`s that are
@@ -262,6 +251,17 @@ If an action is listed in this rule's `action_names`, but is NOT listed in the
         "implies": attr.label_list(
             providers = [PwFeatureSetInfo],
             doc = "Features that should be enabled when this action is used.",
+        ),
+        "tools": attr.label_list(
+            mandatory = True,
+            cfg = "exec",
+            doc = """The tool to use for the specified actions.
+
+A tool can be a `pw_cc_tool`, or a binary.
+
+If multiple tools are specified, the first tool that has `with_features` that
+satisfy the currently enabled feature set is used.
+""",
         ),
     },
     provides = [PwActionConfigSetInfo],
