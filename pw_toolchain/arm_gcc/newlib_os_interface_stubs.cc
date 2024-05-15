@@ -49,7 +49,7 @@ PW_WRAP_NEWLIB_FILE_FUNCTION(__sclose, void*)
 #undef PW_WRAP_NEWLIB_FILE_FUNCTION
 
 // Newlib defines a set of OS interface functions. Most of these should never be
-// called, since they're used by libc functions not supported in Pigweed(e.g.
+// called, since they're used by libc functions not supported in Pigweed (e.g.
 // fopen or printf). If they're linked into a binary, that indicates that an
 // unsupported function was called.
 //
@@ -61,11 +61,11 @@ PW_WRAP_NEWLIB_FILE_FUNCTION(__sclose, void*)
 // are documented at https://sourceware.org/newlib/libc.html#Stubs. The default
 // implementation calls the following function, which is never defined,
 // resulting in a linker error.
-[[noreturn]] void AttempedToInvokeUnsupportedNewlibOsInterfaceFunction();
+[[noreturn]] void AttemptedToInvokeUnsupportedNewlibOsInterfaceFunction();
 
-#define PW_DISABLE_NEWLIB_FUNCTION(function, ...)           \
-  extern "C" int _##function(__VA_ARGS__) {                 \
-    AttempedToInvokeUnsupportedNewlibOsInterfaceFunction(); \
+#define PW_DISABLE_NEWLIB_FUNCTION(function, ...)            \
+  extern "C" int _##function(__VA_ARGS__) {                  \
+    AttemptedToInvokeUnsupportedNewlibOsInterfaceFunction(); \
   }
 
 PW_DISABLE_NEWLIB_FUNCTION(_exit, void)
