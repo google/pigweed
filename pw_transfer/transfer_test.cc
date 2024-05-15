@@ -70,7 +70,7 @@ class TestMemoryReader : public stream::SeekableReader {
   stream::MemoryReader memory_reader_;
 };
 
-class SimpleReadTransfer final : public ReadOnlyHandler {
+class SimpleReadTransfer : public ReadOnlyHandler {
  public:
   SimpleReadTransfer(uint32_t session_id, ConstByteSpan data)
       : ReadOnlyHandler(session_id),
@@ -3069,6 +3069,90 @@ TEST_F(WriteTransferMultibyteVarintChunkSize,
   EXPECT_EQ(chunk.window_end_offset(), kExpectedMaxChunkSize);
   ASSERT_TRUE(chunk.max_chunk_size_bytes().has_value());
   EXPECT_EQ(chunk.max_chunk_size_bytes().value(), kExpectedMaxChunkSize);
+}
+
+class ReadTransferWithStats : public SimpleReadTransfer {
+ public:
+  using SimpleReadTransfer::SimpleReadTransfer;
+
+  Status GetStatus(uint64_t& readable_offset,
+                   uint64_t& writeable_offset,
+                   uint64_t& read_checksum,
+                   uint64_t& write_checksum) override {
+    readable_offset = 64;
+    read_checksum = 0xffee;
+    writeable_offset = 128;
+    write_checksum = 0xeeff;
+    return OkStatus();
+  }
+};
+
+class GetResourceStatus : public ::testing::Test {
+ protected:
+  GetResourceStatus(size_t max_chunk_size_bytes = 64)
+      : handler_(3, kData),
+        transfer_thread_(span(data_buffer_).first(max_chunk_size_bytes),
+                         encode_buffer_),
+        ctx_(transfer_thread_,
+             64,
+             // Use a long timeout to avoid accidentally triggering timeouts.
+             std::chrono::minutes(1)),
+        system_thread_(TransferThreadOptions(), transfer_thread_) {
+    ctx_.service().RegisterHandler(handler_);
+
+    PW_CHECK(!handler_.prepare_read_called);
+    PW_CHECK(!handler_.finalize_read_called);
+  }
+
+  ~GetResourceStatus() override {
+    transfer_thread_.Terminate();
+    system_thread_.join();
+  }
+
+  ReadTransferWithStats handler_;
+  Thread<1, 1> transfer_thread_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, GetResourceStatus) ctx_;
+  thread::Thread system_thread_;
+  std::array<std::byte, 64> data_buffer_;
+  std::array<std::byte, 64> encode_buffer_;
+};
+
+TEST_F(GetResourceStatus, ValidResourceId_ReturnsStatus) {
+  pwpb::ResourceStatusRequest::MemoryEncoder encoder(encode_buffer_);
+  ASSERT_EQ(encoder.Write({.resource_id = 3}), OkStatus());
+  ctx_.call(encoder);
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.status(), OkStatus());
+
+  stream::MemoryReader reader(ctx_.response());
+  pwpb::ResourceStatus::StreamDecoder decoder(reader);
+  pwpb::ResourceStatus::Message response;
+  ASSERT_EQ(decoder.Read(response), OkStatus());
+
+  EXPECT_EQ(response.resource_id, 3u);
+  EXPECT_EQ(response.readable_offset, 64u);
+  EXPECT_EQ(response.read_checksum, 0xffee);
+  EXPECT_EQ(response.writeable_offset, 128u);
+  EXPECT_EQ(response.write_checksum, 0xeeff);
+}
+
+TEST_F(GetResourceStatus, InvalidResourceId_ReturnsNotFound) {
+  pwpb::ResourceStatusRequest::MemoryEncoder encoder(encode_buffer_);
+  ASSERT_EQ(encoder.Write({.resource_id = 27}), OkStatus());
+  ctx_.call(encoder);
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.status(), Status::NotFound());
+
+  stream::MemoryReader reader(ctx_.response());
+  pwpb::ResourceStatus::StreamDecoder decoder(reader);
+  pwpb::ResourceStatus::Message response;
+  ASSERT_EQ(decoder.Read(response), OkStatus());
+
+  EXPECT_EQ(response.resource_id, 27u);
 }
 
 }  // namespace
