@@ -33,6 +33,7 @@ class BuildifierFormatter(FileFormatter):
         'native-build',
         'same-origin-load',
         'out-of-order-load',
+        'unsorted-dict-items',
     )
 
     def __init__(

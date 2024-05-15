@@ -61,6 +61,7 @@ class TestBuildifierFormatter(unittest.TestCase):
                             'native-build',
                             'same-origin-load',
                             'out-of-order-load',
+                            'unsorted-dict-items',
                         )
                     ),
                 )
@@ -96,6 +97,7 @@ class TestBuildifierFormatter(unittest.TestCase):
                             'native-build',
                             'same-origin-load',
                             'out-of-order-load',
+                            'unsorted-dict-items',
                         )
                     ),
                 )
@@ -136,6 +138,7 @@ class TestBuildifierFormatter(unittest.TestCase):
                                 'native-build',
                                 'same-origin-load',
                                 'out-of-order-load',
+                                'unsorted-dict-items',
                             )
                         ),
                         str(file_to_fix),
@@ -158,6 +161,7 @@ class TestBuildifierFormatter(unittest.TestCase):
                                 'native-build',
                                 'same-origin-load',
                                 'out-of-order-load',
+                                'unsorted-dict-items',
                             )
                         ),
                         str(malformed_file),
@@ -180,6 +184,7 @@ class TestBuildifierFormatter(unittest.TestCase):
                                 'native-build',
                                 'same-origin-load',
                                 'out-of-order-load',
+                                'unsorted-dict-items',
                             )
                         ),
                         str(malformed_file),
