@@ -47,6 +47,7 @@ pw_python_package("py") {
     "pw_env_setup/zephyr_sdk_actions.py",
   ]
   tests = [
+    "config_file_test.py",
     "cipd_setup_update_test.py",
     "environment_test.py",
     "json_visitor_test.py",

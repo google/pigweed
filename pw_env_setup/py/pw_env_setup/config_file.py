@@ -19,6 +19,12 @@ See also https://pigweed.dev/seed/0101-pigweed.json.html.
 import json
 import os
 
+try:
+    # This will only succeed when using config_file from Bazel.
+    from rules_python.python.runfiles import runfiles  # type: ignore
+except (ImportError, ModuleNotFoundError):
+    runfiles = None
+
 
 def _resolve_env(env):
     if env:
@@ -53,10 +59,24 @@ def path(env=None):
     return os.path.join(_get_project_root(env=env), 'pigweed.json')
 
 
+def path_from_runfiles():
+    r = runfiles.Create()
+    location = r.Rlocation("pigweed.json")
+    if location is None:
+        # Failed to find pigweed.json
+        raise ValueError("Failed to find pigweed.json")
+
+    return location
+
+
 def load(env=None):
     """Load pigweed.json if it exists and return the contents."""
-    env = _resolve_env(env)
-    config_path = path(env=env)
+    if env is None and runfiles is not None:
+        config_path = path_from_runfiles()
+    else:
+        env = _resolve_env(env)
+        config_path = path(env=env)
+
     if not os.path.isfile(config_path):
         return {}
 

@@ -100,6 +100,8 @@ common --//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
 common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
 common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
 
+common --//pw_env_setup/py:pigweed_json=//:pigweed.json
+
 # Config for the stm32f429i_disc1_stm32cube platform.
 #
 # TODO: b/301334234 - Make the platform set the flags below.
