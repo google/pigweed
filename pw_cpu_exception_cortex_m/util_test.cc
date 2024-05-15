@@ -46,7 +46,7 @@ TEST(ActiveProcessorMode, ThreadModeProcess) {
   // return values, in particular bits 0:3.
   // Bits 0:3 of EXC_RETURN:
   // 0b1101 - 0xD Thread mode Process
-  cpu_state.extended.exc_return = 0b1001;
+  cpu_state.extended.exc_return = 0b1101;
   EXPECT_EQ(ActiveProcessorMode(cpu_state), ProcessorMode::kThreadMode);
 }
 
