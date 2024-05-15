@@ -22,7 +22,7 @@ import("perfetto.gni")
 # This file defines a GN pw_proto_library for an external installation of
 # the perfetto protos.
 if (dir_pw_third_party_perfetto != "") {
-  pw_proto_library("proto") {
+  pw_proto_library("trace_proto") {
     sources = [
       "$dir_pw_third_party_perfetto/protos/perfetto/trace/perfetto_trace.proto",
     ]

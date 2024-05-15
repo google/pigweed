@@ -19,13 +19,13 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 proto_library(
-    name = "perfetto_proto",
+    name = "trace_proto",
     srcs = ["repo/protos/perfetto/trace/perfetto_trace.proto"],
     import_prefix = "perfetto",
     strip_import_prefix = "/third_party/perfetto/repo/protos/perfetto/trace/",
 )
 
 py_proto_library(
-    name = "perfetto_py_pb2",
-    deps = [":perfetto_proto"],
+    name = "trace_py_pb2",
+    deps = [":trace_proto"],
 )
