@@ -342,6 +342,9 @@ alignment requirements.
 
 The generated ``utilization`` data source will work with any ELF file, where
 ``Used Space`` is reported for the sum of virtual memory size of all sections.
+``Padding`` captures the amount of memory that is utilized to enfore alignment
+requirements. Tracking ``Padding`` size can help monitor application growth
+for changes that are too small to force realignment.
 
 In order for ``Free Space`` to be reported, your linker scripts must include
 properly aligned sections which span the unused remaining space for the relevant
