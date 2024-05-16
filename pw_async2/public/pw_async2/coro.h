@@ -496,32 +496,3 @@ Coro<T> CoroPromiseType<T>::get_return_object_on_allocation_failure() {
 
 }  // namespace internal
 }  // namespace pw::async2
-
-/// Like `PW_TRY`, but using `co_return` instead of early `return`.
-///
-/// This is necessary because only `co_return` can be used inside of a
-/// coroutine, and there is no way to detect whether particular code is running
-/// within a coroutine or not.
-#define PW_CO_TRY(expr) _PW_CO_TRY(_PW_TRY_UNIQUE(__LINE__), expr)
-
-#define _PW_CO_TRY(result, expr)                         \
-  do {                                                   \
-    if (auto result = (expr); !result.ok()) {            \
-      co_return ::pw::internal::ConvertToStatus(result); \
-    }                                                    \
-  } while (0)
-
-/// Like `PW_TRY_ASSIGN`, but using `co_return` instead of early `return`.
-///
-/// This is necessary because only `co_return` can be used inside of a
-/// coroutine, and there is no way to detect whether particular code is running
-/// within a coroutine or not.
-#define PW_CO_TRY_ASSIGN(assignment_lhs, expression) \
-  _PW_CO_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), assignment_lhs, expression)
-
-#define _PW_CO_TRY_ASSIGN(result, lhs, expr)           \
-  auto result = (expr);                                \
-  if (!result.ok()) {                                  \
-    co_return ::pw::internal::ConvertToStatus(result); \
-  }                                                    \
-  lhs = ::pw::internal::ConvertToValue(result);

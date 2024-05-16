@@ -20,6 +20,8 @@
 
 // Macros for cleanly working with Status or StatusWithSize objects in functions
 // that return Status.
+
+/// Returns early if \a expr is a non-OK `Status` or `Result`.
 #define PW_TRY(expr) _PW_TRY(_PW_TRY_UNIQUE(__LINE__), expr)
 
 #define _PW_TRY(result, expr)                         \
@@ -29,8 +31,10 @@
     }                                                 \
   } while (0)
 
-#define PW_TRY_ASSIGN(assignment_lhs, expression) \
-  _PW_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), assignment_lhs, expression)
+/// Returns early if \a expression is a non-OK `Result`.
+/// If \a expression is okay, assigns the inner value to \a lhs.
+#define PW_TRY_ASSIGN(lhs, expression) \
+  _PW_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), lhs, expression)
 
 #define _PW_TRY_ASSIGN(result, lhs, expr)           \
   auto result = (expr);                             \
@@ -39,8 +43,9 @@
   }                                                 \
   lhs = ::pw::internal::ConvertToValue(result);
 
-// Macro for cleanly working with Status or StatusWithSize objects in functions
-// that return StatusWithSize.
+/// Returns early if \a expr is a non-OK `Status` or `StatusWithSize`.
+///
+/// This is designed for use in functions that return a `StatusWithSize`.
 #define PW_TRY_WITH_SIZE(expr) _PW_TRY_WITH_SIZE(_PW_TRY_UNIQUE(__LINE__), expr)
 
 #define _PW_TRY_WITH_SIZE(result, expr)                       \
@@ -52,6 +57,35 @@
 
 #define _PW_TRY_UNIQUE(line) _PW_TRY_UNIQUE_EXPANDED(line)
 #define _PW_TRY_UNIQUE_EXPANDED(line) _pw_try_unique_name_##line
+
+/// Like `PW_TRY`, but using `co_return` instead of early `return`.
+///
+/// This is necessary because only `co_return` can be used inside of a
+/// coroutine, and there is no way to detect whether particular code is running
+/// within a coroutine or not.
+#define PW_CO_TRY(expr) _PW_CO_TRY(_PW_TRY_UNIQUE(__LINE__), expr)
+
+#define _PW_CO_TRY(result, expr)                         \
+  do {                                                   \
+    if (auto result = (expr); !result.ok()) {            \
+      co_return ::pw::internal::ConvertToStatus(result); \
+    }                                                    \
+  } while (0)
+
+/// Like `PW_TRY_ASSIGN`, but using `co_return` instead of early `return`.
+///
+/// This is necessary because only `co_return` can be used inside of a
+/// coroutine, and there is no way to detect whether particular code is running
+/// within a coroutine or not.
+#define PW_CO_TRY_ASSIGN(lhs, expression) \
+  _PW_CO_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), lhs, expression)
+
+#define _PW_CO_TRY_ASSIGN(result, lhs, expr)           \
+  auto result = (expr);                                \
+  if (!result.ok()) {                                  \
+    co_return ::pw::internal::ConvertToStatus(result); \
+  }                                                    \
+  lhs = ::pw::internal::ConvertToValue(result);
 
 namespace pw::internal {
 
