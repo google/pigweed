@@ -30,7 +30,7 @@ label_flag(
 )
 
 py_library(
-    name = "config_file",
+    name = "pw_env_setup",
     srcs = [
         "pw_env_setup/__init__.py",
         "pw_env_setup/config_file.py",
@@ -48,6 +48,6 @@ py_test(
     name = "config_file_test",
     srcs = ["config_file_test.py"],
     deps = [
-        ":config_file",
+        ":pw_env_setup",
     ],
 )
