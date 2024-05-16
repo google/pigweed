@@ -332,6 +332,36 @@ genrule_defaults {
     ],
 }
 
+// Same as pw_rpc_generate_raw_rpc_header but the proto files are compiled with
+// a single prefix, which can be added with pw_rpc_add_prefix_to_proto.
+// Since pw_rpc_add_prefix_to_proto may include .option files as an input, only
+// .proto files are passed to the compile script. Make sure .option files are
+// prefixed in the same rule as their .proto files.
+//
+// See the pw_rpc_echo_service_pwpb target for an example. The echo.proto file
+// is compiled with "pw_rpc" as the prefix.
+genrule_defaults {
+    name: "pw_rpc_generate_raw_rpc_header_with_prefix",
+    cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
+        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language raw_rpc " +
+        "--sources $${proto_files} " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_rawpb_py",
+    ],
+}
+
 // Generate header pwpb files.
 // The output file names are based on the srcs file name with a .pwpb.h extension.
 genrule_defaults {
