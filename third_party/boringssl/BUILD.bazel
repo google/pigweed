@@ -36,5 +36,6 @@ pw_cc_test(
     ],
     deps = [
         ":sysdeps",
+        "//pw_bytes",
     ],
 )

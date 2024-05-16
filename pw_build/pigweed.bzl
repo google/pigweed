@@ -108,15 +108,21 @@ def pw_cc_test(**kwargs):
     Args:
       **kwargs: Passed to cc_test.
     """
-    test_main = kwargs.get("test_main", "@pigweed//pw_unit_test:main")
-    kwargs.pop("test_main", "")
-
-    kwargs["deps"] = kwargs.get("deps", []) + [test_main]
 
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_build:default_link_extra_lib"]
+    kwargs["deps"] = kwargs.get("deps", []) + ["@pigweed//pw_build:default_link_extra_lib"]
+
+    # Depend on the backend. E.g. to pull in gtest.h include paths.
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_unit_test:backend"]
+
+    # Save the base set of deps minus pw_unit_test:main for the .lib target.
+    original_deps = kwargs["deps"]
+
+    # Add the unit test main label flag dep.
+    test_main = kwargs.pop("test_main", "@pigweed//pw_unit_test:main")
+    kwargs["deps"] = original_deps + [test_main]
 
     native.cc_test(**kwargs)
 
@@ -140,6 +146,9 @@ def pw_cc_test(**kwargs):
         "timeout",
     ):
         kwargs.pop(arg, "")
+
+    # Reset the deps for the .lib target.
+    kwargs["deps"] = original_deps
     native.cc_library(name = kwargs.pop("name") + ".lib", **kwargs)
 
 def pw_cc_perf_test(**kwargs):
