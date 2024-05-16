@@ -29,6 +29,7 @@ py_library(
     imports = ["."],
     deps = [
         "@python_packages_pyyaml//:pkg",
+        "@python_packages_types_pyyaml//:pkg",
     ],
 )
 
