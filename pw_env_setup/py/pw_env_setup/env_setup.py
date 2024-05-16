@@ -603,6 +603,10 @@ Then use `set +x` to go back to normal.
             # every step.
             self._write_gni_file()
 
+        # Only write stuff for GitHub Actions once, at the end.
+        if 'GITHUB_ACTIONS' in os.environ:
+            self._env.github(self._install_dir)
+
         self._log('')
         self._env.echo('')
 

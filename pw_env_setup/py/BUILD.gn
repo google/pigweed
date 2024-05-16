@@ -34,6 +34,7 @@ pw_python_package("py") {
     "pw_env_setup/entry_points/arm_gdb.py",
     "pw_env_setup/env_setup.py",
     "pw_env_setup/environment.py",
+    "pw_env_setup/github_visitor.py",
     "pw_env_setup/gni_visitor.py",
     "pw_env_setup/json_visitor.py",
     "pw_env_setup/npm_action.py",
