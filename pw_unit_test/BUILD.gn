@@ -92,6 +92,7 @@ pw_source_set("light") {
   public_deps = [
     ":config",
     ":event_handler",
+    "$dir_pw_bytes:alignment",
     dir_pw_polyfill,
     dir_pw_preprocessor,
     dir_pw_span,

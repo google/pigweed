@@ -68,27 +68,4 @@ class WithBuffer {
   T obj_;
 };
 
-/// Returns the largest aligned subspan of a given byte span.
-///
-/// The subspan will start and end on alignment boundaries.
-///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the aligned subspan.
-///
-///    RESOURCE_EXHAUSTED: The given span does not contain an alignment
-///    boundary.
-///
-/// @endrst
-Result<ByteSpan> GetAlignedSubspan(ByteSpan bytes, size_t alignment);
-
-/// Returns whether one region is completely contained within another.
-///
-/// @param[in]  ptr     Points to the start of the subregion.
-/// @param[in]  layout  Describes the subregion.
-/// @param[in]  outer   The memory that may contain the subregion.
-bool IsWithin(const void* ptr, size_t size, ConstByteSpan outer);
-
 }  // namespace pw::allocator

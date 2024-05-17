@@ -151,6 +151,7 @@ pw_source_set("buddy_allocator") {
   ]
   deps = [
     ":buffer",
+    "$dir_pw_bytes:alignment",
     dir_pw_assert,
   ]
   sources = [ "buddy_allocator.cc" ]
@@ -167,7 +168,6 @@ pw_source_set("buffer") {
     "$dir_pw_bytes:alignment",
     dir_pw_assert,
   ]
-  sources = [ "buffer.cc" ]
 }
 
 pw_source_set("bump_allocator") {
@@ -175,6 +175,7 @@ pw_source_set("bump_allocator") {
   public = [ "public/pw_allocator/bump_allocator.h" ]
   public_deps = [
     ":allocator",
+    "$dir_pw_bytes:alignment",
     dir_pw_bytes,
   ]
   deps = [ ":buffer" ]
@@ -192,6 +193,7 @@ pw_source_set("chunk_pool") {
   deps = [
     ":buffer",
     "$dir_pw_assert:check",
+    "$dir_pw_bytes:alignment",
   ]
   sources = [ "chunk_pool.cc" ]
 }

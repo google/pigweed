@@ -18,101 +18,21 @@
 #include <cstdint>
 
 #include "pw_bytes/span.h"
-#include "pw_result/result.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
 
-using pw::allocator::GetAlignedSubspan;
-using pw::allocator::IsWithin;
+using pw::allocator::WithBuffer;
 
-TEST(BufferTest, GetAlignedSubspanWhenAligned) {
-  alignas(16) std::array<std::byte, 256> bytes{};
-  pw::Result<pw::ByteSpan> result = GetAlignedSubspan(bytes, 16);
-  ASSERT_EQ(result.status(), pw::OkStatus());
-  pw::ByteSpan aligned = result.value();
-  EXPECT_EQ(bytes.data(), aligned.data());
-  EXPECT_EQ(bytes.size(), aligned.size());
-}
-
-TEST(BufferTest, GetAlignedSubspanWhenUnaligned) {
-  alignas(16) std::array<std::byte, 256> buffer{};
-  pw::ByteSpan bytes(buffer);
-  bytes = bytes.subspan(1);
-  pw::Result<pw::ByteSpan> result = GetAlignedSubspan(bytes, 16);
-  ASSERT_EQ(result.status(), pw::OkStatus());
-  pw::ByteSpan aligned = result.value();
-  EXPECT_EQ(bytes.data() + 15, aligned.data());
-  EXPECT_EQ(bytes.size() - 15, aligned.size());
-}
-
-TEST(BufferTest, GetAlignedSubspanWhenEmpty) {
-  pw::ByteSpan bytes;
-  pw::Result<pw::ByteSpan> result = GetAlignedSubspan(bytes, 16);
-  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
-}
-
-TEST(BufferTest, GetAlignedSubspanWhenTooSmall) {
-  alignas(16) std::array<std::byte, 16> buffer{};
-  pw::ByteSpan bytes(buffer);
-  bytes = bytes.subspan(1);
-  pw::Result<pw::ByteSpan> result = GetAlignedSubspan(bytes, 16);
-  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
-}
-
-TEST(BufferTest, IsWithin) {
-  std::array<std::byte, 256> bytes{};
-  void* ptr = bytes.data() + 32;
-  size_t size = 32;
-  EXPECT_TRUE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenOverlappingStart) {
-  std::array<std::byte, 256> buffer{};
-  pw::ByteSpan bytes(buffer);
-  void* ptr = bytes.data();
-  size_t size = 32;
-  bytes = bytes.subspan(1);
-  EXPECT_FALSE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenOverlappingEnd) {
-  std::array<std::byte, 256> buffer{};
-  pw::ByteSpan bytes(buffer);
-  void* ptr = bytes.data() + 224;
-  size_t size = 32;
-  bytes = bytes.subspan(0, 255);
-  EXPECT_FALSE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenDisjoint) {
-  std::array<std::byte, 256> buffer{};
-  pw::ByteSpan bytes(buffer);
-  void* ptr = bytes.data();
-  size_t size = 32;
-  bytes = bytes.subspan(64);
-  EXPECT_FALSE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenNull) {
-  std::array<std::byte, 256> bytes{};
-  void* ptr = nullptr;
-  size_t size = 32;
-  EXPECT_FALSE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenZeroSize) {
-  std::array<std::byte, 256> bytes{};
-  void* ptr = bytes.data();
-  size_t size = 0;
-  EXPECT_TRUE(IsWithin(ptr, size, bytes));
-}
-
-TEST(BufferTest, IsWithinWhenEmpty) {
-  std::array<std::byte, 256> bytes{};
-  void* ptr = bytes.data();
-  size_t size = 32;
-  EXPECT_FALSE(IsWithin(ptr, size, pw::ByteSpan()));
+TEST(WithBuffer, AlignedBytesAreAvailable) {
+  static constexpr size_t kBufferSize = 47;
+  static constexpr size_t kAlignment = 32;
+  WithBuffer<int, kBufferSize, kAlignment> int_with_buffer;
+  EXPECT_EQ(int_with_buffer.size(), kBufferSize);
+  EXPECT_EQ(int_with_buffer.as_bytes().size(), kBufferSize);
+  size_t buffer_data_ptr =
+      reinterpret_cast<size_t>(int_with_buffer.as_bytes().data());
+  EXPECT_EQ(buffer_data_ptr % kAlignment, 0u);
 }
 
 }  // namespace

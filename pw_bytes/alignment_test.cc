@@ -112,5 +112,35 @@ TEST(Padding, NonAligned_NonPowerOf2) {
   EXPECT_EQ(14u, Padding(16, 15));
 }
 
+TEST(GetAlignedSubspan, AlignedSpanIsUnchanged) {
+  alignas(16) std::array<std::byte, 256> bytes{};
+  pw::ByteSpan aligned = GetAlignedSubspan(bytes, 16);
+  EXPECT_EQ(bytes.data(), aligned.data());
+  EXPECT_EQ(bytes.size(), aligned.size());
+}
+
+TEST(GetAlignedSubspan, UnalignedSpanIsAdvanced) {
+  alignas(16) std::array<std::byte, 256> buffer{};
+  pw::ByteSpan bytes(buffer);
+  bytes = bytes.subspan(1);
+  pw::ByteSpan aligned = GetAlignedSubspan(bytes, 16);
+  EXPECT_EQ(bytes.data() + 15, aligned.data());
+  EXPECT_EQ(bytes.size() - 15, aligned.size());
+}
+
+TEST(GetAlignedSubspan, EmptySpanReturnsEmpty) {
+  pw::ByteSpan bytes;
+  pw::ByteSpan aligned = GetAlignedSubspan(bytes, 16);
+  EXPECT_EQ(aligned.size(), 0u);
+}
+
+TEST(GetAlignedSubspan, SpanTooSmallForAlignmentReturnsEmptySpan) {
+  alignas(16) std::array<std::byte, 16> buffer{};
+  pw::ByteSpan bytes(buffer);
+  bytes = bytes.subspan(1);
+  pw::ByteSpan aligned = GetAlignedSubspan(bytes, 16);
+  EXPECT_EQ(aligned.size(), 0u);
+}
+
 }  // namespace
 }  // namespace pw

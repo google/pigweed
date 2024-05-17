@@ -143,12 +143,13 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
     pw_containers.vector
   PRIVATE_DEPS
     pw_allocator.buffer
+    pw_bytes.alignment
     pw_assert
   SOURCES
     buddy_allocator.cc
 )
 
-pw_add_library(pw_allocator.buffer STATIC
+pw_add_library(pw_allocator.buffer INTERFACE
   HEADERS
     public/pw_allocator/buffer.h
   PUBLIC_INCLUDES
@@ -156,11 +157,6 @@ pw_add_library(pw_allocator.buffer STATIC
   PUBLIC_DEPS
     pw_bytes
     pw_result
-  PRIVATE_DEPS
-    pw_assert
-    pw_bytes.alignment
-  SOURCES
-    buffer.cc
 )
 
 pw_add_library(pw_allocator.bump_allocator STATIC
@@ -173,6 +169,7 @@ pw_add_library(pw_allocator.bump_allocator STATIC
     pw_bytes
   PRIVATE_DEPS
     pw_allocator.buffer
+    pw_bytes.alignment
   SOURCES
     bump_allocator.cc
 )
@@ -188,6 +185,7 @@ pw_add_library(pw_allocator.chunk_pool STATIC
     pw_result
   PRIVATE_DEPS
     pw_allocator.buffer
+    pw_bytes.alignment
     pw_assert.check
   SOURCES
     chunk_pool.cc

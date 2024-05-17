@@ -28,6 +28,7 @@
 #include <cstring>
 #include <new>
 
+#include "pw_bytes/alignment.h"
 #include "pw_polyfill/standard.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
@@ -408,6 +409,14 @@ struct CStringArg {
   const char* const c_str;
 };
 
+constexpr size_t MaxPaddingNeededToRaiseAlignment(size_t current_align,
+                                                  size_t new_align) {
+  if (new_align < current_align) {
+    return 0;
+  }
+  return new_align - current_align;
+}
+
 // Singleton test framework class responsible for managing and running test
 // cases. This implementation is internal to Pigweed test; free functions
 // wrapping its functionality are exposed as the public interface.
@@ -469,7 +478,10 @@ class Framework {
   template <typename TestInstance>
   static void CreateAndRunTest(const TestInfo& test_info) {
     static_assert(
-        sizeof(TestInstance) <= sizeof(memory_pool_),
+        sizeof(TestInstance) +
+                MaxPaddingNeededToRaiseAlignment(
+                    alignof(decltype(memory_pool_)), alignof(TestInstance)) <=
+            sizeof(memory_pool_),
         "The test memory pool is too small for this test. Either increase "
         "PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE or decrease the size of your "
         "test fixture.");
@@ -485,7 +497,9 @@ class Framework {
 
     // Construct the test object within the static memory pool. The StartTest
     // function has already been called by the TestInfo at this point.
-    TestInstance* test_instance = new (&framework.memory_pool_) TestInstance;
+    void* aligned_pool =
+        AlignUp(&framework.memory_pool_, alignof(TestInstance));
+    TestInstance* test_instance = new (aligned_pool) TestInstance();
     test_instance->PigweedTestRun();
 
     // Manually call the destructor as it is not called automatically for
@@ -626,8 +640,7 @@ class Framework {
   span<const char*> test_suites_to_run_;  // Always empty in C++14.
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-  std::aligned_storage_t<config::kMemoryPoolSize, alignof(std::max_align_t)>
-      memory_pool_;
+  alignas(std::max_align_t) std::byte memory_pool_[config::kMemoryPoolSize];
 };
 
 // Information about a single test case, including a pointer to a function which

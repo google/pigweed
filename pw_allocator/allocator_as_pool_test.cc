@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "pw_allocator/layout.h"
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
@@ -31,21 +32,25 @@ struct U64 {
   std::byte bytes[8];
 };
 
+class AllocatorAsPoolTest : public ::testing::Test {
+ public:
+  AllocatorAsPoolTest() : allocator_(), pool_(allocator_, Layout::Of<U64>()) {}
+
+ protected:
+  AllocatorForTest allocator_;
+  AllocatorAsPool pool_;
+};
+
 // Unit tests.
 
-TEST(AllocatorAsPoolTest, Capabilities) {
-  AllocatorForTest allocator;
-  AllocatorAsPool pool(allocator, Layout::Of<U64>());
-  EXPECT_EQ(pool.capabilities(), allocator.capabilities());
+TEST_F(AllocatorAsPoolTest, Capabilities) {
+  EXPECT_EQ(pool_.capabilities(), allocator_.capabilities());
 }
 
-TEST(AllocatorAsPoolTest, AllocateDeallocate) {
-  AllocatorForTest allocator;
-  AllocatorAsPool pool(allocator, Layout::Of<U64>());
-
-  void* ptr = pool.Allocate();
+TEST_F(AllocatorAsPoolTest, AllocateDeallocate) {
+  void* ptr = pool_.Allocate();
   ASSERT_NE(ptr, nullptr);
-  pool.Deallocate(ptr);
+  pool_.Deallocate(ptr);
 }
 
 }  // namespace

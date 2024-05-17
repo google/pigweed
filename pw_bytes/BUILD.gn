@@ -48,9 +48,11 @@ pw_source_set("alignment") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_bytes/alignment.h" ]
   public_deps = [
+    ":pw_bytes",
     dir_pw_assert,
     dir_pw_preprocessor,
   ]
+  sources = [ "alignment.cc" ]
 }
 
 pw_source_set("bit") {

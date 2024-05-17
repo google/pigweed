@@ -157,15 +157,13 @@ cc_library(
         "//pw_alignment",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_containers:vector",
     ],
 )
 
 cc_library(
     name = "buffer",
-    srcs = [
-        "buffer.cc",
-    ],
     hdrs = [
         "public/pw_allocator/buffer.h",
     ],
@@ -191,6 +189,7 @@ cc_library(
         ":allocator",
         ":buffer",
         "//pw_bytes",
+        "//pw_bytes:alignment",
     ],
 )
 
@@ -208,6 +207,7 @@ cc_library(
         ":pool",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_result",
     ],
 )

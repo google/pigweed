@@ -285,12 +285,6 @@ Buffer management
 .. doxygenclass:: pw::allocator::WithBuffer
    :members:
 
-The following utility functions are available to allocator implementers. They
-are not intended to be used by module consumers.
-
-.. doxygenfunction:: pw::allocator::GetAlignedSubspan
-.. doxygenfunction:: pw::allocator::IsWithin
-
 ------------
 Test support
 ------------

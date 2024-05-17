@@ -79,6 +79,7 @@ cc_library(
         ":config",
         ":event_handler",
         "//pw_assert",
+        "//pw_bytes:alignment",
         "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_span",

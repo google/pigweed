@@ -15,6 +15,7 @@
 #include "pw_allocator/bump_allocator.h"
 
 #include "pw_allocator/buffer.h"
+#include "pw_bytes/alignment.h"
 
 namespace pw::allocator {
 
@@ -28,12 +29,12 @@ BumpAllocator::~BumpAllocator() {
 }
 
 void* BumpAllocator::DoAllocate(Layout layout) {
-  Result<ByteSpan> region = GetAlignedSubspan(remaining_, layout.alignment());
-  if (!region.ok() || region->size() < layout.size()) {
+  ByteSpan region = GetAlignedSubspan(remaining_, layout.alignment());
+  if (region.size() < layout.size()) {
     return nullptr;
   }
-  remaining_ = region->subspan(layout.size());
-  return region->data();
+  remaining_ = region.subspan(layout.size());
+  return region.data();
 }
 
 void BumpAllocator::DoDeallocate(void*) {}

@@ -50,9 +50,12 @@ else()
 endif()
 
 pw_add_library(pw_unit_test.light STATIC
+  HEADERS
+    light_public_overrides/pw_unit_test/framework_backend.h
   SOURCES
     framework_light.cc
   PUBLIC_DEPS
+    pw_bytes.alignment
     pw_polyfill
     pw_preprocessor
     pw_string
@@ -63,8 +66,8 @@ pw_add_library(pw_unit_test.light STATIC
     public_overrides
 )
 
-pw_add_library(pw_unit_test.googletest STATIC
-  SOURCES
+pw_add_library(pw_unit_test.googletest INTERFACE
+  HEADERS
     googletest_public_overrides/pw_unit_test/framework_backend.h
   PUBLIC_INCLUDES
     googletest_public_overrides

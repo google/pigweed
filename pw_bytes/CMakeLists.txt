@@ -35,14 +35,17 @@ pw_add_library(pw_bytes STATIC
     byte_builder.cc
 )
 
-pw_add_library(pw_bytes.alignment INTERFACE
+pw_add_library(pw_bytes.alignment STATIC
   HEADERS
     public/pw_bytes/alignment.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_assert
+    pw_bytes
     pw_preprocessor
+  SOURCES
+    alignment.cc
 )
 
 pw_add_library(pw_bytes.bit INTERFACE

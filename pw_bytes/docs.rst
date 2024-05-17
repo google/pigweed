@@ -25,6 +25,18 @@ pw_bytes/alignment.h
 ====================
 Functions for aligning sizes and addresses to memory alignment boundaries.
 
+ .. doxygenfunction:: pw::AlignDown(size_t value, size_t alignment)
+
+ .. doxygenfunction:: pw::AlignDown(T* value, size_t alignment)
+
+ .. doxygenfunction:: pw::AlignUp(size_t value, size_t alignment)
+
+ .. doxygenfunction:: pw::AlignUp(T* value, size_t alignment)
+
+ .. doxygenfunction:: pw::Padding
+
+ .. doxygenfunction:: pw::GetAlignedSubspan
+
 pw_bytes/array.h
 ================
 Functions for working with byte arrays, primarily for building fixed-size byte

@@ -18,6 +18,7 @@
 
 #include "pw_allocator/buffer.h"
 #include "pw_assert/check.h"
+#include "pw_bytes/alignment.h"
 
 namespace pw::allocator::internal {
 
@@ -25,9 +26,7 @@ GenericBuddyAllocator::GenericBuddyAllocator(span<Bucket> buckets,
                                              size_t min_chunk_size,
                                              ByteSpan region)
     : buckets_(buckets) {
-  Result<ByteSpan> result = GetAlignedSubspan(region, min_chunk_size);
-  PW_CHECK_OK(result.status());
-  region_ = result.value();
+  region_ = GetAlignedSubspan(region, min_chunk_size);
   PW_CHECK_INT_GE(region_.size(), min_chunk_size);
 
   Bucket::Init(buckets, min_chunk_size);
