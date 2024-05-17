@@ -117,6 +117,14 @@ pw_test("metrics") {
   sources = [ "metrics.cc" ]
 }
 
+pw_test("pmr") {
+  deps = [
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:testing",
+  ]
+  sources = [ "pmr.cc" ]
+}
+
 pw_executable("size_report") {
   check_includes = false
   sources = [ "size_report.cc" ]
@@ -151,6 +159,7 @@ pw_test_group("examples") {
     ":custom_allocator_perf_test",
     ":linker_sections",
     ":metrics",
+    ":pmr",
     ":spin_lock",
   ]
 }

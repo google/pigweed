@@ -51,6 +51,10 @@ class SizeReporter final {
   struct Bar {
     Foo foo;
     size_t number;
+
+    Bar(size_t number_) : number(number_) {
+      std::memset(foo.buffer.data(), 0, foo.buffer.size());
+    }
   };
 
   /// Nested type used for exercising an allocator.
@@ -62,9 +66,9 @@ class SizeReporter final {
   void SetBaseline() {
     pw::bloat::BloatThisBinary();
     ByteSpan bytes = buffer();
-    Foo* foo = new (bytes.data()) Foo();
-    PW_ASSERT(foo != nullptr);
-    std::destroy_at(foo);
+    Bar* bar = new (bytes.data()) Bar(0);
+    PW_ASSERT(bar != nullptr);
+    std::destroy_at(bar);
 #ifndef PW_ALLOCATOR_SIZE_REPORTER_BASE
     // Include the NullAllocator to bake in the costs of the base `Allocator`.
     Allocator& allocator = GetNullAllocator();

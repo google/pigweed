@@ -129,6 +129,15 @@
 #define PW_NO_SANITIZE(check)
 #endif  // __clang__
 
+/// Wrapper around `__has_feature`, which is defined by GCC and Clang and
+/// evaluates to a non zero constant integer if the feature is supported
+/// standardized in the current language standard or 0 if not.
+#ifdef __has_feature
+#define PW_HAVE_FEATURE(x) __has_feature(x)
+#else
+#define PW_HAVE_FEATURE(x) 0
+#endif  // __has_feature
+
 /// Wrapper around `__has_attribute`, which is defined by GCC 5+ and Clang and
 /// evaluates to a non zero constant integer if the attribute is supported or 0
 /// if not.

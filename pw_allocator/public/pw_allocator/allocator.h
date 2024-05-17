@@ -15,6 +15,7 @@
 
 #include <cstddef>
 
+#include "pw_allocator/as_pmr_allocator.h"
 #include "pw_allocator/capability.h"
 #include "pw_allocator/deallocator.h"
 #include "pw_allocator/layout.h"
@@ -132,6 +133,18 @@ class Allocator : public Deallocator {
       return Allocate(Layout(new_size, old_layout.alignment()));
     }
     return DoReallocate(ptr, old_layout, new_size);
+  }
+
+  /// Returns an std::pmr::polymorphic_allocator that wraps this object.
+  ///
+  /// The returned object can be used with the PMR versions of standard library
+  /// containers, e.g. `std::pmr::vector`, `std::pmr::string`, etc.
+  ///
+  /// @rst
+  /// See also :ref:`module-pw_allocator-use-standard-library-containers`
+  /// @endrst
+  allocator::AsPmrAllocator as_pmr() {
+    return allocator::AsPmrAllocator(*this);
   }
 
   /// Returns the layout used to allocate a given pointer.

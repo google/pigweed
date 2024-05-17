@@ -25,11 +25,6 @@ namespace {
 using ::pw::allocator::BumpAllocator;
 using ::pw::allocator::Layout;
 
-class BumpAllocatorTest : public ::testing::Test {
- protected:
-  alignas(16) std::array<std::byte, 256> buffer_;
-};
-
 class DestroyCounter final {
  public:
   DestroyCounter(size_t* counter) : counter_(counter) {}
@@ -41,14 +36,16 @@ class DestroyCounter final {
 
 // Unit tests.
 
-TEST_F(BumpAllocatorTest, AllocateValid) {
-  BumpAllocator allocator(buffer_);
+TEST(BumpAllocatorTest, AllocateValid) {
+  alignas(16) std::array<std::byte, 256> buffer;
+  BumpAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(64, 16));
   ASSERT_NE(ptr, nullptr);
 }
 
-TEST_F(BumpAllocatorTest, AllocateAligned) {
-  BumpAllocator allocator(buffer_);
+TEST(BumpAllocatorTest, AllocateAligned) {
+  alignas(16) std::array<std::byte, 256> buffer;
+  BumpAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(1, 1));
   ASSERT_NE(ptr, nullptr);
 
@@ -58,16 +55,18 @@ TEST_F(BumpAllocatorTest, AllocateAligned) {
   EXPECT_EQ(reinterpret_cast<uintptr_t>(ptr) % 32, 0U);
 }
 
-TEST_F(BumpAllocatorTest, AllocateFailsWhenExhausted) {
-  BumpAllocator allocator(buffer_);
+TEST(BumpAllocatorTest, AllocateFailsWhenExhausted) {
+  alignas(16) std::array<std::byte, 256> buffer;
+  BumpAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(256, 16));
   ASSERT_NE(ptr, nullptr);
   ptr = allocator.Allocate(Layout(1, 1));
   EXPECT_EQ(ptr, nullptr);
 }
 
-TEST_F(BumpAllocatorTest, DeallocateDoesNothing) {
-  BumpAllocator allocator(buffer_);
+TEST(BumpAllocatorTest, DeallocateDoesNothing) {
+  alignas(16) std::array<std::byte, 256> buffer;
+  BumpAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(256, 16));
   ASSERT_NE(ptr, nullptr);
   allocator.Deallocate(ptr);
@@ -75,10 +74,11 @@ TEST_F(BumpAllocatorTest, DeallocateDoesNothing) {
   EXPECT_EQ(ptr, nullptr);
 }
 
-TEST_F(BumpAllocatorTest, NewDoesNotDestroy) {
+TEST(BumpAllocatorTest, NewDoesNotDestroy) {
+  alignas(16) std::array<std::byte, 256> buffer;
   size_t counter = 0;
   {
-    BumpAllocator allocator(buffer_);
+    BumpAllocator allocator(buffer);
     DestroyCounter* dc1 = allocator.New<DestroyCounter>(&counter);
     EXPECT_EQ(counter, 0U);
     allocator.Delete(dc1);
@@ -86,39 +86,43 @@ TEST_F(BumpAllocatorTest, NewDoesNotDestroy) {
   EXPECT_EQ(counter, 0U);
 }
 
-TEST_F(BumpAllocatorTest, DeleteDoesNothing) {
+TEST(BumpAllocatorTest, DeleteDoesNothing) {
+  alignas(16) std::array<std::byte, 256> buffer;
   size_t counter = 0;
-  BumpAllocator allocator(buffer_);
+  BumpAllocator allocator(buffer);
   DestroyCounter* dc1 = allocator.New<DestroyCounter>(&counter);
   EXPECT_EQ(counter, 0U);
   allocator.Delete(dc1);
   EXPECT_EQ(counter, 0U);
 }
 
-TEST_F(BumpAllocatorTest, NewOwnedDestroys) {
+TEST(BumpAllocatorTest, NewOwnedDestroys) {
+  alignas(16) std::array<std::byte, 256> buffer;
   size_t counter = 0;
   {
-    BumpAllocator allocator(buffer_);
+    BumpAllocator allocator(buffer);
     allocator.NewOwned<DestroyCounter>(&counter);
     EXPECT_EQ(counter, 0U);
   }
   EXPECT_EQ(counter, 1U);
 }
 
-TEST_F(BumpAllocatorTest, MakeUniqueDoesNotDestroy) {
+TEST(BumpAllocatorTest, MakeUniqueDoesNotDestroy) {
+  alignas(16) std::array<std::byte, 256> buffer;
   size_t counter = 0;
   {
-    BumpAllocator allocator(buffer_);
+    BumpAllocator allocator(buffer);
     allocator.MakeUnique<DestroyCounter>(&counter).get();
     EXPECT_EQ(counter, 0U);
   }
   EXPECT_EQ(counter, 0U);
 }
 
-TEST_F(BumpAllocatorTest, MakeUniqueOwnedDestroys) {
+TEST(BumpAllocatorTest, MakeUniqueOwnedDestroys) {
+  alignas(16) std::array<std::byte, 256> buffer;
   size_t counter = 0;
   {
-    BumpAllocator allocator(buffer_);
+    BumpAllocator allocator(buffer);
     allocator.MakeUniqueOwned<DestroyCounter>(&counter).get();
     EXPECT_EQ(counter, 0U);
   }

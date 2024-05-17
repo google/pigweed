@@ -21,7 +21,7 @@ are accustomed to and need. The fundamental design goals of ``pw_allocator`` are
 for allocators to be:
 
 - Familiar: The interface and its usage should resemble that of C++17's
-  `polymorphic allocators`_.
+  `std::pmr::polymorphic_allocator`_ type.
 - Flexible: A diverse set of allocation strategies should be implementable
   using allocators.
 - Composable: Allocators should be able to combine and use other allocators.
@@ -33,6 +33,8 @@ for allocators to be:
   being used.
 - Correcting: Allocators should include features to help uncover
   `memory defects`_ including heap corruption, leaks, use-after-frees, etc.
+
+.. _module-pw_allocator-design-differences-with-polymorphic-allocators:
 
 Differences with C++ polymorphic allocators
 ===========================================
@@ -49,9 +51,12 @@ Even so, ``pw_allocator`` has taken inspiration from the design of PMR,
 incorporating many of its ideas. :ref:`module-pw_allocator-api-allocator` in
 particular is similar to `std::pmr::memory_resource`_.
 
-.. TODO: b/328076428 - Furthermore, ``pw::allocator::MemoryResource`` acts as a
-   PMR adapter, allowing Pigweed allocators to be used with the C++ STL, albeit
-   at the cost of an extra layer of virtual indirection.
+This similarity is most evident in the PMR adapter class,
+:ref:`module-pw_allocator-api-as_pmr_allocator`. This adapter allows any
+:ref:`module-pw_allocator-api-allocator` to be used as a
+`std::pmr::polymorphic_allocator`_ with any standard library that
+`can use an allocator`_. Refer to the guides on how to
+:ref:`module-pw_allocator-use-standard-library-containers`.
 
 .. _module-pw_allocator-design-forwarding:
 
@@ -173,10 +178,11 @@ Found a bug? Got a feature request? Please create a new issue in our `tracker`_!
 Want to discuss allocators in real-time with the Pigweed team? Head over to our
 `Discord`_!
 
-.. _polymorphic allocators: https://en.cppreference.com/w/cpp/memory/polymorphic_allocator
 .. _memory defects: https://en.wikipedia.org/wiki/Memory_corruption
 .. _golden hammer: https://en.wikipedia.org/wiki/Law_of_the_instrument#Computer_programming
 .. _bin packing problem: https://en.wikipedia.org/wiki/Bin_packing_problem
 .. _std::pmr::memory_resource: https://en.cppreference.com/w/cpp/memory/memory_resource
+.. _std::pmr::polymorphic_allocator: https://en.cppreference.com/w/cpp/memory/polymorphic_allocator
+.. _can use an allocator: https://en.cppreference.com/w/cpp/memory/uses_allocator
 .. _tracker: https://pwbug.dev
 .. _Discord: https://discord.gg/M9NSeTA

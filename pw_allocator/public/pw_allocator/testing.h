@@ -53,6 +53,9 @@ class AllocatorForTest : public Allocator {
     allocator_->Reset();
   }
 
+  AllocatorType::Range blocks() const { return allocator_->blocks(); }
+  AllocatorType::Range blocks() { return allocator_->blocks(); }
+
   const metric::Group& metric_group() const { return tracker_.metric_group(); }
   metric::Group& metric_group() { return tracker_.metric_group(); }
 

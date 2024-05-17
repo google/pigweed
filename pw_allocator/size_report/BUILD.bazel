@@ -29,6 +29,25 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
+    name = "as_pmr_allocator_base",
+    srcs = ["as_pmr_allocator_base.cc"],
+    deps = [
+        "//pw_allocator:block_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
+    name = "as_pmr_allocator",
+    srcs = ["as_pmr_allocator.cc"],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_allocator:block_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
     name = "best_fit_block_allocator",
     srcs = ["best_fit_block_allocator.cc"],
     deps = [

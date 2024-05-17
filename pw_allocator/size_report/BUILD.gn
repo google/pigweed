@@ -26,6 +26,23 @@ pw_executable("base") {
   ]
 }
 
+pw_executable("as_pmr_allocator_base") {
+  sources = [ "as_pmr_allocator_base.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("as_pmr_allocator") {
+  sources = [ "as_pmr_allocator.cc" ]
+  deps = [
+    "..:allocator",
+    "..:block_allocator",
+    "..:size_reporter",
+  ]
+}
+
 pw_executable("best_fit_block_allocator") {
   include_dirs = [ "../public" ]
   sources = [ "best_fit_block_allocator.cc" ]

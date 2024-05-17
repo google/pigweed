@@ -126,6 +126,16 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "pmr",
+    testonly = True,
+    srcs = ["pmr.cc"],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_allocator:testing",
+    ],
+)
+
 pw_cc_binary(
     name = "size_report",
     testonly = True,

@@ -19,13 +19,16 @@ include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 pw_add_library(pw_allocator.allocator STATIC
   HEADERS
     public/pw_allocator/allocator.h
+    public/pw_allocator/as_pmr_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.deallocator
+    pw_assert.check
     pw_result
   SOURCES
     allocator.cc
+    as_pmr_allocator.cc
 )
 
 pw_add_library(pw_allocator.allocator_as_pool STATIC
@@ -442,6 +445,18 @@ pw_add_test(pw_allocator.allocator_test
   PRIVATE_DEPS
     pw_allocator.allocator
     pw_allocator.testing
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.as_pmr_allocator_test
+  SOURCES
+    as_pmr_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.allocator
+    pw_allocator.testing
+    pw_unit_test
   GROUPS
     modules
     pw_allocator
