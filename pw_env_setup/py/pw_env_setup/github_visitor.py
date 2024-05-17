@@ -84,32 +84,48 @@ class GitHubVisitor(object):
     def visit_set(self, set):  # pylint: disable=redefined-builtin
         if '\n' in set.value:
             eof = '__EOF__'
-            assert f'\n{eof}\n' not in set.value
+            assert '\n{}\n'.format(eof) not in set.value
             print(
-                f'{set.name}=<<{eof}\n{set.value}\n{eof}',
+                '{name}=<<{eof}\n{value}\n{eof}'.format(
+                    name=set.name,
+                    value=set.value,
+                    eof=eof,
+                ),
                 file=self._github_env,
             )
         else:
-            print(f'{set.name}={set.value}', file=self._github_env)
-        print(f'setting {set.name!r} = {set.value!r}', file=self._log)
+            print(
+                '{name}={value}'.format(name=set.name, value=set.value),
+                file=self._github_env,
+            )
+        print(
+            'setting {name!r} = {value!r}'.format(
+                name=set.name, value=set.value
+            ),
+            file=self._log,
+        )
 
     def visit_clear(self, clear):
-        print(f'{clear.name}=', file=self._github_env)
-        print(f'setting {clear.name!r} = ""', file=self._log)
+        print('{}='.format(clear.name), file=self._github_env)
+        print('setting {!r} = ""'.format(clear.name), file=self._log)
 
     def visit_prepend(self, prepend):
         if prepend.name == 'PATH':
             print(prepend.value, file=self._github_path)
-            print(f'adding {prepend.value!r} to PATH', file=self._log)
+            print('adding {!r} to PATH'.format(prepend.value), file=self._log)
         else:
             print(
-                f'unsupported prepend: {prepend.name!r} += {prepend.value!r}',
+                'unsupported prepend: {name!r} += {value!r}'.format(
+                    name=prepend.name, value=prepend.value
+                ),
                 file=self._log,
             )
 
     def visit_append(self, append):
         print(
-            f'unsupported append: {append.name!r} += {append.value!r}',
+            'unsupported append: {name!r} += {value!r}'.format(
+                name=append.name, value=append.value
+            ),
             file=self._log,
         )
 
