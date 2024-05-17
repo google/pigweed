@@ -13,11 +13,480 @@ Talk to the team at Pigweed Live
 
 .. _docs-changelog-latest:
 
+------------
+May 16, 2024
+------------
+
+.. changelog_highlights_start
+
+Highlights (May 2, 2024 to May 16, 2024):
+
+* **Coroutines**: You can now create asynchronous tasks using C++20
+  :ref:`coroutines <module-pw_async2-coroutines>`.
+* **Rust with Bazel**: The Rust toolchain can now be used by downstream projects
+  using Bazel.
+* **More MCUXpresso support**: Several modules have additional support for
+  projects built using the NXP MCUXpresso SDK, including multiple core support
+  in :ref:`module-pw_build_mcuxpresso`, a new initiator in
+  :ref:`module-pw_i2c_mcuxpresso`, a new responder in
+  :ref:`module-pw_spi_mcuxpresso`, and a new :ref:`module-pw_dma_mcuxpresso`
+  module.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please visit :ref:`seed-0000`
+and leave feedback on the RFCs (i.e. SEEDs) marked
+``Open for Comments``.
+
+.. Note: There is space between the following section headings
+.. and commit lists to remind you to write a summary for each
+.. section. If a summary is not needed, delete the extra
+.. space.
+
+Modules
+=======
+
+pw_allocator
+------------
+* `Fix data race
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208412>`__
+  (issue `#333386065 <https://issues.pigweed.dev/issues/333386065>`__)
+* `Add BucketBlockAllocator
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/198155>`__
+* `Improve namespacing
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/206153>`__
+* `Use singletons for stateless allocators
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207337>`__
+
+pw_assert
+---------
+* `Ensure condition does not contain stray %
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208140>`__
+  (issue `#337268540 <https://issues.pigweed.dev/issues/337268540>`__)
+
+pw_async2
+---------
+C++20 users can now define asynchronous tasks using
+:ref:`module-pw_async2-coroutines`.
+
+* `Move PW_CO_TRY functions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209911>`__
+* `Add Coro<T> coroutine API
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207690>`__
+
+pw_bloat
+--------
+Padding is now included as part of utilization in code size reports. This allows
+developers to monitor changes in application size that smaller than the used
+space alignment defined in the linker script.
+
+* `Add padding to utilization
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209972>`__
+  (issue `#276370736 <https://issues.pigweed.dev/issues/276370736>`__)
+
+pw_bluetooth
+------------
+* `Add a constant for max controller delay
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209271>`__
+* `Put cmake tests in modules group
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208897>`__
+* `Disable emboss enum traits
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208591>`__
+  (issue `#339029458 <https://issues.pigweed.dev/issues/339029458>`__)
+* `Remove hci_vendor
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208313>`__
+  (issue `#338269786 <https://issues.pigweed.dev/issues/338269786>`__)
+
+pw_bluetooth_proxy
+------------------
+* `Also support V2 of LE read buffer event
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209879>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Use LE read buffer event
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209878>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Removing trailing comma in PW_LOG call
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209231>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Allow setting the # of credits to reserve
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208895>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Add cmake build rules
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208653>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Update tests to remove RVNO assumptions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208652>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+* `Reserve ACL LE slots from host
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207671>`__
+  (issue `#326499611 <https://issues.pigweed.dev/issues/326499611>`__)
+
+pw_boot_cortex_m
+----------------
+* `Emit pw_boot_Entry without prologue
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208931>`__
+  (issue `#339107121 <https://issues.pigweed.dev/issues/339107121>`__)
+
+pw_build
+--------
+* `pw_cc_test.lib fixup
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210231>`__
+  (issue `#307825072, 341109859 <https://issues.pigweed.dev/issues/307825072, 341109859>`__)
+* `Fix type hint
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208137>`__
+  (issue `#338462905 <https://issues.pigweed.dev/issues/338462905>`__)
+
+pw_build_mcuxpresso
+-------------------
+:ref:`module-pw_build_mcuxpresso` now can support multiple device cores.
+
+* `Support multiple cores
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208654>`__
+
+pw_config_loader
+----------------
+* `Add missing types dep
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210236>`__
+
+pw_cpu_exception_cortex_m
+-------------------------
+* `Add error flag masks
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210072>`__
+* `Fix PSP unit test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210071>`__
+
+pw_digital_io_linux
+-------------------
+* `Add test_utils.h for ASSERT_OK and friends
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209592>`__
+* `Minor updates to OwnedFd
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209591>`__
+* `Refactor test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/196051>`__
+
+pw_dma_mcuxpresso
+-----------------
+:ref:`module-pw_dma_mcuxpresso` is a new module for working with an MCUXpresso
+DMA controller.
+
+* `Module for working with NXP DMA controller
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208655>`__
+
+pw_docs
+-------
+* `Add inline search to sidebar
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207674>`__
+
+pw_env_setup
+------------
+* `Remove f-strings from github_visitor
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210274>`__
+* `Change Bazel library name
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210198>`__
+  (issue `#340328100 <https://issues.pigweed.dev/issues/340328100>`__)
+* `Add GitHub environment visitor
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210045>`__
+  (issue `#340900493 <https://issues.pigweed.dev/issues/340900493>`__)
+* `Bazel support for config_file
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209913>`__
+  (issue `#340328100 <https://issues.pigweed.dev/issues/340328100>`__)
+
+pw_format
+---------
+* `Add Rust support for field width and zero padding
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208898>`__
+* `Add Rust support for formatting integers in hex
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208415>`__
+* `Add test for escaped curly brackets
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208291>`__
+* `Refactor format string parsing for better core::fmt support
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208656>`__
+
+pw_i2c
+------
+* `Update OWNERS
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208413>`__
+
+pw_i2c_mcuxpresso
+-----------------
+The new ``I3cMcuxpressoInitiator`` implements the ``pw_i2c`` initiator interface
+using the MCUXpresso I3C driver, allowing normal I2C API's to work after setup.
+
+* `Fix Clang compilation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209191>`__
+* `Add i3c initiator
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208136>`__
+* `Remove swatiwagh from OWNERS
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208671>`__
+
+pw_ide
+------
+* `Add .pw_ide.user.yaml to .gitignore
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208894>`__
+* `Raise specific error on bad settings file
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208132>`__
+  (issue `#336799314 <https://issues.pigweed.dev/issues/336799314>`__)
+
+pw_libcxx
+---------
+Added initial support for using LLVM's `libcxx <https://libcxx.llvm.org/>`__ as
+a standard C++ library implementation.
+
+* `Minimal implementation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/201918>`__
+
+pw_log
+------
+Logging messages with untyped string arguments is now supported in the Rust
+implementation.
+
+.. todo-check: disable
+
+* `Make TODO actionable
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209571>`__
+* `Add core::fmt style format string support to Rust API
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207331>`__
+* `Rename Rust logging API to be less verbose
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207330>`__
+* `Add Rust support for untyped strings
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/206673>`__
+
+.. todo-check: enable
+
+pw_multibuf
+-----------
+* `Remove deprecated Chunk::DiscardFront
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/206676>`__
+
+pw_package
+----------
+* `Suppress package progress messages
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208331>`__
+
+pw_presubmit
+------------
+* `Auto fix unsorted-dict-items
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209881>`__
+  (issue `#340637744 <https://issues.pigweed.dev/issues/340637744>`__)
+* `Fix missing pico-sdk for docs_build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209931>`__
+* `Add repo tool API
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179230>`__
+* `Exclude all OWNERS from copyright
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209031>`__
+
+pw_proto
+--------
+* `Create genrule for raw rpc with prefix
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209992>`__
+  (issue `#340749161 <https://issues.pigweed.dev/issues/340749161>`__)
+
+pw_protobuf
+-----------
+* `Build common.proto with Nanopb+Soong
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209851>`__
+  (issue `#340350973 <https://issues.pigweed.dev/issues/340350973>`__)
+
+pw_protobuf_compiler
+--------------------
+* `Disable layering check less
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209111>`__
+  (issue `#323749176 <https://issues.pigweed.dev/issues/323749176>`__)
+* `Fix name collisions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208658>`__
+* `Disable layering_check
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208932>`__
+  (issue `#339280821 <https://issues.pigweed.dev/issues/339280821>`__)
+* `Fix bazel failure if proto dir is empty
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208135>`__
+  (issue `#328311416 <https://issues.pigweed.dev/issues/328311416>`__)
+* `Add a no_prefix test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208138>`__
+  (issue `#328311416 <https://issues.pigweed.dev/issues/328311416>`__)
+* `Tests fail to build under cmake
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208271>`__
+  (issue `#338622044 <https://issues.pigweed.dev/issues/338622044>`__)
+
+pw_result
+---------
+* `Fix typo in template member
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209667>`__
+  (issue `#339794389 <https://issues.pigweed.dev/issues/339794389>`__)
+
+pw_rpc
+------
+* `Include FakeChannelOutput in soong target
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209991>`__
+  (issue `#340350973 <https://issues.pigweed.dev/issues/340350973>`__)
+* `Update docs for channel ID remapping
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209431>`__
+* `Build compatibility fixes
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208893>`__
+* `Fix macro name in docs and comments
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208311>`__
+
+pw_spi_mcuxpresso
+-----------------
+The :ref:`module-pw_spi_mcuxpresso` module now includes an
+``McuxpressoResponder`` useing the SPI and DMA drivers from the NXP MCUXpresso
+SDK.
+
+* `Add responder implementation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208657>`__
+
+pw_stm32cube_build
+------------------
+* `Fix a label flag name in documentation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208231>`__
+
+pw_sys_io_rp2040
+----------------
+* `Bazel build file update
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209877>`__
+  (issue `#261603269, 300318025 <https://issues.pigweed.dev/issues/261603269, 300318025>`__)
+
+pw_sys_io_stdio
+---------------
+* `Expand allowed uses beyond host
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208511>`__
+
+pw_sys_io_stm32cube
+-------------------
+* `Fix build for f1xx family
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208471>`__
+
+pw_tokenizer
+------------
+* `Clean up rust docs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208416>`__
+
+pw_toolchain
+------------
+Pigweed's Rust toolchain can now be used by downstream projects.
+
+* `Fix typos in newlib_os_interface_stubs.cc
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209952>`__
+* `Add clang-apply-replacements plugin
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209539>`__
+  (issue `#339294894 <https://issues.pigweed.dev/issues/339294894>`__)
+* `Support Rust toolchains in downstream projects
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209871>`__
+* `Add clang-apply-replacements plugin
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208896>`__
+  (issue `#339294894 <https://issues.pigweed.dev/issues/339294894>`__)
+* `Fix CMake build on macOS
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208139>`__
+* `Add no-canonical-system-headers
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208156>`__
+  (issue `#319665090 <https://issues.pigweed.dev/issues/319665090>`__)
+
+pw_trace_tokenized
+------------------
+* `Build compatibility fixes
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208893>`__
+
+pw_transfer
+-----------
+The transfer service now ends active transfers when the underlying stream
+changes, avoiding a case where a transfer could become stuck.
+
+* `End active transfers when RPC stream changes
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209876>`__
+* `Add tests for GetResourceStatus
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209753>`__
+* `Add py_proto_library target for update_bundle_proto
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209731>`__
+* `GetResoureStatus fix missing return
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208491>`__
+* `Lock resource_responder_ access
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208251>`__
+
+pw_unit_test
+------------
+* `Add missing :config dependency for gtest backend
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208472>`__
+
+Build
+=====
+
+bazel
+-----
+* `Ignore reformatting change in git blame
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210111>`__
+  (issue `#340637744 <https://issues.pigweed.dev/issues/340637744>`__)
+* `Fix unsorted-dict-items instances
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209880>`__
+  (issue `#340637744 <https://issues.pigweed.dev/issues/340637744>`__)
+* `Remove unnecessary .bazelrc flag
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208659>`__
+  (issue `#319665090 <https://issues.pigweed.dev/issues/319665090>`__)
+* `Re-enable sandbox_hermetic_tmp
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208312>`__
+  (issue `#319665090 <https://issues.pigweed.dev/issues/319665090>`__)
+
+Targets
+=======
+
+targets/rp2040
+--------------
+* `pre_init and freertos config
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209554>`__
+  (issue `#261603269, 300318025 <https://issues.pigweed.dev/issues/261603269, 300318025>`__)
+
+Docs
+====
+* `Update changelog
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208171>`__
+
+SEEDs
+=====
+
+SEED-0116
+---------
+* `Set status to On Hold
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208831>`__
+
+Third party
+===========
+
+third_party/emboss
+------------------
+* `Use absolute paths in source dependencies
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209131>`__
+  (issue `#339467547 <https://issues.pigweed.dev/issues/339467547>`__)
+* `Update emboss repo to tag v2024.0501.215421
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208314>`__
+  (issue `#338675057 <https://issues.pigweed.dev/issues/338675057>`__)
+* `Add additional owners for emboss
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208631>`__
+
+third_party/freertos
+--------------------
+* `Add CM3 support to Bazel build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210211>`__
+
+third_party/perfetto
+--------------------
+* `Rename proto targets
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210040>`__
+* `Add third party perfetto repo
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/203618>`__
+* `Copybara import
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207490>`__
+
+Miscellaneous
+=============
+* `Run clang-format
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208911>`__
+* `Add roller as WORKSPACE owner
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208900>`__
+  (issue `#245397913 <https://issues.pigweed.dev/issues/245397913>`__)
+
 -----------
 May 1, 2024
 -----------
-
-.. changelog_highlights_start
 
 Highlights (Apr 19, 2024 to May 1, 2024):
 
@@ -30,8 +499,6 @@ Highlights (Apr 19, 2024 to May 1, 2024):
 * **Transfer:** Adaptive windowing got a Java implementation, and improvements
   to adaptive windowing in C++.
 * **Bluetooth:** Initial CLs towards a Bluetooth proxy.
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============
