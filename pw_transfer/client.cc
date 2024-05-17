@@ -39,14 +39,15 @@ Result<Client::Handle> Client::Read(
   }
 
   if (!has_read_stream_) {
-    rpc::RawClientReaderWriter read_stream = client_.Read(
-        [this](ConstByteSpan chunk) {
+    rpc::RawClientReaderWriter read_stream =
+        client_.Read(nullptr,  // on_next will be set by the transfer_thread.
+                     [this](Status status) {
+                       OnRpcError(status, internal::TransferType::kReceive);
+                     });
+    transfer_thread_.SetClientReadStream(
+        read_stream, [this](ConstByteSpan chunk) {
           transfer_thread_.ProcessClientChunk(chunk);
-        },
-        [this](Status status) {
-          OnRpcError(status, internal::TransferType::kReceive);
         });
-    transfer_thread_.SetClientReadStream(read_stream);
     has_read_stream_ = true;
   }
 
@@ -85,14 +86,15 @@ Result<Client::Handle> Client::Write(
   }
 
   if (!has_write_stream_) {
-    rpc::RawClientReaderWriter write_stream = client_.Write(
-        [this](ConstByteSpan chunk) {
+    rpc::RawClientReaderWriter write_stream =
+        client_.Write(nullptr,  // on_next will be set by the transfer thread.
+                      [this](Status status) {
+                        OnRpcError(status, internal::TransferType::kTransmit);
+                      });
+    transfer_thread_.SetClientWriteStream(
+        write_stream, [this](ConstByteSpan chunk) {
           transfer_thread_.ProcessClientChunk(chunk);
-        },
-        [this](Status status) {
-          OnRpcError(status, internal::TransferType::kTransmit);
         });
-    transfer_thread_.SetClientWriteStream(write_stream);
     has_write_stream_ = true;
   }
 

@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_function/function.h"
 #include "pw_rpc/raw/server_reader_writer.h"
@@ -69,6 +70,9 @@ enum class EventType {
   // Manages the list of transfer handlers for a transfer service.
   kAddTransferHandler,
   kRemoveTransferHandler,
+
+  // Updates one of the transfer thread's RPC streams.
+  kSetStream,
 
   // For testing only: aborts the transfer thread.
   kTerminate,
@@ -133,6 +137,10 @@ struct SendStatusChunkEvent {
   TransferStream stream;
 };
 
+struct SetStreamEvent {
+  TransferStream stream;
+};
+
 struct UpdateTransferEvent {
   uint32_t handle_id;
   uint32_t transfer_size_bytes;
@@ -163,6 +171,7 @@ struct Event {
     UpdateTransferEvent update_transfer;
     Handler* add_transfer_handler;
     Handler* remove_transfer_handler;
+    SetStreamEvent set_stream;
     GetResourceStatusEvent resource_status;
   };
 };

@@ -107,7 +107,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [5],
+                            packets_before_failure: [5, 5],
                             start_immediately: true,
                             only_consider_transfer_chunks: true,
                         }
@@ -162,7 +162,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [3],
+                            packets_before_failure: [3, 3],
                             only_consider_transfer_chunks: true,
                         }
                     }
@@ -242,7 +242,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [2],
+                            packets_before_failure: [2, 2],
                             start_immediately: true,
                             only_consider_transfer_chunks: true,
                         }
@@ -291,7 +291,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [5],
+                            packets_before_failure: [5, 5],
                             only_consider_transfer_chunks: true,
                         }
                     }

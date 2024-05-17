@@ -68,17 +68,15 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   TransferService& operator=(TransferService&&) = delete;
 
   void Read(RawServerReaderWriter& reader_writer) {
-    reader_writer.set_on_next([this](ConstByteSpan message) {
+    thread_.SetServerReadStream(reader_writer, [this](ConstByteSpan message) {
       HandleChunk(message, internal::TransferType::kTransmit);
     });
-    thread_.SetServerReadStream(reader_writer);
   }
 
   void Write(RawServerReaderWriter& reader_writer) {
-    reader_writer.set_on_next([this](ConstByteSpan message) {
+    thread_.SetServerWriteStream(reader_writer, [this](ConstByteSpan message) {
       HandleChunk(message, internal::TransferType::kReceive);
     });
-    thread_.SetServerWriteStream(reader_writer);
   }
 
   void GetResourceStatus(ConstByteSpan request,

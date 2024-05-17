@@ -90,6 +90,7 @@ void Context::HandleEvent(const Event& event) {
     case EventType::kSendStatusChunk:
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
+    case EventType::kSetStream:
     case EventType::kTerminate:
     case EventType::kUpdateClientTransfer:
     case EventType::kGetResourceStatus:
@@ -476,13 +477,13 @@ void Context::PerformInitialHandshake(const Chunk& chunk) {
     // Response packet sent from a server to a client, confirming the protocol
     // version and session_id of the transfer.
     case Chunk::Type::kStartAck: {
+      UpdateLocalProtocolConfigurationFromPeer(chunk);
+
       // This should confirm the offset we're starting at
       if (offset_ != chunk.initial_offset()) {
         TerminateTransfer(Status::Unimplemented());
         break;
       }
-
-      UpdateLocalProtocolConfigurationFromPeer(chunk);
 
       Chunk start_ack_confirmation(configured_protocol_version_,
                                    Chunk::Type::kStartAckConfirmation);
@@ -1220,7 +1221,8 @@ void Context::RetryHandshake() {
       // chunk, so we use the client's desired version instead.
       retry_chunk.set_protocol_version(desired_protocol_version_)
           .set_desired_session_id(session_id_)
-          .set_resource_id(resource_id_);
+          .set_resource_id(resource_id_)
+          .set_initial_offset(offset_);
       if (type() == TransferType::kReceive) {
         SetTransferParameters(retry_chunk);
       }

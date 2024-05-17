@@ -258,6 +258,18 @@ void TransferThread::EndTransfer(EventType type,
   event_notification_.release();
 }
 
+void TransferThread::SetStream(TransferStream stream) {
+  // Block until the last event has been processed.
+  next_event_ownership_.acquire();
+
+  next_event_.type = EventType::kSetStream;
+  next_event_.set_stream = {
+      .stream = stream,
+  };
+
+  event_notification_.release();
+}
+
 void TransferThread::UpdateClientTransfer(uint32_t handle_id,
                                           size_t transfer_size_bytes) {
   // Block until the last event has been processed.
@@ -346,6 +358,10 @@ void TransferThread::HandleEvent(const internal::Event& event) {
         }
       }
       handlers_.remove(*event.remove_transfer_handler);
+      return;
+
+    case EventType::kSetStream:
+      HandleSetStreamEvent(event.set_stream.stream);
       return;
 
     case EventType::kGetResourceStatus:
@@ -450,6 +466,7 @@ Context* TransferThread::FindContextForEvent(
     case EventType::kSendStatusChunk:
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
+    case EventType::kSetStream:
     case EventType::kTerminate:
     case EventType::kGetResourceStatus:
     default:
@@ -485,6 +502,64 @@ uint32_t TransferThread::AssignSessionId() {
     session_id = next_session_id_++;
   }
   return session_id;
+}
+
+template <typename T>
+void TerminateTransfers(span<T> contexts,
+                        TransferType type,
+                        EventType event_type,
+                        Status status) {
+  for (Context& context : contexts) {
+    if (context.active() && context.type() == type) {
+      context.HandleEvent(Event{
+          .type = event_type,
+          .end_transfer =
+              EndTransferEvent{
+                  .id_type = IdentifierType::Session,
+                  .id = context.session_id(),
+                  .status = status.code(),
+                  .send_status_chunk = false,
+              },
+      });
+    }
+  }
+}
+
+void TransferThread::HandleSetStreamEvent(TransferStream stream) {
+  switch (stream) {
+    case TransferStream::kClientRead:
+      TerminateTransfers(client_transfers_,
+                         TransferType::kReceive,
+                         EventType::kClientEndTransfer,
+                         Status::Aborted());
+      client_read_stream_ = std::move(staged_client_stream_);
+      client_read_stream_.set_on_next(std::move(staged_client_on_next_));
+      break;
+    case TransferStream::kClientWrite:
+      TerminateTransfers(client_transfers_,
+                         TransferType::kTransmit,
+                         EventType::kClientEndTransfer,
+                         Status::Aborted());
+      client_write_stream_ = std::move(staged_client_stream_);
+      client_write_stream_.set_on_next(std::move(staged_client_on_next_));
+      break;
+    case TransferStream::kServerRead:
+      TerminateTransfers(server_transfers_,
+                         TransferType::kTransmit,
+                         EventType::kServerEndTransfer,
+                         Status::Aborted());
+      server_read_stream_ = std::move(staged_server_stream_);
+      server_read_stream_.set_on_next(std::move(staged_server_on_next_));
+      break;
+    case TransferStream::kServerWrite:
+      TerminateTransfers(server_transfers_,
+                         TransferType::kReceive,
+                         EventType::kServerEndTransfer,
+                         Status::Aborted());
+      server_write_stream_ = std::move(staged_server_stream_);
+      server_write_stream_.set_on_next(std::move(staged_server_on_next_));
+      break;
+  }
 }
 
 // Adds GetResourceStatusEvent to the queue. Will fail if there is already a

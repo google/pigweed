@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,9 +16,11 @@
 
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
+#include "pw_bytes/span.h"
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/raw/test_method_context.h"
 #include "pw_rpc/test_helpers.h"
+#include "pw_status/status.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/handler.h"
@@ -104,7 +106,7 @@ constexpr auto kData = bytes::Initialized<32>([](size_t i) { return i; });
 
 TEST_F(TransferThreadTest, AddTransferHandler) {
   auto reader_writer = ctx_.reader_writer();
-  transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
 
   SimpleReadTransfer handler(3, kData);
   transfer_thread_.AddTransferHandler(handler);
@@ -128,7 +130,7 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
 
 TEST_F(TransferThreadTest, RemoveTransferHandler) {
   auto reader_writer = ctx_.reader_writer();
-  transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
 
   SimpleReadTransfer handler(3, kData);
   transfer_thread_.AddTransferHandler(handler);
@@ -159,7 +161,7 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
 
 TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
   auto reader_writer = ctx_.reader_writer();
-  transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
 
   SimpleReadTransfer handler(3, kData);
   transfer_thread_.AddTransferHandler(handler);
@@ -205,7 +207,7 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
 
 TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
   auto reader_writer = ctx_.reader_writer();
-  transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
 
   SimpleReadTransfer handler3(3, kData);
   SimpleReadTransfer handler4(4, kData);
@@ -270,7 +272,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
 TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
   rpc::RawClientReaderWriter read_stream = pw_rpc::raw::Transfer::Read(
       rpc_client_context_.client(), rpc_client_context_.channel().id());
-  transfer_thread_.SetClientReadStream(read_stream);
+  transfer_thread_.SetClientReadStream(read_stream, [](ConstByteSpan) {});
 
   Status status3 = Status::Unknown();
   Status status4 = Status::Unknown();
@@ -320,7 +322,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
 
 TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
   auto reader_writer = ctx_.reader_writer();
-  transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
 
   SimpleReadTransfer handler(3, kData);
   transfer_thread_.AddTransferHandler(handler);
@@ -349,6 +351,51 @@ TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
   EXPECT_FALSE(chunk.resource_id().has_value());
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), Status::NotFound());
+
+  transfer_thread_.RemoveTransferHandler(handler);
+}
+
+TEST_F(TransferThreadTest, SetStream_TerminatesActiveTransfers) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
+
+  SimpleReadTransfer handler(3, kData);
+  transfer_thread_.AddTransferHandler(handler);
+
+  transfer_thread_.StartServerTransfer(
+      internal::TransferType::kTransmit,
+      ProtocolVersion::kLegacy,
+      3,
+      3,
+      EncodeChunk(
+          Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+              .set_session_id(3)
+              .set_window_end_offset(8)
+              .set_max_chunk_size_bytes(8)
+              .set_offset(0)),
+      max_parameters_,
+      kNeverTimeout,
+      3,
+      10);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_FALSE(handler.finalize_read_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  auto chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.session_id(), 3u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.payload().size(), 8u);
+  EXPECT_EQ(
+      std::memcmp(chunk.payload().data(), kData.data(), chunk.payload().size()),
+      0);
+
+  auto new_reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(new_reader_writer, [](ConstByteSpan) {});
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler.finalize_read_called);
+  EXPECT_EQ(handler.finalize_read_status, Status::Aborted());
 
   transfer_thread_.RemoveTransferHandler(handler);
 }

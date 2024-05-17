@@ -95,6 +95,10 @@ class Context {
   // True if the transfer is active.
   bool active() const { return transfer_state_ >= TransferState::kInitiating; }
 
+  constexpr TransferType type() const {
+    return static_cast<TransferType>(flags_ & kFlagsType);
+  }
+
   std::optional<chrono::SystemClock::time_point> timeout() const {
     return active() && next_timeout_ != kNoTimeout
                ? std::optional(next_timeout_)
@@ -148,10 +152,6 @@ class Context {
         log_chunks_before_rate_limit_cfg_(
             cfg::kLogDefaultChunksBeforeRateLimit),
         log_chunks_before_rate_limit_(0) {}
-
-  constexpr TransferType type() const {
-    return static_cast<TransferType>(flags_ & kFlagsType);
-  }
 
   stream::Reader& reader() {
     PW_DASSERT(active() && type() == TransferType::kTransmit);

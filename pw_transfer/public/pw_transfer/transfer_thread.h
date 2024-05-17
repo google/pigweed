@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_function/function.h"
 #include "pw_rpc/raw/client_reader_writer.h"
@@ -149,23 +150,76 @@ class TransferThread : public thread::ThreadCore {
                 send_status_chunk);
   }
 
-  // Move the read/write streams on this thread instead of the transfer thread.
-  // RPC call objects are synchronized by pw_rpc, so this move will be atomic
-  // with respect to the transfer thread.
-  void SetClientReadStream(rpc::RawClientReaderWriter& read_stream) {
-    client_read_stream_ = std::move(read_stream);
+  /// Updates the transfer thread's client read stream.
+  ///
+  /// The provided stream should not have an on_next function set. Instead,
+  /// on_next is passed separately to ensure that it is only set when the new
+  /// stream becomes the transfer thread's primary stream.
+  ///
+  /// If the thread has an existing active client read stream, closes it and
+  /// terminates any transfers running on it.
+  void SetClientReadStream(rpc::RawClientReaderWriter& read_stream,
+                           Function<void(ConstByteSpan)>&& on_next) {
+    // Clear the existing callback to prevent incoming chunks from blocking on
+    // the transfer thread and preventing the call's cleanup.
+    client_read_stream_.set_on_next(nullptr);
+    staged_client_stream_ = std::move(read_stream);
+    staged_client_on_next_ = std::move(on_next);
+    SetStream(TransferStream::kClientRead);
   }
 
-  void SetClientWriteStream(rpc::RawClientReaderWriter& write_stream) {
-    client_write_stream_ = std::move(write_stream);
+  /// Updates the transfer thread's client write stream.
+  ///
+  /// The provided stream should not have an on_next function set. Instead,
+  /// on_next is passed separately to ensure that it is only set when the new
+  /// stream becomes the transfer thread's primary stream.
+  ///
+  /// If the thread has an existing active client write stream, closes it and
+  /// terminates any transfers running on it.
+  void SetClientWriteStream(rpc::RawClientReaderWriter& write_stream,
+                            Function<void(ConstByteSpan)>&& on_next) {
+    // Clear the existing callback to prevent incoming chunks from blocking on
+    // the transfer thread and preventing the call's cleanup.
+    client_write_stream_.set_on_next(nullptr);
+    staged_client_stream_ = std::move(write_stream);
+    staged_client_on_next_ = std::move(on_next);
+    SetStream(TransferStream::kClientWrite);
   }
 
-  void SetServerReadStream(rpc::RawServerReaderWriter& read_stream) {
-    server_read_stream_ = std::move(read_stream);
+  /// Updates the transfer thread's server read stream.
+  ///
+  /// The provided stream should not have an on_next function set. Instead,
+  /// on_next is passed separately to ensure that it is only set when the new
+  /// stream becomes the transfer thread's primary stream.
+  ///
+  /// If the thread has an existing active server read stream, closes it and
+  /// terminates any transfers running on it.
+  void SetServerReadStream(rpc::RawServerReaderWriter& read_stream,
+                           Function<void(ConstByteSpan)>&& on_next) {
+    // Clear the existing callback to prevent incoming chunks from blocking on
+    // the transfer thread and preventing the call's cleanup.
+    server_read_stream_.set_on_next(nullptr);
+    staged_server_stream_ = std::move(read_stream);
+    staged_server_on_next_ = std::move(on_next);
+    SetStream(TransferStream::kServerRead);
   }
 
-  void SetServerWriteStream(rpc::RawServerReaderWriter& write_stream) {
-    server_write_stream_ = std::move(write_stream);
+  /// Updates the transfer thread's server write stream.
+  ///
+  /// The provided stream should not have an on_next function set. Instead,
+  /// on_next is passed separately to ensure that it is only set when the new
+  /// stream becomes the transfer thread's primary stream.
+  ///
+  /// If the thread has an existing active server write stream, closes it and
+  /// terminates any transfers running on it.
+  void SetServerWriteStream(rpc::RawServerReaderWriter& write_stream,
+                            Function<void(ConstByteSpan)>&& on_next) {
+    // Clear the existing callback to prevent incoming chunks from blocking on
+    // the transfer thread and preventing the call's cleanup.
+    server_write_stream_.set_on_next(nullptr);
+    staged_server_stream_ = std::move(write_stream);
+    staged_server_on_next_ = std::move(on_next);
+    SetStream(TransferStream::kServerWrite);
   }
 
   void AddTransferHandler(Handler& handler) {
@@ -325,6 +379,9 @@ class TransferThread : public thread::ThreadCore {
                    Status status,
                    bool send_status_chunk);
 
+  void SetStream(TransferStream stream);
+  void HandleSetStreamEvent(TransferStream stream);
+
   void TransferHandlerEvent(EventType type, Handler& handler);
 
   void HandleEvent(const Event& event);
@@ -342,8 +399,13 @@ class TransferThread : public thread::ThreadCore {
 
   rpc::RawClientReaderWriter client_read_stream_;
   rpc::RawClientReaderWriter client_write_stream_;
+  rpc::RawClientReaderWriter staged_client_stream_;
+  Function<void(ConstByteSpan)> staged_client_on_next_;
+
   rpc::RawServerReaderWriter server_read_stream_;
   rpc::RawServerReaderWriter server_write_stream_;
+  rpc::RawServerReaderWriter staged_server_stream_;
+  Function<void(ConstByteSpan)> staged_server_on_next_;
 
   span<ClientContext> client_transfers_;
   span<ServerContext> server_transfers_;
