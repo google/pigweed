@@ -47,12 +47,12 @@ thread::Options& TransferThreadOptions() {
 class TransferThreadTest : public ::testing::Test {
  public:
   TransferThreadTest()
-      : ctx_(transfer_thread_, 512),
-        max_parameters_(chunk_buffer_.size(),
+      : max_parameters_(chunk_buffer_.size(),
                         chunk_buffer_.size(),
                         cfg::kDefaultExtendWindowDivisor),
         transfer_thread_(chunk_buffer_, encode_buffer_),
-        system_thread_(TransferThreadOptions(), transfer_thread_) {}
+        system_thread_(TransferThreadOptions(), transfer_thread_),
+        ctx_(transfer_thread_, 512) {}
 
   ~TransferThreadTest() override {
     transfer_thread_.Terminate();
@@ -60,8 +60,6 @@ class TransferThreadTest : public ::testing::Test {
   }
 
  protected:
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
-
   std::array<std::byte, 64> chunk_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 
@@ -69,8 +67,8 @@ class TransferThreadTest : public ::testing::Test {
   internal::TransferParameters max_parameters_;
 
   transfer::Thread<1, 1> transfer_thread_;
-
   thread::Thread system_thread_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
 };
 
 class SimpleReadTransfer final : public ReadOnlyHandler {
