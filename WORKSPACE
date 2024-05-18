@@ -176,9 +176,9 @@ install_deps()
 git_repository(
     name = "fuchsia_infra",
     # ROLL: Warning: this entry is automatically updated.
-    # ROLL: Last updated 2024-05-14.
-    # ROLL: By https://cr-buildbucket.appspot.com/build/8747923693009132785.
-    commit = "315942c08df42b39f552b946b53d89f30081579c",
+    # ROLL: Last updated 2024-05-18.
+    # ROLL: By https://cr-buildbucket.appspot.com/build/8747564615453324865.
+    commit = "52383ad4d22365cc54b29aab98da9c44441049a0",
     remote = "https://fuchsia.googlesource.com/fuchsia-infra-bazel-rules",
 )
 
