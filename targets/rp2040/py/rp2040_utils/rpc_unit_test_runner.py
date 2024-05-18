@@ -26,12 +26,9 @@ import serial  # type: ignore
 import pw_cli.log
 from pw_hdlc import rpc
 from pw_log.proto import log_pb2
+from pw_rpc.callback_client.errors import RpcTimeout
 from pw_system import device
 from pw_tokenizer import detokenize
-from pw_unit_test.serial_test_runner import (
-    DeviceNotFound,
-    TestingFailure,
-)
 from pw_unit_test_proto import unit_test_pb2
 from rp2040_utils import device_detector
 from rp2040_utils.device_detector import BoardInfo
@@ -41,7 +38,7 @@ _LOG = logging.getLogger("unit_test_runner")
 
 
 def parse_args():
-    """Parses command-line arguments."""
+    """Parse and return command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -88,15 +85,21 @@ def parse_args():
 
 
 class PiPicoRpcTestingDevice:
-    """A RPC test runner implementation for the Pi Pico."""
+    """An RPC test runner implementation for the Pi Pico."""
 
     def __init__(self, board_info: BoardInfo, baud_rate=115200):
         self._board_info = board_info
         self._baud_rate = baud_rate
 
     @staticmethod
-    def _find_elf(binary: Path) -> Path:
-        """Attempts to find and ELF file given the provided binary."""
+    def _find_elf(binary: Path) -> Path | None:
+        """Attempt to find and return the path to an ELF file for a binary.
+
+        Args:
+          binary: A relative path to a binary.
+
+        Returns the path to the associated ELF file, or None if none was found.
+        """
         if binary.suffix == '.elf' or not binary.suffix:
             return binary
         choices = (
@@ -108,29 +111,44 @@ class PiPicoRpcTestingDevice:
             if choice.exists():
                 return choice
 
-        raise TestingFailure('Cannot find ELF file to use as a token database')
+        _LOG.error(
+            'Cannot find ELF file to use as a token database for binary: %s',
+            binary,
+        )
+        return None
 
     def run_device_test(self, binary: Path, timeout: float) -> bool:
-        """Runs an RPC unit test on this device."""
-        self.load_binary(binary)
+        """Run an RPC unit test on this device.
+
+        Returns whether it succeeded.
+        """
+        if not self.load_binary(binary):
+            return False
         serial_device = serial.Serial(
             self.serial_port(), self.baud_rate(), timeout=0.1
         )
         reader = rpc.SerialReader(serial_device, 8192)
+        elf_path = self._find_elf(binary)
+        if not elf_path:
+            return False
         with device.Device(
             channel_id=rpc.DEFAULT_CHANNEL_ID,
             reader=reader,
             write=serial_device.write,
             proto_library=[log_pb2, unit_test_pb2],
-            detokenizer=detokenize.Detokenizer(self._find_elf(binary)),
+            detokenizer=detokenize.Detokenizer(elf_path),
         ) as dev:
-            test_results = dev.run_tests(timeout)
+            try:
+                test_results = dev.run_tests(timeout)
+            except RpcTimeout:
+                _LOG.error('Test timed out after %s seconds.', timeout)
+                return False
             if not test_results.all_tests_passed():
-                raise TestingFailure('One or more tests failed')
+                return False
         return True
 
-    def load_binary(self, binary: Path) -> None:
-        """Flashes a binary to this device."""
+    def load_binary(self, binary: Path) -> bool:
+        """Flash a binary to this device, returning success or failure."""
         cmd = (
             'picotool',
             'load',
@@ -147,21 +165,21 @@ class PiPicoRpcTestingDevice:
         )
         if process.returncode:
             err = (
-                'Command failed: ' + ' '.join(cmd),
+                'Flashing command failed: ' + ' '.join(cmd),
                 str(self._board_info),
                 process.stdout.decode('utf-8', errors='replace'),
             )
-            raise TestingFailure('\n\n'.join(err))
+            _LOG.error('\n\n'.join(err))
+            return False
         # Wait for serial port to enumerate. This will retry forever.
         while True:
             try:
                 serial.Serial(
                     baudrate=self.baud_rate(), port=self.serial_port()
                 )
+                return True
             except serial.serialutil.SerialException:
                 time.sleep(0.001)
-            else:
-                break
 
     def serial_port(self) -> str:
         return self._board_info.serial_port
@@ -178,7 +196,7 @@ def run_device_test(
     usb_bus: int,
     usb_port: int,
 ) -> bool:
-    """Flashes, runs, and checks an on-device test binary.
+    """Flash, run, and check an on-device test binary.
 
     Returns true on test pass.
     """
@@ -188,20 +206,25 @@ def run_device_test(
     )
 
 
-def detect_and_run_test(binary: Path, test_timeout: float, baud_rate: int):
+def detect_and_run_test(
+    binary: Path, test_timeout: float, baud_rate: int
+) -> bool:
+    """Detect a dev board and run a test binary on it.
+
+    Returns whether or not the test completed successfully.
+    """
     _LOG.debug('Attempting to automatically detect dev board')
     boards = device_detector.detect_boards()
     if not boards:
-        error = 'Could not find an attached device'
-        _LOG.error(error)
-        raise DeviceNotFound(error)
+        _LOG.error('Could not find an attached device')
+        return False
     return PiPicoRpcTestingDevice(boards[0], baud_rate).run_device_test(
         binary, test_timeout
     )
 
 
 def main():
-    """Set up runner, and then flash/run device test."""
+    """Set up runner and then flash/run device test."""
     args = parse_args()
     log_level = logging.DEBUG if args.verbose else logging.INFO
     pw_cli.log.install(level=log_level)
@@ -220,8 +243,7 @@ def main():
             args.usb_bus,
             args.usb_port,
         )
-
-        sys.exit(0 if test_passed else 1)
+    sys.exit(0 if test_passed else 1)
 
 
 if __name__ == '__main__':
