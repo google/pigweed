@@ -31,6 +31,7 @@ if (dir_pw_third_party_chre == "") {
       "-Wno-cast-qual",
       "-Wno-int-in-bool-context",
       "-Wno-thread-safety-analysis",
+      "-Wno-vla",
     ]
     visibility = [ ":*" ]
   }
@@ -111,7 +112,6 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/core/event_loop_manager.cc",
       "$dir_pw_third_party_chre/core/event_ref_queue.cc",
       "$dir_pw_third_party_chre/core/host_comms_manager.cc",
-      "$dir_pw_third_party_chre/core/host_notifications.cc",
       "$dir_pw_third_party_chre/core/init.cc",
       "$dir_pw_third_party_chre/core/log.cc",
       "$dir_pw_third_party_chre/core/nanoapp.cc",
@@ -121,6 +121,7 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/util/buffer_base.cc",
       "$dir_pw_third_party_chre/util/dynamic_vector_base.cc",
       "$dir_pw_third_party_chre/util/system/debug_dump.cc",
+      "$dir_pw_third_party_chre/util/system/event_callbacks.cc",
     ]
 
     public_deps = [
@@ -164,7 +165,6 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/util/tests/conditional_lock_guard_test.cc",
       "$dir_pw_third_party_chre/util/tests/debug_dump_test.cc",
       "$dir_pw_third_party_chre/util/tests/lock_guard_test.cc",
-      "$dir_pw_third_party_chre/util/tests/memory_pool_test.cc",
       "$dir_pw_third_party_chre/util/tests/optional_test.cc",
       "$dir_pw_third_party_chre/util/tests/ref_base_test.cc",
       "$dir_pw_third_party_chre/util/tests/shared_ptr_test.cc",

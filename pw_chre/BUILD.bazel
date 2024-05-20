@@ -35,6 +35,7 @@ filegroup(
         "include/chre/target_platform/fatal_error.h",
         "include/chre/target_platform/host_link_base.h",
         "include/chre/target_platform/log.h",
+        "include/chre/target_platform/memory_impl.h",
         "include/chre/target_platform/mutex_base.h",
         "include/chre/target_platform/mutex_base_impl.h",
         "include/chre/target_platform/platform_nanoapp_base.h",

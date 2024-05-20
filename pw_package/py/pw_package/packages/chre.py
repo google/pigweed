@@ -28,7 +28,7 @@ class Chre(pw_package.git_repo.GitRepo):
             *args,
             name='chre',
             url='https://android.googlesource.com/platform/system/chre',
-            commit='d768690052557f0d486eea2f9fb2b26a91f59372',
+            commit='0cef15730b06ea2f67b87014c9e8da048fef1d80',
             **kwargs,
         )
 

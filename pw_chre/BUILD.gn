@@ -25,6 +25,7 @@ config("disable_warnings") {
     "-Wno-nested-anon-types",
     "-Wno-gnu-anonymous-struct",
     "-Wno-thread-safety-analysis",
+    "-Wno-vla",
   ]
   visibility = [ ":*" ]
 }
@@ -47,6 +48,7 @@ pw_source_set("chre_backend_headers") {
     "include/chre/target_platform/fatal_error.h",
     "include/chre/target_platform/host_link_base.h",
     "include/chre/target_platform/log.h",
+    "include/chre/target_platform/memory_impl.h",
     "include/chre/target_platform/mutex_base.h",
     "include/chre/target_platform/mutex_base_impl.h",
     "include/chre/target_platform/platform_nanoapp_base.h",

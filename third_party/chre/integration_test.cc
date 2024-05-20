@@ -59,6 +59,7 @@ void TestBase::TearDown() {
   chre::deinit();
   TestEventQueueSingleton::deinit();
   deleteNanoappInfos();
+  unregisterAllTestNanoapps();
 }
 
 template class Singleton<TestEventQueue>;
