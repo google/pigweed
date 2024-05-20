@@ -572,6 +572,10 @@ upstream GoogleTest backend (``pw_unit_test:googletest``) instead of
 
 Test declaration
 ================
+Note that ``TEST_F`` may allocate fixtures separately from the stack.
+Large variables should be stored in test fixture fields,
+rather than stack variables. This allows the test framework to statically ensure
+that enough space is available to store these variables.
 
 .. doxygendefine:: TEST
 .. doxygendefine:: GTEST_TEST

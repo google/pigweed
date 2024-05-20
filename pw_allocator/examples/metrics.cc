@@ -80,11 +80,15 @@ namespace pw::allocator {
 
 using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
 
+class MetricsExampleTest : public ::testing::Test {
+ protected:
+  AllocatorForTest allocator_;
+};
+
 // TODO: b/328076428 - Use pwrev/193642.
-TEST(MetricsExample, CollectCustomMetrics) {
-  AllocatorForTest allocator;
+TEST_F(MetricsExampleTest, CollectCustomMetrics) {
   // log_basic::test::LogCache<32> logs;
-  examples::CollectCustomMetrics(allocator);
+  examples::CollectCustomMetrics(allocator_);
 
   // std::array<std::atring_view, 1> kExpectedLines{
   //   "todo",
@@ -98,10 +102,9 @@ TEST(MetricsExample, CollectCustomMetrics) {
 }
 
 // TODO: b/328076428 - Use pwrev/193642.
-TEST(MetricsExample, CollectMultipleTrackers) {
-  AllocatorForTest allocator;
+TEST_F(MetricsExampleTest, CollectMultipleTrackers) {
   // log_basic::test::LogCache<32> logs;
-  examples::CollectMultipleTrackers(allocator);
+  examples::CollectMultipleTrackers(allocator_);
 
   // std::array<std::atring_view, 1> kExpectedLines{
   //   "todo",

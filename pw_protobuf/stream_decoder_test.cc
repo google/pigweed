@@ -48,7 +48,7 @@ class NonSeekableMemoryReader : public stream::NonSeekableReader {
 
 TEST(StreamDecoder, Decode) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // type=sint32, k=2, v=-13
@@ -134,7 +134,7 @@ TEST(StreamDecoder, Decode) {
 
 TEST(StreamDecoder, Decode_SkipsUnusedFields) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // type=sint32, k=2, v=-13
@@ -167,7 +167,7 @@ TEST(StreamDecoder, Decode_SkipsUnusedFields) {
 
 TEST(StreamDecoder, Decode_NonSeekable_SkipsUnusedFields) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // type=sint32, k=2, v=-13
@@ -202,7 +202,7 @@ TEST(StreamDecoder, Decode_NonSeekable_SkipsUnusedFields) {
 
 TEST(StreamDecoder, Decode_BadData) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // type=sint32, k=2, value... missing
@@ -228,7 +228,7 @@ TEST(StreamDecoder, Decode_BadData) {
 
 TEST(StreamDecoder, Decode_MissingDelimitedLength) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // Submessage (bytes) key=8, length=... missing
@@ -250,7 +250,7 @@ TEST(StreamDecoder, Decode_MissingDelimitedLength) {
 
 TEST(StreamDecoder, Decode_VarintTooBig) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=uint32, k=1, v=>uint32_t::max
     0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f,
     // type=int32, k=2, v=>int32_t::max
@@ -297,7 +297,7 @@ TEST(StreamDecoder, Decode_VarintTooBig) {
 
 TEST(Decoder, Decode_SkipsBadFieldNumbers) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
     // type=int32, k=19001, v=42 (invalid field number)
@@ -325,7 +325,7 @@ TEST(Decoder, Decode_SkipsBadFieldNumbers) {
 
 TEST(StreamDecoder, Decode_Nested) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
 
@@ -382,7 +382,7 @@ TEST(StreamDecoder, Decode_Nested) {
 
 TEST(StreamDecoder, Decode_Nested_SeeksToNextFieldOnDestruction) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
 
@@ -423,7 +423,7 @@ TEST(StreamDecoder, Decode_Nested_SeeksToNextFieldOnDestruction) {
 TEST(StreamDecoder,
      Decode_Nested_NonSeekable_AdvancesToNextFieldOnDestruction) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
 
@@ -465,7 +465,7 @@ TEST(StreamDecoder,
 
 TEST(StreamDecoder, Decode_Nested_LastField) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=int32, k=1, v=42
     0x08, 0x2a,
 
@@ -499,7 +499,7 @@ TEST(StreamDecoder, Decode_Nested_LastField) {
 
 TEST(StreamDecoder, Decode_Nested_MultiLevel) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=4
     0x0a, 0x04,
 
@@ -544,7 +544,7 @@ TEST(StreamDecoder, Decode_Nested_MultiLevel) {
 
 TEST(StreamDecoder, Decode_Nested_InvalidField) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=4
     0x0a, 0x04,
 
@@ -566,7 +566,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidField) {
 
 TEST(StreamDecoder, Decode_Nested_InvalidFieldKey) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x02,
     // type=invalid...
@@ -596,7 +596,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidFieldKey) {
 
 TEST(StreamDecoder, Decode_Nested_MissingDelimitedLength) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=1
     0x0a, 0x01,
     // Delimited field (bytes) key=1, length=missing...
@@ -626,7 +626,7 @@ TEST(StreamDecoder, Decode_Nested_MissingDelimitedLength) {
 
 TEST(StreamDecoder, Decode_Nested_InvalidDelimitedLength) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x02,
     // Delimited field (bytes) key=1, length=invalid...
@@ -656,7 +656,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidDelimitedLength) {
 
 TEST(StreamDecoder, Decode_Nested_InvalidVarint) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x02,
     // type=uint32 key=1, value=invalid...
@@ -690,7 +690,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidVarint) {
 
 TEST(StreamDecoder, Decode_Nested_SkipInvalidVarint) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x02,
     // type=uint32 key=1, value=invalid...
@@ -724,7 +724,7 @@ TEST(StreamDecoder, Decode_Nested_SkipInvalidVarint) {
 
 TEST(StreamDecoder, Decode_Nested_TruncatedFixed) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x03,
     // type=fixed32 key=1, value=truncated...
@@ -758,7 +758,7 @@ TEST(StreamDecoder, Decode_Nested_TruncatedFixed) {
 
 TEST(StreamDecoder, Decode_Nested_SkipTruncatedFixed) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // Submessage key=1, length=2
     0x0a, 0x03,
     // type=fixed32 key=1, value=truncated...
@@ -1394,7 +1394,7 @@ TEST(StreamDecoder, PackedZigZag) {
 
 TEST(StreamDecoder, PackedZigZagVector) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=sint32[], k=1, v={-100, -25, -1, 0, 1, 25, 100}
     0x0a, 0x09,
     0xc7, 0x01,
@@ -1428,7 +1428,7 @@ TEST(StreamDecoder, PackedZigZagVector) {
 
 TEST(StreamDecoder, PackedFixed) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=fixed32[], k=1, v={0, 50, 100, 150, 200}
     0x0a, 0x14,
     0x00, 0x00, 0x00, 0x00,
@@ -1528,7 +1528,7 @@ TEST(StreamDecoder, PackedFixed) {
 
 TEST(StreamDecoder, PackedFixedInsufficientSpace) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=fixed32[], k=1, v={0, 50, 100, 150, 200}
     0x0a, 0x14,
     0x00, 0x00, 0x00, 0x00,
@@ -1551,7 +1551,7 @@ TEST(StreamDecoder, PackedFixedInsufficientSpace) {
 
 TEST(StreamDecoder, PackedFixedVector) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=sfixed32[], k=1, v={0, -50, 100, -150, 200}
     0x0a, 0x14,
     0x00, 0x00, 0x00, 0x00,
@@ -1583,7 +1583,7 @@ TEST(StreamDecoder, PackedFixedVector) {
 
 TEST(StreamDecoder, PackedFixedVectorFull) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     // type=sfixed32[], k=1, v={0, -50, 100, -150, 200}
     0x0a, 0x14,
     0x00, 0x00, 0x00, 0x00,
@@ -1608,7 +1608,7 @@ TEST(StreamDecoder, PackedFixedVectorFull) {
 // See b/314803709.
 TEST(StreamDecoder, NestedIncompleteVarint) {
   // clang-format off
-  constexpr uint8_t encoded_proto[] = {
+  static constexpr const uint8_t encoded_proto[] = {
     0x4a, 0x02, 0x20, 0xff,
   };
   // clang-format on
