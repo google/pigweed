@@ -43,7 +43,6 @@ cc_library {
     srcs: [
         "allocator.cc",
         "allocator_as_pool.cc",
-        "buffer.cc",
         "block.cc",
         "chunk_pool.cc",
         "deallocator.cc",
