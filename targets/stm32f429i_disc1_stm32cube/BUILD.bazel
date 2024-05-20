@@ -94,6 +94,20 @@ cc_library(
     alwayslink = 1,
 )
 
+cc_library(
+    name = "extra_platform_libs",
+    deps = [
+        # The linker script for pw_boot_cortex_m.
+        ":linker_script",
+        # The initialization code.
+        ":pre_init",
+        # The linker script for pw_tokenizer.
+        "//pw_tokenizer:linker_script",
+        # Arm GCC support libraries.
+        "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+    ],
+)
+
 pw_linker_script(
     name = "linker_script",
     defines = [

@@ -53,6 +53,38 @@ cc_library(
 )
 
 cc_library(
+    name = "pw_system",
+    deps = [
+        ":init",
+        ":io",
+        ":extra_platform_libs",
+        ":target_hooks",
+        ":work_queue",
+        # pw_system has (transitive) dependencies on pw_assert and pw_log. So,
+        # we add deps on the backend_impl here, saving the user from having to
+        # add them manually to their cc_binary target.
+        #
+        # When implementing a backend for pw_assert or pw_log, *do not* depend
+        # on @pigweed//pw_system:pw_system. Instead, depend on the appropriate
+        # component library. See :log_backend, below, for an examples.
+        "//pw_assert:backend_impl",
+        "//pw_log:backend_impl",
+    ],
+)
+
+# Any platform-specific pw_system components. At the very least, this should
+# include platform-specific initialization code. It may also include linker
+# scripts.
+#
+# TODO: https://github.com/bazelbuild/bazel/issues/22457 - Recommend using
+# @bazel_tool//tools/cpp:link_extra_libs instead, once they're not propagated
+# to the exec configuration.
+label_flag(
+    name = "extra_platform_libs",
+    build_setting_default = "//targets/host_device_simulator:boot",
+)
+
+cc_library(
     name = "log",
     srcs = [
         "log.cc",
@@ -379,18 +411,7 @@ pw_cc_binary(
     testonly = True,
     srcs = ["example_user_app_init.cc"],
     deps = [
-        ":init",
-        ":io",
-        ":target_hooks",
-        "//pw_stream",
-        "//pw_stream:sys_io_stream",
+        ":pw_system",
         "//pw_unit_test:rpc_service",
-    ] + select({
-        "//pw_build/constraints/rtos:freertos": [
-            "//pw_tokenizer:linker_script",
-            "//targets/stm32f429i_disc1_stm32cube:linker_script",
-            "//targets/stm32f429i_disc1_stm32cube:pre_init",
-        ],
-        "//conditions:default": ["//targets/host_device_simulator:boot"],
-    }),
+    ],
 )

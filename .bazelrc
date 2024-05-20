@@ -112,6 +112,8 @@ build:stm32f429i --@stm32f4xx_hal_driver//:hal_config=//targets/stm32f429i_disc1
 build:stm32f429i --//pw_log:backend=@pigweed//pw_log_tokenized
 build:stm32f429i --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
 build:stm32f429i --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
+build:stm32f429i --//pw_system:extra_platform_libs=@pigweed//targets/stm32f429i_disc1_stm32cube:extra_platform_libs
+
 
 # Config for the lm3s6965evb platform, used to build pw_rust/examples.
 #
