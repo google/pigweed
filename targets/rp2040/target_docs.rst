@@ -1,8 +1,8 @@
 .. _target-raspberry-pi-pico:
 
-================================
-Raspberry Pi Pico with pw_system
-================================
+=================
+Raspberry Pi Pico
+=================
 .. warning::
 
    This target is in an early state and is under active development. Usability
@@ -11,35 +11,35 @@ Raspberry Pi Pico with pw_system
 
 This target configuration uses :ref:`pw_system<module-pw_system>` on top of
 FreeRTOS and the `Raspberry Pi Pico SDK
-<https://github.com/raspberrypi/pico-sdk>`_ HAL rather than a from-the-ground-up
-baremetal approach.
+<https://github.com/raspberrypi/pico-sdk>`_ HAL rather than a baremetal
+approach.
 
------
-Setup
------
+----------------
+First-time setup
+----------------
 To use this target, Pigweed must be set up to use FreeRTOS and the Pico SDK
 HAL. The supported repositories can be downloaded via ``pw package``, and then
 the build must be manually configured to point to the locations the repositories
 were downloaded to.
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw package install freertos
-   pw package install pico_sdk
+   $ pw package install freertos
+   $ pw package install pico_sdk
 
-   gn gen out --export-compile-commands --args="
-     dir_pw_third_party_freertos=\"//environment/packages/freertos\"
-     PICO_SRC_DIR=\"//environment/packages/pico_sdk\"
-   "
+   $ gn gen out --export-compile-commands --args="
+       dir_pw_third_party_freertos=\"//environment/packages/freertos\"
+       PICO_SRC_DIR=\"//environment/packages/pico_sdk\"
+     "
 
 .. tip::
 
    Instead of the ``gn gen out`` with args set on the command line above you can
    run:
 
-   .. code-block:: sh
+   .. code-block:: console
 
-      gn args out
+      $ gn args out
 
    Then add the following lines to that text file:
 
@@ -48,8 +48,10 @@ were downloaded to.
       dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
       PICO_SRC_DIR = getenv("PW_PACKAGE_ROOT") + "/pico_sdk"
 
-Linux
-=====
+.. _target-raspberry-pi-pico-first_time_setup-setting_up_linux_udev_rules:
+
+Setting up udev rules
+=====================
 On linux, you may need to update your udev rules at
 ``/etc/udev/rules.d/49-pico.rules`` to include the following:
 
@@ -71,25 +73,122 @@ On linux, you may need to update your udev rules at
 --------
 Building
 --------
-The Pi Pico is configured to output logs and test results over USB serial at a
-baud rate of 115200.
-
-Once the pico SDK is configured, the Pi Pico will build as part of the default
+Once the Pico SDK is configured, the Pi Pico will build as part of the default
 GN build:
 
-.. code-block:: sh
+.. code-block:: console
 
-   ninja -C out
+   $ ninja -C out
+
+The pw_system example is available as a separate build target:
+
+.. code-block:: console
+
+   $ ninja -C out pw_system_demo
 
 --------
 Flashing
 --------
-Flashing the Pi Pico is two easy steps:
+Using the mass-storage booloader
+================================
+Hold down the BOOTSEL button when plugging in the pico and it will appear as a
+mass storage device. Copy the UF2 firmware image (for example,
+``out/rp2040.size_optimized/obj/pw_system/system_example.uf2``) to
+your Pico when it is in USB bootloader mode.
 
-#. While holding the button on the Pi Pico, connect the Pico to your computer
-   via the micro USB port.
-#. Copy the desired UF2 firmware image to the RPI-RP2 volume that enumerated
-   when you connected the Pico.
+.. tip::
+
+   This is the simplest solution if you are fine with physically interacting
+   with your Pico whenever you want to flash a new firmware image.
+
+.. _target-raspberry-pi-pico-flashing-using_openocd:
+
+Using OpenOCD
+=============
+To flash using OpenOCD, you'll either need a
+`Pico debug probe <https://www.raspberrypi.com/products/debug-probe/>`_ or a
+second Raspberry Pi Pico to use as a debug probe. Also, on Linux you'll need to
+follow the instructions for
+:ref:`target-raspberry-pi-pico-first_time_setup-setting_up_linux_udev_rules`\.
+
+First-time setup
+----------------
+First, flash your first Pi Pico with ``debugprobe_on_pico.uf2`` from `the
+latest release of debugprobe <https://github.com/raspberrypi/debugprobe/releases/latest>`_.
+
+Next, connect the two Pico boards as follows:
+
+- Pico probe GND -> target Pico GND
+- Pico probe GP2 -> target Pico SWCLK
+- Pico probe GP3 -> target Pico SWDIO
+
+If you do not jump VSYS -> VSYS, you'll need to connect both Pi Pico boards
+to USB ports so that they have power.
+
+For more detailed instructions on how how to connect two Pico boards, see
+``Appendix A: Using Picoprobe`` of the `Getting started with Raspberry Pi Pico
+<https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf>`_
+guide.
+
+Flashing a new firmware
+-----------------------
+Once your Pico is all wired up, you'll be able to flash it using OpenOCD:
+
+.. code-block:: console
+
+   $ openocd -f interface/cmsis-dap.cfg \
+         -f target/rp2040.cfg -c "adapter speed 5000" \
+         -c "program out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf verify reset exit"
+
+Typical output:
+
+.. code-block:: none
+
+   xPack Open On-Chip Debugger 0.12.0+dev-01312-g18281b0c4-dirty (2023-09-05-01:33)
+   Licensed under GNU GPL v2
+   For bug reports, read
+      http://openocd.org/doc/doxygen/bugs.html
+   Info : Hardware thread awareness created
+   Info : Hardware thread awareness created
+   adapter speed: 5000 kHz
+   Info : Using CMSIS-DAPv2 interface with VID:PID=0x2e8a:0x000c, serial=415032383337300B
+   Info : CMSIS-DAP: SWD supported
+   Info : CMSIS-DAP: Atomic commands supported
+   Info : CMSIS-DAP: Test domain timer supported
+   Info : CMSIS-DAP: FW Version = 2.0.0
+   Info : CMSIS-DAP: Interface Initialised (SWD)
+   Info : SWCLK/TCK = 0 SWDIO/TMS = 0 TDI = 0 TDO = 0 nTRST = 0 nRESET = 0
+   Info : CMSIS-DAP: Interface ready
+   Info : clock speed 5000 kHz
+   Info : SWD DPIDR 0x0bc12477, DLPIDR 0x00000001
+   Info : SWD DPIDR 0x0bc12477, DLPIDR 0x10000001
+   Info : [rp2040.core0] Cortex-M0+ r0p1 processor detected
+   Info : [rp2040.core0] target has 4 breakpoints, 2 watchpoints
+   Info : [rp2040.core1] Cortex-M0+ r0p1 processor detected
+   Info : [rp2040.core1] target has 4 breakpoints, 2 watchpoints
+   Info : starting gdb server for rp2040.core0 on 3333
+   Info : Listening on port 3333 for gdb connections
+   Warn : [rp2040.core1] target was in unknown state when halt was requested
+   [rp2040.core0] halted due to debug-request, current mode: Thread
+   xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
+   [rp2040.core1] halted due to debug-request, current mode: Thread
+   xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
+   ** Programming Started **
+   Info : Found flash device 'win w25q16jv' (ID 0x001540ef)
+   Info : RP2040 B0 Flash Probe: 2097152 bytes @0x10000000, in 32 sectors
+
+   Info : Padding image section 1 at 0x10022918 with 232 bytes (bank write end alignment)
+   Warn : Adding extra erase range, 0x10022a00 .. 0x1002ffff
+   ** Programming Finished **
+   ** Verify Started **
+   ** Verified OK **
+   ** Resetting Target **
+   shutdown command invoked
+
+.. tip::
+
+   This is the most robust flashing solution if you don't want to physically
+   interact with the attached devices every time you want to flash a Pico.
 
 ------------------
 Running unit tests
@@ -107,7 +206,7 @@ attached Pi Pico running an application with USB serial enabled, then using
 it for testing. To override this behavior, provide a custom server configuration
 file with ``--server-config``.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ python -m rp2040_utils.unit_test_server
 
@@ -127,7 +226,7 @@ By default, this hardware target has incremental testing disabled. Enabling the
 ``pw_targets_ENABLE_RP2040_TEST_RUNNER`` build arg tells GN to send requests to
 a running ``rp2040_utils.unit_test_server``.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn args out
    # Modify and save the args file to use pw_target_runner.
@@ -140,115 +239,18 @@ since the last build will be rebuilt and then run on the attached device.
 Alternatively, you may use ``pw watch`` to set up Pigweed to trigger
 builds/tests whenever changes to source files are detected.
 
------------------------------------------
-Building and running the demo application
------------------------------------------
-This target has an associated demo application that can be built and then
-flashed to a device with the following commands:
-
-Build
-=====
-.. code-block:: sh
-
-   ninja -C out pw_system_demo
-
-Flash
-=====
-- Using a uf2 file:
-
-  Copy to ``out/rp2040.size_optimized/obj/pw_system/system_example.uf2``
-  your Pico when it is in USB bootloader mode. Hold down the BOOTSEL button when
-  plugging in the pico and it will appear as a mass storage device.
-
-- Using a Pico Probe and openocd:
-
-  First, flash your first Pi Pico with ``debugprobe_on_pico.uf2`` from `the
-  latest release of debugprobe <https://github.com/raspberrypi/debugprobe/releases/latest>`_.
-
-  Next, connect the two Pico boards as follows:
-
-  - Pico probe GND -> target Pico GND
-  - Pico probe GP2 -> target Pico SWCLK
-  - Pico probe GP3 -> target Pico SWDIO
-
-  If you do not jump VSYS -> VSYS, you'll need to connect both Pi Pico boards
-  to USB ports so that they have power.
-
-  For more detailed instructions on how how to connect two Pico boards, see
-  ``Appendix A: Using Picoprobe`` of the `Getting started with Raspberry Pi Pico
-  <https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf>`_
-  guide.
-
-  **Setup udev rules (Linux only):**
-
-  .. code-block:: sh
-
-     cat <<EOF > 49-picoprobe.rules
-     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000[43a]", MODE:="0666"
-     KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000[43a]", MODE:="0666"
-     EOF
-     sudo cp 49-picoprobe.rules /usr/lib/udev/rules.d/49-picoprobe.rules
-     sudo udevadm control --reload-rules
-
-  **Flash the Pico:**
-
-  .. code-block:: console
-
-     $ openocd -f interface/cmsis-dap.cfg \
-           -f target/rp2040.cfg -c "adapter speed 5000" \
-           -c "program out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf verify reset exit"
-     xPack Open On-Chip Debugger 0.12.0+dev-01312-g18281b0c4-dirty (2023-09-05-01:33)
-     Licensed under GNU GPL v2
-     For bug reports, read
-        http://openocd.org/doc/doxygen/bugs.html
-     Info : Hardware thread awareness created
-     Info : Hardware thread awareness created
-     adapter speed: 5000 kHz
-     Info : Using CMSIS-DAPv2 interface with VID:PID=0x2e8a:0x000c, serial=415032383337300B
-     Info : CMSIS-DAP: SWD supported
-     Info : CMSIS-DAP: Atomic commands supported
-     Info : CMSIS-DAP: Test domain timer supported
-     Info : CMSIS-DAP: FW Version = 2.0.0
-     Info : CMSIS-DAP: Interface Initialised (SWD)
-     Info : SWCLK/TCK = 0 SWDIO/TMS = 0 TDI = 0 TDO = 0 nTRST = 0 nRESET = 0
-     Info : CMSIS-DAP: Interface ready
-     Info : clock speed 5000 kHz
-     Info : SWD DPIDR 0x0bc12477, DLPIDR 0x00000001
-     Info : SWD DPIDR 0x0bc12477, DLPIDR 0x10000001
-     Info : [rp2040.core0] Cortex-M0+ r0p1 processor detected
-     Info : [rp2040.core0] target has 4 breakpoints, 2 watchpoints
-     Info : [rp2040.core1] Cortex-M0+ r0p1 processor detected
-     Info : [rp2040.core1] target has 4 breakpoints, 2 watchpoints
-     Info : starting gdb server for rp2040.core0 on 3333
-     Info : Listening on port 3333 for gdb connections
-     Warn : [rp2040.core1] target was in unknown state when halt was requested
-     [rp2040.core0] halted due to debug-request, current mode: Thread
-     xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
-     [rp2040.core1] halted due to debug-request, current mode: Thread
-     xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
-     ** Programming Started **
-     Info : Found flash device 'win w25q16jv' (ID 0x001540ef)
-     Info : RP2040 B0 Flash Probe: 2097152 bytes @0x10000000, in 32 sectors
-
-     Info : Padding image section 1 at 0x10022918 with 232 bytes (bank write end alignment)
-     Warn : Adding extra erase range, 0x10022a00 .. 0x1002ffff
-     ** Programming Finished **
-     ** Verify Started **
-     ** Verified OK **
-     ** Resetting Target **
-     shutdown command invoked
-
+-----------------------
 Connect with pw_console
-=======================
+-----------------------
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw-system-console -d /dev/{ttyX} -b 115200 \
-     --proto-globs pw_rpc/echo.proto \
-     --token-databases \
-       out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf
+   $ pw-system-console -d /dev/{ttyX} -b 115200 \
+       --proto-globs pw_rpc/echo.proto \
+       --token-databases \
+         out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf
 
 Replace ``{ttyX}`` with the appropriate device on your machine. On Linux this
 may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.
@@ -292,3 +294,38 @@ You are now up and running!
    The :ref:`module-pw_console`
    :bdg-ref-primary-line:`module-pw_console-user_guide` for more info on using
    the the pw_console UI.
+
+---------------------
+Interactive debugging
+---------------------
+To interactively debug a Pico, first ensure you are set up for
+:ref:`target-raspberry-pi-pico-flashing-using_openocd`\.
+
+In one terminal window, start an OpenOCD GDB server with the following command:
+
+.. code-block:: console
+
+   $ openocd -f interface/cmsis-dap.cfg \
+         -f target/rp2040.cfg -c "adapter speed 5000"
+
+In a second terminal window, connect to the open GDB server, passing the binary
+you will be debugging:
+
+.. code-block:: console
+
+   $ arm-none-eabi-gdb -ex "target remote :3333" \
+     out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf
+
+Helpful GDB commands
+====================
++---------------------------------------------------------+--------------------+
+| Action                                                  | shortcut / command |
++=========================================================+====================+
+| Reset the running device, stopping immediately          | ``mon reset halt`` |
++---------------------------------------------------------+--------------------+
+| Continue execution until pause or breakpoint            |              ``c`` |
++---------------------------------------------------------+--------------------+
+| Pause execution                                         |         ``ctrl+c`` |
++---------------------------------------------------------+--------------------+
+| Show backtrace                                          |             ``bt`` |
++---------------------------------------------------------+--------------------+
