@@ -162,29 +162,22 @@ Flash
 
 - Using a Pico Probe and openocd:
 
-  This requires installing the Raspberry Pi foundation's OpenOCD fork for the
-  Pico probe. More details including how to connect the two Pico boards is
-  available in ``Appendix A: Using Picoprobe`` of the `Getting started with
-  Raspberry Pi Pico
+  First, flash your first Pi Pico with ``debugprobe_on_pico.uf2`` from `the
+  latest release of debugprobe <https://github.com/raspberrypi/debugprobe/releases/latest>`_.
+
+  Next, connect the two Pico boards as follows:
+
+  - Pico probe GND -> target Pico GND
+  - Pico probe GP2 -> target Pico SWCLK
+  - Pico probe GP3 -> target Pico SWDIO
+
+  If you do not jump VSYS -> VSYS, you'll need to connect both Pi Pico boards
+  to USB ports so that they have power.
+
+  For more detailed instructions on how how to connect two Pico boards, see
+  ``Appendix A: Using Picoprobe`` of the `Getting started with Raspberry Pi Pico
   <https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf>`_
   guide.
-
-  **Install RaspberryPi's OpenOCD Fork:**
-
-  .. code-block:: sh
-
-     git clone https://github.com/raspberrypi/openocd.git \
-       --branch picoprobe \
-       --depth=1 \
-       --no-single-branch \
-       openocd-picoprobe
-
-     cd openocd-picoprobe
-
-     ./bootstrap
-     ./configure --enable-picoprobe --prefix=$HOME/apps/openocd --disable-werror
-     make -j2
-     make install
 
   **Setup udev rules (Linux only):**
 
@@ -199,9 +192,51 @@ Flash
 
   **Flash the Pico:**
 
-  .. code-block:: sh
+  .. code-block:: console
 
-     ~/apps/openocd/bin/openocd -f ~/apps/openocd/share/openocd/scripts/interface/picoprobe.cfg -f ~/apps/openocd/share/openocd/scripts/target/rp2040.cfg -c 'program out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf verify reset exit'
+     $ openocd -f interface/cmsis-dap.cfg \
+           -f target/rp2040.cfg -c "adapter speed 5000" \
+           -c "program out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf verify reset exit"
+     xPack Open On-Chip Debugger 0.12.0+dev-01312-g18281b0c4-dirty (2023-09-05-01:33)
+     Licensed under GNU GPL v2
+     For bug reports, read
+        http://openocd.org/doc/doxygen/bugs.html
+     Info : Hardware thread awareness created
+     Info : Hardware thread awareness created
+     adapter speed: 5000 kHz
+     Info : Using CMSIS-DAPv2 interface with VID:PID=0x2e8a:0x000c, serial=415032383337300B
+     Info : CMSIS-DAP: SWD supported
+     Info : CMSIS-DAP: Atomic commands supported
+     Info : CMSIS-DAP: Test domain timer supported
+     Info : CMSIS-DAP: FW Version = 2.0.0
+     Info : CMSIS-DAP: Interface Initialised (SWD)
+     Info : SWCLK/TCK = 0 SWDIO/TMS = 0 TDI = 0 TDO = 0 nTRST = 0 nRESET = 0
+     Info : CMSIS-DAP: Interface ready
+     Info : clock speed 5000 kHz
+     Info : SWD DPIDR 0x0bc12477, DLPIDR 0x00000001
+     Info : SWD DPIDR 0x0bc12477, DLPIDR 0x10000001
+     Info : [rp2040.core0] Cortex-M0+ r0p1 processor detected
+     Info : [rp2040.core0] target has 4 breakpoints, 2 watchpoints
+     Info : [rp2040.core1] Cortex-M0+ r0p1 processor detected
+     Info : [rp2040.core1] target has 4 breakpoints, 2 watchpoints
+     Info : starting gdb server for rp2040.core0 on 3333
+     Info : Listening on port 3333 for gdb connections
+     Warn : [rp2040.core1] target was in unknown state when halt was requested
+     [rp2040.core0] halted due to debug-request, current mode: Thread
+     xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
+     [rp2040.core1] halted due to debug-request, current mode: Thread
+     xPSR: 0xf1000000 pc: 0x000000ee msp: 0x20041f00
+     ** Programming Started **
+     Info : Found flash device 'win w25q16jv' (ID 0x001540ef)
+     Info : RP2040 B0 Flash Probe: 2097152 bytes @0x10000000, in 32 sectors
+
+     Info : Padding image section 1 at 0x10022918 with 232 bytes (bank write end alignment)
+     Warn : Adding extra erase range, 0x10022a00 .. 0x1002ffff
+     ** Programming Finished **
+     ** Verify Started **
+     ** Verified OK **
+     ** Resetting Target **
+     shutdown command invoked
 
 Connect with pw_console
 =======================
