@@ -40,6 +40,7 @@ pw_chrono_stl
 pw_chrono_threadx
 pw_chrono_zephyr
 pw_cli
+pw_clock_tree
 pw_compilation_testing
 pw_config_loader
 pw_console

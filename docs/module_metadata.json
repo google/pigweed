@@ -57,6 +57,13 @@
       "Python"
     ]
   },
+  "pw_clock_tree": {
+    "tagline": "Clock tree management for embedded devices",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_console": {
     "tagline": "Multi-purpose pluggable interactive console for dev & manufacturing",
     "status": "stable",

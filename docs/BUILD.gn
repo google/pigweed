@@ -193,6 +193,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_chre/public/pw_chre/host_link.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",
   "$dir_pw_chrono/public/pw_chrono/system_timer.h",
+  "$dir_pw_clock_tree/public/pw_clock_tree/clock_tree.h",
   "$dir_pw_containers/public/pw_containers/filtered_view.h",
   "$dir_pw_containers/public/pw_containers/inline_deque.h",
   "$dir_pw_containers/public/pw_containers/inline_queue.h",
