@@ -30,6 +30,10 @@
           "module": "pw_emu.__main__",
           "function": "main"
         },
+        "clang-tidy-fix": {
+          "module": "pw_toolchain.clang_apply_replacements",
+          "function": "main"
+        },
         "ffx": {
           "module": "pw_cli.pigweed_aliases",
           "function": "ffx"

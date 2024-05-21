@@ -185,9 +185,7 @@ def run_clang_tidy(
 
         if export_fixes:
             suggested_fix_command = (
-                '   clang-apply-replacements'
-                f' {export_fixes.parent}'
-                ' --ignore-insert-conflict --remove-change-desc-files'
+                '   pw clang-tidy-fix' f' {export_fixes.parent}'
             )
             _LOG.warning(
                 "To apply clang-tidy suggested fixes, run:\n\n%s\n",
