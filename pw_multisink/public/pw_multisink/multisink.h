@@ -170,7 +170,7 @@ class MultiSink {
     // be a crash.
     //
     // Return values:
-    // OK - the entry or entries were removed from the multisink succesfully.
+    // OK - the entry or entries were removed from the multisink successfully.
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     Status PopEntry(const PeekedEntry& entry)
         PW_LOCKS_EXCLUDED(multisink_->lock_);

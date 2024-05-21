@@ -244,7 +244,7 @@ class ReadTransfer extends Transfer<byte[]> {
         break;
 
       case EXTEND:
-        // Window was received succesfully without packet loss and should grow. Double
+        // Window was received successfully without packet loss and should grow. Double
         // the window
         // size during slow start, or increase it by a single chunk in congestion
         // avoidance.

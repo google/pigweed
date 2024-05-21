@@ -210,7 +210,7 @@ void Context::UpdateTransferParameters(TransmitAction action) {
         break;
 
       case TransmitAction::kExtend:
-        // Window was received succesfully without packet loss and should grow.
+        // Window was received successfully without packet loss and should grow.
         // Double the window size during slow start, or increase it by a single
         // chunk in congestion avoidance.
         if (transmit_phase_ == TransmitPhase::kCongestionAvoidance) {

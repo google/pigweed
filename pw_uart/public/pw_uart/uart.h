@@ -51,7 +51,7 @@ class Uart {
   ///
   /// .. pw-status-codes::
   ///
-  ///    OK: The UART module has been succesfully initialized.
+  ///    OK: The UART module has been successfully initialized.
   ///
   ///    INTERNAL: Internal errors within the hardware abstraction layer.
   ///
@@ -69,7 +69,7 @@ class Uart {
   ///
   /// .. pw-status-codes::
   ///
-  ///    OK: The UART module has been succesfully initialized.
+  ///    OK: The UART module has been successfully initialized.
   ///
   ///    INTERNAL: Internal errors  within the hardware abstraction layer.
   ///
@@ -86,7 +86,7 @@ class Uart {
   ///
   /// .. pw-status-codes::
   ///
-  ///    OK: The UART has been succesfully initialized.
+  ///    OK: The UART has been successfully initialized.
   ///
   ///    FAILED_PRECONDITION: The device is enabled and does not support
   ///    changing settings on the fly.

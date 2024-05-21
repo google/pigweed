@@ -879,7 +879,7 @@ class ReadTransfer(Transfer):
         self, chunk: Chunk, action: 'ReadTransfer._TransmitAction'
     ) -> None:
         if action is ReadTransfer._TransmitAction.EXTEND:
-            # Window was received succesfully without packet loss and should
+            # Window was received successfully without packet loss and should
             # grow. Double the window size during slow start, or increase it by
             # a single chunk in congestion avoidance.
             if self._transmit_phase == ReadTransfer._TransmitPhase.SLOW_START:
