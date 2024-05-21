@@ -110,21 +110,6 @@ class McuxpressoResponder : public Responder {
   };
   std::atomic<State> state_ = State::kIdle;
 
-  unsigned int state() const { return cpp23::to_underlying(state_.load()); }
-
-  static const char* StateToStr(State state) {
-    switch (state) {
-      case State::kIdle:
-        return "idle";
-      case State::kBusy:
-        return "busy";
-      default:
-        return "???";
-    }
-  }
-
-  const char* state_str() const { return StateToStr(state_.load()); }
-
   bool TryChangeState(State expected, State desired, State* old = nullptr) {
     if (state_.compare_exchange_strong(expected, desired)) {
       return true;

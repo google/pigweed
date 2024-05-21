@@ -341,10 +341,6 @@ void McuxpressoResponder::SdkCallback(SPI_Type* base,
 
 void McuxpressoResponder::DmaComplete(status_t sdk_status) {
   // WARNING: This is called in IRQ context.
-  PW_LOG_DEBUG("DmaComplete in state=%s with sdk_status=%" PRId32,
-               state_str(),
-               sdk_status);
-
   PW_CHECK(!config_.handle_cs,
            "DmaComplete should never be called when handle_cs=true!");
 
@@ -360,7 +356,6 @@ void McuxpressoResponder::DmaComplete(status_t sdk_status) {
   auto status = ToPwStatus(sdk_status);
   size_t bytes_transferred =
       status.ok() ? current_transaction_.rx_data.size() : 0;
-  PW_LOG_DEBUG("DmaComplete calling TransferComplete");
   TransferComplete(status, bytes_transferred);
 }
 
@@ -397,7 +392,6 @@ void McuxpressoResponder::FlexcommSpiIrqHandler(void* base, void* arg) {
 
 void McuxpressoResponder::CsAsserted() {
   // WARNING: This is called in IRQ context.
-  PW_LOG_DEBUG("CS asserted! state=%s", state_str());
 }
 
 Status McuxpressoResponder::WaitForQuiescenceAfterCsDeassertion() {
@@ -432,13 +426,11 @@ Status McuxpressoResponder::WaitForQuiescenceAfterCsDeassertion() {
   for (wait_count = 0; wait_count < kMaxWaitCount; ++wait_count) {
     if (!rx_dma_.IsActive()) {
       // The DMA has consumed as many bytes from the FIFO as it ever will.
-      PW_LOG_DEBUG("CsDeasserted: DMA done");
       break;
     }
 
     if (SPI_RxFifoIsEmpty(base_) && !rx_dma_.IsBusy()) {
       // The FIFO is empty, and the DMA channel has moved all data to SRAM.
-      PW_LOG_DEBUG("CsDeasserted: FIFO empty and DMA not busy");
       break;
     }
 
@@ -461,8 +453,6 @@ Status McuxpressoResponder::WaitForQuiescenceAfterCsDeassertion() {
 
 void McuxpressoResponder::CsDeasserted() {
   // WARNING: This is called in IRQ context.
-  PW_LOG_DEBUG("CS deasserted! state=%s", state_str());
-
   PW_CHECK(config_.handle_cs,
            "CsDeasserted should only be called when handle_cs=true!");
 
@@ -497,12 +487,6 @@ void McuxpressoResponder::CsDeasserted() {
     bytes_transferred = 0;
     xfer_status = ToPwStatus(sdk_status);
   }
-  PW_LOG_DEBUG(
-      "CsDeasserted calling TransferComplete(status=%s, bytes_transferred=%zd)"
-      " in state=%s",
-      xfer_status.str(),
-      bytes_transferred,
-      state_str());
   TransferComplete(xfer_status, bytes_transferred);
 }
 
@@ -552,8 +536,6 @@ Status McuxpressoResponder::DoWriteReadAsync(ConstByteSpan tx_data,
   current_transaction_ = {
       .rx_data = rx_data,
   };
-
-  PW_LOG_DEBUG("Starting a new transaction (%u bytes)", transfer.dataSize);
 
   if (config_.handle_cs) {
     // Complete the transfer when CS is deasserted.
