@@ -76,18 +76,18 @@ constexpr uint32_t kCfsrUndefinstrMask = (kCfsrUsageFaultStart << 0);
 constexpr uint32_t kCfsrInvstateMask = (kCfsrUsageFaultStart << 1);
 constexpr uint32_t kCfsrInvpcMask = (kCfsrUsageFaultStart << 2);
 constexpr uint32_t kCfsrNocpMask = (kCfsrUsageFaultStart << 3);
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
 constexpr uint32_t kCfsrStkofMask = (kCfsrUsageFaultStart << 4);
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
 constexpr uint32_t kCfsrUnalignedMask = (kCfsrUsageFaultStart << 8);
 constexpr uint32_t kCfsrDivbyzeroMask = (kCfsrUsageFaultStart << 9);
 // Mask for all supported usage error flags i.e. bits that indicate a specific
 // error.
 constexpr uint32_t kCfsrUsageAllErrorsMask =
     kCfsrUndefinstrMask | kCfsrInvstateMask | kCfsrInvpcMask | kCfsrNocpMask |
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
     kCfsrStkofMask |
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
     kCfsrUnalignedMask | kCfsrDivbyzeroMask;
 
 // Bit masks for an exception return value. (ARMv7-M Section B1.5.8)

@@ -44,9 +44,9 @@ bool FpuStateWasPushed(const pw_cpu_exception_State& cpu_state) {
 void CloneBaseRegistersFromPsp(pw_cpu_exception_State* cpu_state) {
   // If CPU succeeded in pushing context to PSP, copy it to the MSP.
   if (!(cpu_state->extended.cfsr & kCfsrStkerrMask) &&
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       !(cpu_state->extended.cfsr & kCfsrStkofMask) &&
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     // TODO(amontanez): {r0-r3,r12} are captured in pw_cpu_exception_Entry(),
     //                  so this only really needs to copy pc, lr, and psr. Could
@@ -76,9 +76,9 @@ void RestoreBaseRegistersToPsp(pw_cpu_exception_State* cpu_state) {
   // continue. Otherwise, don't attempt as we'll likely end up in an escalated
   // hard fault.
   if (!(cpu_state->extended.cfsr & kCfsrStkerrMask) &&
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       !(cpu_state->extended.cfsr & kCfsrStkofMask) &&
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     std::memcpy(reinterpret_cast<void*>(cpu_state->extended.psp),
                 &cpu_state->base,
@@ -110,9 +110,9 @@ uint32_t CalculatePspDelta(const pw_cpu_exception_State& cpu_state) {
   // need to be shifted.
   if (!ProcessStackActive(cpu_state) ||
       (cpu_state.extended.cfsr & kCfsrStkerrMask) ||
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       (cpu_state.extended.cfsr & kCfsrStkofMask) ||
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       (cpu_state.extended.cfsr & kCfsrMstkerrMask)) {
     return 0;
   }

@@ -42,10 +42,10 @@ Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
   state_encoder.WritePsp(extended.psp).IgnoreError();
   state_encoder.WriteExcReturn(extended.exc_return).IgnoreError();
   state_encoder.WriteCfsr(extended.cfsr).IgnoreError();
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   state_encoder.WriteMsplim(extended.msplim).IgnoreError();
   state_encoder.WritePsplim(extended.psplim).IgnoreError();
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   state_encoder.WriteMmfar(extended.mmfar).IgnoreError();
   state_encoder.WriteBfar(extended.bfar).IgnoreError();
   state_encoder.WriteIcsr(extended.icsr).IgnoreError();

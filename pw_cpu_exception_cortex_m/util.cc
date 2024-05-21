@@ -96,11 +96,11 @@ namespace {
   if (cfsr & kCfsrDivbyzeroMask) {
     PW_LOG_ERROR("  DIVBYZERO: Division by zero");
   }
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cfsr & kCfsrStkofMask) {
     PW_LOG_ERROR("  STKOF: Stack overflowed");
   }
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
 }
 
 }  // namespace
@@ -113,7 +113,7 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
   if (cpu_state.extended.hfsr & kHfsrForcedMask) {
     PW_LOG_CRITICAL("Encountered a nested CPU fault (See active CFSR fields)");
   }
-#if _PW_ARCH_ARM_V8M_MAINLINE
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {
     if (ProcessStackActive(cpu_state)) {
       PW_LOG_CRITICAL("Encountered process stack overflow (psp)");
@@ -121,7 +121,7 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
       PW_LOG_CRITICAL("Encountered main stack overflow (msp)");
     }
   }
-#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrMemFaultMask) {
     if (cpu_state.extended.cfsr & kCfsrMmarvalidMask) {
       PW_LOG_CRITICAL(
