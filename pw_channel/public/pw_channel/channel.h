@@ -481,12 +481,26 @@ using ByteChannel = Channel<DataType::kByte, kProperties...>;
 template <Property... kProperties>
 using DatagramChannel = Channel<DataType::kDatagram, kProperties...>;
 
+/// Unreliable byte-oriented `Channel` that supports reading.
+using ByteReader = ByteChannel<kReadable>;
+/// Unreliable byte-oriented `Channel` that supports writing.
+using ByteWriter = ByteChannel<kWritable>;
+/// Unreliable byte-oriented `Channel` that supports reading and writing.
+using ByteReaderWriter = ByteChannel<kReadable, kWritable>;
+
 /// Reliable byte-oriented `Channel` that supports reading.
-using ByteReader = ByteChannel<kReliable, kReadable>;
+using ReliableByteReader = ByteChannel<kReliable, kReadable>;
 /// Reliable byte-oriented `Channel` that supports writing.
-using ByteWriter = ByteChannel<kReliable, kWritable>;
+using ReliableByteWriter = ByteChannel<kReliable, kWritable>;
 /// Reliable byte-oriented `Channel` that supports reading and writing.
-using ByteReaderWriter = ByteChannel<kReliable, kReadable, kWritable>;
+using ReliableByteReaderWriter = ByteChannel<kReliable, kReadable, kWritable>;
+
+/// Unreliable datagram-oriented `Channel` that supports reading.
+using DatagramReader = DatagramChannel<kReadable>;
+/// Unreliable datagram-oriented `Channel` that supports writing.
+using DatagramWriter = DatagramChannel<kWritable>;
+/// Unreliable datagram-oriented `Channel` that supports reading and writing.
+using DatagramReaderWriter = DatagramChannel<kReadable, kWritable>;
 
 /// Reliable datagram-oriented `Channel` that supports reading.
 using ReliableDatagramReader = DatagramChannel<kReliable, kReadable>;
@@ -495,13 +509,6 @@ using ReliableDatagramWriter = DatagramChannel<kReliable, kWritable>;
 /// Reliable datagram-oriented `Channel` that supports reading and writing.
 using ReliableDatagramReaderWriter =
     DatagramChannel<kReliable, kReadable, kWritable>;
-
-/// Unreliable datagram-oriented `Channel` that supports reading.
-using DatagramReader = DatagramChannel<kReadable>;
-/// Unreliable datagram-oriented `Channel` that supports writing.
-using DatagramWriter = DatagramChannel<kWritable>;
-/// Unreliable datagram-oriented `Channel` that supports reading and writing.
-using DatagramReaderWriter = DatagramChannel<kReadable, kWritable>;
 
 /// @}
 

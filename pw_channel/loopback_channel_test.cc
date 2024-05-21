@@ -32,10 +32,10 @@ using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::operator"" _b;
-using ::pw::channel::ByteReader;
 using ::pw::channel::DatagramReader;
 using ::pw::channel::LoopbackByteChannel;
 using ::pw::channel::LoopbackDatagramChannel;
+using ::pw::channel::ReliableByteReader;
 using ::pw::multibuf::MultiBuf;
 using ::pw::multibuf::MultiBufAllocator;
 using ::pw::multibuf::SimpleAllocator;
@@ -134,7 +134,7 @@ TEST(LoopbackDatagramChannel, LoopsDatagrams) {
 TEST(LoopbackByteChannel, IgnoresEmptyWrites) {
   SimpleAllocatorForTest alloc;
   LoopbackByteChannel channel(*alloc);
-  ReaderTask<ByteReader> read_task(channel);
+  ReaderTask<ReliableByteReader> read_task(channel);
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);
@@ -154,7 +154,7 @@ TEST(LoopbackByteChannel, IgnoresEmptyWrites) {
 TEST(LoopbackByteChannel, LoopsData) {
   SimpleAllocatorForTest alloc;
   LoopbackByteChannel channel(*alloc);
-  ReaderTask<ByteReader> read_task(channel);
+  ReaderTask<ReliableByteReader> read_task(channel);
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);

@@ -74,7 +74,7 @@ class LoopbackChannel<DataType::kDatagram>
 };
 
 template <>
-class LoopbackChannel<DataType::kByte> : public ByteReaderWriter {
+class LoopbackChannel<DataType::kByte> : public ReliableByteReaderWriter {
  public:
   LoopbackChannel(multibuf::MultiBufAllocator& write_allocator)
       : write_allocator_(&write_allocator) {}

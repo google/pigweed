@@ -138,7 +138,7 @@ class ForwardingChannel<DataType::kDatagram>
 };
 
 template <>
-class ForwardingChannel<DataType::kByte> : public ByteReaderWriter {
+class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
  public:
   ForwardingChannel(const ForwardingChannel&) = delete;
   ForwardingChannel& operator=(const ForwardingChannel&) = delete;
