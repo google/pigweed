@@ -126,7 +126,7 @@ void LoggingEventHandler::TestCaseExpect(const TestCase& test_case,
   }
 
   const char* result = expectation.success ? "Success" : "Failure";
-  uint32_t level = expectation.success ? PW_LOG_LEVEL_INFO : PW_LOG_LEVEL_ERROR;
+  int32_t level = expectation.success ? PW_LOG_LEVEL_INFO : PW_LOG_LEVEL_ERROR;
   PW_LOG(level,
          PW_LOG_MODULE_NAME,
          PW_LOG_FLAGS,
