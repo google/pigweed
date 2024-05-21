@@ -97,7 +97,7 @@ def generate_server_config() -> IO[bytes]:
             '--usb-port',
             str(board.port),
             '--serial-port',
-            board.serial_port,
+            str(board.serial_port),
         ]
         config_file.write(
             generate_runner(_TEST_RUNNER_COMMAND, test_runner_args).encode(

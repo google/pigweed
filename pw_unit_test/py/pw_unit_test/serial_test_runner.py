@@ -56,12 +56,15 @@ class SerialTestingDevice(abc.ABC):
     """A device that supports automated testing via parsing serial output."""
 
     @abc.abstractmethod
-    def load_binary(self, binary: Path) -> None:
+    def load_binary(self, binary: Path) -> bool:
         """Flashes the specified binary to this device.
 
         Raises:
           DeviceNotFound: This device is no longer available.
           FlashingFailure: The binary could not be flashed.
+
+        Returns:
+          True if the binary was loaded successfully.
         """
 
     @abc.abstractmethod

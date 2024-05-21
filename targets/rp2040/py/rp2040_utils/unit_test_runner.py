@@ -28,7 +28,6 @@ from pw_unit_test import serial_test_runner
 from pw_unit_test.serial_test_runner import (
     SerialTestingDevice,
     DeviceNotFound,
-    TestingFailure,
 )
 from rp2040_utils import device_detector
 from rp2040_utils.device_detector import BoardInfo
@@ -91,7 +90,8 @@ class PiPicoTestingDevice(SerialTestingDevice):
         self._board_info = board_info
         self._baud_rate = baud_rate
 
-    def load_binary(self, binary: Path) -> None:
+    def load_binary(self, binary: Path) -> bool:
+        """Flash a binary to this device, returning success or failure."""
         cmd = (
             'picotool',
             'load',
@@ -103,28 +103,60 @@ class PiPicoTestingDevice(SerialTestingDevice):
             str(self._board_info.address()),
             '-F',
         )
+        _LOG.debug('Flashing ==> %s', ' '.join(cmd))
         process = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         if process.returncode:
             err = (
-                'Command failed: ' + ' '.join(cmd),
+                'Flashing command failed: ' + ' '.join(cmd),
                 str(self._board_info),
                 process.stdout.decode('utf-8', errors='replace'),
             )
-            raise TestingFailure('\n\n'.join(err))
+            _LOG.error('\n\n'.join(err))
+            return False
+
+        start_time = time.monotonic()
+        load_binary_timeout = 10.0
         # Wait for serial port to enumerate. This will retry forever.
-        while True:
-            try:
-                serial.Serial(
-                    baudrate=self.baud_rate(), port=self.serial_port()
-                )
-            except serial.serialutil.SerialException:
-                time.sleep(0.001)
-            else:
-                break
+        while time.monotonic() - start_time < load_binary_timeout:
+            # If the serial port path isn't known, watch for a newly
+            # enmerated path.
+            if not self.serial_port() or self.serial_port() == 'None':
+                # Wait a bit before checking for a new port.
+                time.sleep(0.3)
+                # Check for updated serial port path.
+                for device in device_detector.detect_boards():
+                    if (
+                        device.bus == self._board_info.bus
+                        and device.port == self._board_info.port
+                    ):
+                        self._board_info.serial_port = device.serial_port
+                        # Serial port found, break out of device for loop.
+                        break
+
+            # Serial port known try to connect to it.
+            if self.serial_port():
+                # Connect to the serial port.
+                try:
+                    serial.Serial(
+                        baudrate=self.baud_rate(), port=self.serial_port()
+                    )
+                    return True
+                except serial.serialutil.SerialException:
+                    # Unable to connect, try again.
+                    _LOG.debug('Unable to connect to %s', self.serial_port())
+                    time.sleep(0.1)
+
+        _LOG.error(
+            'Binary flashed but unable to connect to the serial port: %s',
+            self.serial_port(),
+        )
+        return False
 
     def serial_port(self) -> str:
+        if not self._board_info.serial_port:
+            return 'None'
         return self._board_info.serial_port
 
     def baud_rate(self) -> int:
@@ -149,7 +181,11 @@ def run_device_test(
 
     Returns true on test pass.
     """
-    board = BoardInfo(serial_port, usb_bus, usb_port)
+    board = BoardInfo(
+        bus=usb_bus,
+        port=usb_port,
+        serial_port=serial_port,
+    )
     return _run_test(
         PiPicoTestingDevice(board, baud_rate), binary, test_timeout
     )
