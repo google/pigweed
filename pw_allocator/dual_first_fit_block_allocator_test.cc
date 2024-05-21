@@ -68,14 +68,18 @@ TEST_F(DualFirstFitBlockAllocatorTest, AllocateAlignmentFailure) {
 }
 
 TEST_F(DualFirstFitBlockAllocatorTest, AllocatesUsingThreshold) {
+  // TODO(b/328831791): This could be improved if the AllocLast didn't require
+  // kBlockOverhead extra bytes to be able to split.
+  constexpr size_t kBlockOverhead =
+      DualFirstFitBlockAllocator::BlockType::kBlockOverhead;
   auto& allocator = GetAllocator({
-      {kLargerOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize + kBlockOverhead, Preallocation::kIndexFree},
       {kSmallerOuterSize, 1},
-      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize + kBlockOverhead, Preallocation::kIndexFree},
       {Preallocation::kSizeRemaining, 3},
-      {kLargeOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize + kBlockOverhead, Preallocation::kIndexFree},
       {kSmallerOuterSize, 5},
-      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize + kBlockOverhead, Preallocation::kIndexFree},
   });
   auto& dual_first_fit_block_allocator =
       static_cast<DualFirstFitBlockAllocator&>(allocator);

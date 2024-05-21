@@ -28,7 +28,7 @@ using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
 
 TEST(AllocatorTest, HasFlags) {
   AllocatorForTest allocator;
-  EXPECT_FALSE(
+  EXPECT_TRUE(
       allocator.HasCapability(Capability::kImplementsGetRequestedLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetUsableLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsQuery));

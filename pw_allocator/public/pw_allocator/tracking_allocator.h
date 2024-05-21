@@ -43,35 +43,6 @@ static constexpr struct AddTrackingAllocatorAsChild {
 /// template parameter type, such as `TrackingAllocator` which uses the
 /// default metrics implementation, or `TrackingAllocatorForTest` which
 /// always uses the real metrics implementation.
-///
-/// If the `requested_bytes` metric is enabled, then this allocator will add
-/// overhead to each allocation. It uses one of two layouts:
-///
-///   * If the underlying allocator implements `GetAllocated`, this allocator
-///     will store the requested size of an allocation after that allocation's
-///     usable space. For example, assume `Layout{.size=256, .alignment=16}`,
-///     `sizeof(size_t) == 4`, and that 'U' indicates "usable space". An
-///     allocation might look like:
-///
-///     ..1f0 | UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU
-///     ..... | ...
-///     ..2e0 | UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU
-///     ..2f0 | 00 00 01 00 .. .. .. .. .. .. .. .. .. .. .. .. // size suffix
-///
-///   * If the underlying allocator does NOT implement `GetAllocated`, this
-///     allocator will store a `Layout` of the requested bytes and alignment
-///     before the usable space. This is more expensive, as `alignment` bytes
-///     must be added to keep the usable space aligned. For example, with the
-///     same assumptions as beforea and 'x' indicating padding, an allocation
-///     might look like:
-///
-///     ..1f0 | xx xx xx xx xx xx xx xx 00 00 01 00 00 00 00 10
-///     ..2e0 | UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU
-///     ..... | ...
-///     ..2f0 | UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU UU
-///
-/// If the `requested_bytes` metric is disabled, no additional overhead will be
-/// added.
 template <typename MetricsType>
 class TrackingAllocator : public Allocator {
  public:
@@ -116,40 +87,23 @@ class TrackingAllocator : public Allocator {
 
   /// @copydoc Allocator::GetRequestedLayout
   Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    return DoGetRequestedLayoutImpl(FromUsableSpace(ptr));
+    return GetRequestedLayout(allocator_, ptr);
   }
 
-  /// Like ``DoGetRequestedLayout``, except that ``ptr`` must be a pointer
-  /// returned by the underlying allocator instead of by this object.
-  Result<Layout> DoGetRequestedLayoutImpl(const void* ptr) const;
-
   /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override;
+  Result<Layout> DoGetUsableLayout(const void* ptr) const override {
+    return GetUsableLayout(allocator_, ptr);
+  }
 
   /// @copydoc Allocator::GetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
+  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
+    return GetAllocatedLayout(allocator_, ptr);
+  }
 
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr) const override {
     return Query(allocator_, ptr);
   }
-
-  /// Returns a layout that includes storage for an allocation and its stored
-  /// details.
-  Layout ReserveStorage(Layout requested);
-
-  /// Returns a pointer to an allocation from a pointer to its usable space.
-  template <typename PtrType = void*>
-  PtrType FromUsableSpace(PtrType ptr) const;
-
-  /// Returns a pointer to usable space from a pointer to an allocation.
-  void* ToUsableSpace(void* ptr, const Layout& requested) const;
-
-  /// Stores the requested size of an allocation in that allocation.
-  void SetRequested(void* ptr, const Layout& requested);
-
-  /// Returns a pointer to where the requested allocation size is stored.
-  void* GetRequestedStorage(const void* ptr) const;
 
   Allocator& allocator_;
   internal::Metrics<MetricsType> metrics_;
@@ -170,7 +124,7 @@ inline Layout UnwrapLayout(const Result<Layout>& result) {
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
   Layout requested = layout;
-  void* new_ptr = allocator_.Allocate(ReserveStorage(requested));
+  void* new_ptr = allocator_.Allocate(requested);
   if (new_ptr == nullptr) {
     metrics_.RecordFailure(requested.size());
     return nullptr;
@@ -180,14 +134,12 @@ void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
   metrics_.IncrementAllocations();
   metrics_.ModifyRequested(requested.size(), 0);
   metrics_.ModifyAllocated(allocated.size(), 0);
-  SetRequested(new_ptr, requested);
-  return ToUsableSpace(new_ptr, requested);
+  return new_ptr;
 }
 
 template <typename MetricsType>
 void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
-  ptr = FromUsableSpace(ptr);
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
+  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
   Layout allocated =
       internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
   allocator_.Deallocate(ptr);
@@ -198,12 +150,11 @@ void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
 
 template <typename MetricsType>
 bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
-  ptr = FromUsableSpace(ptr);
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
+  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
   Layout allocated =
       internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
   Layout new_requested(new_size, requested.alignment());
-  if (!allocator_.Resize(ptr, ReserveStorage(new_requested).size())) {
+  if (!allocator_.Resize(ptr, new_requested.size())) {
     metrics_.RecordFailure(new_size);
     return false;
   }
@@ -212,19 +163,17 @@ bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
   metrics_.IncrementResizes();
   metrics_.ModifyRequested(new_requested.size(), requested.size());
   metrics_.ModifyAllocated(new_allocated.size(), allocated.size());
-  SetRequested(ptr, new_requested);
-  return ToUsableSpace(ptr, new_requested);
+  return true;
 }
 
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
                                                    Layout new_layout) {
-  ptr = FromUsableSpace(ptr);
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayoutImpl(ptr));
+  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
   Layout allocated =
       internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
   Layout new_requested(new_layout.size(), requested.alignment());
-  void* new_ptr = allocator_.Reallocate(ptr, ReserveStorage(new_requested));
+  void* new_ptr = allocator_.Reallocate(ptr, new_requested);
   if (new_ptr == nullptr) {
     metrics_.RecordFailure(new_requested.size());
     return nullptr;
@@ -242,125 +191,7 @@ void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
     // Reallocate performed "resize" without additional overhead.
     metrics_.ModifyAllocated(new_allocated.size(), allocated.size());
   }
-  SetRequested(new_ptr, new_requested);
-  return ToUsableSpace(new_ptr, new_requested);
-}
-
-template <typename MetricsType>
-Result<Layout> TrackingAllocator<MetricsType>::DoGetRequestedLayoutImpl(
-    const void* ptr) const {
-  Result<Layout> requested = GetRequestedLayout(allocator_, ptr);
-  if (requested.ok()) {
-    return requested;
-  }
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    Layout layout;
-    std::memcpy(&layout, GetRequestedStorage(ptr), sizeof(layout));
-    return layout;
-  }
-  return Status::Unimplemented();
-}
-
-template <typename MetricsType>
-Result<Layout> TrackingAllocator<MetricsType>::DoGetUsableLayout(
-    const void* ptr) const {
-  ptr = FromUsableSpace(ptr);
-  Result<Layout> usable = GetUsableLayout(allocator_, ptr);
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout)) {
-      if (usable.ok()) {
-        size_t size = usable->size();
-        PW_ASSERT(!PW_SUB_OVERFLOW(size, sizeof(Layout), &size));
-        usable = Layout(size, usable->alignment());
-      }
-    }
-  }
-  return usable;
-}
-
-template <typename MetricsType>
-Result<Layout> TrackingAllocator<MetricsType>::DoGetAllocatedLayout(
-    const void* ptr) const {
-  ptr = FromUsableSpace(ptr);
-  return GetAllocatedLayout(allocator_, ptr);
-}
-
-template <typename MetricsType>
-Layout TrackingAllocator<MetricsType>::ReserveStorage(Layout requested) {
-  size_t size = requested.size();
-  size_t alignment = requested.alignment();
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout)) {
-      if (allocator_.HasCapability(Capability::kImplementsGetUsableLayout)) {
-        PW_ASSERT(!PW_ADD_OVERFLOW(size, sizeof(Layout), &size));
-      } else {
-        alignment = std::max(alignment, sizeof(Layout));
-        PW_ASSERT(!PW_ADD_OVERFLOW(alignment, size, &size));
-      }
-    }
-  }
-  return Layout(size, alignment);
-}
-
-template <typename MetricsType>
-void* TrackingAllocator<MetricsType>::ToUsableSpace(
-    void* ptr, const Layout& requested) const {
-  auto addr = reinterpret_cast<uintptr_t>(ptr);
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout) &&
-        !allocator_.HasCapability(Capability::kImplementsGetUsableLayout)) {
-      PW_ASSERT(PW_ADD_OVERFLOW(addr, requested.alignment(), &addr));
-    }
-  }
-  return reinterpret_cast<void*>(addr);
-}
-
-template <typename MetricsType>
-template <typename PtrType>
-PtrType TrackingAllocator<MetricsType>::FromUsableSpace(PtrType ptr) const {
-  auto addr = reinterpret_cast<uintptr_t>(ptr);
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout) &&
-        !allocator_.HasCapability(Capability::kImplementsGetUsableLayout)) {
-      uintptr_t requested_addr;
-      PW_ASSERT(PW_SUB_OVERFLOW(addr, sizeof(Layout), &requested_addr));
-      Layout requested;
-      std::memcpy(
-          &requested, reinterpret_cast<void*>(requested_addr), sizeof(Layout));
-      PW_ASSERT(PW_SUB_OVERFLOW(addr, requested.alignment(), &addr));
-    }
-  }
-  return reinterpret_cast<PtrType>(addr);
-}
-
-template <typename MetricsType>
-void TrackingAllocator<MetricsType>::SetRequested(void* ptr,
-                                                  const Layout& requested) {
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    if (!allocator_.HasCapability(Capability::kImplementsGetRequestedLayout)) {
-      std::memcpy(GetRequestedStorage(ptr), &requested, sizeof(requested));
-    }
-  }
-}
-
-template <typename MetricsType>
-void* TrackingAllocator<MetricsType>::GetRequestedStorage(
-    const void* ptr) const {
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    Result<Layout> usable = GetUsableLayout(allocator_, ptr);
-    auto addr = reinterpret_cast<uintptr_t>(ptr);
-    if (usable.ok()) {
-      PW_ASSERT(!PW_ADD_OVERFLOW(addr, usable->size(), &addr));
-      PW_ASSERT(!PW_SUB_OVERFLOW(addr, sizeof(Layout), &addr));
-    } else {
-      PW_ASSERT(!PW_ADD_OVERFLOW(addr, usable->alignment(), &addr));
-      PW_ASSERT(!PW_SUB_OVERFLOW(addr, sizeof(Layout), &addr));
-    }
-    return reinterpret_cast<void*>(addr);
-  } else {
-    // `GetRequestedStorage()` is not available when `requested_bytes` disabled.
-    PW_ASSERT(false);
-  }
+  return new_ptr;
 }
 
 // TODO(b/326509341): This is an interim alias to facilitate refactoring

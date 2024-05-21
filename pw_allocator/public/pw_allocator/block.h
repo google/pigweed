@@ -162,6 +162,10 @@ class Block {
   /// @returns The number of usable bytes inside the block.
   size_t InnerSize() const { return OuterSize() - kBlockOverhead; }
 
+  /// @returns The number of bytes requested using AllocFirst, AllocLast, or
+  /// Resize.
+  size_t RequestedSize() const { return InnerSize() - padding_; }
+
   /// @returns A pointer to the usable space inside this block.
   std::byte* UsableSpace() {
     return std::launder(reinterpret_cast<std::byte*>(this) + kBlockOverhead);
@@ -484,14 +488,35 @@ class Block {
   /// untouched; false otherwise.
   bool CheckPoison() const;
 
+  /// Offset (in increments of the minimum alignment) from this block to the
+  /// previous block. 0 if this is the first block.
   offset_type prev_ = 0;
+
+  /// Offset (in increments of the minimum alignment) from this block to the
+  /// next block. Valid even if this is the last block, since it equals the
+  /// size of the block.
   offset_type next_ = 0;
+
+  /// Information about the current state of the block:
+  /// * If the `used` flag is set, the block's usable memory has been allocated
+  ///   and is being used.
+  /// * If the `poisoned` flag is set and the `used` flag is clear, the block's
+  ///   usable memory contains a poison pattern that will be checked when the
+  ///   block is allocated.
+  /// * If the `last` flag is set, the block does not have a next block.
+  /// * If the `used` flag is set, the alignment represents the requested value
+  ///   when the memory was allocated, which may be less strict than the actual
+  ///   alignment.
   struct {
     uint16_t used : 1;
     uint16_t poisoned : 1;
     uint16_t last : 1;
     uint16_t alignment : 13;
   } info_;
+
+  /// Number of bytes allocated beyond what was requested. This will be at most
+  /// the minimum alignment, i.e. `alignof(offset_type).`
+  uint16_t padding_ = 0;
 
  public:
   // Associated types.
@@ -580,7 +605,7 @@ class Block {
     ReverseIterator begin_;
     ReverseIterator end_;
   };
-};
+} __attribute__((packed, aligned(kAlign)));
 
 // Public template method implementations.
 
@@ -640,6 +665,7 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
   if (block == nullptr) {
     return Status::InvalidArgument();
   }
+  size_t requested_inner_size = inner_size;
   size_t pad_outer_size = 0;
   if (auto status =
           block->AdjustForAllocFirst(inner_size, pad_outer_size, alignment);
@@ -664,6 +690,7 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
 
   block->MarkUsed();
   block->info_.alignment = alignment;
+  block->padding_ = block->InnerSize() - requested_inner_size;
   return OkStatus();
 }
 
@@ -708,6 +735,7 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocLast(Block*& block,
   if (block == nullptr) {
     return Status::InvalidArgument();
   }
+  size_t requested_inner_size = inner_size;
   size_t pad_outer_size = 0;
   if (auto status =
           block->AdjustForAllocLast(inner_size, pad_outer_size, alignment);
@@ -724,6 +752,7 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocLast(Block*& block,
   }
   block->MarkUsed();
   block->info_.alignment = alignment;
+  block->padding_ = block->InnerSize() - requested_inner_size;
   return OkStatus();
 }
 
@@ -749,14 +778,17 @@ Status Block<OffsetType, kAlign, kCanPoison>::Resize(Block*& block,
   if (!block->Used()) {
     return Status::FailedPrecondition();
   }
+  size_t requested_inner_size = new_inner_size;
   size_t old_inner_size = block->InnerSize();
+  size_t alignment = block->info_.alignment;
+  uint16_t padding = block->padding_;
   new_inner_size = AlignUp(new_inner_size, kAlignment);
   if (old_inner_size == new_inner_size) {
     return OkStatus();
   }
 
   // Treat the block as free and try to combine it with the next block. At most
-  // one free block is expecte to follow this block.
+  // one free block is expected to follow this block.
   block->MarkFree();
   MergeNext(block).IgnoreError();
 
@@ -771,11 +803,15 @@ Status Block<OffsetType, kAlign, kCanPoison>::Resize(Block*& block,
     trailing->Poison(should_poison);
   }
 
-  // Restore the original block on failure.
-  if (!status.ok() && block->InnerSize() != old_inner_size) {
+  if (status.ok()) {
+    padding = block->InnerSize() - requested_inner_size;
+  } else if (block->InnerSize() != old_inner_size) {
+    // Restore the original block on failure.
     SplitImpl(block, old_inner_size);
   }
   block->MarkUsed();
+  block->info_.alignment = alignment;
+  block->padding_ = padding;
   return status;
 }
 

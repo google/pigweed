@@ -28,7 +28,9 @@ void BlockAllocatorTestBase::Store(size_t index, void* ptr) {
   ptrs_[index] = ptr;
 }
 
-void* BlockAllocatorTestBase::Fetch(size_t index) { return ptrs_[index]; }
+void* BlockAllocatorTestBase::Fetch(size_t index) {
+  return index < kNumPtrs ? ptrs_[index] : nullptr;
+}
 
 void BlockAllocatorTestBase::UseMemory(void* ptr, size_t size) {
   std::memset(ptr, 0x5a, size);

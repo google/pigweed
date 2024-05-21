@@ -282,10 +282,12 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
 
 template <typename BlockAllocatorType>
 void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
-  if (index > kNumPtrs) {
+  void* ptr = Fetch(index);
+  if (ptr == nullptr) {
     return nullptr;
   }
-  auto* block = BlockType::FromUsableSpace(Fetch(index));
+
+  auto* block = BlockType::FromUsableSpace(ptr);
   while (!block->Last()) {
     block = block->Next();
     if (block->Used()) {
