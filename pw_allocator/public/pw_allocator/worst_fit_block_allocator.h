@@ -43,15 +43,14 @@ class WorstFitBlockAllocator
     // Search backwards for the biggest block that can hold this allocation.
     BlockType* worst = nullptr;
     for (auto* block : Base::rblocks()) {
-      if (!block->CanAllocLast(layout.size(), layout.alignment()).ok()) {
+      if (!block->CanAllocLast(layout).ok()) {
         continue;
       }
       if (worst == nullptr || block->OuterSize() > worst->OuterSize()) {
         worst = block;
       }
     }
-    if (worst != nullptr &&
-        BlockType::AllocLast(worst, layout.size(), layout.alignment()).ok()) {
+    if (worst != nullptr && BlockType::AllocLast(worst, layout).ok()) {
       return worst;
     }
     return nullptr;

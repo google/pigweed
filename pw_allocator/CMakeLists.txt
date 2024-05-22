@@ -127,6 +127,7 @@ pw_add_library(pw_allocator.bucket_block_allocator INTERFACE
   PUBLIC_DEPS
     pw_allocator.block_allocator_base
     pw_allocator.bucket
+    pw_status
 )
 
 pw_add_library(pw_allocator.buddy_allocator STATIC

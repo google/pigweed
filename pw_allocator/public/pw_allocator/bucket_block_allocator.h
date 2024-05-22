@@ -17,6 +17,7 @@
 
 #include "pw_allocator/block_allocator_base.h"
 #include "pw_allocator/bucket.h"
+#include "pw_status/try.h"
 
 namespace pw::allocator {
 
@@ -71,10 +72,7 @@ class BucketBlockAllocator
   Status Init(BlockType* begin) { return Base::Init(begin); }
 
   Status Init(BlockType* begin, BlockType* end) override {
-    Status status = Base::Init(begin, end);
-    if (!status.ok()) {
-      return status;
-    }
+    PW_TRY(Base::Init(begin, end));
     for (auto* block : Base::blocks()) {
       if (!block->Used()) {
         RecycleBlock(block);
@@ -93,9 +91,7 @@ class BucketBlockAllocator
       }
       void* leading = bucket.RemoveIf([&layout](void* chunk) {
         BlockType* candidate = BlockType::FromUsableSpace(chunk);
-        return BlockType::AllocLast(
-                   candidate, layout.size(), layout.alignment())
-            .ok();
+        return BlockType::AllocLast(candidate, layout).ok();
       });
       if (leading != nullptr) {
         block = BlockType::FromUsableSpace(leading);

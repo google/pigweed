@@ -243,7 +243,8 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
     size_t inner_size = outer_size - BlockType::kBlockOverhead;
 
     block->MarkFree();
-    PW_ASSERT(BlockType::AllocFirst(block, inner_size, 1).ok());
+    Layout layout(inner_size, 1);
+    PW_ASSERT(BlockType::AllocFirst(block, layout).ok());
     if (!block->Last()) {
       block->Next()->MarkUsed();
     }

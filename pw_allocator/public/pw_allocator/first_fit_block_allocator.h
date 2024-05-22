@@ -43,8 +43,8 @@ class FirstFitBlockAllocator
   BlockType* ChooseBlock(Layout layout) override {
     // Search forwards for the first block that can hold this allocation.
     for (auto* block : Base::blocks()) {
-      if (BlockType::AllocFirst(block, layout.size(), layout.alignment())
-              .ok()) {
+      block->CrashIfInvalid();
+      if (BlockType::AllocFirst(block, layout).ok()) {
         return block;
       }
     }

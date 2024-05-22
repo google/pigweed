@@ -136,6 +136,7 @@ pw_source_set("bucket_block_allocator") {
   public_deps = [
     ":block_allocator_base",
     ":bucket",
+    dir_pw_status,
   ]
 }
 

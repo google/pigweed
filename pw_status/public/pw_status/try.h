@@ -41,7 +41,7 @@
   if (!result.ok()) {                               \
     return ::pw::internal::ConvertToStatus(result); \
   }                                                 \
-  lhs = ::pw::internal::ConvertToValue(result);
+  lhs = ::pw::internal::ConvertToValue(result)
 
 /// Returns early if \a expr is a non-OK `Status` or `StatusWithSize`.
 ///

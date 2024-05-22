@@ -24,7 +24,7 @@
 namespace {
 
 // Test fixtures.
-
+using ::pw::allocator::Layout;
 using LargeOffsetBlock = ::pw::allocator::Block<uint64_t>;
 using SmallOffsetBlock = ::pw::allocator::Block<uint16_t>;
 using PoisonedBlock = ::pw::allocator::Block<uint32_t, alignof(uint32_t), true>;
@@ -326,7 +326,8 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstFromAlignedBlock) {
 
   // Allocate from the front of the block.
   BlockType* prev = block->Prev();
-  EXPECT_EQ(BlockType::AllocFirst(block, kSize, kAlign), pw::OkStatus());
+  Layout layout(kSize, kAlign);
+  EXPECT_EQ(BlockType::AllocFirst(block, layout), pw::OkStatus());
   EXPECT_EQ(block->InnerSize(), kSize);
   addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -360,16 +361,26 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstFromUnalignedBlock) {
   EXPECT_EQ(result.status(), pw::OkStatus());
   block = *result;
 
-  // Allocate from the front of the block.
   BlockType* prev = block->Prev();
-  EXPECT_EQ(BlockType::AllocFirst(block, kSize, kAlign), pw::OkStatus());
+  prev->MarkUsed();
+  size_t prev_inner_size = prev->InnerSize();
+
+  // Allocate from the front of the block.
+  Layout layout(kSize, kAlign);
+  EXPECT_EQ(BlockType::AllocFirst(block, layout), pw::OkStatus());
   EXPECT_EQ(block->InnerSize(), kSize);
   addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_TRUE(block->Used());
 
-  // A new padding block was allocated.
-  EXPECT_LT(prev, block->Prev());
+  if (!block->Prev()->Used()) {
+    // Either a new free block was added...
+    EXPECT_LT(prev, block->Prev());
+  } else {
+    /// ...or less than a minimum block was added to the previous block.
+    EXPECT_NE(prev_inner_size, prev->InnerSize());
+    EXPECT_LT(prev->InnerSize() - prev_inner_size, BlockType::kBlockOverhead);
+  }
 
   // Extra was split from the end of the block.
   EXPECT_FALSE(block->Last());
@@ -396,13 +407,15 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstTooSmallBlock) {
   block = *result;
 
   // Cannot allocate without room to a split a block for alignment.
-  EXPECT_EQ(BlockType::AllocFirst(block, block->InnerSize(), kAlign),
-            pw::Status::OutOfRange());
+  Layout layout(block->InnerSize(), kAlign);
+  EXPECT_EQ(BlockType::AllocFirst(block, layout), pw::Status::OutOfRange());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstFromNull) {
   BlockType* block = nullptr;
-  EXPECT_EQ(BlockType::AllocFirst(block, 1, 1), pw::Status::InvalidArgument());
+  Layout layout(1, 1);
+  EXPECT_EQ(BlockType::AllocFirst(block, layout),
+            pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast) {
@@ -416,7 +429,8 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast) {
   BlockType* block = *result;
 
   // Allocate from the back of the block.
-  EXPECT_EQ(BlockType::AllocLast(block, kSize, kAlign), pw::OkStatus());
+  Layout layout(kSize, kAlign);
+  EXPECT_EQ(BlockType::AllocLast(block, layout), pw::OkStatus());
   EXPECT_GE(block->InnerSize(), kSize);
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -448,13 +462,15 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromTooSmallBlock) {
   block = *result;
 
   // Cannot allocate without room to a split a block for alignment.
-  EXPECT_EQ(BlockType::AllocLast(block, block->InnerSize(), kAlign),
+  Layout layout(block->InnerSize(), kAlign);
+  EXPECT_EQ(BlockType::AllocLast(block, layout),
             pw::Status::ResourceExhausted());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromNull) {
   BlockType* block = nullptr;
-  EXPECT_EQ(BlockType::AllocLast(block, 1, 1), pw::Status::InvalidArgument());
+  Layout layout(1, 1);
+  EXPECT_EQ(BlockType::AllocLast(block, layout), pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CanMergeWithNextBlock) {
@@ -924,9 +940,12 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetAlignmentFromUsedBlock) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   BlockType* block1 = *result;
 
-  EXPECT_EQ(BlockType::AllocFirst(block1, kSplit1, kAlign), pw::OkStatus());
+  Layout layout1(kSplit1, kAlign);
+  EXPECT_EQ(BlockType::AllocFirst(block1, layout1), pw::OkStatus());
+
+  Layout layout2(kSplit2, kAlign * 2);
   BlockType* block2 = block1->Next();
-  EXPECT_EQ(BlockType::AllocFirst(block2, kSplit2, kAlign * 2), pw::OkStatus());
+  EXPECT_EQ(BlockType::AllocFirst(block2, layout2), pw::OkStatus());
 
   EXPECT_EQ(block1->Alignment(), kAlign);
   EXPECT_EQ(block2->Alignment(), kAlign * 2);
@@ -942,7 +961,8 @@ TEST_FOR_EACH_BLOCK_TYPE(FreeBlockAlignmentIsAlwaysOne) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   BlockType* block1 = *result;
 
-  EXPECT_EQ(BlockType::AllocFirst(block1, kSplit1, kAlign), pw::OkStatus());
+  Layout layout(kSplit1, kAlign);
+  EXPECT_EQ(BlockType::AllocFirst(block1, layout), pw::OkStatus());
   block1->MarkFree();
   EXPECT_EQ(block1->Alignment(), 1U);
 }

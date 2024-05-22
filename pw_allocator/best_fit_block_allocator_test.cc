@@ -62,14 +62,10 @@ TEST_F(BestFitBlockAllocatorTest, AllocateAlignmentFailure) {
 }
 
 TEST_F(BestFitBlockAllocatorTest, AllocatesBestCompatible) {
-  // TODO(b/328831791): This could be improved if the AllocLast didn't require
-  // kBlockOverhead extra bytes to be able to split.
-  constexpr size_t kBlockOverhead =
-      BestFitBlockAllocator::BlockType::kBlockOverhead;
   auto& allocator = GetAllocator({
-      {kLargeOuterSize + kBlockOverhead, Preallocation::kIndexFree},
+      {kLargeOuterSize, Preallocation::kIndexFree},
       {kSmallerOuterSize, 1},
-      {kSmallOuterSize + kBlockOverhead, Preallocation::kIndexFree},
+      {kSmallOuterSize, Preallocation::kIndexFree},
       {kSmallerOuterSize, 3},
       {kSmallerOuterSize, Preallocation::kIndexFree},
       {kSmallerOuterSize, 5},

@@ -138,6 +138,7 @@ cc_library(
     deps = [
         ":block_allocator_base",
         ":bucket",
+        "//pw_status",
     ],
 )
 

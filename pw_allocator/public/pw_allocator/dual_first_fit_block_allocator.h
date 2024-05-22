@@ -48,16 +48,14 @@ class DualFirstFitBlockAllocator
     if (layout.size() < threshold_) {
       // Search backwards for the last block that can hold this allocation.
       for (auto* block : Base::rblocks()) {
-        if (BlockType::AllocLast(block, layout.size(), layout.alignment())
-                .ok()) {
+        if (BlockType::AllocLast(block, layout).ok()) {
           return block;
         }
       }
     } else {
       // Search forwards for the first block that can hold this allocation.
       for (auto* block : Base::blocks()) {
-        if (BlockType::AllocFirst(block, layout.size(), layout.alignment())
-                .ok()) {
+        if (BlockType::AllocFirst(block, layout).ok()) {
           return block;
         }
       }

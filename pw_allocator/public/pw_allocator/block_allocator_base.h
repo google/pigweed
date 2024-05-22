@@ -189,7 +189,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
     return StatusWithSize(capacity_);
   }
 
-  /// @copydoc Allocator::GetRequestedLayout
+  /// @copydoc Allocator::GetUsableLayout
   Result<Layout> DoGetRequestedLayout(const void* ptr) const override;
 
   /// @copydoc Allocator::GetUsableLayout

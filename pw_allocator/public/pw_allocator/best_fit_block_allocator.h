@@ -44,15 +44,14 @@ class BestFitBlockAllocator
     // Search backwards for the smallest block that can hold this allocation.
     BlockType* best = nullptr;
     for (auto* block : Base::rblocks()) {
-      if (!block->CanAllocLast(layout.size(), layout.alignment()).ok()) {
+      if (!block->CanAllocLast(layout).ok()) {
         continue;
       }
       if (best == nullptr || block->OuterSize() < best->OuterSize()) {
         best = block;
       }
     }
-    if (best != nullptr &&
-        BlockType::AllocLast(best, layout.size(), layout.alignment()).ok()) {
+    if (best != nullptr && BlockType::AllocLast(best, layout).ok()) {
       return best;
     }
     return nullptr;

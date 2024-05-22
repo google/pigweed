@@ -43,7 +43,7 @@ class LastFitBlockAllocator
   BlockType* ChooseBlock(Layout layout) override {
     // Search backwards for the last block that can hold this allocation.
     for (auto* block : Base::rblocks()) {
-      if (BlockType::AllocLast(block, layout.size(), layout.alignment()).ok()) {
+      if (BlockType::AllocLast(block, layout).ok()) {
         return block;
       }
     }
