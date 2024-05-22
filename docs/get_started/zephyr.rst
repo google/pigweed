@@ -49,7 +49,7 @@ Setup
 
             git clone --recursive \
               https://pigweed.googlesource.com/pigweed/quickstart/zephyr \
-              ~/zephyr-quickstart
+              zephyr-quickstart
 
       .. tab-item:: macOS
          :sync: mac
@@ -58,7 +58,7 @@ Setup
 
             git clone --recursive \
               https://pigweed.googlesource.com/pigweed/quickstart/zephyr \
-              ~/zephyr-quickstart
+              zephyr-quickstart
 
    .. _main Pigweed: https://pigweed.googlesource.com/pigweed/pigweed/
    .. _main Zephyr: https://github.com/zephyrproject-rtos/zephyr
@@ -75,14 +75,14 @@ Setup
 
          .. code-block:: console
 
-            cd ~/quickstart-zephyr
+            cd quickstart-zephyr
 
       .. tab-item:: macOS
          :sync: mac
 
          .. code-block:: console
 
-            cd ~/quickstart-zephyr
+            cd quickstart-zephyr
 
 #. Bootstrap the repo.
 
