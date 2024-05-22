@@ -49,7 +49,9 @@ const thread::Options& LogThreadOptions() {
   return options;
 }
 
-static constexpr size_t kRpcThreadStackWords = 512;
+// Stack size set to 16K in order to accommodate tests with large stacks.
+// TODO: https://pwbug.dev/325509758 - Lower once tests stack sizes are reduced.
+static constexpr size_t kRpcThreadStackWords = 8192;
 static thread::freertos::StaticContextWithStack<kRpcThreadStackWords>
     rpc_thread_context;
 const thread::Options& RpcThreadOptions() {
