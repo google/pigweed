@@ -33,7 +33,7 @@ from rp2040_utils import device_detector
 from rp2040_utils.device_detector import BoardInfo
 
 
-_LOG = logging.getLogger("unit_test_runner")
+_LOG = logging.getLogger()
 
 
 def parse_args():
@@ -145,7 +145,9 @@ class PiPicoTestingDevice(SerialTestingDevice):
                     return True
                 except serial.serialutil.SerialException:
                     # Unable to connect, try again.
-                    _LOG.debug('Unable to connect to %s', self.serial_port())
+                    _LOG.debug(
+                        'Unable to connect to %s, retrying', self.serial_port()
+                    )
                     time.sleep(0.1)
 
         _LOG.error(
@@ -208,6 +210,17 @@ def main():
     args = parse_args()
     log_level = logging.DEBUG if args.verbose else logging.INFO
     pw_cli.log.install(level=log_level)
+
+    test_logfile = args.binary.with_suffix(args.binary.suffix + '.test_log.txt')
+    # Truncate existing logfile
+    test_logfile.write_text('', encoding='utf-8')
+    # Setup the test_log.txt file handler.
+    pw_cli.log.install(
+        level=logging.DEBUG,
+        use_color=False,
+        log_file=test_logfile,
+        logger=_LOG,
+    )
 
     test_passed = False
     if not args.serial_port:

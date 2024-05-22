@@ -34,7 +34,7 @@ from rp2040_utils.device_detector import BoardInfo
 from rp2040_utils.unit_test_runner import PiPicoTestingDevice
 
 
-_LOG = logging.getLogger("unit_test_runner")
+_LOG = logging.getLogger()
 
 
 def parse_args():
@@ -136,6 +136,7 @@ class PiPicoRpcTestingDevice(PiPicoTestingDevice):
         ) as dev:
             try:
                 test_results = dev.run_tests(timeout)
+                _LOG.info('Test run complete')
             except RpcTimeout:
                 _LOG.error('Test timed out after %s seconds.', timeout)
                 return False
@@ -188,6 +189,17 @@ def main():
     args = parse_args()
     log_level = logging.DEBUG if args.verbose else logging.INFO
     pw_cli.log.install(level=log_level)
+
+    test_logfile = args.binary.with_suffix(args.binary.suffix + '.test_log.txt')
+    # Truncate existing logfile
+    test_logfile.write_text('', encoding='utf-8')
+    # Setup the test_log.txt file handler.
+    pw_cli.log.install(
+        level=logging.DEBUG,
+        use_color=False,
+        log_file=test_logfile,
+        logger=_LOG,
+    )
 
     test_passed = False
     if not args.serial_port:
