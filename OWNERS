@@ -1,3 +1,6 @@
+# Syntax for OWNERS files can be found at
+# https://gerrit.googlesource.com/plugins/code-owners/+/HEAD/resources/Documentation/backend-find-owners.md
+#
 # OWNERS for all modules. Please see individual modules for their OWNERS files.
 #
 # Note: a Pigweed core team member should be among the OWNERS for each module.
