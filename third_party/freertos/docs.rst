@@ -51,14 +51,17 @@ must specify values for the following settings:
 
 *   ``@freertos//:port``, to set which FreeRTOS port to use. You can
     select a value from those defined in
-    ``third_party/freertos/freertos.BUILD.bazel``.
+    ``third_party/freertos/freertos.BUILD.bazel`` (for example,
+    ``@freertos//:port_ARM_CM4F``).
 *   ``@freertos//:malloc``, to set which FreeRTOS malloc implementation to use.
     You can select a value from those defined in
-    ``third_party/freertos/BUILD.bazel``.
+    ``third_party/freertos/BUILD.bazel`` (for example,
+    ``@freertos//:malloc_heap_1``).
 *   ``@freertos//:disable_task_statics_setting``, to determine whether statics
     should be disabled during compilation of the tasks.c source file (see next
     section). This setting has only two possible values, also defined in
-    ``third_party/freertos/BUILD.bazel``.
+    ``third_party/freertos/BUILD.bazel``: ``@freertos//:disable_task_statics``
+    and ``@freertos//:no_disable_task_statics``.
 
 In addition, you need to set the ``@freertos//:freertos_config`` label flag to
 point to the library target providing the FreeRTOS config header.  See
