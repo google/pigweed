@@ -50,11 +50,11 @@ bool MemoryResource::do_is_equal(
   // requires runtime type identification. Without RTTI, two `MemoryResource`s
   // with the same allocator will be treated as unequal, and moving objects
   // between them may lead to an extra allocation, copy, and deallocation.
-#if PW_HAVE_FEATURE(__cpp_rtti)
+#if defined(__cpp_rtti) && __cpp_rtti
   if (typeid(*this) == typeid(other)) {
     return allocator_ == static_cast<const MemoryResource&>(other).allocator_;
   }
-#endif  // PW_HAVE_FEATURE(__cpp_rtti)
+#endif  // defined(__cpp_rtti) && __cpp_rtti
   return false;
 }
 

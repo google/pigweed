@@ -15,8 +15,12 @@
 
 #if __has_include(<memory_resource>)
 #include <memory_resource>
+#define pmr_namespace ::std::pmr
+
 #elif __has_include(<experimental/memory_resource>)
 #include <experimental/memory_resource>
+#define pmr_namespace ::std::experimental::pmr
+
 #else
 #error "<memory_resource> is required to use this header!"
 #endif  // __has_include(<memory_resource>)
@@ -25,19 +29,12 @@
 
 namespace pw {
 
+// Forward declaration
 class Allocator;
 
 namespace allocator {
 
-#if __has_include(<memory_resource>)
-using StdMemoryResource = ::std::pmr::memory_resource;
-using StdPolymorphicAllocator = ::std::pmr::polymorphic_allocator<std::byte>;
-#elif __has_include(<experimental/memory_resource>)
-using StdMemoryResource = ::std::experimental::pmr::memory_resource;
-using StdPolymorphicAllocator =
-    ::std::experimental::pmr::polymorphic_allocator<std::byte>;
-#endif  // __has_include(<memory_resource>)
-
+// Forward declaration
 class AsPmrAllocator;
 
 namespace internal {
@@ -48,7 +45,7 @@ namespace internal {
 /// NOTE! This class aborts if allocation fails.
 ///
 /// See also https://en.cppreference.com/w/cpp/memory/memory_resource.
-class MemoryResource final : public StdMemoryResource {
+class MemoryResource final : public pmr_namespace::memory_resource {
  public:
   constexpr MemoryResource() = default;
 
@@ -60,7 +57,8 @@ class MemoryResource final : public StdMemoryResource {
 
   void* do_allocate(size_t bytes, size_t alignment) override;
   void do_deallocate(void* p, size_t bytes, size_t alignment) override;
-  bool do_is_equal(const StdMemoryResource& other) const noexcept override;
+  bool do_is_equal(
+      const pmr_namespace::memory_resource& other) const noexcept override;
 
   Allocator* allocator_ = nullptr;
 };
@@ -74,9 +72,10 @@ class MemoryResource final : public StdMemoryResource {
 /// can be used in `std::pmr` containers, such as `std::pmr::vector`.
 ///
 /// See also https://en.cppreference.com/w/cpp/memory/polymorphic_allocator.
-class AsPmrAllocator final : public StdPolymorphicAllocator {
+class AsPmrAllocator final
+    : public pmr_namespace::polymorphic_allocator<std::byte> {
  public:
-  using Base = StdPolymorphicAllocator;
+  using Base = pmr_namespace::polymorphic_allocator<std::byte>;
 
   AsPmrAllocator(Allocator& allocator) : Base(&memory_resource_) {
     memory_resource_.set_allocator(allocator);
@@ -90,3 +89,5 @@ class AsPmrAllocator final : public StdPolymorphicAllocator {
 
 }  // namespace allocator
 }  // namespace pw
+
+#undef pmr_namespace
