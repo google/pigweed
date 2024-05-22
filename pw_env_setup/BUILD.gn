@@ -145,6 +145,11 @@ pw_python_distribution("pypi_pigweed_python_source_tree") {
 # dev environment. It's similar to the source tree for PyPI but it appends the
 # current date to the version so pip will consider it more up to date than the
 # one in PyPI.
+#
+# To create this wheel run:
+#   ninja -C out pigweed_pypi_distribution
+# The resulting wheel is available in
+#   out/python/obj/pw_env_setup/generate_pigweed_python_package._build_wheel/
 pw_python_distribution("generate_pigweed_python_package") {
   packages = [ ":core_pigweed_python_packages" ]
 
@@ -164,43 +169,6 @@ pw_python_pip_install("pip_install_pigweed_package") {
   packages = [ ":generate_pigweed_python_package" ]
 }
 
-# The next three targets are not built by default but demonstrate how to
-# generate Python distributions with only a subset of Python packages
-# included. The result could be bundled into PyOxidizer or distributed as a
-# standalone wheel.
-
-# To create this wheel run:
-#   ninja -C out pw_env_setup:generate_pw_env_setup_distribution.wheel
-# The resulting wheel is available in
-#   out/obj/pw_env_setup/generate_pw_env_setup_distribution._build_wheel/
-pw_python_distribution("generate_pw_env_setup_distribution") {
-  packages = [ "$dir_pw_env_setup/py" ]
-  generate_setup_cfg = {
-    common_config_file = "pypi_common_setup.cfg"
-  }
-  extra_files = [
-    "$dir_pigweed/LICENSE > LICENSE",
-    "$dir_pigweed/README.md > README.md",
-    "pypi_pyproject.toml > pyproject.toml",
-  ]
-}
-
-# To create this wheel run:
-#   ninja -C out pw_env_setup:generate_pw_system_distribution.wheel
-# The resulting wheel is available in
-#   out/obj/pw_env_setup/generate_pw_system_distribution._build_wheel/
-pw_python_distribution("generate_pw_system_distribution") {
-  packages = [ "$dir_pw_system/py" ]
-  generate_setup_cfg = {
-    common_config_file = "pypi_common_setup.cfg"
-  }
-  extra_files = [
-    "$dir_pigweed/LICENSE > LICENSE",
-    "$dir_pigweed/README.md > README.md",
-    "pypi_pyproject.toml > pyproject.toml",
-  ]
-}
-
 pw_python_group("hdlc_proto_rpc_python_packages") {
   python_deps = [
     "$dir_pw_hdlc/py",
@@ -210,21 +178,26 @@ pw_python_group("hdlc_proto_rpc_python_packages") {
   ]
 }
 
+# This target is not built by default but demonstrate how to generate
+# Python distributions with only a subset of Python packages
+# included. The result could be bundled into PyOxidizer or distributed
+# as a standalone Python wheel.
+#
 # To create this wheel run:
-#   ninja -C out pw_env_setup:generate_hdlc_proto_rpc_tokenizer_distribution.wheel
+#   ninja -C out pigweed_pypi_distribution
 # The resulting wheel is available in
-#   out/obj/pw_env_setup/generate_hdlc_proto_rpc_tokenizer_distribution._build_wheel/
+#   out/python/obj/pw_env_setup/generate_hdlc_proto_rpc_tokenizer_distribution._build_wheel/
 pw_python_distribution("generate_hdlc_proto_rpc_tokenizer_distribution") {
   packages = [ ":hdlc_proto_rpc_python_packages" ]
 
   generate_setup_cfg = {
     common_config_file = "pypi_common_setup.cfg"
     append_date_to_version = true
+    include_default_pyproject_file = true
   }
   extra_files = [
     "$dir_pigweed/LICENSE > LICENSE",
     "$dir_pigweed/README.md > README.md",
-    "pypi_pyproject.toml > pyproject.toml",
   ]
 }
 

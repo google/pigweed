@@ -495,7 +495,10 @@ pw_python_group("python") {
 }
 
 group("pigweed_pypi_distribution") {
-  deps = [ "$dir_pw_env_setup:pypi_pigweed_python_source_tree($pw_build_PYTHON_TOOLCHAIN)" ]
+  deps = [
+    "$dir_pw_env_setup:generate_hdlc_proto_rpc_tokenizer_distribution.wheel($pw_build_PYTHON_TOOLCHAIN)",
+    "$dir_pw_env_setup:pypi_pigweed_python_source_tree.wheel($pw_build_PYTHON_TOOLCHAIN)",
+  ]
 }
 
 # Build host-only tooling.
