@@ -19,13 +19,9 @@
 
 namespace pw::allocator {
 
-BumpAllocator::BumpAllocator(ByteSpan region)
-    : Allocator(kCapabilities), remaining_(region) {}
-
-BumpAllocator::~BumpAllocator() {
-  if (owned_ != nullptr) {
-    owned_->Destroy();
-  }
+void BumpAllocator::Init(ByteSpan region) {
+  Reset();
+  remaining_ = region;
 }
 
 void* BumpAllocator::DoAllocate(Layout layout) {
@@ -38,5 +34,12 @@ void* BumpAllocator::DoAllocate(Layout layout) {
 }
 
 void BumpAllocator::DoDeallocate(void*) {}
+
+void BumpAllocator::Reset() {
+  if (owned_ != nullptr) {
+    owned_->Destroy();
+  }
+  remaining_ = ByteSpan();
+}
 
 }  // namespace pw::allocator

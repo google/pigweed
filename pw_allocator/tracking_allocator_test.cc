@@ -52,9 +52,7 @@ class TrackingAllocatorTest : public ::testing::Test {
 
   TrackingAllocatorTest() : ::testing::Test(), tracker_(kToken, *allocator_) {}
 
-  void SetUp() override {
-    EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), pw::OkStatus());
-  }
+  void SetUp() override { allocator_->Init(allocator_.as_bytes()); }
 
   void TearDown() override {
     for (auto* block : allocator_->blocks()) {

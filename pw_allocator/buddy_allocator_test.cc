@@ -36,6 +36,11 @@ class BuddyAllocatorTest : public ::testing::Test {
 
 // Unit tests.
 
+TEST_F(BuddyAllocatorTest, ExplicitlyInit) {
+  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator;
+  allocator.Init(buffer_);
+}
+
 TEST_F(BuddyAllocatorTest, AllocateSmall) {
   BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
   void* ptr = allocator.Allocate(Layout(kMinChunkSize / 2, 1));

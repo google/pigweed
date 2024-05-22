@@ -75,9 +75,16 @@ class BumpAllocator : public Allocator {
  public:
   static constexpr Capabilities kCapabilities = kSkipsDestroy;
 
-  explicit BumpAllocator(ByteSpan region);
+  /// Constructs a BumpAllocator without initializing it.
+  constexpr BumpAllocator() : Allocator(kCapabilities) {}
 
-  ~BumpAllocator() override;
+  /// Constructs a BumpAllocator and initializes it.
+  explicit BumpAllocator(ByteSpan region) : BumpAllocator() { Init(region); }
+
+  ~BumpAllocator() override { Reset(); }
+
+  /// Sets the memory region to be used by the allocator.
+  void Init(ByteSpan region);
 
   /// Constructs an "owned" object of type `T` from the given `args`
   ///
@@ -122,6 +129,9 @@ class BumpAllocator : public Allocator {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void*) override;
+
+  /// Frees any owned objects and discards remaining memory.
+  void Reset();
 
   ByteSpan remaining_;
   internal::GenericOwned* owned_ = nullptr;

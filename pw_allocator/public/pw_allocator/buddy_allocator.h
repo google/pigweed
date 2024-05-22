@@ -34,14 +34,14 @@ namespace internal {
 /// respect to the number of buckets.
 class GenericBuddyAllocator final {
  public:
-  /// Construct a buddy allocator.
+  /// Constructs a buddy allocator.
   ///
   /// @param[in] buckets        Storage for buckets of free chunks.
   /// @param[in] min_chunk_size Size of the chunks in the first bucket.
-  /// @param[in] region         Memory used to allocate chunks.
-  GenericBuddyAllocator(span<Bucket> buckets,
-                        size_t min_chunk_size,
-                        ByteSpan region);
+  GenericBuddyAllocator(span<Bucket> buckets, size_t min_chunk_size);
+
+  /// Sets the memory used to allocate chunks.
+  void Init(ByteSpan region);
 
   /// @copydoc Allocator::Allocate
   void* Allocate(Layout layout);
@@ -90,13 +90,24 @@ class BuddyAllocator : public Allocator {
   static_assert((kMinChunkSize & (kMinChunkSize - 1)) == 0,
                 "kMinChunkSize must be a power of 2");
 
-  /// Construct an allocator.
+  /// Constructs an allocator. Callers must call `Init`.
+  BuddyAllocator() : impl_(buckets_, kMinChunkSize) {}
+
+  /// Constructs an allocator, and initializes it with the given memory region.
   ///
   /// @param[in]  region  Region of memory to use when satisfying allocation
-  ///                     requests. The region must be large enough to fit a
+  ///                     requests. The region MUST be large enough to fit a
   ///                     least one minimally-size chunk aligned to the size of
   ///                     the chunk.
-  BuddyAllocator(ByteSpan region) : impl_(buckets_, kMinChunkSize, region) {}
+  BuddyAllocator(ByteSpan region) : BuddyAllocator() { Init(region); }
+
+  /// Sets the memory region used by the allocator.
+  ///
+  /// @param[in]  region  Region of memory to use when satisfying allocation
+  ///                     requests. The region MUST be large enough to fit a
+  ///                     least one minimally-size chunk aligned to the size of
+  ///                     the chunk.
+  void Init(ByteSpan region) { impl_.Init(region); }
 
   ~BuddyAllocator() override { impl_.CrashIfAllocated(); }
 

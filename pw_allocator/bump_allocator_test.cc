@@ -36,6 +36,12 @@ class DestroyCounter final {
 
 // Unit tests.
 
+TEST(BumpAllocatorTest, ExplicitlyInit) {
+  alignas(16) std::array<std::byte, 256> buffer;
+  BumpAllocator allocator;
+  allocator.Init(buffer);
+}
+
 TEST(BumpAllocatorTest, AllocateValid) {
   alignas(16) std::array<std::byte, 256> buffer;
   BumpAllocator allocator(buffer);

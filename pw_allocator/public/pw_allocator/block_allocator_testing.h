@@ -39,6 +39,7 @@ class BlockAllocatorTestBase : public ::testing::Test {
   static constexpr size_t kDefaultBlockOverhead = Block<>::kBlockOverhead;
 
   // Size of the memory region to use in the tests below.
+  // This must be large enough so that BlockType::Init does not fail.
   static constexpr size_t kCapacity = 1024;
 
   // The number of allocated pointers cached by the test fixture.
@@ -202,7 +203,7 @@ struct Preallocation {
 
 template <typename BlockAllocatorType>
 Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
-  EXPECT_EQ(allocator_.Init(GetBytes()), OkStatus());
+  allocator_.Init(GetBytes());
   return allocator_;
 }
 
@@ -222,7 +223,6 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
   }
 
   Result<BlockType*> result = BlockType::Init(GetBytes());
-  PW_ASSERT(result.ok());
   BlockType* block = *result;
   void* begin = block->UsableSpace();
 
@@ -277,7 +277,7 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
     block->MarkFree();
   }
   block = BlockType::FromUsableSpace(begin);
-  PW_ASSERT(allocator_.Init(block).ok());
+  allocator_.Init(block);
   return allocator_;
 }
 
@@ -320,7 +320,7 @@ template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::CanExplicitlyInit(
     BlockAllocatorType& allocator) {
   EXPECT_EQ(*(allocator.blocks().begin()), nullptr);
-  EXPECT_EQ(allocator.Init(GetBytes()), pw::OkStatus());
+  allocator.Init(GetBytes());
   EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 

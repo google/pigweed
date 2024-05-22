@@ -144,7 +144,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
   pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
                             FirstFitBlockAllocatorTest::kCapacity>
       allocator;
-  EXPECT_EQ(allocator->Init(allocator.as_bytes()), pw::OkStatus());
+  allocator->Init(allocator.as_bytes());
   constexpr Layout layout =
       Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
 
@@ -175,7 +175,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
   pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
                             FirstFitBlockAllocatorTest::kCapacity>
       allocator;
-  EXPECT_EQ(allocator->Init(allocator.as_bytes()), pw::OkStatus());
+  allocator->Init(allocator.as_bytes());
   constexpr Layout layout =
       Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
 

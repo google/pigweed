@@ -23,13 +23,16 @@
 namespace pw::allocator::internal {
 
 GenericBuddyAllocator::GenericBuddyAllocator(span<Bucket> buckets,
-                                             size_t min_chunk_size,
-                                             ByteSpan region)
+                                             size_t min_chunk_size)
     : buckets_(buckets) {
+  Bucket::Init(buckets, min_chunk_size);
+}
+
+void GenericBuddyAllocator::Init(ByteSpan region) {
+  CrashIfAllocated();
+  size_t min_chunk_size = buckets_[0].chunk_size();
   region_ = GetAlignedSubspan(region, min_chunk_size);
   PW_CHECK_INT_GE(region_.size(), min_chunk_size);
-
-  Bucket::Init(buckets, min_chunk_size);
 
   // Build up the available memory by successively freeing (and thus merging)
   // minimum sized chunks.

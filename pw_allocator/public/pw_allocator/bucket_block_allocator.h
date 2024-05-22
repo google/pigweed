@@ -58,27 +58,36 @@ class BucketBlockAllocator
                               std::max(kAlign, alignof(std::byte*))>;
   using BlockType = typename Base::BlockType;
 
+  /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr BucketBlockAllocator() : Base() {
     internal::Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
                            kMinChunkSize);
   }
 
+  /// Non-constexpr constructor that automatically calls `Init`.
+  ///
+  /// @param[in]  region  Region of memory to use when satisfying allocation
+  ///                     requests. The region MUST be large enough to fit an
+  ///                     aligned block with overhead. It MUST NOT be larger
+  ///                     than what is addressable by `OffsetType`.
   explicit BucketBlockAllocator(ByteSpan region) : BucketBlockAllocator() {
-    PW_ASSERT(Base::Init(region).ok());
+    Base::Init(region);
   }
 
-  Status Init(ByteSpan region) { return Base::Init(region); }
+  /// @copydoc BlockAllocator::Init
+  void Init(ByteSpan region) { Base::Init(region); }
 
-  Status Init(BlockType* begin) { return Base::Init(begin); }
+  /// @copydoc BlockAllocator::Init
+  void Init(BlockType* begin) { Base::Init(begin); }
 
-  Status Init(BlockType* begin, BlockType* end) override {
-    PW_TRY(Base::Init(begin, end));
+  /// @copydoc BlockAllocator::Init
+  void Init(BlockType* begin, BlockType* end) override {
+    Base::Init(begin, end);
     for (auto* block : Base::blocks()) {
       if (!block->Used()) {
         RecycleBlock(block);
       }
     }
-    return OkStatus();
   }
 
  private:

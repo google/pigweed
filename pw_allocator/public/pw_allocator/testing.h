@@ -43,7 +43,7 @@ class AllocatorForTest : public Allocator {
   AllocatorForTest()
       : Allocator(AllocatorType::kCapabilities), tracker_(kToken, *allocator_) {
     ResetParameters();
-    EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
+    allocator_->Init(allocator_.as_bytes());
   }
 
   ~AllocatorForTest() override {
