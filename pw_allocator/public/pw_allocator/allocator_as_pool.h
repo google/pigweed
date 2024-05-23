@@ -34,11 +34,11 @@ class AllocatorAsPool : public Pool {
   /// @copydoc Pool::Allocate
   void* DoAllocate() override;
 
-  /// @copydoc Pool::Deallocate
+  /// @copydoc Deallocator::Deallocate
   void DoDeallocate(void* ptr) override;
 
-  /// @copydoc Pool::Query
-  Status DoQuery(const void* ptr) const override;
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   Allocator& allocator_;
 };

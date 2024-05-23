@@ -30,8 +30,9 @@ enum Capability : uint32_t {
   kImplementsGetRequestedLayout = 1 << 0,
   kImplementsGetUsableLayout    = 1 << 1,
   kImplementsGetAllocatedLayout = 1 << 2,
-  kImplementsQuery              = 1 << 3,
-  kSkipsDestroy                 = 1 << 4,
+  kImplementsGetCapacity        = 1 << 4,
+  kImplementsRecognizes         = 1 << 5,
+  kSkipsDestroy                 = 1 << 6,
   // clang-format on
 };
 

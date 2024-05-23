@@ -194,7 +194,6 @@ pw_add_library(pw_allocator.chunk_pool STATIC
 
 pw_add_library(pw_allocator.deallocator STATIC
   SOURCES
-    deallocator.cc
     unique_ptr.cc
   HEADERS
     public/pw_allocator/capability.h

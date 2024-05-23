@@ -229,24 +229,4 @@ void BlockAllocatorTestBase::ResizeSmallLargerFailure() {
   EXPECT_FALSE(allocator.Resize(Fetch(0), new_size));
 }
 
-void BlockAllocatorTestBase::CanGetLayoutFromValidPointer() {
-  Allocator& allocator = GetAllocator();
-  constexpr size_t kAlignment = 64;
-  Store(0, allocator.Allocate(Layout(kLargeInnerSize, kAlignment * 2)));
-  ASSERT_NE(Fetch(0), nullptr);
-
-  Store(1, allocator.Allocate(Layout(kSmallInnerSize, kAlignment / 2)));
-  ASSERT_NE(Fetch(1), nullptr);
-
-  Result<Layout> result0 = allocator.GetLayout(Fetch(0));
-  ASSERT_EQ(result0.status(), OkStatus());
-  EXPECT_GE(result0->size(), kLargeInnerSize);
-  EXPECT_EQ(result0->alignment(), kAlignment * 2);
-
-  Result<Layout> result1 = allocator.GetLayout(Fetch(1));
-  ASSERT_EQ(result1.status(), OkStatus());
-  EXPECT_GE(result1->size(), kSmallInnerSize);
-  EXPECT_EQ(result1->alignment(), kAlignment / 2);
-}
-
 }  // namespace pw::allocator::test

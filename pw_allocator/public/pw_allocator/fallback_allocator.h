@@ -47,24 +47,8 @@ class FallbackAllocator : public Allocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override;
 
-  /// @copydoc Allocator::GetCapacity
-  StatusWithSize DoGetCapacity() const override;
-
-  /// @copydoc Allocator::GetRequestedLayout
-  Result<Layout> DoGetRequestedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr) const override;
-
-  /// Combines a secondary result with a primary, non-ok status.
-  Result<Layout> CombineResults(Status primary,
-                                const Result<Layout>& secondary) const;
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   Allocator& primary_;
   Allocator& secondary_;

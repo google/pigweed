@@ -21,6 +21,7 @@
 #include "pw_allocator/bucket.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_status/try.h"
 
 namespace pw::allocator {
 namespace internal {
@@ -34,6 +35,10 @@ namespace internal {
 /// respect to the number of buckets.
 class GenericBuddyAllocator final {
  public:
+  static constexpr Capabilities kCapabilities =
+      kImplementsGetUsableLayout | kImplementsGetAllocatedLayout |
+      kImplementsGetCapacity | kImplementsRecognizes;
+
   /// Constructs a buddy allocator.
   ///
   /// @param[in] buckets        Storage for buckets of free chunks.
@@ -49,8 +54,11 @@ class GenericBuddyAllocator final {
   /// @copydoc Deallocator::Deallocate
   void Deallocate(void* ptr);
 
-  /// @copydoc Deallocator::Query
-  Status Query(const void* ptr) const;
+  /// Returns the total capacity of this allocator.
+  size_t GetCapacity() const { return region_.size(); }
+
+  /// Returns the allocated layout for a given pointer.
+  Result<Layout> GetLayout(const void* ptr) const;
 
   /// Ensures all allocations have been freed. Crashes with a diagnostic message
   /// If any allocations remain outstanding.
@@ -121,8 +129,28 @@ class BuddyAllocator : public Allocator {
   /// @copydoc Deallocator::DoDeallocate
   void DoDeallocate(void* ptr) override { impl_.Deallocate(ptr); }
 
-  /// @copydoc Deallocator::Query
-  Status DoQuery(const void* ptr) const override { return impl_.Query(ptr); }
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
+    switch (info_type) {
+      case InfoType::kUsableLayoutOf: {
+        Layout layout;
+        PW_TRY_ASSIGN(layout, impl_.GetLayout(ptr));
+        return Layout(layout.size() - 1, layout.alignment());
+      }
+      case InfoType::kAllocatedLayoutOf:
+        return impl_.GetLayout(ptr);
+      case InfoType::kCapacity:
+        return Layout(impl_.GetCapacity(), kMinChunkSize);
+      case InfoType::kRecognizes: {
+        Layout layout;
+        PW_TRY_ASSIGN(layout, impl_.GetLayout(ptr));
+        return Layout();
+      }
+      case InfoType::kRequestedLayoutOf:
+      default:
+        return Status::Unimplemented();
+    }
+  }
 
   std::array<internal::Bucket, kNumBuckets> buckets_;
   internal::GenericBuddyAllocator impl_;

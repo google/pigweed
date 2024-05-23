@@ -134,14 +134,6 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
-TEST_F(DualFirstFitBlockAllocatorTest, CanGetLayoutFromValidPointer) {
-  CanGetLayoutFromValidPointer();
-}
-
-TEST_F(DualFirstFitBlockAllocatorTest, CannotGetLayoutFromInvalidPointer) {
-  CannotGetLayoutFromInvalidPointer();
-}
-
 TEST_F(DualFirstFitBlockAllocatorTest, ResizeLargeSmallerAcrossThreshold) {
   auto& allocator = GetAllocator({{kDualFitThreshold * 2, 0}});
   // Shrinking succeeds, and the pointer is unchanged even though it is now

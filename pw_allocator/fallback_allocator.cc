@@ -23,7 +23,7 @@ FallbackAllocator::FallbackAllocator(Allocator& primary, Allocator& secondary)
     : Allocator(primary.capabilities() | secondary.capabilities()),
       primary_(primary),
       secondary_(secondary) {
-  PW_CHECK(primary.HasCapability(Capability::kImplementsQuery));
+  PW_CHECK(primary.HasCapability(Capability::kImplementsRecognizes));
 }
 
 void* FallbackAllocator::DoAllocate(Layout layout) {
@@ -32,7 +32,7 @@ void* FallbackAllocator::DoAllocate(Layout layout) {
 }
 
 void FallbackAllocator::DoDeallocate(void* ptr) {
-  if (Query(primary_, ptr).ok()) {
+  if (Recognizes(primary_, ptr)) {
     primary_.Deallocate(ptr);
   } else {
     secondary_.Deallocate(ptr);
@@ -42,55 +42,26 @@ void FallbackAllocator::DoDeallocate(void* ptr) {
 void FallbackAllocator::DoDeallocate(void* ptr, Layout) { DoDeallocate(ptr); }
 
 bool FallbackAllocator::DoResize(void* ptr, size_t new_size) {
-  return Query(primary_, ptr).ok() ? primary_.Resize(ptr, new_size)
+  return Recognizes(primary_, ptr) ? primary_.Resize(ptr, new_size)
                                    : secondary_.Resize(ptr, new_size);
 }
 
-StatusWithSize FallbackAllocator::DoGetCapacity() const {
-  StatusWithSize primary = primary_.GetCapacity();
-  if (!primary.ok()) {
+Result<Layout> FallbackAllocator::DoGetInfo(InfoType info_type,
+                                            const void* ptr) const {
+  Result<Layout> primary = GetInfo(primary_, info_type, ptr);
+  if (primary.ok() == (info_type != InfoType::kCapacity)) {
     return primary;
   }
-  StatusWithSize secondary = secondary_.GetCapacity();
-  if (!secondary.ok()) {
+  Result<Layout> secondary = GetInfo(secondary_, info_type, ptr);
+  if (secondary.ok() == (info_type != InfoType::kCapacity)) {
     return secondary;
   }
-  return StatusWithSize(primary.size() + secondary.size());
-}
-
-Result<Layout> FallbackAllocator::DoGetRequestedLayout(const void* ptr) const {
-  Result<Layout> primary = GetRequestedLayout(primary_, ptr);
-  return primary.ok() ? primary
-                      : CombineResults(primary.status(),
-                                       GetRequestedLayout(secondary_, ptr));
-}
-
-Result<Layout> FallbackAllocator::DoGetUsableLayout(const void* ptr) const {
-  Result<Layout> primary = GetUsableLayout(primary_, ptr);
-  return primary.ok() ? primary
-                      : CombineResults(primary.status(),
-                                       GetUsableLayout(secondary_, ptr));
-}
-
-Result<Layout> FallbackAllocator::DoGetAllocatedLayout(const void* ptr) const {
-  Result<Layout> primary = GetAllocatedLayout(primary_, ptr);
-  return primary.ok() ? primary
-                      : CombineResults(primary.status(),
-                                       GetAllocatedLayout(secondary_, ptr));
-}
-
-Status FallbackAllocator::DoQuery(const void* ptr) const {
-  Status status = Query(primary_, ptr);
-  return status.ok() ? status : Query(secondary_, ptr);
-}
-
-/// Combines a secondary result with a primary, non-ok status.
-Result<Layout> FallbackAllocator::CombineResults(
-    Status primary, const Result<Layout>& secondary) const {
-  if (!secondary.ok() && !primary.IsUnimplemented()) {
-    return primary;
+  if (info_type != InfoType::kCapacity) {
+    return Layout(primary->size() + secondary->size(),
+                  std::max(primary->alignment(), secondary->alignment()));
+  } else {
+    return primary.status().IsUnimplemented() ? secondary : primary;
   }
-  return secondary;
 }
 
 }  // namespace pw::allocator

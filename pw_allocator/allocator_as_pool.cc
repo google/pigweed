@@ -23,8 +23,9 @@ void* AllocatorAsPool::DoAllocate() { return allocator_.Allocate(layout()); }
 
 void AllocatorAsPool::DoDeallocate(void* ptr) { allocator_.Deallocate(ptr); }
 
-Status AllocatorAsPool::DoQuery(const void* ptr) const {
-  return Deallocator::Query(allocator_, ptr);
+Result<Layout> AllocatorAsPool::DoGetInfo(InfoType info_type,
+                                          const void* ptr) const {
+  return GetInfo(allocator_, info_type, ptr);
 }
 
 }  // namespace pw::allocator

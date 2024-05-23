@@ -80,29 +80,9 @@ class TrackingAllocator : public Allocator {
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout new_layout) override;
 
-  /// @copydoc Allocator::GetCapacity
-  StatusWithSize DoGetCapacity() const override {
-    return allocator_.GetCapacity();
-  }
-
-  /// @copydoc Allocator::GetRequestedLayout
-  Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    return GetRequestedLayout(allocator_, ptr);
-  }
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override {
-    return GetUsableLayout(allocator_, ptr);
-  }
-
-  /// @copydoc Allocator::GetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
-    return GetAllocatedLayout(allocator_, ptr);
-  }
-
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr) const override {
-    return Query(allocator_, ptr);
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
+    return GetInfo(allocator_, info_type, ptr);
   }
 
   Allocator& allocator_;
@@ -110,16 +90,6 @@ class TrackingAllocator : public Allocator {
 };
 
 // Template method implementation.
-
-namespace internal {
-
-/// Extracts a ``Layout`` from a ``Result`` if ok, or provides a default
-/// ``Layout`` otherwise.
-inline Layout UnwrapLayout(const Result<Layout>& result) {
-  return result.ok() ? result.value() : Layout(0, 1);
-}
-
-}  // namespace internal
 
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
@@ -129,8 +99,7 @@ void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
     metrics_.RecordFailure(requested.size());
     return nullptr;
   }
-  Layout allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, new_ptr));
+  Layout allocated = Layout::Unwrap(GetAllocatedLayout(new_ptr));
   metrics_.IncrementAllocations();
   metrics_.ModifyRequested(requested.size(), 0);
   metrics_.ModifyAllocated(allocated.size(), 0);
@@ -139,9 +108,8 @@ void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
 
 template <typename MetricsType>
 void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
-  Layout allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+  Layout allocated = Layout::Unwrap(GetAllocatedLayout(ptr));
   allocator_.Deallocate(ptr);
   metrics_.IncrementDeallocations();
   metrics_.ModifyRequested(0, requested.size());
@@ -150,16 +118,14 @@ void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
 
 template <typename MetricsType>
 bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
-  Layout allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+  Layout allocated = Layout::Unwrap(GetAllocatedLayout(ptr));
   Layout new_requested(new_size, requested.alignment());
   if (!allocator_.Resize(ptr, new_requested.size())) {
     metrics_.RecordFailure(new_size);
     return false;
   }
-  Layout new_allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  Layout new_allocated = Layout::Unwrap(GetAllocatedLayout(ptr));
   metrics_.IncrementResizes();
   metrics_.ModifyRequested(new_requested.size(), requested.size());
   metrics_.ModifyAllocated(new_allocated.size(), allocated.size());
@@ -169,9 +135,8 @@ bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
                                                    Layout new_layout) {
-  Layout requested = internal::UnwrapLayout(DoGetRequestedLayout(ptr));
-  Layout allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, ptr));
+  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+  Layout allocated = Layout::Unwrap(GetAllocatedLayout(ptr));
   Layout new_requested(new_layout.size(), requested.alignment());
   void* new_ptr = allocator_.Reallocate(ptr, new_requested);
   if (new_ptr == nullptr) {
@@ -180,8 +145,7 @@ void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
   }
   metrics_.IncrementReallocations();
   metrics_.ModifyRequested(new_requested.size(), requested.size());
-  Layout new_allocated =
-      internal::UnwrapLayout(GetAllocatedLayout(allocator_, new_ptr));
+  Layout new_allocated = Layout::Unwrap(GetAllocatedLayout(new_ptr));
   if (ptr != new_ptr) {
     // Reallocate performed "alloc, copy, free". Increment and decrement
     // seperately in order to ensure "peak" metrics are correct.

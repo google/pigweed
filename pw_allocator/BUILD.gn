@@ -200,10 +200,7 @@ pw_source_set("chunk_pool") {
 }
 
 pw_source_set("deallocator") {
-  sources = [
-    "deallocator.cc",
-    "unique_ptr.cc",
-  ]
+  sources = [ "unique_ptr.cc" ]
   public = [
     "public/pw_allocator/capability.h",
     "public/pw_allocator/deallocator.h",

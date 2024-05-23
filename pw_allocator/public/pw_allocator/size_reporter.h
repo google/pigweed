@@ -96,10 +96,6 @@ class SizeReporter final {
     // Measure `Reallocate`.
     ptr = allocator.Reallocate(ptr, Layout::Of<Baz>());
 
-    // Measure `GetLayout`.
-    Result<Layout> result = allocator.GetLayout(ptr);
-    layout = result.ok() ? result.value() : Layout::Of<Bar>();
-
     // Measure `Deallocate`.
     allocator.Deallocate(ptr);
 

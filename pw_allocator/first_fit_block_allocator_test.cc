@@ -104,14 +104,6 @@ TEST_F(FirstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
-TEST_F(FirstFitBlockAllocatorTest, CanGetLayoutFromValidPointer) {
-  CanGetLayoutFromValidPointer();
-}
-
-TEST_F(FirstFitBlockAllocatorTest, CannotGetLayoutFromInvalidPointer) {
-  CannotGetLayoutFromInvalidPointer();
-}
-
 TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
   auto& allocator = GetAllocator();
   constexpr Layout layout = Layout::Of<std::byte[kSmallInnerSize]>();

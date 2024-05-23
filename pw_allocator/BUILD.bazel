@@ -216,7 +216,6 @@ cc_library(
 cc_library(
     name = "deallocator",
     srcs = [
-        "deallocator.cc",
         "unique_ptr.cc",
     ],
     hdrs = [

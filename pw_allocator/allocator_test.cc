@@ -31,7 +31,6 @@ TEST(AllocatorTest, HasFlags) {
   EXPECT_TRUE(
       allocator.HasCapability(Capability::kImplementsGetRequestedLayout));
   EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsGetUsableLayout));
-  EXPECT_TRUE(allocator.HasCapability(Capability::kImplementsQuery));
 }
 
 TEST(AllocatorTest, ResizeNull) {

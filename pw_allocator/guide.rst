@@ -160,9 +160,6 @@ details abstracted behind the :ref:`module-pw_allocator-api-allocator`
 interface. One exception to this guidance is when integrating allocators into
 existing code that assumes ``malloc`` and ``free`` semantics. Notably, ``free``
 does not take any parameters beyond a pointer describing the memory to be freed.
-To implement such a method using ``Deallocate``, you may need to violate the
-abstraction and only use allocators that implement the optional ``GetLayout``
-method:
 
 .. literalinclude:: examples/block_allocator.cc
    :language: cpp
@@ -312,10 +309,8 @@ There are also several optional methods you can provide:
 - If an implementation of ``DoReallocate`` isn't provided, then ``Reallocate``
   will try to ``Resize``, and, if unsuccessful, try to ``Allocate``, copy, and
   ``Deallocate``.
-- If an implementation of ``DoGetLayout`` isn't provided, then ``GetLayout``
+- If an implementation of ``DoGetInfo`` isn't provided, then ``GetInfo``
   will always return ``pw::Status::Unimplmented``.
-- If an implementation of ``DoQuery`` isn't provided, then ``Query`` will
-  always return ``pw::Status::Unimplmented``.
 
 Custom allocators can indicate which optional methods they implement and what
 optional behaviors they want from the base class by specifying

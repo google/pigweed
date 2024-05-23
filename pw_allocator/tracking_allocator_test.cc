@@ -36,9 +36,9 @@ class TrackingAllocatorForTest : public TrackingAllocator<TestMetrics> {
   TrackingAllocatorForTest(pw::metric::Token token, pw::Allocator& allocator)
       : TrackingAllocator<TestMetrics>(token, allocator) {}
 
-  // Expose the protected ``GetAllocatedLayout`` method for test purposes.
+  // Expose the protected allocated ``Layout`` method for test purposes.
   pw::Result<Layout> GetAllocatedLayout(const void* ptr) const {
-    return Allocator::GetAllocatedLayout(*this, ptr);
+    return TrackingAllocator<TestMetrics>::GetAllocatedLayout(ptr);
   }
 };
 

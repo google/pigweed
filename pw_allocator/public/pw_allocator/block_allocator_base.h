@@ -36,7 +36,8 @@ class GenericBlockAllocator : public Allocator {
  public:
   static constexpr Capabilities kCapabilities =
       kImplementsGetRequestedLayout | kImplementsGetUsableLayout |
-      kImplementsGetAllocatedLayout | kImplementsQuery;
+      kImplementsGetAllocatedLayout | kImplementsGetCapacity |
+      kImplementsRecognizes;
 
   // Not copyable or movable.
   GenericBlockAllocator(const GenericBlockAllocator&) = delete;
@@ -142,22 +143,8 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override;
 
-  /// @copydoc Allocator::GetCapacity
-  StatusWithSize DoGetCapacity() const override {
-    return StatusWithSize(capacity_);
-  }
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetRequestedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::GetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override;
-
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr) const override;
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   /// Selects a free block to allocate from.
   ///
@@ -314,9 +301,11 @@ bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
 }
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-Result<Layout>
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetRequestedLayout(
-    const void* ptr) const {
+Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
+    InfoType info_type, const void* ptr) const {
+  if (info_type == InfoType::kCapacity) {
+    return Layout(capacity_, kAlign);
+  }
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     return Status::NotFound();
@@ -325,43 +314,19 @@ BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetRequestedLayout(
   if (!block->Used()) {
     return Status::FailedPrecondition();
   }
-  return Layout(block->RequestedSize(), block->Alignment());
-}
-
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-Result<Layout>
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetUsableLayout(
-    const void* ptr) const {
-  auto result = FromUsableSpace(ptr);
-  if (!result.ok()) {
-    return Status::NotFound();
+  switch (info_type) {
+    case InfoType::kRequestedLayoutOf:
+      return Layout(block->RequestedSize(), block->Alignment());
+    case InfoType::kUsableLayoutOf:
+      return Layout(block->InnerSize(), block->Alignment());
+    case InfoType::kAllocatedLayoutOf:
+      return Layout(block->OuterSize(), block->Alignment());
+    case InfoType::kRecognizes:
+      return Layout();
+    case InfoType::kCapacity:
+    default:
+      return Status::Unimplemented();
   }
-  const BlockType* block = result.value();
-  if (!block->Used()) {
-    return Status::FailedPrecondition();
-  }
-  return Layout(block->InnerSize(), block->Alignment());
-}
-
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-Result<Layout>
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetAllocatedLayout(
-    const void* ptr) const {
-  auto result = FromUsableSpace(ptr);
-  if (!result.ok()) {
-    return Status::NotFound();
-  }
-  const BlockType* block = result.value();
-  if (!block->Used()) {
-    return Status::FailedPrecondition();
-  }
-  return Layout(block->OuterSize(), block->Alignment());
-}
-
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-Status BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoQuery(
-    const void* ptr) const {
-  return FromUsableSpace(ptr).status();
 }
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>

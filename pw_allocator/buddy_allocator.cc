@@ -107,11 +107,10 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
   if (ptr == nullptr) {
     return;
   }
-  PW_CHECK_OK(Query(ptr));
   auto* chunk = std::launder(reinterpret_cast<std::byte*>(ptr));
-  std::byte index =
-      ptr == region_.data() ? region_[region_.size() - 1] : *(chunk - 1);
-  size_t chunk_size = buckets_[size_t(index)].chunk_size();
+  auto layout = GetLayout(ptr);
+  PW_CHECK_OK(layout.status());
+  size_t chunk_size = layout->size();
 
   Bucket* bucket = nullptr;
   PW_CHECK_INT_GT(buckets_.size(), 0);
@@ -149,7 +148,7 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
   bucket->Add(chunk);
 }
 
-Status GenericBuddyAllocator::Query(const void* ptr) const {
+Result<Layout> GenericBuddyAllocator::GetLayout(const void* ptr) const {
   if (ptr < region_.data()) {
     return Status::OutOfRange();
   }
@@ -159,7 +158,10 @@ Status GenericBuddyAllocator::Query(const void* ptr) const {
   if (region_.size() <= offset || offset % min_chunk_size != 0) {
     return Status::OutOfRange();
   }
-  return OkStatus();
+  const auto* chunk = std::launder(reinterpret_cast<const std::byte*>(ptr));
+  std::byte index =
+      ptr == region_.data() ? region_[region_.size() - 1] : *(chunk - 1);
+  return Layout(buckets_[size_t(index)].chunk_size(), min_chunk_size);
 }
 
 }  // namespace pw::allocator::internal

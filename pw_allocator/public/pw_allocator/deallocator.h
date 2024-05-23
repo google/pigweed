@@ -80,7 +80,10 @@ class Deallocator {
   /// capacity may be less than the memory originally given to an allocator,
   /// e.g. if the allocator must align the region of memory, its capacity may be
   /// reduced.
-  StatusWithSize GetCapacity() const { return DoGetCapacity(); }
+  StatusWithSize GetCapacity() const {
+    auto result = DoGetInfo(InfoType::kCapacity, nullptr);
+    return StatusWithSize(result.status(), Layout::Unwrap(result).size());
+  }
 
   /// Returns whether the given object is the same as this one.
   ///
@@ -109,34 +112,157 @@ class Deallocator {
     return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this);
   }
 
-  /// Returns whether a given memory allocation was provided by this reource.
+  /// Indicates what kind of information to retrieve using `GetInfo`.
   ///
-  /// This method MUST only be used to dispatch between two or more objects
-  /// assoicated with non-overlapping regions of memory. Do NOT use it to
-  /// determine if this object can deallocate pointers. Callers MUST only
-  /// deallocate memory using the same ``Deallocator`` that provided it.
+  /// Note that this enum is considered open, and may be extended in the future.
+  /// As a result, implementers of `DoGetInfo` should include a default case
+  /// that handles unrecognized info types. If building with `-Wswitch-enum`,
+  /// you will also want to locally disable that diagnostic and build with
+  /// `-Wswitch-default` instead, e.g.:
+  ///
+  /// @code{.cpp}
+  /// class MyAllocator : public Allocator {
+  ///  private:
+  ///   Layout MyGetLayoutFromPointer(const void* ptr) { /* ... */ }
+  ///
+  ///   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) override {
+  ///     PW_MODIFY_DIAGNOSTICS_PUSH();
+  ///     PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
+  ///     switch(info_type) {
+  ///       case InfoType::kAllocatedLayoutOf:
+  ///         return MyGetLayoutFromPointer(ptr);
+  ///       default:
+  ///         return Status::Unimplmented();
+  ///     }
+  ///     PW_MODIFY_DIAGNOSTICS_POP();
+  ///   }
+  /// };
+  /// @endcode
+  ///
+  /// See also `GetInfo`.
+  enum class InfoType {
+    /// If supported, `GetInfo` will return `OK` with the `Layout` of the
+    /// requested memory associated with the given pointer, or `NOT_FOUND` if
+    /// the pointer is not recognized.
+    ///
+    /// The requested layout may differ from either the layout of usable memory,
+    /// the layout of memory used to fulfill the request, or both.
+    ///
+    /// For example, it may have a smaller size than the usable memory if the
+    /// latter was padded to an alignment boundary, or may have a less strict
+    /// alignment than the actual memory.
+    kRequestedLayoutOf,
+
+    /// If supported, `GetInfo` will return `OK` with the `Layout` of the
+    /// usable memory associated with the given pointer, or `NOT_FOUND` if
+    /// the pointer is not recognized.
+
+    /// The usable layout may from either the requested layout, the layout of
+    /// memory used to fulfill the request, or both.
+    ///
+    /// For example, it may have a larger size than the requested layout if it
+    /// was padded to an alignment boundary, but may be less than the acutal
+    /// memory if the object includes some overhead for metadata.
+    kUsableLayoutOf,
+
+    /// If supported, `GetInfo` will return `OK` with the `Layout` of the
+    /// allocated memory associated with the given pointer, or `NOT_FOUND` if
+    /// the pointer is not recognized.
+    ///
+    /// The layout of memory used to fulfill a request may differ from either
+    /// the requested layout, the layout of the usable memory, or both.
+    ///
+    /// For example, it may have a larger size than the requested layout or the
+    /// layout of usable memory if the object includes some overhead for
+    /// metadata.
+    kAllocatedLayoutOf,
+
+    /// If supported, `GetInfo` will return `OK` with a `Layout` whose size
+    /// is the total number of bytes that can be allocated by this object, and
+    /// whose alignment is the minimum alignment of any allocation.
+    ///
+    /// The given pointer is ignored.
+    kCapacity,
+
+    /// If supported, `GetInfo` will return `OK` with a default `Layout` if the
+    /// given pointer was provided by this object, or `NOT_FOUND`.
+    ///
+    /// This MUST only be used to dispatch between two or more objects
+    /// associated with non-overlapping regions of memory. Do NOT use it to
+    /// determine if this object can deallocate pointers. Callers MUST only
+    /// deallocate memory using the same ``Deallocator`` that provided it.
+    kRecognizes,
+  };
+
+  /// Returns deallocator-specific information about allocations.
+  ///
+  /// Deallocators may support any number of `InfoType`s. See that type for what
+  /// each supported type returns. For unsupported types, this method returns
+  /// `UNIMPLEMENTED`.
+  Result<Layout> GetInfo(InfoType info_type, const void* ptr) const {
+    return DoGetInfo(info_type, ptr);
+  }
+
+  /// @copydoc GetInfo
   ///
   /// This method is protected in order to restrict it to object
   /// implementations. It is static and takes an ``deallocator`` parameter in
   /// order to allow forwarding allocators to call it on wrapped allocators.
-  ///
-  /// @param[in]  deallocator   The object that provided ``ptr``.
-  /// @param[in]  ptr           The pointer to be queried.
-  /// @param[in]  layout        Describes the memory pointed at by `ptr`.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: This object can re/deallocate the pointer.
-  ///
-  ///    OUT_OF_RANGE: Pointer cannot be re/deallocated by this object.
-  ///
-  ///    UNIMPLEMENTED: This object cannot recognize allocated pointers.
-  ///
-  /// @endrst
-  static Status Query(const Deallocator& deallocator, const void* ptr) {
-    return deallocator.DoQuery(ptr);
+  static Result<Layout> GetInfo(const Deallocator& deallocator,
+                                InfoType info_type,
+                                const void* ptr) {
+    return deallocator.DoGetInfo(info_type, ptr);
+  }
+
+  /// Convenience wrapper of `DoGetInfo` for getting the requested layout
+  /// associated with a pointer.
+  Result<Layout> GetRequestedLayout(const void* ptr) const {
+    return DoGetInfo(InfoType::kRequestedLayoutOf, ptr);
+  }
+
+  /// Static version of `GetRequestedLayout` that allows forwarding allocators
+  /// to call it on wrapped allocators.
+  static Result<Layout> GetRequestedLayout(const Deallocator& deallocator,
+                                           const void* ptr) {
+    return deallocator.GetRequestedLayout(ptr);
+  }
+
+  /// Convenience wrapper of `DoGetInfo` for getting the usable layout
+  /// associated with a pointer.
+  Result<Layout> GetUsableLayout(const void* ptr) const {
+    return DoGetInfo(InfoType::kUsableLayoutOf, ptr);
+  }
+
+  /// Static version of `GetUsableLayout` that allows forwarding allocators to
+  /// call it on wrapped allocators.
+  static Result<Layout> GetUsableLayout(const Deallocator& deallocator,
+                                        const void* ptr) {
+    return deallocator.GetUsableLayout(ptr);
+  }
+
+  /// Convenience wrapper of `DoGetInfo` for getting the allocated layout
+  /// associated with a pointer.
+  Result<Layout> GetAllocatedLayout(const void* ptr) const {
+    return DoGetInfo(InfoType::kAllocatedLayoutOf, ptr);
+  }
+
+  /// Static version of `GetAllocatedLayout` that allows forwarding allocators
+  /// to call it on wrapped allocators.
+  static Result<Layout> GetAllocatedLayout(const Deallocator& deallocator,
+                                           const void* ptr) {
+    return deallocator.GetAllocatedLayout(ptr);
+  }
+
+  /// Convenience wrapper of `DoGetInfo` for getting whether the allocator
+  /// recognizes a pointer.
+  bool Recognizes(const void* ptr) const {
+    return DoGetInfo(InfoType::kRecognizes, ptr).ok();
+  }
+
+  /// Static version of `Recognizes` that allows forwarding allocators to call
+  /// it on wrapped allocators.
+  static bool Recognizes(const Deallocator& deallocator, const void* ptr) {
+    return deallocator.Recognizes(ptr);
   }
 
  private:
@@ -154,11 +280,10 @@ class Deallocator {
   /// Do not use this method. It will be removed.
   virtual void DoDeallocate(void* ptr, Layout) { DoDeallocate(ptr); }
 
-  /// Virtual `GetCapacity` function that can be overridden by derived classes.
-  virtual StatusWithSize DoGetCapacity() const;
-
-  /// Virtual `Query` function that can be overridden by derived classes.
-  virtual Status DoQuery(const void*) const;
+  /// Virtual `GetInfo` function that can be overridden by derived classes.
+  virtual Result<Layout> DoGetInfo(InfoType, const void*) const {
+    return Status::Unimplemented();
+  }
 
   const Capabilities capabilities_;
 };

@@ -20,31 +20,21 @@
 
 namespace {
 
+using ::pw::allocator::FallbackAllocator;
 using ::pw::allocator::Layout;
-using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<128>;
+using ::pw::allocator::test::AllocatorForTest;
 
 // Test fixtures.
 
-class FallbackAllocatorForTest : public ::pw::allocator::FallbackAllocator {
- public:
-  using Base = ::pw::allocator::FallbackAllocator;
-
-  FallbackAllocatorForTest(Allocator& primary, Allocator& secondary)
-      : Base(primary, secondary) {}
-
-  // Expose the protected ``Query`` method for test purposes.
-  pw::Status Query(const void* ptr) const {
-    return Allocator::Query(*this, ptr);
-  }
-};
-
 class FallbackAllocatorTest : public ::testing::Test {
  protected:
+  constexpr static size_t kCapacity = 256;
+
   FallbackAllocatorTest() : allocator_(primary_, secondary_) {}
 
-  AllocatorForTest primary_;
-  AllocatorForTest secondary_;
-  FallbackAllocatorForTest allocator_;
+  AllocatorForTest<kCapacity> primary_;
+  AllocatorForTest<kCapacity> secondary_;
+  FallbackAllocator allocator_;
 };
 
 // Unit tests.
@@ -52,26 +42,7 @@ class FallbackAllocatorTest : public ::testing::Test {
 TEST_F(FallbackAllocatorTest, GetCapacity) {
   pw::StatusWithSize capacity = allocator_.GetCapacity();
   EXPECT_EQ(capacity.status(), pw::OkStatus());
-  EXPECT_EQ(capacity.size(), 256U);
-}
-
-TEST_F(FallbackAllocatorTest, QueryValidPrimary) {
-  Layout layout = Layout::Of<uint32_t>();
-  void* ptr = primary_.Allocate(layout);
-  EXPECT_EQ(allocator_.Query(ptr), pw::OkStatus());
-}
-
-TEST_F(FallbackAllocatorTest, QueryValidSecondary) {
-  Layout layout = Layout::Of<uint32_t>();
-  void* ptr = secondary_.Allocate(layout);
-  EXPECT_EQ(allocator_.Query(ptr), pw::OkStatus());
-}
-
-TEST_F(FallbackAllocatorTest, QueryInvalidPtr) {
-  AllocatorForTest other;
-  Layout layout = Layout::Of<uint32_t>();
-  void* ptr = other.Allocate(layout);
-  EXPECT_NE(allocator_.Query(ptr), pw::OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST_F(FallbackAllocatorTest, AllocateFromPrimary) {

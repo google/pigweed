@@ -32,7 +32,7 @@ ChunkPool::ChunkPool(ByteSpan region, const Layout& layout)
       GetAlignedSubspan(region, allocated_layout_.alignment());
   PW_CHECK_OK(result.status());
   start_ = reinterpret_cast<uintptr_t>(region.data());
-  end_ = start_ + region.size();
+  end_ = start_ + region.size() - (region.size() % allocated_layout_.size());
   region = result.value();
   next_ = region.data();
   std::byte* current = next_;
@@ -64,7 +64,10 @@ void ChunkPool::DoDeallocate(void* ptr) {
   next_ = reinterpret_cast<std::byte*>(ptr);
 }
 
-Status ChunkPool::DoQuery(const void* ptr) const {
+Result<Layout> ChunkPool::DoGetInfo(InfoType info_type, const void* ptr) const {
+  if (info_type == InfoType::kCapacity) {
+    return Layout(end_ - start_, allocated_layout_.alignment());
+  }
   auto addr = reinterpret_cast<uintptr_t>(ptr);
   if (addr < start_ || end_ <= addr) {
     return Status::OutOfRange();
@@ -72,7 +75,17 @@ Status ChunkPool::DoQuery(const void* ptr) const {
   if ((addr - start_) % allocated_layout_.size() != 0) {
     return Status::OutOfRange();
   }
-  return OkStatus();
+  switch (info_type) {
+    case InfoType::kRequestedLayoutOf:
+    case InfoType::kUsableLayoutOf:
+    case InfoType::kAllocatedLayoutOf:
+      return allocated_layout_;
+    case InfoType::kRecognizes:
+      return Layout();
+    case InfoType::kCapacity:
+    default:
+      return Status::Unimplemented();
+  }
 }
 
 }  // namespace pw::allocator

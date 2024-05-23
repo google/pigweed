@@ -21,35 +21,11 @@ namespace pw {
 
 using ::pw::allocator::Layout;
 
-Result<Layout> Allocator::GetRequestedLayout(const Allocator& allocator,
-                                             const void* ptr) {
-  if (ptr == nullptr) {
-    return Status::NotFound();
-  }
-  return allocator.DoGetRequestedLayout(ptr);
-}
-
-Result<Layout> Allocator::GetUsableLayout(const Allocator& allocator,
-                                          const void* ptr) {
-  if (ptr == nullptr) {
-    return Status::NotFound();
-  }
-  return allocator.DoGetUsableLayout(ptr);
-}
-
-Result<Layout> Allocator::GetAllocatedLayout(const Allocator& allocator,
-                                             const void* ptr) {
-  if (ptr == nullptr) {
-    return Status::NotFound();
-  }
-  return allocator.DoGetAllocatedLayout(ptr);
-}
-
 void* Allocator::DoReallocate(void* ptr, Layout new_layout) {
   if (Resize(ptr, new_layout.size())) {
     return ptr;
   }
-  Result<Layout> allocated = GetAllocatedLayout(*this, ptr);
+  Result<Layout> allocated = GetAllocatedLayout(ptr);
   if (!allocated.ok()) {
     return nullptr;
   }
@@ -68,7 +44,7 @@ void* Allocator::DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
   if (Resize(ptr, old_layout, new_size)) {
     return ptr;
   }
-  Result<Layout> allocated = DoGetAllocatedLayout(ptr);
+  Result<Layout> allocated = GetAllocatedLayout(ptr);
   if (!allocated.ok()) {
     return nullptr;
   }
@@ -81,18 +57,6 @@ void* Allocator::DoReallocate(void* ptr, Layout old_layout, size_t new_size) {
     Deallocate(ptr, *allocated);
   }
   return new_ptr;
-}
-
-Result<Layout> Allocator::DoGetRequestedLayout(const void*) const {
-  return Status::Unimplemented();
-}
-
-Result<Layout> Allocator::DoGetUsableLayout(const void*) const {
-  return Status::Unimplemented();
-}
-
-Result<Layout> Allocator::DoGetAllocatedLayout(const void*) const {
-  return Status::Unimplemented();
 }
 
 }  // namespace pw

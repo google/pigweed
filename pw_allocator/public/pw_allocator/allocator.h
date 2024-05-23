@@ -147,132 +147,12 @@ class Allocator : public Deallocator {
     return allocator::AsPmrAllocator(*this);
   }
 
-  /// Returns the layout used to allocate a given pointer.
-  ///
-  /// NOTE: This method will eventually be deprecated. Use `GetAllocatedLayout`
-  /// instead.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the actual layout of allocated memory.
-  ///
-  ///    NOT_FOUND: The allocator does not recognize the pointer as one of
-  ///    its allocations.
-  ///
-  ///    UNIMPLEMENTED: Allocator cannot recover allocation details.
-  ///
-  /// @endrst
-  Result<Layout> GetLayout(const void* ptr) const {
-    return GetAllocatedLayout(*this, ptr);
-  }
-
  protected:
   /// TODO(b/326509341): Remove when downstream consumers migrate.
   constexpr Allocator() = default;
 
   explicit constexpr Allocator(const Capabilities& capabilities)
       : Deallocator(capabilities) {}
-
-  /// Returns the layout that was requested when allocating a given pointer.
-  ///
-  /// This optional method can recover details about what memory was requested
-  /// from a pointer previously allocated by a given object. The
-  /// requested layout may differ from either the layout of usable memory, the
-  /// layout of memory used to fulfill the request, or both.
-  ///
-  /// For example, it may have a smaller size than the usable memory if the
-  /// latter was padded to an alignment boundary, or may have a less strict
-  /// alignment than the actual memory.
-  ///
-  /// This method is protected in order to restrict it to object
-  /// implementations. It is static and takes an ``allocator`` parameter in
-  /// order to allow forwarding allocators to call it on wrapped allocators.
-  ///
-  /// @param[in]  allocator   The object that provided ``ptr``.
-  /// @param[in]  ptr           A pointer to previously allocated memory.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the originally requested layout.
-  ///
-  ///    NOT_FOUND: The allocator does not recognize the pointer
-  ///    as one of its allocations.
-  ///
-  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
-  ///
-  /// @endrst
-  static Result<Layout> GetRequestedLayout(const Allocator& allocator,
-                                           const void* ptr);
-
-  /// Returns the layout of the usable memory associated with a given pointer.
-  ///
-  /// This optional method can recover details about what memory is usable for a
-  /// pointer previously allocated by this object. The usable layout
-  /// may from either the requested layout, the layout of memory used to fulfill
-  /// the request, or both.
-  ///
-  /// For example, it may have a larger size than the requested layout if it
-  /// was padded to an alignment boundary, but may be less than the acutal
-  /// memory if the object includes some overhead for metadata.
-  ///
-  /// This method is protected in order to restrict it to object
-  /// implementations. It is static and takes an ``allocator`` parameter in
-  /// order to allow forwarding allocators to call it on wrapped allocators.
-  ///
-  /// @param[in]  allocator      The object that provided ``ptr``.
-  /// @param[in]  ptr           A pointer to previously allocated memory.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the layout of usable memory.
-  ///
-  ///    NOT_FOUND: The allocator does not recognize the pointer as one of its
-  ///    allocations.
-  ///
-  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
-  ///
-  /// @endrst
-  static Result<Layout> GetUsableLayout(const Allocator& allocator,
-                                        const void* ptr);
-
-  /// Returns the layout of the memory used to allocate a given pointer.
-  ///
-  /// This optional method can recover details about what memory is usable for a
-  /// pointer previously allocated by this object. The layout of memory
-  /// used to fulfill a request may differ from either the requested layout, the
-  /// layout of the usable memory, or both.
-  ///
-  /// For example, it may have a larger size than the requested layout or the
-  /// layout of usable memory if the object includes some overhead for
-  /// metadata.
-  ///
-  /// This method is protected in order to restrict it to object
-  /// implementations. It is static and takes an ``allocator`` parameter in
-  /// order to allow forwarding allocators to call it on wrapped allocators.
-  ///
-  /// @param[in]  allocator   The object that provided ``ptr``.
-  /// @param[in]  ptr           A pointer to previously allocated memory.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the layout of usable memory.
-  ///
-  ///    NOT_FOUND: The allocator does not recognize the pointer as one of
-  ///    its allocations.
-  ///
-  ///    UNIMPLEMENTED: Implementation cannot recover allocation details.
-  ///
-  /// @endrst
-  static Result<Layout> GetAllocatedLayout(const Allocator& allocator,
-                                           const void* ptr);
 
  private:
   /// Virtual `Allocate` function implemented by derived classes.
@@ -310,20 +190,6 @@ class Allocator : public Deallocator {
   /// Do not use this method. It will be removed.
   /// TODO(b/326509341): Remove when downstream consumers migrate.
   virtual void* DoReallocate(void* ptr, Layout old_layout, size_t new_size);
-
-  /// Virtual `GetRequested` function that can be overridden by derived classes.
-  ///
-  /// The default implementation of this method simply returns `UNIMPLEMENTED`,
-  /// indicating the allocator cannot recover layouts from allocated pointers.
-  ///
-  /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
-  virtual Result<Layout> DoGetRequestedLayout(const void*) const;
-
-  /// Virtual `Query` function that can be overridden by derived classes.
-  virtual Result<Layout> DoGetUsableLayout(const void*) const;
-
-  /// Virtual `Query` function that can be overridden by derived classes.
-  virtual Result<Layout> DoGetAllocatedLayout(const void*) const;
 };
 
 namespace allocator {

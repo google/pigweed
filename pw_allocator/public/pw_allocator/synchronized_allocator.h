@@ -64,34 +64,10 @@ class SynchronizedAllocator : public Allocator {
     return allocator->Reallocate(ptr, new_layout);
   }
 
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr) const override {
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
     Pointer allocator = borrowable_.acquire();
-    return Query(*allocator, ptr);
-  }
-
-  /// @copydoc Allocator::GetCapacity
-  StatusWithSize DoGetCapacity() const override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->GetCapacity();
-  }
-
-  /// @copydoc Allocator::GetRequestedLayout
-  Result<Layout> DoGetRequestedLayout(const void* ptr) const override {
-    Pointer allocator = borrowable_.acquire();
-    return GetRequestedLayout(*allocator, ptr);
-  }
-
-  /// @copydoc Allocator::GetUsableLayout
-  Result<Layout> DoGetUsableLayout(const void* ptr) const override {
-    Pointer allocator = borrowable_.acquire();
-    return GetUsableLayout(*allocator, ptr);
-  }
-
-  /// @copydoc Allocator::DoGetAllocatedLayout
-  Result<Layout> DoGetAllocatedLayout(const void* ptr) const override {
-    Pointer allocator = borrowable_.acquire();
-    return GetAllocatedLayout(*allocator, ptr);
+    return GetInfo(*allocator, info_type, ptr);
   }
 
   LockType lock_;

@@ -105,7 +105,6 @@ class BlockAllocatorTestBase : public ::testing::Test {
   void ResizeSmallSmaller();
   void ResizeSmallLarger();
   void ResizeSmallLargerFailure();
-  void CanGetLayoutFromValidPointer();
 
  private:
   std::array<void*, kNumPtrs> ptrs_;
@@ -351,31 +350,6 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
   }
   EXPECT_EQ(used_count, 3U);
   EXPECT_EQ(free_count, 4U);
-}
-
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<
-    BlockAllocatorType>::CannotGetLayoutFromInvalidPointer() {
-  Allocator& allocator = GetAllocator({
-      {kLargerOuterSize, 0},
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kSmallOuterSize, 2},
-      {kSmallerOuterSize, Preallocation::kIndexFree},
-      {kSmallOuterSize, 4},
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kLargerOuterSize, 6},
-  });
-
-  Result<Layout> result0 = allocator.GetLayout(nullptr);
-  EXPECT_EQ(result0.status(), Status::NotFound());
-
-  auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);
-  for (const auto& block : block_allocator.blocks()) {
-    if (!block->Used()) {
-      Result<Layout> result1 = allocator.GetLayout(block->UsableSpace());
-      EXPECT_EQ(result1.status(), Status::FailedPrecondition());
-    }
-  }
 }
 
 }  // namespace pw::allocator::test

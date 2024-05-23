@@ -17,6 +17,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_result/result.h"
 
 namespace pw::allocator {
 
@@ -45,6 +46,12 @@ class Layout {
   template <typename T>
   static constexpr Layout Of() {
     return Layout(sizeof(T), alignof(T));
+  }
+
+  /// If the result is okay, returns its contained layout; otherwise, returns a
+  /// default layout.
+  static constexpr Layout Unwrap(const Result<Layout>& result) {
+    return result.ok() ? (*result) : Layout();
   }
 
   constexpr Layout Extend(size_t size) const {

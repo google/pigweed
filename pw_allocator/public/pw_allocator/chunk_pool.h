@@ -31,7 +31,8 @@ class ChunkPool : public Pool {
  public:
   static constexpr Capabilities kCapabilities =
       kImplementsGetRequestedLayout | kImplementsGetUsableLayout |
-      kImplementsGetAllocatedLayout | kImplementsQuery;
+      kImplementsGetAllocatedLayout | kImplementsGetCapacity |
+      kImplementsRecognizes;
   static constexpr size_t kMinSize = sizeof(void*);
   static constexpr size_t kMinAlignment = alignof(void*);
 
@@ -47,11 +48,11 @@ class ChunkPool : public Pool {
   /// @copydoc Pool::Allocate
   void* DoAllocate() override;
 
-  /// @copydoc Pool::Deallocate
+  /// @copydoc Deallocator::Deallocate
   void DoDeallocate(void* ptr) override;
 
-  /// @copydoc Pool::Query
-  Status DoQuery(const void* ptr) const override;
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   const Layout allocated_layout_;
   uintptr_t start_;
