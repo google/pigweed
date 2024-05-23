@@ -62,6 +62,7 @@ pw_doc_group("core_docs") {
     "get_started/zephyr.rst",
     "glossary.rst",
     "infra/ci_cq_intro.rst",
+    "infra/github.rst",
     "infra/index.rst",
     "infra/rollers.rst",
     "mission.rst",
