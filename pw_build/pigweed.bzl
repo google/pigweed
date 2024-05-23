@@ -425,10 +425,22 @@ def _preprocess_linker_script_impl(ctx):
         feature_configuration = feature_configuration,
         action_name = C_COMPILE_ACTION_NAME,
     )
+    compilation_context = cc_common.merge_compilation_contexts(
+        compilation_contexts = [dep[CcInfo].compilation_context for dep in ctx.attr.deps],
+    )
     c_compile_variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = ctx.fragments.cpp.copts + ctx.fragments.cpp.conlyopts,
+        include_directories = compilation_context.includes,
+        quote_include_directories = compilation_context.quote_includes,
+        system_include_directories = compilation_context.system_includes,
+        preprocessor_defines = depset(ctx.attr.defines, transitive = [compilation_context.defines]),
+    )
+    cmd_line = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+        variables = c_compile_variables,
     )
     env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
@@ -439,25 +451,17 @@ def _preprocess_linker_script_impl(ctx):
         outputs = [output_script],
         inputs = depset(
             [ctx.file.linker_script],
-            transitive = [cc_toolchain.all_files],
+            transitive = [compilation_context.headers, cc_toolchain.all_files],
         ),
         executable = cxx_compiler_path,
         arguments = [
             "-E",
             "-P",
-            # TODO: b/296928739 - This flag is needed so cc1 can be located
-            # despite the presence of symlinks. Normally this is provided
-            # through copts inherited from the toolchain, but since those are
-            # not pulled in here the flag must be explicitly added.
-            "-no-canonical-prefixes",
             "-xc",
             ctx.file.linker_script.path,
             "-o",
             output_script.path,
-        ] + [
-            "-D" + d
-            for d in ctx.attr.defines
-        ] + ctx.attr.copts,
+        ] + cmd_line,
         env = env,
     )
     linker_input = cc_common.create_linker_input(
@@ -478,6 +482,12 @@ pw_linker_script = rule(
     attrs = {
         "copts": attr.string_list(doc = "C compile options."),
         "defines": attr.string_list(doc = "C preprocessor defines."),
+        "deps": attr.label_list(
+            providers = [CcInfo],
+            doc = """Dependencies of this linker script. Can be used to provide
+                     header files and defines. Only the CompilationContext of
+                     the provided dependencies are used.""",
+        ),
         "linker_script": attr.label(
             mandatory = True,
             allow_single_file = True,

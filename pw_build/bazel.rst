@@ -35,6 +35,14 @@ rule for handling linker scripts with Bazel. e.g.
          "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
          "PW_BOOT_VECTOR_TABLE_SIZE=512",
      ],
+     deps = [":some_header_library"],
+   )
+
+   # You can include headers provided by targets specified in deps.
+   cc_library(
+     name = "some_header_library",
+     hdrs = ["test_header.h"],
+     includes = ["."],
    )
 
    # You can include the linker script in the deps.

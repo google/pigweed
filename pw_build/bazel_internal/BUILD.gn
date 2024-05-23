@@ -17,5 +17,6 @@ import("$dir_pw_build/target_types.gni")
 # This is target is to keep the presubmit happy. But is not actually used.
 pw_source_set("tests") {
   public_deps = [ dir_pw_preprocessor ]
+  headers = [ "header_test.h" ]
   sources = [ "test.cc" ]
 }

@@ -21,6 +21,11 @@
 #error "PW_BOOT_VECTOR_TABLE_BEGIN is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_VECTOR_TABLE_BEGIN
 
+#include "header_test.h"
+
+#ifndef SOME_USEFUL_LINKER_SCRIPT_MACRO
+#error "Header include test failed"
+#endif
 
  /* Note: This technically doesn't set the firmware's entry point. Setting the
  *       firmware entry point is done by setting vector_table[1]

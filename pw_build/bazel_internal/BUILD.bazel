@@ -14,6 +14,12 @@
 
 load("//pw_build:pigweed.bzl", "pw_linker_script")
 
+cc_library(
+    name = "header_test",
+    hdrs = ["header_test.h"],
+    includes = ["."],
+)
+
 pw_linker_script(
     name = "linker_script_test",
     defines = [
@@ -27,6 +33,7 @@ pw_linker_script(
         "PW_BOOT_VECTOR_TABLE_SIZE=1M",
     ],
     linker_script = "linker_script.ld",
+    deps = [":header_test"],
 )
 
 # Use cc_binary to build the test to avoid duplicating the linker script in the
