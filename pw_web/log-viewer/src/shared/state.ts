@@ -12,31 +12,51 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { State } from './interfaces';
+import { TableColumn } from './interfaces';
+import { ViewNode } from './view-node';
 
-/**
- * Abstract Class for StateStore.
- */
-export abstract class StateStore {
-  abstract getState(): State;
-  abstract setState(state: State): void;
+export interface LogViewerState {
+  rootNode: ViewNode;
 }
 
-/**
- * LocalStorage version of StateStore
- */
-export class LocalStorageState extends StateStore {
-  getState(): State {
-    try {
-      const state = localStorage.getItem('logState') as string;
-      return state == null ? { logViewConfig: [] } : JSON.parse(state);
-    } catch (e) {
-      console.error(e);
-      return { logViewConfig: [] };
+export interface LogViewState {
+  searchText: string;
+  columnData: TableColumn[];
+}
+
+interface StateStorage {
+  loadState(): LogViewerState | undefined;
+  saveState(state: LogViewerState): void;
+}
+
+export class LocalStateStorage implements StateStorage {
+  private readonly STATE_STORAGE_KEY = 'logViewerState';
+
+  loadState(): LogViewerState | undefined {
+    const storedStateString = localStorage.getItem(this.STATE_STORAGE_KEY);
+    if (storedStateString) {
+      return JSON.parse(storedStateString);
     }
+    return undefined;
   }
 
-  setState(state: State): void {
-    localStorage.setItem('logState', JSON.stringify(state));
+  saveState(state: LogViewerState) {
+    localStorage.setItem(this.STATE_STORAGE_KEY, JSON.stringify(state));
+  }
+}
+
+export class StateService {
+  private store: StateStorage;
+
+  constructor(store: StateStorage) {
+    this.store = store;
+  }
+
+  loadState(): LogViewerState | undefined {
+    return this.store.loadState();
+  }
+
+  saveState(state: LogViewerState) {
+    this.store.saveState(state);
   }
 }

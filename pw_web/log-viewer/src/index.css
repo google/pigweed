@@ -60,14 +60,8 @@ button {
 
 main {
     height: 100vh;
-    padding: 16px;
+    padding: 0.5rem;
     width: 100vw;
-}
-
-@media (min-width: 840px) {
-    main {
-        padding: 24px;
-    }
 }
 
 a {

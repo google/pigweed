@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,21 +15,13 @@
 import { assert } from '@open-wc/testing';
 import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
-import { LocalStorageState } from '../src/shared/state';
-import { LogStore } from '../src/log-store';
+import { LocalStateStorage, StateService } from '../src/shared/state';
+import { NodeType, Orientation, ViewNode } from '../src/shared/view-node';
 
 function setUpLogViewer(logSources) {
-  const logStore = new LogStore();
-  const destroyLogViewer = createLogViewer(
-    logSources,
-    document.body,
-    undefined,
-    logStore,
-  );
+  const destroyLogViewer = createLogViewer(logSources, document.body);
   const logViewer = document.querySelector('log-viewer');
-
-  handleResizeObserverError();
-  return { logSources, destroyLogViewer, logViewer, logStore };
+  return { logSources, destroyLogViewer, logViewer };
 }
 
 // Handle benign ResizeObserver error caused by custom log viewer initialization
@@ -52,82 +44,101 @@ function handleResizeObserverError() {
 
 describe('log-view', () => {
   let logSources;
-  let logStore;
   let destroyLogViewer;
   let logViewer;
-  let stateStore;
+  let stateService;
+  let mockColumnData;
+  let mockState;
 
   async function getLogViews() {
     const logViewerEl = document.querySelector('log-viewer');
-
     await logViewerEl.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 100));
-
     const logViews = logViewerEl.shadowRoot.querySelectorAll('log-view');
     return logViews;
   }
 
   describe('state', () => {
     beforeEach(() => {
-      window.localStorage.clear();
-      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
-        new MockLogSource(),
-      ]));
-      stateStore = new LocalStorageState();
+      mockColumnData = [
+        {
+          fieldName: 'test',
+          characterLength: 0,
+          manualWidth: null,
+          isVisible: false,
+        },
+        {
+          fieldName: 'foo',
+          characterLength: 0,
+          manualWidth: null,
+          isVisible: true,
+        },
+        {
+          fieldName: 'bar',
+          characterLength: 0,
+          manualWidth: null,
+          isVisible: false,
+        },
+      ];
+
+      mockState = {
+        rootNode: new ViewNode({
+          type: NodeType.Split,
+          orientation: Orientation.Horizontal,
+          children: [
+            new ViewNode({
+              searchText: 'hello',
+              logViewId: 'child-node-1',
+              type: NodeType.View,
+              columnData: mockColumnData,
+            }),
+            new ViewNode({
+              searchText: 'world',
+              logViewId: 'child-node-2',
+              type: NodeType.View,
+              columnData: mockColumnData,
+            }),
+          ],
+        }),
+      };
+
+      stateService = new StateService(new LocalStateStorage());
+      stateService.saveState(mockState);
+      handleResizeObserverError();
     });
 
     afterEach(() => {
       destroyLogViewer();
-      window.localStorage.clear();
     });
 
     it('should default to single view when state is cleared', async () => {
+      window.localStorage.clear();
+
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+        new MockLogSource(),
+      ]));
       const logViews = await getLogViews();
+
       assert.lengthOf(logViews, 1);
     });
 
     it('should populate correct number of views from state', async () => {
-      // Destroy log viewer created by beforeEach()
-      destroyLogViewer();
-
-      const viewState1 = {
-        columnData: [
-          {
-            fieldName: 'test',
-            characterLength: 0,
-            manualWidth: null,
-            isVisible: false,
-          },
-        ],
-        search: '',
-        viewID: 'abc',
-        viewTitle: 'Log View',
-      };
-      const viewState2 = structuredClone(viewState1);
-      viewState2.viewID = 'def';
-
-      const state = stateStore.getState();
-      state.logViewConfig = [viewState1, viewState2];
-      stateStore.setState(state);
-
-      // Create a new log viewer with an existing state
-      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
         new MockLogSource(),
       ]));
+
       const logViews = await getLogViews();
       assert.lengthOf(logViews, 2);
-      window.localStorage.clear();
     });
   });
 
   describe('sources', () => {
     before(() => {
       window.localStorage.clear();
-      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
         new MockLogSource('Source 1'),
         new MockLogSource('Source 2'),
       ]));
-      stateStore = new LocalStorageState();
     });
 
     after(() => {

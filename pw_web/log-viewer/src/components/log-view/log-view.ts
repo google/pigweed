@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,13 +16,7 @@ import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styles } from './log-view.styles';
 import { LogList } from '../log-list/log-list';
-import {
-  TableColumn,
-  LogEntry,
-  State,
-  SourceData,
-} from '../../shared/interfaces';
-import { LocalStorageState, StateStore } from '../../shared/state';
+import { TableColumn, LogEntry, SourceData } from '../../shared/interfaces';
 import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
 import '../log-view-controls/log-view-controls';
@@ -46,7 +40,7 @@ export class LogView extends LitElement {
    * view is created in a log viewer instance.
    */
   @property({ type: String })
-  id = `${this.localName}-${crypto.randomUUID()}`;
+  id = '';
 
   /** An array of log entries to be displayed. */
   @property({ type: Array })
@@ -60,21 +54,17 @@ export class LogView extends LitElement {
   @property({ type: String })
   viewTitle = '';
 
+  /** The field keys (column values) for the incoming log entries. */
+  @property({ type: Array })
+  columnData: TableColumn[] = [];
+
   /** Whether line wrapping in table cells should be used. */
   @state()
   _lineWrap = false;
 
-  /** The field keys (column values) for the incoming log entries. */
-  @state()
-  public columnData: TableColumn[] = [];
-
   /** A string representing the value contained in the search field. */
   @state()
-  public searchText = '';
-
-  /** A StateStore object that stores state of views */
-  @state()
-  _stateStore: StateStore = new LocalStorageState();
+  searchText = '';
 
   /** Preferred column order to reference */
   @state()
@@ -100,8 +90,6 @@ export class LogView extends LitElement {
    */
   private _timeFilter: FilterFunction = () => true;
 
-  private _state: State;
-
   private _debounceTimeout: NodeJS.Timeout | null = null;
 
   /** The number of elements in the `logs` array since last updated. */
@@ -110,22 +98,7 @@ export class LogView extends LitElement {
   /** The amount of time, in ms, before the filter expression is executed. */
   private readonly FILTER_DELAY = 100;
 
-  constructor() {
-    super();
-    this._state = this._stateStore.getState();
-  }
-
   protected firstUpdated(): void {
-    const viewConfigArr = this._state.logViewConfig;
-    const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
-
-    // Get column data from local storage, if it exists
-    if (index !== -1) {
-      const storedColumnData = viewConfigArr[index].columnData;
-      this.updateColumnOrder(storedColumnData);
-      this.columnData = this.updateColumnRender(storedColumnData);
-    }
-
     // Update view title with log source names if a view title isn't already provided
     if (!this.viewTitle) {
       this.updateTitle();
@@ -147,11 +120,8 @@ export class LogView extends LitElement {
       this.filterLogs();
     }
 
-    if (changedProperties.has('_columnData')) {
-      this._state = { logViewConfig: this._state.logViewConfig };
-      this._stateStore.setState({
-        logViewConfig: this._state.logViewConfig,
-      });
+    if (changedProperties.has('columnData')) {
+      this._logList.columnData = this.columnData;
     }
   }
 
@@ -162,20 +132,12 @@ export class LogView extends LitElement {
    *   update the filter.
    */
   private updateFilter(event: CustomEvent) {
-    this.searchText = event.detail.inputValue;
-    const logViewConfig = this._state.logViewConfig;
-    const index = logViewConfig.findIndex((i) => this.id === i.viewID);
-
     switch (event.type) {
       case 'input-change':
+        this.searchText = event.detail.inputValue;
+
         if (this._debounceTimeout) {
           clearTimeout(this._debounceTimeout);
-        }
-
-        if (index !== -1) {
-          logViewConfig[index].search = this.searchText;
-          this._state = { logViewConfig: logViewConfig };
-          this._stateStore.setState({ logViewConfig: logViewConfig });
         }
 
         if (!this.searchText) {
@@ -211,10 +173,6 @@ export class LogView extends LitElement {
   }
 
   private updateFieldsFromNewLogs(newLogs: LogEntry[]): void {
-    if (!this.columnData) {
-      this.columnData = [];
-    }
-
     newLogs.forEach((log) => {
       log.fields.forEach((field) => {
         if (!this.columnData.some((col) => col.fieldName === field.key)) {
@@ -309,13 +267,6 @@ export class LogView extends LitElement {
    *   toggled.
    */
   private toggleColumns(event: CustomEvent) {
-    const logViewConfig = this._state.logViewConfig;
-    const index = logViewConfig.findIndex((i) => this.id === i.viewID);
-
-    if (index === -1) {
-      return;
-    }
-
     // Find the relevant column in _columnData
     const column = this.columnData.find(
       (col) => col.fieldName === event.detail.field,
@@ -337,9 +288,8 @@ export class LogView extends LitElement {
       lastVisibleColumn.manualWidth = null;
     }
 
-    // Trigger the change in column data and request an update
+    // Trigger a `columnData` update
     this.columnData = [...this.columnData];
-    this._logList.requestUpdate();
   }
 
   /**
@@ -368,10 +318,6 @@ export class LogView extends LitElement {
     }
   }
 
-  private updateColumnData(event: CustomEvent) {
-    this.columnData = event.detail;
-  }
-
   private updateTitle() {
     const sourceNames = Array.from(this.sources.values())?.map(
       (tag: SourceData) => tag.name,
@@ -396,7 +342,7 @@ export class LogView extends LitElement {
         .viewId=${this.id}
         .viewTitle=${this.viewTitle}
         .hideCloseButton=${!this.isOneOfMany}
-        .stateStore=${this._stateStore}
+        .searchText=${this.searchText}
         @input-change="${this.updateFilter}"
         @clear-logs="${this.updateFilter}"
         @column-toggle="${this.toggleColumns}"
@@ -407,12 +353,10 @@ export class LogView extends LitElement {
       </log-view-controls>
 
       <log-list
-        .columnData=${[...this.columnData]}
         .lineWrap=${this._lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}
         .searchText=${this.searchText}
-        @update-column-data="${this.updateColumnData}"
       >
       </log-list>`;
   }

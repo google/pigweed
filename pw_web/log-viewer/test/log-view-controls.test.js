@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,8 +14,9 @@
 
 import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
-import { LocalStorageState } from '../src/shared/state';
 import { expect } from '@open-wc/testing';
+import { LocalStateStorage, StateService } from '../src/shared/state';
+import { NodeType, Orientation, ViewNode } from '../src/shared/view-node';
 
 function setUpLogViewer() {
   const mockLogSource = new MockLogSource();
@@ -46,14 +47,58 @@ describe('log-view-controls', () => {
   let mockLogSource;
   let destroyLogViewer;
   let logViewer;
-  let stateStore;
+  let mockColumnData;
+  let mockState;
+  let stateService;
 
-  beforeEach(() => {
-    stateStore = new LocalStorageState();
+  before(() => {
+    mockColumnData = [
+      {
+        fieldName: 'test',
+        characterLength: 0,
+        manualWidth: null,
+        isVisible: false,
+      },
+      {
+        fieldName: 'foo',
+        characterLength: 0,
+        manualWidth: null,
+        isVisible: true,
+      },
+      {
+        fieldName: 'bar',
+        characterLength: 0,
+        manualWidth: null,
+        isVisible: false,
+      },
+    ];
+    mockState = {
+      rootNode: new ViewNode({
+        type: NodeType.Split,
+        orientation: Orientation.Horizontal,
+        children: [
+          new ViewNode({
+            searchText: 'hello',
+            logViewId: 'child-node-1',
+            type: NodeType.View,
+            columnData: mockColumnData,
+          }),
+          new ViewNode({
+            searchText: 'world',
+            logViewId: 'child-node-2',
+            type: NodeType.View,
+            columnData: mockColumnData,
+          }),
+        ],
+      }),
+    };
+
+    stateService = new StateService(new LocalStateStorage());
+    stateService.saveState(mockState);
     handleResizeObserverError();
   });
 
-  afterEach(() => {
+  after(() => {
     window.localStorage.clear();
     mockLogSource.stop();
     destroyLogViewer();
@@ -63,79 +108,40 @@ describe('log-view-controls', () => {
     it('should populate search field value on component load', async () => {
       ({ mockLogSource, destroyLogViewer, logViewer } = setUpLogViewer());
       const logViews = await getLogViews();
-
-      const state = stateStore.getState();
-      const stateSearchString = state.logViewConfig[0].search;
+      const stateSearchString =
+        mockState.rootNode.children[0].logViewState.searchText;
       const logControls =
         logViews[0].shadowRoot.querySelector('log-view-controls');
-      const inputEl = logControls.shadowRoot.querySelector('.input-facade');
+      logControls.requestUpdate();
+      const inputEl = logControls.shadowRoot.querySelector('#search-field');
 
-      expect(inputEl.innerText).to.equal(stateSearchString);
+      await logViewer.updateComplete;
+      expect(inputEl.value).to.equal(stateSearchString);
     });
 
     it('should populate search field values for multiple log views on component load', async () => {
-      const viewState = {
-        columnData: [
-          {
-            fieldName: 'test',
-            characterLength: 0,
-            manualWidth: null,
-            isVisible: false,
-          },
-        ],
-        search: 'hello world',
-        viewID: 'abc',
-        viewTitle: 'Log View',
-      };
-
-      setupState(viewState);
       ({ mockLogSource, destroyLogViewer, logViewer } = setUpLogViewer());
 
-      const state = stateStore.getState();
+      const state = stateService.loadState();
       const logViews = await getLogViews();
       const searchInputs = [];
+
       logViews.forEach((logView) => {
-        const logControl =
+        const logControls =
           logView.shadowRoot.querySelector('log-view-controls');
-        const inputEl = logControl.shadowRoot.querySelector('.input-facade');
-        searchInputs.push(inputEl.innerText);
+        const inputEl = logControls.shadowRoot.querySelector('#search-field');
+        searchInputs.push(inputEl.value);
       });
 
-      state.logViewConfig.forEach((viewConfig, index) => {
-        expect(viewConfig.search).to.equal(searchInputs[index]);
+      state.rootNode.children.forEach((childNode, index) => {
+        expect(childNode.logViewState.searchText).to.equal(searchInputs[index]);
       });
     });
 
     it('should recall table column visibility on component load', async () => {
-      const viewState = {
-        columnData: [
-          {
-            fieldName: 'test',
-            characterLength: 0,
-            manualWidth: null,
-            isVisible: false,
-          },
-          {
-            fieldName: 'foo',
-            characterLength: 0,
-            manualWidth: null,
-            isVisible: true,
-          },
-          {
-            fieldName: 'bar',
-            characterLength: 0,
-            manualWidth: null,
-            isVisible: false,
-          },
-        ],
-        search: 'hello world',
-        viewID: 'abc',
-        viewTitle: 'Log View',
-      };
-
-      setupState(viewState);
       ({ mockLogSource, destroyLogViewer, logViewer } = setUpLogViewer());
 
+      const state = stateService.loadState();
       const logViews = await getLogViews();
       const logControls =
         logViews[0].shadowRoot.querySelector('log-view-controls');
@@ -143,7 +149,8 @@ describe('log-view-controls', () => {
         logControls.shadowRoot.querySelectorAll('.item-checkboxes');
 
       fieldMenu.forEach((field, index) => {
-        expect(field.checked).to.equal(viewState.columnData[index].isVisible);
+        const columnData = state.rootNode.children[0].logViewState.columnData;
+        expect(field.checked).to.equal(columnData[index].isVisible);
       });
     });
 
@@ -153,12 +160,6 @@ describe('log-view-controls', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       const logViews = logViewerEl.shadowRoot.querySelectorAll('log-view');
       return logViews;
-    }
-
-    function setupState(viewState) {
-      const state = stateStore.getState();
-      state.logViewConfig.push(viewState);
-      stateStore.setState(state);
     }
   });
 });

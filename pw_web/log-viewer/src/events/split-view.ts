@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,17 +12,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-interface InputChangeEvent extends CustomEvent {
+import { TableColumn } from '../shared/interfaces';
+import { Orientation } from '../shared/view-node';
+
+interface SplitViewEvent extends CustomEvent {
   detail: {
-    viewId: string;
-    inputValue: string;
+    columnData: TableColumn[];
+    viewTitle: string;
+    searchText: string;
+    orientation: Orientation;
+    parentId: string;
   };
 }
 
 declare global {
   interface GlobalEventHandlersEventMap {
-    'input-change': InputChangeEvent;
+    'split-view': SplitViewEvent;
   }
 }
 
-export default InputChangeEvent;
+export default SplitViewEvent;

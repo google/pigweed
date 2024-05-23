@@ -15,20 +15,21 @@
 import { JsonLogSource } from './custom/json-log-source';
 import { BrowserLogSource } from './custom/browser-log-source';
 import { createLogViewer } from './createLogViewer';
-import { LocalStorageState } from './shared/state';
 import { LogSource } from './log-source';
 import { LogStore } from './log-store';
 
+// Shoelace imports
+import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
+
 const logStore = new LogStore();
-const logSources = [new BrowserLogSource(), new JsonLogSource()] as LogSource[];
-const state = new LocalStorageState();
+const logSources = [new JsonLogSource(), new BrowserLogSource()] as LogSource[];
 
 const containerEl = document.querySelector(
   '#log-viewer-container',
 ) as HTMLElement;
 
 if (containerEl) {
-  createLogViewer(logSources, containerEl, state, logStore);
+  createLogViewer(logSources, containerEl, undefined, logStore);
 }
 
 // Start reading log data

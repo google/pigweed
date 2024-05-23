@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -53,7 +53,7 @@ export class LogList extends LitElement {
   @property({ type: Boolean })
   lineWrap = false;
 
-  @property({ type: Array })
+  @state()
   columnData: TableColumn[] = [];
 
   /** Indicates whether the table content is overflowing to the right. */
@@ -108,8 +108,6 @@ export class LogList extends LitElement {
   } | null = null;
 
   firstUpdated() {
-    setInterval(() => this.updateHorizontalOverflowState(), 1000);
-
     this._tableContainer.addEventListener('scroll', this.handleTableScroll);
     this._tableBody.addEventListener('rangeChanged', this.onRangeChanged);
 
@@ -137,6 +135,8 @@ export class LogList extends LitElement {
 
     if (changedProperties.has('columnData')) {
       this.updateColumnWidths(this.generateGridTemplateColumns());
+      this.updateHorizontalOverflowState();
+      this.requestUpdate();
     }
   }
 
@@ -214,6 +214,18 @@ export class LogList extends LitElement {
         }
       });
     });
+
+    this.updateColumnWidths(this.generateGridTemplateColumns());
+    const resizeColumn = new CustomEvent('resize-column', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        viewId: this.viewId,
+        columnData: this.columnData,
+      },
+    });
+
+    this.dispatchEvent(resizeColumn);
   };
 
   private generateGridTemplateColumns(
@@ -377,7 +389,7 @@ export class LogList extends LitElement {
 
     const handleColumnResize = throttle((event: MouseEvent) => {
       this.handleColumnResize(event);
-    }, 32);
+    }, 16);
 
     const handleColumnResizeEnd = () => {
       this.columnResizeData = null;
@@ -385,11 +397,16 @@ export class LogList extends LitElement {
       document.removeEventListener('mouseup', handleColumnResizeEnd);
 
       // Communicate column data changes back to parent Log View
-      const updateColumnData = new CustomEvent('update-column-data', {
-        detail: this.columnData,
+      const resizeColumn = new CustomEvent('resize-column', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          viewId: this.viewId,
+          columnData: this.columnData,
+        },
       });
 
-      this.dispatchEvent(updateColumnData);
+      this.dispatchEvent(resizeColumn);
     };
 
     document.addEventListener('mousemove', handleColumnResize);
@@ -580,13 +597,13 @@ export class LogList extends LitElement {
 
     <div
       class="overflow-indicator left-indicator"
-      style="opacity: ${this._scrollPercentageLeft}"
+      style="opacity: ${this._scrollPercentageLeft - 0.5}"
       ?hidden="${!this._isOverflowingToRight}"
     ></div>
 
     <div
       class="overflow-indicator right-indicator"
-      style="opacity: ${1 - this._scrollPercentageLeft}"
+      style="opacity: ${1 - this._scrollPercentageLeft - 0.5}"
       ?hidden="${!this._isOverflowingToRight}"
     ></div>
   `;

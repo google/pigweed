@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,35 +12,60 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { assert, expect } from '@open-wc/testing';
-import { LocalStorageState, StateStore } from '../src/shared/state';
+import { expect, assert } from '@open-wc/testing';
+import { LocalStateStorage, StateService } from '../src/shared/state';
+import { NodeType, Orientation, ViewNode } from '../src/shared/view-node';
 
 describe('state', () => {
-  const stateStore = new LocalStorageState();
-  const state = stateStore.getState();
-  const viewState = {
-    columnData: [
-      {
-        fieldName: 'test',
-        characterLength: 0,
-        manualWidth: null,
-        isVisible: true,
-      },
-    ],
-    search: '',
-    viewID: 'abc',
-    viewTitle: 'Log View',
+  const mockColumnData = [
+    {
+      fieldName: 'test',
+      characterLength: 0,
+      manualWidth: null,
+      isVisible: false,
+    },
+    {
+      fieldName: 'foo',
+      characterLength: 0,
+      manualWidth: null,
+      isVisible: true,
+    },
+    {
+      fieldName: 'bar',
+      characterLength: 0,
+      manualWidth: null,
+      isVisible: false,
+    },
+  ];
+
+  const mockState = {
+    rootNode: new ViewNode({
+      type: NodeType.Split,
+      orientation: Orientation.Horizontal,
+      children: [
+        new ViewNode({
+          searchText: 'hello',
+          logViewId: 'child-node-1',
+          type: NodeType.View,
+          columnData: mockColumnData,
+        }),
+        new ViewNode({
+          searchText: 'world',
+          logViewId: 'child-node-2',
+          type: NodeType.View,
+          columnData: mockColumnData,
+        }),
+      ],
+    }),
   };
 
-  it('should be empty when initialized', () => {
-    expect(state).to.have.property('logViewConfig');
-    assert.lengthOf(state.logViewConfig, 0, 'logViewConfig should be empty');
-  });
+  const stateService = new StateService(new LocalStateStorage());
+  stateService.saveState(mockState);
 
-  it('when the state is set, the state from the getter should match', () => {
-    state.logViewConfig.push(viewState);
-    stateStore.setState(state);
-    const storedState = stateStore.getState();
-    expect(storedState.logViewConfig[1]).to.equal(state.logViewConfig[1]);
+  describe('state service', () => {
+    it('loads a stored state object', () => {
+      expect(stateService.loadState()).to.have.property('rootNode');
+      assert.lengthOf(stateService.loadState().rootNode.children, 2);
+    });
   });
 });

@@ -127,7 +127,7 @@ body {
         --sys-log-viewer-color-table-bg: var(--md-sys-color-surface-container-lowest);
         --sys-log-viewer-color-table-text: var(--md-sys-color-on-surface);
         --sys-log-viewer-color-table-cell-outline: var(--md-sys-color-outline-variant);
-        --sys-log-viewer-color-overflow-indicator: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-overflow-indicator: var(--sys-log-viewer-color-table-bg);
         --sys-log-viewer-color-table-mark: var(--md-sys-color-primary-container);
         --sys-log-viewer-color-table-mark-text: var(--md-sys-color-on-primary-container);
         --sys-log-viewer-color-table-mark-outline: var(--md-sys-color-outline-variant);
@@ -200,7 +200,7 @@ body {
         --sys-log-viewer-color-table-bg: var(--md-sys-color-surface-container-lowest);
         --sys-log-viewer-color-table-text: var(--md-sys-color-on-surface);
         --sys-log-viewer-color-table-cell-outline: var(--md-sys-color-outline-variant);
-        --sys-log-viewer-color-overflow-indicator: var(--md-sys-color-surface-container);
+        --sys-log-viewer-color-overflow-indicator: var(--sys-log-viewer-color-table-bg);
         --sys-log-viewer-color-table-mark: var(--md-sys-color-primary-container);
         --sys-log-viewer-color-table-mark-text: var(--md-sys-color-on-primary-container);
         --sys-log-viewer-color-table-mark-outline: var(--md-sys-color-outline-variant);

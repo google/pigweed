@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,17 +12,21 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-interface InputChangeEvent extends CustomEvent {
+import { TableColumn } from '../shared/interfaces';
+
+interface UpdateLogViewStateEvent extends CustomEvent {
   detail: {
     viewId: string;
-    inputValue: string;
+    columnData: TableColumn[];
+    searchText: string;
+    viewTitle: string;
   };
 }
 
 declare global {
   interface GlobalEventHandlersEventMap {
-    'input-change': InputChangeEvent;
+    'update-log-view-state': UpdateLogViewStateEvent;
   }
 }
 
-export default InputChangeEvent;
+export default UpdateLogViewStateEvent;

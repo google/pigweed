@@ -31,23 +31,12 @@ export interface LogEntry {
   sourceData?: SourceData;
 }
 
-export interface LogViewConfig {
-  columnData: TableColumn[];
-  search: string;
-  viewID: string;
-  viewTitle: string;
-}
-
 export enum Severity {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
   WARNING = 'WARNING',
   ERROR = 'ERROR',
   CRITICAL = 'CRITICAL',
-}
-
-export interface State {
-  logViewConfig: LogViewConfig[];
 }
 
 export interface LogEntryEvent {

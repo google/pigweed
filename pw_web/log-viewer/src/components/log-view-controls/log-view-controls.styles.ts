@@ -73,7 +73,7 @@ export const styles = css`
     width: 100%;
   }
 
-  .input-facade {
+  input[type='text'] {
     align-items: center;
     background-color: var(--sys-log-viewer-color-controls-input-bg);
     border: 1px solid var(--sys-log-viewer-color-controls-input-outline);
@@ -87,10 +87,6 @@ export const styles = css`
     overflow: hidden;
     padding: 0.5rem 1rem;
     width: 100%;
-  }
-
-  input[type='text'] {
-    display: none;
   }
 
   input::placeholder {

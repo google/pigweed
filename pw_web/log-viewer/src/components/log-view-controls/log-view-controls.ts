@@ -21,8 +21,7 @@ import {
   state,
 } from 'lit/decorators.js';
 import { styles } from './log-view-controls.styles';
-import { State, TableColumn } from '../../shared/interfaces';
-import { StateStore, LocalStorageState } from '../../shared/state';
+import { TableColumn } from '../../shared/interfaces';
 
 /**
  * A sub-component of the log view with user inputs for managing and customizing
@@ -45,13 +44,12 @@ export class LogViewControls extends LitElement {
   @property({ type: Boolean })
   hideCloseButton = false;
 
-  /** A StateStore object that stores state of views */
-  @state()
-  _stateStore: StateStore = new LocalStorageState();
-
   /** The title of the parent log view, to be displayed on the log view toolbar */
   @property()
   viewTitle = '';
+
+  @property()
+  searchText = '';
 
   @state()
   _moreActionsMenuOpen = false;
@@ -60,11 +58,7 @@ export class LogViewControls extends LitElement {
 
   @query('#search-field') _searchField!: HTMLInputElement;
 
-  @query('.input-facade') _inputFacade!: HTMLDivElement;
-
   @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
-
-  private _state: State;
 
   /** The timer identifier for debouncing search input. */
   private _inputDebounceTimer: number | null = null;
@@ -76,25 +70,10 @@ export class LogViewControls extends LitElement {
 
   constructor() {
     super();
-    this._state = this._stateStore.getState();
   }
 
   protected firstUpdated(): void {
-    let searchText = '';
-    if (this._state !== null) {
-      const viewConfigArr = this._state.logViewConfig;
-      for (const i in viewConfigArr) {
-        if (viewConfigArr[i].viewID === this.viewId) {
-          searchText = viewConfigArr[i].search as string;
-          this.viewTitle = viewConfigArr[i].viewTitle
-            ? viewConfigArr[i].viewTitle
-            : this.viewTitle;
-        }
-      }
-    }
-
-    this._inputFacade.textContent = searchText;
-    this._inputFacade.dispatchEvent(new CustomEvent('input'));
+    this._searchField.dispatchEvent(new CustomEvent('input'));
   }
 
   /**
@@ -104,26 +83,30 @@ export class LogViewControls extends LitElement {
    *
    * @param {Event} event - The input event object.
    */
-  private handleInput = (event: Event) => {
+  private handleInput(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    const inputValue = inputElement.value;
+
+    // Update searchText immediately for responsiveness
+    this.searchText = inputValue;
+
+    // Debounce to avoid excessive updates and event dispatching
     if (this._inputDebounceTimer) {
       clearTimeout(this._inputDebounceTimer);
     }
 
-    const inputFacade = event.target as HTMLDivElement;
-    this.markKeysInText(inputFacade);
-    this._searchField.value = inputFacade.textContent || '';
-    const inputValue = this._searchField.value;
-
     this._inputDebounceTimer = window.setTimeout(() => {
-      const customEvent = new CustomEvent('input-change', {
-        detail: { inputValue },
-        bubbles: true,
-        composed: true,
-      });
-
-      this.dispatchEvent(customEvent);
+      this.dispatchEvent(
+        new CustomEvent('input-change', {
+          detail: { viewId: this.viewId, inputValue: inputValue },
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }, this.INPUT_DEBOUNCE_DELAY);
-  };
+
+    this.markKeysInText(this._searchField);
+  }
 
   private markKeysInText(target: HTMLElement) {
     const pattern = /\b(\w+):(?=\w)/;
@@ -201,6 +184,7 @@ export class LogViewControls extends LitElement {
       bubbles: true,
       composed: true,
       detail: {
+        viewId: this.viewId,
         field: inputEl.value,
         isChecked: inputEl.checked,
       },
@@ -209,14 +193,36 @@ export class LogViewControls extends LitElement {
     this.dispatchEvent(columnToggle);
   }
 
-  private handleAddView() {
-    const addView = new CustomEvent('add-view', {
-      detail: { columnData: this.columnData },
+  private handleSplitRight() {
+    const splitView = new CustomEvent('split-view', {
+      detail: {
+        columnData: this.columnData,
+        viewTitle: this.viewTitle,
+        searchText: this.searchText,
+        orientation: 'horizontal',
+        parentId: this.viewId,
+      },
       bubbles: true,
       composed: true,
     });
 
-    this.dispatchEvent(addView);
+    this.dispatchEvent(splitView);
+  }
+
+  private handleSplitDown() {
+    const splitView = new CustomEvent('split-view', {
+      detail: {
+        columnData: this.columnData,
+        viewTitle: this.viewTitle,
+        searchText: this.searchText,
+        orientation: 'vertical',
+        parentId: this.viewId,
+      },
+      bubbles: true,
+      composed: true,
+    });
+
+    this.dispatchEvent(splitView);
   }
 
   /**
@@ -255,10 +261,13 @@ export class LogViewControls extends LitElement {
       <p class="host-name">${this.viewTitle}</p>
 
       <div class="input-container">
-        <div class="input-facade" contenteditable="plaintext-only" @input="${
-          this.handleInput
-        }" @keydown="${this.handleKeydown}"></div>
-        <input id="search-field" type="text"></input>
+        <input
+          id="search-field"
+          type="text"
+          .value="${this.searchText}"
+          @input="${this.handleInput}"
+          @keydown="${this.handleKeydown}"
+        />
       </div>
 
       <div class="actions-container">
@@ -280,17 +289,17 @@ export class LogViewControls extends LitElement {
           </md-icon-button>
         </span>
 
-        <span class="action-button" title="Toggle Line Wrapping">
+        <span class="action-button" title="Toggle line wrapping">
           <md-icon-button @click=${this.handleWrapToggle} toggle>
             <md-icon>wrap_text</md-icon>
           </md-icon-button>
         </span>
 
-        <span class='action-button field-toggle' title="Toggle fields">
+        <span class="action-button field-toggle" title="Toggle columns">
           <md-icon-button @click=${this.toggleColumnVisibilityMenu} toggle>
             <md-icon>view_column</md-icon>
           </md-icon-button>
-          <menu class='field-menu' hidden>
+          <menu class="field-menu" hidden>
             ${this.columnData.map(
               (column) => html`
                 <li class="field-menu-item">
@@ -309,37 +318,61 @@ export class LogViewControls extends LitElement {
           </menu>
         </span>
 
-        <span class="action-button" title="Toggle fields">
-          <md-icon-button @click=${
-            this.toggleMoreActionsMenu
-          } class="more-actions-button">
-            <md-icon >more_vert</md-icon>
+        <span class="action-button" title="Additional actions">
+          <md-icon-button
+            @click=${this.toggleMoreActionsMenu}
+            class="more-actions-button"
+          >
+            <md-icon>more_vert</md-icon>
           </md-icon-button>
 
-          <md-menu quick fixed
+          <md-menu
+            quick
+            fixed
             ?open=${this._moreActionsMenuOpen}
             .anchor=${this.moreActionsButtonEl}
             @closed=${() => {
               this._moreActionsMenuOpen = false;
-            }}>
-
-            <md-menu-item headline="Add view" @click=${
-              this.handleAddView
-            } role="button" title="Add a view">
-              <md-icon slot="start" data-variant="icon">new_window</md-icon>
+            }}
+          >
+            <md-menu-item
+              headline="Split Right"
+              @click=${this.handleSplitRight}
+              role="button"
+              title="Open a new view to the right of the current view"
+            >
+              <md-icon slot="start" data-variant="icon"
+                >splitscreen_right</md-icon
+              >
             </md-menu-item>
 
-            <md-menu-item headline="Download logs (.txt)" @click=${
-              this.handleDownloadLogs
-            } role="button" title="Download current logs as a plaintext file">
+            <md-menu-item
+              headline="Split Down"
+              @click=${this.handleSplitDown}
+              role="button"
+              title="Open a new view below the current view"
+            >
+              <md-icon slot="start" data-variant="icon"
+                >splitscreen_bottom</md-icon
+              >
+            </md-menu-item>
+
+            <md-menu-item
+              headline="Download logs (.txt)"
+              @click=${this.handleDownloadLogs}
+              role="button"
+              title="Download current logs as a plaintext file"
+            >
               <md-icon slot="start" data-variant="icon">download</md-icon>
             </md-menu-item>
           </md-menu>
         </span>
 
-        <span class="action-button" title="Close view" ?hidden=${
-          this.hideCloseButton
-        }>
+        <span
+          class="action-button"
+          title="Close view"
+          ?hidden=${this.hideCloseButton}
+        >
           <md-icon-button @click=${this.handleCloseViewClick}>
             <md-icon>close</md-icon>
           </md-icon-button>

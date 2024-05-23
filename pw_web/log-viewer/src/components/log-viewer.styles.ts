@@ -20,8 +20,7 @@ export const styles = css`
   }
 
   :host {
-    display: flex;
-    flex-direction: column;
+    display: block;
     gap: 2rem;
     height: var(--sys-log-viewer-height);
     width: 100%;
@@ -49,20 +48,31 @@ export const styles = css`
     --sys-log-viewer-table-cell-icon-size: 1.125rem;
   }
 
-  .grid-container {
-    display: grid;
-    grid-gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr));
+  sl-split-panel {
+    --divider-width: 8px;
+    --divider-hit-area: 24px;
+    --min: 10rem;
+    --max: calc(100% - 10rem);
     height: 100%;
-    overflow: hidden;
+    width: 100%;
+    contain: size style;
   }
 
-  .add-button {
-    width: 8rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  sl-split-panel::part(divider) {
+    border-radius: 8px;
+    transition: 150ms ease 20ms;
+    background-color: transparent;
+    border: 2px solid black;
+    border-color: var(--md-sys-color-surface);
+  }
+
+  sl-split-panel::part(divider):hover,
+  sl-split-panel::part(divider):focus {
+    background-color: #a8c7fa;
+  }
+
+  sl-split-panel div[slot='start'],
+  sl-split-panel div[slot='end'] {
+    overflow: hidden;
   }
 `;

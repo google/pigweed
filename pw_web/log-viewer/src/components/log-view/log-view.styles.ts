@@ -23,5 +23,8 @@ export const styles = css`
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    height: 100%;
+    width: 100%;
+    contain: style;
   }
 `;

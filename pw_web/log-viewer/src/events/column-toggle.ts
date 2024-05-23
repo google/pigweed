@@ -14,6 +14,7 @@
 
 interface ColumnToggleEvent extends CustomEvent {
   detail: {
+    viewId: string;
     field: string;
     isChecked: boolean;
   };

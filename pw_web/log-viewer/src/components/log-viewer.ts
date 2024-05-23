@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,23 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, PropertyValues, html } from 'lit';
+import { LitElement, PropertyValues, TemplateResult, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
+import { LogEntry, SourceData } from '../shared/interfaces';
 import {
-  TableColumn,
-  LogEntry,
-  LogViewConfig,
-  State,
-  SourceData,
-} from '../shared/interfaces';
-import { LocalStorageState, StateStore } from '../shared/state';
+  LocalStateStorage,
+  LogViewerState,
+  StateService,
+} from '../shared/state';
+import { ViewNode, NodeType } from '../shared/view-node';
 import { styles } from './log-viewer.styles';
 import { themeDark } from '../themes/dark';
 import { themeLight } from '../themes/light';
 import { LogView } from './log-view/log-view';
 import CloseViewEvent from '../events/close-view';
-import AddViewEvent from '../events/add-view';
+import SplitViewEvent from '../events/split-view';
+import InputChangeEvent from '../events/input-change';
+import ColumnToggleEvent from '../events/column-toggle';
+import ResizeColumnEvent from '../events/resize-column';
 
 type ColorScheme = 'dark' | 'light';
 
@@ -49,13 +50,8 @@ export class LogViewer extends LitElement {
   @property({ type: String, reflect: true })
   colorScheme?: ColorScheme;
 
-  /** An array of rendered log view instances. */
   @state()
-  _logViews: LogView[] = [];
-
-  /** An object that stores the state of log views */
-  @state()
-  _stateStore: StateStore;
+  _rootNode: ViewNode;
 
   /** An array that stores the preferred column order of columns  */
   @state()
@@ -64,33 +60,16 @@ export class LogViewer extends LitElement {
   /** A map containing data from present log sources */
   private _sources: Map<string, SourceData> = new Map();
 
-  private _state: State;
+  private _stateService: StateService = new StateService(
+    new LocalStateStorage(),
+  );
 
-  constructor(
-    state: StateStore = new LocalStorageState(),
-    columnOrder: string[],
-  ) {
+  constructor(state: LogViewerState | undefined, columnOrder: string[]) {
     super();
     this._columnOrder = columnOrder;
-    this._stateStore = state;
-    this._state = this._stateStore.getState();
-  }
-
-  protected firstUpdated(): void {
-    if (this._state.logViewConfig.length == 0) {
-      this.addLogView();
-      return;
-    }
-
-    const viewState = this._state.logViewConfig;
-    const viewEls = [];
-    for (const i in viewState) {
-      const view = new LogView();
-      view.id = viewState[i].viewID;
-      view.searchText = viewState[i].search;
-      viewEls.push(view);
-      this._logViews = viewEls;
-    }
+    const savedState = state ?? this._stateService.loadState();
+    this._rootNode =
+      savedState?.rootNode || new ViewNode({ type: NodeType.View });
   }
 
   connectedCallback() {
@@ -132,54 +111,61 @@ export class LogViewer extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener('close-view', this.handleCloseView);
+
+    // Save state before disconnecting
+    this._stateService.saveState({ rootNode: this._rootNode });
   }
 
-  /** Creates a new log view in the `_logViews` arrray. */
-  private addLogView(event?: AddViewEvent) {
-    const newView = new LogView();
-    const newViewState = this.addLogViewState(
-      newView,
-      event?.detail.columnData,
-    );
+  private splitLogView(event: SplitViewEvent) {
+    const { parentId, orientation, columnData, searchText } = event.detail;
 
-    const viewStates: State = {
-      logViewConfig: [...this._state.logViewConfig, newViewState],
-    };
-    this._logViews = [...this._logViews, newView];
-    this._stateStore.setState(viewStates);
-    this._state = viewStates;
+    // Find parent node, handle errors if not found
+    const parentNode = this.findNodeById(this._rootNode, parentId);
+    if (!parentNode) {
+      console.error('Parent node not found for split:', parentId);
+      return;
+    }
+
+    // Create `ViewNode`s with inherited or provided data
+    const newView = new ViewNode({
+      type: NodeType.View,
+      logViewId: crypto.randomUUID(),
+      columnData: JSON.parse(
+        JSON.stringify(columnData || parentNode.logViewState?.columnData),
+      ),
+      searchText: searchText || parentNode.logViewState?.searchText,
+    });
+
+    // Both views receive the same values for `searchText` and `columnData`
+    const originalView = new ViewNode({
+      type: NodeType.View,
+      logViewId: crypto.randomUUID(),
+      columnData: JSON.parse(JSON.stringify(newView.logViewState?.columnData)),
+      searchText: newView.logViewState?.searchText,
+    });
+
+    parentNode.type = NodeType.Split;
+    parentNode.orientation = orientation;
+    parentNode.children = [originalView, newView];
+
+    this._stateService.saveState({ rootNode: this._rootNode });
+
+    this.requestUpdate();
   }
 
-  /** Creates a new log view state to store in the state object. */
-  private addLogViewState(
-    view: LogView,
-    existingColumnData?: TableColumn[],
-  ): LogViewConfig {
-    let fieldColumns = [];
-    const fields = view.getFields();
-
-    for (const i in fields) {
-      const col: TableColumn = {
-        isVisible: true,
-        fieldName: fields[i],
-        characterLength: 0,
-        manualWidth: null,
-      };
-      fieldColumns.push(col);
+  private findNodeById(node: ViewNode, id: string): ViewNode | undefined {
+    if (node.logViewId === id) {
+      return node;
     }
 
-    if (existingColumnData) {
-      fieldColumns = existingColumnData;
+    // Recursively search through children `ViewNode`s for a match
+    for (const child of node.children) {
+      const found = this.findNodeById(child, id);
+      if (found) {
+        return found;
+      }
     }
-
-    const obj = {
-      columnData: fieldColumns,
-      search: '',
-      viewID: view.id,
-      viewTitle: '',
-    };
-
-    return obj as LogViewConfig;
+    return undefined;
   }
 
   /**
@@ -189,36 +175,97 @@ export class LogViewer extends LitElement {
    */
   private handleCloseView(event: CloseViewEvent) {
     const viewId = event.detail.viewId;
-    const index = this._logViews.findIndex((view) => view.id === viewId);
-    this._logViews = this._logViews.filter((view) => view.id !== viewId);
 
-    if (index > -1) {
-      this._state.logViewConfig.splice(index, 1);
-      this._stateStore.setState(this._state);
+    const removeViewNode = (node: ViewNode, id: string): boolean => {
+      let nodeIsFound = false;
+
+      node.children.forEach((child, index) => {
+        if (nodeIsFound) return;
+
+        if (child.logViewId === id) {
+          node.children.splice(index, 1); // Remove the targeted view
+          if (node.children.length === 1) {
+            // Flatten the node if only one child remains
+            const remainingChild = node.children[0];
+            Object.assign(node, remainingChild);
+          }
+          nodeIsFound = true;
+        } else {
+          nodeIsFound = removeViewNode(child, id);
+        }
+      });
+      return nodeIsFound;
+    };
+
+    if (removeViewNode(this._rootNode, viewId)) {
+      this._stateService.saveState({ rootNode: this._rootNode });
+    }
+
+    this.requestUpdate();
+  }
+
+  private handleViewEvent(
+    event: InputChangeEvent | ColumnToggleEvent | ResizeColumnEvent,
+  ) {
+    const { viewId } = event.detail;
+    const nodeToUpdate = this.findNodeById(this._rootNode, viewId);
+
+    if (!nodeToUpdate) {
+      return;
+    }
+
+    if (event.type === 'input-change') {
+      const { inputValue } = (event as InputChangeEvent).detail;
+      if (nodeToUpdate.logViewState) {
+        nodeToUpdate.logViewState.searchText = inputValue;
+      }
+      return;
+    } else if (event.type === 'resize-column') {
+      const { columnData } = (event as ResizeColumnEvent).detail;
+      if (nodeToUpdate.logViewState) {
+        nodeToUpdate.logViewState.columnData = columnData;
+      }
+    }
+
+    this._stateService.saveState({ rootNode: this._rootNode });
+  }
+
+  private renderNodes(node: ViewNode): TemplateResult {
+    if (node.type === NodeType.View) {
+      return html`<log-view
+        id=${node.logViewId ?? ''}
+        .logs=${this.logs}
+        .sources=${this._sources}
+        .isOneOfMany=${this._rootNode.children.length > 1}
+        .columnOrder=${this._columnOrder}
+        .searchText=${node.logViewState?.searchText ?? ''}
+        .columnData=${node.logViewState?.columnData ?? []}
+        @split-view="${this.splitLogView}"
+        @input-change="${this.handleViewEvent}"
+        @column-toggle="${this.handleViewEvent}"
+        @resize-column="${this.handleViewEvent}"
+      ></log-view>`;
+    } else {
+      const [startChild, endChild] = node.children;
+      return html`<sl-split-panel ?vertical=${node.orientation === 'vertical'}>
+        ${startChild
+          ? html`<div slot="start">${this.renderNodes(startChild)}</div>`
+          : ''}
+        ${endChild
+          ? html`<div slot="end">${this.renderNodes(endChild)}</div>`
+          : ''}
+      </sl-split-panel>`;
     }
   }
 
   render() {
-    return html`
-      <div class="grid-container">
-        ${repeat(
-          this._logViews,
-          (view) => view.id,
-          (view) => html`
-            <log-view
-              id=${view.id}
-              .logs=${this.logs}
-              .sources=${this._sources}
-              .isOneOfMany=${this._logViews.length > 1}
-              .stateStore=${this._stateStore}
-              .columnOrder=${this._columnOrder}
-              @add-view="${this.addLogView}"
-            ></log-view>
-          `,
-        )}
-      </div>
-    `;
+    return html`${this.renderNodes(this._rootNode)}`;
   }
+}
+
+// Manually register Log View component due to conditional rendering
+if (!customElements.get('log-view')) {
+  customElements.define('log-view', LogView);
 }
 
 declare global {
