@@ -14,6 +14,8 @@
 
 #include "pw_grpc/pw_rpc_handler.h"
 
+#include <cinttypes>
+
 namespace pw::grpc {
 
 using pw::rpc::internal::pwpb::PacketType;
@@ -44,8 +46,9 @@ Status PwRpcHandler::OnNew(StreamId id,
 Status PwRpcHandler::OnMessage(StreamId id, ByteSpan message) {
   auto stream = LookupStream(id);
   if (!stream.ok()) {
-    PW_LOG_INFO(
-        "Handler.OnMessage id=%d size=%lu: unknown stream", id, message.size());
+    PW_LOG_INFO("Handler.OnMessage id=%" PRIu32 " size=%zu: unknown stream",
+                id,
+                message.size());
     return Status::NotFound();
   }
 
