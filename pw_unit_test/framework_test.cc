@@ -326,5 +326,25 @@ TEST(TestSuiteTearDown, MakeSureItRan) {
   EXPECT_EQ(SetUpAndTearDown::value, 8);
 }
 
+class Interleaved : public ::testing::Test {
+ public:
+  static void SetUpTestSuite() { suites_running++; }
+  static void TearDownTestSuite() { suites_running--; }
+
+ protected:
+  static int suites_running;
+};
+
+int Interleaved::suites_running = 0;
+
+class InterleavedA : public Interleaved {};
+class InterleavedB : public Interleaved {};
+
+TEST_F(InterleavedA, Test1) { ASSERT_EQ(suites_running, 1); }
+TEST_F(InterleavedB, Test1) { ASSERT_EQ(suites_running, 1); }
+TEST_F(Interleaved, Test12) { ASSERT_EQ(suites_running, 1); }
+TEST_F(InterleavedB, Test2) { ASSERT_EQ(suites_running, 1); }
+TEST_F(InterleavedA, Test2) { ASSERT_EQ(suites_running, 1); }
+
 }  // namespace
 }  // namespace pw

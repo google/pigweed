@@ -41,10 +41,19 @@ void Framework::RegisterTest(TestInfo* new_test) const {
     return;
   }
 
-  // Append the test case to the end of the test list.
+  // Find the right place in the test list to insert new test case.
   TestInfo* info = tests_;
   for (; info->next() != nullptr; info = info->next()) {
+    // Stop if this is the last test case from new test's suite.
+    if (strcmp(info->test_case().suite_name,
+               new_test->test_case().suite_name) == 0 &&
+        strcmp(info->next()->test_case().suite_name,
+               new_test->test_case().suite_name) != 0) {
+      break;
+    }
   }
+
+  new_test->set_next(info->next());
   info->set_next(new_test);
 }
 
