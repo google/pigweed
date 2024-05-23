@@ -150,15 +150,30 @@ button.
 
    Example of **Word wrap** active.
 
----------
-Add views
----------
-To add a log view, click the **Add view** button under the kabob menu.
+-----------
+Split views
+-----------
+To split a log view, click the **Split right** button or the **Split down** button in the **Additional actions** (kabob) menu.
 
-.. figure:: https://storage.googleapis.com/pigweed-media/pw_web/more-actions.png
-   :alt: Add view is found under the more actions button in the top menu.
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_web/split-view-buttons.png
+   :alt: Split Right/Split Down can be found under the additional actions menu in the toolbar.
 
-   **Add view** in the kabob menu.
+   **Split Right** and **Split Down** are in the **Additional actions** menu.
+
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_web/split-views.png
+   :alt: Clicking on Split Right/Split Down creates a view to the right of or below the active view.
+
+   This creates a copy of the active view.
+
+------------
+Resize views
+------------
+To resize split views, click and drag the resize handle between them. You can also focus on the resize handle element and use :kbd:`←` and :kbd:`→` to adjust the size of the views.
+
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_web/resizing-views.png
+   :alt: Resize split views with the handle located at the border of the views.
+
+   The resize handle can be found between adjacent views.
 
 -------------
 Download logs
