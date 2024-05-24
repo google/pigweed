@@ -50,4 +50,9 @@ ClockDivider
 ============
 .. doxygenclass:: pw::clock_tree::ClockDivider
    :members:
+
+ClockDividerElement
+===================
+.. doxygenclass:: pw::clock_tree::ClockDividerElement
+   :members:
    :protected-members:

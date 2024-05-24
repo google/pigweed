@@ -109,7 +109,6 @@ class Element {
   friend class ClockTree;
   template <typename ElementType>
   friend class DependentElement;
-  template <typename ElementType>
   friend class ClockDivider;
 };
 
@@ -312,6 +311,33 @@ class DependentElement : public ElementType {
   ElementType* source_;
 };
 
+/// Abstract class of the clock divider specific interface.
+///
+/// The clock divider interface allows APIs to accept a `ClockDivider`
+/// element, if they want to use the `ClockTree`'s `SetDividerValue` method.
+/// They can use the `element` method to call the `ClockTree`'s `Acquire` and
+/// `Release` methods.
+class ClockDivider {
+ public:
+  constexpr ClockDivider(Element& element) : element_(element) {}
+
+  virtual ~ClockDivider() = default;
+
+  /// Set `divider` value.
+  ///
+  /// The `divider` value will get updated as part of this method if the clock
+  /// divider is currently active, otherwise the new divider value will be
+  /// configured when the clock divider gets enabled next.
+  virtual Status Set(uint32_t divider) = 0;
+
+  /// Return the element implementing this interface.
+  Element& element() const { return element_; }
+
+ private:
+  /// Reference to element implementing this interface.
+  Element& element_;
+};
+
 /// Abstract class template of a clock divider element.
 ///
 /// A `ClockDivider` clock tree element depends on another clock tree element
@@ -325,19 +351,22 @@ class DependentElement : public ElementType {
 /// `ElementNonBlockingCannotFail` or
 /// `ElementNonBlockingMightFail.`
 template <typename ElementType>
-class ClockDivider : public DependentElement<ElementType> {
+class ClockDividerElement : public DependentElement<ElementType>,
+                            public ClockDivider {
  public:
   /// Create a clock divider element that depends on `source` and gets
   /// configured with `divider` value when enabled.
-  constexpr ClockDivider(ElementType& source, uint32_t divider)
-      : DependentElement<ElementType>(source), divider_(divider) {}
+  constexpr ClockDividerElement(ElementType& source, uint32_t divider)
+      : DependentElement<ElementType>(source),
+        ClockDivider(static_cast<Element&>(*this)),
+        divider_(divider) {}
 
   /// Set `divider` value.
   ///
   /// The `divider` value will get updated as part of this method if the clock
   /// divider is currently active, otherwise the new divider value will be
   /// configured when the clock divider gets enabled next.
-  Status Set(uint32_t divider) {
+  Status Set(uint32_t divider) override {
     uint32_t old_divider = divider_;
     divider_ = divider;
     if (this->ref_count() == 0) {
@@ -362,17 +391,17 @@ class ClockDivider : public DependentElement<ElementType> {
 };
 
 /// Alias for a blocking clock divider tree element.
-using ClockDividerBlocking = ClockDivider<ElementBlocking>;
+using ClockDividerBlocking = ClockDividerElement<ElementBlocking>;
 
 /// Alias for a non-blocking clock divider tree element where updates cannot
 /// fail.
 using ClockDividerNonBlockingCannotFail =
-    ClockDivider<ElementNonBlockingCannotFail>;
+    ClockDividerElement<ElementNonBlockingCannotFail>;
 
 /// Alias for a non-blocking clock divider tree element where updates might
 /// fail.
 using ClockDividerNonBlockingMightFail =
-    ClockDivider<ElementNonBlockingMightFail>;
+    ClockDividerElement<ElementNonBlockingMightFail>;
 
 /// Clock tree class that manages the state of clock tree elements.
 ///
@@ -482,6 +511,20 @@ class ClockTree {
   Status SetDividerValue(ClockDividerBlocking& clock_divider,
                          uint32_t divider_value) {
     std::lock_guard lock(mutex_);
+    return clock_divider.Set(divider_value);
+  }
+
+  /// Set divider value for a clock divider element.
+  /// Setting the clock divider value might fail.
+  ///
+  /// Note: May not be called from inside an interrupt context or with
+  /// interrupts disabled.
+  Status SetDividerValue(ClockDivider& clock_divider, uint32_t divider_value) {
+    if (clock_divider.element().may_block()) {
+      std::lock_guard lock(mutex_);
+      return clock_divider.Set(divider_value);
+    }
+    std::lock_guard lock(interrupt_spin_lock_);
     return clock_divider.Set(divider_value);
   }
 

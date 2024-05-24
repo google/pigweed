@@ -62,12 +62,13 @@ using ClockSourceExampleNonBlocking =
 /// `ElementNonBlockingCannotFail` or
 /// `ElementNonBlockingMightFail.`
 template <typename ElementType>
-class ClockDividerExample : public pw::clock_tree::ClockDivider<ElementType> {
+class ClockDividerExample
+    : public pw::clock_tree::ClockDividerElement<ElementType> {
  public:
   constexpr ClockDividerExample(ElementType& source,
                                 uint32_t divider_name,
                                 uint32_t divider)
-      : pw::clock_tree::ClockDivider<ElementType>(source, divider),
+      : pw::clock_tree::ClockDividerElement<ElementType>(source, divider),
         divider_name_(divider_name) {}
 
  private:
