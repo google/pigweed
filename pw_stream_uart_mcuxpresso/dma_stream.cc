@@ -173,10 +173,11 @@ void UartDmaStreamMcuxpresso::TriggerWriteDma() {
 }
 
 // Completion callback for TX and RX transactions
-void UartDmaStreamMcuxpresso::TxRxCompletionCallback(USART_Type* base,
-                                                     usart_dma_handle_t* state,
-                                                     status_t status,
-                                                     void* param) {
+void UartDmaStreamMcuxpresso::TxRxCompletionCallback(
+    USART_Type* /* base */,
+    usart_dma_handle_t* /* state */,
+    status_t status,
+    void* param) {
   UartDmaStreamMcuxpresso* stream =
       reinterpret_cast<UartDmaStreamMcuxpresso*>(param);
 
