@@ -377,13 +377,15 @@ using ClockDividerNonBlockingMightFail =
 /// Clock tree class that manages the state of clock tree elements.
 ///
 /// The `ClockTree` provides the `Acquire` and `Release` methods to
-/// acquire a reference to a `ElementNonBlocking` or
-/// `ElementBlocking` element. These functions will acquire the
+/// acquire a reference to `ElementNonBlockingCannotFail`,
+/// `ElementNonBlockingMightFail`, or `ElementBlocking` elements or
+/// to the generic `Element` element. These functions will acquire the
 /// proper lock to ensure that clock updates are synchronized.
 ///
 /// The `SetDividerValue` method allows to change the divider value for
 /// `ClockDividerNonBlockingCannotFail`, `ClockDividerNonBlockingMightFail`
-/// or `ClockDividerBlocking` elements.
+/// or `ClockDividerBlocking` elements, or to the generic `ClockDivider`
+/// element.
 class ClockTree {
  public:
   /// Acquire a reference to a non-blocking clock tree element.
@@ -408,6 +410,20 @@ class ClockTree {
     return element.Acquire();
   }
 
+  /// Acquire a reference to a clock tree element.
+  /// Acquiring the clock tree element might fail.
+  ///
+  /// Note: May not be called from inside an interrupt context or with
+  /// interrupts disabled.
+  Status Acquire(Element& element) {
+    if (element.may_block()) {
+      std::lock_guard lock(mutex_);
+      return element.Acquire();
+    }
+    std::lock_guard lock(interrupt_spin_lock_);
+    return element.Acquire();
+  }
+
   /// Release a reference to a non-blocking clock tree element.
   /// Releasing the clock tree element will succeed.
   void Release(ElementNonBlockingCannotFail& element) {
@@ -427,6 +443,20 @@ class ClockTree {
   /// Releasing the clock tree element might fail.
   Status Release(ElementBlocking& element) {
     std::lock_guard lock(mutex_);
+    return element.Release();
+  }
+
+  /// Release a reference to a clock tree element.
+  /// Releasing the clock tree element might fail.
+  ///
+  /// Note: May not be called from inside an interrupt context or with
+  /// interrupts disabled.
+  Status Release(Element& element) {
+    if (element.may_block()) {
+      std::lock_guard lock(mutex_);
+      return element.Release();
+    }
+    std::lock_guard lock(interrupt_spin_lock_);
     return element.Release();
   }
 

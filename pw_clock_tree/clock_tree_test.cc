@@ -563,6 +563,7 @@ static void TestClockSelector() {
   ClockSourceTest<ElementType> clock_a;
   ClockSelectorTest<ElementType> clock_selector_b(
       clock_a, kSelector, 2, 7, test_data);
+  Element& clock_selector_b_element = clock_selector_b;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -572,7 +573,7 @@ static void TestClockSelector() {
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_tree.Acquire(clock_selector_b_element);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 2u);
@@ -582,7 +583,7 @@ static void TestClockSelector() {
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_selector_b);
+  status = clock_tree.Release(clock_selector_b_element);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -1242,6 +1243,7 @@ static void TestClockSource() {
   ClockSourceStateTest<ElementType> clock_b(2, &shared_clock_value, test_data);
   ClockSourceStateTest<ElementType> clock_c(
       4, &exclusive_clock_value, test_data);
+  Element& clock_c_element = clock_c;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -1257,7 +1259,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 1u);
   EXPECT_EQ(exclusive_clock_value, 0u);
 
-  status = clock_tree.Acquire(clock_c);
+  status = clock_tree.Acquire(clock_c_element);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -1289,7 +1291,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 0u);
   EXPECT_EQ(exclusive_clock_value, 4u);
 
-  status = clock_tree.Release(clock_c);
+  status = clock_tree.Release(clock_c_element);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -1304,7 +1306,6 @@ TEST(ClockTree, ClockSourceBlocking) { TestClockSource<ElementBlocking>(); }
 
 TEST(ClockTree, ClockSourceNonBlocking) {
   TestClockSource<ElementNonBlockingMightFail>();
-  ClockSourceTest<ElementNonBlockingMightFail> clock_a;
 }
 
 // Validate that no references have been acquired when ClockSource
