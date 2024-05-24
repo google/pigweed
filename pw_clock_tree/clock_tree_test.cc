@@ -1563,5 +1563,17 @@ TEST(ClockTree, ClockFailureRelease2Blocking) {
 TEST(ClockTree, ClockFailureRelease2NonBlocking) {
   TestFailureRelease2<ElementNonBlockingMightFail>();
 }
+
+TEST(ClockTree, ElementMayBlock) {
+  ClockSourceTest<ElementNonBlockingCannotFail> clock_non_blocking_cannot_fail;
+  EXPECT_FALSE(clock_non_blocking_cannot_fail.may_block());
+
+  ClockSourceTest<ElementNonBlockingMightFail> clock_non_blocking_might_fail;
+  EXPECT_FALSE(clock_non_blocking_might_fail.may_block());
+
+  ClockSourceTest<ElementBlocking> clock_blocking;
+  EXPECT_TRUE(clock_blocking.may_block());
+}
+
 }  // namespace
 }  // namespace pw::clock_tree
