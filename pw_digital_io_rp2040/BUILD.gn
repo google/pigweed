@@ -28,6 +28,7 @@ pw_source_set("pw_digital_io_rp2040") {
   deps = [
     "$PICO_ROOT/src/common/pico_base",
     "$PICO_ROOT/src/common/pico_stdlib",
+    "$PICO_ROOT/src/rp2_common/hardware_gpio",
   ]
   public_deps = [
     "$dir_pw_digital_io",

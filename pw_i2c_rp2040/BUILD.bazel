@@ -12,16 +12,46 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# RP2040 is not supported on bazel.
-filegroup(
+cc_library(
     name = "pw_i2c_rp2040",
     srcs = [
         "initiator.cc",
-        "initiator_test.cc",
+    ],
+    hdrs = [
         "public/pw_i2c_rp2040/initiator.h",
     ],
+    includes = [
+        "public",
+    ],
+    # TODO: b/261603269 - Get this to build.
+    tags = ["manual"],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_digital_io",
+        "//pw_i2c:initiator",
+        "//pw_log",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "@pico-sdk//src/common/pico_stdlib",
+        "@pico-sdk//src/rp2_common/hardware_gpio",
+        "@pico-sdk//src/rp2_common/hardware_i2c",
+    ],
+)
+
+pw_cc_test(
+    name = "initiator_test",
+    srcs = ["initiator_test.cc"],
+    # TODO: b/261603269 - Get this to build.
+    tags = ["manual"],
+    deps = [":pw_i2c_rp2040"],
 )

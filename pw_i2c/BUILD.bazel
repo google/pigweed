@@ -48,6 +48,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":address",
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_status",
