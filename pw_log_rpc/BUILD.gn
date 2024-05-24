@@ -189,12 +189,6 @@ pw_test("log_service_test") {
     "$dir_pw_rpc/raw:test_method_context",
     "$dir_pw_status",
   ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_test("log_filter_service_test") {
@@ -209,12 +203,6 @@ pw_test("log_filter_service_test") {
     "$dir_pw_rpc/raw:test_method_context",
     "$dir_pw_status",
   ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_test("log_filter_test") {
@@ -228,12 +216,6 @@ pw_test("log_filter_test") {
     "$dir_pw_result",
     "$dir_pw_status",
   ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_test("rpc_log_drain_test") {

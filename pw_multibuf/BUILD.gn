@@ -56,12 +56,6 @@ pw_test("header_chunk_region_tracker_test") {
     dir_pw_status,
   ]
   sources = [ "header_chunk_region_tracker_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_source_set("single_chunk_region_tracker") {
@@ -92,12 +86,6 @@ pw_test("chunk_test") {
     "$dir_pw_allocator:testing",
   ]
   sources = [ "chunk_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_source_set("pw_multibuf") {
@@ -116,12 +104,6 @@ pw_test("multibuf_test") {
     ":test_utils",
   ]
   sources = [ "multibuf_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
 }
 
 pw_source_set("allocator") {
