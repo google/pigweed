@@ -102,6 +102,17 @@ common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_ini
 
 common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 
+
+# Config for the rp2040 platform.
+#
+# TODO: b/301334234 - Make the platform set the flags below.
+build:rp2040 --platforms=@pigweed//targets/rp2040
+build:rp2040 --//pw_log:backend=@pigweed//pw_log_tokenized
+build:rp2040 --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
+build:rp2040 --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
+build:rp2040 --//pw_system:extra_platform_libs=@pigweed//targets/rp2040:extra_platform_libs
+
+
 # Config for the stm32f429i_disc1_stm32cube platform.
 #
 # TODO: b/301334234 - Make the platform set the flags below.

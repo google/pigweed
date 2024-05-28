@@ -884,6 +884,20 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_build:module_config_test',
     )
 
+    # Provide some coverage of the RP2040 build.
+    #
+    # This is just a minimal presubmit intended to ensure we don't break what
+    # support we have.
+    #
+    # TODO: b/271465588 - Eventually just build the entire repo for this
+    # platform.
+    build_bazel(
+        ctx,
+        'build',
+        '--config=rp2040',
+        '//pw_system:system_example',
+    )
+
     # Build the pw_system example for the Discovery board using STM32Cube.
     build_bazel(
         ctx,

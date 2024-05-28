@@ -13,7 +13,10 @@
 # the License.
 package(default_visibility = ["//visibility:public"])
 
-# --- OS's ---
+# --------------------
+# --- OS Platforms ---
+# --------------------
+
 platform(
     name = "freertos",
     constraint_values = [
@@ -38,11 +41,9 @@ platform(
     ],
 )
 
-platform(
-    name = "none",
-    constraint_values = ["@platforms//os:none"],
-)
-
+# --------------------------
+# --- Hardware Platforms ---
+# --------------------------
 platform(
     name = "lm3s6965evb",
     constraint_values = [
@@ -75,7 +76,9 @@ platform(
     parents = [":nrf52833"],
 )
 
-# --- Test platforms ---
+# ----------------------
+# --- Test Platforms ---
+# ----------------------
 
 # This is a platform for compilation testing of freertos backends. This is not
 # a complete specification of any real target platform.
@@ -104,4 +107,13 @@ platform(
         # For toolchain resolution.
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
     ],
+)
+
+# ----------------------
+# --- Misc Platforms ---
+# ----------------------
+
+platform(
+    name = "none",
+    constraint_values = ["@platforms//os:none"],
 )

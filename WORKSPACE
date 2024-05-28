@@ -493,3 +493,17 @@ new_local_repository(
     build_file_content = 'cc_library(name="hal_driver")',
     path = ".",
 )
+
+git_repository(
+    name = "pico-sdk",
+    commit = "4de7ec6bd73cd154533f35d9058279267ba77176",
+    remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
+)
+
+http_archive(
+    name = "tinyusb",
+    build_file = "@pico-sdk//src/rp2_common/tinyusb:tinyusb.BUILD",
+    sha256 = "ac57109bba00d26ffa33312d5f334990ec9a9a4d82bf890ed8b825b4610d1da2",
+    strip_prefix = "tinyusb-86c416d4c0fb38432460b3e11b08b9de76941bf5",
+    url = "https://github.com/hathach/tinyusb/archive/86c416d4c0fb38432460b3e11b08b9de76941bf5.zip",
+)
