@@ -1,4 +1,4 @@
-From 0b48b44de59c8fd85f3ec3267061dd3610503655 Mon Sep 17 00:00:00 2001
+From b090ae35fadde62e1e7a703e51ac8618d42f15db Mon Sep 17 00:00:00 2001
 From: Erik Gilling <konkers@google.com>
 Date: Mon, 27 Mar 2023 16:48:26 +0000
 Subject: [PATCH 2/2] PROTOTYPE: Add ability to document multiple crates at
@@ -7,18 +7,19 @@ Subject: [PATCH 2/2] PROTOTYPE: Add ability to document multiple crates at
 ---
  rust/defs.bzl                     |   4 +
  rust/private/rustdoc.bzl          | 203 ++++++++++++++++++++++++++++++
+ util/BUILD.bazel                  |  12 ++
  util/capture_args/BUILD.bazel     |   8 ++
  util/capture_args/capture_args.rs |  28 +++++
  util/run_scripts/BUILD.bazel      |   8 ++
  util/run_scripts/run_scripts.rs   |  40 ++++++
- 6 files changed, 291 insertions(+)
+ 7 files changed, 303 insertions(+)
  create mode 100644 util/capture_args/BUILD.bazel
  create mode 100644 util/capture_args/capture_args.rs
  create mode 100644 util/run_scripts/BUILD.bazel
  create mode 100644 util/run_scripts/run_scripts.rs
 
 diff --git a/rust/defs.bzl b/rust/defs.bzl
-index 7c972439..c0e84b80 100644
+index 67a28630..4d58df51 100644
 --- a/rust/defs.bzl
 +++ b/rust/defs.bzl
 @@ -56,6 +56,7 @@ load(
@@ -29,7 +30,7 @@ index 7c972439..c0e84b80 100644
  )
  load(
      "//rust/private:rustdoc_test.bzl",
-@@ -94,6 +95,9 @@ rust_test_suite = _rust_test_suite
+@@ -99,6 +100,9 @@ rust_test_suite = _rust_test_suite
  rust_doc = _rust_doc
  # See @rules_rust//rust/private:rustdoc.bzl for a complete description.
  
@@ -40,7 +41,7 @@ index 7c972439..c0e84b80 100644
  # See @rules_rust//rust/private:rustdoc_test.bzl for a complete description.
  
 diff --git a/rust/private/rustdoc.bzl b/rust/private/rustdoc.bzl
-index f06d18e4..7326f59f 100644
+index 58d044c6..f43c4377 100644
 --- a/rust/private/rustdoc.bzl
 +++ b/rust/private/rustdoc.bzl
 @@ -229,6 +229,81 @@ def _rust_doc_impl(ctx):
@@ -125,9 +126,9 @@ index f06d18e4..7326f59f 100644
  rust_doc = rule(
      doc = dedent("""\
      Generates code documentation.
-@@ -345,3 +420,131 @@ rust_doc = rule(
+@@ -346,3 +421,131 @@ rust_doc = rule(
+         "@bazel_tools//tools/cpp:toolchain_type",
      ],
-     incompatible_use_toolchain_transition = True,
  )
 +
 +rust_docs = rule(
@@ -257,6 +258,26 @@ index f06d18e4..7326f59f 100644
 +    ],
 +    incompatible_use_toolchain_transition = True,
 +)
+diff --git a/util/BUILD.bazel b/util/BUILD.bazel
+index 1070f050..37ea5e04 100644
+--- a/util/BUILD.bazel
++++ b/util/BUILD.bazel
+@@ -9,3 +9,15 @@ alias(
+     actual = "//util/collect_coverage",
+     visibility = ["//visibility:public"],
+ )
++
++sh_binary(
++    name = "dump_args",
++    srcs = ["dump_args.sh"],
++    visibility = ["//visibility:public"],
++)
++
++sh_binary(
++    name = "run_all",
++    srcs = ["run_all.sh"],
++    visibility = ["//visibility:public"],
++)
 diff --git a/util/capture_args/BUILD.bazel b/util/capture_args/BUILD.bazel
 new file mode 100644
 index 00000000..0d7146c2
@@ -366,5 +387,5 @@ index 00000000..cc8e4796
 +    }
 +}
 -- 
-2.41.0.694.ge786442a9b-goog
+2.45.1.288.g0e0cd299f1-goog
 

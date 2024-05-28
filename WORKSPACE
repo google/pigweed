@@ -298,9 +298,9 @@ nanopb_workspace()
 
 # Rust Support
 #
-
 http_archive(
     name = "rules_rust",
+    integrity = "sha256-+bWb47wg0VchIADaHt6L5Dma2Gn+Q589nz/MKcTi+lo=",
     patch_args = ["-p1"],
     patches = [
         # Fix rustdoc test w/ proc macros
@@ -315,8 +315,7 @@ http_archive(
         # https://github.com/konkers/rules_rust/tree/wip/rustdoc
         "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
     ],
-    sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.45.1/rules_rust-v0.45.1.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies")
