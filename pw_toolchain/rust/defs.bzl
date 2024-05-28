@@ -202,6 +202,10 @@ def _pw_rust_toolchain(
         target_triple = target_triple,
         extra_rustc_flags = extra_rustc_flags,
         extra_exec_rustc_flags = extra_rustc_flags,
+        # TODO: https://pwbug.dev/342695883 - Works around confusing
+        # target_compatible_with semantics in rust_toolchain. Figure out how to
+        # do better.
+        tags = ["manual"],
     )
     native.toolchain(
         name = name,
