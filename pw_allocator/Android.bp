@@ -45,7 +45,6 @@ cc_library {
         "allocator_as_pool.cc",
         "block.cc",
         "chunk_pool.cc",
-        "deallocator.cc",
         "freelist.cc",
         "freelist_heap.cc",
         "libc_allocator.cc",
