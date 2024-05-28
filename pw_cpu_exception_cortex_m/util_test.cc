@@ -76,7 +76,7 @@ TEST(MainStackActive, ThreadModeProcess) {
   // return values, in particular bits 0:3.
   // Bits 0:3 of EXC_RETURN:
   // 0b1101 - 0xD Thread mode Process
-  cpu_state.extended.exc_return = 0b1001;
+  cpu_state.extended.exc_return = 0b1101;
   EXPECT_FALSE(MainStackActive(cpu_state));
 }
 
@@ -106,7 +106,7 @@ TEST(ProcessStackActive, ThreadModeProcess) {
   // return values, in particular bits 0:3.
   // Bits 0:3 of EXC_RETURN:
   // 0b1101 - 0xD Thread mode Process
-  cpu_state.extended.exc_return = 0b1001;
+  cpu_state.extended.exc_return = 0b1101;
   EXPECT_TRUE(ProcessStackActive(cpu_state));
 }
 
