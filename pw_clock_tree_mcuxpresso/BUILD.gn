@@ -16,48 +16,29 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
 }
 
-pw_source_set("clock_tree") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_clock_tree/clock_tree.h" ]
-  visibility = [ ":*" ]
-  public_deps = [
-    "$dir_pw_assert",
-    "$dir_pw_status",
-    "$dir_pw_sync:interrupt_spin_lock",
-    "$dir_pw_sync:mutex",
-  ]
-}
-
-pw_test("clock_tree_test") {
-  sources = [ "clock_tree_test.cc" ]
-  deps = [ ":clock_tree" ]
-  public_deps = [ "$dir_pw_preprocessor" ]
-}
-
-pw_test("clock_tree_examples") {
-  sources = [ "examples.cc" ]
-  deps = [ ":clock_tree" ]
+if (pw_third_party_mcuxpresso_SDK != "") {
+  pw_source_set("clock_tree_mcuxpresso") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_clock_tree_mcuxpresso/clock_tree.h" ]
+    visibility = [ ":*" ]
+    deps = [
+      "//pw_clock_manager",
+      pw_third_party_mcuxpresso_SDK,
+    ]
+  }
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":clock_tree_test",
-    ":clock_tree_examples",
-  ]
+  tests = []
 }
 
 pw_doc_group("docs") {
-  inputs = [ "examples.cc" ]
-  sources = [
-    "api.rst",
-    "docs.rst",
-    "examples.rst",
-    "implementations.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

@@ -64,6 +64,13 @@
       "C++17"
     ]
   },
+  "pw_clock_tree_mcuxpresso": {
+    "tagline": "NXP MCUXpresso SDK implementation for pw_clock_tree",
+    "status": "unstable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_console": {
     "tagline": "Multi-purpose pluggable interactive console for dev & manufacturing",
     "status": "stable",
