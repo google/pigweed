@@ -33,7 +33,10 @@ pw_linker_script(
         "PW_BOOT_VECTOR_TABLE_SIZE=1M",
     ],
     linker_script = "linker_script.ld",
-    deps = [":header_test"],
+    deps = [
+        ":header_test",
+        "//pw_build:must_place",
+    ],
 )
 
 # Use cc_binary to build the test to avoid duplicating the linker script in the

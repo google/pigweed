@@ -370,12 +370,23 @@ group("link_deps") {
 group("empty") {
 }
 
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+# Linker script utility PW_MUST_PLACE
+pw_source_set("must_place") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_build/must_place.ld.h" ]
+}
+
 pw_doc_group("docs") {
   sources = [
     "bazel.rst",
     "cmake.rst",
     "docs.rst",
     "gn.rst",
+    "linker_scripts.rst",
     "project_builder.rst",
     "python.rst",
   ]

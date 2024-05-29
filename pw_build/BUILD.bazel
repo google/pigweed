@@ -144,3 +144,10 @@ cc_library(
         "//pw_log:backend_impl",
     ],
 )
+
+# Linker script utility PW_MUST_PLACE
+cc_library(
+    name = "must_place",
+    hdrs = ["public/pw_build/must_place.ld.h"],
+    includes = ["public"],
+)

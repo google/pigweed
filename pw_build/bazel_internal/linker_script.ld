@@ -22,6 +22,7 @@
 #endif  // PW_BOOT_VECTOR_TABLE_BEGIN
 
 #include "header_test.h"
+#include "pw_build/must_place.ld.h"
 
 #ifndef SOME_USEFUL_LINKER_SCRIPT_MACRO
 #error "Header include test failed"
@@ -58,3 +59,12 @@ MEMORY
  * actually used
  */
 _linker_defined_symbol = 0xDEADBEEF;
+
+SECTIONS
+{
+  .code :
+  {
+    /* Exercise PW_MUST_PLACE macro on our test object file */
+    PW_MUST_PLACE(*/test.o);
+  }
+}

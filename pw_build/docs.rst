@@ -33,3 +33,4 @@ these to Pigweed's Bazel build integration.
    cmake
    bazel
    project_builder
+   linker_scripts
