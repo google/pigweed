@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from pw_emu.core import InvalidChannelName, InvalidChannelType
-from tests.common import check_prog, ConfigHelperWithEmulator
+from config_helper import check_prog, ConfigHelperWithEmulator
 
 
 # TODO: b/301382004 - The Python Pigweed package install (into python-venv)

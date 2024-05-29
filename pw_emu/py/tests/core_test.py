@@ -39,7 +39,7 @@ from pw_emu.core import (
     Launcher,
 )
 from mock_emu_frontend import _mock_emu
-from tests.common import ConfigHelper
+from config_helper import ConfigHelper
 
 
 class ConfigHelperWithLauncher(ConfigHelper):

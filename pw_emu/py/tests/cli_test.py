@@ -24,7 +24,7 @@ import unittest
 from pathlib import Path
 
 from mock_emu_frontend import _mock_emu
-from tests.common import ConfigHelper
+from config_helper import ConfigHelper
 
 
 # TODO: b/301382004 - The Python Pigweed package install (into python-venv)

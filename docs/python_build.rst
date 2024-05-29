@@ -519,7 +519,6 @@ on the structure of Python packages.
    ├── python_package1/
    │   ├── BUILD.gn
    │   ├── setup.cfg
-   │   ├── setup.py
    │   ├── pyproject.toml
    │   │
    │   ├── package_name/
@@ -695,7 +694,6 @@ modules. A module's Python package is nested under a ``py/`` directory (see
    ├── py/
    │   ├── BUILD.gn
    │   ├── setup.cfg
-   │   ├── setup.py
    │   ├── pyproject.toml
    │   ├── package_name/
    │   │   ├── module_a.py
@@ -712,15 +710,8 @@ The ``BUILD.gn`` declares this package in GN. For upstream Pigweed, a presubmit
 check in ensures that all Python files are listed in a ``BUILD.gn``.
 
 Pigweed prefers to define Python packages using ``setup.cfg`` files. In the
-above file tree ``setup.py`` and ``pyproject.toml`` files are stubs with the
-following content:
-
-.. code-block::
-   :caption: :octicon:`file;1em` setup.py
-   :name: setup-py-stub
-
-   import setuptools  # type: ignore
-   setuptools.setup()  # Package definition in setup.cfg
+above file tree the ``pyproject.toml`` file is only a stub with the following
+content:
 
 .. code-block::
    :caption: :octicon:`file;1em` pyproject.toml
@@ -729,8 +720,6 @@ following content:
    [build-system]
    requires = ['setuptools', 'wheel']
    build-backend = 'setuptools.build_meta'
-
-The stub ``setup.py`` file is there to support running ``pip install --editable``.
 
 Each ``pyproject.toml`` file is required to specify which build system should be
 used for the given Python package. In Pigweed's case it always specifies using
@@ -752,7 +741,7 @@ in :ref:`module-pw_build-python`.
 
 The key attributes of a ``pw_python_package`` are
 
-- a ``setup.py`` file,
+- a ``setup.cfg`` and ``pyproject.toml`` file,
 - source files,
 - test files,
 - dependencies on other ``pw_python_package`` targets.
@@ -829,12 +818,12 @@ nested within existing Python packages. In this case, the Python package in the
 source tree is incomplete; the final Python package, including protobufs, is
 generated in the output directory.
 
-Generating setup.py
-^^^^^^^^^^^^^^^^^^^
+Generating setup.cfg
+^^^^^^^^^^^^^^^^^^^^
 The ``pw_python_package`` target in the ``BUILD.gn`` duplicates much of the
-information in the ``setup.py`` or ``setup.cfg`` file. In many cases, it would
-be possible to generate a ``setup.py`` file rather than including it in the
-source tree. However, removing the ``setup.py`` would preclude using a direct,
+information in the ``setup.cfg`` file. In many cases, it would be possible to
+generate a ``setup.cfg`` file rather than including it in the source
+tree. However, removing the ``setup.cfg`` would preclude using a direct,
 editable installation from the source tree.
 
 Pigweed packages containing protobufs are generated in full or in part. These
@@ -891,10 +880,10 @@ package, potentially with dependencies on other local or `PyPI
 <https://pypi.org/>`_ packages.
 
 The basic Python packaging tools lack dependency tracking for local packages.
-For example, a package's ``setup.py`` or ``setup.cfg`` lists all of
-its dependencies, but ``pip`` is not aware of local packages until they are
-installed. Packages must be installed with their dependencies taken into
-account, in topological sorted order.
+For example, a package's ``setup.cfg`` lists all of its dependencies, but
+``pip`` is not aware of local packages until they are installed. Packages must
+be installed with their dependencies taken into account, in topological sorted
+order.
 
 To work around this, one could set up a private `PyPI server
 <https://pypi.org/project/pypiserver/>`_ instance, but this is too cumbersome

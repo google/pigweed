@@ -25,7 +25,7 @@ from pw_emu.core import (
     InvalidPropertyPath,
 )
 from mock_emu_frontend import _mock_emu
-from tests.common import ConfigHelperWithEmulator
+from config_helper import ConfigHelperWithEmulator
 
 
 class TestEmulator(ConfigHelperWithEmulator):

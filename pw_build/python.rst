@@ -67,8 +67,8 @@ multi-toolchain builds. This toolchain can be set with the
 
 Arguments
 ---------
-- ``setup`` - List of setup file paths (setup.py or pyproject.toml & setup.cfg),
-  which must all be in the same directory.
+- ``setup`` - List of setup file paths (setup.cfg and pyproject.toml), which
+  must all be in the same directory.
 - ``generate_setup``: As an alternative to ``setup``, generate setup files with
   the keywords in this scope. ``name`` is required. This follows the same
   structure as a ``setup.cfg`` file's `declarative config
@@ -89,6 +89,29 @@ Arguments
 
 - ``sources`` - Python sources files in the package.
 - ``tests`` - Test files for this Python package.
+
+  .. tip::
+     It is best to keep these files within the same folder as the ``BUILD.gn``
+     and not nested within another folder that contains an ``__init__.py``
+     file. That could cause your tests to be included within the package
+     distributions (See :ref:`module-pw_build-pw_python_distribution`). For
+     example pip installed into the bootstrapped Python virtual environment or
+     as part of a Python wheel.
+
+     If you need to nest your test source files under a sub-folder exclude it in
+     the ``setup.cfg`` file with:
+
+     .. code-block:: cfg
+
+        [options]
+        packages = find:
+
+        # Exclude the tests and test_scripts folders.
+        [options.packages.find]
+        exclude =
+            tests
+            test_scripts
+
 - ``python_deps`` - Dependencies on other pw_python_packages in the GN build.
 - ``python_test_deps`` - Test-only pw_python_package dependencies.
 - ``other_deps`` - Dependencies on GN targets that are not pw_python_packages.
@@ -121,7 +144,6 @@ This is an example Python package declaration for a ``pw_my_module`` module.
      setup = [
        "pyproject.toml",
        "setup.cfg",
-       "setup.py",
      ]
      sources = [
        "pw_my_module/__init__.py",
@@ -342,7 +364,7 @@ Collects Python wheels for one or more ``pw_python_package`` targets, plus any
 additional ``pw_python_package`` targets they depend on, directly or indirectly.
 Note that this does not include Python dependencies that come from outside the
 GN build, like packages from PyPI, for example. Those should still be declared
-in the package's ``setup.py`` file as usual.
+in the package's ``setup.cfg`` file as usual.
 
 Arguments
 ---------
@@ -369,8 +391,7 @@ developer environment. The generated ``.zip`` contains Python wheels
 (``.whl`` files) for one or more ``pw_python_package`` targets, plus wheels for
 any additional ``pw_python_package`` targets in the GN build they depend on,
 directly or indirectly. Dependencies from outside the GN build, such as packages
-from PyPI, must be listed in packages' ``setup.py`` or ``setup.cfg`` files as
-usual.
+from PyPI, must be listed in packages' ``setup.cfg`` file as usual.
 
 The ``.zip`` also includes simple setup scripts for Linux,
 MacOS, and Windows. The setup scripts automatically create a Python virtual
