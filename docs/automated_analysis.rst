@@ -141,8 +141,11 @@ the :ref:`module-pw_fuzzer` module documentation for more details.
 Enabling analysis for your project
 ----------------------------------
 
+GN
+==
+
 PyLint and Mypy
-===============
+---------------
 PyLint and Mypy can be configured to run every time your project is built by
 adding ``python.lint`` to your default build group. (You can also add one or both
 individually using ``python.lint.mypy`` and ``python.lint.pylint``.) Likewise,
@@ -153,7 +156,7 @@ directly include the `python_checks.gn_python_lint`_ presubmit step.
 .. _python_checks.gn_python_lint: https://cs.pigweed.dev/pigweed/+/main:pw_presubmit/py/pw_presubmit/python_checks.py?q=file:python_checks.py%20gn_python_lint&ss=pigweed%2Fpigweed
 
 clang-tidy
-==========
+----------
 `pw_toolchain/static_analysis_toolchain.gni`_ provides the
 ``pw_static_analysis_toolchain`` template that can be used to create a build
 group performing static analysis. See :ref:`module-pw_toolchain` documentation
@@ -169,11 +172,11 @@ source file.
 .. _clang documentation: https://clang.llvm.org/extra/clang-tidy/
 
 Clang sanitizers
-================
+----------------
 There are two ways to enable sanitizers for your build.
 
 GN args on debug toolchains
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 If you are already building your tests with one of the following toolchains (or
 a toolchain derived from one of them):
 
@@ -186,7 +189,7 @@ you can enable the clang sanitizers simply by setting the gn arg
 ``["address", "thread", "undefined"]``.
 
 Example
-^^^^^^^
+.......
 If your project defines a toolchain ``host_clang_debug`` that is derived from
 one of the above toolchains, and you'd like to run the ``pw_executable`` target
 ``sample_binary`` defined in the ``BUILD.gn`` file in ``examples/sample`` with
@@ -199,7 +202,7 @@ asan, you would run,
    out/host_clang_debug/obj/example/sample/bin/sample_binary
 
 Sanitizer toolchains
---------------------
+^^^^^^^^^^^^^^^^^^^^
 Otherwise, instead of using ``gn args`` you can build your tests with the
 appropriate toolchain from the following list (or a toolchain derived from one
 of them):
@@ -210,6 +213,21 @@ of them):
 
 See the :ref:`module-pw_toolchain` module documentation for more
 about Pigweed toolchains.
+
+Bazel
+=====
+
+Clang sanitizers
+----------------
+If you're using Pigweed's own host toolchain configuration, you can enable
+AddressSanitizer by building with the appropriate flag:
+
+.. code-block:: sh
+
+   bazel build --@pigweed//pw_toolchain/host_clang:asan //...
+
+If you're building your own toolchain, you can add
+``@pigweed//pw_toolchain_bazel/flag_sets:asan`` to it.
 
 Fuzzers
 =======

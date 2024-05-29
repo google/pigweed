@@ -97,3 +97,15 @@ pw_cc_flag_set(
     ],
     flags = ["-g"],
 )
+
+pw_cc_flag_set(
+    name = "asan",
+    actions = [
+        "@pw_toolchain//actions:all_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-fsanitize=address",
+        "-DADDRESS_SANITIZER",
+    ],
+)

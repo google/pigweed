@@ -12,10 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
     "pw_cc_action_files",
     "pw_cc_feature",
+    "pw_cc_feature_set",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
 )
@@ -137,6 +139,44 @@ pw_cc_action_files(
     ],
 )
 
+bool_flag(
+    name = "asan",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "asan_enabled",
+    flag_values = {
+        ":asan": "true",
+    },
+)
+
+pw_cc_feature(
+    name = "asan_feature",
+    enabled = select({
+        ":asan_enabled": True,
+        "//conditions:default": False,
+    }),
+    feature_name = "asan",
+    flag_sets = ["@pw_toolchain//flag_sets:asan"],
+    requires_any_of = [":asan_constraint"],
+)
+
+pw_cc_feature_set(
+    name = "asan_constraint",
+    # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
+    # -fsanitize=address is not be specified during Rust linking.
+    all_of = [":rules_rust_unsupported_feature"],
+)
+
+# This is a sentinel feature defined by rules_rust. It is by definition
+# unsupported: rules_rust will disable this feature when linking Rust code.
+pw_cc_feature(
+    name = "rules_rust_unsupported_feature",
+    enabled = True,
+    feature_name = "rules_rust_unsupported_feature",
+)
+
 pw_cc_toolchain(
     name = "host_toolchain",
     action_configs = [
@@ -204,7 +244,9 @@ pw_cc_toolchain(
         "//conditions:default": None,
     }),
     toolchain_features = [
+        ":asan_feature",
         ":verbose_compiler_output",
+        ":rules_rust_unsupported_feature",
     ],
     toolchain_identifier = "host-toolchain",
 )

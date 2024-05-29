@@ -79,6 +79,11 @@ build --features=external_include_paths
 build --@freertos//:freertos_config=//third_party/freertos:freertos_config
 build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
+common:asan --//pw_toolchain/host_clang:asan
+# TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
+# -requires_cxx_20 because the test_tag_filters flag does not accumulate.
+test:asan --test_tag_filters=-requires_cxx_20,-noasan
+
 # Define the --config=asan-libfuzzer configuration.
 build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer

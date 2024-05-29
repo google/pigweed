@@ -391,6 +391,8 @@ pw_cc_test(
         "pw_thread_private/thread_snapshot_service.h",
         "thread_snapshot_service_test.cc",
     ],
+    # TODO: https://pwbug.dev/342662853 - This test fails under ASAN.
+    tags = ["noasan"],
     deps = [
         ":thread_cc.pwpb",
         ":thread_info",
