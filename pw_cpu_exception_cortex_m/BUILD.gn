@@ -14,9 +14,11 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_cpu_exception/backend.gni")
+import("$dir_pw_cpu_exception_cortex_m/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -39,6 +41,11 @@ pw_source_set("config") {
 
 config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("private_include_path") {
+  include_dirs = [ "private" ]
   visibility = [ ":*" ]
 }
 
@@ -80,6 +87,21 @@ pw_source_set("util") {
     dir_pw_log,
   ]
   sources = [ "util.cc" ]
+}
+
+pw_facade("crash") {
+  backend = pw_cpu_exception_cortex_m_CRASH_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_cpu_exception:entry" ]
+  public = [ "public/pw_cpu_exception_cortex_m/crash.h" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+    ":cpu_state",
+    ":util",
+    "$dir_pw_preprocessor:arch",
+  ]
+  sources = [ "crash.cc" ]
 }
 
 pw_source_set("proto_dump") {
@@ -209,6 +231,7 @@ group("cortex_m_constants_armv8m") {
 pw_test_group("tests") {
   tests = [
     ":cpu_exception_entry_test",
+    ":crash_test",
     ":util_test",
   ]
 }
@@ -216,7 +239,8 @@ pw_test_group("tests") {
 # TODO: b/234888156 - Add ARMv8-M mainline coverage.
 pw_test("cpu_exception_entry_test") {
   enable_if = pw_cpu_exception_ENTRY_BACKEND ==
-              "$dir_pw_cpu_exception_cortex_m:cpu_exception"
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception" &&
+              pw_cpu_exception_SUPPORT_BACKEND != ""
   deps = [
     ":config",
     ":cortex_m_constants",
@@ -238,6 +262,39 @@ pw_test("util_test") {
     ":util",
   ]
   sources = [ "util_test.cc" ]
+}
+
+# This test defines a crash backend so pw_cpu_exception_cortex_m_CRASH_BACKEND
+# cannot be defined.
+pw_test("crash_test") {
+  enable_if = pw_cpu_exception_ENTRY_BACKEND ==
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception" &&
+              pw_cpu_exception_cortex_m_CRASH_BACKEND == ""
+  public_configs = [
+    ":backend_config",
+    ":public_include_path",
+    ":private_include_path",
+  ]
+  public = [
+    "private/pw_cpu_exception_cortex_m_backend/crash.h",
+    "public/pw_cpu_exception_cortex_m/crash.h",
+  ]
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+    ":cpu_state",
+    ":util",
+    "$dir_pw_cpu_exception:entry",
+    "$dir_pw_preprocessor:arch",
+    "$dir_pw_string:builder",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    dir_pw_status,
+  ]
+  sources = [
+    "crash.cc",
+    "crash_test.cc",
+  ]
 }
 
 pw_doc_group("docs") {

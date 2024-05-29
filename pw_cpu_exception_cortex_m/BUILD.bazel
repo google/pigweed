@@ -16,12 +16,20 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
+    "pw_facade",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+# The crash facade provides architecture-independent APIs that may be helpful
+# for analysing the CPU state delegating the reporting and crashing to the
+# backend.
+constraint_setting(
+    name = "crash_constraint_setting",
+)
 
 constraint_value(
     name = "entry_backend",
@@ -42,6 +50,41 @@ cc_library(
 label_flag(
     name = "config_override",
     build_setting_default = "//pw_build:default_module_config",
+)
+
+# Override-able flag for each facade backend.
+label_flag(
+    name = "crash_backend",
+    build_setting_default = ":crash_backend_multiplexer",
+)
+
+# Default facade backends.
+alias(
+    name = "crash_backend_multiplexer",
+    actual = select({
+        "//conditions:default": "//pw_build:unspecified_backend",
+    }),
+)
+
+pw_facade(
+    name = "crash",
+    srcs = ["crash.cc"],
+    hdrs = ["public/pw_cpu_exception_cortex_m/crash.h"],
+    backend = ":crash_backend",
+    includes = ["public"],
+    target_compatible_with = select({
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":config",
+        ":cortex_m_constants",
+        ":cpu_state",
+        "//pw_preprocessor:cortex_m",
+    ],
 )
 
 cc_library(
@@ -201,5 +244,48 @@ pw_cc_test(
     deps = [
         ":cpu_state",
         ":util",
+    ],
+)
+
+# This test defines a crash backend so one must not be specified.
+cc_library(
+    name = "crash_test_util",
+    srcs = [
+        "crash.cc",
+    ],
+    hdrs = [
+        "private/pw_cpu_exception_cortex_m_backend/crash.h",
+        "public/pw_cpu_exception_cortex_m/crash.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":config",
+        ":cortex_m_constants",
+        ":cpu_state",
+        ":util",
+        "//pw_cpu_exception:entry",
+        "//pw_preprocessor",
+        "//pw_preprocessor:cortex_m",
+    ],
+)
+
+pw_cc_test(
+    name = "crash_test",
+    srcs = [
+        "crash_test.cc",
+    ],
+    deps = [
+        ":config",
+        ":cortex_m_constants",
+        ":cpu_state",
+        ":crash_test_util",
+        ":util",
+        "//pw_cpu_exception:entry",
+        "//pw_preprocessor",
+        "//pw_preprocessor:cortex_m",
+        "//pw_status",
+        "//pw_string:builder",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
     ],
 )

@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_cpu_exception_cortex_m/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_cpu_exception_cortex_m_CONFIG)
@@ -66,6 +67,25 @@ pw_add_library(pw_cpu_exception_cortex_m.util STATIC
     pw_preprocessor.arch
   SOURCES
     util.cc
+)
+
+pw_add_facade(pw_cpu_exception_cortex_m.crash STATIC
+  BACKEND
+    pw_cpu_exception_cortex_m.crash_BACKEND
+  HEADERS
+    public/pw_cpu_exception_cortex_m/crash.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_cpu_exception.entry
+  PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
+    pw_cpu_exception_cortex_m.constants
+    pw_cpu_exception_cortex_m.cpu_state
+    pw_cpu_exception_cortex_m.util
+    pw_preprocessor.arch
+  SOURCES
+    crash.cc
 )
 
 pw_add_library(pw_cpu_exception_cortex_m.support STATIC
@@ -158,6 +178,38 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
     PRIVATE_DEPS
       pw_cpu_exception_cortex_m.cpu_state
       pw_cpu_exception_cortex_m.util
+    GROUPS
+      modules
+      pw_cpu_exception_cortex_m
+  )
+endif()
+
+# This test defines a crash backend so pw_cpu_exception_cortex_m.crash_BACKEND
+# cannot be defined.
+if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
+   "pw_cpu_exception_cortex_m.cpu_exception" AND
+   "${pw_cpu_exception_cortex_m.crash_BACKEND}" STREQUAL "")
+  pw_add_test(pw_cpu_exception_cortex_m.crash_test
+    HEADERS
+      public/pw_cpu_exception_cortex_m/crash.h
+      private/pw_cpu_exception_cortex_m_backend/crash.h
+    SOURCES
+      crash.cc
+      crash_test.cc
+    PUBLIC_INCLUDES
+      public
+      private
+    PRIVATE_DEPS
+      pw_cpu_exception.entry
+      pw_cpu_exception_cortex_m.config
+      pw_cpu_exception_cortex_m.constants
+      pw_cpu_exception_cortex_m.cpu_state
+      pw_cpu_exception_cortex_m.util
+      pw_preprocessor.arch
+      pw_status
+      pw_string.builder
+      pw_sync.lock_annotations
+      pw_sync.mutex
     GROUPS
       modules
       pw_cpu_exception_cortex_m

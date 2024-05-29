@@ -17,6 +17,7 @@
 
 namespace pw::cpu_exception::cortex_m {
 
+// Analyses the CPU state and logs the analysis results.
 void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state);
 
 enum class ProcessorMode {

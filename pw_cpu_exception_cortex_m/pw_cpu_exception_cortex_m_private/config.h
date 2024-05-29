@@ -41,6 +41,12 @@
 #define PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP 0
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 
+// Enables the extended CPU analysis in AnalyzeCpuStateAndCrash() that collects
+// useful registers depending on the crash type.
+#ifndef PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
+#define PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS 1
+#endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
+
 // Whether the floating-point unit is enabled.
 // TODO: b/264897542 - This should be an Arm target trait.
 #ifndef PW_ARMV7M_ENABLE_FPU
