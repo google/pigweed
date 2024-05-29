@@ -153,6 +153,7 @@ pw_cc_toolchain(
         "@platforms//os:linux": "external/linux_sysroot",
         "@platforms//os:macos": XCODE_SDK_PATH,
     }),
+    compiler = "clang",
     cxx_builtin_include_directories = select({
         "@platforms//os:linux": [
             "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",

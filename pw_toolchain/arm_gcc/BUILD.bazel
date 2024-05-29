@@ -231,6 +231,7 @@ pw_cc_toolchain(
         "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
     ],
     builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
+    compiler = "gcc",
     cxx_builtin_include_directories = [
         "%sysroot%/arm-none-eabi/include/newlib-nano",
         "%sysroot%/arm-none-eabi/include/c++/12.2.1",
