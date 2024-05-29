@@ -92,24 +92,108 @@ void Dispatcher::DoRunToCompletion(Task* task) {
     if (!result.ran_a_task()) {
       SleepInfo sleep_info = AttemptRequestWake();
       if (sleep_info.should_sleep()) {
-        NativeWaitForWake();
+        if (!NativeWaitForWake().ok()) {
+          break;
+        }
       }
     }
   }
 }
 
-void Dispatcher::NativeWaitForWake() {
-  struct epoll_event event;
+Status Dispatcher::NativeWaitForWake() {
+  std::array<epoll_event, kMaxEventsToProcessAtOnce> events;
 
-  int num_fds = epoll_wait(epoll_fd_, &event, 1, /*timeout=*/-1);
+  int num_events =
+      epoll_wait(epoll_fd_, events.data(), events.size(), /*timeout=*/-1);
+  if (num_events < 0) {
+    if (errno == EINTR) {
+      return OkStatus();
+    }
 
-  PW_CHECK_INT_EQ(num_fds, 1);
+    PW_LOG_ERROR("Dispatcher failed to wait for incoming events: %s",
+                 std::strerror(errno));
+    return Status::Internal();
+  }
 
-  // Consume the written notification.
-  char unused;
-  ssize_t bytes_read = read(wait_fd_, &unused, 1);
-  PW_CHECK_INT_EQ(bytes_read, 1, "Dispatcher failed to read wake notification");
-  PW_DCHECK_INT_EQ(unused, kNotificationSignal);
+  for (int i = 0; i < num_events; ++i) {
+    epoll_event& event = events[i];
+    if (event.data.fd == wait_fd_) {
+      // Consume the wake notification.
+      char unused;
+      ssize_t bytes_read = read(wait_fd_, &unused, 1);
+      PW_CHECK_INT_EQ(
+          bytes_read, 1, "Dispatcher failed to read wake notification");
+      PW_DCHECK_INT_EQ(unused, kNotificationSignal);
+    } else {
+      if ((event.events & (EPOLLIN | EPOLLRDHUP)) != 0) {
+        NativeFindAndWakeFileDescriptor(event.data.fd,
+                                        FileDescriptorType::kReadable);
+      }
+      if ((event.events & EPOLLOUT) != 0) {
+        NativeFindAndWakeFileDescriptor(event.data.fd,
+                                        FileDescriptorType::kWritable);
+      }
+    }
+  }
+
+  return OkStatus();
+}
+
+Status Dispatcher::NativeRegisterFileDescriptor(int fd,
+                                                FileDescriptorType type) {
+  epoll_event event;
+  event.events = EPOLLET;
+  event.data.fd = fd;
+
+  if ((type & FileDescriptorType::kReadable) != 0) {
+    event.events |= EPOLLIN | EPOLLRDHUP;
+  }
+  if ((type & FileDescriptorType::kWritable) != 0) {
+    event.events |= EPOLLOUT;
+  }
+
+  if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event) == -1) {
+    PW_LOG_ERROR("Failed to register epoll event: %s", std::strerror(errno));
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
+Status Dispatcher::NativeUnregisterFileDescriptor(int fd) {
+  epoll_event event;
+  event.data.fd = fd;
+  if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, &event) == -1) {
+    PW_LOG_ERROR("Failed to unregister epoll event: %s", std::strerror(errno));
+    return Status::Internal();
+  }
+
+  auto fd_waker = std::find_if(fd_wakers_.begin(),
+                               fd_wakers_.end(),
+                               [fd](auto& f) { return f.fd == fd; });
+  if (fd_waker != fd_wakers_.end()) {
+    fd_wakers_.erase(fd_waker);
+  }
+
+  return OkStatus();
+}
+
+void Dispatcher::NativeFindAndWakeFileDescriptor(int fd,
+                                                 FileDescriptorType type) {
+  auto fd_waker =
+      std::find_if(fd_wakers_.begin(), fd_wakers_.end(), [fd, type](auto& f) {
+        return f.fd == fd && f.type == type;
+      });
+  if (fd_waker == fd_wakers_.end()) {
+    PW_LOG_WARN(
+        "Received an event for registered file descriptor %d, but there is no "
+        "task to wake",
+        fd);
+    return;
+  }
+
+  std::move(fd_waker->waker).Wake();
+  fd_wakers_.erase(fd_waker);
 }
 
 void Dispatcher::DoWake() {

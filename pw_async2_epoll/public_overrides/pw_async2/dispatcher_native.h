@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <vector>
+
 #include "pw_assert/assert.h"
 #include "pw_async2/dispatcher_base.h"
 
@@ -29,17 +31,53 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
 
   Status NativeInit();
 
+  enum FileDescriptorType {
+    kReadable = 1 << 0,
+    kWritable = 1 << 1,
+    kReadWrite = kReadable | kWritable,
+  };
+
+  Status NativeRegisterFileDescriptor(int fd, FileDescriptorType type);
+  Status NativeUnregisterFileDescriptor(int fd);
+
+  void NativeAddReadWakerForFileDescriptor(int fd, Waker&& waker) {
+    NativeAddWakerForFileDescriptor(
+        fd, FileDescriptorType::kReadable, std::move(waker));
+  }
+
+  void NativeAddWriteWakerForFileDescriptor(int fd, Waker&& waker) {
+    NativeAddWakerForFileDescriptor(
+        fd, FileDescriptorType::kWritable, std::move(waker));
+  }
+
  private:
+  static constexpr size_t kMaxEventsToProcessAtOnce = 5;
+
+  struct FdWaker {
+    int fd;
+    FileDescriptorType type;
+    Waker waker;
+  };
+
   void DoWake() final;
   Poll<> DoRunUntilStalled(Task* task);
   void DoRunToCompletion(Task* task);
   friend class DispatcherImpl<Dispatcher>;
 
-  void NativeWaitForWake();
+  Status NativeWaitForWake();
+  void NativeFindAndWakeFileDescriptor(int fd, FileDescriptorType type);
+
+  void NativeAddWakerForFileDescriptor(int fd,
+                                       FileDescriptorType type,
+                                       Waker&& waker) {
+    fd_wakers_.push_back({fd, type, std::move(waker)});
+  }
 
   int epoll_fd_;
   int notify_fd_;
   int wait_fd_;
+
+  std::vector<FdWaker> fd_wakers_;
 };
 
 }  // namespace pw::async2

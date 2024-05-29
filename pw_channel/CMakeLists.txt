@@ -87,3 +87,26 @@ pw_add_test(pw_channel.loopback_channel_test
     pw_channel.loopback_channel
     pw_multibuf.simple_allocator
 )
+
+pw_add_library(pw_channel.epoll_channel STATIC
+  HEADERS
+    public/pw_channel/epoll_channel.h
+  SOURCES
+    epoll_channel.cc
+  PUBLIC_DEPS
+    pw_channel
+    pw_multibuf.allocator
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_channel.epoll_channel_test
+  SOURCES
+    epoll_channel_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_channel.epoll_channel
+    pw_multibuf.simple_allocator
+    pw_thread.sleep
+    pw_thread.thread
+)

@@ -58,3 +58,7 @@ Channel implementations
 .. doxygengroup:: pw_channel_loopback
    :content-only:
    :members:
+
+.. doxygengroup:: pw_channel_epoll
+   :content-only:
+   :members:

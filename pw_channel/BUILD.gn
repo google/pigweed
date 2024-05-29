@@ -85,6 +85,31 @@ pw_test("loopback_channel_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
 }
 
+pw_source_set("epoll_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/epoll_channel.h" ]
+  sources = [ "epoll_channel.cc" ]
+  public_deps = [
+    ":pw_channel",
+    "$dir_pw_multibuf:allocator",
+    "$dir_pw_sync:mutex",
+  ]
+  deps = [ dir_pw_log ]
+}
+
+pw_test("epoll_channel_test") {
+  sources = [ "epoll_channel_test.cc" ]
+  deps = [
+    ":epoll_channel",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_multibuf:simple_allocator",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+  ]
+  enable_if =
+      pw_async2_DISPATCHER_BACKEND == "$dir_pw_async2_epoll:dispatcher_backend"
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
@@ -92,6 +117,7 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":channel_test",
+    ":epoll_channel_test",
     ":forwarding_channel_test",
     ":loopback_channel_test",
   ]

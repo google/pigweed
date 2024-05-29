@@ -99,3 +99,29 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "epoll_channel",
+    srcs = ["epoll_channel.cc"],
+    hdrs = ["public/pw_channel/epoll_channel.h"],
+    includes = ["public"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":pw_channel",
+        "@pigweed//pw_multibuf:allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "epoll_channel_test",
+    srcs = ["epoll_channel_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":epoll_channel",
+        "@pigweed//pw_allocator:testing",
+        "@pigweed//pw_multibuf:simple_allocator",
+        "@pigweed//pw_thread:sleep",
+        "@pigweed//pw_thread:thread",
+        "@pigweed//pw_unit_test",
+    ],
+)
