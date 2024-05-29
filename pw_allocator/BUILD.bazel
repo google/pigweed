@@ -106,6 +106,7 @@ cc_library(
     deps = [
         ":allocator",
         ":block",
+        ":fragmentation",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_result",
@@ -263,6 +264,13 @@ cc_library(
     hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
     includes = ["public"],
     deps = [":block_allocator_base"],
+)
+
+cc_library(
+    name = "fragmentation",
+    srcs = ["fragmentation.cc"],
+    hdrs = ["public/pw_allocator/fragmentation.h"],
+    includes = ["public"],
 )
 
 cc_library(
@@ -614,6 +622,15 @@ pw_cc_test(
         ":block_allocator_testing",
         ":buffer",
         ":first_fit_block_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "fragmentation_test",
+    srcs = ["fragmentation_test.cc"],
+    deps = [
+        ":fragmentation",
         "//pw_unit_test",
     ],
 )

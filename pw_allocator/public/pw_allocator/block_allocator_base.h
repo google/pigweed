@@ -16,6 +16,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/capability.h"
+#include "pw_allocator/fragmentation.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -116,6 +117,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///                     which case the sequence ends with the first block
   ///                     marked "last".
   virtual void Init(BlockType* begin, BlockType* end);
+
+  /// Returns fragmentation information for the block allocator's memory region.
+  Fragmentation MeasureFragmentation() const;
 
   /// Resets the allocator to an uninitialized state.
   ///
@@ -303,9 +307,11 @@ bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
     InfoType info_type, const void* ptr) const {
+  // Handle types not related to a block first.
   if (info_type == InfoType::kCapacity) {
     return Layout(capacity_, kAlign);
   }
+  // Get a block from the given pointer.
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     return Status::NotFound();
@@ -327,6 +333,19 @@ Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
     default:
       return Status::Unimplemented();
   }
+}
+
+template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+Fragmentation
+BlockAllocator<OffsetType, kPoisonInterval, kAlign>::MeasureFragmentation()
+    const {
+  Fragmentation fragmentation;
+  for (auto block : blocks()) {
+    if (!block->Used()) {
+      fragmentation.AddFragment(block->InnerSize() / BlockType::kAlignment);
+    }
+  }
+  return fragmentation;
 }
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>

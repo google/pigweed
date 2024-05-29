@@ -96,6 +96,7 @@ pw_add_library(pw_allocator.block_allocator_base STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.block
+    pw_allocator.fragmentation
     pw_bytes.alignment
     pw_result
     pw_status
@@ -241,6 +242,15 @@ pw_add_library(pw_allocator.first_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator_base
+)
+
+pw_add_library(pw_allocator.fragmentation STATIC
+  HEADERS
+    public/pw_allocator/fragmentation.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    fragmentation.cc
 )
 
 pw_add_library(pw_allocator.freelist STATIC
@@ -563,6 +573,16 @@ pw_add_test(pw_allocator.first_fit_block_allocator_test
     pw_allocator.block_allocator_testing
     pw_allocator.buffer
     pw_allocator.first_fit_block_allocator
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.fragmentation_test
+  SOURCES
+    fragmentation_test.cc
+  PRIVATE_DEPS
+    pw_allocator.fragmentation
   GROUPS
     modules
     pw_allocator

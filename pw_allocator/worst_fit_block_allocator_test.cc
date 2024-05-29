@@ -109,4 +109,8 @@ TEST_F(WorstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(WorstFitBlockAllocatorTest, CanMeasureFragmentation) {
+  CanMeasureFragmentation();
+}
+
 }  // namespace

@@ -156,4 +156,8 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerAcrossThreshold) {
   UseMemory(Fetch(1), kDualFitThreshold * 2);
 }
 
+TEST_F(DualFirstFitBlockAllocatorTest, CanMeasureFragmentation) {
+  CanMeasureFragmentation();
+}
+
 }  // namespace

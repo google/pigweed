@@ -142,6 +142,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_allocator/public/pw_allocator/dual_first_fit_block_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/fallback_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/first_fit_block_allocator.h",
+  "$dir_pw_allocator/public/pw_allocator/fragmentation.h",
   "$dir_pw_allocator/public/pw_allocator/fuzzing.h",
   "$dir_pw_allocator/public/pw_allocator/last_fit_block_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/layout.h",

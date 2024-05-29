@@ -104,6 +104,10 @@ TEST_F(FirstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(FirstFitBlockAllocatorTest, CanMeasureFragmentation) {
+  CanMeasureFragmentation();
+}
+
 TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
   auto& allocator = GetAllocator();
   constexpr Layout layout = Layout::Of<std::byte[kSmallInnerSize]>();

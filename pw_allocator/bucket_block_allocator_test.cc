@@ -153,4 +153,8 @@ TEST_F(BucketBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(BucketBlockAllocatorTest, CanMeasureFragmentation) {
+  CanMeasureFragmentation();
+}
+
 }  // namespace

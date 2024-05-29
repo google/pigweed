@@ -111,6 +111,7 @@ pw_source_set("block_allocator_base") {
     ":allocator",
     ":block",
     ":bucket",
+    ":fragmentation",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -239,6 +240,12 @@ pw_source_set("first_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/first_fit_block_allocator.h" ]
   public_deps = [ ":block_allocator_base" ]
+}
+
+pw_source_set("fragmentation") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/fragmentation.h" ]
+  sources = [ "fragmentation.cc" ]
 }
 
 pw_source_set("freelist") {
@@ -496,6 +503,11 @@ pw_test("first_fit_block_allocator_test") {
   sources = [ "first_fit_block_allocator_test.cc" ]
 }
 
+pw_test("fragmentation_test") {
+  deps = [ ":fragmentation" ]
+  sources = [ "fragmentation_test.cc" ]
+}
+
 pw_test("freelist_test") {
   deps = [
     ":freelist",
@@ -595,6 +607,7 @@ pw_test_group("tests") {
     ":dual_first_fit_block_allocator_test",
     ":fallback_allocator_test",
     ":first_fit_block_allocator_test",
+    ":fragmentation_test",
     ":freelist_test",
     ":freelist_heap_test",
     ":last_fit_block_allocator_test",

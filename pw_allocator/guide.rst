@@ -395,6 +395,31 @@ the same underlying allocator:
    :start-after: [pw_allocator-examples-metrics-multiple_trackers]
    :end-before: [pw_allocator-examples-metrics-multiple_trackers]
 
+Measure fragmentation
+=====================
+
+If you are using a :ref:`module-pw_allocator-api-block_allocator`, you can use
+the ``MeasureFragmentation`` method to examine how fragmented the heap is. This
+method returns a :ref:`module-pw_allocator-api-fragmentation` struct, which
+includes the "sum of squares" and the sum of the inner sizes of the current free
+blocks. On a platform or host with floating point support, you can divide the
+square root of the sum of squares by the sum to obtain a number that ranges from
+0 to 1 to indicate maximal and minimal fragmenation, respectively. Subtracting
+this number from 1 can give a more intuitive "fragmenation score".
+
+For example, consider a heap consisting of the following blocks:
+
+- 100 bytes in use.
+- 200 bytes free.
+- 50 bytes in use.
+- 10 bytes free.
+- 200 bytes in use.
+- 300 bytes free.
+
+For such a heap, ``MeasureFragmentation`` will return 130100 and 510. The above
+calculation gives a fragmentation score of ``1 - sqrt(130100) / 510``, which is
+approximately ``0.29``.
+
 .. TODO: b/328648868 - Add guide for heap-viewer and link to cli.rst.
 
 ------------------------

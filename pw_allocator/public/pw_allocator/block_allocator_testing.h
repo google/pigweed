@@ -141,7 +141,7 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   static void CanAutomaticallyInit(BlockAllocatorType& allocator);
   void CanExplicitlyInit(BlockAllocatorType& allocator);
   void IterateOverBlocks();
-  void CannotGetLayoutFromInvalidPointer();
+  void CanMeasureFragmentation();
 
  private:
   BlockAllocatorType& allocator_;
@@ -350,6 +350,35 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
   }
   EXPECT_EQ(used_count, 3U);
   EXPECT_EQ(free_count, 4U);
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
+  Allocator& allocator = GetAllocator({
+      {0x020, Preallocation::kIndexFree},
+      {0x040, Preallocation::kIndexNext},
+      {0x080, Preallocation::kIndexFree},
+      {0x100, Preallocation::kIndexNext},
+      {0x200, Preallocation::kIndexFree},
+      {Preallocation::kSizeRemaining, Preallocation::kIndexNext},
+  });
+
+  auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);
+  constexpr size_t alignment = BlockAllocatorType::BlockType::kAlignment;
+  size_t sum_of_squares = 0;
+  size_t sum = 0;
+  for (const auto block : block_allocator.blocks()) {
+    if (!block->Used()) {
+      size_t inner_size = block->InnerSize() / alignment;
+      sum_of_squares += inner_size * inner_size;
+      sum += inner_size;
+    }
+  }
+
+  Fragmentation fragmentation = block_allocator.MeasureFragmentation();
+  EXPECT_EQ(fragmentation.sum_of_squares.hi, 0U);
+  EXPECT_EQ(fragmentation.sum_of_squares.lo, sum_of_squares);
+  EXPECT_EQ(fragmentation.sum, sum);
 }
 
 }  // namespace pw::allocator::test
