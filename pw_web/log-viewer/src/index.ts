@@ -18,9 +18,6 @@ import { createLogViewer } from './createLogViewer';
 import { LogSource } from './log-source';
 import { LogStore } from './log-store';
 
-// Shoelace imports
-import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
-
 const logStore = new LogStore();
 const logSources = [new JsonLogSource(), new BrowserLogSource()] as LogSource[];
 

@@ -29,6 +29,9 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
 
+// Shoelace imports
+import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
+
 /**
  * Create an instance of log-viewer
  * @param logSources - collection of sources from where logs originate
