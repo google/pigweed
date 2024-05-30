@@ -26,14 +26,16 @@
 
 namespace pw::multisink {
 namespace {
+
 constexpr size_t kEntryBufferSize = sizeof("message 000");
 constexpr size_t kMaxMessageCount = 250;
 constexpr size_t kBufferSize = kMaxMessageCount * kEntryBufferSize;
 
 using MessageSpan = span<const StringBuffer<kEntryBufferSize>>;
 
-void CompareSentAndReceivedMessages(const MessageSpan& sent_messages,
-                                    const MessageSpan& received_messages) {
+// This function is unused if joining is not supported.
+[[maybe_unused]] void CompareSentAndReceivedMessages(
+    const MessageSpan& sent_messages, const MessageSpan& received_messages) {
   ASSERT_EQ(sent_messages.size(), received_messages.size());
   for (size_t i = 0; i < sent_messages.size(); ++i) {
     ASSERT_EQ(sent_messages[i].size(), received_messages[i].size());
@@ -41,6 +43,7 @@ void CompareSentAndReceivedMessages(const MessageSpan& sent_messages,
               std::string_view(received_messages[i]));
   }
 }
+
 }  // namespace
 
 // Static message pool to avoid recreating messages for every test and avoids
@@ -183,13 +186,13 @@ class LogWriterThread : public thread::ThreadCore {
 
 class MultiSinkTest : public ::testing::Test {
  protected:
-  MultiSinkTest() : multisink_(buffer_) {}
+  MultiSinkTest() : buffer_{}, multisink_(buffer_) {}
 
   std::byte buffer_[kBufferSize];
   MultiSink multisink_;
-
- private:
 };
+
+#if PW_THREAD_JOINING_ENABLED
 
 TEST_F(MultiSinkTest, SingleWriterSingleReader) {
   const uint32_t log_count = 100;
@@ -367,5 +370,7 @@ TEST_F(MultiSinkTest, OverflowMultisink) {
   // Verifying received messages and drop message counts is unreliable as we
   // can't control the order threads will operate.
 }
+
+#endif  // PW_THREAD_JOINING_ENABLED
 
 }  // namespace pw::multisink
