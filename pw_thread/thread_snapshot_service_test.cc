@@ -81,14 +81,11 @@ TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info = CreateThreadInfoObject(
-      std::make_optional(name), /* thread name */
-      std::make_optional(
-          static_cast<uintptr_t>(12345678u)) /* stack low address */,
-      std::make_optional(static_cast<uintptr_t>(0u)) /* stack high address */,
-      std::make_optional(
-          static_cast<uintptr_t>(987654321u)) /* stack peak address */);
+      as_bytes(span("MyThread")), /* thread name */
+      static_cast<uintptr_t>(12345678u) /* stack low address */,
+      static_cast<uintptr_t>(0u) /* stack high address */,
+      static_cast<uintptr_t>(987654321u) /* stack peak address */);
 
   EXPECT_EQ(OkStatus(), ProtoEncodeThreadInfo(encoder, thread_info));
 
@@ -102,26 +99,23 @@ TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  ConstByteSpan name = bytes::String("MyThread1\0");
   ThreadInfo thread_info_1 =
-      CreateThreadInfoObject(std::make_optional(name),
-                             std::make_optional(static_cast<uintptr_t>(123u)),
-                             std::make_optional(static_cast<uintptr_t>(1023u)),
-                             std::make_optional(static_cast<uintptr_t>(321u)));
+      CreateThreadInfoObject(as_bytes(span("MyThread1")),
+                             static_cast<uintptr_t>(123u),
+                             static_cast<uintptr_t>(1023u),
+                             static_cast<uintptr_t>(321u));
 
-  name = bytes::String("MyThread2\0");
-  ThreadInfo thread_info_2 = CreateThreadInfoObject(
-      std::make_optional(name),
-      std::make_optional(static_cast<uintptr_t>(1000u)),
-      std::make_optional(static_cast<uintptr_t>(999999u)),
-      std::make_optional(static_cast<uintptr_t>(0u)));
+  ThreadInfo thread_info_2 =
+      CreateThreadInfoObject(as_bytes(span("MyThread2")),
+                             static_cast<uintptr_t>(1000u),
+                             static_cast<uintptr_t>(999999u),
+                             static_cast<uintptr_t>(0u));
 
-  name = bytes::String("MyThread3\0");
   ThreadInfo thread_info_3 =
-      CreateThreadInfoObject(std::make_optional(name),
-                             std::make_optional(static_cast<uintptr_t>(123u)),
-                             std::make_optional(static_cast<uintptr_t>(1023u)),
-                             std::make_optional(static_cast<uintptr_t>(321u)));
+      CreateThreadInfoObject(as_bytes(span("MyThread3")),
+                             static_cast<uintptr_t>(123u),
+                             static_cast<uintptr_t>(1023u),
+                             static_cast<uintptr_t>(321u));
 
   // Encode out of order.
   EXPECT_EQ(OkStatus(), ProtoEncodeThreadInfo(encoder, thread_info_3));
@@ -142,12 +136,10 @@ TEST(ThreadSnapshotService, DefaultBufferSize) {
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  ConstByteSpan name = bytes::String("MyThread\0");
-  std::optional<uintptr_t> example_addr =
-      std::make_optional(std::numeric_limits<uintptr_t>::max());
+  std::optional<uintptr_t> example_addr = std::numeric_limits<uintptr_t>::max();
 
   ThreadInfo thread_info = CreateThreadInfoObject(
-      std::make_optional(name), example_addr, example_addr, example_addr);
+      as_bytes(span("MyThread")), example_addr, example_addr, example_addr);
 
   for (int i = 0; i < PW_THREAD_MAXIMUM_THREADS; i++) {
     EXPECT_EQ(OkStatus(), ProtoEncodeThreadInfo(encoder, thread_info));
@@ -163,23 +155,22 @@ TEST(ThreadSnapshotService, FailedPrecondition) {
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  ThreadInfo thread_info_no_name = CreateThreadInfoObject(
-      std::nullopt,
-      std::make_optional(static_cast<uintptr_t>(1111111111u)),
-      std::make_optional(static_cast<uintptr_t>(2222222222u)),
-      std::make_optional(static_cast<uintptr_t>(3333333333u)));
+  ThreadInfo thread_info_no_name =
+      CreateThreadInfoObject(std::nullopt,
+                             static_cast<uintptr_t>(1111111111u),
+                             static_cast<uintptr_t>(2222222222u),
+                             static_cast<uintptr_t>(3333333333u));
   Status status = ProtoEncodeThreadInfo(encoder, thread_info_no_name);
   EXPECT_EQ(status, Status::FailedPrecondition());
   // Expected log: "Thread missing information needed by service."
   ErrorLog(status);
 
   // Same error log as above.
-  ConstByteSpan name = bytes::String("MyThread\0");
-  ThreadInfo thread_info_no_high_addr = CreateThreadInfoObject(
-      std::make_optional(name),
-      std::make_optional(static_cast<uintptr_t>(1111111111u)),
-      std::nullopt,
-      std::make_optional(static_cast<uintptr_t>(3333333333u)));
+  ThreadInfo thread_info_no_high_addr =
+      CreateThreadInfoObject(as_bytes(span("MyThread")),
+                             static_cast<uintptr_t>(1111111111u),
+                             std::nullopt,
+                             static_cast<uintptr_t>(3333333333u));
   EXPECT_EQ(ProtoEncodeThreadInfo(encoder, thread_info_no_high_addr),
             Status::FailedPrecondition());
 }
@@ -189,11 +180,10 @@ TEST(ThreadSnapshotService, Unimplemented) {
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info_no_peak_addr =
-      CreateThreadInfoObject(std::make_optional(name),
-                             std::make_optional(static_cast<uintptr_t>(0u)),
-                             std::make_optional(static_cast<uintptr_t>(0u)),
+      CreateThreadInfoObject(as_bytes(span("MyThread")),
+                             static_cast<uintptr_t>(0u),
+                             static_cast<uintptr_t>(0u),
                              std::nullopt);
 
   Status status = ProtoEncodeThreadInfo(encoder, thread_info_no_peak_addr);
