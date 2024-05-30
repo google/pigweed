@@ -52,7 +52,6 @@ class ReliableByteReaderWriterStub
  private:
   // Read functions
 
-  // The max_bytes argument is ignored for datagram-oriented channels.
   pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPendRead(
       pw::async2::Context&) override {
     return pw::async2::Pending();
@@ -70,8 +69,53 @@ class ReliableByteReaderWriterStub
   PW_MODIFY_DIAGNOSTICS_POP();
 
   pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
-    // ``DoPendReadyToWrite`` will never return ``Ready``, so this is not
-    // callable.
+    // `DoPendReadyToWrite` never returns `Ready`, so this is not callable.
+    PW_CHECK(false);
+  }
+
+  pw::Result<pw::channel::WriteToken> DoWrite(
+      pw::multibuf::MultiBuf&&) override {
+    return pw::Status::Unimplemented();
+  }
+
+  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPendFlush(
+      pw::async2::Context&) override {
+    return pw::async2::Ready(
+        pw::Result<pw::channel::WriteToken>(pw::Status::Unimplemented()));
+  }
+
+  // Common functions
+  pw::async2::Poll<pw::Status> DoPendClose(pw::async2::Context&) override {
+    return pw::OkStatus();
+  }
+};
+
+class ReadOnlyStub : public pw::channel::ByteReader {
+ public:
+  constexpr ReadOnlyStub() = default;
+
+ private:
+  // Read functions
+  pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPendRead(
+      pw::async2::Context&) override {
+    return pw::async2::Pending();
+  }
+
+  pw::async2::Poll<pw::Status> DoPendClose(pw::async2::Context&) override {
+    return pw::OkStatus();
+  }
+};
+
+class WriteOnlyStub : public pw::channel::ByteWriter {
+ private:
+  // Write functions
+
+  pw::async2::Poll<pw::Status> DoPendReadyToWrite(
+      pw::async2::Context&) override {
+    return pw::async2::Pending();
+  }
+
+  pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
     PW_CHECK(false);
   }
 
@@ -122,6 +166,22 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
   dispatcher.Post(test_task);
 
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+}
+
+TEST(Channel, ReadOnlyChannelOnlyOpenForReads) {
+  ReadOnlyStub read_only;
+
+  EXPECT_TRUE(read_only.readable());
+  EXPECT_TRUE(read_only.is_read_open());
+  EXPECT_FALSE(read_only.is_write_open());
+}
+
+TEST(Channel, WriteOnlyChannelOnlyOpenForWrites) {
+  WriteOnlyStub write_only;
+
+  EXPECT_FALSE(write_only.readable());
+  EXPECT_FALSE(write_only.is_read_open());
+  EXPECT_TRUE(write_only.is_write_open());
 }
 
 #if PW_NC_TEST(InvalidOrdering)

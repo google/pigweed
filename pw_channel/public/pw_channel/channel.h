@@ -156,8 +156,12 @@ class AnyChannel {
     return (properties_ & Property::kWritable) != 0;
   }
 
+  /// True if the channel is open for reading. Always false for write-only
+  /// channels.
   [[nodiscard]] constexpr bool is_read_open() const { return read_open_; }
 
+  /// True if the channel is open for writing. Always false for read-only
+  /// channels.
   [[nodiscard]] constexpr bool is_write_open() const { return write_open_; }
 
   [[nodiscard]] constexpr bool is_read_or_write_open() const {
@@ -423,10 +427,10 @@ class AnyChannel {
 
   // `AnyChannel` may only be constructed by deriving from `Channel`.
   explicit constexpr AnyChannel(DataType type, uint8_t properties)
-      : read_open_(true),
-        write_open_(true),
-        data_type_(type),
-        properties_(properties) {}
+      : data_type_(type),
+        properties_(properties),
+        read_open_(readable()),
+        write_open_(writable()) {}
 
   // Virtual interface
 
@@ -457,10 +461,10 @@ class AnyChannel {
   // Common functions
   virtual async2::Poll<Status> DoPendClose(async2::Context& cx) = 0;
 
-  bool read_open_;
-  bool write_open_;
   DataType data_type_;
   uint8_t properties_;
+  bool read_open_;
+  bool write_open_;
 };
 
 /// The basic `Channel` type. Unlike `AnyChannel`, the `Channel`'s properties
