@@ -60,66 +60,19 @@ Example code to use GPIO pins:
 Configure an input pin and get its state
 ========================================
 
-.. code-block:: cpp
+.. literalinclude:: examples/input.cc
+   :language: cpp
+   :linenos:
+   :lines: 15-
 
-   #include "pw_digital_io_linux/digital_io.h"
-   #include "pw_status/try.h"
-
-   using pw::digital_io::LinuxDigitalIoChip;
-
-   pw::Status InputExample() {
-     // Open handle to chip.
-     PW_TRY_ASSIGN(auto chip, LinuxDigitalIoChip::Open("/dev/gpiochip0"));
-
-     // Configure input line.
-     LinuxInputConfig config(
-         /* index= */ 5,
-         /* polarity= */ Polarity::kActiveHigh);
-     PW_TRY_ASSIGN(auto input, chip.GetInputLine(config));
-     PW_TRY(input.Enable());
-
-     // Get the input pin state.
-     PW_TRY_ASSIGN(auto pin_state, input.GetState());
-
-     return pw::OkStatus();
-   }
 
 Configure an output pin and set its state
 =========================================
 
-.. code-block:: cpp
-
-   #include "pw_digital_io/polarity.h"
-   #include "pw_digital_io_linux/digital_io.h"
-   #include "pw_status/try.h"
-
-   using pw::digital_io::LinuxDigitalIoChip;
-   using pw::digital_io::LinuxOutputConfig;
-   using pw::digital_io::Polarity;
-   using pw::digital_io::State;
-
-   pw::Status OutputExample() {
-     // Open handle to chip.
-     PW_TRY_ASSIGN(auto chip, LinuxDigitalIoChip::Open("/dev/gpiochip0"));
-
-     // Configure output line.
-     // Set the polarity to active-low and default state to active.
-     LinuxOutputConfig config(
-         /* index= */ 4,
-         /* polarity= */ Polarity::kActiveLow,
-         /* default_state= */ State::kActive);
-     PW_TRY_ASSIGN(auto output, chip->GetOutputLine(config));
-
-     // Enable the output pin. This pulls the pin to ground since the
-     // polarity is kActiveLow and the default_state is kActive.
-     PW_TRY(output.Enable());
-
-     // Set the output pin to inactive.
-     // This pulls pin to Vdd since the polarity is kActiveLow.
-     PW_TRY(out.SetState(State::kInactive));
-
-     return pw::OkStatus();
-   }
+.. literalinclude:: examples/output.cc
+   :language: cpp
+   :linenos:
+   :lines: 15-
 
 
 ----------------------

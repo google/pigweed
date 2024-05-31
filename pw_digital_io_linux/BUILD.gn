@@ -47,10 +47,6 @@ pw_executable("pw_digital_io_linux_cli") {
   ]
 }
 
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
-
 # TODO(b/328262654): Move this to a more appropriate module.
 pw_source_set("mock_vfs") {
   public_configs = [ ":public_includes" ]
@@ -83,4 +79,13 @@ pw_test("digital_io_test") {
 
 pw_test_group("tests") {
   tests = [ ":digital_io_test" ]
+  group_deps = [ "examples" ]
+}
+
+pw_doc_group("docs") {
+  inputs = [
+    "examples/input.cc",
+    "examples/output.cc",
+  ]
+  sources = [ "docs.rst" ]
 }
