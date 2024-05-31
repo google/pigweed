@@ -97,3 +97,12 @@ pw_cc_test(
     ],
     deps = [":pw_stream_uart_dma_mcuxpresso"],
 )
+
+pw_cc_test(
+    name = "interrupt_safe_writer_example",
+    srcs = ["interrupt_safe_writer_example.cc"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [":pw_stream_uart_interrupt_safe_writer_mcuxpresso"],
+)

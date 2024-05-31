@@ -51,9 +51,8 @@ Usage
 
 ``InterruptSafeUartWriterMcuxpresso`` example:
 
-.. code-block:: cpp
-
-   constinit InterruptSafeUartWriterMcuxpresso crash_safe_uart(
-       USART0_BASE, kCLOCK_Flexcomm0Clk, 115200);
-
-   PW_TRY(crash_safe_uart.Enable());
+.. literalinclude:: interrupt_safe_writer_example.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_stream_uart_mcuxpresso-UartInterruptSafeWriterExample]
+   :end-before: [pw_stream_uart_mcuxpresso-UartInterruptSafeWriterExample]
