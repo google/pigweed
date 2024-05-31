@@ -114,8 +114,8 @@ class Line {
 // GPIO_GET_LINEHANDLE_IOCTL to an open chip file.
 class LineHandleFile : public MockFile {
  public:
-  LineHandleFile(MockVfs& vfs, const std::string& name, Line& line)
-      : MockFile(vfs, name), line_(line) {}
+  LineHandleFile(MockVfs& vfs, int eventfd, const std::string& name, Line& line)
+      : MockFile(vfs, eventfd, name), line_(line) {}
 
  private:
   Line& line_;
@@ -166,8 +166,11 @@ class LineHandleFile : public MockFile {
 // Represents an open GPIO chip file, the result of opening /dev/gpiochip*.
 class ChipFile : public MockFile {
  public:
-  ChipFile(MockVfs& vfs, const std::string& name, std::vector<Line>& lines)
-      : MockFile(vfs, name), lines_(lines) {}
+  ChipFile(MockVfs& vfs,
+           int eventfd,
+           const std::string& name,
+           std::vector<Line>& lines)
+      : MockFile(vfs, eventfd, name), lines_(lines) {}
 
  private:
   std::vector<Line>& lines_;
@@ -227,7 +230,7 @@ class ChipFile : public MockFile {
       return -1;
     }
 
-    req->fd = vfs_.InstallNewFile<LineHandleFile>("line-handle", line);
+    req->fd = vfs().InstallNewFile<LineHandleFile>("line-handle", line);
     return 0;
   }
 };

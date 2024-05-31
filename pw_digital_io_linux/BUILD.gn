@@ -56,7 +56,11 @@ pw_source_set("mock_vfs") {
   public_configs = [ ":public_includes" ]
   public = [ "mock_vfs.h" ]
   public_deps = [ "$dir_pw_log" ]
-  sources = [ "mock_vfs.cc" ]
+  sources = [
+    "log_errno.h",
+    "mock_vfs.cc",
+  ]
+  deps = [ "$dir_pw_assert" ]
 }
 
 pw_test("digital_io_test") {
@@ -73,6 +77,7 @@ pw_test("digital_io_test") {
   ldflags = [
     "-Wl,--wrap=close",
     "-Wl,--wrap=ioctl",
+    "-Wl,--wrap=read",
   ]
 }
 

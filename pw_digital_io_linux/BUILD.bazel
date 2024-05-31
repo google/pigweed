@@ -55,9 +55,14 @@ cc_binary(
 # TODO(b/328262654): Move this to a more appropriate module.
 cc_library(
     name = "mock_vfs",
-    srcs = ["mock_vfs.cc"],
+    srcs = [
+        "log_errno.h",
+        "mock_vfs.cc",
+    ],
     hdrs = ["mock_vfs.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "//pw_assert",
         "//pw_log",
     ],
 )
@@ -71,6 +76,7 @@ pw_cc_test(
     linkopts = [
         "-Wl,--wrap=close",
         "-Wl,--wrap=ioctl",
+        "-Wl,--wrap=read",
     ],
     deps = [
         ":mock_vfs",

@@ -13,8 +13,10 @@
 // the License.
 #pragma once
 
+#include <unistd.h>
+
+#include <map>
 #include <string>
-#include <vector>
 
 #include "pw_log/log.h"
 
@@ -28,19 +30,31 @@ class MockVfs;
 // custom test file behaviors.
 class MockFile {
  public:
-  MockFile(MockVfs& vfs, const std::string& name) : vfs_(vfs), name_(name) {}
+  MockFile(MockVfs& vfs, int eventfd, const std::string& name)
+      : vfs_(vfs), eventfd_(eventfd), name_(name) {}
   virtual ~MockFile() = default;
 
+  MockVfs& vfs() const { return vfs_; }
+  int eventfd() const { return eventfd_; }
   const std::string& name() { return name_; }
+
+  // Public interface, intended for use by tests.
+  void WriteEventfd(uint64_t add = 1);
+  uint64_t ReadEventfd();
 
   // Public interface, intended for use by MockVfs.
   // These methods conform closely to syscalls of the same name.
-  int Close() { return DoClose(); }
+  int Close();
   int Ioctl(unsigned long request, void* arg) { return DoIoctl(request, arg); }
+  ssize_t Read(void* buf, size_t count) { return DoRead(buf, count); }
 
- protected:
+ private:
   MockVfs& vfs_;
-  std::string name_;
+  // NOTE: We can't use OwnedFd here because it calls close(), which is wrapped
+  // in mock_vfs, which would lead to recursion.
+  static constexpr int kInvalidFd = -1;
+  int eventfd_ = kInvalidFd;
+  const std::string name_;
 
   // Derived class interface
   // These methods conform closely to syscalls of the same name.
@@ -48,6 +62,11 @@ class MockFile {
 
   virtual int DoIoctl(unsigned long /* request */, void* /* arg */) {
     PW_LOG_ERROR("[%s] Ioctl unimplemented", name_.c_str());
+    return -1;
+  }
+
+  virtual ssize_t DoRead(void* /* buf */, size_t /* count */) {
+    PW_LOG_ERROR("[%s] Read unimplemented", name_.c_str());
     return -1;
   }
 };
@@ -65,14 +84,15 @@ class MockVfs {
   MockVfs operator=(const MockVfs&& other) = delete;
 
   // Returns true if the fd is in the range of mocked fds, not if it is open.
-  bool IsMockFd(const int fd) const { return fd >= kFakeFdBase; }
+  bool IsMockFd(const int fd);
 
   // Creates a new MockFile object associated with this vfs.
   // The FileType template argument must be MockFile or a derived class.
   // Arguments are forwarded to the FileType constructor.
   template <class FileType, typename... Args>
   std::unique_ptr<FileType> MakeFile(Args&&... args) {
-    return std::make_unique<FileType>(*this, std::forward<Args>(args)...);
+    return std::make_unique<FileType>(
+        *this, GetEventFd(), std::forward<Args>(args)...);
   }
 
   // Installs a MockFile object into this vfs, and returns a newly-assigned fd.
@@ -89,18 +109,18 @@ class MockVfs {
   bool AllFdsClosed() const;
 
   // Resets the vfs to its default state, closing any open files.
-  void Reset() { open_files_.clear(); }
+  void Reset();
 
   // Mocked syscalls
   int mock_close(int fd);
   int mock_ioctl(int fd, unsigned long request, void* arg);
+  ssize_t mock_read(int fd, void* buf, size_t count);
 
  private:
-  // We start at an fd far above what this test process will ever open as an
-  // easy way to avoid our fake fd's being passed to real syscalls which we
-  // haven't intercepted.
-  static constexpr int kFakeFdBase = 100000;
-  std::vector<std::unique_ptr<MockFile>> open_files_;
+  // All open files. Key is (real) fd number.
+  std::map<int, std::unique_ptr<MockFile>> open_files_;
+
+  int GetEventFd();
 
   // Gets the MockFile object associated with the given fd.
   // If fd refers to an open MockFile, a pointer to that file is returned (and

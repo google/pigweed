@@ -13,6 +13,22 @@
 // the License.
 #include "mock_vfs.h"
 
+#include <sys/eventfd.h>
+#include <unistd.h>
+
+#include <cinttypes>
+
+#include "log_errno.h"
+#include "pw_assert/check.h"
+
+extern "C" {
+
+decltype(close) __real_close;
+decltype(read) __real_read;
+#define __real_write ::write  // Not (yet) wraapped
+
+}  // extern "C"
+
 // TODO(b/328262654): Move this to a more appropriate module.
 namespace pw::digital_io {
 
@@ -21,63 +37,63 @@ MockVfs& GetMockVfs() {
   return vfs;
 }
 
+// MockVfs
+
 MockFile* MockVfs::GetFile(const int fd) const {
-  if (fd < kFakeFdBase) {
-    return nullptr;
+  if (auto it = open_files_.find(fd); it != open_files_.end()) {
+    return it->second.get();
   }
-  const size_t index = fd - kFakeFdBase;
-  if (index >= open_files_.size()) {
-    return nullptr;
-  }
-  return open_files_[index].get();
+  return nullptr;
 }
 
-int MockVfs::InstallFile(std::unique_ptr<MockFile>&& file) {
-  // Find the lowest unused index.
-  size_t index;
-  for (index = 0; index < open_files_.size(); ++index) {
-    if (open_files_[index] == nullptr) {
-      break;
-    }
-  }
+bool MockVfs::IsMockFd(const int fd) { return GetFile(fd) != nullptr; }
 
-  const int fd = kFakeFdBase + index;
-  PW_LOG_DEBUG("Installing fd %d: \"%s\"", fd, file->name().c_str());
+int MockVfs::GetEventFd() {
+  // All files are backed by a real (kernel) eventfd.
+  const int fd = ::eventfd(0, EFD_SEMAPHORE | EFD_CLOEXEC | EFD_NONBLOCK);
+  PW_CHECK_INT_GE(fd,
+                  0,
+                  "eventfd() failed: " ERRNO_FORMAT_STRING,
+                  ERRNO_FORMAT_ARGS(errno));
 
-  const size_t min_size = index + 1;
-  if (min_size > open_files_.size()) {
-    open_files_.resize(min_size);
-  }
-  open_files_[index] = std::move(file);
+  // There should be no existing file registered with this eventfd.
+  PW_CHECK_PTR_EQ(GetFile(fd), nullptr);
 
   return fd;
 }
 
-bool MockVfs::AllFdsClosed() const {
-  for (const auto& f : open_files_) {
-    if (f != nullptr) {
-      return false;
-    }
-  }
-  return true;
+int MockVfs::InstallFile(std::unique_ptr<MockFile>&& file) {
+  // All files are backed by a real (kernel) eventfd.
+  const int fd = file->eventfd();
+
+  PW_LOG_DEBUG("Installing fd %d: \"%s\"", fd, file->name().c_str());
+
+  auto [_, inserted] = open_files_.try_emplace(fd, std::move(file));
+  PW_CHECK(inserted);
+
+  return fd;
 }
 
+void MockVfs::Reset() {
+  for (const auto& [fd, file] : open_files_) {
+    file->Close();
+  }
+  open_files_.clear();
+}
+
+bool MockVfs::AllFdsClosed() const { return open_files_.empty(); }
+
 int MockVfs::mock_close(int fd) {
-  auto* file = GetFile(fd);
-  if (!file) {
+  // Attempt to remove the file from the map.
+  auto node = open_files_.extract(fd);
+  if (!node) {
     // TODO: https://pwbug.dev/338269682 - The return value of close(2) is
     // frequently ignored, so provide a hook here to let consumers handle this
     // error.
     errno = EBADF;
     return -1;
   }
-
-  int result = file->Close();
-
-  const int index = fd - kFakeFdBase;
-  open_files_[index] = nullptr;
-
-  return result;
+  return node.mapped()->Close();
 }
 
 int MockVfs::mock_ioctl(int fd, unsigned long request, void* arg) {
@@ -89,6 +105,43 @@ int MockVfs::mock_ioctl(int fd, unsigned long request, void* arg) {
   return file->Ioctl(request, arg);
 }
 
+ssize_t MockVfs::mock_read(int fd, void* buf, size_t count) {
+  auto* file = GetFile(fd);
+  if (!file) {
+    errno = EBADF;
+    return -1;
+  }
+  return file->Read(buf, count);
+}
+
+// MockFile
+
+int MockFile::Close() {
+  int result = DoClose();
+
+  // Close the real eventfd
+  PW_CHECK_INT_NE(eventfd_, kInvalidFd);
+  PW_CHECK_INT_EQ(__real_close(eventfd_), 0);
+  eventfd_ = kInvalidFd;
+
+  return result;
+}
+
+void MockFile::WriteEventfd(uint64_t add) {
+  const ssize_t ret = __real_write(eventfd_, &add, sizeof(add));
+  PW_CHECK(ret == sizeof(add));
+}
+
+uint64_t MockFile::ReadEventfd() {
+  uint64_t val;
+  ssize_t nread = __real_read(eventfd_, &val, sizeof(val));
+  if (nread == -1 && errno == EAGAIN) {
+    return 0;
+  }
+  PW_CHECK_INT_EQ(nread, sizeof(val));
+  return val;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Syscalls wrapped via --wrap
 
@@ -98,7 +151,6 @@ extern "C" {
 
 // close()
 
-decltype(close) __real_close;
 decltype(close) __wrap_close;
 
 int __wrap_close(int fd) {
@@ -123,6 +175,18 @@ int __wrap_ioctl(int fd, unsigned long request, void* arg) {
     return vfs.mock_ioctl(fd, request, arg);
   }
   return __real_ioctl(fd, request, arg);
+}
+
+// read()
+
+decltype(read) __wrap_read;
+
+ssize_t __wrap_read(int fd, void* buf, size_t nbytes) {
+  auto& vfs = GetMockVfs();
+  if (vfs.IsMockFd(fd)) {
+    return vfs.mock_read(fd, buf, nbytes);
+  }
+  return __real_read(fd, buf, nbytes);
 }
 
 }  // extern "C"
