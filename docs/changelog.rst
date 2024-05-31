@@ -14,11 +14,347 @@ Talk to the team at Pigweed Live
 .. _docs-changelog-latest:
 
 ------------
-May 16, 2024
+May 30, 2024
 ------------
-
 .. changelog_highlights_start
 
+Highlights (May 17, 2024 to May 30, 2024):
+
+* **Clock management**: The new :ref:`module-pw_clock_tree` module manages
+  generic clock tree elements such as clocks, clock selectors, and clock
+  dividers.
+* **GitHub Actions**: The new :ref:`docs-github` guide shows you
+  how to set up GitHub Actions to build and test a Bazel-based Pigweed
+  project when a pull request is received.
+* **pw_system and Bazel**:ref:`module-pw_system` usage in Bazel has been
+  simplified by gathering all required ``pw_system`` components into one
+  target and providing label flags that can set platform-dependent
+  dependencies.
+* **Channels and Linux Epoll**: The new :cpp:class:`pw::channel::EpollChannel`
+  class sends and receives data through a file descriptor, with read and write
+  notifications backed by Linux's epoll system.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please visit :ref:`seed-0000`
+and leave feedback on the RFCs (i.e. SEEDs) marked
+``Open for Comments``.
+
+Modules
+=======
+
+pw_allocator
+------------
+* `Add BlockAllocator::MeasureFragmentation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209933>`__
+* `Fix Android build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211871>`__
+* `Refactor optional Allocator methods
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210402>`__
+* `Make Init methods infallible
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209044>`__
+  (issue `#338389412 <https://issues.pigweed.dev/issues/338389412>`__)
+* `Reduce Block fragmentation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209538>`__
+  (issue `#328831791 <https://issues.pigweed.dev/issues/328831791>`__)
+* `Fix #if PW_HAVE_FEATURE(__cpp_rtti)
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210816>`__
+  (issue `#341975367 <https://issues.pigweed.dev/issues/341975367>`__)
+* `Track requested sizes in blocks
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210395>`__
+* `Fix Android build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210571>`__
+  (issue `#A <https://issues.pigweed.dev/issues/N/A>`__)
+* `Move large values to test fixtures
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210398>`__
+* `Add AsPmrAllocator
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/207170>`__
+
+pw_assert
+---------
+* `Add missing dep in Android.bp
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211271>`__
+
+pw_build
+--------
+The new ``PW_MUST_PLACE`` macro ensures that linker script inputs are
+non-zero sized.
+
+* `Introduce PW_MUST_PLACE linker script macro
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211924>`__
+* `Add deps support to pw_linker_script
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211194>`__
+  (issue `#331927492 <https://issues.pigweed.dev/issues/331927492>`__)
+
+pw_channel
+----------
+The new :cpp:class:`pw::channel::EpollChannel` class sends and receives
+data through a file descriptor, with read and write notifications backed
+by Linux's epoll system.
+
+* `Only open read/write if channel is readable/writable
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/212212>`__
+* `Add EpollChannel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210813>`__
+* `Consistent datagram/byte channel aliases
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210796>`__
+
+pw_chre
+-------
+* `Update CHRE revision
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210011>`__
+  (issue `#341137451 <https://issues.pigweed.dev/issues/341137451>`__)
+
+pw_clock_tree
+-------------
+The new :ref:`module-pw_clock_tree` module manages generic clock tree
+elements such as clocks, clock selectors, and clock dividers.
+
+* `Introduce new ClockDivider class
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211292>`__
+  (issue `#331672574 <https://issues.pigweed.dev/issues/331672574>`__)
+* `ClockTree support Element ops
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211149>`__
+  (issue `#331672574 <https://issues.pigweed.dev/issues/331672574>`__)
+* `Introduce Element may_block()
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211148>`__
+  (issue `#331672574 <https://issues.pigweed.dev/issues/331672574>`__)
+* `Generic clock tree management
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/204310>`__
+  (issue `#331672574 <https://issues.pigweed.dev/issues/331672574>`__)
+
+pw_clock_tree_mcuxpresso
+------------------------
+The new :ref:`module-pw_clock_tree_mcuxpresso` module is an NXP
+MCUXPresso backend for :ref:`module-pw_clock_tree`.
+
+* `Mcuxpresso module
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/204245>`__
+  (issue `#331672574 <https://issues.pigweed.dev/issues/331672574>`__)
+
+pw_config_loader
+----------------
+* `Remove unnecessary dep
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210286>`__
+
+pw_cpu_exception_cortex_m
+-------------------------
+The new crash analysis API provides data about CPU state during exceptions.
+See :ref:`module-pw_cpu_exception_cortex_m-crash-facade-setup`.
+
+* `Add crash analysis API
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/204248>`__
+* `Fix incorrect inputs to util_test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211551>`__
+* `Fix checks for ARMv8
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210272>`__
+
+pw_emu
+------
+* `Exclude tests module from the Pigweed Python package
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211977>`__
+
+pw_env_setup
+------------
+* `PyPI version bump to 0.0.16
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211136>`__
+* `Build an extra example pypi distribution
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211134>`__
+* `Remove f-strings from github_visitor
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210274>`__
+
+pw_grpc
+-------
+* `Fix warnings in format strings
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211391>`__
+
+pw_hex_dump
+-----------
+* `Add Android.bp
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/212231>`__
+
+pw_libcxx
+---------
+* `Only enable in clang builds
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211941>`__
+
+pw_log_basic
+------------
+* `Fixing sign conversion error for logging
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210331>`__
+
+pw_multisink
+------------
+* `Fix compiler warnings for tests
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/212051>`__
+  (issue `#343480404 <https://issues.pigweed.dev/issues/343480404>`__)
+
+pw_preprocessor
+---------------
+* `Remove PW_HAVE_FEATURE
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211016>`__
+  (issue `#341975367 <https://issues.pigweed.dev/issues/341975367>`__)
+
+pw_rpc
+------
+* `Include FakeChannelOutput in soong target
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209991>`__
+  (issue `#340350973 <https://issues.pigweed.dev/issues/340350973>`__)
+
+pw_spi_mcuxpresso
+-----------------
+* `Remove unnecessary debug messages
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210711>`__
+
+pw_stream_uart_mcuxpresso
+-------------------------
+* `Fix unused parameter warnings
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211571>`__
+
+pw_system
+---------
+:ref:`module-pw_system` usage in Bazel has been simplified by gathering
+all required ``pw_system`` components into one target and providing label
+flags that can set platform-dependent dependencies.
+
+* `Simplify pw_system usage in Bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210116>`__
+  (issue `#341144405 <https://issues.pigweed.dev/issues/341144405>`__)
+
+pw_thread
+---------
+* `Fix thread snapshot service test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/212111>`__
+
+pw_toolchain
+------------
+* `Add manual tag to Rust toolchains
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211934>`__
+  (issue `#342695883 <https://issues.pigweed.dev/issues/342695883>`__)
+* `Add clang-apply-replacements plugin
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210405>`__
+  (issue `#339294894 <https://issues.pigweed.dev/issues/339294894>`__)
+
+pw_transfer
+-----------
+* `Fix transfer_thread_test initialization order
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210352>`__
+* `End active transfers when RPC stream changes
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209876>`__
+
+pw_uart
+-------
+* `Add pw_uart to CMakeLists
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210731>`__
+
+pw_unit_test
+------------
+* `Don't execute multiple test suites at the same time
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210531>`__
+* `Ensure alignment of test fixtures
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210278>`__
+
+pw_web
+------
+* `Move shoelace split panel import
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211940>`__
+* `Add split/resize view guide in docs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211471>`__
+* `Implement split log views with resize
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209471>`__
+  (issue `#333891204 <https://issues.pigweed.dev/issues/333891204>`__)
+
+Build
+=====
+
+Bazel
+-----
+Clang's ``AddressSanitizer`` is now supported. See
+:ref:`docs-automated-analysis-clang-sanitizers`.
+
+* `Support asan in Bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211369>`__
+  (issue `#301487567 <https://issues.pigweed.dev/issues/301487567>`__)
+* `Update rules_rust to 0.45.1
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211939>`__
+  (issue `#342673389 <https://issues.pigweed.dev/issues/https://pwbug.dev/342673389>`__)
+* `Explicitly load rules_python in BUILD.bazel files
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211361>`__
+
+Targets
+=======
+
+rp2040
+------
+* `Additional bazel build file coverage
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211351>`__
+  (issue `#303255049, 305746219 <https://issues.pigweed.dev/issues/303255049, 305746219>`__)
+* `Enable thread high water accounting
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210831>`__
+* `Update docs to add missing picotool dependency
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210811>`__
+* `Save test run log files
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210814>`__
+* `Increase RPC thread stack size to 16K
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210832>`__
+* `Allow using rp2040 devices in bootloader mode
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210525>`__
+* `Refresh target docs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210404>`__
+* `Update openocd flashing instructions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210400>`__
+* `Increase device_detector verbosity
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210411>`__
+* `Add upstream Bazel platform definition
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211592>`__
+* `Renable tests that pass with larger stack frames
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211147>`__
+* `Raise minimal stack size to 1KB
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210517>`__
+* `Replace exceptions with logging
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210396>`__
+
+OS support
+==========
+
+freertos
+--------
+* `Clarify Bazel documentation
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211052>`__
+
+Docs
+====
+The new :ref:`docs-github` guide shows you how to set up GitHub Actions
+to build and test a Pigweed project when a pull request is received.
+
+* `Add notes about GitHub Actions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211135>`__
+  (issue `#338083578 <https://issues.pigweed.dev/issues/338083578>`__)
+* `Instructions for freertos.BUILD.bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211193>`__
+* `Create files in current directory
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/206196>`__
+* `Update changelog
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210285>`__
+
+Miscellaneous
+=============
+.. common_typos_disable
+
+* `Fix typo succesfully->successfully
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210671>`__
+* `Update Android.bp after GetAlignedSubspan move
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210518>`__
+* `Add link to format
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211011>`__
+
+.. common_typos_enable
+
+------------
+May 16, 2024
+------------
 Highlights (May 2, 2024 to May 16, 2024):
 
 * **Coroutines**: You can now create asynchronous tasks using C++20
@@ -31,8 +367,6 @@ Highlights (May 2, 2024 to May 16, 2024):
   :ref:`module-pw_i2c_mcuxpresso`, a new responder in
   :ref:`module-pw_spi_mcuxpresso`, and a new :ref:`module-pw_dma_mcuxpresso`
   module.
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============

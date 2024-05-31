@@ -75,6 +75,8 @@ application's exception handler will not be entered if an exception occurs
 before the vector table entries are updated to point to
 ``pw_cpu_exception_Entry``.
 
+.. _module-pw_cpu_exception_cortex_m-crash-facade-setup:
+
 Crash Facade Setup
 ==================
 The function ``AnalyzeCpuStateAndCrash()`` creates a condensed analysis of the

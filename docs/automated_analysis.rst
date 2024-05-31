@@ -217,6 +217,8 @@ about Pigweed toolchains.
 Bazel
 =====
 
+.. _docs-automated-analysis-clang-sanitizers:
+
 Clang sanitizers
 ----------------
 If you're using Pigweed's own host toolchain configuration, you can enable
