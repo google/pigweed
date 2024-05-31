@@ -76,3 +76,12 @@ pw_cc_test(
     ],
     deps = [":pw_stream_uart_mcuxpresso"],
 )
+
+pw_cc_test(
+    name = "dma_stream_example",
+    srcs = ["dma_stream_example.cc"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [":pw_stream_uart_dma_mcuxpresso"],
+)

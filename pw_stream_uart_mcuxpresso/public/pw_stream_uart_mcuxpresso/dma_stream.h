@@ -44,7 +44,7 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
   };
 
   UartDmaStreamMcuxpresso(const Config& config)
-      : config_(config), rx_data_{.ring_buffer = config.buffer} {}
+      : rx_data_{.ring_buffer = config.buffer}, config_(config) {}
 
   ~UartDmaStreamMcuxpresso();
 
@@ -68,20 +68,20 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
 
   // Usart DMA RX data structure
   struct UsartDmaRxData {
-    ByteSpan ring_buffer;          // Receive ring buffer
-    size_t ring_buffer_read_idx;   // ring buffer reader index
-    size_t ring_buffer_write_idx;  // ring buffer writer index
-    size_t
-        data_received;  // data received and acknowledged by completion callback
-    size_t data_copied;  // data copied out to receiver
+    ByteSpan ring_buffer;            // Receive ring buffer
+    size_t ring_buffer_read_idx{};   // ring buffer reader index
+    size_t ring_buffer_write_idx{};  // ring buffer writer index
+    size_t data_received{};  // data received and acknowledged by completion
+                             // callback
+    size_t data_copied{};    // data copied out to receiver
     // completion callback will be executed when completion size decreases to 0
     // bytes
-    size_t completion_size;
-    usart_transfer_t transfer;  // USART RX transfer structure
-    dma_handle_t dma_handle;    // DMA handle
+    size_t completion_size{};
+    usart_transfer_t transfer{};  // USART RX transfer structure
+    dma_handle_t dma_handle{};    // DMA handle
     std::atomic_uint8_t
-        busy;  // Flag to prevent concurrent access to RX ring buffer
-    pw::sync::ThreadNotification notification;  // RX completion notification
+        busy{};  // Flag to prevent concurrent access to RX ring buffer
+    pw::sync::ThreadNotification notification{};  // RX completion notification
   };
 
   // Since we are calling USART_TransferGetReceiveCountDMA we may only
