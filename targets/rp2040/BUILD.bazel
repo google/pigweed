@@ -26,7 +26,6 @@ platform(
         "freertos_config_cv",
         "//pw_build/constraints/rtos:freertos",
         "//pw_interrupt_cortex_m:backend",
-        "//pw_malloc_freelist:backend",
         "//pw_sys_io_rp2040:backend",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",

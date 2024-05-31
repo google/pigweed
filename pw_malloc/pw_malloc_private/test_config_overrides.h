@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,17 +11,28 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_malloc/malloc.h"
-#include "pw_malloc_freertos/allocator.h"
+#include <cstdint>
+
+#include "pw_allocator/metrics.h"
+#include "pw_allocator/synchronized_allocator.h"
+#include "pw_allocator/tracking_allocator.h"
 
 namespace pw::malloc {
 
-void InitSystemAllocator(ByteSpan) {}
-
-Allocator* GetSystemAllocator() {
-  static freertos::Allocator allocator;
-  return &allocator;
-}
+struct TestMetrics {
+  PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
+  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
+};
 
 }  // namespace pw::malloc
+
+#define PW_MALLOC_METRICS_TYPE ::pw::malloc::TestMetrics
+
+#define PW_MALLOC_BLOCK_OFFSET_TYPE uint16_t
+
+#define PW_MALLOC_MIN_BUCKET_SIZE 64
+
+#define PW_MALLOC_NUM_BUCKETS 4

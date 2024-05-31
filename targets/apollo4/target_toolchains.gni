@@ -59,7 +59,7 @@ _target_config = {
   pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
   pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
 
-  pw_malloc_BACKEND = "$dir_pw_malloc_freelist"
+  pw_malloc_BACKEND = "$dir_pw_malloc:bucket_block_allocator"
 
   pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
     "PW_BOOT_VECTOR_TABLE_BEGIN=0x00018000",

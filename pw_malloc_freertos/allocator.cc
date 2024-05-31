@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,16 +12,19 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_malloc/malloc.h"
 #include "pw_malloc_freertos/allocator.h"
 
-namespace pw::malloc {
+#include "FreeRTOS.h"
 
-void InitSystemAllocator(ByteSpan) {}
+namespace pw::malloc::freertos {
 
-Allocator* GetSystemAllocator() {
-  static freertos::Allocator allocator;
-  return &allocator;
+void* Allocator::DoAllocate(Layout layout) {
+  if (layout.alignment() > portBYTE_ALIGNMENT) {
+    return nullptr;
+  }
+  return pvPortMalloc(layout.size());
 }
 
-}  // namespace pw::malloc
+void Allocator::DoDeallocate(void* ptr) { vPortFree(ptr); }
+
+}  // namespace pw::malloc::freertos

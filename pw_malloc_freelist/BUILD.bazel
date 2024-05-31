@@ -12,66 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_test",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-constraint_value(
+# pw_allocator:freelist has been replaced by pw_allocator:bucket_block_allocator
+alias(
     name = "backend",
-    constraint_setting = "//pw_malloc:backend_constraint_setting",
+    actual = "//pw_malloc:bucket_block_allocator_backend",
 )
 
-cc_library(
-    name = "headers",
-    hdrs = [
-        "public/pw_malloc_freelist/freelist_malloc.h",
-    ],
-    includes = [
-        "public",
-    ],
-)
-
-cc_library(
+alias(
     name = "pw_malloc_freelist",
-    srcs = [
-        "freelist_malloc.cc",
-    ],
-    linkopts = [
-        # Link options that replace dynamic memory operations in standard
-        # library with the pigweed malloc.
-        "-Wl,--wrap=malloc",
-        "-Wl,--wrap=free",
-        "-Wl,--wrap=realloc",
-        "-Wl,--wrap=calloc",
-        "-Wl,--wrap=_malloc_r",
-        "-Wl,--wrap=_realloc_r",
-        "-Wl,--wrap=_free_r",
-        "-Wl,--wrap=_calloc_r",
-    ],
-    deps = [
-        ":headers",
-        "//pw_allocator:block",
-        "//pw_allocator:freelist_heap",
-        "//pw_malloc:facade",
-        "//pw_preprocessor",
-    ],
-)
-
-pw_cc_test(
-    name = "freelist_malloc_test",
-    srcs = [
-        "freelist_malloc_test.cc",
-    ],
-    # TODO: b/257530518 - Get this test to work with Bazel.
-    tags = ["manual"],
-    deps = [
-        ":headers",
-        ":pw_malloc_freelist",
-        "//pw_unit_test",
-    ],
+    actual = "//pw_malloc:bucket_block_allocator",
 )

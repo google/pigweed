@@ -153,8 +153,8 @@ being foundational infrastructure.
          "PW_BOOT_FLASH_SIZE=200K",
 
          # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
-         # least 6K bytes in heap when using pw_malloc_freelist. The heap size
-         # required for tests should be investigated.
+         # least 6K bytes in heap when using pw_malloc:bucket_block_allocator.
+         # The heap size required for tests should be investigated.
          "PW_BOOT_HEAP_SIZE=7K",
          "PW_BOOT_MIN_STACK_SIZE=1K",
          "PW_BOOT_RAM_BEGIN=0x20000000",

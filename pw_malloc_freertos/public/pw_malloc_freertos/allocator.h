@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,7 +13,16 @@
 // the License.
 #pragma once
 
-#include "pw_allocator/freelist_heap.h"
+#include "pw_allocator/allocator.h"
 
-// Global variables to initialize a freelist heap.
-extern pw::allocator::FreeListHeapBuffer<>* pw_freelist_heap;
+namespace pw::malloc::freertos {
+
+/// An allocator that uses FreeRTOS memory management functions to de/allocate
+/// memory.
+class Allocator : public ::pw::Allocator {
+ private:
+  void* DoAllocate(Layout layout) override;
+  void DoDeallocate(void*) override;
+};
+
+}  // namespace pw::malloc::freertos

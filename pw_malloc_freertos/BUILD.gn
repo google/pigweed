@@ -19,11 +19,22 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_malloc_freertos/allocator.h" ]
+  public_deps = [ "dir_pw_allocator:allocator" ]
+  deps = [ "$dir_pw_third_party/freertos" ]
+  sources = [ "allocator.cc" ]
+}
+
 pw_source_set("pw_malloc_freertos") {
   deps = [
+    ":allocator",
     "$dir_pw_malloc:facade",
-    "$dir_pw_preprocessor",
-    "$dir_pw_third_party/freertos",
   ]
   sources = [ "freertos_malloc.cc" ]
 }

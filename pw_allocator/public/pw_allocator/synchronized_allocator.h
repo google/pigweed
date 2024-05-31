@@ -74,4 +74,10 @@ class SynchronizedAllocator : public Allocator {
   sync::Borrowable<Allocator, LockType> borrowable_;
 };
 
+/// Tag type used to indicate synchronization is NOT desired.
+///
+/// This can be useful with allocator parameters for module configuration, e.g.
+/// PW_MALLOC_LOCK_TYPE.
+struct NoSync {};
+
 }  // namespace pw::allocator

@@ -15,11 +15,15 @@
 
 #if __has_include(<memory_resource>)
 #include <memory_resource>
-#define pmr_namespace ::std::pmr
+namespace pw {
+namespace pmr = ::std::pmr;
+}  // namespace pw
 
 #elif __has_include(<experimental/memory_resource>)
 #include <experimental/memory_resource>
-#define pmr_namespace ::std::experimental::pmr
+namespace pw {
+namespace pmr = ::std::experimental::pmr;
+}  // namespace pw
 
 #else
 #error "<memory_resource> is required to use this header!"
@@ -45,7 +49,7 @@ namespace internal {
 /// NOTE! This class aborts if allocation fails.
 ///
 /// See also https://en.cppreference.com/w/cpp/memory/memory_resource.
-class MemoryResource final : public pmr_namespace::memory_resource {
+class MemoryResource final : public pw::pmr::memory_resource {
  public:
   constexpr MemoryResource() = default;
 
@@ -58,7 +62,7 @@ class MemoryResource final : public pmr_namespace::memory_resource {
   void* do_allocate(size_t bytes, size_t alignment) override;
   void do_deallocate(void* p, size_t bytes, size_t alignment) override;
   bool do_is_equal(
-      const pmr_namespace::memory_resource& other) const noexcept override;
+      const pw::pmr::memory_resource& other) const noexcept override;
 
   Allocator* allocator_ = nullptr;
 };
@@ -69,13 +73,12 @@ class MemoryResource final : public pmr_namespace::memory_resource {
 /// a pw::Allocator.
 ///
 /// Note that despite is name, this is NOT a pw::Allocator itself. Instead, it
-/// can be used in `std::pmr` containers, such as `std::pmr::vector`.
+/// can be used in `pw::pmr` containers, such as `pw::pmr::vector`.
 ///
 /// See also https://en.cppreference.com/w/cpp/memory/polymorphic_allocator.
-class AsPmrAllocator final
-    : public pmr_namespace::polymorphic_allocator<std::byte> {
+class AsPmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
  public:
-  using Base = pmr_namespace::polymorphic_allocator<std::byte>;
+  using Base = pw::pmr::polymorphic_allocator<std::byte>;
 
   AsPmrAllocator(Allocator& allocator) : Base(&memory_resource_) {
     memory_resource_.set_allocator(allocator);
@@ -89,5 +92,3 @@ class AsPmrAllocator final
 
 }  // namespace allocator
 }  // namespace pw
-
-#undef pmr_namespace

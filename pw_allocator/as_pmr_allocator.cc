@@ -41,7 +41,7 @@ void MemoryResource::do_deallocate(void* p, size_t, size_t) {
 }
 
 bool MemoryResource::do_is_equal(
-    const std::pmr::memory_resource& other) const noexcept {
+    const pw::pmr::memory_resource& other) const noexcept {
   if (this == &other) {
     return true;
   }

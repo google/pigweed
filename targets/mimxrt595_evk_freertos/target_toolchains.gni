@@ -39,7 +39,7 @@ _target_config = {
   pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_freertos:system_timer"
   pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv8m"
   pw_log_BACKEND = dir_pw_log_basic
-  pw_malloc_BACKEND = dir_pw_malloc_freelist
+  pw_malloc_BACKEND = "$dir_pw_malloc:bucket_block_allocator"
   pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_freertos:binary_semaphore"
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_freertos:counting_semaphore"

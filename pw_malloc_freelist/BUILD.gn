@@ -13,41 +13,15 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
-  include_dirs = [ "public" ]
-}
-
-pw_source_set("pw_malloc_freelist") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_malloc_freelist/freelist_malloc.h" ]
-  deps = [
-    "$dir_pw_allocator:block",
-    "$dir_pw_allocator:freelist_heap",
-    "$dir_pw_malloc:facade",
-    "$dir_pw_preprocessor",
-    dir_pw_span,
-  ]
-  sources = [ "freelist_malloc.cc" ]
+# pw_allocator:freelist has been replaced by pw_allocator:bucket_block_allocator
+group("pw_malloc_freelist") {
+  public_deps = [ "$dir_pw_malloc:bucket_block_allocator" ]
 }
 
 pw_test_group("tests") {
-  enable_if = pw_malloc_BACKEND == dir_pw_malloc_freelist
-  tests = [ ":freelist_malloc_test" ]
-}
-
-pw_test("freelist_malloc_test") {
-  deps = [
-    "$dir_pw_allocator",
-    "$dir_pw_malloc",
-    dir_pw_span,
-  ]
-  sources = [ "freelist_malloc_test.cc" ]
 }
 
 pw_doc_group("docs") {

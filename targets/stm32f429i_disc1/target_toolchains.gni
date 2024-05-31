@@ -66,7 +66,7 @@ _target_config = {
   pw_log_BACKEND = dir_pw_log_basic
   pw_sys_io_BACKEND = dir_pw_sys_io_baremetal_stm32f429
   pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
-  pw_malloc_BACKEND = dir_pw_malloc_freelist
+  pw_malloc_BACKEND = "$dir_pw_malloc:bucket_block_allocator"
 
   pw_boot_cortex_m_LINK_CONFIG_DEFINES = []
   pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
@@ -74,8 +74,8 @@ _target_config = {
     "PW_BOOT_FLASH_SIZE=1024K",
 
     # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
-    # least 6K bytes in heap when using pw_malloc_freelist. The heap size
-    # required for tests should be investigated.
+    # least 6K bytes in heap when using pw_malloc:bucket_block_allocator.
+    # The heap size required for tests should be investigated.
     #
     # TLS realted tests such as $dir_pw_third_party/boringssl:tests require
     # much larger heap for dynamic allocation. The current number is an

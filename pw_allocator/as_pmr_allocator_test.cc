@@ -131,49 +131,49 @@ void TestPmrAllocator() {
 
 // Unit tests.
 
-TEST(AsPmrAllocatorTest, Vector) { TestPmrAllocator<std::pmr::vector<Foo>>(); }
+TEST(AsPmrAllocatorTest, Vector) { TestPmrAllocator<pw::pmr::vector<Foo>>(); }
 
 TEST(AsPmrAllocatorTest, Deque) {
   // Some implementations preallocate a lot of memory.
-  TestPmrAllocator<std::pmr::deque<Foo>, 8192>();
+  TestPmrAllocator<pw::pmr::deque<Foo>, 8192>();
 }
 
 TEST(AsPmrAllocatorTest, ForwardList) {
-  TestPmrAllocator<std::pmr::forward_list<Foo>>();
+  TestPmrAllocator<pw::pmr::forward_list<Foo>>();
 }
 
-TEST(AsPmrAllocatorTest, List) { TestPmrAllocator<std::pmr::list<Foo>>(); }
+TEST(AsPmrAllocatorTest, List) { TestPmrAllocator<pw::pmr::list<Foo>>(); }
 
-TEST(AsPmrAllocatorTest, Set) { TestPmrAllocator<std::pmr::set<Foo>>(); }
+TEST(AsPmrAllocatorTest, Set) { TestPmrAllocator<pw::pmr::set<Foo>>(); }
 
-TEST(AsPmrAllocatorTest, Map) { TestPmrAllocator<std::pmr::map<Foo, Bar>>(); }
+TEST(AsPmrAllocatorTest, Map) { TestPmrAllocator<pw::pmr::map<Foo, Bar>>(); }
 
 TEST(AsPmrAllocatorTest, MultiSet) {
-  TestPmrAllocator<std::pmr::multiset<Foo>>();
+  TestPmrAllocator<pw::pmr::multiset<Foo>>();
 }
 
 TEST(AsPmrAllocatorTest, MultiMap) {
-  TestPmrAllocator<std::pmr::multimap<Foo, Bar>>();
+  TestPmrAllocator<pw::pmr::multimap<Foo, Bar>>();
 }
 
 TEST(AsPmrAllocatorTest, UnorderedSet) {
   // Some implementations preallocate a lot of memory.
-  TestPmrAllocator<std::pmr::unordered_set<Foo>, 1024>();
+  TestPmrAllocator<pw::pmr::unordered_set<Foo>, 1024>();
 }
 
 TEST(AsPmrAllocatorTest, UnorderedMap) {
   // Some implementations preallocate a lot of memory.
-  TestPmrAllocator<std::pmr::unordered_map<Foo, Bar>, 1024>();
+  TestPmrAllocator<pw::pmr::unordered_map<Foo, Bar>, 1024>();
 }
 
 TEST(AsPmrAllocatorTest, UnorderedMultiSet) {
   // Some implementations preallocate a lot of memory.
-  TestPmrAllocator<std::pmr::unordered_multiset<Foo>, 1024>();
+  TestPmrAllocator<pw::pmr::unordered_multiset<Foo>, 1024>();
 }
 
 TEST(AsPmrAllocatorTest, UnorderedMultiMap) {
   // Some implementations preallocate a lot of memory.
-  TestPmrAllocator<std::pmr::unordered_multimap<Foo, Bar>, 1024>();
+  TestPmrAllocator<pw::pmr::unordered_multimap<Foo, Bar>, 1024>();
 }
 
 }  // namespace
