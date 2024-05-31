@@ -20,6 +20,7 @@
 #include "fsl_usart_dma.h"
 #include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
+#include "pw_clock_tree/clock_tree.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_sync/interrupt_spin_lock.h"
@@ -41,10 +42,16 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
     inputmux_signal_t rx_input_mux_dmac_ch_request_en;  // Rx input mux signal
     inputmux_signal_t tx_input_mux_dmac_ch_request_en;  // Tx input mux signal
     ByteSpan buffer;                                    // Receive ring buffer
+    pw::clock_tree::ClockTree* clock_tree{};            // Optional clock Tree
+    pw::clock_tree::Element*
+        clock_tree_element{};  // Optional clock tree element
   };
 
   UartDmaStreamMcuxpresso(const Config& config)
-      : rx_data_{.ring_buffer = config.buffer}, config_(config) {}
+      : rx_data_{.ring_buffer = config.buffer},
+        config_(config),
+        clock_tree_element_controller_(config.clock_tree,
+                                       config.clock_tree_element) {}
 
   ~UartDmaStreamMcuxpresso();
 
@@ -122,6 +129,9 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
   struct UsartDmaRxData rx_data_;       // RX data
 
   Config const config_;  // USART DMA configuration
+  pw::clock_tree::ElementController
+      clock_tree_element_controller_;  // Element controller encapsulating
+                                       // optional clock tree information
   bool
       initialized_;  // Whether the USART and DMA channels have been initialized
 };

@@ -30,6 +30,7 @@ cc_library(
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
+        "//pw_clock_tree",
         "//pw_preprocessor",
         "//pw_stream",
         "@pigweed//targets:mcuxpresso_sdk",
@@ -45,6 +46,7 @@ cc_library(
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
+        "//pw_clock_tree",
         "//pw_preprocessor",
         "//pw_stream",
         "//pw_sync:interrupt_spin_lock",
@@ -62,6 +64,7 @@ cc_library(
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
+        "//pw_clock_tree",
         "//pw_status",
         "//pw_stream",
         "@pigweed//targets:mcuxpresso_sdk",

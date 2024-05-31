@@ -16,12 +16,18 @@
 
 namespace pw::stream {
 
-UartStreamMcuxpresso::~UartStreamMcuxpresso() { USART_RTOS_Deinit(&handle_); }
+UartStreamMcuxpresso::~UartStreamMcuxpresso() {
+  USART_RTOS_Deinit(&handle_);
+  element_controller_.Release().IgnoreError();
+}
 
 Status UartStreamMcuxpresso::Init(uint32_t srcclk) {
   config_.srcclk = srcclk;
 
+  PW_TRY(element_controller_.Acquire());
+
   if (USART_RTOS_Init(&handle_, &uart_handle_, &config_) != kStatus_Success) {
+    element_controller_.Release().IgnoreError();
     return Status::Internal();
   }
 

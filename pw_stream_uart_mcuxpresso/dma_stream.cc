@@ -41,6 +41,7 @@ void UartDmaStreamMcuxpresso::Deinit() {
   interrupt_lock_.unlock();
 
   USART_Deinit(config_.usart_base);
+  clock_tree_element_controller_.Release().IgnoreError();
 }
 
 UartDmaStreamMcuxpresso::~UartDmaStreamMcuxpresso() {
@@ -74,8 +75,10 @@ Status UartDmaStreamMcuxpresso::Init(uint32_t srcclk) {
   defconfig_.enableTx = true;
   defconfig_.enableRx = true;
 
+  PW_TRY(clock_tree_element_controller_.Acquire());
   status_t status = USART_Init(config_.usart_base, &defconfig_, srcclk);
   if (status != kStatus_Success) {
+    clock_tree_element_controller_.Release().IgnoreError();
     return Status::Internal();
   }
 

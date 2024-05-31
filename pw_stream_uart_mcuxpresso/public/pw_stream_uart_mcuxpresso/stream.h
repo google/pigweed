@@ -15,6 +15,7 @@
 
 #include "fsl_usart_freertos.h"
 #include "pw_bytes/span.h"
+#include "pw_clock_tree/clock_tree.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
@@ -22,6 +23,23 @@ namespace pw::stream {
 
 class UartStreamMcuxpresso : public NonSeekableReaderWriter {
  public:
+  UartStreamMcuxpresso(USART_Type* base,
+                       uint32_t baudrate,
+                       usart_parity_mode_t parity,
+                       usart_stop_bit_count_t stopbits,
+                       ByteSpan buffer,
+                       pw::clock_tree::ClockTree& clock_tree,
+                       pw::clock_tree::Element& clock_tree_element)
+      : base_(base),
+        config_{.base = base_,
+                .srcclk = 0,
+                .baudrate = baudrate,
+                .parity = parity,
+                .stopbits = stopbits,
+                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
+                .buffer_size = buffer.size()},
+        element_controller_(&clock_tree, &clock_tree_element) {}
+
   UartStreamMcuxpresso(USART_Type* base,
                        uint32_t baudrate,
                        usart_parity_mode_t parity,
@@ -48,6 +66,7 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
   struct rtos_usart_config config_;
   usart_rtos_handle_t handle_;
   usart_handle_t uart_handle_;
+  pw::clock_tree::ElementController element_controller_;
 };
 
 }  // namespace pw::stream
