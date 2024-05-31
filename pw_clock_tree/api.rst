@@ -56,3 +56,8 @@ ClockDividerElement
 .. doxygenclass:: pw::clock_tree::ClockDividerElement
    :members:
    :protected-members:
+
+ElementController
+=================
+.. doxygenclass:: pw::clock_tree::ElementController
+   :members:

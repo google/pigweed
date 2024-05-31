@@ -210,11 +210,11 @@ class UartStreamMcuxpresso {
  public:
   pw::Status Init() {
     // Acquire reference to clock before initializing device.
-    clock_tree_.Acquire(clock_tree_element_);
+    PW_TRY(clock_tree_element_controller_.Acquire());
     pw::Status status = USART_RTOS_Init();
     if (!status.ok()) {
       // Failed to initialize device, release the acquired clock.
-      clock_tree_.Release(clock_tree_element_);
+      clock_tree_element_controller_.Release().IgnoreError();
     }
     return status;
   }
@@ -223,19 +223,19 @@ class UartStreamMcuxpresso {
     // Deinitialize the device before we can release the reference
     // to the clock.
     USART_RTOS_Deinit();
-    clock_tree_.Release(clock_tree_element_);
+    clock_tree_element_controller_.Release().IgnoreError();
   }
 
-  // Device constructor that accepts `clock_tree` and `clock_tree_element`
-  // to manage clock lifecycle.
+  // Device constructor that optionally accepts `clock_tree` and
+  // `clock_tree_element` to manage clock lifecycle.
   constexpr UartStreamMcuxpresso(
-      pw::clock_tree::ClockTree& clock_tree,
-      pw::clock_tree::ElementNonBlockingCannotFail& clock_tree_element)
-      : clock_tree_(clock_tree), clock_tree_element_(clock_tree_element) {}
+      pw::clock_tree::ClockTree* clock_tree = nullptr,
+      pw::clock_tree::ElementNonBlockingCannotFail* clock_tree_element =
+          nullptr)
+      : clock_tree_element_controller_(clock_tree, clock_tree_element) {}
 
  private:
-  pw::clock_tree::ClockTree& clock_tree_;
-  pw::clock_tree::ElementNonBlockingCannotFail& clock_tree_element_;
+  pw::clock_tree::ElementController clock_tree_element_controller_;
 };
 // DOCSTAG: [pw_clock_tree-examples-IntegrationIntoDeviceDriversClassDef]
 
@@ -249,7 +249,7 @@ pw::Status ClockTreeExample() {
   pw::clock_tree::ClockTree clock_tree;
   // Declare the uart clock source
   ClockSourceUart uart_clock_source;
-  UartStreamMcuxpresso uart(clock_tree, uart_clock_source);
+  UartStreamMcuxpresso uart(&clock_tree, &uart_clock_source);
 
   // Initialize the uart which enables the uart clock source.
   PW_TRY(uart.Init());

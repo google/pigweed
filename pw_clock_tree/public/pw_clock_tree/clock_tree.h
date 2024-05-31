@@ -536,4 +536,43 @@ class ClockTree {
   /// and `ElementNonBlockingMightFail` clock tree elements.
   sync::InterruptSpinLock interrupt_spin_lock_;
 };
+
+/// Helper class that allows drivers to accept optional clock tree
+/// information and streamline clock tree operations.
+class ElementController {
+ public:
+  /// Create an element controller that accepts optional clock
+  /// tree and element information.
+  constexpr ElementController(ClockTree* clock_tree = nullptr,
+                              Element* element = nullptr)
+      : clock_tree_(clock_tree), element_(element) {}
+
+  /// Acquire a reference to the optional clock tree element.
+  ///
+  /// If not both optional clock_tree and element pointers are
+  /// non-null, the function just returns `pw::OkStatus()`.
+  Status Acquire() {
+    if (clock_tree_ != nullptr && element_ != nullptr) {
+      return clock_tree_->Acquire(*element_);
+    }
+    return OkStatus();
+  }
+
+  /// Release a reference to the optional clock tree element.
+  ///
+  /// If not both optional clock_tree and element pointers are
+  /// non-null, the function just returns `pw::OkStatus()`.
+  Status Release() {
+    if (clock_tree_ != nullptr && element_ != nullptr) {
+      return clock_tree_->Release(*element_);
+    }
+    return OkStatus();
+  }
+
+  /// Pointer to optional `ClockTree` object.
+  ClockTree* clock_tree_ = nullptr;
+
+  /// Pointer to optional `Element` object.
+  Element* element_ = nullptr;
+};
 }  // namespace pw::clock_tree

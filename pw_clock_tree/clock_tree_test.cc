@@ -1601,5 +1601,160 @@ TEST(ClockTree, ClockDividerMayBlock) {
   EXPECT_TRUE(clock_divider_blocking.may_block());
 }
 
+// Validate that the ElementController performs the correct
+// clock operations and returns the expected status codes.
+template <typename ElementType>
+static void TestElementController() {
+  const uint32_t kSelector = 41;
+  struct clock_selector_test_call_data call_data[] = {
+      {kSelector, 2, ClockOperation::kAcquire, pw::Status::Internal()},
+      {kSelector, 2, ClockOperation::kAcquire, pw::OkStatus()},
+      {kSelector, 7, ClockOperation::kRelease, pw::Status::Internal()},
+      {kSelector, 7, ClockOperation::kRelease, pw::OkStatus()}};
+
+  struct clock_selector_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+  ClockTree clock_tree;
+  pw::Status status;
+
+  ClockSourceTest<ElementType> clock_a;
+  ClockSelectorTest<ElementType> clock_selector_b(
+      clock_a, kSelector, 2, 7, test_data);
+
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
+
+  // Specify an element controller with valid pointers.
+  ElementController clock_tree_element_controller(&clock_tree,
+                                                  &clock_selector_b);
+
+  // First acquire call should fail.
+  status = clock_tree_element_controller.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
+
+  // Second acquire call should succeed
+  status = clock_tree_element_controller.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
+
+  // Third acquire call should succeed
+  status = clock_tree_element_controller.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 2u);
+
+  // First release call should succeed, since this only changes the reference
+  // count of `clock_selector_b`.
+  status = clock_tree_element_controller.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
+
+  // Second release call should fail and not change the reference counts.
+  status = clock_tree_element_controller.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
+
+  // Third release call should succeed.
+  status = clock_tree_element_controller.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
+
+TEST(ClockTree, ElementControllerBlocking) {
+  TestElementController<ElementBlocking>();
+}
+
+TEST(ClockTree, ElementControllerNonBlocking) {
+  TestElementController<ElementNonBlockingMightFail>();
+}
+
+// Validate that the ElementController performs clock operations
+// for ElementNonBlockingCannotFail elements.
+TEST(ClockTree, ElementControllerCannotFail) {
+  ClockTree clock_tree;
+  pw::Status status;
+
+  ClockSourceTest<ElementNonBlockingCannotFail> clock_a;
+
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+
+  // Specify an element controller with valid pointers.
+  ElementController clock_tree_element_controller(&clock_tree, &clock_a);
+
+  // Acquire call should succeed
+  status = clock_tree_element_controller.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+
+  // Acquire call should succeed
+  status = clock_tree_element_controller.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 2u);
+
+  // Release call should succeed.
+  status = clock_tree_element_controller.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 1u);
+
+  // Release call should succeed.
+  status = clock_tree_element_controller.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+}
+
+// Validate that the ElementController performs no clock operations
+// if not both clock tree and element are specified.
+TEST(ClockTree, ElementControllerNoClockOperations) {
+  ClockTree clock_tree;
+  pw::Status status;
+
+  ClockSourceTest<ElementNonBlockingCannotFail> clock_a;
+
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+
+  // Specify an element controller with no clock_tree pointer.
+  ElementController clock_tree_element_controller_no_clock_tree(nullptr,
+                                                                &clock_a);
+
+  // Acquire shouldn't acquire a reference to `clock_a`
+  // due to the missing `clock_tree`.
+  status = clock_tree_element_controller_no_clock_tree.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+
+  // Release shouldn't release a reference to `clock_a`
+  // due to the missing `clock_tree`.
+  status = clock_tree_element_controller_no_clock_tree.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_a.ref_count(), 0u);
+
+  // Specify an element controller with no element pointer.
+  ElementController clock_tree_element_controller_no_element(&clock_tree,
+                                                             nullptr);
+
+  status = clock_tree_element_controller_no_element.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+
+  status = clock_tree_element_controller_no_clock_tree.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+
+  // Specify an element controller with two null pointers.
+  ElementController clock_tree_element_controller_nullptrs;
+
+  status = clock_tree_element_controller_nullptrs.Acquire();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+
+  status = clock_tree_element_controller_nullptrs.Release();
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+}
+
 }  // namespace
 }  // namespace pw::clock_tree
