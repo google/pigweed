@@ -20,6 +20,9 @@
 //    set   [-i] CHIP LINE VALUE
 //      Configure the GPIO as an output and set its value.
 //
+//    watch [-i] CHIP LINE
+//      Configure the GPIO as an input and watch for interrupt events.
+//
 //  Args:
 //   CHIP:  gpiochip path (e.g. /dev/gpiochip0)
 //   LINE:  line number (e.g. 1)
@@ -44,7 +47,9 @@
 #include "pw_log/log.h"
 #include "pw_status/try.h"
 
+using pw::digital_io::InterruptTrigger;
 using pw::digital_io::LinuxDigitalIoChip;
+using pw::digital_io::LinuxGpioNotifier;
 using pw::digital_io::LinuxInputConfig;
 using pw::digital_io::LinuxOutputConfig;
 using pw::digital_io::Polarity;
@@ -75,6 +80,43 @@ pw::Status SetOutput(LinuxDigitalIoChip& chip,
   // file descriptor is closed. Depending on the GPIO driver, this could
   // result in the pin being immediately returned to its default state.
   // See https://manpages.debian.org/bookworm/gpiod/gpioset.1.en.html.
+
+  return pw::OkStatus();
+}
+
+pw::Status WatchInput(LinuxDigitalIoChip& chip,
+                      const LinuxInputConfig& config) {
+  PW_TRY_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+
+  auto maybe_input = chip.GetInterruptLine(config, notifier);
+  if (!maybe_input.ok()) {
+    PW_LOG_ERROR("Failed to get input line: %s", maybe_input.status().str());
+    return pw::Status::Unavailable();
+  }
+  auto input = std::move(maybe_input.value());
+
+  auto handler = [](State state) {
+    if (state == State::kActive) {
+      std::cout << "Activated" << std::endl;
+    } else {
+      std::cout << "Deactivated" << std::endl;
+    }
+  };
+
+  PW_TRY(input.SetInterruptHandler(InterruptTrigger::kBothEdges, handler));
+
+  if (auto status = input.EnableInterruptHandler(); !status.ok()) {
+    PW_LOG_ERROR("Failed to enable input interrupt: %s", status.str());
+    return status;
+  }
+
+  if (auto status = input.Enable(); !status.ok()) {
+    PW_LOG_ERROR("Failed to enable input line: %s", status.str());
+    return status;
+  }
+
+  // Process events
+  notifier->Run();
 
   return pw::OkStatus();
 }
@@ -110,6 +152,7 @@ void UsageError(const std::string& error) {
   std::cerr << "  Commands:" << std::endl;
   std::cerr << "    get   [-i] CHIP LINE" << std::endl;
   std::cerr << "    set   [-i] CHIP LINE VALUE" << std::endl;
+  std::cerr << "    watch [-i] CHIP LINE" << std::endl;
   std::cerr << std::endl;
   std::cerr << "  Options:" << std::endl;
   std::cerr << "    -i    Invert; configure as active-low." << std::endl;
@@ -133,7 +176,7 @@ int main(int argc, char* argv[]) {
 
   // These are currently the only commands, and they take the same options (-i)
   // and first two arguments (chip and line).
-  if (!(command == "get" || command == "set")) {
+  if (!(command == "get" || command == "set" || command == "watch")) {
     UsageError("Invalid command: \"" + command + "\"");
     return 1;
   }
@@ -196,17 +239,22 @@ int main(int argc, char* argv[]) {
 
   // Handle the get or set.
   pw::Status status;
-  if (set_value) {
+  if (command == "get") {
+    LinuxInputConfig config(
+        /* index= */ index,
+        /* polarity= */ polarity);
+    status = GetInput(chip, config);
+  } else if (command == "set") {
     LinuxOutputConfig config(
         /* index= */ index,
         /* polarity= */ polarity,
         /* default_state= */ *set_value);
     status = SetOutput(chip, config);
-  } else {
+  } else if (command == "watch") {
     LinuxInputConfig config(
         /* index= */ index,
         /* polarity= */ polarity);
-    status = GetInput(chip, config);
+    status = WatchInput(chip, config);
   }
 
   // Handle the return status accordingly.

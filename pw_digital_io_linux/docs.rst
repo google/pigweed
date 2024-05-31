@@ -143,4 +143,25 @@ Arguments:
 * ``LINE``: GPIO line number (e.g. ``1``)
 * ``VALUE``: the value to set (``0`` = inactive or ``1`` = active)
 
+``watch``
+=========
+Configure a GPIO line as an input and watch for interrupt evnts.
+
+Both rising and falling edges will trigger an event.
+
+Usage:
+
+.. code-block:: none
+
+   watch [-i] CHIP LINE
+
+Options:
+
+* ``-i``: Invert; configure as active-low.
+
+Arguments:
+
+* ``CHIP``: gpiochip path (e.g. ``/dev/gpiochip0``)
+* ``LINE``: GPIO line number (e.g. ``1``)
+
 .. cpp:namespace-pop::
