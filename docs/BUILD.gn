@@ -41,6 +41,7 @@ pw_doc_group("core_docs") {
   ]
   sources = [
     "blog/01-kudzu.rst",
+    "blog/02-bazel-feature-flags.rst",
     "blog/index.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",

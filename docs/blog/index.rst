@@ -10,3 +10,4 @@ and users can share ideas and projects related to Pigweed.
    :maxdepth: 1
 
    #1: Kudzu <01-kudzu>
+   #2: Feature flags in Bazel builds <02-bazel-feature-flags>
