@@ -15,7 +15,9 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
+    "pw_facade",
 )
+load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -147,7 +149,6 @@ cc_library(
     deps = [
         ":config",
         ":io",
-        ":target_io",
         "//pw_assert",
         "//pw_hdlc",
         "//pw_hdlc:default_addresses",
@@ -173,14 +174,21 @@ cc_library(
     ],
 )
 
-cc_library(
+pw_facade(
     name = "io",
     hdrs = [
         "public/pw_system/io.h",
     ],
+    backend = ":io_backend",
+    includes = ["public"],
     deps = [
         "//pw_stream",
     ],
+)
+
+label_flag(
+    name = "io_backend",
+    build_setting_default = "//pw_system:target_io",
 )
 
 cc_library(
@@ -237,7 +245,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":io",
+        ":io.facade",
         "//pw_stream",
         "//pw_stream:sys_io_stream",
     ],
@@ -251,7 +259,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":config",
-        ":io",
+        ":io.facade",
         "//pw_assert",
         "//pw_stream",
         "//pw_stream:socket_stream",
@@ -414,4 +422,10 @@ pw_cc_binary(
         ":pw_system",
         "//pw_unit_test:rpc_service",
     ],
+)
+
+host_device_simulator_binary(
+    name = "simulator_system_example",
+    testonly = True,
+    binary = ":system_example",
 )
