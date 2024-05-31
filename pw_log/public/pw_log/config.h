@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <stdint.h>
+
 // These configuration options differ from the options in pw_log/options.h in
 // that these should be set at a global level in the build system rather than
 // at a module or compile unit level.
@@ -37,5 +39,6 @@
 // This expression determines whether or not the statement is enabled and
 // should be passed to the backend.
 #ifndef PW_LOG_ENABLE_IF_DEFAULT
-#define PW_LOG_ENABLE_IF_DEFAULT(level, module, flags) ((level) >= PW_LOG_LEVEL)
+#define PW_LOG_ENABLE_IF_DEFAULT(level, module, flags) \
+  ((int32_t)(level) >= (int32_t)(PW_LOG_LEVEL))
 #endif  // PW_LOG_ENABLE_IF_DEFAULT
