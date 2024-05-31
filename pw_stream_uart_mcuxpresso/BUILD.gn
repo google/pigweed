@@ -77,6 +77,20 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     ]
   }
 
+  pw_test("stream_example") {
+    enable_if =
+        pw_third_party_mcuxpresso_SDK ==
+        "//targets/mimxrt595_evk_freertos:sdk" &&
+        (pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_debug" ||
+         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_size_optimized" ||
+         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_speed_optimized")
+    sources = [ "stream_example.cc" ]
+    deps = [
+      ":pw_stream_uart_mcuxpresso",
+      "//targets/mimxrt595_evk_freertos:sdk",
+    ]
+  }
+
   pw_test("dma_stream_example") {
     enable_if =
         pw_third_party_mcuxpresso_SDK ==
@@ -94,6 +108,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
   pw_test_group("tests") {
     tests = [
       ":stream_test",
+      ":stream_example",
       ":dma_stream_example",
     ]
   }
@@ -104,6 +119,9 @@ if (pw_third_party_mcuxpresso_SDK != "") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "dma_stream_example.cc" ]
+  inputs = [
+    "stream_example.cc",
+    "dma_stream_example.cc",
+  ]
   sources = [ "docs.rst" ]
 }

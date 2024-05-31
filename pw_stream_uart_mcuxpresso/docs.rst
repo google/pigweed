@@ -35,23 +35,11 @@ Usage
 
 ``UartStreamMcuxpresso`` example:
 
-.. code-block:: cpp
-
-   constexpr uint32_t kFlexcomm = 0;
-   constexpr uint32_t kBaudRate = 115200;
-   std::array<std::byte, 20> kBuffer = {};
-
-   auto stream = UartStreamMcuxpresso{USART0,
-                                      kBaudRate,
-                                      kUSART_ParityDisabled,
-                                      kUSART_OneStopBit,
-                                      kBuffer};
-
-   PW_TRY(stream.Init(CLOCK_GetFlexcommClkFreq(kFlexcomm)));
-
-   std::array<std::byte, 10> to_write = {};
-   PW_TRY(stream.Write(to_write));
-
+.. literalinclude:: stream_example.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_stream_uart_mcuxpresso-UartStreamExample]
+   :end-before: [pw_stream_uart_mcuxpresso-UartStreamExample]
 
 ``UartDmaStreamMcuxpresso`` example:
 
