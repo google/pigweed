@@ -18,19 +18,29 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <vector>
 
 #include "mock_vfs.h"
 #include "pw_digital_io_linux/digital_io.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
+#include "pw_sync/mutex.h"
+#include "pw_sync/timed_thread_notification.h"
+#include "pw_thread/thread.h"
+#include "pw_thread_stl/options.h"
 #include "pw_unit_test/framework.h"
 #include "test_utils.h"
 
 namespace pw::digital_io {
 namespace {
 
+using namespace std::chrono_literals;
+
 class DigitalIoTest;
+class LineHandleFile;
+class LineEventFile;
 
 // Represents a mocked in-kernel GPIO line object.
 class Line {
@@ -66,27 +76,44 @@ class Line {
     return OkStatus();
   }
 
-  Status RequestInput(bool active_low) {
-    return DoRequest(RequestedState::kInput, active_low);
+  Status RequestInput(LineHandleFile* handle, bool active_low) {
+    PW_TRY(DoRequest(RequestedState::kInput, active_low));
+    current_line_handle_ = handle;
+    return OkStatus();
   }
 
-  Status RequestOutput(bool active_low) {
-    return DoRequest(RequestedState::kOutput, active_low);
+  Status RequestInputInterrupt(LineEventFile* handle, bool active_low) {
+    PW_TRY(DoRequest(RequestedState::kInputInterrupt, active_low));
+    current_event_handle_ = handle;
+    return OkStatus();
   }
 
-  void ClearRequest() { requested_ = RequestedState::kNone; }
+  Status RequestOutput(LineHandleFile* handle, bool active_low) {
+    PW_TRY(DoRequest(RequestedState::kOutput, active_low));
+    current_line_handle_ = handle;
+    return OkStatus();
+  }
+
+  void ClearRequest() {
+    requested_ = RequestedState::kNone;
+    current_line_handle_ = nullptr;
+    current_event_handle_ = nullptr;
+  }
 
   //
   // Test-side interface: Intended for use by the tests themselves.
   //
 
   enum class RequestedState {
-    kNone,    // Not requested by "userspace"
-    kInput,   // Requested by "userspace" as an input
-    kOutput,  // Requested by "userspace" as an output
+    kNone,            // Not requested by "userspace"
+    kInput,           // Requested by "userspace" as an input
+    kInputInterrupt,  // Requested by "userspace" as an interrupt (event)
+    kOutput,          // Requested by "userspace" as an output
   };
 
   RequestedState requested() const { return requested_; }
+  LineHandleFile* current_line_handle() const { return current_line_handle_; }
+  LineEventFile* current_event_handle() const { return current_event_handle_; }
 
   void ForcePhysicalState(bool state) { physical_state_ = state; }
 
@@ -99,6 +126,9 @@ class Line {
   RequestedState requested_ = RequestedState::kNone;
   bool active_low_ = false;
 
+  LineHandleFile* current_line_handle_ = nullptr;
+  LineEventFile* current_event_handle_ = nullptr;
+
   Status DoRequest(RequestedState request, bool active_low) {
     if (requested_ != RequestedState::kNone) {
       PW_LOG_ERROR("Cannot request already-requested line");
@@ -109,6 +139,15 @@ class Line {
     return OkStatus();
   }
 };
+
+#define EXPECT_LINE_NOT_REQUESTED(line) \
+  EXPECT_EQ(line.requested(), Line::RequestedState::kNone)
+#define EXPECT_LINE_REQUESTED_OUTPUT(line) \
+  EXPECT_EQ(line.requested(), Line::RequestedState::kOutput)
+#define EXPECT_LINE_REQUESTED_INPUT(line) \
+  EXPECT_EQ(line.requested(), Line::RequestedState::kInput)
+#define EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line) \
+  EXPECT_EQ(line.requested(), Line::RequestedState::kInputInterrupt)
 
 // Represents a GPIO line handle, the result of issuing
 // GPIO_GET_LINEHANDLE_IOCTL to an open chip file.
@@ -163,6 +202,94 @@ class LineHandleFile : public MockFile {
   }
 };
 
+// Represents a GPIO line event handle, the result of issuing
+// GPIO_GET_LINEEVENT_IOCTL to an open chip file.
+class LineEventFile final : public MockFile {
+ public:
+  LineEventFile(MockVfs& vfs,
+                int eventfd,
+                const std::string& name,
+                Line& line,
+                uint32_t event_flags)
+      : MockFile(vfs, eventfd, name), line_(line), event_flags_(event_flags) {}
+
+  void EnqueueEvent(const struct gpioevent_data& event) {
+    static_assert(GPIOEVENT_REQUEST_RISING_EDGE == GPIOEVENT_EVENT_RISING_EDGE);
+    static_assert(GPIOEVENT_REQUEST_FALLING_EDGE ==
+                  GPIOEVENT_EVENT_FALLING_EDGE);
+    if ((event.id & event_flags_) == 0) {
+      return;
+    }
+
+    {
+      std::lock_guard lock(mutex_);
+      event_queue_.push(event);
+    }
+
+    // Make this file's fd readable (one token).
+    WriteEventfd();
+  }
+
+ private:
+  Line& line_;
+  uint32_t const event_flags_;
+  std::queue<struct gpioevent_data> event_queue_;
+  pw::sync::Mutex mutex_;
+
+  // Hide these
+  using MockFile::ReadEventfd;
+  using MockFile::WriteEventfd;
+
+  //
+  // MockFile impl.
+  //
+
+  int DoClose() override {
+    line_.ClearRequest();
+    return 0;
+  }
+
+  int DoIoctl(unsigned long request, void* arg) override {
+    switch (request) {
+      case GPIOHANDLE_GET_LINE_VALUES_IOCTL:
+        return DoIoctlGetValues(static_cast<struct gpiohandle_data*>(arg));
+      // Unlinke LineHandleFile, this only supports "get", as it is only for
+      // inputs.
+      default:
+        PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
+        return -1;
+    }
+  }
+
+  int DoIoctlGetValues(struct gpiohandle_data* data) {
+    auto result = line_.GetValue();
+    if (!result.ok()) {
+      return -1;
+    }
+
+    data->values[0] = *result;
+    return 0;
+  }
+
+  ssize_t DoRead(void* buf, size_t count) override {
+    // Consume the readable state of the eventfd (one token).
+    PW_CHECK_INT_EQ(ReadEventfd(), 1);  // EFD_SEMAPHORE
+
+    std::lock_guard lock(mutex_);
+
+    // Pop the event from the queue.
+    PW_CHECK(!event_queue_.empty());
+    struct gpioevent_data event = event_queue_.front();
+    if (count < sizeof(event)) {
+      return -1;
+    }
+    event_queue_.pop();
+
+    memcpy(buf, &event, sizeof(event));
+    return sizeof(event);
+  }
+};
+
 // Represents an open GPIO chip file, the result of opening /dev/gpiochip*.
 class ChipFile : public MockFile {
  public:
@@ -183,6 +310,8 @@ class ChipFile : public MockFile {
     switch (request) {
       case GPIO_GET_LINEHANDLE_IOCTL:
         return DoLinehandleIoctl(static_cast<struct gpiohandle_request*>(arg));
+      case GPIO_GET_LINEEVENT_IOCTL:
+        return DoLineeventIoctl(static_cast<struct gpioevent_request*>(arg));
       default:
         PW_LOG_ERROR("%s: Unhandled request=0x%lX", __FUNCTION__, request);
         return -1;
@@ -216,21 +345,56 @@ class ChipFile : public MockFile {
     }
     Line& line = lines_[offset];
 
+    auto file = vfs().MakeFile<LineHandleFile>("line-handle", line);
+    // Ownership: The vfs owns this file, but the line borrows a reference to
+    // it. This is safe because the file's Close() method undoes that borrow.
+
     Status status = OkStatus();
     switch (direction) {
       case GPIOHANDLE_REQUEST_OUTPUT:
-        status.Update(line.RequestOutput(active_low));
+        status.Update(line.RequestOutput(file.get(), active_low));
         status.Update(line.SetValue(default_value));
         break;
       case GPIOHANDLE_REQUEST_INPUT:
-        status.Update(line.RequestInput(active_low));
+        status.Update(line.RequestInput(file.get(), active_low));
         break;
     }
     if (!status.ok()) {
       return -1;
     }
 
-    req->fd = vfs().InstallNewFile<LineHandleFile>("line-handle", line);
+    req->fd = vfs().InstallFile(std::move(file));
+    return 0;
+  }
+
+  int DoLineeventIoctl(struct gpioevent_request* req) {
+    uint32_t const direction = req->handleflags & (GPIOHANDLE_REQUEST_OUTPUT |
+                                                   GPIOHANDLE_REQUEST_INPUT);
+    bool const active_low = req->handleflags & GPIOHANDLE_REQUEST_ACTIVE_LOW;
+    uint32_t const offset = req->lineoffset;
+
+    if (direction != GPIOHANDLE_REQUEST_INPUT) {
+      PW_LOG_ERROR("%s: Only input is supported by this ioctl", __FUNCTION__);
+      return -1;
+    }
+
+    if (offset >= lines_.size()) {
+      PW_LOG_ERROR("%s: Invalid line offset: %u", __FUNCTION__, offset);
+      return -1;
+    }
+    Line& line = lines_[offset];
+
+    auto file =
+        vfs().MakeFile<LineEventFile>("line-event", line, req->eventflags);
+    // Ownership: The vfs() owns this file, but the line borrows a reference to
+    // it. This is safe because the file's Close() method undoes that borrow.
+
+    Status status = line.RequestInputInterrupt(file.get(), active_low);
+    if (!status.ok()) {
+      return -1;
+    }
+
+    req->fd = vfs().InstallFile(std::move(file));
     return 0;
   }
 };
@@ -272,9 +436,9 @@ TEST_F(DigitalIoTest, DoInput) {
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   ASSERT_OK(input.Enable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
+  EXPECT_LINE_REQUESTED_INPUT(line);
 
   Result<State> state;
 
@@ -292,7 +456,7 @@ TEST_F(DigitalIoTest, DoInput) {
 
   // Disable the line and ensure it is no longer requested.
   ASSERT_OK(input.Disable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
 }
 
 TEST_F(DigitalIoTest, DoInputInvert) {
@@ -306,9 +470,9 @@ TEST_F(DigitalIoTest, DoInputInvert) {
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   ASSERT_OK(input.Enable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kInput);
+  EXPECT_LINE_REQUESTED_INPUT(line);
 
   Result<State> state;
 
@@ -326,7 +490,7 @@ TEST_F(DigitalIoTest, DoInputInvert) {
 
   // Disable the line and ensure it is no longer requested.
   ASSERT_OK(input.Disable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
 }
 
 TEST_F(DigitalIoTest, DoOutput) {
@@ -341,9 +505,9 @@ TEST_F(DigitalIoTest, DoOutput) {
   ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   ASSERT_OK(output.Enable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
+  EXPECT_LINE_REQUESTED_OUTPUT(line);
 
   // Expect the line to go high, due to default_state=kActive (active high).
   ASSERT_TRUE(line.physical_state());
@@ -358,7 +522,7 @@ TEST_F(DigitalIoTest, DoOutput) {
 
   // Disable the line and ensure it is no longer requested.
   ASSERT_OK(output.Disable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
 }
@@ -375,9 +539,9 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
   ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   ASSERT_OK(output.Enable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kOutput);
+  EXPECT_LINE_REQUESTED_OUTPUT(line);
 
   // Expect the line to stay low, due to default_state=kActive (active low).
   ASSERT_FALSE(line.physical_state());
@@ -392,7 +556,7 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
 
   // Disable the line and ensure it is no longer requested.
   ASSERT_OK(output.Disable());
-  ASSERT_EQ(line.requested(), Line::RequestedState::kNone);
+  EXPECT_LINE_NOT_REQUESTED(line);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
 }
@@ -427,6 +591,197 @@ TEST_F(DigitalIoTest, OutputGetState) {
   state = output.GetState();
   ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
+}
+
+//
+// Input interrupts
+//
+
+TEST_F(DigitalIoTest, DoInputInterruptsEnabledBefore) {
+  LinuxDigitalIoChip chip = OpenChip();
+  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+
+  auto& line = line0();
+  LinuxInputConfig config(
+      /* index= */ 0,
+      /* polarity= */ Polarity::kActiveHigh);
+
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+
+  EXPECT_LINE_NOT_REQUESTED(line);
+
+  // Have to set a handler before we can enable interrupts.
+  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
+                                      [](State) {}));
+
+  // pw_digital_io says the line should be enabled before calling
+  // EnableInterruptHandler(), but we explicitly support it being called with
+  // the line disabled to avoid an unnecessary file close/reopen.
+  ASSERT_OK(input.EnableInterruptHandler());
+  ASSERT_OK(input.Enable());
+
+  // Interrupts requested; should be a line event handle.
+  EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
+
+  // Disable; nothing should be requested.
+  ASSERT_OK(input.Disable());
+  EXPECT_LINE_NOT_REQUESTED(line);
+}
+
+TEST_F(DigitalIoTest, DoInputInterruptsEnabledAfter) {
+  LinuxDigitalIoChip chip = OpenChip();
+  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+
+  auto& line = line0();
+  LinuxInputConfig config(
+      /* index= */ 0,
+      /* polarity= */ Polarity::kActiveHigh);
+
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+
+  EXPECT_LINE_NOT_REQUESTED(line);
+
+  ASSERT_OK(input.Enable());
+
+  // No interrupts requested; should be a normal line handle.
+  EXPECT_LINE_REQUESTED_INPUT(line);
+
+  // Interrupts requested while enabled; should be a line event handle.
+  // Have to set a handler before we can enable interrupts.
+  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
+                                      [](State) {}));
+  ASSERT_OK(input.EnableInterruptHandler());
+  EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
+
+  // Interrupts disabled while enabled; should revert to a normal line handle.
+  ASSERT_OK(input.DisableInterruptHandler());
+  EXPECT_LINE_REQUESTED_INPUT(line);
+
+  // Disable; nothing should be requested.
+  ASSERT_OK(input.Disable());
+  EXPECT_LINE_NOT_REQUESTED(line);
+}
+
+TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
+  LinuxDigitalIoChip chip = OpenChip();
+  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+
+  auto& line = line0();
+  LinuxInputConfig config(
+      /* index= */ 0,
+      /* polarity= */ Polarity::kActiveHigh);
+
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+
+  std::vector<State> interrupts;
+  auto handler = [&interrupts](State state) {
+    PW_LOG_DEBUG("Interrupt handler fired with state=%s",
+                 state == State::kActive ? "active" : "inactive");
+    interrupts.push_back(state);
+  };
+
+  ASSERT_OK(
+      input.SetInterruptHandler(InterruptTrigger::kActivatingEdge, handler));
+
+  // pw_digital_io says the line should be enabled before calling
+  // EnableInterruptHandler(), but we explicitly support it being called with
+  // the line disabled to avoid an unnecessary file close/reopen.
+  ASSERT_OK(input.EnableInterruptHandler());
+  ASSERT_OK(input.Enable());
+
+  EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
+  LineEventFile* evt = line.current_event_handle();
+  ASSERT_NE(evt, nullptr);
+
+  evt->EnqueueEvent({
+      .timestamp = 1122334455667788,
+      .id = GPIOEVENT_EVENT_RISING_EDGE,
+  });
+
+  constexpr int timeout = 0;  // Don't block
+  PW_LOG_DEBUG("WaitForEvents(%d)", timeout);
+  ASSERT_OK_AND_ASSIGN(unsigned int count, notifier->WaitForEvents(timeout));
+  EXPECT_EQ(count, 1u);
+
+  EXPECT_EQ(interrupts,
+            std::vector<State>({
+                State::kActive,
+            }));
+}
+
+TEST_F(DigitalIoTest, DoInputInterruptsThread) {
+  LinuxDigitalIoChip chip = OpenChip();
+  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+
+  auto& line = line0();
+  LinuxInputConfig config(
+      /* index= */ 0,
+      /* polarity= */ Polarity::kActiveHigh);
+
+  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+
+  constexpr unsigned int kCount = 10;
+  struct {
+    sync::TimedThreadNotification done;
+    std::vector<State> interrupts;
+
+    void HandleInterrupt(State state) {
+      interrupts.push_back(state);
+      if (interrupts.size() == kCount) {
+        done.release();
+      }
+    }
+  } context;
+
+  auto handler = [&context](State state) {
+    PW_LOG_DEBUG("Interrupt handler fired with state=%s",
+                 state == State::kActive ? "active" : "inactive");
+    context.HandleInterrupt(state);
+  };
+
+  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kBothEdges, handler));
+
+  // pw_digital_io says the line should be enabled before calling
+  // EnableInterruptHandler(), but we explicitly support it being called with
+  // the line disabled to avoid an unnecessary file close/reopen.
+  ASSERT_OK(input.EnableInterruptHandler());
+  ASSERT_OK(input.Enable());
+
+  // Run a notifier thread.
+  pw::thread::Thread notif_thread(pw::thread::stl::Options(), *notifier);
+
+  EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
+  LineEventFile* evt = line.current_event_handle();
+  ASSERT_NE(evt, nullptr);
+
+  // Feed the line with events.
+  auto nth_event = [](unsigned int i) -> uint32_t {
+    return (i % 2) ? GPIOEVENT_EVENT_FALLING_EDGE : GPIOEVENT_EVENT_RISING_EDGE;
+  };
+  auto nth_state = [](unsigned int i) -> State {
+    return (i % 2) ? State::kInactive : State::kActive;
+  };
+
+  for (unsigned int i = 0; i < kCount; i++) {
+    evt->EnqueueEvent({
+        .timestamp = 1122334400000000u + i,
+        .id = nth_event(i),
+    });
+  }
+
+  // Wait for the notifier to pick them all up.
+  constexpr auto kWaitForDataTimeout = 1000ms;
+  ASSERT_TRUE(context.done.try_acquire_for(kWaitForDataTimeout));
+
+  // Stop the notifier thread.
+  notifier->CancelWait();
+  notif_thread.join();
+
+  // Verify we received all of the expected callbacks.
+  EXPECT_EQ(context.interrupts.size(), kCount);
+  for (unsigned int i = 0; i < kCount; i++) {
+    EXPECT_EQ(context.interrupts[i], nth_state(i));
+  }
 }
 
 }  // namespace

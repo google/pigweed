@@ -33,9 +33,21 @@ pw_test("output") {
   sources = [ "output.cc" ]
 }
 
+pw_test("interrupt") {
+  enable_if = current_os == "linux"
+  deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_digital_io_linux",
+    "$dir_pw_log",
+    "$dir_pw_thread:sleep",
+  ]
+  sources = [ "interrupt.cc" ]
+}
+
 pw_test_group("examples") {
   tests = [
     ":input",
     ":output",
+    ":interrupt",
   ]
 }

@@ -38,3 +38,13 @@ pw_cc_test(
         "//pw_digital_io_linux",
     ],
 )
+
+pw_cc_test(
+    name = "interrupt",
+    srcs = ["interrupt.cc"],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_digital_io_linux",
+        "//pw_thread:sleep",
+    ],
+)

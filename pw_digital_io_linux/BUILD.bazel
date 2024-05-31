@@ -26,10 +26,12 @@ cc_library(
     srcs = [
         "digital_io.cc",
         "log_errno.h",
+        "notifier.cc",
     ],
     hdrs = [
         "public/pw_digital_io_linux/digital_io.h",
         "public/pw_digital_io_linux/internal/owned_fd.h",
+        "public/pw_digital_io_linux/notifier.h",
     ],
     includes = ["public"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -37,6 +39,10 @@ cc_library(
         "//pw_digital_io",
         "//pw_log",
         "//pw_result",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_thread:thread",
     ],
 )
 
@@ -81,6 +87,29 @@ pw_cc_test(
     deps = [
         ":mock_vfs",
         ":pw_digital_io_linux",
+        "//pw_assert",
         "//pw_log",
+        "//pw_sync:mutex",
+        "//pw_sync:timed_thread_notification",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread",
+    ],
+)
+
+pw_cc_test(
+    name = "notifier_test",
+    srcs = [
+        "log_errno.h",
+        "notifier_test.cc",
+        "test_utils.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":pw_digital_io_linux",
+        "//pw_assert",
+        "//pw_log",
+        "//pw_sync:counting_semaphore",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread",
     ],
 )

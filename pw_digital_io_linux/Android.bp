@@ -23,6 +23,7 @@ cc_library_static {
     vendor_available: true,
     defaults: [
         "pw_android_common_backends",
+        "pw_thread",
     ],
     whole_static_libs: [
         // pw_digital_io needs to use whole_static_libs to ensure symbols
@@ -39,9 +40,14 @@ cc_library_static {
     ],
     header_libs: [
         "pw_log",
+        "pw_sync",
+    ],
+    export_header_lib_headers: [
+        "pw_sync",
     ],
     srcs: [
         "digital_io.cc",
+        "notifier.cc",
     ],
 }
 

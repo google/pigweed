@@ -37,6 +37,14 @@ Represents a single input line and implements :cpp:class:`DigitalIn`.
 This is acquired by calling ``chip.GetInputLine()`` with an appropriate
 ``LinuxInputConfig``.
 
+``LinuxDigitalInInterrupt``
+===========================
+Represents a single input line configured for interrupts and implements
+:cpp:class:`DigitalInInterrupt`.
+
+This is acquired by calling ``chip.GetInterruptLine()`` with an appropriate
+``LinuxInputConfig``.
+
 ``LinuxDigitalOut``
 ===================
 Represents a single input line and implements :cpp:class:`DigitalOut`.
@@ -70,6 +78,15 @@ Configure an output pin and set its state
 =========================================
 
 .. literalinclude:: examples/output.cc
+   :language: cpp
+   :linenos:
+   :lines: 15-
+
+
+Configure an interrupt pin and handle events
+============================================
+
+.. literalinclude:: examples/interrupt.cc
    :language: cpp
    :linenos:
    :lines: 15-
