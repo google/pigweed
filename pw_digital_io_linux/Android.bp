@@ -37,6 +37,9 @@ cc_library_static {
         "pw_result",
         "pw_status",
     ],
+    header_libs: [
+        "pw_log",
+    ],
     srcs: [
         "digital_io.cc",
     ],

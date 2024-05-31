@@ -14,9 +14,11 @@
 
 #include "pw_digital_io_linux/digital_io.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/gpio.h>
 
+#include "log_errno.h"
 #include "pw_digital_io/digital_io.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -33,6 +35,7 @@ Result<State> FdGetState(OwnedFd& fd) {
   struct gpiohandle_data req = {};
 
   if (fd.ioctl(GPIOHANDLE_GET_LINE_VALUES_IOCTL, &req) < 0) {
+    LOG_ERROR_WITH_ERRNO("GPIOHANDLE_GET_LINE_VALUES_IOCTL failed:", errno);
     return Status::Internal();
   }
 
@@ -82,6 +85,7 @@ Result<LinuxDigitalIoChip> LinuxDigitalIoChip::Open(const char* path) {
   int fd = open(path, O_RDWR);
   if (fd < 0) {
     // TODO(jrreinhart): Map errno to Status
+    LOG_ERROR_WITH_ERRNO("Could not open %s:", errno, path);
     return Status::Internal();
   }
   return LinuxDigitalIoChip(fd);
@@ -99,6 +103,7 @@ Result<OwnedFd> LinuxDigitalIoChip::Impl::GetLineHandle(uint32_t offset,
       .fd = -1,
   };
   if (fd_.ioctl(GPIO_GET_LINEHANDLE_IOCTL, &req) < 0) {
+    LOG_ERROR_WITH_ERRNO("GPIO_GET_LINEHANDLE_IOCTL failed:", errno);
     return Status::Internal();
   }
   if (req.fd < 0) {
@@ -170,6 +175,7 @@ Status LinuxDigitalOut::DoSetState(State level) {
   };
 
   if (fd_.ioctl(GPIOHANDLE_SET_LINE_VALUES_IOCTL, &req) < 0) {
+    LOG_ERROR_WITH_ERRNO("GPIOHANDLE_SET_LINE_VALUES_IOCTL failed:", errno);
     return Status::Internal();
   }
 

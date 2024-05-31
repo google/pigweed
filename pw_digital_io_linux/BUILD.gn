@@ -32,8 +32,11 @@ pw_source_set("pw_digital_io_linux") {
     "$dir_pw_result",
     "$dir_pw_status",
   ]
-  sources = [ "digital_io.cc" ]
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
+  deps = [ "$dir_pw_log" ]
+  sources = [
+    "digital_io.cc",
+    "log_errno.h",
+  ]
 }
 
 pw_executable("pw_digital_io_linux_cli") {

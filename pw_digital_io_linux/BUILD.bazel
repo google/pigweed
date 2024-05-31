@@ -25,6 +25,7 @@ cc_library(
     name = "pw_digital_io_linux",
     srcs = [
         "digital_io.cc",
+        "log_errno.h",
     ],
     hdrs = [
         "public/pw_digital_io_linux/digital_io.h",
@@ -34,6 +35,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_digital_io",
+        "//pw_log",
         "//pw_result",
     ],
 )
