@@ -24,12 +24,11 @@ config("default_config") {
 }
 
 if (pw_third_party_mcuxpresso_SDK != "") {
-  pw_source_set("clock_tree_mcuxpresso") {
+  pw_source_set("pw_clock_tree_mcuxpresso") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_clock_tree_mcuxpresso/clock_tree.h" ]
-    visibility = [ ":*" ]
-    deps = [
-      "//pw_clock_manager",
+    public_deps = [
+      "//pw_clock_tree",
       pw_third_party_mcuxpresso_SDK,
     ]
   }
