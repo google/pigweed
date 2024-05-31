@@ -66,7 +66,7 @@ in ``device_core``.
    import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 
    pw_mcuxpresso_sdk("sample_project_sdk") {
-     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_8.xml"
+     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_13.xml"
      include = [
        "component.serial_manager_uart.MIMXRT595S",
        "project_template.evkmimxrt595.MIMXRT595S",
@@ -112,7 +112,7 @@ the source set uses.
 .. code-block:: text
 
    pw_mcuxpresso_sdk("my_project_sdk") {
-     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_8.xml"
+     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_13.xml"
      include = [
        "component.serial_manager_uart.MIMXRT595S",
        "utility.debug_console.MIMXRT595S",

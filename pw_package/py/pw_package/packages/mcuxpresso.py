@@ -31,7 +31,7 @@ class McuxpressoSdk(pw_package.package_manager.Package):
                 'https://pigweed-internal.googlesource.com/'
                 'third_party/vendor/nxp/evkmimxrt595'
             ),
-            commit='10176a38fa830208332de132b112addb189d6d24',
+            commit='003f1764ad3e03b9162bfc02918659c4bcb3eb01',
         )
 
     def install(self, path: Path) -> None:

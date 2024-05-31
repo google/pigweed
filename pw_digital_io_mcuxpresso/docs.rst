@@ -19,7 +19,7 @@ This example shows what your SDK setup would look like if using an RT595 board.
    import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 
    pw_mcuxpresso_sdk("sample_project_sdk") {
-     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_8.xml"
+     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_13.xml"
      include = [
        "component.serial_manager_uart.MIMXRT595S",
        "platform.drivers.lpc_gpio.MIMXRT595S",

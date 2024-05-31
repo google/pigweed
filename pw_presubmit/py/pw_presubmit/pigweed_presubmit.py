@@ -347,7 +347,7 @@ gn_mimxrt595_build = PigweedGnGenNinja(
             str(ctx.package_root / 'mcuxpresso')
         ),
         'pw_target_mimxrt595_evk_MANIFEST': '$dir_pw_third_party_mcuxpresso'
-        + '/EVK-MIMXRT595_manifest_v3_8.xml',
+        + '/EVK-MIMXRT595_manifest_v3_13.xml',
         'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk:sample_sdk',
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
@@ -366,7 +366,7 @@ gn_mimxrt595_freertos_build = PigweedGnGenNinja(
             str(ctx.package_root / 'mcuxpresso')
         ),
         'pw_target_mimxrt595_evk_freertos_MANIFEST': '{}/{}'.format(
-            "$dir_pw_third_party_mcuxpresso", "EVK-MIMXRT595_manifest_v3_8.xml"
+            "$dir_pw_third_party_mcuxpresso", "EVK-MIMXRT595_manifest_v3_13.xml"
         ),
         'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk_freertos:sdk',
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,

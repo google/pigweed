@@ -52,7 +52,7 @@ declare_args() {
 # Example:
 #
 #   pw_mcuxpresso_sdk("sample_project_sdk") {
-#     manifest = "$dir_pw_third_party/mcuxpresso/EVK-MIMXRT595_manifest_v3_8.xml"
+#     manifest = "$dir_pw_third_party/mcuxpresso/EVK-MIMXRT595_manifest_v3_13.xml"
 #     include = [ "project_template.evkmimxrt595.MIMXRT595S" ]
 #     device_core = "cm33_MIMXRT595S"
 #   }

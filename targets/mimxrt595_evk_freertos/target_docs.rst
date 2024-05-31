@@ -36,7 +36,7 @@ Pigweed target directory.
 
    $ gn args out
    # Modify and save the args file to use the sample SDK.
-   pw_target_mimxrt595_evk_freertos_MANIFEST = "//third_party/mcuxpresso/sdk/EVK-MIMXRT595_manifest_v3_8.xml"
+   pw_target_mimxrt595_evk_freertos_MANIFEST = "//third_party/mcuxpresso/sdk/EVK-MIMXRT595_manifest_v3_13.xml"
    pw_third_party_mcuxpresso_SDK = "//targets/mimxrt595_evk_freertos:sdk"
 
 Step 3: Install Freertos Source and Configure Location
