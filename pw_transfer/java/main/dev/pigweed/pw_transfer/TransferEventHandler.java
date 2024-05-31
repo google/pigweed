@@ -53,8 +53,10 @@ class TransferEventHandler {
 
   // Map session ID to transfer.
   private final Map<Integer, Transfer<?>> sessionIdToTransfer = new HashMap<>();
-  // Legacy transfers only use the resource ID. The client assigns an arbitrary session ID that
-  // legacy servers ignore. The client then maps from the legacy ID to its local session ID.
+  // Legacy transfers only use the resource ID. The client assigns an arbitrary
+  // session ID that
+  // legacy servers ignore. The client then maps from the legacy ID to its local
+  // session ID.
   private final Map<Integer, Integer> legacyIdToSessionId = new HashMap<>();
 
   @Nullable private Call.ClientStreaming<Chunk> readStream = null;
@@ -131,7 +133,8 @@ class TransferEventHandler {
         throw new AssertionError("Cannot start non-zero offset transfer with legacy version");
       }
 
-      // The v2 protocol supports multiple transfers for a single resource. For simplicity while
+      // The v2 protocol supports multiple transfers for a single resource. For
+      // simplicity while
       // supporting both protocols, only support a single transfer per resource.
       if (legacyIdToSessionId.containsKey(transfer.getResourceId())) {
         transfer.terminate(
@@ -156,15 +159,21 @@ class TransferEventHandler {
   }
 
   /**
-   * Test version of run() that processes all enqueued events before checking for timeouts.
+   * Test version of run() that processes all enqueued events before checking for
+   * timeouts.
    *
-   * Tests that need to time out should process all enqueued events first to prevent flaky failures.
-   * If handling one of several queued packets takes longer than the timeout (which must be short
+   * Tests that need to time out should process all enqueued events first to
+   * prevent flaky failures.
+   * If handling one of several queued packets takes longer than the timeout
+   * (which must be short
    * for a unit test), then the test may fail spuriously.
    *
-   * This run function is not used outside of tests because processing all incoming packets before
-   * checking for timeouts could delay the transfer client's outgoing write packets if there are
-   * lots of inbound packets. This could delay transfers and cause unnecessary timeouts.
+   * This run function is not used outside of tests because processing all
+   * incoming packets before
+   * checking for timeouts could delay the transfer client's outgoing write
+   * packets if there are
+   * lots of inbound packets. This could delay transfers and cause unnecessary
+   * timeouts.
    */
   void runForTestsThatMustTimeOut() {
     while (processEvents) {
@@ -174,6 +183,7 @@ class TransferEventHandler {
       handleTimeouts();
     }
   }
+
   /** Stops the transfer event handler from processing events. */
   void stop() {
     enqueueEvent(() -> {
@@ -183,7 +193,10 @@ class TransferEventHandler {
     });
   }
 
-  /** Blocks until all events currently in the queue are processed; for test use only. */
+  /**
+   * Blocks until all events currently in the queue are processed; for test use
+   * only.
+   */
   void waitUntilEventsAreProcessedForTest() {
     Semaphore semaphore = new Semaphore(0);
     enqueueEvent(semaphore::release);
@@ -244,9 +257,9 @@ class TransferEventHandler {
     private TransferInterface() {}
 
     /**
-     *  Sends the provided transfer chunk.
+     * Sends the provided transfer chunk.
      *
-     *  Must be called on the transfer thread.
+     * Must be called on the transfer thread.
      */
     void sendChunk(Chunk chunk) throws TransferError {
       try {
@@ -257,9 +270,9 @@ class TransferEventHandler {
     }
 
     /**
-     *  Removes this transfer from the list of active transfers.
+     * Removes this transfer from the list of active transfers.
      *
-     *  Must be called on the transfer thread.
+     * Must be called on the transfer thread.
      */
     // TODO(frolv): Investigate why this is occurring -- there shouldn't be any
     // futures here.
@@ -311,19 +324,13 @@ class TransferEventHandler {
       enqueueEvent(() -> {
         resetStream();
 
-        // The transfers remove themselves from the Map during cleanup, iterate over a copied list.
+        // The transfers remove themselves from the Map during cleanup, iterate over a
+        // copied list.
         List<Transfer<?>> activeTransfers = new ArrayList<>(sessionIdToTransfer.values());
 
-        // FAILED_PRECONDITION indicates that the stream packet was not recognized as the stream is
-        // not open. This could occur if the server resets. Notify pending transfers that this has
-        // occurred so they can restart.
-        if (status.equals(Status.FAILED_PRECONDITION)) {
-          activeTransfers.forEach(Transfer::handleDisconnection);
-        } else {
-          TransferError error = new TransferError(
-              "Transfer stream RPC closed unexpectedly with status " + status, Status.INTERNAL);
-          activeTransfers.forEach(t -> t.terminate(error));
-        }
+        TransferError error = new TransferError(
+            "Transfer stream RPC closed unexpectedly with status " + status, Status.INTERNAL);
+        activeTransfers.forEach(t -> t.terminate(error));
       });
     }
 

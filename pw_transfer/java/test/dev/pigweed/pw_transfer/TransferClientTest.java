@@ -88,26 +88,7 @@ public final class TransferClientTest {
   }
 
   @Test
-  public void legacy_read_failedPreconditionError_retriesInitialPacket() throws Exception {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
-    ListenableFuture<byte[]> future = transferClient.read(1, TRANSFER_PARAMETERS);
-
-    assertThat(lastChunks()).containsExactly(initialLegacyReadChunk(1));
-
-    receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).containsExactly(initialLegacyReadChunk(1));
-
-    receiveReadChunks(newLegacyChunk(Chunk.Type.DATA, 1)
-                          .setOffset(0)
-                          .setData(TEST_DATA_SHORT)
-                          .setRemainingBytes(0));
-
-    assertThat(future.get()).isEqualTo(TEST_DATA_SHORT.toByteArray());
-  }
-
-  @Test
-  public void legacy_read_failedPreconditionError_abortsAfterInitialPacket() {
+  public void legacy_read_failedPreconditionError_aborts() {
     createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
     TransferParameters params = TransferParameters.create(50, 50, 0);
     ListenableFuture<byte[]> future = transferClient.read(1, params);
@@ -125,28 +106,6 @@ public final class TransferClientTest {
                              .build());
 
     receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INTERNAL);
-  }
-
-  @Test
-  public void legacy_read_failedPreconditionErrorMaxRetriesTimes_aborts() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
-    ListenableFuture<byte[]> future = transferClient.read(1, TRANSFER_PARAMETERS);
-
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveReadServerError(Status.FAILED_PRECONDITION);
-    }
-
-    Chunk initialChunk = initialLegacyReadChunk(1);
-    assertThat(lastChunks())
-        .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
-
-    receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).isEmpty();
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
     assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
@@ -574,7 +533,8 @@ public final class TransferClientTest {
     ExecutionException exception = assertThrows(ExecutionException.class, future::get);
     assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.DEADLINE_EXCEEDED);
 
-    // read should have retried sending the transfer parameters 2 times, for a total of 3
+    // read should have retried sending the transfer parameters 2 times, for a total
+    // of 3
     assertThat(lastChunks())
         .containsExactly(
             initialLegacyReadChunk(123), initialLegacyReadChunk(123), initialLegacyReadChunk(123));
@@ -614,27 +574,7 @@ public final class TransferClientTest {
   }
 
   @Test
-  public void legacy_write_failedPreconditionError_retriesInitialPacket() throws Exception {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
-    ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
-
-    assertThat(lastChunks()).containsExactly(initialLegacyWriteChunk(2, TEST_DATA_SHORT.size()));
-
-    receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).containsExactly(initialLegacyWriteChunk(2, TEST_DATA_SHORT.size()));
-
-    receiveWriteChunks(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 2)
-                           .setOffset(0)
-                           .setPendingBytes(1024)
-                           .setMaxChunkSizeBytes(128),
-        legacyFinalChunk(2, Status.OK));
-
-    assertThat(future.get()).isNull(); // Ensure that no exceptions are thrown.
-  }
-
-  @Test
-  public void legacy_write_failedPreconditionError_abortsAfterInitialPacket() {
+  public void legacy_write_failedPreconditionError_aborts() {
     createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
     ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_100B.toByteArray());
 
@@ -648,28 +588,6 @@ public final class TransferClientTest {
             legacyDataChunk(2, TEST_DATA_100B, 0, 50));
 
     receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INTERNAL);
-  }
-
-  @Test
-  public void legacy_write_failedPreconditionErrorMaxRetriesTimes_aborts() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.LEGACY);
-    ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
-
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveWriteServerError(Status.FAILED_PRECONDITION);
-    }
-
-    Chunk initialChunk = initialLegacyWriteChunk(2, TEST_DATA_SHORT.size());
-    assertThat(lastChunks())
-        .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
-
-    receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).isEmpty();
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
     assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
@@ -758,7 +676,8 @@ public final class TransferClientTest {
                            .setPendingBytes(50)
                            .setWindowEndOffset(80));
 
-    // Transfer doesn't roll back to offset 30 but instead continues sending up to 80.
+    // Transfer doesn't roll back to offset 30 but instead continues sending up to
+    // 80.
     assertThat(lastChunks())
         .containsExactly(
             newLegacyChunk(Chunk.Type.DATA, 123).setOffset(50).setData(range(50, 80)).build());
@@ -806,7 +725,8 @@ public final class TransferClientTest {
             .setOffset(25)
             .setPendingBytes(25)
             .setWindowEndOffset(50),
-        // Start from an arbitrary offset before the current, but extend the window to the end.
+        // Start from an arbitrary offset before the current, but extend the window to
+        // the end.
         newLegacyChunk(Chunk.Type.PARAMETERS_CONTINUE, 123).setOffset(80).setWindowEndOffset(100));
 
     assertThat(lastChunks())
@@ -994,7 +914,8 @@ public final class TransferClientTest {
     ExecutionException exception = assertThrows(ExecutionException.class, future::get);
     assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.DEADLINE_EXCEEDED);
 
-    // Client should have resent the last chunk (the initial chunk in this case) for each timeout.
+    // Client should have resent the last chunk (the initial chunk in this case) for
+    // each timeout.
     assertThat(lastChunks())
         .containsExactly(initialLegacyWriteChunk(123, TEST_DATA_SHORT.size()), // initial
             initialLegacyWriteChunk(123, TEST_DATA_SHORT.size()), // retry 1
@@ -1005,7 +926,8 @@ public final class TransferClientTest {
   public void legacy_write_timeoutAfterSingleChunk() {
     createTransferClientThatMayTimeOut(ProtocolVersion.LEGACY);
 
-    // Wait for two outgoing packets (Write RPC request and first chunk), then send the parameters.
+    // Wait for two outgoing packets (Write RPC request and first chunk), then send
+    // the parameters.
     enqueueWriteChunks(2,
         newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
             .setOffset(0)
@@ -1032,7 +954,8 @@ public final class TransferClientTest {
   public void legacy_write_multipleTimeoutsAndRecoveries() throws Exception {
     createTransferClientThatMayTimeOut(ProtocolVersion.LEGACY);
 
-    // Wait for two outgoing packets (Write RPC request and first chunk), then send the parameters.
+    // Wait for two outgoing packets (Write RPC request and first chunk), then send
+    // the parameters.
     enqueueWriteChunks(2,
         newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
             .setOffset(0)
@@ -1138,28 +1061,7 @@ public final class TransferClientTest {
   }
 
   @Test
-  public void read_failedPreconditionError_retriesInitialPacket() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
-    ListenableFuture<byte[]> future = transferClient.read(1, TRANSFER_PARAMETERS);
-    ReadTransfer transfer = transferClient.getReadTransferForTest(future);
-
-    assertThat(lastChunks()).containsExactly(initialReadChunk(transfer));
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveReadServerError(Status.FAILED_PRECONDITION);
-
-      assertThat(lastChunks()).containsExactly(initialReadChunk(transfer));
-    }
-
-    receiveReadChunks(newChunk(Chunk.Type.START_ACK, transfer.getSessionId())
-                          .setResourceId(1)
-                          .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
-
-    assertThat(lastChunks())
-        .containsExactly(readStartAckConfirmation(transfer.getSessionId(), TRANSFER_PARAMETERS));
-  }
-
-  @Test
-  public void read_failedPreconditionError_abortsAfterInitial() {
+  public void read_failedPreconditionError_aborts() {
     createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
     TransferParameters params = TransferParameters.create(50, 50, 0);
     ListenableFuture<byte[]> future = transferClient.read(1, params);
@@ -1172,61 +1074,6 @@ public final class TransferClientTest {
                           .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
 
     receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INTERNAL);
-  }
-
-  @Test
-  public void read_failedPreconditionError_abortsAfterHandshake() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
-    TransferParameters params = TransferParameters.create(50, 50, 0);
-    ListenableFuture<byte[]> future = transferClient.read(1, params);
-    ReadTransfer transfer = transferClient.getReadTransferForTest(future);
-
-    assertThat(lastChunks()).containsExactly(initialReadChunk(transfer));
-
-    receiveReadChunks(newChunk(Chunk.Type.START_ACK, transfer.getSessionId())
-                          .setResourceId(1)
-                          .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
-
-    assertThat(lastChunks())
-        .containsExactly(readStartAckConfirmation(transfer.getSessionId(), params));
-
-    receiveReadChunks(dataChunk(transfer.getSessionId(), TEST_DATA_100B, 0, 50));
-
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
-                             .setOffset(50)
-                             .setWindowEndOffset(100)
-                             .setMaxChunkSizeBytes(50)
-                             .build());
-
-    receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INTERNAL);
-  }
-
-  @Test
-  public void read_failedPreconditionErrorMaxRetriesTimes_aborts() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
-    ListenableFuture<byte[]> future = transferClient.read(1, TRANSFER_PARAMETERS);
-    ReadTransfer transfer = transferClient.getReadTransferForTest(future);
-
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveReadServerError(Status.FAILED_PRECONDITION);
-    }
-
-    Chunk initialChunk = initialReadChunk(transfer);
-    assertThat(lastChunks())
-        .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
-
-    receiveReadServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).isEmpty();
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
     assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
@@ -1863,7 +1710,8 @@ public final class TransferClientTest {
     ExecutionException exception = assertThrows(ExecutionException.class, future::get);
     assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.DEADLINE_EXCEEDED);
 
-    // read should have retried sending the transfer parameters 2 times, for a total of 3
+    // read should have retried sending the transfer parameters 2 times, for a total
+    // of 3
     assertThat(lastChunks())
         .containsExactly(
             initialReadChunk(transfer), initialReadChunk(transfer), initialReadChunk(transfer));
@@ -1961,31 +1809,7 @@ public final class TransferClientTest {
   }
 
   @Test
-  public void write_failedPreconditionError_retriesInitialPacket() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
-    ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
-    WriteTransfer transfer = transferClient.getWriteTransferForTest(future);
-
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(transfer, TEST_DATA_SHORT.size()));
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-      assertThat(lastChunks()).containsExactly(initialWriteChunk(transfer, TEST_DATA_SHORT.size()));
-    }
-
-    receiveWriteChunks(newChunk(Chunk.Type.START_ACK, transfer.getSessionId())
-                           .setResourceId(2)
-                           .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
-
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.START_ACK_CONFIRMATION, transfer.getSessionId())
-                             .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal())
-                             .setRemainingBytes(TEST_DATA_SHORT.size())
-                             .build());
-  }
-
-  @Test
-  public void write_failedPreconditionError_abortsAfterInitialPacket() {
+  public void write_failedPreconditionError_aborts() {
     createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
     ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_100B.toByteArray());
     WriteTransfer transfer = transferClient.getWriteTransferForTest(future);
@@ -1997,29 +1821,6 @@ public final class TransferClientTest {
                            .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
 
     receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INTERNAL);
-  }
-
-  @Test
-  public void write_failedPreconditionErrorMaxRetriesTimes_aborts() {
-    createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
-    ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
-    WriteTransfer transfer = transferClient.getWriteTransferForTest(future);
-
-    for (int i = 0; i < MAX_RETRIES; ++i) {
-      receiveWriteServerError(Status.FAILED_PRECONDITION);
-    }
-
-    Chunk initialChunk = initialWriteChunk(transfer, TEST_DATA_SHORT.size());
-    assertThat(lastChunks())
-        .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
-
-    receiveWriteServerError(Status.FAILED_PRECONDITION);
-
-    assertThat(lastChunks()).isEmpty();
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
     assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
@@ -2130,7 +1931,8 @@ public final class TransferClientTest {
                            .setOffset(30)
                            .setWindowEndOffset(80));
 
-    // Transfer doesn't roll back to offset 30 but instead continues sending up to 80.
+    // Transfer doesn't roll back to offset 30 but instead continues sending up to
+    // 80.
     assertThat(lastChunks())
         .containsExactly(newChunk(Chunk.Type.DATA, transfer.getSessionId())
                              .setOffset(50)
@@ -2183,7 +1985,8 @@ public final class TransferClientTest {
         newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
             .setOffset(25)
             .setWindowEndOffset(50),
-        // Start from an arbitrary offset before the current, but extend the window to the end.
+        // Start from an arbitrary offset before the current, but extend the window to
+        // the end.
         newChunk(Chunk.Type.PARAMETERS_CONTINUE, transfer.getSessionId())
             .setOffset(80)
             .setWindowEndOffset(100));
@@ -2472,7 +2275,8 @@ public final class TransferClientTest {
     ExecutionException exception = assertThrows(ExecutionException.class, future::get);
     assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.DEADLINE_EXCEEDED);
 
-    // Client should have resent the last chunk (the initial chunk in this case) for each timeout.
+    // Client should have resent the last chunk (the initial chunk in this case) for
+    // each timeout.
     assertThat(lastChunks())
         .containsExactly(initialWriteChunk(transfer, TEST_DATA_SHORT.size()), // initial
             initialWriteChunk(transfer, TEST_DATA_SHORT.size()), // retry 1
@@ -2483,7 +2287,8 @@ public final class TransferClientTest {
   public void write_timeoutAfterSingleChunk() {
     createTransferClientThatMayTimeOut(ProtocolVersion.VERSION_TWO);
 
-    // Wait for two outgoing packets (Write RPC request and first chunk), then do the handshake.
+    // Wait for two outgoing packets (Write RPC request and first chunk), then do
+    // the handshake.
     enqueueWriteChunks(2,
         newChunk(Chunk.Type.START_ACK, transferClient.getNextSessionIdForTest()).setResourceId(9),
         newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, transferClient.getNextSessionIdForTest())
@@ -2519,7 +2324,8 @@ public final class TransferClientTest {
 
     int id = transferClient.getNextSessionIdForTest();
 
-    // Wait for four outgoing packets (Write RPC request and START chunk + retry), then handshake.
+    // Wait for four outgoing packets (Write RPC request and START chunk + retry),
+    // then handshake.
     enqueueWriteChunks(3,
         newChunk(Chunk.Type.START_ACK, id)
             .setResourceId(5)
@@ -2547,7 +2353,8 @@ public final class TransferClientTest {
             .setWindowEndOffset(200)
             .setMaxChunkSizeBytes(20));
 
-    // After the retry, confirm completed multiple times; additional packets should be dropped
+    // After the retry, confirm completed multiple times; additional packets should
+    // be dropped
     enqueueWriteChunks(1,
         newChunk(Chunk.Type.COMPLETION, id).setStatus(Status.OK.code()),
         newChunk(Chunk.Type.COMPLETION, id).setStatus(Status.OK.code()),
@@ -2596,7 +2403,8 @@ public final class TransferClientTest {
 
     int id = transferClient.getNextSessionIdForTest();
 
-    // Wait for two outgoing packets (Write RPC request and START chunk), then do the handshake.
+    // Wait for two outgoing packets (Write RPC request and START chunk), then do
+    // the handshake.
     enqueueWriteChunks(2,
         newChunk(Chunk.Type.START_ACK, id)
             .setResourceId(5)
@@ -2665,7 +2473,8 @@ public final class TransferClientTest {
 
     int id = transferClient.getNextSessionIdForTest();
 
-    // Wait for four outgoing packets (Write RPC request and START chunk + 2 retries)
+    // Wait for four outgoing packets (Write RPC request and START chunk + 2
+    // retries)
     enqueueWriteChunks(4, // 2 retries
         newChunk(Chunk.Type.START_ACK, id)
             .setResourceId(5)
@@ -2678,7 +2487,8 @@ public final class TransferClientTest {
             .setWindowEndOffset(60)
             .setMaxChunkSizeBytes(20));
 
-    // After 3 data packets, wait for two more retries, which should put this over the retry limit.
+    // After 3 data packets, wait for two more retries, which should put this over
+    // the retry limit.
     enqueueWriteChunks(5, // 2 retries
         newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // This packet should be ignored
             .setOffset(80)

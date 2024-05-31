@@ -403,61 +403,6 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.resource_id, 31)
         self.assertEqual(exception.status, Status.NOT_FOUND)
 
-    def test_read_transfer_reopen(self) -> None:
-        manager = pw_transfer.Manager(
-            self._service,
-            initial_response_timeout_s=DEFAULT_TIMEOUT_S,
-            default_response_timeout_s=DEFAULT_TIMEOUT_S,
-        )
-
-        # A FAILED_PRECONDITION error should attempt a stream reopen.
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-        self._enqueue_server_responses(
-            _Method.READ,
-            (
-                (
-                    transfer_pb2.Chunk(
-                        transfer_id=3,
-                        offset=0,
-                        data=b'xyz',
-                        remaining_bytes=0,
-                    ),
-                ),
-            ),
-        )
-
-        # The transfer should complete following reopen, with the first chunk
-        # being retried.
-        data = manager.read(3)
-        self.assertEqual(data, b'xyz')
-        self.assertEqual(len(self._sent_chunks), 3)
-        self.assertEqual(self._sent_chunks[0], self._sent_chunks[1])
-        self.assertTrue(self._sent_chunks[-1].HasField('status'))
-        self.assertEqual(self._sent_chunks[-1].status, 0)
-
-    def test_read_transfer_reopen_max_attempts(self) -> None:
-        manager = pw_transfer.Manager(
-            self._service,
-            initial_response_timeout_s=DEFAULT_TIMEOUT_S,
-            default_response_timeout_s=DEFAULT_TIMEOUT_S,
-        )
-
-        # A FAILED_PRECONDITION error should attempt a stream reopen; enqueue
-        # several.
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-        self._enqueue_server_error(_Method.READ, Status.FAILED_PRECONDITION)
-
-        with self.assertRaises(pw_transfer.Error) as context:
-            manager.read(81)
-
-        exception = context.exception
-        self.assertEqual(len(self._sent_chunks), 4)
-        self.assertEqual(exception.resource_id, 81)
-        self.assertEqual(exception.status, Status.INTERNAL)
-
     def test_read_transfer_server_error(self) -> None:
         manager = pw_transfer.Manager(
             self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S

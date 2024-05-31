@@ -54,12 +54,6 @@ abstract class Transfer<T> extends AbstractFuture<T> {
   private State state;
   private VersionedChunk lastChunkSent;
 
-  // The number of times this transfer has retried due to an RPC disconnection.
-  // Limit this to
-  // maxRetries to prevent repeated crashes if reading to / writing from a
-  // particular transfer is
-  // causing crashes.
-  private int disconnectionRetries = 0;
   private int lifetimeRetries = 0;
 
   /**
@@ -182,10 +176,6 @@ abstract class Transfer<T> extends AbstractFuture<T> {
 
   /** Processes an incoming chunk from the server. */
   final void handleChunk(VersionedChunk chunk) {
-    // Since a packet has been received, don't allow retries on disconnection; abort
-    // instead.
-    disconnectionRetries = Integer.MAX_VALUE;
-
     try {
       if (chunk.type() == Chunk.Type.COMPLETION) {
         state.handleFinalChunk(chunk.status().orElseGet(() -> {
@@ -216,29 +206,6 @@ abstract class Transfer<T> extends AbstractFuture<T> {
 
   final void handleCancellation() {
     state.handleCancellation();
-  }
-
-  /** Restarts a transfer after an RPC disconnection. */
-  final void handleDisconnection() {
-    // disconnectionRetries is set to Int.MAX_VALUE when a packet is received to
-    // prevent retries
-    // after the initial packet.
-    if (disconnectionRetries++ < timeoutSettings.maxRetries()) {
-      logger.atFine().log("Restarting the pw_transfer RPC for %s (attempt %d/%d)",
-          this,
-          disconnectionRetries,
-          timeoutSettings.maxRetries());
-      try {
-        sendChunk(getChunkForRetry());
-      } catch (TransferAbortedException e) {
-        return; // Transfer is aborted; nothing else to do.
-      }
-      setInitialTimeout();
-    } else {
-      changeState(new Completed(new TransferError("Transfer " + sessionId + " restarted "
-              + timeoutSettings.maxRetries() + " times, aborting",
-          Status.INTERNAL)));
-    }
   }
 
   /** Returns the State to enter immediately after sending the first packet. */

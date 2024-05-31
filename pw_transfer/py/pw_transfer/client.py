@@ -84,24 +84,14 @@ class _TransferStream:
         if rpc_status is Status.FAILED_PRECONDITION:
             # FAILED_PRECONDITION indicates that the stream packet was not
             # recognized as the stream is not open. Attempt to re-open the
-            # stream to allow pending transfers to continue.
-            self._reopen_attempts += 1
-            if self._reopen_attempts > self._max_reopen_attempts:
-                _LOG.error(
-                    'Failed to reopen transfer stream after %d tries',
-                    self._max_reopen_attempts,
-                )
-                self._error_handler(Status.UNAVAILABLE)
-            else:
-                _LOG.info(
-                    'Transfer stream failed to write; attempting to re-open'
-                )
-                self.open(force=True)
+            # stream automatically.
+            self.open(force=True)
         else:
             # Other errors are unrecoverable; clear the stream.
             _LOG.error('Transfer stream shut down with status %s', rpc_status)
             self._call = None
-            self._error_handler(rpc_status)
+
+        self._error_handler(rpc_status)
 
 
 class Manager:  # pylint: disable=too-many-instance-attributes
@@ -507,10 +497,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                 transfer.status,
             )
 
-        # If no more transfers are using the read stream, close it.
-        if not self._read_transfers:
-            self._read_stream.close()
-
     def _start_write_transfer(self, transfer: Transfer) -> None:
         """Begins a new write transfer, opening the stream if it isn't."""
 
@@ -532,10 +518,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                 transfer.id,
                 transfer.status,
             )
-
-        # If no more transfers are using the write stream, close it.
-        if not self._write_transfers:
-            self._write_stream.close()
 
 
 class Error(Exception):

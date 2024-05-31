@@ -35,7 +35,7 @@ HOSTNAME: str = "localhost"
 def _perform_transfer_action(
     action: config_pb2.TransferAction, transfer_manager: pw_transfer.Manager
 ) -> bool:
-    """Performs the transfer action and returns Truen on success."""
+    """Performs the transfer action and returns True on success."""
     protocol_version = pw_transfer.ProtocolVersion(int(action.protocol_version))
 
     # Default to the latest protocol version if none is specified.
