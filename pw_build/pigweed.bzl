@@ -407,6 +407,7 @@ pw_cc_binary_with_map = rule(
             doc = "Whether to encode build information into the binary.",
         ),
     },
+    executable = True,
     provides = [DefaultInfo],
     fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
@@ -479,6 +480,10 @@ def _preprocess_linker_script_impl(ctx):
 
 pw_linker_script = rule(
     _preprocess_linker_script_impl,
+    doc = """Create a linker script target. Supports preprocessing with the C
+    preprocessor and adding the resulting linker script to linkopts. Also
+    provides a DefaultInfo containing the processed linker script.
+    """,
     attrs = {
         "copts": attr.string_list(doc = "C compile options."),
         "defines": attr.string_list(doc = "C preprocessor defines."),

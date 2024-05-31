@@ -183,4 +183,4 @@ def link_cc(
         [linking_outputs.executable] + additional_outputs,
         transitive = [],
     )
-    return [DefaultInfo(files = output_files)]
+    return [DefaultInfo(files = output_files, executable = linking_outputs.executable)]
