@@ -22,10 +22,9 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-pw_source_set("clock_tree") {
+pw_source_set("pw_clock_tree") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_clock_tree/clock_tree.h" ]
-  visibility = [ ":*" ]
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_status",
@@ -36,13 +35,13 @@ pw_source_set("clock_tree") {
 
 pw_test("clock_tree_test") {
   sources = [ "clock_tree_test.cc" ]
-  deps = [ ":clock_tree" ]
+  deps = [ ":pw_clock_tree" ]
   public_deps = [ "$dir_pw_preprocessor" ]
 }
 
 pw_test("clock_tree_examples") {
   sources = [ "examples.cc" ]
-  deps = [ ":clock_tree" ]
+  deps = [ ":pw_clock_tree" ]
 }
 
 pw_test_group("tests") {
