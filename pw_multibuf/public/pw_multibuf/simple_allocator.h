@@ -57,7 +57,7 @@ class LinkedRegionTracker final
 }  // namespace internal
 
 /// A simple first-fit ``MultiBufAllocator``.
-class SimpleAllocator final : public MultiBufAllocator {
+class SimpleAllocator : public MultiBufAllocator {
  public:
   /// Creates a new ``SimpleAllocator``.
   ///
@@ -69,7 +69,6 @@ class SimpleAllocator final : public MultiBufAllocator {
   ///  used to create a thread-safe allocator from a non-thread-safe allocator.
   SimpleAllocator(ByteSpan data_area, pw::allocator::Allocator& metadata_alloc)
       : metadata_alloc_(metadata_alloc), data_area_(data_area) {}
-  ~SimpleAllocator() final = default;
 
  private:
   pw::Result<MultiBuf> DoAllocate(size_t min_size,

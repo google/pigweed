@@ -76,6 +76,11 @@ An RAII-style ``OwnedChunk`` is also provided, and manages the lifetime of
 .. doxygenclass:: pw::multibuf::Stream
    :members:
 
+Test-only features
+==================
+.. doxygenclass:: pw::multibuf::test::SimpleAllocatorForTest
+   :members:
+
 ---------------------------
 Allocator Implementors' API
 ---------------------------
