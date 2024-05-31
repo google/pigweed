@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:binary_tools.bzl", "pw_elf_to_bin")
 load("//pw_build:pigweed.bzl", "pw_linker_script")
 
 cc_library(
@@ -96,4 +97,10 @@ cc_binary(
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
     }),
+)
+
+pw_elf_to_bin(
+    name = "test_bin",
+    bin_out = "test.bin",
+    elf_input = ":test_linker_script",
 )

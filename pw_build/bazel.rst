@@ -334,6 +334,22 @@ This should result in a ``test.map`` file generated next to the ``test`` binary.
 Note that it's only partially compatible with the ``cc_binary`` interface and
 certain things are not implemented like make variable substitution.
 
+pw_elf_to_bin
+-------------
+The ``pw_elf_to_bin`` rule takes in a binary executable target and produces a
+file with all ELF headers removed. It uses the toolchains ``objcopy``
+tool. This output is commonly used to boot images on baremetal.
+
+.. code-block::
+
+   load("@pigweed//pw_build:binary_tools.bzl", "pw_elf_to_bin")
+
+   pw_elf_to_bin(
+     name = "bin",
+     elf_input = ":main",
+     bin_out = "main.bin",
+   )
+
 Miscellaneous utilities
 -----------------------
 
