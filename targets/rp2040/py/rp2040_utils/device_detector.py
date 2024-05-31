@@ -22,7 +22,7 @@ import platform
 import shutil
 import subprocess
 import sys
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Sequence
 
 from ctypes.util import find_library as ctypes_find_library
 import serial.tools.list_ports
@@ -37,17 +37,18 @@ _LOG = logging.getLogger('pi_pico_detector')
 # Vendor/device ID to search for in USB devices.
 _RASPBERRY_PI_VENDOR_ID = 0x2E8A
 
-# RP2040 based debug probes:
-_RASPBERRY_PI_DEBUGPROBE_DEVICE_IDS = (
-    # RaspberryPi Debug probe: https://github.com/raspberrypi/debugprobe
-    0x000C,
-    # RaspberryPi Legacy Picoprobe (early Debug probe version)
-    0x0004,
-)
+# RaspberryPi Debug probe: https://github.com/raspberrypi/debugprobe
+_DEBUG_PROBE_DEVICE_ID = 0x000C
 
 _PICO_USB_SERIAL_DEVICE_ID = 0x000A
 _PICO_BOOTLOADER_DEVICE_ID = 0x0003
 _PICO_DEVICE_IDS = (
+    _PICO_USB_SERIAL_DEVICE_ID,
+    _PICO_BOOTLOADER_DEVICE_ID,
+)
+
+_ALL_DEVICE_IDS = (
+    _DEBUG_PROBE_DEVICE_ID,
     _PICO_USB_SERIAL_DEVICE_ID,
     _PICO_BOOTLOADER_DEVICE_ID,
 )
@@ -66,7 +67,7 @@ else:
     sys.exit(1)
 
 
-def custom_find_library(name: str) -> str | None:
+def _custom_find_library(name: str) -> str | None:
     """Search for shared libraries in non-standard locations."""
     search_paths: list[Path] = []
 
@@ -122,7 +123,7 @@ def custom_find_library(name: str) -> str | None:
             if name in lib.name and _LIB_SUFFIX in lib.suffixes
         )
         if lib_results:
-            _LOG.info('Using %s located at: %s', name, lib_results[-1])
+            _LOG.debug('Using %s located at: %s', name, lib_results[-1])
             # Return the highest lexigraphically sorted lib version
             return lib_results[-1]
 
@@ -130,46 +131,106 @@ def custom_find_library(name: str) -> str | None:
     return ctypes_find_library(name)
 
 
-def libusb_raspberry_pi_devices() -> Iterable[usb.core.Device]:
+def _device_port_path(device: usb.core.Device) -> str:
+    """Returns the chain of ports that represent where a device is attached.
+
+    Example:
+        2:2:1
+    """
+    return ":".join([str(port) for port in device.port_numbers])
+
+
+def _libusb_raspberry_pi_devices(
+    bus_filter: int | None,
+    port_filter: str | None,
+    include_picos: bool = True,
+    include_debug_probes: bool = True,
+) -> Iterable[usb.core.Device]:
+    """Finds all Pi Pico-related USB devices."""
+    devices_to_match: list[int] = []
+    if include_picos:
+        devices_to_match.extend(_PICO_DEVICE_IDS)
+    if include_debug_probes:
+        devices_to_match.append(_DEBUG_PROBE_DEVICE_ID)
+
+    def _custom_match(d: usb.core.Device):
+        if d.idVendor != _RASPBERRY_PI_VENDOR_ID:
+            return False
+        if d.idProduct not in devices_to_match:
+            return False
+        if bus_filter is not None and d.bus != bus_filter:
+            return False
+        if port_filter is not None and _device_port_path(d) != port_filter:
+            return False
+
+        return True
+
     return usb.core.find(
         find_all=True,
-        idVendor=_RASPBERRY_PI_VENDOR_ID,
-        backend=libusb1.get_backend(find_library=custom_find_library),
+        custom_match=_custom_match,
+        backend=libusb1.get_backend(find_library=_custom_find_library),
     )
 
 
 @dataclass
-class BoardInfo:
-    """Information about a connected Pi Pico board."""
+class PicoBoardInfo:
+    """Information about a connected Pi Pico board.
+
+    NOTE: As a Pico board is flashed and reset, the USB address can change.
+    Also, the bootloader has a different serial number than the regular
+    application firmware. For this reason, this object does NOT cache or store
+    the serial number, address, or USB device ID.
+    """
 
     bus: int
-    port: int
-    serial_port: Optional[str] = None
+    port: str
+    serial_port: Optional[str]
 
-    # As a board is flashed and reset, the USB address can change. This method
-    # uses the USB bus and port to try and find the desired device. Using the
-    # serial number sounds appealing, but unfortunately the application's serial
-    # number is different from the bootloader's.
     def address(self) -> int:
-        for device in libusb_raspberry_pi_devices():
-            if device.idProduct in _RASPBERRY_PI_DEBUGPROBE_DEVICE_IDS:
-                continue
-            if device.idProduct not in _PICO_DEVICE_IDS:
+        """Queries this device for its USB address.
+
+        WARNING: This is not necessarily stable, and may change whenever the
+        board is reset or flashed.
+        """
+        for device in _libusb_raspberry_pi_devices(
+            bus_filter=self.bus, port_filter=self.port
+        ):
+            if device.idProduct not in _ALL_DEVICE_IDS:
                 _LOG.error(
                     'Unknown device type on bus %s port %s', self.bus, self.port
                 )
-            if device.port_number == self.port:
+            if _device_port_path(device) == self.port:
                 return device.address
-        _LOG.error(
+        raise ValueError(
             'No Pico found, it may have been disconnected or flashed with '
             'an incompatible application'
         )
-        sys.exit(1)
+
+    @staticmethod
+    def vendor_id() -> int:
+        return _RASPBERRY_PI_VENDOR_ID
+
+    def is_debug_probe(self) -> bool:
+        return isinstance(self, PicoDebugProbeBoardInfo)
+
+
+@dataclass
+class PicoDebugProbeBoardInfo(PicoBoardInfo):
+    """Information about a connected Pi Debug Probe.
+
+    Unlike a Pi Pico, a Pi Debug Probe has a stable serial number and device ID.
+    """
+
+    serial_number: str
+
+    @staticmethod
+    def device_id() -> int:
+        return _DEBUG_PROBE_DEVICE_ID
 
 
 @dataclass
 class _BoardSerialInfo:
-    """Information that ties a serial number to a serial com port."""
+    """Object that ties a serial number to a serial com port."""
 
     serial_port: str
     serial_number: str
@@ -177,11 +238,16 @@ class _BoardSerialInfo:
 
 @dataclass
 class _BoardUsbInfo:
-    """Information that ties a serial number to a USB information"""
+    """Object that ties a serial number to other USB device information.
+
+    WARNING: This is private and ephemeral because many of these values are not
+    necessarily stable as a Pico is flashed and reset. Use PicoBoardInfo or
+    PicoDebugProbeBoardInfo for more stable representations of an attached Pico.
+    """
 
     serial_number: str
     bus: int
-    port: int
+    port: str
     product: str
     manufacturer: str
     vendor_id: int
@@ -197,16 +263,26 @@ class _BoardUsbInfo:
 
     @property
     def is_debug_probe(self) -> bool:
-        return self.product_id in _RASPBERRY_PI_DEBUGPROBE_DEVICE_IDS
+        return self.product_id == _DEBUG_PROBE_DEVICE_ID
 
     def __repr__(self) -> str:
         return repr(asdict(self))
 
 
-def _detect_pico_usb_info() -> dict[str, _BoardUsbInfo]:
+def _detect_pico_usb_info(
+    bus_filter: int | None = None,
+    port_filter: str | None = None,
+    include_picos: bool = True,
+    include_debug_probes: bool = True,
+) -> dict[str, _BoardUsbInfo]:
     """Finds Raspberry Pi Pico devices and retrieves USB info for each one."""
     boards: dict[str, _BoardUsbInfo] = {}
-    devices = libusb_raspberry_pi_devices()
+    devices = _libusb_raspberry_pi_devices(
+        bus_filter=bus_filter,
+        port_filter=port_filter,
+        include_picos=include_picos,
+        include_debug_probes=include_debug_probes,
+    )
 
     if not devices:
         return boards
@@ -226,7 +302,7 @@ def _detect_pico_usb_info() -> dict[str, _BoardUsbInfo]:
         board_usb_info = _BoardUsbInfo(
             serial_number=serial_number,
             bus=device.bus,
-            port=device.port_number,
+            port=_device_port_path(device),
             product=device.product,
             manufacturer=device.manufacturer,
             vendor_id=device.idVendor,
@@ -246,6 +322,7 @@ def _detect_pico_usb_info() -> dict[str, _BoardUsbInfo]:
             )
 
         elif board_usb_info.is_debug_probe:
+            boards[serial_number] = board_usb_info
             _LOG.debug(
                 '  --> Found Raspberry Pi debug probe: %s', board_usb_info
             )
@@ -264,9 +341,9 @@ def _detect_pico_serial_ports() -> dict[str, _BoardSerialInfo]:
     boards = {}
     all_devs = serial.tools.list_ports.comports()
     for dev in all_devs:
-        if (
-            dev.vid == _RASPBERRY_PI_VENDOR_ID
-            and dev.pid == _PICO_USB_SERIAL_DEVICE_ID
+        if dev.vid == _RASPBERRY_PI_VENDOR_ID and (
+            dev.pid == _PICO_USB_SERIAL_DEVICE_ID
+            or dev.pid == _DEBUG_PROBE_DEVICE_ID
         ):
             serial_number = dev.serial_number
             if serial_number is None:
@@ -279,23 +356,101 @@ def _detect_pico_serial_ports() -> dict[str, _BoardSerialInfo]:
     return boards
 
 
-def detect_boards() -> list[BoardInfo]:
-    """Detects attached Raspberry Pi Pico boards in USB serial mode.
+def board_from_usb_port(
+    bus: int,
+    port: str,
+    include_picos: bool = True,
+    include_debug_probes: bool = True,
+) -> PicoDebugProbeBoardInfo | PicoBoardInfo:
+    """Retrieves board info for the Pico at the specified USB bus and port.
+
+    Args:
+        bus: The USB bus that the requested Pico resides on.
+        port: The chain of ports as a colon separated list of integers (e.g.
+            '1:4:2:2') that the requested Pico resides on. This only performs
+            exact matches.
 
     Returns:
-      A list of all found boards as BoardInfo objects.
+      The board at the requested bus/port.
     """
     serial_devices = _detect_pico_serial_ports()
-    pico_usb_info = _detect_pico_usb_info()
-    boards = []
+    pico_usb_info = _detect_pico_usb_info(
+        include_picos=include_picos,
+        include_debug_probes=include_debug_probes,
+        bus_filter=bus,
+        port_filter=port,
+    )
+
+    if not pico_usb_info:
+        raise ValueError(f'No matching device found on bus {bus} port {port}')
+
+    if len(pico_usb_info) > 1:
+        raise ValueError(f'Multiple Picos found on bus {bus} port {port}')
+
+    usb_info = next(iter(pico_usb_info.values()))
+
+    serial_port = None
+    if usb_info.serial_number in serial_devices:
+        serial_port = serial_devices[usb_info.serial_number].serial_port
+
+    if usb_info.is_debug_probe:
+        return PicoDebugProbeBoardInfo(
+            bus=usb_info.bus,
+            port=usb_info.port,
+            serial_port=serial_port,
+            serial_number=usb_info.serial_number,
+        )
+
+    return PicoBoardInfo(
+        bus=usb_info.bus,
+        port=usb_info.port,
+        serial_port=serial_port,
+    )
+
+
+def detect_boards(
+    include_picos: bool = True, include_debug_probes: bool = False
+) -> Sequence[PicoBoardInfo | PicoDebugProbeBoardInfo]:
+    """Detects attached Raspberry Pi Pico boards in USB serial mode.
+
+    Args:
+        include_picos: Whether or not to include detected Raspberry Pi Picos in
+            the list of enumerated devices.
+        include_debug_probes: Whether or not to include detected Raspberry Pi
+            debug probes in the list of enumerated devices.
+
+    Returns:
+      A list of all found boards.
+    """
+    serial_devices = _detect_pico_serial_ports()
+    pico_usb_info = _detect_pico_usb_info(
+        include_picos=include_picos,
+        include_debug_probes=include_debug_probes,
+    )
+    boards: list[PicoBoardInfo | PicoDebugProbeBoardInfo] = []
     for serial_number, usb_info in pico_usb_info.items():
+        if not include_debug_probes and usb_info.is_debug_probe:
+            continue
+
+        if not include_picos and not usb_info.is_debug_probe:
+            continue
+
         serial_port = None
         if serial_number in serial_devices:
             serial_port = serial_devices[serial_number].serial_port
 
-        if serial_port or usb_info.in_bootloader_mode:
+        if usb_info.is_debug_probe:
             boards.append(
-                BoardInfo(
+                PicoDebugProbeBoardInfo(
+                    bus=usb_info.bus,
+                    port=usb_info.port,
+                    serial_port=serial_port,
+                    serial_number=usb_info.serial_number,
+                )
+            )
+        elif serial_port or usb_info.in_bootloader_mode:
+            boards.append(
+                PicoBoardInfo(
                     bus=usb_info.bus,
                     port=usb_info.port,
                     serial_port=serial_port,
@@ -311,7 +466,7 @@ def main():
         level=logging.DEBUG, use_color=True, hide_timestamp=False
     )
 
-    boards = detect_boards()
+    boards = detect_boards(include_picos=True, include_debug_probes=True)
     if not boards:
         _LOG.info('No attached boards detected')
     for idx, board in enumerate(boards):

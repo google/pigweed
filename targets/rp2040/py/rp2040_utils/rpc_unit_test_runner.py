@@ -14,7 +14,6 @@
 # the License.
 """This script flashes and runs RPC unit tests on Raspberry Pi Pico boards."""
 
-import argparse
 import logging
 import sys
 from pathlib import Path
@@ -30,58 +29,10 @@ from pw_tokenizer import detokenize
 from pw_unit_test_proto import unit_test_pb2
 
 from rp2040_utils import device_detector
-from rp2040_utils.device_detector import BoardInfo
-from rp2040_utils.unit_test_runner import PiPicoTestingDevice
+from rp2040_utils.unit_test_runner import PiPicoTestingDevice, parse_args
 
 
 _LOG = logging.getLogger()
-
-
-def parse_args():
-    """Parse and return command-line arguments."""
-
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        'binary', type=Path, help='The target test binary to run'
-    )
-    parser.add_argument(
-        '--usb-bus',
-        type=int,
-        help='The bus this Pi Pico is on',
-    )
-    parser.add_argument(
-        '--usb-port',
-        type=int,
-        help='The port of this Pi Pico on the specified USB bus',
-    )
-    parser.add_argument(
-        '--serial-port',
-        type=str,
-        help='The name of the serial port to connect to when running tests',
-    )
-    parser.add_argument(
-        '-b',
-        '--baud',
-        type=int,
-        default=115200,
-        help='Baud rate to use for serial communication with target device',
-    )
-    parser.add_argument(
-        '--test-timeout',
-        type=float,
-        default=5.0,
-        help='Maximum communication delay in seconds before a '
-        'test is considered unresponsive and aborted',
-    )
-    parser.add_argument(
-        '--verbose',
-        '-v',
-        dest='verbose',
-        action='store_true',
-        help='Output additional logs as the script runs',
-    )
-
-    return parser.parse_args()
 
 
 class PiPicoRpcTestingDevice(PiPicoTestingDevice):
@@ -148,34 +99,36 @@ class PiPicoRpcTestingDevice(PiPicoTestingDevice):
 def run_device_test(
     binary: Path,
     test_timeout: float,
-    serial_port: str,
     baud_rate: int,
     usb_bus: int,
-    usb_port: int,
+    usb_port: str,
 ) -> bool:
     """Flash, run, and check an on-device test binary.
 
     Returns true on test pass.
     """
-    board = BoardInfo(
-        bus=usb_bus,
-        port=usb_port,
-        serial_port=serial_port,
-    )
+    board = device_detector.board_from_usb_port(usb_bus, usb_port)
     return PiPicoRpcTestingDevice(board, baud_rate).run_device_test(
         binary, test_timeout
     )
 
 
 def detect_and_run_test(
-    binary: Path, test_timeout: float, baud_rate: int
+    binary: Path,
+    test_timeout: float,
+    baud_rate: int,
+    include_picos: bool = True,
+    include_debug_probes: bool = True,
 ) -> bool:
     """Detect a dev board and run a test binary on it.
 
     Returns whether or not the test completed successfully.
     """
     _LOG.debug('Attempting to automatically detect dev board')
-    boards = device_detector.detect_boards()
+    boards = device_detector.detect_boards(
+        include_picos=include_picos,
+        include_debug_probes=include_debug_probes,
+    )
     if not boards:
         _LOG.error('Could not find an attached device')
         return False
@@ -187,30 +140,40 @@ def detect_and_run_test(
 def main():
     """Set up runner and then flash/run device test."""
     args = parse_args()
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    pw_cli.log.install(level=log_level)
-
     test_logfile = args.binary.with_suffix(args.binary.suffix + '.test_log.txt')
-    # Truncate existing logfile
+    # Truncate existing logfile.
     test_logfile.write_text('', encoding='utf-8')
-    # Setup the test_log.txt file handler.
     pw_cli.log.install(
-        level=logging.DEBUG,
-        use_color=False,
-        log_file=test_logfile,
-        logger=_LOG,
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        debug_log=test_logfile,
     )
+    _LOG.debug('Logging results to %s', test_logfile)
+
+    if args.pico_only and args.debug_probe_only:
+        _LOG.critical('Cannot specify both --pico-only and --debug-probe-only')
+        sys.exit(1)
+
+    # For now, require manual configurations to be fully specified.
+    if (args.usb_port or args.usb_bus) and not (args.usb_port and args.usb_bus):
+        _LOG.critical(
+            'Must specify BOTH --usb-bus and --usb-port when manually '
+            'specifying a device'
+        )
+        sys.exit(1)
 
     test_passed = False
-    if not args.serial_port:
+    if not args.usb_bus:
         test_passed = detect_and_run_test(
-            args.binary, args.test_timeout, args.baud
+            args.binary,
+            args.test_timeout,
+            args.baud,
+            not args.debug_probe_only,
+            not args.pico_only,
         )
     else:
         test_passed = run_device_test(
             args.binary,
             args.test_timeout,
-            args.serial_port,
             args.baud,
             args.usb_bus,
             args.usb_port,
