@@ -250,7 +250,7 @@ Example
 ^^^^^^^
 **BUILD.bazel**
 
-.. code-block::
+.. code-block:: python
 
    pw_cc_blob_info(
      name = "foo_blob",
@@ -322,7 +322,7 @@ pw_cc_binary_with_map
 The ``pw_cc_binary_with_map`` rule can be used to build a binary like
 ``cc_binary`` does but also generate a .map file from the linking step.
 
-.. code-block::
+.. code-block:: python
 
    pw_cc_binary_with_map(
      name = "test",
@@ -337,10 +337,10 @@ certain things are not implemented like make variable substitution.
 pw_elf_to_bin
 -------------
 The ``pw_elf_to_bin`` rule takes in a binary executable target and produces a
-file with all ELF headers removed. It uses the toolchains ``objcopy``
+file with all ELF headers removed. It uses the toolchain's ``objcopy``
 tool. This output is commonly used to boot images on baremetal.
 
-.. code-block::
+.. code-block:: python
 
    load("@pigweed//pw_build:binary_tools.bzl", "pw_elf_to_bin")
 
@@ -348,6 +348,23 @@ tool. This output is commonly used to boot images on baremetal.
      name = "bin",
      elf_input = ":main",
      bin_out = "main.bin",
+   )
+
+pw_elf_to_dump
+--------------
+The ``pw_elf_to_dump`` rule takes in a binary executable target and produces a
+text file containing the output of the toolchain's ``objdump -xd`` command. This
+contains the full binary layout, symbol table and disassembly which is often
+useful when debugging embedded firmware.
+
+.. code-block:: python
+
+   load("@pigweed//pw_build:binary_tools.bzl", "pw_elf_to_dump")
+
+   pw_elf_to_dump(
+     name = "dump",
+     elf_input = ":main",
+     dump_out = "main.dump",
    )
 
 Miscellaneous utilities

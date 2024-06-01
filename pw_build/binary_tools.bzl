@@ -16,7 +16,17 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@pw_toolchain//actions:providers.bzl", "ActionNameInfo")
 
-def _pw_elf_to_bin_impl(ctx):
+def _run_action_on_executable(
+        ctx,
+        action_name,
+        action_args,
+        input,
+        output,
+        additional_outputs,
+        output_executable = False):
+    """Macro to be used in rule implementation to run an action on input executable.
+
+    Looks up the current toolchain to find the path to the specified action."""
     cc_toolchain = find_cpp_toolchain(ctx)
 
     feature_configuration = cc_common.configure_features(
@@ -25,30 +35,43 @@ def _pw_elf_to_bin_impl(ctx):
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
-    objcopy_path = cc_common.get_tool_for_action(
+    tool_path = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
-        action_name = ctx.attr._objcopy[ActionNameInfo].name,
+        action_name = action_name,
     )
 
     ctx.actions.run_shell(
         inputs = depset(
-            direct = [ctx.executable.elf_input],
+            direct = [input],
             transitive = [
                 cc_toolchain.all_files,
             ],
         ),
-        outputs = [ctx.outputs.bin_out],
-        command = "{objcopy} {args} {input} {output}".format(
-            objcopy = objcopy_path,
-            args = "-Obinary",
-            input = ctx.executable.elf_input.path,
-            output = ctx.outputs.bin_out.path,
+        outputs = [output],
+        command = "{tool} {args}".format(
+            tool = tool_path,
+            args = action_args,
         ),
     )
 
     return DefaultInfo(
-        files = depset([ctx.outputs.bin_out] + ctx.files.elf_input),
-        executable = ctx.outputs.bin_out,
+        files = depset([output] + additional_outputs),
+        executable = output if output_executable else None,
+    )
+
+def _pw_elf_to_bin_impl(ctx):
+    return _run_action_on_executable(
+        ctx = ctx,
+        action_name = ctx.attr._objcopy[ActionNameInfo].name,
+        action_args = "{args} {input} {output}".format(
+            args = "-Obinary",
+            input = ctx.executable.elf_input.path,
+            output = ctx.outputs.bin_out.path,
+        ),
+        input = ctx.executable.elf_input,
+        output = ctx.outputs.bin_out,
+        additional_outputs = ctx.files.elf_input,
+        output_executable = True,
     )
 
 pw_elf_to_bin = rule(
@@ -66,6 +89,37 @@ pw_elf_to_bin = rule(
         ),
     },
     executable = True,
+    toolchains = use_cpp_toolchain(),
+    fragments = ["cpp"],
+)
+
+def _pw_elf_to_dump_impl(ctx):
+    return _run_action_on_executable(
+        ctx = ctx,
+        action_name = ctx.attr._objdump[ActionNameInfo].name,
+        action_args = "{args} {input} > {output}".format(
+            args = "-dx",
+            input = ctx.executable.elf_input.path,
+            output = ctx.outputs.dump_out.path,
+        ),
+        input = ctx.executable.elf_input,
+        output = ctx.outputs.dump_out,
+        additional_outputs = ctx.files.elf_input,
+    )
+
+pw_elf_to_dump = rule(
+    implementation = _pw_elf_to_dump_impl,
+    doc = """Takes in an ELF executable and uses the toolchain objdump tool to
+    create a text file dump of the contents.
+    """,
+    attrs = {
+        "dump_out": attr.output(mandatory = True),
+        "elf_input": attr.label(mandatory = True, executable = True, cfg = "target"),
+        "_objdump": attr.label(
+            default = "@pw_toolchain//actions:objdump_embed_data",
+            providers = [ActionNameInfo],
+        ),
+    },
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
 )
