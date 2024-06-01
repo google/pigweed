@@ -147,17 +147,23 @@ Arguments:
 =========
 Configure a GPIO line as an input and watch for interrupt evnts.
 
-Both rising and falling edges will trigger an event.
+By default, both rising and falling edges will trigger an event.
+This can be changed via the ``-t`` option.
 
 Usage:
 
 .. code-block:: none
 
-   watch [-i] CHIP LINE
+   watch [-i] [{-ta,-tb,-td}] CHIP LINE
 
 Options:
 
 * ``-i``: Invert; configure as active-low.
+* ``-t``: Trigger for an interrupt:
+
+   * ``-ta`` - activating edge
+   * ``-tb`` - both edges (default)
+   * ``-td`` - deactivating edge
 
 Arguments:
 

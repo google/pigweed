@@ -20,8 +20,14 @@
 //    set   [-i] CHIP LINE VALUE
 //      Configure the GPIO as an output and set its value.
 //
-//    watch [-i] CHIP LINE
+//    watch [-i] [{-ta,-tb,-td}] CHIP LINE
 //      Configure the GPIO as an input and watch for interrupt events.
+//
+//      Options:
+//        -t  Trigger for an interrupt:
+//            -ta - activating edge
+//            -tb - both edges (default)
+//            -td - deactivating edge
 //
 //  Args:
 //   CHIP:  gpiochip path (e.g. /dev/gpiochip0)
@@ -84,8 +90,22 @@ pw::Status SetOutput(LinuxDigitalIoChip& chip,
   return pw::OkStatus();
 }
 
+const char* InterruptTriggerStr(InterruptTrigger trigger) {
+  switch (trigger) {
+    case InterruptTrigger::kActivatingEdge:
+      return "activating edge";
+    case InterruptTrigger::kBothEdges:
+      return "both edges";
+    case InterruptTrigger::kDeactivatingEdge:
+      return "deactivating edge";
+    default:
+      return "?";
+  }
+}
+
 pw::Status WatchInput(LinuxDigitalIoChip& chip,
-                      const LinuxInputConfig& config) {
+                      const LinuxInputConfig& config,
+                      InterruptTrigger trigger) {
   PW_TRY_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
 
   auto maybe_input = chip.GetInterruptLine(config, notifier);
@@ -103,7 +123,7 @@ pw::Status WatchInput(LinuxDigitalIoChip& chip,
     }
   };
 
-  PW_TRY(input.SetInterruptHandler(InterruptTrigger::kBothEdges, handler));
+  PW_TRY(input.SetInterruptHandler(trigger, handler));
 
   if (auto status = input.EnableInterruptHandler(); !status.ok()) {
     PW_LOG_ERROR("Failed to enable input interrupt: %s", status.str());
@@ -114,6 +134,8 @@ pw::Status WatchInput(LinuxDigitalIoChip& chip,
     PW_LOG_ERROR("Failed to enable input line: %s", status.str());
     return status;
   }
+
+  PW_LOG_INFO("Watching for events (%s)", InterruptTriggerStr(trigger));
 
   // Process events
   notifier->Run();
@@ -152,9 +174,14 @@ void UsageError(const std::string& error) {
   std::cerr << "  Commands:" << std::endl;
   std::cerr << "    get   [-i] CHIP LINE" << std::endl;
   std::cerr << "    set   [-i] CHIP LINE VALUE" << std::endl;
-  std::cerr << "    watch [-i] CHIP LINE" << std::endl;
+  std::cerr << "    watch [-i] [{-ta,-tb,-td}] CHIP LINE" << std::endl;
+  std::cerr << "        Options:" << std::endl;
+  std::cerr << "          -t  Trigger for an interrupt:" << std::endl;
+  std::cerr << "              -ta - activating edge" << std::endl;
+  std::cerr << "              -tb - both edges (default)" << std::endl;
+  std::cerr << "              -td - deactivating edge" << std::endl;
   std::cerr << std::endl;
-  std::cerr << "  Options:" << std::endl;
+  std::cerr << "  Common Options:" << std::endl;
   std::cerr << "    -i    Invert; configure as active-low." << std::endl;
 }
 
@@ -183,6 +210,7 @@ int main(int argc, char* argv[]) {
 
   // Process options
   Polarity polarity = Polarity::kActiveHigh;
+  InterruptTrigger trigger = InterruptTrigger::kBothEdges;
   for (auto argi = args.begin(); argi != args.end(); /* Advance in body. */) {
     std::string option = *argi;
     if (!(option.size() >= 2 && option[0] == '-')) {
@@ -196,6 +224,18 @@ int main(int argc, char* argv[]) {
     if (option == "i") {
       polarity = Polarity::kActiveLow;
       continue;
+    }
+    if (command == "watch") {
+      if (option == "ta") {
+        trigger = InterruptTrigger::kActivatingEdge;
+        continue;
+      } else if (option == "tb") {
+        trigger = InterruptTrigger::kBothEdges;
+        continue;
+      } else if (option == "td") {
+        trigger = InterruptTrigger::kDeactivatingEdge;
+        continue;
+      }
     }
     UsageError("Invalid option: \"-" + option + "\"");
     return 1;
@@ -254,7 +294,7 @@ int main(int argc, char* argv[]) {
     LinuxInputConfig config(
         /* index= */ index,
         /* polarity= */ polarity);
-    status = WatchInput(chip, config);
+    status = WatchInput(chip, config, trigger);
   }
 
   // Handle the return status accordingly.
