@@ -22,7 +22,7 @@
 
 
 enum StatusCode:
-  -- HCI Error Codes. Refer to Core Spec v5.0, Vol 2, Part D for definitions and
+  -- HCI Error Codes. Refer to Core Spec v5.4, Vol 1, Part F for definitions and
   -- descriptions. All enum values are in increasing numerical order, however the
   -- values are listed below for clarity.
   [maximum_bits: 8]
@@ -96,6 +96,9 @@ enum StatusCode:
   UNKNOWN_ADVERTISING_IDENTIFIER                    = 0x42
   LIMIT_REACHED                                     = 0x43
   OPERATION_CANCELLED_BY_HOST                       = 0x44
+  PACKET_TOO_LONG                                   = 0x45
+  TOO_LATE                                          = 0x46
+  TOO_EARLY                                         = 0x47
 
 
 enum OpCode:
