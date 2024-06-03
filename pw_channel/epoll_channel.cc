@@ -22,29 +22,28 @@
 
 namespace pw::channel {
 
-Status EpollChannel::Register() {
-  if (is_open()) {
-    return Status::FailedPrecondition();
-  }
-
+void EpollChannel::Register() {
   if (fcntl(channel_fd_, F_SETFL, O_NONBLOCK) != 0) {
     PW_LOG_ERROR("Failed to make channel file descriptor nonblocking: %s",
                  std::strerror(errno));
-    return Status::Internal();
+    set_closed();
+    return;
   }
 
-  PW_TRY(dispatcher_->NativeRegisterFileDescriptor(
-      channel_fd_, async2::Dispatcher::FileDescriptorType::kReadWrite));
+  if (!dispatcher_
+           ->NativeRegisterFileDescriptor(
+               channel_fd_, async2::Dispatcher::FileDescriptorType::kReadWrite)
+           .ok()) {
+    set_closed();
+    return;
+  }
 
-  open_ = true;
   ready_to_write_ = true;
-
-  return OkStatus();
 }
 
 async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
     async2::Context& cx) {
-  if (!is_open()) {
+  if (!is_read_open()) {
     return Status::FailedPrecondition();
   }
 
@@ -88,7 +87,7 @@ async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
 }
 
 async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
-  if (!is_open()) {
+  if (!is_write_open()) {
     return Status::FailedPrecondition();
   }
 
@@ -106,7 +105,7 @@ async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
 }
 
 Result<channel::WriteToken> EpollChannel::DoWrite(multibuf::MultiBuf&& data) {
-  if (!is_open()) {
+  if (!is_write_open()) {
     return Status::FailedPrecondition();
   }
 
@@ -131,9 +130,9 @@ Result<channel::WriteToken> EpollChannel::DoWrite(multibuf::MultiBuf&& data) {
 }
 
 void EpollChannel::Cleanup() {
-  if (is_open()) {
+  if (is_read_or_write_open()) {
     dispatcher_->NativeUnregisterFileDescriptor(channel_fd_).IgnoreError();
-    open_ = false;
+    set_closed();
   }
   close(channel_fd_);
 }

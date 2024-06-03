@@ -139,7 +139,8 @@ TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
   Dispatcher dispatcher;
 
   EpollChannel channel(read_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   ReaderTask<ByteReader> read_task(channel, 1);
   dispatcher.Post(read_task);
@@ -170,25 +171,13 @@ TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
   EXPECT_EQ(close_task.close_status, pw::OkStatus());
 }
 
-TEST_F(EpollChannelTest, Read_Unregistered_ReturnsFailedPrecondition) {
-  SimpleAllocatorForTest alloc;
-  Dispatcher dispatcher;
-
-  EpollChannel channel(read_fd_, dispatcher, alloc);
-
-  ReaderTask<ByteReader> read_task(channel, 1);
-  dispatcher.Post(read_task);
-
-  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
-  EXPECT_EQ(read_task.read_status, pw::Status::FailedPrecondition());
-}
-
 TEST_F(EpollChannelTest, Read_Closed_ReturnsFailedPrecondition) {
   SimpleAllocatorForTest alloc;
   Dispatcher dispatcher;
 
   EpollChannel channel(read_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   CloseTask close_task(channel);
   dispatcher.Post(close_task);
@@ -265,7 +254,8 @@ TEST_F(EpollChannelTest, Write_ValidData_Succeeds) {
   Dispatcher dispatcher;
 
   EpollChannel channel(write_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   constexpr auto kData = pw::bytes::Initialized<32>(0x3f);
   WriterTask<ByteWriter> write_task(channel, 1, kData);
@@ -290,7 +280,8 @@ TEST_F(EpollChannelTest, Write_EmptyData_Succeeds) {
   Dispatcher dispatcher;
 
   EpollChannel channel(write_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   WriterTask<ByteWriter> write_task(channel, 1, {});
   dispatcher.Post(write_task);
@@ -304,25 +295,13 @@ TEST_F(EpollChannelTest, Write_EmptyData_Succeeds) {
   EXPECT_EQ(close_task.close_status, pw::OkStatus());
 }
 
-TEST_F(EpollChannelTest, Write_Unregistered_ReturnsFailedPrecondition) {
-  SimpleAllocatorForTest alloc;
-  Dispatcher dispatcher;
-
-  EpollChannel channel(write_fd_, dispatcher, alloc);
-
-  WriterTask<ByteWriter> write_task(channel, 1, {});
-  dispatcher.Post(write_task);
-
-  dispatcher.RunToCompletion();
-  EXPECT_EQ(write_task.last_write_status, pw::Status::FailedPrecondition());
-}
-
 TEST_F(EpollChannelTest, Write_Closed_ReturnsFailedPrecondition) {
   SimpleAllocatorForTest alloc;
   Dispatcher dispatcher;
 
   EpollChannel channel(write_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   CloseTask close_task(channel);
   dispatcher.Post(close_task);
@@ -342,7 +321,8 @@ TEST_F(EpollChannelTest, Destructor_ClosesFileDescriptor) {
 
   {
     EpollChannel channel(write_fd_, dispatcher, alloc);
-    ASSERT_EQ(channel.Register(), pw::OkStatus());
+    ASSERT_TRUE(channel.is_read_open());
+    ASSERT_TRUE(channel.is_write_open());
   }
 
   const char kArbitraryByte = 'b';
@@ -354,7 +334,8 @@ TEST_F(EpollChannelTest, PendReadyToWrite_BlocksWhenUnavailable) {
   SimpleAllocatorForTest alloc;
   Dispatcher dispatcher;
   EpollChannel channel(write_fd_, dispatcher, alloc);
-  ASSERT_EQ(channel.Register(), pw::OkStatus());
+  ASSERT_TRUE(channel.is_read_open());
+  ASSERT_TRUE(channel.is_write_open());
 
   constexpr auto kData =
       pw::bytes::Initialized<decltype(alloc)::data_size_bytes()>('c');

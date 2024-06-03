@@ -42,12 +42,13 @@ class EpollChannel : public ByteReaderWriter {
                async2::Dispatcher& dispatcher,
                multibuf::MultiBufAllocator& allocator)
       : channel_fd_(channel_fd),
-        open_(false),
         ready_to_write_(false),
         write_token_(0),
         allocation_future_(std::nullopt),
         dispatcher_(&dispatcher),
-        allocator_(&allocator) {}
+        allocator_(&allocator) {
+    Register();
+  }
 
   ~EpollChannel() override { Cleanup(); }
 
@@ -57,26 +58,11 @@ class EpollChannel : public ByteReaderWriter {
   EpollChannel(EpollChannel&&) = default;
   EpollChannel& operator=(EpollChannel&&) = default;
 
-  /// Registers the channel's file descriptor on its EpollDisptacher.
-  /// Must be called before any other channel operations.
-  ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The channel has been registered and can be used.
-  ///
-  ///    INTERNAL: One of the underlying Linux syscalls failed. A log message
-  ///      with the value of ``errno`` is sent.
-  ///
-  /// @endrst
-  Status Register();
-
-  constexpr bool is_open() const { return open_; }
-
  private:
   static constexpr size_t kMinimumReadSize = 64;
   static constexpr size_t kDesiredReadSize = 1024;
+
+  void Register();
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
@@ -99,10 +85,14 @@ class EpollChannel : public ByteReaderWriter {
     return async2::Ready(OkStatus());
   }
 
+  void set_closed() {
+    set_read_closed();
+    set_write_closed();
+  }
+
   void Cleanup();
 
   int channel_fd_;
-  bool open_;
   bool ready_to_write_;
   uint32_t write_token_;
   std::optional<multibuf::MultiBufAllocationFuture> allocation_future_;
