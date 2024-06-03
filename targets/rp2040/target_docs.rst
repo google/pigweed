@@ -237,9 +237,9 @@ Step 1: Start test server
 To allow Ninja to properly serialize tests to run on device, Ninja will send
 test requests to a server running in the background. The first step is to launch
 this server. By default, the script will attempt to automatically detect an
-attached Pi Pico running an application with USB serial enabled, then using
-it for testing. To override this behavior, provide a custom server configuration
-file with ``--server-config``.
+attached Pi Pico running an application with USB serial enabled or a Pi Debug
+Probe, then use it for testing. To override this behavior, provide a custom
+server configuration file with ``--server-config``.
 
 .. code-block:: console
 

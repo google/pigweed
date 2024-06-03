@@ -38,32 +38,6 @@ _LOG = logging.getLogger()
 class PiPicoRpcTestingDevice(PiPicoTestingDevice):
     """An RPC test runner implementation for the Pi Pico."""
 
-    @staticmethod
-    def _find_elf(binary: Path) -> Path | None:
-        """Attempt to find and return the path to an ELF file for a binary.
-
-        Args:
-          binary: A relative path to a binary.
-
-        Returns the path to the associated ELF file, or None if none was found.
-        """
-        if binary.suffix == '.elf' or not binary.suffix:
-            return binary
-        choices = (
-            binary.parent / f'{binary.stem}.elf',
-            binary.parent / 'bin' / f'{binary.stem}.elf',
-            binary.parent / 'test' / f'{binary.stem}.elf',
-        )
-        for choice in choices:
-            if choice.exists():
-                return choice
-
-        _LOG.error(
-            'Cannot find ELF file to use as a token database for binary: %s',
-            binary,
-        )
-        return None
-
     def run_device_test(self, binary: Path, timeout: float) -> bool:
         """Run an RPC unit test on this device.
 

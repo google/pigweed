@@ -114,9 +114,16 @@ def generate_server_config(
     _LOG.debug('Generating test server config at %s', config_file.name)
     _LOG.debug('Found %d attached devices', len(boards))
 
-    # TODO: b/290245354 - Multi-device flashing doesn't work due to limitations
-    # of picotool. Limit to one device even if multiple are connected.
-    if boards:
+    picotool_boards = [board for board in boards if not board.is_debug_probe()]
+    if len(picotool_boards) > 1:
+        # TODO: https://pwbug.dev/290245354 - Multi-device flashing doesn't work
+        # due to limitations of picotool. Limit to one device even if multiple
+        # are connected.
+        _LOG.warning(
+            'TODO: https://pwbug.dev/290245354 - Multiple non-debugprobe '
+            ' boards attached. '
+            'Disabling parallel testing.'
+        )
         boards = boards[:1]
 
     for board in boards:
