@@ -78,6 +78,7 @@ void MultiBuf::Truncate(size_t len) {
   PW_DCHECK(len <= size());
   if (len == 0) {
     Release();
+    return;
   }
   Chunk* new_last_chunk = first_;
   size_t len_from_chunk_start = len;

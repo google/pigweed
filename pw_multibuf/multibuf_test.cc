@@ -230,6 +230,12 @@ TEST(MultiBuf, TruncateRemovesWholeAndPartialChunks) {
   EXPECT_EQ(buf.size(), 2U);
 }
 
+TEST(MultiBuf, TruncateEmptyBuffer) {
+  MultiBuf buf;
+  buf.Truncate(0);
+  EXPECT_TRUE(buf.empty());
+}
+
 TEST(MultiBuf, TakePrefixWithNoBytesDoesNothing) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
