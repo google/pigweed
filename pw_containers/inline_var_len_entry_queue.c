@@ -96,6 +96,10 @@ static uint32_t CopyAndWrap(pw_InlineVarLenEntryQueue_Handle queue,
                             uint32_t tail,
                             const uint8_t* data,
                             uint32_t size) {
+  if (size == 0) {  // Avoid zero-length memcpy, which may be UB if data is null
+    return tail;
+  }
+
   // Copy the new data in one or two chunks. The first chunk is copied to the
   // byte after the tail, the second from the beginning of the buffer. Both may
   // be zero bytes.
@@ -141,6 +145,20 @@ void pw_InlineVarLenEntryQueue_Push(pw_InlineVarLenEntryQueue_Handle queue,
            "Insufficient remaining space for entry");
 
   AppendEntryKnownToFit(queue, prefix, prefix_size, data, data_size_bytes);
+}
+
+bool pw_InlineVarLenEntryQueue_TryPush(pw_InlineVarLenEntryQueue_Handle queue,
+                                       const void* data,
+                                       const uint32_t data_size_bytes) {
+  uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES];
+  uint32_t prefix_size = EncodePrefix(queue, prefix, data_size_bytes);
+
+  if (prefix_size + data_size_bytes > AvailableBytes(queue)) {
+    return false;
+  }
+
+  AppendEntryKnownToFit(queue, prefix, prefix_size, data, data_size_bytes);
+  return true;
 }
 
 void pw_InlineVarLenEntryQueue_PushOverwrite(

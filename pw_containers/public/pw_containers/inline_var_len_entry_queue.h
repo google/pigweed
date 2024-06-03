@@ -93,12 +93,23 @@ static inline void pw_InlineVarLenEntryQueue_Clear(
 /// Appends an entry to the end of the queue.
 ///
 /// @pre The entry MUST NOT be larger than `max_size_bytes()`.
+/// @pre There must be sufficient space in the queue for this entry.
 void pw_InlineVarLenEntryQueue_Push(pw_InlineVarLenEntryQueue_Handle queue,
                                     const void* data,
                                     uint32_t data_size_bytes);
 
+/// Appends an entry to the end of the queue, but only if there is sufficient
+/// space for it.
+///
+/// @returns true if the data was added to the queue; false if it did not fit
+/// @pre The entry MUST NOT be larger than `max_size_bytes()`.
+bool pw_InlineVarLenEntryQueue_TryPush(pw_InlineVarLenEntryQueue_Handle queue,
+                                       const void* data,
+                                       const uint32_t data_size_bytes);
+
 /// Appends an entry to the end of the queue, removing entries with `Pop`
-/// as necessary to make room.
+/// as necessary to make room. Calling this function drops old entries to make
+/// room for new; call `try_push()` to drop new entries instead.
 ///
 /// @pre The entry MUST NOT be larger than `max_size_bytes()`.
 void pw_InlineVarLenEntryQueue_PushOverwrite(
@@ -171,6 +182,11 @@ static inline uint8_t pw_InlineVarLenEntryQueue_Entry_At(
 /// Returns the number of variable-length entries in the queue. This is O(n) in
 /// the number of entries in the queue.
 uint32_t pw_InlineVarLenEntryQueue_Size(
+    pw_InlineVarLenEntryQueue_ConstHandle queue);
+
+/// Returns the maximum number of entries in the queue. This is only attainable
+/// if all entries are empty.
+static inline uint32_t pw_InlineVarLenEntryQueue_MaxSize(
     pw_InlineVarLenEntryQueue_ConstHandle queue);
 
 /// Returns the combined size in bytes of all entries in the queue, excluding
@@ -269,6 +285,11 @@ static inline uint32_t pw_InlineVarLenEntryQueue_RawStorageSizeBytes(
     pw_InlineVarLenEntryQueue_ConstHandle queue) {
   return PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 * sizeof(uint32_t) +
          _PW_VAR_QUEUE_ARRAY_SIZE_BYTES;
+}
+
+static inline uint32_t pw_InlineVarLenEntryQueue_MaxSize(
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
+  return _PW_VAR_QUEUE_ARRAY_SIZE_BYTES - 1;
 }
 
 static inline uint32_t pw_InlineVarLenEntryQueue_MaxSizeBytes(
@@ -379,6 +400,7 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
   }
 
   /// Returns the first entry in the queue.
+  /// @pre The queue must NOT empty (`empty()` is false).
   Entry front() const { return *begin(); }
 
   /// @copydoc pw_InlineVarLenEntryQueue_Begin
@@ -400,6 +422,11 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
 
   /// @copydoc pw_InlineVarLenEntryQueue_Size
   size_type size() const { return pw_InlineVarLenEntryQueue_Size(array_); }
+
+  /// @copydoc pw_InlineVarLenEntryQueue_MaxSize
+  size_type max_size() const {
+    return pw_InlineVarLenEntryQueue_MaxSize(array_);
+  }
 
   /// @copydoc pw_InlineVarLenEntryQueue_SizeBytes
   size_type size_bytes() const {
@@ -424,6 +451,12 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
   /// @copydoc pw_InlineVarLenEntryQueue_Push
   void push(span<const T> value) {
     pw_InlineVarLenEntryQueue_Push(
+        array_, value.data(), static_cast<size_type>(value.size()));
+  }
+
+  /// @copydoc pw_InlineVarLenEntryQueue_TryPush
+  [[nodiscard]] bool try_push(span<const T> value) {
+    return pw_InlineVarLenEntryQueue_TryPush(
         array_, value.data(), static_cast<size_type>(value.size()));
   }
 

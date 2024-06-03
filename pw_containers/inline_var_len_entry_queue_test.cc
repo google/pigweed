@@ -29,13 +29,18 @@ struct PushOverwrite {
 struct Push {
   std::string_view data;
 };
+struct TryPush {
+  std::string_view data;
+  bool expected;
+};
 struct Pop {};
 struct Clear {};
 struct SizeEquals {
   size_t expected;
 };
 
-using TestStep = std::variant<PushOverwrite, Push, Pop, Clear, SizeEquals>;
+using TestStep =
+    std::variant<PushOverwrite, Push, TryPush, Pop, Clear, SizeEquals>;
 
 // Copies an entry, which might be wrapped, to a single std::vector.
 std::vector<std::byte> ReadEntry(const pw_InlineVarLenEntryQueue_Iterator& it) {
@@ -78,6 +83,18 @@ std::vector<std::byte> ReadEntry(const pw_InlineVarLenEntryQueue_Iterator& it) {
             push->data.data(),                                                 \
             static_cast<uint32_t>(push->data.size()));                         \
         oracle.push(pw::as_bytes(pw::span(push->data)));                       \
+      } else if (auto try_push = std::get_if<TryPush>(&step);                  \
+                 try_push != nullptr) {                                        \
+        ASSERT_EQ(try_push->expected,                                          \
+                  cpp_queue.try_push(pw::as_bytes(pw::span(try_push->data)))); \
+        ASSERT_EQ(try_push->expected,                                          \
+                  pw_InlineVarLenEntryQueue_TryPush(                           \
+                      c_queue,                                                 \
+                      try_push->data.data(),                                   \
+                      static_cast<uint32_t>(try_push->data.size())));          \
+        if (try_push->expected) {                                              \
+          oracle.push(pw::as_bytes(pw::span(try_push->data)));                 \
+        }                                                                      \
       } else if (std::holds_alternative<Pop>(step)) {                          \
         cpp_queue.pop();                                                       \
         pw_InlineVarLenEntryQueue_Pop(c_queue);                                \
@@ -196,6 +213,7 @@ constexpr TestStep kOverwriteVaryingSizesUpTo4[] = {
     PushOverwrite{"abcd"},
     PushOverwrite{"efgh"},
     PushOverwrite{"ijkl"},
+    TryPush{"uhoh", false},
     Pop{},
     SizeEquals{0},
 };
@@ -205,12 +223,15 @@ DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo4, 6);
 
 constexpr char kBigEntryBytes[196]{};
 
+template <size_t kSizeBytes>
+constexpr std::string_view kBigEntry(kBigEntryBytes, kSizeBytes);
+
 constexpr TestStep kTwoBytePrefix[] = {
-    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
-    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
-    PushOverwrite{std::string_view(kBigEntryBytes, 127)},
-    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
-    PushOverwrite{std::string_view(kBigEntryBytes, 127)},
+    PushOverwrite{kBigEntry<128>},
+    PushOverwrite{kBigEntry<128>},
+    PushOverwrite{kBigEntry<127>},
+    PushOverwrite{kBigEntry<128>},
+    PushOverwrite{kBigEntry<127>},
     SizeEquals{1},
     Pop{},
     SizeEquals{0},
@@ -230,6 +251,41 @@ constexpr TestStep kClear[] = {
 };
 DATA_DRIVEN_TEST(kClear, 7);
 DATA_DRIVEN_TEST(kClear, 100);
+
+constexpr TestStep kTryPushMaxSize5[] = {
+    TryPush{"", true},
+    TryPush{"", true},
+    TryPush{"", true},
+    TryPush{"", true},
+    TryPush{"", true},
+    TryPush{"", true},  // max_size_bytes() of 5 => up to 6 empty entries
+    TryPush{"", false},
+    TryPush{"1", false},
+    Clear{},
+    TryPush{"12345", true},
+    TryPush{"", false},
+};
+DATA_DRIVEN_TEST(kTryPushMaxSize5, 5);
+
+constexpr TestStep kPushPopLargeEntry[] = {
+    Push{kBigEntry<196>},
+    TryPush{kBigEntry<196>, false},
+    Pop{},
+    Push{kBigEntry<196>},
+    TryPush{"", true},
+    Pop{},
+    TryPush{"1", true},
+    TryPush{kBigEntry<196>, true},
+    TryPush{"12", true},
+    Pop{},
+    Pop{},
+    Pop{},
+    TryPush{kBigEntry<196>, true},
+    TryPush{kBigEntry<196>, false},
+};
+DATA_DRIVEN_TEST(kPushPopLargeEntry, 255);
+DATA_DRIVEN_TEST(kPushPopLargeEntry, 256);
+DATA_DRIVEN_TEST(kPushPopLargeEntry, 257);
 
 TEST(InlineVarLenEntryQueue, DeclareMacro) {
   PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 123);
@@ -344,6 +400,26 @@ TEST(InlineVarLenEntryQueueClass, InitializeExistingBuffer) {
   EXPECT_EQ(queue.size_bytes(), 0u);
   EXPECT_EQ(queue.size(), 0u);
   EXPECT_TRUE(queue.empty());
+}
+
+TEST(InlineVarLenEntryQueueClass, MaxSizeOneBytePrefix) {
+  pw::InlineVarLenEntryQueue<127> queue;
+  EXPECT_EQ(queue.max_size(), 128u);
+
+  while (queue.try_push({})) {
+  }
+  EXPECT_EQ(queue.size(), queue.max_size());
+  EXPECT_EQ(queue.size_bytes(), 0u);
+}
+
+TEST(InlineVarLenEntryQueueClass, MaxSizeTwoBytePrefix) {
+  pw::InlineVarLenEntryQueue<128> queue;
+  EXPECT_EQ(queue.max_size(), 130u);
+
+  while (queue.try_push({})) {
+  }
+  EXPECT_EQ(queue.size(), queue.max_size());
+  EXPECT_EQ(queue.size_bytes(), 0u);
 }
 
 TEST(InlineVarLenEntryQueueClass, Entry) {
