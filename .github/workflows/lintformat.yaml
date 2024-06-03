@@ -1,0 +1,18 @@
+name: lintformat
+
+on:
+  push
+
+jobs:
+  lintformat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Bootstrap
+        run: pw_env_setup/run.sh bootstrap.sh
+      - name: python_format
+        run: pw presubmit --program lintformat --full --keep-going

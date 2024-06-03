@@ -1,0 +1,27 @@
+name: bazel-noenv
+
+on:
+  push
+
+jobs:
+  bazel-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Get Bazel
+        uses: bazel-contrib/setup-bazel@0.8.1
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
+      - name: Bazel Build
+        run: bazel build ...
+      - name: Bazel Test
+        run: bazel test ...
