@@ -14,5 +14,5 @@ jobs:
           submodules: recursive
       - name: Bootstrap
         run: pw_env_setup/run.sh bootstrap.sh
-      - name: python_format
+      - name: lint/format
         run: pw presubmit --program lintformat --full --keep-going
