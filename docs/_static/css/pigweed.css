@@ -41,6 +41,17 @@
   scroll-behavior: auto !important;
 }
 
+/********** Focus behavior ***********/
+
+/* (a11y) Provide clear visual indication that an element is focused:
+ * https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html
+ *
+ * This rule should be applied to all focusable HTML elements:
+ * https://stackoverflow.com/a/1600194 */
+a:focus, area:focus, button:focus, input:focus, select:focus, textarea:focus {
+  outline: 3px solid var(--color-text-selection-background);
+}
+
 /********** General document coloring ***********/
 
 /* Code blocks inside block quotes end up getting italicized. */
@@ -257,4 +268,21 @@ div.font-monospace {
 .sales-pitch-cta-secondary .sd-card-title {
   border-bottom: 3px solid var(--color-sidebar-link-text);
   padding-bottom: 0.5rem;
+}
+
+/* Position the "skip to main content" anchor offscreen by default.
+ * https://pwbug.dev/344643289 */
+#skip {
+  position: absolute;
+  left: -1000%;
+  top: -1000%;
+  background-color: var(--color-background-primary);
+}
+
+/* Show the "skip to main content" anchor at the top-left of the viewport when
+ * it's focused. */
+#skip:focus {
+  left: 10px;
+  top: 10px;
+  z-index: 1000;
 }
