@@ -156,18 +156,17 @@ present to distinguish different calls to the same method. When a "call ID"
 feature was first introduced to solve this issue, existing clients and servers
 (1) set this value to zero and (2) ignored this value.
 
-When initial support for concurrent methods was added, a separate
-"open call ID" was introduced to distinguish unrequested responses. However,
-legacy servers built prior to this change continue to send unrequested
-responses with call ID zero. Prior to
-`this fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/192311>`,
-clients which used "open call ID" would not accept unrequested responses from
-legacy servers. Clients built after that change will accept unrequested
-responses which use both "open call ID" and call ID zero.
+When initial support for concurrent methods was added, a separate "open call ID"
+was introduced to distinguish unrequested responses. However, legacy servers
+built prior to this change continue to send unrequested responses with call ID
+zero. Prior to `this fix
+<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/192311>`_, clients
+which used "open call ID" would not accept unrequested responses from legacy
+servers. Clients built after that change will accept unrequested responses which
+use both "open call ID" and call ID zero.
 
-See
-`Issue 237418397 <https://issues.pigweed.dev/issues/237418397>`_
-for more details and discussion.
+See `Issue 237418397 <https://issues.pigweed.dev/issues/237418397>`_ for more
+details and discussion.
 
 ---------------
 Creating an RPC
