@@ -75,14 +75,14 @@ Setup
 
          .. code-block:: console
 
-            cd quickstart-zephyr
+            cd zephyr-quickstart
 
       .. tab-item:: macOS
          :sync: mac
 
          .. code-block:: console
 
-            cd quickstart-zephyr
+            cd zephyr-quickstart
 
 #. Bootstrap the repo.
 
