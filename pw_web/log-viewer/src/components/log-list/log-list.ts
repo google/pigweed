@@ -185,26 +185,30 @@ export class LogList extends LitElement {
    */
   private autosizeColumns = (rows = this._tableRows) => {
     // Iterate through each row to find the maximum width in each column
+    const visibleColumnData = this.columnData.filter(
+      (column) => column.isVisible,
+    );
+
     rows.forEach((row) => {
       const cells = Array.from(row.children).filter(
         (cell) => !cell.hasAttribute('hidden'),
       ) as HTMLTableCellElement[];
 
       cells.forEach((cell, columnIndex) => {
-        if (columnIndex === 0) return;
+        if (visibleColumnData[columnIndex].fieldName == 'severity') return;
 
         const textLength = cell.textContent?.trim().length || 0;
 
         if (!this._autosizeLocked) {
           // Update the preferred width if it's smaller than the new one
-          if (this.columnData[columnIndex]) {
-            this.columnData[columnIndex].characterLength = Math.max(
-              this.columnData[columnIndex].characterLength,
+          if (visibleColumnData[columnIndex]) {
+            visibleColumnData[columnIndex].characterLength = Math.max(
+              visibleColumnData[columnIndex].characterLength,
               textLength,
             );
           } else {
             // Initialize if the column data for this index does not exist
-            this.columnData[columnIndex] = {
+            visibleColumnData[columnIndex] = {
               fieldName: '',
               characterLength: textLength,
               manualWidth: null,
@@ -235,6 +239,9 @@ export class LogList extends LitElement {
     let gridTemplateColumns = '';
 
     const calculateColumnWidth = (col: TableColumn, i: number) => {
+      const chWidth = col.characterLength;
+      const padding = 34;
+
       if (i === resizingIndex) {
         return `${newWidth}px`;
       }
@@ -244,8 +251,9 @@ export class LogList extends LitElement {
       if (i === 0) {
         return `3rem`;
       }
-      const chWidth = col.characterLength;
-      const padding = 34;
+      if (i === this.columnData.length - 1) {
+        return `minmax(${this.MIN_COL_WIDTH}px, auto)`;
+      }
       return `clamp(${this.MIN_COL_WIDTH}px, ${chWidth}ch + ${padding}px, 80ch)`;
     };
 
