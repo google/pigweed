@@ -33,9 +33,7 @@ using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::async2::Waker;
 using ::pw::channel::ByteReader;
-using ::pw::channel::ByteWriter;
 using ::pw::channel::DatagramReader;
-using ::pw::channel::DatagramWriter;
 using ::pw::multibuf::MultiBuf;
 
 // Creates and initializes a MultiBuf to the specified value.

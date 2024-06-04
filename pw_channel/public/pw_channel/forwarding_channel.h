@@ -36,11 +36,11 @@ class ForwardingChannel;
 /// @defgroup pw_channel_forwarding
 /// @{
 
-/// Forwards datagrams between two channels. Writes to the first channel appear
-/// as reads on the second, and vice versa.
+/// Forwards either datagrams or bytes between two channels. Writes to the first
+/// channel appear as reads on the second, and vice versa.
 ///
-/// `ForwardingChannelPair` enables connecting two subsystems that
-/// communicate with datagram channels without implementing a custom channel.
+/// `ForwardingChannelPair` enables connecting two subsystems that communicate
+/// with channels without implementing a custom channel.
 template <DataType kType>
 class ForwardingChannelPair {
  public:
