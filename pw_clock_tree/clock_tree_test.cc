@@ -1756,5 +1756,64 @@ TEST(ClockTree, ElementControllerNoClockOperations) {
   EXPECT_EQ(status.code(), PW_STATUS_OK);
 }
 
+// Validate the behavior of the ClockSourceNoOp class
+TEST(ClockTree, ClockSourceNoOp) {
+  const uint32_t kClockDividerA = 23;
+  const uint32_t kClockDividerB = 42;
+
+  struct clock_divider_test_call_data call_data[] = {
+      {kClockDividerA, 2, ClockOperation::kAcquire, pw::OkStatus()},
+      {kClockDividerB, 4, ClockOperation::kAcquire, pw::OkStatus()},
+      {kClockDividerB, 4, ClockOperation::kRelease, pw::OkStatus()},
+      {kClockDividerA, 2, ClockOperation::kRelease, pw::OkStatus()}};
+
+  struct clock_divider_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+
+  ClockTree clock_tree;
+
+  ClockSourceNoOp clock_source_no_op;
+  ClockDividerTest<ElementNonBlockingCannotFail> clock_divider_a(
+      clock_source_no_op, kClockDividerA, 2, test_data);
+  ClockDividerTest<ElementNonBlockingCannotFail> clock_divider_b(
+      clock_source_no_op, kClockDividerB, 4, test_data);
+
+  EXPECT_EQ(clock_source_no_op.ref_count(), 0u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 0u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  clock_tree.Acquire(clock_divider_a);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  clock_tree.Acquire(clock_divider_a);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 2u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  clock_tree.Acquire(clock_divider_b);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 2u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 2u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 1u);
+
+  clock_tree.Release(clock_divider_b);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 2u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  clock_tree.Release(clock_divider_a);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 1u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  clock_tree.Release(clock_divider_a);
+  EXPECT_EQ(clock_source_no_op.ref_count(), 0u);
+  EXPECT_EQ(clock_divider_a.ref_count(), 0u);
+  EXPECT_EQ(clock_divider_b.ref_count(), 0u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
+
 }  // namespace
 }  // namespace pw::clock_tree

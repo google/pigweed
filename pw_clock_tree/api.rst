@@ -9,29 +9,29 @@ APIs
 .. _module-pw_clock_tree-references:
 
 ClockTree
-============
+=========
 .. doxygenclass:: pw::clock_tree::ClockTree
    :members:
 
 
 Element
-================
+=======
 .. doxygenclass:: pw::clock_tree::Element
    :members:
    :protected-members:
 
 ElementBlocking
-========================
+===============
 .. doxygenclass:: pw::clock_tree::ElementBlocking
    :members:
 
 ElementNonBlockingCannotFail
-=====================================
+============================
 .. doxygenclass:: pw::clock_tree::ElementNonBlockingCannotFail
    :members:
 
 ElementNonBlockingMightFail
-====================================
+===========================
 .. doxygenclass:: pw::clock_tree::ElementNonBlockingMightFail
    :members:
 
@@ -40,8 +40,12 @@ ClockSource
 .. doxygenclass:: pw::clock_tree::ClockSource
    :members:
 
+ClockSourceNoOp
+===============
+.. doxygenclass:: pw::clock_tree::ClockSourceNoOp
+
 DependentElement
-=========================
+================
 .. doxygenclass:: pw::clock_tree::DependentElement
    :members:
    :protected-members:
