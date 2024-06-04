@@ -3,7 +3,7 @@
 =======
 Pigweed
 =======
-*Modern software development for embedded systems*
+*Sustained, robust, and rapid embedded product development for large teams*
 
 .. raw:: html
 
