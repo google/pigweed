@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -113,6 +114,7 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
@@ -133,6 +135,7 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_rpc:internal_packet_proto_pb2",
@@ -152,6 +155,7 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",

@@ -93,6 +93,7 @@ cc_library(
         ":pw_hdlc",
         ":rpc_channel_output",
         "//pw_log",
+        "//pw_log_basic:headers",
         "//pw_rpc/system_server:facade",
         "//pw_stream:sys_io_stream",
     ],

@@ -29,6 +29,7 @@ rust_binary(
         "//pw_build/constraints/chipset:lm3s6965evb": [],
         "@platforms//os:linux": ["@platforms//:incompatible"],
         "@platforms//os:macos": ["@platforms//:incompatible"],
+        "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
         "@rust_crates//:cortex-m",

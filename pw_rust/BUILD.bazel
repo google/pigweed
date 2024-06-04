@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_docs")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 rust_docs(
     name = "docs",
@@ -37,4 +38,5 @@ rust_docs(
         "//pw_log/rust:pw_log",
         "//pw_base64/rust:pw_base64",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )

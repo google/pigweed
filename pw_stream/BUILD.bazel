@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -48,6 +49,8 @@ cc_library(
     name = "socket_stream",
     srcs = ["socket_stream.cc"],
     hdrs = ["public/pw_stream/socket_stream.h"],
+    # TODO: b/343481391 - get this building on supporting targets
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_stream",
         "//pw_log",
@@ -124,6 +127,7 @@ pw_cc_test(
 pw_cc_test(
     name = "std_file_stream_test",
     srcs = ["std_file_stream_test.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":std_file_stream",
         "//pw_assert",

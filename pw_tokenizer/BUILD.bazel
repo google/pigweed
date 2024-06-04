@@ -21,6 +21,7 @@ load(
     "pw_cc_test",
     "pw_linker_script",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -283,6 +284,8 @@ pw_cc_test(
         "tokenize_test.cc",
         "tokenize_test_c.c",
     ],
+    # TODO: b/344050496 - get working on rp2040 and stm32f429i
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_tokenizer",
         "//pw_preprocessor",

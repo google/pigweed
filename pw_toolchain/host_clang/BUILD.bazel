@@ -192,6 +192,7 @@ pw_cc_toolchain(
     builtin_sysroot = select({
         "@platforms//os:linux": "external/linux_sysroot",
         "@platforms//os:macos": XCODE_SDK_PATH,
+        "//conditions:default": "",
     }),
     compiler = "clang",
     cxx_builtin_include_directories = select({
@@ -209,6 +210,7 @@ pw_cc_toolchain(
             "%package(@llvm_toolchain//)%/include/c++/v1",
             "%package(@llvm_toolchain//)%/lib/clang/18/include",
         ],
+        "//conditions:default": [],
     }),
     extra_action_files = [":sysroot_files"],
     flag_sets = select({
@@ -219,6 +221,7 @@ pw_cc_toolchain(
             ":macos_link_libs",
             ":libtool_darwin_flags",
         ],
+        "//conditions:default": [],
     }) + [
         ":warnings",
         ":thread_safety_warnings",

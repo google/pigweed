@@ -12,12 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+
 licenses(["notice"])
 
 java_test(
     name = "DecoderTest",
     size = "small",
     srcs = ["DecoderTest.java"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     test_class = "dev.pigweed.pw_hdlc.DecoderTest",
     visibility = ["//visibility:public"],
     deps = [
@@ -34,6 +37,7 @@ java_test(
     name = "EncoderTest",
     size = "small",
     srcs = ["EncoderTest.java"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     test_class = "dev.pigweed.pw_hdlc.EncoderTest",
     visibility = ["//visibility:public"],
     deps = [
@@ -50,6 +54,7 @@ java_test(
     name = "FrameTest",
     size = "small",
     srcs = ["FrameTest.java"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     test_class = "dev.pigweed.pw_hdlc.FrameTest",
     visibility = ["//visibility:public"],
     deps = [

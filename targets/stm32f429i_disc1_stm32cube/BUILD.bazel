@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_binary",
     "pw_linker_script",
 )
 
@@ -58,6 +57,7 @@ platform(
         "@freertos//:disable_task_statics",
         "@platforms//cpu:armv7e-m",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
+        "@rust_crates//:no_std",
     ],
 )
 
@@ -125,18 +125,4 @@ pw_linker_script(
         "PW_BOOT_VECTOR_TABLE_SIZE=512",
     ],
     linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
-)
-
-pw_cc_binary(
-    name = "demo",
-    srcs = [
-        "main.cc",
-    ],
-    target_compatible_with = [":freertos_config_cv"],
-    deps = [
-        "//pw_thread:thread",
-        "//pw_thread:thread_core",
-        "//pw_thread_freertos:thread",
-        "@freertos",
-    ],
 )

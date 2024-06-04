@@ -17,12 +17,14 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 cc_library(
     name = "sysdeps",
     hdrs = ["sysdeps/sys/socket.h"],
     copts = ["-Wno-unused-parameter"],
     includes = ["sysdeps"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_assert",
         "@boringssl//:ssl",

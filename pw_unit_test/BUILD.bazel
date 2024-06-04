@@ -19,6 +19,7 @@ load(
     "pw_cc_test",
     "pw_facade",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -94,6 +95,8 @@ cc_library(
         "googletest_public_overrides/pw_unit_test/framework_backend.h",
     ],
     includes = ["googletest_public_overrides"],
+    # TODO: b/310957361 - gtest not supported on device
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":googletest_handler_adapter",
         "@com_google_googletest//:gtest",
@@ -147,6 +150,8 @@ cc_library(
     srcs = ["googletest_handler_adapter.cc"],
     hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
     includes = ["public"],
+    # TODO: b/310957361 - gtest not supported on device
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":event_handler",
         "//pw_preprocessor",
@@ -159,6 +164,8 @@ cc_library(
     testonly = True,
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
     includes = ["public"],
+    # TODO: b/310957361 - gtest not supported on device
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_result",
         "//pw_status",

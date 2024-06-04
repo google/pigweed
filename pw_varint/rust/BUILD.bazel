@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 rust_library(
     name = "pw_varint",
@@ -32,14 +33,18 @@ rust_test(
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
     }),
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_varint_doc_test",
     crate = ":pw_varint",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc(
     name = "pw_varint_doc",
     crate = ":pw_varint",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )

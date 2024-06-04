@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 rust_library(
     name = "pw_log",
@@ -37,11 +38,14 @@ rust_test(
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
     }),
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_log_doc_test",
     crate = ":pw_log",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_library(
@@ -59,6 +63,8 @@ rust_library(
     ],
     crate_name = "pw_log_backend",
     proc_macro_deps = [":pw_log_backend_println_macro"],
+    # TODO: b/343467774 - provide no_std backend by default
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":pw_log_backend_api",
@@ -93,6 +99,8 @@ rust_library(
     ],
     crate_name = "pw_log_backend",
     proc_macro_deps = [":pw_log_backend_printf_macro"],
+    # TODO: b/343467774 - provide no_std backend by default
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     visibility = ["//visibility:public"],
     deps = [
         ":pw_log_backend_api",
@@ -109,6 +117,8 @@ rust_library(
     ],
     crate_name = "pw_log_backend_printf",
     proc_macro_deps = [":pw_log_backend_printf_macro"],
+    # TODO: b/343467774 - provide no_std backend by default
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     visibility = ["//visibility:public"],
     deps = [
         ":pw_log_backend_api",
@@ -122,11 +132,14 @@ rust_library(
 rust_test(
     name = "pw_log_backend_printf_test",
     crate = ":pw_log_backend_printf_docs",
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_log_backend_printf_doc_test",
     crate = ":pw_log_backend_printf_docs",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_proc_macro(
@@ -163,6 +176,8 @@ rust_library(
 rust_test(
     name = "printf_backend_test_test",
     crate = ":printf_backend_test",
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_library(
@@ -186,6 +201,8 @@ rust_library(
 rust_test(
     name = "println_backend_test_test",
     crate = ":println_backend_test",
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 label_flag(

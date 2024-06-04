@@ -17,8 +17,12 @@ approach.
 ----------------
 First-time setup
 ----------------
+GN
+==
+
 To use this target, Pigweed must be set up to use FreeRTOS and the Pico SDK
-HAL. The supported repositories can be downloaded via ``pw package``, and then
+HAL. When using bazel, dependencies will be automatically installed.  For the GN
+build, the supported repositories can be downloaded via ``pw package``, and then
 the build must be manually configured to point to the locations the repositories
 were downloaded to.
 
@@ -108,18 +112,37 @@ On linux, you may need to update your udev rules at
 --------
 Building
 --------
-Once the Pico SDK is configured, the Pi Pico will build as part of the default
-GN build:
 
-.. code-block:: console
+.. tab-set::
 
-   $ ninja -C out
+   .. tab-item:: GN
+      :sync: GN
 
-The pw_system example is available as a separate build target:
+      Once the Pico SDK is configured, the Pi Pico will build as part of the default
+      GN build:
 
-.. code-block:: console
+      .. code-block:: console
 
-   $ ninja -C out pw_system_demo
+         $ ninja -C out
+
+      The pw_system example is available as a separate build target:
+
+      .. code-block:: console
+
+         $ ninja -C out pw_system_demo
+
+   .. tab-item:: bazel
+      :sync: bazel
+
+      .. code-block:: console
+
+         $ bazel build --config=rp2040 //...
+
+      The pw_system example is available as a separate build target:
+
+      .. code-block:: console
+
+         $ bazel build --config=rp2040 //pw_system:system_example
 
 --------
 Flashing

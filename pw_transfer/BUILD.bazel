@@ -21,6 +21,12 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+hosts_lin_mac = {
+    "@platforms//os:linux": [],
+    "@platforms//os:macos": [],
+    "//conditions:default": ["@platforms//:incompatible"],
+}
+
 cc_library(
     name = "config",
     hdrs = ["public/pw_transfer/internal/config.h"],
@@ -168,6 +174,8 @@ pw_cc_test(
 pw_cc_test(
     name = "handler_test",
     srcs = ["handler_test.cc"],
+    # TODO: b/235345886 - Fix transfer tests on Windows and non-host builds.
+    target_compatible_with = select(hosts_lin_mac),
     deps = [
         ":pw_transfer",
         "//pw_unit_test",
@@ -177,6 +185,8 @@ pw_cc_test(
 pw_cc_test(
     name = "atomic_file_transfer_handler_test",
     srcs = ["atomic_file_transfer_handler_test.cc"],
+    # TODO: b/235345886 - Fix transfer tests on Windows and non-host builds.
+    target_compatible_with = select(hosts_lin_mac),
     deps = [
         ":atomic_file_transfer_handler",
         ":atomic_file_transfer_handler_internal",
@@ -190,10 +200,8 @@ pw_cc_test(
 pw_cc_test(
     name = "transfer_thread_test",
     srcs = ["transfer_thread_test.cc"],
-    target_compatible_with = select({
-        "//pw_unit_test:light_setting": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    # TODO: b/235345886 - Fix transfer tests on Windows and non-host builds.
+    target_compatible_with = select(hosts_lin_mac),
     deps = [
         ":pw_transfer",
         ":test_helpers",
@@ -208,6 +216,8 @@ pw_cc_test(
 pw_cc_test(
     name = "transfer_test",
     srcs = ["transfer_test.cc"],
+    # TODO: b/235345886 - Fix transfer tests on Windows and non-host builds.
+    target_compatible_with = select(hosts_lin_mac),
     deps = [
         ":pw_transfer",
         ":test_helpers",
@@ -223,6 +233,8 @@ pw_cc_test(
 pw_cc_test(
     name = "client_test",
     srcs = ["client_test.cc"],
+    # TODO: b/235345886 - Fix transfer tests on Windows and non-host builds.
+    target_compatible_with = select(hosts_lin_mac),
     deps = [
         ":client",
         ":test_helpers",

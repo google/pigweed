@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -105,6 +106,8 @@ pw_cc_test(
 pw_cc_test(
     name = "dispatcher_thread_test",
     srcs = ["dispatcher_thread_test.cc"],
+    # TODO: b/343776738 - update to run on all compatible devices
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":dispatcher",
         "@pigweed//pw_function",

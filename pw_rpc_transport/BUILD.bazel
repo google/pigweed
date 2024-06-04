@@ -120,6 +120,8 @@ pw_cc_test(
     srcs = [
         "local_rpc_egress_test.cc",
     ],
+    # TODO: b/343986281 - update to run on all compatible devices
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":local_rpc_egress",
         ":rpc_transport",

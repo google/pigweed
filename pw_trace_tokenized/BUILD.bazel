@@ -18,6 +18,7 @@ load(
     "pw_cc_binary",
     "pw_cc_test",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -136,6 +137,7 @@ cc_library(
     ],
     deps = [
         ":pw_trace_tokenized",
+        "//pw_bytes",
         "//pw_ring_buffer",
         "//pw_status",
     ],
@@ -263,6 +265,8 @@ pw_cc_test(
     srcs = [
         "trace_service_pwpb_test.cc",
     ],
+    # TODO: b/343778108 - update to run on all compatible devices
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_trace_host_trace_time",
         ":trace_service_pwpb",

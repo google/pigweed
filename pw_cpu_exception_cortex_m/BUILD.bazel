@@ -274,6 +274,13 @@ pw_cc_test(
     srcs = [
         "crash_test.cc",
     ],
+    target_compatible_with = select({
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":config",
         ":cortex_m_constants",

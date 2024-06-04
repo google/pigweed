@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 rust_library(
     name = "pw_bytes",
@@ -25,9 +26,12 @@ rust_library(
 rust_test(
     name = "pw_bytes_test",
     crate = ":pw_bytes",
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_bytes_doc_test",
     crate = ":pw_bytes",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )

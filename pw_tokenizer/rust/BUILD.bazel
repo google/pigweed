@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 rust_proc_macro(
     name = "pw_tokenizer_macro",
@@ -33,6 +34,8 @@ rust_proc_macro(
 rust_test(
     name = "pw_tokenizer_macro_test",
     crate = ":pw_tokenizer_macro",
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_library(
@@ -55,16 +58,20 @@ rust_test(
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
     }),
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_tokenizer_core_doc_test",
     crate = ":pw_tokenizer_core",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc(
     name = "pw_tokenizer_core_doc",
     crate = ":pw_tokenizer_core",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_library(
@@ -101,14 +108,18 @@ rust_test(
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
     }),
+    # TODO: b/343726867 - support on-device rust tests
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc_test(
     name = "pw_tokenizer_doc_test",
     crate = ":pw_tokenizer",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 rust_doc(
     name = "pw_tokenizer_doc",
     crate = ":pw_tokenizer",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
