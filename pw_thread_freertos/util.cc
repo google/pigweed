@@ -24,6 +24,11 @@
 // The externed symbols below are all internal FreeRTOS kernel variables from
 // FreeRTOS/Source/tasks.c needed in order to iterate through all of the threads
 // from interrupts which the native APIs do not permit.
+//
+// NOTE: FreeRTOS declares these symbols as `static`, so they are not normally
+// accessible outside of their translation unit. The `static` keyword must be
+// removed by setting `pw_third_party_freertos_DISABLE_TASKS_STATICS` in the
+// builds. See https://pigweed.dev/pw_thread_freertos/#thread-iteration-backend.
 
 extern "C" PRIVILEGED_DATA volatile BaseType_t xSchedulerRunning;
 
