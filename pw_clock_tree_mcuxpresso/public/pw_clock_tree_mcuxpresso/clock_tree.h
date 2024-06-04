@@ -64,12 +64,17 @@ class ClockMcuxpressoLpOsc final
   }
 };
 
-/// Class implementing the MCLK IN clock source.
-class ClockMcuxpressoMclk final
-    : public ClockSource<ElementNonBlockingCannotFail> {
+/// Class template implementing the MCLK IN clock source.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoMclk final : public DependentElement<ElementType> {
  public:
-  /// Constructor specifying the MCLK IN clock frequency in Hz.
-  constexpr ClockMcuxpressoMclk(uint32_t frequency) : frequency_(frequency) {}
+  /// Constructor specifying the MCLK IN clock frequency in Hz and
+  /// the dependent clock tree element to enable the MCLK clock source.
+  constexpr ClockMcuxpressoMclk(ElementType& source, uint32_t frequency)
+      : DependentElement<ElementType>(source), frequency_(frequency) {}
 
  private:
   /// Set MCLK IN clock frequency.
@@ -88,12 +93,25 @@ class ClockMcuxpressoMclk final
   uint32_t frequency_;
 };
 
-/// Class implementing the CLK IN pin clock source.
-class ClockMcuxpressoClkIn final
-    : public ClockSource<ElementNonBlockingCannotFail> {
+/// Alias for a blocking MCLK IN clock tree element.
+using ClockMcuxpressoMclkBlocking = ClockMcuxpressoMclk<ElementBlocking>;
+
+/// Alias for a non-blocking MCLK IN clock tree element where updates cannot
+/// fail.
+using ClockMcuxpressoMclkNonBlocking =
+    ClockMcuxpressoMclk<ElementNonBlockingCannotFail>;
+
+/// Class template implementing the CLK IN pin clock source.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
  public:
-  /// Constructor specifying the CLK IN pin clock frequency in Hz.
-  constexpr ClockMcuxpressoClkIn(uint32_t frequency) : frequency_(frequency) {}
+  /// Constructor specifying the CLK IN pin clock frequency in Hz and
+  /// the dependent clock tree element to enable the CLK IN pin clock source.
+  constexpr ClockMcuxpressoClkIn(ElementType& source, uint32_t frequency)
+      : DependentElement<ElementType>(source), frequency_(frequency) {}
 
  private:
   /// Set CLK IN clock frequency.
@@ -113,11 +131,18 @@ class ClockMcuxpressoClkIn final
   uint32_t frequency_;
 };
 
-/// Class implementing the FRG clock tree element.
+/// Alias for a blocking CLK IN pin clock tree element.
+using ClockMcuxpressoClkInBlocking = ClockMcuxpressoClkIn<ElementBlocking>;
+
+/// Alias for a non-blocking CLK IN pin clock tree element where updates cannot
+/// fail.
+using ClockMcuxpressoClkInNonBlocking =
+    ClockMcuxpressoClkIn<ElementNonBlockingCannotFail>;
+
+/// Class template implementing the FRG clock tree element.
 ///
-/// Template argument `ElementType` can be of class `ElementBlocking`,
-/// `ElementNonBlockingCannotFail` or
-/// `ElementNonBlockingMightFail.`
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
 template <typename ElementType>
 class ClockMcuxpressoFrg final : public DependentElement<ElementType> {
  public:
@@ -152,15 +177,17 @@ class ClockMcuxpressoFrg final : public DependentElement<ElementType> {
   const clock_frg_clk_config_t& config_;
 };
 
+/// Alias for a blocking FRG clock tree element.
 using ClockMcuxpressoFrgBlocking = ClockMcuxpressoFrg<ElementBlocking>;
+
+/// Alias for a non-blocking FRG clock tree element where updates cannot fail.
 using ClockMcuxpressoFrgNonBlocking =
     ClockMcuxpressoFrg<ElementNonBlockingCannotFail>;
 
-/// Class implementing the clock selector element.
+/// Class template implementing the clock selector element.
 ///
-/// Template argument `ElementType` can be of class `ElementBlocking`,
-/// `ElementNonBlockingCannotFail` or
-/// `ElementNonBlockingMightFail.`
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
 template <typename ElementType>
 class ClockMcuxpressoSelector : public DependentElement<ElementType> {
  public:
@@ -193,16 +220,19 @@ class ClockMcuxpressoSelector : public DependentElement<ElementType> {
   clock_attach_id_t selector_disable_;
 };
 
+/// Alias for a blocking clock selector clock tree element.
 using ClockMcuxpressoSelectorBlocking =
     ClockMcuxpressoSelector<ElementBlocking>;
+
+/// Alias for a non-blocking clock selector clock tree element where updates
+/// cannot fail.
 using ClockMcuxpressoSelectorNonBlocking =
     ClockMcuxpressoSelector<ElementNonBlockingCannotFail>;
 
-/// Class implementing the clock divider element.
+/// Class template implementing the clock divider element.
 ///
-/// Template argument `ElementType` can be of class `ElementBlocking`,
-/// `ElementNonBlockingCannotFail` or
-/// `ElementNonBlockingMightFail.`
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
 template <typename ElementType>
 class ClockMcuxpressoDivider final : public ClockDividerElement<ElementType> {
  public:
@@ -225,7 +255,11 @@ class ClockMcuxpressoDivider final : public ClockDividerElement<ElementType> {
   clock_div_name_t divider_name_;
 };
 
+/// Alias for a blocking clock divider clock tree element.
 using ClockMcuxpressoDividerBlocking = ClockMcuxpressoDivider<ElementBlocking>;
+
+/// Alias for a non-blocking clock divider clock tree element where updates
+/// cannot fail.
 using ClockMcuxpressoDividerNonBlocking =
     ClockMcuxpressoDivider<ElementNonBlockingCannotFail>;
 

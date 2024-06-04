@@ -56,8 +56,13 @@ PW_CONSTINIT pw::clock_tree::ClockMcuxpressoDividerNonBlocking i3c0_divider(
 // inclusive-language: disable
 // DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-Ctimer0]
 
+// Need to define `ClockSourceNoOp` clock tree element to satisfy dependency for
+// `ClockMcuxpressoMclk` class.
+PW_CONSTINIT pw::clock_tree::ClockSourceNoOp clock_source_no_op;
+
 // Define Master clock
-PW_CONSTINIT pw::clock_tree::ClockMcuxpressoMclk mclk(19200000);
+PW_CONSTINIT pw::clock_tree::ClockMcuxpressoMclkNonBlocking mclk(
+    clock_source_no_op, 19200000);
 
 // Define clock selector CTIMER0
 PW_CONSTINIT pw::clock_tree::ClockMcuxpressoSelectorNonBlocking ctimer_0(
