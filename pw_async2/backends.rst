@@ -9,3 +9,4 @@ pw_async2 backends
    :maxdepth: 1
 
    Basic <../pw_async2_basic/docs>
+   Linux epoll <../pw_async2_epoll/docs>
