@@ -60,8 +60,8 @@ def _evaluate_env_in_shell(env):
         delete=False,
         mode='w+',
     ) as temp:
-        env.write(temp)
         temp_name = temp.name
+        env.write(temp, shell_file=temp_name)
 
     # Evaluate env sourcing script and capture output of 'env'.
     if os.name == 'nt':
@@ -164,7 +164,7 @@ class EnvironmentTest(unittest.TestCase):
         self.env.set(self.var_not_set, '/foo/bar/baz')
         self.env.add_replacement('FOOBAR', '/foo/bar')
         buf = six.StringIO()
-        self.env.write(buf)
+        self.env.write(buf, shell_file='test.sh')
         assert '/foo/bar' not in buf.getvalue()
 
     def test_variable_replacement(self):
@@ -172,7 +172,7 @@ class EnvironmentTest(unittest.TestCase):
         self.env.set(self.var_not_set, '/foo/bar/baz')
         self.env.add_replacement('FOOBAR')
         buf = six.StringIO()
-        self.env.write(buf)
+        self.env.write(buf, shell_file='test.sh')
         print(buf.getvalue())
         assert '/foo/bar/baz' not in buf.getvalue()
 

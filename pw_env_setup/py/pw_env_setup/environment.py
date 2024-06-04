@@ -333,6 +333,7 @@ class Environment(object):
         self.replacements = []
         self._join = Join(pathsep)
         self._finalized = False
+        self._shell_file = ''
 
     def add_replacement(self, variable, value=None):
         self.replacements.append((variable, value))
@@ -440,7 +441,7 @@ class Environment(object):
 
         if not self._windows:
             buf = StringIO()
-            self.write_deactivate(buf)
+            self.write_deactivate(buf, shell_file=self._shell_file)
             self._actions.append(Function('_pw_deactivate', buf.getvalue()))
             self._blankline()
 
@@ -457,17 +458,27 @@ class Environment(object):
     def json(self, outs):
         json_visitor.JSONVisitor().serialize(self, outs)
 
-    def write(self, outs):
+    def write(self, outs, shell_file):
         if self._windows:
             visitor = batch_visitor.BatchVisitor(pathsep=self._pathsep)
         else:
-            visitor = shell_visitor.ShellVisitor(pathsep=self._pathsep)
+            if shell_file.endswith('.fish'):
+                visitor = shell_visitor.FishShellVisitor()
+            else:
+                visitor = shell_visitor.ShellVisitor(pathsep=self._pathsep)
         visitor.serialize(self, outs)
 
-    def write_deactivate(self, outs):
+    def write_deactivate(self, outs, shell_file):
         if self._windows:
             return
-        visitor = shell_visitor.DeactivateShellVisitor(pathsep=self._pathsep)
+        if shell_file.endswith('.fish'):
+            visitor = shell_visitor.DeactivateFishShellVisitor(
+                pathsep=self._pathsep
+            )
+        else:
+            visitor = shell_visitor.DeactivateShellVisitor(
+                pathsep=self._pathsep
+            )
         visitor.serialize(self, outs)
 
     @contextlib.contextmanager

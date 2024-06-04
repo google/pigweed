@@ -54,7 +54,7 @@ class _BaseShellVisitor(object):  # pylint: disable=useless-object-inheritance
 
 
 class ShellVisitor(_BaseShellVisitor):
-    """Serializes an Environment into a shell file."""
+    """Serializes an Environment into a bash-like shell file."""
 
     def __init__(self, *args, **kwargs):
         super(ShellVisitor, self).__init__(*args, **kwargs)
@@ -174,7 +174,7 @@ class ShellVisitor(_BaseShellVisitor):
 
 
 class DeactivateShellVisitor(_BaseShellVisitor):
-    """Removes values from an Environment."""
+    """Removes values from a bash-like shell environment."""
 
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
@@ -193,6 +193,135 @@ class DeactivateShellVisitor(_BaseShellVisitor):
     def visit_set(self, set):  # pylint: disable=redefined-builtin
         if set.deactivate:
             self._outs.write('unset {name}\n'.format(name=set.name))
+
+    def visit_clear(self, clear):
+        pass  # Not relevant.
+
+    def visit_remove(self, remove):
+        pass  # Not relevant.
+
+    def visit_prepend(self, prepend):
+        self._outs.write(
+            self._remove_value_from_path(prepend.name, prepend.value)
+        )
+
+    def visit_append(self, append):
+        self._outs.write(
+            self._remove_value_from_path(append.name, append.value)
+        )
+
+    def visit_echo(self, echo):
+        pass  # Not relevant.
+
+    def visit_comment(self, comment):
+        pass  # Not relevant.
+
+    def visit_command(self, command):
+        pass  # Not relevant.
+
+    def visit_doctor(self, doctor):
+        pass  # Not relevant.
+
+    def visit_blank_line(self, blank_line):
+        pass  # Not relevant.
+
+    def visit_function(self, function):
+        pass  # Not relevant.
+
+
+class FishShellVisitor(ShellVisitor):
+    """Serializes an Environment into a fish shell file."""
+
+    def __init__(self, *args, **kwargs):
+        super(FishShellVisitor, self).__init__(*args, **kwargs)
+        self._pathsep = ' '
+
+    def _remove_value_from_path(self, variable, value):
+        return 'set PATH (string match -v {value} ${variable})\n'.format(
+            variable=variable, value=value
+        )
+
+    def visit_set(self, set):  # pylint: disable=redefined-builtin
+        value = self._apply_replacements(set)
+        self._outs.write(
+            'set -x {name} {value}\n'.format(name=set.name, value=value)
+        )
+
+    def visit_clear(self, clear):
+        self._outs.write('set -e {name}\n'.format(**vars(clear)))
+
+    def visit_remove(self, remove):
+        value = self._apply_replacements(remove)
+        self._remove_value_from_path(remove.name, value)
+
+    def visit_prepend(self, prepend):
+        value = self._apply_replacements(prepend)
+        self._outs.write(
+            'set -x --prepend {name} {value}\n'.format(
+                name=prepend.name, value=value
+            )
+        )
+
+    def visit_append(self, append):
+        value = self._apply_replacements(append)
+        self._outs.write(
+            'set -x --append {name} {value}\n'.format(
+                name=append.name, value=value
+            )
+        )
+
+    def visit_echo(self, echo):
+        self._outs.write('if not set -q PW_ENVSETUP_QUIET\n')
+        if echo.newline:
+            self._outs.write('  echo "{}"\n'.format(echo.value))
+        else:
+            self._outs.write('  echo -n "{}"\n'.format(echo.value))
+        self._outs.write('end\n')
+
+    def visit_hash(self, hash):  # pylint: disable=redefined-builtin
+        del hash
+
+    def visit_function(self, function):
+        self._outs.write(
+            'function {name}\n{body}\nend\n'.format(
+                name=function.name, body=function.body
+            )
+        )
+
+    def visit_command(self, command):
+        self._outs.write('{}\n'.format(' '.join(command.command)))
+        if not command.exit_on_error:
+            return
+
+        # Assume failing command produced relevant output.
+        self._outs.write('if test $status -ne 0\n  return 1\nend\n')
+
+    def visit_doctor(self, doctor):
+        self._outs.write('if not set -q PW_ACTIVATE_SKIP_CHECKS\n')
+        self.visit_command(doctor)
+        self._outs.write('else\n')
+        self._outs.write(
+            'echo Skipping environment check because '
+            'PW_ACTIVATE_SKIP_CHECKS is set\n'
+        )
+        self._outs.write('end\n')
+
+
+class DeactivateFishShellVisitor(FishShellVisitor):
+    """Removes values from a fish shell environment."""
+
+    def serialize(self, env, outs):
+        try:
+            self._outs = outs
+
+            env.accept(self)
+
+        finally:
+            self._outs = None
+
+    def visit_set(self, set):  # pylint: disable=redefined-builtin
+        if set.deactivate:
+            self._outs.write('set -e {name}\n'.format(name=set.name))
 
     def visit_clear(self, clear):
         pass  # Not relevant.

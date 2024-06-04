@@ -40,8 +40,13 @@ runs bootstrap.
 .. note::
 
    On Windows the scripts used to set up the environment are ``bootstrap.bat``
-   and ``activate.bat``. For simplicity they will be referred to with the
-   ``.sh`` endings unless the distinction is relevant.
+   and ``activate.bat``.
+
+   ``bootstrap.fish`` and ``activate.fish`` are also available for `Fish shell
+   <https://fishshell.com/>`_ users.
+
+   For simplicity they will be referred to with the ``.sh`` endings unless the
+   distinction is relevant.
 
 On POSIX systems, the environment can be deactivated by running ``deactivate``.
 

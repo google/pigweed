@@ -45,6 +45,11 @@ To get setup:
       $ bootstrap.bat         (On Windows)
       ...
 
+   .. tip::
+
+      If you use the `Fish shell <https://fishshell.com/>`_ run `source
+      ./bootstrap.fish` instead.
+
 #. Configure the GN build.
 
    .. code-block:: bash

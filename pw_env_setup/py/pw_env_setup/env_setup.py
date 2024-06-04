@@ -200,6 +200,7 @@ class EnvSetup(object):
         )
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
+        self._env._shell_file = shell_file
         self._is_windows = os.name == 'nt'
         self._quiet = quiet
         self._install_dir = install_dir
@@ -628,14 +629,14 @@ Then use `set +x` to go back to normal.
             return 0
 
         with open(self._shell_file, 'w') as outs:
-            self._env.write(outs)
+            self._env.write(outs, shell_file=self._shell_file)
 
         deactivate = os.path.join(
             self._install_dir,
             'deactivate{}'.format(os.path.splitext(self._shell_file)[1]),
         )
         with open(deactivate, 'w') as outs:
-            self._env.write_deactivate(outs)
+            self._env.write_deactivate(outs, shell_file=deactivate)
 
         config = {
             # Skipping sysname and nodename in os.uname(). nodename could change

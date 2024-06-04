@@ -21,6 +21,8 @@ export PATH
 #   - bootstrap.sh
 #   - pw_cli/color.py
 #   - pw_env_setup/py/pw_env_setup/colors.py
+#   - pw_env_setup/util.fish
+#   - pw_env_setup/util.sh
 #
 # So please keep them matching then modifying them.
 pw_none() {
@@ -160,6 +162,7 @@ pw_get_env_root() {
 # the contortions that would be needed to share this snippet across shell,
 # batch, and Python. Locations:
 #
+#   - pw_env_setup/util.fish
 #   - pw_env_setup/util.sh
 #   - pw_cli/branding.py
 #   - pw_env_setup/py/pw_env_setup/windows_env_start.py
@@ -181,9 +184,13 @@ _PW_BANNER_FUNC="_pw_banner"
 
 _pw_hello() {
   _PW_TEXT="$1"
+  # If $PW_BANNER_FUNC is defined, use that as the banner function
+  # instead of the default.
   if [ -n "$PW_BANNER_FUNC" ]; then
     _PW_BANNER_FUNC="$PW_BANNER_FUNC"
   fi
+  # Display the banner unless PW_ENVSETUP_QUIET or
+  # PW_ENVSETUP_NO_BANNER is set.
   if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
     pw_green "\n  WELCOME TO...\n"
     "$_PW_BANNER_FUNC"
