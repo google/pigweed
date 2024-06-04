@@ -45,12 +45,10 @@ EmbossT CreateAndPopulateToControllerView(std::array<uint8_t, arr_size>& h4_arr,
 
 // Return a populated H4 command buffer of a type that proxy host doesn't
 // interact with.
-std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>
-PopulateNoninteractingToControllerBuffer(
+void PopulateNoninteractingToControllerBuffer(
     std::array<uint8_t, emboss::InquiryCommandView::SizeInBytes() + 1>& arr) {
   CreateAndPopulateToControllerView<emboss::InquiryCommandWriter>(
       arr, emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  return arr;
 }
 
 // Populate passed H4 event buffer and return Emboss view on it.
@@ -68,13 +66,12 @@ EmbossT CreateAndPopulateToHostEventView(std::array<uint8_t, arr_size>& arr,
 
 // Return a populated H4 event buffer of a type that proxy host doesn't interact
 // with.
-std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-CreateNonInteractingToHostBuffer() {
-  std::array<uint8_t, emboss::InquiryCompleteEventWriter::SizeInBytes() + 1>
-      arr;
+
+void CreateNonInteractingToHostBuffer(
+    std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>&
+        arr) {
   CreateAndPopulateToHostEventView<emboss::InquiryCompleteEventWriter>(
       arr, emboss::EventCode::INQUIRY_COMPLETE);
-  return arr;
 }
 
 // ########## Examples
@@ -89,7 +86,8 @@ TEST(Example, ExampleUsage) {
 
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      h4_array_from_controller = CreateNonInteractingToHostBuffer();
+      h4_array_from_controller;
+  CreateNonInteractingToHostBuffer(h4_array_from_controller);
   auto h4_span_from_controller = pw::span(h4_array_from_controller);
 
   H4HciPacketSendFn containerSendToHostFn([](H4HciPacket packet) {});
@@ -159,7 +157,8 @@ TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
 // Verify buffer is properly passed (contents unaltered and zero-copy).
 TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      send_packet = CreateNonInteractingToHostBuffer();
+      send_packet;
+  CreateNonInteractingToHostBuffer(send_packet);
 
   // Struct for capturing because `pw::Function` can't fit multiple captures.
   struct {
@@ -287,7 +286,8 @@ TEST(BadPacketTest, EmptyBufferToHostIsPassedOn) {
 
 TEST(BadPacketTest, TooShortEventToHostIsPassOn) {
   std::array<uint8_t, emboss::InquiryCompleteEventView::SizeInBytes() + 1>
-      valid_packet = CreateNonInteractingToHostBuffer();
+      valid_packet;
+  CreateNonInteractingToHostBuffer(valid_packet);
 
   // Create span for sending whose size is one less than a valid command
   // complete event.
