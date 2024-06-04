@@ -64,7 +64,7 @@ and MbedTLS, support the use of C APIs ``time()`` and ``getimtofday()`` for
 obtaining date time. To accomodate the use of these libraries, a facade target
 ``pw_tls_client:time`` is added that wraps these APIs. For GN builds,
 specify the backend target with variable ``pw_tls_client_TIME_BACKEND``.
-``pw_tls_client_TIME_BACKEND`` defaults to the ``pw_tls_client::build_time``
+``pw_tls_client_TIME_BACKEND`` defaults to the ``pw_chrono::wrap_time_build_time``
 backend that returns build time.
 
 If downstream project chooses to use other TLS libraires that handle time source

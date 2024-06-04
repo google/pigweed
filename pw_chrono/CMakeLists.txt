@@ -108,3 +108,45 @@ if(NOT "${pw_chrono.system_timer_BACKEND}" STREQUAL "")
       pw_chrono
   )
 endif()
+
+function(generate_build_time_header NAME)
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+  )
+
+  set(out_dir "${CMAKE_CURRENT_BINARY_DIR}/${NAME}")
+  set(output "${out_dir}/pw_chrono/build_time.h")
+  get_filename_component(output_include_path "${output}" DIRECTORY)
+
+  set(gen_header "$ENV{PW_ROOT}/pw_chrono/generate_build_time_header.py")
+  LIST(APPEND gen_header_cmd python3 "${gen_header}" ${output})
+
+  add_custom_command(
+    COMMAND
+      ${gen_header_cmd}
+    DEPENDS
+      ${gen_header}
+    OUTPUT
+      ${output})
+
+  add_custom_target("${NAME}._generate" DEPENDS ${output})
+
+  pw_add_library_generic("${NAME}" INTERFACE
+    PUBLIC_INCLUDES
+      ${out_dir}
+  )
+  add_dependencies("${NAME}" "${NAME}._generate")
+endfunction()
+
+generate_build_time_header(pw_chrono.build_time_header)
+
+pw_add_library(pw_chrono.wrap_time_build_time STATIC
+  SOURCES
+    wrap_time_build_time.cc
+  PUBLIC_DEPS
+    pw_chrono.build_time_header
+  PUBLIC_LINK_OPTIONS
+    -Wl,--wrap=time
+    -Wl,--wrap=gettimeofday
+)

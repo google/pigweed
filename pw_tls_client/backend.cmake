@@ -20,5 +20,5 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_backend_variable(pw_tls_client.pw_tls_client_BACKEND)
 pw_add_backend_variable(pw_tls_client.time_BACKEND
   DEFAULT_BACKEND
-    pw_tls_client.build_time
+    pw_chrono.wrap_time_build_time
 )

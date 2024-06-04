@@ -101,6 +101,41 @@ pw_test("system_timer_facade_test") {
   ]
 }
 
+# The ":time" target wraps the time() and gettimeofday(), which are
+# commonly used by TLS libraries for expiration check.
+config("time_wrap") {
+  # Link options that wrap C time calls.
+  ldflags = [
+    "-Wl,--wrap=time",
+    "-Wl,--wrap=gettimeofday",
+  ]
+  visibility = [ ":*" ]
+}
+
+# The build time is obtained with a python script and put in a generated header
+# file. The header file is included in build_time.cc
+pw_python_action("generate_build_time_header") {
+  header_output = "$target_gen_dir/pw_chrono/build_time.h"
+  script = "generate_build_time_header.py"
+  outputs = [ header_output ]
+  args = [ rebase_path(header_output) ]
+}
+
+# The target provides a backend to :time that returns build time.
+pw_source_set("wrap_time_build_time") {
+  all_dependent_configs = [ ":time_wrap" ]
+  include_dirs =
+      [ get_label_info(":generate_build_time_header", "target_gen_dir") ]
+  sources = [ "wrap_time_build_time.cc" ]
+  deps = [ ":generate_build_time_header" ]
+}
+
+pw_source_set("wrap_time_system_clock") {
+  all_dependent_configs = [ ":time_wrap" ]
+  sources = [ "wrap_time_system_clock.cc" ]
+  deps = [ ":system_clock" ]
+}
+
 pw_proto_library("protos") {
   sources = [ "chrono.proto" ]
   prefix = "pw_chrono_protos"

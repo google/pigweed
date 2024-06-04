@@ -60,19 +60,8 @@ pw_source_set("fake_entropy") {
   deps = [ "$dir_pw_log" ]
 }
 
-# The ":time" target wraps the time() and gettimeofday(), which are
-# commonly used by TLS libraries for expiration check.
-config("time_wrap") {
-  # Link options that wrap C time calls.
-  ldflags = [
-    "-Wl,--wrap=time",
-    "-Wl,--wrap=gettimeofday",
-  ]
-}
-
 pw_facade("time") {
   backend = pw_tls_client_TIME_BACKEND
-  public_configs = [ ":time_wrap" ]
   public = []
 
   # The target should only be used by TLS libraries to obtain date time
@@ -81,26 +70,6 @@ pw_facade("time") {
     "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/mbedtls",
     "$dir_pw_third_party/mbedtls:mbedtls_v3",
-  ]
-}
-
-# The build time is obtained with a python script and put in a generated header
-# file. The header file is included in build_time.cc
-pw_python_action("generate_build_time_header") {
-  header_output = "$target_gen_dir/$target_name/build_time.h"
-  script = "generate_build_time_header.py"
-  outputs = [ header_output ]
-  args = [ rebase_path(header_output) ]
-}
-
-# The target provides a backend to :time that returns build time.
-pw_source_set("build_time") {
-  time_injection_outputs = get_target_outputs(":generate_build_time_header")
-  include_dirs = [ get_path_info(time_injection_outputs[0], "dir") ]
-  sources = [ "build_time.cc" ]
-  deps = [
-    ":generate_build_time_header",
-    ":time.facade",
   ]
 }
 

@@ -12,22 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "build_time.h"
-
 #include <time.h>
+
+#include "pw_chrono/build_time.h"
+
 #if __has_include(<sys/time.h>)
 #include <sys/time.h>
 #endif  // __has_include(<sys/time.h>)
 
+namespace pw::chrono {
 namespace {
 constexpr uint64_t kMicrosecondsPerSecond = 1'000'000;
 }
 
-#if __cplusplus
-extern "C" {
-#endif
-
-time_t __wrap_time(time_t* t) {
+extern "C" time_t __wrap_time(time_t* t) {
   time_t ret =
       static_cast<time_t>(kBuildTimeMicrosecondsUTC / kMicrosecondsPerSecond);
   if (t) {
@@ -38,7 +36,7 @@ time_t __wrap_time(time_t* t) {
 
 #if __has_include(<sys/time.h>)
 
-int __wrap_gettimeofday(struct timeval* tv, void* tz) {
+extern "C" int __wrap_gettimeofday(struct timeval* tv, void* tz) {
   // The use of the timezone structure is obsolete (see docs "man
   // gettimeofday"). Thus we don't consider it.
   (void)tz;
@@ -49,6 +47,4 @@ int __wrap_gettimeofday(struct timeval* tv, void* tz) {
 
 #endif  // __has_include(<sys/time.h>)
 
-#if __cplusplus
-}
-#endif
+}  // namespace pw::chrono

@@ -158,3 +158,34 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+py_binary(
+    name = "generate_build_time_header",
+    srcs = ["generate_build_time_header.py"],
+)
+
+genrule(
+    name = "build_time_header",
+    outs = ["build_time.h"],
+    cmd = "$(location :generate_build_time_header) $@",
+    tools = [":generate_build_time_header"],
+)
+
+cc_library(
+    name = "wrap_time_build_time",
+    srcs = [
+        "wrap_time_build_time.cc",
+        ":build_time_header",
+    ],
+)
+
+cc_library(
+    name = "wrap_time_system_clock",
+    srcs = ["wrap_time_system_clock.cc"],
+    linkopts = [
+        "-Wl,--wrap=gettimeofday",
+        "-Wl,--wrap=time",
+    ],
+    deps = [":system_clock"],
+    alwayslink = 1,
+)
