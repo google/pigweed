@@ -154,6 +154,10 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         ),
         # The "strict" mode is much more strict than what we currently enforce.
         "python.analysis.typeCheckingMode": "basic",
+        # Restrict the search for Python files to the locations we expect to
+        # have Python files. This minimizes the time & RAM the LSP takes to
+        # parse the project.
+        "python.analysis.include": ["pw_*/py/**/*"],
         "python.terminal.activateEnvironment": False,
         "python.testing.unittestEnabled": True,
         "[python]": OrderedDict({"editor.tabSize": 4}),
