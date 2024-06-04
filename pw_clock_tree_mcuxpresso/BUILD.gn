@@ -32,12 +32,22 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       pw_third_party_mcuxpresso_SDK,
     ]
   }
-}
 
-pw_test_group("tests") {
-  tests = []
+  pw_test("clock_tree_mcuxpresso_examples") {
+    sources = [ "examples.cc" ]
+    deps = [ ":pw_clock_tree_mcuxpresso" ]
+  }
+
+  pw_test_group("tests") {
+    tests = [ ":clock_tree_mcuxpresso_examples" ]
+  }
+} else {
+  pw_test_group("tests") {
+    tests = []
+  }
 }
 
 pw_doc_group("docs") {
+  inputs = [ "examples.cc" ]
   sources = [ "docs.rst" ]
 }
