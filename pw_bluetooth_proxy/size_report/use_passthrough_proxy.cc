@@ -40,7 +40,8 @@ void UsePassthroughProxy() {
       ([]([[maybe_unused]] H4HciPacket packet) {}));
 
   ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
-                              std::move(containerSendToControllerFn));
+                              std::move(containerSendToControllerFn),
+                              0);
 
   proxy.HandleH4HciFromHost(h4_span_from_host);
 

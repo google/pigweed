@@ -61,8 +61,8 @@ void ProxyHost::ProcessH4HciFromController(H4HciPacket h4_packet) {
     return;
   }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch-enum"
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (command_complete_event.command_opcode_enum().Read()) {
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V1: {
       auto read_event =
@@ -94,7 +94,7 @@ void ProxyHost::ProcessH4HciFromController(H4HciPacket h4_packet) {
       // Nothing to process
       break;
   }
-#pragma clang diagnostic pop
+  PW_MODIFY_DIAGNOSTICS_POP();
 }
 
 void ProxyHost::HandleH4HciFromController(H4HciPacket h4_packet) {
