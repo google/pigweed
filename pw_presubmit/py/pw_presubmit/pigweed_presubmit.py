@@ -1413,6 +1413,7 @@ OTHER_CHECKS = (
     pw_transfer_integration_test,
     python_checks.update_upstream_python_constraints,
     python_checks.vendor_python_wheels,
+    shell_checks.shellcheck,
     # TODO(hepler): Many files are missing from the CMake build. Add this check
     # to lintformat when the missing files are fixed.
     source_in_build.cmake(SOURCE_FILES_FILTER, _run_cmake),
@@ -1476,7 +1477,6 @@ _LINTFORMAT = (
         SOURCE_FILES_FILTER_GN_EXCLUDE
     ),
     source_is_in_cmake_build_warn_only,
-    shell_checks.shellcheck if shutil.which('shellcheck') else (),
     javascript_checks.eslint if shutil.which('npm') else (),
     json_check.presubmit_check,
     keep_sorted.presubmit_check,
