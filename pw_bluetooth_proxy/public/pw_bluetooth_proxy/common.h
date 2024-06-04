@@ -14,16 +14,20 @@
 
 #pragma once
 
+#include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
 
-// pw:span containing an H4 HCI packet. The first octet should be the HCI packet
-// type as defined in BT Core Spec Version 5.4 | Vol 4, Part A, Section 2. The
-// remainder of the span should be an HCI packet as defined in BT Core Spec
-// Version 5.4 | Vol 4, Part E, Section 5.4.
-using H4HciPacket = pw::span<uint8_t>;
+// An H4 HCI packet. `h4_type` should be the HCI packet type indicator as
+// defined in BT Core Spec Version 5.4 | Vol 4, Part A, Section 2. The
+// `hci_span` should be an HCI packet as defined in BT Core Spec Version 5.4 |
+// Vol 4, Part E, Section 5.4.
+struct H4HciPacket {
+  emboss::H4PacketType h4_type;
+  pw::span<uint8_t> hci_span;
+};
 
 using H4HciPacketSendFn = pw::Function<void(H4HciPacket packet)>;
 

@@ -35,15 +35,15 @@ void ProxyHost::HandleH4HciFromHost(H4HciPacket h4_packet) {
 }
 
 void ProxyHost::ProcessH4HciFromController(H4HciPacket h4_packet) {
-  if (h4_packet.empty()) {
+  if (h4_packet.hci_span.empty()) {
     PW_LOG_ERROR("Received empty H4 buffer. So will not process.");
     return;
   }
 
-  if (h4_packet[0] != cpp23::to_underlying(emboss::H4PacketType::EVENT)) {
+  if (h4_packet.h4_type != emboss::H4PacketType::EVENT) {
     return;
   }
-  pw::span hci_buffer = H4HciSubspan(h4_packet);
+  pw::span hci_buffer = h4_packet.hci_span;
   auto event = MakeEmboss<emboss::EventHeaderView>(hci_buffer);
   if (!event.IsComplete()) {
     PW_LOG_ERROR("Buffer is too small for EventHeader. So will not process.");
