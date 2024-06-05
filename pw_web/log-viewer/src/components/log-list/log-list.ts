@@ -551,10 +551,10 @@ export class LogList extends LitElement {
 
     if (field.key == 'severity') {
       const severityIcons = new Map<Severity, string>([
-        [Severity.WARNING, 'warning'],
-        [Severity.ERROR, 'cancel'],
-        [Severity.CRITICAL, 'brightness_alert'],
-        [Severity.DEBUG, 'bug_report'],
+        [Severity.WARNING, '\uf083'],
+        [Severity.ERROR, '\ue888'],
+        [Severity.CRITICAL, '\uf5cf'],
+        [Severity.DEBUG, '\ue868'],
       ]);
 
       const severityValue: Severity = field.value
@@ -624,7 +624,7 @@ export class LogList extends LitElement {
       leading-icon
       data-visible="${this._autoscrollIsEnabled ? 'false' : 'true'}"
     >
-      <md-icon slot="icon" aria-hidden="true">arrow_downward</md-icon>
+      <md-icon slot="icon" aria-hidden="true">&#xe5db;</md-icon>
       Jump to Bottom
     </md-filled-button>
   `;

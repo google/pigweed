@@ -271,33 +271,21 @@ export class LogViewControls extends LitElement {
       </div>
 
       <div class="actions-container">
-        <span class="action-button" hidden>
-          <md-icon-button>
-            <md-icon>pause_circle</md-icon>
-          </md-icon-button>
-        </span>
-
-        <span class="action-button" hidden>
-          <md-icon-button>
-            <md-icon>wrap_text</md-icon>
-          </md-icon-button>
-        </span>
-
         <span class="action-button" title="Clear logs">
           <md-icon-button @click=${this.handleClearLogsClick}>
-            <md-icon>delete_sweep</md-icon>
+            <md-icon>&#xe16c;</md-icon>
           </md-icon-button>
         </span>
 
         <span class="action-button" title="Toggle line wrapping">
           <md-icon-button @click=${this.handleWrapToggle} toggle>
-            <md-icon>wrap_text</md-icon>
+            <md-icon>&#xe25b;</md-icon>
           </md-icon-button>
         </span>
 
         <span class="action-button field-toggle" title="Toggle columns">
           <md-icon-button @click=${this.toggleColumnVisibilityMenu} toggle>
-            <md-icon>view_column</md-icon>
+            <md-icon>&#xe8ec;</md-icon>
           </md-icon-button>
           <menu class="field-menu" hidden>
             ${this.columnData.map(
@@ -323,7 +311,7 @@ export class LogViewControls extends LitElement {
             @click=${this.toggleMoreActionsMenu}
             class="more-actions-button"
           >
-            <md-icon>more_vert</md-icon>
+            <md-icon>&#xe5d4;</md-icon>
           </md-icon-button>
 
           <md-menu
@@ -341,9 +329,7 @@ export class LogViewControls extends LitElement {
               role="button"
               title="Open a new view to the right of the current view"
             >
-              <md-icon slot="start" data-variant="icon"
-                >splitscreen_right</md-icon
-              >
+              <md-icon slot="start" data-variant="icon">&#xf674;</md-icon>
             </md-menu-item>
 
             <md-menu-item
@@ -352,9 +338,7 @@ export class LogViewControls extends LitElement {
               role="button"
               title="Open a new view below the current view"
             >
-              <md-icon slot="start" data-variant="icon"
-                >splitscreen_bottom</md-icon
-              >
+              <md-icon slot="start" data-variant="icon">&#xf676;</md-icon>
             </md-menu-item>
 
             <md-menu-item
@@ -363,7 +347,7 @@ export class LogViewControls extends LitElement {
               role="button"
               title="Download current logs as a plaintext file"
             >
-              <md-icon slot="start" data-variant="icon">download</md-icon>
+              <md-icon slot="start" data-variant="icon">&#xf090;</md-icon>
             </md-menu-item>
           </md-menu>
         </span>
@@ -380,7 +364,7 @@ export class LogViewControls extends LitElement {
 
         <span class="action-button" hidden>
           <md-icon-button>
-            <md-icon>more_horiz</md-icon>
+            <md-icon>&#xe5d3;</md-icon>
           </md-icon-button>
         </span>
       </div>

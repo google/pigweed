@@ -16,13 +16,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex&family=Roboto+Mono:wght@400;500&display=block');
 
-@font-face {
-    font-family: 'Material Symbols Rounded';
-    font-style: normal;
-    font-display: block;
-    src: url('./pw_web/log-viewer/src/assets/material_symbols_rounded_subset.woff2') format('woff2'),
-    url('./assets/material_symbols_rounded_subset.woff2') format('woff2');
-}
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&text=%EE%97%9B%EF%97%8F%EE%A1%A8%EE%A2%88%EE%97%8D%EE%85%AC%EF%82%90%EE%97%93%EE%97%94%EE%86%A2%EF%99%B6%EF%99%B4%EE%A3%AC%EF%82%83%EE%89%9B&display=block');
 
 :root {
     background-color: #fff;

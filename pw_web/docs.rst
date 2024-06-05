@@ -345,11 +345,11 @@ Material Icon Font (Subsetting)
 -------------------------------
 .. inclusive-language: disable
 
-Log Viewer uses a subset of Material Icons Rounded hosted on `GitHub <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.woff2>`_
-with codepoints listed in the `codepoints <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints>`_ file
+The Log Viewer uses a subset of the Material Symbols Rounded icon font fetched via the `Google Fonts API <https://developers.google.com/fonts/docs/css2#forming_api_urls>`_. However, we also provide a subset of this font for offline usage at `GitHub <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.woff2>`_
+with codepoints listed in the `codepoints <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints>`_ file.
 
 (It's easiest to look up the codepoints at `fonts.google.com <https://fonts.google.com/icons?selected=Material+Symbols+Rounded>`_ e.g. see
-the sidebar shows the Codepoint for `"home" <https://fonts.google.com/icons?selected=Material+Symbols+Rounded:home:FILL@0;wght@0;GRAD@0;opsz@NaN>`_ is e88a)
+the sidebar shows the Codepoint for `"home" <https://fonts.google.com/icons?selected=Material+Symbols+Rounded:home:FILL@0;wght@0;GRAD@0;opsz@NaN>`_ is e88a).
 
 The following icons with codepoints are curently used:
 
