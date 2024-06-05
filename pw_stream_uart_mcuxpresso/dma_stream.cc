@@ -478,7 +478,7 @@ StatusWithSize UartDmaStreamMcuxpresso::DoRead(ByteSpan data) {
 // the USART TX channel.
 Status UartDmaStreamMcuxpresso::DoWrite(ConstByteSpan data) {
   if (data.size() == 0) {
-    return Status::InvalidArgument();
+    return OkStatus();
   }
 
   bool was_busy = tx_data_.busy.exchange(true);
