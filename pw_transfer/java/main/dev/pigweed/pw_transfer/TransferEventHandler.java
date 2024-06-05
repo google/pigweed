@@ -24,10 +24,8 @@ import dev.pigweed.pw_rpc.StreamObserver;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -53,10 +51,8 @@ class TransferEventHandler {
 
   // Map session ID to transfer.
   private final Map<Integer, Transfer<?>> sessionIdToTransfer = new HashMap<>();
-  // Legacy transfers only use the resource ID. The client assigns an arbitrary
-  // session ID that
-  // legacy servers ignore. The client then maps from the legacy ID to its local
-  // session ID.
+  // Legacy transfers only use the resource ID. The client assigns an arbitrary session ID that
+  // legacy servers ignore. The client then maps from the legacy ID to its local session ID.
   private final Map<Integer, Integer> legacyIdToSessionId = new HashMap<>();
 
   @Nullable private Call.ClientStreaming<Chunk> readStream = null;
@@ -133,8 +129,7 @@ class TransferEventHandler {
         throw new AssertionError("Cannot start non-zero offset transfer with legacy version");
       }
 
-      // The v2 protocol supports multiple transfers for a single resource. For
-      // simplicity while
+      // The v2 protocol supports multiple transfers for a single resource. For simplicity while
       // supporting both protocols, only support a single transfer per resource.
       if (legacyIdToSessionId.containsKey(transfer.getResourceId())) {
         transfer.terminate(
@@ -159,21 +154,15 @@ class TransferEventHandler {
   }
 
   /**
-   * Test version of run() that processes all enqueued events before checking for
-   * timeouts.
+   * Test version of run() that processes all enqueued events before checking for timeouts.
    *
-   * Tests that need to time out should process all enqueued events first to
-   * prevent flaky failures.
-   * If handling one of several queued packets takes longer than the timeout
-   * (which must be short
+   * Tests that need to time out should process all enqueued events first to prevent flaky failures.
+   * If handling one of several queued packets takes longer than the timeout (which must be short
    * for a unit test), then the test may fail spuriously.
    *
-   * This run function is not used outside of tests because processing all
-   * incoming packets before
-   * checking for timeouts could delay the transfer client's outgoing write
-   * packets if there are
-   * lots of inbound packets. This could delay transfers and cause unnecessary
-   * timeouts.
+   * This run function is not used outside of tests because processing all incoming packets before
+   * checking for timeouts could delay the transfer client's outgoing write packets if there are
+   * lots of inbound packets. This could delay transfers and cause unnecessary timeouts.
    */
   void runForTestsThatMustTimeOut() {
     while (processEvents) {
@@ -193,10 +182,7 @@ class TransferEventHandler {
     });
   }
 
-  /**
-   * Blocks until all events currently in the queue are processed; for test use
-   * only.
-   */
+  /** Blocks until all events currently in the queue are processed; for test use only. */
   void waitUntilEventsAreProcessedForTest() {
     Semaphore semaphore = new Semaphore(0);
     enqueueEvent(semaphore::release);
@@ -241,7 +227,8 @@ class TransferEventHandler {
   }
 
   private void handleTimeouts() {
-    for (Transfer<?> transfer : sessionIdToTransfer.values()) {
+    // Copy to array since transfers may remove themselves from sessionIdToTransfer while iterating.
+    for (Transfer<?> transfer : sessionIdToTransfer.values().toArray(Transfer<?>[] ::new)) {
       transfer.handleTimeoutIfDeadlineExceeded();
     }
   }
@@ -257,9 +244,9 @@ class TransferEventHandler {
     private TransferInterface() {}
 
     /**
-     * Sends the provided transfer chunk.
+     *  Sends the provided transfer chunk.
      *
-     * Must be called on the transfer thread.
+     *  Must be called on the transfer thread.
      */
     void sendChunk(Chunk chunk) throws TransferError {
       try {
@@ -270,9 +257,9 @@ class TransferEventHandler {
     }
 
     /**
-     * Removes this transfer from the list of active transfers.
+     *  Removes this transfer from the list of active transfers.
      *
-     * Must be called on the transfer thread.
+     *  Must be called on the transfer thread.
      */
     // TODO(frolv): Investigate why this is occurring -- there shouldn't be any
     // futures here.
@@ -324,13 +311,13 @@ class TransferEventHandler {
       enqueueEvent(() -> {
         resetStream();
 
-        // The transfers remove themselves from the Map during cleanup, iterate over a
-        // copied list.
-        List<Transfer<?>> activeTransfers = new ArrayList<>(sessionIdToTransfer.values());
-
         TransferError error = new TransferError(
             "Transfer stream RPC closed unexpectedly with status " + status, Status.INTERNAL);
-        activeTransfers.forEach(t -> t.terminate(error));
+
+        // The transfers remove themselves from the Map during cleanup; iterate over a copied list.
+        for (Transfer<?> transfer : sessionIdToTransfer.values().toArray(Transfer<?>[] ::new)) {
+          transfer.terminate(error);
+        }
       });
     }
 
