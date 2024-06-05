@@ -551,3 +551,17 @@ http_archive(
     strip_prefix = "probe-rs-tools-x86_64-pc-windows-msvc",
     url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-x86_64-pc-windows-msvc.zip",
 )
+
+git_repository(
+    name = "rules_libusb",
+    commit = "d4de2aecbd4cdc5cb29cab152ee0c85b725c144b",
+    remote = "https://pigweed.googlesource.com/pigweed/rules_libusb",
+)
+
+http_archive(
+    name = "libusb",
+    build_file = "@rules_libusb//:libusb.BUILD",
+    sha256 = "ffaa41d741a8a3bee244ac8e54a72ea05bf2879663c098c82fc5757853441575",
+    strip_prefix = "libusb-1.0.27",
+    url = "https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.tar.bz2",
+)
