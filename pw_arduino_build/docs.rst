@@ -3,6 +3,8 @@
 -----------------
 pw_arduino_build
 -----------------
+.. pigweed-module::
+   :name: pw_arduino_build
 
 The ``pw_arduino_build`` module contains both the `arduino_builder`_ command
 line utility and an `Arduino Main Wrapper`_.

@@ -14,6 +14,14 @@
     ],
     "size": "400 to 1800 bytes"
   },
+  "pw_arduino_build": {
+    "tagline": "Main function wrapper and build utilities for Arduino",
+    "status": "stable",
+    "languages": [
+      "C++",
+      "GN"
+    ]
+  },
   "pw_async2": {
     "tagline": "Cooperative async tasks for embedded",
     "status": "experimental",
