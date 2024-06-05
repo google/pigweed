@@ -213,6 +213,12 @@ can be augmented or overridden at the project level or the user level using
 generated ``settings.json`` file is essentially a build artifact and shouldn't
 be committed to source control.
 
+.. note::
+
+   You should treat ``settings.json`` as a build artifact and avoid editing it
+   directly. However, if you do make changes to it, don't worry! The changes
+   will be preserved after running ``pw ide sync``
+
 The same pattern applies to ``tasks.json``, which provides Visual Studio Code
 tasks for ``pw_ide`` commands. Access these by opening the command palette
 (Ctrl/Cmd-Shift-P), selecting ``Tasks: Run Task``, then selecting the desired

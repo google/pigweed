@@ -260,6 +260,7 @@ def cmd_vscode(
             vsc_manager.default(settings_type).sync_to(active_settings)
             vsc_manager.project(settings_type).sync_to(active_settings)
             vsc_manager.user(settings_type).sync_to(active_settings)
+            vsc_manager.active(settings_type).sync_to(active_settings)
 
         new_settings_hash = vsc_manager.active(settings_type).hash()
         settings_changed = new_settings_hash != prev_settings_hash
