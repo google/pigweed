@@ -109,6 +109,13 @@
       "C++17"
     ]
   },
+  "pw_docgen": {
+    "tagline": "Documentation generator for Pigweed-based projects",
+    "status": "stable",
+    "languages": [
+      "GN"
+    ]
+  },
   "pw_emu": {
     "tagline": "Flexible emulators frontend",
     "status": "experimental",

@@ -3,26 +3,33 @@
 =========
 pw_docgen
 =========
-The docgen module provides tools to generate documentation for Pigweed-based
-projects, and for Pigweed itself.
+.. pigweed-module::
+   :name: pw_docgen
 
+``pw_docgen`` provides tools to generate documentation for Pigweed-based
+projects.
+
+.. note::
+
+   Pigweed itself uses ``pw_docgen`` to generate ``pigweed.dev``.
+
+--------
+Overview
+--------
 Pigweed-based projects typically use a subset of Pigweed's modules and add their
 own product-specific modules on top of that, which may have product-specific
-documentation. Docgen provides a convenient way to combine all of the relevant
-documentation for a project into one place, allowing downstream consumers of
-release bundles (e.g. factory teams, QA teams, beta testers, etc.) to have a
-unified source of documentation early on.
+documentation. ``pw_docgen`` provides a convenient way to combine all of the
+relevant documentation for a project into one place, allowing downstream
+consumers of release bundles (e.g. factory teams, QA teams, beta testers, etc.)
+to have a unified source of documentation early on.
 
 The documentation generation is integrated directly into the build system. Any
 build target can depend on documentation, which allows it to be included as part
 of a factory release build, for example. Additionally, documentation itself can
-depend on other build targets, such as report cards for binary size/profiling.
-Any time the code is changed, documentation will be regenerated with the updated
-reports.
+depend on other build targets, such as :ref:`report cards <module-pw_bloat>` for
+binary size/profiling. Any time the code is changed, documentation will be
+regenerated with the updated reports.
 
-----------------------
-Documentation overview
-----------------------
 Each Pigweed module provides documentation describing its functionality, use
 cases, and programming API.
 
@@ -53,7 +60,7 @@ target, which accumulates all of them and renders the resulting HTML. This
 system can either be used directly within Pigweed, or integrated into a
 downstream project.
 
-GN Templates
+GN templates
 ============
 
 pw_doc_group
@@ -64,8 +71,8 @@ Each Pigweed module is expected to provide at least one ``pw_doc_group`` target
 defining the module's documentation. A ``pw_doc_group`` can depend on other
 groups, causing them to be built with it.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``sources``: RST documentation source files.
 * ``inputs``: Additional resources required for the docs (images, data files,
   etc.)
@@ -76,8 +83,8 @@ groups, causing them to be built with it.
   ``pw_doc_group`` runs that is not included in one of the above ``dep``
   categories.
 
-**Example**
-
+Example
+^^^^^^^
 .. code-block::
 
    pw_doc_group("my_doc_group") {
@@ -98,8 +105,8 @@ configuring Sphinx's output, and a top level ``index.rst`` for the main page of
 the documentation. These are added at the root level of the built documentation
 to tie everything together.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``conf``: Path to the ``conf.py`` to use for Sphinx.
 * ``index``: Path to the top-level ``index.rst`` file.
 * ``output_directory``: Directory in which to render HTML output.
@@ -108,8 +115,8 @@ to tie everything together.
   deps for generating Python package metadata list, not the overall
   documentation generation. This should rarely be used by non-Pigweed code.
 
-**Example**
-
+Example
+^^^^^^^
 .. code-block::
 
    pw_doc_gen("my_docs") {
@@ -170,7 +177,7 @@ identical to the project's directory structure. The only special case is the
 top-level ``index.rst`` file's imports; they must start from the project's build
 root.
 
-Viewing Documentation
+Viewing documentation
 ---------------------
 ``pw_docgen`` includes a web server that serves locally-generated documentation
 at ``pw_docgen.docserver``. It supports hot-reloading, so the rendered docs in
@@ -179,9 +186,12 @@ your browser will refresh as you make changes to the source files.
 In most cases, you will not need to run the docs server directly. Instead, it
 will be run via :ref:`module-pw_watch`.
 
------------------
-Sphinx Extensions
------------------
+-----------------------------
+pigweed.dev Sphinx extensions
+-----------------------------
+.. note:: The topics in this section only apply to ``pigweed.dev``.
+   This section isn't relevant to downstream users of ``pw_docgen``.
+
 This module houses Pigweed-specific extensions for the Sphinx documentation
 generator. Extensions are included and configured in ``docs/conf.py``.
 
