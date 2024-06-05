@@ -14,16 +14,7 @@
 
 #include "pw_grpc/send_queue.h"
 
-#include "pw_chrono/system_clock.h"
-
 namespace pw::grpc {
-
-namespace {
-
-constexpr auto kSendTimeout =
-    chrono::SystemClock::for_at_least(std::chrono::seconds(1));
-
-}
 
 std::optional<std::reference_wrapper<SendQueue::SendRequest>>
 SendQueue::NextSendRequest() {
@@ -71,11 +62,8 @@ Status SendQueue::SendBytes(ConstByteSpan message) {
 Status SendQueue::SendBytesVector(span<ConstByteSpan> messages) {
   SendRequest request(messages);
   QueueSendRequest(request);
-  if (!request.notify.try_acquire_for(kSendTimeout)) {
-    CancelSendRequest(request);
-    return Status::DeadlineExceeded();
-  }
-
+  // TODO: b/345088816 - Add timeout error support to this blocking call.
+  request.notify.acquire();
   return request.status;
 }
 
