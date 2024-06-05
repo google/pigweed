@@ -3,6 +3,9 @@
 -------------------
 The pw_log protobuf
 -------------------
+.. pigweed-module-subpage::
+   :name: pw_log
+
 ``pw_log`` defines a protocol buffer for storing and transmitting log messages.
 The protobuf is optimized to be maximally efficient.
 

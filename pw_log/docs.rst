@@ -3,6 +3,9 @@
 ======
 pw_log
 ======
+.. pigweed-module::
+   :name: pw_log
+
 Pigweed's logging module provides facilities for applications to log
 information about the execution of their application. The module is split into
 two components:

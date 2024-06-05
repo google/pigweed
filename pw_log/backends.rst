@@ -3,6 +3,9 @@
 ===============
 pw_log backends
 ===============
+.. pigweed-module-subpage::
+   :name: pw_log
+
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

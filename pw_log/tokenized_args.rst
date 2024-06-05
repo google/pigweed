@@ -3,6 +3,9 @@
 -----------------------
 Tokenized log arguments
 -----------------------
+.. pigweed-module-subpage::
+   :name: pw_log
+
 The ``pw_log`` facade is intended to make the logging backend invisible to the
 user, but some backend features require additional frontend support,
 necessitating a break in the abstraction. One of these features is the logging

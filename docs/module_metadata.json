@@ -211,6 +211,15 @@
       "C++17"
     ]
   },
+  "pw_log": {
+    "tagline": "Robust and portable logging for embedded projects",
+    "status": "stable",
+    "languages": [
+      "C++",
+      "Java",
+      "Python"
+    ]
+  },
   "pw_log_android": {
     "tagline": "Android logging backend",
     "status": "unstable",
