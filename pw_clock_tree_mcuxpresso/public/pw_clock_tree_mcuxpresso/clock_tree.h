@@ -101,7 +101,8 @@ using ClockMcuxpressoMclkBlocking = ClockMcuxpressoMclk<ElementBlocking>;
 using ClockMcuxpressoMclkNonBlocking =
     ClockMcuxpressoMclk<ElementNonBlockingCannotFail>;
 
-/// Class template implementing the CLK IN pin clock source.
+/// Class template implementing the CLK IN pin clock source and selecting
+/// it as an input source for OSC Clock source.
 ///
 /// Template argument `ElementType` can be of class `ElementBlocking` or
 /// `ElementNonBlockingCannotFail`.
@@ -118,12 +119,20 @@ class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
   pw::Status DoEnable() final {
     CLOCK_SetClkinFreq(
         frequency_); /*!< Sets CLK_IN pin clock frequency in Hz */
+
+    // OSC clock source selector ClkIn.
+    const uint8_t kCLOCK_OscClkIn = CLKCTL0_SYSOSCBYPASS_SEL(1);
+    CLKCTL0->SYSOSCBYPASS = kCLOCK_OscClkIn;
     return pw::OkStatus();
   }
 
   /// Set CLK IN clock frequency to 0 Hz.
   pw::Status DoDisable() final {
     CLOCK_SetClkinFreq(0); /*!< Sets CLK_IN pin clock frequency in Hz */
+
+    // OSC clock source selector None, which gates output to reduce power.
+    const uint8_t kCLOCK_OscNone = CLKCTL0_SYSOSCBYPASS_SEL(7);
+    CLKCTL0->SYSOSCBYPASS = kCLOCK_OscNone;
     return pw::OkStatus();
   }
 

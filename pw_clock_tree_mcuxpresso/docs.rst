@@ -16,7 +16,7 @@ that can be directly instantiated:
 * 32 kHz RTC Oscillator
 * Low-power Oscillator
 * Master Clock
-* External Clock Input
+* External Clock Input as clock source for SYSOSCBYPASS clock selector to generate OSC_CLK
 * Fractional Rate Generator (FRG) for Flexcomm Interfaces
 * Clock Source Selector
 * Clock Divider
