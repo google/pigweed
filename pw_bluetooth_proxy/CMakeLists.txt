@@ -37,6 +37,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_function
     pw_log
     pw_span
+    pw_status
   SOURCES
     acl_data_channel.cc
     emboss_util.h
