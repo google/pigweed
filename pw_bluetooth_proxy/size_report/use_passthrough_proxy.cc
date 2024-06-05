@@ -27,11 +27,14 @@ namespace {
 void UsePassthroughProxy() {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, 20> h4_array_from_host{0};
-  H4HciPacket h4_span_from_host = pw::span(h4_array_from_host);
+  H4HciPacket h4_span_from_host = {.h4_type = emboss::H4PacketType::COMMAND,
+                                   .hci_span = pw::span(h4_array_from_host)};
 
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, 20> h4_array_from_controller{0};
-  H4HciPacket h4_span_from_controller = pw::span(h4_array_from_controller);
+  H4HciPacket h4_span_from_controller = {
+      .h4_type = emboss::H4PacketType::EVENT,
+      .hci_span = pw::span(h4_array_from_controller)};
 
   H4HciPacketSendFn containerSendToHostFn(
       []([[maybe_unused]] H4HciPacket packet) {});
