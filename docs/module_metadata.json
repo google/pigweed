@@ -29,6 +29,14 @@
       "C++17"
     ]
   },
+  "pw_bloat": {
+    "tagline": "Utilities for generating binary size reports",
+    "status": "stable",
+    "languages": [
+      "C++",
+      "GN"
+    ]
+  },
   "pw_bluetooth_proxy": {
     "tagline": "Lightweight proxy for augmenting Bluetooth functionality",
     "status": "unstable",
