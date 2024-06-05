@@ -228,14 +228,11 @@ static inline bool pw_InlineVarLenEntryQueue_Empty(
 #define _PW_VAR_QUEUE_TAIL queue[2]  // points after the last byte
 #define _PW_VAR_QUEUE_DATA ((const uint8_t*)&queue[3])
 
-#define _PW_VAR_QUEUE_GET_ARRAY_SIZE_BYTES(array_size_uint32)     \
-  (uint32_t)(array_size_uint32 -                                  \
-             PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32) * \
-      sizeof(uint32_t)
-
 static inline void pw_InlineVarLenEntryQueue_Init(uint32_t array[],
                                                   size_t array_size_uint32) {
-  array[0] = _PW_VAR_QUEUE_GET_ARRAY_SIZE_BYTES(array_size_uint32);
+  array[0] = (uint32_t)(array_size_uint32 -
+                        PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32) *
+             sizeof(uint32_t);
   array[1] = 0;  // head
   array[2] = 0;  // tail
 }
@@ -472,6 +469,10 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
  protected:
   constexpr BasicInlineVarLenEntryQueue(uint32_t max_size_bytes)
       : array_{_PW_VAR_QUEUE_DATA_SIZE_BYTES(max_size_bytes), 0, 0} {}
+
+  // Polymorphic-sized queues cannot be destroyed directly due to the lack of a
+  // virtual destructor.
+  ~BasicInlineVarLenEntryQueue() = default;
 
   BasicInlineVarLenEntryQueue(const BasicInlineVarLenEntryQueue&) = default;
   BasicInlineVarLenEntryQueue& operator=(const BasicInlineVarLenEntryQueue&) =
