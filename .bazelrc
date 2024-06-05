@@ -40,7 +40,11 @@ build --incompatible_enable_cc_toolchain_resolution
 # Skip building or testing C++20 targets by default
 # TODO: b/340568834 Remove when a proper solution is available.
 build --build_tag_filters=-requires_cxx_20
-test --test_tag_filters=-requires_cxx_20
+# Also exclude integration tests from the default build. The test_tag_filters
+# flag doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we
+# have to specify it only once, setting all the exclusions in a comma-separated
+# list.
+test --test_tag_filters=-requires_cxx_20,-integration
 
 # Do not attempt to configure an autodetected (local) toolchain. We vendor all
 # our toolchains, and CI VMs may not have any local toolchain to detect.
@@ -81,8 +85,9 @@ build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
 common:asan --//pw_toolchain/host_clang:asan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
-# -requires_cxx_20 because the test_tag_filters flag does not accumulate.
-test:asan --test_tag_filters=-requires_cxx_20,-noasan
+# -requires_cxx_20 and -integration because the test_tag_filters flag does not
+# accumulate.
+test:asan --test_tag_filters=-requires_cxx_20,-integration,-noasan
 
 # Define the --config=asan-libfuzzer configuration.
 build:asan-libfuzzer \
