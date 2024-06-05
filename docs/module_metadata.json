@@ -248,6 +248,13 @@
       "C++20"
     ]
   },
+  "pw_spi_rp2040": {
+    "tagline": "Raspberry Pi RP2040 backend for pw_spi",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_status": {
     "tagline": "Exception-free error propagation for embedded",
     "status": "stable",

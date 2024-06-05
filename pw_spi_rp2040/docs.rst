@@ -3,16 +3,19 @@
 ==============
  pw_spi_rp2040
 ==============
+.. pigweed-module::
+   :name: pw_spi_rp2040
 
-``pw_spi_rp2040`` implements the ``pw_spi`` interface using the
+``pw_spi_rp2040`` implements the :ref:`module-pw_spi` interface using the
 `Raspberry Pi Pico SDK <https://github.com/raspberrypi/pico-sdk/>`_.
 
-The implementation is based on the SPI driver in pico_sdk. SPI transfers use
-the blocking driver API which uses busy waiting under the hood.
+The implementation is based on the SPI driver from the Pico SDK. SPI transfers
+use the blocking driver API which uses busy waiting under the hood.
 
 .. note::
    There is currently no support for RP2040 hardware CSn
-   pins. ~pw::spi::DigitalOutChipSelector~ is used instead.
+   pins. :cpp:class:`pw::spi::DigitalOutChipSelector` is
+   used instead.
 
 Usage
 =====
