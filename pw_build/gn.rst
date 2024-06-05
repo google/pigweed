@@ -1,3 +1,5 @@
+.. _module-pw_build-gn:
+
 GN / Ninja
 ==========
 The GN / Ninja build system is the primary build system used for upstream
