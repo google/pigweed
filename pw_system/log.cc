@@ -23,7 +23,6 @@
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 #include "pw_system/config.h"
-#include "pw_system/rpc_server.h"
 
 namespace pw::system {
 namespace {

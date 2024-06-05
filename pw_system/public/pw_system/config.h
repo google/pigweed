@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+
 // PW_SYSTEM_LOG_BUFFER_SIZE is the log buffer size which determines how many
 // log entries can be buffered prior to streaming them.
 //
@@ -116,3 +118,19 @@
 #ifndef PW_SYSTEM_SOCKET_IO_PORT
 #define PW_SYSTEM_SOCKET_IO_PORT 33000
 #endif  // PW_SYSTEM_SOCKET_IO_PORT
+
+namespace pw::system {
+
+// This is the default channel used by the pw_system RPC server. Some other
+// parts of pw_system use this channel ID as the default destination for
+// unrequested data streams.
+inline constexpr uint32_t kDefaultRpcChannelId = PW_SYSTEM_DEFAULT_CHANNEL_ID;
+
+// This is the channel ID used for logging.
+inline constexpr uint32_t kLoggingRpcChannelId = PW_SYSTEM_LOGGING_CHANNEL_ID;
+#if PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+inline constexpr uint32_t kExtraLoggingRpcChannelId =
+    PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID;
+#endif  // PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+
+}  // namespace pw::system
