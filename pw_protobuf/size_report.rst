@@ -3,9 +3,12 @@
 ================================
 pw_protobuf extended size report
 ================================
-pw_protobuf can impact binary size very differently depending on how it's used.
-A series of examples are provided below to illustrate how much certain use cases
-affect binary size.
+.. pigweed-module-subpage::
+   :name: pw_protobuf
+
+``pw_protobuf`` can impact binary size very differently depending on how it's
+used. A series of examples are provided below to illustrate how much certain
+use cases affect binary size.
 
 --------
 Overview

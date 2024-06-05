@@ -241,6 +241,13 @@
       "C++17"
     ]
   },
+  "pw_protobuf": {
+    "tagline": "Expressive interface for encoding and decoding protocol buffers",
+    "status": "stable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_result": {
     "tagline": "Error propagation primitives: value-or-error",
     "status": "stable",
