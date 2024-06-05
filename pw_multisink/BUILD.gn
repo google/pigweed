@@ -46,6 +46,8 @@ pw_source_set("pw_multisink") {
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
+    "$dir_pw_sync:virtual_basic_lockable",
+    dir_pw_assert,
     dir_pw_bytes,
     dir_pw_containers,
     dir_pw_function,

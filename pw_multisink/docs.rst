@@ -14,16 +14,18 @@ of this module, see the
 :ref:`module documentation <module-structure-compile-time-configuration>` for
 more details.
 
-.. c:macro:: PW_MULTISINK_CONFIG_LOCK_INTERRUPT_SAFE
+.. c:macro:: PW_MULTISINK_CONFIG_LOCK_TYPE
 
-  Whether an interrupt-safe lock is used to guard multisink read/write
-  operations.
+  Set to configure the underlying lock used to guard multisink read/write
+  operations.  By default, this is set to uses an interrupt spin-lock to guard
+  the multisink transactions. Should be set to one of the following options:
 
-  By default, this option is enabled and the multisink uses an interrupt
-  spin-lock to guard its transactions. If disabled, a mutex is used instead.
+  - PW_MULTISINK_INTERRUPT_SPIN_LOCK: Use an interrupt spin lock
+  - PW_MULTISINK_MUTEX: Use a mutex. Not safe to use multisink in interrupt
+    context
+  - PW_MULTISINK_VIRTUAL_LOCK: User provided locking implementation. Interrupt
+    support will be left to the user to manage.
 
-  Disabling this will alter the entry precondition of the multisink,
-  requiring that it not be called from an interrupt context.
 
 .. _module-pw_multisink-late_drain_attach:
 
