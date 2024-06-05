@@ -55,6 +55,7 @@ cc_library(
         "//pw_boot_cortex_m",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
+        "//third_party/freertos:support",
         "@pigweed//targets:mcuxpresso_sdk",
     ],
     alwayslink = 1,
@@ -67,13 +68,4 @@ cc_library(
     ],
     includes = ["./"],
     deps = ["//third_party/freertos:config_assert"],
-)
-
-cc_library(
-    name = "tasks",
-    srcs = [
-        "tasks.c",
-    ],
-    target_compatible_with = ["//pw_build/constraints/rtos:freertos"],
-    deps = ["@freertos"],
 )

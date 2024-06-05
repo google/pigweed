@@ -2395,6 +2395,9 @@ PREDEFINED             = __cplusplus=202002L \
                          PW_GUARDED_BY(...)= \
                          PW_NO_SANITIZE(...)= \
                          PW_NODISCARD_STR(...)= \
+                         configSUPPORT_STATIC_ALLOCATION=1 \
+                         configUSE_TIMERS=1 \
+                         configCHECK_FOR_STACK_OVERFLOW=1 \
                          PW_EXCLUDE_FROM_DOXYGEN=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this

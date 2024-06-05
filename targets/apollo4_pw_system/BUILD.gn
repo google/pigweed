@@ -75,6 +75,7 @@ pw_system_target("apollo4_pw_system") {
     pw_build_LINK_DEPS += [
       "$dir_pigweed/targets/apollo4_pw_system:main",
       "$dir_pw_assert:impl",
+      "$dir_pw_third_party/freertos:support",
       "$dir_pw_log:impl",
       "$dir_pw_cpu_exception:entry_impl",
       "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",

@@ -36,6 +36,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_string",
       "$dir_pw_system",
       "$dir_pw_third_party/freertos",
+      "$dir_pw_third_party/freertos:support",
     ]
     sources = [ "boot.cc" ]
   }

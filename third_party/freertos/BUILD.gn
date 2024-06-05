@@ -236,6 +236,18 @@ pw_source_set("config_assert") {
   public = [ "public/pw_third_party/freertos/config_assert.h" ]
 }
 
+pw_source_set("support") {
+  deps = [
+    "$dir_pw_string:util",
+    "$dir_pw_third_party/freertos",
+    dir_pw_assert,
+  ]
+  sources = [
+    "pw_assert_stack_overflow_hook.cc",
+    "static_task_allocation.cc",
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

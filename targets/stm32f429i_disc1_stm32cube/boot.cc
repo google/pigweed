@@ -27,18 +27,6 @@
 #include "stm32f4xx.h"
 #include "task.h"
 
-namespace {
-
-std::array<StackType_t, configMINIMAL_STACK_SIZE> freertos_idle_stack;
-StaticTask_t freertos_idle_tcb;
-
-std::array<StackType_t, configTIMER_TASK_STACK_DEPTH> freertos_timer_stack;
-StaticTask_t freertos_timer_tcb;
-
-std::array<char, configMAX_TASK_NAME_LEN> temp_thread_name_buffer;
-
-}  // namespace
-
 // Initializes clock to its max, 180Mhz. Note that this naming follows CubeMX's
 // naming out of convention. It's not required that this target provides a
 // symbol named SystemClock_Config. This function shares the same purpose as
@@ -82,31 +70,6 @@ extern "C" void SystemClock_Config() {
 // Functions needed when configGENERATE_RUN_TIME_STATS is on.
 extern "C" void configureTimerForRunTimeStats(void) {}
 extern "C" unsigned long getRunTimeCounterValue(void) { return uwTick; }
-
-// Required for configCHECK_FOR_STACK_OVERFLOW.
-extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char* pcTaskName) {
-  pw::string::Copy(pcTaskName, temp_thread_name_buffer);
-  PW_CRASH("Stack OVF for task %s", temp_thread_name_buffer.data());
-}
-
-// Required for configUSE_TIMERS.
-extern "C" void vApplicationGetTimerTaskMemory(
-    StaticTask_t** ppxTimerTaskTCBBuffer,
-    StackType_t** ppxTimerTaskStackBuffer,
-    uint32_t* pulTimerTaskStackSize) {
-  *ppxTimerTaskTCBBuffer = &freertos_timer_tcb;
-  *ppxTimerTaskStackBuffer = freertos_timer_stack.data();
-  *pulTimerTaskStackSize = freertos_timer_stack.size();
-}
-
-extern "C" void vApplicationGetIdleTaskMemory(
-    StaticTask_t** ppxIdleTaskTCBBuffer,
-    StackType_t** ppxIdleTaskStackBuffer,
-    uint32_t* pulIdleTaskStackSize) {
-  *ppxIdleTaskTCBBuffer = &freertos_idle_tcb;
-  *ppxIdleTaskStackBuffer = freertos_idle_stack.data();
-  *pulIdleTaskStackSize = freertos_idle_stack.size();
-}
 
 extern "C" void pw_boot_PreStaticMemoryInit() {}
 

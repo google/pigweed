@@ -40,6 +40,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_sys_io_stm32cube",
       "$dir_pw_system",
       "$dir_pw_third_party/freertos",
+      "$dir_pw_third_party/freertos:support",
       "$dir_pw_third_party/stm32cube",
     ]
     sources = [

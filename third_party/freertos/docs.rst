@@ -55,7 +55,6 @@ your ``WORKSPACE``, like so:
       urls = ["https://github.com/FreeRTOS/FreeRTOS-Kernel/archive/refs/tags/V10.5.1.tar.gz"],
    )
 
-
 The FreeRTOS build is configured through `constraint_settings
 <https://bazel.build/reference/be/platforms-and-toolchains#constraint_setting>`_.
 The `platform <https://bazel.build/extending/platforms>`_ you are building for
@@ -135,3 +134,8 @@ is provided under ``pw_third_party/freertos/config_assert.h`` which defines
 
    // Instead of defining configASSERT, simply include this header in its place.
    #include "pw_third_party/freertos/config_assert.h"
+
+---------------------------------------------
+FreeRTOS application function implementations
+---------------------------------------------
+.. doxygengroup:: FreeRTOS_application_functions

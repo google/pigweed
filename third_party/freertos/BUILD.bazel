@@ -41,3 +41,17 @@ alias(
         "//conditions:default": "@freertos//:default_freertos_config",
     }),
 )
+
+cc_library(
+    name = "support",
+    srcs = [
+        "pw_assert_stack_overflow_hook.cc",
+        "static_task_allocation.cc",
+    ],
+    deps = [
+        "//pw_assert",
+        "//pw_string:util",
+        "@freertos",
+    ],
+    alwayslink = True,
+)

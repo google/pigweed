@@ -43,8 +43,9 @@ cc_library(
         "//pw_preprocessor",
         "//pw_string",
         "//pw_sys_io_emcraft_sf2",
-        "//third_party/freertos",
+        "//third_party/freertos:support",
         "//third_party/smartfusion_mss",
+        "@freertos",
     ],
 )
 
