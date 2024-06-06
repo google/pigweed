@@ -3,6 +3,9 @@
 --------------------
 pw_android_toolchain
 --------------------
+.. pigweed-module::
+   :name: pw_android_toolchain
+
 Android toolchains differ from ``pw_toolchain`` in that the latter defines the
 tool names and paths at the lowest level, with customisation added at higher
 levels, while in ``pw_android_toolchain`` the tool names and paths are derived

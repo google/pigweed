@@ -14,6 +14,13 @@
     ],
     "size": "400 to 1800 bytes"
   },
+  "pw_android_toolchain": {
+    "tagline": "GN toolchains for the Android NDK",
+    "status": "unstable",
+    "languages": [
+      "GN"
+    ]
+  },
   "pw_arduino_build": {
     "tagline": "Main function wrapper and build utilities for Arduino",
     "status": "stable",
