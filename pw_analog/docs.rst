@@ -3,9 +3,8 @@
 =========
 pw_analog
 =========
-
-.. warning::
-  This module is under construction and may not be ready for use.
+.. pigweed-module::
+   :name: pw_analog
 
 pw_analog contains interfaces and utility functions for using the ADC.
 
