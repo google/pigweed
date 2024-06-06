@@ -1,8 +1,10 @@
 .. _module-pw_presubmit-format:
 
-=============================
-pw_presubmit: Code formatting
-=============================
+===============
+Code formatting
+===============
+.. pigweed-module-subpage::
+   :name: pw_presubmit
 
 .. admonition:: Note
    :class: warning
@@ -16,9 +18,9 @@ pw_presubmit: Code formatting
 
 .. _module-pw_presubmit-format-api:
 
-=============
+-------------
 API reference
-=============
+-------------
 
 Core
 ====

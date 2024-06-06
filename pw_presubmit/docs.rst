@@ -3,6 +3,9 @@
 ============
 pw_presubmit
 ============
+.. pigweed-module::
+   :name: pw_presubmit
+
 The presubmit module provides Python tools for running presubmit checks and
 checking and fixing code format. It also includes the presubmit check script for
 the Pigweed repository, ``pigweed_presubmit.py``.

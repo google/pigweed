@@ -241,6 +241,13 @@
       "C++17"
     ]
   },
+  "pw_presubmit": {
+    "tagline": "Python tools for running presubmit checks and linters",
+    "status": "stable",
+    "languages": [
+      "Python"
+    ]
+  },
   "pw_protobuf": {
     "tagline": "Expressive interface for encoding and decoding protocol buffers",
     "status": "stable",
