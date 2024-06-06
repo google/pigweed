@@ -41,6 +41,21 @@ class CountingListener : public Listener {
   size_t notification_count_ = 0;
 };
 
+class EntriesSizeMonitorListener : public Listener {
+ public:
+  EntriesSizeMonitorListener(pw::multisink::MultiSink::Drain& drain)
+      : last_seen_unread_size_(0u), drain_(drain) {}
+  void OnNewEntryAvailable() override {
+    last_seen_unread_size_ = drain_.UnsafeGetUnreadEntriesSize();
+  }
+
+  size_t GetLastSeenUnreadEntriesSize() const { return last_seen_unread_size_; }
+
+ private:
+  size_t last_seen_unread_size_;
+  pw::multisink::MultiSink::Drain& drain_;
+};
+
 class MultiSinkTest : public ::testing::Test {
  protected:
   static constexpr std::byte kMessage[] = {
@@ -530,6 +545,52 @@ TEST_F(MultiSinkTest, DetachedDrainReportsDropCount) {
   multisink_.DetachDrain(drains_[0]);
   multisink_.AttachDrain(drains_[0]);
   VerifyPopEntry(drains_[0], kMessage, 0, ingress_drops);
+}
+
+TEST_F(MultiSinkTest, DrainUnreadEntriesSize) {
+  multisink_.AttachDrain(drains_[0]);
+
+  EXPECT_EQ(drains_[0].GetUnreadEntriesSize(), 0u);
+  multisink_.HandleEntry(kMessage);
+  multisink_.HandleEntry(kMessage);
+  const size_t unread_entries_size = drains_[0].GetUnreadEntriesSize();
+  EXPECT_GT(unread_entries_size, 0u);
+
+  // Attach another drain, it sees the same unread entriess size as the first
+  // drain.
+  multisink_.AttachDrain(drains_[1]);
+  EXPECT_EQ(drains_[1].GetUnreadEntriesSize(), unread_entries_size);
+
+  // Pop entries from the first drain.
+  VerifyPopEntry(drains_[0],
+                 /*expected_message=*/kMessage,
+                 /*expected_drop_count=*/0,
+                 /*expected_ingress_drop_count=*/0);
+  VerifyPopEntry(drains_[0],
+                 /*expected_message=*/kMessage,
+                 /*expected_drop_count=*/0,
+                 /*expected_ingress_drop_count=*/0);
+  EXPECT_EQ(drains_[0].GetUnreadEntriesSize(), 0u);
+  EXPECT_EQ(drains_[1].GetUnreadEntriesSize(), unread_entries_size);
+}
+
+TEST(UnsafeGetUnreadEntriesSize, ReadFromListener) {
+  std::array<std::byte, 32> buffer;
+  MultiSink multisink(buffer);
+
+  pw::multisink::MultiSink::Drain drain;
+  multisink.AttachDrain(drain);
+
+  EntriesSizeMonitorListener listener(drain);
+  multisink.AttachListener(listener);
+
+  ASSERT_EQ(listener.GetLastSeenUnreadEntriesSize(), 0u);
+
+  constexpr std::string_view kEntryToPush = "one";
+  multisink.HandleEntry(as_bytes(span<const char>(kEntryToPush)));
+
+  EXPECT_EQ(listener.GetLastSeenUnreadEntriesSize(),
+            drain.GetUnreadEntriesSize());
 }
 
 TEST(UnsafeIteration, NoLimit) {

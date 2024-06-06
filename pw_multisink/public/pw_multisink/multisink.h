@@ -162,7 +162,7 @@ class MultiSink {
     //    return peek_result.status();
     //  }
     //  Status send_status = UserSendFunction(peek_result.value().entry())
-    //  if (!send_status.ok())
+    //  if (!send_status.ok()) {
     //    return send_status;
     //  }
     //  PW_CHECK_OK(PopEntry(peek_result.value());
@@ -203,6 +203,21 @@ class MultiSink {
     Drain& operator=(const Drain&) = delete;
     Drain(Drain&&) = delete;
     Drain& operator=(Drain&&) = delete;
+
+    // Returns size of unread entries in the sink for this drain. This is a
+    // thread-safe version and must not be used inside a
+    // Listener::OnNewEntryAvailable() to avoid deadlocks. Use
+    // UnsafeGetUnreadEntriesSize() instead in such case.
+    size_t GetUnreadEntriesSize() const PW_LOCKS_EXCLUDED(multisink_->lock_) {
+      std::lock_guard lock(multisink_->lock_);
+      return UnsafeGetUnreadEntriesSize();
+    }
+
+    // Returns size of unread entries in the sink for this drain.
+    // Marked unsafe because it requires external synchronization.
+    size_t UnsafeGetUnreadEntriesSize() const PW_NO_LOCK_SAFETY_ANALYSIS {
+      return reader_.EntriesSize();
+    }
 
    protected:
     friend MultiSink;
