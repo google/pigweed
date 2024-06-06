@@ -3,6 +3,9 @@
 ---------
 pw_router
 ---------
+.. pigweed-module::
+   :name: pw_router
+
 The ``pw_router`` module provides transport-agnostic classes for routing packets
 over network links.
 

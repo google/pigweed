@@ -248,6 +248,13 @@
       "C++"
     ]
   },
+  "pw_router": {
+    "tagline": "Transport-agnostic packet routing",
+    "status": "experimental",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_result": {
     "tagline": "Error propagation primitives: value-or-error",
     "status": "stable",
