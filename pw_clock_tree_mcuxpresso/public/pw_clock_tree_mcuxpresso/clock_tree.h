@@ -272,4 +272,84 @@ using ClockMcuxpressoDividerBlocking = ClockMcuxpressoDivider<ElementBlocking>;
 using ClockMcuxpressoDividerNonBlocking =
     ClockMcuxpressoDivider<ElementNonBlockingCannotFail>;
 
+/// Class template implementing the audio pll clock element.
+///
+/// The Audio PLL can either operate in the enabled mode where the PLL
+/// and the phase fractional divider are enabled, or it can operate in
+/// bypass mode, where both PLL and phase fractional divider are
+/// clock gated.
+/// When the Audio PLL clock tree gets disabled, both PLL and phase fractional
+/// divider will be clock gated.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoAudioPll : public DependentElement<ElementType> {
+ public:
+  /// Constructor specifying the configuration for the enabled Audio PLL.
+  constexpr ClockMcuxpressoAudioPll(ElementType& source,
+                                    const clock_audio_pll_config_t& config,
+                                    uint8_t audio_pfd_divider)
+      : DependentElement<ElementType>(source),
+        config_(&config),
+        audio_pfd_divider_(audio_pfd_divider) {}
+
+  /// Constructor to place the Audio PLL into bypass mode.
+  constexpr ClockMcuxpressoAudioPll(ElementType& source,
+                                    audio_pll_src_t bypass_source)
+      : DependentElement<ElementType>(source), bypass_source_(bypass_source) {}
+
+ private:
+  /// Configures and enables the audio PLL if `config_` is set, otherwise places
+  /// the audio PLL in bypass mode.
+  Status DoEnable() override {
+    // If `config_` is specified, the PLL should be enabled and the phase
+    // fractional divider PFD0 needs to get configured, otherwise the PLL
+    // operates in bypass mode.
+    if (config_ != nullptr) {
+      // Configure Audio PLL clock source.
+      CLOCK_InitAudioPll(config_);
+      CLOCK_InitAudioPfd(kCLOCK_Pfd0, audio_pfd_divider_);
+    } else {
+      // PLL operates in bypass mode.
+      CLKCTL1->AUDIOPLL0CLKSEL = bypass_source_;
+      CLKCTL1->AUDIOPLL0CTL0 |= CLKCTL1_AUDIOPLL0CTL0_BYPASS_MASK;
+    }
+    return OkStatus();
+  }
+
+  /// Disables the audio PLL logic.
+  Status DoDisable() override {
+    if (config_ != nullptr) {
+      // Clock gate the phase fractional divider PFD0.
+      CLOCK_DeinitAudioPfd(kCLOCK_Pfd0);
+    }
+
+    // Power down Audio PLL
+    CLOCK_DeinitAudioPll();
+
+    // Clock gate audio PLL clock selector.
+    CLKCTL1->AUDIOPLL0CLKSEL = kCLOCK_AudioPllNone;
+    return OkStatus();
+  }
+
+  /// Optional audio PLL configuration.
+  const clock_audio_pll_config_t* config_ = nullptr;
+
+  /// Optional audio kCLOCK_Pfd0 clock divider value.
+  const uint8_t audio_pfd_divider_ = 0;
+
+  /// Optional audio PLL bypass clock source.
+  const audio_pll_src_t bypass_source_ = kCLOCK_AudioPllNone;
+};
+
+/// Alias for a blocking audio PLL clock tree element.
+using ClockMcuxpressoAudioPllBlocking =
+    ClockMcuxpressoAudioPll<ElementBlocking>;
+
+/// Alias for a non-blocking audio PLL clock tree element where updates
+/// cannot fail.
+using ClockMcuxpressoAudioPllNonBlocking =
+    ClockMcuxpressoAudioPll<ElementNonBlockingCannotFail>;
+
 }  // namespace pw::clock_tree
