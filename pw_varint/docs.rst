@@ -3,6 +3,9 @@
 =========
 pw_varint
 =========
+.. pigweed-module::
+   :name: pw_varint
+
 .. doxygenfile:: pw_varint/varint.h
    :sections: detaileddescription
 

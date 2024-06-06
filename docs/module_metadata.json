@@ -337,6 +337,15 @@
     "tagline": "GoogleTest for embedded",
     "status": "stable"
   },
+  "pw_varint": {
+    "tagline": "Functions for encoding and decoding variable length integers",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++",
+      "Rust"
+    ]
+  },
   "pw_watch": {
     "tagline": "Embedded development file system watcher",
     "status": "stable"
