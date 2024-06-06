@@ -207,6 +207,8 @@ pw_cc_toolchain(
         "@platforms//os:macos": [
             "%sysroot%/usr/include",
             "%sysroot%/System/Library/Frameworks/CoreFoundation.framework/Headers",
+            "%sysroot%/System/Library/Frameworks/IOKit.framework/Headers",
+            "%sysroot%/System/Library/Frameworks/Security.framework/Headers",
             "%package(@llvm_toolchain//)%/include/c++/v1",
             "%package(@llvm_toolchain//)%/lib/clang/18/include",
         ],
