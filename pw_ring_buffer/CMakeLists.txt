@@ -37,6 +37,7 @@ pw_add_test(pw_ring_buffer.prefixed_entry_ring_buffer_test
   PRIVATE_DEPS
     pw_ring_buffer
     pw_assert
+    pw_varint
   GROUPS
     modules
     pw_ring_buffer

@@ -14,6 +14,7 @@
 
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -21,6 +22,7 @@
 #include "pw_assert/check.h"
 #include "pw_containers/vector.h"
 #include "pw_unit_test/framework.h"
+#include "pw_varint/varint.h"
 
 using std::byte;
 
@@ -90,11 +92,14 @@ void SingleEntryWriteReadTest(bool user_data) {
   EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   EXPECT_EQ(ring.EntryCount(), 0u);
+  EXPECT_EQ(ring.EntriesSize(), 0u);
   EXPECT_EQ(ring.PopFront(), Status::OutOfRange());
   EXPECT_EQ(ring.EntryCount(), 0u);
+  EXPECT_EQ(ring.EntriesSize(), 0u);
   EXPECT_EQ(ring.PushBack(span(single_entry_data, sizeof(test_buffer) + 5)),
             Status::OutOfRange());
   EXPECT_EQ(ring.EntryCount(), 0u);
+  EXPECT_EQ(ring.EntriesSize(), 0u);
   EXPECT_EQ(ring.PeekFront(read_buffer, &read_size), Status::OutOfRange());
   EXPECT_EQ(read_size, 0u);
   read_size = 500U;
@@ -120,6 +125,10 @@ void SingleEntryWriteReadTest(bool user_data) {
     uint32_t preamble_byte = i % 128;
     ASSERT_EQ(ring.PushBack(span(single_entry_data, data_size), preamble_byte),
               OkStatus());
+    ASSERT_EQ(ring.EntriesSize(),
+              sizeof(single_entry_data) +
+                  varint::EncodedSize(sizeof(single_entry_data)));
+    ASSERT_EQ(ring.EntryCount(), 1u);
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
@@ -160,6 +169,8 @@ void SingleEntryWriteReadTest(bool user_data) {
     }
 
     ASSERT_EQ(ring.PopFront(), OkStatus());
+    ASSERT_EQ(ring.EntriesSize(), 0u);
+    ASSERT_EQ(ring.EntryCount(), 0u);
   }
 }
 
@@ -534,6 +545,35 @@ TEST(PrefixedEntryRingBuffer, Iterator) {
   EXPECT_EQ(validated_entries, entry_count);
 }
 
+TEST(PrefixedEntryRingBuffer, EntriesSizeWhenBufferFull) {
+  PrefixedEntryRingBuffer ring;
+
+  constexpr size_t kSingleEntryInternalSize =
+      sizeof(single_entry_data) +
+      varint::EncodedSize(sizeof(single_entry_data));
+
+  // Set the buffer size to be a multiple of single entry data size.
+  std::array<std::byte, kSingleEntryInternalSize> test_buffer;
+  ASSERT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  // Set the buffer to 100% full.
+  while (true) {
+    Status status = ring.TryPushBack(single_entry_data);
+    ASSERT_EQ(ring.TotalUsedBytes(),
+              ring.EntryCount() * kSingleEntryInternalSize);
+    if (!status.ok()) {
+      EXPECT_EQ(status, Status::ResourceExhausted());
+      break;
+    }
+  }
+  ASSERT_EQ(ring.TotalUsedBytes(), ring.TotalSizeBytes());
+  EXPECT_EQ(ring.EntriesSize(), ring.TotalSizeBytes());
+
+  // Push one more entry.
+  EXPECT_EQ(ring.PushBack(single_entry_data), OkStatus());
+  EXPECT_EQ(ring.EntriesSize(), ring.TotalSizeBytes());
+}
+
 TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
   PrefixedEntryRingBufferMulti ring;
   byte test_buffer[kTestBufferSize];
@@ -557,6 +597,9 @@ TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
     }
   }
 
+  EXPECT_EQ(fast_reader.EntriesSize(), ring.TotalUsedBytes());
+  EXPECT_EQ(slow_reader.EntriesSize(), ring.TotalUsedBytes());
+
   // Run fast reader twice as fast as the slow reader.
   size_t total_used_bytes = ring.TotalUsedBytes();
   for (int i = 0; i < total_items; ++i) {
@@ -571,11 +614,14 @@ TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
     total_used_bytes = ring.TotalUsedBytes();
   }
   EXPECT_EQ(fast_reader.PopFront(), Status::OutOfRange());
+  EXPECT_EQ(fast_reader.EntriesSize(), 0u);
+  EXPECT_EQ(slow_reader.EntriesSize(), ring.TotalUsedBytes());
   EXPECT_TRUE(ring.TotalUsedBytes() > 0u);
 
   // Fill the buffer again, expect that the fast reader
   // only sees half the entries as the slow reader.
   size_t max_items = total_items;
+  const size_t total_used_bytes_before_pushing = total_used_bytes;
   while (true) {
     Status status = TryPushBack<int>(ring, total_items);
     if (status.ok()) {
@@ -586,7 +632,11 @@ TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
     }
   }
   EXPECT_EQ(slow_reader.EntryCount(), max_items);
+  EXPECT_EQ(slow_reader.EntriesSize(), ring.TotalUsedBytes());
   EXPECT_EQ(fast_reader.EntryCount(), total_items - max_items);
+  // Fast reader pops all the entries before the second push.
+  EXPECT_EQ(fast_reader.EntriesSize(),
+            ring.TotalUsedBytes() - total_used_bytes_before_pushing);
 
   for (int i = total_items - max_items; i < total_items; ++i) {
     EXPECT_EQ(PeekFront<int>(slow_reader), i);
@@ -597,7 +647,9 @@ TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
     }
   }
   EXPECT_EQ(slow_reader.PopFront(), Status::OutOfRange());
+  EXPECT_EQ(slow_reader.EntriesSize(), 0u);
   EXPECT_EQ(fast_reader.PopFront(), Status::OutOfRange());
+  EXPECT_EQ(fast_reader.EntriesSize(), 0u);
   EXPECT_EQ(ring.TotalUsedBytes(), 0u);
 }
 
@@ -666,6 +718,7 @@ TEST(PrefixedEntryRingBufferMulti, ReaderAddRemove) {
   // Add new reader after filling the buffer.
   EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
   EXPECT_EQ(transient_reader.EntryCount(), total_items);
+  EXPECT_EQ(transient_reader.EntriesSize(), ring.TotalUsedBytes());
 
   // Confirm that the transient reader observes all values, even though it was
   // attached after entries were pushed.
@@ -674,18 +727,21 @@ TEST(PrefixedEntryRingBufferMulti, ReaderAddRemove) {
     EXPECT_EQ(transient_reader.PopFront(), OkStatus());
   }
   EXPECT_EQ(transient_reader.EntryCount(), 0u);
+  EXPECT_EQ(transient_reader.EntriesSize(), 0u);
 
   // Confirm that re-attaching the reader resets it back to the oldest
   // available entry.
   EXPECT_EQ(ring.DetachReader(transient_reader), OkStatus());
   EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
   EXPECT_EQ(transient_reader.EntryCount(), total_items);
+  EXPECT_EQ(transient_reader.EntriesSize(), ring.TotalUsedBytes());
 
   for (size_t i = 0; i < total_items; i++) {
     EXPECT_EQ(PeekFront<size_t>(transient_reader), i);
     EXPECT_EQ(transient_reader.PopFront(), OkStatus());
   }
   EXPECT_EQ(transient_reader.EntryCount(), 0u);
+  EXPECT_EQ(transient_reader.EntriesSize(), 0u);
 }
 
 TEST(PrefixedEntryRingBufferMulti, SingleBufferPerReader) {

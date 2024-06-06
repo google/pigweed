@@ -449,6 +449,24 @@ Status PrefixedEntryRingBufferMulti::Reader::PeekFrontWithPreamble(
       *this, GetOutput(data, &entry_bytes_read_out), false, &user_preamble_out);
 }
 
+size_t PrefixedEntryRingBufferMulti::Reader::EntriesSize() const {
+  // Case: Not wrapped.
+  if (read_idx_ < buffer_->write_idx_) {
+    return buffer_->write_idx_ - read_idx_;
+  }
+  // Case: Wrapped.
+  if (read_idx_ > buffer_->write_idx_) {
+    return buffer_->buffer_bytes_ - (read_idx_ - buffer_->write_idx_);
+  }
+
+  // No entries remaining.
+  if (entry_count_ == 0) {
+    return 0;
+  }
+
+  return buffer_->buffer_bytes_;
+}
+
 iterator& iterator::operator++() {
   PW_DCHECK_OK(iteration_status_);
   PW_DCHECK_INT_NE(entry_count_, 0);

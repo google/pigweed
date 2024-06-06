@@ -50,6 +50,7 @@ pw_test("prefixed_entry_ring_buffer_test") {
   deps = [
     ":pw_ring_buffer",
     "$dir_pw_assert:pw_assert",
+    "$dir_pw_varint",
   ]
   sources = [ "prefixed_entry_ring_buffer_test.cc" ]
 }

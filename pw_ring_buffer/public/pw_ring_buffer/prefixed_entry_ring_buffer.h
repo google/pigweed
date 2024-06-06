@@ -156,6 +156,11 @@ class PrefixedEntryRingBufferMulti {
     // Entry count.
     size_t EntryCount() const { return entry_count_; }
 
+    // Get the size of the unread entries currently in the ring buffer.
+    // Return value:
+    // Number of bytes.
+    size_t EntriesSize() const;
+
    private:
     friend PrefixedEntryRingBufferMulti;
 
