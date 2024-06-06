@@ -1,8 +1,10 @@
 .. _module-pw_async:
 
-================
+========
 pw_async
-================
+========
+.. pigweed-module::
+   :name: pw_async
 
 --------
 Overview

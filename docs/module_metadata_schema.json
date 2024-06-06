@@ -38,7 +38,8 @@
           "enum": [
             "stable",
             "unstable",
-            "experimental"
+            "experimental",
+            "deprecated"
           ]
         },
         "tagline": {

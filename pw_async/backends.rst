@@ -1,8 +1,11 @@
 .. _module-pw_async-backends:
 
-==================
+=================
 pw_async backends
-==================
+=================
+.. pigweed-module-subpage::
+   :name: pw_async
+
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::
