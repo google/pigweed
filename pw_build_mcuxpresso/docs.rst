@@ -3,6 +3,8 @@
 ===================
 pw_build_mcuxpresso
 ===================
+.. pigweed-module::
+   :name: pw_build_mcuxpresso
 
 The ``pw_build_mcuxpresso`` module provides helper utilities for building a
 target based on an NXP MCUXpresso SDK.

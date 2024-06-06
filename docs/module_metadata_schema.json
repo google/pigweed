@@ -12,6 +12,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "Bazel",
               "C",
               "C11",
               "C++",
