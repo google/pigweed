@@ -75,9 +75,10 @@ class ProxyHost {
   ///               at this time (transient error).
   ///  UNIMPLEMENTED: If send is not supported by the current implementation.
   /// @endrst
-  pw::Status sendGattNotify(uint16_t connection_handle,
-                            uint16_t attribute_handle,
-                            const pw::span<uint8_t> attribute_value) {
+  pw::Status sendGattNotify(
+      [[maybe_unused]] uint16_t connection_handle,
+      [[maybe_unused]] uint16_t attribute_handle,
+      [[maybe_unused]] const pw::span<uint8_t> attribute_value) {
     return pw::Status::Unimplemented();
   }
 
