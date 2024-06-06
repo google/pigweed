@@ -83,7 +83,7 @@ set -e _pw_sourced
 set -e _PW_BOOTSTRAP_PATH
 set -e SETUP_SH
 
-# TODO(tonymd): Source fish pw_cli shell completion.
+source $PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw.fish
 
 pw_cleanup
 

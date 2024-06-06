@@ -31,10 +31,15 @@ def main() -> NoReturn:
 
     pw_cli.log.install(level=args.loglevel, debug_log=args.debug_log)
 
-    # Print the banner unless --no-banner or --tab-complete-command is provided.
-    # Note: args.tab_complete_command may be the empty string '' so check for
-    # None instead.
-    if args.banner and args.tab_complete_command is None:
+    # Print the banner unless --no-banner or a tab completion arg is
+    # present.
+    # Note: args.tab_complete_{command,option} may be the empty string
+    # '' so check for None instead.
+    if (
+        args.banner
+        and args.tab_complete_option is None
+        and args.tab_complete_command is None
+    ):
         arguments.print_banner()
 
     _LOG.debug('Executing the pw command from %s', args.directory)
@@ -53,7 +58,7 @@ def main() -> NoReturn:
     if args.tab_complete_command is not None:
         for name, plugin in sorted(pw_command_plugins.plugin_registry.items()):
             if name.startswith(args.tab_complete_command):
-                if args.tab_complete_format == 'zsh':
+                if args.tab_complete_format in ('fish', 'zsh'):
                     print(':'.join([name, plugin.help()]))
                 else:
                     print(name)

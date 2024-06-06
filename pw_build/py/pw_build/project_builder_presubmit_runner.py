@@ -638,7 +638,7 @@ def main(
     force_pw_watch: bool = False,
 ) -> int:
     """Build upstream Pigweed presubmit steps."""
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-branches
     parser = get_parser(presubmit_programs, build_recipes)
     args = parser.parse_args()
 
@@ -665,14 +665,18 @@ def main(
     else:
         charset = ASCII_CHARSET
 
-    if build_recipes and args.tab_complete_recipe is not None:
-        _tab_complete_recipe(build_recipes, text=args.tab_complete_recipe)
+    if args.tab_complete_recipe is not None:
+        if build_recipes:
+            _tab_complete_recipe(build_recipes, text=args.tab_complete_recipe)
+        # Must exit if there are no build_recipes.
         return 0
 
-    if presubmit_programs and args.tab_complete_presubmit_step is not None:
-        _tab_complete_presubmit_step(
-            presubmit_programs, text=args.tab_complete_presubmit_step
-        )
+    if args.tab_complete_presubmit_step is not None:
+        if presubmit_programs:
+            _tab_complete_presubmit_step(
+                presubmit_programs, text=args.tab_complete_presubmit_step
+            )
+        # Must exit if there are no presubmit_programs.
         return 0
 
     # List valid steps + recipes.
