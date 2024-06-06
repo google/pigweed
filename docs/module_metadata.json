@@ -43,6 +43,14 @@
       "C++17"
     ]
   },
+  "pw_base64": {
+    "tagline": "Base64 encoding, decoding, and validating",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_bloat": {
     "tagline": "Utilities for generating binary size reports",
     "status": "stable",
