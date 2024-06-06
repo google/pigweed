@@ -1,8 +1,11 @@
 .. _module-pw_rpc-ts:
 
--------------------------
-pw_rpc Web Module
--------------------------
+-----------------
+pw_rpc web module
+-----------------
+.. pigweed-module-subpage::
+   :name: pw_rpc
+
 The ``pw_rpc`` module makes it possible to call Pigweed RPCs from
 TypeScript or JavaScript. The module includes client library to facilitate handling RPCs.
 

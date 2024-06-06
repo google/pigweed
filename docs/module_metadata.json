@@ -262,6 +262,17 @@
       "C++17"
     ]
   },
+  "pw_rpc": {
+    "tagline": "Efficient, low-code-size, higher-level RPC system for embedded devices",
+    "status": "stable",
+    "languages": [
+      "C++",
+      "Java",
+      "JavaScript",
+      "Python",
+      "TypeScript"
+    ]
+  },
   "pw_software_update": {
     "tagline": "Secure software delivery",
     "status": "experimental",

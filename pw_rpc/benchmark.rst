@@ -3,6 +3,9 @@
 ===================
 pw_rpc Benchmarking
 ===================
+.. pigweed-module-subpage::
+   :name: pw_rpc
+
 pw_rpc provides tools for stress testing and benchmarking a Pigweed RPC
 deployment and the transport it is running over. Two components are included:
 
