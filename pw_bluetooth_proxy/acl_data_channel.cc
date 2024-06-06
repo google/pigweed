@@ -64,6 +64,10 @@ AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
     emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
     emboss::LEReadBufferSizeV2CommandCompleteEventWriter read_buffer_event);
 
+uint16_t AclDataChannel::GetLeAclCreditsToReserve() const {
+  return le_acl_credits_to_reserve_;
+}
+
 uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
   // TODO: https://pwbug.dev/326499611 - Subtract pending packets once we have
   // them.

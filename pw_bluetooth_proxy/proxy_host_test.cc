@@ -511,6 +511,8 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
 
+  EXPECT_TRUE(proxy.HasSendAclCapability());
+
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);
 }
@@ -550,6 +552,8 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV2) {
   proxy.HandleH4HciFromController(h4_packet);
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+
+  EXPECT_TRUE(proxy.HasSendAclCapability());
 
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);
@@ -630,6 +634,8 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveZeroCredits) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
+  EXPECT_FALSE(proxy.HasSendAclCapability());
+
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);
 }
@@ -669,6 +675,8 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenHostCreditsZero) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
+  EXPECT_TRUE(proxy.HasSendAclCapability());
+
   // Verify to controller callback was called.
   EXPECT_EQ(send_called, true);
 }
@@ -683,6 +691,8 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenNotInitialized) {
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+
+  EXPECT_TRUE(proxy.HasSendAclCapability());
 }
 
 }  // namespace

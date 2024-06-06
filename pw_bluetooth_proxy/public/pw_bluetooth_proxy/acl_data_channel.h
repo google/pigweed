@@ -48,6 +48,9 @@ class AclDataChannel {
     ProcessSpecificLEReadBufferSizeCommandCompleteEvent(read_buffer_event);
   }
 
+  // Returns the number of LE ACL send credits reserved for the proxy.
+  uint16_t GetLeAclCreditsToReserve() const;
+
   // Returns the number of available LE ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;

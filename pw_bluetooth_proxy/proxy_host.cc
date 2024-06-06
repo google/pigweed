@@ -112,6 +112,10 @@ void ProxyHost::SendToController(H4HciPacket h4_packet) {
   outward_send_to_controller_fn_(h4_packet);
 }
 
+bool ProxyHost::HasSendAclCapability() const {
+  return acl_data_channel_.GetLeAclCreditsToReserve() > 0;
+}
+
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
   return acl_data_channel_.GetNumFreeLeAclPackets();
 }

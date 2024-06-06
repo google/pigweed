@@ -81,6 +81,11 @@ class ProxyHost {
     return pw::Status::Unimplemented();
   }
 
+  /// Indicates whether the proxy has the capability of sending ACL packets.
+  /// Note that this indicates intention, so it can be true even if the proxy
+  /// has not yet or has been unable to reserve credits from the host.
+  bool HasSendAclCapability() const;
+
   /// Returns the number of available LE ACL send credits for the proxy.
   /// Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
