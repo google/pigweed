@@ -396,7 +396,7 @@
     ]
   },
   "pw_uart": {
-    "tagline": "UART interface for communication",
+    "tagline": "Core interfaces for UART communication",
     "status": "unstable",
     "languages": [
       "C++"

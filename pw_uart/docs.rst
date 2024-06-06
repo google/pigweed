@@ -3,8 +3,10 @@
 =======
 pw_uart
 =======
+.. pigweed-module::
+   :name: pw_uart
 
-The Uart interface defines the core methods for UART communication. This serves
+``pw_uart`` defines core methods for UART communication. This serves
 as a blueprint for concrete UART implementations. You will need to write the
 backend code tailored to your specific hardware device to interact with the
 UART peripheral.
