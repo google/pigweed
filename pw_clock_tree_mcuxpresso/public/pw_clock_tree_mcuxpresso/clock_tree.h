@@ -29,15 +29,15 @@ class ClockMcuxpressoFro final
 
  private:
   /// Enable this FRO divider.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_EnableFroClk(CLKCTL0->FRODIVOEN | fro_output_);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Disable this FRO divider.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     CLOCK_EnableFroClk(CLKCTL0->FRODIVOEN & ~fro_output_);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// FRO divider.
@@ -49,18 +49,18 @@ class ClockMcuxpressoLpOsc final
     : public ClockSource<ElementNonBlockingCannotFail> {
  private:
   /// Enable low power oscillator.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     POWER_DisablePD(kPDRUNCFG_PD_LPOSC); /* Power on LPOSC (1MHz) */
     // POWER_ApplyPD() is not necessary for LPOSC_PD.
     CLOCK_EnableLpOscClk(); /* Wait until LPOSC stable */
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Disable low power oscillator.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     POWER_EnablePD(kPDRUNCFG_PD_LPOSC); /* Power down LPOSC (1MHz). */
     // POWER_ApplyPD() is not necessary for LPOSC_PD.
-    return pw::OkStatus();
+    return OkStatus();
   }
 };
 
@@ -78,15 +78,15 @@ class ClockMcuxpressoMclk final : public DependentElement<ElementType> {
 
  private:
   /// Set MCLK IN clock frequency.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_SetMclkFreq(frequency_); /* Sets external MCLKIN freq */
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Set MCLK IN clock frequency to 0 Hz.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     CLOCK_SetMclkFreq(0); /* Sets external MCLKIN freq */
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// MCLK IN frequency.
@@ -116,24 +116,24 @@ class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
 
  private:
   /// Set CLK IN clock frequency.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_SetClkinFreq(
         frequency_); /*!< Sets CLK_IN pin clock frequency in Hz */
 
     // OSC clock source selector ClkIn.
     const uint8_t kCLOCK_OscClkIn = CLKCTL0_SYSOSCBYPASS_SEL(1);
     CLKCTL0->SYSOSCBYPASS = kCLOCK_OscClkIn;
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Set CLK IN clock frequency to 0 Hz.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     CLOCK_SetClkinFreq(0); /*!< Sets CLK_IN pin clock frequency in Hz */
 
     // OSC clock source selector None, which gates output to reduce power.
     const uint8_t kCLOCK_OscNone = CLKCTL0_SYSOSCBYPASS_SEL(7);
     CLKCTL0->SYSOSCBYPASS = kCLOCK_OscNone;
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// CLK IN frequency.
@@ -166,20 +166,20 @@ class ClockMcuxpressoFrg final : public DependentElement<ElementType> {
   const uint8_t kCLOCK_FrgNone = 7;
 
   /// Enable FRG configuration.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_SetFRGClock(&config_);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Disable FRG configuration.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     clock_frg_clk_config_t disable_config = config_;
     static_assert(sizeof(disable_config.sfg_clock_src) ==
                   sizeof(kCLOCK_FrgNone));
     disable_config.sfg_clock_src =
         static_cast<decltype(disable_config.sfg_clock_src)>(kCLOCK_FrgNone);
     CLOCK_SetFRGClock(&disable_config);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// FRG clock configuration to enable FRG component.
@@ -212,15 +212,15 @@ class ClockMcuxpressoSelector : public DependentElement<ElementType> {
 
  private:
   /// Enable selector.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_AttachClk(selector_enable_);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Disable selector.
-  pw::Status DoDisable() final {
+  Status DoDisable() final {
     CLOCK_AttachClk(selector_disable_);
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Enable selector value.
@@ -255,9 +255,9 @@ class ClockMcuxpressoDivider final : public ClockDividerElement<ElementType> {
 
  private:
   /// Set the divider configuration.
-  pw::Status DoEnable() final {
+  Status DoEnable() final {
     CLOCK_SetClkDiv(divider_name_, this->divider());
-    return pw::OkStatus();
+    return OkStatus();
   }
 
   /// Name of divider.
