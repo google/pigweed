@@ -247,12 +247,6 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
   return *this;
 }
 
-void MultiBuf::const_iterator::AdvanceToData() {
-  while (chunk_ != nullptr && chunk_->empty()) {
-    chunk_ = chunk_->next_in_buf_;
-  }
-}
-
 Chunk& MultiBuf::ChunkIterable::back() {
   return const_cast<Chunk&>(std::as_const(*this).back());
 }

@@ -407,6 +407,7 @@ TEST(MultiBuf, IteratorAdvancesNAcrossChunks) {
 TEST(MultiBuf, IteratorAdvancesNAcrossZeroLengthChunk) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, 0));
   buf.PushBackChunk(MakeChunk(allocator, {1_b, 2_b, 3_b}));
   buf.PushBackChunk(MakeChunk(allocator, 0));
   buf.PushBackChunk(MakeChunk(allocator, {4_b, 5_b, 6_b}));
@@ -425,6 +426,23 @@ TEST(MultiBuf, ConstIteratorAdvancesNAcrossChunks) {
   MultiBuf::const_iterator iter = buf.cbegin();
   iter += 4;
   EXPECT_EQ(*iter, 5_b);
+}
+
+TEST(MultiBuf, IteratorSkipsEmptyChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, 0));
+  buf.PushBackChunk(MakeChunk(allocator, 0));
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  buf.PushBackChunk(MakeChunk(allocator, 0));
+  buf.PushBackChunk(MakeChunk(allocator, {2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(allocator, 0));
+
+  MultiBuf::iterator it = buf.begin();
+  ASSERT_EQ(*it++, 1_b);
+  ASSERT_EQ(*it++, 2_b);
+  ASSERT_EQ(*it++, 3_b);
+  ASSERT_EQ(it, buf.end());
 }
 
 }  // namespace

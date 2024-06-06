@@ -81,11 +81,11 @@ class MultiBuf {
   [[nodiscard]] bool empty() const;
 
   /// Returns an iterator pointing to the first byte of this ``MultiBuf`.
-  iterator begin() { return iterator(first_, 0); }
+  iterator begin() { return iterator(first_); }
   /// Returns a const iterator pointing to the first byte of this ``MultiBuf`.
-  const_iterator begin() const { return const_iterator(first_, 0); }
+  const_iterator begin() const { return const_iterator(first_); }
   /// Returns a const iterator pointing to the first byte of this ``MultiBuf`.
-  const_iterator cbegin() const { return const_iterator(first_, 0); }
+  const_iterator cbegin() const { return const_iterator(first_); }
 
   /// Returns an iterator pointing to the end of this ``MultiBuf``.
   iterator end() { return iterator::end(); }
@@ -257,10 +257,7 @@ class MultiBuf {
     using pointer = const std::byte*;
     using iterator_category = std::forward_iterator_tag;
 
-    constexpr const_iterator() = default;
-    const_iterator(const Chunk* chunk, size_t byte_index)
-        : chunk_(chunk), byte_index_(byte_index) {}
-    static const_iterator end() { return const_iterator(nullptr, 0); }
+    constexpr const_iterator() : chunk_(nullptr), byte_index_(0) {}
 
     reference operator*() const { return (*chunk_)[byte_index_]; }
     pointer operator->() const { return &(*chunk_)[byte_index_]; }
@@ -294,10 +291,23 @@ class MultiBuf {
     constexpr size_t byte_index() const { return byte_index_; }
 
    private:
-    void AdvanceToData();
+    friend class MultiBuf;
 
-    const Chunk* chunk_ = nullptr;
-    size_t byte_index_ = 0;
+    explicit constexpr const_iterator(const Chunk* chunk)
+        : chunk_(chunk), byte_index_(0) {
+      AdvanceToData();
+    }
+
+    static const_iterator end() { return const_iterator(nullptr); }
+
+    constexpr void AdvanceToData() {
+      while (chunk_ != nullptr && chunk_->empty()) {
+        chunk_ = chunk_->next_in_buf_;
+      }
+    }
+
+    const Chunk* chunk_;
+    size_t byte_index_;
   };
 
   /// An ``std::forward_iterator`` over the bytes of a ``MultiBuf``.
@@ -310,9 +320,6 @@ class MultiBuf {
     using iterator_category = std::forward_iterator_tag;
 
     constexpr iterator() = default;
-    iterator(Chunk* chunk, size_t byte_index)
-        : const_iter_(chunk, byte_index) {}
-    static iterator end() { return iterator(nullptr, 0); }
 
     reference operator*() const { return const_cast<std::byte&>(*const_iter_); }
     pointer operator->() const { return const_cast<std::byte*>(&*const_iter_); }
@@ -352,6 +359,12 @@ class MultiBuf {
     constexpr size_t byte_index() const { return const_iter_.byte_index(); }
 
    private:
+    friend class MultiBuf;
+
+    explicit constexpr iterator(Chunk* chunk) : const_iter_(chunk) {}
+
+    static iterator end() { return iterator(nullptr); }
+
     const_iterator const_iter_;
   };
 
