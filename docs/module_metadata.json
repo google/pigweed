@@ -51,6 +51,13 @@
       "GN"
     ]
   },
+  "pw_blob_store": {
+    "tagline": "Flash-backed persistent storage for data blobs",
+    "status": "stable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_bluetooth_proxy": {
     "tagline": "Lightweight proxy for augmenting Bluetooth functionality",
     "status": "unstable",

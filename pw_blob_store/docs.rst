@@ -3,6 +3,9 @@
 =============
 pw_blob_store
 =============
+.. pigweed-module::
+   :name: pw_blob_store
+
 ``pw_blob_store`` is a storage container library for storing a single blob of
 data. ``BlobStore`` is a flash-backed persistent storage system with integrated
 data integrity checking that serves as a lightweight alternative to a file
