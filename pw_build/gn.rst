@@ -2,6 +2,9 @@
 
 GN / Ninja
 ==========
+.. pigweed-module-subpage::
+   :name: pw_build
+
 The GN / Ninja build system is the primary build system used for upstream
 Pigweed development, and is the most tested and feature-rich build system
 Pigweed offers.

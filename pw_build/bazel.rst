@@ -2,6 +2,9 @@
 
 Bazel
 =====
+.. pigweed-module-subpage::
+   :name: pw_build
+
 Bazel is currently very experimental, and only builds for host and ARM Cortex-M
 microcontrollers.
 

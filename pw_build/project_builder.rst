@@ -3,6 +3,9 @@
 ===============
 Project Builder
 ===============
+.. pigweed-module-subpage::
+   :name: pw_build
+
 The ``pw_build`` Python module contains a light-weight build command execution
 library used for projects that require running multiple commands to perform a
 build. For example: running ``cmake`` alongside ``gn``.

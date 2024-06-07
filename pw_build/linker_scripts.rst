@@ -3,6 +3,9 @@
 ==============
 Linker Scripts
 ==============
+.. pigweed-module-subpage::
+   :name: pw_build
+
 ``pw_build`` provides utilities for working with linker scripts in embedded
 projects. If using the ``GN`` or ``Bazel`` build systems you can preprocess your
 linker script using the C preprocessor with the ``pw_linker_script`` rules.

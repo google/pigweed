@@ -116,6 +116,15 @@
       "C++17"
     ]
   },
+  "pw_build": {
+    "tagline": "Integrations for Bazel, GN, and CMake",
+    "status": "stable",
+    "languages": [
+      "Bazel",
+      "CMake",
+      "GN"
+    ]
+  },
   "pw_build_android": {
     "tagline": "Utilities for using Pigweed in Android platform",
     "status": "unstable",

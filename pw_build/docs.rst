@@ -3,6 +3,9 @@
 ========
 pw_build
 ========
+.. pigweed-module::
+   :name: pw_build
+
 Pigweed's modules aim to be easy to integrate into both new and existing
 embedded projects. To that end, the ``pw_build`` module provides support for
 multiple build systems, including:

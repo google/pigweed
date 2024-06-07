@@ -3,6 +3,9 @@
 ===================
 Python GN Templates
 ===================
+.. pigweed-module-subpage::
+   :name: pw_build
+
 The Python build is implemented with GN templates defined in
 ``pw_build/python.gni``. See the .gni file for complete usage documentation.
 

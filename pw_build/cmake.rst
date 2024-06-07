@@ -2,6 +2,9 @@
 
 CMake
 =====
+.. pigweed-module-subpage::
+   :name: pw_build
+
 Pigweed's `CMake`_ support is provided primarily for projects that have an
 existing CMake build and wish to integrate Pigweed without switching to a new
 build system.
