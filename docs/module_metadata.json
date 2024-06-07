@@ -443,6 +443,13 @@
       "C++17"
     ]
   },
+  "pw_target_runner": {
+    "tagline": "gRPC server for running executables in parallel",
+    "status": "stable",
+    "languages": [
+      "Go"
+    ]
+  },
   "pw_tokenizer": {
     "tagline": "Compress strings to shrink logs by +75%",
     "status": "stable",

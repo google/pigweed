@@ -3,6 +3,8 @@
 --
 Go
 --
+.. pigweed-module-subpage::
+   :name: pw_target_runner
 
 Server
 ------

@@ -3,6 +3,9 @@
 ----------------
 pw_target_runner
 ----------------
+.. pigweed-module::
+   :name: pw_target_runner
+
 The target runner module implements a gRPC server designed to run executables
 in parallel. These executables may be run directly on the host, or flashed to
 one or more attached targets.
