@@ -90,9 +90,11 @@ TEST(Example, ExampleUsage) {
 
   CreateNonInteractingToHostBuffer(h4_packet_from_controller);
 
-  H4HciPacketSendFn containerSendToHostFn([](H4HciPacket packet) {});
+  H4HciPacketSendFn containerSendToHostFn(
+      []([[maybe_unused]] H4HciPacket packet) {});
 
-  H4HciPacketSendFn containerSendToControllerFn(([](H4HciPacket packet) {}));
+  H4HciPacketSendFn containerSendToControllerFn(
+      ([]([[maybe_unused]] H4HciPacket packet) {}));
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
 
