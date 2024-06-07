@@ -73,6 +73,13 @@
       "C++"
     ]
   },
+  "pw_bluetooth_hci": {
+    "tagline": "Bluetooth Host Controller Interface utilities",
+    "status": "stable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_bluetooth_proxy": {
     "tagline": "Lightweight proxy for augmenting Bluetooth functionality",
     "status": "unstable",
