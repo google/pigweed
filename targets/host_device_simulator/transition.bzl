@@ -39,7 +39,7 @@ _host_device_simulator_transition = transition(
 
 def _host_device_simulator_binary_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name)
-    ctx.actions.symlink(output = out, target_file = ctx.executable.binary)
+    ctx.actions.symlink(output = out, is_executable = True, target_file = ctx.executable.binary)
     return [DefaultInfo(files = depset([out]), executable = out)]
 
 host_device_simulator_binary = rule(
@@ -56,4 +56,5 @@ host_device_simulator_binary = rule(
         ),
     },
     doc = "Builds the specified binary for the host_device_simulator platform",
+    executable = True,
 )
