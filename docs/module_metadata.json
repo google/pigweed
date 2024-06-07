@@ -131,6 +131,13 @@
       "C++"
     ]
   },
+  "pw_chre": {
+    "tagline": "Android Context Hub Runtime Environment backend",
+    "status": "experimental",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_cli": {
     "tagline": "Enhance and accelerate custom command-line tooling",
     "status": "stable",

@@ -3,11 +3,8 @@
 =======
 pw_chre
 =======
-
-.. warning::
-
-  This module is extremely experimental. Parts of this module might be broken,
-  and the module does not provide a stable API.
+.. pigweed-module::
+   :name: pw_chre
 
 The `Context Hub Runtime Environment <https://source.android.com/docs/core/interaction/contexthub>`_
 (CHRE) is Android's platform for developing always-on applications called
