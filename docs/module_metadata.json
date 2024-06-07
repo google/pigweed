@@ -116,6 +116,15 @@
       "C++20"
     ]
   },
+  "pw_build_info": {
+    "tagline": "Generate, embed, and parse build-related information",
+    "status": "stable",
+    "languages": [
+      "Bazel",
+      "CMake",
+      "GN"
+    ]
+  },
   "pw_build_mcuxpresso": {
     "tagline": "Utilities for building NXP MCUXpresso SDK targets",
     "status": "stable",

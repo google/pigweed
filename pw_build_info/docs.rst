@@ -3,9 +3,8 @@
 =============
 pw_build_info
 =============
-
-.. warning::
-  This module is incomplete, but the build ID integration is ready for use.
+.. pigweed-module::
+   :name: pw_build_info
 
 pw_build_info provides tooling, build integration, and libraries for generating,
 embedding, and parsing build-related information that is embedded into
