@@ -3,9 +3,8 @@
 ==========
 pw_channel
 ==========
-.. warning::
-
-  This module is in an early, experimental state. Do not rely on its APIs.
+.. pigweed-module::
+   :name: pw_channel
 
 .. cpp:namespace:: pw::channel
 

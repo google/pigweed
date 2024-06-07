@@ -138,6 +138,13 @@
       "C++"
     ]
   },
+  "pw_channel": {
+    "tagline": "Async, zero-copy API for sending and receiving bytes or datagrams",
+    "status": "experimental",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_cli": {
     "tagline": "Enhance and accelerate custom command-line tooling",
     "status": "stable",
