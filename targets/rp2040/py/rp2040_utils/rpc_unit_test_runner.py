@@ -128,7 +128,9 @@ def main():
         sys.exit(1)
 
     # For now, require manual configurations to be fully specified.
-    if (args.usb_port or args.usb_bus) and not (args.usb_port and args.usb_bus):
+    if (args.usb_port is not None or args.usb_bus is not None) and not (
+        args.usb_port is not None and args.usb_bus is not None
+    ):
         _LOG.critical(
             'Must specify BOTH --usb-bus and --usb-port when manually '
             'specifying a device'
