@@ -73,6 +73,13 @@
       "C++"
     ]
   },
+  "pw_bluetooth": {
+    "tagline": "Host-layer Bluetooth Low Energy APIs and utilities",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_bluetooth_hci": {
     "tagline": "Bluetooth Host Controller Interface utilities",
     "status": "stable",

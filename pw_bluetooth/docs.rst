@@ -1,8 +1,11 @@
 .. _module-pw_bluetooth:
 
-================
+============
 pw_bluetooth
-================
+============
+.. pigweed-module::
+   :name: pw_bluetooth
+
 The ``pw_bluetooth`` module contains APIs and utilities for the host layer of
 Bluetooth Low Energy.
 
