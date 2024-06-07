@@ -337,8 +337,9 @@ certain things are not implemented like make variable substitution.
 pw_elf_to_bin
 -------------
 The ``pw_elf_to_bin`` rule takes in a binary executable target and produces a
-file with all ELF headers removed. It uses the toolchain's ``objcopy``
-tool. This output is commonly used to boot images on baremetal.
+file using the ``-Obinary`` option to ``objcopy``. This is only suitable for use
+with binaries where all the segments are non-overlapping. A common use case for
+this type of file is booting directly on hardware with no bootloader.
 
 .. code-block:: python
 
