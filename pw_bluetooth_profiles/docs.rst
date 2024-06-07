@@ -3,6 +3,8 @@
 =====================
 pw_bluetooth_profiles
 =====================
+.. pigweed-module::
+   :name: pw_bluetooth_profiles
 
 .. attention::
 

@@ -87,6 +87,13 @@
       "C++"
     ]
   },
+  "pw_bluetooth_profiles": {
+    "tagline": "Bluetooth profiles built on top of pw_bluetooth",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_bluetooth_proxy": {
     "tagline": "Lightweight proxy for augmenting Bluetooth functionality",
     "status": "unstable",
