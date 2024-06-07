@@ -1066,6 +1066,10 @@ class ConsoleApp:
         self.prefs.reset_config()
         self.prefs.load_config_file(config_file)
 
+        # Reset colors
+        self.load_theme(self.prefs.ui_theme)
+        self.pw_ptpython_repl.use_code_colorscheme(self.prefs.code_theme)
+
     def apply_window_config(self) -> None:
         self.window_manager.apply_config(self.prefs)
 
