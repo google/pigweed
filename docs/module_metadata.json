@@ -147,15 +147,23 @@
       "C++"
     ]
   },
-  "pw_chre": {
-    "tagline": "Android Context Hub Runtime Environment backend",
+  "pw_channel": {
+    "tagline": "Async, zero-copy API for sending and receiving bytes or datagrams",
     "status": "experimental",
     "languages": [
       "C++"
     ]
   },
-  "pw_channel": {
-    "tagline": "Async, zero-copy API for sending and receiving bytes or datagrams",
+  "pw_checksum": {
+    "tagline": "Checksum calculation API",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
+  "pw_chre": {
+    "tagline": "Android Context Hub Runtime Environment backend",
     "status": "experimental",
     "languages": [
       "C++"

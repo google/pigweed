@@ -3,6 +3,9 @@
 -----------
 pw_checksum
 -----------
+.. pigweed-module::
+   :name: pw_checksum
+
 The ``pw_checksum`` module provides functions for calculating checksums.
 
 pw_checksum/crc16_ccitt.h
