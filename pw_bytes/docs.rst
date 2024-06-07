@@ -1,14 +1,12 @@
 .. _module-pw_bytes:
 
-=========
+========
 pw_bytes
-=========
-pw_bytes is a collection of utilities for manipulating binary data.
+========
+.. pigweed-module::
+   :name: pw_bytes
 
--------------
-Compatibility
--------------
-C++17
+pw_bytes is a collection of utilities for manipulating binary data.
 
 ------------
 Dependencies

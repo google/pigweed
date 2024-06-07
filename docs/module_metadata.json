@@ -117,6 +117,13 @@
       "GN"
     ]
   },
+  "pw_bytes": {
+    "tagline": "Utilities for manipulating binary data",
+    "status": "stable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_cli": {
     "tagline": "Enhance and accelerate custom command-line tooling",
     "status": "stable",
