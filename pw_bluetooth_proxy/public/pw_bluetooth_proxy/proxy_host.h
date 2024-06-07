@@ -74,11 +74,12 @@ class ProxyHost {
   ///  UNAVAILABLE: If CHRE doesn't have resources to queue the send
   ///               at this time (transient error).
   ///  UNIMPLEMENTED: If send is not supported by the current implementation.
+  ///  INVALID_ARGUMENT: If arguments are invalid.
   /// @endrst
   pw::Status sendGattNotify(
       [[maybe_unused]] uint16_t connection_handle,
       [[maybe_unused]] uint16_t attribute_handle,
-      [[maybe_unused]] const pw::span<uint8_t> attribute_value) {
+      [[maybe_unused]] pw::span<const uint8_t> attribute_value) {
     return pw::Status::Unimplemented();
   }
 
