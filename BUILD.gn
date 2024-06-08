@@ -503,10 +503,7 @@ group("pigweed_pypi_distribution") {
 
 # Build host-only tooling.
 group("host_tools") {
-  deps = [
-    "$dir_pw_target_runner/go:simple_client(:non_default_toolchain)",
-    "$dir_pw_target_runner/go:simple_server(:non_default_toolchain)",
-  ]
+  deps = []
 
   if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
     deps += [ "$dir_pw_rust/examples/host_executable:host_executable($dir_pigweed/targets/host:host_clang_debug)" ]

@@ -26,7 +26,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	pb "pigweed/proto/pw_target_runner/target_runner_pb"
@@ -55,7 +54,6 @@ func NewServer() *Server {
 		workerPool: newWorkerPool("ServerWorkerPool"),
 	}
 
-	reflection.Register(s.grpcServer)
 	pb.RegisterTargetRunnerServer(s.grpcServer, &pwTargetRunnerService{s})
 
 	return s

@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
 	"pigweed/pw_target_runner"
 
 	pb "pigweed/proto/pw_target_runner/exec_server_config_pb"
@@ -35,7 +35,7 @@ type ServerOptions struct {
 	port int
 }
 
-// configureServerFromFile sets up the server with workers specifyed in a
+// configureServerFromFile sets up the server with workers specified in a
 // config file. The file contains a pw.target_runner.ServerConfig protobuf
 // message in canonical protobuf text format.
 func configureServerFromFile(s *pw_target_runner.Server, filepath string) error {
@@ -45,7 +45,7 @@ func configureServerFromFile(s *pw_target_runner.Server, filepath string) error 
 	}
 
 	var config pb.ServerConfig
-	if err := proto.UnmarshalText(string(content), &config); err != nil {
+	if err := prototext.Unmarshal(content, &config); err != nil {
 		return err
 	}
 

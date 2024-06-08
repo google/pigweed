@@ -1,0 +1,42 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+
+package(default_visibility = ["//visibility:public"])
+
+go_binary(
+    name = "server",
+    srcs = ["server.go"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "@pigweed//pw_target_runner:go_exec_server_config_protos",
+        "@pigweed//pw_target_runner/go:target_runner",
+    ],
+)
+
+go_binary(
+    name = "client",
+    srcs = ["client.go"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        "@org_golang_google_grpc//:grpc",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@pigweed//pw_target_runner:go_protos",
+        "@pigweed//pw_target_runner/go:target_runner",
+    ],
+)

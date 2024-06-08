@@ -19,8 +19,10 @@ import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  group_deps = [ "go:docs" ]
+  sources = [
+    "docs.rst",
+    "go/docs.rst",
+  ]
 }
 
 pw_proto_library("target_runner_proto") {
