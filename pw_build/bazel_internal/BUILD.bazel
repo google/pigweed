@@ -46,18 +46,17 @@ cc_binary(
     name = "test_linker_script",
     srcs = ["test.cc"],
     copts = ["-Wno-unused-variable"],
+    # Only compatible with platforms that support linker scripts.
+    # This test and its siblings will not link with asan:
+    # ld.lld: error: section '.text' will not fit in region 'VECTOR_TABLE': overflowed by 319296 bytes
+    # ld.lld: error: section '.init' will not fit in region 'VECTOR_TABLE': overflowed by 319319 bytes
+    # ld.lld: error: section '.fini' will not fit in region 'VECTOR_TABLE': overflowed by 319329 bytes
+    # ld.lld: error: section '.plt' will not fit in region 'VECTOR_TABLE': overflowed by 320096 bytes
+    # ld.lld: error: section '.bss' will not fit in region 'RAM': overflowed by 10135216 bytes
     target_compatible_with = select({
-        # This test and its siblings will not link with asan:
-        # ld.lld: error: section '.text' will not fit in region 'VECTOR_TABLE': overflowed by 319296 bytes
-        # ld.lld: error: section '.init' will not fit in region 'VECTOR_TABLE': overflowed by 319319 bytes
-        # ld.lld: error: section '.fini' will not fit in region 'VECTOR_TABLE': overflowed by 319329 bytes
-        # ld.lld: error: section '.plt' will not fit in region 'VECTOR_TABLE': overflowed by 320096 bytes
-        # ld.lld: error: section '.bss' will not fit in region 'RAM': overflowed by 10135216 bytes
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
-        # Only compatible with platforms that support linker scripts.
-        "@platforms//os:macos": ["@platforms//:incompatible"],
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [":linker_script_test"],
 )
@@ -76,9 +75,8 @@ cc_binary(
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
-        "@platforms//os:macos": ["@platforms//:incompatible"],
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [":lib_linker_script"],
 )
@@ -93,9 +91,8 @@ cc_binary(
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
-        "@platforms//os:macos": ["@platforms//:incompatible"],
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
     }),
 )
 

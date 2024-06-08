@@ -21,22 +21,16 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_linker_script(
-    name = "basic_linker_script",
-    # These come from
-    # https://cs.opensource.google/pigweed/pigweed/+/main:targets/stm32f429i_disc1/target_toolchains.gni
-    # TODO(tpudlik): Figure out how to share them between bazel and GN.
-    defines = [
-        "PW_BOOT_FLASH_BEGIN=0x08000200",
-        "PW_BOOT_FLASH_SIZE=1024K",
-        "PW_BOOT_HEAP_SIZE=112K",
-        "PW_BOOT_MIN_STACK_SIZE=1K",
-        "PW_BOOT_RAM_BEGIN=0x20000000",
-        "PW_BOOT_RAM_SIZE=192K",
-        "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
-        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+platform(
+    name = "platform",
+    constraint_values = [
+        "//pw_interrupt_cortex_m:backend",
+        "//pw_malloc:bucket_block_allocator_backend",
+        "//pw_sys_io_baremetal_stm32f429:backend",
+        "@platforms//cpu:armv7e-m",
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
+        "@rust_crates//:no_std",
     ],
-    linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
 )
 
 cc_library(
@@ -57,4 +51,32 @@ cc_library(
     # TODO: b/251939135 - Remove the need for alwayslink by rethinking how
     # pw_boot_cortex_m is structured in the build system.
     alwayslink = 1,
+)
+
+cc_library(
+    name = "extra_platform_libs",
+    deps = [
+        # The initialization code.
+        ":pre_init",
+        # Arm GCC support libraries.
+        "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+    ],
+)
+
+pw_linker_script(
+    name = "basic_linker_script",
+    # These come from
+    # https://cs.opensource.google/pigweed/pigweed/+/main:targets/stm32f429i_disc1/target_toolchains.gni
+    # TODO(tpudlik): Figure out how to share them between bazel and GN.
+    defines = [
+        "PW_BOOT_FLASH_BEGIN=0x08000200",
+        "PW_BOOT_FLASH_SIZE=1024K",
+        "PW_BOOT_HEAP_SIZE=112K",
+        "PW_BOOT_MIN_STACK_SIZE=1K",
+        "PW_BOOT_RAM_BEGIN=0x20000000",
+        "PW_BOOT_RAM_SIZE=192K",
+        "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
+        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ],
+    linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
 )

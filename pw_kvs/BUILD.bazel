@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -312,6 +313,12 @@ pw_cc_test(
     srcs = [
         "entry_test.cc",
     ],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -324,6 +331,12 @@ pw_cc_test(
 pw_cc_test(
     name = "entry_cache_test",
     srcs = ["entry_cache_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -335,6 +348,12 @@ pw_cc_test(
 pw_cc_test(
     name = "flash_partition_stream_test",
     srcs = ["flash_partition_stream_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -426,6 +445,12 @@ cc_library(
 
 pw_cc_test(
     name = "flash_partition_1_alignment_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_1_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -437,6 +462,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_1_alignment_4_logical_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_1_aligned_4_logical_partition",
         ":flash_partition_test_2_iterations",
@@ -448,6 +479,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_16_alignment_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_16_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -459,6 +496,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_64_alignment_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_64_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -470,6 +513,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_256_alignment_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_256_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -481,6 +530,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_256_write_size_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_1_aligned_partition",
         ":flash_partition_test_100_iterations_256_write",
@@ -492,6 +547,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "flash_partition_4_logical_256_write_size_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash_1_aligned_4_logical_partition",
         ":flash_partition_test_2_iterations_256_write",
@@ -516,6 +577,12 @@ pw_cc_test(
 pw_cc_test(
     name = "key_value_store_test",
     srcs = ["key_value_store_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -532,6 +599,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "key_value_store_1_alignment_flash_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_1_aligned_partition",
@@ -549,6 +622,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "key_value_store_1_alignment_4_logical_flash_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_1_aligned_4_logical_partition",
@@ -566,6 +645,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "key_value_store_16_alignment_flash_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_16_aligned_partition",
@@ -583,6 +668,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "key_value_store_64_alignment_flash_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_64_aligned_partition",
@@ -600,6 +691,12 @@ pw_cc_test(
 
 pw_cc_test(
     name = "key_value_store_256_alignment_flash_test",
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_256_aligned_partition",
@@ -618,6 +715,12 @@ pw_cc_test(
 pw_cc_test(
     name = "fake_flash_test_key_value_store_test",
     srcs = ["test_key_value_store_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash_test_key_value_store",
@@ -634,6 +737,12 @@ pw_cc_test(
     srcs = [
         "key_value_store_binary_format_test.cc",
     ],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -646,6 +755,12 @@ pw_cc_test(
 pw_cc_test(
     name = "key_value_store_put_test",
     srcs = ["key_value_store_put_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -660,6 +775,12 @@ pw_cc_test(
 pw_cc_test(
     name = "key_value_store_map_test",
     srcs = ["key_value_store_map_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -676,6 +797,12 @@ pw_cc_test(
 pw_cc_test(
     name = "sectors_test",
     srcs = ["sectors_test.cc"],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -689,6 +816,12 @@ pw_cc_test(
     srcs = [
         "key_value_store_wear_test.cc",
     ],
+    # TODO: b/234883746 - KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":fake_flash",
         ":pw_kvs",

@@ -64,11 +64,7 @@ pw_cc_binary_with_map(
     name = "cc_binary_with_map",
     srcs = ["empty_main.cc"],
     # Only enable on platforms that support -Map linker flag
-    target_compatible_with = select({
-        "@platforms//os:macos": ["@platforms//:incompatible"],
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # Bazel produces root-relative file paths without the -ffile-prefix-map option.

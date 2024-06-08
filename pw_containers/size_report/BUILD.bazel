@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 cc_library(
     name = "base_lib",
@@ -25,6 +26,7 @@ cc_library(
 pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -35,6 +37,7 @@ pw_cc_binary(
     name = "linked_list_one_item",
     srcs = ["linked_list.cc"],
     defines = ["ITEM_COUNT=1"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -45,6 +48,7 @@ pw_cc_binary(
     name = "linked_list_two_item",
     srcs = ["linked_list.cc"],
     defines = ["ITEM_COUNT=2"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -55,6 +59,7 @@ pw_cc_binary(
     name = "linked_list_four_item",
     srcs = ["linked_list.cc"],
     defines = ["ITEM_COUNT=4"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -65,6 +70,7 @@ pw_cc_binary(
     name = "intrusive_list_one_item",
     srcs = ["intrusive_list.cc"],
     defines = ["ITEM_COUNT=1"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -75,6 +81,7 @@ pw_cc_binary(
     name = "intrusive_list_two_item",
     srcs = ["intrusive_list.cc"],
     defines = ["ITEM_COUNT=2"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",
@@ -85,6 +92,7 @@ pw_cc_binary(
     name = "intrusive_list_four_item",
     srcs = ["intrusive_list.cc"],
     defines = ["ITEM_COUNT=4"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_containers",

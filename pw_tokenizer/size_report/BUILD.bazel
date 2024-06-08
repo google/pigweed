@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
 )
+load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 # Baseline size report library.
 cc_library(
@@ -28,6 +29,7 @@ pw_cc_binary(
     name = "tokenize_string_base",
     srcs = ["tokenize_string.cc"],
     defines = ["BASELINE"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_tokenizer",
@@ -38,6 +40,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "tokenize_string",
     srcs = ["tokenize_string.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_tokenizer",
@@ -49,6 +52,7 @@ pw_cc_binary(
     name = "tokenize_string_expr_base",
     srcs = ["tokenize_string_expr.cc"],
     defines = ["BASELINE"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_tokenizer",
@@ -59,6 +63,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "tokenize_string_expr",
     srcs = ["tokenize_string_expr.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":base_lib",
         "//pw_tokenizer",

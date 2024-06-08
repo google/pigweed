@@ -902,7 +902,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'build',
-        '--config=stm32f429i',
+        '--config=stm32f429i_freertos',
         '//pw_system:system_example',
     )
 

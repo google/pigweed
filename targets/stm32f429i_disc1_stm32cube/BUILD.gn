@@ -49,6 +49,15 @@ if (current_toolchain != default_toolchain) {
     ]
   }
 
+  pw_source_set("unit_test_app") {
+    sources = [ "unit_test_app.cc" ]
+    deps = [
+      "$dir_pw_status",
+      "$dir_pw_system",
+      "$dir_pw_unit_test:rpc_service",
+    ]
+  }
+
   config("config_includes") {
     include_dirs = [ "config" ]
   }
