@@ -53,12 +53,6 @@ pw_cc_test(
 )
 
 cc_library(
-    name = "digital_io_controller",
-    hdrs = ["public/pw_digital_io/digital_io_controller.h"],
-    includes = ["public"],
-)
-
-cc_library(
     name = "digital_io_service",
     srcs = ["digital_io_service.cc"],
     hdrs = ["public/pw_digital_io/digital_io_service.h"],
