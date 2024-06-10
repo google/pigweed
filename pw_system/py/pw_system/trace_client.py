@@ -42,7 +42,7 @@ from pw_tokenizer import detokenize
 from pw_console import socket_client
 
 
-_LOG = logging.getLogger('pw_console_trace_client')
+_LOG = logging.getLogger(__package__)
 _LOG.level = logging.DEBUG
 _LOG.addHandler(logging.StreamHandler(sys.stdout))
 

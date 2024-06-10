@@ -303,15 +303,29 @@ Connect with pw_console
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code-block:: console
+.. tab-set::
 
-   $ pw-system-console -d /dev/{ttyX} -b 115200 \
-       --proto-globs pw_rpc/echo.proto \
-       --token-databases \
-         out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf
+   .. tab-item:: Bazel
+      :sync: bazel
 
-Replace ``{ttyX}`` with the appropriate device on your machine. On Linux this
-may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.
+      .. code-block:: console
+
+         $ bazel run --config=rp2040 //pw_system:system_example_console
+
+   .. tab-item:: GN
+      :sync: gn
+
+      .. code-block:: console
+
+         $ pw-system-console --device /dev/{ttyX} --baudrate 115200 \
+             --token-databases \
+               out/rp2040.size_optimized/obj/pw_system/bin/system_example.elf
+
+      Replace ``{ttyX}`` with the appropriate device on your machine. On Linux
+      this may look like ``ttyACM0``, and on a Mac it may look like
+      ``cu.usbmodem***``. If ``--device`` is omitted the first detected port
+      will be used if there is only one. If multiple ports are detected an
+      interactive prompt will be shown.
 
 When the console opens, try sending an Echo RPC request. You should get back
 the same message you sent to the device.

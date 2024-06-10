@@ -31,7 +31,7 @@ from pw_tokenizer.proto import decode_optionally_tokenized
 from pw_unit_test.rpc import run_tests as pw_unit_test_run_tests, TestRecord
 
 # Internal log for troubleshooting this tool (the console).
-_LOG = logging.getLogger('tools')
+_LOG = logging.getLogger(__package__)
 DEFAULT_DEVICE_LOGGER = logging.getLogger('rpc_device')
 
 

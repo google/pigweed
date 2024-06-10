@@ -28,7 +28,7 @@ from pw_system.device import Device
 from pw_trace import trace
 from pw_trace_tokenized import trace_tokenized
 
-_LOG = logging.getLogger('tracing')
+_LOG = logging.getLogger(__package__)
 DEFAULT_TICKS_PER_SECOND = 1000
 
 

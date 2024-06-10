@@ -61,6 +61,7 @@ from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system import device as pw_device
 from pw_system import device_tracing
+from pw_system.find_serial_port import interactive_port_select
 from pw_tokenizer import detokenize
 
 # Default proto imports:
@@ -76,7 +77,7 @@ from pw_transfer import transfer_pb2
 
 # pylint: enable=ungrouped-imports
 
-_LOG = logging.getLogger('tools')
+_LOG = logging.getLogger(__package__)
 _DEVICE_LOG = logging.getLogger('rpc_device')
 _SERIAL_DEBUG = logging.getLogger('pw_console.serial_debug_logger')
 _ROOT_LOG = logging.getLogger()
@@ -90,8 +91,27 @@ def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m pw_system.console", description=__doc__
     )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-d', '--device', help='the serial port to use')
+
+    group = parser.add_mutually_exclusive_group(required=False)
+
+    group.add_argument(
+        '-d',
+        '--device',
+        help='the serial port to use',
+    )
+    group.add_argument(
+        '-s',
+        '--socket-addr',
+        type=str,
+        help=(
+            'Socket address used to connect to server. Type "default" to use '
+            'localhost:33000, pass the server address and port as '
+            'address:port, or prefix the path to a forwarded socket with '
+            f'"{socket_client.SocketClient.FILE_SOCKET_SERVER}:" as '
+            f'{socket_client.SocketClient.FILE_SOCKET_SERVER}:path_to_file.'
+        ),
+    )
+
     parser.add_argument(
         '-b',
         '--baudrate',
@@ -128,7 +148,6 @@ def get_parser() -> argparse.ArgumentParser:
             '--merge-device-and-host-logs argument is used.'
         ),
     )
-
     parser.add_argument(
         '--merge-device-and-host-logs',
         action='store_true',
@@ -138,7 +157,6 @@ def get_parser() -> argparse.ArgumentParser:
             'only log file.'
         ),
     )
-
     parser.add_argument(
         '--host-logfile',
         help=(
@@ -146,28 +164,13 @@ def get_parser() -> argparse.ArgumentParser:
             'default logfile are host only.'
         ),
     )
-
     parser.add_argument(
         '--device-logfile',
         default='pw_console-device-logs.txt',
         help='Device only log file.',
     )
-
     parser.add_argument(
         '--json-logfile', help='Device only JSON formatted log file.'
-    )
-
-    group.add_argument(
-        '-s',
-        '--socket-addr',
-        type=str,
-        help=(
-            'Socket address used to connect to server. Type "default" to use '
-            'localhost:33000, pass the server address and port as '
-            'address:port, or prefix the path to a forwarded socket with '
-            f'"{socket_client.SocketClient.FILE_SOCKET_SERVER}:" as '
-            f'{socket_client.SocketClient.FILE_SOCKET_SERVER}:path_to_file.'
-        ),
     )
     parser.add_argument(
         "--token-databases",
@@ -213,14 +216,12 @@ def get_parser() -> argparse.ArgumentParser:
         default=True,
         help='Use pw_rpc based logging.',
     )
-
     parser.add_argument(
         '--hdlc-encoding',
         action=argparse.BooleanOptionalAction,
         default=True,
         help='Use HDLC encoding on transfer interfaces.',
     )
-
     parser.add_argument(
         '--channel-id',
         type=int,
@@ -483,6 +484,10 @@ def console(
             if serial_debug
             else serial.Serial
         )
+
+        if not device:
+            device = interactive_port_select()
+        _ROOT_LOG.info('Using serial port: %s', device)
         serial_device = serial_impl(
             device,
             baudrate,

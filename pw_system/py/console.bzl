@@ -65,3 +65,56 @@ def device_simulator_console(
         out = name + ".exe",
         **kwargs
     )
+
+def device_console(
+        name,
+        script,
+        binary,
+        baudrate = "115200",
+        pw_console_config = None,
+        **kwargs):
+    """Connect to a device running the binary with the pw_system console.
+
+    This macro is a wrapper around bazel_skylib native_binary to
+    launch the console.py script with the basic set of arguments.
+
+    Args:
+      name: The name of this device_simulator_console rule.
+      script: The py_binary target that calls upstream Pigweed's
+        pw_system.console main or main_with_compiled_protos. See:
+        https://cs.opensource.google/pigweed/pigweed/+/main:pw_system/py/pw_system/console.py
+      binary: The binary to pass along to pw-system-console as the
+        "--token-databases" argument.
+      baudrate: Value to pass as the "--baudrate" arg to
+        pw-system-console. Defaults to 115200.
+      pw_console_config: Optional file group target containing a
+        pw_console.yaml config file. For example:
+
+          filegroup(
+              name = "pw_console_config",
+              srcs = [".pw_console.yaml"],
+          )
+
+      **kwargs: Passed to native_binary.
+    """
+    data = [binary]
+    args = [
+        "--baudrate",
+        baudrate,
+        "--token-databases",
+        "$(rootpath " + binary + ")",
+    ]
+    if pw_console_config:
+        data.append(pw_console_config)
+        args.append("--config-file")
+        args.append("$(rootpath " + pw_console_config + ")")
+
+    native_binary(
+        name = name,
+        src = script,
+        args = args,
+        data = data,
+        # Note: out is mandatory in older bazel-skylib versions.
+        out = name + ".exe",
+        **kwargs
+    )
