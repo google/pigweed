@@ -3,6 +3,9 @@
 ============
 pw_toolchain
 ============
+.. pigweed-module::
+   :name: pw_toolchain
+
 GN toolchains function both as a set of tools for compilation and as a workspace
 for evaluating build files. The same compilations and actions can be executed by
 different toolchains. Each toolchain maintains its own set of build args, and

@@ -471,6 +471,13 @@
       "Java"
     ]
   },
+  "pw_toolchain": {
+    "tagline": "Embedded toolchains for GN-based Pigweed projects",
+    "status": "stable",
+    "languages": [
+      "GN"
+    ]
+  },
   "pw_toolchain_bazel": {
     "tagline": "A modular toolkit for declaring C/C++ toolchains in Bazel",
     "status": "unstable",
