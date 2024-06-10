@@ -138,6 +138,14 @@ class MultiBuf {
   /// This method will acquire a mutex and is not IRQ safe.
   void Truncate(size_t len);
 
+  /// Truncates the `MultiBuf` after the current iterator. All bytes following
+  /// the iterator are removed.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void TruncateAfter(iterator pos);
+
   /// Attempts to shrink this handle to refer to the data beginning at
   /// offset ``bytes_to_take``, returning the first ``bytes_to_take`` bytes as
   /// a new ``MultiBuf``.

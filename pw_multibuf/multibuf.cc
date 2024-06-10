@@ -75,20 +75,18 @@ void MultiBuf::Slice(size_t begin, size_t end) {
 }
 
 void MultiBuf::Truncate(size_t len) {
-  PW_DCHECK(len <= size());
   if (len == 0) {
     Release();
     return;
   }
-  Chunk* new_last_chunk = first_;
-  size_t len_from_chunk_start = len;
-  while (len_from_chunk_start > new_last_chunk->size()) {
-    len_from_chunk_start -= new_last_chunk->size();
-    new_last_chunk = new_last_chunk->next_in_buf_;
-  }
-  new_last_chunk->Truncate(len_from_chunk_start);
-  Chunk* remainder = new_last_chunk->next_in_buf_;
-  new_last_chunk->next_in_buf_ = nullptr;
+  TruncateAfter(begin() + (len - 1));
+}
+
+void MultiBuf::TruncateAfter(iterator pos) {
+  PW_DCHECK(pos != end());
+  pos.chunk()->Truncate(pos.byte_index() + 1);
+  Chunk* remainder = pos.chunk()->next_in_buf_;
+  pos.chunk()->next_in_buf_ = nullptr;
   MultiBuf discard;
   discard.first_ = remainder;
 }
@@ -238,11 +236,15 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
   if (advance == 0) {
     return *this;
   }
+
   while (chunk_ != nullptr && advance >= (chunk_->size() - byte_index_)) {
     advance -= (chunk_->size() - byte_index_);
     chunk_ = chunk_->next_in_buf_;
     byte_index_ = 0;
   }
+
+  PW_DCHECK(chunk_ != nullptr || advance == 0u,
+            "Iterated past the end of the MultiBuf");
   byte_index_ += advance;
   return *this;
 }

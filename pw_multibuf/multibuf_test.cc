@@ -221,12 +221,34 @@ TEST(MultiBuf, SliceDoesNotModifyChunkMemory) {
   ExpectElementsEqual(span, kBytes);
 }
 
+TEST(MultiBuf, TruncateRemovesFinalEmptyChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(allocator, 3U));
+  buf.PushFrontChunk(MakeChunk(allocator, 3U));
+  buf.Truncate(3U);
+  EXPECT_EQ(buf.size(), 3U);
+  EXPECT_EQ(buf.Chunks().size(), 1U);
+}
+
 TEST(MultiBuf, TruncateRemovesWholeAndPartialChunks) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
   buf.PushFrontChunk(MakeChunk(allocator, 3U));
   buf.PushFrontChunk(MakeChunk(allocator, 3U));
   buf.Truncate(2U);
+  EXPECT_EQ(buf.size(), 2U);
+}
+
+TEST(MultiBuf, TruncateAfterRemovesWholeAndPartialChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(allocator, 3U));
+  buf.PushFrontChunk(MakeChunk(allocator, 0U));
+  buf.PushFrontChunk(MakeChunk(allocator, 1U));
+  auto it = buf.begin();
+  ++it;
+  buf.TruncateAfter(it);
   EXPECT_EQ(buf.size(), 2U);
 }
 

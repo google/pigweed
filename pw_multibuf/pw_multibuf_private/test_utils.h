@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 #include <optional>
 
@@ -26,16 +27,16 @@ namespace pw::multibuf::test_utils {
 // Arbitrary size intended to be large enough to store the Chunk and data
 // slices. This may be increased if `MakeChunk` or a Chunk-splitting operation
 // fails.
-const size_t kArbitraryAllocatorSize = 2048;
-const size_t kArbitraryChunkSize = 32;
+inline constexpr size_t kArbitraryAllocatorSize = 2048;
+inline constexpr size_t kArbitraryChunkSize = 32;
 
-constexpr std::byte kPoisonByte{0x9d};
+inline constexpr std::byte kPoisonByte{0x9d};
 
 using ::pw::allocator::test::AllocatorForTest;
 
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
-                     size_t size,
-                     std::byte initializer = std::byte{0}) {
+inline OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
+                            size_t size,
+                            std::byte initializer = std::byte{0}) {
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, size);
   // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
@@ -44,8 +45,8 @@ OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
   return std::move(*chunk);
 }
 
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
-                     std::initializer_list<std::byte> data) {
+inline OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
+                            std::initializer_list<std::byte> data) {
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
   // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
@@ -54,8 +55,8 @@ OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
   return std::move(*chunk);
 }
 
-OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
-                     pw::span<const std::byte> data) {
+inline OwnedChunk MakeChunk(pw::allocator::Allocator& allocator,
+                            pw::span<const std::byte> data) {
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
   // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
