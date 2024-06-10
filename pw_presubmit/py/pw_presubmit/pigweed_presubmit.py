@@ -884,25 +884,31 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_build:module_config_test',
     )
 
-    # Provide some coverage of the RP2040 build.
-    #
-    # This is just a minimal presubmit intended to ensure we don't break what
-    # support we have.
-    #
-    # TODO: b/271465588 - Eventually just build the entire repo for this
-    # platform.
+    # Build upstream Pigweed for the rp2040.
     build_bazel(
         ctx,
         'build',
         '--config=rp2040',
+        '//...',
+        # Bazel will silently skip any incompatible targets in wildcard builds;
+        # but we know that some end-to-end targets definitely should remain
+        # compatible with this platform. So we list them explicitly. (If an
+        # explicitly listed target is incompatible with the platform, Bazel
+        # will return an error instead of skipping it.)
         '//pw_system:system_example',
     )
 
-    # Build the pw_system example for the Discovery board using STM32Cube.
+    # Build upstream Pigweed for the Discovery board using STM32Cube.
     build_bazel(
         ctx,
         'build',
         '--config=stm32f429i_freertos',
+        '//...',
+        # Bazel will silently skip any incompatible targets in wildcard builds;
+        # but we know that some end-to-end targets definitely should remain
+        # compatible with this platform. So we list them explicitly. (If an
+        # explicitly listed target is incompatible with the platform, Bazel
+        # will return an error instead of skipping it.)
         '//pw_system:system_example',
     )
 
