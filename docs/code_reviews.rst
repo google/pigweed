@@ -1,8 +1,8 @@
 .. _docs-code_reviews:
 
-============
-Code Reviews
-============
+======================
+Code review guidelines
+======================
 All Pigweed development happens on Gerrit, following the `typical Gerrit
 development workflow <http://ceres-solver.org/contributing.html>`_. Consult the
 `Gerrit User Guide

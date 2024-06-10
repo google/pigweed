@@ -140,25 +140,13 @@ Talk to us
    :hidden:
 
    Home <self>
-   docs/overview
+   What's new <changelog>
    docs/get_started/index
+   docs/showcases/index
+   Source code <https://cs.pigweed.dev/pigweed>
    docs/concepts/index
-   targets
+   docs/3p/index
    modules
-   changelog
-   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
-   Chat Room <https://discord.gg/M9NSeTA>
-   docs/os/index
-   docs/size_optimizations
-   Code Editor Support <docs/editors>
-   third_party_support
-   Source Code <https://cs.pigweed.dev/pigweed>
-   Code Reviews <https://pigweed-review.googlesource.com>
-   Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
-   docs/contributing/index
-   docs/infra/index
-   Automated Analysis <automated_analysis>
-   Build System <build_system>
-   SEEDs <seed/0000-index>
-   kudzu/docs
-   Eng Blog <docs/blog/index>
+   docs/community/index
+   Developing & contributing <docs/contributing/index>
+   Blog <docs/blog/index>

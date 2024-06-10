@@ -1,7 +1,7 @@
 .. _docs-os:
 
 ==========
-OS Support
+OS support
 ==========
 
 .. toctree::

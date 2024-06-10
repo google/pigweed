@@ -1,7 +1,7 @@
 .. _docs-size-optimizations:
 
 ==================
-Size Optimizations
+Size optimizations
 ==================
 This page contains recommendations for optimizing the size of embedded software
 including its memory and code footprints.

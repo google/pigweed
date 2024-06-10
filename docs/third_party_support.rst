@@ -1,11 +1,11 @@
 .. _docs-third-party-support:
 
 ===================
-Third Party Support
+Third-party modules
 ===================
-Pigweed is a collection of embedded-focused and embedded-related modules where
-some may have third party dependencies. To facilitate this Pigweed provides a
-set of third party modules with toolchain support and other helpers.
+Some Pigweed modules have third-party dependencies. Pigweed's
+third-party modules provide toolchain support and other helpers
+to make it easier to work with these third-party dependencies.
 
 .. toctree::
   :maxdepth: 1

@@ -1,8 +1,8 @@
 .. _docs-facades:
 
-====================
-Facades and backends
-====================
+==================
+Facades & backends
+==================
 This page explains what "facades" and "backends" mean in the context of Pigweed
 and provides guidelines on when to use them.
 

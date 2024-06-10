@@ -1,7 +1,7 @@
 .. _docs-code-of-conduct:
 
 ===============
-Code of Conduct
+Code of conduct
 ===============
 
 Our Pledge

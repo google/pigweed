@@ -1,8 +1,8 @@
 .. _docs-concepts:
 
-========
-Concepts
-========
+====================
+Overviews & concepts
+====================
 .. grid:: 1
 
    .. grid-item-card:: :octicon:`info` Facades & Backends
@@ -34,6 +34,10 @@ Concepts
    :maxdepth: 1
    :hidden:
 
+   ../overview
+   ../mission
    ../facades
+   ../size_optimizations
+   ../../automated_analysis
    ../glossary
    FAQs <../faq>

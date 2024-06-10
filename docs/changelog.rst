@@ -3,7 +3,7 @@
 .. _docs-changelog:
 
 =====================
-What's New In Pigweed
+What's new in Pigweed
 =====================
 
 --------------------------------

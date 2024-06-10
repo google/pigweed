@@ -1,8 +1,8 @@
 .. _docs-contrib-docs:
 
-=============
-Documentation
-=============
+=================
+Docs contributors
+=================
 Authoring guidelines and style guides for ``pigweed.dev`` contributors.
 
 .. grid:: 2

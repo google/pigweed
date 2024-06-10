@@ -1,7 +1,7 @@
 .. _docs-mission:
 
 ======================
-Mission & Philosophies
+Mission & philosophies
 ======================
 
 -----------

@@ -1,7 +1,7 @@
 .. _docs-get-started:
 
 ===========
-Get Started
+Quickstarts
 ===========
 .. _docs-first-time-setup:
 

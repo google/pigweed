@@ -40,11 +40,13 @@ pw_doc_group("core_docs") {
     "run_doxygen.py",
   ]
   sources = [
+    "3p/index.rst",
     "blog/01-kudzu.rst",
     "blog/02-bazel-feature-flags.rst",
     "blog/index.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",
+    "community/index.rst",
     "concepts/index.rst",
     "contributing/docs/changelog.rst",
     "contributing/docs/index.rst",
@@ -72,6 +74,7 @@ pw_doc_group("core_docs") {
     "os/zephyr/index.rst",
     "os/zephyr/kconfig.rst",
     "overview.rst",
+    "showcases/index.rst",
     "size_optimizations.rst",
     "style/cli.rst",
     "style/commit_message.rst",
