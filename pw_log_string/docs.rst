@@ -168,6 +168,12 @@ Update your target toolchain configuration file:
 Optionally provide your own implementation of ``PW_LOG_STRING_HANDLE_MESSAGE``
 which invokes ``pw_log_string_HANDLER_BACKEND`` with your selected arguments.
 
+``assert`` wrapper
+==================
+A wrapper for ``assert`` is provided that redirects calls to the ``pw_log_string``
+handler. This can be used to replace all usage of ``assert`` in a Newlib binary
+at link time.
+
 -------------
 API reference
 -------------

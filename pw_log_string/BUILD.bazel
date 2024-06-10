@@ -63,3 +63,18 @@ alias(
     name = "impl",
     actual = ":handler",
 )
+
+cc_library(
+    name = "wrap_newlib_assert",
+    srcs = [
+        "wrap_newlib_assert.cc",
+    ],
+    linkopts = [
+        "-Wl,--wrap=__assert_func",
+    ],
+    deps = [
+        ":handler",
+        "//pw_log",
+    ],
+    alwayslink = 1,
+)

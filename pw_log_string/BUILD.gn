@@ -98,6 +98,20 @@ if (pw_log_string_HANDLER_BACKEND != "") {
   }
 }
 
+config("wrap_newlib_assert_config") {
+  ldflags = [ "-Wl,--wrap=__assert_func" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("wrap_newlib_assert") {
+  all_dependent_configs = [ ":wrap_newlib_assert_config" ]
+  sources = [ "wrap_newlib_assert.cc" ]
+  deps = [
+    ":handler",
+    dir_pw_log,
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
