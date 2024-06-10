@@ -15,6 +15,7 @@
 #include "pw_stream/mpsc_stream.h"
 
 #include <cstring>
+#include <mutex>
 
 #include "pw_assert/check.h"
 
