@@ -692,5 +692,73 @@ TEST(MultiBuf, CopyFromIntoEmptyMultibuf) {
   EXPECT_EQ(result.size(), 0u);
 }
 
+TEST(MultiBuf, IsContiguousTrueForEmptyBuffer) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  MultiBuf buf;
+  EXPECT_TRUE(buf.IsContiguous());
+
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  EXPECT_TRUE(buf.IsContiguous());
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  EXPECT_TRUE(buf.IsContiguous());
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  EXPECT_TRUE(buf.IsContiguous());
+}
+
+TEST(MultiBuf, IsContiguousTrueForSingleNonEmptyChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  EXPECT_TRUE(buf.IsContiguous());
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  EXPECT_TRUE(buf.IsContiguous());
+  buf.PushFrontChunk(MakeChunk(allocator, {}));
+  EXPECT_TRUE(buf.IsContiguous());
+}
+
+TEST(MultiBuf, IsContiguousFalseIfMultipleNonEmptyChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {2_b}));
+  EXPECT_FALSE(buf.IsContiguous());
+}
+
+TEST(MultiBuf, ContiguousSpanAcrossMultipleChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  OwnedChunk chunk_1 = MakeChunk(allocator, 10);
+  const ConstByteSpan contiguous_span = chunk_1;
+  OwnedChunk chunk_2 = chunk_1->TakeSuffix(5).value();
+  OwnedChunk chunk_3 = chunk_2->TakeSuffix(5).value();
+  OwnedChunk chunk_4 = chunk_3->TakeSuffix(1).value();
+
+  MultiBuf buf;
+  buf.PushBackChunk(std::move(chunk_1));       // 5 bytes
+  buf.PushBackChunk(std::move(chunk_2));       // 0 bytes
+  buf.PushBackChunk(std::move(chunk_3));       // 4 bytes
+  buf.PushBackChunk(std::move(chunk_4));       // 1 byte
+  buf.PushBackChunk(MakeChunk(allocator, 0));  // empty
+
+  auto it = buf.Chunks().begin();
+  ASSERT_EQ((it++)->size(), 5u);
+  ASSERT_EQ((it++)->size(), 0u);
+  ASSERT_EQ((it++)->size(), 4u);
+  ASSERT_EQ((it++)->size(), 1u);
+  ASSERT_EQ((it++)->size(), 0u);
+  ASSERT_EQ(it, buf.Chunks().end());
+
+  EXPECT_TRUE(buf.IsContiguous());
+  ByteSpan span = buf.ContiguousSpan().value();
+  EXPECT_EQ(span.data(), contiguous_span.data());
+  EXPECT_EQ(span.size(), contiguous_span.size());
+
+  it = buf.Chunks().begin();
+  buf.InsertChunk(++it, MakeChunk(allocator, 1));
+  EXPECT_FALSE(buf.IsContiguous());
+}
+
 }  // namespace
 }  // namespace pw::multibuf

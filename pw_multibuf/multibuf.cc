@@ -43,6 +43,24 @@ bool MultiBuf::empty() const {
   });
 }
 
+std::optional<ConstByteSpan> MultiBuf::ContiguousSpan() const {
+  ConstByteSpan contiguous;
+  for (const Chunk& chunk : Chunks()) {
+    if (chunk.empty()) {
+      continue;
+    }
+    if (contiguous.empty()) {
+      contiguous = chunk;
+    } else if (contiguous.data() + contiguous.size() == chunk.data()) {
+      contiguous = {contiguous.data(), contiguous.size() + chunk.size()};
+    } else {  // Non-empty chunks are not contiguous
+      return std::nullopt;
+    }
+  }
+  // Return either the one non-empty chunk or an empty span.
+  return contiguous;
+}
+
 bool MultiBuf::ClaimPrefix(size_t bytes_to_claim) {
   if (first_ == nullptr) {
     return false;

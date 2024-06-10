@@ -81,6 +81,33 @@ class MultiBuf {
   /// efficient than `size() == 0` in most cases.
   [[nodiscard]] bool empty() const;
 
+  /// Returns if the `MultiBuf` is contiguous. A `MultiBuf` is contiguous if it
+  /// is comprised of either:
+  ///
+  /// - one non-empty chunk,
+  /// - only empty chunks, or
+  /// - no chunks at all.
+  [[nodiscard]] bool IsContiguous() const {
+    return ContiguousSpan().has_value();
+  }
+
+  /// If the `MultiBuf` is contiguous, returns it as a span. The span will be
+  /// empty if the `MultiBuf` is empty.
+  ///
+  /// A `MultiBuf` is contiguous if it is comprised of either:
+  ///
+  /// - one non-empty chunk,
+  /// - only empty chunks, or
+  /// - no chunks at all.
+  std::optional<ByteSpan> ContiguousSpan() {
+    auto result = std::as_const(*this).ContiguousSpan();
+    if (result.has_value()) {
+      return span(const_cast<std::byte*>(result->data()), result->size());
+    }
+    return std::nullopt;
+  }
+  std::optional<ConstByteSpan> ContiguousSpan() const;
+
   /// Returns an iterator pointing to the first byte of this ``MultiBuf`.
   iterator begin() { return iterator(first_); }
   /// Returns a const iterator pointing to the first byte of this ``MultiBuf`.
@@ -531,6 +558,10 @@ class MultiBuf {
 
     constexpr Chunk* chunk() const { return chunk_; }
 
+    constexpr operator ConstChunkIterator() const {
+      return ConstChunkIterator(chunk_);
+    }
+
    private:
     constexpr ChunkIterator(Chunk* chunk) : chunk_(chunk) {}
     static constexpr ChunkIterator end() { return ChunkIterator(nullptr); }
@@ -582,6 +613,7 @@ class MultiBuf {
     const Chunk* chunk_ = nullptr;
     friend class MultiBuf;
     friend class ChunkIterable;
+    friend class ChunkIterator;
   };
 
  private:
