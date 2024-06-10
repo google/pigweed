@@ -36,6 +36,14 @@
       "GN"
     ]
   },
+  "pw_assert": {
+    "tagline": "Flexible crash triggering and handling",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_async": {
     "tagline": "Portable APIs for asynchronous code",
     "status": "deprecated",

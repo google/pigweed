@@ -3,6 +3,9 @@
 ==================
 pw_assert backends
 ==================
+.. pigweed-module-subpage::
+   :name: pw_assert
+
 .. TODO: b/323607687 - Add backend guidance here
 
 The following backends are already implemented and available for use in your
