@@ -105,6 +105,7 @@ pw_add_test(pw_multibuf.multibuf_test
   SOURCES
     multibuf_test.cc
   PRIVATE_DEPS
+    pw_bytes
     pw_multibuf
     pw_multibuf._internal_test_utils
   GROUPS

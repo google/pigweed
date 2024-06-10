@@ -95,6 +95,7 @@ pw_source_set("pw_multibuf") {
   public_deps = [
     ":chunk",
     dir_pw_preprocessor,
+    dir_pw_status,
   ]
 }
 
@@ -102,6 +103,7 @@ pw_test("multibuf_test") {
   deps = [
     ":internal_test_utils",
     ":pw_multibuf",
+    dir_pw_bytes,
   ]
   sources = [ "multibuf_test.cc" ]
 }

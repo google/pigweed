@@ -17,6 +17,7 @@
 
 #include "pw_multibuf/chunk.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::multibuf {
 
@@ -176,6 +177,78 @@ class MultiBuf {
   /// This operation does not move any data and is ``O(Chunks().size())``.
   void PushSuffix(MultiBuf&& tail);
 
+  /// Copies bytes from the multibuf into the provided buffer.
+  ///
+  /// @param[out] dest Destination into which to copy data from the `MultiBuf`.
+  /// @param[in] position Offset in the `MultiBuf` from which to start.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: All bytes were copied into the desstination. The
+  ///    :cpp:class:`pw::StatusWithSize` includes the number of bytes copied,
+  ///    which is the size of the ``MultiBuf``.
+  ///
+  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the ``MultiBuf`` was
+  ///    larger than the destination buffer. The :cpp:class:`pw::StatusWithSize`
+  ///    includes the number of bytes copied.
+  ///
+  /// @endrst
+  StatusWithSize CopyTo(ByteSpan dest, size_t position = 0) const;
+
+  /// Copies bytes from the provided buffer into the multibuf.
+  ///
+  /// @param[in] source Data to copy into the `MultiBuf`.
+  /// @param[in] position Offset in the `MultiBuf` from which to start.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: All bytes were copied. The :cpp:class:`pw::StatusWithSize` includes
+  ///    the number of bytes copied, which is the size of the ``MultiBuf``.
+  ///
+  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the source was larger
+  ///    than the destination. The :cpp:class:`pw::StatusWithSize` includes the
+  ///    number of bytes copied.
+  ///
+  /// @endrst
+  StatusWithSize CopyFrom(ConstByteSpan source, size_t position = 0) {
+    return CopyFromAndOptionallyTruncate(source, position, /*truncate=*/false);
+  }
+
+  /// Copies bytes from the provided buffer into this `MultiBuf` and truncates
+  /// it to the end of the copied data. This is a more efficient version of:
+  /// @code{.cpp}
+  ///
+  ///   if (multibuf.CopyFrom(destination).ok()) {
+  ///     multibuf.Truncate(destination.size());
+  ///   }
+  ///
+  /// @endcode
+  ///
+  /// @param[in] source Data to copy into the `MultiBuf`.
+  /// @param[in] position Offset in the `MultiBuf` from which to start.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: All bytes were copied and the `MultiBuf` was truncated. The
+  ///    :cpp:class:`pw::StatusWithSize` includes the new `MultiBuf` size.
+  ///
+  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the source buffer was
+  ///    larger than the ``MultiBuf``. The returned
+  ///    :cpp:class:`pw::StatusWithSize` includes the number of bytes copied,
+  ///    which is the size of the ``MultiBuf``.
+  ///
+  /// @endrst
+  StatusWithSize CopyFromAndTruncate(ConstByteSpan source,
+                                     size_t position = 0) {
+    return CopyFromAndOptionallyTruncate(source, position, /*truncate=*/true);
+  }
+
   ///////////////////////////////////////////////////////////////////
   //--------------------- Chunk manipulation ----------------------//
   ///////////////////////////////////////////////////////////////////
@@ -301,8 +374,8 @@ class MultiBuf {
    private:
     friend class MultiBuf;
 
-    explicit constexpr const_iterator(const Chunk* chunk)
-        : chunk_(chunk), byte_index_(0) {
+    explicit constexpr const_iterator(const Chunk* chunk, size_t byte_index = 0)
+        : chunk_(chunk), byte_index_(byte_index) {
       AdvanceToData();
     }
 
@@ -369,7 +442,8 @@ class MultiBuf {
    private:
     friend class MultiBuf;
 
-    explicit constexpr iterator(Chunk* chunk) : const_iter_(chunk) {}
+    explicit constexpr iterator(Chunk* chunk, size_t byte_index = 0)
+        : const_iter_(chunk, byte_index) {}
 
     static iterator end() { return iterator(nullptr); }
 
@@ -519,6 +593,10 @@ class MultiBuf {
   ///
   /// This operation is ``O(Chunks().size())``.
   Chunk* Previous(Chunk* chunk) const;
+
+  StatusWithSize CopyFromAndOptionallyTruncate(ConstByteSpan source,
+                                               size_t position,
+                                               bool truncate);
 
   Chunk* first_;
 };

@@ -100,6 +100,7 @@ cc_library(
     deps = [
         ":chunk",
         "//pw_preprocessor",
+        "//pw_status",
     ],
 )
 
@@ -109,6 +110,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":pw_multibuf",
+        "//pw_bytes",
         "//pw_unit_test",
     ],
 )

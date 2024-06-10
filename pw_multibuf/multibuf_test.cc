@@ -15,6 +15,7 @@
 #include "pw_multibuf/multibuf.h"
 
 #include "pw_assert/check.h"
+#include "pw_bytes/array.h"
 #include "pw_bytes/suffix.h"
 #include "pw_multibuf_private/test_utils.h"
 #include "pw_span/span.h"
@@ -465,6 +466,230 @@ TEST(MultiBuf, IteratorSkipsEmptyChunks) {
   ASSERT_EQ(*it++, 2_b);
   ASSERT_EQ(*it++, 3_b);
   ASSERT_EQ(it, buf.end());
+}
+
+constexpr auto kSequentialBytes =
+    bytes::Initialized<6>([](size_t i) { return i + 1; });
+
+TEST(MultiBuf, CopyToFromEmptyMultiBuf) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  std::array<std::byte, 6> buffer = {};
+  StatusWithSize result = buf.CopyTo(buffer);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 0u);
+
+  result = buf.CopyTo({});
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 0u);
+}
+
+TEST(MultiBuf, CopyToEmptyDestination) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b, 2_b, 3_b, 4_b}));
+  StatusWithSize result = buf.CopyTo({});
+  ASSERT_EQ(result.status(), Status::ResourceExhausted());
+  EXPECT_EQ(result.size(), 0u);
+}
+
+TEST(MultiBuf, CopyToOneChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b, 2_b, 3_b, 4_b}));
+
+  std::array<std::byte, 4> buffer = {};
+  StatusWithSize result = buf.CopyTo(buffer);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 4u);
+  EXPECT_TRUE(
+      std::equal(buffer.begin(), buffer.end(), kSequentialBytes.begin()));
+}
+
+TEST(MultiBuf, CopyToVariousChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  buf.PushBackChunk(MakeChunk(allocator, {4_b, 5_b, 6_b}));
+
+  std::array<std::byte, 6> buffer = {};
+  StatusWithSize result = buf.CopyTo(buffer);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 6u);
+  EXPECT_TRUE(
+      std::equal(buffer.begin(), buffer.end(), kSequentialBytes.begin()));
+}
+
+TEST(MultiBuf, CopyToInTwoParts) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  constexpr size_t kMultiBufSize = 6;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+  buf.PushBackChunk(MakeChunk(allocator, {4_b, 5_b, 6_b}));
+  ASSERT_EQ(buf.size(), kMultiBufSize);
+
+  for (size_t first = 0; first < kMultiBufSize; ++first) {
+    std::array<std::byte, kMultiBufSize> buffer = {};
+    StatusWithSize result = buf.CopyTo(span(buffer).first(first));
+    ASSERT_EQ(result.status(), Status::ResourceExhausted());
+    ASSERT_EQ(result.size(), first);
+
+    result = buf.CopyTo(span(buffer).last(kMultiBufSize - first),
+                        result.size());  // start from last offset
+    ASSERT_EQ(result.status(), OkStatus());
+    ASSERT_EQ(result.size(), kMultiBufSize - first);
+
+    ASSERT_TRUE(
+        std::equal(buffer.begin(), buffer.end(), kSequentialBytes.begin()))
+        << "The whole buffer should have copied";
+  }
+}
+
+TEST(MultiBuf, CopyToPositionIsEnd) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(allocator, {1_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(allocator, {}));
+
+  StatusWithSize result = buf.CopyTo({}, 3u);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 0u);
+}
+
+TEST(MultiBuf, CopyFromIntoOneChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf mb;
+  mb.PushBackChunk(MakeChunk(allocator, 6));
+
+  StatusWithSize result = mb.CopyFrom(kSequentialBytes);
+  EXPECT_EQ(result.status(), OkStatus());
+  ASSERT_EQ(result.size(), 6u);
+  EXPECT_TRUE(std::equal(mb.begin(), mb.end(), kSequentialBytes.begin()));
+}
+
+TEST(MultiBuf, CopyFromIntoMultipleChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf mb;
+  mb.PushBackChunk(MakeChunk(allocator, 2));
+  mb.PushBackChunk(MakeChunk(allocator, 0));
+  mb.PushBackChunk(MakeChunk(allocator, 3));
+  mb.PushBackChunk(MakeChunk(allocator, 1));
+  mb.PushBackChunk(MakeChunk(allocator, 0));
+
+  StatusWithSize result = mb.CopyFrom(kSequentialBytes);
+  EXPECT_EQ(result.status(), OkStatus());
+  ASSERT_EQ(result.size(), 6u);
+  EXPECT_TRUE(std::equal(mb.begin(), mb.end(), kSequentialBytes.begin()));
+}
+
+TEST(MultiBuf, CopyFromInTwoParts) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  for (size_t first = 0; first < kSequentialBytes.size(); ++first) {
+    MultiBuf mb;
+    mb.PushBackChunk(MakeChunk(allocator, 1));
+    mb.PushBackChunk(MakeChunk(allocator, 0));
+    mb.PushBackChunk(MakeChunk(allocator, 0));
+    mb.PushBackChunk(MakeChunk(allocator, 2));
+    mb.PushBackChunk(MakeChunk(allocator, 3));
+    ASSERT_EQ(mb.size(), kSequentialBytes.size());
+
+    StatusWithSize result = mb.CopyFrom(span(kSequentialBytes).first(first));
+    ASSERT_EQ(result.status(), OkStatus());
+    ASSERT_EQ(result.size(), first);
+
+    result = mb.CopyFrom(
+        span(kSequentialBytes).last(kSequentialBytes.size() - first),
+        result.size());  // start from last offset
+    ASSERT_EQ(result.status(), OkStatus());
+    ASSERT_EQ(result.size(), kSequentialBytes.size() - first);
+
+    ASSERT_TRUE(std::equal(mb.begin(), mb.end(), kSequentialBytes.begin()))
+        << "The whole buffer should have copied";
+  }
+}
+
+TEST(MultiBuf, CopyFromAndTruncate) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  for (size_t to_copy = 0; to_copy < kSequentialBytes.size(); ++to_copy) {
+    MultiBuf mb;
+    mb.PushBackChunk(MakeChunk(allocator, 1));
+    mb.PushBackChunk(MakeChunk(allocator, 0));
+    mb.PushBackChunk(MakeChunk(allocator, 0));
+    mb.PushBackChunk(MakeChunk(allocator, 2));
+    mb.PushBackChunk(MakeChunk(allocator, 3));
+    mb.PushBackChunk(MakeChunk(allocator, 0));
+    ASSERT_EQ(mb.size(), kSequentialBytes.size());
+
+    StatusWithSize result =
+        mb.CopyFromAndTruncate(span(kSequentialBytes).first(to_copy));
+    ASSERT_EQ(result.status(), OkStatus());
+    ASSERT_EQ(result.size(), to_copy);
+    ASSERT_EQ(mb.size(), result.size());
+    ASSERT_TRUE(std::equal(mb.begin(), mb.end(), kSequentialBytes.begin()));
+  }
+}
+
+TEST(MultiBuf, CopyFromAndTruncateFromOffset) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+
+  static constexpr std::array<std::byte, 6> kZeroes = {};
+
+  // Sweep offsets 0–6 (inclusive), and copy 0–all bytes for each offset.
+  for (size_t offset = 0; offset <= kSequentialBytes.size(); ++offset) {
+    for (size_t to_copy = 0; to_copy <= kSequentialBytes.size() - offset;
+         ++to_copy) {
+      MultiBuf mb;
+      mb.PushBackChunk(MakeChunk(allocator, 2));
+      mb.PushBackChunk(MakeChunk(allocator, 0));
+      mb.PushBackChunk(MakeChunk(allocator, 3));
+      mb.PushBackChunk(MakeChunk(allocator, 0));
+      mb.PushBackChunk(MakeChunk(allocator, 0));
+      mb.PushBackChunk(MakeChunk(allocator, 1));
+      ASSERT_EQ(mb.size(), kSequentialBytes.size());
+
+      StatusWithSize result =
+          mb.CopyFromAndTruncate(span(kSequentialBytes).first(to_copy), offset);
+      ASSERT_EQ(result.status(), OkStatus());
+      ASSERT_EQ(result.size(), to_copy);
+      ASSERT_EQ(mb.size(), offset + to_copy);
+
+      // MultiBuf contains to_copy 0s followed by to_copy sequential bytes.
+      ASSERT_TRUE(std::equal(mb.begin(), mb.begin() + offset, kZeroes.begin()));
+      ASSERT_TRUE(
+          std::equal(mb.begin() + offset, mb.end(), kSequentialBytes.begin()));
+    }
+  }
+}
+
+TEST(MultiBuf, CopyFromIntoEmptyMultibuf) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf mb;
+
+  StatusWithSize result = mb.CopyFrom({});
+  EXPECT_EQ(result.status(), OkStatus());  // empty source, so copy succeeded
+  EXPECT_EQ(result.size(), 0u);
+
+  result = mb.CopyFrom(kSequentialBytes);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  EXPECT_EQ(result.size(), 0u);
+
+  mb.PushBackChunk(MakeChunk(allocator, 0));  // add an empty chunk
+
+  result = mb.CopyFrom({});
+  EXPECT_EQ(result.status(), OkStatus());  // empty source, so copy succeeded
+  EXPECT_EQ(result.size(), 0u);
+
+  result = mb.CopyFrom(kSequentialBytes);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  EXPECT_EQ(result.size(), 0u);
 }
 
 }  // namespace

@@ -15,6 +15,7 @@
 #include "pw_multibuf/multibuf.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "pw_assert/check.h"
 
@@ -104,6 +105,70 @@ void MultiBuf::PushSuffix(MultiBuf&& tail) {
   }
   Chunks().back().next_in_buf_ = tail.first_;
   tail.first_ = nullptr;
+}
+
+StatusWithSize MultiBuf::CopyTo(ByteSpan dest, const size_t position) const {
+  const_iterator byte_in_chunk = begin() + position;
+
+  ConstChunkIterator chunk(byte_in_chunk.chunk());
+  size_t chunk_offset = byte_in_chunk.byte_index();
+
+  size_t bytes_copied = 0;
+  for (; chunk != Chunks().end(); ++chunk) {
+    const size_t chunk_bytes = chunk->size() - chunk_offset;
+    const size_t to_copy = std::min(chunk_bytes, dest.size() - bytes_copied);
+    if (to_copy != 0u) {
+      std::memcpy(
+          dest.data() + bytes_copied, chunk->data() + chunk_offset, to_copy);
+      bytes_copied += to_copy;
+    }
+
+    if (chunk_bytes > to_copy) {
+      return StatusWithSize::ResourceExhausted(bytes_copied);
+    }
+    chunk_offset = 0;
+  }
+
+  return StatusWithSize(bytes_copied);  // all chunks were copied
+}
+
+StatusWithSize MultiBuf::CopyFromAndOptionallyTruncate(ConstByteSpan source,
+                                                       size_t position,
+                                                       bool truncate) {
+  if (source.empty()) {
+    if (truncate) {
+      Truncate(position);
+    }
+    return StatusWithSize(0u);
+  }
+
+  iterator byte_in_chunk = begin() + position;
+  size_t chunk_offset = byte_in_chunk.byte_index();
+
+  size_t bytes_copied = 0;
+  for (ChunkIterator chunk(byte_in_chunk.chunk()); chunk != Chunks().end();
+       ++chunk) {
+    if (chunk->empty()) {
+      continue;
+    }
+    const size_t to_copy =
+        std::min(chunk->size() - chunk_offset, source.size() - bytes_copied);
+    std::memcpy(
+        chunk->data() + chunk_offset, source.data() + bytes_copied, to_copy);
+    bytes_copied += to_copy;
+
+    if (bytes_copied == source.size()) {
+      if (truncate) {
+        // to_copy is always at least one byte, since source.empty() is checked
+        // above and empty chunks are skipped.
+        TruncateAfter(iterator(&*chunk, chunk_offset + to_copy - 1));
+      }
+      return StatusWithSize(bytes_copied);
+    }
+    chunk_offset = 0;
+  }
+
+  return StatusWithSize::ResourceExhausted(bytes_copied);  // ran out of space
 }
 
 std::optional<MultiBuf> MultiBuf::TakePrefix(size_t bytes_to_take) {
