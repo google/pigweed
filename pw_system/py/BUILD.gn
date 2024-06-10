@@ -25,6 +25,7 @@ pw_python_package("py") {
     "pw_system/__init__.py",
     "pw_system/console.py",
     "pw_system/device.py",
+    "pw_system/device_sim.py",
     "pw_system/device_tracing.py",
     "pw_system/trace_client.py",
   ]
@@ -39,6 +40,7 @@ pw_python_package("py") {
     "$dir_pw_metric:metric_service_proto.python",
     "$dir_pw_metric/py",
     "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_rpc:protos.python",
     "$dir_pw_rpc/py",
     "$dir_pw_thread:protos.python",
     "$dir_pw_thread/py",

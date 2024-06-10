@@ -17,6 +17,7 @@ load(
     "pw_cc_binary",
     "pw_facade",
 )
+load("//pw_system/py:console.bzl", "device_simulator_console")
 load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -428,4 +429,12 @@ host_device_simulator_binary(
     name = "simulator_system_example",
     testonly = True,
     binary = ":system_example",
+)
+
+# Start :simulator_system_example and connect to it with pw console.
+device_simulator_console(
+    name = "simulator_system_example_console",
+    testonly = True,
+    host_binary = ":simulator_system_example",
+    script = "//pw_system/py:device_sim",
 )

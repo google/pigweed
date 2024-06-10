@@ -22,6 +22,7 @@ py_library(
         "pw_system/__init__.py",
         "pw_system/console.py",
         "pw_system/device.py",
+        "pw_system/device_sim.py",
         "pw_system/device_tracing.py",
     ],
     imports = ["."],
@@ -36,6 +37,7 @@ py_library(
         "//pw_log_rpc/py:pw_log_rpc",
         "//pw_metric:metric_proto_py_pb2",
         "//pw_metric/py:pw_metric",
+        "//pw_rpc:echo_py_pb2",
         "//pw_rpc/py:pw_rpc",
         "//pw_thread:thread_proto_py_pb2",
         "//pw_thread:thread_snapshot_service_py_pb2",
@@ -59,6 +61,17 @@ py_binary(
         "pw_system/console.py",
     ],
     main = "pw_system/console.py",
+    tags = ["manual"],
+    deps = [
+        ":pw_system_lib",
+    ],
+)
+
+py_binary(
+    name = "device_sim",
+    srcs = [
+        "pw_system/device_sim.py",
+    ],
     tags = ["manual"],
     deps = [
         ":pw_system_lib",

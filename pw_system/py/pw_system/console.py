@@ -64,13 +64,17 @@ from pw_system import device_tracing
 from pw_tokenizer import detokenize
 
 # Default proto imports:
+# pylint: disable=ungrouped-imports
 from pw_log.proto import log_pb2
 from pw_metric_proto import metric_service_pb2
 from pw_thread_protos import thread_snapshot_service_pb2
 from pw_unit_test_proto import unit_test_pb2
 from pw_file import file_pb2
+from pw_rpc import echo_pb2
 from pw_trace_protos import trace_service_pb2
 from pw_transfer import transfer_pb2
+
+# pylint: enable=ungrouped-imports
 
 _LOG = logging.getLogger('tools')
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -455,6 +459,7 @@ def console(
     protos.append(metric_service_pb2)
     protos.append(thread_snapshot_service_pb2)
     protos.append(file_pb2)
+    protos.append(echo_pb2)
     protos.append(trace_service_pb2)
     protos.append(transfer_pb2)
 
