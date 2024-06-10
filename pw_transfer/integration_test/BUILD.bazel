@@ -13,9 +13,10 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pigweed.bzl", "pw_cc_binary")
+load("//pw_build:python.bzl", "pw_py_test")
 load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 pw_cc_binary(
@@ -47,7 +48,7 @@ py_binary(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "proxy_test",
     srcs = [
         "proxy.py",
@@ -129,7 +130,7 @@ py_library(
 )
 
 # Uses ports 3310 and 3311.
-py_test(
+pw_py_test(
     name = "cross_language_large_write_test",
     # Actually 1 hour, see
     # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
@@ -149,7 +150,7 @@ py_test(
 )
 
 # Uses ports 3306 and 3307.
-py_test(
+pw_py_test(
     name = "cross_language_large_read_test",
     # Actually 1 hour, see
     # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
@@ -169,7 +170,7 @@ py_test(
 )
 
 # Uses ports 3304 and 3305.
-py_test(
+pw_py_test(
     name = "cross_language_medium_read_test",
     timeout = "moderate",
     srcs = [
@@ -187,7 +188,7 @@ py_test(
 )
 
 # Uses ports 3316 and 3317.
-py_test(
+pw_py_test(
     name = "cross_language_medium_write_test",
     timeout = "long",
     srcs = [
@@ -205,7 +206,7 @@ py_test(
 )
 
 # Uses ports 3302 and 3303.
-py_test(
+pw_py_test(
     name = "cross_language_small_test",
     timeout = "moderate",
     srcs = [
@@ -222,7 +223,7 @@ py_test(
 )
 
 # Uses ports 3308 and 3309.
-py_test(
+pw_py_test(
     name = "multi_transfer_test",
     timeout = "moderate",
     srcs = [
@@ -239,7 +240,7 @@ py_test(
 )
 
 # Uses ports 3312 and 3313.
-py_test(
+pw_py_test(
     name = "expected_errors_test",
     timeout = "long",
     srcs = ["expected_errors_test.py"],
@@ -256,7 +257,7 @@ py_test(
 )
 
 # Uses ports 3314 and 3315.
-py_test(
+pw_py_test(
     name = "legacy_binaries_test",
     timeout = "moderate",
     srcs = ["legacy_binaries_test.py"],

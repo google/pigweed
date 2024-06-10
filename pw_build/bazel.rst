@@ -13,8 +13,8 @@ microcontrollers.
 Wrapper rules
 -------------
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
-file. The built-in Bazel rules ``cc_binary``, ``cc_test`` are wrapped with
-``pw_cc_binary`` and ``pw_cc_test``.
+file. The built-in Bazel rules ``cc_binary``, ``cc_test`` and ``py_test`` are
+wrapped with ``pw_cc_binary``, ``pw_cc_test`` and ``pw_py_test``.
 
 .. _module-pw_build-bazel-pw_linker_script:
 

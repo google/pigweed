@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -123,7 +124,7 @@ py_binary(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "command_runner_test",
     size = "small",
     srcs = [
@@ -134,7 +135,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "console_app_test",
     size = "small",
     srcs = [
@@ -145,7 +146,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "console_prefs_test",
     size = "small",
     srcs = [
@@ -156,7 +157,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "help_window_test",
     size = "small",
     srcs = [
@@ -167,7 +168,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "log_filter_test",
     size = "small",
     srcs = [
@@ -179,7 +180,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "log_store_test",
     size = "small",
     srcs = [
@@ -190,7 +191,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "log_view_test",
     size = "small",
     srcs = [
@@ -202,7 +203,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "socket_client_test",
     size = "small",
     srcs = [
@@ -213,7 +214,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "repl_pane_test",
     size = "small",
     srcs = [
@@ -224,7 +225,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "table_test",
     size = "small",
     srcs = [
@@ -236,7 +237,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "text_formatting_test",
     size = "small",
     srcs = [
@@ -248,7 +249,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "window_manager_test",
     size = "small",
     srcs = [

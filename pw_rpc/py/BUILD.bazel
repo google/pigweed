@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -102,7 +102,7 @@ py_library(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "callback_client_test",
     size = "small",
     srcs = [
@@ -114,7 +114,6 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
@@ -123,7 +122,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "client_test",
     size = "small",
     srcs = [
@@ -135,7 +134,6 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_rpc:internal_packet_proto_pb2",
@@ -143,7 +141,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "descriptors_test",
     size = "small",
     srcs = [
@@ -155,7 +153,6 @@ py_test(
     env = {
         "PROTOC": "$(location @com_google_protobuf//:protoc)",
     },
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
@@ -163,7 +160,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "ids_test",
     size = "small",
     srcs = [
@@ -176,7 +173,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "packets_test",
     size = "small",
     srcs = [

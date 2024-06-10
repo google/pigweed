@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,7 +37,7 @@ py_library(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "encode_test",
     size = "small",
     srcs = [
@@ -47,7 +48,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "decode_test",
     size = "small",
     srcs = [
@@ -59,7 +60,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "rpc_test",
     size = "small",
     srcs = [

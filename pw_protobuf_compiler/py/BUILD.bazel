@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,7 +30,7 @@ py_library(
     imports = ["."],
 )
 
-py_test(
+pw_py_test(
     name = "compiled_protos_test",
     size = "small",
     srcs = [
@@ -43,7 +44,7 @@ py_test(
     ],
 )
 
-py_test(
+pw_py_test(
     name = "compiled_nanopb_protos_test",
     size = "small",
     srcs = [
@@ -58,7 +59,7 @@ py_test(
 )
 
 # TODO(tonymd) Find out how to make protoc available in the bazel sandbox.
-# py_test(
+# pw_py_test(
 #     name = "python_protos_test",
 #     size = "small",
 #     srcs = [

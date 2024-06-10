@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 py_library(
     name = "pw_log_tokenized",
@@ -21,14 +22,14 @@ py_library(
     visibility = ["//visibility:public"],
 )
 
-py_test(
+pw_py_test(
     name = "format_string_test",
     size = "small",
     srcs = ["format_string_test.py"],
     deps = [":pw_log_tokenized"],
 )
 
-py_test(
+pw_py_test(
     name = "metadata_test",
     size = "small",
     srcs = ["metadata_test.py"],
