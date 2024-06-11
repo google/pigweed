@@ -17,6 +17,7 @@
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth_proxy/acl_data_channel.h"
 #include "pw_bluetooth_proxy/common.h"
+#include "pw_function/function.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -30,8 +31,8 @@ class ProxyHost {
   /// to send HCI packet towards the host.
   /// @param[in] send_to_controller_fn - Callback that will be called when proxy
   /// wants to send HCI packet towards the controller.
-  ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
-            H4HciPacketSendFn&& send_to_controller_fn,
+  ProxyHost(pw::Function<void(H4HciPacket packet)>&& send_to_host_fn,
+            pw::Function<void(H4HciPacket packet)>&& send_to_controller_fn,
             uint16_t le_acl_credits_to_reserve);
 
   ProxyHost() = delete;
@@ -104,11 +105,11 @@ class ProxyHost {
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // host.
-  H4HciPacketSendFn outward_send_to_host_fn_;
+  pw::Function<void(H4HciPacket packet)> outward_send_to_host_fn_;
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // controller.
-  H4HciPacketSendFn outward_send_to_controller_fn_;
+  pw::Function<void(H4HciPacket packet)> outward_send_to_controller_fn_;
 
   // Owns management of the HCI LE ACL data channel.
   AclDataChannel acl_data_channel_;

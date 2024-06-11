@@ -36,10 +36,10 @@ void UsePassthroughProxy() {
       .h4_type = emboss::H4PacketType::EVENT,
       .hci_span = pw::span(h4_array_from_controller)};
 
-  H4HciPacketSendFn containerSendToHostFn(
+  pw::Function<void(H4HciPacket packet)> containerSendToHostFn(
       []([[maybe_unused]] H4HciPacket packet) {});
 
-  H4HciPacketSendFn containerSendToControllerFn(
+  pw::Function<void(H4HciPacket packet)> containerSendToControllerFn(
       ([]([[maybe_unused]] H4HciPacket packet) {}));
 
   ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),

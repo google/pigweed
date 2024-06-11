@@ -15,7 +15,6 @@
 #pragma once
 
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_function/function.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
@@ -28,7 +27,5 @@ struct H4HciPacket {
   emboss::H4PacketType h4_type;
   pw::span<uint8_t> hci_span;
 };
-
-using H4HciPacketSendFn = pw::Function<void(H4HciPacket packet)>;
 
 }  // namespace pw::bluetooth::proxy

@@ -23,9 +23,10 @@
 
 namespace pw::bluetooth::proxy {
 
-ProxyHost::ProxyHost(H4HciPacketSendFn&& send_to_host_fn,
-                     H4HciPacketSendFn&& send_to_controller_fn,
-                     uint16_t le_acl_credits_to_reserve)
+ProxyHost::ProxyHost(
+    pw::Function<void(H4HciPacket packet)>&& send_to_host_fn,
+    pw::Function<void(H4HciPacket packet)>&& send_to_controller_fn,
+    uint16_t le_acl_credits_to_reserve)
     : outward_send_to_host_fn_(std::move(send_to_host_fn)),
       outward_send_to_controller_fn_(std::move(send_to_controller_fn)),
       acl_data_channel_{le_acl_credits_to_reserve} {}
