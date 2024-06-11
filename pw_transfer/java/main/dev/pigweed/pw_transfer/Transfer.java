@@ -18,7 +18,6 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static dev.pigweed.pw_transfer.TransferProgress.UNKNOWN_TRANSFER_SIZE;
 
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Status;
 import dev.pigweed.pw_transfer.TransferEventHandler.TransferInterface;

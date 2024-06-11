@@ -27,7 +27,6 @@ import dev.pigweed.pw_rpc.Status;
 import dev.pigweed.pw_rpc.TestClient;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
