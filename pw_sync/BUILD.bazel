@@ -542,6 +542,12 @@ pw_cc_test(
         "interrupt_spin_lock_facade_test.cc",
         "interrupt_spin_lock_facade_test_c.c",
     ],
+    # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+    # indefinitely.
+    target_compatible_with = select({
+        "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":borrow_lockable_tests",
         ":interrupt_spin_lock",

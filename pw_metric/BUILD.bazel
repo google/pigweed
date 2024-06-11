@@ -139,6 +139,12 @@ pw_cc_test(
     srcs = [
         "global_test.cc",
     ],
+    # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; has test
+    # failures.
+    target_compatible_with = select({
+        "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":global",
     ],
