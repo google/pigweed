@@ -43,6 +43,7 @@ extensions = [
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
     "pw_docgen.sphinx.kconfig",
     "pw_docgen.sphinx.module_metadata",
+    "pw_docgen.sphinx.modules_index",
     "pw_docgen.sphinx.pigweed_live",
     "pw_docgen.sphinx.pw_status_codes",
     "pw_docgen.sphinx.inlinesearch",

@@ -1,13 +1,13 @@
 .. _module-pw_rpc_transport:
 
-.. warning::
-  This is an experimental module currently under development. APIs and
-  functionality may change at any time.
-
 ================
 pw_rpc_transport
 ================
 The ``pw_rpc_transport`` provides a transport layer for ``pw_rpc``.
+
+.. warning::
+  This is an experimental module currently under development. APIs and
+  functionality may change at any time.
 
 ``pw_rpc`` provides a system for defining and invoking remote procedure calls
 (RPCs) on a device. It does not include any transports for sending these RPC
