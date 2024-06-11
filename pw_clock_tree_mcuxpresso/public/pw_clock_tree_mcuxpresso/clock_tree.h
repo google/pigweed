@@ -50,15 +50,19 @@ class ClockMcuxpressoLpOsc final
  private:
   /// Enable low power oscillator.
   Status DoEnable() final {
-    POWER_DisablePD(kPDRUNCFG_PD_LPOSC); /* Power on LPOSC (1MHz) */
+    // Power up the 1MHz low power oscillator power domain.
+    POWER_DisablePD(kPDRUNCFG_PD_LPOSC);
     // POWER_ApplyPD() is not necessary for LPOSC_PD.
-    CLOCK_EnableLpOscClk(); /* Wait until LPOSC stable */
+
+    // Wait for the low power oscillator to stabilize.
+    CLOCK_EnableLpOscClk();
     return OkStatus();
   }
 
   /// Disable low power oscillator.
   Status DoDisable() final {
-    POWER_EnablePD(kPDRUNCFG_PD_LPOSC); /* Power down LPOSC (1MHz). */
+    // Power down the 1MHz low power oscillator power domain.
+    POWER_EnablePD(kPDRUNCFG_PD_LPOSC);
     // POWER_ApplyPD() is not necessary for LPOSC_PD.
     return OkStatus();
   }
@@ -79,17 +83,19 @@ class ClockMcuxpressoMclk final : public DependentElement<ElementType> {
  private:
   /// Set MCLK IN clock frequency.
   Status DoEnable() final {
-    CLOCK_SetMclkFreq(frequency_); /* Sets external MCLKIN freq */
+    // Set global that stores external MCLK IN clock frequency.
+    CLOCK_SetMclkFreq(frequency_);
     return OkStatus();
   }
 
   /// Set MCLK IN clock frequency to 0 Hz.
   Status DoDisable() final {
-    CLOCK_SetMclkFreq(0); /* Sets external MCLKIN freq */
+    // Set global that stores external MCLK IN clock frequency to zero.
+    CLOCK_SetMclkFreq(0);
     return OkStatus();
   }
 
-  /// MCLK IN frequency.
+  /// MCLK IN frequency in Hz.
   uint32_t frequency_;
 };
 
@@ -119,8 +125,8 @@ class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
  private:
   /// Set CLK IN clock frequency.
   Status DoEnable() final {
-    CLOCK_SetClkinFreq(
-        frequency_); /*!< Sets CLK_IN pin clock frequency in Hz */
+    // Set global that stores external CLK IN pin clock frequency.
+    CLOCK_SetClkinFreq(frequency_);
 
     // OSC clock source selector ClkIn.
     const uint8_t kCLOCK_OscClkIn = CLKCTL0_SYSOSCBYPASS_SEL(1);
@@ -130,15 +136,16 @@ class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
 
   /// Set CLK IN clock frequency to 0 Hz.
   Status DoDisable() final {
-    CLOCK_SetClkinFreq(0); /*!< Sets CLK_IN pin clock frequency in Hz */
+    // Set global that stores external CLK IN pin clock frequency to zero.
+    CLOCK_SetClkinFreq(0);
 
-    // OSC clock source selector None, which gates output to reduce power.
+    // Set OSC clock source selector None, which gates output to reduce power.
     const uint8_t kCLOCK_OscNone = CLKCTL0_SYSOSCBYPASS_SEL(7);
     CLKCTL0->SYSOSCBYPASS = kCLOCK_OscNone;
     return OkStatus();
   }
 
-  /// CLK IN frequency.
+  /// CLK IN frequency in Hz.
   uint32_t frequency_;
 };
 
