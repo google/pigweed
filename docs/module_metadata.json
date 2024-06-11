@@ -121,7 +121,15 @@
     "tagline": "Simplified booting for C++ targets",
     "status": "stable",
     "languages": [
-      "C++17"
+      "C++"
+    ]
+  },
+  "pw_boot_cortex_m": {
+    "tagline": "ARM Cortex-M backend for pw_boot",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
     ]
   },
   "pw_build": {

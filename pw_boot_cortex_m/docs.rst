@@ -3,6 +3,8 @@
 ----------------
 pw_boot_cortex_m
 ----------------
+.. pigweed-module::
+   :name: pw_boot_cortex_m
 
 The ARM Cortex-M boot module provides a linker script and some early
 initialization of static memory regions and C++ constructors. This is enough to
