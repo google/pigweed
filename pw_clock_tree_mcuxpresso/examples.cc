@@ -118,6 +118,9 @@ PW_CONSTINIT pw::clock_tree::ClockMcuxpressoAudioPllNonBlocking
 
 // DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
 
+PW_CONSTINIT pw::clock_tree::ClockMcuxpressoRtcNonBlocking rtc(
+    clock_source_no_op);
+
 // Create the clock tree
 pw::clock_tree::ClockTree clock_tree;
 
@@ -149,4 +152,9 @@ TEST(ClockTreeMcuxpresso, AudioPll) {
 TEST(ClockTreeMcuxpresso, AudioPllBypass) {
   clock_tree.Acquire(audio_pll_bypass);
   clock_tree.Release(audio_pll_bypass);
+}
+
+TEST(ClockTreeMcuxpresso, Rtc) {
+  clock_tree.Acquire(rtc);
+  clock_tree.Release(rtc);
 }

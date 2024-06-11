@@ -21,6 +21,7 @@ that can be directly instantiated:
 * Clock Source Selector
 * Clock Divider
 * Audio PLL
+* RTC
 
 .. inclusive-language: enable
 
@@ -218,4 +219,10 @@ ClockMcuxpressoDivider
 ClockMcuxpressoAudioPll
 -----------------------
 .. doxygenclass:: pw::clock_tree::ClockMcuxpressoAudioPll
+   :members:
+
+------------------
+ClockMcuxpressoRtc
+------------------
+.. doxygenclass:: pw::clock_tree::ClockMcuxpressoRtc
    :members:

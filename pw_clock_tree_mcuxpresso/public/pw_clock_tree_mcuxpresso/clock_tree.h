@@ -94,6 +94,8 @@ class ClockMcuxpressoMclk final : public DependentElement<ElementType> {
 };
 
 /// Alias for a blocking MCLK IN clock tree element.
+/// This class should be used if the MCLK IN clock source depends on
+/// another blocking clock tree element to enable the MCLK IN clock source.
 using ClockMcuxpressoMclkBlocking = ClockMcuxpressoMclk<ElementBlocking>;
 
 /// Alias for a non-blocking MCLK IN clock tree element where updates cannot
@@ -141,6 +143,8 @@ class ClockMcuxpressoClkIn final : public DependentElement<ElementType> {
 };
 
 /// Alias for a blocking CLK IN pin clock tree element.
+/// This class should be used if the CLK IN pin clock source depends on
+/// another blocking clock tree element to enable the CLK IN pin clock source.
 using ClockMcuxpressoClkInBlocking = ClockMcuxpressoClkIn<ElementBlocking>;
 
 /// Alias for a non-blocking CLK IN pin clock tree element where updates cannot
@@ -351,5 +355,43 @@ using ClockMcuxpressoAudioPllBlocking =
 /// cannot fail.
 using ClockMcuxpressoAudioPllNonBlocking =
     ClockMcuxpressoAudioPll<ElementNonBlockingCannotFail>;
+
+/// Class template implementing the Rtc clock tree element.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoRtc final : public DependentElement<ElementType> {
+ public:
+  /// Constructor specifying the dependent clock tree element to enable the
+  /// Rtc clock source.
+  constexpr ClockMcuxpressoRtc(ElementType& source)
+      : DependentElement<ElementType>(source) {}
+
+ private:
+  /// Enable 32 kHz RTC oscillator
+  Status DoEnable() final {
+    // Enable 32kHZ output of RTC oscillator.
+    CLOCK_EnableOsc32K(true);
+    return OkStatus();
+  }
+
+  /// Disable 32 kHz RTS oscillator.
+  Status DoDisable() final {
+    // Disable 32KHz output of RTC oscillator.
+    CLOCK_EnableOsc32K(false);
+    return OkStatus();
+  }
+};
+
+/// Alias for a blocking Rtc clock tree element.
+/// This class should be used if the Rtc clock source depends on
+/// another blocking clock tree element to enable the Rtc clock source.
+using ClockMcuxpressoRtcBlocking = ClockMcuxpressoRtc<ElementBlocking>;
+
+/// Alias for a non-blocking Rtc clock tree element where updates
+/// cannot fail.
+using ClockMcuxpressoRtcNonBlocking =
+    ClockMcuxpressoRtc<ElementNonBlockingCannotFail>;
 
 }  // namespace pw::clock_tree
