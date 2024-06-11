@@ -194,7 +194,16 @@ def get_code_size(module_name: str) -> str | None:
 
 def status_badge(module_status: str) -> str:
     """Given a module status, return the status badge for rendering."""
-    role = ':bdg-primary:'
+    # Use a different badge for each module status value.
+    # https://sphinx-design.readthedocs.io/en/latest/badges_buttons.html#badges
+    status_to_badge = {
+        'stable': 'primary',
+        'unstable': 'secondary',
+        'experimental': 'warning',
+        'deprecated': 'danger',
+    }
+    badge = status_to_badge[module_status]
+    role = f':bdg-{badge}:'
     return role + f'`{module_status.title()}`'
 
 
