@@ -30,7 +30,7 @@ platform(
         "//pw_sys_io_rp2040:backend",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
         "@rust_crates//:no_std",
     ],
 )

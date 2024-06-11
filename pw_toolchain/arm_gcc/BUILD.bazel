@@ -135,6 +135,20 @@ pw_cc_flag_set(
 )
 
 pw_cc_flag_set(
+    name = "cortex-m0plus",
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-mcpu=cortex-m0plus",
+        "-mfloat-abi=soft",
+    ],
+)
+
+pw_cc_flag_set(
     name = "cortex-m3",
     actions = [
         "@pw_toolchain//actions:all_asm_actions",
@@ -252,6 +266,7 @@ pw_cc_toolchain(
         "@pw_toolchain//flag_sets:wnon_virtual_dtor",
     ] + select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [":cortex-m0"],
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [":cortex-m0plus"],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [":cortex-m3"],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [":cortex-m33"],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33+nofp": [":cortex-m33+nofp"],
@@ -268,6 +283,7 @@ pw_cc_toolchain(
     ],
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33+nofp": [],
@@ -283,6 +299,15 @@ toolchain(
     name = "arm_gcc_cc_toolchain_cortex-m0",
     target_compatible_with = [
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+    ],
+    toolchain = ":arm_gcc_toolchain_cortex-m",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "arm_gcc_cc_toolchain_cortex-m0plus",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
     ],
     toolchain = ":arm_gcc_toolchain_cortex-m",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",

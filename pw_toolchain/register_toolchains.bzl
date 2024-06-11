@@ -68,6 +68,7 @@ def register_pigweed_cxx_toolchains():
 
     native.register_toolchains(
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
+        "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0plus",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
