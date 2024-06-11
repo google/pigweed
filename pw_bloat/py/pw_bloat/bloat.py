@@ -100,8 +100,18 @@ def run_bloaty(
         subprocess.CalledProcessError: The Bloaty invocation failed.
     """
 
-    default_bloaty = 'bloaty'
-    bloaty_path = os.getenv('BLOATY_PATH', default_bloaty)
+    try:
+        # If running from within a Bazel context, find the Bloaty executable
+        # within the project's runfiles.
+        # pylint: disable=import-outside-toplevel
+        from rules_python.python.runfiles import runfiles  # type: ignore
+
+        r = runfiles.Create()
+        bloaty_path = r.Rlocation("bloaty/bloaty")
+    except ImportError:
+        # Outside of Bazel, use Bloaty from the system path.
+        default_bloaty = 'bloaty'
+        bloaty_path = os.getenv('BLOATY_PATH', default_bloaty)
 
     cmd = [
         bloaty_path,

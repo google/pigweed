@@ -66,6 +66,15 @@ cipd_repository(
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
 )
 
+# Set up bloaty size profiler.
+# Required by: pigweed.
+# Used in modules: //pw_bloat.
+cipd_repository(
+    name = "bloaty",
+    path = "fuchsia/third_party/bloaty/${os}-amd64",
+    tag = "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3",
+)
+
 # Set up Starlark library.
 # Required by: io_bazel_rules_go, com_google_protobuf, rules_python
 # Used in modules: None.
