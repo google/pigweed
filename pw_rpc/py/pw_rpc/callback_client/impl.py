@@ -155,9 +155,9 @@ class _MethodClient:
         """
 
         def send(
-            self, _rpc_request_proto: Message | None = None, **request_fields
+            self, request_proto: Message | None = None, /, **request_fields
         ) -> None:
-            ClientStreamingCall.send(self, _rpc_request_proto, **request_fields)
+            ClientStreamingCall.send(self, request_proto, **request_fields)
 
         _apply_protobuf_signature(self.method, send)
 
@@ -496,17 +496,16 @@ class Impl(client.ClientImpl):
     ) -> _UnaryMethodClient:
         """Creates a _UnaryMethodClient with a customized __call__ method."""
 
-        # TODO(hepler): Use / to mark the first arg as positional-only
-        #     when when Python 3.7 support is no longer required.
         def call(
             self: _UnaryMethodClient,
-            _rpc_request_proto: Message | None = None,
+            request_proto: Message | None = None,
+            /,
             *,
             pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
             **request_fields,
         ) -> UnaryResponse:
             return self.invoke(
-                self.method.get_request(_rpc_request_proto, request_fields)
+                self.method.get_request(request_proto, request_fields)
             ).wait(pw_rpc_timeout_s)
 
         _update_call_method(method, call)
@@ -526,17 +525,16 @@ class Impl(client.ClientImpl):
     ) -> _ServerStreamingMethodClient:
         """Creates _ServerStreamingMethodClient with custom __call__ method."""
 
-        # TODO(hepler): Use / to mark the first arg as positional-only
-        #     when when Python 3.7 support is no longer required.
         def call(
             self: _ServerStreamingMethodClient,
-            _rpc_request_proto: Message | None = None,
+            request_proto: Message | None = None,
+            /,
             *,
             pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
             **request_fields,
         ) -> StreamResponse:
             return self.invoke(
-                self.method.get_request(_rpc_request_proto, request_fields)
+                self.method.get_request(request_proto, request_fields)
             ).wait(pw_rpc_timeout_s)
 
         _update_call_method(method, call)

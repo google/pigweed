@@ -338,13 +338,11 @@ class ClientStreamingCall(Call):
     def response(self) -> Any:
         return self._responses[-1] if self._responses else None
 
-    # TODO(hepler): Use / to mark the first arg as positional-only
-    #     when when Python 3.7 support is no longer required.
     def send(
-        self, _rpc_request_proto: Message | None = None, **request_fields
+        self, request_proto: Message | None = None, /, **request_fields
     ) -> None:
         """Sends client stream request to the server."""
-        self._send_client_stream(_rpc_request_proto, request_fields)
+        self._send_client_stream(request_proto, request_fields)
 
     def finish_and_wait(
         self,
@@ -364,13 +362,11 @@ class BidirectionalStreamingCall(Call):
     def responses(self) -> Sequence:
         return self._responses
 
-    # TODO(hepler): Use / to mark the first arg as positional-only
-    #     when when Python 3.7 support is no longer required.
     def send(
-        self, _rpc_request_proto: Message | None = None, **request_fields
+        self, request_proto: Message | None = None, /, **request_fields
     ) -> None:
         """Sends a message to the server in the client stream."""
-        self._send_client_stream(_rpc_request_proto, request_fields)
+        self._send_client_stream(request_proto, request_fields)
 
     def finish_and_wait(
         self,
