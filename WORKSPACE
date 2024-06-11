@@ -216,7 +216,7 @@ load("@fuchsia_sdk//fuchsia:clang.bzl", "fuchsia_clang_repository")
 
 fuchsia_clang_repository(
     name = "fuchsia_clang",
-    from_workspace = "@llvm_toolchain//:BUILD.bazel",
+    from_workspace = "@llvm_toolchain//:BUILD",
 )
 
 load("@fuchsia_clang//:defs.bzl", "register_clang_toolchains")
