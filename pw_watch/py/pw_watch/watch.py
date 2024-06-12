@@ -546,10 +546,7 @@ def _exit_due_to_inotify_instance_limit():
 def _exit_due_to_pigweed_not_installed():
     # Show information and suggested commands when pigweed environment variable
     # not found.
-    _LOG.error(
-        'Environment variable $PW_ROOT not defined or is defined '
-        'outside the current directory.'
-    )
+    _LOG.error('Environment variable $PW_ROOT not defined.')
     _LOG.error(
         'Did you forget to activate the Pigweed environment? '
         'Try source ./activate.sh'
@@ -585,6 +582,10 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
     # and generate all parent paths needed to be watched without recursion.
     exclude_dir_parents = {to_watch}
     for directory_to_exclude in directories_to_exclude:
+        # Irrelevant excluded path
+        if not Path(directory_to_exclude).is_relative_to(to_watch):
+            continue
+
         parts = list(Path(directory_to_exclude).relative_to(to_watch).parts)[
             :-1
         ]
@@ -767,9 +768,6 @@ def watch_setup(  # pylint: disable=too-many-locals
 
     # Get pigweed directory information from environment variable PW_ROOT.
     if os.environ['PW_ROOT'] is None:
-        _exit_due_to_pigweed_not_installed()
-    pw_root = Path(os.environ['PW_ROOT']).resolve()
-    if Path.cwd().resolve() not in [pw_root, *pw_root.parents]:
         _exit_due_to_pigweed_not_installed()
 
     build_recipes = project_builder.build_recipes
