@@ -519,6 +519,13 @@ git_repository(
     remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
 )
 
+# TODO: https://pwbug.dev/345244650 - Upstream bazel build.
+git_repository(
+    name = "picotool",
+    commit = "49072f6ebbc814dcc74d6f8b753b89c24af12971",
+    remote = "https://github.com/armandomontanez/picotool",
+)
+
 http_archive(
     name = "tinyusb",
     build_file = "@pico-sdk//src/rp2_common/tinyusb:tinyusb.BUILD",

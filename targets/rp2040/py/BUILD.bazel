@@ -52,6 +52,7 @@ py_binary(
     ],
     data = [
         "//third_party/probe-rs",
+        "@picotool",
     ],
     main = "rp2040_utils/rpc_unit_test_runner.py",
     tags = ["manual"],

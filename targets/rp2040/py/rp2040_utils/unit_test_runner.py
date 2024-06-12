@@ -16,6 +16,7 @@
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -42,7 +43,7 @@ try:
 
     r = runfiles.Create()
     _PROBE_RS_COMMAND = r.Rlocation('pigweed/third_party/probe-rs/probe-rs')
-    _PICOTOOL_COMMAND = 'picotool'
+    _PICOTOOL_COMMAND = r.Rlocation('picotool/picotool')
 except ImportError:
     _PROBE_RS_COMMAND = 'probe-rs'
     _PICOTOOL_COMMAND = 'picotool'
@@ -220,20 +221,39 @@ class PiPicoTestingDevice(SerialTestingDevice):
     def load_picotool_binary(self, binary: Path) -> bool:
         """Flash a binary to this device using picotool, returning success or
         failure."""
-        cmd = (
+        cmd = [
             _PICOTOOL_COMMAND,
             'load',
             '-x',
             str(binary),
+        ]
+
+        # If the binary has not file extension, assume that it is ELF and
+        # explicitly tell `picotool` that.
+        if not binary.suffix:
+            cmd += ['-t', 'elf']
+
+        cmd += [
             '--bus',
             str(self._board_info.bus),
             '--address',
             str(self._board_info.address()),
             '-F',
-        )
+        ]
+
         _LOG.debug('Flashing ==> %s', ' '.join(cmd))
+
+        # If the script is running inside Bazel, `picotool` needs to run from
+        # the project root so that it can find libusb.
+        cwd = None
+        if 'BUILD_WORKING_DIRECTORY' in os.environ:
+            cwd = os.environ['BUILD_WORKING_DIRECTORY']
+
         process = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=cwd,
         )
         if process.returncode:
             err = (
