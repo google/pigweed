@@ -712,6 +712,7 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
     toolchain_path = ctx.root / 'pw_toolchain' / toolchain / 'toolchain.cmake'
     build.cmake(
         ctx,
+        '--fresh',
         f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
         f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
