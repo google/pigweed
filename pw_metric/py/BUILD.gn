@@ -31,6 +31,7 @@ pw_python_package("py") {
   python_deps = [
     "$dir_pw_rpc/py",
     "$dir_pw_tokenizer/py",
+    "..:metric_service_proto.python",
   ]
   python_test_deps = [ "$dir_pw_metric:metric_service_proto.python" ]
   pylintrc = "$dir_pigweed/.pylintrc"

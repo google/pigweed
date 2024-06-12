@@ -77,10 +77,17 @@ template("pw_doc_group") {
 #
 # Args:
 #   deps: List of pw_doc_group targets.
-#   python_metadata_deps: Python-related dependencies that are only used as deps
-#                         for generating Python package metadata list, not the
-#                         overall documentation generation. This should rarely
-#                         be used by non-Pigweed code.
+#   python_deps: Additional Python package dependencies that must be
+#                fully built before sphinx can run. This will set the
+#                PYTHONPATH when sphinx is run so automodule,
+#                autoclass or autofunction RST directives work for
+#                in-tree pw_python_package targets.
+#   python_metadata_deps: Python-related dependencies that are only
+#                         used as deps for generating Python package
+#                         metadata list, not the overall documentation
+#                         generation. This only modifies PYTHONPATH so
+#                         sphinx can import in-tree Python files. This
+#                         should rarely be used by non-Pigweed code.
 #   sources: Top-level documentation .rst source files.
 #   conf: Configuration script (conf.py) for Sphinx.
 #   output_directory: Path to directory to which HTML output is rendered.
@@ -148,8 +155,16 @@ template("pw_doc_gen") {
       python_deps = [ "$dir_pw_docgen/py" ]
       deps = [ ":$_metadata_file_target" ]
 
-      # Required to set the PYTHONPATH for any automodule/class/function RST
-      # directives.
+      # Additional Python deps that may be required for sphinx to run
+      # successfully. These deps will be fully built.
+      if (defined(invoker.python_deps)) {
+        python_deps += invoker.python_deps
+      }
+
+      # Required to set the PYTHONPATH for any automodule, autoclass,
+      # and autofunction RST directives. These deps will have their
+      # in-tree directories added to PYTHONPATH only. They will not be
+      # generated or built in the out directory first.
       python_metadata_deps = [ "$dir_pw_docgen/py" ]
       if (defined(invoker.python_metadata_deps)) {
         python_metadata_deps += invoker.python_metadata_deps

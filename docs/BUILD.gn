@@ -356,10 +356,10 @@ pw_doc_gen("docs") {
     ":third_party_docs",
     "$dir_pigweed/kudzu:docs",
     "$dir_pigweed/seed:seeds",
-    "$dir_pw_env_setup:python.install",
   ]
 
-  # Required to set the PYTHONPATH so automodule, autoclass or autofunction RST
-  # directives work.
-  python_metadata_deps = [ "$dir_pw_env_setup:core_pigweed_python_packages" ]
+  # Extra Python deps are required to set the PYTHONPATH so
+  # automodule, autoclass or autofunction RST directives work in
+  # sphinx.
+  python_deps = [ "$dir_pw_env_setup:core_pigweed_python_packages" ]
 }
