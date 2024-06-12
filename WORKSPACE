@@ -37,6 +37,14 @@ http_archive(
 )
 
 http_archive(
+    name = "rules_platform",
+    sha256 = "0aadd1bd350091aa1f9b6f2fbcac8cd98201476289454e475b28801ecf85d3fd",
+    urls = [
+        "https://github.com/bazelbuild/rules_platform/releases/download/0.1.0/rules_platform-0.1.0.tar.gz",
+    ],
+)
+
+http_archive(
     name = "rules_cc",
     sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",
     strip_prefix = "rules_cc-0.0.9",

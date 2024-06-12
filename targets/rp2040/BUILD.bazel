@@ -59,21 +59,18 @@ constraint_value(
     constraint_setting = "@freertos//:freertos_config_setting",
 )
 
-# This is just a stub to silence warnings saying that pico_logging_test_main.cc
-# is missing from the bazel build. There's no plans yet to do a Bazel build for
-# the Pi Pico.
-#
-# TODO: b/260639642 - Support Pico in the Bazel build.
 cc_library(
-    name = "pico_logging_test_main",
+    name = "unit_test_app",
+    testonly = True,
     srcs = [
-        "pico_logging_test_main.cc",
+        "unit_test_app.cc",
     ],
-    tags = ["manual"],
     deps = [
-        "//pw_unit_test",
-        "//pw_unit_test:logging_event_handler",
+        "//pw_status",
+        "//pw_system",
+        "//pw_unit_test:rpc_service",
     ],
+    alwayslink = True,
 )
 
 # This is just a stub to silence warnings saying that boot.cc and *.h files are
@@ -84,7 +81,6 @@ filegroup(
     srcs = [
         "config/pigweed_module_config.h",
         "config/rp2040_hal_config.h",
-        "unit_test_app.cc",
     ],
 )
 

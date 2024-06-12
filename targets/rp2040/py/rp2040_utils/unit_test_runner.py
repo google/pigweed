@@ -35,6 +35,18 @@ from rp2040_utils.device_detector import PicoBoardInfo, PicoDebugProbeBoardInfo
 
 _LOG = logging.getLogger()
 
+# If the script is being run through Bazel, our support binaries are provided
+# at well known locations in its runfiles.
+try:
+    from rules_python.python.runfiles import runfiles  # type: ignore
+
+    r = runfiles.Create()
+    _PROBE_RS_COMMAND = r.Rlocation('pigweed/third_party/probe-rs/probe-rs')
+    _PICOTOOL_COMMAND = 'picotool'
+except ImportError:
+    _PROBE_RS_COMMAND = 'probe-rs'
+    _PICOTOOL_COMMAND = 'picotool'
+
 
 def parse_args():
     """Parses command-line arguments."""
@@ -153,7 +165,7 @@ class PiPicoTestingDevice(SerialTestingDevice):
         )
 
         download_cmd = (
-            'probe-rs',
+            _PROBE_RS_COMMAND,
             'download',
             '--probe',
             probe,
@@ -176,8 +188,10 @@ class PiPicoTestingDevice(SerialTestingDevice):
             _LOG.error('\n\n'.join(err))
             return False
 
+        # `probe-rs download` leaves the device halted so it needs to be reset
+        # to run.
         reset_cmd = (
-            'probe-rs',
+            _PROBE_RS_COMMAND,
             'reset',
             '--probe',
             probe,
@@ -207,7 +221,7 @@ class PiPicoTestingDevice(SerialTestingDevice):
         """Flash a binary to this device using picotool, returning success or
         failure."""
         cmd = (
-            'picotool',
+            _PICOTOOL_COMMAND,
             'load',
             '-x',
             str(binary),

@@ -21,6 +21,7 @@ py_library(
     srcs = [
         "pw_unit_test/__init__.py",
         "pw_unit_test/rpc.py",
+        "pw_unit_test/serial_test_runner.py",
         "pw_unit_test/test_runner.py",
     ],
     imports = ["."],

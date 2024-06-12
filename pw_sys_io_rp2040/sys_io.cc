@@ -39,15 +39,6 @@ void LazyInitSysIo() {
   }
 }
 
-// Spin until host connects.
-void WaitForConnect() {
-  // In order to stop this sleep polling, we could register a shared IRQ handler
-  // for the USB interrupt and block on a signal from that.
-  while (!stdio_usb_connected()) {
-    sleep_ms(50);
-  }
-}
-
 }  // namespace
 
 // This whole implementation is very inefficient because it only reads / writes
@@ -56,7 +47,6 @@ namespace pw::sys_io {
 
 Status ReadByte(std::byte* dest) {
   LazyInitSysIo();
-  WaitForConnect();
 
   while (true) {
     int c = getchar_timeout_us(0);

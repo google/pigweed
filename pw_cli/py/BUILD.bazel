@@ -43,6 +43,7 @@ py_library(
         "pw_cli/tool_runner.py",
     ],
     imports = ["."],
+    deps = ["@python_packages_psutil//:pkg"],
 )
 
 py_binary(

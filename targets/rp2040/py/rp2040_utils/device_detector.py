@@ -111,6 +111,19 @@ def _custom_find_library(name: str) -> str | None:
         if cipd_lib.is_dir():
             search_paths.append(cipd_lib)
 
+    # libusb provided by Bazel
+    try:
+        # pylint: disable=import-outside-toplevel
+        from rules_python.python.runfiles import runfiles  # type: ignore
+
+        r = runfiles.Create()
+        libusb_dir = os.path.dirname(
+            r.Rlocation(f'libusb/libusb-1.0{_LIB_SUFFIX}')
+        )
+        search_paths.append(Path(libusb_dir))
+    except ImportError:
+        pass
+
     _LOG.debug('Potential shared library search paths:')
     for path in search_paths:
         _LOG.debug(path)

@@ -24,7 +24,17 @@ except ImportError:
     # Load from this directory if rp2040_utils is not available.
     import unit_test_server  # type: ignore
 
-_TARGET_CLIENT_COMMAND = 'pw_target_runner_client'
+# If the script is being run through Bazel, our client is provided at a well
+# known location in its runfiles.
+try:
+    from rules_python.python.runfiles import runfiles  # type: ignore
+
+    r = runfiles.Create()
+    _TARGET_CLIENT_COMMAND = r.Rlocation(
+        'pigweed/pw_target_runner/go/cmd/client_/client'
+    )
+except ImportError:
+    _TARGET_CLIENT_COMMAND = 'pw_target_runner_client'
 
 
 def parse_args():
