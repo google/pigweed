@@ -98,6 +98,7 @@ group("default") {
     ":docs",
     ":host",
     ":pi_pico",
+    ":python.install",
     ":python.lint",
     ":python.tests",
     ":static_analysis",

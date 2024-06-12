@@ -113,7 +113,11 @@ pw_python_venv("pigweed_build_venv") {
   source_packages = [ ":core_pigweed_python_packages" ]
 }
 
-pw_python_pip_install("target_support_packages") {
+pw_python_group("target_support_packages") {
+  python_deps = [ ":pip_install_target_support_packages" ]
+}
+
+pw_python_pip_install("pip_install_target_support_packages") {
   packages = [ ":target_support_package_distribution" ]
 }
 
