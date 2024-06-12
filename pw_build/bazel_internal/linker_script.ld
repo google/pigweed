@@ -65,6 +65,6 @@ SECTIONS
   .code :
   {
     /* Exercise PW_MUST_PLACE macro on our test object file */
-    PW_MUST_PLACE(*/test.o);
+    PW_MUST_PLACE(*/test.pic.o);
   }
 }

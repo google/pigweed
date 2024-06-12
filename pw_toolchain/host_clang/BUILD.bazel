@@ -177,6 +177,13 @@ pw_cc_feature(
     feature_name = "rules_rust_unsupported_feature",
 )
 
+pw_cc_feature(
+    name = "supports_pic",
+    enabled = True,
+    feature_name = "supports_pic",
+    overrides = "@pw_toolchain//features/well_known:supports_pic",
+)
+
 pw_cc_toolchain(
     name = "host_toolchain",
     action_configs = [
@@ -252,6 +259,7 @@ pw_cc_toolchain(
         ":asan_feature",
         ":verbose_compiler_output",
         ":rules_rust_unsupported_feature",
+        ":supports_pic",
     ],
     toolchain_identifier = "host-toolchain",
 )
