@@ -307,20 +307,20 @@ class Vector<T, vector_impl::kGeneric> {
 
   // Access
 
-  reference at(size_type index) {
+  reference at(size_t index) {
     PW_ASSERT(index < size());
     return data()[index];
   }
-  const_reference at(size_type index) const {
+  const_reference at(size_t index) const {
     PW_ASSERT(index < size());
     return data()[index];
   }
 
-  reference operator[](size_type index) {
+  reference operator[](size_t index) {
     PW_DASSERT(index < size());
     return data()[index];
   }
-  const_reference operator[](size_type index) const {
+  const_reference operator[](size_t index) const {
     PW_DASSERT(index < size());
     return data()[index];
   }
