@@ -63,7 +63,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_sync:counting_semaphore_facade",
+        "//pw_sync:counting_semaphore.facade",
     ],
 )
 
@@ -83,7 +83,7 @@ cc_library(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_assert",
-        "//pw_sync:mutex_facade",
+        "//pw_sync:mutex.facade",
     ],
 )
 
@@ -100,7 +100,7 @@ cc_library(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_chrono:system_clock",
-        "//pw_sync:timed_mutex_facade",
+        "//pw_sync:timed_mutex.facade",
     ],
 )
 
@@ -137,7 +137,7 @@ cc_library(
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        "//pw_sync:interrupt_spin_lock_facade",
+        "//pw_sync:interrupt_spin_lock.facade",
         "//pw_sync:yield_core",
     ],
 )

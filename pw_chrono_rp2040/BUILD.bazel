@@ -39,7 +39,7 @@ cc_library(
     # TODO: b/261603269 - This should depend on the Pi Pico SDK build rules.
     deps = [
         "//pw_chrono:epoch",
-        "//pw_chrono:system_clock_facade",
+        "//pw_chrono:system_clock.facade",
     ],
 )
 

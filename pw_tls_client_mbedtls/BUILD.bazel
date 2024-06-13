@@ -37,7 +37,7 @@ cc_library(
     tags = ["manual"],
     deps = [
         "//pw_log",
-        "//pw_tls_client:pw_tls_client_facade",
+        "//pw_tls_client:pw_tls_client.facade",
     ],
 )
 

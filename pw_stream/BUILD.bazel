@@ -94,7 +94,7 @@ cc_library(
         ":pw_stream",
         "//pw_assert",
         "//pw_bytes",
-        "//pw_chrono:system_clock_facade",
+        "//pw_chrono:system_clock.facade",
         "//pw_containers:intrusive_list",
         "//pw_function",
         "//pw_status",

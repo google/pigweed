@@ -33,7 +33,7 @@ cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_tls_client:pw_tls_client_facade",
+        "//pw_tls_client:pw_tls_client.facade",
     ],
 )
 

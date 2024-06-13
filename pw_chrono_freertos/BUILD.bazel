@@ -37,7 +37,7 @@ cc_library(
     deps = [
         ":config_override",
         "//pw_chrono:epoch",
-        "//pw_chrono:system_clock_facade",
+        "//pw_chrono:system_clock.facade",
         "//pw_interrupt:context",
         "//pw_polyfill",
         "//pw_sync:interrupt_spin_lock",
@@ -68,7 +68,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_chrono:system_timer_facade",
+        "//pw_chrono:system_timer.facade",
         "//pw_function",
         "@freertos",
     ],

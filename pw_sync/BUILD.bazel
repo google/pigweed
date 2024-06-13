@@ -365,8 +365,8 @@ cc_library(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":binary_semaphore_thread_notification_backend",
+        ":timed_thread_notification.facade",
         "//pw_chrono:system_clock",
-        "//pw_sync:timed_thread_notification_facade",
     ],
 )
 

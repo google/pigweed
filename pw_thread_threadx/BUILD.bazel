@@ -35,7 +35,7 @@ cc_library(
     ],
     # TODO: b/257321712 - Add ThreadX dependency.
     deps = [
-        "//pw_thread:id_facade",
+        "//pw_thread:id.facade",
     ],
 )
 
@@ -65,7 +65,7 @@ cc_library(
         "//pw_assert",
         "//pw_string",
         "//pw_thread:deprecated_or_new_thread_function",
-        "//pw_thread:thread_facade",
+        "//pw_thread:thread.facade",
     ],
 )
 
@@ -85,7 +85,7 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
-        "//pw_thread:thread_facade",
+        "//pw_thread:thread.facade",
     ],
 )
 
@@ -118,7 +118,7 @@ cc_library(
         ":sleep_headers",
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_thread:sleep_facade",
+        "//pw_thread:sleep.facade",
     ],
 )
 
@@ -135,7 +135,7 @@ cc_library(
     # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
-        "//pw_thread:yield_facade",
+        "//pw_thread:yield.facade",
     ],
 )
 

@@ -38,7 +38,7 @@ cc_library(
     deps = [
         ":config_override",
         "//pw_chrono:epoch",
-        "//pw_chrono:system_clock_facade",
+        "//pw_chrono:system_clock.facade",
         "//pw_polyfill",
     ],
 )

@@ -73,7 +73,7 @@ cc_library(
         "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
-        "//pw_sync:counting_semaphore_facade",
+        "//pw_sync:counting_semaphore.facade",
         "@freertos",
     ],
 )
@@ -96,7 +96,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_interrupt:context",
-        "//pw_sync:mutex_facade",
+        "//pw_sync:mutex.facade",
         "@freertos",
     ],
 )
@@ -127,7 +127,7 @@ cc_library(
         "//pw_polyfill",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
-        "//pw_sync:thread_notification_facade",
+        "//pw_sync:thread_notification.facade",
         "@freertos",
     ],
 )
@@ -157,7 +157,7 @@ cc_library(
         "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
-        "//pw_sync:timed_thread_notification_facade",
+        "//pw_sync:timed_thread_notification.facade",
         "@freertos",
     ],
 )
@@ -183,7 +183,7 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
         "//pw_sync:mutex",
-        "//pw_sync:timed_mutex_facade",
+        "//pw_sync:timed_mutex.facade",
         "@freertos",
     ],
 )
@@ -209,7 +209,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_interrupt:context",
-        "//pw_sync:interrupt_spin_lock_facade",
+        "//pw_sync:interrupt_spin_lock.facade",
         "@freertos",
     ],
 )

@@ -26,6 +26,6 @@ cc_library(
     srcs = ["context.cc"],
     target_compatible_with = [":backend"],
     deps = [
-        "//pw_interrupt:context_facade",
+        "//pw_interrupt:context.facade",
     ],
 )

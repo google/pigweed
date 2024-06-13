@@ -34,7 +34,7 @@ cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_async:task_facade",
+        "//pw_async:task.facade",
         "//pw_containers:intrusive_list",
     ],
 )
@@ -52,7 +52,7 @@ cc_library(
         "public_override",
     ],
     deps = [
-        "//pw_async:fake_dispatcher_facade",
+        "//pw_async:fake_dispatcher.facade",
         "//pw_async:task",
         "//pw_log",
     ],

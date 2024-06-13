@@ -31,7 +31,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//pw_assert",
-        "//pw_sync:interrupt_spin_lock_facade",
+        "//pw_sync:interrupt_spin_lock.facade",
         "//pw_sync:yield_core",
     ],
 )
@@ -51,7 +51,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//pw_assert",
-        "//pw_sync:mutex_facade",
+        "//pw_sync:mutex.facade",
     ],
 )
 

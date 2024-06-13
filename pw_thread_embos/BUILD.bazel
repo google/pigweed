@@ -32,7 +32,7 @@ cc_library(
         "//pw_build/constraints/rtos:embos",
     ],
     deps = [
-        "//pw_thread:id_facade",
+        "//pw_thread:id.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
@@ -57,7 +57,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_thread:sleep_facade",
+        "//pw_thread:sleep.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
@@ -87,7 +87,7 @@ cc_library(
         "//pw_assert",
         "//pw_string",
         "//pw_thread:deprecated_or_new_thread_function",
-        "//pw_thread:thread_facade",
+        "//pw_thread:thread.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
@@ -110,7 +110,7 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
-        "//pw_thread:thread_facade",
+        "//pw_thread:thread.facade",
     ],
 )
 
@@ -125,7 +125,7 @@ cc_library(
         "yield_public_overrides",
     ],
     deps = [
-        "//pw_thread:yield_facade",
+        "//pw_thread:yield.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.

@@ -126,7 +126,7 @@ cc_library(
         ":cortex_m_constants",
         ":cpu_state",
         ":util",
-        "//pw_cpu_exception:support_facade",
+        "//pw_cpu_exception:support.facade",
         "//pw_log",
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
