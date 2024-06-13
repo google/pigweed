@@ -11,75 +11,49 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
 #include <cstddef>
 
 #include "pw_allocator/block.h"
-#include "pw_allocator/freelist.h"
-#include "pw_span/span.h"
+#include "pw_allocator/bucket_block_allocator.h"
+#include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace pw::allocator {
 
-class FreeListHeap {
- public:
-  using BlockType = Block<>;
-
-  template <size_t kNumBuckets>
-  friend class FreeListHeapBuffer;
-  struct HeapStats {
-    size_t total_bytes;
-    size_t bytes_allocated;
-    size_t cumulative_allocated;
-    size_t cumulative_freed;
-    size_t total_allocate_calls;
-    size_t total_free_calls;
-  };
-  FreeListHeap(span<std::byte> region, FreeList& freelist);
-
-  void* Allocate(size_t size);
-  void Free(void* ptr);
-  void* Realloc(void* ptr, size_t size);
-  void* Calloc(size_t num, size_t size);
-
-  void LogHeapStats();
-
- private:
-  span<std::byte> BlockToSpan(BlockType* block) {
-    return span<std::byte>(block->UsableSpace(), block->InnerSize());
-  }
-
-  void InvalidFreeCrash();
-
-  span<std::byte> region_;
-  FreeList& freelist_;
-  HeapStats heap_stats_;
-};
-
+/// Legacy interface to BucketBlockAllocator.
+///
+/// This interface is deprecated, and is only maintained for compatibility
+/// reasons. New projects should use ``BucketBlockAllocator``.
 template <size_t kNumBuckets = 6>
 class FreeListHeapBuffer {
  public:
-  static constexpr std::array<size_t, kNumBuckets> defaultBuckets{
-      16, 32, 64, 128, 256, 512};
+  explicit FreeListHeapBuffer(ByteSpan region) : allocator_(region) {}
 
-  FreeListHeapBuffer(span<std::byte> region)
-      : freelist_(defaultBuckets), heap_(region, freelist_) {}
+  void* Allocate(size_t size) { return allocator_.Allocate(Layout(size)); }
 
-  void* Allocate(size_t size) { return heap_.Allocate(size); }
-  void Free(void* ptr) { heap_.Free(ptr); }
-  void* Realloc(void* ptr, size_t size) { return heap_.Realloc(ptr, size); }
-  void* Calloc(size_t num, size_t size) { return heap_.Calloc(num, size); }
+  void Free(void* ptr) { allocator_.Deallocate(ptr); }
 
-  const FreeListHeap::HeapStats& heap_stats() const {
-    return heap_.heap_stats_;
+  void* Realloc(void* ptr, size_t size) {
+    return allocator_.Reallocate(ptr, Layout(size));
   }
 
-  void LogHeapStats() { heap_.LogHeapStats(); }
+  void* Calloc(size_t num, size_t size) {
+    PW_ASSERT(!PW_MUL_OVERFLOW(num, size, &size));
+    void* ptr = allocator_.Allocate(Layout(size));
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+    std::memset(ptr, 0, size);
+    return ptr;
+  }
 
  private:
-  FreeListBuffer<kNumBuckets> freelist_;
-  FreeListHeap heap_;
+  using OffsetType = Block<>::offset_type;
+  static constexpr size_t kMinChunkSize = 16;
+  BucketBlockAllocator<OffsetType, kMinChunkSize, kNumBuckets> allocator_;
 };
 
 }  // namespace pw::allocator

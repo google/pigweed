@@ -183,8 +183,6 @@ TypedPool
 .. doxygenclass:: pw::allocator::TypedPool
    :members:
 
-.. TODO: b/328076428 - Update FreeListHeap or remove
-
 ---------------------
 Forwarding Allocators
 ---------------------

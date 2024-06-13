@@ -253,33 +253,17 @@ pw_add_library(pw_allocator.fragmentation STATIC
     fragmentation.cc
 )
 
-pw_add_library(pw_allocator.freelist STATIC
-  HEADERS
-    public/pw_allocator/freelist.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_containers.vector
-    pw_span
-    pw_status
-  SOURCES
-    freelist.cc
-)
-
-pw_add_library(pw_allocator.freelist_heap STATIC
+pw_add_library(pw_allocator.freelist_heap INTERFACE
   HEADERS
     public/pw_allocator/freelist_heap.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.block
-    pw_allocator.freelist
-  PRIVATE_DEPS
+    pw_allocator.bucket_block_allocator
     pw_assert
-    pw_log
-    pw_span
-  SOURCES
-    freelist_heap.cc
+    pw_bytes
+    pw_preprocessor
 )
 
 pw_add_library(pw_allocator.last_fit_block_allocator INTERFACE
@@ -588,23 +572,12 @@ pw_add_test(pw_allocator.fragmentation_test
     pw_allocator
 )
 
-pw_add_test(pw_allocator.freelist_test
-  SOURCES
-    freelist_test.cc
-  PRIVATE_DEPS
-    pw_allocator.freelist
-    pw_span
-    pw_status
-  GROUPS
-    modules
-    pw_allocator
-)
-
 pw_add_test(pw_allocator.freelist_heap_test
   SOURCES
     freelist_heap_test.cc
   PRIVATE_DEPS
     pw_allocator.freelist_heap
+    pw_bytes.alignment
   GROUPS
     modules
     pw_allocator

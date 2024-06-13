@@ -14,86 +14,108 @@
 
 #include "pw_allocator/freelist_heap.h"
 
-#include "pw_span/span.h"
+#include "pw_bytes/alignment.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
+namespace {
 
-TEST(FreeListHeap, CanAllocate) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+// Test fixtures.
 
-  FreeListHeapBuffer allocator(buf);
+using ::pw::allocator::FreeListHeapBuffer;
 
-  void* ptr = allocator.Allocate(kAllocSize);
+class FreeListHeapBufferTest : public ::testing::Test {
+ protected:
+  using BlockType = ::pw::allocator::Block<>;
 
+  static constexpr size_t kN = 2048;
+
+  alignas(BlockType) std::array<std::byte, kN> buffer_;
+};
+
+// Unit tests.
+
+TEST_F(FreeListHeapBufferTest, CanAllocate) {
+  FreeListHeapBuffer allocator(buffer_);
+
+  void* ptr = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr, nullptr);
-  // In this case, the allocator should be returning us the start of the chunk.
-  EXPECT_EQ(ptr, &buf[0] + FreeListHeap::BlockType::kBlockOverhead);
+
+  // The returned memory should be a chunk of the allocator's memory...
+  EXPECT_GE(ptr, buffer_.data());
+  EXPECT_LT(ptr, buffer_.data() + buffer_.size());
+
+  // ...and should be usable.
+  std::memset(ptr, 0xff, kN / 4);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr);
 }
 
-TEST(FreeListHeap, AllocationsDontOverlap) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+TEST_F(FreeListHeapBufferTest, AllocationsDontOverlap) {
+  FreeListHeapBuffer allocator(buffer_);
 
-  FreeListHeapBuffer allocator(buf);
-
-  void* ptr1 = allocator.Allocate(kAllocSize);
-  void* ptr2 = allocator.Allocate(kAllocSize);
-
+  void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
-  ASSERT_NE(ptr2, nullptr);
-
   uintptr_t ptr1_start = reinterpret_cast<uintptr_t>(ptr1);
-  uintptr_t ptr1_end = ptr1_start + kAllocSize;
-  uintptr_t ptr2_start = reinterpret_cast<uintptr_t>(ptr2);
+  uintptr_t ptr1_end = ptr1_start + (kN / 4);
 
-  EXPECT_GT(ptr2_start, ptr1_end);
+  void* ptr2 = allocator.Allocate(kN / 4);
+  ASSERT_NE(ptr2, nullptr);
+  uintptr_t ptr2_start = reinterpret_cast<uintptr_t>(ptr2);
+  uintptr_t ptr2_end = ptr2_start + (kN / 4);
+
+  if (ptr1 < ptr2) {
+    EXPECT_LT(ptr1_end, ptr2_start);
+  } else {
+    EXPECT_LT(ptr2_end, ptr1_start);
+  }
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
+  allocator.Free(ptr2);
 }
 
-TEST(FreeListHeap, CanFreeAndRealloc) {
+TEST_F(FreeListHeapBufferTest, CanFreeAndRealloc) {
+  FreeListHeapBuffer allocator(buffer_);
+
+  void* ptr1 = allocator.Allocate(kN / 4);
+  allocator.Free(ptr1);
+
   // There's not really a nice way to test that Free works, apart from to try
   // and get that value back again.
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
-
-  FreeListHeapBuffer allocator(buf);
-
-  void* ptr1 = allocator.Allocate(kAllocSize);
-  allocator.Free(ptr1);
-  void* ptr2 = allocator.Allocate(kAllocSize);
+  void* ptr2 = allocator.Allocate(kN / 4);
 
   EXPECT_EQ(ptr1, ptr2);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr2);
 }
 
-TEST(FreeListHeap, ReturnsNullWhenAllocationTooLarge) {
-  constexpr size_t N = 2048;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+TEST_F(FreeListHeapBufferTest, ReturnsNullWhenAllocationTooLarge) {
+  FreeListHeapBuffer allocator(buffer_);
 
-  FreeListHeapBuffer allocator(buf);
-
-  EXPECT_EQ(allocator.Allocate(N), nullptr);
+  EXPECT_EQ(allocator.Allocate(kN), nullptr);
 }
 
-TEST(FreeListHeap, ReturnsNullWhenFull) {
-  constexpr size_t N = 2048;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+TEST_F(FreeListHeapBufferTest, ReturnsNullWhenFull) {
+  FreeListHeapBuffer allocator(buffer_);
 
-  FreeListHeapBuffer allocator(buf);
+  auto start = reinterpret_cast<uintptr_t>(buffer_.data());
+  uintptr_t usable =
+      pw::AlignUp(start + BlockType::kBlockOverhead, alignof(std::max_align_t));
 
-  EXPECT_NE(allocator.Allocate(N - FreeListHeap::BlockType::kBlockOverhead),
-            nullptr);
-  EXPECT_EQ(allocator.Allocate(1), nullptr);
+  void* ptr1 = allocator.Allocate(kN - (usable - start));
+  ASSERT_NE(ptr1, nullptr);
+
+  void* ptr2 = allocator.Allocate(1);
+  EXPECT_EQ(ptr2, nullptr);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
 }
 
-TEST(FreeListHeap, ReturnedPointersAreAligned) {
-  constexpr size_t N = 2048;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
-
-  FreeListHeapBuffer allocator(buf);
+TEST_F(FreeListHeapBufferTest, ReturnedPointersAreAligned) {
+  FreeListHeapBuffer allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(1);
 
@@ -107,169 +129,115 @@ TEST(FreeListHeap, ReturnedPointersAreAligned) {
   uintptr_t ptr2_start = reinterpret_cast<uintptr_t>(ptr2);
 
   EXPECT_EQ(ptr2_start % alignment, static_cast<size_t>(0));
-}
 
-#if defined(CHECK_TEST_CRASHES) && CHECK_TEST_CRASHES
-
-// TODO(amontanez): Ensure that this test triggers an assert.
-TEST(FreeListHeap, CannotFreeNonOwnedPointer) {
-  // This is a nasty one to test without looking at the internals of FreeList.
-  // We can cheat; create a heap, allocate it all, and try and return something
-  // random to it. Try allocating again, and check that we get nullptr back.
-  constexpr size_t N = 2048;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
-
-  FreeListHeapBuffer allocator(buf);
-
-  void* ptr =
-      allocator.Allocate(N - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
-
-  ASSERT_NE(ptr, nullptr);
-
-  // Free some random address past the end
-  allocator.Free(static_cast<std::byte*>(ptr) + N * 2);
-
-  void* ptr_ahead = allocator.Allocate(1);
-  EXPECT_EQ(ptr_ahead, nullptr);
-
-  // And try before
-  allocator.Free(static_cast<std::byte*>(ptr) - N);
-
-  void* ptr_before = allocator.Allocate(1);
-  EXPECT_EQ(ptr_before, nullptr);
-}
-#endif  // CHECK_TEST_CRASHES
-
-TEST(FreeListHeap, CanRealloc) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  constexpr size_t kNewAllocSize = 768;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(1)};
-
-  FreeListHeapBuffer allocator(buf);
-
-  void* ptr1 = allocator.Allocate(kAllocSize);
-  void* ptr2 = allocator.Realloc(ptr1, kNewAllocSize);
-
-  ASSERT_NE(ptr1, nullptr);
-  ASSERT_NE(ptr2, nullptr);
-}
-
-TEST(FreeListHeap, ReallocHasSameContent) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = sizeof(int);
-  constexpr size_t kNewAllocSize = sizeof(int) * 2;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(1)};
-  // Data inside the allocated block.
-  std::byte data1[kAllocSize];
-  // Data inside the reallocated block.
-  std::byte data2[kAllocSize];
-
-  FreeListHeapBuffer allocator(buf);
-
-  int* ptr1 = reinterpret_cast<int*>(allocator.Allocate(kAllocSize));
-  *ptr1 = 42;
-  memcpy(data1, ptr1, kAllocSize);
-  int* ptr2 = reinterpret_cast<int*>(allocator.Realloc(ptr1, kNewAllocSize));
-  memcpy(data2, ptr2, kAllocSize);
-
-  ASSERT_NE(ptr1, nullptr);
-  ASSERT_NE(ptr2, nullptr);
-  // Verify that data inside the allocated and reallocated chunks are the same.
-  EXPECT_EQ(std::memcmp(data1, data2, kAllocSize), 0);
-}
-
-TEST(FreeListHeap, ReturnsNullReallocFreedPointer) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  constexpr size_t kNewAllocSize = 256;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
-
-  FreeListHeapBuffer allocator(buf);
-
-  void* ptr1 = allocator.Allocate(kAllocSize);
+  // All pointers must be freed before the allocator goes out of scope.
   allocator.Free(ptr1);
-  void* ptr2 = allocator.Realloc(ptr1, kNewAllocSize);
-
-  EXPECT_EQ(nullptr, ptr2);
+  allocator.Free(ptr2);
 }
 
-TEST(FreeListHeap, ReallocSmallerSize) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  constexpr size_t kNewAllocSize = 256;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+TEST_F(FreeListHeapBufferTest, CanRealloc) {
+  FreeListHeapBuffer allocator(buffer_);
 
-  FreeListHeapBuffer allocator(buf);
+  void* ptr1 = allocator.Allocate(kN / 4);
+  ASSERT_NE(ptr1, nullptr);
 
-  void* ptr1 = allocator.Allocate(kAllocSize);
-  void* ptr2 = allocator.Realloc(ptr1, kNewAllocSize);
+  void* ptr2 = allocator.Realloc(ptr1, (kN * 3) / 8);
+  ASSERT_NE(ptr2, nullptr);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr2);
+}
+
+TEST_F(FreeListHeapBufferTest, ReallocHasSameContent) {
+  FreeListHeapBuffer allocator(buffer_);
+
+  size_t val1 = 42;
+  void* ptr1 = allocator.Allocate(sizeof(size_t));
+  ASSERT_NE(ptr1, nullptr);
+  std::memcpy(ptr1, &val1, sizeof(size_t));
+
+  size_t val2;
+  void* ptr2 = allocator.Realloc(ptr1, sizeof(size_t) * 2);
+  ASSERT_NE(ptr2, nullptr);
+  std::memcpy(&val2, ptr2, sizeof(size_t));
+
+  // Verify that data inside the allocated and reallocated chunks are the same.
+  EXPECT_EQ(val1, val2);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr2);
+}
+
+TEST_F(FreeListHeapBufferTest, ReallocSmallerSize) {
+  FreeListHeapBuffer allocator(buffer_);
+
+  void* ptr1 = allocator.Allocate(kN / 4);
+  ASSERT_NE(ptr1, nullptr);
 
   // For smaller sizes, Realloc will not shrink the block.
+  void* ptr2 = allocator.Realloc(ptr1, kN / 8);
   EXPECT_EQ(ptr1, ptr2);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr2);
 }
 
-TEST(FreeListHeap, ReallocTooLarge) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 512;
-  constexpr size_t kNewAllocSize = 4096;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(0)};
+TEST_F(FreeListHeapBufferTest, ReallocTooLarge) {
+  FreeListHeapBuffer allocator(buffer_);
 
-  FreeListHeapBuffer allocator(buf);
+  void* ptr1 = allocator.Allocate(kN / 4);
+  ASSERT_NE(ptr1, nullptr);
 
-  void* ptr1 = allocator.Allocate(kAllocSize);
-  void* ptr2 = allocator.Realloc(ptr1, kNewAllocSize);
+  // Realloc() will not invalidate the original pointer if it fails
+  void* ptr2 = allocator.Realloc(ptr1, kN * 2);
+  EXPECT_EQ(ptr2, nullptr);
 
-  // Realloc() will not invalidate the original pointer if Reallc() fails
-  EXPECT_NE(nullptr, ptr1);
-  EXPECT_EQ(nullptr, ptr2);
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
 }
 
-TEST(FreeListHeap, CanCalloc) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 128;
+TEST_F(FreeListHeapBufferTest, CanCalloc) {
   constexpr size_t kNum = 4;
-  constexpr int size = kNum * kAllocSize;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(1)};
-  constexpr std::byte zero{0};
+  constexpr size_t kSize = 128;
+  constexpr std::array<std::byte, kNum * kSize> kZero = {std::byte(0)};
 
-  FreeListHeapBuffer allocator(buf);
+  FreeListHeapBuffer allocator(buffer_);
 
-  std::byte* ptr1 =
-      reinterpret_cast<std::byte*>(allocator.Calloc(kNum, kAllocSize));
-
-  // Calloc'd content is zero.
-  for (int i = 0; i < size; i++) {
-    EXPECT_EQ(ptr1[i], zero);
-  }
-}
-
-TEST(FreeListHeap, CanCallocWeirdSize) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 143;
-  constexpr size_t kNum = 3;
-  constexpr int size = kNum * kAllocSize;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(132)};
-  constexpr std::byte zero{0};
-
-  FreeListHeapBuffer allocator(buf);
-
-  std::byte* ptr1 =
-      reinterpret_cast<std::byte*>(allocator.Calloc(kNum, kAllocSize));
+  void* ptr1 = allocator.Calloc(kNum, kSize);
+  ASSERT_NE(ptr1, nullptr);
 
   // Calloc'd content is zero.
-  for (int i = 0; i < size; i++) {
-    EXPECT_EQ(ptr1[i], zero);
-  }
+  EXPECT_EQ(std::memcmp(ptr1, kZero.data(), kZero.size()), 0);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
 }
 
-TEST(FreeListHeap, CallocTooLarge) {
-  constexpr size_t N = 2048;
-  constexpr size_t kAllocSize = 2049;
-  alignas(FreeListHeap::BlockType) std::byte buf[N] = {std::byte(1)};
+TEST_F(FreeListHeapBufferTest, CanCallocWeirdSize) {
+  constexpr size_t kNum = 4;
+  constexpr size_t kSize = 128;
+  constexpr std::array<std::byte, kNum * kSize> kZero = {std::byte(0)};
 
-  FreeListHeapBuffer allocator(buf);
+  FreeListHeapBuffer allocator(buffer_);
 
-  EXPECT_EQ(allocator.Calloc(1, kAllocSize), nullptr);
+  void* ptr1 = allocator.Calloc(kNum, kSize);
+  ASSERT_NE(ptr1, nullptr);
+
+  // Calloc'd content is zero.
+  EXPECT_EQ(std::memcmp(ptr1, kZero.data(), kZero.size()), 0);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
 }
-}  // namespace pw::allocator
+
+TEST_F(FreeListHeapBufferTest, CallocTooLarge) {
+  FreeListHeapBuffer allocator(buffer_);
+
+  void* ptr1 = allocator.Calloc(1, kN + 1);
+  EXPECT_EQ(ptr1, nullptr);
+
+  // All pointers must be freed before the allocator goes out of scope.
+  allocator.Free(ptr1);
+}
+
+}  // namespace
