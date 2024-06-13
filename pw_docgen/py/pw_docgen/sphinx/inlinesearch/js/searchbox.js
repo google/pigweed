@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       results = window.fuzzysort.go(query, index, { key: 'title' });
       searchResults.innerHTML = '';
-      searchResults.style.display = 'block';
+      searchResults.style.display = 'grid';
 
       if (results.length === 0) {
         searchResults.innerHTML = '<li><a href="#">No results found</a></li>';
@@ -80,10 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       searchResults.style.width =
         Math.max(
           searchField.offsetWidth,
-          Array.from(searchResults.children).reduce(
-            (max, child) => Math.max(max, child.offsetWidth),
-            0,
-          ) + 20,
+          searchResults.querySelector('li').offsetWidth,
         ) + 'px';
     }
 
