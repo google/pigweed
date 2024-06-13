@@ -131,8 +131,8 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
 
     // Look for the buddy chunk in the previous bucket. If found, remove it from
     // that bucket, and repeat the whole process with the merged chunk.
-    void* match =
-        current.RemoveIf([buddy](void* other) { return buddy == other; });
+    void* match = current.RemoveIf(
+        [buddy](const std::byte* other) { return buddy == other; });
     if (match == nullptr) {
       break;
     }

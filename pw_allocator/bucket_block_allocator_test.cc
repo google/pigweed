@@ -14,6 +14,7 @@
 
 #include "pw_allocator/bucket_block_allocator.h"
 
+#include "pw_allocator/allocator.h"
 #include "pw_allocator/block_allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
@@ -107,7 +108,7 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
   EXPECT_FALSE(block2->Used());
   EXPECT_EQ(Fetch(5), block2->Next()->UsableSpace());
 
-  // this allocation exactly matches the chunk size of bucket 1.
+  // This allocation exactly matches the chunk size of bucket 1.
   Store(3, allocator.Allocate(Layout(128, 1)));
   EXPECT_EQ(Fetch(3), bucket1_ptr);
 
@@ -123,6 +124,57 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
   Store(1, allocator.Allocate(Layout(32, 1)));
   EXPECT_FALSE(block0->Used());
   EXPECT_EQ(Fetch(1), block0->Next()->UsableSpace());
+}
+
+TEST_F(BucketBlockAllocatorTest, UnusedPortionIsRecycled) {
+  auto& allocator = GetAllocator({
+      {128 + BlockType::kBlockOverhead, 0},
+      {Preallocation::kSizeRemaining, 3},
+  });
+
+  // Deallocate to fill buckets.
+  allocator.Deallocate(Fetch(0));
+  Store(0, nullptr);
+
+  Store(1, allocator.Allocate(Layout(65, 1)));
+  ASSERT_NE(Fetch(1), nullptr);
+
+  // The remainder should be recycled to a smaller bucket.
+  Store(2, allocator.Allocate(Layout(32, 1)));
+  ASSERT_NE(Fetch(2), nullptr);
+}
+
+TEST_F(BucketBlockAllocatorTest, ExhaustBucket) {
+  auto& allocator = GetAllocator({
+      {128 + BlockType::kBlockOverhead, 0},
+      {kSmallerOuterSize, 1},
+      {128 + BlockType::kBlockOverhead, 2},
+      {kSmallerOuterSize, 3},
+      {128 + BlockType::kBlockOverhead, 4},
+      {Preallocation::kSizeRemaining, 5},
+  });
+
+  // Deallocate to fill buckets.
+  allocator.Deallocate(Fetch(0));
+  Store(0, nullptr);
+  allocator.Deallocate(Fetch(2));
+  Store(2, nullptr);
+  allocator.Deallocate(Fetch(4));
+  Store(4, nullptr);
+
+  void* ptr0 = allocator.Allocate(Layout(65, 1));
+  EXPECT_NE(ptr0, nullptr);
+  Store(0, ptr0);
+
+  void* ptr2 = allocator.Allocate(Layout(65, 1));
+  EXPECT_NE(ptr2, nullptr);
+  Store(2, ptr2);
+
+  void* ptr4 = allocator.Allocate(Layout(65, 1));
+  EXPECT_NE(ptr4, nullptr);
+  Store(4, ptr4);
+
+  EXPECT_EQ(allocator.Allocate(Layout(65, 1)), nullptr);
 }
 
 TEST_F(BucketBlockAllocatorTest, DeallocateNull) { DeallocateNull(); }

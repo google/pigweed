@@ -25,4 +25,15 @@ void GenericBlockAllocator::CrashOnAllocated(void* allocated) {
             allocated);
 }
 
+void GenericBlockAllocator::CrashOnInvalidFree(void* freed) {
+  PW_DCHECK(
+      false,
+      "Attemped to free %p, which is outside the allocator's memory region.",
+      freed);
+}
+
+void GenericBlockAllocator::CrashOnDoubleFree(void* freed) {
+  PW_DCHECK(false, "The block at %p was freed twice.", freed);
+}
+
 }  // namespace pw::allocator::internal

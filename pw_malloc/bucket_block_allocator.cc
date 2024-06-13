@@ -24,7 +24,6 @@ using BucketBlockAllocator =
     ::pw::allocator::BucketBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
                                           PW_MALLOC_MIN_BUCKET_SIZE,
                                           PW_MALLOC_NUM_BUCKETS,
-                                          PW_MALLOC_BLOCK_POISON_INTERVAL,
                                           PW_MALLOC_BLOCK_ALIGNMENT>;
 
 BucketBlockAllocator& GetBucketBlockAllocator() {

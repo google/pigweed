@@ -17,6 +17,7 @@
 
 #include "pw_allocator/block_allocator_base.h"
 #include "pw_allocator/bucket.h"
+#include "pw_assert/assert.h"
 #include "pw_status/try.h"
 
 namespace pw::allocator {
@@ -43,26 +44,24 @@ namespace pw::allocator {
 /// bucket[3] (512B) --> chunk[312B] --> chunk[512B] --> chunk[416B] --> NULL
 /// bucket[4] (implicit) --> chunk[1024B] --> chunk[513B] --> NULL
 /// @endcode
+///
+/// Note that since this allocator stores information in free chunks, it does
+/// not currently support poisoning.
 template <typename OffsetType = uintptr_t,
-          size_t kMinChunkSize = 32,
+          size_t kMinBucketChunkSize = 32,
           size_t kNumBuckets = 5,
-          size_t kPoisonInterval = 0,
           size_t kAlign = std::max(alignof(OffsetType), alignof(std::byte*))>
 class BucketBlockAllocator
     : public BlockAllocator<OffsetType,
-                            kPoisonInterval,
+                            0,
                             std::max(kAlign, alignof(std::byte*))> {
  public:
-  using Base = BlockAllocator<OffsetType,
-                              kPoisonInterval,
-                              std::max(kAlign, alignof(std::byte*))>;
+  using Base =
+      BlockAllocator<OffsetType, 0, std::max(kAlign, alignof(std::byte*))>;
   using BlockType = typename Base::BlockType;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr BucketBlockAllocator() : Base() {
-    internal::Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
-                           kMinChunkSize);
-  }
+  constexpr BucketBlockAllocator() : Base() {}
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///
@@ -83,6 +82,9 @@ class BucketBlockAllocator
   /// @copydoc BlockAllocator::Init
   void Init(BlockType* begin, BlockType* end) override {
     Base::Init(begin, end);
+    internal::Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
+                           kMinBucketChunkSize);
+    buckets_.back().Init();
     for (auto* block : Base::blocks()) {
       if (!block->Used()) {
         RecycleBlock(block);
@@ -93,38 +95,48 @@ class BucketBlockAllocator
  private:
   /// @copydoc BlockAllocator::ChooseBlock
   BlockType* ChooseBlock(Layout layout) override {
-    BlockType* block = nullptr;
+    layout =
+        Layout(std::max(layout.size(), sizeof(internal::Bucket::Chunk)),
+               std::max(layout.alignment(), alignof(internal::Bucket::Chunk)));
     for (auto& bucket : buckets_) {
       if (bucket.chunk_size() < layout.size()) {
         continue;
       }
-      void* leading = bucket.RemoveIf([&layout](void* chunk) {
-        BlockType* candidate = BlockType::FromUsableSpace(chunk);
-        return BlockType::AllocLast(candidate, layout).ok();
+      void* chosen = bucket.RemoveIf([&layout](const std::byte* chunk) {
+        const BlockType* block = BlockType::FromUsableSpace(chunk);
+        return block->CanAllocLast(layout).ok();
       });
-      if (leading != nullptr) {
-        block = BlockType::FromUsableSpace(leading);
-        break;
+      if (chosen == nullptr) {
+        continue;
       }
+      BlockType* block = BlockType::FromUsableSpace(chosen);
+      BlockType* prev = block;
+      BlockType::AllocLast(block, layout).IgnoreError();
+
+      // If the chunk was split, what we have is the leading free block.
+      if (prev != block) {
+        RecycleBlock(prev);
+      }
+      return block;
     }
-    if (block == nullptr) {
-      return nullptr;
+    return nullptr;
+  }
+
+  /// @copydoc BlockAllocator::ReserveBlock
+  void ReserveBlock(BlockType* block) override {
+    PW_ASSERT(!block->Used());
+    size_t inner_size = block->InnerSize();
+    if (inner_size < sizeof(internal::Bucket::Chunk)) {
+      return;
     }
-    // If the chunk was split, what we have is the leading free block.
-    if (!block->Used()) {
-      RecycleBlock(block);
-      block = block->Next();
-    }
-    return block;
+    internal::Bucket::Remove(block->UsableSpace());
   }
 
   /// @copydoc BlockAllocator::RecycleBlock
   void RecycleBlock(BlockType* block) override {
-    // Free blocks that are too small to be added to buckets will be "garbage
-    // collected" by merging them with their neighbors when the latter are
-    // freed.
+    PW_ASSERT(!block->Used());
     size_t inner_size = block->InnerSize();
-    if (inner_size < sizeof(void*)) {
+    if (inner_size < sizeof(internal::Bucket::Chunk)) {
       return;
     }
     for (auto& bucket : buckets_) {

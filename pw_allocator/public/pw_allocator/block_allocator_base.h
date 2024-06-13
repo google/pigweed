@@ -49,12 +49,19 @@ class GenericBlockAllocator : public Allocator {
  protected:
   constexpr GenericBlockAllocator() : Allocator(kCapabilities) {}
 
-  /// Crashes with an informational method that the given block is allocated.
+  /// Crashes with an informational message that a given block is allocated.
   ///
   /// This method is meant to be called by ``SplitFreeListAllocator``s
   /// destructor. There must not be any outstanding allocations from an
   /// when it is destroyed.
   static void CrashOnAllocated(void* allocated);
+
+  /// Crashes with an informational message that a given pointer does not belong
+  /// to this allocator.
+  static void CrashOnInvalidFree(void* freed);
+
+  /// Crashes with an informational message that a given block was freed twice.
+  static void CrashOnDoubleFree(void* freed);
 };
 
 }  // namespace internal
@@ -134,38 +141,6 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// allocator.
   ReverseRange rblocks();
 
- private:
-  /// @copydoc Allocator::Allocate
-  void* DoAllocate(Layout layout) override;
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr) override;
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
-
-  /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, size_t new_size) override;
-
-  /// @copydoc Deallocator::GetInfo
-  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
-
-  /// Selects a free block to allocate from.
-  ///
-  /// This method represents the allocator-specific strategy of choosing which
-  /// block should be used to satisfy allocation requests.
-  ///
-  /// @param  layout  Same as ``Allocator::Allocate``.
-  virtual BlockType* ChooseBlock(Layout layout) = 0;
-
-  /// Makes this block available for allocation again.
-  ///
-  /// This method is called when a block is deallocated. By default, it does
-  /// nothing.
-  ///
-  /// @param  block   The block beind deallocated.
-  virtual void RecycleBlock(BlockType* block);
-
   /// Returns the block associated with a pointer.
   ///
   /// If the given pointer is to this allocator's memory region, but not to a
@@ -189,6 +164,60 @@ class BlockAllocator : public internal::GenericBlockAllocator {
                 const BlockType*,
                 BlockType*>>
   Result<BlockPtrType> FromUsableSpace(PtrType ptr) const;
+
+  /// Indicates that a block will no longer be free.
+  ///
+  /// Does nothing by default. Derived class may overload to do additional
+  /// bookkeeeping.
+  ///
+  /// @param  block   The block being freed.
+  virtual void ReserveBlock(BlockType*) {}
+
+  /// Indicates that a block is now free.
+  ///
+  /// Does nothing by default. Derived class may overload to do additional
+  /// bookkeeeping.
+  ///
+  /// @param  block   The block being freed.
+  virtual void RecycleBlock(BlockType*) {}
+
+ private:
+  /// @copydoc Allocator::Allocate
+  void* DoAllocate(Layout layout) override;
+
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr) override;
+
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
+  /// @copydoc Allocator::Resize
+  bool DoResize(void* ptr, size_t new_size) override;
+
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
+
+  /// Selects a free block to allocate from.
+  ///
+  /// This method represents the allocator-specific strategy of choosing which
+  /// block should be used to satisfy allocation requests.
+  ///
+  /// If derived classes override ``ReserveBlock`` and ``RecycleBlock`` to
+  /// provide additional bookkeeping, the implementation of this method should
+  /// invoke those methods as needed.
+  ///
+  /// @param  layout  Same as ``Allocator::Allocate``.
+  virtual BlockType* ChooseBlock(Layout layout) = 0;
+
+  /// Returns if the previous block exists and is free.
+  bool PrevIsFree(const BlockType* block) const {
+    return block->Prev() != nullptr && !block->Prev()->Used();
+  }
+
+  /// Returns if the next block exists and is free.
+  bool NextIsFree(const BlockType* block) const {
+    return !block->Last() && !block->Next()->Used();
+  }
 
   /// Ensures the pointer to the last block is correct after the given block is
   /// allocated or freed.
@@ -270,9 +299,20 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
     void* ptr) {
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
-    return;
+    CrashOnInvalidFree(ptr);
   }
   BlockType* block = *result;
+  if (!block->Used()) {
+    CrashOnDoubleFree(block);
+  }
+
+  // Neighboring blocks may be merged when freeing.
+  if (PrevIsFree(block)) {
+    ReserveBlock(block->Prev());
+  }
+  if (NextIsFree(block)) {
+    ReserveBlock(block->Next());
+  }
 
   // Free the block and merge it with its neighbors, if possible.
   BlockType::Free(block);
@@ -285,6 +325,7 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
       unpoisoned_ = 0;
     }
   }
+
   RecycleBlock(block);
 }
 
@@ -297,10 +338,20 @@ bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
   }
   BlockType* block = *result;
 
+  // Neighboring blocks may be merged when resizing.
+  if (NextIsFree(block)) {
+    ReserveBlock(block->Next());
+  }
+
   if (!BlockType::Resize(block, new_size).ok()) {
     return false;
   }
   UpdateLast(block);
+
+  if (NextIsFree(block)) {
+    RecycleBlock(block->Next());
+  }
+
   return true;
 }
 
@@ -347,10 +398,6 @@ BlockAllocator<OffsetType, kPoisonInterval, kAlign>::MeasureFragmentation()
   }
   return fragmentation;
 }
-
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::RecycleBlock(
-    BlockType*) {}
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
 template <typename PtrType, typename BlockPtrType>

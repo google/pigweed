@@ -21,20 +21,39 @@
 
 namespace pw::allocator::internal {
 
-/// List of free chunks of a fixed size.
-///
-/// A "chunk" is simply a memory region of at least `sizeof(void*)` bytes.
-/// When part of a `Bucket`, each chunk will contain a pointer to the next
-/// chunk in the bucket.
+/// Doubly linked list of free memory regions, or "chunks", of a maximum size or
+/// less.
 class Bucket final {
  public:
+  /// When part of a `Bucket`, each `Chunk` will contain a pointer to the next
+  /// and previous chunks in the bucket.
+  struct Chunk {
+   private:
+    friend class Bucket;
+
+    static Chunk* FromBytes(std::byte* ptr) {
+      return std::launder(reinterpret_cast<Chunk*>(ptr));
+    }
+
+    const std::byte* AsBytes() const {
+      return std::launder(reinterpret_cast<const std::byte*>(this));
+    }
+
+    std::byte* AsBytes() {
+      return std::launder(reinterpret_cast<std::byte*>(this));
+    }
+
+    Chunk* prev;
+    Chunk* next;
+  };
+
   /// Constructs a bucket with an unbounded chunk size.
-  constexpr Bucket() = default;
+  Bucket();
 
   /// Construct a bucket.
   ///
-  /// @param  chunk_size  The fixed size of the memory chunks in this bucket.
-  ///                     Must be at least `sizeof(std::byte*)`.
+  /// @param  chunk_size  The maximum size of the memory chunks in this bucket.
+  ///                     Must be at least `sizeof(Chunk)`.
   explicit Bucket(size_t chunk_size);
 
   Bucket(const Bucket& other) = delete;
@@ -45,12 +64,14 @@ class Bucket final {
 
   ~Bucket() = default;
 
+  void Init(size_t chunk_size = std::numeric_limits<size_t>::max());
+
   /// Creates a list of buckets, with each twice as large as the one before it.
   static void Init(span<Bucket> buckets, size_t min_chunk_size);
 
   size_t chunk_size() const { return chunk_size_; }
 
-  bool empty() const { return chunks_ == nullptr; }
+  bool empty() const { return sentinel_.next == &sentinel_; }
 
   /// Returns the number of the chunks in the bucket.
   ///
@@ -70,12 +91,34 @@ class Bucket final {
   /// @retval       The removed region, or null if the bucket is empty.
   std::byte* Remove();
 
-  /// Removes a chunk
-  std::byte* RemoveIf(const Function<bool(void*)>& cond);
+  /// Removes a chunk for which a given condition is met.
+  ///
+  /// This will remove at most one chunk.
+  ///
+  /// @retval       The first chunk for which the condition evaluates to true,
+  ///               null if the bucket does not contain any such chunk.
+  /// @param  cond  The condition to be tested on the chunks in this bucket.
+  std::byte* RemoveIf(const Function<bool(const std::byte*)>& cond);
+
+  /// Removes a chunk from any bucket it is a part of.
+  ///
+  /// @retval       The removed region, for convenience.
+  /// @param  ptr   The memory region to be removed.
+  static std::byte* Remove(std::byte* ptr);
 
  private:
-  std::byte* chunks_ = nullptr;
-  size_t chunk_size_ = std::numeric_limits<size_t>::max();
+  /// Removes a chunk from any bucket it is a part of.
+  ///
+  /// @retval       The removed region, for convenience.
+  /// @param  chunk   The chunk to be removed.
+  static std::byte* Remove(Chunk* chunk);
+
+  /// List terminator node that is before the head and after the tail of the
+  /// circular list.
+  Chunk sentinel_;
+
+  /// The maximum size of chunks in this bucket.
+  size_t chunk_size_;
 };
 
 }  // namespace pw::allocator::internal

@@ -133,41 +133,42 @@ _testing = {
     "-include",
     rebase_path("pw_malloc_private/test_config_overrides.h", root_build_dir),
   ]
+  deps = [ "$dir_pw_tokenizer:decoder" ]
 }
 
 pw_test("best_fit_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:best_fit_block_allocator" ]
+  deps += [ "$dir_pw_allocator:best_fit_block_allocator" ]
   sources += [ "best_fit_block_allocator.cc" ]
 }
 
 pw_test("bucket_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:bucket_block_allocator" ]
+  deps += [ "$dir_pw_allocator:bucket_block_allocator" ]
   sources += [ "bucket_block_allocator.cc" ]
 }
 
 pw_test("dual_first_fit_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:dual_first_fit_block_allocator" ]
+  deps += [ "$dir_pw_allocator:dual_first_fit_block_allocator" ]
   sources += [ "dual_first_fit_block_allocator.cc" ]
 }
 
 pw_test("first_fit_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:first_fit_block_allocator" ]
+  deps += [ "$dir_pw_allocator:first_fit_block_allocator" ]
   sources += [ "first_fit_block_allocator.cc" ]
 }
 
 pw_test("last_fit_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:last_fit_block_allocator" ]
+  deps += [ "$dir_pw_allocator:last_fit_block_allocator" ]
   sources += [ "last_fit_block_allocator.cc" ]
 }
 
 pw_test("worst_fit_block_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps = [ "$dir_pw_allocator:worst_fit_block_allocator" ]
+  deps += [ "$dir_pw_allocator:worst_fit_block_allocator" ]
   sources += [ "worst_fit_block_allocator.cc" ]
 }
 

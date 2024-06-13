@@ -16,16 +16,19 @@
 
 #include <cstdint>
 
+#include "pw_tokenizer/detokenize.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
+
+using namespace std::literals::string_view_literals;
 
 class MallocTest : public ::testing::Test {
  protected:
   void SetUp() override { pw::malloc::InitSystemAllocator(heap_); }
 
  private:
-  std::array<std::byte, 1024> heap_;
+  std::array<std::byte, 8192> heap_;
 };
 
 TEST_F(MallocTest, MallocFree) {
@@ -104,6 +107,34 @@ TEST_F(MallocTest, MallocReallocFree) {
 
   free(new_ptr);
   EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+}
+
+// This test mimics pw_tokenizer//detokenize_test.cc in order to perform memory
+// allocations as a result of manipulating a std::unordered_map.
+// See also b/345526413 for the failure that motivated this test.
+TEST_F(MallocTest, Detokenizae) {
+  static constexpr char kTestDatabase[] =
+      "TOKENS\0\0"
+      "\x06\x00\x00\x00"  // Number of tokens in this database.
+      "\0\0\0\0"
+      "\x01\x00\x00\x00----"
+      "\x05\x00\x00\x00----"
+      "\xFF\x00\x00\x00----"
+      "\xFF\xEE\xEE\xDD----"
+      "\xEE\xEE\xEE\xEE----"
+      "\x9D\xA7\x97\xF8----"
+      "One\0"
+      "TWO\0"
+      "333\0"
+      "FOUR\0"
+      "$AQAAAA==\0"
+      "■msg♦This is $AQAAAA== message■module♦■file♦file.txt";
+  pw::tokenizer::Detokenizer detok(
+      pw::tokenizer::TokenDatabase::Create<kTestDatabase>());
+  EXPECT_EQ(detok.Detokenize("\1\0\0\0"sv).BestString(), "One");
+  EXPECT_EQ(detok.Detokenize("\5\0\0\0"sv).BestString(), "TWO");
+  EXPECT_EQ(detok.Detokenize("\xff\x00\x00\x00"sv).BestString(), "333");
+  EXPECT_EQ(detok.Detokenize("\xff\xee\xee\xdd"sv).BestString(), "FOUR");
 }
 
 }  // namespace
