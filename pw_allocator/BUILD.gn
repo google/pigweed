@@ -505,6 +505,11 @@ pw_test("last_fit_block_allocator_test") {
   sources = [ "last_fit_block_allocator_test.cc" ]
 }
 
+pw_test("layout_test") {
+  deps = [ ":deallocator" ]
+  sources = [ "layout_test.cc" ]
+}
+
 pw_test("libc_allocator_test") {
   deps = [ ":libc_allocator" ]
   sources = [ "libc_allocator_test.cc" ]
@@ -585,6 +590,7 @@ pw_test_group("tests") {
     ":fragmentation_test",
     ":freelist_heap_test",
     ":last_fit_block_allocator_test",
+    ":layout_test",
     ":libc_allocator_test",
     ":null_allocator_test",
     ":typed_pool_test",

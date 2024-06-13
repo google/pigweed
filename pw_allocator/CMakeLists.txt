@@ -583,6 +583,16 @@ pw_add_test(pw_allocator.freelist_heap_test
     pw_allocator
 )
 
+pw_add_test(pw_allocator.layout_test
+  SOURCES
+    layout_test.cc
+  PRIVATE_DEPS
+    pw_allocator.deallocator
+  GROUPS
+    modules
+    pw_allocator
+)
+
 pw_add_test(pw_allocator.last_fit_block_allocator_test
   SOURCES
     last_fit_block_allocator_test.cc

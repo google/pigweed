@@ -62,8 +62,8 @@ TEST(LibCAllocatorTest, Reallocate) {
   constexpr Layout old_layout = Layout::Of<uint32_t[4]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_NE(ptr, nullptr);
-  constexpr size_t new_size = sizeof(uint32_t[3]);
-  void* new_ptr = allocator.Reallocate(ptr, new_size);
+  constexpr Layout new_layout(sizeof(uint32_t[3]), old_layout.alignment());
+  void* new_ptr = allocator.Reallocate(ptr, new_layout);
   ASSERT_NE(new_ptr, nullptr);
   allocator.Deallocate(new_ptr);
 }

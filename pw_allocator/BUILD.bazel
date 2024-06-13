@@ -640,6 +640,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "layout_test",
+    srcs = ["layout_test.cc"],
+    deps = [
+        ":deallocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "libc_allocator_test",
     srcs = [
         "libc_allocator_test.cc",

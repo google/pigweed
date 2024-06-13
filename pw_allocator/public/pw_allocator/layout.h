@@ -38,8 +38,10 @@ namespace pw::allocator {
 /// @endcode
 class Layout {
  public:
-  constexpr Layout() = default;
-  constexpr Layout(size_t size, size_t alignment = alignof(std::max_align_t))
+  constexpr Layout() : Layout(0) {}
+  constexpr explicit Layout(size_t size)
+      : Layout(size, alignof(std::max_align_t)) {}
+  constexpr Layout(size_t size, size_t alignment)
       : size_(size), alignment_(alignment) {}
 
   /// Creates a Layout for the given type.
@@ -59,12 +61,12 @@ class Layout {
     return Layout(size, alignment_);
   }
 
-  size_t size() const { return size_; }
-  size_t alignment() const { return alignment_; }
+  constexpr size_t size() const { return size_; }
+  constexpr size_t alignment() const { return alignment_; }
 
  private:
-  size_t size_ = 0;
-  size_t alignment_ = 1;
+  size_t size_;
+  size_t alignment_;
 };
 
 inline bool operator==(const Layout& lhs, const Layout& rhs) {

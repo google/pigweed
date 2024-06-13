@@ -60,11 +60,11 @@ TEST(AllocatorTest, ResizeSame) {
 TEST(AllocatorTest, ReallocateNull) {
   AllocatorForTest allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t>();
-  size_t new_size = old_layout.size();
-  void* new_ptr = allocator.Reallocate(nullptr, new_size);
+  constexpr Layout new_layout(old_layout.size(), old_layout.alignment());
+  void* new_ptr = allocator.Reallocate(nullptr, new_layout);
 
   // Resize should fail and Reallocate should call Allocate.
-  EXPECT_EQ(allocator.allocate_size(), new_size);
+  EXPECT_EQ(allocator.allocate_size(), new_layout.size());
 
   // Deallocate should not be called.
   EXPECT_EQ(allocator.deallocate_ptr(), nullptr);
@@ -82,8 +82,8 @@ TEST(AllocatorTest, ReallocateZeroNewSize) {
   ASSERT_NE(ptr, nullptr);
   allocator.ResetParameters();
 
-  size_t new_size = 0;
-  void* new_ptr = allocator.Reallocate(ptr, new_size);
+  constexpr Layout new_layout(0, old_layout.alignment());
+  void* new_ptr = allocator.Reallocate(ptr, new_layout);
 
   // Reallocate does not call Resize, Allocate, or Deallocate.
   EXPECT_EQ(allocator.resize_ptr(), nullptr);
@@ -131,13 +131,13 @@ TEST(AllocatorTest, ReallocateSmaller) {
   ASSERT_NE(ptr, nullptr);
   allocator.ResetParameters();
 
-  size_t new_size = sizeof(uint32_t);
-  void* new_ptr = allocator.Reallocate(ptr, new_size);
+  constexpr Layout new_layout(sizeof(uint32_t), old_layout.alignment());
+  void* new_ptr = allocator.Reallocate(ptr, new_layout);
 
   // Reallocate should call Resize.
   EXPECT_EQ(allocator.resize_ptr(), ptr);
   EXPECT_EQ(allocator.resize_old_size(), old_layout.size());
-  EXPECT_EQ(allocator.resize_new_size(), new_size);
+  EXPECT_EQ(allocator.resize_new_size(), new_layout.size());
 
   // Allocate should not be called.
   EXPECT_EQ(allocator.allocate_size(), 0U);
@@ -166,16 +166,16 @@ TEST(AllocatorTest, ReallocateLarger) {
   ASSERT_NE(next, nullptr);
   allocator.ResetParameters();
 
-  size_t new_size = sizeof(uint32_t[3]);
-  void* new_ptr = allocator.Reallocate(ptr, new_size);
+  constexpr Layout new_layout(sizeof(uint32_t[3]), old_layout.alignment());
+  void* new_ptr = allocator.Reallocate(ptr, new_layout);
 
   // Reallocate should call Resize.
   EXPECT_EQ(allocator.resize_ptr(), ptr);
   EXPECT_EQ(allocator.resize_old_size(), old_layout.size());
-  EXPECT_EQ(allocator.resize_new_size(), new_size);
+  EXPECT_EQ(allocator.resize_new_size(), new_layout.size());
 
   // Resize should fail and Reallocate should call Allocate.
-  EXPECT_EQ(allocator.allocate_size(), new_size);
+  EXPECT_EQ(allocator.allocate_size(), new_layout.size());
 
   // Deallocate should also be called.
   EXPECT_EQ(allocator.deallocate_ptr(), ptr);
