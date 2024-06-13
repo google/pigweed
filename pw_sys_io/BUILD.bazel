@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "host_backend_alias")
 load(
     "//pw_build:pigweed.bzl",
-    "host_backend_alias",
     "pw_facade",
 )
 

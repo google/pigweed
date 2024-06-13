@@ -371,6 +371,16 @@ useful when debugging embedded firmware.
      dump_out = "main.dump",
    )
 
+Platform compatibility rules
+----------------------------
+Macros and rules related to platform compatibility are provided in
+``//pw_build:compatibility.bzl``.
+
+host_backend_alias
+^^^^^^^^^^^^^^^^^^
+An alias that resolves to the backend for host platforms. This is useful when
+declaring a facade that provides a default backend for host platform use.
+
 Miscellaneous utilities
 -----------------------
 
