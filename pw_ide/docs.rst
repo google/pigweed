@@ -3,6 +3,9 @@
 ------
 pw_ide
 ------
+.. pigweed-module::
+   :name: pw_ide
+
 This module provides tools for supporting code editor and IDE features for
 Pigweed projects.
 

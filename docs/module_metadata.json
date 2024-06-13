@@ -324,6 +324,16 @@
       "C++17"
     ]
   },
+  "pw_ide": {
+    "tagline": "Code editor and IDE support for Pigweed projects",
+    "status": "stable",
+    "languages": [
+      "C++",
+      "CLI",
+      "Python",
+      "VS Code"
+    ]
+  },
   "pw_json": {
     "tagline": "Simple, efficient C++ JSON serialization",
     "status": "stable",

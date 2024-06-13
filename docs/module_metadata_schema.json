@@ -7,7 +7,7 @@
       "type": "object",
       "properties": {
         "languages": {
-          "description": "The programming languages that the module supports.",
+          "description": "Supported languages, build systems, etc. TODO: https://pwbug.dev/345534064 - Refactor this.",
           "type": "array",
           "items": {
             "type": "string",
@@ -27,7 +27,8 @@
               "Python",
               "Rust",
               "Starlark",
-              "TypeScript"
+              "TypeScript",
+              "VS Code"
             ]
           }
         },
