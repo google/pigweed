@@ -18,9 +18,9 @@
 // Disable formatting to make it easier to compare with other config files.
 // clang-format off
 
-#define vPortSVCHandler         isr_svcall
-#define xPortPendSVHandler      isr_pendsv
-#define xPortSysTickHandler     isr_systick
+#define vPortSVCHandler         SVC_Handler
+#define xPortPendSVHandler      PendSV_Handler
+#define xPortSysTickHandler     SysTick_Handler
 
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0

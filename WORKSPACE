@@ -513,9 +513,10 @@ new_local_repository(
     path = ".",
 )
 
+# This repository is pinned to the upstream `develop` branch of the Pico SDK.
 git_repository(
     name = "pico-sdk",
-    commit = "4de7ec6bd73cd154533f35d9058279267ba77176",
+    commit = "6ff3e4fab27441de19fd53c0eb5aacbe83a18221",
     remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
 )
 

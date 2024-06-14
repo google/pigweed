@@ -22,7 +22,6 @@ platform(
         "@freertos//:port_ARM_CM0",
         "@freertos//:disable_task_statics",
         "@pico-sdk//bazel/constraint:rp2040",
-        "@pico-sdk//bazel/constraint:stdio_usb",
         "freertos_config_cv",
         "//pw_build/constraints/chipset:rp2040",
         "//pw_build/constraints/rtos:freertos",
