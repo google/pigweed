@@ -337,6 +337,8 @@ This should result in a ``test.map`` file generated next to the ``test`` binary.
 Note that it's only partially compatible with the ``cc_binary`` interface and
 certain things are not implemented like make variable substitution.
 
+.. _module-pw_build-bazel-pw_elf_to_bin:
+
 pw_elf_to_bin
 -------------
 The ``pw_elf_to_bin`` rule takes in a binary executable target and produces a
@@ -353,6 +355,8 @@ this type of file is booting directly on hardware with no bootloader.
      elf_input = ":main",
      bin_out = "main.bin",
    )
+
+.. _module-pw_build-bazel-pw_elf_to_dump:
 
 pw_elf_to_dump
 --------------

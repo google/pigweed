@@ -213,9 +213,9 @@ async function render(commits) {
     rest += `${'-'.repeat(title.length)}\n\n`;
     rest += '.. changelog_highlights_start\n\n';
     rest += `Highlights (${start} to ${end}):\n\n`;
-    rest += '* Highlight #1\n';
-    rest += '* Highlight #2\n';
-    rest += '* Highlight #3\n\n';
+    rest += '* **<Highlight 1>**: Description\n';
+    rest += '* **<Highlight 2>**: Description\n';
+    rest += '* **<Highlight 3>**: Description\n\n';
     rest += '.. changelog_highlights_end\n\n';
     rest += 'Active SEEDs\n';
     rest += '============\n';
@@ -228,13 +228,13 @@ async function render(commits) {
     rest += '.. space.\n\n';
     const categories = [
       'Modules',
-      'Build',
-      'Targets',
+      'Build systems',
+      'Hardware targets',
       'Language support',
       'OS support',
       'Docs',
       'SEEDs',
-      'Third party',
+      'Third-party software',
       'Miscellaneous',
     ];
     for (let i = 0; i < categories.length; i++) {
@@ -245,11 +245,19 @@ async function render(commits) {
       let topics = Object.keys(commits[category]);
       topics.sort();
       topics.forEach((topic) => {
-        rest += `${topic}\n`;
-        rest += `${'-'.repeat(topic.length)}\n\n\n`;
+        // Some topics should not be rendered because they're redundant.
+        // E.g. we already have a "Docs" H3 heading so we don't need another
+        // "docs" H4 heading right after it.
+        const topicsToSkip = ['docs'];
+        if (!topicsToSkip.includes(topic)) {
+          rest += `${topic}\n`;
+          rest += `${'-'.repeat(topic.length)}\n\n\n`;
+        }
         commits[category][topic].forEach((commit) => {
-          const change = commit.change.replaceAll('`', '`');
-          // The double underscores are signficant:
+          // Escape any backticks that are used in the commit message.
+          const change = commit.change.replaceAll('`', '\\`');
+          // Use double underscores to make the links anonymous so that Sphinx
+          // doesn't error when the same link is used multiple times.
           // https://github.com/sphinx-doc/sphinx/issues/3921
           rest += `* \`${commit.title}\n  <${change}>\`__\n`;
           if (commit.issue)

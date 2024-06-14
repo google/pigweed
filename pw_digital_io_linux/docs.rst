@@ -91,6 +91,7 @@ Configure an interrupt pin and handle events
    :linenos:
    :lines: 15-
 
+.. _module-pw_digital_io_linux-cli:
 
 ----------------------
 Command-Line Interface
@@ -143,9 +144,11 @@ Arguments:
 * ``LINE``: GPIO line number (e.g. ``1``)
 * ``VALUE``: the value to set (``0`` = inactive or ``1`` = active)
 
+.. _module-pw_digital_io_linux-cli-watch:
+
 ``watch``
 =========
-Configure a GPIO line as an input and watch for interrupt evnts.
+Configure a GPIO line as an input and watch for interrupt events.
 
 By default, both rising and falling edges will trigger an event.
 This can be changed via the ``-t`` option.

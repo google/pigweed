@@ -64,6 +64,9 @@ Setup
             dir_pw_third_party_nanopb = "//environment/packages/nanopb"
             dir_pw_third_party_freertos = "//environment/packages/freertos"
 
+
+.. _target-host-device-simulator-demo:
+
 -----------------------------
 Building and running the demo
 -----------------------------
