@@ -77,39 +77,6 @@ platform(
 )
 
 # ----------------------
-# --- Test Platforms ---
-# ----------------------
-
-# This is a platform for compilation testing of freertos backends. This is not
-# a complete specification of any real target platform.
-platform(
-    name = "testonly_freertos",
-    constraint_values = [
-        # Use FreeRTOS backends.
-        "//pw_build/constraints/rtos:freertos",
-        # Use the FreeRTOS config file for stm32f429i_disc1_stm32cube.
-        "//targets/stm32f429i_disc1_stm32cube:freertos_config_cv",
-        # Use the ARM_CM4F port of FreeRTOS.
-        "@freertos//:port_ARM_CM4F",
-        # Use the baremetal pw_sys_io backend (because the default
-        # pw_sys_io_stdio backend is not compatible with FreeRTOS).
-        "//pw_sys_io_baremetal_stm32f429:backend",
-        # Select cortex-m backends
-        "//pw_cpu_exception:basic_handler_backend",
-        "//pw_cpu_exception_cortex_m:entry_backend",
-        "//pw_cpu_exception_cortex_m:support_backend",
-        "//pw_interrupt_cortex_m:backend",
-        "//pw_malloc_freertos:backend",
-        # os:none means, we're not building for any host platform (Windows,
-        # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
-        # compatible with os:none.
-        "@platforms//os:none",
-        # For toolchain resolution.
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
-    ],
-)
-
-# ----------------------
 # --- Misc Platforms ---
 # ----------------------
 

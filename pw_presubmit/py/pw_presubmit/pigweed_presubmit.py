@@ -859,29 +859,11 @@ def bazel_build(ctx: PresubmitContext) -> None:
                 *targets,
             )
 
-    # Provide some coverage of the FreeRTOS build.
-    #
-    # This is just a minimal presubmit intended to ensure we don't break what
-    # support we have.
-    #
-    # TODO: b/271465588 - Eventually just build the entire repo for this
-    # platform.
     build_bazel(
         ctx,
         'build',
-        '--platforms=//pw_build/platforms:testonly_freertos',
-        '//pw_sync/...',
-        '//pw_thread/...',
-        '//pw_thread_freertos/...',
-        '//pw_interrupt/...',
-        '//pw_cpu_exception/...',
-    )
-
-    build_bazel(
-        ctx,
-        'build',
+        '--config=stm32f429i_freertos',
         '--//pw_thread_freertos:config_override=//pw_build:test_module_config',
-        '--platforms=//pw_build/platforms:testonly_freertos',
         '//pw_build:module_config_test',
     )
 
