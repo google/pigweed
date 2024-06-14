@@ -14,17 +14,15 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/targets/common/stl.gni")
 import("$dir_pw_async/backend.gni")
 import("$dir_pw_async2/backend.gni")
-import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
-import("$dir_pw_sync/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_system/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
-import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
 import("$dir_pw_toolchain/traits.gni")
@@ -32,6 +30,8 @@ import("$dir_pw_trace/backend.gni")
 import("$dir_pw_trace_tokenized/config.gni")
 
 _host_common = {
+  forward_variables_from(pw_targets_STL_BACKEND_GROUP, "*")
+
   # Use logging-based test output on host.
   pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
 
@@ -55,21 +55,6 @@ _host_common = {
   # Enable decimal expansion when converting floats to string.
   pw_string_CONFIG = "$dir_pw_string:enable_decimal_float_expansion"
 
-  # Configure backends for pw_sync's facades.
-  pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
-  pw_sync_CONDITION_VARIABLE_BACKEND =
-      "$dir_pw_sync_stl:condition_variable_backend"
-  pw_sync_COUNTING_SEMAPHORE_BACKEND =
-      "$dir_pw_sync_stl:counting_semaphore_backend"
-  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
-  pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
-  pw_sync_RECURSIVE_MUTEX_BACKEND = "$dir_pw_sync_stl:recursive_mutex_backend"
-  pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
-  pw_sync_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync:binary_semaphore_thread_notification_backend"
-  pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync:binary_semaphore_timed_thread_notification_backend"
-
   # Configure backend for pw_sys_io facade.
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
@@ -82,21 +67,8 @@ _host_common = {
   # Tokenizer trace time.
   pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 
-  # Configure backend for pw_chrono's facades.
-  pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_stl:system_clock"
-  pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_stl:system_timer"
-
   # Configure backend for pw_perf_test timing facade.
   pw_perf_test_TIMER_INTERFACE_BACKEND = "$dir_pw_perf_test:chrono_timer"
-
-  # Configure backends for pw_thread's facades.
-  pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
-  pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
-  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
-  pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
-  pw_thread_THREAD_ITERATION_BACKEND = "$dir_pw_thread_stl:thread_iteration"
-  pw_thread_TEST_THREAD_CONTEXT_BACKEND =
-      "$dir_pw_thread_stl:test_thread_context"
 
   pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
   pw_build_LINK_DEPS = [

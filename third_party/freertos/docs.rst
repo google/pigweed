@@ -120,6 +120,25 @@ modules:
 * :ref:`module-pw_sync_freertos`
 * :ref:`module-pw_thread_freertos`
 
+Backend group
+=============
+In GN, import ``pw_targets_FREERTOS_BACKEND_GROUP`` to set backends for
+:ref:`module-pw_chrono`, :ref:`module-pw_sync`, and :ref:`module-pw_thread` for
+FreeRTOS. The backends can be overridden individually if needed.
+
+.. code-block:: none
+
+   # Toolchain configuration
+   import("$dir_pigweed/targets/common/freertos.gni")
+
+   _backend_setting_example = {
+     # Since this target is using FreeRTOS, adopt FreeRTOS backends by default.
+     forward_variables_from(pw_targets_FREERTOS_BACKEND_GROUP, "*")
+
+     # Set other backends or override the default FreeRTOS selections if needed.
+     ...
+   }
+
 .. _third_party-freertos_config_assert:
 
 --------------------------

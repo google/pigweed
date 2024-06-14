@@ -14,15 +14,19 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/targets/common/freertos.gni")
 import("$dir_pw_boot/backend.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
-import("$dir_pw_sync/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
-
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 
 _target_config = {
+  # This target uses FreeRTOS.
+  forward_variables_from(pw_targets_FREERTOS_BACKEND_GROUP, "*")
+  pw_thread_THREAD_ITERATION_BACKEND = ""
+  pw_third_party_freertos_DISABLE_TASKS_STATICS = true
+
   # Use the logging main.
   pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
 
@@ -35,27 +39,10 @@ _target_config = {
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
   pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv8m"
-  pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_freertos:system_clock"
-  pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_freertos:system_timer"
   pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv8m"
   pw_log_BACKEND = dir_pw_log_basic
   pw_malloc_BACKEND = "$dir_pw_malloc:bucket_block_allocator"
-  pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_freertos:binary_semaphore"
-  pw_sync_COUNTING_SEMAPHORE_BACKEND =
-      "$dir_pw_sync_freertos:counting_semaphore"
-  pw_sync_MUTEX_BACKEND = "$dir_pw_sync_freertos:mutex"
-  pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_freertos:timed_mutex"
-  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
-      "$dir_pw_sync_freertos:interrupt_spin_lock"
-  pw_sync_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync_freertos:thread_notification"
-  pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync_freertos:timed_thread_notification"
   pw_sys_io_BACKEND = "$dir_pw_sys_io_mcuxpresso"
-  pw_thread_ID_BACKEND = "$dir_pw_thread_freertos:id"
-  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_freertos:sleep"
-  pw_thread_THREAD_BACKEND = "$dir_pw_thread_freertos:thread"
-  pw_thread_YIELD_BACKEND = "$dir_pw_thread_freertos:yield"
 
   pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
 

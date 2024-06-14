@@ -14,27 +14,10 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/targets/common/stl.gni")
+
 PW_SYSTEM_STL_BACKENDS = {
-  pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_stl:system_clock"
-  pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_stl:system_timer"
-  pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
-  pw_sync_CONDITION_VARIABLE_BACKEND =
-      "$dir_pw_sync_stl:condition_variable_backend"
-  pw_sync_COUNTING_SEMAPHORE_BACKEND =
-      "$dir_pw_sync_stl:counting_semaphore_backend"
-  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
-  pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
-  pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
-  pw_sync_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync:binary_semaphore_thread_notification_backend"
-  pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND =
-      "$dir_pw_sync:binary_semaphore_timed_thread_notification_backend"
-  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
-  pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
-  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
-  pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
-  pw_thread_THREAD_ITERATION_BACKEND = "$dir_pw_thread_stl:thread_iteration"
-  pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
+  forward_variables_from(pw_targets_STL_BACKEND_GROUP, "*")
   pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:stl_target_hooks"
   pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 }
