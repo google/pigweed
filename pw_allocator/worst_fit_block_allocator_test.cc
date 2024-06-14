@@ -64,14 +64,14 @@ TEST_F(WorstFitBlockAllocatorTest, AllocateAlignmentFailure) {
 
 TEST_F(WorstFitBlockAllocatorTest, AllocatesWorstCompatible) {
   auto& allocator = GetAllocator({
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kSmallerOuterSize, 1},
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {kSmallerOuterSize, 3},
-      {kSmallerOuterSize, Preallocation::kIndexFree},
-      {kSmallerOuterSize, 5},
-      {kLargerOuterSize, Preallocation::kIndexFree},
-      {Preallocation::kSizeRemaining, 7},
+      {kLargeOuterSize, Preallocation::kFree},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kFree},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {kLargerOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   Store(6, allocator.Allocate(Layout(kLargeInnerSize, 1)));

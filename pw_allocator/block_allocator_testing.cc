@@ -25,11 +25,18 @@ namespace pw::allocator::test {
 void BlockAllocatorTestBase::SetUp() { ptrs_.fill(nullptr); }
 
 void BlockAllocatorTestBase::Store(size_t index, void* ptr) {
+  PW_CHECK_UINT_LT(index, kNumPtrs, "index is out of bounds");
+  PW_CHECK(ptr == nullptr || ptrs_[index] == nullptr,
+           "assigning pointer would clobber existing allocation");
   ptrs_[index] = ptr;
 }
 
 void* BlockAllocatorTestBase::Fetch(size_t index) {
   return index < kNumPtrs ? ptrs_[index] : nullptr;
+}
+
+void BlockAllocatorTestBase::Swap(size_t i, size_t j) {
+  std::swap(ptrs_[i], ptrs_[j]);
 }
 
 void BlockAllocatorTestBase::UseMemory(void* ptr, size_t size) {
@@ -95,9 +102,9 @@ void BlockAllocatorTestBase::AllocateAlignmentFailure() {
   uintptr_t outer_size =
       AlignUp(addr + kDefaultBlockOverhead, kAlignment) - addr + 1;
   Allocator& allocator = GetAllocator({
-      {outer_size, 0},
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {Preallocation::kSizeRemaining, 2},
+      {outer_size, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   // The allocator should be unable to create an aligned region..
@@ -123,14 +130,10 @@ void BlockAllocatorTestBase::DeallocateShuffled() {
   // Mix up the order of allocations.
   for (size_t i = 0; i < kNumPtrs; ++i) {
     if (i % 2 == 0 && i + 1 < kNumPtrs) {
-      void* tmp = Fetch(i);
-      Store(i, Fetch(i + 1));
-      Store(i + 1, tmp);
+      Swap(i, i + 1);
     }
     if (i % 3 == 0 && i + 2 < kNumPtrs) {
-      void* tmp = Fetch(i);
-      Store(i, Fetch(i + 2));
-      Store(i + 2, tmp);
+      Swap(i, i + 2);
     }
   }
 
@@ -149,8 +152,8 @@ void BlockAllocatorTestBase::ResizeNull() {
 
 void BlockAllocatorTestBase::ResizeLargeSame() {
   Allocator& allocator = GetAllocator({
-      {kLargeOuterSize, 0},
-      {kLargeOuterSize, 1},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kLargeInnerSize;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -159,8 +162,8 @@ void BlockAllocatorTestBase::ResizeLargeSame() {
 
 void BlockAllocatorTestBase::ResizeLargeSmaller() {
   Allocator& allocator = GetAllocator({
-      {kLargeOuterSize, 0},
-      {kLargeOuterSize, 1},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kSmallInnerSize;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -169,9 +172,9 @@ void BlockAllocatorTestBase::ResizeLargeSmaller() {
 
 void BlockAllocatorTestBase::ResizeLargeLarger() {
   Allocator& allocator = GetAllocator({
-      {kLargeOuterSize, 0},
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kSmallOuterSize, 2},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kFree},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kLargeInnerSize * 2;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -180,8 +183,8 @@ void BlockAllocatorTestBase::ResizeLargeLarger() {
 
 void BlockAllocatorTestBase::ResizeLargeLargerFailure() {
   Allocator& allocator = GetAllocator({
-      {kLargeOuterSize, 0},
-      {kSmallOuterSize, 12},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   // Memory after ptr is already allocated, so `Resize` should fail.
   size_t new_size = kLargeInnerSize * 2;
@@ -190,8 +193,8 @@ void BlockAllocatorTestBase::ResizeLargeLargerFailure() {
 
 void BlockAllocatorTestBase::ResizeSmallSame() {
   Allocator& allocator = GetAllocator({
-      {kSmallOuterSize, 0},
-      {kSmallOuterSize, 1},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kSmallInnerSize;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -200,8 +203,8 @@ void BlockAllocatorTestBase::ResizeSmallSame() {
 
 void BlockAllocatorTestBase::ResizeSmallSmaller() {
   Allocator& allocator = GetAllocator({
-      {kSmallOuterSize, 0},
-      {kSmallOuterSize, 1},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kSmallInnerSize / 2;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -210,9 +213,9 @@ void BlockAllocatorTestBase::ResizeSmallSmaller() {
 
 void BlockAllocatorTestBase::ResizeSmallLarger() {
   Allocator& allocator = GetAllocator({
-      {kSmallOuterSize, 0},
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {kSmallOuterSize, 2},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   size_t new_size = kSmallInnerSize * 2;
   ASSERT_TRUE(allocator.Resize(Fetch(0), new_size));
@@ -221,8 +224,8 @@ void BlockAllocatorTestBase::ResizeSmallLarger() {
 
 void BlockAllocatorTestBase::ResizeSmallLargerFailure() {
   Allocator& allocator = GetAllocator({
-      {kSmallOuterSize, 0},
-      {kSmallOuterSize, 1},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
   });
   // Memory after ptr is already allocated, so `Resize` should fail.
   size_t new_size = kSmallInnerSize * 2 + kDefaultBlockOverhead;

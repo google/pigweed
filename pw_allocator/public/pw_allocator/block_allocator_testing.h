@@ -15,19 +15,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 
-#include "pw_allocator/block.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_assert/assert.h"
-#include "pw_bytes/alignment.h"
+#include "pw_allocator/block_testing.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
-
-// Forward declaration.
-struct Preallocation;
 
 /// Test fixture responsible for managing a memory region and an allocator that
 /// allocates block of memory from it.
@@ -83,6 +77,9 @@ class BlockAllocatorTestBase : public ::testing::Test {
 
   /// Retrieve an allocated pointer from the test's cache of pointers.
   void* Fetch(size_t index);
+
+  /// Swaps the pointer at indices `i` and `j`.
+  void Swap(size_t i, size_t j);
 
   /// Ensures the memory is usable by writing to it.
   void UseMemory(void* ptr, size_t size);
@@ -148,56 +145,6 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer_;
 };
 
-/// Represents an initial state for a memory block.
-///
-/// Unit tests can specify an initial block layout by passing a list of these
-/// structs to `Preallocate`.
-///
-/// The outer size of each block must be at least `kBlockOverhead` for the
-/// block type in use. The special `kSizeRemaining` may be used for at most
-/// one block to give it any space not assigned to other blocks.
-///
-/// The index must be less than `BlockAllocatorBlockAllocatorTest::kNumPtrs` or
-/// one of the special values `kIndexFree` or `kIndexNext`. A regular index will
-/// mark the block as "used" and cache the pointer to its usable space in
-/// `ptrs[index]`. The special value `kIndexFree` will leave the block as
-/// "free". The special value `kIndexNext` will mark the block as "used" and
-/// cache its pointer in the next available slot in `test_fixture`. This
-/// may be used/ when the pointer is not needed for the test but should still
-/// be automatically freed at the end of the test.
-///
-/// Example:
-/// @code{.cpp}
-///   // BlockType = UnpoisonedBlock<uint32_t>, so kBlockOverhead == 8.
-///   ASSERT_EQ(Preallocate({
-///     {32,              0},           // ptrs[0] == 24 byte region.
-///     {24,              kIndexFree},  // Free block of 16 bytes.
-///     {48,              2},           // ptrs[2] == 40 byte region.
-///     {kSizeRemaining,  kIndesFree},  // Free block of leftover space.
-///     {64,              4},           // ptrs[4] == 56 byte region from the
-///                                     //             end of the allocator.
-///   }), OkStatus());
-/// @endcode
-struct Preallocation {
-  /// The outer size of the block to preallocate.
-  size_t outer_size;
-
-  // Index into the `test_fixture` array where the pointer to the block's
-  // space should be cached.
-  size_t index;
-
-  /// Special value indicating the block should comprise of the all remaining
-  /// space not preallocated to any other block. May be used at most once.
-  static constexpr size_t kSizeRemaining = std::numeric_limits<size_t>::max();
-
-  /// Special value indicating the block should be treated as unallocated,
-  /// i.e. it's pointer should not be cached.
-  static constexpr size_t kIndexFree = BlockAllocatorTestBase::kNumPtrs + 1;
-
-  /// Special value indicating to use the next available index.
-  static constexpr size_t kIndexNext = BlockAllocatorTestBase::kNumPtrs + 2;
-};
-
 // Test fixture template method implementations.
 
 template <typename BlockAllocatorType>
@@ -209,74 +156,13 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
 template <typename BlockAllocatorType>
 Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
     std::initializer_list<Preallocation> preallocations) {
-  // First, look if any blocks use kSizeRemaining, and calculate how large
-  // that will be.
-  size_t remaining_outer_size = kCapacity;
-  for (auto& preallocation : preallocations) {
-    if (preallocation.outer_size != Preallocation::kSizeRemaining) {
-      size_t outer_size =
-          AlignUp(preallocation.outer_size, BlockType::kAlignment);
-      PW_ASSERT(remaining_outer_size >= outer_size);
-      remaining_outer_size -= outer_size;
-    }
+  auto* first = Preallocate<BlockType>(GetBytes(), preallocations);
+  size_t index = 0;
+  for (BlockType* block = first; block != nullptr; block = block->Next()) {
+    Store(index, block->Used() ? block->UsableSpace() : nullptr);
+    ++index;
   }
-
-  Result<BlockType*> result = BlockType::Init(GetBytes());
-  BlockType* block = *result;
-  void* begin = block->UsableSpace();
-
-  // To prevent free blocks being merged back into the block of available
-  // space, treat the available space as being used.
-  block->MarkUsed();
-
-  size_t next_index = 0;
-  for (auto& preallocation : preallocations) {
-    PW_ASSERT(block != nullptr);
-
-    // Perform the allocation.
-    size_t outer_size = preallocation.outer_size;
-    if (outer_size == Preallocation::kSizeRemaining) {
-      outer_size = remaining_outer_size;
-      remaining_outer_size = 0;
-    }
-    size_t inner_size = outer_size - BlockType::kBlockOverhead;
-
-    block->MarkFree();
-    Layout layout(inner_size, 1);
-    PW_ASSERT(BlockType::AllocFirst(block, layout).ok());
-    if (!block->Last()) {
-      block->Next()->MarkUsed();
-    }
-
-    // Free the block or cache the allocated pointer.
-    if (preallocation.index == Preallocation::kIndexFree) {
-      BlockType::Free(block);
-
-    } else if (preallocation.index == Preallocation::kIndexNext) {
-      while (true) {
-        PW_ASSERT(next_index < kNumPtrs);
-        if (Fetch(next_index) == nullptr &&
-            std::all_of(preallocations.begin(),
-                        preallocations.end(),
-                        [next_index](const Preallocation& other) {
-                          return other.index != next_index;
-                        })) {
-          break;
-        }
-        ++next_index;
-      }
-      Store(next_index, block->UsableSpace());
-
-    } else {
-      Store(preallocation.index, block->UsableSpace());
-    }
-    block = block->Next();
-  }
-  if (block != nullptr) {
-    block->MarkFree();
-  }
-  block = BlockType::FromUsableSpace(begin);
-  allocator_.Init(block);
+  allocator_.Init(first);
   return allocator_;
 }
 
@@ -300,8 +186,9 @@ void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
   for (size_t i = 0; i < kNumPtrs; ++i) {
-    if (Fetch(i) != nullptr) {
-      allocator_.Deallocate(Fetch(i));
+    void* ptr = Fetch(i);
+    if (ptr != nullptr) {
+      allocator_.Deallocate(ptr);
     }
   }
   allocator_.Reset();
@@ -326,13 +213,13 @@ void BlockAllocatorTest<BlockAllocatorType>::CanExplicitlyInit(
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
   Allocator& allocator = GetAllocator({
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {kLargeOuterSize, Preallocation::kIndexNext},
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {kLargeOuterSize, Preallocation::kIndexNext},
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {kLargeOuterSize, Preallocation::kIndexNext},
-      {Preallocation::kSizeRemaining, Preallocation::kIndexFree},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kFree},
   });
 
   // Count the blocks. The unallocated ones vary in size, but the allocated ones
@@ -355,12 +242,12 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
   Allocator& allocator = GetAllocator({
-      {0x020, Preallocation::kIndexFree},
-      {0x040, Preallocation::kIndexNext},
-      {0x080, Preallocation::kIndexFree},
-      {0x100, Preallocation::kIndexNext},
-      {0x200, Preallocation::kIndexFree},
-      {Preallocation::kSizeRemaining, Preallocation::kIndexNext},
+      {0x020, Preallocation::kFree},
+      {0x040, Preallocation::kUsed},
+      {0x080, Preallocation::kFree},
+      {0x100, Preallocation::kUsed},
+      {0x200, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);

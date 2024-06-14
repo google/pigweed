@@ -70,15 +70,15 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
   // Bucket sizes are: [ 64, 128, 256 ]
   // Start with everything allocated in order to recycle blocks into buckets.
   auto& allocator = GetAllocator({
-      {kSmallerOuterSize, 0},
-      {63 + BlockType::kBlockOverhead, 1},
-      {kSmallerOuterSize, 2},
-      {128 + BlockType::kBlockOverhead, 3},
-      {kSmallerOuterSize, 4},
-      {255 + BlockType::kBlockOverhead, 5},
-      {kSmallerOuterSize, 6},
-      {257 + BlockType::kBlockOverhead, 7},
-      {Preallocation::kSizeRemaining, 8},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {63 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {255 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {257 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   // Deallocate to fill buckets.
@@ -128,30 +128,30 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
 
 TEST_F(BucketBlockAllocatorTest, UnusedPortionIsRecycled) {
   auto& allocator = GetAllocator({
-      {128 + BlockType::kBlockOverhead, 0},
-      {Preallocation::kSizeRemaining, 3},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   // Deallocate to fill buckets.
   allocator.Deallocate(Fetch(0));
   Store(0, nullptr);
 
-  Store(1, allocator.Allocate(Layout(65, 1)));
-  ASSERT_NE(Fetch(1), nullptr);
+  Store(2, allocator.Allocate(Layout(65, 1)));
+  ASSERT_NE(Fetch(2), nullptr);
 
   // The remainder should be recycled to a smaller bucket.
-  Store(2, allocator.Allocate(Layout(32, 1)));
-  ASSERT_NE(Fetch(2), nullptr);
+  Store(3, allocator.Allocate(Layout(32, 1)));
+  ASSERT_NE(Fetch(3), nullptr);
 }
 
 TEST_F(BucketBlockAllocatorTest, ExhaustBucket) {
   auto& allocator = GetAllocator({
-      {128 + BlockType::kBlockOverhead, 0},
-      {kSmallerOuterSize, 1},
-      {128 + BlockType::kBlockOverhead, 2},
-      {kSmallerOuterSize, 3},
-      {128 + BlockType::kBlockOverhead, 4},
-      {Preallocation::kSizeRemaining, 5},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
   // Deallocate to fill buckets.

@@ -343,11 +343,22 @@ pw_source_set("testing") {
   deps = [ dir_pw_assert ]
 }
 
-pw_source_set("block_allocator_testing") {
-  public = [ "public/pw_allocator/block_allocator_testing.h" ]
+pw_source_set("block_testing") {
+  public = [ "public/pw_allocator/block_testing.h" ]
   public_deps = [
     ":block",
     ":block_allocator",
+    "$dir_pw_bytes:alignment",
+    dir_pw_assert,
+    dir_pw_status,
+  ]
+}
+
+pw_source_set("block_allocator_testing") {
+  public = [ "public/pw_allocator/block_allocator_testing.h" ]
+  public_deps = [
+    ":block_allocator",
+    ":block_testing",
     dir_pw_unit_test,
   ]
   deps = [
@@ -417,7 +428,7 @@ pw_test("best_fit_block_allocator_test") {
 
 pw_test("block_test") {
   deps = [
-    ":block",
+    ":block_testing",
     dir_pw_span,
   ]
   sources = [ "block_test.cc" ]

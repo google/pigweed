@@ -69,13 +69,13 @@ TEST_F(DualFirstFitBlockAllocatorTest, AllocateAlignmentFailure) {
 
 TEST_F(DualFirstFitBlockAllocatorTest, AllocatesUsingThreshold) {
   auto& allocator = GetAllocator({
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kSmallerOuterSize, 1},
-      {kSmallOuterSize, Preallocation::kIndexFree},
-      {Preallocation::kSizeRemaining, 3},
-      {kLargeOuterSize, Preallocation::kIndexFree},
-      {kSmallerOuterSize, 5},
-      {kSmallOuterSize, Preallocation::kIndexFree},
+      {kLargeOuterSize, Preallocation::kFree},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kFree},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
   });
   auto& dual_first_fit_block_allocator =
       static_cast<DualFirstFitBlockAllocator&>(allocator);
@@ -135,7 +135,8 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
 }
 
 TEST_F(DualFirstFitBlockAllocatorTest, ResizeLargeSmallerAcrossThreshold) {
-  auto& allocator = GetAllocator({{kDualFitThreshold * 2, 0}});
+  auto& allocator =
+      GetAllocator({{kDualFitThreshold * 2, Preallocation::kUsed}});
   // Shrinking succeeds, and the pointer is unchanged even though it is now
   // below the threshold.
   size_t new_size = kDualFitThreshold / 2;
@@ -145,9 +146,9 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeLargeSmallerAcrossThreshold) {
 
 TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerAcrossThreshold) {
   auto& allocator = GetAllocator({
-      {Preallocation::kSizeRemaining, Preallocation::kIndexNext},
-      {kDualFitThreshold / 2, 1},
-      {kDualFitThreshold * 2, Preallocation::kIndexFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+      {kDualFitThreshold / 2, Preallocation::kUsed},
+      {kDualFitThreshold * 2, Preallocation::kFree},
   });
   // Growing succeeds, and the pointer is unchanged even though it is now
   // above the threshold.

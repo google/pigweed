@@ -406,6 +406,21 @@ cc_library(
 )
 
 cc_library(
+    name = "block_testing",
+    testonly = True,
+    hdrs = [
+        "public/pw_allocator/block_testing.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":block",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "block_allocator_testing",
     testonly = True,
     srcs = [
@@ -416,8 +431,8 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":block",
         ":block_allocator",
+        ":block_testing",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_status",
@@ -514,7 +529,7 @@ pw_cc_test(
         "block_test.cc",
     ],
     deps = [
-        ":block",
+        ":block_testing",
         "//pw_span",
         "//pw_unit_test",
     ],

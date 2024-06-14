@@ -372,14 +372,26 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_assert
 )
 
-pw_add_library(pw_allocator.block_allocator_testing STATIC
+pw_add_library(pw_allocator.block_testing INTERFACE
   HEADERS
-    public/pw_allocator/block_allocator_testing.h
-    public/pw_allocator/testing.h
+    public/pw_allocator/block_testing.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.block
+    pw_assert
+    pw_bytes.alignment
+    pw_bytes
+    pw_result
+)
+
+pw_add_library(pw_allocator.block_allocator_testing STATIC
+  HEADERS
+    public/pw_allocator/block_allocator_testing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.block_testing
     pw_allocator.block_allocator
     pw_unit_test
   PRIVATE_DEPS
@@ -469,7 +481,7 @@ pw_add_test(pw_allocator.block_test
   SOURCES
     block_test.cc
   PRIVATE_DEPS
-    pw_allocator.block
+    pw_allocator.block_testing
     pw_span
   GROUPS
     modules
