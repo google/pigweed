@@ -19,7 +19,7 @@
 // clang-format on
 
 #include "pw_log/log.h"
-#include "pw_rpc/internal/channel.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
@@ -28,7 +28,7 @@ namespace pw::rpc {
 
 Result<PacketMeta> PacketMeta::FromBuffer(ConstByteSpan data) {
   PW_TRY_ASSIGN(internal::Packet packet, internal::Packet::FromBuffer(data));
-  if (packet.channel_id() == internal::Channel::kUnassignedChannelId ||
+  if (packet.channel_id() == Channel::kUnassignedChannelId ||
       packet.service_id() == 0 || packet.method_id() == 0) {
     PW_LOG_WARN("Received malformed pw_rpc packet");
     return Status::DataLoss();

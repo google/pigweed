@@ -219,7 +219,8 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
   EXPECT_EQ(context.client().ProcessPacket(*result), Status::InvalidArgument());
 }
 
-const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
+const internal::ChannelBase* GetChannel(internal::Endpoint& endpoint,
+                                        uint32_t id) {
   internal::RpcLockGuard lock;
   return endpoint.GetInternalChannel(id);
 }

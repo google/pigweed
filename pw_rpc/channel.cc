@@ -15,7 +15,7 @@
 // clang-format off
 #include "pw_rpc/internal/log_config.h"  // PW_LOG_* macros must be first.
 
-#include "pw_rpc/internal/channel.h"
+#include "pw_rpc/channel.h"
 // clang-format on
 
 #include "pw_assert/check.h"
@@ -46,6 +46,34 @@ Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128) {
   return OkStatus();
 }
 
+Status ChannelBase::Send(const Packet& packet) {
+  ByteSpan buffer = encoding_buffer.GetPacketBuffer(packet.payload().size());
+  Result encoded = packet.Encode(buffer);
+
+  if (!encoded.ok()) {
+    encoding_buffer.Release();
+    PW_LOG_ERROR(
+        "Failed to encode RPC packet type %u to channel %u buffer, status %u",
+        static_cast<unsigned>(packet.type()),
+        static_cast<unsigned>(id()),
+        encoded.status().code());
+    return Status::Internal();
+  }
+
+  PW_CHECK_NOTNULL(output_);
+  Status sent = output_->Send(encoded.value());
+  encoding_buffer.Release();
+
+  if (!sent.ok()) {
+    PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
+                 static_cast<unsigned>(id()),
+                 sent.code());
+
+    return Status::Unknown();
+  }
+  return OkStatus();
+}
+
 }  // namespace internal
 
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
@@ -63,34 +91,4 @@ Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
   return Status::DataLoss();
 }
 
-namespace internal {
-
-Status Channel::Send(const Packet& packet) {
-  ByteSpan buffer = encoding_buffer.GetPacketBuffer(packet.payload().size());
-  Result encoded = packet.Encode(buffer);
-
-  if (!encoded.ok()) {
-    encoding_buffer.Release();
-    PW_LOG_ERROR(
-        "Failed to encode RPC packet type %u to channel %u buffer, status %u",
-        static_cast<unsigned>(packet.type()),
-        static_cast<unsigned>(id()),
-        encoded.status().code());
-    return Status::Internal();
-  }
-
-  Status sent = output().Send(encoded.value());
-  encoding_buffer.Release();
-
-  if (!sent.ok()) {
-    PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
-                 static_cast<unsigned>(id()),
-                 sent.code());
-
-    return Status::Unknown();
-  }
-  return OkStatus();
-}
-
-}  // namespace internal
 }  // namespace pw::rpc

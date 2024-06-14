@@ -38,7 +38,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
   internal::rpc_lock().lock();
   IntrusiveList<internal::Call>::iterator call = FindCall(packet);
 
-  internal::Channel* channel = GetInternalChannel(packet.channel_id());
+  internal::ChannelBase* channel = GetInternalChannel(packet.channel_id());
 
   if (channel == nullptr) {
     internal::rpc_lock().unlock();

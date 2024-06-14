@@ -19,7 +19,6 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
-#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/grpc.h"
 #include "pw_rpc/internal/lock.h"
@@ -189,12 +188,12 @@ class Server : public internal::Endpoint {
   }
 
   void HandleCompletionRequest(const internal::Packet& packet,
-                               internal::Channel& channel,
+                               internal::ChannelBase& channel,
                                IntrusiveList<internal::Call>::iterator call)
       const PW_UNLOCK_FUNCTION(internal::rpc_lock());
 
   void HandleClientStreamPacket(const internal::Packet& packet,
-                                internal::Channel& channel,
+                                internal::ChannelBase& channel,
                                 IntrusiveList<internal::Call>::iterator call)
       const PW_UNLOCK_FUNCTION(internal::rpc_lock());
 

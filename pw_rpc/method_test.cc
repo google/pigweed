@@ -55,8 +55,8 @@ TEST(Method, Invoke) {
     Status Send(ConstByteSpan) override { return OkStatus(); }
   } channel_output;
 
-  Channel channel(123, &channel_output);
-  Server server(span(static_cast<rpc::Channel*>(&channel), 1));
+  Channel channel = Channel::Create<123>(&channel_output);
+  Server server(span(&channel, 1));
   TestService service;
 
   const CallContext context(server, channel.id(), service, kTestMethod, 0);

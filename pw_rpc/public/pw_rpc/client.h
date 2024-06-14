@@ -17,7 +17,6 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_span/span.h"

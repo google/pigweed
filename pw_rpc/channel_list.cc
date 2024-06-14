@@ -31,7 +31,7 @@ Status ChannelList::Add(uint32_t channel_id, ChannelOutput& output) {
   }
 
 #if PW_RPC_DYNAMIC_ALLOCATION
-  channels_.emplace_back(channel_id, &output);
+  channels_.emplace_back(Channel(channel_id, &output));
 #else
   Channel* new_channel = Get(Channel::kUnassignedChannelId);
   if (new_channel == nullptr) {

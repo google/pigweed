@@ -66,8 +66,8 @@ bool NanopbMethod::DecodeRequest(const CallContext& context,
 
   // The channel is known to exist. It was found when the request was processed
   // and the lock has been held since, so GetInternalChannel cannot fail.
-  static_cast<internal::Channel*>(
-      context.server().GetInternalChannel(context.channel_id()))
+  context.server()
+      .GetInternalChannel(context.channel_id())
       ->Send(Packet::ServerError(request, Status::DataLoss()))
       .IgnoreError();
   PW_LOG_WARN("Nanopb failed to decode request payload from channel %u",

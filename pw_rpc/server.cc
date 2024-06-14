@@ -49,7 +49,7 @@ Status Server::ProcessPacket(internal::Packet packet) {
   //              static_cast<unsigned>(packet.service_id()),
   //              static_cast<unsigned>(packet.method_id()));
 
-  internal::Channel* channel = GetInternalChannel(packet.channel_id());
+  internal::ChannelBase* channel = GetInternalChannel(packet.channel_id());
   if (channel == nullptr) {
     internal::rpc_lock().unlock();
     PW_LOG_WARN("RPC server received packet for unknown channel %u",
@@ -132,7 +132,7 @@ std::tuple<Service*, const internal::Method*> Server::FindMethodLocked(
 
 void Server::HandleCompletionRequest(
     const internal::Packet& packet,
-    internal::Channel& channel,
+    internal::ChannelBase& channel,
     IntrusiveList<internal::Call>::iterator call) const {
   if (call == calls_end()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
@@ -161,7 +161,7 @@ void Server::HandleCompletionRequest(
 
 void Server::HandleClientStreamPacket(
     const internal::Packet& packet,
-    internal::Channel& channel,
+    internal::ChannelBase& channel,
     IntrusiveList<internal::Call>::iterator call) const {
   if (call == calls_end()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))

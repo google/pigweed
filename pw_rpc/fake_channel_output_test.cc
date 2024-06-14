@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <memory>
 
-#include "pw_rpc/internal/channel.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_unit_test/framework.h"
@@ -49,7 +49,9 @@ class TestFakeChannelOutput final : public FakeChannelOutputBuffer<9, 128> {
 TEST(FakeChannelOutput, SendAndClear) {
   constexpr MethodType type = MethodType::kServerStreaming;
   TestFakeChannelOutput output;
-  Channel channel(kChannelId, &output);
+  Channel public_channel = Channel::Create<kChannelId>(&output);
+  internal::ChannelBase& channel = public_channel;
+
   const internal::Packet server_stream_packet(pwpb::PacketType::SERVER_STREAM,
                                               kChannelId,
                                               kServiceId,
@@ -76,7 +78,9 @@ TEST(FakeChannelOutput, SendAndClear) {
 TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   constexpr MethodType type = MethodType::kUnary;
   TestFakeChannelOutput output;
-  Channel channel(kChannelId, &output);
+  Channel public_channel = Channel::Create<kChannelId>(&output);
+  internal::ChannelBase& channel = public_channel;
+
   const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,
@@ -123,7 +127,9 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
 TEST(FakeChannelOutput, SendAndFakeSingleResult) {
   constexpr MethodType type = MethodType::kUnary;
   TestFakeChannelOutput output;
-  Channel channel(kChannelId, &output);
+  Channel public_channel = Channel::Create<kChannelId>(&output);
+  internal::ChannelBase& channel = public_channel;
+
   const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,
@@ -157,7 +163,9 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
 
 TEST(FakeChannelOutput, SendResponseUpdated) {
   TestFakeChannelOutput output;
-  Channel channel(kChannelId, &output);
+  Channel public_channel = Channel::Create<kChannelId>(&output);
+  internal::ChannelBase& channel = public_channel;
+
   const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,

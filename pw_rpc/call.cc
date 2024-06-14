@@ -204,7 +204,7 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
     return Status::FailedPrecondition();
   }
 
-  Channel* channel = endpoint_->GetInternalChannel(channel_id_);
+  ChannelBase* channel = endpoint_->GetInternalChannel(channel_id_);
   if (channel == nullptr) {
     encoding_buffer.ReleaseIfAllocated();
     return Status::Unavailable();

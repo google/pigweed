@@ -18,8 +18,8 @@
 #include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
-#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/channel_list.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
@@ -83,8 +83,8 @@ class Endpoint {
   // ensure that `rpc_lock()` is held.
   LockedEndpoint& ClaimLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  // Finds an internal::Channel with this ID or nullptr if none matches.
-  Channel* GetInternalChannel(uint32_t channel_id)
+  // Finds an internal::ChannelBase with this ID or nullptr if none matches.
+  ChannelBase* GetInternalChannel(uint32_t channel_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return channels_.Get(channel_id);
   }
@@ -107,9 +107,7 @@ class Endpoint {
   _PW_RPC_CONSTEXPR Endpoint() = default;
 
   // Initializes the endpoint from a span of channels.
-  _PW_RPC_CONSTEXPR Endpoint(span<rpc::Channel> channels)
-      : channels_(span(static_cast<internal::Channel*>(channels.data()),
-                       channels.size())) {}
+  _PW_RPC_CONSTEXPR Endpoint(span<Channel> channels) : channels_(channels) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.

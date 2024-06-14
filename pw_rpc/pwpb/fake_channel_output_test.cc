@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <memory>
 
-#include "pw_rpc/internal/channel.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_unit_test/framework.h"

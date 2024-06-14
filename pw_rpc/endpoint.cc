@@ -161,7 +161,7 @@ Status Endpoint::CloseChannel(uint32_t channel_id) {
     rpc_lock().unlock();
     return Status::NotFound();
   }
-  channel->Close();
+  static_cast<internal::ChannelBase*>(channel)->Close();
 
   // Close pending calls on the channel that's going away.
   AbortCalls(AbortIdType::kChannel, channel_id);

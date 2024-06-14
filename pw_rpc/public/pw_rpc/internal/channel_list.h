@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-#include "pw_rpc/internal/channel.h"
+#include <utility>
+
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_span/span.h"
 
@@ -57,8 +59,7 @@ class ChannelList {
   const Channel* Get(uint32_t channel_id) const;
 
   Channel* Get(uint32_t channel_id) {
-    return const_cast<Channel*>(
-        static_cast<const ChannelList&>(*this).Get(channel_id));
+    return const_cast<Channel*>(std::as_const(*this).Get(channel_id));
   }
 
   // Adds the channel with the requested ID to the list. Returns:

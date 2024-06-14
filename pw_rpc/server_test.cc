@@ -332,7 +332,8 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
-const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
+const internal::ChannelBase* GetChannel(internal::Endpoint& endpoint,
+                                        uint32_t id) {
   internal::RpcLockGuard lock;
   return endpoint.GetInternalChannel(id);
 }

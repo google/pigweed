@@ -21,8 +21,8 @@
 #include <cstdint>
 
 #include "pw_assert/assert.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/client.h"
-#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/raw/fake_channel_output.h"
