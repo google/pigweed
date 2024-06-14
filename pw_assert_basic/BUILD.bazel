@@ -38,7 +38,7 @@ cc_library(
         "public_overrides",
     ],
     deps = [
-        ":handler_facade",
+        ":handler.facade",
         "//pw_assert:assert_compatibility_backend",
         "//pw_preprocessor",
     ],

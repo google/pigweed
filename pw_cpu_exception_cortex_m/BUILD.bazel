@@ -177,7 +177,7 @@ cc_library(
     ],
     deps = [
         ":cpu_state",
-        "//pw_cpu_exception:entry_facade",
+        "//pw_cpu_exception:entry.facade",
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
     ],

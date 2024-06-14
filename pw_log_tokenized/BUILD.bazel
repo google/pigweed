@@ -56,7 +56,7 @@ cc_library(
         "public_overrides",
     ],
     deps = [
-        ":handler_facade",
+        ":handler.facade",
         ":headers",
         "//pw_log:pw_log.facade",
     ],
@@ -120,7 +120,7 @@ cc_library(
     srcs = ["base64_over_hdlc.cc"],
     deps = [
         ":base64",
-        ":handler_facade",
+        ":handler.facade",
         "//pw_hdlc",
         "//pw_stream:sys_io_stream",
         "//pw_tokenizer:base64",
