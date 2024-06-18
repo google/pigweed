@@ -22,8 +22,8 @@ py_library(
     srcs = [
         "rp2040_utils/__init__.py",
         "rp2040_utils/device_detector.py",
+        "rp2040_utils/flasher.py",
         "rp2040_utils/unit_test_client.py",
-        "rp2040_utils/unit_test_runner.py",
         "rp2040_utils/unit_test_server.py",
     ],
     data = ["@libusb//:libusb_dynamic"],

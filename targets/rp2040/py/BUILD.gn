@@ -24,9 +24,9 @@ pw_python_package("py") {
   sources = [
     "rp2040_utils/__init__.py",
     "rp2040_utils/device_detector.py",
+    "rp2040_utils/flasher.py",
     "rp2040_utils/rpc_unit_test_runner.py",
     "rp2040_utils/unit_test_client.py",
-    "rp2040_utils/unit_test_runner.py",
     "rp2040_utils/unit_test_server.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
