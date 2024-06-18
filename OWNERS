@@ -4,30 +4,31 @@
 # OWNERS for all modules. Please see individual modules for their OWNERS files.
 #
 # Note: a Pigweed core team member should be among the OWNERS for each module.
-aarongreen@google.com
-abrachet@google.com
-alizhang@google.com
-amontanez@google.com
-amyhu@google.com
-asadmemon@google.com
-cachinchilla@google.com
-chadnorvell@google.com
-cramertj@google.com
-ewout@google.com
-frolv@google.com
-hayala@google.com
-hepler@google.com
-kayce@google.com
-keir@google.com
-konkers@google.com
-lesprit@google.com
-mcgrathr@google.com
-mohrr@google.com
-phosek@google.com
-prabhukr@google.com
-tonymd@google.com
-tpudlik@google.com
-zyecheng@google.com
+aarongreen@google.com #{LAST_RESORT_SUGGESTION}
+abrachet@google.com #{LAST_RESORT_SUGGESTION}
+alizhang@google.com #{LAST_RESORT_SUGGESTION}
+amontanez@google.com #{LAST_RESORT_SUGGESTION}
+amyhu@google.com #{LAST_RESORT_SUGGESTION}
+asadmemon@google.com #{LAST_RESORT_SUGGESTION}
+cachinchilla@google.com #{LAST_RESORT_SUGGESTION}
+chadnorvell@google.com #{LAST_RESORT_SUGGESTION}
+cramertj@google.com #{LAST_RESORT_SUGGESTION}
+ewout@google.com #{LAST_RESORT_SUGGESTION}
+frolv@google.com #{LAST_RESORT_SUGGESTION}
+gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com
+hayala@google.com #{LAST_RESORT_SUGGESTION}
+hepler@google.com #{LAST_RESORT_SUGGESTION}
+kayce@google.com #{LAST_RESORT_SUGGESTION}
+keir@google.com #{LAST_RESORT_SUGGESTION}
+konkers@google.com #{LAST_RESORT_SUGGESTION}
+lesprit@google.com #{LAST_RESORT_SUGGESTION}
+mcgrathr@google.com #{LAST_RESORT_SUGGESTION}
+mohrr@google.com #{LAST_RESORT_SUGGESTION}
+phosek@google.com #{LAST_RESORT_SUGGESTION}
+prabhukr@google.com #{LAST_RESORT_SUGGESTION}
+tonymd@google.com #{LAST_RESORT_SUGGESTION}
+tpudlik@google.com #{LAST_RESORT_SUGGESTION}
+zyecheng@google.com #{LAST_RESORT_SUGGESTION}
 
 # Additional owners for updating bazel dependencies
 per-file WORKSPACE=file:WORKSPACE_OWNERS
