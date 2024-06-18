@@ -29,6 +29,14 @@ config("public_include_dirs") {
   ]
 }
 
+config("rename_exceptions_config") {
+  defines = [ "LIB_CMSIS_CORE=1" ]
+  inputs = [ "${_CWD}/include/cmsis/rename_exceptions.h" ]
+  cflags = [ "-include" +
+             rebase_path("${_CWD}/include/cmsis/rename_exceptions.h",
+                         root_build_dir) ]
+}
+
 pw_source_set("rename_exceptions") {
   public_configs = [
     ":public_include_dirs",

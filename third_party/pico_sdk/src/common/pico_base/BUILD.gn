@@ -46,6 +46,7 @@ generate_version_header("version") {
 pw_source_set("pico_base") {
   public_configs = [
     ":board_define",
+    "${PICO_ROOT}/src/rp2_common/cmsis:rename_exceptions_config",
     ":public_include_dirs",
     "${PICO_ROOT}/gn:disable_warnings",
   ]
