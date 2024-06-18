@@ -630,6 +630,13 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
 
   // Drop padding.
   if ((frame.flags & FLAGS_PADDED) != 0) {
+    if (payload.size() < 1) {
+      // RFC 9113 §4.2: "An endpoint MUST send an error code of FRAME_SIZE_ERROR
+      // if a frame ... is too small to contain mandatory frame data."
+      SendGoAway(Http2Error::FRAME_SIZE_ERROR);
+      return Status::Internal();
+    }
+
     uint32_t pad_length = static_cast<uint32_t>(payload[0]);
     if (pad_length >= frame.payload_length) {
       // RFC 9113 §6.1: "If the length of the padding is the length of the frame
@@ -815,6 +822,14 @@ Status Connection::Reader::ProcessHeadersFrame(const FrameHeader& frame) {
 
   // Drop padding.
   if ((frame.flags & FLAGS_PADDED) != 0) {
+    if (payload.size() < 1) {
+      // RFC 9113 §4.2: "An endpoint MUST send an error code of FRAME_SIZE_ERROR
+      // if a frame ... is too small to contain mandatory frame data. A frame
+      // size error in a frame that could alter the state of the entire
+      // connection MUST be treated as a connection error"
+      SendGoAway(Http2Error::FRAME_SIZE_ERROR);
+      return Status::Internal();
+    }
     uint32_t pad_length = static_cast<uint32_t>(payload[0]);
     if (pad_length >= frame.payload_length) {
       // RFC 9113 §6.2: "If the length of the padding is the length of the frame
@@ -828,6 +843,12 @@ Status Connection::Reader::ProcessHeadersFrame(const FrameHeader& frame) {
 
   // Drop priority fields.
   if ((frame.flags & FLAGS_PRIORITY) != 0) {
+    if (payload.size() < 5) {
+      // RFC 9113 §4.2: "An endpoint MUST send an error code of FRAME_SIZE_ERROR
+      // if a frame ... is too small to contain mandatory frame data."
+      SendGoAway(Http2Error::FRAME_SIZE_ERROR);
+      return Status::Internal();
+    }
     payload = payload.subspan(5);
   }
 
