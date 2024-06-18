@@ -15,7 +15,7 @@ all prerequisites, it greatly accelerates new developer onboarding.
 The first-time setup guides below are required for any Pigweed-based project,
 but only need to be done once per machine.
 
-.. grid:: 1
+.. grid:: 2
 
    .. grid-item-card:: First-time setup
       :link: docs-first-time-setup-guide
@@ -24,6 +24,13 @@ but only need to be done once per machine.
 
       Prerequisites, first-time setup, and support notes for Linux, macOS, and
       Windows.
+
+   .. grid-item-card:: Install Bazel
+      :link: docs-install-bazel
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Recommendations on how to install Bazel.
 
 ------------------------------
 Create a Pigweed-based project
@@ -106,6 +113,7 @@ Pigweed is modular: you can use as much or as little of it as you need.
    :hidden:
 
    First-time setup <first_time_setup>
+   Install Bazel <install_bazel>
    Bazel quickstart <bazel>
    Bazel integration <bazel_integration>
    GitHub Actions <github_actions>
