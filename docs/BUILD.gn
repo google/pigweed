@@ -338,6 +338,7 @@ pw_doc_gen("docs") {
     # Note: These must use the "docs" prefix for links and image references. In
     # contrast, the pw_doc_group above should not use the docs prefix.
     "automated_analysis.rst",
+    "bazel_compatibility.rst",
     "build_system.rst",
     "changelog.rst",
     "index.rst",

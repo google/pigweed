@@ -191,6 +191,12 @@ components:
        targets in wildcard builds
        <https://bazel.build/extending/platforms#skipping-incompatible-targets>`_.
 
+   .. warning::
+
+      Facade constraint settings were `never fully rolled out
+      <https://pwbug.dev/272090220>`_ and are :ref:`no longer recommended
+      <docs-bazel-compatibility-per-facade-constraint-settings>`.
+
 #. The **backend multiplexer**. If a project uses more than one backend for a
    given facade (e.g., it uses different backends for host and embedded target
    builds), the backend label flag will point to a target that resolves to the

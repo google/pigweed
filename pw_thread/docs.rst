@@ -340,6 +340,8 @@ something like:
 
    }  // namespace my_app
 
+.. _module-pw_thread-detaching-joining:
+
 Detaching & Joining
 ===================
 The ``Thread::detach()`` API is always available, to let you separate the

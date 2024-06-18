@@ -17,6 +17,7 @@ Pigweed.
 .. toctree::
   :hidden:
 
+  bazel_compatibility
   python_build
 
 What's in a build system?
