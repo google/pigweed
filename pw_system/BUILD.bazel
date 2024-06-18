@@ -19,6 +19,7 @@ load(
 )
 load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
 load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
+load("//targets/rp2040:transition.bzl", "rp2040_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -427,6 +428,12 @@ pw_cc_binary(
 
 host_device_simulator_binary(
     name = "simulator_system_example",
+    testonly = True,
+    binary = ":system_example",
+)
+
+rp2040_binary(
+    name = "rp2040_system_example",
     testonly = True,
     binary = ":system_example",
 )
