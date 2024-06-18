@@ -25,8 +25,6 @@ Highlights (May 30, 2024 to Jun 13, 2024):
 ``pw_malloc`` now supports :ref:`pw_allocator <module-pw_allocator>`-based
 backends.
 
-* **GitHub Actions guidance**: The new :ref:`docs-github` guide shows you
-  how to set up GitHub Actions for Pigweed projects.
 * **New pw_build Bazel rules**: ``pw_py_test`` rule wraps ``py_test``,
   :ref:`pw_elf_to_dump <module-pw_build-bazel-pw_elf_to_dump>` takes a
   binary executable and produces a text file containing the full binary layout,
@@ -760,14 +758,8 @@ mimxrt595
 
 GitHub
 ------
-The new :ref:`docs-github` guide shows you how to set up GitHub Actions
-for Pigweed projects.
-
 * `Fix step name
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/213692>`__
-* `Add basic workflow and docs
-  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/212952>`__
-  (issue `#340900493 <https://issues.pigweed.dev/issues/340900493>`__)
 
 io_bazel_rules_go
 -----------------
@@ -788,7 +780,7 @@ Highlights (May 17, 2024 to May 30, 2024):
 * **Clock management**: The new :ref:`module-pw_clock_tree` module manages
   generic clock tree elements such as clocks, clock selectors, and clock
   dividers.
-* **GitHub Actions**: The new :ref:`docs-github` guide shows you
+* **GitHub Actions**: The new :ref:`docs-github-actions` guide shows you
   how to set up GitHub Actions to build and test a Bazel-based Pigweed
   project when a pull request is received.
 * **pw_system and Bazel**: :ref:`module-pw_system` usage in Bazel has been
@@ -1089,7 +1081,7 @@ freertos
 
 Docs
 ====
-The new :ref:`docs-github` guide shows you how to set up GitHub Actions
+The new :ref:`docs-github-actions` guide shows you how to set up GitHub Actions
 to build and test a Pigweed project when a pull request is received.
 
 * `Add notes about GitHub Actions

@@ -257,6 +257,7 @@ redirects = {
     'docs/contributing/changelog': './docs/changelog.html',
     'docs/contributing/module_docs': './docs/modules.html',
     'docs/getting_started': './get_started/index.html',
+    'docs/infra/github': '../get_started/github.html',
     'docs/os_abstraction_layers': './os/index.html',
     'docs/release_notes/index': '../../changelog.html',
     'docs/release_notes/2022_jan': '../../changelog.html',
