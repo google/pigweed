@@ -15,7 +15,6 @@
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
-load("//pw_build:compatibility.bzl", _host_backend_alias = "host_backend_alias")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _compile_cc = "compile_cc",
@@ -167,10 +166,6 @@ def pw_cc_perf_test(**kwargs):
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:backend_impl"]
     kwargs["testonly"] = True
     native.cc_binary(**kwargs)
-
-# TODO: b/344654805 - Remove this after migrating all users to load
-# host_backend_alias from compatibility.bzl.
-host_backend_alias = _host_backend_alias
 
 CcBlobInfo = provider(
     "Input to pw_cc_blob_library",
