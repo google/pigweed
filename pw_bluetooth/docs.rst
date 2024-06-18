@@ -196,7 +196,7 @@ Delta of +96 when adding a second packet view and reading/writing a field.
 Roadmap
 -------
 - Bluetooth Proxy (WIP in in :ref:`module-pw_bluetooth_proxy`)
-- Add automated Emboss file formatting to `pw format` (`b/331195584 <https://pwbug.dev/331195584>`_)
+- Add automated Emboss file formatting to `pw format` (:bug:`331195584`)
 - Create a backend for the Bluetooth API using Fuchsia's Bluetooth stack
   (Sapphire).
 - Stabilize the Bluetooth API.

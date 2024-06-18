@@ -609,8 +609,7 @@ widely"? Well we can. So that's the doc you're reading now!
 
 But arguably the story shouldn't end here: Pigweed should probably provide a
 ready-made implementation of Chromium build flags for downstream projects. See
-`issue #342454993 <https://pwbug.dev/342454993>`_ to check out how that's
-going!
+:bug:`342454993` to check out how that's going!
 
 Do you need to generate actual files?
 =====================================

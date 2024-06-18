@@ -27,6 +27,7 @@ pw_python_package("py") {
     "pw_docgen/docserver.py",
     "pw_docgen/seed.py",
     "pw_docgen/sphinx/__init__.py",
+    "pw_docgen/sphinx/bug.py",
     "pw_docgen/sphinx/google_analytics.py",
     "pw_docgen/sphinx/inlinesearch/__init__.py",
     "pw_docgen/sphinx/kconfig.py",

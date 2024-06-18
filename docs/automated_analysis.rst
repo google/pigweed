@@ -106,7 +106,7 @@ described in this section. For more detail about these sanitizers, see the
 
 .. note::
    Pigweed does not currently support `MemorySanitizer`_ (msan). See
-   https://pwbug.dev/234876100 for details.
+   :bug:`234876100` for details.
 
 The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.pigweed.dev/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.

@@ -40,6 +40,7 @@ pygments_style = 'pw_console.pigweed_code_style.PigweedCodeLightStyle'
 pygments_dark_style = 'pw_console.pigweed_code_style.PigweedCodeStyle'
 
 extensions = [
+    "pw_docgen.sphinx.bug",
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
     "pw_docgen.sphinx.kconfig",
     "pw_docgen.sphinx.module_metadata",

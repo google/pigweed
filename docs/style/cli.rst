@@ -27,8 +27,7 @@ The following programs demonstrate conformance to Pigweed's CLI style guide rule
 * `pw_digital_io_linux_cli
   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_digital_io_linux/digital_io_cli.cc>`_
 
-  * Note: This does not yet fully conform. See issue `#330435501
-    <https://pwbug.dev/330435501>`_.
+  * Note: This does not yet fully conform. See :bug:`330435501`.
 
 ----------
 Exit codes
@@ -138,8 +137,7 @@ conditions.
 .. warning::
 
    Currently there is no preconfigured ``pw_log`` backend which sends log
-   messages to ``stderr``.
-   See issue `#329747262 <https://pwbug.dev/329747262>`_.
+   messages to ``stderr``.  See :bug:`329747262`.
 
    This can be achieved by using ``pw_log_basic`` and calling ``SetOutput()``
    as follows:
@@ -153,8 +151,7 @@ conditions.
 .. warning::
 
    Currently there is no mechanism for setting the ``pw_log`` level at runtime.
-   (E.g. via ``--verbose`` or ``--quiet`` options).
-   See issue `#329755001 <https://pwbug.dev/329755001>`_.
+   (E.g. via ``--verbose`` or ``--quiet`` options).  See :bug:`329755001`.
 
 **Exceptions**:
 

@@ -220,7 +220,20 @@ upstream Pigweed repo:
 
    grep '<link rel="canonical' out/docs/gen/docs/html/* -R
 
-Context: `b/323077749 <https://issues.pigweed.dev/323077749>`_
+Context: :bug:`323077749`.
+
+bug
+---
+This extension simplifies adding references to issues (bugs) in the Pigweed
+issue tracker. It defines a `Docutils role
+<https://docutils.sourceforge.io/docs/ref/rst/roles.html>`__ that can be
+used as follows.
+
+.. code-block:: rst
+
+   For more details see :bug:`323077749`.
+
+This becomes a hyperlink to https://pwbug.dev/323077749.
 
 google_analytics
 ----------------
