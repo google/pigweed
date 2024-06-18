@@ -43,8 +43,10 @@ from types import ModuleType
 from typing import (
     Any,
     Collection,
+    Dict,
     Iterable,
     Iterator,
+    List,
 )
 
 import serial
@@ -60,7 +62,7 @@ from pw_console import socket_client
 from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system import device as pw_device
-from pw_system import device_tracing
+from pw_system import device_tracing as pw_device_tracing
 from pw_system.find_serial_port import interactive_port_select
 from pw_tokenizer import detokenize
 
@@ -228,6 +230,12 @@ def get_parser() -> argparse.ArgumentParser:
         default=rpc.DEFAULT_CHANNEL_ID,
         help="Channel ID used in RPC communications.",
     )
+    parser.add_argument(
+        '--device-tracing',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Use device tracing.',
+    )
 
     return parser
 
@@ -364,6 +372,7 @@ def console(
     use_ipython: bool = False,
     channel_id: int = rpc.DEFAULT_CHANNEL_ID,
     hdlc_encoding: bool = True,
+    device_tracing: bool = True,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
@@ -537,19 +546,24 @@ def console(
             _LOG.exception('Failed to initialize socket at %s', socket_addr)
             return 1
 
+    device_args: List[Any] = [channel_id, reader, write]
+    device_kwds: Dict[str, Any] = {
+        'proto_library': protos,
+        'detokenizer': detokenizer,
+        'timestamp_decoder': timestamp_decoder,
+        'rpc_timeout_s': 5,
+        'use_rpc_logging': rpc_logging,
+        'use_hdlc_encoding': hdlc_encoding,
+    }
     with reader:
-        device_client = device_tracing.DeviceWithTracing(
-            channel_id,
-            reader,
-            write,
-            proto_library=protos,
-            detokenizer=detokenizer,
-            timestamp_decoder=timestamp_decoder,
-            rpc_timeout_s=5,
-            use_rpc_logging=rpc_logging,
-            use_hdlc_encoding=hdlc_encoding,
-            ticks_per_second=ticks_per_second,
-        )
+        device_client: pw_device_tracing.DeviceWithTracing | pw_device.Device
+        if device_tracing:
+            device_kwds['ticks_per_second'] = ticks_per_second
+            device_client = pw_device_tracing.DeviceWithTracing(
+                *device_args, **device_kwds
+            )
+        else:
+            device_client = pw_device.Device(*device_args, **device_kwds)
         with device_client:
             _start_python_terminal(
                 device=device_client,
