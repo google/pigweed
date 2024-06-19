@@ -122,11 +122,13 @@ common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 build:rp2040 --platforms=@pigweed//targets/rp2040
+build:rp2040 --//pw_interrupt:backend=@pigweed//pw_interrupt_cortex_m:context
 build:rp2040 --//pw_log:backend=@pigweed//pw_log_tokenized
 build:rp2040 --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
 build:rp2040 --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
 build:rp2040 --//pw_system:extra_platform_libs=@pigweed//targets/rp2040:extra_platform_libs
 build:rp2040 --//pw_unit_test:main=//targets/rp2040:unit_test_app
+build:rp2040 --@freertos//:freertos_config=@pigweed//targets/rp2040:freertos_config
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_UART=True
 test:rp2040 --run_under=//targets/rp2040/py:unit_test_client

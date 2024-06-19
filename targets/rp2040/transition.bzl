@@ -14,23 +14,15 @@
 
 """Bazel transitions for the rp2040."""
 
-# From the rp2040 config:
-# build:rp2040 --platforms=@pigweed//targets/rp2040
-# build:rp2040 --//pw_log:backend=@pigweed//pw_log_tokenized
-# build:rp2040 --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
-# build:rp2040 --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
-# build:rp2040 --//pw_system:extra_platform_libs=@pigweed//targets/rp2040:extra_platform_libs
-# build:rp2040 --//pw_unit_test:main=//targets/rp2040:unit_test_app
-# build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
-# build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_UART=True
-
 def _rp2040_transition_impl(settings, attr):
     # buildifier: disable=unused-variable
     _ignore = settings, attr
     return {
         "//command_line_option:platforms": "@pigweed//targets/rp2040",
+        "@freertos//:freertos_config": "@pigweed//targets/rp2040:freertos_config",
         "@pico-sdk//bazel/config:PICO_STDIO_UART": True,
         "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
+        "@pigweed//pw_interrupt:backend": "@pigweed//pw_interrupt_cortex_m:context",
         "@pigweed//pw_log:backend": "@pigweed//pw_log_tokenized",
         "@pigweed//pw_log:backend_impl": "@pigweed//pw_log_tokenized:impl",
         "@pigweed//pw_log_tokenized:handler_backend": "@pigweed//pw_system:log_backend",
@@ -43,11 +35,13 @@ _rp2040_transition = transition(
     inputs = [],
     outputs = [
         "//command_line_option:platforms",
+        "@pigweed//pw_interrupt:backend",
         "@pigweed//pw_log:backend",
         "@pigweed//pw_log:backend_impl",
         "@pigweed//pw_log_tokenized:handler_backend",
         "@pigweed//pw_system:extra_platform_libs",
         "@pigweed//pw_unit_test:main",
+        "@freertos//:freertos_config",
         "@pico-sdk//bazel/config:PICO_STDIO_USB",
         "@pico-sdk//bazel/config:PICO_STDIO_UART",
     ],
