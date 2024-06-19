@@ -16,7 +16,7 @@
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth_proxy/acl_data_channel.h"
-#include "pw_bluetooth_proxy/common.h"
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_function/function.h"
 #include "pw_status/status.h"
 
@@ -31,8 +31,8 @@ class ProxyHost {
   /// to send HCI packet towards the host.
   /// @param[in] send_to_controller_fn - Callback that will be called when proxy
   /// wants to send HCI packet towards the controller.
-  ProxyHost(pw::Function<void(H4HciPacket packet)>&& send_to_host_fn,
-            pw::Function<void(H4HciPacket packet)>&& send_to_controller_fn,
+  ProxyHost(pw::Function<void(H4PacketWithHci packet)>&& send_to_host_fn,
+            pw::Function<void(H4PacketWithHci packet)>&& send_to_controller_fn,
             uint16_t le_acl_credits_to_reserve);
 
   ProxyHost() = delete;
@@ -48,13 +48,13 @@ class ProxyHost {
   /// host side towards the controller side. Proxy will in turn call the
   /// `send_to_controller_fn` provided during construction to pass the packet on
   /// to the controller. Some packets may be modified, added, or removed.
-  void HandleH4HciFromHost(H4HciPacket h4_packet);
+  void HandleH4HciFromHost(H4PacketWithHci h4_packet);
 
   /// Called by container to ask proxy to handle a H4 packet sent from the
   /// controller side towards the host side. Proxy will in turn call the
   /// `send_to_host_fn` provided during construction to pass the packet on to
   /// the host. Some packets may be modified, added, or removed.
-  void HandleH4HciFromController(H4HciPacket h4_packet);
+  void HandleH4HciFromController(H4PacketWithHci h4_packet);
 
   // ##### Client APIs
 
@@ -95,21 +95,21 @@ class ProxyHost {
 
  private:
   // Process/update the packet.
-  void ProcessH4HciFromController(H4HciPacket h4_packet);
+  void ProcessH4HciFromController(H4PacketWithHci h4_packet);
 
   // Send packet onwards to host.
-  void SendToHost(H4HciPacket h4_packet);
+  void SendToHost(H4PacketWithHci h4_packet);
 
   // Send packet onwards to controller.
-  void SendToController(H4HciPacket h4_packet);
+  void SendToController(H4PacketWithHci h4_packet);
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // host.
-  pw::Function<void(H4HciPacket packet)> outward_send_to_host_fn_;
+  pw::Function<void(H4PacketWithHci packet)> outward_send_to_host_fn_;
 
   // Function to call when proxy wants proxy container to pass a packet to the
   // controller.
-  pw::Function<void(H4HciPacket packet)> outward_send_to_controller_fn_;
+  pw::Function<void(H4PacketWithHci packet)> outward_send_to_controller_fn_;
 
   // Owns management of the HCI LE ACL data channel.
   AclDataChannel acl_data_channel_;

@@ -15,7 +15,7 @@
 #include <cstdint>
 
 #include "pw_bloat/bloat_this_binary.h"
-#include "pw_bluetooth_proxy/common.h"
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_span/span.h"
 
@@ -27,20 +27,21 @@ namespace {
 void UsePassthroughProxy() {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, 20> h4_array_from_host{0};
-  H4HciPacket h4_span_from_host = {.h4_type = emboss::H4PacketType::COMMAND,
-                                   .hci_span = pw::span(h4_array_from_host)};
+  H4PacketWithHci h4_span_from_host = {
+      .h4_type = emboss::H4PacketType::COMMAND,
+      .hci_span = pw::span(h4_array_from_host)};
 
   // Populate H4 buffer to send towards host.
   std::array<uint8_t, 20> h4_array_from_controller{0};
-  H4HciPacket h4_span_from_controller = {
+  H4PacketWithHci h4_span_from_controller = {
       .h4_type = emboss::H4PacketType::EVENT,
       .hci_span = pw::span(h4_array_from_controller)};
 
-  pw::Function<void(H4HciPacket packet)> containerSendToHostFn(
+  pw::Function<void(H4PacketWithHci packet)> containerSendToHostFn(
       []([[maybe_unused]] H4HciPacket packet) {});
 
-  pw::Function<void(H4HciPacket packet)> containerSendToControllerFn(
-      ([]([[maybe_unused]] H4HciPacket packet) {}));
+  pw::Function<void(H4PacketWithHci packet)> containerSendToControllerFn(
+      ([]([[maybe_unused]] H4PacketWithHci packet) {}));
 
   ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
                               std::move(containerSendToControllerFn),

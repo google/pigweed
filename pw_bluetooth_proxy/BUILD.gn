@@ -44,7 +44,8 @@ pw_source_set("pw_bluetooth_proxy") {
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_bluetooth_proxy/acl_data_channel.h",
-    "public/pw_bluetooth_proxy/common.h",
+    "public/pw_bluetooth_proxy/emboss_util.h",
+    "public/pw_bluetooth_proxy/h4_packet.h",
     "public/pw_bluetooth_proxy/proxy_host.h",
   ]
   public_deps = [
@@ -59,7 +60,6 @@ pw_source_set("pw_bluetooth_proxy") {
   deps = [ dir_pw_log ]
   sources = [
     "acl_data_channel.cc",
-    "emboss_util.h",
     "proxy_host.cc",
   ]
 }
@@ -68,8 +68,8 @@ pw_test("emboss_util_test") {
   enable_if =
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [
-    "emboss_util.h",
     "emboss_util_test.cc",
+    "public/pw_bluetooth_proxy/emboss_util.h",
   ]
   include_dirs = [ "." ]
   deps = [
@@ -83,7 +83,7 @@ pw_test("pw_bluetooth_proxy_test") {
   enable_if =
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [
-    "emboss_util.h",
+    "h4_packet_test.cc",
     "proxy_host_test.cc",
   ]
   include_dirs = [ "." ]
