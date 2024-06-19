@@ -14,13 +14,17 @@
 # the License.
 """Flashes binaries to attached Raspberry Pi Pico boards."""
 
+import argparse
 import logging
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 
 import serial  # type: ignore
+
+import pw_cli.log
 
 from rp2040_utils import device_detector
 from rp2040_utils.device_detector import PicoBoardInfo, PicoDebugProbeBoardInfo
@@ -241,3 +245,102 @@ def _load_debugprobe_binary(
     time.sleep(0.5)
 
     return True
+
+
+def _parse_args():
+    """Parses command-line arguments."""
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('binary', type=Path, help='The target binary to flash')
+    parser.add_argument(
+        '--usb-bus',
+        type=int,
+        help='The bus this Pi Pico is on',
+    )
+    parser.add_argument(
+        '--usb-port',
+        type=str,
+        help=(
+            'The port chain as a colon-separated list of integers of this Pi '
+            'Pico on the specified USB bus (e.g. 1:4:2:2)'
+        ),
+    )
+    parser.add_argument(
+        '-b',
+        '--baud',
+        type=int,
+        default=115200,
+        help='Baud rate to use for serial communication with target device',
+    )
+    parser.add_argument(
+        '--debug-probe-only',
+        action='store_true',
+        help='Only flash on detected Pi Pico debug probes',
+    )
+    parser.add_argument(
+        '--pico-only',
+        action='store_true',
+        help='Only flash on detected Pi Pico boards',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose',
+        action='store_true',
+        help='Output additional logs as the script runs',
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    """Flash a binary."""
+    args = _parse_args()
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pw_cli.log.install(level=log_level)
+
+    if args.pico_only and args.debug_probe_only:
+        _LOG.critical('Cannot specify both --pico-only and --debug-probe-only')
+        sys.exit(1)
+
+    # For now, require manual configurations to be fully specified.
+    if (args.usb_port is not None or args.usb_bus is not None) and not (
+        args.usb_port is not None and args.usb_bus is not None
+    ):
+        _LOG.critical(
+            'Must specify BOTH --usb-bus and --usb-port when manually '
+            'specifying a device'
+        )
+        sys.exit(1)
+
+    if args.usb_bus:
+        board = device_detector.board_from_usb_port(args.usb_bus, args.usb_port)
+    else:
+        _LOG.debug('Attempting to automatically detect dev board')
+        boards = device_detector.detect_boards(
+            include_picos=not args.debug_probe_only,
+            include_debug_probes=not args.pico_only,
+        )
+        if not boards:
+            _LOG.error('Could not find an attached device')
+            sys.exit(1)
+        if len(boards) == 1:
+            _LOG.info('Only one device detected.')
+            board = boards[0]
+        else:
+            print('Multiple devices detected. Please select one:')
+            for n, board_n in enumerate(boards):
+                print(f' {n}: bus {board_n.bus}, port {board_n.port}')
+            print()
+            user_input = input('--> Board index (default: 0): ')
+            if user_input == '':
+                board = boards[0]
+            else:
+                board = boards[int(user_input)]
+    _LOG.info('Flashing bus %s port %s', board.bus, board.port)
+    flashed = flash(board, args.baud, args.binary)
+    sys.exit(0 if flashed else 1)
+
+
+if __name__ == '__main__':
+    main()

@@ -17,6 +17,19 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
+py_binary(
+    name = "flash",
+    srcs = [
+        "rp2040_utils/flasher.py",
+    ],
+    main = "rp2040_utils/flasher.py",
+    tags = ["manual"],
+    deps = [
+        ":rp2040_utils",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 py_library(
     name = "rp2040_utils",
     srcs = [
@@ -26,7 +39,11 @@ py_library(
         "rp2040_utils/unit_test_client.py",
         "rp2040_utils/unit_test_server.py",
     ],
-    data = ["@libusb//:libusb_dynamic"],
+    data = [
+        "//third_party/probe-rs",
+        "@libusb//:libusb_dynamic",
+        "@picotool",
+    ],
     imports = ["."],
     tags = ["manual"],
     deps = [
@@ -49,10 +66,6 @@ py_binary(
     name = "rpc_unit_test_runner",
     srcs = [
         "rp2040_utils/rpc_unit_test_runner.py",
-    ],
-    data = [
-        "//third_party/probe-rs",
-        "@picotool",
     ],
     main = "rp2040_utils/rpc_unit_test_runner.py",
     tags = ["manual"],
