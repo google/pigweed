@@ -16,6 +16,10 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load(
+    "//pw_build_info:substitute_workspace_status.bzl",
+    "pw_substitute_workspace_status",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -105,6 +109,29 @@ pw_cc_test(
     deps = [
         ":build_id",
         "//pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+py_binary(
+    name = "substitute_workspace_status_tool",
+    srcs = ["substitute_workspace_status_tool.py"],
+)
+
+pw_substitute_workspace_status(
+    name = "git_build_info",
+    src = "git_build_info.h.in",
+    out = "git_build_info.h",
+)
+
+pw_cc_test(
+    name = "git_build_info_test",
+    srcs = [
+        "git_build_info_test.cc",
+        ":git_build_info",
+    ],
+    deps = [
+        "//pw_log",
         "//pw_unit_test",
     ],
 )

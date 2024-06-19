@@ -40,7 +40,7 @@ your embedded target's linker script.
 
 Updating your linker script
 ---------------------------
-If your project has a custom linker scipt, you'll need to update it to include
+If your project has a custom linker script, you'll need to update it to include
 a section to contain the generated build ID. This section should be placed
 alongside the ``.text`` and ``.rodata`` sections, and named
 ``.note.gnu.build-id``.
@@ -77,7 +77,7 @@ alongside the ``.text`` and ``.rodata`` sections, and named
 
 
 Alternatively, you can copy the following linker snippet into a pre-existing
-section. This makes reading the build ID slower, so whenever possibe prefer
+section. This makes reading the build ID slower, so whenever possible prefer
 creating a dedicated section for the build ID.
 
 .. literalinclude:: build_id_linker_snippet.ld
@@ -157,3 +157,53 @@ printed out if it is found.
 
    $ python -m pw_build_info.build_id my_device_image.elf
    d43cce74f18522052f77a1fa3fb7a25fe33f40dd
+
+---------------
+Git Commit Info
+---------------
+If your project uses ``git`` and builds with ``bazel``, you can use the
+auto-generated ``//pw_build_info:git_build_info`` header to embed which git
+commit your binary was built from. This requires a bit of setup to use.
+
+Bazel Workspace Status Command
+==============================
+Bazel supports running a command to inspect the current workspace status each
+build. Add the following to your ``.bazelrc,`` replacing the ``path/to/pigweed``
+portion with where you have pigweed checked out.
+
+.. code-block::
+
+   build --workspace_status_command=path/to/pigweed/pw_build_info/git_workspace_status_command.sh
+
+Use ``pw_build_info/git_build_info.h`` Header
+=============================================
+Add generated header directly to the target where you want to use it.
+
+.. code-block:: python
+
+   cc_binary(
+     name = "main",
+     srcs = [
+       "main.cc",
+       "@pigweed//pw_build_info:git_build_info",
+     ]
+   )
+
+Include the header. The following constants are available:
+
+* ``pw::build_info::kGitCommit``: The git commit this binary was built from.
+* ``pw::build_info::kGitDirty``: True if there were any uncommitted changes.
+
+.. code-block:: cpp
+
+   #include "pw_build_info/git_build_info.h"
+   #include "pw_string/string.h"
+   #include "pw_log/log.h"
+
+   int main() {
+     PW_LOG_INFO("kGitCommit %s", pw::InlineString<40>(pw::build_info::kGitCommit).c_str());
+     PW_LOG_INFO("kGitDirty %d", pw::build_info::kGitDirty);
+     return 0;
+   }
+
+More info about `bazel workspace status commands <https://bazel.build/docs/user-manual#workspace-status-command>`__.

@@ -103,6 +103,11 @@ build:fuzztest \
 build:fuzztest \
     --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
 
+# Configure workspace status command to test pw_build_info git_build_info
+# https://bazel.build/docs/user-manual#workspace-status-command
+# TODO: b/348046338 - Add a Windows version of this command
+build --workspace_status_command=pw_build_info/git_workspace_status_command.sh
+
 # We use non-default labels for the STM32Cube repositories upstream (to reserve
 # the option of building for more than one MCU family down the road), so need to
 # override the three labels below.
