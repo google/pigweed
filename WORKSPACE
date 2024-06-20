@@ -582,7 +582,7 @@ http_archive(
 
 git_repository(
     name = "rules_libusb",
-    commit = "8680b8d1dea7b4053cdd82bd118026b545b50c0b",
+    commit = "eb8c39291104b08d5a2ea69d31d79c61a85a8485",
     remote = "https://pigweed.googlesource.com/pigweed/rules_libusb",
 )
 
