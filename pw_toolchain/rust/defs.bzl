@@ -188,6 +188,7 @@ def _pw_rust_toolchain(
     rust_toolchain(
         name = "{}_rust_toolchain".format(name),
         binary_ext = "",
+        clippy_driver = "{}//:bin/clippy-driver".format(toolchain_repo),
         default_edition = "2021",
         dylib_ext = dylib_ext,
         exec_compatible_with = exec_compatible_with,
