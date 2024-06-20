@@ -71,9 +71,8 @@ build --repo_env=JAVA_HOME=../bazel_tools/jdk
 
 # Silence compiler warnings from external repositories.
 #
-# This is supported by Bazel's default C++ toolchain, but not yet by
-# rules_cc_toolchain
-# (https://github.com/bazelembedded/rules_cc_toolchain/issues/46).
+# TODO: https://pwbug.dev/347317581 - This is supported by Bazel's default C++
+# toolchain, but not yet by Pigweed's own toolchains.
 build --features=external_include_paths
 
 # This feature can't be enabled until __unordtf2 and __letf2 are implemented by
