@@ -45,7 +45,7 @@ def generate_nanopb_proto(
         ):
             os.remove(generated_nanopb_pb2)
 
-    sys.path.append(str(nanopb_root / 'generator'))
+    sys.path.insert(0, str(nanopb_root / 'generator'))
 
     spec = importlib.util.spec_from_file_location(
         'proto', nanopb_root / 'generator' / 'nanopb_generator.py'
