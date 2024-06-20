@@ -84,7 +84,7 @@ pw_add_library(pw_system.hdlc_rpc_server STATIC
     pw_system.config
     pw_system.io
     pw_system.rpc_server.facade
-    pw_system.target_io
+    pw_system.sys_io_target_io
     pw_thread.thread_core
     pw_trace
   SOURCES
@@ -214,13 +214,13 @@ pw_add_library(pw_system.work_queue STATIC
     pw_system.config
 )
 
-pw_add_library(pw_system.target_io STATIC
+pw_add_library(pw_system.sys_io_target_io STATIC
   PRIVATE_DEPS
     pw_system.io
     pw_stream
     pw_stream.sys_io_stream
   SOURCES
-    target_io.cc
+    sys_io_target_io.cc
 )
 
 pw_add_facade(pw_system.target_hooks INTERFACE

@@ -190,7 +190,7 @@ pw_facade(
 
 label_flag(
     name = "io_backend",
-    build_setting_default = "//pw_system:target_io",
+    build_setting_default = "//pw_system:sys_io_target_io",
 )
 
 cc_library(
@@ -241,9 +241,9 @@ cc_library(
 )
 
 cc_library(
-    name = "target_io",
+    name = "sys_io_target_io",
     srcs = [
-        "target_io.cc",
+        "sys_io_target_io.cc",
     ],
     includes = ["public"],
     deps = [

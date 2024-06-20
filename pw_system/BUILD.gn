@@ -184,7 +184,7 @@ pw_source_set("work_queue") {
 }
 
 pw_source_set("sys_io_target_io") {
-  sources = [ "target_io.cc" ]
+  sources = [ "sys_io_target_io.cc" ]
   deps = [
     ":io.facade",
     "$dir_pw_stream",
