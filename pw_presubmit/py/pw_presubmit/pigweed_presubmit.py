@@ -895,6 +895,15 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_system:system_example',
     )
 
+    # Build upstream Pigweed for the Discovery board using the baremetal
+    # backends.
+    build_bazel(
+        ctx,
+        'build',
+        '--config=stm32f429i_baremetal',
+        '//...',
+    )
+
     # Build the fuzztest example.
     #
     # TODO: b/324652164 - This doesn't work on MacOS yet.
