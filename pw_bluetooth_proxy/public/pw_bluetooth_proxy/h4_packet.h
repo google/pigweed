@@ -17,6 +17,7 @@
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth_proxy/emboss_util.h"
+#include "pw_function/function.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
@@ -84,17 +85,36 @@ class H4PacketWithH4 final : public H4PacketInterface {
  public:
   H4PacketWithH4(pw::span<uint8_t> h4_span) : h4_span_(h4_span) {}
 
+  /// release_fn (if callable) will be called when H4PacketWithH4 is destructed.
+  H4PacketWithH4(pw::span<uint8_t> h4_span,
+                 pw::Function<void(H4PacketWithH4& packet)>&& release_fn)
+      : h4_span_(h4_span), release_fn_(std::move(release_fn)) {}
+
   H4PacketWithH4(emboss::H4PacketType h4_type, pw::span<uint8_t> h4_span)
       : H4PacketWithH4(h4_span) {
     SetH4Type(h4_type);
   }
 
   H4PacketWithH4(const H4PacketWithH4& other) = delete;
+  H4PacketWithH4& operator=(const H4PacketWithH4& other) = delete;
 
-  H4PacketWithH4(H4PacketWithH4&& other) = default;
-  H4PacketWithH4& operator=(H4PacketWithH4&& other) = default;
+  H4PacketWithH4(H4PacketWithH4&& other)
+      : h4_span_(other.h4_span_), release_fn_(std::move(other.release_fn_)) {
+    other.Reset();
+  }
 
-  ~H4PacketWithH4() final = default;
+  H4PacketWithH4& operator=(H4PacketWithH4&& other) {
+    h4_span_ = other.h4_span_;
+    release_fn_ = std::move(other.release_fn_);
+    other.Reset();
+    return *this;
+  }
+
+  ~H4PacketWithH4() final {
+    if (release_fn_) {
+      release_fn_(*this);
+    }
+  }
 
   emboss::H4PacketType GetH4Type() final {
     if (h4_span_.empty()) {
@@ -119,9 +139,14 @@ class H4PacketWithH4 final : public H4PacketInterface {
   }
 
  private:
-  H4PacketWithH4& operator=(const H4PacketWithH4& other) = default;
+  void Reset() {
+    h4_span_ = pw::span<uint8_t>();
+    release_fn_ = nullptr;
+  }
 
   pw::span<uint8_t> h4_span_;
+
+  pw::Function<void(H4PacketWithH4& packet)> release_fn_{};
 };
 
 }  // namespace pw::bluetooth::proxy

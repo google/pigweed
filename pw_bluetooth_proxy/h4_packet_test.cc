@@ -95,5 +95,77 @@ TEST(H4Packet, H4PacketWithH4Sets) {
   EXPECT_EQ(h4_buffer[0], cpp23::to_underlying(emboss::H4PacketType::EVENT));
 }
 
+TEST(H4PacketRelease, ReleaseCalledOnDtor) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+
+  H4PacketWithH4* released_packet_ptr = nullptr;
+  H4PacketWithH4* packet_ptr = nullptr;
+  {
+    H4PacketWithH4 packet{pw::span{h4_buffer},
+                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
+                            released_packet_ptr = &rel_packet;
+                          }};
+    packet_ptr = &packet;
+  }
+
+  // release_fn was called with packet by the time packet went out of scope
+  EXPECT_TRUE(released_packet_ptr);
+  EXPECT_EQ(released_packet_ptr, packet_ptr);
+}
+
+TEST(H4PacketRelease, ReleaseCalledAfterMoveOnDtor) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+
+  H4PacketWithH4* released_packet_ptr = nullptr;
+  H4PacketWithH4* packet2_ptr = nullptr;
+  {
+    H4PacketWithH4 packet{pw::span{h4_buffer},
+                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
+                            released_packet_ptr = &rel_packet;
+                          }};
+
+    H4PacketWithH4 packet2(std::move(packet));
+    packet2_ptr = &packet2;
+
+    // packet was reset by packet2 move ctor
+    EXPECT_TRUE(packet.GetHciSpan().empty());
+    EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
+    // release_fn was not called during move ctor
+    EXPECT_FALSE(released_packet_ptr);
+  }
+  // release_fn was called with packet2 by the time packet2 went out of scope
+  EXPECT_TRUE(released_packet_ptr);
+  EXPECT_EQ(released_packet_ptr, packet2_ptr);
+}
+
+TEST(H4PacketRelease, ReleaseCalledAfterMoveAssignOnDtor) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+
+  H4PacketWithH4* released_packet_ptr = nullptr;
+  H4PacketWithH4* packet2_ptr = nullptr;
+  {
+    H4PacketWithH4 packet{pw::span{h4_buffer},
+                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
+                            released_packet_ptr = &rel_packet;
+                          }};
+
+    H4PacketWithH4 packet2{{}};
+    packet2_ptr = &packet2;
+    packet2 = std::move(packet);
+
+    // packet was reset by packet2 move assign
+    EXPECT_TRUE(packet.GetHciSpan().empty());
+    EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
+    // release_fn was not called during move ctor
+    EXPECT_FALSE(released_packet_ptr);
+  }
+  // release_fn was called with packet2 by the time packet2 went out of scope
+  EXPECT_TRUE(released_packet_ptr);
+  EXPECT_EQ(released_packet_ptr, packet2_ptr);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth::proxy
