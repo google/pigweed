@@ -34,14 +34,14 @@ void UsePassthroughProxy() {
   H4PacketWithHci h4_span_from_controller = {
       emboss::H4PacketType::COMMAND, pw::span(hci_array_from_controller)};
 
-  pw::Function<void(H4PacketWithHci && packet)> containerSendToHostFn(
+  pw::Function<void(H4PacketWithHci && packet)> container_send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci packet) {});
 
-  pw::Function<void(H4PacketWithH4 && packet)> containerSendToControllerFn(
+  pw::Function<void(H4PacketWithH4 && packet)> container_send_to_controller_fn(
       ([]([[maybe_unused]] H4PacketWithH4&& packet) {}));
 
-  ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
-                              std::move(containerSendToControllerFn),
+  ProxyHost proxy = ProxyHost(std::move(container_send_to_host_fn),
+                              std::move(container_send_to_controller_fn),
                               0);
 
   proxy.HandleH4HciFromHost(std::move(h4_span_from_host));

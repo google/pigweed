@@ -91,10 +91,10 @@ TEST(Example, ExampleUsage) {
 
   CreateNonInteractingToHostBuffer(h4_packet_from_controller);
 
-  pw::Function<void(H4PacketWithHci && packet)> containerSendToHostFn(
+  pw::Function<void(H4PacketWithHci && packet)> container_send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
 
-  pw::Function<void(H4PacketWithH4 && packet)> containerSendToControllerFn(
+  pw::Function<void(H4PacketWithH4 && packet)> container_send_to_controller_fn(
       ([]([[maybe_unused]] H4PacketWithH4&& packet) {}));
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
@@ -102,18 +102,18 @@ TEST(Example, ExampleUsage) {
 #include "pw_bluetooth_proxy/proxy_host.h"
 
   // Container creates ProxyHost .
-  ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
-                              std::move(containerSendToControllerFn),
+  ProxyHost proxy = ProxyHost(std::move(container_send_to_host_fn),
+                              std::move(container_send_to_controller_fn),
                               2);
 
   // Container passes H4 packets from host through proxy. Proxy will in turn
-  // call the container-provided `containerSendToControllerFn` to pass them on
-  // to the controller. Some packets may be modified, added, or removed.
+  // call the container-provided `container_send_to_controller_fn` to pass them
+  // on to the controller. Some packets may be modified, added, or removed.
   proxy.HandleH4HciFromHost(std::move(h4_packet_from_host));
 
   // Container passes H4 packets from controller through proxy. Proxy will in
-  // turn call the container-provided `containerSendToHostFn` to pass them on to
-  // the controller. Some packets may be modified, added, or removed.
+  // turn call the container-provided `container_send_to_host_fn` to pass them
+  // on to the controller. Some packets may be modified, added, or removed.
   proxy.HandleH4HciFromController(std::move(h4_packet_from_controller));
 
   // DOCSTAG: [pw_bluetooth_proxy-examples-basic]
