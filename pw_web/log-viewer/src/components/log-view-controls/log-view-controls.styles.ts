@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -21,12 +21,14 @@ export const styles = css`
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
     box-sizing: border-box;
     color: var(--sys-log-viewer-color-controls-text);
+    contain: style;
     display: flex;
     flex-shrink: 0;
     gap: 1rem;
     height: 3rem;
     justify-content: space-between;
     padding: 0 1rem;
+    position: relative;
     --md-list-item-leading-icon-size: 1.5rem;
   }
 
@@ -34,14 +36,73 @@ export const styles = css`
     display: flex;
   }
 
+  :host *[hidden] {
+    display: none;
+  }
+
+  :host([searchexpanded]) .host-name {
+    display: none;
+  }
+
+  :host([searchexpanded]) .toolbar {
+    flex: 1 1 auto;
+  }
+
+  :host([searchexpanded]) input {
+    width: 100%;
+  }
+
   .host-name {
+    display: block;
+    flex: 0 1 auto;
     font-size: 1.125rem;
     font-weight: 300;
     margin: 0;
+    max-width: 30rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .field-menu {
+  .toolbar {
+    align-items: center;
+    flex: 1 0 auto;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .actions-container {
+    flex: 0 0 auto;
+    position: relative;
+  }
+
+  input[type='text'] {
+    align-items: center;
+    background-color: var(--sys-log-viewer-color-controls-input-bg);
+    border: 1px solid var(--sys-log-viewer-color-controls-input-outline);
+    border-radius: 1.5rem;
+    cursor: text;
+    display: flex;
+    font-size: 1rem;
+    height: 0.75rem;
+    justify-content: flex-end;
+    line-height: 0.75;
+    overflow: hidden;
+    padding: 0.5rem 1rem;
+    width: 25rem;
+  }
+
+  input::placeholder {
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--md-sys-color-primary);
+    height: 1.125rem;
+    width: 1.125rem;
+  }
+
+  .col-toggle-menu {
     background-color: var(--md-sys-color-surface-container);
     border-radius: 4px;
     margin: 0;
@@ -56,7 +117,7 @@ export const styles = css`
     border-radius: 100%;
   }
 
-  .field-menu-item {
+  .col-toggle-menu-item {
     align-items: center;
     display: flex;
     height: 3rem;
@@ -68,43 +129,7 @@ export const styles = css`
     position: relative;
   }
 
-  .input-container {
-    justify-content: flex-end;
-    width: 100%;
-  }
-
-  input[type='text'] {
-    align-items: center;
-    background-color: var(--sys-log-viewer-color-controls-input-bg);
-    border: 1px solid var(--sys-log-viewer-color-controls-input-outline);
-    border-radius: 1.5rem;
-    cursor: text;
-    display: inline-flex;
-    font-size: 1rem;
-    height: 0.75rem;
-    line-height: 0.75;
-    max-width: 30rem;
-    overflow: hidden;
-    padding: 0.5rem 1rem;
-    width: 100%;
-  }
-
-  input::placeholder {
-    color: var(--md-sys-color-on-surface-variant);
-  }
-
-  input[type='checkbox'] {
-    accent-color: var(--md-sys-color-primary);
-    height: 1.125rem;
-    width: 1.125rem;
-  }
-
   label {
     padding-left: 0.75rem;
-  }
-
-  p {
-    flex: 1 0;
-    white-space: nowrap;
   }
 `;

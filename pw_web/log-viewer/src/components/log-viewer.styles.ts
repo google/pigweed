@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -51,8 +51,8 @@ export const styles = css`
   sl-split-panel {
     --divider-width: 8px;
     --divider-hit-area: 24px;
-    --min: 10rem;
-    --max: calc(100% - 10rem);
+    --min: 20rem;
+    --max: calc(100% - 20rem);
     height: 100%;
     width: 100%;
     contain: size style;

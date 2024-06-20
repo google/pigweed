@@ -521,7 +521,7 @@ export class LogList extends LitElement {
       'log-row--nowrap': !this.lineWrap,
     };
     const logSeverityClass = ('log-row--' +
-      (log.severity || Severity.INFO).toLowerCase()) as keyof typeof classes;
+      (log?.severity || Severity.INFO).toLowerCase()) as keyof typeof classes;
     classes[logSeverityClass] = true;
 
     return html`

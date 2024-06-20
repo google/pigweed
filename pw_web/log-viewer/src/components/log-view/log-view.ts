@@ -348,7 +348,6 @@ export class LogView extends LitElement {
         @column-toggle="${this.toggleColumns}"
         @wrap-toggle="${this.toggleWrapping}"
         @download-logs="${this.downloadLogs}"
-        role="toolbar"
       >
       </log-view-controls>
 

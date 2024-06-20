@@ -113,7 +113,7 @@ describe('log-view-controls', () => {
       const logControls =
         logViews[0].shadowRoot.querySelector('log-view-controls');
       logControls.requestUpdate();
-      const inputEl = logControls.shadowRoot.querySelector('#search-field');
+      const inputEl = logControls.shadowRoot.querySelector('.search-field');
 
       await logViewer.updateComplete;
       expect(inputEl.value).to.equal(stateSearchString);
@@ -129,7 +129,7 @@ describe('log-view-controls', () => {
       logViews.forEach((logView) => {
         const logControls =
           logView.shadowRoot.querySelector('log-view-controls');
-        const inputEl = logControls.shadowRoot.querySelector('#search-field');
+        const inputEl = logControls.shadowRoot.querySelector('.search-field');
         searchInputs.push(inputEl.value);
       });
 

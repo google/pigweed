@@ -22,6 +22,7 @@ import {
 } from 'lit/decorators.js';
 import { styles } from './log-view-controls.styles';
 import { TableColumn } from '../../shared/interfaces';
+import { MdMenu } from '@material/web/menu/menu';
 
 /**
  * A sub-component of the log view with user inputs for managing and customizing
@@ -51,12 +52,25 @@ export class LogViewControls extends LitElement {
   @property()
   searchText = '';
 
+  @property({ type: Boolean, reflect: true })
+  searchExpanded = false;
+
   @state()
-  _moreActionsMenuOpen = false;
+  _colToggleMenuOpen = false;
 
-  @query('.field-menu') _fieldMenu!: HTMLMenuElement;
+  @state()
+  _addlActionsMenuOpen = false;
 
-  @query('#search-field') _searchField!: HTMLInputElement;
+  @state()
+  _toolbarCollapsed = false;
+
+  @query('.col-toggle-menu') _colToggleMenu!: HTMLElement;
+
+  @query('.search-field') _searchField!: HTMLInputElement;
+
+  @query('.addl-actions-button') _addlActionsButton!: HTMLElement;
+
+  @query('.addl-actions-menu') _addlActionsMenu!: HTMLElement;
 
   @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
 
@@ -66,14 +80,27 @@ export class LogViewControls extends LitElement {
   /** The delay (in ms) used for debouncing search input. */
   private readonly INPUT_DEBOUNCE_DELAY = 50;
 
-  @query('.more-actions-button') moreActionsButtonEl!: HTMLElement;
+  private resizeObserver = new ResizeObserver((entries) =>
+    this.handleResize(entries),
+  );
 
-  constructor() {
-    super();
+  connectedCallback() {
+    super.connectedCallback();
+    this.resizeObserver.observe(this);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.resizeObserver.unobserve(this);
   }
 
   protected firstUpdated(): void {
     this._searchField.dispatchEvent(new CustomEvent('input'));
+
+    // Supply anchor element to Material Web menus
+    if (this._addlActionsMenu) {
+      (this._addlActionsMenu as MdMenu).anchorElement = this._addlActionsButton;
+    }
   }
 
   /**
@@ -106,6 +133,20 @@ export class LogViewControls extends LitElement {
     }, this.INPUT_DEBOUNCE_DELAY);
 
     this.markKeysInText(this._searchField);
+  }
+
+  private handleResize(entries: ResizeObserverEntry[]) {
+    for (const entry of entries) {
+      if (entry.contentRect.width < 800) {
+        this._toolbarCollapsed = true;
+      } else {
+        this.searchExpanded = false;
+        this._toolbarCollapsed = false;
+      }
+    }
+
+    this._colToggleMenuOpen = false;
+    this._addlActionsMenuOpen = false;
   }
 
   private markKeysInText(target: HTMLElement) {
@@ -248,49 +289,83 @@ export class LogViewControls extends LitElement {
 
   /** Opens and closes the column visibility dropdown menu. */
   private toggleColumnVisibilityMenu() {
-    this._fieldMenu.hidden = !this._fieldMenu.hidden;
+    this._colToggleMenuOpen = !this._colToggleMenuOpen;
   }
 
-  /** Opens and closes the More Actions menu. */
-  private toggleMoreActionsMenu() {
-    this._moreActionsMenuOpen = !this._moreActionsMenuOpen;
+  /** Opens and closes the Additional Actions menu. */
+  private toggleAddlActionsMenu() {
+    this._addlActionsMenuOpen = !this._addlActionsMenuOpen;
+  }
+
+  /** Opens and closes the search field while it is in a collapsible state. */
+  private toggleSearchField() {
+    this.searchExpanded = !this.searchExpanded;
   }
 
   render() {
     return html`
       <p class="host-name">${this.viewTitle}</p>
 
-      <div class="input-container">
+      <div class="toolbar" role="toolbar">
         <input
-          id="search-field"
+          class="search-field"
+          ?hidden=${this._toolbarCollapsed && !this.searchExpanded}
           type="text"
           .value="${this.searchText}"
           @input="${this.handleInput}"
           @keydown="${this.handleKeydown}"
         />
-      </div>
 
-      <div class="actions-container">
-        <span class="action-button" title="Clear logs">
-          <md-icon-button @click=${this.handleClearLogsClick}>
-            <md-icon>&#xe16c;</md-icon>
-          </md-icon-button>
-        </span>
+        <div class="actions-container">
+          <span
+            class="action-button"
+            title="Expand search field"
+            ?hidden=${!this._toolbarCollapsed}
+          >
+            <md-icon-button
+              @click=${this.toggleSearchField}
+              ?toggle=${this.searchExpanded}
+              ?selected=${this.searchExpanded}
+            >
+              <md-icon>&#xe8b6;</md-icon>
+              <md-icon slot="selected">&#xea76;</md-icon>
+            </md-icon-button>
+          </span>
 
-        <span class="action-button" title="Toggle line wrapping">
-          <md-icon-button @click=${this.handleWrapToggle} toggle>
-            <md-icon>&#xe25b;</md-icon>
-          </md-icon-button>
-        </span>
+          <span
+            class="action-button"
+            title="Clear logs"
+            ?hidden=${this._toolbarCollapsed}
+          >
+            <md-icon-button @click=${this.handleClearLogsClick}>
+              <md-icon>&#xe16c;</md-icon>
+            </md-icon-button>
+          </span>
 
-        <span class="action-button field-toggle" title="Toggle columns">
-          <md-icon-button @click=${this.toggleColumnVisibilityMenu} toggle>
-            <md-icon>&#xe8ec;</md-icon>
-          </md-icon-button>
-          <menu class="field-menu" hidden>
+          <span
+            class="action-button"
+            title="Toggle line wrapping"
+            ?hidden=${this._toolbarCollapsed}
+          >
+            <md-icon-button @click=${this.handleWrapToggle} toggle>
+              <md-icon>&#xe25b;</md-icon>
+            </md-icon-button>
+          </span>
+
+          <span
+            class="action-button field-toggle"
+            title="Toggle columns"
+            ?hidden=${this._toolbarCollapsed}
+          >
+            <md-icon-button @click=${this.toggleColumnVisibilityMenu}>
+              <md-icon>&#xe8ec;</md-icon>
+            </md-icon-button>
+          </span>
+
+          <menu class="col-toggle-menu" ?hidden=${!this._colToggleMenuOpen}>
             ${this.columnData.map(
               (column) => html`
-                <li class="field-menu-item">
+                <li class="col-toggle-menu-item">
                   <input
                     class="item-checkboxes"
                     @click=${this.handleColumnToggle}
@@ -304,69 +379,98 @@ export class LogViewControls extends LitElement {
               `,
             )}
           </menu>
-        </span>
 
-        <span class="action-button" title="Additional actions">
-          <md-icon-button
-            @click=${this.toggleMoreActionsMenu}
-            class="more-actions-button"
-          >
-            <md-icon>&#xe5d4;</md-icon>
-          </md-icon-button>
-
-          <md-menu
-            quick
-            fixed
-            ?open=${this._moreActionsMenuOpen}
-            .anchor=${this.moreActionsButtonEl}
-            @closed=${() => {
-              this._moreActionsMenuOpen = false;
-            }}
-          >
-            <md-menu-item
-              headline="Split Right"
-              @click=${this.handleSplitRight}
-              role="button"
-              title="Open a new view to the right of the current view"
+          <span class="" title="Additional actions">
+            <md-icon-button
+              @click=${this.toggleAddlActionsMenu}
+              class="addl-actions-button"
             >
-              <md-icon slot="start" data-variant="icon">&#xf674;</md-icon>
-            </md-menu-item>
+              <md-icon>&#xe5d4;</md-icon>
+            </md-icon-button>
 
-            <md-menu-item
-              headline="Split Down"
-              @click=${this.handleSplitDown}
-              role="button"
-              title="Open a new view below the current view"
+            <md-menu
+              quick
+              class="addl-actions-menu"
+              positioning="popover"
+              ?open=${this._addlActionsMenuOpen}
+              @closed=${() => {
+                this._addlActionsMenuOpen = false;
+              }}
             >
-              <md-icon slot="start" data-variant="icon">&#xf676;</md-icon>
-            </md-menu-item>
+              <md-menu-item
+                @click=${this.handleWrapToggle}
+                role="button"
+                title="Toggle line wrapping"
+                ?hidden=${!this._toolbarCollapsed}
+              >
+                <md-icon slot="start" data-variant="icon">&#xe25b;</md-icon>
+                <div slot="headline">Toggle line wrapping</div>
+              </md-menu-item>
 
-            <md-menu-item
-              headline="Download logs (.txt)"
-              @click=${this.handleDownloadLogs}
-              role="button"
-              title="Download current logs as a plaintext file"
+              <md-menu-item
+                @click=${this.toggleColumnVisibilityMenu}
+                role="button"
+                title="Toggle columns"
+                ?hidden=${!this._toolbarCollapsed}
+              >
+                <md-icon slot="start" data-variant="icon">&#xe8ec;</md-icon>
+                <div slot="headline">Toggle columns</div>
+              </md-menu-item>
+
+              <md-menu-item
+                @click=${this.handleSplitRight}
+                role="button"
+                title="Open a new view to the right of the current view"
+              >
+                <md-icon slot="start" data-variant="icon">&#xf674;</md-icon>
+                <div slot="headline">Split right</div>
+              </md-menu-item>
+
+              <md-menu-item
+                @click=${this.handleSplitDown}
+                role="button"
+                title="Open a new view below the current view"
+              >
+                <md-icon slot="start" data-variant="icon">&#xf676;</md-icon>
+                <div slot="headline">Split down</div>
+              </md-menu-item>
+
+              <md-menu-item
+                @click=${this.handleDownloadLogs}
+                role="button"
+                title="Download current logs as a plaintext file"
+              >
+                <md-icon slot="start" data-variant="icon">&#xf090;</md-icon>
+                <div slot="headline">Download logs (.txt)</div>
+              </md-menu-item>
+
+              <md-menu-item
+                @click=${this.handleClearLogsClick}
+                role="button"
+                title="Clear logs"
+                ?hidden=${!this._toolbarCollapsed}
+              >
+                <md-icon slot="start" data-variant="icon">&#xe16c;</md-icon>
+                <div slot="headline">Clear logs</div>
+              </md-menu-item>
+            </md-menu>
+          </span>
+
+          <span class="action-button" title="Close view">
+            <md-icon-button
+              ?hidden=${this.hideCloseButton}
+              @click=${this.handleCloseViewClick}
             >
-              <md-icon slot="start" data-variant="icon">&#xf090;</md-icon>
-            </md-menu-item>
-          </md-menu>
-        </span>
+              <md-icon>&#xe5cd;</md-icon>
+            </md-icon-button>
+          </span>
 
-        <span
-          class="action-button"
-          title="Close view"
-          ?hidden=${this.hideCloseButton}
-        >
-          <md-icon-button @click=${this.handleCloseViewClick}>
-            <md-icon>close</md-icon>
-          </md-icon-button>
-        </span>
-
-        <span class="action-button" hidden>
-          <md-icon-button>
-            <md-icon>&#xe5d3;</md-icon>
-          </md-icon-button>
-        </span>
+          <span class="action-button" hidden>
+            <md-icon-button>
+              <md-icon>&#xe5d3;</md-icon>
+            </md-icon-button>
+          </span>
+        </div>
       </div>
     `;
   }
