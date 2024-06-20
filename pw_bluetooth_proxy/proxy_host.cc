@@ -24,18 +24,18 @@
 namespace pw::bluetooth::proxy {
 
 ProxyHost::ProxyHost(
-    pw::Function<void(H4PacketWithHci packet)>&& send_to_host_fn,
-    pw::Function<void(H4PacketWithHci packet)>&& send_to_controller_fn,
+    pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
+    pw::Function<void(H4PacketWithHci&& packet)>&& send_to_controller_fn,
     uint16_t le_acl_credits_to_reserve)
     : outward_send_to_host_fn_(std::move(send_to_host_fn)),
       outward_send_to_controller_fn_(std::move(send_to_controller_fn)),
       acl_data_channel_{le_acl_credits_to_reserve} {}
 
-void ProxyHost::HandleH4HciFromHost(H4PacketWithHci h4_packet) {
-  SendToController(h4_packet);
+void ProxyHost::HandleH4HciFromHost(H4PacketWithHci&& h4_packet) {
+  SendToController(std::move(h4_packet));
 }
 
-void ProxyHost::ProcessH4HciFromController(H4PacketWithHci h4_packet) {
+void ProxyHost::ProcessH4HciFromController(H4PacketWithHci&& h4_packet) {
   if (h4_packet.GetHciSpan().empty()) {
     PW_LOG_ERROR("Received empty H4 buffer. So will not process.");
     return;
@@ -98,19 +98,19 @@ void ProxyHost::ProcessH4HciFromController(H4PacketWithHci h4_packet) {
   PW_MODIFY_DIAGNOSTICS_POP();
 }
 
-void ProxyHost::HandleH4HciFromController(H4PacketWithHci h4_packet) {
-  ProcessH4HciFromController(h4_packet);
-  SendToHost(h4_packet);
+void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
+  ProcessH4HciFromController(std::move(h4_packet));
+  SendToHost(std::move(h4_packet));
 }
 
-void ProxyHost::SendToHost(H4PacketWithHci h4_packet) {
+void ProxyHost::SendToHost(H4PacketWithHci&& h4_packet) {
   PW_DCHECK(outward_send_to_host_fn_ != nullptr);
-  outward_send_to_host_fn_(h4_packet);
+  outward_send_to_host_fn_(std::move(h4_packet));
 }
 
-void ProxyHost::SendToController(H4PacketWithHci h4_packet) {
+void ProxyHost::SendToController(H4PacketWithHci&& h4_packet) {
   PW_DCHECK(outward_send_to_controller_fn_ != nullptr);
-  outward_send_to_controller_fn_(h4_packet);
+  outward_send_to_controller_fn_(std::move(h4_packet));
 }
 
 bool ProxyHost::HasSendAclCapability() const {

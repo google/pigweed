@@ -28,6 +28,13 @@ namespace pw::bluetooth::proxy {
 /// across the concrete subclasses
 class H4PacketInterface {
  public:
+  H4PacketInterface() = default;
+
+  H4PacketInterface(const H4PacketInterface& other) = delete;
+
+  H4PacketInterface(H4PacketInterface&& other) = default;
+  H4PacketInterface& operator=(H4PacketInterface&& other) = default;
+
   virtual ~H4PacketInterface() = default;
 
   /// Returns HCI packet type indicator as defined in BT Core Spec Version 5.4 |
@@ -40,6 +47,9 @@ class H4PacketInterface {
   /// Returns pw::span of HCI packet as defined in BT Core Spec Version 5.4 |
   /// Vol 4, Part E, Section 5.4.
   virtual pw::span<uint8_t> GetHciSpan() = 0;
+
+ protected:
+  H4PacketInterface& operator=(const H4PacketInterface& other) = default;
 };
 
 /// H4PacketWithHci is an H4Packet backed by an HCI buffer.
@@ -47,6 +57,11 @@ class H4PacketWithHci final : public H4PacketInterface {
  public:
   H4PacketWithHci(emboss::H4PacketType h4_type, pw::span<uint8_t> hci_span)
       : hci_span_(hci_span), h4_type_(h4_type) {}
+
+  H4PacketWithHci(const H4PacketWithHci& other) = delete;
+
+  H4PacketWithHci(H4PacketWithHci&& other) = default;
+  H4PacketWithHci& operator=(H4PacketWithHci&& other) = default;
 
   ~H4PacketWithHci() final = default;
 
@@ -57,6 +72,8 @@ class H4PacketWithHci final : public H4PacketInterface {
   pw::span<uint8_t> GetHciSpan() final { return hci_span_; }
 
  private:
+  H4PacketWithHci& operator=(const H4PacketWithHci& other) = default;
+
   pw::span<uint8_t> hci_span_;
 
   emboss::H4PacketType h4_type_;
@@ -66,6 +83,11 @@ class H4PacketWithHci final : public H4PacketInterface {
 class H4PacketWithH4 final : public H4PacketInterface {
  public:
   H4PacketWithH4(pw::span<uint8_t> h4_span) : h4_span_(h4_span) {}
+
+  H4PacketWithH4(const H4PacketWithH4& other) = delete;
+
+  H4PacketWithH4(H4PacketWithH4&& other) = default;
+  H4PacketWithH4& operator=(H4PacketWithH4&& other) = default;
 
   ~H4PacketWithH4() final = default;
 
@@ -90,6 +112,8 @@ class H4PacketWithH4 final : public H4PacketInterface {
   }
 
  private:
+  H4PacketWithH4& operator=(const H4PacketWithH4& other) = default;
+
   pw::span<uint8_t> h4_span_;
 };
 

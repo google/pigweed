@@ -13,6 +13,7 @@
 // the License.
 
 #include <cstdint>
+#include <utility>
 
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
@@ -27,29 +28,31 @@ namespace {
 void UsePassthroughProxy() {
   // Populate H4 buffer to send towards controller.
   std::array<uint8_t, 20> h4_array_from_host{0};
-  H4PacketWithHci h4_span_from_host = {
-      .h4_type = emboss::H4PacketType::COMMAND,
-      .hci_span = pw::span(h4_array_from_host)};
+  // std::array<uint8_t, 20> h4_array_from_controller{0};
+  H4PacketWithHci h4_span_from_host = {emboss::H4PacketType::COMMAND,
+                                       pw::span(h4_array_from_host)};
 
   // Populate H4 buffer to send towards host.
-  std::array<uint8_t, 20> h4_array_from_controller{0};
-  H4PacketWithHci h4_span_from_controller = {
-      .h4_type = emboss::H4PacketType::EVENT,
-      .hci_span = pw::span(h4_array_from_controller)};
+  // H4PacketWithHci h4_span_from_controller = {
+  //     .h4_type = emboss::H4PacketType::EVENT,
+  //     .hci_span = pw::span(h4_array_from_controller)};
 
-  pw::Function<void(H4PacketWithHci packet)> containerSendToHostFn(
-      []([[maybe_unused]] H4HciPacket packet) {});
+  H4PacketWithHci h4_span_from_controller = {emboss::H4PacketType::COMMAND,
+                                             pw::span(h4_array_from_host)};
 
-  pw::Function<void(H4PacketWithHci packet)> containerSendToControllerFn(
-      ([]([[maybe_unused]] H4PacketWithHci packet) {}));
+  pw::Function<void(H4PacketWithHci && packet)> containerSendToHostFn(
+      []([[maybe_unused]] H4PacketWithHci packet) {});
+
+  pw::Function<void(H4PacketWithHci && packet)> containerSendToControllerFn(
+      ([]([[maybe_unused]] H4PacketWithHci&& packet) {}));
 
   ProxyHost proxy = ProxyHost(std::move(containerSendToHostFn),
                               std::move(containerSendToControllerFn),
                               0);
 
-  proxy.HandleH4HciFromHost(h4_span_from_host);
+  proxy.HandleH4HciFromHost(std::move(h4_span_from_host));
 
-  proxy.HandleH4HciFromController(h4_span_from_controller);
+  proxy.HandleH4HciFromController(std::move(h4_span_from_controller));
 }
 
 }  // namespace
