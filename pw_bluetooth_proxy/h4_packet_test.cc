@@ -38,7 +38,7 @@ TEST(H4Packet, H4PacketWithHciSets) {
   std::array<uint8_t, 5> hci_buffer{0, 1, 2, 3, 4};
   H4PacketWithHci packet{emboss::H4PacketType::COMMAND, pw::span{hci_buffer}};
 
-  packet.GetH4Type(emboss::H4PacketType::EVENT);
+  packet.SetH4Type(emboss::H4PacketType::EVENT);
 
   EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::EVENT);
 }
@@ -69,7 +69,7 @@ TEST(H4Packet, H4PacketWithH4Sets) {
   h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
   H4PacketWithH4 packet{pw::span{h4_buffer}};
 
-  packet.GetH4Type(emboss::H4PacketType::EVENT);
+  packet.SetH4Type(emboss::H4PacketType::EVENT);
 
   EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::EVENT);
   EXPECT_EQ(h4_buffer[0], cpp23::to_underlying(emboss::H4PacketType::EVENT));

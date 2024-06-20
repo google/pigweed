@@ -35,7 +35,7 @@ class H4PacketInterface {
   virtual emboss::H4PacketType GetH4Type() = 0;
 
   /// Sets HCI packet type indicator.
-  virtual void GetH4Type(emboss::H4PacketType) = 0;
+  virtual void SetH4Type(emboss::H4PacketType) = 0;
 
   /// Returns pw::span of HCI packet as defined in BT Core Spec Version 5.4 |
   /// Vol 4, Part E, Section 5.4.
@@ -52,7 +52,7 @@ class H4PacketWithHci final : public H4PacketInterface {
 
   emboss::H4PacketType GetH4Type() final { return h4_type_; }
 
-  void GetH4Type(emboss::H4PacketType h4_type) final { h4_type_ = h4_type; }
+  void SetH4Type(emboss::H4PacketType h4_type) final { h4_type_ = h4_type; }
 
   pw::span<uint8_t> GetHciSpan() final { return hci_span_; }
 
@@ -77,7 +77,7 @@ class H4PacketWithH4 final : public H4PacketInterface {
     return emboss::H4PacketType(h4_span_[0]);
   }
 
-  void GetH4Type(emboss::H4PacketType h4_type) final {
+  void SetH4Type(emboss::H4PacketType h4_type) final {
     *h4_span_.data() = cpp23::to_underlying(h4_type);
   }
 

@@ -37,7 +37,7 @@ template <typename EmbossT>
 EmbossT CreateAndPopulateToControllerView(H4PacketWithHci& h4_packet,
                                           emboss::OpCode opcode) {
   std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 100);
-  h4_packet.GetH4Type(emboss::H4PacketType::COMMAND);
+  h4_packet.SetH4Type(emboss::H4PacketType::COMMAND);
   EmbossT view = MakeEmboss<EmbossT>(h4_packet.GetHciSpan());
   EXPECT_TRUE(view.IsComplete());
   view.header().opcode_enum().Write(opcode);
@@ -56,7 +56,7 @@ template <typename EmbossT>
 EmbossT CreateAndPopulateToHostEventView(H4PacketWithHci& h4_packet,
                                          emboss::EventCode event_code) {
   std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 0x10);
-  h4_packet.GetH4Type(emboss::H4PacketType::EVENT);
+  h4_packet.SetH4Type(emboss::H4PacketType::EVENT);
   EmbossT view = MakeEmboss<EmbossT>(h4_packet.GetHciSpan());
   view.header().event_code_enum().Write(event_code);
   view.status().Write(emboss::StatusCode::SUCCESS);
@@ -262,7 +262,7 @@ TEST(BadPacketTest, BadH4TypeToControllerIsPassedOn) {
   PopulateNoninteractingToControllerBuffer(h4_packet);
 
   // Set back to an invalid type.
-  h4_packet.GetH4Type(emboss::H4PacketType::UNKNOWN);
+  h4_packet.SetH4Type(emboss::H4PacketType::UNKNOWN);
 
   // Struct for capturing because `pw::Function` can't fit multiple captures.
   struct {
@@ -304,7 +304,7 @@ TEST(PBadPacketTest, BadH4TypeToHostIsPassedOn) {
   CreateNonInteractingToHostBuffer(h4_packet);
 
   // Set back to an invalid type.
-  h4_packet.GetH4Type(emboss::H4PacketType::UNKNOWN);
+  h4_packet.SetH4Type(emboss::H4PacketType::UNKNOWN);
 
   // Struct for capturing because `pw::Function` can't fit multiple captures.
   struct {
