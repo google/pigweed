@@ -50,7 +50,7 @@
     "eslint-plugin-lit-a11y": "^4.1.0",
     "grpc-tools": "^1.11.2",
     "grpc-web": "^1.2.1",
-    "gts": "^3.1.0",
+    "gts": "^5.3.1",
     "html-react-parser": "^1.4.0",
     "http-server": "^13.0.2",
     "install-peers": "^1.0.3",
