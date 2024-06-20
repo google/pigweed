@@ -55,9 +55,29 @@ TEST(H4Packet, H4PacketWithH4Gets) {
   EXPECT_EQ(packet.GetHciSpan().data(), h4_buffer.data() + 1);
 }
 
-TEST(H4Packet, H4PacketWithH4WithEmptyH4Buffer) {
+TEST(H4Packet, H4PacketWithTypeCtorWithH4Gets) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  H4PacketWithH4 packet{emboss::H4PacketType::COMMAND, pw::span{h4_buffer}};
+
+  EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::COMMAND);
+
+  // HCI span should be h4 buffer without the first byte.
+  EXPECT_EQ(packet.GetHciSpan().size(), h4_buffer.size() - 1);
+  EXPECT_EQ(packet.GetHciSpan().data(), h4_buffer.data() + 1);
+}
+
+TEST(H4Packet, H4PacketWithH4WithEmptyBuffer) {
   std::array<uint8_t, 0> h4_buffer{};
   H4PacketWithH4 packet{pw::span{h4_buffer}};
+
+  EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
+
+  EXPECT_TRUE(packet.GetHciSpan().empty());
+}
+
+TEST(H4Packet, H4PacketWithWithTypeCtorWithEmptyBuffer) {
+  std::array<uint8_t, 0> h4_buffer{};
+  H4PacketWithH4 packet{emboss::H4PacketType::COMMAND, pw::span{h4_buffer}};
 
   EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
 

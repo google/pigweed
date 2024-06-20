@@ -84,6 +84,11 @@ class H4PacketWithH4 final : public H4PacketInterface {
  public:
   H4PacketWithH4(pw::span<uint8_t> h4_span) : h4_span_(h4_span) {}
 
+  H4PacketWithH4(emboss::H4PacketType h4_type, pw::span<uint8_t> h4_span)
+      : H4PacketWithH4(h4_span) {
+    SetH4Type(h4_type);
+  }
+
   H4PacketWithH4(const H4PacketWithH4& other) = delete;
 
   H4PacketWithH4(H4PacketWithH4&& other) = default;
@@ -100,7 +105,9 @@ class H4PacketWithH4 final : public H4PacketInterface {
   }
 
   void SetH4Type(emboss::H4PacketType h4_type) final {
-    *h4_span_.data() = cpp23::to_underlying(h4_type);
+    if (!h4_span_.empty()) {
+      h4_span_.data()[0] = cpp23::to_underlying(h4_type);
+    }
   }
 
   pw::span<uint8_t> GetHciSpan() final {
