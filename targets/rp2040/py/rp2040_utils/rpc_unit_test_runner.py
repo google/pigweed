@@ -166,16 +166,11 @@ def detect_and_run_test(
 def main():
     """Set up runner and then flash/run device test."""
     args = parse_args()
-    test_logfile = args.binary.with_suffix(args.binary.suffix + '.test_log.txt')
-    # Create a new logfile, truncating any that already exist.
-    test_logfile.unlink(missing_ok=True)
-    test_logfile.parent.mkdir(parents=True, exist_ok=True)
-    test_logfile.touch()
+
+    # Log to stdout, which will be captured by the unit test server.
     pw_cli.log.install(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        debug_log=test_logfile,
     )
-    _LOG.debug('Logging results to %s', test_logfile)
 
     if args.pico_only and args.debug_probe_only:
         _LOG.critical('Cannot specify both --pico-only and --debug-probe-only')

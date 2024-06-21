@@ -19,7 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"path/filepath"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -52,13 +52,13 @@ func NewClient(host string, port int) (*Client, error) {
 
 // RunBinary sends a RunBinary RPC to the target runner service.
 func (c *Client) RunBinary(path string) error {
-	abspath, err := filepath.Abs(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
 	client := pb.NewTargetRunnerClient(c.conn)
-	req := &pb.RunBinaryRequest{FilePath: abspath}
+	req := &pb.RunBinaryRequest{Binary: &pb.RunBinaryRequest_TestBinary{TestBinary: data}}
 
 	res, err := client.RunBinary(context.Background(), req)
 	if err != nil {

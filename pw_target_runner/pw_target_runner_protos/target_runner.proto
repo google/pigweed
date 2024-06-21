@@ -35,8 +35,12 @@ enum RunStatus {
 }
 
 message RunBinaryRequest {
-  // Local file path to the binary.
-  string file_path = 1;
+  oneof binary {
+    // Local file path to the binary.
+    string file_path = 1;
+    // The executable test file to run.
+    bytes test_binary = 2;
+  }
 }
 
 message RunBinaryResponse {

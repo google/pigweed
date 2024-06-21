@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -133,9 +134,39 @@ func (s *pwTargetRunnerService) RunBinary(
 	ctx context.Context,
 	desc *pb.RunBinaryRequest,
 ) (*pb.RunBinaryResponse, error) {
-	runRes, err := s.server.RunBinary(desc.FilePath)
+	var path string
+
+	switch bin := desc.Binary.(type) {
+	case *pb.RunBinaryRequest_FilePath:
+		path = bin.FilePath
+		break
+	case *pb.RunBinaryRequest_TestBinary:
+		f, err := os.CreateTemp("", "pw_target_runner_")
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Internal server error: %v", err)
+		}
+
+		defer os.Remove(f.Name())
+
+		_, err = f.Write(bin.TestBinary)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Internal server error: %v", err)
+		}
+
+		err = os.Chmod(f.Name(), 0755)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Internal server error: %v", err)
+		}
+
+		path = f.Name()
+		break
+	default:
+		return nil, status.Error(codes.InvalidArgument, "No test path or binary provided")
+	}
+
+	runRes, err := s.server.RunBinary(path)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal server error")
+		return nil, status.Errorf(codes.Internal, "Internal server error: %v", err)
 	}
 
 	res := &pb.RunBinaryResponse{
