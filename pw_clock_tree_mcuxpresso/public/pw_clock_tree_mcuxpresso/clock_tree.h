@@ -338,9 +338,6 @@ class ClockMcuxpressoAudioPll : public DependentElement<ElementType> {
 
     // Power down Audio PLL
     CLOCK_DeinitAudioPll();
-
-    // Clock gate audio PLL clock selector.
-    CLKCTL1->AUDIOPLL0CLKSEL = kCLOCK_AudioPllNone;
     return OkStatus();
   }
 
@@ -400,5 +397,4 @@ using ClockMcuxpressoRtcBlocking = ClockMcuxpressoRtc<ElementBlocking>;
 /// cannot fail.
 using ClockMcuxpressoRtcNonBlocking =
     ClockMcuxpressoRtc<ElementNonBlockingCannotFail>;
-
 }  // namespace pw::clock_tree

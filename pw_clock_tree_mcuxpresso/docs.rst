@@ -25,8 +25,20 @@ that can be directly instantiated:
 
 .. inclusive-language: enable
 
+.. cpp:namespace-push:: pw::clock_tree::Element
+
 Other clock tree components such as PLLs can be instantiated by deriving custom class implementations
-from the abstract class `DependentElement` and overwriting `DoEnable` and `DoDisable` methods.
+from the abstract class :cpp:class:`DependentElement` and overwriting :cpp:func:`DoEnable` and
+:cpp:func:`DoDisable` methods.
+
+.. cpp:namespace-pop::
+
+.. cpp:namespace-push:: pw::clock_tree::ClockTree
+
+When enabling clock tree elements sourced from the audio PLL or the SYS PLL it is necessary
+to use the :cpp:func:`AcquireWith` method.
+
+.. cpp:namespace-pop::
 
 Examples
 ========
@@ -64,6 +76,12 @@ Definition of clock tree elements:
 .. literalinclude:: examples.cc
    :language: cpp
    :linenos:
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-fro_div8]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-fro_div8]
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :linenos:
    :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-i3c0]
    :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-i3c0]
 
@@ -77,8 +95,8 @@ Definition of clock tree elements:
 .. literalinclude:: examples.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-ClockSourceNoOp]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-ClockSourceNoOp]
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClkTreeElemDefs-ClockSourceNoOp]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClkTreeElemDefs-ClockSourceNoOp]
 
 .. literalinclude:: examples.cc
    :language: cpp
@@ -118,14 +136,17 @@ Example usage of ``clock_tree`` APIs:
 Audio PLL examples
 ------------------
 
-.. cpp:namespace-push:: pw::clock_tree
+.. cpp:namespace-push:: pw::clock_tree::ClockTree
 
 The :cpp:class:`ClockMcuxpressoAudioPll` can be configured in two different ways,
 either it can be configured where the audio PLL gets enabled, or it can be
 configured in bypass mode.
 
 The first example shows where :cpp:class:`ClockMcuxpressoAudioPll` enables the audio PLL
-and uses the ClkIn pin clock source as OSC clock source that feeds into the audio PLL logic.
+and uses the ClkIn pin clock source as OSC clock source that feeds into the audio PLL
+logic. Since the audio PLL requires that the ``FRO_DIV8`` clock source is enabled when
+enabling the audio PLL, the :cpp:func:`AcquireWith` needs to be used that ensures
+that the ``FRO_DIV8`` clock is enabled when enabling the audio PLL.
 
 .. mermaid::
 
@@ -140,20 +161,48 @@ and uses the ClkIn pin clock source as OSC clock source that feeds into the audi
           style A fill:#f0f,stroke:#333,stroke-width:2px
           style E fill:#f0f,stroke:#333,stroke-width:2px
 
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-ClockSourceNoOp]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-ClockSourceNoOp]
+Definition of clock tree:
 
 .. literalinclude:: examples.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-AudioPll]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-AudioPll]
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
+
+Definition of audio PLL related clock tree elements:
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClkTreeElemDefs-ClockSourceNoOp]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClkTreeElemDefs-ClockSourceNoOp]
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-AudioPll]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-AudioPll]
+
+Definition of ``FRO_DIV8`` clock tree element:
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-fro_div8]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-fro_div8]
+
+Audio PLL clock tree element gets enabled and disabled. We use :cpp:func:`AcquireWith`
+to ensure that ``FRO_DIV8`` is enabled prior to configuring the audio PLL to a
+non-``FRO_DIV8`` clock source.
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
 
 The second example shows where :cpp:class:`ClockMcuxpressoAudioPll` bypasses the audio PLL
-and uses ``FRO_DIV_8 pin`` clock source.
+and uses ``FRO_DIV8 pin`` clock source.
 
 .. cpp:namespace-pop::
 
@@ -167,8 +216,8 @@ and uses ``FRO_DIV_8 pin`` clock source.
 .. literalinclude:: examples.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-AudioPllBypass]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-AudioPllBypass]
+   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-AudioPllBypass]
+   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-AudioPllBypass]
 
 APIs
 ====
