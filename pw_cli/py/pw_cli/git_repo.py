@@ -16,6 +16,7 @@
 import logging
 from pathlib import Path
 import re
+import shlex
 import subprocess
 from typing import Collection, Iterable, Pattern
 
@@ -32,33 +33,28 @@ _NON_TRACKING_FALLBACK = 'HEAD~10'
 class GitError(Exception):
     """A Git-raised exception."""
 
-    def __init__(self, message, returncode):
-        super().__init__(message)
+    def __init__(
+        self, args: Iterable[str], message: str, returncode: int
+    ) -> None:
+        super().__init__(f'`git {shlex.join(args)}` failed: {message}')
         self.returncode = returncode
 
 
 class _GitTool:
-    def __init__(self, tool_runner: ToolRunner, working_dir: Path):
+    def __init__(self, tool_runner: ToolRunner, working_dir: Path) -> None:
         self._run_tool = tool_runner
         self._working_dir = working_dir
 
     def __call__(self, *args, **kwargs) -> str:
-        proc = self._run_tool(
-            tool='git',
-            args=(
-                '-C',
-                str(self._working_dir),
-                *args,
-            ),
-            **kwargs,
-        )
+        cmd = ('-C', str(self._working_dir), *args)
+        proc = self._run_tool(tool='git', args=cmd, **kwargs)
 
         if proc.returncode != 0:
             if not proc.stderr:
                 err = '(no output)'
             else:
                 err = proc.stderr.decode().strip()
-            raise GitError(err, proc.returncode)
+            raise GitError((str(s) for s in cmd), err, proc.returncode)
 
         return '' if not proc.stdout else proc.stdout.decode().strip()
 
