@@ -673,9 +673,18 @@ struct LinkKeyRequestNegativeReplyCommand:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         bd_addr
     -- BD_ADDR of the peer device that the host does not have a link key for.
 
-# 7.1.12 PIN Code Request Reply command
-# HCI_PIN_Code_Request_Reply
-# TODO: b/265052417 - Definition needs to be added
+
+struct PinCodeRequestReplyCommand:
+  -- 7.1.12 PIN Code Request Reply command (v1.1) (BR/EDR)
+  -- HCI_PIN_Code_Request_Reply
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         bd_addr
+    -- BD_ADDR of the device which the PIN code is for
+  $next [+1]                          UInt               pin_code_length
+    -- Length of the PIN code in octets
+    [requires: 0x01 <= this <= 0x10]
+  $next [+16]                         UInt:8[16]         pin_code
 
 
 # 7.1.13 PIN Code Request Negative Reply command
