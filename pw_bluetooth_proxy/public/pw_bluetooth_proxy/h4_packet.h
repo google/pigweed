@@ -138,6 +138,13 @@ class H4PacketWithH4 final : public H4PacketInterface {
     return H4HciSubspan(h4_span_);
   }
 
+  pw::span<uint8_t> GetH4Span() {
+    if (h4_span_.empty()) {
+      return {};
+    }
+    return h4_span_;
+  }
+
  private:
   void Reset() {
     h4_span_ = pw::span<uint8_t>();
