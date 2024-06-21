@@ -1128,9 +1128,11 @@ struct ResetCommand:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.3.5 Read PIN Type command
-# HCI_Read_PIN_Type
-# TODO: b/265052417 - Definition needs to be added
+struct ReadPinTypeCommand:
+  -- 7.3.5 Read PIN Type command (v1.1) (BR/EDR)
+  -- HCI_Read_PIN_Type
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandHeader  header
 
 
 # 7.3.6 Write PIN Type command
