@@ -152,9 +152,11 @@ def user_agent():
     """Generate a user-agent based on the project name and current hash."""
 
     try:
-        rev = subprocess.check_output(
-            ['git', '-C', SCRIPT_DIR, 'rev-parse', 'HEAD']
-        ).strip()
+        with open(os.devnull, 'w') as devnull:
+            rev = subprocess.check_output(
+                ['git', '-C', SCRIPT_DIR, 'rev-parse', 'HEAD'],
+                stderr=devnull,
+            ).strip()
     except subprocess.CalledProcessError:
         rev = '???'
 
