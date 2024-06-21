@@ -73,10 +73,10 @@ abstract class Transfer<T> extends AbstractFuture<T> {
       TransferTimeoutSettings timeoutSettings,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback,
-      int initial_offset) {
+      int initialOffset) {
     this.resourceId = resourceId;
     this.sessionId = sessionId;
-    this.offset = initial_offset;
+    this.offset = initialOffset;
     this.desiredProtocolVersion = desiredProtocolVersion;
     this.eventHandler = eventHandler;
 

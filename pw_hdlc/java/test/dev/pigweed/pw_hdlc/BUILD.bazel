@@ -25,7 +25,6 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "//pw_log/java/main/dev/pigweed/pw_log",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_flogger_flogger_system_backend",
         "@maven//:com_google_guava_guava",
@@ -42,8 +41,6 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "//pw_log/java/main/dev/pigweed/pw_log",
-        "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_flogger_flogger_system_backend",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
@@ -59,7 +56,6 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "//pw_log/java/main/dev/pigweed/pw_log",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_flogger_flogger_system_backend",
         "@maven//:com_google_guava_guava",
