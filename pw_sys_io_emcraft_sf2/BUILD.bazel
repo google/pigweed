@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+load("//pw_build:compatibility.bzl", "boolean_constraint_value")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -21,6 +22,8 @@ constraint_value(
     constraint_setting = "//pw_sys_io:backend_constraint_setting",
 )
 
+boolean_constraint_value(name = "compatible")
+
 cc_library(
     name = "pw_sys_io_emcraft_sf2",
     srcs = [
@@ -29,7 +32,7 @@ cc_library(
     ],
     hdrs = ["public/pw_sys_io_emcraft_sf2/init.h"],
     target_compatible_with = [
-        "@platforms//os:none",
+        ":compatible",
     ],
     deps = [
         ":config_override",

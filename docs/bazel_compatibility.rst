@@ -236,7 +236,9 @@ For any library that does make such assumptions, and these assumptions are not
 captured by one of the :ref:`well-known constraints
 <docs-bazel-compatibility-well-known>`, the recommended pattern is to define a
 "boolean" ``constraint_setting`` to express compatibility. We introduce some
-syntactic sugar (``boolean_constraint_value``) for making this concise.
+syntactic sugar (:ref:`module-pw_build-bazel-boolean_constraint_value`) for
+making this concise.
+
 Example:
 
 .. code-block:: python

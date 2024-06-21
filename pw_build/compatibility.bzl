@@ -30,3 +30,35 @@ def host_backend_alias(name, backend):
             "//conditions:default": "@pigweed//pw_build:unspecified_backend",
         }),
     )
+
+def boolean_constraint_value(name):
+    """Syntactic sugar for a constraint with just two possible values.
+
+    Args:
+      name: The name of the "True" value of the generated constraint.
+    """
+    constraint_setting_name = name + ".constraint_setting"
+    false_value_name = name + ".not"
+
+    native.constraint_setting(
+        name = constraint_setting_name,
+        default_constraint_value = ":" + false_value_name,
+        # Do not allow anyone to declare additional values for this setting.
+        # It's boolean, so by definition it's true or false, that's it!
+        visibility = ["//visibility:private"],
+    )
+
+    native.constraint_value(
+        name = false_value_name,
+        constraint_setting = ":" + constraint_setting_name,
+        # The false value is not exposed at this time to avoid exposing more
+        # API surface than necessary, and for better compliance with
+        # https://bazel.build/rules/bzl-style#macros. But we may make it public
+        # in the future.
+        visibility = ["//visibility:private"],
+    )
+
+    native.constraint_value(
+        name = name,
+        constraint_setting = ":" + constraint_setting_name,
+    )

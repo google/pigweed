@@ -386,6 +386,20 @@ Platform compatibility rules
 Macros and rules related to platform compatibility are provided in
 ``//pw_build:compatibility.bzl``.
 
+.. _module-pw_build-bazel-boolean_constraint_value:
+
+boolean_constraint_value
+^^^^^^^^^^^^^^^^^^^^^^^^
+This macro is syntactic sugar for declaring a `constraint setting
+<https://bazel.build/reference/be/platforms-and-toolchains#constraint_setting>`__
+with just two possible `constraint values
+<https://bazel.build/reference/be/platforms-and-toolchains#constraint_value>`__.
+The only exposed target is the ``constraint_value`` corresponding to ``True``;
+the default value of the setting is ``False``.
+
+This macro is meant to simplify declaring
+:ref:`docs-bazel-compatibility-module-specific`.
+
 host_backend_alias
 ^^^^^^^^^^^^^^^^^^
 An alias that resolves to the backend for host platforms. This is useful when
