@@ -687,9 +687,13 @@ struct PinCodeRequestReplyCommand:
   $next [+16]                         UInt:8[16]         pin_code
 
 
-# 7.1.13 PIN Code Request Negative Reply command
-# HCI_PIN_Code_Request_Negative_Reply
-# TODO: b/265052417 - Definition needs to be added
+struct PinCodeRequestNegativeReplyCommand:
+  -- 7.1.13 PIN Code Request Negative Reply command (v1.1) (BR/EDR)
+  -- HCI_PIN_Code_Request_Negative_Reply
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         bd_addr
+    -- BD_ADDR of the peer device that the host is responding to
 
 
 # 7.1.14 Change Connection Packet Type command
