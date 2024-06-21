@@ -126,5 +126,8 @@ pw_system_target("rp2040") {
 }
 
 pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
+  sources = [
+    "target_docs.rst",
+    "upstream.rst",
+  ]
 }

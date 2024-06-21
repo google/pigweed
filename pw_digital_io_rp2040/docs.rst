@@ -9,7 +9,7 @@ the `Raspberry Pi Pico SDK <https://github.com/raspberrypi/pico-sdk/>`_.
 Setup
 =====
 Use of this module requires setting up the Pico SDK for use with Pigweed. Follow
-the steps in :ref:`target-raspberry-pi-pico` to get setup.
+the steps in :ref:`target-rp2040` to get setup.
 
 Examples
 ========

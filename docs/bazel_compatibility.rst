@@ -827,7 +827,7 @@ Why wildcard builds?
 Pigweed is generic microcontroller middleware: you can use Pigweed to
 accelerate development on any microcontroller platform. In addition, Pigweed
 provides explicit support for a number of specific hardware platforms, such as
-the :ref:`target-raspberry-pi-pico` or :ref:`STM32f429i Discovery Board
+the :ref:`target-rp2040` or :ref:`STM32f429i Discovery Board
 <target-stm32f429i-disc1-stm32cube>`. For these specific platforms, every
 Pigweed module falls into one of three buckets:
 
