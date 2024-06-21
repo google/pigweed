@@ -910,11 +910,11 @@ When building ``//:time_is_relative``, Bazel checks the dependencies of
 
 .. code-block:: python
 
-   # @pigweed//targets/BUILD.bazel
+   # @pigweed//pw_chrono/BUILD.bazel
 
    label_flag(
-       name = "pw_chrono_system_clock_backend",
-       build_setting_default = "@pigweed//pw_chrono:system_clock_backend_multiplexer",
+       name = "system_clock_backend",
+       build_setting_default = ":unspecified system_clock_backend",
    )
 
 This is a  `label_flag
@@ -955,7 +955,7 @@ files and a BUILD file like,
            "public_overrides",
        ],
        deps = [
-           "//pw_chrono:system_clock.facade",
+           "@pigweed//pw_chrono:system_clock.facade",
        ],
    )
 
@@ -1010,112 +1010,3 @@ you just specify the ``--config`` on the command line:
 .. code-block:: console
 
    bazel build --config=m4 //:time_is_relative
-
-Multiplexer-based backend selection
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(`b/272090220 <https://issues.pigweed.dev/issues/272090220>`_): Not all
-facades and backends expose this interface yet.
-
-As an alternative to directly switching backends using label flags, Pigweed
-supports backend selection based on the target `platform
-<https://bazel.build/extending/platforms>`_. That is, on the command line you
-build with,
-
-.. code-block:: console
-
-   bazel build --platforms-//platforms:primary_computer //:time_is_relative
-
-and backend selection is done by Bazel based on the platform definition. Let's
-discuss how to set this up.
-
-Continuing with our scenario, let's say we add a backup microcontroller
-to our spacecraft. But this backup computer doesn't have a hardware RTC. We
-still want to share the bulk of the code between the two computers but now we
-need two separate implementations for our pw_chrono facade. Let's say we choose
-to keep the primary flight computer using the hardware RTC and switch the
-backup computer over to use Pigweed's default FreeRTOS backend:
-
-#. Create a constraint value corresponding to your custom backend:
-
-   .. code-block:: python
-
-      # //pw_chrono_my_hardware_rtc/BUILD.bazel
-      constraint_value(
-        name = "system_clock_backend",
-        constraint_setting = "//pw_chrono:system_clock_constraint_setting",
-      )
-
-#. Create a set of platforms that can be used to switch constraint values.
-   For example:
-
-   .. code-block:: python
-
-      # //platforms/BUILD.bazel
-      platform(
-        name = "primary_computer",
-        constraint_values = ["//pw_chrono_my_hardware_rtc:system_clock_backend"],
-      )
-
-      platform(
-        name = "backup_computer",
-        constraint_values = ["@pigweed//pw_chrono_freertos:system_clock_backend"],
-      )
-
-   If you already have platform definitions for the primary and backup
-   computers, just add these constraint values to them.
-
-#. Create a target multiplexer that will select the right backend depending on
-   which computer you are using. For example:
-
-   .. code-block:: python
-
-      # //targets/BUILD.bazel
-      cc_library(
-        name = "system_clock_backend_multiplexer",
-        deps = select({
-          "//pw_chrono_my_hardware_rtc:system_clock_backend": [
-            "//pw_chrono_my_hardware_rtc:system_clock",
-          ],
-          "@pigweed//pw_chrono_freertos:system_clock_backend": [
-            "@pigweed//pw_chrono_freertos:system_clock",
-          ],
-          "//conditions:default": [
-            "@pigweed//pw_chrono_stl:system_clock",
-          ],
-        }),
-      )
-
-#. Add a build setting override for the ``pw_chrono_system_clock_backend`` label
-   flag to your ``.bazelrc`` file that points to your new target multiplexer.
-
-   .. code-block:: bash
-
-      # //.bazelrc
-      build --@pigweed//pw_chrono:system_clock_backend=//targets:system_clock_backend_multiplexer
-
-Building your target now will result in slightly different build graph. For
-example, running;
-
-.. code-block:: sh
-
-   bazel build //:time_is_relative --platforms=//platforms:primary_computer
-
-Will result in a build graph that looks like;
-
-.. code-block::
-
-   //:time_is_relative
-    |
-   @pigweed//pw_chrono -> @pigweed//pw_chrono:system_clock_backend
-    |                                   (Injectable)
-    |                                        |
-    |                                        v
-    |                     //targets:system_clock_backend_multiplexer
-    |                     Select backend based on OS:
-    |                     [Primary (X), Backup ( ), Host only default ( )]
-    |                                        |
-    |                                        v
-    |                     //pw_chrono_my_hardware_rtc:system_clock
-    |                     (Actual backend)
-    v                                        |
-   @pigweed//pw_chrono:pw_chrono.facade <---.

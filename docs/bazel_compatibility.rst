@@ -595,8 +595,7 @@ their instances from Pigweed, replacing them with the recommended patterns.
 
 Per-facade constraint settings (not recommended)
 ================================================
-This approach is :ref:`described in our documentation
-<module-pw_build-bazel-pw_facade>`, although it was `never fully rolled out
+This approach was once recommended, although it was `never fully rolled out
 <https://pwbug.dev/272090220>`_:
 
 #. For **every facade**, introduce a ``constraint_setting`` (e.g.,
