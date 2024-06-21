@@ -228,6 +228,7 @@ class ClockTreeSetSource : public ClockTree {
 struct clock_source_state_test_call_data {
   uint32_t value;
   ClockOperation op;
+  pw::Status status;
 };
 
 struct clock_source_state_test_data {
@@ -245,24 +246,27 @@ class ClockSourceStateTest : public ClockSource<ElementType> {
       : value_(value), clock_state_(clock_state), test_data_(test_data) {}
 
  private:
-  void ValidateClockAction(ClockOperation op) {
+  pw::Status ValidateClockAction(ClockOperation op) {
+    pw::Status status = pw::Status::OutOfRange();
     if (test_data_.num_calls < test_data_.num_expected_calls) {
       uint32_t i = test_data_.num_calls;
       EXPECT_EQ(test_data_.data[i].value, value_);
       EXPECT_EQ(test_data_.data[i].op, op);
+      status = test_data_.data[i].status;
     }
     test_data_.num_calls++;
+    return status;
   }
 
   pw::Status DoEnable() final {
+    PW_TRY(ValidateClockAction(ClockOperation::kAcquire));
     *clock_state_ |= value_;
-    ValidateClockAction(ClockOperation::kAcquire);
     return pw::OkStatus();
   }
 
   pw::Status DoDisable() final {
+    PW_TRY(ValidateClockAction(ClockOperation::kRelease));
     *clock_state_ &= ~value_;
-    ValidateClockAction(ClockOperation::kRelease);
     return pw::OkStatus();
   }
 
@@ -270,9 +274,9 @@ class ClockSourceStateTest : public ClockSource<ElementType> {
   uint32_t* clock_state_;
   struct clock_source_state_test_data& test_data_;
 };
-using ClockSourceStateTestBlocking = ClockSelectorTest<ElementBlocking>;
+using ClockSourceStateTestBlocking = ClockSourceStateTest<ElementBlocking>;
 using ClockSourceStateTestNonBlocking =
-    ClockSelectorTest<ElementNonBlockingMightFail>;
+    ClockSourceStateTest<ElementNonBlockingMightFail>;
 
 template <typename ElementType>
 class ClockSourceTest : public ClockSource<ElementType> {
@@ -1230,12 +1234,12 @@ static void TestClockSource() {
   uint32_t exclusive_clock_value = 0;
 
   struct clock_source_state_test_call_data call_data[] = {
-      {1, ClockOperation::kAcquire},
-      {4, ClockOperation::kAcquire},
-      {2, ClockOperation::kAcquire},
-      {1, ClockOperation::kRelease},
-      {2, ClockOperation::kRelease},
-      {4, ClockOperation::kRelease}};
+      {1, ClockOperation::kAcquire, pw::OkStatus()},
+      {4, ClockOperation::kAcquire, pw::OkStatus()},
+      {2, ClockOperation::kAcquire, pw::OkStatus()},
+      {1, ClockOperation::kRelease, pw::OkStatus()},
+      {2, ClockOperation::kRelease, pw::OkStatus()},
+      {4, ClockOperation::kRelease, pw::OkStatus()}};
 
   struct clock_source_state_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
@@ -1815,5 +1819,166 @@ TEST(ClockTree, ClockSourceNoOp) {
   EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
 }
 
+// Validate that AcquireWith acquires the element_with during
+// acquisition of element.
+TEST(ClockTree, AcquireWith) {
+  uint32_t element_with_value = 0;
+  uint32_t element_value = 0;
+
+  // The order of acquisitions validates that we are
+  // acquiring `element_with` before acquring `element`,
+  // and releasing `element_with` after acquiring `element`.
+  struct clock_source_state_test_call_data call_data[] = {
+      // AcquireWith(element, element_with)
+      {1, ClockOperation::kAcquire, pw::OkStatus()},
+      {2, ClockOperation::kAcquire, pw::OkStatus()},
+      {1, ClockOperation::kRelease, pw::OkStatus()},
+      // Release(element)
+      {2, ClockOperation::kRelease, pw::OkStatus()},
+      // Acquire(element_with)
+      {1, ClockOperation::kAcquire, pw::OkStatus()},
+      // AcquireWith(element, element_with)
+      {2, ClockOperation::kAcquire, pw::OkStatus()}};
+
+  struct clock_source_state_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+
+  ClockSourceStateTestBlocking clock_element_with(
+      1, &element_with_value, test_data);
+  ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
+
+  ClockTree clock_tree;
+  pw::Status status;
+
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+
+  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_element.ref_count(), 1u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+  EXPECT_EQ(element_with_value, 0u);
+  EXPECT_EQ(element_value, 2u);
+
+  status = clock_tree.Release(clock_element);
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+  EXPECT_EQ(element_with_value, 0u);
+  EXPECT_EQ(element_value, 0u);
+
+  status = clock_tree.Acquire(clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 1u);
+  EXPECT_EQ(element_with_value, 1u);
+  EXPECT_EQ(element_value, 0u);
+
+  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_element.ref_count(), 1u);
+  EXPECT_EQ(clock_element_with.ref_count(), 1u);
+  EXPECT_EQ(element_with_value, 1u);
+  EXPECT_EQ(element_value, 2u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
+
+TEST(ClockTree, AcquireWithFailure1) {
+  uint32_t element_with_value = 0;
+  uint32_t element_value = 0;
+
+  struct clock_source_state_test_call_data call_data[] = {
+      // AcquireWith(element, element_with)
+      {1, ClockOperation::kAcquire, pw::Status::Internal()}};
+
+  struct clock_source_state_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+
+  ClockSourceStateTestBlocking clock_element_with(
+      1, &element_with_value, test_data);
+  ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
+
+  ClockTree clock_tree;
+  pw::Status status;
+
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+
+  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+  EXPECT_EQ(element_with_value, 0u);
+  EXPECT_EQ(element_value, 0u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
+
+TEST(ClockTree, AcquireWithFailure2) {
+  uint32_t element_with_value = 0;
+  uint32_t element_value = 0;
+
+  struct clock_source_state_test_call_data call_data[] = {
+      // AcquireWith(element, element_with)
+      {1, ClockOperation::kAcquire, pw::OkStatus()},
+      {2, ClockOperation::kAcquire, pw::Status::Internal()},
+      {1, ClockOperation::kRelease, pw::OkStatus()}};
+
+  struct clock_source_state_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+
+  ClockSourceStateTestBlocking clock_element_with(
+      1, &element_with_value, test_data);
+  ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
+
+  ClockTree clock_tree;
+  pw::Status status;
+
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+
+  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+  EXPECT_EQ(element_with_value, 0u);
+  EXPECT_EQ(element_value, 0u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
+
+TEST(ClockTree, AcquireWithFailure3) {
+  uint32_t element_with_value = 0;
+  uint32_t element_value = 0;
+
+  struct clock_source_state_test_call_data call_data[] = {
+      // AcquireWith(element, element_with)
+      {1, ClockOperation::kAcquire, pw::OkStatus()},
+      {2, ClockOperation::kAcquire, pw::OkStatus()},
+      {1, ClockOperation::kRelease, pw::Status::Internal()}};
+
+  struct clock_source_state_test_data test_data;
+  INIT_TEST_DATA(test_data, call_data);
+
+  ClockSourceStateTestBlocking clock_element_with(
+      1, &element_with_value, test_data);
+  ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
+
+  ClockTree clock_tree;
+  pw::Status status;
+
+  EXPECT_EQ(clock_element.ref_count(), 0u);
+  EXPECT_EQ(clock_element_with.ref_count(), 0u);
+
+  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  EXPECT_EQ(status.code(), PW_STATUS_OK);
+  EXPECT_EQ(clock_element.ref_count(), 1u);
+  EXPECT_EQ(clock_element_with.ref_count(), 1u);
+  EXPECT_EQ(element_with_value, 1u);
+  EXPECT_EQ(element_value, 2u);
+
+  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
+}
 }  // namespace
 }  // namespace pw::clock_tree

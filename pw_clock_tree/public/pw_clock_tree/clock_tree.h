@@ -463,6 +463,19 @@ class ClockTree {
     return element.Acquire();
   }
 
+  /// Acquire a reference to clock tree element `element` while `element_with`
+  /// clock tree is enabled.
+  /// Acquiring the clock tree element might fail.
+  ///
+  /// Note: May not be called from inside an interrupt context or with
+  /// interrupts disabled.
+  Status AcquireWith(Element& element, Element& element_with) {
+    PW_TRY(Acquire(element_with));
+    Status status = Acquire(element);
+    Release(element_with).IgnoreError();
+    return status;
+  }
+
   /// Release a reference to a non-blocking clock tree element.
   /// Releasing the clock tree element will succeed.
   void Release(ElementNonBlockingCannotFail& element) {
