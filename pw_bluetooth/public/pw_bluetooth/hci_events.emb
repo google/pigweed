@@ -900,6 +900,14 @@ struct PinCodeRequestNegativeReplyCommandCompleteEvent:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
 
 
+struct ReadPinTypeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.5 Read PIN Type command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
+  $next [+1]                          hci.StatusCode            status
+  $next [+1]                          hci.PinType               pin_type
+
+
 struct ReadLocalVersionInfoCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.1 Read Local Version Information command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
