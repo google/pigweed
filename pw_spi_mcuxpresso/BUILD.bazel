@@ -22,14 +22,38 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 cc_library(
-    name = "pw_spi_mcuxpresso",
+    name = "spi",
     srcs = [
-        "flexio_spi.cc",
         "spi.cc",
     ],
     hdrs = [
-        "public/pw_spi_mcuxpresso/flexio_spi.h",
         "public/pw_spi_mcuxpresso/spi.h",
+    ],
+    includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [
+        "//pw_assert",
+        "//pw_chrono:system_clock",
+        "//pw_log",
+        "//pw_spi:chip_selector",
+        "//pw_spi:initiator",
+        "//pw_status",
+        "//pw_sync:binary_semaphore",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "@pigweed//targets:mcuxpresso_sdk",
+    ],
+)
+
+cc_library(
+    name = "flexio_spi",
+    srcs = [
+        "flexio_spi.cc",
+    ],
+    hdrs = [
+        "public/pw_spi_mcuxpresso/flexio_spi.h",
     ],
     includes = ["public"],
     target_compatible_with = [
@@ -38,10 +62,11 @@ cc_library(
     deps = [
         "//pw_digital_io",
         "//pw_log",
-        "//pw_preprocessor",
         "//pw_spi:chip_selector",
         "//pw_spi:initiator",
+        "//pw_status",
         "//pw_sync:binary_semaphore",
+        "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "@pigweed//targets:mcuxpresso_sdk",
     ],
@@ -75,7 +100,10 @@ pw_cc_test(
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
-    deps = [":pw_digital_io_mcuxpresso"],
+    deps = [
+        ":spi",
+        "//pw_spi:device",
+    ],
 )
 
 pw_cc_test(
@@ -84,5 +112,5 @@ pw_cc_test(
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
-    deps = [":pw_digital_io_mcuxpresso"],
+    deps = [":flexio_spi"],
 )

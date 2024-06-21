@@ -35,7 +35,8 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_spi_mcuxpresso/spi.h" ]
     public_deps = [
-      "$dir_pw_spi:device",
+      "$dir_pw_spi:chip_selector",
+      "$dir_pw_spi:initiator",
       "$dir_pw_status",
       "$dir_pw_sync:binary_semaphore",
       "$dir_pw_sync:lock_annotations",
@@ -55,7 +56,8 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public = [ "public/pw_spi_mcuxpresso/flexio_spi.h" ]
     public_deps = [
       "$dir_pw_digital_io",
-      "$dir_pw_spi:device",
+      "$dir_pw_spi:chip_selector",
+      "$dir_pw_spi:initiator",
       "$dir_pw_status",
       "$dir_pw_sync:binary_semaphore",
       "$dir_pw_sync:lock_annotations",
@@ -99,6 +101,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "spi_test.cc" ]
     deps = [
       ":spi",
+      "$dir_pw_spi:device",
       "//targets/mimxrt595_evk_freertos:sdk",
     ]
   }

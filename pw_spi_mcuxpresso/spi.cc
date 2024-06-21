@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "public/pw_spi_mcuxpresso/spi.h"
+#include "pw_spi_mcuxpresso/spi.h"
 
 #include <cinttypes>
 #include <mutex>
@@ -20,7 +20,6 @@
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
-#include "pw_spi_mcuxpresso/spi.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
