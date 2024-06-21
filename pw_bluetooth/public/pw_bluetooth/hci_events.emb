@@ -884,6 +884,14 @@ struct SimpleCommandCompleteEvent:
   $next [+1]         hci.StatusCode            status
 
 
+struct PinCodeRequestReplyCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.1.12 PIN Code Request Reply command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
+  $next [+1]                          hci.StatusCode            status
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
+
+
 struct ReadLocalVersionInfoCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.1 Read Local Version Information command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
