@@ -88,6 +88,8 @@ class McuxpressoChipSelector : public ChipSelector {
   // Instead of directly activating the cs line, this informs the underlying
   // driver to do so.
   Status SetActive(bool active) override {
+    // TODO: https://pwbug.dev/348512572 - Respect 'active'
+    static_cast<void>(active);
     return initiator_.SetChipSelect(pin_);
   }
 
