@@ -16,7 +16,7 @@
 #include <cstdint>
 
 #include "examples/custom_allocator.h"
-#include "pw_allocator/block_allocator.h"
+#include "pw_allocator/first_fit_block_allocator.h"
 #include "pw_allocator/size_reporter.h"
 
 int main() {

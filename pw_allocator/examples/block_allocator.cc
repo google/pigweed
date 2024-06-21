@@ -12,12 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block_allocator.h"
-
 #include <array>
 #include <cstdint>
 
 #include "examples/named_u32.h"
+#include "pw_allocator/last_fit_block_allocator.h"
 #include "pw_unit_test/framework.h"
 
 namespace examples {

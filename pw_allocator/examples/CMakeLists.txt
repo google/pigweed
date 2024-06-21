@@ -68,7 +68,7 @@ pw_add_test(pw_allocator.examples.basic
 pw_add_test(pw_allocator.examples.block_allocator
   PRIVATE_DEPS
     pw_allocator.examples.named_u32
-    pw_allocator.block_allocator
+    pw_allocator.last_fit_block_allocator
   SOURCES
     block_allocator.cc
 )

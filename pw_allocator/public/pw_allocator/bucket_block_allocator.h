@@ -15,7 +15,7 @@
 
 #include <array>
 
-#include "pw_allocator/block_allocator_base.h"
+#include "pw_allocator/block_allocator.h"
 #include "pw_allocator/bucket.h"
 #include "pw_assert/assert.h"
 #include "pw_status/try.h"

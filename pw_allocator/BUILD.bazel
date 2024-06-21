@@ -62,7 +62,7 @@ cc_library(
     name = "best_fit_block_allocator",
     hdrs = ["public/pw_allocator/best_fit_block_allocator.h"],
     includes = ["public"],
-    deps = [":block_allocator_base"],
+    deps = [":block_allocator"],
 )
 
 cc_library(
@@ -83,25 +83,10 @@ cc_library(
     ],
 )
 
-# TODO(b/326509341): Remove when all customers depend on the correct targets.
 cc_library(
     name = "block_allocator",
-    hdrs = ["public/pw_allocator/block_allocator.h"],
-    includes = ["public"],
-    deps = [
-        ":best_fit_block_allocator",
-        ":dual_first_fit_block_allocator",
-        ":first_fit_block_allocator",
-        ":last_fit_block_allocator",
-        ":worst_fit_block_allocator",
-    ],
-)
-
-# TODO(b/326509341): Rename when all customers depend on the correct targets.
-cc_library(
-    name = "block_allocator_base",
     srcs = ["block_allocator.cc"],
-    hdrs = ["public/pw_allocator/block_allocator_base.h"],
+    hdrs = ["public/pw_allocator/block_allocator.h"],
     includes = ["public"],
     deps = [
         ":allocator",
@@ -137,7 +122,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":block_allocator_base",
+        ":block_allocator",
         ":bucket",
         "//pw_status",
     ],
@@ -238,7 +223,7 @@ cc_library(
     name = "dual_first_fit_block_allocator",
     hdrs = ["public/pw_allocator/dual_first_fit_block_allocator.h"],
     includes = ["public"],
-    deps = [":block_allocator_base"],
+    deps = [":block_allocator"],
 )
 
 cc_library(
@@ -263,7 +248,7 @@ cc_library(
     name = "first_fit_block_allocator",
     hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
     includes = ["public"],
-    deps = [":block_allocator_base"],
+    deps = [":block_allocator"],
 )
 
 cc_library(
@@ -292,7 +277,7 @@ cc_library(
     name = "last_fit_block_allocator",
     hdrs = ["public/pw_allocator/last_fit_block_allocator.h"],
     includes = ["public"],
-    deps = [":block_allocator_base"],
+    deps = [":block_allocator"],
 )
 
 cc_library(
@@ -379,7 +364,7 @@ cc_library(
     name = "worst_fit_block_allocator",
     hdrs = ["public/pw_allocator/worst_fit_block_allocator.h"],
     includes = ["public"],
-    deps = [":block_allocator_base"],
+    deps = [":block_allocator"],
 )
 
 # Test support

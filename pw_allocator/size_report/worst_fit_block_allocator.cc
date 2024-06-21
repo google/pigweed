@@ -12,7 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block_allocator.h"
+#include "pw_allocator/worst_fit_block_allocator.h"
+
 #include "pw_allocator/size_reporter.h"
 
 int main() {

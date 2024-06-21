@@ -32,7 +32,7 @@ pw_cc_binary(
     name = "as_pmr_allocator_base",
     srcs = ["as_pmr_allocator_base.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -42,7 +42,7 @@ pw_cc_binary(
     srcs = ["as_pmr_allocator.cc"],
     deps = [
         "//pw_allocator:allocator",
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -51,7 +51,7 @@ pw_cc_binary(
     name = "best_fit_block_allocator",
     srcs = ["best_fit_block_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:best_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -87,7 +87,7 @@ pw_cc_binary(
     name = "dual_first_fit_block_allocator",
     srcs = ["dual_first_fit_block_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:dual_first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -96,7 +96,7 @@ pw_cc_binary(
     name = "fallback_allocator_base",
     srcs = ["fallback_allocator_base.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -105,8 +105,8 @@ pw_cc_binary(
     name = "fallback_allocator",
     srcs = ["fallback_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
         "//pw_allocator:fallback_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -115,7 +115,7 @@ pw_cc_binary(
     name = "first_fit_block_allocator",
     srcs = ["first_fit_block_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -124,7 +124,7 @@ pw_cc_binary(
     name = "last_fit_block_allocator",
     srcs = ["last_fit_block_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:last_fit_block_allocator",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -151,7 +151,7 @@ pw_cc_binary(
     name = "synchronized_allocator_isl",
     srcs = ["synchronized_allocator_isl.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
         "//pw_allocator:synchronized_allocator",
         "//pw_sync:interrupt_spin_lock",
@@ -162,7 +162,7 @@ pw_cc_binary(
     name = "synchronized_allocator_mutex",
     srcs = ["synchronized_allocator_mutex.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
         "//pw_allocator:synchronized_allocator",
         "//pw_sync:mutex",
@@ -173,7 +173,7 @@ pw_cc_binary(
     name = "tracking_allocator_all_metrics",
     srcs = ["tracking_allocator_all_metrics.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
         "//pw_allocator:tracking_allocator",
     ],
@@ -183,7 +183,7 @@ pw_cc_binary(
     name = "tracking_allocator_no_metrics",
     srcs = ["tracking_allocator_no_metrics.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
+        "//pw_allocator:first_fit_block_allocator",
         "//pw_allocator:size_reporter",
         "//pw_allocator:tracking_allocator",
     ],
@@ -193,7 +193,7 @@ pw_cc_binary(
     name = "worst_fit_block_allocator",
     srcs = ["worst_fit_block_allocator.cc"],
     deps = [
-        "//pw_allocator:block_allocator",
         "//pw_allocator:size_reporter",
+        "//pw_allocator:worst_fit_block_allocator",
     ],
 )

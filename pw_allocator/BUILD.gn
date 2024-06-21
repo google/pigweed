@@ -63,7 +63,7 @@ pw_source_set("allocator_as_pool") {
 pw_source_set("best_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/best_fit_block_allocator.h" ]
-  public_deps = [ ":block_allocator_base" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("block") {
@@ -85,23 +85,9 @@ pw_source_set("block") {
   sources = [ "block.cc" ]
 }
 
-# TODO(b/326509341): Remove when all customers depend on the correct targets.
 pw_source_set("block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/block_allocator.h" ]
-  public_deps = [
-    ":best_fit_block_allocator",
-    ":dual_first_fit_block_allocator",
-    ":first_fit_block_allocator",
-    ":last_fit_block_allocator",
-    ":worst_fit_block_allocator",
-  ]
-}
-
-# TODO(b/326509341): Rename when all customers depend on the correct targets.
-pw_source_set("block_allocator_base") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/block_allocator_base.h" ]
   public_deps = [
     ":allocator",
     ":block",
@@ -130,7 +116,7 @@ pw_source_set("bucket_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/bucket_block_allocator.h" ]
   public_deps = [
-    ":block_allocator_base",
+    ":block_allocator",
     ":bucket",
     dir_pw_status,
   ]
@@ -215,7 +201,7 @@ pw_source_set("deallocator") {
 pw_source_set("dual_first_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/dual_first_fit_block_allocator.h" ]
-  public_deps = [ ":block_allocator_base" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("fallback_allocator") {
@@ -234,7 +220,7 @@ pw_source_set("fallback_allocator") {
 pw_source_set("first_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/first_fit_block_allocator.h" ]
-  public_deps = [ ":block_allocator_base" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("fragmentation") {
@@ -258,7 +244,7 @@ pw_source_set("freelist_heap") {
 pw_source_set("last_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/last_fit_block_allocator.h" ]
-  public_deps = [ ":block_allocator_base" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("libc_allocator") {
@@ -322,7 +308,7 @@ pw_source_set("typed_pool") {
 pw_source_set("worst_fit_block_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/worst_fit_block_allocator.h" ]
-  public_deps = [ ":block_allocator_base" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 # Test support

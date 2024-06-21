@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_allocator/block_allocator_base.h"
+#include "pw_allocator/block_allocator.h"
 
 namespace pw::allocator {
 

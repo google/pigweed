@@ -18,7 +18,8 @@
 
 #include "examples/named_u32.h"
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/block_allocator.h"
+#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/worst_fit_block_allocator.h"
 #include "pw_unit_test/framework.h"
 
 namespace examples {

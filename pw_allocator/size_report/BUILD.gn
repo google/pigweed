@@ -29,7 +29,7 @@ pw_executable("base") {
 pw_executable("as_pmr_allocator_base") {
   sources = [ "as_pmr_allocator_base.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -38,7 +38,7 @@ pw_executable("as_pmr_allocator") {
   sources = [ "as_pmr_allocator.cc" ]
   deps = [
     "..:allocator",
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -47,7 +47,7 @@ pw_executable("best_fit_block_allocator") {
   include_dirs = [ "../public" ]
   sources = [ "best_fit_block_allocator.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:best_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -82,7 +82,7 @@ pw_executable("bump_allocator") {
 pw_executable("dual_first_fit_block_allocator") {
   sources = [ "dual_first_fit_block_allocator.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:dual_first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -90,8 +90,8 @@ pw_executable("dual_first_fit_block_allocator") {
 pw_executable("fallback_allocator_base") {
   sources = [ "fallback_allocator_base.cc" ]
   deps = [
-    "..:block_allocator",
     "..:fallback_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -99,8 +99,8 @@ pw_executable("fallback_allocator_base") {
 pw_executable("fallback_allocator") {
   sources = [ "fallback_allocator.cc" ]
   deps = [
-    "..:block_allocator",
     "..:fallback_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -108,7 +108,7 @@ pw_executable("fallback_allocator") {
 pw_executable("first_fit_block_allocator") {
   sources = [ "first_fit_block_allocator.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -116,7 +116,7 @@ pw_executable("first_fit_block_allocator") {
 pw_executable("last_fit_block_allocator") {
   sources = [ "last_fit_block_allocator.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:last_fit_block_allocator",
     "..:size_reporter",
   ]
 }
@@ -141,7 +141,7 @@ pw_executable("synchronized_allocator_isl") {
   sources = [ "synchronized_allocator_isl.cc" ]
   deps = [
     "$dir_pw_sync:interrupt_spin_lock",
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
     "..:synchronized_allocator",
   ]
@@ -151,7 +151,7 @@ pw_executable("synchronized_allocator_mutex") {
   sources = [ "synchronized_allocator_mutex.cc" ]
   deps = [
     "$dir_pw_sync:mutex",
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
     "..:synchronized_allocator",
   ]
@@ -160,7 +160,7 @@ pw_executable("synchronized_allocator_mutex") {
 pw_executable("tracking_allocator_all_metrics") {
   sources = [ "tracking_allocator_all_metrics.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
     "..:tracking_allocator",
   ]
@@ -169,7 +169,7 @@ pw_executable("tracking_allocator_all_metrics") {
 pw_executable("tracking_allocator_no_metrics") {
   sources = [ "tracking_allocator_no_metrics.cc" ]
   deps = [
-    "..:block_allocator",
+    "..:first_fit_block_allocator",
     "..:size_reporter",
     "..:tracking_allocator",
   ]
@@ -178,7 +178,7 @@ pw_executable("tracking_allocator_no_metrics") {
 pw_executable("worst_fit_block_allocator") {
   sources = [ "worst_fit_block_allocator.cc" ]
   deps = [
-    "..:block_allocator",
     "..:size_reporter",
+    "..:worst_fit_block_allocator",
   ]
 }

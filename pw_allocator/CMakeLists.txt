@@ -50,7 +50,7 @@ pw_add_library(pw_allocator.best_fit_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
 )
 
 pw_add_library(pw_allocator.block STATIC
@@ -73,24 +73,9 @@ pw_add_library(pw_allocator.block STATIC
     block.cc
 )
 
-# TODO(b/326509341): Remove when all customers depend on the correct targets.
-pw_add_library(pw_allocator.block_allocator INTERFACE
+pw_add_library(pw_allocator.block_allocator STATIC
   HEADERS
     public/pw_allocator/block_allocator.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_allocator.first_fit_block_allocator
-    pw_allocator.last_fit_block_allocator
-    pw_allocator.best_fit_block_allocator
-    pw_allocator.worst_fit_block_allocator
-    pw_allocator.dual_first_fit_block_allocator
-)
-
-# TODO(b/326509341): Rename when all customers depend on the correct targets.
-pw_add_library(pw_allocator.block_allocator_base STATIC
-  HEADERS
-    public/pw_allocator/block_allocator_base.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -126,7 +111,7 @@ pw_add_library(pw_allocator.bucket_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
     pw_allocator.bucket
     pw_status
 )
@@ -216,7 +201,7 @@ pw_add_library(pw_allocator.dual_first_fit_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
 )
 
 pw_add_library(pw_allocator.fallback_allocator STATIC
@@ -241,7 +226,7 @@ pw_add_library(pw_allocator.first_fit_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
 )
 
 pw_add_library(pw_allocator.fragmentation STATIC
@@ -272,7 +257,7 @@ pw_add_library(pw_allocator.last_fit_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
 )
 
 pw_add_library(pw_allocator.libc_allocator STATIC
@@ -348,7 +333,7 @@ pw_add_library(pw_allocator.worst_fit_block_allocator INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator_base
+    pw_allocator.block_allocator
 )
 
 # Test support
