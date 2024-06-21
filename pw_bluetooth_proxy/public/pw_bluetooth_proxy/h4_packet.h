@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth_proxy/emboss_util.h"
@@ -87,7 +89,7 @@ class H4PacketWithH4 final : public H4PacketInterface {
 
   /// release_fn (if callable) will be called when H4PacketWithH4 is destructed.
   H4PacketWithH4(pw::span<uint8_t> h4_span,
-                 pw::Function<void(H4PacketWithH4& packet)>&& release_fn)
+                 pw::Function<void(const uint8_t* buffer)>&& release_fn)
       : h4_span_(h4_span), release_fn_(std::move(release_fn)) {}
 
   H4PacketWithH4(emboss::H4PacketType h4_type, pw::span<uint8_t> h4_span)
@@ -112,7 +114,7 @@ class H4PacketWithH4 final : public H4PacketInterface {
 
   ~H4PacketWithH4() final {
     if (release_fn_) {
-      release_fn_(*this);
+      release_fn_(h4_span_.data());
     }
   }
 
@@ -128,6 +130,21 @@ class H4PacketWithH4 final : public H4PacketInterface {
     if (!h4_span_.empty()) {
       h4_span_.data()[0] = cpp23::to_underlying(h4_type);
     }
+  }
+
+  bool HasReleaseFn() {
+    // pw::Function bool returns true if not-empty
+    return bool{release_fn_};
+  }
+
+  // Returns the release function (which could be empty) and resets the packet.
+  // Essentially it moves ownership of the buffer to the caller (who should have
+  // already stored `GetH4Span()` since packet's span will be reset by this
+  // call).
+  pw::Function<void(const uint8_t*)> ResetAndReturnReleaseFn() {
+    pw::Function<void(const uint8_t* packet)> fn = std::move(release_fn_);
+    Reset();
+    return fn;
   }
 
   pw::span<uint8_t> GetHciSpan() final {
@@ -153,7 +170,7 @@ class H4PacketWithH4 final : public H4PacketInterface {
 
   pw::span<uint8_t> h4_span_;
 
-  pw::Function<void(H4PacketWithH4& packet)> release_fn_{};
+  pw::Function<void(const uint8_t* packet)> release_fn_{};
 };
 
 }  // namespace pw::bluetooth::proxy

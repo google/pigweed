@@ -56,6 +56,8 @@ TEST(H4Packet, H4PacketWithH4Gets) {
   // HCI span should be h4 buffer without the first byte.
   EXPECT_EQ(packet.GetHciSpan().size(), h4_buffer.size() - 1);
   EXPECT_EQ(packet.GetHciSpan().data(), h4_buffer.data() + 1);
+
+  EXPECT_FALSE(packet.HasReleaseFn());
 }
 
 TEST(H4Packet, H4PacketWithTypeCtorWithH4Gets) {
@@ -70,6 +72,8 @@ TEST(H4Packet, H4PacketWithTypeCtorWithH4Gets) {
   // HCI span should be h4 buffer without the first byte.
   EXPECT_EQ(packet.GetHciSpan().size(), h4_buffer.size() - 1);
   EXPECT_EQ(packet.GetHciSpan().data(), h4_buffer.data() + 1);
+
+  EXPECT_FALSE(packet.HasReleaseFn());
 }
 
 TEST(H4Packet, H4PacketWithH4WithEmptyBuffer) {
@@ -81,6 +85,8 @@ TEST(H4Packet, H4PacketWithH4WithEmptyBuffer) {
   EXPECT_TRUE(packet.GetH4Span().empty());
 
   EXPECT_TRUE(packet.GetHciSpan().empty());
+
+  EXPECT_FALSE(packet.HasReleaseFn());
 }
 
 TEST(H4Packet, H4PacketWithWithTypeCtorWithEmptyBuffer) {
@@ -92,6 +98,8 @@ TEST(H4Packet, H4PacketWithWithTypeCtorWithEmptyBuffer) {
   EXPECT_TRUE(packet.GetH4Span().empty());
 
   EXPECT_TRUE(packet.GetHciSpan().empty());
+
+  EXPECT_FALSE(packet.HasReleaseFn());
 }
 
 TEST(H4Packet, H4PacketWithH4Sets) {
@@ -105,76 +113,141 @@ TEST(H4Packet, H4PacketWithH4Sets) {
   EXPECT_EQ(h4_buffer[0], cpp23::to_underlying(emboss::H4PacketType::EVENT));
 }
 
+TEST(H4PacketRelease, EmptyReleaseFn) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+
+  H4PacketWithH4 packet(pw::span{h4_buffer});
+  EXPECT_FALSE(packet.HasReleaseFn());
+
+  H4PacketWithH4 packet2(emboss::H4PacketType::EVENT, pw::span{h4_buffer});
+  EXPECT_FALSE(packet2.HasReleaseFn());
+
+  H4PacketWithH4 packet3(pw::span{h4_buffer}, nullptr);
+  EXPECT_FALSE(packet3.HasReleaseFn());
+}
+
 TEST(H4PacketRelease, ReleaseCalledOnDtor) {
   std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
   h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
 
-  H4PacketWithH4* released_packet_ptr = nullptr;
-  H4PacketWithH4* packet_ptr = nullptr;
+  const uint8_t* released_h4_buffer = nullptr;
   {
-    H4PacketWithH4 packet{pw::span{h4_buffer},
-                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
-                            released_packet_ptr = &rel_packet;
-                          }};
-    packet_ptr = &packet;
+    H4PacketWithH4 packet{
+        pw::span{h4_buffer},
+        [&released_h4_buffer](const uint8_t* h4_buffer_to_release) {
+          released_h4_buffer = h4_buffer_to_release;
+        }};
+    EXPECT_TRUE(packet.HasReleaseFn());
   }
 
-  // release_fn was called with packet by the time packet went out of scope
-  EXPECT_TRUE(released_packet_ptr);
-  EXPECT_EQ(released_packet_ptr, packet_ptr);
+  // release_fn was called with h4_buffer* by the time packet went out of scope
+  EXPECT_TRUE(released_h4_buffer);
+  EXPECT_EQ(released_h4_buffer, h4_buffer.data());
 }
 
 TEST(H4PacketRelease, ReleaseCalledAfterMoveOnDtor) {
   std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
   h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
 
-  H4PacketWithH4* released_packet_ptr = nullptr;
-  H4PacketWithH4* packet2_ptr = nullptr;
+  const uint8_t* released_h4_buffer = nullptr;
   {
-    H4PacketWithH4 packet{pw::span{h4_buffer},
-                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
-                            released_packet_ptr = &rel_packet;
-                          }};
+    H4PacketWithH4 packet{
+        pw::span{h4_buffer},
+        [&released_h4_buffer](const uint8_t* h4_buffer_to_release) {
+          released_h4_buffer = h4_buffer_to_release;
+        }};
+
+    EXPECT_TRUE(packet.HasReleaseFn());
 
     H4PacketWithH4 packet2(std::move(packet));
-    packet2_ptr = &packet2;
 
-    // packet was reset by packet2 move ctor
+    // packet was reset by packet2 move
+    EXPECT_FALSE(packet.HasReleaseFn());
     EXPECT_TRUE(packet.GetHciSpan().empty());
     EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
-    // release_fn was not called during move ctor
-    EXPECT_FALSE(released_packet_ptr);
+
+    // release_fn was not called during move
+    EXPECT_EQ(released_h4_buffer, nullptr);
   }
-  // release_fn was called with packet2 by the time packet2 went out of scope
-  EXPECT_TRUE(released_packet_ptr);
-  EXPECT_EQ(released_packet_ptr, packet2_ptr);
+
+  // release_fn was called with h4_buffer* by the time packet2 went out of scope
+  EXPECT_NE(released_h4_buffer, nullptr);
+  EXPECT_EQ(released_h4_buffer, h4_buffer.data());
 }
 
 TEST(H4PacketRelease, ReleaseCalledAfterMoveAssignOnDtor) {
   std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
   h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
 
-  H4PacketWithH4* released_packet_ptr = nullptr;
-  H4PacketWithH4* packet2_ptr = nullptr;
+  const uint8_t* released_h4_buffer = nullptr;
   {
-    H4PacketWithH4 packet{pw::span{h4_buffer},
-                          [&released_packet_ptr](H4PacketWithH4& rel_packet) {
-                            released_packet_ptr = &rel_packet;
-                          }};
+    H4PacketWithH4 packet{
+        pw::span{h4_buffer},
+        [&released_h4_buffer](const uint8_t* h4_buffer_to_release) {
+          released_h4_buffer = h4_buffer_to_release;
+        }};
+
+    EXPECT_TRUE(packet.HasReleaseFn());
 
     H4PacketWithH4 packet2{{}};
-    packet2_ptr = &packet2;
     packet2 = std::move(packet);
 
     // packet was reset by packet2 move assign
+    EXPECT_FALSE(packet.HasReleaseFn());
     EXPECT_TRUE(packet.GetHciSpan().empty());
     EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
-    // release_fn was not called during move ctor
-    EXPECT_FALSE(released_packet_ptr);
+
+    // release_fn was not called during move assign
+    EXPECT_EQ(released_h4_buffer, nullptr);
   }
-  // release_fn was called with packet2 by the time packet2 went out of scope
-  EXPECT_TRUE(released_packet_ptr);
-  EXPECT_EQ(released_packet_ptr, packet2_ptr);
+
+  // release_fn was called with h4_buffer* by the time packet2 went out of scope
+  EXPECT_NE(released_h4_buffer, nullptr);
+  EXPECT_EQ(released_h4_buffer, h4_buffer.data());
+}
+
+TEST(H4PacketRelease, ResetAndReturnReleaseFn) {
+  std::array<uint8_t, 5> h4_buffer{0, 1, 2, 3, 4};
+  h4_buffer[0] = cpp23::to_underlying(emboss::H4PacketType::COMMAND);
+
+  const uint8_t* released_h4_buffer = nullptr;
+  {
+    H4PacketWithH4 packet{
+        pw::span{h4_buffer},
+        [&released_h4_buffer](const uint8_t* h4_buffer_to_release) {
+          released_h4_buffer = h4_buffer_to_release;
+        }};
+    EXPECT_TRUE(packet.HasReleaseFn());
+
+    pw::span<uint8_t> span_from_packet = packet.GetH4Span();
+    EXPECT_FALSE(span_from_packet.empty());
+
+    pw::Function<void(const uint8_t*)> release_fn =
+        packet.ResetAndReturnReleaseFn();
+    EXPECT_TRUE(release_fn);
+
+    // packet was reset by ResetAndReturnReleaseFn
+    EXPECT_FALSE(packet.HasReleaseFn());
+    EXPECT_TRUE(packet.GetHciSpan().empty());
+    EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
+
+    // release_fn passed to packet was not called yet
+    EXPECT_EQ(released_h4_buffer, nullptr);
+
+    release_fn(span_from_packet.data());
+
+    // release_fn passed to packet and returned above was called with h4_buffer*
+    EXPECT_TRUE(released_h4_buffer);
+
+    // Set to null so we can verify outside of scope that release_fn was
+    // not called again.
+    released_h4_buffer = nullptr;
+  }
+
+  // release_fn passed to packet was not called by the time packet went out of
+  // scope
+  EXPECT_EQ(released_h4_buffer, nullptr);
 }
 
 }  // namespace
