@@ -1053,6 +1053,12 @@ enum AuthenticationRequirements:
 # inclusive-language: enable
 
 
+enum PinType:
+  [maximum_bits: 8]
+  VARIABLE = 0x00
+  FIXED    = 0x01
+
+
 struct LinkKey:
   0 [+16]  UInt:8[16]  value
 
