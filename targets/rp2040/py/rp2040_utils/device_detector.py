@@ -339,6 +339,17 @@ def _detect_pico_usb_info(
             _LOG.debug(
                 '  --> Found Raspberry Pi debug probe: %s', board_usb_info
             )
+            if device.bcdDevice < 0x201:
+                _LOG.error(
+                    'Reliable flashing and testing not possible due to '
+                    'outdated Debug Probe firmware (%d.%d.%d). Update to '
+                    'version 2.0.1 or later. See https://www.raspberrypi.com/'
+                    'documentation/microcontrollers/debug-probe.html for '
+                    'update instructions.',
+                    (device.bcdDevice >> 8 & 0xF),
+                    (device.bcdDevice >> 4 & 0xF),
+                    (device.bcdDevice & 0xF),
+                )
 
         else:
             _LOG.warning(
