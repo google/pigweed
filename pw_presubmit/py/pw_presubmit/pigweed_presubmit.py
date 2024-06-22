@@ -582,11 +582,12 @@ def zephyr_build(ctx: PresubmitContext) -> None:
 def docs_build(ctx: PresubmitContext) -> None:
     """Build Pigweed docs"""
 
+    build.install_package(ctx, 'emboss')
+    build.install_package(ctx, 'freertos')
     build.install_package(ctx, 'nanopb')
     build.install_package(ctx, 'pico_sdk')
-    build.install_package(ctx, 'stm32cube_f4')
-    build.install_package(ctx, 'freertos')
     build.install_package(ctx, 'pigweed_examples_repo')
+    build.install_package(ctx, 'stm32cube_f4')
 
     # Build main docs through GN/Ninja.
     build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
