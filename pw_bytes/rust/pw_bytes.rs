@@ -145,9 +145,9 @@ mod tests {
     // Since `concat_static_strs!` uses `concat_const_u8_slices!`, we rely on
     // the exhaustive tests above for testing edge conditions.
     fn strings_concatenates_correctly() {
-        const STR_A: &'static str = "abc";
-        const STR_B: &'static str = "def";
-        const STR_AB: &'static str = concat_static_strs!(STR_A, STR_B);
+        const STR_A: &str = "abc";
+        const STR_B: &str = "def";
+        const STR_AB: &str = concat_static_strs!(STR_A, STR_B);
         assert_eq!(STR_AB, "abcdef");
     }
 }

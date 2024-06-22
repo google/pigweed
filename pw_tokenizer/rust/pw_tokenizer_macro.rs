@@ -45,7 +45,7 @@ fn token_backend(domain: &str, fragments: &[TokenStream2]) -> TokenStream2 {
     let section = if cfg!(target_os = "macos") {
         ",pw,".to_string()
     } else {
-        format!(".pw_tokenizer.entries.rust")
+        ".pw_tokenizer.entries.rust".to_string()
     };
 
     let domain = CString::new(domain).unwrap();

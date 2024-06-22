@@ -265,7 +265,7 @@ impl Parse for Arg {
         }
 
         // Otherwise prase as an expression.
-        input.parse::<Expr>().map(|expr| Self::Expr(expr))
+        input.parse::<Expr>().map(Self::Expr)
     }
 }
 
@@ -689,7 +689,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
 
     fn string_fragment(&mut self, string: &str) -> Result<()> {
         // Escape '%' characters.
-        let format_string = string.replace("%", "%%");
+        let format_string = string.replace('%', "%%");
 
         self.append_format_string(&format_string);
         self.inner.string_fragment(string)
@@ -850,7 +850,7 @@ impl<GENERATOR: CoreFmtFormatMacroGenerator> FormatMacroGenerator for CoreFmtGen
 
     fn string_fragment(&mut self, string: &str) -> Result<()> {
         // Escape '{' and '} characters.
-        let format_string = string.replace("{", "{{").replace("}", "}}");
+        let format_string = string.replace('{', "{{").replace('}', "}}");
 
         self.format_string.push_str(&format_string);
         self.inner.string_fragment(string)

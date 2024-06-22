@@ -52,6 +52,9 @@ impl<T: AsRef<[u8]>> Cursor<T> {
     }
 
     /// Returns the total length of the Cursor.
+    // Empty is ambiguous whether it should refer to len() or remaining() so
+    // we don't provide it.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.inner.as_ref().len()
     }
@@ -167,7 +170,7 @@ macro_rules! cursor_read_type_impl {
             //
             // Safety:  We are both bounds checking and size constraining the
             // slice in the above lines of code.
-            let sub_array: &[u8; NUM_BYTES] = unsafe { ::core::mem::transmute(sub_slice.as_ptr()) };
+            let sub_array: &[u8; NUM_BYTES] = unsafe { &*(sub_slice.as_ptr() as *const [u8; NUM_BYTES]) };
             let value = $ty::[<from_ $endian _bytes>](*sub_array);
 
             self.pos += NUM_BYTES;
@@ -316,8 +319,8 @@ mod tests {
             inner: &mut [0, 0, 0, 0, 0, 0, 0, 0],
             pos: 4,
         };
-        let mut buf = [1, 2, 3, 4, 5, 6, 7, 8];
-        assert_eq!(cursor.write(&mut buf), Ok(4));
+        let buf = [1, 2, 3, 4, 5, 6, 7, 8];
+        assert_eq!(cursor.write(&buf), Ok(4));
         assert_eq!(cursor.inner, &[0, 0, 0, 0, 1, 2, 3, 4]);
     }
 

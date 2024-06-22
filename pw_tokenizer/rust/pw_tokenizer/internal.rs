@@ -94,7 +94,7 @@ pub fn encode_string<W: MessageWriter>(writer: &mut W, value: &str) -> Result<()
     if overflow {
         header |= 0x80;
     }
-    writer.write(&[header as u8])?;
+    writer.write(&[header])?;
 
     writer.write(&string_bytes[..len])
 }

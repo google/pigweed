@@ -85,7 +85,7 @@ fn explicit_type(input: &str) -> IResult<&str, Style> {
 ///
 /// i.e. the `x?` in `{:x?} or no type as in `{:}`
 fn style(input: &str) -> IResult<&str, Style> {
-    let (input, spec) = explicit_type(input).unwrap_or_else(|_| (input, Style::None));
+    let (input, spec) = explicit_type(input).unwrap_or((input, Style::None));
 
     Ok((input, spec))
 }

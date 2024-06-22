@@ -132,7 +132,7 @@ fn test_percent_with_star_precision_fails() {
     assert!(FormatString::parse_printf("%*%").is_err());
 }
 
-const INTEGERS: &'static [(&'static str, Primitive, Style)] = &[
+const INTEGERS: &[(&str, Primitive, Style)] = &[
     ("d", Primitive::Integer, Style::None),
     ("i", Primitive::Integer, Style::None),
     ("o", Primitive::Unsigned, Style::Octal),
@@ -438,7 +438,7 @@ fn test_integer_with_length() {
     }
 }
 
-const FLOATS: &'static [(&'static str, Primitive, Style)] = &[
+const FLOATS: &[(&str, Primitive, Style)] = &[
     ("f", Primitive::Float, Style::None),
     ("e", Primitive::Float, Style::Exponential),
     ("E", Primitive::Float, Style::UpperExponential),
@@ -1030,7 +1030,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%lc")),
+        FormatString::parse_printf("%lc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1047,7 +1047,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%llc")),
+        FormatString::parse_printf("%llc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1064,7 +1064,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%jc")),
+        FormatString::parse_printf("%jc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1081,7 +1081,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%zc")),
+        FormatString::parse_printf("%zc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1098,7 +1098,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%tc")),
+        FormatString::parse_printf("%tc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1115,7 +1115,7 @@ fn test_char_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%Lc")),
+        FormatString::parse_printf("%Lc"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1313,7 +1313,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%ls")),
+        FormatString::parse_printf("%ls"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1330,7 +1330,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%lls")),
+        FormatString::parse_printf("%lls"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1347,7 +1347,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%js")),
+        FormatString::parse_printf("%js"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1364,7 +1364,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%zs")),
+        FormatString::parse_printf("%zs"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1381,7 +1381,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%ts")),
+        FormatString::parse_printf("%ts"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,
@@ -1398,7 +1398,7 @@ fn test_string_with_length() {
     );
 
     assert_eq!(
-        FormatString::parse_printf(&format!("%Ls")),
+        FormatString::parse_printf("%Ls"),
         Ok(FormatString {
             fragments: vec![FormatFragment::Conversion(ConversionSpec {
                 argument: Argument::None,

@@ -415,6 +415,8 @@ pub trait MessageWriter {
 }
 
 #[cfg(test)]
+// Untyped prints code rely on as casts to annotate type information.
+#[allow(clippy::unnecessary_cast)]
 mod tests {
     use super::*;
     extern crate self as pw_tokenizer;

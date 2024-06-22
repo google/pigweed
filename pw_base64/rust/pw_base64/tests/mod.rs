@@ -30,7 +30,7 @@ fn encoded_size_correctly_calculates_size() {
 fn single_characters_encode_correctly() {
     for (input, expected_output) in single_char::test_cases() {
         let mut output_buffer = vec![0u8; encoded_size(input.len())];
-        let encode_len = encode(&input[..], &mut output_buffer).unwrap();
+        let encode_len = encode(input, &mut output_buffer).unwrap();
         let output_str = core::str::from_utf8(&output_buffer[0..encode_len]).unwrap();
         assert_eq!(&output_str, &expected_output);
     }
@@ -40,7 +40,7 @@ fn single_characters_encode_correctly() {
 fn random_data_encodes_correctly() {
     for (input, expected_output) in random_data::test_cases() {
         let mut output_buffer = vec![0u8; encoded_size(input.len())];
-        let encode_len = encode(&input[..], &mut output_buffer).unwrap();
+        let encode_len = encode(input, &mut output_buffer).unwrap();
         let output_str = core::str::from_utf8(&output_buffer[0..encode_len]).unwrap();
         assert_eq!(&output_str, &expected_output);
     }
@@ -65,7 +65,7 @@ fn too_small_output_buffer_returns_error() {
 fn random_data_encodes_to_string_correctly() {
     for (input, expected_output) in random_data::test_cases() {
         let mut output_buffer = vec![0u8; encoded_size(input.len())];
-        let output_str = encode_str(&input[..], &mut output_buffer).unwrap();
+        let output_str = encode_str(input, &mut output_buffer).unwrap();
         assert_eq!(&output_str, &expected_output);
     }
 }

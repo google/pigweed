@@ -167,6 +167,12 @@ pub trait VarArgs: Clone {
     fn append<T: Clone>(self, val: T) -> Self::OneMore<T>;
 
     /// Calls `printf` with the arguments in `self` and the given format and log level string.
+    ///
+    /// # Safety
+    ///
+    /// Calls into `libc` printf without any input validation.  The code further
+    /// up the stack is responsible for initializing valid [`VarArgs`] that
+    /// will cause printf to execute in a sound manner.
     unsafe fn call_printf(self, format_str: *const c_uchar, log_level_str: *const c_uchar)
         -> c_int;
 }

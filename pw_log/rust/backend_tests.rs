@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #[cfg(test)]
+// Untyped prints code rely on as casts to annotate type information.
+#[allow(clippy::unnecessary_cast)]
 mod tests {
     use crate::run_with_capture;
     use pw_log_backend::{pw_log_backend, pw_logf_backend};
