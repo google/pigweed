@@ -137,28 +137,45 @@ pub(crate) fn format_string(input: &str) -> IResult<&str, FormatString> {
     Ok((input, FormatString::from_fragments(&fragments)))
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
+    use crate::{MinFieldWidth, Precision};
+
     use super::*;
 
     #[test]
     fn test_specifier() {
-        assert_eq!(specifier("d"), Ok(("", Specifier::Decimal)));
-        assert_eq!(specifier("i"), Ok(("", Specifier::Integer)));
-        assert_eq!(specifier("o"), Ok(("", Specifier::Octal)));
-        assert_eq!(specifier("u"), Ok(("", Specifier::Unsigned)));
-        assert_eq!(specifier("x"), Ok(("", Specifier::Hex)));
-        assert_eq!(specifier("X"), Ok(("", Specifier::UpperHex)));
-        assert_eq!(specifier("f"), Ok(("", Specifier::Double)));
-        assert_eq!(specifier("F"), Ok(("", Specifier::UpperDouble)));
-        assert_eq!(specifier("e"), Ok(("", Specifier::Exponential)));
-        assert_eq!(specifier("E"), Ok(("", Specifier::UpperExponential)));
-        assert_eq!(specifier("g"), Ok(("", Specifier::SmallDouble)));
-        assert_eq!(specifier("G"), Ok(("", Specifier::UpperSmallDouble)));
-        assert_eq!(specifier("c"), Ok(("", Specifier::Char)));
-        assert_eq!(specifier("s"), Ok(("", Specifier::String)));
-        assert_eq!(specifier("p"), Ok(("", Specifier::Pointer)));
-        assert_eq!(specifier("v"), Ok(("", Specifier::Untyped)));
+        assert_eq!(specifier("d"), Ok(("", (Primitive::Integer, Style::None))));
+        assert_eq!(specifier("i"), Ok(("", (Primitive::Integer, Style::None))));
+        assert_eq!(
+            specifier("o"),
+            Ok(("", (Primitive::Unsigned, Style::Octal)))
+        );
+        assert_eq!(specifier("u"), Ok(("", (Primitive::Unsigned, Style::None))));
+        assert_eq!(specifier("x"), Ok(("", (Primitive::Unsigned, Style::Hex))));
+        assert_eq!(
+            specifier("X"),
+            Ok(("", (Primitive::Unsigned, Style::UpperHex)))
+        );
+        assert_eq!(specifier("f"), Ok(("", (Primitive::Float, Style::None))));
+        assert_eq!(
+            specifier("e"),
+            Ok(("", (Primitive::Float, Style::Exponential)))
+        );
+        assert_eq!(
+            specifier("E"),
+            Ok(("", (Primitive::Float, Style::UpperExponential)))
+        );
+        assert_eq!(
+            specifier("c"),
+            Ok(("", (Primitive::Character, Style::None)))
+        );
+        assert_eq!(specifier("s"), Ok(("", (Primitive::String, Style::None))));
+        assert_eq!(
+            specifier("p"),
+            Ok(("", (Primitive::Pointer, Style::Pointer)))
+        );
+        assert_eq!(specifier("v"), Ok(("", (Primitive::Untyped, Style::None))));
 
         assert_eq!(
             specifier("z"),
@@ -254,11 +271,15 @@ mod tests {
             Ok((
                 "",
                 ConversionSpec {
+                    argument: Argument::None,
+                    fill: ' ',
+                    alignment: Alignment::None,
                     flags: [].into_iter().collect(),
                     min_field_width: MinFieldWidth::None,
                     precision: Precision::None,
                     length: None,
-                    specifier: Specifier::Decimal
+                    primitive: Primitive::Integer,
+                    style: Style::None,
                 }
             ))
         );
@@ -268,25 +289,15 @@ mod tests {
             Ok((
                 "",
                 ConversionSpec {
+                    argument: Argument::None,
+                    fill: ' ',
+                    alignment: Alignment::None,
                     flags: [Flag::LeadingZeros].into_iter().collect(),
                     min_field_width: MinFieldWidth::Fixed(4),
                     precision: Precision::None,
                     length: Some(Length::Long),
-                    specifier: Specifier::Decimal
-                }
-            ))
-        );
-
-        assert_eq!(
-            conversion_spec("%- 4.2Lg"),
-            Ok((
-                "",
-                ConversionSpec {
-                    flags: [Flag::LeftJustify, Flag::SpaceSign].into_iter().collect(),
-                    min_field_width: MinFieldWidth::Fixed(4),
-                    precision: Precision::Fixed(2),
-                    length: Some(Length::LongDouble),
-                    specifier: Specifier::SmallDouble
+                    primitive: Primitive::Integer,
+                    style: Style::None,
                 }
             ))
         );
@@ -295,31 +306,38 @@ mod tests {
     #[test]
     fn test_format_string() {
         assert_eq!(
-            format_string("long double %+ 4.2Lg is %-03hd%%."),
+            format_string("long double %+ 4.2Lf is %-03hd%%."),
             Ok((
                 "",
                 FormatString {
                     fragments: vec![
                         FormatFragment::Literal("long double ".to_string()),
                         FormatFragment::Conversion(ConversionSpec {
+                            argument: Argument::None,
+                            fill: ' ',
+                            alignment: Alignment::None,
                             flags: [Flag::ForceSign, Flag::SpaceSign].into_iter().collect(),
                             min_field_width: MinFieldWidth::Fixed(4),
                             precision: Precision::Fixed(2),
                             length: Some(Length::LongDouble),
-                            specifier: Specifier::SmallDouble
+                            primitive: Primitive::Float,
+                            style: Style::None,
                         }),
                         FormatFragment::Literal(" is ".to_string()),
                         FormatFragment::Conversion(ConversionSpec {
+                            argument: Argument::None,
+                            fill: ' ',
+                            alignment: Alignment::Left,
                             flags: [Flag::LeftJustify, Flag::LeadingZeros]
                                 .into_iter()
                                 .collect(),
                             min_field_width: MinFieldWidth::Fixed(3),
                             precision: Precision::None,
                             length: Some(Length::Short),
-                            specifier: Specifier::Decimal
+                            primitive: Primitive::Integer,
+                            style: Style::None,
                         }),
-                        FormatFragment::Percent,
-                        FormatFragment::Literal(".".to_string()),
+                        FormatFragment::Literal("%.".to_string()),
                     ]
                 }
             ))
