@@ -222,6 +222,7 @@ pw_cc_toolchain(
         "@pw_toolchain//flag_sets:wno_register",
         "@pw_toolchain//flag_sets:wnon_virtual_dtor",
         "//pw_toolchain/cc:common_warnings",
+        "//pw_toolchain/cc:color_diagnostics",
     ] + select({
         "//pw_build:kythe": [":no_unknown_warning_option"],
         "//conditions:default": [],

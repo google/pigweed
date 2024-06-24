@@ -35,13 +35,26 @@ pw_cc_flag_set(
         "-Wpointer-arith",
         "-Wshadow",
         "-Wredundant-decls",
-        # TODO: b/332954913 - enable once code fixed
-        # "-Wsign-conversion",
+        # TODO: b/259746255 - Enable implicit conversion warnings once fixed.
+        # "-Wconversion",
         # Make all warnings errors, except for the exemptions below.
         "-Werror",
         "-Wno-error=cpp",  # preprocessor #warning statement
         "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
     ],
+)
+
+# Enables colors in compiler diagnostics. This uses the GCC spelling of the
+# flag, which Clang supports as an undocumented extension.
+pw_cc_flag_set(
+    name = "color_diagnostics",
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = ["-fdiagnostics-color"],
 )
 
 # This config contains warnings that are enabled for upstream Pigweed.
