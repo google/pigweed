@@ -59,25 +59,6 @@ pw_cc_flag_set(
     flags = ["-no_warning_for_no_symbols"],
 )
 
-# Although we use similar warnings for clang and arm_gcc, we don't have one
-# centralized list, since we might want to use different warnings based on the
-# compiler in the future.
-pw_cc_flag_set(
-    name = "warnings",
-    actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-    ],
-    flags = [
-        "-Wall",
-        "-Wextra",
-        # Make all warnings errors, except for the exemptions below.
-        "-Werror",
-        "-Wno-error=cpp",  # preprocessor #warning statement
-        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
-    ],
-)
-
 # Thread safety warnings are only supported by Clang.
 pw_cc_flag_set(
     name = "thread_safety_warnings",
@@ -232,7 +213,6 @@ pw_cc_toolchain(
         ],
         "//conditions:default": [],
     }) + [
-        ":warnings",
         ":thread_safety_warnings",
         "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
@@ -241,6 +221,7 @@ pw_cc_toolchain(
         "@pw_toolchain//flag_sets:no_rtti",
         "@pw_toolchain//flag_sets:wno_register",
         "@pw_toolchain//flag_sets:wnon_virtual_dtor",
+        "//pw_toolchain/cc:common_warnings",
     ] + select({
         "//pw_build:kythe": [":no_unknown_warning_option"],
         "//conditions:default": [],

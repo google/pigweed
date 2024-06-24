@@ -43,9 +43,7 @@ cc_library(
     ],
 )
 
-# Although we use similar warnings for clang and arm_gcc, we don't have one
-# centralized list, since we might want to use different warnings based on the
-# compiler in the future.
+# Additional arm_gcc specific warning flags
 pw_cc_flag_set(
     name = "warnings",
     actions = [
@@ -53,13 +51,10 @@ pw_cc_flag_set(
         "@pw_toolchain//actions:all_cpp_compiler_actions",
     ],
     flags = [
-        "-Wall",
-        "-Wextra",
-        # Make all warnings errors, except for the exemptions below.
-        "-Werror",
-        "-Wno-error=cpp",  # preprocessor #warning statement
-        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
-        "-Wno-psabi",  # Silence the really verbose ARM warnings.
+        # This can't be in common, because proto headers in host builds trigger
+        "-Wundef",
+        # Silence the really verbose ARM warnings.
+        "-Wno-psabi",
     ],
 )
 
@@ -173,6 +168,10 @@ pw_cc_flag_set(
     flags = [
         "-mcpu=cortex-m4",
         "-mfloat-abi=hard",
+        "-mfpu=fpv4-sp-d16",
+        # Used by some pigweed tests/targets to correctly handle hardware FPU
+        # behavior.
+        "-DPW_ARMV7M_ENABLE_FPU=1",
     ],
 )
 
@@ -201,6 +200,10 @@ pw_cc_flag_set(
     flags = [
         "-mcpu=cortex-m7",
         "-mfloat-abi=hard",
+        "-mfpu=fpv5-d16",
+        # Used by some pigweed tests/targets to correctly handle hardware FPU
+        # behavior.
+        "-DPW_ARMV7M_ENABLE_FPU=1",
     ],
 )
 
@@ -215,6 +218,10 @@ pw_cc_flag_set(
     flags = [
         "-mcpu=cortex-m33",
         "-mfloat-abi=hard",
+        "-mfpu=fpv5-sp-d16",
+        # Used by some pigweed tests/targets to correctly handle hardware FPU
+        # behavior.
+        "-DPW_ARMV7M_ENABLE_FPU=1",
     ],
 )
 
@@ -256,7 +263,7 @@ pw_cc_toolchain(
         "%sysroot%/arm-none-eabi/include",
     ],
     flag_sets = [
-        "@pw_toolchain//flag_sets:o2",
+        "@pw_toolchain//flag_sets:oz",
         "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
         "@pw_toolchain//flag_sets:reduced_size",
@@ -264,6 +271,7 @@ pw_cc_toolchain(
         "@pw_toolchain//flag_sets:no_rtti",
         "@pw_toolchain//flag_sets:wno_register",
         "@pw_toolchain//flag_sets:wnon_virtual_dtor",
+        "//pw_toolchain/cc:common_warnings",
     ] + select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [":cortex-m0"],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [":cortex-m0plus"],

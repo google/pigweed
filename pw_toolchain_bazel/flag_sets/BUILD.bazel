@@ -32,6 +32,17 @@ pw_cc_flag_set(
     flags = ["-O2"],
 )
 
+# Optimization aggressively for size rather than speed option
+pw_cc_flag_set(
+    name = "oz",
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = ["-Oz"],
+)
+
 # Prevent relative paths from being converted to absolute paths.
 pw_cc_flag_set(
     name = "no_canonical_prefixes",

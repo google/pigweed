@@ -384,8 +384,8 @@ void OutputVarintTest(TestDataFile* file, T i) {
   // All integers are encoded as signed for tokenization.
   size_t size = pw::varint::Encode(i, pw::as_writable_bytes(pw::span(buffer)));
 
-  for (size_t i = 0; i < size; ++i) {
-    file->printf("\\x%02x", buffer[i]);
+  for (size_t j = 0; j < size; ++j) {
+    file->printf("\\x%02x", buffer[j]);
   }
 
   file->printf("%s),\n", file->fmt().binary_string_suffix);

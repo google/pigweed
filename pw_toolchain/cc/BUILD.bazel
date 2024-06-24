@@ -1,0 +1,74 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@pw_toolchain//cc_toolchain:defs.bzl",
+    "pw_cc_feature",
+    "pw_cc_flag_set",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+# The common set of warnings for clang and arm_gcc.
+pw_cc_flag_set(
+    name = "common_warnings",
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
+    flags = [
+        "-Wall",
+        "-Wextra",
+        "-Wimplicit-fallthrough",
+        "-Wcast-qual",
+        "-Wpointer-arith",
+        "-Wshadow",
+        "-Wredundant-decls",
+        # TODO: b/332954913 - enable once code fixed
+        # "-Wsign-conversion",
+        # Make all warnings errors, except for the exemptions below.
+        "-Werror",
+        "-Wno-error=cpp",  # preprocessor #warning statement
+        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
+    ],
+)
+
+# This config contains warnings that are enabled for upstream Pigweed.
+# This config MUST NOT be used downstream to allow for warnings to be
+# added in the future without breaking downstream.
+pw_cc_flag_set(
+    name = "internal_strict_warnings_flags",
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
+    flags = [
+        "-Wswitch-enum",
+        "-Wextra-semi",
+    ] + select({
+        "@platforms//os:windows": [],
+        # TODO: b/243069432 - Enable pedantic warnings on Windows once passing.
+        "//conditions:default": [":pedantic_warnings"],
+    }),
+    visibility = ["//:__subpackages__"],
+)
+
+# Add `--features=internal_strict_warnings` to your Bazel invocation to enable.
+pw_cc_feature(
+    name = "internal_strict_warnings",
+    enabled = False,
+    feature_name = "internal_strict_warnings",
+    flag_sets = [":internal_strict_warnings_flags"],
+    visibility = ["//:__subpackages__"],
+)
