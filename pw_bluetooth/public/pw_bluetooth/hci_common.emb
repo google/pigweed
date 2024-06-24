@@ -1020,6 +1020,7 @@ enum IoCapability:
   DISPLAY_YES_NO     = 0x01
   KEYBOARD_ONLY      = 0x02
   NO_INPUT_NO_OUTPUT = 0x03
+  KEYBOARD_DISPLAY   = 0x04
 
 
 enum LESleepClockAccuracyRange:
