@@ -365,6 +365,14 @@
       "C++"
     ]
   },
+  "pw_malloc": {
+    "tagline": "Replacement interface for standard libc dynamic memory operations",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_multibuf": {
     "tagline": "A buffer API optimized for zero-copy messaging",
     "status": "unstable",

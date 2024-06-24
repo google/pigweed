@@ -3,6 +3,9 @@
 =========
 pw_malloc
 =========
+.. pigweed-module::
+   :name: pw_malloc
+
 This module defines an interface for replacing the standard libc dynamic memory
 operations.
 

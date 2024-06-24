@@ -3,6 +3,9 @@
 ==================
 pw_malloc backends
 ==================
+.. pigweed-module-subpage::
+   :name: pw_malloc
+
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::
