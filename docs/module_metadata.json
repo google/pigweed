@@ -194,6 +194,14 @@
       "C++"
     ]
   },
+  "pw_chrono": {
+    "tagline": "Portable std::chrono for constrained embedded devices",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_cli": {
     "tagline": "Enhance and accelerate custom command-line tooling",
     "status": "stable",

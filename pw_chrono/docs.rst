@@ -3,12 +3,12 @@
 =========
 pw_chrono
 =========
+.. pigweed-module::
+   :name: pw_chrono
+
 Pigweed's chrono module provides facilities for applications to deal with time,
 leveraging many pieces of STL's the ``std::chrono`` library but with a focus
 on portability for constrained embedded devices and maintaining correctness.
-
-.. note::
-   This module is still under construction, the API is not yet stable.
 
 -------------------------------
 ``duration`` and ``time_point``

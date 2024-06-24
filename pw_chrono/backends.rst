@@ -3,6 +3,9 @@
 ==================
 pw_chrono backends
 ==================
+.. pigweed-module-subpage::
+   :name: pw_chrono
+
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::
