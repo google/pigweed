@@ -21,6 +21,49 @@
 # =========================== HCI Data Definitions ===========================
 
 
+enum AclDataPacketBoundaryFlag:
+  -- Options for the Packet_Boundary_Flag field in an ACL Data frame header.
+
+  [maximum_bits: 2]
+
+  FIRST_NON_FLUSHABLE = 0b00
+    -- First non-automatically-flushable packet of a higher layer message (start
+    -- of a nonautomatically-flushable L2CAP PDU) from Host to Controller.
+
+  CONTINUING_FRAGMENT = 0b01
+    -- Continuing fragment of a higher layer message.
+
+  FIRST_FLUSHABLE     = 0b10
+    -- First automatically flushable packet of a higher layer message (start of
+    -- an automatically-flushable L2CAP PDU).
+
+
+enum AclDataPacketBroadcastFlag:
+  -- Options for the Broadcast_Flag field in an ACL Data frame header.
+  [maximum_bits: 2]
+  POINT_TO_POINT = 0b00
+    -- ACL-U or LE-U
+
+  BROADCAST      = 0b01
+    -- BR/EDR broadcast (APB-U)
+
+
+struct AclDataFrameHeader:
+  -- HCI ACL Data packet frame header
+  -- Core Spec v5.4, Vol 4, Part E, Section 5.4.2
+  0     [+2]  bits:
+    0     [+12]      UInt                        handle
+      -- Connection_Handle to be used for transmitting a data packet or segment
+      -- over a Controller.
+      -- [requires: 0x0000 <= this <= 0x0EFF]
+
+    $next [+2]       AclDataPacketBoundaryFlag   packet_boundary_flag
+    $next [+2]       AclDataPacketBroadcastFlag  broadcast_flag
+
+  $next [+2]         UInt                        data_total_length
+    -- Length of data measured in octets.
+
+
 enum IsoDataPbFlag:
   -- Options for the pb_flag field in an Isochronous Data packet header.
 

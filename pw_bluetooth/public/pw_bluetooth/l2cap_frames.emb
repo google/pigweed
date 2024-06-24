@@ -20,7 +20,20 @@
 
 # ========================= Data Packet Format =================================
 # Core Spec v5.4 Vol 3, Part A, Section 3
-#
+
+
+struct BFrameHeader:
+  -- 3.1
+  -- A frame header for a B-Frame.
+  -- In basic L2CAP mode, the L2CAP PDU on a connection-oriented channel is also
+  -- referred to as a "B-frame".
+  0     [+2]  UInt  pdu_length
+    -- For B-frames, the PDU Length equals the payload size.
+
+  $next [+2]  UInt  channel_id
+    -- The channel ID (CID) identifies the destination channel endpoint of the
+    -- packet.
+
 # ========== 3.4 Credit-Based Flow Control Frames ==========
 
 
