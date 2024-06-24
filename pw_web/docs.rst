@@ -403,6 +403,27 @@ To create your own subset, find the codepoints you want to add and:
 
 .. inclusive-language: enable
 
+Shoelace
+--------
+We currently use Split Panel from the `Shoelace <https://github.com/shoelace-style/shoelace>`_
+library to enable resizable split views within the log viewer.
+
+To provide flexibility in different environments, we've introduced a property ``useShoelaceFeatures``
+in the ``LogViewer`` component. This flag allows developers to enable or disable the import and
+usage of Shoelace components based on their needs.
+
+By default, the ``useShoelaceFeatures`` flag is set to ``true``, meaning Shoelace components will
+be used and resizable split views are made available. To disable Shoelace components, set this
+property to ``false`` as shown below:
+
+.. code-block:: javascript
+
+   const logViewer = document.querySelector('log-viewer');
+   logViewer.useShoelaceFeatures = false;
+
+When ``useShoelaceFeatures`` is set to ``false``, the  <sl-split-panel> component from Shoelace will
+not be imported or used within the log viewer.
+
 Guides
 ======
 

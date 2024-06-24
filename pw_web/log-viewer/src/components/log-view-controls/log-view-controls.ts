@@ -55,6 +55,13 @@ export class LogViewControls extends LitElement {
   @property({ type: Boolean, reflect: true })
   searchExpanded = false;
 
+  /**
+   * Flag to determine whether Shoelace components should be used by
+   * `LogViewControls`.
+   */
+  @property({ type: Boolean })
+  useShoelaceFeatures = true;
+
   @state()
   _colToggleMenuOpen = false;
 
@@ -421,6 +428,7 @@ export class LogViewControls extends LitElement {
                 @click=${this.handleSplitRight}
                 role="button"
                 title="Open a new view to the right of the current view"
+                ?hidden=${!this.useShoelaceFeatures}
               >
                 <md-icon slot="start" data-variant="icon">&#xf674;</md-icon>
                 <div slot="headline">Split right</div>
@@ -430,6 +438,7 @@ export class LogViewControls extends LitElement {
                 @click=${this.handleSplitDown}
                 role="button"
                 title="Open a new view below the current view"
+                ?hidden=${!this.useShoelaceFeatures}
               >
                 <md-icon slot="start" data-variant="icon">&#xf676;</md-icon>
                 <div slot="headline">Split down</div>

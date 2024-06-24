@@ -58,6 +58,13 @@ export class LogView extends LitElement {
   @property({ type: Array })
   columnData: TableColumn[] = [];
 
+  /**
+   * Flag to determine whether Shoelace components should be used by
+   * `LogView` and its subcomponents.
+   */
+  @property({ type: Boolean })
+  useShoelaceFeatures = true;
+
   /** Whether line wrapping in table cells should be used. */
   @state()
   _lineWrap = false;
@@ -343,6 +350,7 @@ export class LogView extends LitElement {
         .viewTitle=${this.viewTitle}
         .hideCloseButton=${!this.isOneOfMany}
         .searchText=${this.searchText}
+        .useShoelaceFeatures=${this.useShoelaceFeatures}
         @input-change="${this.updateFilter}"
         @clear-logs="${this.updateFilter}"
         @column-toggle="${this.toggleColumns}"

@@ -50,6 +50,13 @@ export class LogViewer extends LitElement {
   @property({ type: String, reflect: true })
   colorScheme?: ColorScheme;
 
+  /**
+   * Flag to determine whether Shoelace components should be used by
+   * `LogViewer` and its subcomponents.
+   */
+  @property({ type: Boolean })
+  useShoelaceFeatures: boolean = true;
+
   @state()
   _rootNode: ViewNode;
 
@@ -70,6 +77,7 @@ export class LogViewer extends LitElement {
     const savedState = state ?? this._stateService.loadState();
     this._rootNode =
       savedState?.rootNode || new ViewNode({ type: NodeType.View });
+    this.loadShoelaceComponents();
   }
 
   connectedCallback() {
@@ -114,6 +122,17 @@ export class LogViewer extends LitElement {
 
     // Save state before disconnecting
     this._stateService.saveState({ rootNode: this._rootNode });
+  }
+
+  /**
+   * Conditionally loads Shoelace components
+   */
+  async loadShoelaceComponents() {
+    if (this.useShoelaceFeatures) {
+      await import(
+        '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js'
+      );
+    }
   }
 
   private splitLogView(event: SplitViewEvent) {
@@ -231,7 +250,7 @@ export class LogViewer extends LitElement {
   }
 
   private renderNodes(node: ViewNode): TemplateResult {
-    if (node.type === NodeType.View) {
+    if (node.type === NodeType.View || !this.useShoelaceFeatures) {
       return html`<log-view
         id=${node.logViewId ?? ''}
         .logs=${this.logs}
@@ -240,6 +259,7 @@ export class LogViewer extends LitElement {
         .columnOrder=${this._columnOrder}
         .searchText=${node.logViewState?.searchText ?? ''}
         .columnData=${node.logViewState?.columnData ?? []}
+        .useShoelaceFeatures=${this.useShoelaceFeatures}
         @split-view="${this.splitLogView}"
         @input-change="${this.handleViewEvent}"
         @column-toggle="${this.handleViewEvent}"
