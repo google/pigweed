@@ -1188,9 +1188,13 @@ struct RoleChangeEvent:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.7.22 PIN Code Request event
-# HCI_PIN_Code_Request
-# TODO: b/265052417 - Definition needs to be added
+struct PinCodeRequestEvent:
+  -- 7.7.22 PIN Code Request event (v1.1) (BR/EDR)
+  -- HCI_PIN_Code_Request
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+    -- The address of the device that the PIN code is being requested for.
 
 
 struct LinkKeyRequestEvent:
