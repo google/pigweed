@@ -630,6 +630,11 @@ def get_common_excludes() -> list[Path]:
         for ignored_directory in typical_ignored_directories
     )
 
+    # Ignore bazel-* directories
+    exclude_list.extend(
+        d for d in pw_root_dir.glob('bazel-*') if d.is_dir() and d.is_symlink()
+    )
+
     # Preset exclude for common downstream project structures.
     #
     # If watch is invoked outside of the Pigweed root, exclude common
