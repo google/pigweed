@@ -3,6 +3,9 @@
 ---------------
 pw_preprocessor
 ---------------
+.. pigweed-module::
+   :name: pw_preprocessor
+
 The preprocessor module provides various helpful preprocessor macros.
 
 Compatibility

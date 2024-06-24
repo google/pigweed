@@ -387,6 +387,14 @@
       "C++17"
     ]
   },
+  "pw_preprocessor": {
+    "tagline": "Helpful preprocessor macros",
+    "status": "stable",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_presubmit": {
     "tagline": "Python tools for running presubmit checks and linters",
     "status": "stable",
