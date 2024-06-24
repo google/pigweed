@@ -97,6 +97,11 @@ endif()
 
 include($ENV{PW_ROOT}/third_party/emboss/emboss.cmake)
 
+emboss_cc_library(pw_bluetooth.emboss_att
+  SOURCES
+    public/pw_bluetooth/att.emb
+)
+
 emboss_cc_library(pw_bluetooth.emboss_hci_common
   SOURCES
     public/pw_bluetooth/hci_common.emb
@@ -168,6 +173,7 @@ pw_add_library("pw_bluetooth.emboss_hci_group" INTERFACE
 
 pw_target_link_targets("pw_bluetooth._public_config"
   INTERFACE
+    pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_android
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
@@ -184,6 +190,7 @@ pw_add_test(pw_bluetooth.emboss_test
 
     # All emboss targets are listed (even if they don't have explicit tests) to
     # ensure they are compiled.
+    pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_group
     pw_bluetooth.emboss_hci_test
     pw_bluetooth.emboss_l2cap_frames

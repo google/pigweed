@@ -20,6 +20,7 @@
 // clang-format off
 // All emboss headers are listed (even if they don't have explicit tests) to
 // ensure they are compiled.
+#include "pw_bluetooth/att.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_commands.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"

@@ -101,6 +101,19 @@ pw_cc_test(
 )
 
 emboss_cc_library(
+    name = "_emboss_att",
+    srcs = ["public/pw_bluetooth/att.emb"],
+    enable_enum_traits = False,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "emboss_att",
+    includes = ["public"],
+    deps = [":_emboss_att"],
+)
+
+emboss_cc_library(
     name = "_emboss_hci_android",
     srcs = ["public/pw_bluetooth/hci_android.emb"],
     enable_enum_traits = False,
@@ -233,6 +246,7 @@ pw_cc_test(
     deps = [
         # All emboss targets are listed (even if they don't have explicit tests)
         # to ensure they are compiled.
+        ":emboss_att",
         ":emboss_hci",
         ":emboss_hci_test",
         ":emboss_l2cap_frames",

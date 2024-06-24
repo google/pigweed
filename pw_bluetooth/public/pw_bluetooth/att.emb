@@ -1,0 +1,104 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file contains Emboss definitions of the protocol data units (PDUs)
+# associated with the Attribute Protocol (ATT) as defined in Vol 3 (Host), Part
+# F of the Bluetooth Core Specification.
+#
+# The Emboss compiler is used to generate a C++ header from this file.
+
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
+
+
+enum AttOpcode:
+  -- Attribute Protocol PDU Opcodes. See Core Spec v5.4, Vol 3, Part F,
+  -- Section 3.4.8 for a table with a summary of the Attribute Protocol PDUs.
+  [maximum_bits: 8]
+  ATT_ERROR_RSP                  = 0x01
+  ATT_EXCHANGE_MTU_REQ           = 0x02
+  ATT_EXCHANGE_MTU_RSP           = 0x03
+  ATT_FIND_INFORMATION_REQ       = 0x04
+  ATT_FIND_INFORMATION_RSP       = 0x05
+  ATT_FIND_BY_TYPE_VALUE_REQ     = 0x06
+  ATT_FIND_BY_TYPE_VALUE_RSP     = 0x07
+  ATT_READ_BY_TYPE_REQ           = 0x08
+  ATT_READ_BY_TYPE_RSP           = 0x09
+  ATT_READ_REQ                   = 0x0A
+  ATT_READ_RSP                   = 0x0B
+  ATT_READ_BLOB_REQ              = 0x0C
+  ATT_READ_BLOB_RSP              = 0x0D
+  ATT_READ_MULTIPLE_REQ          = 0x0E
+  ATT_READ_MULTIPLE_RSP          = 0x0F
+  ATT_READ_BY_GROUP_TYPE_REQ     = 0x10
+  ATT_READ_BY_GROUP_TYPE_RSP     = 0x11
+  ATT_WRITE_REQ                  = 0x12
+  ATT_WRITE_RSP                  = 0x13
+  ATT_WRITE_CMD                  = 0x52
+  ATT_PREPARE_WRITE_REQ          = 0x16
+  ATT_PREPARE_WRITE_RSP          = 0x17
+  ATT_EXECUTE_WRITE_REQ          = 0x18
+  ATT_EXECUTE_WRITE_RSP          = 0x19
+  ATT_READ_MULTIPLE_VARIABLE_REQ = 0x20
+  ATT_READ_MULTIPLE_VARIABLE_RSP = 0x21
+  ATT_MULTIPLE_HANDLE_VALUE_NTF  = 0x23
+  ATT_HANDLE_VALUE_NTF           = 0x1B
+  ATT_HANDLE_VALUE_IND           = 0x1D
+  ATT_HANDLE_VALUE_CFM           = 0x1E
+  ATT_SIGNED_WRITE_CMD           = 0xD2
+
+# ===================== Attribute Protocol PDUs =============================
+# Core Spec v5.4 Vol 3, Part F, Section 3.4
+#
+# Many of the ATT packet definitions are parameterized on the size(s) of the
+# attribute value(s) they carry.
+#
+# Attribute value type is opaque to ATT and defines the size of an attribute,
+# which may be fixed or variable. In most cases, attribute value size can be
+# inferred from the length of the packet that carries the PDU. In cases where
+# attribute size cannot be inferred (such as in packets carrying multiple
+# attribute values), the size is either reported in a packet field or assumed to
+# be mutually known by server & client.
+#
+# See Core Spec Vol 3, Part F, Section 3.2 for more details about attributes.
+
+# ============ 3.4.1 Error handling ============
+
+
+# ============= 3.4.2 MTU exchange =============
+
+
+# =========== 3.4.3 Find information ===========
+
+
+# ========== 3.4.4 Reading attributes ==========
+
+
+# ========== 3.4.5 Writing attributes ==========
+
+
+# ============ 3.4.6 Queued writes =============
+
+
+# =========== 3.4.7 Server initiated ===========
+
+
+struct AttHandleValueNtf(attribute_size: UInt:16):
+  -- 3.4.7.1 ATT_HANDLE_VALUE_NTF
+  -- A server can send a notification of an attribute’s value at any time.
+  0     [+1]               AttOpcode               attribute_opcode
+  $next [+2]               UInt                    attribute_handle
+    [requires: this > 0]
+
+  $next [+attribute_size]  UInt:8[attribute_size]  attribute_value
