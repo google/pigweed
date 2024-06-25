@@ -217,6 +217,8 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_hdlc/public/pw_hdlc/decoder.h",
   "$dir_pw_hdlc/public/pw_hdlc/encoder.h",
   "$dir_pw_hdlc/public/pw_hdlc/router.h",
+  "$dir_pw_hex_dump/public/pw_hex_dump/hex_dump.h",
+  "$dir_pw_hex_dump/public/pw_hex_dump/log_bytes.h",
   "$dir_pw_i2c/public/pw_i2c/address.h",
   "$dir_pw_i2c/public/pw_i2c/device.h",
   "$dir_pw_i2c/public/pw_i2c/i2c_service.h",

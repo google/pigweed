@@ -34,8 +34,25 @@ pw_source_set("pw_hex_dump") {
   sources = [ "hex_dump.cc" ]
 }
 
+pw_source_set("pw_log_bytes") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    ":pw_hex_dump",
+    dir_pw_bytes,
+    dir_pw_log,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+  deps = []
+  public = [ "public/pw_hex_dump/log_bytes.h" ]
+  sources = []
+}
+
 pw_test_group("tests") {
-  tests = [ ":hex_dump_test" ]
+  tests = [
+    ":hex_dump_test",
+    ":log_bytes_test",
+  ]
 }
 
 pw_test("hex_dump_test") {
@@ -46,6 +63,17 @@ pw_test("hex_dump_test") {
   sources = [ "hex_dump_test.cc" ]
 }
 
+pw_test("log_bytes_test") {
+  deps = [
+    ":pw_log_bytes",
+    dir_pw_log,
+  ]
+  sources = [ "log_bytes_test.cc" ]
+}
+
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "api.rst",
+    "docs.rst",
+  ]
 }

@@ -294,6 +294,13 @@
       "C++20"
     ]
   },
+  "pw_hex_dump": {
+    "tagline": "Handy hexdump utilities",
+    "status": "stable",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_hdlc": {
     "tagline": "Simple, robust, and efficient serial communication",
     "status": "stable",
