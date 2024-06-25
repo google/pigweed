@@ -95,7 +95,8 @@ def _load_picotool_binary(board_info: PicoBoardInfo, binary: Path) -> bool:
         _PICOTOOL_COMMAND,
         'load',
         '-x',
-        str(binary),
+        # We use the absolute path since `cwd` is changed below.
+        str(binary.absolute()),
     ]
 
     # If the binary has not file extension, assume that it is ELF and
@@ -247,9 +248,8 @@ def _load_debugprobe_binary(
     return True
 
 
-def _parse_args():
-    """Parses command-line arguments."""
-
+def create_flash_parser() -> argparse.ArgumentParser:
+    """Returns a parser for flashing command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', type=Path, help='The target binary to flash')
     parser.add_argument(
@@ -290,53 +290,73 @@ def _parse_args():
         help='Output additional logs as the script runs',
     )
 
-    return parser.parse_args()
+    return parser
 
 
-def main():
-    """Flash a binary."""
-    args = _parse_args()
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    pw_cli.log.install(level=log_level)
+def device_from_args(
+    args: argparse.Namespace, interactive: bool
+) -> PicoBoardInfo:
+    """Select a PicoBoardInfo using the provided `args`.
 
+    This function will exit if no compatible board is discovered.
+
+    Args:
+        args: The parsed args namespace. This must be a set of arguments parsed
+            using `create_flash_parser`.
+        interactive: If true, multiple detected boards will result in a user
+            interaction to select which to use. If false, the first compatible
+            board will be used.
+
+    Returns:
+        Selected PicoBoardInfo.
+    """
     if args.pico_only and args.debug_probe_only:
         _LOG.critical('Cannot specify both --pico-only and --debug-probe-only')
         sys.exit(1)
 
     # For now, require manual configurations to be fully specified.
-    if (args.usb_port is not None or args.usb_bus is not None) and not (
-        args.usb_port is not None and args.usb_bus is not None
-    ):
+    if (args.usb_port is None) != (args.usb_bus is None):
         _LOG.critical(
             'Must specify BOTH --usb-bus and --usb-port when manually '
             'specifying a device'
         )
         sys.exit(1)
 
-    if args.usb_bus:
-        board = device_detector.board_from_usb_port(args.usb_bus, args.usb_port)
-    else:
-        _LOG.debug('Attempting to automatically detect dev board')
-        boards = device_detector.detect_boards(
-            include_picos=not args.debug_probe_only,
-            include_debug_probes=not args.pico_only,
+    if args.usb_bus and args.usb_port:
+        return device_detector.board_from_usb_port(args.usb_bus, args.usb_port)
+
+    _LOG.debug('Attempting to automatically detect dev board')
+    boards = device_detector.detect_boards(
+        include_picos=not args.debug_probe_only,
+        include_debug_probes=not args.pico_only,
+    )
+    if not boards:
+        _LOG.error('Could not find an attached device')
+        sys.exit(1)
+    if len(boards) == 1:
+        _LOG.info('Only one device detected.')
+        return boards[0]
+    if not interactive:
+        _LOG.info(
+            'Interactive mode disabled. Defaulting to first discovered device.'
         )
-        if not boards:
-            _LOG.error('Could not find an attached device')
-            sys.exit(1)
-        if len(boards) == 1:
-            _LOG.info('Only one device detected.')
-            board = boards[0]
-        else:
-            print('Multiple devices detected. Please select one:')
-            for n, board_n in enumerate(boards):
-                print(f' {n}: bus {board_n.bus}, port {board_n.port}')
-            print()
-            user_input = input('--> Board index (default: 0): ')
-            if user_input == '':
-                board = boards[0]
-            else:
-                board = boards[int(user_input)]
+        return boards[0]
+    print('Multiple devices detected. Please select one:')
+    for n, board_n in enumerate(boards):
+        print(f' {n}: bus {board_n.bus}, port {board_n.port}')
+    print()
+    user_input = input('--> Board index (default: 0): ')
+    if user_input == '':
+        return boards[0]
+    return boards[int(user_input)]
+
+
+def main():
+    """Flash a binary."""
+    args = create_flash_parser().parse_args()
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pw_cli.log.install(level=log_level)
+    board = device_from_args(args, interactive=True)
     _LOG.info('Flashing bus %s port %s', board.bus, board.port)
     flashed = flash(board, args.baud, args.binary)
     sys.exit(0 if flashed else 1)
