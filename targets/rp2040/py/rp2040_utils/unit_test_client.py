@@ -18,6 +18,8 @@ import argparse
 import subprocess
 import sys
 
+SERVER_RUNNER_CMD = 'bazelisk run @pigweed//targets/rp2040/py:unit_test_server'
+
 try:
     from rp2040_utils import unit_test_server
 except ImportError:
@@ -54,7 +56,15 @@ def parse_args():
 
 def launch_client(binary: str, server_port: int) -> int:
     """Sends a test request to the specified server port."""
-    cmd = (_TARGET_CLIENT_COMMAND, '-binary', binary, '-port', str(server_port))
+    cmd = (
+        _TARGET_CLIENT_COMMAND,
+        '-binary',
+        binary,
+        '-port',
+        str(server_port),
+        '-server_suggestion',
+        SERVER_RUNNER_CMD,
+    )
     return subprocess.call(cmd)
 
 
