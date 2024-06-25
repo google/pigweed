@@ -81,6 +81,7 @@ class BuildCommand:
             BuildCommand. The callable takes one Path arg for the build_dir. If
             the callable returns true this command is executed. All
             BuildCommands are run by default.
+        working_dir: Optional working directory to run build command in
     """
 
     build_dir: Path | None = None
@@ -89,6 +90,7 @@ class BuildCommand:
     targets: list[str] = field(default_factory=list)
     command: list[str] = field(default_factory=list)
     run_if: Callable[[Path], bool] = lambda _build_dir: True
+    working_dir: Path | None = None
 
     def __post_init__(self) -> None:
         # Copy self._expanded_args from the command list.
