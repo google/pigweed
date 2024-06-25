@@ -55,15 +55,7 @@ label_flag(
 # Override-able flag for each facade backend.
 label_flag(
     name = "crash_backend",
-    build_setting_default = ":crash_backend_multiplexer",
-)
-
-# Default facade backends.
-alias(
-    name = "crash_backend_multiplexer",
-    actual = select({
-        "//conditions:default": "//pw_build:unspecified_backend",
-    }),
+    build_setting_default = "//pw_build:unspecified_backend",
 )
 
 pw_facade(
