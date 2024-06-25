@@ -71,6 +71,6 @@ cc_library(
     visibility = ["//pw_sync:__pkg__"],
     deps = [
         "//pw_assert",
-        "//pw_sync:recursive_mutex_facade",
+        "//pw_sync:recursive_mutex.facade",
     ],
 )

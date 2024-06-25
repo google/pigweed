@@ -13,6 +13,10 @@
 # the License.
 
 load(
+    "//pw_build:compatibility.bzl",
+    "host_backend_alias",
+)
+load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
     "pw_facade",
@@ -44,18 +48,12 @@ pw_facade(
 
 label_flag(
     name = "binary_semaphore_backend",
-    build_setting_default = ":binary_semaphore_backend_multiplexer",
+    build_setting_default = ":binary_semaphore_unspecified_backend",
 )
 
-cc_library(
-    name = "binary_semaphore_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:binary_semaphore"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:binary_semaphore"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_sync_threadx:binary_semaphore"],
-        "//conditions:default": ["//pw_sync_stl:binary_semaphore"],
-    }),
+host_backend_alias(
+    name = "binary_semaphore_unspecified_backend",
+    backend = "//pw_sync_stl:binary_semaphore",
 )
 
 pw_facade(
@@ -76,18 +74,12 @@ pw_facade(
 
 label_flag(
     name = "counting_semaphore_backend",
-    build_setting_default = ":counting_semaphore_backend_multiplexer",
+    build_setting_default = ":counting_semaphore_unspecified_backend",
 )
 
-cc_library(
-    name = "counting_semaphore_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:counting_semaphore"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:counting_semaphore"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_sync_threadx:counting_semaphore"],
-        "//conditions:default": ["//pw_sync_stl:counting_semaphore"],
-    }),
+host_backend_alias(
+    name = "counting_semaphore_unspecified_backend",
+    backend = "//pw_sync_stl:counting_semaphore",
 )
 
 cc_library(
@@ -167,18 +159,12 @@ pw_facade(
 
 label_flag(
     name = "mutex_backend",
-    build_setting_default = ":mutex_backend_multiplexer",
+    build_setting_default = ":mutex_unspecified_backend",
 )
 
-cc_library(
-    name = "mutex_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:mutex"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:mutex"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_sync_threadx:mutex"],
-        "//conditions:default": ["//pw_sync_stl:mutex"],
-    }),
+host_backend_alias(
+    name = "mutex_unspecified_backend",
+    backend = "//pw_sync_stl:mutex",
 )
 
 pw_facade(
@@ -201,23 +187,19 @@ pw_facade(
 
 label_flag(
     name = "timed_mutex_backend",
-    build_setting_default = ":timed_mutex_backend_multiplexer",
+    build_setting_default = ":timed_mutex_unspecified_backend",
 )
 
-cc_library(
-    name = "timed_mutex_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:timed_mutex"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:timed_mutex"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_sync_threadx:timed_mutex"],
-        "//conditions:default": ["//pw_sync_stl:timed_mutex"],
-    }),
+host_backend_alias(
+    name = "timed_mutex_unspecified_backend",
+    backend = "//pw_sync_stl:timed_mutex",
 )
 
-cc_library(
-    name = "recursive_mutex_facade",
+pw_facade(
+    name = "recursive_mutex",
+    srcs = ["recursive_mutex.cc"],
     hdrs = ["public/pw_sync/recursive_mutex.h"],
+    backend = ":recursive_mutex_backend",
     includes = ["public"],
     deps = [
         ":lock_annotations",
@@ -225,28 +207,14 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "recursive_mutex",
-    srcs = ["recursive_mutex.cc"],
-    visibility = ["//pw_sync_baremetal:__pkg__"],
-    deps = [
-        ":recursive_mutex_backend",
-        ":recursive_mutex_facade",
-    ],
-)
-
 label_flag(
     name = "recursive_mutex_backend",
-    build_setting_default = ":recursive_mutex_backend_multiplexer",
+    build_setting_default = ":recursive_mutex_unspecified_backend",
 )
 
-cc_library(
-    name = "recursive_mutex_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "@platforms//os:none": ["//pw_sync_baremetal:recursive_mutex"],
-        "//conditions:default": ["//pw_sync_stl:recursive_mutex"],
-    }),
+host_backend_alias(
+    name = "recursive_mutex_unspecified_backend",
+    backend = "//pw_sync_stl:recursive_mutex",
 )
 
 pw_facade(
@@ -267,18 +235,12 @@ pw_facade(
 
 label_flag(
     name = "interrupt_spin_lock_backend",
-    build_setting_default = ":interrupt_spin_lock_backend_multiplexer",
+    build_setting_default = ":interrupt_spin_lock_unspecified_backend",
 )
 
-cc_library(
-    name = "interrupt_spin_lock_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:interrupt_spin_lock"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:interrupt_spin_lock"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_sync_threadx:interrupt_spin_lock"],
-        "//conditions:default": ["//pw_sync_stl:interrupt_spin_lock"],
-    }),
+host_backend_alias(
+    name = "interrupt_spin_lock_unspecified_backend",
+    backend = "//pw_sync_stl:interrupt_spin_lock",
 )
 
 pw_facade(
@@ -295,16 +257,12 @@ pw_facade(
 
 label_flag(
     name = "thread_notification_backend",
-    build_setting_default = ":thread_notification_backend_multiplexer",
+    build_setting_default = ":thread_notification_unspecified_backend",
 )
 
-cc_library(
-    name = "thread_notification_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:thread_notification"],
-        "//conditions:default": [":binary_semaphore_thread_notification_backend"],
-    }),
+host_backend_alias(
+    name = "thread_notification_unspecified_backend",
+    backend = ":binary_semaphore_thread_notification_backend",
 )
 
 pw_facade(
@@ -321,16 +279,12 @@ pw_facade(
 
 label_flag(
     name = "timed_thread_notification_backend",
-    build_setting_default = ":timed_thread_notification_backend_multiplexer",
+    build_setting_default = ":timed_thread_notification_unspecified_backend",
 )
 
-cc_library(
-    name = "timed_thread_notification_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:timed_thread_notification"],
-        "//conditions:default": ["//pw_sync:binary_semaphore_timed_thread_notification_backend"],
-    }),
+host_backend_alias(
+    name = "timed_thread_notification_unspecified_backend",
+    backend = ":binary_semaphore_timed_thread_notification_backend",
 )
 
 cc_library(
