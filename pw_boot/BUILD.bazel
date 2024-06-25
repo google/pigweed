@@ -41,16 +41,5 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = ":backend_multiplexer",
-)
-
-cc_library(
-    name = "backend_multiplexer",
-    deps = select({
-        "@platforms//cpu:armv7-m": ["//pw_boot_cortex_m"],
-        "@platforms//cpu:armv7e-m": ["//pw_boot_cortex_m"],
-        "@platforms//cpu:armv8-m": ["//pw_boot_cortex_m"],
-        # When building for the host, we don't need a pw_boot implementation.
-        "//conditions:default": [],
-    }),
+    build_setting_default = "//pw_build:unspecified_backend",
 )
