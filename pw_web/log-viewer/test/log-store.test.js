@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -21,12 +21,9 @@ import { LogStore } from '../src/log-store';
 function setUpLogViewer() {
   const mockLogSource = new MockLogSource();
   const logStore = new LogStore();
-  const destroyLogViewer = createLogViewer(
-    mockLogSource,
-    document.body,
-    undefined,
+  const destroyLogViewer = createLogViewer(mockLogSource, document.body, {
     logStore,
-  );
+  });
   const logViewer = document.querySelector('log-viewer');
   return { mockLogSource, destroyLogViewer, logViewer, logStore };
 }

@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,9 +16,7 @@ import { JsonLogSource } from './custom/json-log-source';
 import { BrowserLogSource } from './custom/browser-log-source';
 import { createLogViewer } from './createLogViewer';
 import { LogSource } from './log-source';
-import { LogStore } from './log-store';
 
-const logStore = new LogStore();
 const logSources = [new JsonLogSource(), new BrowserLogSource()] as LogSource[];
 
 const containerEl = document.querySelector(
@@ -26,7 +24,7 @@ const containerEl = document.querySelector(
 ) as HTMLElement;
 
 if (containerEl) {
-  createLogViewer(logSources, containerEl, undefined, logStore);
+  createLogViewer(logSources, containerEl);
 }
 
 // Start reading log data

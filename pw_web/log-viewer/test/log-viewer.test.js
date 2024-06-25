@@ -20,13 +20,9 @@ import { createLogViewer } from '../src/createLogViewer';
 // Initialize the log viewer component with a mock log source
 function setUpLogViewer(columnOrder) {
   const mockLogSource = new MockLogSource();
-  const destroyLogViewer = createLogViewer(
-    mockLogSource,
-    document.body,
-    undefined,
-    undefined,
+  const destroyLogViewer = createLogViewer(mockLogSource, document.body, {
     columnOrder,
-  );
+  });
   const logViewer = document.querySelector('log-viewer');
   return { mockLogSource, destroyLogViewer, logViewer };
 }

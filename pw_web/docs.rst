@@ -298,13 +298,18 @@ Only fields that exist in the Log Source will render as columns in the Log Viewe
 
 .. code-block:: typescript
 
-   createLogViewer(logSource, root, state, logStore, columnOrder)
+   createLogViewer(logSource, root, { columnOrder })
 
 ``columnOrder`` accepts an ``string[]`` and defaults to ``[log_source, time, timestamp]``
 
 .. code-block:: typescript
 
-   createLogViewer(logSource, root, state, logStore, ['log_source', 'time', 'timestamp'])
+   createLogViewer(
+    logSource,
+    root,
+    { columnOrder: ['log_source', 'time', 'timestamp'] }
+
+  )
 
 Note, columns will always start with ``severity`` and end with ``message``, these fields do not need to be defined.
 Columns are ordered in the following format:
