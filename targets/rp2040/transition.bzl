@@ -14,6 +14,7 @@
 
 """Bazel transitions for the rp2040."""
 
+# LINT.IfChange
 def _rp2040_transition_impl(settings, attr):
     # buildifier: disable=unused-variable
     _ignore = settings, attr
@@ -36,6 +37,8 @@ def _rp2040_transition_impl(settings, attr):
         "@pigweed//pw_system:extra_platform_libs": "@pigweed//targets/rp2040:extra_platform_libs",
         "@pigweed//pw_unit_test:main": "@pigweed//targets/rp2040:unit_test_app",
     }
+
+# LINT.ThenChange(//.bazelrc)
 
 _rp2040_transition = transition(
     implementation = _rp2040_transition_impl,

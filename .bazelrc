@@ -126,6 +126,7 @@ common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 # Config for the rp2040 platform.
 #
 # TODO: b/301334234 - Make the platform set the flags below.
+# LINT.IfChange
 build:rp2040 --platforms=@pigweed//targets/rp2040
 build:rp2040 --//pw_assert:backend=@pigweed//pw_assert_basic
 build:rp2040 --//pw_assert:backend_impl=@pigweed//pw_assert_basic:impl
@@ -144,6 +145,7 @@ build:rp2040 --@freertos//:freertos_config=@pigweed//targets/rp2040:freertos_con
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_UART=True
 test:rp2040 --run_under=//targets/rp2040/py:unit_test_client
+# LINT.ThenChange(//targets/rp2040/transition.bzl)
 
 # Config for the stm32f429i_disc1 baremetal platform.
 #
