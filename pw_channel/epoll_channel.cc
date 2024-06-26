@@ -43,10 +43,6 @@ void EpollChannel::Register() {
 
 async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
     async2::Context& cx) {
-  if (!is_read_open()) {
-    return Status::FailedPrecondition();
-  }
-
   if (!allocation_future_.has_value()) {
     allocation_future_ =
         allocator_->AllocateContiguousAsync(kMinimumReadSize, kDesiredReadSize);
@@ -87,28 +83,19 @@ async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
 }
 
 async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
-  if (!is_write_open()) {
-    return Status::FailedPrecondition();
+  if (ready_to_write_) {
+    return OkStatus();
   }
-
-  if (!ready_to_write_) {
-    // The previous write operation failed. Block the task until the dispatcher
-    // receives a notification for the channel's file descriptor.
-    ready_to_write_ = true;
-    async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
-    cx.dispatcher().NativeAddWriteWakerForFileDescriptor(channel_fd_,
-                                                         std::move(waker));
-    return async2::Pending();
-  }
-
-  return OkStatus();
+  // The previous write operation failed. Block the task until the dispatcher
+  // receives a notification for the channel's file descriptor.
+  ready_to_write_ = true;
+  async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
+  cx.dispatcher().NativeAddWriteWakerForFileDescriptor(channel_fd_,
+                                                       std::move(waker));
+  return async2::Pending();
 }
 
 Result<channel::WriteToken> EpollChannel::DoWrite(multibuf::MultiBuf&& data) {
-  if (!is_write_open()) {
-    return Status::FailedPrecondition();
-  }
-
   const uint32_t token = write_token_++;
 
   for (multibuf::Chunk& chunk : data.Chunks()) {
