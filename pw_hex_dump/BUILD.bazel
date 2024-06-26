@@ -51,7 +51,7 @@ pw_cc_test(
 )
 
 cc_library(
-    name = "pw_log_bytes",
+    name = "log_bytes",
     srcs = [],
     hdrs = [
         "public/pw_hex_dump/log_bytes.h",
@@ -70,7 +70,7 @@ pw_cc_test(
         "log_bytes_test.cc",
     ],
     deps = [
-        ":pw_log_bytes",
+        ":log_bytes",
         "//pw_log",
         "//pw_unit_test",
     ],

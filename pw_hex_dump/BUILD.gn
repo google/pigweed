@@ -34,7 +34,7 @@ pw_source_set("pw_hex_dump") {
   sources = [ "hex_dump.cc" ]
 }
 
-pw_source_set("pw_log_bytes") {
+pw_source_set("log_bytes") {
   public_configs = [ ":default_config" ]
   public_deps = [
     ":pw_hex_dump",
@@ -65,7 +65,7 @@ pw_test("hex_dump_test") {
 
 pw_test("log_bytes_test") {
   deps = [
-    ":pw_log_bytes",
+    ":log_bytes",
     dir_pw_log,
   ]
   sources = [ "log_bytes_test.cc" ]
