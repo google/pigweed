@@ -243,6 +243,7 @@ pw_source_set("support") {
     dir_pw_assert,
   ]
   sources = [
+    "pw_assert_malloc_failed_hook.cc",
     "pw_assert_stack_overflow_hook.cc",
     "static_task_allocation.cc",
   ]
