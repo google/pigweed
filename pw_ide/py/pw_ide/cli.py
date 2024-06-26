@@ -16,6 +16,7 @@
 import argparse
 import enum
 from inspect import cleandoc
+from pathlib import Path
 import re
 from typing import Any, Callable, Protocol
 
@@ -323,8 +324,15 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         '-p',
         '--process',
         action='store_true',
-        help='process a file or several files matching '
-        'the clang compilation database format',
+        help='process compilation databases found in directories defined in '
+        'the settings file',
+    )
+    parser_cpp.add_argument(
+        '--process-files',
+        '-P',
+        nargs="+",
+        type=Path,
+        help='process the compilation database(s) at the provided path(s)',
     )
     parser_cpp.add_argument(
         '--clangd-command',

@@ -285,9 +285,57 @@ def cmd_vscode(
             )
 
 
+# Elements:
+# - The root search path of the compilation database
+#     (essentially, the root directory we started searching from to find it)
+# - The compilation database file path
+# - The target inference pattern to use
+# TODO: https://pwbug.dev/349522832 - This should be a TypedDict or class, but
+# doing so may require some careful refactoring.
+CompDbPathsData = tuple[Path, Path, str]
+
+
+def _process_compdbs_from_settings(
+    pw_ide_settings: PigweedIdeSettings,
+) -> list[CompDbPathsData]:
+    """Process comp DBs found in the search path(s) defined in settings."""
+
+    # Find all compilation databases in the paths defined in settings, and
+    # associate them with their target inference pattern.
+    compdb_paths_data: list[CompDbPathsData] = []
+    settings_search_paths = pw_ide_settings.compdb_search_paths
+
+    # Get all compdb_search_paths entries from settings
+    for search_path_glob, target_inference in settings_search_paths:
+        # Expand the search path globs to get all concrete search paths
+        for search_path in (Path(p) for p in iglob(str(search_path_glob))):
+            # Search each path for compilation database files
+            for compdb_file in search_path.rglob(str(COMPDB_FILE_NAME)):
+                compdb_paths_data.append(
+                    (Path(search_path), compdb_file, target_inference)
+                )
+
+    return compdb_paths_data
+
+
+def _process_compdbs_from_files(
+    pw_ide_settings: PigweedIdeSettings,
+    compdb_file_paths: list[Path],
+) -> list[CompDbPathsData]:
+    """Process comp DBs from provided file path(s)."""
+
+    target_inference = pw_ide_settings.target_inference
+
+    return [
+        (file_path.parent.resolve(), file_path, target_inference)
+        for file_path in compdb_file_paths
+    ]
+
+
 def _process_compdbs(  # pylint: disable=too-many-locals
     reporter: StatusReporter,
     pw_ide_settings: PigweedIdeSettings,
+    compbd_file_paths: list[Path] | None = None,
     always_output_new: bool = False,
 ):
     """Find and process compilation databases in the project.
@@ -322,26 +370,17 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     # Associate processed compilation databases with their original sources
     all_processed_compdbs: dict[Path, CppCompilationDatabasesMap] = {}
 
-    # Find all compilation databases in the paths defined in settings, and
-    # associate them with their target inference pattern.
-    compdb_file_paths: list[tuple[Path, Path, str]] = []
-    settings_search_paths = pw_ide_settings.compdb_search_paths
-
-    # Get all compdb_search_paths entries from settings
-    for search_path_glob, target_inference in settings_search_paths:
-        # Expand the search path globs to get all concrete search paths
-        for search_path in (Path(p) for p in iglob(str(search_path_glob))):
-            # Search each path for compilation database files
-            for compdb_file in search_path.rglob(str(COMPDB_FILE_NAME)):
-                compdb_file_paths.append(
-                    (Path(search_path), compdb_file, target_inference)
-                )
+    compdb_paths_data = (
+        _process_compdbs_from_settings(pw_ide_settings)
+        if compbd_file_paths is None
+        else _process_compdbs_from_files(pw_ide_settings, compbd_file_paths)
+    )
 
     for (
         compdb_root_dir,
         compdb_file_path,
         target_inference,
-    ) in compdb_file_paths:
+    ) in compdb_paths_data:
         # Load the compilation database
         try:
             compdb = CppCompilationDatabase.load(
@@ -478,10 +517,10 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     # so the caller can avoid needlessly updating anything else.
     if num_new_targets > 0 or num_removed_targets > 0:
         found_compdb_text = (
-            f'Found {len(compdb_file_paths)} compilation database'
+            f'Found {len(compdb_paths_data)} compilation database'
         )
 
-        if len(compdb_file_paths) > 1:
+        if len(compdb_paths_data) > 1:
             found_compdb_text += 's'
 
         reporter.ok(found_compdb_text)
@@ -527,7 +566,8 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     should_list_targets: bool,
     should_get_target: bool,
     target_to_set: str | None,
-    process: bool = True,
+    process: bool = False,
+    process_files: list[Path] | None = None,
     use_default_target: bool = False,
     clangd_command: bool = False,
     clangd_command_system: str | None = None,
@@ -566,11 +606,18 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
     Refer to the Pigweed documentation or your build system's documentation to
     learn how to produce a clangd compilation database. Once you have one, run
-    this command to process it (or provide a glob to process multiple):
+    this command to process it:
 
     .. code-block:: bash
 
-        pw ide cpp --process {path to compile_commands.json}
+        pw ide cpp --process-files {path to compile_commands.json}
+
+    When using GN and CMake, ``pw_ide`` can search your build directory (or
+    other directories specified in settings) for compilation databases with:
+
+    .. code-block:: bash
+
+       pw ide cpp --process
 
     You can now examine the target toolchains that are available to you:
 
@@ -626,9 +673,11 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
     state = CppIdeFeaturesState(pw_ide_settings)
 
-    if process:
+    if process or process_files is not None:
         default = False
-        _process_compdbs(reporter, pw_ide_settings)
+        _process_compdbs(
+            reporter, pw_ide_settings, compbd_file_paths=process_files
+        )
 
         if state.current_target is None:
             use_default_target = True
