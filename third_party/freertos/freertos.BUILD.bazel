@@ -214,6 +214,9 @@ constraint_value(
 cc_library(
     name = "tasks_c",
     srcs = ["tasks.c"],
+    copts = [
+        "-Wno-cast-qual",
+    ],
     local_defines = select({
         ":disable_task_statics": [
             "static=",
