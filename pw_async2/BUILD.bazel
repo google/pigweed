@@ -30,9 +30,9 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_polyfill",
+        "//pw_string:to_string",
         "//third_party/fuchsia:stdcompat",
-        "@pigweed//pw_polyfill",
-        "@pigweed//pw_string:to_string",
     ],
 )
 
@@ -41,7 +41,7 @@ pw_cc_test(
     srcs = ["poll_test.cc"],
     deps = [
         ":poll",
-        "@pigweed//pw_result",
+        "//pw_result",
     ],
 )
 
@@ -60,12 +60,12 @@ cc_library(
     ],
     deps = [
         ":poll",
-        "@pigweed//pw_assert",
-        "@pigweed//pw_chrono:system_clock",
-        "@pigweed//pw_containers:vector",
-        "@pigweed//pw_sync:interrupt_spin_lock",
-        "@pigweed//pw_sync:lock_annotations",
-        "@pigweed//pw_toolchain:no_destructor",
+        "//pw_assert",
+        "//pw_chrono:system_clock",
+        "//pw_containers:vector",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
+        "//pw_toolchain:no_destructor",
     ],
 )
 
@@ -90,7 +90,7 @@ label_flag(
 
 cc_library(
     name = "dispatcher_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "@platforms//os:linux": ["//pw_async2_epoll:dispatcher"],
         "//conditions:default": ["//pw_async2_basic:dispatcher"],
@@ -110,9 +110,9 @@ pw_cc_test(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":dispatcher",
-        "@pigweed//pw_function",
-        "@pigweed//pw_thread:sleep",
-        "@pigweed//pw_thread:thread",
+        "//pw_function",
+        "//pw_thread:sleep",
+        "//pw_thread:thread",
     ],
 )
 

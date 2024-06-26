@@ -34,7 +34,7 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_sync:timed_thread_notification",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 
@@ -69,7 +69,7 @@ cc_library(
         "//pw_log",
         "//pw_status",
         "//pw_sync:mutex",
+        "//targets:mcuxpresso_sdk",
         "//third_party/fuchsia:stdcompat",
-        "@pigweed//targets:mcuxpresso_sdk",
     ],
 )

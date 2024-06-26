@@ -43,7 +43,7 @@ cc_library(
         "//pw_sync:binary_semaphore",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 
@@ -68,7 +68,7 @@ cc_library(
         "//pw_sync:binary_semaphore",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 

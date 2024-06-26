@@ -27,9 +27,9 @@ go_library(
     importpath = "pigweed/pw_target_runner",
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
+        "//pw_target_runner:go_protos",
         "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
-        "@pigweed//pw_target_runner:go_protos",
     ],
 )

@@ -108,7 +108,7 @@ config_setting(
     name = "light_setting",
     testonly = True,
     flag_values = {
-        "@pigweed//pw_unit_test:backend": "@pigweed//pw_unit_test:light",
+        "//pw_unit_test:backend": "//pw_unit_test:light",
     },
     # Do not depend on this config_setting outside upstream Pigweed. Config
     # settings based on label flags are unreliable. See
@@ -120,7 +120,7 @@ config_setting(
     name = "gtest_setting",
     testonly = True,
     flag_values = {
-        "@pigweed//pw_unit_test:backend": "@pigweed//pw_unit_test:googletest",
+        "//pw_unit_test:backend": "//pw_unit_test:googletest",
     },
     # Do not depend on this config_setting outside upstream Pigweed. Config
     # settings based on label flags are unreliable. See

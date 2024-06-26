@@ -141,7 +141,7 @@ label_flag(
 
 cc_library(
     name = "timer_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//conditions:default": [":chrono_timer"],
     }),

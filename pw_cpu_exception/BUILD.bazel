@@ -123,7 +123,7 @@ label_flag(
 alias(
     name = "entry_backend_multiplexer",
     actual = select({
-        "//pw_cpu_exception_cortex_m:entry_backend": "@pigweed//pw_cpu_exception_cortex_m:cpu_exception",
+        "//pw_cpu_exception_cortex_m:entry_backend": "//pw_cpu_exception_cortex_m:cpu_exception",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
 )
@@ -131,7 +131,7 @@ alias(
 alias(
     name = "entry_backend_impl_multiplexer",
     actual = select({
-        "//pw_cpu_exception_cortex_m:entry_backend": "@pigweed//pw_cpu_exception_cortex_m:cpu_exception_impl",
+        "//pw_cpu_exception_cortex_m:entry_backend": "//pw_cpu_exception_cortex_m:cpu_exception_impl",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
 )
@@ -147,7 +147,7 @@ alias(
 alias(
     name = "support_backend_multiplexer",
     actual = select({
-        "//pw_cpu_exception_cortex_m:support_backend": "@pigweed//pw_cpu_exception_cortex_m:support",
+        "//pw_cpu_exception_cortex_m:support_backend": "//pw_cpu_exception_cortex_m:support",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
 )

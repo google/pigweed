@@ -56,7 +56,7 @@ label_flag(
 
 cc_library(
     name = "system_clock_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_clock"],
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_clock"],
@@ -84,7 +84,7 @@ label_flag(
 
 cc_library(
     name = "system_timer_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_timer"],
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_timer"],

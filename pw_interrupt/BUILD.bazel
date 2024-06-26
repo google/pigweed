@@ -46,5 +46,5 @@ alias(
         "//pw_interrupt_xtensa:backend": "//pw_interrupt_xtensa:context",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
 )

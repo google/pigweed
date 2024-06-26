@@ -29,7 +29,7 @@ cc_library(
     }),
     includes = ["public"],
     deps = [
-        "@pigweed//pw_assert",
+        "//pw_assert",
     ],
 )
 

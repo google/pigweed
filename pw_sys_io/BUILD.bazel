@@ -67,21 +67,21 @@ cc_library(
 alias(
     name = "backend_multiplexer",
     actual = select({
-        "//pw_sys_io_arduino:backend": "@pigweed//pw_sys_io_arduino",
-        "//pw_sys_io_baremetal_lm3s6965evb:backend": "@pigweed//pw_sys_io_baremetal_lm3s6965evb",
-        "//pw_sys_io_baremetal_stm32f429:backend": "@pigweed//pw_sys_io_baremetal_stm32f429",
-        "//pw_sys_io_emcraft_sf2:backend": "@pigweed//pw_sys_io_emcraft_sf2",
-        "//pw_sys_io_mcuxpresso:backend": "@pigweed//pw_sys_io_mcuxpresso",
-        "//pw_sys_io_rp2040:backend": "@pigweed//pw_sys_io_rp2040",
-        "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
-        "//pw_sys_io_stm32cube:backend": "@pigweed//pw_sys_io_stm32cube",
+        "//pw_sys_io_arduino:backend": "//pw_sys_io_arduino",
+        "//pw_sys_io_baremetal_lm3s6965evb:backend": "//pw_sys_io_baremetal_lm3s6965evb",
+        "//pw_sys_io_baremetal_stm32f429:backend": "//pw_sys_io_baremetal_stm32f429",
+        "//pw_sys_io_emcraft_sf2:backend": "//pw_sys_io_emcraft_sf2",
+        "//pw_sys_io_mcuxpresso:backend": "//pw_sys_io_mcuxpresso",
+        "//pw_sys_io_rp2040:backend": "//pw_sys_io_rp2040",
+        "//pw_sys_io_stdio:backend": "//pw_sys_io_stdio",
+        "//pw_sys_io_stm32cube:backend": "//pw_sys_io_stm32cube",
         ":unspecified": ":unspecified_backend",
         "//conditions:default": ":unspecified_backend",
     }),
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
 )
 
 host_backend_alias(
     name = "unspecified_backend",
-    backend = "@pigweed//pw_sys_io_stdio",
+    backend = "//pw_sys_io_stdio",
 )

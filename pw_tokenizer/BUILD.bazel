@@ -74,7 +74,7 @@ pw_linker_script(
 
 cc_library(
     name = "test_backend",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
 )
 
 cc_library(

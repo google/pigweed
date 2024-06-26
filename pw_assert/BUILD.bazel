@@ -66,7 +66,7 @@ label_flag(
 
 host_backend_alias(
     name = "unspecified_backend_impl",
-    backend = "@pigweed//pw_assert_basic:impl",
+    backend = "//pw_assert_basic:impl",
 )
 
 cc_library(

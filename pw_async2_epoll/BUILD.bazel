@@ -25,9 +25,9 @@ cc_library(
     includes = ["public_overrides"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@pigweed//pw_assert",
-        "@pigweed//pw_async2:dispatcher_base",
-        "@pigweed//pw_async2:poll",
-        "@pigweed//pw_log",
+        "//pw_assert",
+        "//pw_async2:dispatcher_base",
+        "//pw_async2:poll",
+        "//pw_log",
     ],
 )

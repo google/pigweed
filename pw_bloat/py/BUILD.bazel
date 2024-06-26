@@ -30,7 +30,7 @@ py_library(
     data = ["@bloaty//:all"],
     imports = ["."],
     deps = [
-        "@pigweed//pw_cli/py:pw_cli",
+        "//pw_cli/py:pw_cli",
         "@python_packages_pyelftools//:pkg",
         "@rules_python//python/runfiles",
     ],

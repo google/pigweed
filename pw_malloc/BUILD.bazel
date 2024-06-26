@@ -123,7 +123,7 @@ alias(
         "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
 )
 
 cc_library(

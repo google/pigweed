@@ -40,7 +40,7 @@ label_flag(
 
 cc_library(
     name = "id_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:id"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:id"],
@@ -89,7 +89,7 @@ label_flag(
 
 cc_library(
     name = "iteration_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread_iteration"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread_iteration"],
@@ -124,7 +124,7 @@ label_flag(
 
 cc_library(
     name = "sleep_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:sleep"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:sleep"],
@@ -159,7 +159,7 @@ label_flag(
 
 cc_library(
     name = "thread_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread"],
@@ -225,7 +225,7 @@ cc_library(
 
 cc_library(
     name = "test_thread_context_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//conditions:default": ["//pw_thread_stl:test_thread_context"],
     }),
@@ -270,7 +270,7 @@ label_flag(
 
 cc_library(
     name = "yield_backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:yield"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:yield"],

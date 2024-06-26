@@ -33,7 +33,7 @@ cc_library(
         "//pw_clock_tree",
         "//pw_preprocessor",
         "//pw_stream",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 
@@ -51,7 +51,7 @@ cc_library(
         "//pw_stream",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:thread_notification",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 
@@ -67,7 +67,7 @@ cc_library(
         "//pw_clock_tree",
         "//pw_status",
         "//pw_stream",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 

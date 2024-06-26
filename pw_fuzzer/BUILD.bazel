@@ -26,7 +26,7 @@ config_setting(
     name = "use_fuzztest",
     testonly = True,
     flag_values = {
-        "@pigweed//pw_fuzzer:fuzztest_backend": "@com_google_fuzztest//fuzztest:fuzztest_core",
+        "//pw_fuzzer:fuzztest_backend": "@com_google_fuzztest//fuzztest:fuzztest_core",
     },
 )
 

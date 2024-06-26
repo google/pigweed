@@ -49,7 +49,7 @@ label_flag(
 
 cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = ["//pw_trace:null"],
 )
 

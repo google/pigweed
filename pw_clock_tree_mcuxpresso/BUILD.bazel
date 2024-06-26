@@ -31,7 +31,7 @@ cc_library(
     deps = [
         "//pw_clock_tree",
         "//pw_preprocessor",
-        "@pigweed//targets:mcuxpresso_sdk",
+        "//targets:mcuxpresso_sdk",
     ],
 )
 

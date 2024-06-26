@@ -106,7 +106,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":pw_channel",
-        "@pigweed//pw_multibuf:allocator",
+        "//pw_multibuf:allocator",
     ],
 )
 
@@ -116,9 +116,9 @@ pw_cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":epoll_channel",
-        "@pigweed//pw_multibuf:testing",
-        "@pigweed//pw_thread:sleep",
-        "@pigweed//pw_thread:thread",
-        "@pigweed//pw_unit_test",
+        "//pw_multibuf:testing",
+        "//pw_thread:sleep",
+        "//pw_thread:thread",
+        "//pw_unit_test",
     ],
 )

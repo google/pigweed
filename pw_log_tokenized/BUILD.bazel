@@ -102,7 +102,7 @@ label_flag(
 # There is no default backend for now.
 cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
 )
 
 cc_library(

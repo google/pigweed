@@ -71,7 +71,7 @@ cc_library(
         # add them manually to their cc_binary target.
         #
         # When implementing a backend for pw_assert or pw_log, *do not* depend
-        # on @pigweed//pw_system:pw_system. Instead, depend on the appropriate
+        # on //pw_system:pw_system. Instead, depend on the appropriate
         # component library. See :log_backend, below, for an examples.
         "//pw_assert:backend_impl",
         "//pw_log:backend_impl",
@@ -376,7 +376,7 @@ label_flag(
 # projects. For now, assume the pre-baked OS-specific hooks are good enough.
 cc_library(
     name = "target_hooks_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
+    visibility = ["//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": [":freertos_target_hooks"],
         "//conditions:default": [":stl_target_hooks"],
