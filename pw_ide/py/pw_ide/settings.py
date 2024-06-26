@@ -26,11 +26,15 @@ from pw_config_loader.yaml_config_loader_mixin import YamlConfigLoaderMixin
 env = pigweed_environment()
 env_vars = vars(env)
 
+PW_PROJECT_ROOT = (
+    env.PW_PROJECT_ROOT if env.PW_PROJECT_ROOT is not None else os.getcwd()
+)
+
 PW_IDE_DIR_NAME = '.pw_ide'
-PW_IDE_DEFAULT_DIR = Path(env.PW_PROJECT_ROOT) / PW_IDE_DIR_NAME
+PW_IDE_DEFAULT_DIR = Path(PW_PROJECT_ROOT) / PW_IDE_DIR_NAME
 
 _DEFAULT_BUILD_DIR_NAME = 'out'
-_DEFAULT_BUILD_DIR = env.PW_PROJECT_ROOT / _DEFAULT_BUILD_DIR_NAME
+_DEFAULT_BUILD_DIR = Path(PW_PROJECT_ROOT) / _DEFAULT_BUILD_DIR_NAME
 
 _DEFAULT_TARGET_INFERENCE = '?'
 

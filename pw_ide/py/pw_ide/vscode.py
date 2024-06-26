@@ -332,6 +332,16 @@ def _default_settings(
     )
 
 
+def _default_settings_no_side_effects(
+    _pw_ide_settings: PigweedIdeSettings,
+) -> EditorSettingsDict:
+    return OrderedDict(
+        {
+            **_DEFAULT_SETTINGS,
+        }
+    )
+
+
 def _default_tasks(
     pw_ide_settings: PigweedIdeSettings,
     state: CppIdeFeaturesState | None = None,
@@ -392,6 +402,20 @@ class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
 
     types_with_defaults: EditorSettingsTypesWithDefaults = {
         VscSettingsType.SETTINGS: _default_settings,
+        VscSettingsType.TASKS: _default_tasks,
+        VscSettingsType.EXTENSIONS: _default_extensions,
+        VscSettingsType.LAUNCH: _default_launch,
+    }
+
+
+class VscSettingsManagerNoSideEffects(EditorSettingsManager[VscSettingsType]):
+    """This is like VscSettingsManager, but optimized for unit testing."""
+
+    default_settings_dir = DEFAULT_SETTINGS_PATH
+    file_format = Json5FileFormat()
+
+    types_with_defaults: EditorSettingsTypesWithDefaults = {
+        VscSettingsType.SETTINGS: _default_settings_no_side_effects,
         VscSettingsType.TASKS: _default_tasks,
         VscSettingsType.EXTENSIONS: _default_extensions,
         VscSettingsType.LAUNCH: _default_launch,

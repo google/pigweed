@@ -15,7 +15,7 @@
 
 import unittest
 
-from pw_ide.vscode import VscSettingsManager, VscSettingsType
+from pw_ide.vscode import VscSettingsManagerNoSideEffects, VscSettingsType
 
 from test_cases import PwIdeTestCase
 
@@ -25,8 +25,12 @@ class TestVscSettingsManager(PwIdeTestCase):
 
     def test_setup(self):
         """Test realistic setup procedure. Success == doesn't raise."""
+
         ide_settings = self.make_ide_settings()
-        manager = VscSettingsManager(ide_settings, self.temp_dir_path)
+
+        manager = VscSettingsManagerNoSideEffects(
+            ide_settings, self.temp_dir_path
+        )
 
         with manager.active(
             VscSettingsType.SETTINGS
@@ -60,8 +64,12 @@ class TestVscSettingsManager(PwIdeTestCase):
         """
 
         self.touch_temp_file('pw_project_settings.json', content)
+
         ide_settings = self.make_ide_settings()
-        manager = VscSettingsManager(ide_settings, self.temp_dir_path)
+
+        manager = VscSettingsManagerNoSideEffects(
+            ide_settings, self.temp_dir_path
+        )
 
         with manager.active(
             VscSettingsType.SETTINGS
