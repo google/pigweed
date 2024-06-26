@@ -83,5 +83,6 @@ rp2040_binary = rule(
         ),
     },
     doc = "Builds the specified binary for the rp2040 platform",
-    executable = True,
+    # This target is for rp2040 and can't be run on host.
+    executable = False,
 )
