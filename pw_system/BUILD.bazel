@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
+    "pw_cc_test",
     "pw_facade",
 )
 load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
@@ -424,6 +425,48 @@ pw_cc_binary(
     deps = [
         ":pw_system",
         "//pw_unit_test:rpc_service",
+    ],
+)
+
+cc_library(
+    name = "async_packet_io",
+    srcs = ["async_packet_io.cc"],
+    hdrs = ["public/pw_system/internal/async_packet_io.h"],
+    implementation_deps = [
+        ":config",
+        "//pw_assert",
+        "//pw_log",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":config",
+        "//pw_allocator:allocator",
+        "//pw_async2:dispatcher",
+        "//pw_channel",
+        "//pw_channel:forwarding_channel",
+        "//pw_containers:inline_var_len_entry_queue",
+        "//pw_hdlc:router",
+        "//pw_multibuf",
+        "//pw_multibuf:simple_allocator",
+        "//pw_rpc",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_sync:thread_notification",
+        "//pw_thread:thread",
+        "//pw_thread:thread_core",
+    ],
+)
+
+pw_cc_test(
+    name = "async_packet_io_test",
+    srcs = ["async_packet_io_test.cc"],
+    deps = [
+        ":async_packet_io",
+        "//pw_allocator:testing",
+        "//pw_channel:loopback_channel",
+        "//pw_multibuf:testing",
+        "//pw_rpc",
     ],
 )
 

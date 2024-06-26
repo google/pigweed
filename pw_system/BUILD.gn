@@ -20,6 +20,7 @@ import("$dir_pigweed/third_party/nanopb/nanopb.gni")
 import("$dir_pigweed/third_party/pico_sdk/pi_pico.gni")
 import("$dir_pigweed/third_party/smartfusion_mss/mss.gni")
 import("$dir_pigweed/third_party/stm32cube/stm32cube.gni")
+import("$dir_pw_async2/backend.gni")
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
@@ -328,6 +329,47 @@ pw_executable("system_example") {
   ]
 }
 
+pw_source_set("async_packet_io") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/internal/async_packet_io.h" ]
+  sources = [ "async_packet_io.cc" ]
+  public_deps = [
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_channel:forwarding_channel",
+    "$dir_pw_containers:inline_var_len_entry_queue",
+    "$dir_pw_hdlc:router",
+    "$dir_pw_multibuf:simple_allocator",
+    "$dir_pw_rpc:server",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+    dir_pw_allocator,
+    dir_pw_channel,
+    dir_pw_multibuf,
+  ]
+  deps = [
+    ":config",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  visibility = [ "./*" ]
+}
+
+pw_test("async_packet_io_test") {
+  sources = [ "async_packet_io_test.cc" ]
+  deps = [
+    ":async_packet_io",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_channel:loopback_channel",
+    "$dir_pw_multibuf:testing",
+  ]
+
+  # TODO: b/317922402 - Run on Windows when thread detaching is supported.
+  enable_if = host_os != "win" && pw_async2_DISPATCHER_BACKEND != ""
+}
+
 group("system_examples") {
   # TODO: b/303282642 - Remove this testonly
   testonly = pw_unit_test_TESTONLY
@@ -368,4 +410,5 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
+  tests = [ ":async_packet_io_test" ]
 }

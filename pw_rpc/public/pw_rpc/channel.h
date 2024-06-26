@@ -209,6 +209,8 @@ class ChannelBase {
   // Internal functions made private in the public Channel class.
   //
 
+  // Invokes ChannelOutput::Send and returns its status. Any non-OK status
+  // indicates that the Channel is permanently closed.
   Status Send(const Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   constexpr void Close() {
