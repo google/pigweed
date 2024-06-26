@@ -327,6 +327,8 @@ is a compile-time error unless dynamic allocation is enabled.
    // Compiler error: sizeof(MyCallable) exceeds function's inline storage size.
    pw::Function<int(int)> function((MyCallable()));
 
+.. _module-pw_function-dynamic-allocation:
+
 Dynamic allocation
 ==================
 You can configure the inline allocation size of ``pw::Function`` and whether it

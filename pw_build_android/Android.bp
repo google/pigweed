@@ -16,12 +16,20 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-// List of Common Android backends used by Pigweed modules.
+// List of Common Android backends and build flags used by Pigweed modules.
 // Do not modify this to swap a different backend. Instead see the
 // pw_build_android documentation for how to use custom backends.
 cc_defaults {
     name: "pw_android_common_backends",
     cpp_std: "c++20",
+
+    // Note for maintainers:
+    // Update the build flags in the documentation when updating this list.
+    cflags: [
+        // Allow `pw::Function`s to exceed the inline size. This assumes all
+        // targets built with this backend can use dynamic allocation.
+        "-DPW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION=1",
+    ],
 
     // Note for maintainers:
     // Update the common backends list in the documentation when updating this

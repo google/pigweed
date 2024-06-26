@@ -376,3 +376,20 @@ Backends are defined the same way as
 :ref:`module-pw_build_android-module-libraries`. They must follow the
 ``pw_<MODULE_NAME>.<FACADE_NAME>_<BACKEND_NAME>`` name format or
 ``pw_<MODULE_NAME>_<BACKEND_NAME>`` if applicable.
+
+-----------
+Build flags
+-----------
+Some build flags should be set for all Android targets; these flags are
+specified in ``pw_android_common_backends``. These flags are as follows:
+
+``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION``
+-----------------------------------------
+As discussed in :ref:`module-pw_function-dynamic-allocation`, this flag enables
+dynamic allocation of :cpp:type:`pw::Function`, allowing it to exceed the
+inline size limit.
+
+Android targets support dynamic allocation since the Android environment is not
+memory constrained. Thus, ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled
+in ``pw_android_common_backends``. Components built with dynamic allocation
+disabled cannot be linked against components with dynamic allocation enabled.
