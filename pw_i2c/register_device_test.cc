@@ -13,6 +13,8 @@
 // the License.
 #include "pw_i2c/register_device.h"
 
+#include <cstring>
+
 #include "pw_assert/check.h"
 #include "pw_bytes/byte_builder.h"
 #include "pw_unit_test/framework.h"
@@ -122,8 +124,9 @@ TEST(RegisterDevice, WriteRegisters8With2RegistersAnd2ByteAddress) {
   EXPECT_EQ(sizeof(builder), test_device_builder.size());
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
@@ -152,20 +155,21 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddress) {
   EXPECT_EQ(sizeof(builder), test_device_builder.size());
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
   constexpr uint32_t kAddressSize =
       static_cast<uint32_t>(RegisterAddressSize::k2Bytes);
 
-  const uint16_t* read_pointer = reinterpret_cast<const uint16_t*>(
-      test_device_builder.data() + kAddressSize);
-  for (uint32_t i = 0; i < (test_device_builder.size() - kAddressSize) /
-                               sizeof(register_data[0]);
-       i++) {
-    EXPECT_EQ(register_data[i], read_pointer[i]);
+  for (uint32_t i = kAddressSize, j = 0; i < test_device_builder.size();
+       i += kAddressSize, j++) {
+    uint16_t actualData;
+    std::memcpy(
+        &actualData, &test_device_builder.data()[i], sizeof(actualData));
+    EXPECT_EQ(register_data[j], actualData);
   }
 }
 
@@ -185,8 +189,9 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   EXPECT_EQ(sizeof(builder), test_device_builder.size());
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
@@ -194,13 +199,13 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   constexpr uint32_t kAddressSize =
       static_cast<uint32_t>(RegisterAddressSize::k2Bytes);
 
-  const uint16_t* read_pointer = reinterpret_cast<const uint16_t*>(
-      test_device_builder.data() + kAddressSize);
-  for (uint32_t i = 0; i < (test_device_builder.size() - kAddressSize) /
-                               sizeof(register_data[0]);
-       i++) {
-    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &register_data[i]),
-              read_pointer[i]);
+  for (uint32_t i = kAddressSize, j = 0; i < test_device_builder.size();
+       i += kAddressSize, j++) {
+    uint16_t actualData;
+    std::memcpy(
+        &actualData, &test_device_builder.data()[i], sizeof(actualData));
+    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &register_data[j]),
+              actualData);
   }
 }
 
@@ -295,8 +300,9 @@ TEST(RegisterDevice, WriteRegister16with2ByteAddress) {
   EXPECT_EQ(test_device_builder.size(), kAddressSize + sizeof(kRegisterData));
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
@@ -379,8 +385,9 @@ TEST(RegisterDevice, WriteRegister16With2ByteAddressAndBigEndian) {
   EXPECT_EQ(test_device_builder.size(), kAddressSize + sizeof(kRegisterData));
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
@@ -474,8 +481,8 @@ TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd2ByteAddress) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
@@ -505,8 +512,8 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
@@ -534,8 +541,8 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
@@ -629,8 +636,8 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddress) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(kRegisterAddress, kActualAddress);
 
   // Check data.
@@ -721,8 +728,8 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddressAndBigEndian) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
@@ -756,8 +763,8 @@ TEST(RegisterDevice, ReadRegister16With2ByteBigEndianAddress) {
   EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
             address_buffer.size());
 
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(address_buffer.data())));
+  uint16_t kActualAddress;
+  std::memcpy(&kActualAddress, address_buffer.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
@@ -787,8 +794,9 @@ TEST(RegisterDevice, WriteRegister16with2ByteBigEndianAddress) {
   EXPECT_EQ(test_device_builder.size(), kAddressSize + sizeof(kRegisterData));
 
   // Check address.
-  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
-      const_cast<std::byte*>(test_device_builder.data())));
+  uint16_t kActualAddress;
+  std::memcpy(
+      &kActualAddress, test_device_builder.data(), sizeof(kActualAddress));
   EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
