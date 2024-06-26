@@ -869,6 +869,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
     )
 
     # Build upstream Pigweed for the rp2040.
+    # First using the config.
     build_bazel(
         ctx,
         'build',
@@ -880,6 +881,15 @@ def bazel_build(ctx: PresubmitContext) -> None:
         # explicitly listed target is incompatible with the platform, Bazel
         # will return an error instead of skipping it.)
         '//pw_system:system_example',
+    )
+    # Then using the transition.
+    #
+    # This ensures that the rp2040_binary rule transition includes all required
+    # backends.
+    build_bazel(
+        ctx,
+        'build',
+        '//pw_system:rp2040_system_example',
     )
 
     # Build upstream Pigweed for the Discovery board using STM32Cube.
