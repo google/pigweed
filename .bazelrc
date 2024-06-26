@@ -127,6 +127,8 @@ common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 build:rp2040 --platforms=@pigweed//targets/rp2040
+build:rp2040 --//pw_assert:backend=@pigweed//pw_assert_basic
+build:rp2040 --//pw_assert:backend_impl=@pigweed//pw_assert_basic:impl
 build:rp2040 --//pw_interrupt:backend=@pigweed//pw_interrupt_cortex_m:context
 build:rp2040 --//pw_log:backend=@pigweed//pw_log_tokenized
 build:rp2040 --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
@@ -147,6 +149,8 @@ test:rp2040 --run_under=//targets/rp2040/py:unit_test_client
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 build:stm32f429i_baremetal --platforms=//targets/stm32f429i_disc1:platform
+build:stm32f429i_baremetal --//pw_assert:backend=@pigweed//pw_assert_basic
+build:stm32f429i_baremetal --//pw_assert:backend_impl=@pigweed//pw_assert_basic:impl
 build:stm32f429i_baremetal --//pw_boot:backend=@pigweed//pw_boot_cortex_m
 build:stm32f429i_baremetal --//pw_log:backend=@pigweed//pw_log_basic
 build:stm32f429i_baremetal --//pw_log:backend_impl=@pigweed//pw_log_basic:impl
@@ -161,6 +165,8 @@ build:stm32f429i_freertos --platforms=//targets/stm32f429i_disc1_stm32cube:platf
 build:stm32f429i_freertos --copt="-DSTM32CUBE_HEADER=\"stm32f4xx.h\""
 build:stm32f429i_freertos --copt="-DSTM32F429xx"
 build:stm32f429i_freertos --@stm32f4xx_hal_driver//:hal_config=//targets/stm32f429i_disc1_stm32cube:hal_config
+build:stm32f429i_freertos --//pw_assert:backend=@pigweed//pw_assert_basic
+build:stm32f429i_freertos --//pw_assert:backend_impl=@pigweed//pw_assert_basic:impl
 build:stm32f429i_freertos --//pw_boot:backend=@pigweed//pw_boot_cortex_m
 build:stm32f429i_freertos --//pw_log:backend=@pigweed//pw_log_tokenized
 build:stm32f429i_freertos --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl

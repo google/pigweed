@@ -22,6 +22,8 @@ def _rp2040_transition_impl(settings, attr):
         "@freertos//:freertos_config": "@pigweed//targets/rp2040:freertos_config",
         "@pico-sdk//bazel/config:PICO_STDIO_UART": True,
         "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
+        "@pigweed//pw_assert:backend": "@pigweed//pw_assert_basic",
+        "@pigweed//pw_assert:backend_impl": "@pigweed//pw_assert_basic:impl",
         "@pigweed//pw_interrupt:backend": "@pigweed//pw_interrupt_cortex_m:context",
         "@pigweed//pw_log:backend": "@pigweed//pw_log_tokenized",
         "@pigweed//pw_log:backend_impl": "@pigweed//pw_log_tokenized:impl",
@@ -35,6 +37,8 @@ _rp2040_transition = transition(
     inputs = [],
     outputs = [
         "//command_line_option:platforms",
+        "@pigweed//pw_assert:backend",
+        "@pigweed//pw_assert:backend_impl",
         "@pigweed//pw_interrupt:backend",
         "@pigweed//pw_log:backend",
         "@pigweed//pw_log:backend_impl",

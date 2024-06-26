@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "host_backend_alias")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
@@ -48,14 +49,24 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = ":backend_multiplexer",
+    build_setting_default = ":unspecified_backend",
+)
+
+host_backend_alias(
+    name = "unspecified_backend",
+    backend = "//pw_assert_basic",
 )
 
 label_flag(
     name = "backend_impl",
-    build_setting_default = ":backend_impl_multiplexer",
+    build_setting_default = ":unspecified_backend_impl",
     # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
     tags = ["keep_dep"],
+)
+
+host_backend_alias(
+    name = "unspecified_backend_impl",
+    backend = "@pigweed//pw_assert_basic:impl",
 )
 
 cc_library(
@@ -128,20 +139,6 @@ cc_library(
         ":print_and_abort_assert_backend",
         ":print_and_abort_check_backend",
     ],
-)
-
-cc_library(
-    name = "backend_multiplexer",
-    visibility = ["@pigweed//targets:__pkg__"],
-    deps = [
-        "@pigweed//pw_assert_basic",
-    ],
-)
-
-alias(
-    name = "backend_impl_multiplexer",
-    actual = "@pigweed//pw_assert_basic:impl",
-    visibility = ["@pigweed//targets:__pkg__"],
 )
 
 pw_cc_test(
