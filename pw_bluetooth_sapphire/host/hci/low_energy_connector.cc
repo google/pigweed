@@ -142,8 +142,8 @@ void LowEnergyConnector::CreateConnectionInternal(
       pw::bluetooth::emboss::LECreateConnectionCommandWriter>(
       hci_spec::kLECreateConnection);
   auto params = request.view_t();
-  params.le_scan_interval().Write(scan_interval);
-  params.le_scan_window().Write(scan_window);
+  params.le_scan_interval().UncheckedWrite(scan_interval);
+  params.le_scan_window().UncheckedWrite(scan_window);
   params.initiator_filter_policy().Write(
       use_accept_list ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
                       : pw::bluetooth::emboss::GenericEnableParam::DISABLE);
@@ -159,10 +159,13 @@ void LowEnergyConnector::CreateConnectionInternal(
           ? pw::bluetooth::emboss::LEOwnAddressType::PUBLIC
           : pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
 
-  params.connection_interval_min().Write(initial_parameters.min_interval());
-  params.connection_interval_max().Write(initial_parameters.max_interval());
-  params.max_latency().Write(initial_parameters.max_latency());
-  params.supervision_timeout().Write(initial_parameters.supervision_timeout());
+  params.connection_interval_min().UncheckedWrite(
+      initial_parameters.min_interval());
+  params.connection_interval_max().UncheckedWrite(
+      initial_parameters.max_interval());
+  params.max_latency().UncheckedWrite(initial_parameters.max_latency());
+  params.supervision_timeout().UncheckedWrite(
+      initial_parameters.supervision_timeout());
   params.min_connection_event_length().Write(0x0000);
   params.max_connection_event_length().Write(0x0000);
 
