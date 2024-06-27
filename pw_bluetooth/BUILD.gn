@@ -92,6 +92,15 @@ if (dir_pw_third_party_emboss != "") {
   emboss_cc_library("emboss_att") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/att.emb"
+    imports = [
+      "public/pw_bluetooth/hci_data.emb",
+      "public/pw_bluetooth/l2cap_frames.emb",
+    ]
+    import_dirs = [ "public" ]
+    deps = [
+      ":emboss_hci_data",
+      ":emboss_l2cap_frames",
+    ]
   }
 
   emboss_cc_library("emboss_hci_android") {

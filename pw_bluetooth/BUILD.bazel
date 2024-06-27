@@ -104,7 +104,12 @@ emboss_cc_library(
     name = "_emboss_att",
     srcs = ["public/pw_bluetooth/att.emb"],
     enable_enum_traits = False,
+    import_dirs = ["public"],
     visibility = ["//visibility:private"],
+    deps = [
+        ":_emboss_hci_data",
+        ":_emboss_l2cap_frames",
+    ],
 )
 
 cc_library(

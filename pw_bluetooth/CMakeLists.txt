@@ -97,11 +97,6 @@ endif()
 
 include($ENV{PW_ROOT}/third_party/emboss/emboss.cmake)
 
-emboss_cc_library(pw_bluetooth.emboss_att
-  SOURCES
-    public/pw_bluetooth/att.emb
-)
-
 emboss_cc_library(pw_bluetooth.emboss_hci_common
   SOURCES
     public/pw_bluetooth/hci_common.emb
@@ -149,6 +144,16 @@ emboss_cc_library(pw_bluetooth.emboss_hci_data
 emboss_cc_library(pw_bluetooth.emboss_l2cap_frames
   SOURCES
     public/pw_bluetooth/l2cap_frames.emb
+)
+
+emboss_cc_library(pw_bluetooth.emboss_att
+  SOURCES
+    public/pw_bluetooth/att.emb
+  IMPORT_DIRS
+    public
+  DEPS
+    pw_bluetooth.emboss_hci_data
+    pw_bluetooth.emboss_l2cap_frames
 )
 
 emboss_cc_library(pw_bluetooth.emboss_hci_test
