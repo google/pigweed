@@ -125,6 +125,13 @@ pw_system_target("rp2040") {
   }
 }
 
+# This is target is to keep the presubmit happy.
+# It is not yet used.
+# TODO: pwbug.dev/349853258 - add a GN toolchain for pw_system_async.
+pw_source_set("system_async_example") {
+  sources = [ "system_async_example.cc" ]
+}
+
 pw_doc_group("target_docs") {
   sources = [
     "target_docs.rst",

@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:pigweed.bzl", "pw_cc_binary")
+load("//targets/rp2040:flash.bzl", "flash_rp2040")
+load("//targets/rp2040:transition.bzl", "rp2040_binary")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -102,4 +106,30 @@ cc_library(
         "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
     ],
     alwayslink = 1,
+)
+
+pw_cc_binary(
+    name = "system_async_example",
+    testonly = True,
+    srcs = ["system_async_example.cc"],
+    deps = [
+        "//pw_channel:rp2_stdio_channel",
+        "//pw_multibuf:testing",
+        "//pw_system:async",
+        "//third_party/freertos:support",
+        "@freertos",
+        "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
+    ],
+)
+
+rp2040_binary(
+    name = "rp2040_system_async_example",
+    testonly = True,
+    binary = ":system_async_example",
+)
+
+flash_rp2040(
+    name = "flash_rp2040_system_async_example",
+    testonly = True,
+    rp2040_binary = ":rp2040_system_async_example",
 )

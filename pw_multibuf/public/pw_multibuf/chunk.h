@@ -14,6 +14,7 @@
 #pragma once
 
 #include <optional>
+#include <utility>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
