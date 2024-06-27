@@ -17,8 +17,6 @@
 #include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth_proxy/acl_data_channel.h"
 #include "pw_status/status.h"
-#include "pw_sync/lock_annotations.h"
-#include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -99,6 +97,9 @@ class ProxyHost {
                       uint16_t attribute_handle,
                       const pw::span<uint8_t> attribute_value)
       PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
+
+  // Process a Command_Complete event.
+  void ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer);
 
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.

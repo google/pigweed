@@ -45,9 +45,34 @@ void ProxyHost::ProcessH4HciFromController(pw::span<uint8_t> hci_buffer) {
     return;
   }
 
-  if (event.event_code_enum().Read() != emboss::EventCode::COMMAND_COMPLETE) {
-    return;
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
+  switch (event.event_code_enum().Read()) {
+    case emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS: {
+      auto nocp_event =
+          MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(hci_buffer);
+      if (!nocp_event.IsComplete()) {
+        PW_LOG_ERROR(
+            "Buffer is too small for NUMBER_OF_COMPLETED_PACKETS event. So "
+            "will not process.");
+        break;
+      }
+      acl_data_channel_.ProcessNumberOfCompletedPacketsEvent(nocp_event);
+      break;
+    }
+    case emboss::EventCode::COMMAND_COMPLETE: {
+      ProcessCommandCompleteEvent(hci_buffer);
+      break;
+    }
+    default: {
+      PW_LOG_ERROR("Received unexpected HCI event. So will not process.");
+      return;
+    }
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
+}
+
+void ProxyHost::ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer) {
   auto command_complete_event =
       MakeEmboss<emboss::CommandCompleteEventView>(hci_buffer);
   if (!command_complete_event.IsComplete()) {
@@ -166,7 +191,9 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
   // H4 packet is hereby moved. Either ACL data channel will move packet to
   // controller or will be unable to send packet. In either case, packet will be
   // destructed, so its release function will clear the `acl_send_pending` flag.
-  acl_data_channel_.SendAcl(std::move(h4_att_notify));
+  if (!acl_data_channel_.SendAcl(std::move(h4_att_notify))) {
+    return pw::Status::Unavailable();
+  }
   return OkStatus();
 }
 

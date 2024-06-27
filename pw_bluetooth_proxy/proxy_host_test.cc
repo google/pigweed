@@ -964,5 +964,449 @@ TEST(GattNotifyTest, SendGattNotifyReturnsErrorForInvalidArgs) {
             PW_STATUS_INVALID_ARGUMENT);
 }
 
+// ########## NumberOfCompletedPacketsTest
+
+TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
+  constexpr size_t kNumConnections = 3;
+  struct {
+    int sends_called = 0;
+    std::array<uint16_t, kNumConnections> connection_handles = {
+        0x123, 0x456, 0x789};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        EXPECT_EQ(packet.GetHciSpan().size(), 15ul);
+        EXPECT_EQ(view.num_handles().Read(), capture.connection_handles.size());
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Proxy should have reclaimed 1 credit from Connection 0 (leaving 0
+        // credits in packet), no credits from Connection 1 (meaning 0 will be
+        // unchanged), and 1 credit from Connection 2 (leaving 0).
+        EXPECT_EQ(view.nocp_data()[0].connection_handle().Read(),
+                  capture.connection_handles[0]);
+        EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 0);
+
+        EXPECT_EQ(view.nocp_data()[1].connection_handle().Read(),
+                  capture.connection_handles[1]);
+        EXPECT_EQ(view.nocp_data()[1].num_completed_packets().Read(), 0);
+
+        EXPECT_EQ(view.nocp_data()[2].connection_handle().Read(),
+                  capture.connection_handles[2]);
+        EXPECT_EQ(view.nocp_data()[2].num_completed_packets().Read(), 0);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              kNumConnections);
+  SendReadBufferResponseFromController(proxy, kNumConnections);
+
+  std::array<uint8_t, 1> attribute_value = {0};
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 3);
+
+  // Send packet; num free packets should decrement.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[0],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+
+  // Send packet over Connection 1, which will not have a packet completed in
+  // the Number_of_Completed_Packets event.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[1],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+
+  // Send third packet; num free packets should decrement again.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[2],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+
+  // At this point, proxy has used all 3 credits, 1 on each Connection, so send
+  // should fail.
+  EXPECT_EQ(proxy.sendGattNotify(
+                capture.connection_handles[0], 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+
+  std::array<
+      uint8_t,
+      emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+          kNumConnections *
+              emboss::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes()>
+      hci_arr;
+  H4PacketWithHci nocp_packet{emboss::H4PacketType::EVENT, hci_arr};
+  auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      nocp_packet.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(kNumConnections);
+
+  // Number_of_Completed_Packets event that reports 1 packet on Connections 0 &
+  // 1, and no packets on Connection 2.
+  view.nocp_data()[0].connection_handle().Write(capture.connection_handles[0]);
+  view.nocp_data()[0].num_completed_packets().Write(1);
+  view.nocp_data()[1].connection_handle().Write(capture.connection_handles[1]);
+  view.nocp_data()[1].num_completed_packets().Write(0);
+  view.nocp_data()[2].connection_handle().Write(capture.connection_handles[2]);
+  view.nocp_data()[2].num_completed_packets().Write(1);
+
+  // Checks in send_to_host_fn will ensure we have reclaimed 2 of 3 credits.
+  proxy.HandleH4HciFromController(std::move(nocp_packet));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
+  constexpr size_t kNumConnections = 2;
+  struct {
+    int sends_called = 0;
+    std::array<uint16_t, kNumConnections> connection_handles = {0x123, 0x456};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
+        EXPECT_EQ(view.num_handles().Read(), capture.connection_handles.size());
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Proxy should have reclaimed 1 credit from Connection 0 (leaving
+        // 9 credits in packet) and 1 credit from Connection 2 (leaving 14).
+        EXPECT_EQ(view.nocp_data()[0].connection_handle().Read(),
+                  capture.connection_handles[0]);
+        EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 9);
+
+        EXPECT_EQ(view.nocp_data()[1].connection_handle().Read(),
+                  capture.connection_handles[1]);
+        EXPECT_EQ(view.nocp_data()[1].num_completed_packets().Read(), 14);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  SendReadBufferResponseFromController(proxy, 2);
+
+  std::array<uint8_t, 1> attribute_value = {0};
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+
+  // Send packet over Connection 0; num free packets should decrement.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[0],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+
+  // Send packet over Connection 1; num free packets should decrement again.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[1],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+
+  // At this point proxy, has used both credits, so send should fail.
+  EXPECT_EQ(proxy.sendGattNotify(
+                capture.connection_handles[1], 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+
+  std::array<
+      uint8_t,
+      emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+          kNumConnections *
+              emboss::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes()>
+      hci_arr;
+  H4PacketWithHci nocp_event{emboss::H4PacketType::EVENT, hci_arr};
+  auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      nocp_event.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(kNumConnections);
+
+  // Number_of_Completed_Packets event that reports 10 packets on Connection 0
+  // and 15 packets on Connection 1.
+  for (size_t i = 0; i < kNumConnections; ++i) {
+    view.nocp_data()[i].connection_handle().Write(
+        capture.connection_handles[i]);
+    view.nocp_data()[i].num_completed_packets().Write(10 + 5 * i);
+  }
+
+  // Checks in send_to_host_fn will ensure we have reclaimed exactly 2 credits,
+  // 1 from each Connection.
+  proxy.HandleH4HciFromController(std::move(nocp_event));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
+  constexpr size_t kNumConnections = 2;
+  struct {
+    int sends_called = 0;
+    std::array<uint16_t, kNumConnections> connection_handles = {0x123, 0x456};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
+        EXPECT_EQ(view.num_handles().Read(), 2);
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Proxy has 4 credits it wants to reclaim, but it should have only
+        // reclaimed the 2 credits it used on Connection 0.
+        EXPECT_EQ(view.nocp_data()[0].connection_handle().Read(),
+                  capture.connection_handles[0]);
+        EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 8);
+        EXPECT_EQ(view.nocp_data()[1].connection_handle().Read(),
+                  capture.connection_handles[1]);
+        EXPECT_EQ(view.nocp_data()[1].num_completed_packets().Read(), 15);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 4);
+  SendReadBufferResponseFromController(proxy, 4);
+
+  std::array<uint8_t, 1> attribute_value = {0};
+
+  // Use 2 credits on Connection 0 and 2 credits on random connections that will
+  // not be included in the NOCP event.
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[0],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(capture.connection_handles[0],
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_TRUE(proxy.sendGattNotify(0xABC, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.sendGattNotify(0xBCD, 1, pw::span(attribute_value)).ok());
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+
+  std::array<
+      uint8_t,
+      emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+          kNumConnections *
+              emboss::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes()>
+      hci_arr;
+  H4PacketWithHci nocp_event{emboss::H4PacketType::EVENT, hci_arr};
+  auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      nocp_event.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(kNumConnections);
+
+  // Number_of_Completed_Packets event that reports 10 packets on Connection 0
+  // and 15 packets on Connection 1.
+  for (size_t i = 0; i < kNumConnections; ++i) {
+    view.nocp_data()[i].connection_handle().Write(
+        capture.connection_handles[i]);
+    view.nocp_data()[i].num_completed_packets().Write(10 + 5 * i);
+  }
+
+  // Checks in send_to_host_fn will ensure we have reclaimed only 2 credits.
+  proxy.HandleH4HciFromController(std::move(nocp_event));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
+  constexpr size_t kNumConnections = 2;
+  struct {
+    int sends_called = 0;
+    std::array<uint16_t, kNumConnections> connection_handles = {0x123, 0x456};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
+        EXPECT_EQ(view.num_handles().Read(), 2);
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Event should be unmodified.
+        EXPECT_EQ(view.nocp_data()[0].connection_handle().Read(),
+                  capture.connection_handles[0]);
+        EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 10);
+        EXPECT_EQ(view.nocp_data()[1].connection_handle().Read(),
+                  capture.connection_handles[1]);
+        EXPECT_EQ(view.nocp_data()[1].num_completed_packets().Read(), 15);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
+  SendReadBufferResponseFromController(proxy, 10);
+
+  std::array<
+      uint8_t,
+      emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+          kNumConnections *
+              emboss::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes()>
+      hci_arr;
+  H4PacketWithHci nocp_event{emboss::H4PacketType::EVENT, hci_arr};
+  auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      nocp_event.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(kNumConnections);
+
+  // Number_of_Completed_Packets event that reports 10 packets on Connection 0
+  // and 15 packets on Connection 1.
+  for (size_t i = 0; i < kNumConnections; ++i) {
+    view.nocp_data()[i].connection_handle().Write(
+        capture.connection_handles[i]);
+    view.nocp_data()[i].num_completed_packets().Write(10 + 5 * i);
+  }
+
+  // Checks in send_to_host_fn will ensure we have not modified the NOCP event.
+  proxy.HandleH4HciFromController(std::move(nocp_event));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 10);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
+  constexpr size_t kNumConnections = 5;
+  struct {
+    int sends_called = 0;
+    std::array<uint16_t, kNumConnections> connection_handles = {
+        0x123, 0x234, 0x345, 0x456, 0x567};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        if (view.num_handles().Read() == 0) {
+          return;
+        }
+
+        EXPECT_EQ(packet.GetHciSpan().size(), 23ul);
+        EXPECT_EQ(view.num_handles().Read(), 5);
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Event should be unmodified.
+        for (int i = 0; i < 5; ++i) {
+          EXPECT_EQ(view.nocp_data()[i].connection_handle().Read(),
+                    capture.connection_handles[i]);
+          EXPECT_EQ(view.nocp_data()[i].num_completed_packets().Read(), 0);
+        }
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
+  SendReadBufferResponseFromController(proxy, 10);
+
+  std::array<uint8_t, emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes()>
+      hci_arr_empty_event;
+  // Number_of_Completed_Packets event with no entries.
+  H4PacketWithHci empty_nocp_event{emboss::H4PacketType::EVENT,
+                                   hci_arr_empty_event};
+  auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      empty_nocp_event.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(0);
+
+  std::array<
+      uint8_t,
+      emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+          kNumConnections *
+              emboss::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes()>
+      hci_arr_zeros_event;
+  H4PacketWithHci zeros_nocp_event{emboss::H4PacketType::EVENT,
+                                   hci_arr_zeros_event};
+  view = MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+      zeros_nocp_event.GetHciSpan());
+  view.header().event_code_enum().Write(
+      emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.num_handles().Write(kNumConnections);
+  // Number_of_Completed_Packets event that reports 0 packets for various
+  // connections.
+  for (size_t i = 0; i < kNumConnections; ++i) {
+    view.nocp_data()[i].connection_handle().Write(
+        capture.connection_handles[i]);
+    view.nocp_data()[i].num_completed_packets().Write(0);
+  }
+
+  proxy.HandleH4HciFromController(std::move(empty_nocp_event));
+  proxy.HandleH4HciFromController(std::move(zeros_nocp_event));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 10);
+  EXPECT_EQ(capture.sends_called, 2);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth::proxy
