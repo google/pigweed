@@ -26,7 +26,9 @@ def pw_ide_deps():
     maybe(
         http_archive,
         name = "hedron_compile_commands",
-        url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/a14ad3a64e7bf398ab48105aaa0348e032ac87f8.tar.gz",
-        strip_prefix = "bazel-compile-commands-extractor-a14ad3a64e7bf398ab48105aaa0348e032ac87f8",
-        sha256 = "f01636585c3fb61c7c2dc74df511217cd5ad16427528ab33bc76bb34535f10a1",
+        # TODO: https://pwbug.dev/349880767 - Point this back to the upstream
+        # repo once this PR is merged.
+        url = "https://github.com/chadnorvell/bazel-compile-commands-extractor/archive/be255bec27246753e98c7ea3ebd77ea37a66e6e2.tar.gz",
+        strip_prefix = "bazel-compile-commands-extractor-be255bec27246753e98c7ea3ebd77ea37a66e6e2",
+        sha256 = "342441bd3be41433f81bc9c26011317ade06b8acf31b68ba3cebe1e54bf6314c",
     )
