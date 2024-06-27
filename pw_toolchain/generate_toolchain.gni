@@ -434,6 +434,16 @@ template("generate_toolchain") {
           outputs = [ _output ]
         }
 
+        tool("rust_staticlib") {
+          description = "rustc {{output}}"
+          default_output_dir = "{{target_out_dir}}/lib"
+          depfile = "{{output}}.d"
+          output_prefix = "lib"
+          default_output_extension = ".a"
+          command = _rustc_command
+          outputs = [ _output ]
+        }
+
         tool("rust_macro") {
           description = "rustc {{output}}"
           default_output_dir = "{{target_out_dir}}/lib"
