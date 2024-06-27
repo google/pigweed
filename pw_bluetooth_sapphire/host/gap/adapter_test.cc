@@ -1391,7 +1391,10 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
   settings.AddLESupportedCommands();
   settings.lmp_features_page0 |=
       static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
-  settings.le_acl_data_packet_length = 0x1B;  // minimum supported size
+
+  // Minimum supported size as per Core Spec v5.4, Vol 4, Part E, 7.8.2
+  settings.le_acl_data_packet_length = 0x1B;
+
   settings.le_total_num_acl_data_packets = 2;
   settings.acl_data_packet_length = 3;
   settings.total_num_acl_data_packets = 4;
