@@ -61,6 +61,10 @@ class AclDataChannel {
   void ProcessNumberOfCompletedPacketsEvent(
       emboss::NumberOfCompletedPacketsEventWriter nocp_event);
 
+  // Reclaim any credits we have associated with the removed connection.
+  void ProcessDisconnectionCompleteEvent(
+      emboss::DisconnectionCompleteEventWriter dc_event);
+
   // Returns the number of LE ACL send credits reserved for the proxy.
   uint16_t GetLeAclCreditsToReserve() const;
 
@@ -73,6 +77,17 @@ class AclDataChannel {
   bool SendAcl(H4PacketWithH4&& h4_packet);
 
  private:
+  struct AclConnection {
+    uint16_t handle = 0;
+    uint16_t num_pending_packets = 0;
+  };
+
+  // Returns iterator to AclConnection with provided `handle` in
+  // `active_connections_`. Returns active_connections_.end() if no such
+  // connection exists.
+  AclConnection* FindConnection(uint16_t handle)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+
   // Maximum number of simultaneous credit-allocated LE connections supported.
   // TODO: https://pwbug.dev/349700888 - Make size configurable.
   static constexpr size_t kMaxConnections = 10;
@@ -98,11 +113,6 @@ class AclDataChannel {
   // have not yet completed.
   uint16_t proxy_pending_le_acl_packets_
       PW_GUARDED_BY(credit_allocation_mutex_);
-
-  struct AclConnection {
-    uint16_t handle = 0;
-    uint16_t num_pending_packets = 0;
-  };
 
   // List of credit-allocated LE connection handles.
   pw::Vector<AclConnection, kMaxConnections> active_connections_

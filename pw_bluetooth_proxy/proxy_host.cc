@@ -60,6 +60,18 @@ void ProxyHost::ProcessH4HciFromController(pw::span<uint8_t> hci_buffer) {
       acl_data_channel_.ProcessNumberOfCompletedPacketsEvent(nocp_event);
       break;
     }
+    case emboss::EventCode::DISCONNECTION_COMPLETE: {
+      auto dc_event =
+          MakeEmboss<emboss::DisconnectionCompleteEventWriter>(hci_buffer);
+      if (!dc_event.IsComplete()) {
+        PW_LOG_ERROR(
+            "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
+            "process.");
+        break;
+      }
+      acl_data_channel_.ProcessDisconnectionCompleteEvent(dc_event);
+      break;
+    }
     case emboss::EventCode::COMMAND_COMPLETE: {
       ProcessCommandCompleteEvent(hci_buffer);
       break;

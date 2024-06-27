@@ -73,11 +73,8 @@ void AclDataChannel::ProcessNumberOfCompletedPacketsEvent(
   std::lock_guard lock(credit_allocation_mutex_);
   for (uint8_t i = 0; i < nocp_event.num_handles().Read(); ++i) {
     uint16_t handle = nocp_event.nocp_data()[i].connection_handle().Read();
-    auto connection_it = containers::FindIf(
-        active_connections_, [&handle](const AclConnection& connection) {
-          return connection.handle == handle;
-        });
-    if (connection_it == active_connections_.end()) {
+    AclConnection* connection_ptr = FindConnection(handle);
+    if (!connection_ptr) {
       continue;
     }
 
@@ -85,11 +82,33 @@ void AclDataChannel::ProcessNumberOfCompletedPacketsEvent(
     uint16_t num_completed_packets =
         nocp_event.nocp_data()[i].num_completed_packets().Read();
     uint16_t num_reclaimed =
-        std::min(num_completed_packets, connection_it->num_pending_packets);
+        std::min(num_completed_packets, connection_ptr->num_pending_packets);
     proxy_pending_le_acl_packets_ -= num_reclaimed;
-    connection_it->num_pending_packets -= num_reclaimed;
+    connection_ptr->num_pending_packets -= num_reclaimed;
     nocp_event.nocp_data()[i].num_completed_packets().Write(
         num_completed_packets - num_reclaimed);
+  }
+}
+
+void AclDataChannel::ProcessDisconnectionCompleteEvent(
+    emboss::DisconnectionCompleteEventWriter dc_event) {
+  std::lock_guard lock(credit_allocation_mutex_);
+  if (dc_event.status().Read() != emboss::StatusCode::SUCCESS) {
+    PW_LOG_WARN(
+        "Proxy viewed failed disconnect (status: %#.2hhx). Not releasing "
+        "associated credits.",
+        static_cast<unsigned char>(dc_event.status().Read()));
+    return;
+  }
+  PW_LOG_INFO(
+      "Proxy viewed disconnect (reason: %#.2hhx). Releasing associated credits",
+      static_cast<unsigned char>(dc_event.reason().Read()));
+
+  AclConnection* connection_ptr =
+      FindConnection(dc_event.connection_handle().Read());
+  if (connection_ptr) {
+    proxy_pending_le_acl_packets_ -= connection_ptr->num_pending_packets;
+    active_connections_.erase(connection_ptr);
   }
 }
 
@@ -117,18 +136,23 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   }
   uint16_t handle = acl_view.handle().Read();
 
-  auto connection_it = containers::FindIf(
-      active_connections_, [&handle](const AclConnection& connection) {
-        return connection.handle == handle;
-      });
-  if (connection_it == active_connections_.end()) {
+  AclConnection* connection_ptr = FindConnection(handle);
+  if (!connection_ptr) {
     active_connections_.push_back({handle, /*num_pending_packets=*/1});
   } else {
-    ++connection_it->num_pending_packets;
+    ++connection_ptr->num_pending_packets;
   }
 
   hci_transport_.SendToController(std::move(h4_packet));
   return true;
+}
+
+AclDataChannel::AclConnection* AclDataChannel::FindConnection(uint16_t handle) {
+  AclConnection* connection_it = containers::FindIf(
+      active_connections_, [&handle](const AclConnection& connection) {
+        return connection.handle == handle;
+      });
+  return connection_it == active_connections_.end() ? nullptr : connection_it;
 }
 
 }  // namespace pw::bluetooth::proxy
