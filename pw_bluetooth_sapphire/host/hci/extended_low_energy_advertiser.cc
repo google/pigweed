@@ -49,7 +49,8 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
+std::optional<EmbossCommandPacket>
+ExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pw::bluetooth::emboss::GenericEnableParam enable) {
   // We only enable or disable a single address at a time. The multiply by 1 is
@@ -307,7 +308,8 @@ ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+std::optional<EmbossCommandPacket>
+ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address);
