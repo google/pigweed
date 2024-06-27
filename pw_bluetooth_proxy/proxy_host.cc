@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_proxy/proxy_host.h"
 
+#include <mutex>
+
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
@@ -27,24 +29,16 @@ ProxyHost::ProxyHost(
     pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
     pw::Function<void(H4PacketWithH4&& packet)>&& send_to_controller_fn,
     uint16_t le_acl_credits_to_reserve)
-    : outward_send_to_host_fn_(std::move(send_to_host_fn)),
-      outward_send_to_controller_fn_(std::move(send_to_controller_fn)),
-      acl_data_channel_{le_acl_credits_to_reserve} {}
+    : hci_transport_(std::move(send_to_host_fn),
+                     std::move(send_to_controller_fn)),
+      acl_data_channel_(hci_transport_, le_acl_credits_to_reserve),
+      acl_send_pending_(false) {}
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
-  SendToController(std::move(h4_packet));
+  hci_transport_.SendToController(std::move(h4_packet));
 }
 
-void ProxyHost::ProcessH4HciFromController(H4PacketWithHci&& h4_packet) {
-  if (h4_packet.GetHciSpan().empty()) {
-    PW_LOG_ERROR("Received empty H4 buffer. So will not process.");
-    return;
-  }
-
-  if (h4_packet.GetH4Type() != emboss::H4PacketType::EVENT) {
-    return;
-  }
-  pw::span hci_buffer = h4_packet.GetHciSpan();
+void ProxyHost::ProcessH4HciFromController(pw::span<uint8_t> hci_buffer) {
   auto event = MakeEmboss<emboss::EventHeaderView>(hci_buffer);
   if (!event.IsComplete()) {
     PW_LOG_ERROR("Buffer is too small for EventHeader. So will not process.");
@@ -99,18 +93,114 @@ void ProxyHost::ProcessH4HciFromController(H4PacketWithHci&& h4_packet) {
 }
 
 void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
-  ProcessH4HciFromController(std::move(h4_packet));
-  SendToHost(std::move(h4_packet));
+  if (h4_packet.GetHciSpan().empty()) {
+    PW_LOG_ERROR("Received empty H4 buffer. So will not process.");
+  } else if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
+    ProcessH4HciFromController(h4_packet.GetHciSpan());
+  }
+  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
-void ProxyHost::SendToHost(H4PacketWithHci&& h4_packet) {
-  PW_DCHECK(outward_send_to_host_fn_ != nullptr);
-  outward_send_to_host_fn_(std::move(h4_packet));
+pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
+                                     uint16_t attribute_handle,
+                                     const pw::span<uint8_t> attribute_value) {
+  if (connection_handle > 0x0EFF) {
+    PW_LOG_ERROR(
+        "Invalid connection handle: %d (max: 0x0EFF). So will not process.",
+        connection_handle);
+    return pw::Status::InvalidArgument();
+  }
+  if (attribute_handle == 0) {
+    PW_LOG_ERROR("Attribute handle cannot be 0. So will not process.");
+    return pw::Status::InvalidArgument();
+  }
+  if (constexpr uint16_t kMaxAttributeSize =
+          kH4BuffSize - 1 - emboss::AttNotifyOverAcl::MinSizeInBytes();
+      attribute_value.size() > kMaxAttributeSize) {
+    PW_LOG_ERROR("Attribute too large (%zu > %d). So will not process.",
+                 attribute_value.size(),
+                 kMaxAttributeSize);
+    return pw::Status::InvalidArgument();
+  }
+
+  H4PacketWithH4 h4_att_notify({});
+  {
+    std::lock_guard lock(acl_send_mutex_);
+    // TODO: https://pwbug.dev/348680331 - Currently ProxyHost only supports 1
+    // in-flight ACL send, increase this to support multiple.
+    if (acl_send_pending_) {
+      return pw::Status::Unavailable();
+    }
+    acl_send_pending_ = true;
+
+    size_t acl_packet_size =
+        emboss::AttNotifyOverAcl::MinSizeInBytes() + attribute_value.size();
+    emboss::AttNotifyOverAclWriter att_notify =
+        emboss::MakeAttNotifyOverAclView(attribute_value.size(),
+                                         H4HciSubspan(h4_buff_).data(),
+                                         acl_packet_size);
+    if (!att_notify.IsComplete()) {
+      PW_LOG_ERROR("Buffer is too small for ATT Notify. So will not send.");
+      return pw::Status::InvalidArgument();
+    }
+
+    BuildAttNotify(
+        att_notify, connection_handle, attribute_handle, attribute_value);
+
+    size_t h4_packet_size = 1 + acl_packet_size;
+    H4PacketWithH4 h4_temp(pw::span(h4_buff_.data(), h4_packet_size),
+                           [this](const uint8_t* buffer) {
+                             std::lock_guard inner_lock(acl_send_mutex_);
+                             PW_CHECK_PTR_EQ(
+                                 buffer,
+                                 h4_buff_.data(),
+                                 "Received release callback for buffer that "
+                                 "doesn't match our buffer.");
+                             PW_LOG_DEBUG("H4 packet release fn called.");
+                             acl_send_pending_ = false;
+                           });
+    h4_temp.SetH4Type(emboss::H4PacketType::ACL_DATA);
+    h4_att_notify = std::move(h4_temp);
+  }
+
+  // H4 packet is hereby moved. Either ACL data channel will move packet to
+  // controller or will be unable to send packet. In either case, packet will be
+  // destructed, so its release function will clear the `acl_send_pending` flag.
+  acl_data_channel_.SendAcl(std::move(h4_att_notify));
+  return OkStatus();
 }
 
-void ProxyHost::SendToController(H4PacketWithH4&& h4_packet) {
-  PW_DCHECK(outward_send_to_controller_fn_ != nullptr);
-  outward_send_to_controller_fn_(std::move(h4_packet));
+void ProxyHost::BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
+                               uint16_t connection_handle,
+                               uint16_t attribute_handle,
+                               const pw::span<uint8_t> attribute_value) {
+  // ACL header
+  att_notify.acl_header().handle().Write(connection_handle);
+  att_notify.acl_header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+  att_notify.acl_header().broadcast_flag().Write(
+      emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
+  size_t att_pdu_size =
+      emboss::AttHandleValueNtf::MinSizeInBytes() + attribute_value.size();
+  att_notify.acl_header().data_total_length().Write(
+      emboss::BFrameHeader::IntrinsicSizeInBytes() + att_pdu_size);
+
+  // L2CAP header
+  // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.
+  constexpr uint16_t kAttributeProtocolCID = 0x0004;
+  att_notify.l2cap_header().channel_id().Write(kAttributeProtocolCID);
+  att_notify.l2cap_header().pdu_length().Write(att_pdu_size);
+
+  // ATT PDU
+  att_notify.att_handle_value_ntf().attribute_opcode().Write(
+      emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
+  att_notify.att_handle_value_ntf().attribute_handle().Write(attribute_handle);
+  std::memcpy(att_notify.att_handle_value_ntf()
+                  .attribute_value()
+                  .BackingStorage()
+                  .data(),
+              attribute_value.data(),
+              attribute_value.size());
 }
 
 bool ProxyHost::HasSendAclCapability() const {

@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include "pw_assert/check.h"  // IWYU pragma: keep
+#include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth_proxy/acl_data_channel.h"
-#include "pw_bluetooth_proxy/h4_packet.h"
-#include "pw_function/function.h"
 #include "pw_status/status.h"
+#include "pw_sync/lock_annotations.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -29,8 +29,8 @@ class ProxyHost {
   /// Creates an `ProxyHost` that will process HCI packets.
   /// @param[in] send_to_host_fn Callback that will be called when proxy wants
   /// to send HCI packet towards the host.
-  /// @param[in] send_to_controller_fn - Callback that will be called when proxy
-  /// wants to send HCI packet towards the controller.
+  /// @param[in] send_to_controller_fn - Callback that will be called when
+  /// proxy wants to send HCI packet towards the controller.
   ProxyHost(pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
             pw::Function<void(H4PacketWithH4&& packet)>&& send_to_controller_fn,
             uint16_t le_acl_credits_to_reserve);
@@ -46,8 +46,8 @@ class ProxyHost {
 
   /// Called by container to ask proxy to handle a H4 HCI packet sent from the
   /// host side towards the controller side. Proxy will in turn call the
-  /// `send_to_controller_fn` provided during construction to pass the packet on
-  /// to the controller. Some packets may be modified, added, or removed.
+  /// `send_to_controller_fn` provided during construction to pass the packet
+  /// on to the controller. Some packets may be modified, added, or removed.
   void HandleH4HciFromHost(H4PacketWithH4&& h4_packet);
 
   /// Called by container to ask proxy to handle a H4 packet sent from the
@@ -60,8 +60,7 @@ class ProxyHost {
 
   /// Send a GATT Notify to the indicated connection.
   ///
-  /// @param[in] connection_handle The connection handle of the peer the notify
-  ///                              is being sent to.
+  /// @param[in] connection_handle The connection handle of the peer to notify
   ///
   /// @param[in] attribute_handle  The attribute handle the notify should be
   ///                              sent on.
@@ -77,12 +76,9 @@ class ProxyHost {
   ///  UNIMPLEMENTED: If send is not supported by the current implementation.
   ///  INVALID_ARGUMENT: If arguments are invalid.
   /// @endrst
-  pw::Status sendGattNotify(
-      [[maybe_unused]] uint16_t connection_handle,
-      [[maybe_unused]] uint16_t attribute_handle,
-      [[maybe_unused]] pw::span<const uint8_t> attribute_value) {
-    return pw::Status::Unimplemented();
-  }
+  pw::Status sendGattNotify(uint16_t connection_handle,
+                            uint16_t attribute_handle,
+                            const pw::span<uint8_t> attribute_value);
 
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
@@ -95,24 +91,38 @@ class ProxyHost {
 
  private:
   // Process/update the packet.
-  void ProcessH4HciFromController(H4PacketWithHci&& h4_packet);
+  void ProcessH4HciFromController(pw::span<uint8_t> hci_buffer);
 
-  // Send packet onwards to host.
-  void SendToHost(H4PacketWithHci&& h4_packet);
+  // Populate the fields of the provided ATT_HANDLE_VALUE_NTF packet view.
+  void BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
+                      uint16_t connection_handle,
+                      uint16_t attribute_handle,
+                      const pw::span<uint8_t> attribute_value)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
 
-  // Send packet onwards to controller.
-  void SendToController(H4PacketWithH4&& h4_packet);
+  // For sending non-ACL data to the host and controller. ACL traffic shall be
+  // sent through the `acl_data_channel_`.
+  HciTransport hci_transport_;
 
-  // Function to call when proxy wants proxy container to pass a packet to the
-  // host.
-  pw::Function<void(H4PacketWithHci&& packet)> outward_send_to_host_fn_;
-
-  // Function to call when proxy wants proxy container to pass a packet to the
-  // controller.
-  pw::Function<void(H4PacketWithH4&& packet)> outward_send_to_controller_fn_;
-
-  // Owns management of the HCI LE ACL data channel.
+  // Owns management of the LE ACL data channel.
   AclDataChannel acl_data_channel_;
+
+  // Max size of `h4_buff_`.
+  // TODO: https://pwbug.dev/349700888 - Make size configurable.
+  static constexpr uint16_t kH4BuffSize = 14;
+
+  // Sending & releasing ACL packets happen on different threads. As such, we
+  // need a mutex to guard around all operations in the ACL-send pipeline,
+  // including building packets, credit allocation, and releasing packets.
+  sync::Mutex acl_send_mutex_;
+
+  // Static buffer to hold one H4 packet containing an ACL PDU.
+  std::array<uint8_t, kH4BuffSize> h4_buff_ PW_GUARDED_BY(acl_send_mutex_);
+
+  // Set when an H4 packet is sent through the `acl_data_channel_` and cleared
+  // in that H4 packet's release function to indicate that `h4_buff_` is safe to
+  // overwrite.
+  bool acl_send_pending_ PW_GUARDED_BY(acl_send_mutex_);
 };
 
 }  // namespace pw::bluetooth::proxy

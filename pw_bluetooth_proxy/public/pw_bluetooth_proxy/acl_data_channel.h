@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "pw_bluetooth/hci_events.emb.h"
+#include "pw_bluetooth_proxy/hci_transport.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -28,8 +29,10 @@ namespace pw::bluetooth::proxy {
 // buffers.
 class AclDataChannel {
  public:
-  AclDataChannel(uint16_t le_acl_credits_to_reserve)
-      : le_acl_credits_to_reserve_(le_acl_credits_to_reserve) {}
+  AclDataChannel(HciTransport& hci_transport,
+                 uint16_t le_acl_credits_to_reserve)
+      : hci_transport_(hci_transport),
+        le_acl_credits_to_reserve_(le_acl_credits_to_reserve) {}
 
   AclDataChannel(const AclDataChannel&) = delete;
   AclDataChannel& operator=(const AclDataChannel&) = delete;
@@ -55,9 +58,16 @@ class AclDataChannel {
   // Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
 
+  // Send an ACL data packet contained in an H4 packet to the controller.
+  // Returns false if no LE ACL send credits were available to send the packet.
+  bool SendAcl(H4PacketWithH4&& h4_packet);
+
  private:
   // Set to true if channel has been initialized by the host.
   bool initialized_ = false;
+
+  // Reference to the transport owned by the host.
+  HciTransport& hci_transport_;
 
   // The amount of credits this channel will try to reserve.
   const uint16_t le_acl_credits_to_reserve_;

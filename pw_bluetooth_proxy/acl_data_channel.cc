@@ -74,4 +74,9 @@ uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
   return proxy_max_le_acl_packets_;
 }
 
+bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
+  hci_transport_.SendToController(std::move(h4_packet));
+  return true;
+}
+
 }  // namespace pw::bluetooth::proxy

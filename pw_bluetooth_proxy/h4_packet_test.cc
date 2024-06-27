@@ -163,6 +163,7 @@ TEST(H4PacketRelease, ReleaseCalledAfterMoveOnDtor) {
     H4PacketWithH4 packet2(std::move(packet));
 
     // packet was reset by packet2 move
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_FALSE(packet.HasReleaseFn());
     EXPECT_TRUE(packet.GetHciSpan().empty());
     EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
@@ -194,6 +195,7 @@ TEST(H4PacketRelease, ReleaseCalledAfterMoveAssignOnDtor) {
     packet2 = std::move(packet);
 
     // packet was reset by packet2 move assign
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_FALSE(packet.HasReleaseFn());
     EXPECT_TRUE(packet.GetHciSpan().empty());
     EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::UNKNOWN);
