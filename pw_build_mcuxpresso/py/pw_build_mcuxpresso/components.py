@@ -13,9 +13,9 @@
 # the License.
 """Finds components for a given manifest."""
 
-
 import pathlib
 import sys
+from typing import Collection, Container
 import xml.etree.ElementTree
 
 
@@ -391,8 +391,8 @@ def _parse_dependency(dependency: xml.etree.ElementTree.Element) -> list[str]:
 def check_dependencies(
     root: xml.etree.ElementTree.Element,
     component_id: str,
-    include: list[str],
-    exclude: list[str] | None = None,
+    include: Collection[str],
+    exclude: Container[str] | None = None,
     device_core: str | None = None,
 ) -> bool:
     """Check the list of optional dependencies for a component.
@@ -403,8 +403,9 @@ def check_dependencies(
     Args:
         root: root of element tree.
         component_id: id of component to check.
-        include: list of component ids included in the project.
-        exclude: list of component ids explicitly excluded from the project.
+        include: collection of component ids included in the project.
+        exclude: optional container of component ids explicitly excluded from
+            the project.
         device_core: name of core to filter sources for.
 
     Returns:
@@ -421,8 +422,8 @@ def check_dependencies(
 
 def _check_dependency(
     dependency: xml.etree.ElementTree.Element,
-    include: list[str],
-    exclude: list[str] | None = None,
+    include: Collection[str],
+    exclude: Container[str] | None = None,
     device_core: str | None = None,
 ) -> bool:
     """Check a dependency for a component.
@@ -432,8 +433,9 @@ def _check_dependency(
 
     Args:
         dependency: XML Element of dependency.
-        include: list of component ids included in the project.
-        exclude: list of component ids explicitly excluded from the project.
+        include: collection of component ids included in the project.
+        exclude: optional container of component ids explicitly excluded from
+            the project.
         device_core: name of core to filter sources for.
 
     Returns:
@@ -468,8 +470,8 @@ def _check_dependency(
 
 def create_project(
     root: xml.etree.ElementTree.Element,
-    include: list[str],
-    exclude: list[str] | None = None,
+    include: Collection[str],
+    exclude: Container[str] | None = None,
     device_core: str | None = None,
 ) -> tuple[
     list[str],
@@ -483,8 +485,8 @@ def create_project(
 
     Args:
         root: root of element tree.
-        include: list of component ids included in the project.
-        exclude: list of component ids excluded from the project.
+        include: collection of component ids included in the project.
+        exclude: container of component ids excluded from the project.
         device_core: name of core to filter sources for.
 
     Returns:
@@ -494,7 +496,7 @@ def create_project(
     # Build the project list from the list of included components by expanding
     # dependencies.
     project_list = []
-    pending_list = include
+    pending_list = list(include)
     while len(pending_list) > 0:
         component_id = pending_list.pop(0)
         if component_id in project_list:
@@ -562,16 +564,16 @@ class Project:
     def from_file(
         cls,
         manifest_path: pathlib.Path,
-        include: list[str] | None = None,
-        exclude: list[str] | None = None,
+        include: Collection[str],
+        exclude: Container[str] | None = None,
         device_core: str | None = None,
     ):
         """Create a self-contained project with the specified components.
 
         Args:
             manifest_path: path to SDK manifest XML.
-            include: list of component ids included in the project.
-            exclude: list of component ids excluded from the project.
+            include: collection of component ids included in the project.
+            exclude: container of component ids excluded from the project.
             device_core: name of core to filter sources for.
         """
         tree = xml.etree.ElementTree.parse(manifest_path)
@@ -583,22 +585,18 @@ class Project:
     def __init__(
         self,
         manifest: xml.etree.ElementTree.Element,
-        include: list[str] | None = None,
-        exclude: list[str] | None = None,
+        include: Collection[str],
+        exclude: Container[str] | None = None,
         device_core: str | None = None,
     ):
         """Create a self-contained project with the specified components.
 
         Args:
             manifest: parsed manifest XML.
-            include: list of component ids included in the project.
-            exclude: list of component ids excluded from the project.
+            include: collection of component ids included in the project.
+            exclude: container of component ids excluded from the project.
             device_core: name of core to filter sources for.
         """
-        assert (
-            include is not None
-        ), "Project must include at least one component."
-
         (
             self.component_ids,
             self.defines,
