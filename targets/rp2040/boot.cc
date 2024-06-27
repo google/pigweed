@@ -24,12 +24,6 @@
 #include "pw_system/init.h"
 #include "task.h"
 
-extern "C" {
-// Functions needed when configGENERATE_RUN_TIME_STATS is on.
-// void configureTimerForRunTimeStats(void) {}
-// unsigned long getRunTimeCounterValue(void) { return time_us_64(); }
-}
-
 int main() {
   // PICO_SDK Inits
   stdio_init_all();
