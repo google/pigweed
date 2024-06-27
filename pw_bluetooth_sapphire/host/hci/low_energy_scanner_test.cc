@@ -752,4 +752,25 @@ TYPED_TEST(LowEnergyScannerTest, StopScanWhileWaitingForLocalAddress) {
   EXPECT_FALSE(this->test_device()->le_scan_state().enabled);
 }
 
+TYPED_TEST(LowEnergyScannerTest, CallbackStopsScanning) {
+  auto fake_peer = std::make_unique<FakePeer>(
+      kRandomAddress1, this->dispatcher(), true, false);
+  fake_peer->set_advertising_data(kPlainAdvDataBytes);
+  this->test_device()->AddPeer(std::move(fake_peer));
+
+  fake_peer = std::make_unique<FakePeer>(
+      kRandomAddress2, this->dispatcher(), true, false);
+  fake_peer->set_advertising_data(kPlainAdvDataBytes);
+  this->test_device()->AddPeer(std::move(fake_peer));
+
+  // We should be able to stop scanning in the callback and not crash
+  this->set_peer_found_callback(
+      [&](const LowEnergyScanResult& result, const ByteBuffer& data) {
+        this->scanner()->StopScan();
+      });
+
+  EXPECT_TRUE(this->StartScan(true, kPwScanPeriod));
+  this->RunFor(kScanPeriod);
+}
+
 }  // namespace bt::hci

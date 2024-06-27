@@ -167,6 +167,7 @@ LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
     });
     GetPendingResult(address)->AppendData(report_data);
   }
+
   return CommandChannel::EventCallbackResult::kContinue;
 }
 

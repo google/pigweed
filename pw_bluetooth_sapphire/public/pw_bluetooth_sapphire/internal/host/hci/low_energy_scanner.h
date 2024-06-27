@@ -132,7 +132,6 @@ class LowEnergyScanner : public LocalAddressClient {
   // otherwise, a timeout expires.
   class PendingScanResult {
    public:
-    // |adv|: Initial advertising data payload.
     PendingScanResult(LowEnergyScanResult result,
                       pw::chrono::SystemClock::duration timeout,
                       pw::async::Dispatcher& dispatcher,
@@ -281,27 +280,19 @@ class LowEnergyScanner : public LocalAddressClient {
 
   void AddPendingResult(const DeviceAddress& address,
                         const LowEnergyScanResult& scan_result,
-                        fit::closure timeout_handler) {
-    std::unique_ptr<PendingScanResult> pending =
-        std::make_unique<PendingScanResult>(scan_result,
-                                            scan_response_timeout_,
-                                            pw_dispatcher_,
-                                            std::move(timeout_handler));
-    pending_results_[address] = std::move(pending);
-  }
+                        fit::closure timeout_handler);
 
   bool HasPendingResult(const DeviceAddress& address) const {
     return pending_results_.count(address);
   }
 
-  std::unique_ptr<PendingScanResult>& GetPendingResult(
+  const std::unique_ptr<PendingScanResult>& GetPendingResult(
       const DeviceAddress& address) {
     return pending_results_[address];
   }
 
-  void RemovePendingResult(const DeviceAddress& address) {
-    pending_results_.erase(address);
-  }
+  std::unique_ptr<PendingScanResult> RemovePendingResult(
+      const DeviceAddress& address);
 
   Transport::WeakPtr hci() const { return hci_; }
   Delegate* delegate() const { return delegate_; }

@@ -81,6 +81,29 @@ LowEnergyScanner::LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
       });
 }
 
+void LowEnergyScanner::AddPendingResult(const DeviceAddress& address,
+                                        const LowEnergyScanResult& scan_result,
+                                        fit::closure timeout_handler) {
+  std::unique_ptr<PendingScanResult> pending =
+      std::make_unique<PendingScanResult>(scan_result,
+                                          scan_response_timeout_,
+                                          pw_dispatcher_,
+                                          std::move(timeout_handler));
+  pending_results_[address] = std::move(pending);
+}
+
+std::unique_ptr<LowEnergyScanner::PendingScanResult>
+LowEnergyScanner::RemovePendingResult(const DeviceAddress& address) {
+  if (pending_results_.count(address) == 0) {
+    return nullptr;
+  }
+
+  std::unique_ptr<PendingScanResult> pending =
+      std::move(pending_results_[address]);
+  pending_results_.erase(address);
+  return pending;
+}
+
 bool LowEnergyScanner::StartScan(const ScanOptions& options,
                                  ScanStatusCallback callback) {
   BT_ASSERT(callback);
@@ -247,13 +270,16 @@ void LowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
     return;
   }
 
-  std::unique_ptr<PendingScanResult>& pending = GetPendingResult(address);
+  std::unique_ptr<PendingScanResult> pending = RemovePendingResult(address);
   BT_DEBUG_ASSERT(address == pending->result().address);
 
   pending->set_resolved(resolved);
   pending->set_rssi(rssi);
   delegate_->OnPeerFound(pending->result(), pending->data());
-  RemovePendingResult(address);
+
+  // The callback handler may stop the scan, destroying objects within the
+  // LowEnergyScanner. Avoid doing anything more to prevent use after free
+  // bugs.
 }
 
 }  // namespace bt::hci
