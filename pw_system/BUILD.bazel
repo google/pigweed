@@ -41,6 +41,7 @@ cc_library(
     hdrs = [
         "public/pw_system/config.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [":config_override"],
 )
 
@@ -75,6 +76,37 @@ cc_library(
         # component library. See :log_backend, below, for an examples.
         "//pw_assert:backend_impl",
         "//pw_log:backend_impl",
+    ],
+)
+
+cc_library(
+    name = "async",
+    srcs = [
+        "pw_system_private/threads.h",
+        "system.cc",
+        "threads.cc",
+    ],
+    hdrs = ["public/pw_system/system.h"],
+    implementation_deps = [
+        ":async_packet_io",
+        ":file_manager",
+        ":file_service",
+        ":log",
+        ":thread_snapshot_service",
+        ":transfer_service",
+        "//pw_allocator:best_fit_block_allocator",
+        "//pw_async2:allocate_task",
+        "//pw_async2:pend_func_task",
+        "//pw_hdlc:router",
+        "//pw_multibuf:simple_allocator",
+        "//pw_rpc/pwpb:echo_service",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_async2:dispatcher",
+        "//pw_channel",
+        "//pw_rpc",
     ],
 )
 
@@ -466,7 +498,17 @@ pw_cc_test(
         "//pw_allocator:testing",
         "//pw_channel:loopback_channel",
         "//pw_multibuf:testing",
-        "//pw_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "system_test",
+    srcs = ["system_test.cc"],
+    deps = [
+        ":async",
+        "//pw_allocator:testing",
+        "//pw_channel:loopback_channel",
+        "//pw_multibuf:testing",
     ],
 )
 

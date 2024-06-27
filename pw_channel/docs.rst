@@ -44,6 +44,8 @@ This is only valid if, for the datagram channel:
 -------------
 API reference
 -------------
+.. cpp:namespace:: pw::channel
+
 .. doxygengroup:: pw_channel
    :content-only:
    :members:

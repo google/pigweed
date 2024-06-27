@@ -72,7 +72,6 @@ pw_source_set("config") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ pw_system_CONFIG ]
   visibility = [ "./*" ]
-  friend = [ "./*" ]
 }
 
 pw_source_set("log") {
@@ -88,7 +87,6 @@ pw_source_set("log") {
   ]
   deps = [
     ":config",
-    ":rpc_server",
     "$dir_pw_log_rpc:rpc_log_drain",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
@@ -311,6 +309,37 @@ group("pw_system") {
   deps = [ ":target_hooks" ]
 }
 
+pw_source_set("async") {
+  public = [ "public/pw_system/system.h" ]
+  public_configs = [ ":public_include_path" ]
+  sources = [
+    "pw_system_private/threads.h",
+    "system.cc",
+    "threads.cc",
+  ]
+  public_deps = [
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_channel",
+    "$dir_pw_rpc:server",
+  ]
+  deps = [
+    ":async_packet_io",
+    ":file_manager",
+    ":file_service",
+    ":log",
+    ":thread_snapshot_service",
+    ":transfer_service",
+    "$dir_pw_allocator:best_fit_block_allocator",
+    "$dir_pw_async2:allocate_task",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_hdlc:router",
+    "$dir_pw_multibuf:simple_allocator",
+    "$dir_pw_rpc/pwpb:echo_service",
+    "$dir_pw_thread:thread",
+  ]
+}
+
 pw_executable("system_example") {
   # TODO: b/303282642 - Remove this testonly
   testonly = pw_unit_test_TESTONLY
@@ -407,6 +436,7 @@ pw_doc_group("docs") {
     "cli.rst",
     "docs.rst",
   ]
+  inputs = [ "system_test.cc" ]
 }
 
 pw_test_group("tests") {

@@ -15,6 +15,7 @@
 
 #include <utility>
 
+#include "pw_polyfill/language_feature_macros.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_span/span.h"
@@ -26,10 +27,12 @@
 #include PW_RPC_DYNAMIC_CONTAINER_INCLUDE
 
 #define _PW_RPC_CONSTEXPR
+#define _PW_RPC_CONSTINIT
 
 #else  // Otherwise, channels are stored in a constexpr constructible span.
 
 #define _PW_RPC_CONSTEXPR constexpr
+#define _PW_RPC_CONSTINIT PW_CONSTINIT
 
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 

@@ -131,6 +131,7 @@ pw_add_library(pw_rpc.common STATIC
     pw_bytes
     pw_containers.intrusive_list
     pw_function
+    pw_polyfill
     pw_rpc.config
     pw_rpc.protos.pwpb
     pw_span

@@ -281,6 +281,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_sync/public/pw_sync/timed_thread_notification.h",
   "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",
   "$dir_pw_sys_io/public/pw_sys_io/sys_io.h",
+  "$dir_pw_system/public/pw_system/system.h",
   "$dir_pw_third_party/freertos/pw_assert_stack_overflow_hook.cc",
   "$dir_pw_third_party/freertos/static_task_allocation.cc",
   "$dir_pw_thread/public/pw_thread/test_thread_context.h",

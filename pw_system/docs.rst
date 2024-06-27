@@ -250,3 +250,45 @@ An example configuration is provided below:
 Once you have configured pw_system as shown in the example above, you will
 still need to define an RPC channel for the channel ID that you selected so
 the logs can be routed to the appropriate destination.
+
+---------------
+pw_system:async
+---------------
+``pw_system:async`` is a new version of ``pw_system`` based on
+:ref:`module-pw_async2` and :ref:`module-pw_channel`. It provides an async
+dispatcher, which may be used to run async tasks, including with C++20
+coroutines.
+
+To use ``pw_system:async``, add a dependency on ``@pigweed//pw_system:async`` in
+Bazel. Then, from your main function, invoke :cpp:func:`pw::SystemStart` with a
+:cpp:type:`pw::channel::ByteReaderWriter` to use for IO.
+
+.. literalinclude:: system_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_system-async-example-main]
+   :end-before: [pw_system-async-example-main]
+
+pw_system:async Linux example
+=============================
+``//targets/host:system_async_example`` is an example app for running
+``pw_system:async`` on a Linux host. Running the example requires two consoles.
+In the first console, start the ``pw_system:async`` instance:
+
+.. code-block:: sh
+
+   bazelisk run //targets/host:system_async_example
+
+That will wait for a TCP connection from the ``pw_system`` console. To connect
+to it from the console, run the following:
+
+.. code-block:: sh
+
+   bazelisk run //pw_system/py:pw_system_console -- -s 127.0.0.1:33000
+
+API reference
+=============
+.. doxygenfunction:: pw::SystemStart
+.. doxygenfunction:: pw::System
+.. doxygenclass:: pw::system::AsyncCore
+   :members:
