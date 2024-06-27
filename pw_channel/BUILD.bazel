@@ -122,3 +122,20 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "rp2_stdio_channel",
+    srcs = ["rp2_stdio_channel.cc"],
+    hdrs = ["public/pw_channel/rp2_stdio_channel.h"],
+    includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/chipset:rp2040",
+    ],
+    deps = [
+        ":pw_channel",
+        "//pw_log",
+        "//pw_multibuf:allocator",
+        "@pico-sdk//src/common/pico_stdlib:pico_stdlib",
+        "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
+    ],
+)

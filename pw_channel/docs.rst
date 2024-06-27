@@ -61,3 +61,7 @@ Channel implementations
 .. doxygengroup:: pw_channel_epoll
    :content-only:
    :members:
+
+.. doxygengroup:: pw_channel_rp2_stdio
+   :content-only:
+   :members:
