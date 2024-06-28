@@ -958,6 +958,10 @@ TEST(GattNotifyTest, SendGattNotifyUnavailableWhenPending) {
   EXPECT_EQ(proxy.sendGattNotify(123, 345, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
   EXPECT_EQ(capture.sends_called, 2);
+
+  // If captured packet is not reset here, it may destruct after the proxy and
+  // lead to a crash when it tries to lock the proxy's destructed mutex.
+  capture.released_packet.ResetAndReturnReleaseFn();
 }
 
 TEST(GattNotifyTest, SendGattNotifyReturnsErrorForInvalidArgs) {
