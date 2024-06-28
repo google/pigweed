@@ -17,6 +17,7 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_channel/channel.h"
+#include "pw_function/function.h"
 #include "pw_rpc/server.h"
 
 namespace pw {
@@ -49,6 +50,13 @@ class AsyncCore {
 
   /// Returns the system `pw::rpc::Server` instance.
   rpc::Server& rpc_server() { return rpc_server_; }
+
+  /// Runs a function once on a separate thread. If the function blocks, it may
+  /// prevent other functions from running.
+  ///
+  /// @returns true if the function was enqueued to run, false if the function
+  /// queue is full
+  [[nodiscard]] bool RunOnce(Function<void()>&& function);
 
  private:
   friend AsyncCore& pw::System();

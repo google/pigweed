@@ -28,6 +28,7 @@
 #include "pw_system/internal/async_packet_io.h"
 #include "pw_system/thread_snapshot_service.h"
 #include "pw_system/transfer_service.h"
+#include "pw_system/work_queue.h"
 #include "pw_system_private/log.h"
 #include "pw_system_private/threads.h"
 #include "pw_thread/detached_thread.h"
@@ -83,6 +84,10 @@ Allocator& AsyncCore::allocator() {
   alignas(uintptr_t) static std::byte buffer[8192];
   static allocator::BestFitBlockAllocator allocator(buffer);
   return allocator;
+}
+
+bool AsyncCore::RunOnce(Function<void()>&& function) {
+  return GetWorkQueue().PushWork(std::move(function)).ok();
 }
 
 void AsyncCore::Init(channel::ByteReaderWriter& io_channel) {

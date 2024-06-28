@@ -330,6 +330,7 @@ pw_source_set("async") {
     ":log",
     ":thread_snapshot_service",
     ":transfer_service",
+    ":work_queue",
     "$dir_pw_allocator:best_fit_block_allocator",
     "$dir_pw_async2:allocate_task",
     "$dir_pw_async2:pend_func_task",
