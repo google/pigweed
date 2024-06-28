@@ -16,11 +16,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-constraint_value(
-    name = "backend",
-    constraint_setting = "//pw_sys_io:backend_constraint_setting",
-)
-
 cc_library(
     name = "pw_sys_ambiq_sdk",
     srcs = ["sys_io.cc"],

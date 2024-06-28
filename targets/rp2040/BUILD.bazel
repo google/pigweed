@@ -30,7 +30,6 @@ platform(
         "//pw_build/constraints/chipset:rp2040",
         "//pw_build/constraints/rtos:freertos",
         "//pw_interrupt_cortex_m:backend",
-        "//pw_sys_io_rp2040:backend",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",

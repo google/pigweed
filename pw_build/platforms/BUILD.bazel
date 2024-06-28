@@ -49,7 +49,6 @@ platform(
     constraint_values = [
         "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
         "//pw_build/constraints/chipset:lm3s6965evb",
-        "//pw_sys_io_baremetal_lm3s6965evb:backend",
         "@platforms//cpu:armv7-m",
         "@rust_crates//:no_std",
     ],

@@ -52,7 +52,6 @@ platform(
         "//pw_build/constraints/rtos:freertos",
         "//pw_interrupt_cortex_m:backend",
         "//pw_malloc:bucket_block_allocator_backend",
-        "//pw_sys_io_stm32cube:backend",
         "@freertos//:port_ARM_CM4F",
         "@freertos//:disable_task_statics",
         "@platforms//cpu:armv7e-m",

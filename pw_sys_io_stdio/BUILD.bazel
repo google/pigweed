@@ -16,19 +16,9 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-constraint_value(
-    name = "backend",
-    constraint_setting = "//pw_sys_io:backend_constraint_setting",
-)
-
 cc_library(
     name = "pw_sys_io_stdio",
     srcs = ["sys_io.cc"],
-    target_compatible_with = select({
-        "//pw_sys_io:unspecified": [],
-        ":backend": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:pw_sys_io.facade",

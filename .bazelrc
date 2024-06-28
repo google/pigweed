@@ -139,6 +139,7 @@ build:rp2040 --//pw_sync:interrupt_spin_lock_backend=//pw_sync_freertos:interrup
 build:rp2040 --//pw_sync:mutex_backend=//pw_sync_freertos:mutex
 build:rp2040 --//pw_sync:thread_notification_backend=//pw_sync_freertos:thread_notification
 build:rp2040 --//pw_sync:timed_thread_notification_backend=//pw_sync_freertos:timed_thread_notification
+build:rp2040 --//pw_sys_io:backend=//pw_sys_io_rp2040
 build:rp2040 --//pw_system:extra_platform_libs=@pigweed//targets/rp2040:extra_platform_libs
 build:rp2040 --//pw_thread:id_backend=@pigweed//pw_thread_freertos:id
 build:rp2040 --//pw_thread:iteration_backend=@pigweed//pw_thread_freertos:thread_iteration
@@ -162,6 +163,7 @@ build:stm32f429i_baremetal --//pw_log:backend=@pigweed//pw_log_basic
 build:stm32f429i_baremetal --//pw_log:backend_impl=@pigweed//pw_log_basic:impl
 build:stm32f429i_baremetal --//pw_malloc:backend=@pigweed//pw_malloc:bucket_block_allocator
 build:stm32f429i_baremetal --//pw_system:extra_platform_libs=@pigweed//targets/stm32f429i_disc1:extra_platform_libs
+build:stm32f429i_baremetal --//pw_sys_io:backend=//pw_sys_io_baremetal_stm32f429
 
 
 # Config for the stm32f429i_disc1_stm32cube freertos platform.
@@ -189,18 +191,21 @@ build:stm32f429i_freertos --//pw_thread:sleep_backend=@pigweed//pw_thread_freert
 build:stm32f429i_freertos --//pw_thread:thread_backend=@pigweed//pw_thread_freertos:thread
 build:stm32f429i_freertos --//pw_unit_test:main=//targets/stm32f429i_disc1_stm32cube:unit_test_app
 build:stm32f429i_freertos --//pw_system:extra_platform_libs=@pigweed//targets/stm32f429i_disc1_stm32cube:extra_platform_libs
+build:stm32f429i_freertos --//pw_sys_io:backend=//pw_sys_io_stm32cube
 
 # Config for the lm3s6965evb platform, used to build pw_rust/examples.
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 build:lm3s6965evb --platforms=//pw_build/platforms:lm3s6965evb
 build:lm3s6965evb --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
+build:lm3s6965evb --//pw_sys_io:backend=//pw_sys_io_baremetal_lm3s6965evb
 
 # Config for the microbit platform, used to build pw_rust/examples.
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 build:microbit --platforms=//pw_build/platforms:lm3s6965evb
 build:microbit --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
+build:microbit --//pw_sys_io:backend=//pw_sys_io_baremetal_lm3s6965evb
 
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the

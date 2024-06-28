@@ -26,7 +26,7 @@ platform(
     constraint_values = [
         "//pw_interrupt_cortex_m:backend",
         "//pw_malloc:bucket_block_allocator_backend",
-        "//pw_sys_io_baremetal_stm32f429:backend",
+        "//pw_sys_io_baremetal_stm32f429:compatible",
         "@platforms//cpu:armv7e-m",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
         "@rust_crates//:no_std",
