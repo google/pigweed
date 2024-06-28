@@ -470,6 +470,13 @@ git_repository(
     tag = "v2024.0501.215421",
 )
 
+git_repository(
+    name = "icu",
+    build_file = "//third_party/icu:icu.BUILD.bazel",
+    commit = "ef02cc27c0faceffc9345e11a35769ae92b836fb",
+    remote = "https://fuchsia.googlesource.com/third_party/icu",
+)
+
 http_archive(
     name = "freertos",
     build_file = "//third_party/freertos:freertos.BUILD.bazel",
