@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_proxy/proxy_host.h"
 
-#include <mutex>
-
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
@@ -162,10 +160,11 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
 
   H4PacketWithH4 h4_att_notify({});
   {
-    std::lock_guard lock(acl_send_mutex_);
+    acl_send_mutex_.lock();
     // TODO: https://pwbug.dev/348680331 - Currently ProxyHost only supports 1
     // in-flight ACL send, increase this to support multiple.
     if (acl_send_pending_) {
+      acl_send_mutex_.unlock();
       return pw::Status::Unavailable();
     }
     acl_send_pending_ = true;
@@ -178,6 +177,7 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
                                          acl_packet_size);
     if (!att_notify.IsComplete()) {
       PW_LOG_ERROR("Buffer is too small for ATT Notify. So will not send.");
+      acl_send_mutex_.unlock();
       return pw::Status::InvalidArgument();
     }
 
@@ -187,7 +187,7 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
     size_t h4_packet_size = 1 + acl_packet_size;
     H4PacketWithH4 h4_temp(pw::span(h4_buff_.data(), h4_packet_size),
                            [this](const uint8_t* buffer) {
-                             std::lock_guard inner_lock(acl_send_mutex_);
+                             acl_send_mutex_.lock();
                              PW_CHECK_PTR_EQ(
                                  buffer,
                                  h4_buff_.data(),
@@ -195,9 +195,11 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
                                  "doesn't match our buffer.");
                              PW_LOG_DEBUG("H4 packet release fn called.");
                              acl_send_pending_ = false;
+                             acl_send_mutex_.unlock();
                            });
     h4_temp.SetH4Type(emboss::H4PacketType::ACL_DATA);
     h4_att_notify = std::move(h4_temp);
+    acl_send_mutex_.unlock();
   }
 
   // H4 packet is hereby moved. Either ACL data channel will move packet to
