@@ -21,8 +21,16 @@ Setup
 This module requires relatively minimal setup:
 
 1. Write code against the ``pw_sys_io`` facade.
-2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
-   backend.
+2. Set the backend, in a way appropriate to your build system:
+
+   *  In GN, specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
+      backend.
+   *  In Bazel, set the ``--@pigweed//pw_sys_io:backend`` label flag to
+      ``@pigweed//pw_sys_io_baremetal_stm32f429``. Also, add the
+      ``@pigweed//pw_sys_io_baremetal_stm32f429:compatible`` constraint to
+      your platform, to indicate that the platform is compatible with
+      this backend.
+
 3. Build an executable with a main() function using a toolchain that
    supports Cortex-M4.
 
