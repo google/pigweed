@@ -76,7 +76,7 @@ class ProxyHost {
   /// @endrst
   pw::Status sendGattNotify(uint16_t connection_handle,
                             uint16_t attribute_handle,
-                            const pw::span<uint8_t> attribute_value);
+                            pw::span<const uint8_t> attribute_value);
 
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
@@ -95,7 +95,7 @@ class ProxyHost {
   void BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
                       uint16_t connection_handle,
                       uint16_t attribute_handle,
-                      const pw::span<uint8_t> attribute_value)
+                      pw::span<const uint8_t> attribute_value)
       PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
 
   // Process a Command_Complete event.

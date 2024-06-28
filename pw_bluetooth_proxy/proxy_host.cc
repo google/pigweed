@@ -138,7 +138,7 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
 
 pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
                                      uint16_t attribute_handle,
-                                     const pw::span<uint8_t> attribute_value) {
+                                     pw::span<const uint8_t> attribute_value) {
   if (connection_handle > 0x0EFF) {
     PW_LOG_ERROR(
         "Invalid connection handle: %d (max: 0x0EFF). So will not process.",
@@ -214,7 +214,7 @@ pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
 void ProxyHost::BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
                                uint16_t connection_handle,
                                uint16_t attribute_handle,
-                               const pw::span<uint8_t> attribute_value) {
+                               pw::span<const uint8_t> attribute_value) {
   // ACL header
   att_notify.acl_header().handle().Write(connection_handle);
   att_notify.acl_header().packet_boundary_flag().Write(
