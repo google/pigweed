@@ -37,7 +37,8 @@ class LowEnergyConnectionHandle final {
       hci_spec::ConnectionHandle handle,
       fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
       fit::function<sm::BondableMode()> bondable_cb,
-      fit::function<sm::SecurityProperties()> security_cb);
+      fit::function<sm::SecurityProperties()> security_cb,
+      fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb);
 
   // Destroying this object releases its reference to the underlying connection.
   ~LowEnergyConnectionHandle();
@@ -59,6 +60,8 @@ class LowEnergyConnectionHandle final {
 
   sm::SecurityProperties security() const;
 
+  pw::bluetooth::emboss::ConnectionRole role() const;
+
   PeerId peer_identifier() const { return peer_id_; }
   hci_spec::ConnectionHandle handle() const { return handle_; }
 
@@ -77,6 +80,7 @@ class LowEnergyConnectionHandle final {
   fit::callback<void(LowEnergyConnectionHandle*)> release_cb_;
   fit::function<sm::BondableMode()> bondable_cb_;
   fit::function<sm::SecurityProperties()> security_cb_;
+  fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionHandle);
 };

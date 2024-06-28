@@ -145,6 +145,8 @@ class LowEnergyConnection final : public sm::Delegate {
     return sm_->security();
   }
 
+  pw::bluetooth::emboss::ConnectionRole role() const { return link()->role(); }
+
   using WeakPtr = WeakSelf<LowEnergyConnection>::WeakPtr;
   LowEnergyConnection::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 

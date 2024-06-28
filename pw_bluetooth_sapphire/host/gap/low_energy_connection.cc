@@ -146,12 +146,17 @@ LowEnergyConnection::AddRef() {
     BT_ASSERT(self.is_alive());
     return self->security();
   };
+  auto role_cb = [self] {
+    BT_ASSERT(self.is_alive());
+    return self->role();
+  };
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(
       new LowEnergyConnectionHandle(peer_id(),
                                     handle(),
                                     std::move(release_cb),
                                     std::move(bondable_cb),
-                                    std::move(security_cb)));
+                                    std::move(security_cb),
+                                    std::move(role_cb)));
   BT_ASSERT(conn_ref);
 
   refs_.Mutable()->insert(conn_ref.get());

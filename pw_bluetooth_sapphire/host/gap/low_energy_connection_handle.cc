@@ -24,13 +24,15 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
     hci_spec::ConnectionHandle handle,
     fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
     fit::function<sm::BondableMode()> bondable_cb,
-    fit::function<sm::SecurityProperties()> security_cb)
+    fit::function<sm::SecurityProperties()> security_cb,
+    fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb)
     : active_(true),
       peer_id_(peer_id),
       handle_(handle),
       release_cb_(std::move(release_cb)),
       bondable_cb_(std::move(bondable_cb)),
-      security_cb_(std::move(security_cb)) {
+      security_cb_(std::move(security_cb)),
+      role_cb_(std::move(role_cb)) {
   BT_ASSERT(peer_id_.IsValid());
 }
 
@@ -66,6 +68,11 @@ sm::BondableMode LowEnergyConnectionHandle::bondable_mode() const {
 sm::SecurityProperties LowEnergyConnectionHandle::security() const {
   BT_ASSERT(active_);
   return security_cb_();
+}
+
+pw::bluetooth::emboss::ConnectionRole LowEnergyConnectionHandle::role() const {
+  BT_ASSERT(active_);
+  return role_cb_();
 }
 
 }  // namespace bt::gap

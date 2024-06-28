@@ -97,12 +97,16 @@ void FakeAdapter::FakeLowEnergy::Connect(
     return connection_options.bondable_mode;
   };
   auto security_cb = []() { return sm::SecurityProperties(); };
+  auto role_cb = []() {
+    return pw::bluetooth::emboss::ConnectionRole::CENTRAL;
+  };
   auto handle = std::make_unique<LowEnergyConnectionHandle>(
       peer_id,
       /*handle=*/1,
       /*release_cb=*/[](auto) {},
       std::move(bondable_cb),
-      std::move(security_cb));
+      std::move(security_cb),
+      std::move(role_cb));
   callback(fit::ok(std::move(handle)));
 }
 
