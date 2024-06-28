@@ -32,8 +32,6 @@ cc_library(
     includes = [
         "public",
     ],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     deps = [
         "//pw_digital_io",
         "//pw_status",
@@ -45,7 +43,5 @@ cc_library(
 pw_cc_test(
     name = "digital_io_test",
     srcs = ["digital_io_test.cc"],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     deps = [":pw_digital_io_rp2040"],
 )
