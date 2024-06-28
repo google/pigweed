@@ -35,7 +35,7 @@ using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kLEPublic, {0xFF});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {0xFE});
 const DeviceAddress kTestAddress(DeviceAddress::Type::kLEPublic, {1});
-const hci_spec::LEPreferredConnectionParameters kTestParams(1, 1, 1, 1);
+const hci_spec::LEPreferredConnectionParameters kTestParams(6, 6, 1, 10);
 constexpr pw::chrono::SystemClock::duration kConnectTimeout =
     std::chrono::seconds(10);
 constexpr pw::chrono::SystemClock::duration kPwConnectTimeout =
