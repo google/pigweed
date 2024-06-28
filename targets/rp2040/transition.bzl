@@ -35,6 +35,10 @@ def _rp2040_transition_impl(settings, attr):
         "@pigweed//pw_sync:thread_notification_backend": "@pigweed//pw_sync_freertos:thread_notification",
         "@pigweed//pw_sync:timed_thread_notification_backend": "@pigweed//pw_sync_freertos:timed_thread_notification",
         "@pigweed//pw_system:extra_platform_libs": "@pigweed//targets/rp2040:extra_platform_libs",
+        "@pigweed//pw_thread:id_backend": "@pigweed//pw_thread_freertos:id",
+        "@pigweed//pw_thread:iteration_backend": "@pigweed//pw_thread_freertos:thread_iteration",
+        "@pigweed//pw_thread:sleep_backend": "@pigweed//pw_thread_freertos:sleep",
+        "@pigweed//pw_thread:thread_backend": "@pigweed//pw_thread_freertos:thread",
         "@pigweed//pw_unit_test:main": "@pigweed//targets/rp2040:unit_test_app",
     }
 
@@ -60,6 +64,10 @@ _rp2040_transition = transition(
         "@pigweed//pw_sync:thread_notification_backend",
         "@pigweed//pw_sync:timed_thread_notification_backend",
         "@pigweed//pw_system:extra_platform_libs",
+        "@pigweed//pw_thread:id_backend",
+        "@pigweed//pw_thread:sleep_backend",
+        "@pigweed//pw_thread:thread_backend",
+        "@pigweed//pw_thread:iteration_backend",
         "@pigweed//pw_unit_test:main",
     ],
 )
