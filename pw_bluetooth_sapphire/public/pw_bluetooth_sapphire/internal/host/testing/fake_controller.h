@@ -641,10 +641,10 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnLESetEventMask(
       const pw::bluetooth::emboss::LESetEventMaskCommandView& params);
 
-  // Called when a HCI_LE_Read_Buffer_Size command is received.
+  // Called when a HCI_LE_Read_Buffer_Size [v1] command is received.
   void OnLEReadBufferSizeV1();
 
-  // Called when a HCI_LE_Read_Buffer_Size command is received.
+  // Called when a HCI_LE_Read_Buffer_Size [v2] command is received.
   void OnLEReadBufferSizeV2();
 
   // Called when a HCI_LE_Read_Supported_States command is received.
