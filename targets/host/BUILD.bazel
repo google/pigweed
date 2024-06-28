@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pigweed.bzl", "pw_cc_binary")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -27,18 +25,5 @@ cc_library(
         "//pw_hdlc:rpc_channel_output",
         "//pw_rpc/system_server:facade",
         "//pw_stream:socket_stream",
-    ],
-)
-
-# TODO: b/339858158 - Use the host_device_simulator toolchain and configure so
-# logs go to the console instead of stdout.
-pw_cc_binary(
-    name = "system_async_example",
-    testonly = True,
-    srcs = ["system_async_example.cc"],
-    deps = [
-        "//pw_channel:epoll_channel",
-        "//pw_multibuf:testing",
-        "//pw_system:async",
     ],
 )

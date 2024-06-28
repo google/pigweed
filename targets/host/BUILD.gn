@@ -39,13 +39,4 @@ if (current_toolchain != default_toolchain) {
     ]
     sources = [ "system_rpc_server.cc" ]
   }
-
-  pw_executable("system_async_example") {
-    sources = [ "system_async_example.cc" ]
-    deps = [
-      "$dir_pw_channel:epoll_channel",
-      "$dir_pw_multibuf:testing",
-      "$dir_pw_system:async",
-    ]
-  }
 }

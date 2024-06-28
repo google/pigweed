@@ -358,6 +358,15 @@ pw_executable("system_example") {
   ]
 }
 
+pw_executable("system_async_host_example") {
+  sources = [ "system_async_host_example.cc" ]
+  deps = [
+    ":async",
+    "$dir_pw_channel:epoll_channel",
+    "$dir_pw_multibuf:testing",
+  ]
+}
+
 pw_source_set("async_packet_io") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_system/internal/async_packet_io.h" ]
@@ -390,6 +399,19 @@ pw_test("async_packet_io_test") {
   sources = [ "async_packet_io_test.cc" ]
   deps = [
     ":async_packet_io",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_channel:loopback_channel",
+    "$dir_pw_multibuf:testing",
+  ]
+
+  # TODO: b/317922402 - Run on Windows when thread detaching is supported.
+  enable_if = host_os != "win" && pw_async2_DISPATCHER_BACKEND != ""
+}
+
+pw_test("system_async_test") {
+  sources = [ "system_async_test.cc" ]
+  deps = [
+    ":async",
     "$dir_pw_allocator:testing",
     "$dir_pw_channel:loopback_channel",
     "$dir_pw_multibuf:testing",
@@ -436,9 +458,12 @@ pw_doc_group("docs") {
     "cli.rst",
     "docs.rst",
   ]
-  inputs = [ "system_test.cc" ]
+  inputs = [ "system_async_test.cc" ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":async_packet_io_test" ]
+  tests = [
+    ":async_packet_io_test",
+    ":system_async_test",
+  ]
 }

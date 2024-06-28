@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_system/system.h"
-
 #include <cstddef>
 
 #include "pw_async2/dispatcher.h"
@@ -26,7 +24,7 @@
 namespace {
 
 class : public pw::async2::Task {
-  pw::async2::Poll<> DoPend(pw::async2::Context&) {
+  pw::async2::Poll<> DoPend(pw::async2::Context&) override {
     return pw::async2::Ready();
   }
 } my_task;

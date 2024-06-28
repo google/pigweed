@@ -263,7 +263,7 @@ To use ``pw_system:async``, add a dependency on ``@pigweed//pw_system:async`` in
 Bazel. Then, from your main function, invoke :cpp:func:`pw::SystemStart` with a
 :cpp:type:`pw::channel::ByteReaderWriter` to use for IO.
 
-.. literalinclude:: system_test.cc
+.. literalinclude:: system_async_test.cc
    :language: cpp
    :linenos:
    :start-after: [pw_system-async-example-main]
@@ -271,13 +271,13 @@ Bazel. Then, from your main function, invoke :cpp:func:`pw::SystemStart` with a
 
 pw_system:async Linux example
 =============================
-``//targets/host:system_async_example`` is an example app for running
-``pw_system:async`` on a Linux host. Running the example requires two consoles.
-In the first console, start the ``pw_system:async`` instance:
+``//pw_system/system_async_host_simulator_example`` is an example app for
+running ``pw_system:async`` on a Linux host. Running the example requires two
+terminals. In the first terminal, start the ``pw_system:async`` instance:
 
 .. code-block:: sh
 
-   bazelisk run //targets/host:system_async_example
+   bazelisk run //pw_system/system_async_host_simulator_example
 
 That will wait for a TCP connection from the ``pw_system`` console. To connect
 to it from the console, run the following:

@@ -16,6 +16,8 @@
 
 #include "pw_system/system.h"
 
+#include <utility>
+
 #include "pw_allocator/best_fit_block_allocator.h"
 #include "pw_assert/check.h"
 #include "pw_async2/allocate_task.h"
@@ -57,7 +59,7 @@ internal::PacketIO& InitializePacketIoGlobal(
 template <typename Func>
 [[nodiscard]] bool PostTaskFunction(Func&& func) {
   async2::Task* task = async2::AllocateTask<async2::PendFuncTask<Func>>(
-      System().allocator(), std::move(func));
+      System().allocator(), std::forward<Func>(func));
   if (task == nullptr) {
     return false;
   }
@@ -67,7 +69,7 @@ template <typename Func>
 
 template <typename Func>
 void PostTaskFunctionOrCrash(Func&& func) {
-  PW_CHECK(PostTaskFunction(std::move(func)));
+  PW_CHECK(PostTaskFunction(std::forward<Func>(func)));
 }
 
 }  // namespace

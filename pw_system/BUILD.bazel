@@ -79,37 +79,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "async",
-    srcs = [
-        "pw_system_private/threads.h",
-        "system.cc",
-        "threads.cc",
-    ],
-    hdrs = ["public/pw_system/system.h"],
-    implementation_deps = [
-        ":async_packet_io",
-        ":file_manager",
-        ":file_service",
-        ":log",
-        ":thread_snapshot_service",
-        ":transfer_service",
-        "//pw_allocator:best_fit_block_allocator",
-        "//pw_async2:allocate_task",
-        "//pw_async2:pend_func_task",
-        "//pw_hdlc:router",
-        "//pw_multibuf:simple_allocator",
-        "//pw_rpc/pwpb:echo_service",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_allocator:allocator",
-        "//pw_async2:dispatcher",
-        "//pw_channel",
-        "//pw_rpc",
-    ],
-)
-
 # Any platform-specific pw_system components. At the very least, this should
 # include platform-specific initialization code. It may also include linker
 # scripts.
@@ -461,11 +430,41 @@ pw_cc_binary(
 )
 
 cc_library(
+    name = "async",
+    srcs = [
+        "pw_system_private/threads.h",
+        "system.cc",
+        "threads.cc",
+    ],
+    hdrs = ["public/pw_system/system.h"],
+    implementation_deps = [
+        ":async_packet_io",
+        ":file_manager",
+        ":file_service",
+        ":log",
+        ":thread_snapshot_service",
+        ":transfer_service",
+        "//pw_allocator:best_fit_block_allocator",
+        "//pw_async2:allocate_task",
+        "//pw_async2:pend_func_task",
+        "//pw_hdlc:router",
+        "//pw_multibuf:simple_allocator",
+        "//pw_rpc/pwpb:echo_service",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_async2:dispatcher",
+        "//pw_channel",
+        "//pw_rpc",
+    ],
+)
+
+cc_library(
     name = "async_packet_io",
     srcs = ["async_packet_io.cc"],
     hdrs = ["public/pw_system/internal/async_packet_io.h"],
     implementation_deps = [
-        ":config",
         "//pw_assert",
         "//pw_log",
     ],
@@ -502,14 +501,31 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "system_test",
-    srcs = ["system_test.cc"],
+    name = "system_async_test",
+    srcs = ["system_async_test.cc"],
     deps = [
         ":async",
         "//pw_allocator:testing",
         "//pw_channel:loopback_channel",
         "//pw_multibuf:testing",
     ],
+)
+
+pw_cc_binary(
+    name = "system_async_host_example",
+    testonly = True,
+    srcs = ["system_async_host_example.cc"],
+    deps = [
+        ":async",
+        "//pw_channel:epoll_channel",
+        "//pw_multibuf:testing",
+    ],
+)
+
+host_device_simulator_binary(
+    name = "system_async_host_simulator_example",
+    testonly = True,
+    binary = ":system_async_host_example",
 )
 
 host_device_simulator_binary(
