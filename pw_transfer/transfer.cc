@@ -124,7 +124,11 @@ void TransferService::GetResourceStatus(pw::ConstByteSpan request,
 void TransferService::ResourceStatusCallback(
     Status status, const internal::ResourceStatus& stats) {
   std::lock_guard lock(resource_responder_mutex_);
-  PW_ASSERT(resource_responder_.active());
+
+  if (!resource_responder_.active()) {
+    PW_LOG_ERROR("ResourceStatusCallback invoked without an active responder");
+    return;
+  }
 
   std::array<std::byte, pwpb::ResourceStatus::kMaxEncodedSizeBytes> buffer = {};
   pwpb::ResourceStatus::MemoryEncoder encoder(buffer);
