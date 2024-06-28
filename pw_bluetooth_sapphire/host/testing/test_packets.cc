@@ -466,6 +466,32 @@ DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
                        features[7]));
 }
 
+DynamicByteBuffer LERequestPeerScaPacket(hci_spec::ConnectionHandle conn) {
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LERequestPeerSCACommandWriter>(
+      hci_spec::kLERequestPeerSCA);
+  auto view = packet.view_t();
+  view.connection_handle().Write(conn);
+  return DynamicByteBuffer(packet.data());
+}
+
+DynamicByteBuffer LERequestPeerScaCompletePacket(
+    hci_spec::ConnectionHandle conn,
+    pw::bluetooth::emboss::LESleepClockAccuracyRange sca) {
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LERequestPeerSCACompleteSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLERequestPeerSCACompleteSubeventCode);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(conn);
+  view.peer_clock_accuracy().Write(sca);
+
+  return DynamicByteBuffer(packet.data());
+}
+
 DynamicByteBuffer LEStartEncryptionPacket(hci_spec::ConnectionHandle conn,
                                           uint64_t random_number,
                                           uint16_t encrypted_diversifier,

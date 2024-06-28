@@ -152,6 +152,11 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
                   LEReadRemoteFeaturesCompleteSubeventView>();
         }
 
+        case hci_spec::kLERequestPeerSCACompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LERequestPeerSCACompleteSubeventView>();
+        }
+
         default: {
           BT_PANIC("Emboss LE meta subevent (%#.2x) not implemented",
                    subevent_code);

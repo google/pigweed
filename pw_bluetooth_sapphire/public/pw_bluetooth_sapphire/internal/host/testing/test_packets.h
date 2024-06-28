@@ -117,6 +117,11 @@ DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn);
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
     hci_spec::ConnectionHandle conn, hci_spec::LESupportedFeatures le_features);
 
+DynamicByteBuffer LERequestPeerScaPacket(hci_spec::ConnectionHandle coonn);
+DynamicByteBuffer LERequestPeerScaCompletePacket(
+    hci_spec::ConnectionHandle conn,
+    pw::bluetooth::emboss::LESleepClockAccuracyRange sca);
+
 DynamicByteBuffer LEStartEncryptionPacket(hci_spec::ConnectionHandle,
                                           uint64_t random_number,
                                           uint16_t encrypted_diversifier,
