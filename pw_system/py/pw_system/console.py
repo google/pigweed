@@ -18,8 +18,8 @@ or globs for .proto files that define the RPC services to support:
 
   python -m pw_system.console --device /dev/ttyUSB0 --proto-globs pw_rpc/echo.proto
 
-This starts an IPython console for communicating with the connected device. A
-few variables are predefined in the interactive console. These include:
+This starts an interactive console for communicating with the connected device.
+A few variables are predefined in the console. These include:
 
     rpcs   - used to invoke RPCs
     device - the serial device used for communication
@@ -50,7 +50,6 @@ from typing import (
 )
 
 import serial
-import IPython  # type: ignore
 
 from pw_cli import log as pw_cli_log
 from pw_console import embed
@@ -205,12 +204,6 @@ def get_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='Enables debug logging when set.',
     )
-    parser.add_argument(
-        '--ipython',
-        action='store_true',
-        dest='use_ipython',
-        help='Use IPython instead of pw_console.',
-    )
 
     parser.add_argument(
         '--rpc-logging',
@@ -266,7 +259,6 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     json_logfile: str,
     serial_debug: bool = False,
     config_file_path: Path | None = None,
-    use_ipython: bool = False,
 ) -> None:
     """Starts an interactive Python terminal with preset variables."""
     local_variables = dict(
@@ -305,15 +297,6 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
         welcome_message += (
             '\nJSON device logs are being saved to:\n  ' + json_logfile
         )
-
-    if use_ipython:
-        print(welcome_message)
-        IPython.start_ipython(
-            argv=[],
-            display_banner=False,
-            user_ns=local_variables,
-        )
-        return
 
     client_info = device.info()
     completions = flattened_rpc_completions([client_info])
@@ -369,7 +352,6 @@ def console(
     compiled_protos: list[ModuleType] | None = None,
     merge_device_and_host_logs: bool = False,
     rpc_logging: bool = True,
-    use_ipython: bool = False,
     channel_id: int = rpc.DEFAULT_CHANNEL_ID,
     hdlc_encoding: bool = True,
     device_tracing: bool = True,
@@ -576,7 +558,6 @@ def console(
                 json_logfile=json_logfile,
                 serial_debug=serial_debug,
                 config_file_path=config_file,
-                use_ipython=use_ipython,
             )
     return 0
 

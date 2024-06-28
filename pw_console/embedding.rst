@@ -170,3 +170,26 @@ logger. This logger can then be included as a log window pane in the
 
 
 .. _Python's logging documentation: https://docs.python.org/3/library/logging.html#logging.Logger.debug
+
+------------------------------
+Embeddeding other interpreters
+------------------------------
+The Pigweed console is optimized for use with Pigweed, but other embedded Python
+interpreters may be used to interact with Pigweed devices. Popular options
+include `IPython <https://ipython.org/>`_ and `bpython
+<https://bpython-interpreter.org/>`_.
+
+Embedding IPython is similar to embedding ``pw_console``. After ``import
+IPython``, call ``IPython.start_ipython()`` with the set of variables to expose
+in the console. See `Embedding IPython
+<https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding>`_
+for details.
+
+.. code-block:: python
+
+   IPython.start_ipython(
+       argv=[],
+       display_banner=False,
+       user_ns=local_variables,
+   )
+   return
