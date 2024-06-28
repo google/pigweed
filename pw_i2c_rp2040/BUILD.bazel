@@ -32,8 +32,6 @@ cc_library(
     includes = [
         "public",
     ],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_digital_io",
@@ -51,7 +49,5 @@ cc_library(
 pw_cc_test(
     name = "initiator_test",
     srcs = ["initiator_test.cc"],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     deps = [":pw_i2c_rp2040"],
 )

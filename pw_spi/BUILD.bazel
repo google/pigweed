@@ -65,6 +65,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":chip_selector",
         "//pw_digital_io",
         "//pw_status",
     ],

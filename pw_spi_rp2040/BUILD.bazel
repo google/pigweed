@@ -32,8 +32,6 @@ cc_library(
     includes = [
         "public",
     ],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     deps = [
         "//pw_assert",
         "//pw_log",
@@ -48,7 +46,9 @@ cc_library(
 pw_cc_test(
     name = "initiator_test",
     srcs = ["initiator_test.cc"],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
-    deps = [":pw_spi_rp2040"],
+    deps = [
+        ":pw_spi_rp2040",
+        "//pw_digital_io_rp2040",
+        "//pw_spi:device",
+    ],
 )
