@@ -2369,7 +2369,7 @@ constexpr OpCode kLEWriteRFPathCompensation = LEControllerCommandOpCode(0x004D);
 // LE Set Privacy Mode Command (v5.0) (LE)
 constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
 
-// =======================================
+// ============================================
 // LE Read Buffer Size [v2] Command (v5.2) (LE)
 constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
 
