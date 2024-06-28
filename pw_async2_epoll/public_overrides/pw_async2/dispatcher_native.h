@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <vector>
+#include <unordered_map>
 
 #include "pw_assert/assert.h"
 #include "pw_async2/dispatcher_base.h"
@@ -41,22 +41,19 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   Status NativeUnregisterFileDescriptor(int fd);
 
   void NativeAddReadWakerForFileDescriptor(int fd, Waker&& waker) {
-    NativeAddWakerForFileDescriptor(
-        fd, FileDescriptorType::kReadable, std::move(waker));
+    wakers_[fd].read = std::move(waker);
   }
 
   void NativeAddWriteWakerForFileDescriptor(int fd, Waker&& waker) {
-    NativeAddWakerForFileDescriptor(
-        fd, FileDescriptorType::kWritable, std::move(waker));
+    wakers_[fd].write = std::move(waker);
   }
 
  private:
   static constexpr size_t kMaxEventsToProcessAtOnce = 5;
 
-  struct FdWaker {
-    int fd;
-    FileDescriptorType type;
-    Waker waker;
+  struct ReadWriteWaker {
+    Waker read;
+    Waker write;
   };
 
   void DoWake() final;
@@ -67,17 +64,11 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   Status NativeWaitForWake();
   void NativeFindAndWakeFileDescriptor(int fd, FileDescriptorType type);
 
-  void NativeAddWakerForFileDescriptor(int fd,
-                                       FileDescriptorType type,
-                                       Waker&& waker) {
-    fd_wakers_.push_back({fd, type, std::move(waker)});
-  }
-
   int epoll_fd_;
   int notify_fd_;
   int wait_fd_;
 
-  std::vector<FdWaker> fd_wakers_;
+  std::unordered_map<int, ReadWriteWaker> wakers_;
 };
 
 }  // namespace pw::async2

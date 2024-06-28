@@ -124,15 +124,24 @@ Status Dispatcher::NativeWaitForWake() {
       PW_CHECK_INT_EQ(
           bytes_read, 1, "Dispatcher failed to read wake notification");
       PW_DCHECK_INT_EQ(unused, kNotificationSignal);
-    } else {
-      if ((event.events & (EPOLLIN | EPOLLRDHUP)) != 0) {
-        NativeFindAndWakeFileDescriptor(event.data.fd,
-                                        FileDescriptorType::kReadable);
-      }
-      if ((event.events & EPOLLOUT) != 0) {
-        NativeFindAndWakeFileDescriptor(event.data.fd,
-                                        FileDescriptorType::kWritable);
-      }
+      continue;
+    }
+
+    // Debug log for missed events.
+    if (PW_LOG_LEVEL >= PW_LOG_LEVEL_DEBUG &&
+        wakers_[event.data.fd].read.IsEmpty() &&
+        wakers_[event.data.fd].write.IsEmpty()) {
+      PW_LOG_DEBUG(
+          "Received an event for registered file descriptor %d, but there is "
+          "no task to wake",
+          event.data.fd);
+    }
+
+    if ((event.events & (EPOLLIN | EPOLLRDHUP)) != 0) {
+      std::move(wakers_[event.data.fd].read).Wake();
+    }
+    if ((event.events & EPOLLOUT) != 0) {
+      std::move(wakers_[event.data.fd].write).Wake();
     }
   }
 
@@ -167,33 +176,8 @@ Status Dispatcher::NativeUnregisterFileDescriptor(int fd) {
     PW_LOG_ERROR("Failed to unregister epoll event: %s", std::strerror(errno));
     return Status::Internal();
   }
-
-  auto fd_waker = std::find_if(fd_wakers_.begin(),
-                               fd_wakers_.end(),
-                               [fd](auto& f) { return f.fd == fd; });
-  if (fd_waker != fd_wakers_.end()) {
-    fd_wakers_.erase(fd_waker);
-  }
-
+  wakers_.erase(fd);
   return OkStatus();
-}
-
-void Dispatcher::NativeFindAndWakeFileDescriptor(int fd,
-                                                 FileDescriptorType type) {
-  auto fd_waker =
-      std::find_if(fd_wakers_.begin(), fd_wakers_.end(), [fd, type](auto& f) {
-        return f.fd == fd && f.type == type;
-      });
-  if (fd_waker == fd_wakers_.end()) {
-    PW_LOG_WARN(
-        "Received an event for registered file descriptor %d, but there is no "
-        "task to wake",
-        fd);
-    return;
-  }
-
-  std::move(fd_waker->waker).Wake();
-  fd_wakers_.erase(fd_waker);
 }
 
 void Dispatcher::DoWake() {

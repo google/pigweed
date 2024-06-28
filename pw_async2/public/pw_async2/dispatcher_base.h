@@ -257,7 +257,7 @@ class Waker {
   friend class DispatcherImpl;
 
  public:
-  Waker() = default;
+  constexpr Waker() = default;
   Waker(Waker&& other) noexcept PW_LOCKS_EXCLUDED(dispatcher_lock());
 
   /// Replace this ``Waker`` with another.
