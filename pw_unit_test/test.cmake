@@ -55,7 +55,7 @@ set(pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS "" CACHE STRING
      Timeout is in seconds. Defaults to empty which means no timeout.")
 
 set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
-    "Optional arguments to forward to the automatic runner")
+    "Optional list of arguments to forward to the automatic runner")
 
 # pw_add_test: Declares a single unit test suite with Pigweed naming rules and
 #              compiler warning options.
@@ -240,10 +240,10 @@ function(pw_add_test_generic NAME)
     # with Ninja's full dependency resolution.
     if(NOT "${pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS}" STREQUAL "")
       set(optional_timeout_arg
-          "--timeout ${pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS}")
+          "--timeout" "${pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS}")
     endif()
     if(NOT "${pw_unit_test_AUTOMATIC_RUNNER_ARGS}" STREQUAL "")
-      set(optional_runner_args "-- ${pw_unit_test_AUTOMATIC_RUNNER_ARGS}")
+      set(optional_runner_args "--" "${pw_unit_test_AUTOMATIC_RUNNER_ARGS}")
     endif()
     add_custom_command(
       COMMAND
