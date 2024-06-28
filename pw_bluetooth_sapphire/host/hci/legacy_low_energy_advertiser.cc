@@ -35,7 +35,7 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-std::optional<EmbossCommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pw::bluetooth::emboss::GenericEnableParam enable) {
   auto packet = hci::EmbossCommandPacket::New<
@@ -126,8 +126,7 @@ LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-std::optional<EmbossCommandPacket>
-LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
   auto packet = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::LESetAdvertisingEnableCommandWriter>(
