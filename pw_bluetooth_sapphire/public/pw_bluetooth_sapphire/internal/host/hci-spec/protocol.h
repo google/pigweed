@@ -1313,6 +1313,12 @@ constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
 // LE Request Peer SCA Complete Event (v5.2) (LE)
 constexpr EventCode kLERequestPeerSCACompleteSubeventCode = 0x1F;
 
+// LE CIS Established Event (v5.2) (LE)
+constexpr EventCode kLECISEstablishedSubeventCode = 0x019;
+
+// LE CIS Request Event (v5.2) (LE)
+constexpr EventCode kLECISRequestSubeventCode = 0x01A;
+
 // ================================================================
 // Number Of Completed Data Blocks Event (v3.0 + HS) (BR/EDR & AMP)
 constexpr EventCode kNumberOfCompletedDataBlocksEventCode = 0x48;
@@ -2383,6 +2389,14 @@ constexpr OpCode kLERequestPeerSCA = LEControllerCommandOpCode(0x006D);
 // =======================================
 // LE Set Host Feature Command (v5.2) (LE)
 constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
+
+// =========================================
+// LE Accept CIS Request Command (v5.2) (LE)
+constexpr OpCode kLEAcceptCISRequest = LEControllerCommandOpCode(0x0066);
+
+// =========================================
+// LE Reject CIS Request Command (v5.2) (LE)
+constexpr OpCode kLERejectCISRequest = LEControllerCommandOpCode(0x0067);
 
 // ======= Vendor Command =======
 // Core Spec v5.0, Vol 2, Part E, Section 5.4.1
