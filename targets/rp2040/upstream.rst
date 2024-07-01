@@ -25,7 +25,7 @@ Build everything
 ================
 .. code-block:: console
 
-   bazel build --config=rp2040 //...
+   bazelisk build --config=rp2040 //...
 
 Run on-device tests
 ===================
