@@ -1272,6 +1272,7 @@ void AdapterImpl::InitializeStep4() {
       gatt_,
       le_discovery_manager_->GetWeakPtr(),
       sm::SecurityManager::Create,
+      state(),
       dispatcher_);
   le_connection_manager_->AttachInspect(
       adapter_node_, kInspectLowEnergyConnectionManagerNodeName);

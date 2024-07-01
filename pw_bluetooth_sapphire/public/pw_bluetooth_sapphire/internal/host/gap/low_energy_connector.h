@@ -14,6 +14,7 @@
 
 #pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/adapter_state.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_interrogator.h"
@@ -45,6 +46,7 @@ class LowEnergyConnector final {
                      WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                      l2cap::ChannelManager* l2cap,
                      gatt::GATT::WeakPtr gatt,
+                     const AdapterState& adapter_state,
                      pw::async::Dispatcher& dispatcher);
 
   // Instances should only be destroyed after the result callback is called
@@ -147,6 +149,8 @@ class LowEnergyConnector final {
   // Layer pointers to be passed to LowEnergyConnection.
   l2cap::ChannelManager* l2cap_;
   gatt::GATT::WeakPtr gatt_;
+
+  AdapterState adapter_state_;
 
   // True if this connector is connecting an outbound connection, false if it is
   // connecting an inbound connection.

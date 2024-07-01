@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+
+#include "pw_bluetooth_sapphire/internal/host/gap/adapter_state.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
@@ -30,9 +32,12 @@ namespace gap {
 class LowEnergyInterrogator final {
  public:
   // |peer| must outlive this object.
+  // |sca_supported| indicates that the controller supports interrogation of
+  //  peer sleep clock accuracy.
   LowEnergyInterrogator(Peer::WeakPtr peer,
                         hci_spec::ConnectionHandle handle,
-                        hci::CommandChannel::WeakPtr hci);
+                        hci::CommandChannel::WeakPtr hci,
+                        bool sca_supported);
 
   // Destroying the LowEnergyInterrogator effectively abandons an in-flight
   // interrogation, if there is one. The result callback will not be called.
@@ -50,6 +55,7 @@ class LowEnergyInterrogator final {
  private:
   void Complete(hci::Result<> result);
 
+  void QueueRequestPeerSca();
   void QueueReadLERemoteFeatures();
   void QueueReadRemoteVersionInformation();
 
@@ -62,6 +68,9 @@ class LowEnergyInterrogator final {
   ResultCallback callback_ = nullptr;
 
   hci::SequentialCommandRunner cmd_runner_;
+
+  // Controller supports interrogation of peer sleep clock accuracy.
+  bool controller_supports_sca_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

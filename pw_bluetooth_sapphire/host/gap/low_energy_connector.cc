@@ -53,12 +53,14 @@ LowEnergyConnector::LowEnergyConnector(
     WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
     l2cap::ChannelManager* l2cap,
     gatt::GATT::WeakPtr gatt,
+    const AdapterState& adapter_state,
     pw::async::Dispatcher& dispatcher)
     : dispatcher_(dispatcher),
       peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(std::move(gatt)),
+      adapter_state_(adapter_state),
       options_(options),
       cmd_(std::move(cmd_channel)),
       le_connection_manager_(std::move(conn_mgr)) {
@@ -403,7 +405,10 @@ void LowEnergyConnector::StartInterrogation() {
   state_.Set(State::kInterrogating);
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
-  interrogator_.emplace(peer->GetWeakPtr(), connection_->handle(), cmd_);
+  bool sca_supported = adapter_state_.IsCommandSupported(
+      /*octet=*/43, hci_spec::SupportedCommand::kLERequestPeerSCA);
+  interrogator_.emplace(
+      peer->GetWeakPtr(), connection_->handle(), cmd_, sca_supported);
   interrogator_->Start(
       fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
 }

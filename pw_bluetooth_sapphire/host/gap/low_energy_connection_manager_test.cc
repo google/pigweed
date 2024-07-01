@@ -137,6 +137,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         gatt_->GetWeakPtr(),
         discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()),
+        adapter_state_,
         dispatcher());
 
     test_device()->set_connection_state_callback(
@@ -241,6 +242,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyAddressManager> address_manager_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;
+
+  AdapterState adapter_state_ = {};
 
   // The most recent remote-initiated connection reported by |connector_|.
   std::unique_ptr<hci::LowEnergyConnection> last_remote_initiated_;

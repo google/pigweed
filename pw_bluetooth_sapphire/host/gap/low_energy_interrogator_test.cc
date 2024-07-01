@@ -27,6 +27,16 @@
 namespace bt::gap {
 
 constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0BAA;
+constexpr uint64_t kLEFeaturesHasSca =
+    0x0123456789a |
+    static_cast<uint64_t>(
+        hci_spec::LESupportedFeature::kSleepClockAccuracyUpdates);
+constexpr uint64_t kLEFeaturesNoSca =
+    0x0123456789a &
+    ~static_cast<uint64_t>(
+        hci_spec::LESupportedFeature::kSleepClockAccuracyUpdates);
+constexpr auto kDefaultScaRange =
+    pw::bluetooth::emboss::LESleepClockAccuracyRange::PPM_51_TO_75;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kLERandom, {1});
 
 const auto kReadRemoteVersionInfoRsp =
@@ -35,6 +45,8 @@ const auto kReadRemoteVersionInfoRsp =
 const auto kLEReadRemoteFeaturesRsp =
     testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
                                  pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kLERequestPeerScaRsp = testing::CommandStatusPacket(
+    hci_spec::kLERequestPeerSCA, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 using TestingBase =
     bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
@@ -53,9 +65,9 @@ class LowEnergyInterrogatorTest : public TestingBase {
     ASSERT_TRUE(peer_->le());
     EXPECT_FALSE(peer_->version());
     EXPECT_FALSE(peer_->le()->features());
+    EXPECT_FALSE(peer_->le()->sleep_clock_accuracy());
 
-    interrogator_ = std::make_unique<LowEnergyInterrogator>(
-        peer_->GetWeakPtr(), kConnectionHandle, cmd_channel()->AsWeakPtr());
+    CreateInterrogator(/*supports_sca=*/true);
   }
 
   void TearDown() override {
@@ -72,17 +84,40 @@ class LowEnergyInterrogatorTest : public TestingBase {
                                         0}) const {
     const auto remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
-    const auto le_remote_features_complete_packet =
-        testing::LEReadRemoteFeaturesCompletePacket(conn, features);
 
     EXPECT_CMD_PACKET_OUT(test_device(),
                           testing::ReadRemoteVersionInfoPacket(conn),
                           &kReadRemoteVersionInfoRsp,
                           &remote_version_complete_packet);
+
+    const auto le_remote_features_complete_packet =
+        testing::LEReadRemoteFeaturesCompletePacket(conn, features);
     EXPECT_CMD_PACKET_OUT(test_device(),
                           testing::LEReadRemoteFeaturesPacket(conn),
                           &kLEReadRemoteFeaturesRsp,
                           &le_remote_features_complete_packet);
+
+    // Expect a SCA request, if supported by the peer and the controller
+    if ((features.le_features &
+         static_cast<uint64_t>(
+             hci_spec::LESupportedFeature::kSleepClockAccuracyUpdates)) &&
+        controller_supports_sca_) {
+      const auto le_request_peer_sca_complete_packet =
+          testing::LERequestPeerScaCompletePacket(conn, kDefaultScaRange);
+      EXPECT_CMD_PACKET_OUT(test_device(),
+                            testing::LERequestPeerScaPacket(conn),
+                            &kLERequestPeerScaRsp,
+                            &le_request_peer_sca_complete_packet);
+    }
+  }
+
+  void CreateInterrogator(bool supports_sca) {
+    controller_supports_sca_ = supports_sca;
+    interrogator_ =
+        std::make_unique<LowEnergyInterrogator>(peer_->GetWeakPtr(),
+                                                kConnectionHandle,
+                                                cmd_channel()->AsWeakPtr(),
+                                                supports_sca);
   }
 
   void DestroyInterrogator() { interrogator_.reset(); }
@@ -97,6 +132,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
   Peer* peer_ = nullptr;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<LowEnergyInterrogator> interrogator_;
+  bool controller_supports_sca_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyInterrogatorTest);
 };
@@ -105,7 +141,7 @@ using GAP_LowEnergyInterrogatorTest = LowEnergyInterrogatorTest;
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesHasSca};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   std::optional<hci::Result<>> status;
@@ -119,12 +155,14 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_TRUE(peer()->version());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
+  EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kDefaultScaRange);
 }
 
 TEST_F(LowEnergyInterrogatorTest,
        SuccessfulInterrogationPeerAlreadyHasLEFeatures) {
   // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesHasSca};
 
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
@@ -132,6 +170,16 @@ TEST_F(LowEnergyInterrogatorTest,
                         testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp,
                         &remote_version_complete_packet);
+
+  // We should still query peer's SCA
+  constexpr auto kScaRange =
+      pw::bluetooth::emboss::LESleepClockAccuracyRange::PPM_0_TO_20;
+  const auto le_request_peer_sca_complete_packet =
+      testing::LERequestPeerScaCompletePacket(kConnectionHandle, kScaRange);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::LERequestPeerScaPacket(kConnectionHandle),
+                        &kLERequestPeerScaRsp,
+                        &le_request_peer_sca_complete_packet);
 
   peer()->MutLe().SetFeatures(kFeatures);
 
@@ -143,10 +191,13 @@ TEST_F(LowEnergyInterrogatorTest,
   EXPECT_EQ(fit::ok(), *status);
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
+  EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kScaRange);
 }
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
-  QueueSuccessfulInterrogation(kConnectionHandle);
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesHasSca};
+  QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   std::optional<hci::Result<>> status;
   interrogator()->Start(
@@ -165,12 +216,24 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
                         &kReadRemoteVersionInfoRsp,
                         &remote_version_complete_packet);
 
+  // SCA should be read at each connection event.
+  constexpr auto kScaRange =
+      pw::bluetooth::emboss::LESleepClockAccuracyRange::PPM_251_TO_500;
+  const auto le_request_peer_sca_complete_packet =
+      testing::LERequestPeerScaCompletePacket(kConnectionHandle, kScaRange);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::LERequestPeerScaPacket(kConnectionHandle),
+                        &kLERequestPeerScaRsp,
+                        &le_request_peer_sca_complete_packet);
+
   interrogator()->Start(
       [&status](hci::Result<> cb_status) { status = cb_status; });
 
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
+  ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
+  EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kScaRange);
 }
 
 TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
@@ -195,6 +258,9 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
   EXPECT_FALSE(peer()->le()->features().has_value());
+
+  // When previous operations fail, we shouldn't try to read SCA.
+  EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
 TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionErrorStatus) {
@@ -219,6 +285,9 @@ TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionErrorStatus) {
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
   EXPECT_FALSE(peer()->version());
+
+  // When previous operations fail, we shouldn't try to read SCA.
+  EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
 TEST_F(LowEnergyInterrogatorTest,
@@ -256,6 +325,7 @@ TEST_F(LowEnergyInterrogatorTest,
   // The read remote features handler should not update the features of a
   // canceled interrogation.
   EXPECT_FALSE(peer()->le()->features().has_value());
+  EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
 TEST_F(LowEnergyInterrogatorTest,
@@ -293,11 +363,51 @@ TEST_F(LowEnergyInterrogatorTest,
   // The read remote version handler should not update the version after a
   // canceled interrogation.
   EXPECT_FALSE(peer()->version());
+  EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
+}
+
+TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnController) {
+  CreateInterrogator(/*supports_sca=*/false);
+
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesHasSca};
+  QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
+
+  std::optional<hci::Result<>> status;
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
+  RunUntilIdle();
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(fit::ok(), *status);
+
+  EXPECT_TRUE(peer()->version());
+  ASSERT_TRUE(peer()->le()->features());
+  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
+}
+
+TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnPeer) {
+  // Disable peer support for SCA updates.
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesNoSca};
+  QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
+
+  std::optional<hci::Result<>> status;
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
+  RunUntilIdle();
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(fit::ok(), *status);
+
+  EXPECT_TRUE(peer()->version());
+  ASSERT_TRUE(peer()->le()->features());
+  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
 TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
   // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
+  const hci_spec::LESupportedFeatures kFeatures{kLEFeaturesHasSca};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   std::optional<hci::Result<>> status;
@@ -308,6 +418,10 @@ TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_ok());
+  ASSERT_TRUE(peer()->le()->features());
+  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
+  EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kDefaultScaRange);
 }
 
 }  // namespace bt::gap
