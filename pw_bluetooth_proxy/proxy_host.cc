@@ -143,7 +143,7 @@ void ProxyHost::Reset() {
   acl_send_mutex_.unlock();
 }
 
-pw::Status ProxyHost::sendGattNotify(uint16_t connection_handle,
+pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
                                      uint16_t attribute_handle,
                                      pw::span<const uint8_t> attribute_value) {
   if (connection_handle > 0x0EFF) {

@@ -868,7 +868,7 @@ TEST(GattNotifyTest, SendGattNotify1ByteAttribute) {
   SendReadBufferResponseFromController(proxy, 1);
 
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.handle,
+                  .SendGattNotify(capture.handle,
                                   capture.attribute_handle,
                                   pw::span(capture.attribute_value))
                   .ok());
@@ -953,7 +953,7 @@ TEST(GattNotifyTest, SendGattNotify2ByteAttribute) {
   SendReadBufferResponseFromController(proxy, 1);
 
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.handle,
+                  .SendGattNotify(capture.handle,
                                   capture.attribute_handle,
                                   pw::span(capture.attribute_value))
                   .ok());
@@ -980,14 +980,14 @@ TEST(GattNotifyTest, SendGattNotifyUnavailableWhenPending) {
   SendReadBufferResponseFromController(proxy, 2);
 
   std::array<uint8_t, 2> attribute_value = {0xAB, 0xCD};
-  EXPECT_TRUE(proxy.sendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
   // Only one send is allowed at a time, so PW_STATUS_UNAVAILABLE will be
   // returned until the pending packet is destructed.
-  EXPECT_EQ(proxy.sendGattNotify(123, 345, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
   capture.released_packet.~H4PacketWithH4();
-  EXPECT_TRUE(proxy.sendGattNotify(123, 345, pw::span(attribute_value)).ok());
-  EXPECT_EQ(proxy.sendGattNotify(123, 345, pw::span(attribute_value)),
+  EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
   EXPECT_EQ(capture.sends_called, 2);
 
@@ -1007,14 +1007,14 @@ TEST(GattNotifyTest, SendGattNotifyReturnsErrorForInvalidArgs) {
 
   std::array<uint8_t, 2> attribute_value = {0xAB, 0xCD};
   // connection_handle too large
-  EXPECT_EQ(proxy.sendGattNotify(0x0FFF, 345, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(0x0FFF, 345, pw::span(attribute_value)),
             PW_STATUS_INVALID_ARGUMENT);
   // attribute_handle is 0
-  EXPECT_EQ(proxy.sendGattNotify(123, 0, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(123, 0, pw::span(attribute_value)),
             PW_STATUS_INVALID_ARGUMENT);
   // attribute_value too large
   std::array<uint8_t, 3> attribute_value_too_large = {0xAB, 0xCD, 0xEF};
-  EXPECT_EQ(proxy.sendGattNotify(123, 345, pw::span(attribute_value_too_large)),
+  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value_too_large)),
             PW_STATUS_INVALID_ARGUMENT);
 }
 
@@ -1075,7 +1075,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
 
   // Send packet; num free packets should decrement.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[0],
+                  .SendGattNotify(capture.connection_handles[0],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
@@ -1084,7 +1084,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
   // Send packet over Connection 1, which will not have a packet completed in
   // the Number_of_Completed_Packets event.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[1],
+                  .SendGattNotify(capture.connection_handles[1],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
@@ -1092,7 +1092,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
 
   // Send third packet; num free packets should decrement again.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[2],
+                  .SendGattNotify(capture.connection_handles[2],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
@@ -1100,7 +1100,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
 
   // At this point, proxy has used all 3 credits, 1 on each Connection, so send
   // should fail.
-  EXPECT_EQ(proxy.sendGattNotify(
+  EXPECT_EQ(proxy.SendGattNotify(
                 capture.connection_handles[0], 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
 
@@ -1164,7 +1164,7 @@ TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
 
   // Send packet over Connection 0; num free packets should decrement.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[0],
+                  .SendGattNotify(capture.connection_handles[0],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
@@ -1172,14 +1172,14 @@ TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
 
   // Send packet over Connection 1; num free packets should decrement again.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[1],
+                  .SendGattNotify(capture.connection_handles[1],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
   // At this point proxy, has used both credits, so send should fail.
-  EXPECT_EQ(proxy.sendGattNotify(
+  EXPECT_EQ(proxy.SendGattNotify(
                 capture.connection_handles[1], 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
 
@@ -1240,17 +1240,17 @@ TEST(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
   // Use 2 credits on Connection 0 and 2 credits on random connections that will
   // not be included in the NOCP event.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[0],
+                  .SendGattNotify(capture.connection_handles[0],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
   EXPECT_TRUE(proxy
-                  .sendGattNotify(capture.connection_handles[0],
+                  .SendGattNotify(capture.connection_handles[0],
                                   1,
                                   pw::span(attribute_value))
                   .ok());
-  EXPECT_TRUE(proxy.sendGattNotify(0xABC, 1, pw::span(attribute_value)).ok());
-  EXPECT_TRUE(proxy.sendGattNotify(0xBCD, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(0xABC, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(0xBCD, 1, pw::span(attribute_value)).ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
   // Send Number_of_Completed_Packets event that reports 10 packets on
@@ -1417,14 +1417,14 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
   // Use up 3 of the 10 credits on the Connection that will be disconnected.
   for (int i = 0; i < 3; ++i) {
     EXPECT_TRUE(proxy
-                    .sendGattNotify(
+                    .SendGattNotify(
                         capture.connection_handle, 1, pw::span(attribute_value))
                     .ok());
   }
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 7);
   // Use up 2 credits on a random Connection.
   for (int i = 0; i < 2; ++i) {
-    EXPECT_TRUE(proxy.sendGattNotify(0x456, 1, pw::span(attribute_value)).ok());
+    EXPECT_TRUE(proxy.SendGattNotify(0x456, 1, pw::span(attribute_value)).ok());
   }
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 5);
 
@@ -1458,7 +1458,7 @@ TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
 
   // Use sole credit.
   EXPECT_TRUE(
-      proxy.sendGattNotify(connection_handle, 1, pw::span(attribute_value))
+      proxy.SendGattNotify(connection_handle, 1, pw::span(attribute_value))
           .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
@@ -1484,7 +1484,7 @@ TEST(DisconnectionCompleteTest, DisconnectionOfUnusedConnectionHasNoEffect) {
 
   // Use sole credit.
   EXPECT_TRUE(
-      proxy.sendGattNotify(connection_handle, 1, pw::span(attribute_value))
+      proxy.SendGattNotify(connection_handle, 1, pw::span(attribute_value))
           .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
@@ -1534,7 +1534,7 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
 
   // Establish connection over `connection_handle`.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(
+                  .SendGattNotify(
                       capture.connection_handle, 1, pw::span(attribute_value))
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
@@ -1545,7 +1545,7 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
 
   // Re-establish connection over `connection_handle`.
   EXPECT_TRUE(proxy
-                  .sendGattNotify(
+                  .SendGattNotify(
                       capture.connection_handle, 1, pw::span(attribute_value))
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
@@ -1605,11 +1605,11 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
 
   std::array<uint8_t, 1> attribute_value = {0};
   EXPECT_TRUE(proxy
-                  .sendGattNotify(
+                  .SendGattNotify(
                       capture.connection_handle, 1, pw::span(attribute_value))
                   .ok());
   // Proxy still has a free credit, but send should fail, as buffer is occupied.
-  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
 
   proxy.Reset();
@@ -1620,7 +1620,7 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
   EXPECT_TRUE(proxy.HasSendAclCapability());
   // Reset marks buffer as unoccupied, but also resets credits, so send should
   // still fail.
-  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
 
   // Re-initialize AclDataChannel with 2 credits.
@@ -1628,7 +1628,7 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
 
   // Send ACL on random handle to expend one credit. The success of this send
   // indicates that the reset has properly cleared `acl_send_pending_`.
-  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
   // This should have no effect, as the reset has cleared our active connection
   // on this handle.
   SendNumberOfCompletedPackets(
@@ -1660,10 +1660,10 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after double reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
   SendReadBufferResponseFromController(proxy, 1);
-  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
   EXPECT_EQ(sends_called, 1);
 
   proxy.Reset();
@@ -1671,10 +1671,10 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after third reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
   SendReadBufferResponseFromController(proxy, 1);
-  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
   EXPECT_EQ(sends_called, 2);
 }
 
