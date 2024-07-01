@@ -122,8 +122,7 @@ class ProxyHost {
   void BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
                       uint16_t connection_handle,
                       uint16_t attribute_handle,
-                      pw::span<const uint8_t> attribute_value)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
+                      pw::span<const uint8_t> attribute_value);
 
   // Process a Command_Complete event.
   void ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer);
