@@ -51,12 +51,22 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
       const ScanOptions& options,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
+  // Called when a Scan Response is received during an active scan or when we
+  // time out waiting
+  void HandleScanResponse(const DeviceAddress& address,
+                          bool resolved,
+                          int8_t rssi,
+                          const ByteBuffer& data);
+
   // Event handler for HCI LE Advertising Report event.
-  CommandChannel::EventCallbackResult OnAdvertisingReportEvent(
-      const EventPacket& event);
+  void OnAdvertisingReportEvent(const EventPacket& event);
 
   // Our event handler ID for the LE Advertising Report event.
   CommandChannel::EventHandlerId event_handler_id_;
+
+  // Keep this as the last member to make sure that all weak pointers are
+  // invalidated before other members get destroyed
+  WeakSelf<LegacyLowEnergyScanner> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };

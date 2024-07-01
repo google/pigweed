@@ -244,7 +244,10 @@ bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
 
   // If a scan is enabled then send an advertising report for the peer that just
   // got registered if it supports advertising.
-  SendAdvertisingReport(*peer);
+  if (peer->send_advertising_report()) {
+    SendAdvertisingReport(*peer);
+    SendScanResponseReport(*peer);
+  }
 
   peers_[peer->address()] = std::move(peer);
   return true;
@@ -663,273 +666,16 @@ void FakeController::SendInquiryResponses() {
   }
 }
 
-static void WriteScanResponseReport(const FakePeer& peer,
-                                    hci_spec::LEAdvertisingReportData* report) {
-  BT_DEBUG_ASSERT(peer.scannable());
-  report->event_type = hci_spec::LEAdvertisingEventType::kScanRsp;
-
-  report->address = peer.address().value();
-  report->address_type = hci_spec::LEAddressType::kPublic;
-  if (peer.address().type() == DeviceAddress::Type::kLERandom) {
-    report->address_type = hci_spec::LEAddressType::kRandom;
-  }
-
-  report->length_data = peer.scan_response().size();
-  std::memcpy(
-      report->data, peer.scan_response().data(), peer.scan_response().size());
-
-  report->data[report->length_data] = peer.rssi();
-}
-
-DynamicByteBuffer FakeController::BuildLegacyAdvertisingReportEvent(
-    const FakePeer& peer, bool include_scan_rsp) {
-  BT_DEBUG_ASSERT(peer.advertising_data().size() <=
-                  hci_spec::kMaxLEAdvertisingDataLength);
-  size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) +
-                      peer.advertising_data().size() + sizeof(int8_t);
-
-  if (include_scan_rsp) {
-    BT_DEBUG_ASSERT(peer.scannable());
-    BT_DEBUG_ASSERT(peer.scan_response().size() <=
-                    hci_spec::kMaxLEAdvertisingDataLength);
-    param_size += sizeof(hci_spec::LEAdvertisingReportData) +
-                  peer.scan_response().size() + sizeof(int8_t);
-  }
-
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
-  event.mutable_header()->event_code = hci_spec::kLEMetaEventCode;
-  event.mutable_header()->parameter_total_size = param_size;
-
-  auto payload = event.mutable_payload<hci_spec::LEMetaEventParams>();
-  payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
-
-  auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
-          payload->subevent_parameters);
-  subevent_payload->num_reports = 1;
-  if (include_scan_rsp) {
-    subevent_payload->num_reports++;
-  }
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-      subevent_payload->reports);
-  if (peer.directed_advertising_enabled()) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvDirectInd;
-  } else if (peer.connectable()) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvInd;
-  } else if (peer.scannable()) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvScanInd;
-  } else {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvNonConnInd;
-  }
-
-  if (peer.address().type() == DeviceAddress::Type::kLERandom) {
-    report->address_type = hci_spec::LEAddressType::kRandom;
-    if (peer.address_resolved()) {
-      report->address_type = hci_spec::LEAddressType::kRandomIdentity;
-    }
-  } else {
-    report->address_type = hci_spec::LEAddressType::kPublic;
-    if (peer.address_resolved()) {
-      report->address_type = hci_spec::LEAddressType::kPublicIdentity;
-    }
-  }
-
-  report->address = peer.address().value();
-  report->length_data = peer.advertising_data().size();
-  std::memcpy(report->data,
-              peer.advertising_data().data(),
-              peer.advertising_data().size());
-  report->data[report->length_data] = peer.rssi();
-
-  if (include_scan_rsp) {
-    auto* scan_response_report =
-        reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-            report->data + report->length_data + sizeof(int8_t));
-    WriteScanResponseReport(peer, scan_response_report);
-  }
-
-  return buffer;
-}
-
-DynamicByteBuffer FakeController::BuildLegacyScanResponseReportEvent(
-    const FakePeer& peer) const {
-  BT_DEBUG_ASSERT(peer.scannable());
-  BT_DEBUG_ASSERT(peer.scan_response().size() <=
-                  hci_spec::kMaxLEAdvertisingDataLength);
-  size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) +
-                      peer.scan_response().size() + sizeof(int8_t);
-
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
-  event.mutable_header()->event_code = hci_spec::kLEMetaEventCode;
-  event.mutable_header()->parameter_total_size = param_size;
-
-  auto payload = event.mutable_payload<hci_spec::LEMetaEventParams>();
-  payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
-
-  auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
-          payload->subevent_parameters);
-  subevent_payload->num_reports = 1;
-
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-      subevent_payload->reports);
-  WriteScanResponseReport(peer, report);
-
-  return buffer;
-}
-
-void FakeController::FillExtendedAdvertisingReport(
-    const FakePeer& peer,
-    pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
-    const ByteBuffer& data,
-    bool is_fragmented,
-    bool is_scan_response) const {
-  if (peer.use_extended_advertising_pdus()) {
-    report.event_type().directed().Write(peer.directed_advertising_enabled());
-    report.event_type().connectable().Write(peer.connectable());
-    report.event_type().scannable().Write(peer.scannable());
-    report.event_type().scan_response().Write(is_scan_response);
-
-    if (is_fragmented) {
-      report.event_type().data_status().Write(
-          pw::bluetooth::emboss::LEAdvertisingDataStatus::INCOMPLETE);
-    } else {
-      report.event_type().data_status().Write(
-          pw::bluetooth::emboss::LEAdvertisingDataStatus::COMPLETE);
-    }
-  } else {
-    report.event_type().legacy().Write(true);
-    if (is_scan_response) {
-      report.event_type().scan_response().Write(true);
-    }
-
-    if (peer.directed_advertising_enabled()) {  // ADV_DIRECT_IND
-      report.event_type().directed().Write(true);
-      report.event_type().connectable().Write(true);
-    } else if (peer.connectable()) {  // ADV_IND
-      report.event_type().connectable().Write(true);
-      report.event_type().scannable().Write(true);
-    } else if (peer.scannable()) {  // ADV_SCAN_IND
-      report.event_type().scannable().Write(true);
-    }
-    // else ADV_NONCONN_IND
-  }
-
-  if (peer.address().type() == DeviceAddress::Type::kLERandom) {
-    if (peer.address_resolved()) {
-      report.address_type().Write(
-          pw::bluetooth::emboss::LEExtendedAddressType::RANDOM_IDENTITY);
-    } else {
-      report.address_type().Write(
-          pw::bluetooth::emboss::LEExtendedAddressType::RANDOM);
-    }
-  } else {
-    if (peer.address_resolved()) {
-      report.address_type().Write(
-          pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC_IDENTITY);
-    } else {
-      report.address_type().Write(
-          pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC);
-    }
-  }
-
-  report.address().bd_addr().CopyFrom(peer.address().value().view().bd_addr());
-  report.primary_phy().Write(
-      pw::bluetooth::emboss::LEPrimaryAdvertisingPHY::LE_1M);
-  report.secondary_phy().Write(
-      pw::bluetooth::emboss::LESecondaryAdvertisingPHY::NONE);
-  report.advertising_sid().Write(0);
-  report.tx_power().Write(peer.tx_power());
-  report.rssi().Write(peer.rssi());
-  report.periodic_advertising_interval().Write(0);
-
-  // skip direct_address_type and direct_address for now since we don't use it
-
-  report.data_length().Write(data.size());
-  std::memcpy(report.data().BackingStorage().begin(), data.data(), data.size());
-}
-
-DynamicByteBuffer FakeController::BuildExtendedAdvertisingReports(
-    const FakePeer& peer, const ByteBuffer& data, bool is_scan_response) const {
-  using pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter;
-  using pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventWriter;
-
-  size_t num_full_reports =
-      data.size() / hci_spec::kMaxPduLEExtendedAdvertisingDataLength;
-  size_t full_report_size =
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportData::MinSizeInBytes() +
-      hci_spec::kMaxPduLEExtendedAdvertisingDataLength;
-  size_t last_report_size =
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportData::MinSizeInBytes() +
-      (data.size() % hci_spec::kMaxPduLEExtendedAdvertisingDataLength);
-
-  size_t reports_size = num_full_reports * full_report_size + last_report_size;
-  size_t packet_size =
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportSubevent::
-          MinSizeInBytes() +
-      reports_size;
-
-  auto event =
-      hci::EmbossEventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
-          hci_spec::kLEMetaEventCode, packet_size);
-  auto packet =
-      event.view<LEExtendedAdvertisingReportSubeventWriter>(reports_size);
-  packet.le_meta_event().subevent_code().Write(
-      hci_spec::kLEExtendedAdvertisingReportSubeventCode);
-
-  uint8_t num_reports = num_full_reports + 1;
-  packet.num_reports().Write(num_reports);
-
-  for (size_t i = 0; i < num_full_reports; i++) {
-    bool is_fragmented = false;
-    if (num_reports > 1) {
-      is_fragmented = true;
-    }
-
-    LEExtendedAdvertisingReportDataWriter report(
-        packet.reports().BackingStorage().begin() + full_report_size * i,
-        full_report_size);
-    FillExtendedAdvertisingReport(
-        peer, report, data, is_fragmented, is_scan_response);
-  }
-
-  LEExtendedAdvertisingReportDataWriter report(
-      packet.reports().BackingStorage().begin() +
-          full_report_size * num_full_reports,
-      last_report_size);
-  FillExtendedAdvertisingReport(peer, report, data, false, is_scan_response);
-
-  return event.release();
-}
-
-DynamicByteBuffer FakeController::BuildExtendedAdvertisingReportEvent(
-    const FakePeer& peer) const {
-  BT_DEBUG_ASSERT(peer.advertising_data().size() <=
-                  hci_spec::kMaxLEExtendedAdvertisingDataLength);
-  return BuildExtendedAdvertisingReports(peer, peer.advertising_data(), false);
-}
-
-DynamicByteBuffer FakeController::BuildExtendedScanResponseEvent(
-    const FakePeer& peer) const {
-  BT_DEBUG_ASSERT(peer.scannable());
-  BT_DEBUG_ASSERT(peer.scan_response().size() <=
-                  hci_spec::kMaxLEExtendedAdvertisingDataLength);
-  return BuildExtendedAdvertisingReports(peer, peer.scan_response(), true);
-}
-
 void FakeController::SendAdvertisingReports() {
   if (!le_scan_state_.enabled || peers_.empty()) {
     return;
   }
 
   for (const auto& iter : peers_) {
-    SendAdvertisingReport(*iter.second);
+    if (iter.second->send_advertising_report()) {
+      SendAdvertisingReport(*iter.second);
+      SendScanResponseReport(*iter.second);
+    }
   }
 
   // We'll send new reports for the same peers if duplicate filtering is
@@ -950,29 +696,40 @@ void FakeController::SendAdvertisingReport(const FakePeer& peer) {
     return;
   }
 
+  DynamicByteBuffer buffer;
+  if (received_extended_operations_) {
+    buffer = peer.BuildExtendedAdvertisingReportEvent();
+  } else {
+    buffer = peer.BuildLegacyAdvertisingReportEvent();
+  }
+
+  SendCommandChannelPacket(buffer);
+}
+
+void FakeController::SendScanResponseReport(const FakePeer& peer) {
+  if (!le_scan_state_.enabled || !peer.supports_le() ||
+      !peer.advertising_enabled()) {
+    return;
+  }
+
   // We want to send scan response packets only during an active scan and if the
   // peer is scannable.
   bool is_active_scan =
       (le_scan_state_.scan_type == pw::bluetooth::emboss::LEScanType::ACTIVE);
   bool need_scan_rsp = (is_active_scan && peer.scannable());
 
-  if (received_extended_operations_) {
-    SendCommandChannelPacket(BuildExtendedAdvertisingReportEvent(peer));
-
-    if (need_scan_rsp) {
-      SendCommandChannelPacket(BuildExtendedScanResponseEvent(peer));
-    }
-  } else {
-    bool include_scan_rsp = (need_scan_rsp && peer.should_batch_reports());
-    SendCommandChannelPacket(
-        BuildLegacyAdvertisingReportEvent(peer, include_scan_rsp));
-
-    // If the original report did not include a scan response then we send it as
-    // a separate event.
-    if (need_scan_rsp && !peer.should_batch_reports()) {
-      SendCommandChannelPacket(BuildLegacyScanResponseReportEvent(peer));
-    }
+  if (!need_scan_rsp) {
+    return;
   }
+
+  DynamicByteBuffer buffer;
+  if (received_extended_operations_) {
+    buffer = peer.BuildExtendedScanResponseEvent();
+  } else {
+    buffer = peer.BuildLegacyScanResponseReportEvent();
+  }
+
+  SendCommandChannelPacket(buffer);
 }
 
 void FakeController::NotifyControllerParametersChanged() {

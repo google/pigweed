@@ -468,14 +468,21 @@ class FakeController final : public ControllerTestDoubleBase,
         });
   }
 
-  // Populate an LEExtendedAdvertisingReportData as though it was received from
-  // the given FakePeer
-  void FillExtendedAdvertisingReport(
-      const FakePeer& peer,
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
-      const ByteBuffer& data,
-      bool is_fragmented,
-      bool is_scan_response) const;
+  // Sends a single LE advertising report for the given peer. This method will
+  // send a legacy or extended advertising report, depending on which one the
+  // peer is configured to send.
+  //
+  // Does nothing if a LE scan is not currently enabled or if the peer doesn't
+  // support advertising.
+  void SendAdvertisingReport(const FakePeer& peer);
+
+  // Sends a single LE advertising report including the scan response for the
+  // given peer. This method will send a legacy or extended advertising report,
+  // depending on which one the peer is configured to send.
+  //
+  // Does nothing if a LE scan is not currently enabled or if the peer doesn't
+  // support advertising.
+  void SendScanResponseReport(const FakePeer& peer);
 
  private:
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
@@ -531,35 +538,6 @@ class FakeController final : public ControllerTestDoubleBase,
   // a scan is currently enabled. If duplicate filtering is disabled then the
   // reports are continued to be sent until scan is disabled.
   void SendAdvertisingReports();
-
-  // Sends a single LE advertising report for the given peer. This method will
-  // send a legacy or extended advertising report, depending on which one the
-  // peer is configured to send. May send an additional report if the peer has
-  // scan response data and was configured to not batch them in a single report
-  // alongside the regular advertisement.
-  //
-  // Does nothing if a LE scan is not currently enabled or if the peer doesn't
-  // support advertising.
-  void SendAdvertisingReport(const FakePeer& peer);
-
-  // Generates and returns a LE Advertising Report Event payload. If
-  // |include_scan_rsp| is true, then the returned PDU will contain two reports
-  // including the SCAN_IND report.
-  DynamicByteBuffer BuildLegacyAdvertisingReportEvent(const FakePeer& peer,
-                                                      bool include_scan_rsp);
-
-  // Generates a LE Advertising Report Event payload containing the scan
-  // response.
-  DynamicByteBuffer BuildLegacyScanResponseReportEvent(
-      const FakePeer& peer) const;
-
-  // Generates and returns an LE Extended Advertising Report Event payload.
-  DynamicByteBuffer BuildExtendedAdvertisingReportEvent(
-      const FakePeer& peer) const;
-
-  // Generates an LE Extended Advertising Report Event payload containing the
-  // scan response.
-  DynamicByteBuffer BuildExtendedScanResponseEvent(const FakePeer& peer) const;
 
   // Notifies |controller_parameters_cb_|.
   void NotifyControllerParametersChanged();
@@ -916,11 +894,6 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
-
-  DynamicByteBuffer BuildExtendedAdvertisingReports(
-      const FakePeer& peer,
-      const ByteBuffer& data,
-      bool is_scan_response) const;
 
   const uint8_t BIT_1 = 1;
   bool isBREDRPageScanEnabled() const {

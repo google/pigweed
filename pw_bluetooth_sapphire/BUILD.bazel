@@ -149,6 +149,7 @@ filegroup(
         "host/hci/legacy_low_energy_advertiser.cc",
         "host/hci/legacy_low_energy_advertiser_test.cc",
         "host/hci/legacy_low_energy_scanner.cc",
+        "host/hci/legacy_low_energy_scanner_test.cc",
         "host/hci/low_energy_advertiser.cc",
         "host/hci/low_energy_advertiser_test.cc",
         "host/hci/low_energy_connection.cc",

@@ -40,19 +40,16 @@ class FakePeer {
   explicit FakePeer(const DeviceAddress& address,
                     pw::async::Dispatcher& pw_dispatcher,
                     bool connectable = true,
-                    bool scannable = true);
+                    bool scannable = true,
+                    bool send_advertising_report = true);
 
-  const ByteBuffer& advertising_data() const { return adv_data_; }
+  const ByteBuffer& advertising_data() const { return advertising_data_; }
   void set_advertising_data(const ByteBuffer& data) {
-    adv_data_ = DynamicByteBuffer(data);
+    advertising_data_ = DynamicByteBuffer(data);
   }
 
-  // |should_batch_reports| indicates to the FakeController that the SCAN_IND
-  // report should be included in the same HCI LE Advertising Report Event
-  // payload that includes the original advertising data (see comments for
-  // should_batch_reports()).
-  void set_scan_response(bool should_batch_reports, const ByteBuffer& data);
-  const ByteBuffer& scan_response() const { return scan_rsp_; }
+  void set_scan_response(const ByteBuffer& data);
+  const ByteBuffer& scan_response() const { return scan_response_; }
 
   bool advertising_enabled() const { return advertising_enabled_; }
   void set_advertising_enabled(bool enabled) { advertising_enabled_ = enabled; }
@@ -102,17 +99,6 @@ class FakePeer {
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }
 
-  // Indicates whether or not this device should include the scan response and
-  // the advertising data in the same HCI LE Advertising Report Event. This is
-  // used to test that the host stack can correctly consolidate advertising
-  // reports when the payloads are spread across events and when they are
-  // batched together in the same event.
-  //
-  // This isn't used by FakePeer directly to generated batched reports. Rather
-  // it is a hint to the corresponding FakeController which decides how the
-  // reports should be generated.
-  bool should_batch_reports() const { return should_batch_reports_; }
-
   // Returns true if this device is scannable. We use this to tell
   // FakeController whether or not it should send scan response PDUs.
   bool scannable() const { return scannable_; }
@@ -121,6 +107,11 @@ class FakePeer {
 
   bool connected() const { return connected_; }
   void set_connected(bool connected) { connected_ = connected; }
+
+  bool send_advertising_report() const { return send_advertising_report_; }
+  void set_send_advertising_report(bool value) {
+    send_advertising_report_ = value;
+  }
 
   void set_class_of_device(DeviceClass class_of_device) {
     class_of_device_ = class_of_device;
@@ -194,6 +185,23 @@ class FakePeer {
   // Returns the FakeSdpServer associated with this device.
   FakeSdpServer* sdp_server() { return &sdp_server_; }
 
+  // Generates and returns a LE Advertising Report Event payload. If
+  // |include_scan_rsp| is true, then the returned PDU will contain two reports
+  // including the SCAN_IND report.
+  DynamicByteBuffer BuildLegacyAdvertisingReportEvent(
+      bool include_scan_rsp = false) const;
+
+  // Generates a LE Advertising Report Event payload containing the scan
+  // response.
+  DynamicByteBuffer BuildLegacyScanResponseReportEvent() const;
+
+  // Generates and returns an LE Extended Advertising Report Event payload.
+  DynamicByteBuffer BuildExtendedAdvertisingReportEvent() const;
+
+  // Generates an LE Extended Advertising Report Event payload containing the
+  // scan response.
+  DynamicByteBuffer BuildExtendedScanResponseEvent() const;
+
  private:
   friend class FakeController;
 
@@ -215,6 +223,17 @@ class FakePeer {
                   l2cap::ChannelId cid,
                   const ByteBuffer& packet) const;
 
+  DynamicByteBuffer BuildExtendedAdvertisingReports(
+      const ByteBuffer& data, bool is_scan_response) const;
+
+  // Populate an LEExtendedAdvertisingReportData as though it was received from
+  // this fake peer
+  void FillExtendedAdvertisingReport(
+      pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
+      const ByteBuffer& data,
+      bool is_fragmented,
+      bool is_scan_response) const;
+
   // The FakeController that this FakePeer has been assigned to.
   FakeController* controller_;  // weak
 
@@ -227,6 +246,7 @@ class FakePeer {
   bool directed_;
   bool address_resolved_;
   bool use_extended_advertising_pdus_;
+  bool send_advertising_report_;
 
   pw::bluetooth::emboss::StatusCode connect_status_;
   pw::bluetooth::emboss::StatusCode connect_response_;
@@ -242,9 +262,8 @@ class FakePeer {
 
   hci_spec::LESupportedFeatures le_features_;
 
-  bool should_batch_reports_;
-  DynamicByteBuffer adv_data_;
-  DynamicByteBuffer scan_rsp_;
+  DynamicByteBuffer advertising_data_;
+  DynamicByteBuffer scan_response_;
 
   // Open connection handles.
   HandleSet logical_links_;

@@ -26,17 +26,30 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(
     Transport::WeakPtr transport,
     pw::async::Dispatcher& pw_dispatcher)
     : LowEnergyScanner(
-          local_addr_delegate, std::move(transport), pw_dispatcher) {
+          local_addr_delegate, std::move(transport), pw_dispatcher),
+      weak_self_(this) {
+  auto self = weak_self_.GetWeakPtr();
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingReportSubeventCode,
-      fit::bind_member<&LegacyLowEnergyScanner::OnAdvertisingReportEvent>(
-          this));
+      [self](const EventPacket& event) {
+        if (!self.is_alive()) {
+          return hci::CommandChannel::EventCallbackResult::kRemove;
+        }
+
+        self->OnAdvertisingReportEvent(event);
+        return hci::CommandChannel::EventCallbackResult::kContinue;
+      });
 }
 
 LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
-  if (hci()->command_channel()) {
-    hci()->command_channel()->RemoveEventHandler(event_handler_id_);
+  // This object is probably being destroyed because the stack is shutting down,
+  // in which case the HCI layer may have already been destroyed.
+  if (!hci().is_alive() || !hci()->command_channel()) {
+    return;
   }
+
+  hci()->command_channel()->RemoveEventHandler(event_handler_id_);
+  StopScan();
 }
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options,
@@ -94,12 +107,32 @@ EmbossCommandPacket LegacyLowEnergyScanner::BuildEnablePacket(
   return packet;
 }
 
-CommandChannel::EventCallbackResult
-LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
-  bt_log(TRACE, "hci-le", "received advertising report");
+void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
+                                                bool resolved,
+                                                int8_t rssi,
+                                                const ByteBuffer& data) {
+  std::unique_ptr<PendingScanResult> pending = RemovePendingResult(address);
+  if (!pending) {
+    bt_log(DEBUG, "hci-le", "dropping unmatched scan response");
+    return;
+  }
 
+  BT_DEBUG_ASSERT(address == pending->result().address);
+  pending->AppendData(data);
+  pending->set_resolved(resolved);
+  pending->set_rssi(rssi);
+
+  delegate()->OnPeerFound(pending->result(), pending->data());
+
+  // The callback handler may stop the scan, destroying objects within the
+  // LowEnergyScanner. Avoid doing anything more to prevent use after free
+  // bugs.
+}
+
+void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
+    const EventPacket& event) {
   if (!IsScanning()) {
-    return CommandChannel::EventCallbackResult::kContinue;
+    return;
   }
 
   AdvertisingReportParser parser(event);
@@ -136,9 +169,8 @@ LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
         break;
       case hci_spec::LEAdvertisingEventType::kScanRsp:
         if (IsActiveScanning()) {
-          GetPendingResult(address)->AppendData(
-              BufferView(report->data, report->length_data));
-          LegacyLowEnergyScanner::HandleScanResponse(address, resolved, rssi);
+          BufferView data = BufferView(report->data, report->length_data);
+          HandleScanResponse(address, resolved, rssi, data);
         }
         continue;
       default:
@@ -161,14 +193,14 @@ LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
       continue;
     }
 
-    BufferView report_data = BufferView(report->data, report->length_data);
-    AddPendingResult(address, result, [this, address, resolved, rssi] {
-      LegacyLowEnergyScanner::HandleScanResponse(address, resolved, rssi);
-    });
-    GetPendingResult(address)->AppendData(report_data);
+    AddPendingResult(address,
+                     result,
+                     BufferView(report->data, report->length_data),
+                     [this, address, resolved, rssi] {
+                       HandleScanResponse(
+                           address, resolved, rssi, BufferView());
+                     });
   }
-
-  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 }  // namespace bt::hci

@@ -117,7 +117,7 @@ class LowEnergyScannerTest : public TestingBase,
         options, [this](auto status) { last_scan_status_ = status; });
   }
 
-  // LowEnergyScanner::Observer override:
+  // LowEnergyScanner::Delegate override:
   void OnPeerFound(const LowEnergyScanResult& result,
                    const ByteBuffer& data) override {
     if (peer_found_cb_) {
@@ -134,38 +134,31 @@ class LowEnergyScannerTest : public TestingBase,
 
   // Adds 6 fake peers using kAddress[0-5] above.
   void AddFakePeers() {
-    // Generates ADV_IND, scan response is reported in a single HCI event.
+    // Generates ADV_IND
     auto fake_peer =
         std::make_unique<FakePeer>(kPublicAddress1, dispatcher(), true, true);
     fake_peer->set_advertising_data(kPlainAdvDataBytes);
-    fake_peer->set_scan_response(/*should_batch_reports=*/true,
-                                 kPlainScanRspBytes);
+    fake_peer->set_scan_response(kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
-    // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
-    // events.
+    // Generates ADV_SCAN_IND
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
     fake_peer->set_advertising_data(kPlainAdvDataBytes);
-    fake_peer->set_scan_response(/*should_batch_reports=*/false,
-                                 kPlainScanRspBytes);
+    fake_peer->set_scan_response(kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
-    // Generates ADV_IND, empty scan response is reported over multiple HCI
-    // events.
+    // Generates ADV_IND
     fake_peer =
         std::make_unique<FakePeer>(kPublicAddress2, dispatcher(), true, true);
     fake_peer->set_advertising_data(kPlainAdvDataBytes);
-    fake_peer->set_scan_response(/*should_batch_reports=*/false,
-                                 DynamicByteBuffer());
+    fake_peer->set_scan_response(DynamicByteBuffer());
     test_device()->AddPeer(std::move(fake_peer));
 
-    // Generates ADV_IND, empty adv data and non-empty scan response is reported
-    // over multiple HCI events.
+    // Generates ADV_IND
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, true);
-    fake_peer->set_scan_response(/*should_batch_reports=*/false,
-                                 kPlainScanRspBytes);
+    fake_peer->set_scan_response(kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
@@ -354,8 +347,7 @@ TYPED_TEST(LowEnergyScannerTest, ScanResponseTimeout) {
   auto fake_peer = std::make_unique<FakePeer>(
       kRandomAddress1, this->dispatcher(), false, true);
   fake_peer->set_advertising_data(kPlainAdvDataBytes);
-  fake_peer->set_scan_response(/*should_batch_reports=*/false,
-                               kPlainScanRspBytes);
+  fake_peer->set_scan_response(kPlainScanRspBytes);
   this->test_device()->AddPeer(std::move(fake_peer));
 
   fake_peer = std::make_unique<FakePeer>(
@@ -391,6 +383,42 @@ TYPED_TEST(LowEnergyScannerTest, ScanResponseTimeout) {
   EXPECT_EQ(1u, results.count(kRandomAddress1));
   EXPECT_EQ(1u, results.count(kRandomAddress2));
   EXPECT_EQ(1u, results.count(kRandomAddress3));
+}
+
+TYPED_TEST(LowEnergyScannerTest, ScanResponseAfterTimeout) {
+  {
+    auto peer = std::make_unique<FakePeer>(
+        kPublicAddress1, this->dispatcher(), true, true, false);
+    peer->set_advertising_data(kPlainAdvDataBytes);
+    peer->set_scan_response(kPlainScanRspBytes);
+    this->test_device()->AddPeer(std::move(peer));
+  }
+  auto peer = this->test_device()->FindPeer(kPublicAddress1);
+
+  // The callback should get called on timeout waiting for a scan response
+  bool peer_found_callback_called = false;
+  std::unordered_map<DeviceAddress, std::unique_ptr<DynamicByteBuffer>> map;
+
+  this->set_peer_found_callback(
+      [&](const LowEnergyScanResult& result, const ByteBuffer& data) {
+        peer_found_callback_called = true;
+        map[result.address] = std::make_unique<DynamicByteBuffer>(data.size());
+        data.Copy(&*map[result.address]);
+      });
+
+  EXPECT_TRUE(this->StartScan(true));
+  this->RunUntilIdle();
+
+  this->test_device()->SendAdvertisingReport(*peer);
+  this->RunFor(kPwScanResponseTimeout);
+  ASSERT_TRUE(peer_found_callback_called);
+  ASSERT_EQ(1u, map.count(peer->address()));
+  EXPECT_EQ(kPlainAdvDataBytes.ToString(), map[peer->address()]->ToString());
+
+  peer_found_callback_called = false;
+  this->test_device()->SendScanResponseReport(*peer);
+  this->RunUntilIdle();
+  ASSERT_FALSE(peer_found_callback_called);
 }
 
 TYPED_TEST(LowEnergyScannerTest, ActiveScanResults) {
@@ -763,7 +791,9 @@ TYPED_TEST(LowEnergyScannerTest, CallbackStopsScanning) {
   fake_peer->set_advertising_data(kPlainAdvDataBytes);
   this->test_device()->AddPeer(std::move(fake_peer));
 
-  // We should be able to stop scanning in the callback and not crash
+  // We should be able to stop scanning in the callback and not crash. Note: if
+  // crashing, it will likely be due to a use-after-free type bug. Such a bug
+  // may or may not manifest itself in a non-asan build.
   this->set_peer_found_callback(
       [&](const LowEnergyScanResult& result, const ByteBuffer& data) {
         this->scanner()->StopScan();
