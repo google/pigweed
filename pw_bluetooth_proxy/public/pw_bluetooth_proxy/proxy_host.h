@@ -40,18 +40,32 @@ class ProxyHost {
   ProxyHost(ProxyHost&&) = delete;
   ProxyHost& operator=(ProxyHost&&) = delete;
 
-  // ##### Container APIs
+  // ##### Container API
+  // Containers are expected to call these functions (in addition to ctor).
 
   /// Called by container to ask proxy to handle a H4 HCI packet sent from the
   /// host side towards the controller side. Proxy will in turn call the
   /// `send_to_controller_fn` provided during construction to pass the packet
   /// on to the controller. Some packets may be modified, added, or removed.
+  ///
+  /// The proxy host currently does not require any from-host packets to support
+  /// its current functionality. It will pass on all packets, so containers can
+  /// choose to just pass all from-host packets through it.
   void HandleH4HciFromHost(H4PacketWithH4&& h4_packet);
 
   /// Called by container to ask proxy to handle a H4 packet sent from the
   /// controller side towards the host side. Proxy will in turn call the
   /// `send_to_host_fn` provided during construction to pass the packet on to
   /// the host. Some packets may be modified, added, or removed.
+  ///
+  /// To support all of its current functionality, the proxy host needs at least
+  /// the following from-controller events passed through it. It will pass on
+  /// all other packets, so containers can choose to just pass all
+  /// from-controller packets through it.
+  /// - 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v1] command)
+  /// - 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v2] command)
+  /// - 7.7.19 Number Of Completed Packets event (v1.1)
+  /// - 7.7.5 Disconnection Complete event (v1.1)
   void HandleH4HciFromController(H4PacketWithHci&& h4_packet);
 
   // ##### Client APIs
