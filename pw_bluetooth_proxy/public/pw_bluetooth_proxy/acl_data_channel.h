@@ -44,6 +44,10 @@ class AclDataChannel {
   AclDataChannel(AclDataChannel&&) = delete;
   AclDataChannel& operator=(AclDataChannel&&) = delete;
 
+  // Revert to uninitialized state, clearing credit reservation and connections,
+  // but not the number of credits to reserve nor HCI transport.
+  void Reset();
+
   // Acquires LE ACL credits for proxy host use by removing the amount needed
   // from the amount that is passed to the host.
   void ProcessLEReadBufferSizeCommandCompleteEvent(

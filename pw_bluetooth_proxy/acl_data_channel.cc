@@ -22,6 +22,15 @@
 
 namespace pw::bluetooth::proxy {
 
+void AclDataChannel::Reset() {
+  credit_allocation_mutex_.lock();
+  initialized_ = false;
+  proxy_max_le_acl_packets_ = 0;
+  proxy_pending_le_acl_packets_ = 0;
+  active_connections_.clear();
+  credit_allocation_mutex_.unlock();
+}
+
 template <class EventT>
 void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     EventT read_buffer_event) {

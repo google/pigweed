@@ -68,6 +68,13 @@ class ProxyHost {
   /// - 7.7.5 Disconnection Complete event (v1.1)
   void HandleH4HciFromController(H4PacketWithHci&& h4_packet);
 
+  /// Called by container to notify proxy that the Bluetooth system is being
+  /// reset, so the proxy can reset its internal state.
+  /// Warning: Outstanding H4 packets are not invalidated upon reset. If they
+  /// are destructed post-reset, packets generated post-reset are liable to be
+  /// overwritten prematurely.
+  void Reset();
+
   // ##### Client APIs
 
   /// Send a GATT Notify to the indicated connection.

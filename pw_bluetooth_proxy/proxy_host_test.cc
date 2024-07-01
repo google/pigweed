@@ -1559,5 +1559,124 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
   EXPECT_EQ(capture.sends_called, 1);
 }
 
+// ########## ResetTest
+
+TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
+  struct {
+    int sends_called = 0;
+    uint16_t connection_handle = 0x123;
+    H4PacketWithH4 released_packet{{}};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto event_header =
+            MakeEmboss<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
+                0, emboss::EventHeader::IntrinsicSizeInBytes()));
+        if (event_header.event_code_enum().Read() !=
+            emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
+          return;
+        }
+        ++capture.sends_called;
+
+        auto view = MakeEmboss<emboss::NumberOfCompletedPacketsEventView>(
+            packet.GetHciSpan());
+        EXPECT_EQ(packet.GetHciSpan().size(), 7ul);
+        EXPECT_EQ(view.num_handles().Read(), 1);
+        EXPECT_EQ(view.header().event_code_enum().Read(),
+                  emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+
+        // Should be unchanged.
+        EXPECT_EQ(view.nocp_data()[0].connection_handle().Read(),
+                  capture.connection_handle);
+        EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 1);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        // Capture the packet so proxy's buffer remains marked as occupied when
+        // reset is called.
+        capture.released_packet = std::move(packet);
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  SendReadBufferResponseFromController(proxy, 2);
+
+  std::array<uint8_t, 1> attribute_value = {0};
+  EXPECT_TRUE(proxy
+                  .sendGattNotify(
+                      capture.connection_handle, 1, pw::span(attribute_value))
+                  .ok());
+  // Proxy still has a free credit, but send should fail, as buffer is occupied.
+  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+
+  proxy.Reset();
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+  // Reset should not have cleared `le_acl_credits_to_reserve`, so proxy should
+  // still indicate the capability.
+  EXPECT_TRUE(proxy.HasSendAclCapability());
+  // Reset marks buffer as unoccupied, but also resets credits, so send should
+  // still fail.
+  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+
+  // Re-initialize AclDataChannel with 2 credits.
+  SendReadBufferResponseFromController(proxy, 2);
+
+  // Send ACL on random handle to expend one credit. The success of this send
+  // indicates that the reset has properly cleared `acl_send_pending_`.
+  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  // This should have no effect, as the reset has cleared our active connection
+  // on this handle.
+  SendNumberOfCompletedPackets(
+      proxy,
+      FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 1}}}));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+
+  // If captured packet is not reset here, it may destruct after the proxy and
+  // lead to a crash when it tries to lock the proxy's destructed mutex.
+  capture.released_packet.ResetAndReturnReleaseFn();
+}
+
+TEST(ResetTest, ProxyHandlesMultipleResets) {
+  int sends_called = 0;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&sends_called](H4PacketWithH4&& packet) { ++sends_called; });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  SendReadBufferResponseFromController(proxy, 1);
+
+  proxy.Reset();
+  proxy.Reset();
+
+  std::array<uint8_t, 1> attribute_value = {0};
+  // Validate state after double reset.
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+  SendReadBufferResponseFromController(proxy, 1);
+  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_EQ(sends_called, 1);
+
+  proxy.Reset();
+
+  // Validate state after third reset.
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_EQ(proxy.sendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+  SendReadBufferResponseFromController(proxy, 1);
+  EXPECT_TRUE(proxy.sendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_EQ(sends_called, 2);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth::proxy
