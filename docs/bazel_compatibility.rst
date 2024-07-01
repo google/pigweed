@@ -309,7 +309,7 @@ but also work on host platforms by default. An example of this is
      # Compatible with host platforms, and any platform that explicitly
      # lists `@pigweed//pw_stream:socket_stream_compatible` among its
      # constraint_values.
-     target_compatible_with = incompatible_with_mcu(and_requires=":socket_stream_compatible"),
+     target_compatible_with = incompatible_with_mcu(unless_platform_has=":socket_stream_compatible"),
    )
 
 Patterns for facade authors

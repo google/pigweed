@@ -50,6 +50,7 @@ platform(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
         "//pw_build/constraints/chipset:lm3s6965evb",
         "@platforms//cpu:armv7-m",
+        "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
 )
@@ -60,6 +61,7 @@ platform(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
         "//pw_build/constraints/chipset:nrf52833",
         "@platforms//cpu:armv6-m",
+        "@platforms//os:none",
     ],
 )
 
@@ -70,6 +72,7 @@ platform(
     constraint_values = [
         "//pw_build/constraints/board:microbit",
         "@rust_crates//:no_std",
+        "@platforms//os:none",
         # We have no pw_sys_io backend for this platform.
     ],
     parents = [":nrf52833"],

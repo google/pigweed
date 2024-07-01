@@ -55,6 +55,7 @@ platform(
         "@freertos//:port_ARM_CM4F",
         "@freertos//:disable_task_statics",
         "@platforms//cpu:armv7e-m",
+        "@platforms//os:none",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
         "@rust_crates//:no_std",
     ],

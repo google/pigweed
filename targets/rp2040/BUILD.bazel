@@ -32,6 +32,7 @@ platform(
         "//pw_interrupt_cortex_m:backend",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",
+        "@platforms//os:none",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
         "@rust_crates//:no_std",
     ],

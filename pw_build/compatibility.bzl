@@ -62,3 +62,25 @@ def boolean_constraint_value(name):
         name = name,
         constraint_setting = ":" + constraint_setting_name,
     )
+
+def incompatible_with_mcu(unless_platform_has = None):
+    """Helper for expressing incompatibility with MCU platforms.
+
+    This helper should be used in `target_compatible_with` attributes to
+    express:
+
+    *  That a target is only compatible with platforms that have a
+       full-featured OS, see
+       https://pigweed.dev/bazel_compatibility.html#cross-platform-modules-requiring-an-os
+    *  That a target is compatible with platforms with a full-featured OS, and
+       also any platform that explicitly declares compatibility with it:
+       https://pigweed.dev/bazel_compatibility.html#special-case-host-compatible-platform-specific-modules
+
+    Args:
+       unless_platform_has: A constraint_value that the target is compatible with
+          by definition. Optional.
+    """
+    return select({
+        "@platforms//os:none": [unless_platform_has] if (unless_platform_has != None) else ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    })
