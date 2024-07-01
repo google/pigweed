@@ -12,13 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import "pw_bluetooth/hci_data.emb" as hci
-import "pw_bluetooth/l2cap_frames.emb" as l2cap
 # This file contains Emboss definitions of the protocol data units (PDUs)
 # associated with the Attribute Protocol (ATT) as defined in Vol 3 (Host), Part
-# F of the Bluetooth Core Specification.
-#
-# The Emboss compiler is used to generate a C++ header from this file.
+# F of the Bluetooth Core Specification. The Emboss compiler is used to generate
+# a C++ header from this file.
+
+import "pw_bluetooth/hci_data.emb" as hci
+import "pw_bluetooth/l2cap_frames.emb" as l2cap
 
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss"]

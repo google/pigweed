@@ -903,16 +903,16 @@ struct PinCodeRequestNegativeReplyCommandCompleteEvent:
 struct ReadPinTypeCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.3.5 Read PIN Type command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
-  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
-  $next [+1]                          hci.StatusCode            status
-  $next [+1]                          hci.PinType               pin_type
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         hci.PinType               pin_type
 
 
 struct WritePinTypeCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.3.6 Write PIN Type command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
-  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
-  $next [+1]                          hci.StatusCode            status
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
 
 
 struct ReadLocalVersionInfoCommandCompleteEvent:

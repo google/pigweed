@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,12 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-[$default byte_order: "LittleEndian"]
-[(cpp) namespace: "pw::bluetooth::emboss"]
-# This file contins Emboss definitions for the logical link control and
+# This file contains Emboss definitions for the logical link control and
 # adaptation protocol (l2cap) frames found in the Bluetooth core specification.
 # The Emboss compiler is used to generate a C++ header from this file.
 
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
 # ========================= Data Packet Format =================================
 # Core Spec v5.4 Vol 3, Part A, Section 3
 
