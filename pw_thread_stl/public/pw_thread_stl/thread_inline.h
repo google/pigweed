@@ -62,11 +62,11 @@ inline void Thread::detach() {
 }
 
 inline void Thread::swap(Thread& other) {
-  native_type_.swap(other.native_handle());
+  native_type_.swap(*other.native_handle());
 }
 
 inline Thread::native_handle_type Thread::native_handle() {
-  return native_type_;
+  return &native_type_;
 }
 
 }  // namespace pw::thread

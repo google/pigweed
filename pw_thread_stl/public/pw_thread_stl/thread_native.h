@@ -20,6 +20,6 @@
 namespace pw::thread::backend {
 
 using NativeThread = std::thread;
-using NativeThreadHandle = std::thread&;
+using NativeThreadHandle = std::thread*;
 
 }  // namespace pw::thread::backend

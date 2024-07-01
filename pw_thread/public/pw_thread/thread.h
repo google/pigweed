@@ -74,6 +74,8 @@ class Options {
 /// and MoveAssignable.
 class Thread {
  public:
+  /// The type of the native handle for the thread. As with `std::thread`, use
+  /// is inherently non-portable.
   using native_handle_type = backend::NativeThreadHandle;
 
   /// Creates a new thread object which does not represent a thread of execution
@@ -222,6 +224,8 @@ class Thread {
   /// Exchanges the underlying handles of two thread objects.
   void swap(Thread& other);
 
+  /// Returns the native handle for the thread. As with `std::thread`, use is
+  /// inherently non-portable.
   native_handle_type native_handle();
 
  private:
