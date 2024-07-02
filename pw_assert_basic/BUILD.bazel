@@ -71,7 +71,7 @@ cc_library(
     deps = [
         ":handler",
         ":pw_assert_basic",
-        "//pw_assert:pw_assert.facade",
+        "//pw_assert:check.facade",
         "//pw_preprocessor",
     ],
     # Other libraries may not always depend on this library, even if it is

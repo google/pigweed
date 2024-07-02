@@ -37,7 +37,7 @@ cc_library(
     ],
     deps = [
         ":handler",
-        "//pw_assert:facade",
+        "//pw_assert:check.facade",
         "//pw_log_tokenized",
         "//pw_preprocessor",
         "//pw_tokenizer",
@@ -69,4 +69,29 @@ cc_library(
         "//pw_span",
     ],
     alwayslink = 1,
+)
+
+cc_library(
+    name = "assert_backend",
+    hdrs = [
+        "assert_public_overrides/pw_assert_backend/assert_backend.h",
+        "public/pw_assert_tokenized/assert_tokenized.h",
+    ],
+    deps = [
+        ":handler",
+        "//pw_tokenizer",
+    ],
+)
+
+cc_library(
+    name = "check_backend",
+    hdrs = [
+        "check_public_overrides/pw_assert_backend/check_backend.h",
+        "public/pw_assert_tokenized/check_tokenized.h",
+    ],
+    deps = [
+        ":handler",
+        "//pw_log_tokenized",
+        "//pw_tokenizer",
+    ],
 )

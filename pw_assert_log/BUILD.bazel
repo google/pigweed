@@ -31,7 +31,7 @@ cc_library(
     ],
     deps = [
         "//pw_assert:assert_compatibility_backend",
-        "//pw_assert:facade",
+        "//pw_assert:check.facade",
         "//pw_log",
         "//pw_preprocessor",
     ],
@@ -48,6 +48,29 @@ cc_library(
         "public",
     ],
     deps = [
+        "//pw_log",
+        "//pw_preprocessor",
+    ],
+)
+
+cc_library(
+    name = "check_and_assert_backend",
+    srcs = [
+        "assert_log.cc",
+    ],
+    hdrs = [
+        "assert_backend_public_overrides/pw_assert_backend/assert_backend.h",
+        "check_backend_public_overrides/pw_assert_backend/check_backend.h",
+        "public/pw_assert_log/assert_log.h",
+        "public/pw_assert_log/check_log.h",
+    ],
+    includes = [
+        "assert_backend_public_overrides",
+        "check_backend_public_overrides",
+        "public",
+    ],
+    deps = [
+        "//pw_assert:check.facade",
         "//pw_log",
         "//pw_preprocessor",
     ],

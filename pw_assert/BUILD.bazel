@@ -24,11 +24,16 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 # TODO: pwbug.dev/328679085 - Remove this alias.
-alias(
+cc_library(
     name = "facade",
-    actual = ":pw_assert.facade",
+    deps = [
+        ":assert.facade",
+        ":check.facade",
+    ],
 )
 
+# TODO: https://pwbug.dev/350585010 - Make this an empty cc_library with
+# deps on ":check" and ":assert".
 pw_facade(
     name = "pw_assert",
     hdrs = [
@@ -59,14 +64,78 @@ host_backend_alias(
 
 label_flag(
     name = "backend_impl",
-    build_setting_default = ":unspecified_backend_impl",
+    build_setting_default = "//pw_assert_basic:impl",
     # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
     tags = ["keep_dep"],
 )
 
+pw_facade(
+    name = "check",
+    hdrs = [
+        "public/pw_assert/check.h",
+        "public/pw_assert/internal/check_impl.h",
+        "public/pw_assert/short.h",
+    ],
+    backend = ":check_backend",
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":config",
+        "//pw_preprocessor",
+    ],
+)
+
+label_flag(
+    name = "check_backend",
+    build_setting_default = ":unspecified_check_backend",
+)
+
 host_backend_alias(
-    name = "unspecified_backend_impl",
-    backend = "//pw_assert_basic:impl",
+    name = "unspecified_check_backend",
+    backend = ":print_and_abort_check_backend",
+)
+
+label_flag(
+    name = "check_backend_impl",
+    build_setting_default = ":unspecified_check_backend_impl",
+)
+
+host_backend_alias(
+    name = "unspecified_check_backend_impl",
+    backend = "//pw_build:empty_cc_library",
+)
+
+pw_facade(
+    name = "assert",
+    hdrs = [
+        "public/pw_assert/assert.h",
+    ],
+    backend = ":assert_backend",
+    includes = [
+        "public",
+    ],
+    deps = [":config"],
+)
+
+label_flag(
+    name = "assert_backend",
+    build_setting_default = ":unspecified_assert_backend",
+)
+
+alias(
+    name = "unspecified_assert_backend",
+    actual = select({
+        # Default backend for MCU build.
+        "@platforms//os:none": ":assert_compatibility_backend",
+        # Default backend for host build.
+        "//conditions:default": ":print_and_abort_assert_backend",
+    }),
+)
+
+label_flag(
+    name = "assert_backend_impl",
+    build_setting_default = "//pw_build:empty_cc_library",
 )
 
 cc_library(
