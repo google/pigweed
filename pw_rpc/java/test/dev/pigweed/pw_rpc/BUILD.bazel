@@ -14,7 +14,7 @@
 
 # Tests for the generic pw_rpc client.
 
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
 
@@ -22,7 +22,7 @@ java_library(
     name = "test_client",
     testonly = True,
     srcs = ["TestClient.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     visibility = [
         "__pkg__",
         "//pw_transfer/java/test/dev/pigweed/pw_transfer:__pkg__",
@@ -40,7 +40,7 @@ java_test(
     name = "ClientTest",
     size = "small",
     srcs = ["ClientTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.ClientTest",
     deps = [
         ":test_proto_java",
@@ -58,7 +58,7 @@ java_test(
     name = "EndpointTest",
     size = "small",
     srcs = ["EndpointTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.EndpointTest",
     deps = [
         ":test_proto_java",
@@ -76,7 +76,7 @@ java_test(
     name = "FutureCallTest",
     size = "small",
     srcs = ["FutureCallTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.FutureCallTest",
     deps = [
         ":test_proto_java",
@@ -94,7 +94,7 @@ java_test(
     name = "IdsTest",
     size = "small",
     srcs = ["IdsTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.IdsTest",
     deps = [
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
@@ -107,7 +107,7 @@ java_test(
     name = "PacketsTest",
     size = "small",
     srcs = ["PacketsTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.PacketsTest",
     deps = [
         "//pw_rpc:packet_proto_java_lite",
@@ -122,7 +122,7 @@ java_test(
     name = "ServiceTest",
     size = "small",
     srcs = ["ServiceTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.ServiceTest",
     deps = [
         ":test_proto_java",
@@ -136,7 +136,7 @@ java_test(
     name = "StreamObserverCallTest",
     size = "small",
     srcs = ["StreamObserverCallTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.StreamObserverCallTest",
     deps = [
         ":test_proto_java",
@@ -153,7 +153,7 @@ java_test(
     name = "StreamObserverMethodClientTest",
     size = "small",
     srcs = ["StreamObserverMethodClientTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_rpc.StreamObserverMethodClientTest",
     deps = [
         ":test_proto_java",

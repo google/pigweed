@@ -12,13 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
-)
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -201,7 +198,7 @@ pw_cc_test(
     srcs = [
         "client_server_context_threaded_test.cc",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":client_api",
         ":client_server_testing_threaded",

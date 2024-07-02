@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
 )
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,7 +25,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "pointer_simple",
     srcs = ["pointer_simple.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_log",
         "//pw_result",
@@ -35,7 +35,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "result_simple",
     srcs = ["result_simple.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_log",
         "//pw_result",
@@ -45,7 +45,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "pointer_noinline",
     srcs = ["pointer_noinline.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_log",
         "//pw_result",
@@ -55,7 +55,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "result_noinline",
     srcs = ["result_noinline.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_log",
         "//pw_result",
@@ -65,7 +65,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "pointer_read",
     srcs = ["pointer_read.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_bytes",
         "//pw_log",
@@ -77,7 +77,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "result_read",
     srcs = ["result_read.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_bytes",
         "//pw_log",
@@ -89,41 +89,41 @@ pw_cc_binary(
 pw_cc_binary(
     name = "ladder_and_then",
     srcs = ["ladder_and_then.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )
 
 pw_cc_binary(
     name = "monadic_and_then",
     srcs = ["monadic_and_then.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )
 
 pw_cc_binary(
     name = "ladder_or_else",
     srcs = ["ladder_or_else.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )
 
 pw_cc_binary(
     name = "monadic_or_else",
     srcs = ["monadic_or_else.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )
 
 pw_cc_binary(
     name = "ladder_transform",
     srcs = ["ladder_transform.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )
 
 pw_cc_binary(
     name = "monadic_transform",
     srcs = ["monadic_transform.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_result"],
 )

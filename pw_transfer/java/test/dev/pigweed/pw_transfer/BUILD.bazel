@@ -14,7 +14,7 @@
 
 # Tests for the generic pw_rpc client.
 
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
 
@@ -22,7 +22,7 @@ java_test(
     name = "TransferClientTest",
     size = "small",
     srcs = ["TransferClientTest.java"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     test_class = "dev.pigweed.pw_transfer.TransferClientTest",
     visibility = ["//visibility:public"],
     deps = [

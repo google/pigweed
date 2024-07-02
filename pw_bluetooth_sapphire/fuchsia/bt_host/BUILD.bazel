@@ -33,7 +33,7 @@ load(
     "fuchsia_licenses_collection",
     "fuchsia_licenses_spdx",
 )
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_applicable_licenses = ["//pw_bluetooth_sapphire/fuchsia:license_fuchsia"],
@@ -69,7 +69,7 @@ fuchsia_cc_test(
     size = "small",
     srcs = ["hello_gtest.cc"],
     # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "@com_google_googletest//:gtest_main",
         "@fuchsia_sdk//pkg/fdio",

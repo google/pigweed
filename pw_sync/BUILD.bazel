@@ -15,15 +15,12 @@
 load(
     "//pw_build:compatibility.bzl",
     "host_backend_alias",
+    "incompatible_with_mcu",
 )
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
     "pw_facade",
-)
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -299,7 +296,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":binary_semaphore",
         ":thread_notification.facade",
@@ -316,7 +313,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":binary_semaphore_thread_notification_backend",
         ":timed_thread_notification.facade",

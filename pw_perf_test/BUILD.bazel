@@ -12,15 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_perf_test",
     "pw_cc_test",
     "pw_facade",
-)
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -169,7 +166,7 @@ cc_library(
         "chrono_public_overrides",
         "public",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":duration_unit",
         ":timer.facade",
@@ -199,7 +196,7 @@ cc_library(
         "arm_cortex_cyccnt_public_overrides",
         "public",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":duration_unit",
         ":timer.facade",

@@ -15,9 +15,9 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pigweed.bzl", "pw_cc_binary")
 load("//pw_build:python.bzl", "pw_py_test")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 pw_cc_binary(
     name = "server",
@@ -75,7 +75,7 @@ cc_proto_library(
     name = "config_cc_proto",
     # cc_proto_library pulls in the regular proto library, which is only
     # needed for host tests.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [":config_proto"],
 )
 
@@ -282,7 +282,7 @@ java_binary(
     name = "java_client",
     srcs = ["JavaClient.java"],
     main_class = "JavaClient",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":config_java_proto",
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",

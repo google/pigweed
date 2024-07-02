@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
 )
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,7 +29,7 @@ cc_library(
     srcs = ["bloat_this_binary.cc"],
     hdrs = ["public/pw_bloat/bloat_this_binary.h"],
     includes = ["public"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_assert",
         "//pw_log",
@@ -40,6 +40,6 @@ cc_library(
 pw_cc_binary(
     name = "bloat_base",
     srcs = ["base_main.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [":bloat_this_binary"],
 )

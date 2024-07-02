@@ -13,11 +13,8 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pigweed.bzl", "pw_cc_test")
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
-)
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
@@ -121,7 +118,7 @@ pw_cc_test(
         "local_rpc_egress_test.cc",
     ],
     # TODO: b/343986281 - update to run on all compatible devices
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":local_rpc_egress",
         ":rpc_transport",
@@ -229,7 +226,7 @@ cc_library(
     name = "socket_rpc_transport",
     srcs = ["socket_rpc_transport.cc"],
     hdrs = ["public/pw_rpc_transport/socket_rpc_transport.h"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":rpc_transport",
         "//pw_assert",
@@ -271,7 +268,7 @@ cc_library(
 pw_cc_test(
     name = "socket_rpc_transport_test",
     srcs = ["socket_rpc_transport_test.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":socket_rpc_transport",
         "//pw_bytes",
@@ -287,7 +284,7 @@ pw_cc_test(
 pw_cc_test(
     name = "stream_rpc_dispatcher_test",
     srcs = ["stream_rpc_dispatcher_test.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":stream_rpc_dispatcher",
         "//pw_bytes",
@@ -301,7 +298,7 @@ pw_cc_test(
 pw_cc_test(
     name = "rpc_integration_test",
     srcs = ["rpc_integration_test.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":egress_ingress",
         ":local_rpc_egress",

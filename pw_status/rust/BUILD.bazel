@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 rust_library(
     name = "pw_status",
@@ -33,17 +33,17 @@ rust_test(
         "//conditions:default": [""],
     }),
     # TODO: b/343726867 - support on-device rust tests
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_doc_test(
     name = "pw_status_doc_test",
     crate = ":pw_status",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_doc(
     name = "pw_status_doc",
     crate = ":pw_status",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )

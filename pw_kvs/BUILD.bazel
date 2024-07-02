@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -318,7 +318,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -336,7 +336,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -353,7 +353,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -450,7 +450,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_1_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -467,7 +467,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_1_aligned_4_logical_partition",
         ":flash_partition_test_2_iterations",
@@ -484,7 +484,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_16_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -501,7 +501,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_64_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -518,7 +518,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_256_aligned_partition",
         ":flash_partition_test_100_iterations",
@@ -535,7 +535,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_1_aligned_partition",
         ":flash_partition_test_100_iterations_256_write",
@@ -552,7 +552,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash_1_aligned_4_logical_partition",
         ":flash_partition_test_2_iterations_256_write",
@@ -582,7 +582,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -604,7 +604,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_1_aligned_partition",
@@ -627,7 +627,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_1_aligned_4_logical_partition",
@@ -650,7 +650,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_16_aligned_partition",
@@ -673,7 +673,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_64_aligned_partition",
@@ -696,7 +696,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_256_aligned_partition",
@@ -720,7 +720,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash_test_key_value_store",
@@ -742,7 +742,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -760,7 +760,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -780,7 +780,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":crc16",
         ":fake_flash",
@@ -802,7 +802,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -821,7 +821,7 @@ pw_cc_test(
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
     # them and modifying test parameters for different targets.
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":fake_flash",
         ":pw_kvs",

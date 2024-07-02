@@ -13,14 +13,14 @@
 # the License.
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
 go_binary(
     name = "server",
     srcs = ["server.go"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_target_runner:go_exec_server_config_protos",
         "//pw_target_runner/go:target_runner",
@@ -31,7 +31,7 @@ go_binary(
 go_binary(
     name = "client",
     srcs = ["client.go"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_target_runner:go_protos",
         "//pw_target_runner/go:target_runner",

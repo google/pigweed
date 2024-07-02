@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
@@ -37,7 +38,7 @@ cc_library(
         "id_public_overrides",
         "public",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_thread:id.facade",
     ],
@@ -53,7 +54,7 @@ cc_library(
         "public",
         "sleep_public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_chrono:system_clock",
         "//pw_thread:sleep.facade",
@@ -73,7 +74,7 @@ cc_library(
         "public",
         "thread_public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_thread:thread.facade",
     ],
@@ -96,7 +97,7 @@ cc_library(
     srcs = [
         "test_threads.cc",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:thread.facade",
@@ -127,7 +128,7 @@ cc_library(
         "public",
         "yield_public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_thread:yield.facade",
     ],
@@ -143,7 +144,7 @@ cc_library(
         "public",
         "test_thread_context_public_overrides",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":thread",
         "//pw_thread:test_thread_context.facade",

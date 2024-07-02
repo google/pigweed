@@ -22,7 +22,7 @@ _RTOS_NONE = Label("//pw_build/constraints/rtos:none")
 #   cc_library(
 #       name = "some_host_only_lib",
 #       hdrs = ["host.h"],
-#       target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+#       target_compatible_with = incompatible_with_mcu(),
 #   )
 TARGET_COMPATIBLE_WITH_HOST_SELECT = {
     "@platforms//os:android": [_RTOS_NONE],

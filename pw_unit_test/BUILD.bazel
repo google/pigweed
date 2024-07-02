@@ -13,13 +13,13 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_test",
     "pw_facade",
 )
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -96,7 +96,7 @@ cc_library(
     ],
     includes = ["googletest_public_overrides"],
     # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":googletest_handler_adapter",
         "@com_google_googletest//:gtest",
@@ -151,7 +151,7 @@ cc_library(
     hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
     includes = ["public"],
     # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":event_handler",
         "//pw_preprocessor",
@@ -165,7 +165,7 @@ cc_library(
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
     includes = ["public"],
     # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_result",
         "//pw_status",

@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 rust_library(
     name = "pw_format_core",
@@ -52,7 +52,7 @@ rust_test(
     name = "pw_format_test",
     crate = ":pw_format",
     # TODO: b/343726867 - support on-device rust tests
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_doc_test(
@@ -64,7 +64,7 @@ rust_doc_test(
 rust_doc(
     name = "pw_format_doc",
     crate = ":pw_format",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_proc_macro(
@@ -98,7 +98,7 @@ rust_test(
     name = "pw_format_example_macro_test_test",
     crate = ":pw_format_example_macro_test",
     # TODO: b/343726867 - support on-device rust tests
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_proc_macro(
@@ -136,7 +136,7 @@ rust_test(
     name = "pw_format_test_macros_printf_test_test",
     crate = ":pw_format_test_macros_printf_test",
     # TODO: b/343726867 - support on-device rust tests
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 rust_library(
@@ -159,5 +159,5 @@ rust_test(
     name = "pw_format_test_macros_core_fmt_test_test",
     crate = ":pw_format_test_macros_core_fmt_test",
     # TODO: b/343726867 - support on-device rust tests
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    target_compatible_with = incompatible_with_mcu(),
 )
