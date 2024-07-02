@@ -29,5 +29,8 @@ pw_executable("task") {
   deps = [
     "$dir_pw_async_basic:task",
     "$dir_pw_bloat:bloat_this_binary",
+
+    # TODO: b/350780546 - It is not known why gettimeofday is needed by this target.
+    "$dir_pw_chrono:wrap_time_build_time",
   ]
 }
