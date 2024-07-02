@@ -110,6 +110,11 @@ export class LogView extends LitElement {
     if (!this.viewTitle) {
       this.updateTitle();
     }
+
+    this.updateColumnOrder(this.columnData);
+    if (this.columnData) {
+      this.columnData = this.updateColumnRender(this.columnData);
+    }
   }
 
   updated(changedProperties: PropertyValues) {
@@ -204,7 +209,7 @@ export class LogView extends LitElement {
    * @param columnData ColumnData is used to check for undefined fields.
    */
   private updateColumnOrder(columnData: TableColumn[]) {
-    const columnOrder = [...new Set(this.columnOrder)];
+    const columnOrder = this.columnOrder;
     if (this.columnOrder.length !== columnOrder.length) {
       console.warn(
         'Log View had duplicate columns defined, duplicates were removed.',
