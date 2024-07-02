@@ -37,7 +37,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   // Create a transmit engine.
   //
-  // The engine will invoke |send_frame_callback| when a PDU is ready for
+  // The engine will invoke channel->SendFrame() when a PDU is ready for
   // transmission; see tx_engine.h for further detail.
   //
   // The engine will invoke |connection_failure_callback| when a fatal error
@@ -49,12 +49,12 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
       uint16_t max_tx_sdu_size,
       uint8_t max_transmissions,
       uint8_t n_frames_in_tx_window,
-      SendFrameCallback send_frame_callback,
+      TxChannel& channel,
       ConnectionFailureCallback connection_failure_callback,
       pw::async::Dispatcher& dispatcher);
   ~EnhancedRetransmissionModeTxEngine() override = default;
 
-  bool QueueSdu(ByteBufferPtr sdu) override;
+  void NotifySduQueued() override;
 
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   // The value of |is_poll_response| should reflect the 'F' bit in header of the
@@ -200,6 +200,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // * When return value is an error, |this| may be invalid.
   [[nodiscard]] bool RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
                                            bool set_is_poll_response);
+
+  // Process a new SDU from the channel queue.
+  void ProcessSdu(ByteBufferPtr sdu);
 
   pw::async::Dispatcher& pw_dispatcher_;
 

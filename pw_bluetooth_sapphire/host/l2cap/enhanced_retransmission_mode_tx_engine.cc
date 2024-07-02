@@ -42,10 +42,10 @@ Engine::EnhancedRetransmissionModeTxEngine(
     uint16_t max_tx_sdu_size,
     uint8_t max_transmissions,
     uint8_t n_frames_in_tx_window,
-    SendFrameCallback send_frame_callback,
+    TxChannel& channel,
     ConnectionFailureCallback connection_failure_callback,
     pw::async::Dispatcher& dispatcher)
-    : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)),
+    : TxEngine(channel_id, max_tx_sdu_size, channel),
       pw_dispatcher_(dispatcher),
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
@@ -81,7 +81,13 @@ Engine::EnhancedRetransmissionModeTxEngine(
       });
 }
 
-bool Engine::QueueSdu(ByteBufferPtr sdu) {
+void Engine::NotifySduQueued() {
+  std::optional<ByteBufferPtr> sdu = channel_.GetNextQueuedSdu();
+  BT_ASSERT(sdu);
+  ProcessSdu(std::move(*sdu));
+}
+
+void Engine::ProcessSdu(ByteBufferPtr sdu) {
   BT_ASSERT(sdu);
   // TODO(fxbug.dev/42054330): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
@@ -89,7 +95,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
            "l2cap",
            "SDU size exceeds channel TxMTU (channel-id: %#.4x)",
            channel_id_);
-    return false;
+    return;
   }
 
   const auto seq_num = GetNextTxSeq();
@@ -102,7 +108,6 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
   // TODO(fxbug.dev/42086227): Limit the size of the queue.
   pending_pdus_.push_back(std::move(frame));
   MaybeSendQueuedData();
-  return true;
 }
 
 void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
@@ -326,7 +331,7 @@ void Engine::SendReceiverReadyPoll() {
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_,
                 max_transmissions_);
-  send_frame_callback_(
+  channel_.SendFrame(
       std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
@@ -371,7 +376,7 @@ void Engine::SendPdu(PendingPdu* pdu) {
     pdu->tx_count++;
   }
   StartReceiverReadyPollTimer();
-  send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
+  channel_.SendFrame(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
 bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,

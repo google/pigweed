@@ -457,6 +457,7 @@ filegroup(
         "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h",
+        "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_tx_channel.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/fcs.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h",

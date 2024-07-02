@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h"
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_tx_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
 
@@ -23,54 +24,61 @@ namespace {
 
 constexpr ChannelId kTestChannelId = 0x0001;
 
-TEST(BasicModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
+TEST(BasicModeTxEngineTest, ProcessSduTransmitsMinimalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) {
+  FakeTxChannel channel;
+  channel.HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
 
   constexpr size_t kMtu = 10;
   const StaticByteBuffer payload(1);
-  BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  channel.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(payload, *last_pdu));
 }
 
-TEST(BasicModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
+TEST(BasicModeTxEngineTest, ProcessSduTransmitsMaximalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) {
+  FakeTxChannel channel;
+  channel.HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
 
   constexpr size_t kMtu = 1;
   const StaticByteBuffer payload(1);
-  BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  channel.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(payload, *last_pdu));
 }
 
-TEST(BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
+TEST(BasicModeTxEngineTest, ProcessSduDropsOversizedSdu) {
+  FakeTxChannel channel;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel.HandleSendFrame([&](auto pdu) { ++n_pdus; });
 
   constexpr size_t kMtu = 1;
-  BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
+  channel.QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
+  BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST(BasicModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
+TEST(BasicModeTxEngineTest, ProcessSduSurvivesZeroByteSdu) {
+  FakeTxChannel channel;
+  size_t n_pdus = 0;
+  channel.HandleSendFrame([&](auto pdu) { ++n_pdus; });
   constexpr size_t kMtu = 1;
-  BasicModeTxEngine(kTestChannelId, kMtu, [](auto pdu) {
-  }).QueueSdu(std::make_unique<DynamicByteBuffer>());
+  channel.QueueSdu(std::make_unique<DynamicByteBuffer>());
+  BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();
+  EXPECT_EQ(1u, n_pdus);
 }
 
 }  // namespace

@@ -17,6 +17,7 @@
 #include <gmock/gmock.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_tx_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
@@ -24,8 +25,19 @@
 namespace bt::l2cap::internal {
 namespace {
 
-using EnhancedRetransmissionModeEnginesTest =
-    pw::async::test::FakeDispatcherFixture;
+class EnhancedRetransmissionModeEnginesTest
+    : public pw::async::test::FakeDispatcherFixture {
+ protected:
+  void TxProcessSdu(TxEngine& engine, ByteBufferPtr sdu) {
+    channel_.QueueSdu(std::move(sdu));
+    engine.NotifySduQueued();
+  }
+
+  FakeTxChannel& channel() { return channel_; }
+
+ private:
+  FakeTxChannel channel_;
+};
 
 constexpr size_t kMaxTransmissions = 2;
 constexpr size_t kTxWindow = 63;
@@ -38,7 +50,6 @@ constexpr uint8_t kExtendedControlRejFunctionMask = 0b0000'0100;
 constexpr uint8_t kExtendedControlReceiverNotReadyFunctionMask = 0b0000'1000;
 constexpr uint8_t kExtendedControlSrejFunctionMask = 0b0000'1100;
 
-void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
 TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
@@ -47,7 +58,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  NoOpTxCallback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   EXPECT_TRUE(rx_engine);
@@ -61,11 +72,11 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
 TEST_F(EnhancedRetransmissionModeEnginesTest,
        OutboundInformationFramesAcknowledgeReceivedInformationFrames) {
   int tx_count = 0;
-  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
-    // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame
-    // with a Receiver Ready (which is always allowed), so our subsequent
-    // I-Frame is actually the third outbound.
+    // Unlike the Test Spec's sequence diagram, we respond to the peer's
+    // I-Frame with a Receiver Ready (which is always allowed), so our
+    // subsequent I-Frame is actually the third outbound.
     if (tx_count == 0) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
       ASSERT_TRUE(
@@ -84,20 +95,21 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
       EXPECT_EQ(1, header.receive_seq_num());
     }
     tx_count++;
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   /*n_frames_in_tx_window=*/1,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(
-      StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(
+                   StaticByteBuffer{'p', 'i', 'n', 'g'}));
   EXPECT_EQ(1, tx_count);
 
   // Receive an I-frame containing an acknowledgment including the frame that we
@@ -111,8 +123,9 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
                       FrameCheckSequenceOption::kIncludeFcs)));
   EXPECT_EQ(2, tx_count);
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(
-      StaticByteBuffer{'b', 'y', 'e', 'e'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(
+                   StaticByteBuffer{'b', 'y', 'e', 'e'}));
   EXPECT_EQ(3, tx_count);
 }
 
@@ -122,7 +135,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
 TEST_F(EnhancedRetransmissionModeEnginesTest,
        SignalFailureAfterMonitorTimerExpiry) {
   int tx_count = 0;
-  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
     // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame
     // with a Receiver Ready (which is always allowed), so our subsequent
@@ -141,7 +154,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
       ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
-  };
+  });
   bool failure_cb_called = false;
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] =
@@ -149,14 +162,15 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
                                                   kDefaultMTU,
                                                   /*max_transmissions=*/1,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   failure_cb,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(
-      StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(
+                   StaticByteBuffer{'p', 'i', 'n', 'g'}));
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
@@ -177,7 +191,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
 TEST_F(EnhancedRetransmissionModeEnginesTest,
        SignalFailureAfterMaxTransmitExhausted) {
   int tx_count = 0;
-  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
     // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame
     // with a Receiver Ready (which is always allowed), so our subsequent
@@ -196,7 +210,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
       ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
-  };
+  });
   bool failure_cb_called = false;
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] =
@@ -204,14 +218,15 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
                                                   kDefaultMTU,
                                                   /*max_transmissions=*/1,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   failure_cb,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(
-      StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(
+                   StaticByteBuffer{'p', 'i', 'n', 'g'}));
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
@@ -241,8 +256,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   int tx_count = 0;
   int iframe_0_tx_count = 0;
   int iframe_1_tx_count = 0;
-  auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](
-                         ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
     ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
@@ -252,26 +266,26 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     } else if (header.tx_seq() == 1) {
       iframe_1_tx_count++;
     }
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
   EXPECT_EQ(1, tx_count);
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(0, iframe_1_tx_count);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
   EXPECT_EQ(2, tx_count);
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
@@ -299,27 +313,28 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterReceivingSelectiveRejectPollRequestSFrame) {
   int tx_count = 0;
   std::array<int, 4> iframe_tx_counts{};
-  auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
     ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
     const auto& header = pdu->To<SimpleInformationFrameHeader>();
     ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
     iframe_tx_counts[header.tx_seq()]++;
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   /*n_frames_in_tx_window=*/3,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
   for (int i = 0; i < 4; i++) {
-    tx_engine->QueueSdu(
+    TxProcessSdu(
+        *tx_engine,
         std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a' + i)));
   }
 
@@ -351,27 +366,28 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterReceivingSelectiveRejectSFrame) {
   int tx_count = 0;
   std::array<int, 4> iframe_tx_counts{};
-  auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
     ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
     const auto& header = pdu->To<SimpleInformationFrameHeader>();
     ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
     iframe_tx_counts[header.tx_seq()]++;
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   /*n_frames_in_tx_window=*/3,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
   for (int i = 0; i < 4; i++) {
-    tx_engine->QueueSdu(
+    TxProcessSdu(
+        *tx_engine,
         std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a' + i)));
   }
 
@@ -421,7 +437,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterPollResponseDoesNotAcknowledgeSentFrames) {
   DynamicByteBuffer info_frame;
   int tx_count = 0;
-  auto tx_callback = [&info_frame, &tx_count](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     // The first packet is the I-Frame containing the data that we sent.
     // The second packet is the S-Frame polling for the peer after the
     // Retransmission Timer expires. It is not checked to keep the tests less
@@ -433,20 +449,20 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
       EXPECT_TRUE(ContainersEqual(info_frame, *pdu));
     }
     tx_count++;
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'a'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'a'}));
   EXPECT_EQ(1, tx_count);
 
   RunFor(kErtmReceiverReadyPollTimerDuration);
@@ -472,7 +488,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
 TEST_F(EnhancedRetransmissionModeEnginesTest,
        DoNotRetransmitAfterReceivingReceiverNotReadyPollResponse) {
   int tx_count = 0;
-  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
     // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame
     // with a Receiver Ready (which is always allowed), so our subsequent
@@ -491,20 +507,21 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
       ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(
-      StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(
+                   StaticByteBuffer{'p', 'i', 'n', 'g'}));
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
@@ -535,8 +552,7 @@ TEST_F(
   int tx_count = 0;
   int iframe_0_tx_count = 0;
   int iframe_1_tx_count = 0;
-  auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](
-                         ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
 
     // After outbound I-Frames, expect an outbound poll request S-Frame.
@@ -556,22 +572,22 @@ TEST_F(
     } else if (header.tx_seq() == 1) {
       iframe_1_tx_count++;
     }
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
   EXPECT_EQ(2, tx_count);
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
@@ -622,8 +638,7 @@ TEST_F(
   int tx_count = 0;
   int iframe_0_tx_count = 0;
   int iframe_1_tx_count = 0;
-  auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](
-                         ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
 
     // After outbound I-Frames, expect an outbound poll request S-Frame.
@@ -643,22 +658,22 @@ TEST_F(
     } else if (header.tx_seq() == 1) {
       iframe_1_tx_count++;
     }
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
   EXPECT_EQ(2, tx_count);
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
@@ -710,8 +725,7 @@ TEST_F(
   int tx_count = 0;
   int iframe_0_tx_count = 0;
   int iframe_1_tx_count = 0;
-  auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](
-                         ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     tx_count++;
     SCOPED_TRACE(tx_count);
 
@@ -743,22 +757,22 @@ TEST_F(
     } else if (header.tx_seq() == 1) {
       iframe_1_tx_count++;
     }
-  };
+  });
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId,
                                                   kDefaultMTU,
                                                   kMaxTransmissions,
                                                   kTxWindow,
-                                                  tx_callback,
+                                                  channel(),
                                                   NoOpFailureCallback,
                                                   dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
-  tx_engine->QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
+  TxProcessSdu(*tx_engine,
+               std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
   EXPECT_EQ(2, tx_count);
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);

@@ -27,13 +27,12 @@ class BasicModeTxEngine final : public TxEngine {
  public:
   BasicModeTxEngine(ChannelId channel_id,
                     uint16_t max_tx_sdu_size,
-                    SendFrameCallback send_frame_callback)
-      : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)) {}
+                    TxChannel& channel)
+      : TxEngine(channel_id, max_tx_sdu_size, channel) {}
   ~BasicModeTxEngine() override = default;
 
-  // Queues |sdu| for transmission, returning true on success. This may fail,
-  // e.g., if the |sdu| is larger than |max_tx_sdu_size_|.
-  bool QueueSdu(ByteBufferPtr sdu) override;
+  // Notify that an SDU is ready for transmitting. See |TxEngine|.
+  void NotifySduQueued() override;
 
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);

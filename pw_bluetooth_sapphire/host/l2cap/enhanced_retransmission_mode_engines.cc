@@ -28,18 +28,19 @@ MakeLinkedEnhancedRetransmissionModeEngines(
     uint16_t max_tx_sdu_size,
     uint8_t max_transmissions,
     uint8_t n_frames_in_tx_window,
-    EnhancedRetransmissionModeTxEngine::SendFrameCallback send_frame_callback,
+    TxEngine::TxChannel& channel,
     EnhancedRetransmissionModeTxEngine::ConnectionFailureCallback
         connection_failure_callback,
     pw::async::Dispatcher& dispatcher) {
   auto rx_engine = std::make_unique<EnhancedRetransmissionModeRxEngine>(
-      send_frame_callback.share(), connection_failure_callback.share());
+      fit::bind_member(&channel, &TxEngine::TxChannel::SendFrame),
+      connection_failure_callback.share());
   auto tx_engine = std::make_unique<EnhancedRetransmissionModeTxEngine>(
       channel_id,
       max_tx_sdu_size,
       max_transmissions,
       n_frames_in_tx_window,
-      send_frame_callback.share(),
+      channel,
       std::move(connection_failure_callback),
       dispatcher);
 

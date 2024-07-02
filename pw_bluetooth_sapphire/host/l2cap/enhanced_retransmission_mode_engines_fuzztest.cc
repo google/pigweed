@@ -20,13 +20,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_engines.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_tx_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
 constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr bt::l2cap::ChannelId kTestChannelId = 0x0001;
-
-void NoOpTxCallback(bt::ByteBufferPtr) {}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);
@@ -43,13 +42,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bool failure = false;
   auto failure_cb = [&failure] { failure = true; };
 
+  bt::l2cap::internal::FakeTxChannel channel;
   auto [rx_engine, tx_engine] =
       bt::l2cap::internal::MakeLinkedEnhancedRetransmissionModeEngines(
           kTestChannelId,
           max_tx_sdu_size,
           max_transmissions,
           tx_window,
-          NoOpTxCallback,
+          channel,
           failure_cb,
           dispatcher);
 
@@ -60,8 +60,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     if (tx) {
       auto n_bytes = provider.ConsumeIntegral<uint16_t>();
       auto bytes = provider.ConsumeBytes<uint8_t>(n_bytes);
-      tx_engine->QueueSdu(
+      channel.QueueSdu(
           std::make_unique<bt::DynamicByteBuffer>(bt::BufferView(bytes)));
+      tx_engine->NotifySduQueued();
     } else {
       bt::l2cap::Fragmenter fragmenter(kTestHandle);
       auto n_bytes = provider.ConsumeIntegral<uint16_t>();

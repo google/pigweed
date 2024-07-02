@@ -263,7 +263,7 @@ class LogicalLink;
 using LogicalLinkWeakPtr = WeakSelf<LogicalLink>::WeakPtr;
 
 // Channel implementation used in production.
-class ChannelImpl : public Channel {
+class ChannelImpl : public Channel, public TxEngine::TxChannel {
  public:
   // Many core-spec protocols which operate over fixed channels (e.g. v5.2 Vol.
   // 3 Parts F (ATT) and H (SMP)) define service-specific MTU values. Channels
@@ -351,8 +351,11 @@ class ChannelImpl : public Channel {
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
 
-  // Callback that |tx_engine_| uses to deliver a PDU to lower layers.
-  void SendFrame(ByteBufferPtr pdu);
+  // Called by |tx_engine_| to deliver a PDU to lower layers.
+  void SendFrame(ByteBufferPtr pdu) override;
+
+  // Called by |tx_engine_| to get a queued SDU for processing.
+  std::optional<ByteBufferPtr> GetNextQueuedSdu() override;
 
   pw::async::Dispatcher& pw_dispatcher_;
 

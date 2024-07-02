@@ -141,8 +141,8 @@ ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher,
 
   if (info_.mode == RetransmissionAndFlowControlMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
-    tx_engine_ = std::make_unique<BasicModeTxEngine>(
-        id, max_tx_sdu_size(), fit::bind_member<&ChannelImpl::SendFrame>(this));
+    tx_engine_ =
+        std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), *this);
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
     auto connection_failure_cb = [link] {
@@ -157,7 +157,7 @@ ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher,
             max_tx_sdu_size(),
             info_.max_transmissions,
             info_.n_frames_in_tx_window,
-            fit::bind_member<&ChannelImpl::SendFrame>(this),
+            *this,
             std::move(connection_failure_cb),
             pw_dispatcher_);
   }
@@ -250,19 +250,26 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   BT_DEBUG_ASSERT(sdu);
 
   TRACE_DURATION(
-      "bluetooth", "l2cap:channel_send", "handle", link_->handle(), "id", id());
+      "bluetooth", "l2cap:send", "handle", link_->handle(), "id", id());
 
   if (!link_.is_alive()) {
     bt_log(ERROR, "l2cap", "cannot send SDU on a closed link");
     return false;
   }
 
-  // Drop the packet if the channel is inactive.
-  if (!active_)
+  if (!active_) {
+    bt_log(INFO, "l2cap", "not sending SDU on an inactive channel");
     return false;
+  }
 
-  return tx_engine_->QueueSdu(
-      std::move(sdu));  // TODO(fxbug.dev/42074031): Refactor to queue PDUs
+  // Cap the Tx SDU queue to |max_tx_queued|.
+  if (pending_tx_sdus_.size() > max_tx_queued()) {
+    return false;
+  }
+
+  pending_tx_sdus_.push(std::move(sdu));
+  tx_engine_->NotifySduQueued();
+  return true;
 }
 
 std::unique_ptr<hci::ACLDataPacket> ChannelImpl::GetNextOutboundPacket() {
@@ -521,6 +528,14 @@ void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
   if (pending_tx_pdus_.size() == 1u) {
     link_->OnOutboundPacketAvailable();
   }
+}
+
+std::optional<ByteBufferPtr> ChannelImpl::GetNextQueuedSdu() {
+  if (pending_tx_sdus_.empty())
+    return std::nullopt;
+  ByteBufferPtr next_sdu = std::move(pending_tx_sdus_.front());
+  pending_tx_sdus_.pop();
+  return next_sdu;
 }
 
 }  // namespace internal

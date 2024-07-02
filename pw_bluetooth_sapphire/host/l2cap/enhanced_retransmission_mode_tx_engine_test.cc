@@ -17,6 +17,7 @@
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_tx_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
@@ -53,30 +54,40 @@ class EnhancedRetransmissionModeTxEngineTest
     EXPECT_EQ(SupervisoryFunction::ReceiverReady, sframe.function());
     EXPECT_TRUE(sframe.is_poll_request());
   }
+
+  // Helper to queue an SDU to the channel and notify the engine.
+  void QueueSdu(TxEngine& engine, ByteBufferPtr sdu) {
+    channel_.QueueSdu(std::move(sdu));
+    engine.NotifySduQueued();
+  }
+
+  FakeTxChannel& channel() { return channel_; }
+
+ private:
+  FakeTxChannel channel_;
 };
 
-void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduTransmitsMinimalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
 
   constexpr size_t kMtu = 10;
   const StaticByteBuffer payload(1);
-  TxEngine(kTestChannelId,
-           kMtu,
-           kDefaultMaxTransmissions,
-           kDefaultTxWindow,
-           tx_callback,
-           NoOpFailureCallback,
-           dispatcher())
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  TxEngine tx_engine(kTestChannelId,
+                     kMtu,
+                     kDefaultMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
 
@@ -91,21 +102,21 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduTransmitsMaximalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
 
   constexpr size_t kMtu = 1;
   const StaticByteBuffer payload(1);
-  TxEngine(kTestChannelId,
-           kMtu,
-           kDefaultMaxTransmissions,
-           kDefaultTxWindow,
-           tx_callback,
-           NoOpFailureCallback,
-           dispatcher())
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  TxEngine tx_engine(kTestChannelId,
+                     kMtu,
+                     kDefaultMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
 
@@ -120,36 +131,37 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSdu) {
   // TODO(fxbug.dev/42054330): Update this test when we add support for
   // segmentation.
   constexpr size_t kMtu = 1;
-  TxEngine(kTestChannelId,
-           kMtu,
-           kDefaultMaxTransmissions,
-           kDefaultTxWindow,
-           NoOpTxCallback,
-           NoOpFailureCallback,
-           dispatcher())
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
+  TxEngine tx_engine(kTestChannelId,
+                     kMtu,
+                     kDefaultMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
+  QueueSdu(tx_engine,
+           std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
-  TxEngine(kTestChannelId,
-           kDefaultMTU,
-           kDefaultMaxTransmissions,
-           kDefaultTxWindow,
-           NoOpTxCallback,
-           NoOpFailureCallback,
-           dispatcher())
-      .QueueSdu(std::make_unique<DynamicByteBuffer>());
+  TxEngine tx_engine(kTestChannelId,
+                     kDefaultMTU,
+                     kDefaultMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
   const StaticByteBuffer payload(1);
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
@@ -159,7 +171,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
                                         0,   // SAR bits, ReqSeq
                                         1);  // Payload
 
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
     EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
   }
@@ -170,7 +182,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
         1 << 1,  // Final Bit, TxSeq=1, MustBeZeroBit
         0,       // SAR bits, ReqSeq
         1);      // Payload
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
     EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
   }
@@ -181,7 +193,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
         2 << 1,  // Final Bit, TxSeq=2, MustBeZeroBit
         0,       // SAR bits, ReqSeq
         1);      // Payload
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
     EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
   }
@@ -192,18 +204,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 63;  // Max possible value
   const StaticByteBuffer payload(1);
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
     tx_engine.UpdateAckSeq((i + 1) % kMaxSeq, /*is_poll_response=*/false);
   }
 
@@ -217,7 +229,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // above (since the TxWindow is 63), and the new 0th frame. Hence we
   // acknowledge original frames 0 and 1.
   tx_engine.UpdateAckSeq(2, /*is_poll_response=*/false);
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(payload));
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
@@ -226,20 +238,20 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_pdus);
 
   n_pdus = 0;
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   EXPECT_EQ(0u, n_pdus);
 }
 
@@ -247,22 +259,22 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitBeyondTxWindowEvenIfQueueWrapsSequenceNumbers) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_pdus);
 
   constexpr size_t kMaxSeq = 64;
   n_pdus = 0;
   for (size_t i = 0; i < kMaxSeq; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
     ASSERT_EQ(0u, n_pdus);
   }
 }
@@ -270,16 +282,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineTransmitsReceiverReadyPollAfterTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
@@ -292,16 +304,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineTransmitsReceiverReadyPollOnlyOnceAfterTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
@@ -320,22 +332,22 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineAdvancesReceiverReadyPollTimeoutOnNewTransmission) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
 
   ASSERT_FALSE(RunFor(std::chrono::seconds(1)));  // No events should fire.
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   last_pdu = nullptr;
 
@@ -349,20 +361,20 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        ReceiverReadyPollIncludesRequestSequenceNumber) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   tx_engine.UpdateReqSeq(1);
   RunUntilIdle();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   last_pdu = nullptr;
 
   SCOPED_TRACE("");
@@ -374,16 +386,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        AckOfOnlyOutstandingFrameCancelsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
@@ -398,18 +410,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        AckOfAllOutstandingFramesCancelsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
@@ -424,18 +436,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        PartialAckDoesNotCancelReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
@@ -453,23 +465,23 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NewTransmissionAfterAckedFrameReArmsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Send a frame, and get the ACK.
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunUntilIdle();
 
   // Send a new frame.
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   last_pdu = nullptr;
 
   // Having earlier received an ACK for the previous frame should not have left
@@ -484,16 +496,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMonitorTimeout) {
   constexpr size_t kMaxTransmissions = 2;  // Allow retransmission
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // First the receiver_ready_poll_task_ fires.
@@ -511,16 +523,16 @@ TEST_F(
     EngineDoesNotRetransmitReceiverReadyPollAfterMonitorTimeoutWhenRetransmissionsAreDisabled) {
   constexpr size_t kMaxTransmissions = 1;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // First the receiver_ready_poll_task_ fires.
@@ -545,11 +557,11 @@ TEST_F(
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     NoOpTxCallback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -565,16 +577,16 @@ TEST_F(
     EngineContinuesPollingReceiverReadyFromMonitorTaskAfterReceivingNonFinalUpdateForAckSeq) {
   constexpr size_t kMaxTransmissions = 2;  // Allow retransmissions
   ByteBufferPtr last_pdu;
-  TxEngine tx_engine(
-      kTestChannelId,
-      kDefaultMTU,
-      kMaxTransmissions,
-      kDefaultTxWindow,
-      [&](auto pdu) { last_pdu = std::move(pdu); },
-      NoOpFailureCallback,
-      dispatcher());
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
+  TxEngine tx_engine(kTestChannelId,
+                     kDefaultMTU,
+                     kMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -588,16 +600,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMultipleMonitorTimeouts) {
   constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   ByteBufferPtr last_pdu;
-  TxEngine tx_engine(
-      kTestChannelId,
-      kDefaultMTU,
-      kMaxTransmissions,
-      kDefaultTxWindow,
-      [&](auto pdu) { last_pdu = std::move(pdu); },
-      NoOpFailureCallback,
-      dispatcher());
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
+  TxEngine tx_engine(kTestChannelId,
+                     kDefaultMTU,
+                     kMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -615,16 +627,16 @@ TEST_F(
     EngineRetransmitsReceiverReadyPollIndefinitelyAfterMonitorTimeoutWhenMaxTransmitsIsZero) {
   constexpr size_t kMaxTransmissions = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // First the receiver_ready_poll_task_ fires.
@@ -651,16 +663,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineStopsTransmittingReceiverReadyPollAfterMaxTransmits) {
   constexpr size_t kMaxTransmissions = 2;
   ByteBufferPtr last_pdu;
-  TxEngine tx_engine(
-      kTestChannelId,
-      kDefaultMTU,
-      kMaxTransmissions,
-      kDefaultTxWindow,
-      [&](auto pdu) { last_pdu = std::move(pdu); },
-      NoOpFailureCallback,
-      dispatcher());
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
+  TxEngine tx_engine(kTestChannelId,
+                     kDefaultMTU,
+                     kMaxTransmissions,
+                     kDefaultTxWindow,
+                     channel(),
+                     NoOpFailureCallback,
+                     dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -681,11 +693,11 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -704,11 +716,11 @@ TEST_F(
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   ASSERT_TRUE(RunFor(std::chrono::seconds(2)));   // receiver_ready_poll_task_
@@ -721,21 +733,22 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   size_t num_info_frames_sent = 0;
   bool connection_failed = false;
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
+    if (pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->To<EnhancedControlField>().designates_information_frame()) {
+      ++num_info_frames_sent;
+    }
+  });
   TxEngine tx_engine(
       kTestChannelId,
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      [&](ByteBufferPtr pdu) {
-        if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->To<EnhancedControlField>().designates_information_frame()) {
-          ++num_info_frames_sent;
-        }
-      },
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(1u, num_info_frames_sent);
 
@@ -770,21 +783,22 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 255;
   size_t num_info_frames_sent = 0;
   bool connection_failed = false;
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
+    if (pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->To<EnhancedControlField>().designates_information_frame()) {
+      ++num_info_frames_sent;
+    }
+  });
   TxEngine tx_engine(
       kTestChannelId,
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      [&](ByteBufferPtr pdu) {
-        if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->To<EnhancedControlField>().designates_information_frame()) {
-          ++num_info_frames_sent;
-        }
-      },
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   for (size_t i = 0; i < kMaxTransmissions; ++i) {
@@ -813,22 +827,23 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t num_info_frames_sent = 0;
   bool connection_failed = false;
   ByteBufferPtr last_tx_frame = nullptr;
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
+    if (pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->To<EnhancedControlField>().designates_information_frame()) {
+      ++num_info_frames_sent;
+      last_tx_frame = std::move(pdu);
+    }
+  });
   TxEngine tx_engine(
       kTestChannelId,
       kDefaultMTU,
       kMaxTransmissions,
       kTxWindow,
-      [&](ByteBufferPtr pdu) {
-        if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->To<EnhancedControlField>().designates_information_frame()) {
-          ++num_info_frames_sent;
-          last_tx_frame = std::move(pdu);
-        }
-      },
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   EXPECT_EQ(1u, num_info_frames_sent);
 
   // This test should trigger enough transmissions to overflow an 8-bit transmit
@@ -865,8 +880,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // If the first frame's transmit count had overflowed to zero, it would get
   // sent out together with this new SDU because it would be indistinguishable
   // from "never transmitted."
-  tx_engine.QueueSdu(
-      std::make_unique<DynamicByteBuffer>(StaticByteBuffer('@')));
+  QueueSdu(tx_engine,
+           std::make_unique<DynamicByteBuffer>(StaticByteBuffer('@')));
   EXPECT_EQ(1u, num_info_frames_sent);
   EXPECT_EQ('@', (*last_tx_frame)[sizeof(EnhancedControlField)]);
 }
@@ -881,11 +896,11 @@ TEST_F(
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Not having received an acknowledgement after 2 seconds,
@@ -906,16 +921,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsMissingFrameOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  channel().HandleSendFrame([&](auto pdu) { last_pdu = std::move(pdu); });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   last_pdu = nullptr;
 
@@ -936,21 +951,21 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Send a TxWindow's worth of frames.
   for (size_t i = 0; i < kTxWindow; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
@@ -977,21 +992,21 @@ TEST_F(
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Send a TxWindow's worth of frames.
   for (size_t i = 0; i < kTxWindow; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
 
   // Acknowledge the first 32 of these frames (with sequence numbers 0...31).
@@ -999,7 +1014,7 @@ TEST_F(
 
   // Queue 32 new frames (with sequence numbers 63, 0 ... 30).
   for (size_t i = 0; i < 32; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
@@ -1029,21 +1044,21 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Send a TxWindow's worth of frames.
   for (size_t i = 0; i < kTxWindow; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
 
   // Acknowledge the first 62 of these frames (with sequence numbers 0...61).
@@ -1053,7 +1068,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // (Sequence number 62 was used when we queued the first batch of frames
   // above.)
   for (size_t i = 0; i < 62; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
@@ -1081,21 +1096,21 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Queue two TxWindow's worth of frames. These have sequence numbers 0...63.
   for (size_t i = 0; i < 2 * kTxWindow; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
@@ -1119,22 +1134,22 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 48;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Queue one TxWindow's worth of frames. This advances the sequence numbers,
   // so that further transmissions can wrap.
   for (size_t i = 0; i < 48; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   tx_engine.UpdateAckSeq(48, /*is_poll_response=*/false);
   RunUntilIdle();
@@ -1143,14 +1158,14 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // numbers 48..63, and 0..31. These _should_ be retransmitted at the next
   // UpdateAckSeq() call.
   for (size_t i = 0; i < 48; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
   // Queue a few more frames, with sequence numbers 32..39. These should _not_
   // be retransmitted at the next UpdateAckSeq() call.
   for (size_t i = 0; i < 8; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
 
@@ -1180,20 +1195,20 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kTxWindow = 2;
   size_t n_pdus = 0;
   ByteBufferPtr last_pdu;
-  auto tx_callback = [&](auto pdu) {
+  channel().HandleSendFrame([&](auto pdu) {
     ++n_pdus;
     last_pdu = std::move(pdu);
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Let receiver_ready_poll_task_ fire, and clear out accumulated callback
@@ -1220,7 +1235,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       kDefaultMTU,
       kDefaultMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
@@ -1236,11 +1251,11 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       kDefaultMTU,
       kDefaultMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] { connection_failed = true; },
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   tx_engine.UpdateAckSeq(2, /*is_poll_response=*/true);
   EXPECT_TRUE(connection_failed);
 }
@@ -1251,10 +1266,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     NoOpTxCallback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
   tx_engine.UpdateAckSeq(2, /*is_poll_response=*/true);
@@ -1266,7 +1281,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     NoOpTxCallback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
   for (size_t i = 0; i <= EnhancedControlField::kMaxSeqNum; ++i) {
@@ -1277,17 +1292,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   EXPECT_EQ(0u, n_pdus);
 }
@@ -1296,17 +1311,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqTransmitsQueuedDataWhenPossible) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(1u, n_pdus);
 
@@ -1320,18 +1335,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqTransmissionOfQueuedDataRespectsTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(1u, n_pdus);
 
@@ -1345,17 +1360,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NonFinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(1u, n_pdus);
 
@@ -1370,17 +1385,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        FinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(1u, n_pdus);
 
@@ -1395,18 +1410,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataTransmitsAllQueuedFramesWithinTxWindow) {
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
   for (size_t i = 0; i < kTxWindow; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
   ASSERT_EQ(0u, n_pdus);
@@ -1421,18 +1436,18 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
   for (size_t i = 0; i < kTxWindow + 1; ++i) {
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
   RunUntilIdle();
   ASSERT_EQ(0u, n_pdus);
@@ -1446,17 +1461,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataRespectsRemoteBusy) {
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(0u, n_pdus);
 
@@ -1471,7 +1486,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     NoOpTxCallback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
   tx_engine.MaybeSendQueuedData();
@@ -1481,17 +1496,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(0u, n_pdus);
 
@@ -1501,7 +1516,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   ASSERT_EQ(1u, n_pdus);
   n_pdus = 0;
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   EXPECT_EQ(1u, n_pdus);
 }
@@ -1509,31 +1524,31 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduMaintainsSduOrderingAfterClearRemoteBusy) {
   std::vector<uint8_t> pdu_seq_numbers;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       pdu_seq_numbers.push_back(
           pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.SetRemoteBusy();
-  tx_engine.QueueSdu(
-      std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=0
+  QueueSdu(tx_engine,
+           std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=0
   RunUntilIdle();
   ASSERT_TRUE(pdu_seq_numbers.empty());
 
   tx_engine.ClearRemoteBusy();
-  tx_engine.QueueSdu(
-      std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=1
+  QueueSdu(tx_engine,
+           std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=1
   RunUntilIdle();
 
   // This requirement isn't in the specification directly. But it seems
@@ -1548,32 +1563,32 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
   std::vector<uint8_t> pdu_seq_numbers;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       pdu_seq_numbers.push_back(
           pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   // Send out two frames.
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(2u, pdu_seq_numbers.size());
   pdu_seq_numbers.clear();
 
   // Indicate the remote is busy, and queue a third frame.
   tx_engine.SetRemoteBusy();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_TRUE(pdu_seq_numbers.empty());
 
@@ -1592,23 +1607,23 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 3;
   std::vector<uint8_t> pdu_seq_numbers;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       pdu_seq_numbers.push_back(
           pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
@@ -1617,7 +1632,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   // Queue a new frame.
   pdu_seq_numbers.clear();
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   EXPECT_EQ(std::vector<uint8_t>(), pdu_seq_numbers);
 }
@@ -1628,24 +1643,24 @@ TEST_F(
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 1;
   std::vector<uint8_t> pdu_seq_numbers;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       pdu_seq_numbers.push_back(
           pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
@@ -1677,7 +1692,7 @@ TEST_F(
       kDefaultMTU,
       kMaxTransmissions,
       kTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] {
         connection_failed = true;
         tx_engine.reset();
@@ -1685,9 +1700,9 @@ TEST_F(
       dispatcher());
 
   // Queue three SDUs, of which two should be transmitted immediately.
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(*tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(*tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(*tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
@@ -1713,14 +1728,14 @@ TEST_F(
       kDefaultMTU,
       kMaxTransmissions,
       kDefaultTxWindow,
-      NoOpTxCallback,
+      channel(),
       [&] {
         connection_failed = true;
         tx_engine.reset();
       },
       dispatcher());
 
-  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(*tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -1737,24 +1752,24 @@ TEST_F(
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        TransmissionOfPduIncludesRequestSeqNum) {
   uint8_t outbound_req_seq = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       outbound_req_seq =
           pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
   tx_engine.UpdateReqSeq(5);
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   EXPECT_EQ(5u, outbound_req_seq);
@@ -1764,24 +1779,24 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        DeferredTransmissionOfPduIncludesCurrentRequestSeqNum) {
   constexpr size_t kTxWindow = 1;
   uint8_t outbound_req_seq = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       outbound_req_seq =
           pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
                      kTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
 
   tx_engine.UpdateReqSeq(5);
@@ -1797,7 +1812,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   uint8_t outbound_req_seq = 0;
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
@@ -1805,16 +1820,16 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       outbound_req_seq =
           pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
-  };
+  });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kMaxTransmissions,
                      kDefaultTxWindow,
-                     tx_callback,
+                     channel(),
                      NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   EXPECT_EQ(0u, outbound_req_seq);
 
@@ -1837,7 +1852,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        PollTaskLoopsEvenWhenRemoteIsBusy) {
   size_t n_pdus = 0;
-  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
   bool failure = false;
   auto connection_failure_callback = [&] { failure = true; };
   TxEngine tx_engine(
@@ -1845,11 +1860,11 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       /*max_tx_sdu_size=*/kDefaultMTU,
       /*max_transmissions=*/2,
       /*n_frames_in_tx_window=*/kDefaultTxWindow,
-      /*send_frame_callback=*/tx_callback,
+      /*channel=*/channel(),
       /*connection_failure_callback=*/connection_failure_callback,
       dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_pdus);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -1873,25 +1888,25 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
       tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(3u, n_info_frames);
 
   // Request a retransmission of unacked data starting with TxSeq=1 (so the
@@ -1912,7 +1927,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitWithPollRequestTriggersPollResponseOnFirstIFrame) {
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
@@ -1924,17 +1939,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                 pdu->To<EnhancedControlField>().is_poll_response());
       ++n_info_frames;
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/3,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Request a retransmission of unacked data starting with TxSeq=0 (all
@@ -1948,22 +1963,22 @@ TEST_F(
     EnhancedRetransmissionModeTxEngineTest,
     SetRangeRetransmitAfterPollTaskSuppressesSubsequentRetransmitByPollResponse) {
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -1994,22 +2009,22 @@ TEST_F(
     EnhancedRetransmissionModeTxEngineTest,
     SetRangeRetransmitWithPollResponseSetDoesNotSuppressSubsequentRetransmissions) {
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -2034,22 +2049,22 @@ TEST_F(
     EnhancedRetransmissionModeTxEngineTest,
     SetRangeRetransmitSuppressesRetransmissionsByRetransmitRangeWithPollResponse) {
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(1u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -2081,25 +2096,25 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
       tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(3u, n_info_frames);
 
   // Request a retransmission of unacked data with TxSeq=1 (so only the second
@@ -2120,7 +2135,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitWithPollRequestTriggersPollResponseOnIFrame) {
   size_t n_info_frames = 0;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
@@ -2132,17 +2147,17 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                 pdu->To<EnhancedControlField>().is_poll_response());
       ++n_info_frames;
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/3,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Request a retransmission of unacked data with TxSeq=0 (first frame).
@@ -2160,26 +2175,26 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitOnlyAcksIFramesIfPollRequestIsSet) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
       tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/2,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
   // TxWindow prevents third I-Frame from going out.
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Request a retransmission of unacked data with TxSeq=1, not a poll request.
@@ -2212,7 +2227,7 @@ TEST_F(
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
       if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
@@ -2222,17 +2237,17 @@ TEST_F(
         ++n_supervisory_frames;
       }
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -2272,7 +2287,7 @@ TEST_F(
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
       if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
@@ -2282,17 +2297,17 @@ TEST_F(
         ++n_supervisory_frames;
       }
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -2330,7 +2345,7 @@ TEST_F(
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;
   std::optional<uint8_t> tx_seq;
-  auto tx_callback = [&](ByteBufferPtr pdu) {
+  channel().HandleSendFrame([&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
       if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
@@ -2340,17 +2355,17 @@ TEST_F(
         ++n_supervisory_frames;
       }
     }
-  };
+  });
   TxEngine tx_engine(/*channel_id=*/kTestChannelId,
                      /*max_tx_sdu_size=*/kDefaultMTU,
                      /*max_transmissions=*/4,
                      /*n_frames_in_tx_window=*/kDefaultTxWindow,
-                     /*send_frame_callback=*/tx_callback,
+                     /*channel=*/channel(),
                      /*connection_failure_callback=*/NoOpFailureCallback,
                      dispatcher());
 
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   ASSERT_EQ(2u, n_info_frames);
 
   // Let receiver_ready_poll_task_ fire, to transmit the poll.
@@ -2374,7 +2389,7 @@ TEST_F(
     const auto ack_seq =
         (tx_seq.value() + 1) % (EnhancedControlField::kMaxSeqNum + 1);
     tx_engine.UpdateAckSeq(ack_seq, /*is_poll_response=*/false);
-    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
 
   // Now there's a new frame with TxSeq=1.
