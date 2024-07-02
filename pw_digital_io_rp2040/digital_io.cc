@@ -30,6 +30,7 @@ Status Rp2040DigitalIn::DoEnable(bool enable) {
 
   gpio_init(config_.pin);
   gpio_set_dir(config_.pin, GPIO_IN);
+  gpio_set_pulls(config_.pin, config_.enable_pull_up, config_.enable_pull_down);
   return OkStatus();
 }
 
@@ -54,6 +55,7 @@ Status Rp2040DigitalInOut::DoEnable(bool enable) {
 
   gpio_init(config_.pin);
   gpio_set_dir(config_.pin, GPIO_OUT);
+  gpio_set_pulls(config_.pin, config_.enable_pull_up, config_.enable_pull_down);
   return OkStatus();
 }
 

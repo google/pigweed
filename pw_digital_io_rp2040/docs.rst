@@ -37,6 +37,11 @@ Example code to use GPIO pins:
        .pin = 16,
        .polarity = Polarity::kActiveHigh,
    };
+   constexpr Rp2040Config button_connected_to_ground_config{
+       .pin = 12,
+       .polarity = Polarity::kActiveLow,
+       .enable_pull_up = true,
+   };
 
    // Config output pin:
    Rp2040DigitalInOut out(output_pin_config);
@@ -46,11 +51,24 @@ Example code to use GPIO pins:
    // This pulls pin to ground since the polarity is kActiveLow.
    out.SetState(State::kActive);
 
-   // Config input pin:
+   // Config input pins:
    Rp2040DigitalIn in(input_pin_config);
    in.Enable();
+
+   Rp2040DigitalIn button(button_connected_to_ground_config);
+   button.Enable();
 
    // Get the pin state. Since the polarity is kActiveHigh this will return
    // State::kActive if the pin is high or and State::kInactive if the pin is
    // low (grounded).
    State pin_state = in.GetState();
+
+   auto button_result = button.GetState();
+   if (button_result.ok()) {
+     if (button_result.value() == State::kActive) {
+       PW_LOG_INFO("Button is pressed.");
+     }
+     if (button_result.value() == State::kInactive) {
+       PW_LOG_INFO("Button is released.");
+     }
+   }

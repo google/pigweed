@@ -24,6 +24,8 @@ namespace pw::digital_io {
 struct Rp2040Config {
   uint16_t pin;
   Polarity polarity;
+  bool enable_pull_up = false;
+  bool enable_pull_down = false;
 
   bool operator==(const Rp2040Config& rhs) const {
     return polarity == rhs.polarity && pin == rhs.pin;

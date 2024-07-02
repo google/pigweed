@@ -25,17 +25,13 @@ config("public_includes") {
 pw_source_set("pw_digital_io_rp2040") {
   public_configs = [ ":public_includes" ]
   public = [ "public/pw_digital_io_rp2040/digital_io.h" ]
-  deps = [
-    "$PICO_ROOT/src/common/pico_base",
-    "$PICO_ROOT/src/common/pico_stdlib",
-    "$PICO_ROOT/src/rp2_common/hardware_gpio",
-  ]
   public_deps = [
+    "$PICO_ROOT/src/common/pico_base",
+    "$PICO_ROOT/src/rp2_common/hardware_gpio",
     "$dir_pw_digital_io",
     "$dir_pw_status",
   ]
   sources = [ "digital_io.cc" ]
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
 }
 
 pw_test("digital_io_test") {
