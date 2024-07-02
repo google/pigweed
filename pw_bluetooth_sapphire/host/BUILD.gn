@@ -51,6 +51,7 @@ pw_test_group("tests") {
     "gatt:tests",
     "hci:tests",
     "hci-spec:tests",
+    "iso:tests",
     "l2cap:tests",
     "sco:tests",
     "sdp:tests",

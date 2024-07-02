@@ -60,6 +60,14 @@ using AdvertisingHandle = uint8_t;
 // Advertising feature.
 using PeriodicAdvertiserHandle = uint16_t;
 
+// Uniquely identifies a CIG (Connected Isochronous Group) in the context of an
+// LE connection.
+using CigIdentifier = uint8_t;
+
+// Uniquely identifies a CIS (Connected Isochronous Stream) in the context of a
+// CIG and an LE connection.
+using CisIdentifier = uint8_t;
+
 // Returns the OGF (OpCode Group Field) which occupies the upper 6-bits of the
 // opcode.
 inline uint8_t GetOGF(const OpCode opcode) { return opcode >> 10; }

@@ -26,13 +26,26 @@ namespace bt::iso {
 // as a Peripheral, processes incoming stream requests .
 class IsoStreamManager final {
  public:
-  explicit IsoStreamManager(hci::CommandChannel::WeakPtr cmd_channel);
+  explicit IsoStreamManager(hci_spec::ConnectionHandle handle,
+                            hci::CommandChannel::WeakPtr cmd_channel);
   ~IsoStreamManager();
 
   using WeakPtr = WeakSelf<IsoStreamManager>::WeakPtr;
   IsoStreamManager::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
+  // Process an incoming CIS request. Currently rejects all requests.
+  void OnCisRequest(const hci::EmbossEventPacket& event);
+
+  // Send a rejection in response to an incoming CIS request.
+  void RejectCisRequest(
+      const pw::bluetooth::emboss::LECISRequestSubeventView& event_view);
+
+  hci_spec::ConnectionHandle acl_handle_;
+
+  // LE event handler for incoming CIS requests
+  hci::CommandChannel::EventHandlerId cis_request_handler_;
+
   hci::CommandChannel::WeakPtr cmd_;
   WeakSelf<IsoStreamManager> weak_self_;
 
