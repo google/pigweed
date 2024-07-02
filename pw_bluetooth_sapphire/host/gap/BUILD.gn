@@ -92,6 +92,7 @@ pw_source_set("gap") {
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/gatt",
     "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/iso",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_bluetooth_sapphire/host/sco",
     "$dir_pw_bluetooth_sapphire/host/sdp",

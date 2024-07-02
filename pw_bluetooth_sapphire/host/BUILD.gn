@@ -32,6 +32,7 @@ group("host") {
     "gatt",
     "hci",
     "hci-spec",
+    "iso",
     "l2cap",
     "sco",
     "sdp",

@@ -22,6 +22,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
@@ -157,6 +158,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       PeerDisconnectCallback peer_disconnect_cb,
                       ErrorCallback error_cb,
                       WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
+                      std::unique_ptr<iso::IsoStreamManager> iso_mgr,
                       l2cap::ChannelManager* l2cap,
                       gatt::GATT::WeakPtr gatt,
                       hci::CommandChannel::WeakPtr cmd_channel,
@@ -315,6 +317,12 @@ class LowEnergyConnection final : public sm::Delegate {
   std::unique_ptr<hci::LowEnergyConnection> link_;
   LowEnergyConnectionOptions connection_options_;
   WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr_;
+
+  // Manages all Isochronous streams for this connection. If this connection is
+  // operating as a Central, |iso_mgr_| is used to establish an outgoing
+  // connection to a peer. When operating as a Peripheral, |iso_mgr_| is used to
+  // allow incoming requests for specified CIG/CIS combinations.
+  std::unique_ptr<iso::IsoStreamManager> iso_mgr_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;
