@@ -3,8 +3,13 @@
 -----------
 pw_protobuf
 -----------
+.. caution::
+
+   If you're starting a new project, Pigweed recommends Nanopb over
+   ``pw_protobuf``. See :ref:`module-pw_rpc-guides-headers`.
+
 ``pw_rpc`` can generate services which encode/decode RPC requests and responses
-as ``pw_protobuf`` message structs
+as ``pw_protobuf`` message structs.
 
 Usage
 =====

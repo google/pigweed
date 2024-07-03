@@ -1,8 +1,8 @@
 .. _module-pw_rpc-py:
 
----------------------
-pw_rpc Python package
----------------------
+-------------
+Python client
+-------------
 .. pigweed-module-subpage::
    :name: pw_rpc
 

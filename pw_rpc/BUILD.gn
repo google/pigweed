@@ -406,8 +406,12 @@ pw_proto_library("protos") {
 
 pw_doc_group("docs") {
   sources = [
-    "benchmark.rst",
+    "cpp.rst",
+    "design.rst",
     "docs.rst",
+    "guides.rst",
+    "libraries.rst",
+    "protocol.rst",
   ]
   inputs = [
     "benchmark.proto",
