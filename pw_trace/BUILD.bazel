@@ -44,13 +44,7 @@ pw_facade(
 
 label_flag(
     name = "backend",
-    build_setting_default = ":backend_multiplexer",
-)
-
-cc_library(
-    name = "backend_multiplexer",
-    visibility = ["//targets:__pkg__"],
-    deps = ["//pw_trace:null"],
+    build_setting_default = ":null",
 )
 
 cc_library(
