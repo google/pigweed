@@ -101,53 +101,20 @@ cc_library(
 # Override-able flags for each facade backend.
 label_flag(
     name = "entry_backend",
-    build_setting_default = ":entry_backend_multiplexer",
+    build_setting_default = "//pw_build:unspecified_backend",
 )
 
 label_flag(
     name = "entry_backend_impl",
-    build_setting_default = ":entry_backend_impl_multiplexer",
+    build_setting_default = "//pw_build:unspecified_backend",
 )
 
 label_flag(
     name = "handler_backend",
-    build_setting_default = ":handler_backend_multiplexer",
+    build_setting_default = "//pw_build:unspecified_backend",
 )
 
 label_flag(
     name = "support_backend",
-    build_setting_default = ":support_backend_multiplexer",
-)
-
-# Default facade backends.
-alias(
-    name = "entry_backend_multiplexer",
-    actual = select({
-        "//pw_cpu_exception_cortex_m:entry_backend": "//pw_cpu_exception_cortex_m:cpu_exception",
-        "//conditions:default": "//pw_build:unspecified_backend",
-    }),
-)
-
-alias(
-    name = "entry_backend_impl_multiplexer",
-    actual = select({
-        "//pw_cpu_exception_cortex_m:entry_backend": "//pw_cpu_exception_cortex_m:cpu_exception_impl",
-        "//conditions:default": "//pw_build:unspecified_backend",
-    }),
-)
-
-alias(
-    name = "handler_backend_multiplexer",
-    actual = select({
-        ":basic_handler_backend": ":basic_handler",
-        "//conditions:default": "//pw_build:unspecified_backend",
-    }),
-)
-
-alias(
-    name = "support_backend_multiplexer",
-    actual = select({
-        "//pw_cpu_exception_cortex_m:support_backend": "//pw_cpu_exception_cortex_m:support",
-        "//conditions:default": "//pw_build:unspecified_backend",
-    }),
+    build_setting_default = "//pw_build:unspecified_backend",
 )
