@@ -70,17 +70,15 @@ class LegacyLowEnergyScannerTest : public TestingBase,
         options, [this](auto status) { last_scan_status_ = status; });
   }
 
-  using PeerFoundCallback =
-      fit::function<void(const LowEnergyScanResult&, const ByteBuffer&)>;
+  using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&)>;
   void set_peer_found_callback(PeerFoundCallback cb) {
     peer_found_cb_ = std::move(cb);
   }
 
   // LowEnergyScanner::Delegate override:
-  void OnPeerFound(const LowEnergyScanResult& result,
-                   const ByteBuffer& data) override {
+  void OnPeerFound(const LowEnergyScanResult& result) override {
     if (peer_found_cb_) {
-      peer_found_cb_(result, data);
+      peer_found_cb_(result);
     }
   }
 
@@ -110,12 +108,12 @@ TEST_F(LegacyLowEnergyScannerTest, ParseBatchedAdvertisingReport) {
   bool peer_found_callback_called = false;
   std::unordered_map<DeviceAddress, std::unique_ptr<DynamicByteBuffer>> map;
 
-  set_peer_found_callback(
-      [&](const LowEnergyScanResult& result, const ByteBuffer& data) {
-        peer_found_callback_called = true;
-        map[result.address] = std::make_unique<DynamicByteBuffer>(data.size());
-        data.Copy(&*map[result.address]);
-      });
+  set_peer_found_callback([&](const LowEnergyScanResult& result) {
+    peer_found_callback_called = true;
+    map[result.address()] =
+        std::make_unique<DynamicByteBuffer>(result.data().size());
+    result.data().Copy(&*map[result.address()]);
+  });
 
   EXPECT_TRUE(this->StartScan(true));
   RunUntilIdle();

@@ -33,7 +33,7 @@ namespace bt {
 class ByteBuffer;
 
 namespace hci {
-struct LowEnergyScanResult;
+class LowEnergyScanResult;
 }  // namespace hci
 
 namespace gap {

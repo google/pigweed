@@ -117,12 +117,12 @@ void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
     return;
   }
 
-  BT_DEBUG_ASSERT(address == pending->result().address);
-  pending->AppendData(data);
-  pending->set_resolved(resolved);
-  pending->set_rssi(rssi);
+  BT_DEBUG_ASSERT(address == pending->result().address());
+  pending->result().AppendData(data);
+  pending->result().set_resolved(resolved);
+  pending->result().set_rssi(rssi);
 
-  delegate()->OnPeerFound(pending->result(), pending->data());
+  delegate()->OnPeerFound(pending->result());
 
   // The callback handler may stop the scan, destroying objects within the
   // LowEnergyScanner. Avoid doing anything more to prevent use after free
@@ -177,10 +177,9 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
         break;
     }
 
-    LowEnergyScanResult result{.address = address,
-                               .resolved = resolved,
-                               .connectable = connectable,
-                               .rssi = rssi};
+    LowEnergyScanResult result(address, resolved, connectable);
+    result.AppendData(BufferView(report->data, report->length_data));
+    result.set_rssi(rssi);
 
     if (directed) {
       delegate()->OnDirectedAdvertisement(result);
@@ -188,18 +187,11 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     }
 
     if (!needs_scan_rsp) {
-      delegate()->OnPeerFound(result,
-                              BufferView(report->data, report->length_data));
+      delegate()->OnPeerFound(result);
       continue;
     }
 
-    AddPendingResult(address,
-                     result,
-                     BufferView(report->data, report->length_data),
-                     [this, address, resolved, rssi] {
-                       HandleScanResponse(
-                           address, resolved, rssi, BufferView());
-                     });
+    AddPendingResult(std::move(result));
   }
 }
 

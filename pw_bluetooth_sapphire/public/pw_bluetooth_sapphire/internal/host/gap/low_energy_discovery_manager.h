@@ -202,8 +202,7 @@ class LowEnergyDiscoveryManager final
   void RemoveSession(LowEnergyDiscoverySession* session);
 
   // hci::LowEnergyScanner::Delegate override:
-  void OnPeerFound(const hci::LowEnergyScanResult& result,
-                   const ByteBuffer& data) override;
+  void OnPeerFound(const hci::LowEnergyScanResult& result) override;
   void OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) override;
 
   // Called by hci::LowEnergyScanner

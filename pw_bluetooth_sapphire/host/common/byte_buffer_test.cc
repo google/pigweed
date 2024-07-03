@@ -166,6 +166,36 @@ TEST(ByteBufferTest, DynamicByteBufferConstructFromString) {
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 }
 
+TEST(ByteBufferTest, DynamicByteBufferShrink) {
+  std::string data = "abcdef";
+  DynamicByteBuffer buffer(data);
+  ASSERT_EQ(buffer.size(), data.size());
+
+  std::string new_data = "abcde";
+  ASSERT_FALSE(buffer.expand(new_data.size()));
+  EXPECT_EQ(buffer.size(), data.size());
+  EXPECT_EQ(buffer.ToString(), data);
+}
+
+TEST(ByteBufferTest, DynamicByteBufferNewSizeEqual) {
+  std::string data = "abcdef";
+  DynamicByteBuffer buffer(data);
+  ASSERT_EQ(buffer.size(), data.size());
+  ASSERT_FALSE(buffer.expand(data.size()));
+  ASSERT_EQ(buffer.size(), data.size());
+  EXPECT_EQ(buffer.ToString(), data);
+}
+
+TEST(ByteBufferTest, DynamicByteBufferExpand) {
+  std::string data = "abcdef";
+  DynamicByteBuffer buffer(data);
+  ASSERT_EQ(buffer.size(), data.size());
+
+  ASSERT_TRUE(buffer.expand(data.size() * 2));
+  ASSERT_EQ(buffer.size(), data.size() * 2);
+  EXPECT_EQ(buffer.view(0, data.size()).ToString(), data);
+}
+
 TEST(ByteBufferTest, BufferViewTest) {
   constexpr size_t kBufferSize = 5;
   DynamicByteBuffer buffer(kBufferSize);

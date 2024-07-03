@@ -207,6 +207,26 @@ void DynamicByteBuffer::Fill(uint8_t value) {
   memset(buffer_.get(), value, buffer_size_);
 }
 
+bool DynamicByteBuffer::expand(size_t new_buffer_size) {
+  // we only allow growing the buffer, not shrinking it
+  if (new_buffer_size < buffer_size_) {
+    return false;
+  }
+
+  // no reason to do extra work
+  if (new_buffer_size == buffer_size_) {
+    return false;
+  }
+
+  std::unique_ptr<uint8_t[]> new_buffer =
+      std::make_unique<uint8_t[]>(new_buffer_size);
+  memcpy(new_buffer.get(), buffer_.get(), buffer_size_);
+  buffer_.swap(new_buffer);
+  buffer_size_ = new_buffer_size;
+
+  return true;
+}
+
 ByteBuffer::const_iterator DynamicByteBuffer::cbegin() const {
   return buffer_.get();
 }

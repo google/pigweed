@@ -274,14 +274,14 @@ void LowEnergyDiscoveryManager::RemoveSession(
 }
 
 void LowEnergyDiscoveryManager::OnPeerFound(
-    const hci::LowEnergyScanResult& result, const ByteBuffer& data) {
+    const hci::LowEnergyScanResult& result) {
   bt_log(DEBUG,
          "gap-le",
          "peer found (address: %s, connectable: %d)",
-         bt_str(result.address),
-         result.connectable);
+         bt_str(result.address()),
+         result.connectable());
 
-  auto peer = peer_cache_->FindByAddress(result.address);
+  auto peer = peer_cache_->FindByAddress(result.address());
   if (peer && peer->connectable() && peer->le() && connectable_cb_) {
     bt_log(TRACE,
            "gap-le",
@@ -297,20 +297,21 @@ void LowEnergyDiscoveryManager::OnPeerFound(
 
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
-    peer = peer_cache_->NewPeer(result.address, result.connectable);
+    peer = peer_cache_->NewPeer(result.address(), result.connectable());
     BT_ASSERT(peer);
-  } else if (!peer->connectable() && result.connectable) {
+  } else if (!peer->connectable() && result.connectable()) {
     bt_log(DEBUG,
            "gap-le",
            "received connectable advertisement from previously non-connectable "
            "peer (address: %s, "
            "peer: %s)",
-           bt_str(result.address),
+           bt_str(result.address()),
            bt_str(peer->identifier()));
     peer->set_connectable(true);
   }
 
-  peer->MutLe().SetAdvertisingData(result.rssi, data, dispatcher_.now());
+  peer->MutLe().SetAdvertisingData(
+      result.rssi(), result.data(), dispatcher_.now());
 
   cached_scan_results_.insert(peer->identifier());
 
@@ -329,15 +330,15 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
   bt_log(TRACE,
          "gap-le",
          "Received directed advertisement (address: %s, %s)",
-         result.address.ToString().c_str(),
-         (result.resolved ? "resolved" : "not resolved"));
+         result.address().ToString().c_str(),
+         (result.resolved() ? "resolved" : "not resolved"));
 
-  auto peer = peer_cache_->FindByAddress(result.address);
+  auto peer = peer_cache_->FindByAddress(result.address());
   if (!peer) {
     bt_log(DEBUG,
            "gap-le",
            "ignoring connection request from unknown peripheral: %s",
-           result.address.ToString().c_str());
+           result.address().ToString().c_str());
     return;
   }
 
@@ -345,7 +346,7 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
     bt_log(DEBUG,
            "gap-le",
            "rejecting connection request from non-LE peripheral: %s",
-           result.address.ToString().c_str());
+           result.address().ToString().c_str());
     return;
   }
 

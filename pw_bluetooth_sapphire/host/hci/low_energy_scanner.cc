@@ -38,13 +38,38 @@ static std::string ScanStateToString(LowEnergyScanner::State state) {
   return "(unknown)";
 }
 
+void LowEnergyScanResult::AppendData(const ByteBuffer& data) {
+  size_t bytes_needed = data_size_ + data.size();
+  if (buffer_.size() < bytes_needed) {
+    buffer_.expand(bytes_needed);
+  }
+
+  buffer_.Write(data, data_size_);
+  data_size_ += data.size();
+}
+
+LowEnergyScanResult& LowEnergyScanResult::operator=(
+    const LowEnergyScanResult& other) {
+  address_ = other.address_;
+  resolved_ = other.resolved_;
+  connectable_ = other.connectable_;
+  rssi_ = other.rssi_;
+  data_size_ = other.data_size_;
+
+  if (buffer_.size() < other.buffer_.size()) {
+    buffer_.expand(other.buffer_.size());
+  }
+  other.buffer_.Copy(&buffer_);
+
+  return *this;
+}
+
 LowEnergyScanner::PendingScanResult::PendingScanResult(
-    LowEnergyScanResult result,
-    const ByteBuffer& data,
+    LowEnergyScanResult&& result,
     pw::async::Dispatcher& dispatcher,
     pw::chrono::SystemClock::duration timeout,
     fit::closure timeout_handler)
-    : result_(result), timeout_(timeout), timeout_task_(dispatcher) {
+    : result_(std::move(result)), timeout_(timeout), timeout_task_(dispatcher) {
   timeout_task_.set_function(
       [timeout_handler = std::move(timeout_handler)](pw::async::Context /*ctx*/,
                                                      pw::Status status) {
@@ -52,15 +77,7 @@ LowEnergyScanner::PendingScanResult::PendingScanResult(
           timeout_handler();
         }
       });
-  AppendData(data);
-}
-
-void LowEnergyScanner::PendingScanResult::AppendData(const ByteBuffer& data) {
-  buffer_.Write(data, data_size_);
-  data_size_ += data.size();
-
-  timeout_task_.Cancel();
-  timeout_task_.PostAfter(timeout_);
+  StartTimer();
 }
 
 LowEnergyScanner::LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
@@ -83,17 +100,17 @@ LowEnergyScanner::LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
       });
 }
 
-void LowEnergyScanner::AddPendingResult(const DeviceAddress& address,
-                                        const LowEnergyScanResult& scan_result,
-                                        const ByteBuffer& data,
-                                        fit::closure timeout_handler) {
-  std::unique_ptr<PendingScanResult> pending =
-      std::make_unique<PendingScanResult>(scan_result,
-                                          data,
-                                          pw_dispatcher_,
-                                          scan_response_timeout_,
-                                          std::move(timeout_handler));
-  pending_results_.emplace(address, std::move(pending));
+void LowEnergyScanner::AddPendingResult(LowEnergyScanResult&& scan_result) {
+  auto pending = std::make_unique<PendingScanResult>(
+      std::move(scan_result),
+      pw_dispatcher_,
+      scan_response_timeout_,
+      [this, address = scan_result.address()] {
+        std::unique_ptr<PendingScanResult> result =
+            RemovePendingResult(address);
+        delegate()->OnPeerFound(result->result());
+      });
+  pending_results_.emplace(scan_result.address(), std::move(pending));
 }
 
 std::unique_ptr<LowEnergyScanner::PendingScanResult>
@@ -226,7 +243,7 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
   if (!stopped_by_user) {
     for (auto& result : pending_results_) {
       const std::unique_ptr<PendingScanResult>& pending = result.second;
-      delegate_->OnPeerFound(pending->result(), pending->data());
+      delegate_->OnPeerFound(pending->result());
     }
   }
 
@@ -264,5 +281,4 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
     scan_cb_(scan_status);
   });
 }
-
 }  // namespace bt::hci
