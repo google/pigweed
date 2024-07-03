@@ -14,68 +14,43 @@
 
 """Bazel transitions for the rp2040."""
 
+load("//pw_build:merge_flags.bzl", "merge_flags_for_transition_impl", "merge_flags_for_transition_outputs")
+load("//third_party/freertos:flags.bzl", "FREERTOS_FLAGS")
+
 # LINT.IfChange
+# Typical RP2040 pw_system backends and other platform configuration flags.
+RP2040_SYSTEM_FLAGS = FREERTOS_FLAGS | {
+    "@freertos//:freertos_config": "@pigweed//targets/rp2040:freertos_config",
+    "@pico-sdk//bazel/config:PICO_STDIO_UART": True,
+    "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
+    "@pigweed//pw_assert:backend": "@pigweed//pw_assert_basic",
+    "@pigweed//pw_assert:backend_impl": "@pigweed//pw_assert_basic:impl",
+    "@pigweed//pw_assert:check_backend": "@pigweed//pw_assert_basic",
+    "@pigweed//pw_assert:check_backend_impl": "@pigweed//pw_assert_basic:impl",
+    "@pigweed//pw_interrupt:backend": "@pigweed//pw_interrupt_cortex_m:context",
+    "@pigweed//pw_log:backend": "@pigweed//pw_log_tokenized",
+    "@pigweed//pw_log:backend_impl": "@pigweed//pw_log_tokenized:impl",
+    "@pigweed//pw_log_tokenized:handler_backend": "@pigweed//pw_system:log_backend",
+    "@pigweed//pw_sys_io:backend": "@pigweed//pw_sys_io_rp2040",
+    "@pigweed//pw_system:extra_platform_libs": "@pigweed//targets/rp2040:extra_platform_libs",
+    "@pigweed//pw_unit_test:main": "@pigweed//targets/rp2040:unit_test_app",
+}
+
+# Additional flags specific to the upstream Pigweed RP2040 platform.
+_rp2040_flags = {
+    "//command_line_option:platforms": "@pigweed//targets/rp2040",
+}
+# LINT.ThenChange(//.bazelrc)
+
 def _rp2040_transition_impl(settings, attr):
     # buildifier: disable=unused-variable
     _ignore = settings, attr
-    return {
-        "//command_line_option:platforms": "@pigweed//targets/rp2040",
-        "@freertos//:freertos_config": "@pigweed//targets/rp2040:freertos_config",
-        "@pico-sdk//bazel/config:PICO_STDIO_UART": True,
-        "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
-        "@pigweed//pw_assert:backend": "@pigweed//pw_assert_basic",
-        "@pigweed//pw_assert:backend_impl": "@pigweed//pw_assert_basic:impl",
-        "@pigweed//pw_assert:check_backend": "@pigweed//pw_assert_basic",
-        "@pigweed//pw_assert:check_backend_impl": "@pigweed//pw_assert_basic:impl",
-        "@pigweed//pw_interrupt:backend": "@pigweed//pw_interrupt_cortex_m:context",
-        "@pigweed//pw_log:backend": "@pigweed//pw_log_tokenized",
-        "@pigweed//pw_log:backend_impl": "@pigweed//pw_log_tokenized:impl",
-        "@pigweed//pw_log_tokenized:handler_backend": "@pigweed//pw_system:log_backend",
-        "@pigweed//pw_sync:binary_semaphore_backend": "@pigweed//pw_sync_freertos:binary_semaphore",
-        "@pigweed//pw_sync:interrupt_spin_lock_backend": "@pigweed//pw_sync_freertos:interrupt_spin_lock",
-        "@pigweed//pw_sync:mutex_backend": "@pigweed//pw_sync_freertos:mutex",
-        "@pigweed//pw_sync:thread_notification_backend": "@pigweed//pw_sync_freertos:thread_notification",
-        "@pigweed//pw_sync:timed_thread_notification_backend": "@pigweed//pw_sync_freertos:timed_thread_notification",
-        "@pigweed//pw_sys_io:backend": "@pigweed//pw_sys_io_rp2040",
-        "@pigweed//pw_system:extra_platform_libs": "@pigweed//targets/rp2040:extra_platform_libs",
-        "@pigweed//pw_thread:id_backend": "@pigweed//pw_thread_freertos:id",
-        "@pigweed//pw_thread:iteration_backend": "@pigweed//pw_thread_freertos:thread_iteration",
-        "@pigweed//pw_thread:sleep_backend": "@pigweed//pw_thread_freertos:sleep",
-        "@pigweed//pw_thread:thread_backend": "@pigweed//pw_thread_freertos:thread",
-        "@pigweed//pw_unit_test:main": "@pigweed//targets/rp2040:unit_test_app",
-    }
-
-# LINT.ThenChange(//.bazelrc)
+    return merge_flags_for_transition_impl(base = RP2040_SYSTEM_FLAGS, override = _rp2040_flags)
 
 _rp2040_transition = transition(
     implementation = _rp2040_transition_impl,
     inputs = [],
-    outputs = [
-        "//command_line_option:platforms",
-        "@freertos//:freertos_config",
-        "@pico-sdk//bazel/config:PICO_STDIO_USB",
-        "@pico-sdk//bazel/config:PICO_STDIO_UART",
-        "@pigweed//pw_assert:backend",
-        "@pigweed//pw_assert:backend_impl",
-        "@pigweed//pw_assert:check_backend",
-        "@pigweed//pw_assert:check_backend_impl",
-        "@pigweed//pw_interrupt:backend",
-        "@pigweed//pw_log:backend",
-        "@pigweed//pw_log:backend_impl",
-        "@pigweed//pw_log_tokenized:handler_backend",
-        "@pigweed//pw_sync:binary_semaphore_backend",
-        "@pigweed//pw_sync:interrupt_spin_lock_backend",
-        "@pigweed//pw_sync:mutex_backend",
-        "@pigweed//pw_sync:thread_notification_backend",
-        "@pigweed//pw_sync:timed_thread_notification_backend",
-        "@pigweed//pw_sys_io:backend",
-        "@pigweed//pw_system:extra_platform_libs",
-        "@pigweed//pw_thread:id_backend",
-        "@pigweed//pw_thread:sleep_backend",
-        "@pigweed//pw_thread:thread_backend",
-        "@pigweed//pw_thread:iteration_backend",
-        "@pigweed//pw_unit_test:main",
-    ],
+    outputs = merge_flags_for_transition_outputs(base = RP2040_SYSTEM_FLAGS, override = _rp2040_flags),
 )
 
 def _rp2040_binary_impl(ctx):
