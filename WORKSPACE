@@ -457,7 +457,7 @@ git_repository(
 
 git_repository(
     name = "mbedtls",
-    build_file = "//:third_party/mbedtls/BUILD.mbedtls",
+    build_file = "//:third_party/mbedtls/mbedtls.BUILD.bazel",
     # mbedtls-3.2.1 released 2022-07-12
     commit = "869298bffeea13b205343361b7a7daf2b210e33d",
     remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
