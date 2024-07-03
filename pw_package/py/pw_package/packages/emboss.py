@@ -32,7 +32,7 @@ class Emboss(pw_package.git_repo.GitRepo):
                 "/third_party/github/google/emboss"
             ),
             # Also update emboss tag in pigweed/WORKSPACE
-            tag="v2024.0501.215421",
+            tag="v2024.0702.215418",
             **kwargs,
         )
 
