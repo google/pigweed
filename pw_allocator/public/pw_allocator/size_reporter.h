@@ -103,7 +103,7 @@ class SizeReporter final {
     Foo* foo = allocator.template New<Foo>();
 
     // Measure `Delete`.
-    allocator.template Delete(foo);
+    allocator.Delete(foo);
 
     // Measure `MakeUnique`.
     UniquePtr<Foo> unique_foo = allocator.template MakeUnique<Foo>();
