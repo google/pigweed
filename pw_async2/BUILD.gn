@@ -94,6 +94,7 @@ pw_test("dispatcher_thread_test") {
     ":dispatcher",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
     dir_pw_function,
   ]
   sources = [ "dispatcher_thread_test.cc" ]

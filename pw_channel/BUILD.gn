@@ -104,6 +104,7 @@ pw_test("epoll_channel_test") {
     "$dir_pw_multibuf:testing",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
   ]
   enable_if =
       pw_async2_DISPATCHER_BACKEND == "$dir_pw_async2_epoll:dispatcher_backend"
