@@ -85,6 +85,7 @@ class H4PacketWithHci final : public H4PacketInterface {
 /// H4PacketWithHci is an H4Packet backed by an H4 buffer.
 class H4PacketWithH4 final : public H4PacketInterface {
  public:
+  H4PacketWithH4() = default;
   H4PacketWithH4(pw::span<uint8_t> h4_span) : h4_span_(h4_span) {}
 
   /// release_fn (if callable) will be called when H4PacketWithH4 is destructed.

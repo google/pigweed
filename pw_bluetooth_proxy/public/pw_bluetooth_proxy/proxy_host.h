@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth_proxy/acl_data_channel.h"
+#include "pw_containers/flat_map.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -114,6 +115,14 @@ class ProxyHost {
   /// Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
 
+  /// Returns the max number of LE ACL sends that can be in-flight at one time.
+  /// That is, ACL packets that have been sent and not yet released.
+  // TODO: https://pwbug.dev/349700888 - Remove this getter once kNumH4Buffs is
+  // an externally configurable parameter?
+  static constexpr size_t GetNumSimultaneousAclSendsSupported() {
+    return kNumH4Buffs;
+  }
+
  private:
   // Process/update the packet.
   void ProcessH4HciFromController(pw::span<uint8_t> hci_buffer);
@@ -127,6 +136,21 @@ class ProxyHost {
   // Process a Command_Complete event.
   void ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer);
 
+  // TODO: https://pwbug.dev/349700888 - Make sizes configurable.
+  static constexpr size_t kNumH4Buffs = 2;
+  // Default of 14 bytes is the size of an H4 packet containing an ACL data
+  // packet with an ATT Notify PDU for a 2-byte characteristic.
+  static constexpr uint16_t kH4BuffSize = 14;
+
+  // Returns an initializer list for `h4_buff_occupied_` with each buffer
+  // address in `h4_buffs_` mapped to false.
+  std::array<containers::Pair<uint8_t*, bool>, kNumH4Buffs> InitOccupiedMap();
+
+  // Returns a free H4 buffer and marks it as occupied. If all H4 buffers are
+  // occupied, returns std::nullopt.
+  std::optional<pw::span<uint8_t>> ReserveH4Buff()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
+
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.
   HciTransport hci_transport_;
@@ -134,22 +158,21 @@ class ProxyHost {
   // Owns management of the LE ACL data channel.
   AclDataChannel acl_data_channel_;
 
-  // Max size of `h4_buff_`.
-  // TODO: https://pwbug.dev/349700888 - Make size configurable.
-  static constexpr uint16_t kH4BuffSize = 14;
-
   // Sending & releasing ACL packets happen on different threads. As such, we
   // need a mutex to guard around all operations in the ACL-send pipeline,
   // including building packets, credit allocation, and releasing packets.
   sync::Mutex acl_send_mutex_;
 
-  // Static buffer to hold one H4 packet containing an ACL PDU.
-  std::array<uint8_t, kH4BuffSize> h4_buff_ PW_GUARDED_BY(acl_send_mutex_);
+  // Each buffer is meant to hold one H4 packet containing an ACL PDU.
+  std::array<std::array<uint8_t, kH4BuffSize>, kNumH4Buffs> h4_buffs_
+      PW_GUARDED_BY(acl_send_mutex_);
 
-  // Set when an H4 packet is sent through the `acl_data_channel_` and cleared
-  // in that H4 packet's release function to indicate that `h4_buff_` is safe to
+  // Maps each H4 buffer to a flag that is set when the buffer holds an H4
+  // packet being sent through `acl_data_channel_` and cleared in that H4
+  // packet's release function to indicate that the H4 buffer is safe to
   // overwrite.
-  bool acl_send_pending_ PW_GUARDED_BY(acl_send_mutex_);
+  containers::FlatMap<uint8_t*, bool, kNumH4Buffs> h4_buff_occupied_
+      PW_GUARDED_BY(acl_send_mutex_);
 };
 
 }  // namespace pw::bluetooth::proxy

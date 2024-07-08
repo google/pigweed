@@ -960,42 +960,6 @@ TEST(GattNotifyTest, SendGattNotify2ByteAttribute) {
   EXPECT_EQ(capture.sends_called, 1);
 }
 
-TEST(GattNotifyTest, SendGattNotifyUnavailableWhenPending) {
-  struct {
-    int sends_called = 0;
-    H4PacketWithH4 released_packet{{}};
-  } capture;
-
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      []([[maybe_unused]] H4PacketWithHci&& packet) {});
-  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&capture](H4PacketWithH4&& packet) {
-        ++capture.sends_called;
-        capture.released_packet = std::move(packet);
-      });
-
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
-  // Allow proxy to reserve 2 credit.
-  SendReadBufferResponseFromController(proxy, 2);
-
-  std::array<uint8_t, 2> attribute_value = {0xAB, 0xCD};
-  EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
-  // Only one send is allowed at a time, so PW_STATUS_UNAVAILABLE will be
-  // returned until the pending packet is destructed.
-  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
-  capture.released_packet.~H4PacketWithH4();
-  EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
-  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
-  EXPECT_EQ(capture.sends_called, 2);
-
-  // If captured packet is not reset here, it may destruct after the proxy and
-  // lead to a crash when it tries to lock the proxy's destructed mutex.
-  capture.released_packet.ResetAndReturnReleaseFn();
-}
-
 TEST(GattNotifyTest, SendGattNotifyReturnsErrorForInvalidArgs) {
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -1561,11 +1525,10 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
 
 // ########## ResetTest
 
-TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
+TEST(ResetTest, ResetClearsActiveConnections) {
   struct {
     int sends_called = 0;
     uint16_t connection_handle = 0x123;
-    H4PacketWithH4 released_packet{{}};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
@@ -1592,12 +1555,7 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
         EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 1);
       });
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&capture](H4PacketWithH4&& packet) {
-        ++capture.sends_called;
-        // Capture the packet so proxy's buffer remains marked as occupied when
-        // reset is called.
-        capture.released_packet = std::move(packet);
-      });
+      [&capture](H4PacketWithH4&& packet) { ++capture.sends_called; });
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
@@ -1608,9 +1566,6 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
                   .SendGattNotify(
                       capture.connection_handle, 1, pw::span(attribute_value))
                   .ok());
-  // Proxy still has a free credit, but send should fail, as buffer is occupied.
-  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
 
   proxy.Reset();
 
@@ -1618,16 +1573,14 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
   // Reset should not have cleared `le_acl_credits_to_reserve`, so proxy should
   // still indicate the capability.
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  // Reset marks buffer as unoccupied, but also resets credits, so send should
-  // still fail.
+  // Reset clears credit reservation, so send should fail.
   EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_UNAVAILABLE);
 
   // Re-initialize AclDataChannel with 2 credits.
   SendReadBufferResponseFromController(proxy, 2);
 
-  // Send ACL on random handle to expend one credit. The success of this send
-  // indicates that the reset has properly cleared `acl_send_pending_`.
+  // Send ACL on random handle to expend one credit.
   EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
   // This should have no effect, as the reset has cleared our active connection
   // on this handle.
@@ -1635,10 +1588,6 @@ TEST(ResetTest, ResetClearsPendingSendAndActiveConnections) {
       proxy,
       FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 1}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
-
-  // If captured packet is not reset here, it may destruct after the proxy and
-  // lead to a crash when it tries to lock the proxy's destructed mutex.
-  capture.released_packet.ResetAndReturnReleaseFn();
 }
 
 TEST(ResetTest, ProxyHandlesMultipleResets) {
@@ -1676,6 +1625,145 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   SendReadBufferResponseFromController(proxy, 1);
   EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
   EXPECT_EQ(sends_called, 2);
+}
+
+// ########## MultiSendTest
+
+TEST(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
+  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
+  struct {
+    size_t sends_called = 0;
+    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        // Capture all packets to prevent their destruction.
+        capture.released_packets[capture.sends_called++] = std::move(packet);
+      });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              2 * kMaxSends);
+  // Allow proxy to reserve enough credits to send twice the number of
+  // simultaneous sends supported by proxy.
+  SendReadBufferResponseFromController(proxy, 2 * kMaxSends);
+
+  std::array<uint8_t, 1> attribute_value = {0xF};
+  // Occupy all send buffers.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  }
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kMaxSends);
+  EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
+            PW_STATUS_UNAVAILABLE);
+
+  // Confirm we can release and reoccupy each buffer slot.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    capture.released_packets[i].~H4PacketWithH4();
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+    EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
+              PW_STATUS_UNAVAILABLE);
+  }
+  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
+
+  // If captured packets are not reset here, they may destruct after the proxy
+  // and lead to a crash when trying to lock the proxy's destructed mutex.
+  for (auto& packet : capture.released_packets) {
+    packet.ResetAndReturnReleaseFn();
+  }
+}
+
+TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
+  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
+  struct {
+    size_t sends_called = 0;
+    std::array<H4PacketWithH4, kMaxSends> released_packets;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        // Capture first kMaxSends packets linearly.
+        if (capture.sends_called < capture.released_packets.size()) {
+          capture.released_packets[capture.sends_called] = std::move(packet);
+        } else {
+          // Reuse only first packet slot after kMaxSends.
+          capture.released_packets[0] = std::move(packet);
+        }
+        ++capture.sends_called;
+      });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              2 * kMaxSends);
+  SendReadBufferResponseFromController(proxy, 2 * kMaxSends);
+
+  std::array<uint8_t, 1> attribute_value = {0xF};
+  // Occupy all send buffers.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  }
+
+  // Repeatedly free and reoccupy first buffer.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    capture.released_packets[0].~H4PacketWithH4();
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+    EXPECT_EQ(proxy.SendGattNotify(123, 345, pw::span(attribute_value)),
+              PW_STATUS_UNAVAILABLE);
+  }
+  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
+
+  // If captured packets are not reset here, they may destruct after the proxy
+  // and lead to a crash when trying to lock the proxy's destructed mutex.
+  for (auto& packet : capture.released_packets) {
+    packet.ResetAndReturnReleaseFn();
+  }
+}
+
+TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
+  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
+  struct {
+    size_t sends_called = 0;
+    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        // Capture all packets to prevent their destruction.
+        capture.released_packets[capture.sends_called++] = std::move(packet);
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), kMaxSends);
+  SendReadBufferResponseFromController(proxy, kMaxSends);
+
+  std::array<uint8_t, 1> attribute_value = {0xF};
+  // Occupy all send buffers.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  }
+
+  proxy.Reset();
+  SendReadBufferResponseFromController(proxy, kMaxSends);
+
+  // Although sent packets have not been released, proxy.Reset() should have
+  // marked all buffers as unoccupied.
+  for (size_t i = 0; i < kMaxSends; ++i) {
+    EXPECT_TRUE(proxy.SendGattNotify(123, 345, pw::span(attribute_value)).ok());
+  }
+  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
+
+  // If captured packets are not reset here, they may destruct after the proxy
+  // and lead to a crash when trying to lock the proxy's destructed mutex.
+  for (auto& packet : capture.released_packets) {
+    packet.ResetAndReturnReleaseFn();
+  }
 }
 
 }  // namespace
