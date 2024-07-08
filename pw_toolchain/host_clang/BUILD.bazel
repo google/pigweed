@@ -17,6 +17,7 @@ load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
     "pw_cc_action_files",
     "pw_cc_feature",
+    "pw_cc_feature_constraint",
     "pw_cc_feature_set",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
@@ -158,6 +159,34 @@ pw_cc_feature(
     feature_name = "rules_rust_unsupported_feature",
 )
 
+# This is a sentinel feature defined by rules_go. It is by definition
+# unsupported: rules_go will disable this feature when linking Go code.
+pw_cc_feature(
+    name = "rules_go_unsupported_feature",
+    enabled = True,
+    feature_name = "rules_go_unsupported_feature",
+)
+
+pw_cc_feature_constraint(
+    name = "rules_go_constraint",
+
+    # This constraint is saying "not not Golang" (yes Golang / only Golang).
+    none_of = [":rules_go_unsupported_feature"],
+)
+
+# Golang doesn't link with PIE enabled. See pwbug.dev/347708308.
+#
+# We want to disable PIE only when we're *not* compiling Golang code.
+pw_cc_flag_set(
+    name = "no_pie_for_go_flags",
+    actions = ["@pw_toolchain//actions:all_link_actions"],
+    flags = [
+        "-no-pie",
+    ],
+    requires_any_of = [":rules_go_constraint"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
 pw_cc_feature(
     name = "supports_pic",
     enabled = True,
@@ -206,6 +235,7 @@ pw_cc_toolchain(
     flag_sets = select({
         "@platforms//os:linux": [
             ":linux_link_libs",
+            ":no_pie_for_go_flags",
         ],
         "@platforms//os:macos": [
             ":macos_link_libs",

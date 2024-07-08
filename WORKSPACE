@@ -105,7 +105,7 @@ bazel_skylib_workspace()
 # TODO: b/345806988 - remove this fork and update to upstream HEAD.
 git_repository(
     name = "io_bazel_rules_go",
-    commit = "21005c4056de3283553c015c172001229ecbaca9",
+    commit = "d5ba42f3ca0b8510526ed5df2cf5807bdba43856",
     remote = "https://github.com/cramertj/rules_go.git",
 )
 
