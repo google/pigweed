@@ -101,7 +101,10 @@ class ForwardingChannelOutput : public ChannelOutput {
   const TestPacketProcessor client_packet_processor_;
 };
 
-// Provides a testing context with a real client and server
+// Provides a testing context with a real client and server. This class is for
+// internal use only and should not be used directly. Instead, use
+// `NanopbClientServerTestContext` in pw_rpc/nanopb/client_server_testing.h or
+// `PwpbClientServerTestContext` in pw_rpc/pwpb/client_server_testing.h.
 template <typename ForwardingChannelOutputImpl,
           size_t kOutputSize = 128,
           size_t kMaxPackets = 16,
