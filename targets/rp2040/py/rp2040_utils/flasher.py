@@ -25,6 +25,7 @@ import time
 import serial  # type: ignore
 
 import pw_cli.log
+from pw_cli.interactive_prompts import interactive_index_select
 
 from rp2040_utils import device_detector
 from rp2040_utils.device_detector import PicoBoardInfo, PicoDebugProbeBoardInfo
@@ -347,14 +348,15 @@ def device_from_args(
             'Interactive mode disabled. Defaulting to first discovered device.'
         )
         return boards[0]
+
     print('Multiple devices detected. Please select one:')
-    for n, board_n in enumerate(boards):
-        print(f' {n}: bus {board_n.bus}, port {board_n.port}')
-    print()
-    user_input = input('--> Board index (default: 0): ')
-    if user_input == '':
-        return boards[0]
-    return boards[int(user_input)]
+    board_lines = list(
+        f'bus {board.bus}, port {board.port}'
+        f' ({board.manufacturer} - {board.product})'
+        for board in boards
+    )
+    user_input_index, _user_input_text = interactive_index_select(board_lines)
+    return boards[user_input_index]
 
 
 def main():

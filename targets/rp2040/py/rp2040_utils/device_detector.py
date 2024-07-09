@@ -198,6 +198,8 @@ class PicoBoardInfo:
     bus: int
     port: str
     serial_port: Optional[str]
+    manufacturer: Optional[str]
+    product: Optional[str]
 
     def address(self) -> int:
         """Queries this device for its USB address.
@@ -423,12 +425,16 @@ def board_from_usb_port(
             port=usb_info.port,
             serial_port=serial_port,
             serial_number=usb_info.serial_number,
+            product=usb_info.product,
+            manufacturer=usb_info.manufacturer,
         )
 
     return PicoBoardInfo(
         bus=usb_info.bus,
         port=usb_info.port,
         serial_port=serial_port,
+        product=usb_info.product,
+        manufacturer=usb_info.manufacturer,
     )
 
 
@@ -470,6 +476,8 @@ def detect_boards(
                     port=usb_info.port,
                     serial_port=serial_port,
                     serial_number=usb_info.serial_number,
+                    product=usb_info.product,
+                    manufacturer=usb_info.manufacturer,
                 )
             )
         elif serial_port or usb_info.in_bootloader_mode:
@@ -478,6 +486,8 @@ def detect_boards(
                     bus=usb_info.bus,
                     port=usb_info.port,
                     serial_port=serial_port,
+                    product=usb_info.product,
+                    manufacturer=usb_info.manufacturer,
                 )
             )
 

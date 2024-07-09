@@ -62,7 +62,7 @@ from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system import device as pw_device
 from pw_system import device_tracing as pw_device_tracing
-from pw_system.find_serial_port import interactive_port_select
+from pw_system.find_serial_port import interactive_serial_port_select
 from pw_tokenizer import detokenize
 
 # Default proto imports:
@@ -477,7 +477,7 @@ def console(
         )
 
         if not device:
-            device = interactive_port_select()
+            device = interactive_serial_port_select()
         _ROOT_LOG.info('Using serial port: %s', device)
         serial_device = serial_impl(
             device,

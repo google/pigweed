@@ -19,11 +19,10 @@ import operator
 import sys
 from typing import Optional, Sequence
 
-from prompt_toolkit import PromptSession
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.validation import Validator
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
+
+from pw_cli.interactive_prompts import interactive_index_select
 
 _LOG = logging.getLogger(__package__)
 
@@ -100,7 +99,7 @@ def main(
         return 0
 
     if interactive:
-        selected_port = interactive_port_select()
+        selected_port = interactive_serial_port_select()
         if selected_port:
             print(selected_port)
             return 0
@@ -143,7 +142,7 @@ def main(
     return 0
 
 
-def interactive_port_select(auto_select_only_one=True) -> str:
+def interactive_serial_port_select(auto_select_only_one=True) -> str:
     """Prompt the user to select a detected serial port.
 
     Returns: String containing the path to the tty device.
@@ -164,58 +163,21 @@ def interactive_port_select(auto_select_only_one=True) -> str:
 
     # Create valid entry list
     port_lines = list(
-        f'{i+1} - {port.device} - {port.manufacturer} - {port.description}'
+        f'{port.device} - {port.manufacturer} - {port.description}'
         for i, port in enumerate(ports)
     )
 
-    # Add the list to the history so they can be selected with up and down.
-    history = InMemoryHistory()
-    for line in reversed(port_lines):
-        history.append_string(line)
-
-    # Print the list.
     print()
     print('Please select a serial port device.')
     print('Available ports:')
-    for line in port_lines:
-        print(' ', line)
-    print()
-
-    def input_index(text) -> int:
-        """Convert input to a single index."""
-        parts = text.split()
-        index = int(parts[0].strip())
-        return index - 1
-
-    def is_valid_port(text) -> bool:
-        return (
-            text
-            and any(line.startswith(text) for line in port_lines)
-            and input_index(text) < len(port_lines)
-        )
-
-    validator = Validator.from_callable(
-        is_valid_port,
-        error_message="Not a valid port",
-        move_cursor_to_end=True,
+    selected_index, _selected_text = interactive_index_select(
+        selection_lines=port_lines,
+        prompt_text=(
+            'Enter a port index or press up/down (Ctrl-C to cancel)\n> '
+        ),
     )
 
-    session: PromptSession = PromptSession(
-        history=history,
-        enable_history_search=True,
-        validator=validator,
-        validate_while_typing=False,
-    )
-
-    try:
-        text = session.prompt(
-            'Enter port index or press up/down (Ctrl-C to cancel)\n> ',
-        )
-    except (EOFError, KeyboardInterrupt):
-        # Cancel with Ctrl-c or Ctrl-d
-        sys.exit(1)
-
-    selected_port = ports[input_index(text)]
+    selected_port = ports[selected_index]
 
     return selected_port.device
 
