@@ -101,12 +101,6 @@ class ProxyHost {
   pw::Status SendGattNotify(uint16_t connection_handle,
                             uint16_t attribute_handle,
                             pw::span<const uint8_t> attribute_value);
-  // TODO: https://pwbug.dev/350106534 - Migrate container to above version.
-  pw::Status sendGattNotify(uint16_t connection_handle,
-                            uint16_t attribute_handle,
-                            pw::span<const uint8_t> attribute_value) {
-    return SendGattNotify(connection_handle, attribute_handle, attribute_value);
-  }
 
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
