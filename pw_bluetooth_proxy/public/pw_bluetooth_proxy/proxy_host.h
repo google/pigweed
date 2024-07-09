@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth_proxy/acl_data_channel.h"
 #include "pw_containers/flat_map.h"
