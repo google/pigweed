@@ -25,11 +25,6 @@
 //
 // NOTE: The definitions below are incomplete. They get added as needed. This
 // list will grow as we support more vendor features.
-//
-// NOTE: Avoid casting raw buffer pointers to the packet payload structure types
-// below; use as template parameter to PacketView::payload(),
-// MutableBufferView::mutable_payload(), or CommandPacket::mutable_payload()
-// instead. Take extra care when accessing flexible array members.
 
 #include <pw_bluetooth/hci_android.emb.h>
 
@@ -70,5 +65,35 @@ constexpr uint8_t kLEMultiAdvtSetScanRespSubopcode = 0x03;
 constexpr uint8_t kLEMultiAdvtSetRandomAddrSubopcode = 0x4;
 constexpr uint8_t kLEMultiAdvtEnableSubopcode = 0x05;
 constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
+
+// ============================================================================
+// Advertising Packet Content Filtering
+
+// The kLEApcf opcode is shared across all advertising packet content filtering
+// HCI commands. To differentiate between the multiple commands, a subopcode
+// field is included in the command payload. These subopcode fields must be set
+// to a specific value.
+constexpr OpCode kLEApcf = VendorOpCode(0x157);
+constexpr uint8_t kLEApcfEnableSubopcode = 0x00;
+constexpr uint8_t kLEApcfSetFilteringParametersSubopcode = 0x01;
+constexpr uint8_t kLEApcfBroadcastAddressSubopcode = 0x02;
+constexpr uint8_t kLEApcfServiceUUIDSubopcode = 0x03;
+constexpr uint8_t kLEApcfServiceSolicitationUUIDSubopcode = 0x04;
+constexpr uint8_t kLEApcfLocalNameSubopcode = 0x05;
+constexpr uint8_t kLEApcfManufacturerDataSubopcode = 0x06;
+constexpr uint8_t kLEApcfServiceDataSubopcode = 0x07;
+constexpr uint8_t kLEApcfTransportDiscoveryService = 0x08;
+constexpr uint8_t kLEApcfAdTypeFilter = 0x09;
+constexpr uint8_t kLEApcfReadExtendedFeatures = 0xFF;
+
+// The maximum length of an advertising data field. The value 29 is selected
+// because advertising data can be between 0 - 31 bytes wide.
+//
+//    - Byte 0: length of the advertising data itself.
+//    - Byte 1: advertising data type (e.g. 0xFF for manufacturer data)
+//
+// With two bytes used, the rest of the payload size can only take up a maximum
+// of 29 bytes.
+constexpr uint8_t kLEApcfMaxPDUValueLength = 29;
 
 }  // namespace bt::hci_spec::vendor::android
