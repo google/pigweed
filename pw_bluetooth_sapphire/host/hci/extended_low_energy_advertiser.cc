@@ -79,7 +79,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
+std::optional<EmbossCommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     pw::bluetooth::emboss::LEAdvertisingType type,
@@ -98,10 +98,9 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   if (!handle) {
     bt_log(WARN,
            "hci-le",
-           "could not allocate a new advertising handle for address: %s (all "
-           "in use)",
+           "could not allocate advertising handle for address: %s",
            bt_str(address));
-    return std::unique_ptr<CommandPacket>();
+    return std::nullopt;
   }
   packet_view.advertising_handle().Write(handle.value());
 
@@ -113,7 +112,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
            "hci-le",
            "could not generate event bits for type: %hhu",
            static_cast<unsigned char>(type));
-    return std::unique_ptr<CommandPacket>();
+    return std::nullopt;
   }
   uint16_t properties = bits.value();
   packet_view.advertising_event_properties().BackingStorage().WriteUInt(
@@ -160,8 +159,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
   AdvertisingData adv_data;
   data.Copy(&adv_data);
@@ -203,8 +201,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   constexpr size_t kPacketSize =
       pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView::
@@ -233,9 +230,8 @@ ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
-                                                  const AdvertisingData& data) {
+EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
+    const DeviceAddress& address, const AdvertisingData& data) {
   AdvertisingData scan_rsp;
   data.Copy(&scan_rsp);
   if (staged_advertising_parameters_.include_tx_power_level) {
@@ -277,8 +273,7 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
+EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   constexpr size_t kPacketSize =
       pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView::

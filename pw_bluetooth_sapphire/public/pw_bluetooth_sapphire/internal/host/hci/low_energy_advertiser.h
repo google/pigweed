@@ -170,7 +170,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Build the HCI command packet to set the advertising parameters for the
   // flavor of low energy advertising being implemented.
-  virtual CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+  virtual std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
@@ -178,7 +178,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Build the HCI command packet to set the advertising data for the flavor of
   // low energy advertising being implemented.
-  virtual CommandChannel::CommandPacketVariant BuildSetAdvertisingData(
+  virtual EmbossCommandPacket BuildSetAdvertisingData(
       const DeviceAddress& address,
       const AdvertisingData& data,
       AdvFlags flags) = 0;
@@ -186,17 +186,17 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Build the HCI command packet to delete the advertising parameters from the
   // controller for the flavor of low energy advertising being implemented. This
   // method is used when stopping an advertisement.
-  virtual CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
+  virtual EmbossCommandPacket BuildUnsetAdvertisingData(
       const DeviceAddress& address) = 0;
 
   // Build the HCI command packet to set the data sent in a scan response (if
   // requested) for the flavor of low energy advertising being implemented.
-  virtual CommandChannel::CommandPacketVariant BuildSetScanResponse(
+  virtual EmbossCommandPacket BuildSetScanResponse(
       const DeviceAddress& address, const AdvertisingData& scan_rsp) = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the
   // controller for the flavor of low energy advertising being implemented.
-  virtual CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+  virtual EmbossCommandPacket BuildUnsetScanResponse(
       const DeviceAddress& address) = 0;
 
   // Build the HCI command packet to remove the advertising set entirely from

@@ -25,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt {
@@ -141,34 +142,41 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
         hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
-  hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+  std::optional<hci::EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       hci::AdvertisingIntervalRange interval) override {
-    return std::unique_ptr<hci::CommandPacket>();
+    return std::nullopt;
   }
 
-  hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingData(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      AdvFlags flags) override {
-    return std::unique_ptr<hci::CommandPacket>();
+  hci::EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
+                                                   const AdvertisingData& data,
+                                                   AdvFlags flags) override {
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
+        hci_spec::kLESetAdvertisingData);
   }
 
-  hci::CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
+  hci::EmbossCommandPacket BuildUnsetAdvertisingData(
       const DeviceAddress& address) override {
-    return std::unique_ptr<hci::CommandPacket>();
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
+        hci_spec::kLESetAdvertisingData);
   }
 
-  hci::CommandChannel::CommandPacketVariant BuildSetScanResponse(
+  hci::EmbossCommandPacket BuildSetScanResponse(
       const DeviceAddress& address, const AdvertisingData& scan_rsp) override {
-    return std::unique_ptr<hci::CommandPacket>();
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
+        hci_spec::kLESetScanResponseData);
   }
 
-  hci::CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+  hci::EmbossCommandPacket BuildUnsetScanResponse(
       const DeviceAddress& address) override {
-    return std::unique_ptr<hci::CommandPacket>();
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
+        hci_spec::kLESetScanResponseData);
   }
 
   hci::EmbossCommandPacket BuildRemoveAdvertisingSet(
@@ -424,7 +432,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
   RunUntilIdle();
   ASSERT_TRUE(link);
 
-  // Make sure that the link has the correct local and peer addresses assigned.
+  // Make sure that the link has the correct local and peer addresses
+  // assigned.
   EXPECT_EQ(kRandomAddress, link->local_address());
   EXPECT_EQ(peer_address, link->peer_address());
 }
@@ -472,9 +481,9 @@ TEST_F(LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 }
 
 // Test that the AdvertisingInterval values map to the spec defined constants
-// (NOTE: this might change in the future in favor of a more advanced policy for
-// managing the intervals; for now they get mapped to recommended values from
-// Vol 3, Part C, Appendix A).
+// (NOTE: this might change in the future in favor of a more advanced policy
+// for managing the intervals; for now they get mapped to recommended values
+// from Vol 3, Part C, Appendix A).
 TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(/*packed_size=*/21),
@@ -607,8 +616,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
   RunUntilIdle();
   EXPECT_TRUE(adv_mgr()->advertising());
 
-  // Destroying |instance| by invoking the move assignment operator should stop
-  // the advertisement.
+  // Destroying |instance| by invoking the move assignment operator should
+  // stop the advertisement.
   instance = {};
   RunUntilIdle();
   EXPECT_FALSE(adv_mgr()->advertising());

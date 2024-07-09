@@ -89,24 +89,23 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
-  CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+  std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       AdvertisingIntervalRange interval) override;
 
-  CommandChannel::CommandPacketVariant BuildSetAdvertisingData(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      AdvFlags flags) override;
+  EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
+                                              const AdvertisingData& data,
+                                              AdvFlags flags) override;
 
-  CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
+  EmbossCommandPacket BuildUnsetAdvertisingData(
       const DeviceAddress& address) override;
 
-  CommandChannel::CommandPacketVariant BuildSetScanResponse(
+  EmbossCommandPacket BuildSetScanResponse(
       const DeviceAddress& address, const AdvertisingData& scan_rsp) override;
 
-  CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+  EmbossCommandPacket BuildUnsetScanResponse(
       const DeviceAddress& address) override;
 
   EmbossCommandPacket BuildRemoveAdvertisingSet(
@@ -119,7 +118,6 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const EmbossEventPacket& event);
   CommandChannel::EventHandlerId state_changed_event_handler_id_;
 
-  uint8_t max_advertisements_ = 0;
   AdvertisingHandleMap advertising_handle_map_;
   std::queue<fit::closure> op_queue_;
 

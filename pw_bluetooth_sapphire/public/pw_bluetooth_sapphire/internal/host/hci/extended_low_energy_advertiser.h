@@ -95,24 +95,23 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
-  CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+  std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       AdvertisingIntervalRange interval) override;
 
-  CommandChannel::CommandPacketVariant BuildSetAdvertisingData(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      AdvFlags flags) override;
+  EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
+                                              const AdvertisingData& data,
+                                              AdvFlags flags) override;
 
-  CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
+  EmbossCommandPacket BuildUnsetAdvertisingData(
       const DeviceAddress& address) override;
 
-  CommandChannel::CommandPacketVariant BuildSetScanResponse(
+  EmbossCommandPacket BuildSetScanResponse(
       const DeviceAddress& address, const AdvertisingData& data) override;
 
-  CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+  EmbossCommandPacket BuildUnsetScanResponse(
       const DeviceAddress& address) override;
 
   EmbossCommandPacket BuildRemoveAdvertisingSet(

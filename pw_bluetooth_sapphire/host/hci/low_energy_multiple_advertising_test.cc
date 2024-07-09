@@ -120,7 +120,7 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
  private:
   std::unique_ptr<T> advertiser_;
   std::optional<Result<>> last_status_;
-  uint8_t max_advertisements_ = 2;
+  uint8_t max_advertisements_ = hci_spec::kMaxAdvertisingHandle + 1;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyMultipleAdvertisingTest);
 };
@@ -145,7 +145,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
                              kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
 
-  for (uint8_t i = 0; i < this->max_advertisements(); i++) {
+  for (uint8_t i = 0; i < this->advertiser()->MaxAdvertisements(); i++) {
     this->advertiser()->StartAdvertising(
         DeviceAddress(DeviceAddress::Type::kLEPublic, {i}),
         ad,
@@ -158,7 +158,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
 
   ASSERT_TRUE(this->GetLastStatus());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_EQ(this->max_advertisements(),
+  EXPECT_EQ(this->advertiser()->MaxAdvertisements(),
             this->advertiser()->NumAdvertisements());
 
   this->advertiser()->StartAdvertising(
@@ -171,9 +171,9 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
       this->MakeExpectErrorCallback());
 
   this->RunUntilIdle();
-  ASSERT_TRUE(this->GetLastStatus());
+  ASSERT_FALSE(this->GetLastStatus());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_EQ(this->max_advertisements(),
+  EXPECT_EQ(this->advertiser()->MaxAdvertisements(),
             this->advertiser()->NumAdvertisements());
 }
 

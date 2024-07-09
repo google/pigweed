@@ -46,10 +46,8 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
-                                                   const AdvertisingData& data,
-                                                   AdvFlags flags) {
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
+    const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
   auto packet = EmbossCommandPacket::New<
       pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
@@ -65,8 +63,7 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-LegacyLowEnergyAdvertiser::BuildSetScanResponse(
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
   auto packet = EmbossCommandPacket::New<
       pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
@@ -83,7 +80,7 @@ LegacyLowEnergyAdvertiser::BuildSetScanResponse(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
+std::optional<EmbossCommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     pw::bluetooth::emboss::LEAdvertisingType type,
@@ -109,16 +106,14 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
-CommandChannel::CommandPacketVariant
-LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   return EmbossCommandPacket::New<
       pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
 }
 
-CommandChannel::CommandPacketVariant
-LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
+EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   auto packet = EmbossCommandPacket::New<
       pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(

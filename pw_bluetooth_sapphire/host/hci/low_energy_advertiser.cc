@@ -99,22 +99,16 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   data.Copy(&staged_parameters_.data);
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
-  using PacketPtr = std::unique_ptr<CommandPacket>;
-
-  CommandChannel::CommandPacketVariant set_adv_params_packet =
+  std::optional<EmbossCommandPacket> set_adv_params_packet =
       BuildSetAdvertisingParams(address, type, own_addr_type, interval);
-  if (std::holds_alternative<PacketPtr>(set_adv_params_packet) &&
-      !std::get<PacketPtr>(set_adv_params_packet)) {
-    bt_log(WARN,
-           "hci-le",
-           "cannot build HCI set params packet for %s",
-           bt_str(address));
-    result_callback(ToResult(HostError::kCanceled));
+  if (!set_adv_params_packet) {
+    bt_log(
+        WARN, "hci-le", "failed to start advertising for %s", bt_str(address));
     return;
   }
 
   hci_cmd_runner_->QueueCommand(
-      std::move(set_adv_params_packet),
+      *set_adv_params_packet,
       fit::bind_member<&LowEnergyAdvertiser::OnSetAdvertisingParamsComplete>(
           this));
 
@@ -152,30 +146,10 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     AdvFlags flags,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
-  using PacketPtr = std::unique_ptr<CommandPacket>;
-
-  CommandChannel::CommandPacketVariant set_adv_data_packet =
+  EmbossCommandPacket set_adv_data_packet =
       BuildSetAdvertisingData(address, staged_parameters_.data, flags);
-  if (std::holds_alternative<PacketPtr>(set_adv_data_packet) &&
-      !std::get<PacketPtr>(set_adv_data_packet)) {
-    bt_log(WARN,
-           "hci-le",
-           "cannot build HCI set advertising data packet for %s",
-           bt_str(address));
-    return false;
-  }
-
-  CommandChannel::CommandPacketVariant set_scan_rsp_packet =
+  EmbossCommandPacket set_scan_rsp_packet =
       BuildSetScanResponse(address, staged_parameters_.scan_rsp);
-  if (std::holds_alternative<PacketPtr>(set_scan_rsp_packet) &&
-      !std::get<PacketPtr>(set_scan_rsp_packet)) {
-    bt_log(WARN,
-           "hci-le",
-           "cannot build HCI set scan response data packet for %s",
-           bt_str(address));
-    return false;
-  }
-
   EmbossCommandPacket enable_packet = BuildEnablePacket(
       address, pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
@@ -268,31 +242,10 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
     const DeviceAddress& address) {
   EmbossCommandPacket disable_packet = BuildEnablePacket(
       address, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
-
-  using PacketPtr = std::unique_ptr<hci::CommandPacket>;
-
-  hci::CommandChannel::CommandPacketVariant unset_scan_rsp_packet =
+  hci::EmbossCommandPacket unset_scan_rsp_packet =
       BuildUnsetScanResponse(address);
-  if (std::holds_alternative<PacketPtr>(unset_scan_rsp_packet) &&
-      !std::get<PacketPtr>(unset_scan_rsp_packet)) {
-    bt_log(WARN,
-           "hci-le",
-           "cannot build HCI unset scan rsp packet for %s",
-           bt_str(address));
-    return false;
-  }
-
-  hci::CommandChannel::CommandPacketVariant unset_adv_data_packet =
+  hci::EmbossCommandPacket unset_adv_data_packet =
       BuildUnsetAdvertisingData(address);
-  if (std::holds_alternative<PacketPtr>(unset_adv_data_packet) &&
-      !std::get<PacketPtr>(unset_adv_data_packet)) {
-    bt_log(WARN,
-           "hci-le",
-           "cannot build HCI unset advertising data packet for %s",
-           bt_str(address));
-    return false;
-  }
-
   EmbossCommandPacket remove_packet = BuildRemoveAdvertisingSet(address);
 
   hci_cmd_runner_->QueueCommand(disable_packet);
