@@ -32,9 +32,10 @@ cc_library(
     ],
 )
 
-# TODO: https://pwbug.dev/350585010 - Make this an empty cc_library with
-# deps on ":check" and ":assert".
-pw_facade(
+# A target exposing the interfaces of both "check" and "assert".  We re-expose
+# the headers here instead of just putting "check" and "assert" in the deps to
+# avoid a layering check violation.
+cc_library(
     name = "pw_assert",
     hdrs = [
         "public/pw_assert/assert.h",
@@ -42,11 +43,12 @@ pw_facade(
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
-    backend = ":backend",
     includes = [
         "public",
     ],
     deps = [
+        ":assert_backend",
+        ":check_backend",
         ":config",
         "//pw_preprocessor",
     ],

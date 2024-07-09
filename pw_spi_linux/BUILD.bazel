@@ -48,7 +48,7 @@ cc_binary(
     ],
     deps = [
         ":pw_spi_linux",
-        "//pw_assert:backend_impl",
+        "//pw_build:default_link_extra_lib",
         "//pw_log",
         "//pw_preprocessor",
         "//pw_result",

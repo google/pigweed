@@ -23,8 +23,6 @@ RP2040_SYSTEM_FLAGS = FREERTOS_FLAGS | {
     "@freertos//:freertos_config": "@pigweed//targets/rp2040:freertos_config",
     "@pico-sdk//bazel/config:PICO_STDIO_UART": True,
     "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
-    "@pigweed//pw_assert:backend": "@pigweed//pw_assert_basic",
-    "@pigweed//pw_assert:backend_impl": "@pigweed//pw_assert_basic:impl",
     "@pigweed//pw_assert:check_backend": "@pigweed//pw_assert_basic",
     "@pigweed//pw_assert:check_backend_impl": "@pigweed//pw_assert_basic:impl",
     "@pigweed//pw_interrupt:backend": "@pigweed//pw_interrupt_cortex_m:context",

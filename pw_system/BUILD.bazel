@@ -74,7 +74,8 @@ cc_library(
         # When implementing a backend for pw_assert or pw_log, *do not* depend
         # on //pw_system:pw_system. Instead, depend on the appropriate
         # component library. See :log_backend, below, for an examples.
-        "//pw_assert:backend_impl",
+        "//pw_assert:check_backend_impl",
+        "//pw_assert:assert_backend_impl",
         "//pw_log:backend_impl",
     ],
 )

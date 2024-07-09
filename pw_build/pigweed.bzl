@@ -163,7 +163,8 @@ def pw_cc_perf_test(**kwargs):
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_perf_test:logging_main"]
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:check_backend_impl"]
     kwargs["testonly"] = True
     native.cc_binary(**kwargs)
 

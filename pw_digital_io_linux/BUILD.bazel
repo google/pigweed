@@ -53,7 +53,7 @@ cc_binary(
     ],
     deps = [
         ":pw_digital_io_linux",
-        "//pw_assert:backend_impl",
+        "//pw_build:default_link_extra_lib",
         "//pw_log",
     ],
 )
