@@ -59,6 +59,12 @@ def flash(board_info: PicoBoardInfo, baud_rate: int, binary: Path) -> bool:
             board_info.serial_port,
         )
         return False
+    _LOG.info(
+        'Successfully flashed Pico on bus %s, port %s, serial port %s',
+        board_info.bus,
+        board_info.port,
+        board_info.serial_port,
+    )
     return True
 
 
