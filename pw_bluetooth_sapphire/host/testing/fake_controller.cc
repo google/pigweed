@@ -2899,7 +2899,7 @@ void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
     hci_spec::ConnectionHandle conn_handle,
     hci_spec::AdvertisingHandle adv_handle) {
   auto packet = hci::EmbossEventPacket::New<
-      pw::bluetooth::vendor::android_hci::LEMultiAdvtStateChangeSubeventWriter>(
+      android_hci::LEMultiAdvtStateChangeSubeventWriter>(
       hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.vendor_event().subevent_code().Write(
@@ -3090,18 +3090,21 @@ void FakeController::OnAndroidA2dpOffloadCommand(
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
-    const hci_android::LEMultiAdvtSetAdvtParamCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const android_hci::LEMultiAdvtSetAdvtParamCommandView& params) {
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      hci_android::kLEMultiAdvt);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(
+      android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_PARAMETERS);
 
+  hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3114,11 +3117,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            "no available memory for new advertising set, handle: %d",
            handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status = pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3131,8 +3132,8 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
     state = extended_advertising_states_[handle];
   }
 
-  uint16_t interval_min = le16toh(params.adv_interval_min);
-  uint16_t interval_max = le16toh(params.adv_interval_max);
+  uint16_t interval_min = params.adv_interval_min().Read();
+  uint16_t interval_max = params.adv_interval_max().Read();
 
   if (interval_min >= interval_max) {
     bt_log(INFO,
@@ -3141,12 +3142,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            interval_min,
            interval_max);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3156,12 +3154,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            "advertising interval min (%d) less than spec min (%d)",
            interval_min,
            hci_spec::kLEAdvertisingIntervalMin);
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3171,44 +3166,42 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            "advertising interval max (%d) greater than spec max (%d)",
            interval_max,
            hci_spec::kLEAdvertisingIntervalMax);
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
   state.interval_min = interval_min;
   state.interval_max = interval_max;
-  state.adv_type = params.adv_type;
-  state.own_address_type = params.own_address_type;
+  state.adv_type = params.adv_type().Read();
+  state.own_address_type = params.own_addr_type().Read();
 
   // write full state back only at the end (we don't have a reference because we
   // only want to write if there are no errors)
   extended_advertising_states_[handle] = state;
 
-  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
-    const hci_android::LEMultiAdvtSetAdvtDataCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const android_hci::LEMultiAdvtSetAdvtDataCommandView& params) {
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      hci_android::kLEMultiAdvt);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(
+      android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_DATA);
+
+  hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3218,12 +3211,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3231,14 +3221,11 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
 
   // removing advertising data entirely doesn't require us to check for error
   // conditions
-  if (params.adv_data_length == 0) {
+  if (params.adv_data_length().Read() == 0) {
     state.data_length = 0;
     std::memset(state.data, 0, sizeof(state.data));
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3249,53 +3236,50 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            "fake-hci",
            "cannot provide advertising data when using directed advertising");
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
-  if (params.adv_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+  if (params.adv_data_length().Read() > hci_spec::kMaxLEAdvertisingDataLength) {
     bt_log(INFO,
            "fake-hci",
            "data length (%d bytes) larger than legacy PDU size limit",
-           params.adv_data_length);
+           params.adv_data_length().Read());
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
-  state.data_length = params.adv_data_length;
-  std::memcpy(state.data, params.adv_data, params.adv_data_length);
+  state.data_length = params.adv_data_length().Read();
+  std::memcpy(state.data,
+              params.adv_data().BackingStorage().data(),
+              params.adv_data_length().Read());
 
-  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetScanResp(
-    const hci_android::LEMultiAdvtSetScanRespCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const android_hci::LEMultiAdvtSetScanRespDataCommandView& params) {
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      hci_android::kLEMultiAdvt);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(
+      android_hci::LEMultiAdvtSubOpcode::SET_SCAN_RESPONSE_DATA);
+
+  hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3305,12 +3289,9 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER;
-    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3318,15 +3299,12 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
 
   // removing scan response data entirely doesn't require us to check for error
   // conditions
-  if (params.scan_rsp_data_length == 0) {
+  if (params.scan_resp_length().Read() == 0) {
     state.scan_rsp_length = 0;
     std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3338,55 +3316,51 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
         "fake-hci",
         "cannot provide scan response data for unscannable advertising types");
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
-  if (params.scan_rsp_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+  if (params.scan_resp_length().Read() >
+      hci_spec::kMaxLEAdvertisingDataLength) {
     bt_log(INFO,
            "fake-hci",
            "data length (%d bytes) larger than legacy PDU size limit",
-           params.scan_rsp_data_length);
+           params.scan_resp_length().Read());
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
-  state.scan_rsp_length = params.scan_rsp_data_length;
-  std::memcpy(
-      state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
+  state.scan_rsp_length = params.scan_resp_length().Read();
+  std::memcpy(state.scan_rsp_data,
+              params.adv_data().BackingStorage().data(),
+              params.scan_resp_length().Read());
 
-  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
-    const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const android_hci::LEMultiAdvtSetRandomAddrCommandView& params) {
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      hci_android::kLEMultiAdvt);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(
+      android_hci::LEMultiAdvtSubOpcode::SET_RANDOM_ADDRESS);
 
+  hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3396,12 +3370,9 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER;
-    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3412,38 +3383,35 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
         "fake-hci",
         "cannot set LE random address while connectable advertising enabled");
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status = pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED;
-    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
   state.random_address =
-      DeviceAddress(DeviceAddress::Type::kLERandom, params.random_address);
+      DeviceAddress(DeviceAddress::Type::kLERandom,
+                    DeviceAddressBytes(params.peer_address()));
 
-  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
-    const pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandView&
-        params) {
+    const android_hci::LEMultiAdvtEnableCommandView& params) {
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      hci_android::kLEMultiAdvt);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(android_hci::LEMultiAdvtSubOpcode::ENABLE);
+
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
-    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER;
-    ret.opcode = hci_android::kLEMultiAdvtEnableSubopcode;
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3455,11 +3423,8 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
 
   extended_advertising_states_[handle].enabled = enabled;
 
-  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  ret.opcode = hci_android::kLEMultiAdvtEnableSubopcode;
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
@@ -3470,35 +3435,32 @@ void FakeController::OnAndroidLEMultiAdvt(
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
     case hci_android::kLEMultiAdvtSetAdvtParamSubopcode: {
-      auto params =
-          payload.To<hci_android::LEMultiAdvtSetAdvtParamCommandParams>();
+      auto params = android_hci::MakeLEMultiAdvtSetAdvtParamCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetAdvtParam(params);
       break;
     }
     case hci_android::kLEMultiAdvtSetAdvtDataSubopcode: {
-      auto params =
-          payload.To<hci_android::LEMultiAdvtSetAdvtDataCommandParams>();
+      auto params = android_hci::MakeLEMultiAdvtSetAdvtDataCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetAdvtData(params);
       break;
     }
     case hci_android::kLEMultiAdvtSetScanRespSubopcode: {
-      auto params =
-          payload.To<hci_android::LEMultiAdvtSetScanRespCommandParams>();
+      auto params = android_hci::MakeLEMultiAdvtSetScanRespDataCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetScanResp(params);
       break;
     }
     case hci_android::kLEMultiAdvtSetRandomAddrSubopcode: {
-      auto params =
-          payload.To<hci_android::LEMultiAdvtSetRandomAddrCommandParams>();
+      auto params = android_hci::MakeLEMultiAdvtSetRandomAddrCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetRandomAddr(params);
       break;
     }
     case hci_android::kLEMultiAdvtEnableSubopcode: {
-      auto view =
-          pw::bluetooth::vendor::android_hci::MakeLEMultiAdvtEnableCommandView(
-              command_packet.data().data(),
-              pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommand::
-                  MaxSizeInBytes());
+      auto view = android_hci::MakeLEMultiAdvtEnableCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtEnable(view);
       break;
     }

@@ -972,28 +972,6 @@ constexpr uint8_t kLEAdvertisingChannel38 = 0x02;
 constexpr uint8_t kLEAdvertisingChannel39 = 0x04;
 constexpr uint8_t kLEAdvertisingChannelAll = 0x07;
 
-// Possible values that can be used for the |adv_filter_policy| parameter in a
-// HCI_LE_Set_Advertising_Parameters command.
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5)
-enum class LEAdvFilterPolicy : uint8_t {
-  // Process scan and connection requests from all devices (i.e., the Filter Accept List is not in
-  // use) (default).
-  kAllowAll = 0x00,
-
-  // Process connection requests from all devices and only scan requests from
-  // devices that are in the filter accept policy list.
-  kConnAllScanFilterAcceptList = 0x01,
-
-  // Process scan requests from all devices and only connection requests from devices that are in
-  // the Filter Accept List.
-  kScanAllConnFilterAcceptList = 0x02,
-
-  // Process scan and connection requests only from devices in the Filter Accept List.
-  kFilterAcceptListOnly = 0x03,
-
-  // The rest is reserved for future use.
-};
-
 // Possible values that can be used for the Filter_Policy parameter in a
 // HCI_LE_Periodic_Advertising_Create_Sync command.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.67)

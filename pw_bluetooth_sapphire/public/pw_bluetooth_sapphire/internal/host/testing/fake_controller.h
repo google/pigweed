@@ -860,20 +860,19 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
 
   void OnAndroidLEMultiAdvtSetAdvtParam(
-      const hci_android::LEMultiAdvtSetAdvtParamCommandParams& params);
+      const android_hci::LEMultiAdvtSetAdvtParamCommandView& params);
 
   void OnAndroidLEMultiAdvtSetAdvtData(
-      const hci_android::LEMultiAdvtSetAdvtDataCommandParams& params);
+      const android_hci::LEMultiAdvtSetAdvtDataCommandView& params);
 
   void OnAndroidLEMultiAdvtSetScanResp(
-      const hci_android::LEMultiAdvtSetScanRespCommandParams& params);
+      const android_hci::LEMultiAdvtSetScanRespDataCommandView& params);
 
   void OnAndroidLEMultiAdvtSetRandomAddr(
-      const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params);
+      const android_hci::LEMultiAdvtSetRandomAddrCommandView& params);
 
   void OnAndroidLEMultiAdvtEnable(
-      const pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandView&
-          params);
+      const android_hci::LEMultiAdvtEnableCommandView& params);
 
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(
