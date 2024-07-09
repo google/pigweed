@@ -50,6 +50,7 @@ bool CheckBit(NUM_TYPE num_type, ENUM_TYPE bit) {
 }  // namespace
 
 namespace hci_android = hci_spec::vendor::android;
+namespace android_hci = pw::bluetooth::vendor::android_hci;
 
 void FakeController::Settings::ApplyDualModeDefaults() {
   le_connection_delay = std::chrono::seconds(0);
@@ -2939,88 +2940,82 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
 void FakeController::OnAndroidStartA2dpOffload(
     const pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandView&
         params) {
-  hci_android::StartA2dpOffloadCommandReturnParams ret;
-  ret.opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::A2dpOffloadCommandCompleteEventWriter>(
+      hci_android::kA2dpOffloadCommand);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::START_LEGACY);
 
   // return in case A2DP offload already started
   if (offloaded_a2dp_channel_state_) {
-    ret.status = pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS;
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
     return;
   }
 
   // SCMS-T is not currently supported
-  hci_android::A2dpScmsTEnable scms_t_enable;
-  scms_t_enable.enabled = params.scms_t_enable().enabled().Read();
-  scms_t_enable.header = params.scms_t_enable().header().Read();
-  if (scms_t_enable.enabled ==
+  if (params.scms_t_enable().enabled().Read() ==
       pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
-    ret.status =
-        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER;
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
     return;
   }
 
   // return in case any parameter has an invalid value
-  ret.status =
-      pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
+  view.status().Write(
+      pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
 
-  hci_android::A2dpCodecType const codec_type =
-      static_cast<hci_android::A2dpCodecType>(
+  android_hci::A2dpCodecType const codec_type =
+      static_cast<android_hci::A2dpCodecType>(
           le32toh(static_cast<uint32_t>(params.codec_type().Read())));
   switch (codec_type) {
-    case hci_android::A2dpCodecType::kSbc:
-    case hci_android::A2dpCodecType::kAac:
-    case hci_android::A2dpCodecType::kAptx:
-    case hci_android::A2dpCodecType::kAptxhd:
-    case hci_android::A2dpCodecType::kLdac:
+    case android_hci::A2dpCodecType::SBC:
+    case android_hci::A2dpCodecType::AAC:
+    case android_hci::A2dpCodecType::APTX:
+    case android_hci::A2dpCodecType::APTX_HD:
+    case android_hci::A2dpCodecType::LDAC:
       break;
-    default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                                 BufferView(&ret, sizeof(ret)));
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  hci_android::A2dpSamplingFrequency const sampling_frequency =
-      static_cast<hci_android::A2dpSamplingFrequency>(
+  android_hci::A2dpSamplingFrequency const sampling_frequency =
+      static_cast<android_hci::A2dpSamplingFrequency>(
           le32toh(static_cast<uint32_t>(params.sampling_frequency().Read())));
   switch (sampling_frequency) {
-    case hci_android::A2dpSamplingFrequency::k44100Hz:
-    case hci_android::A2dpSamplingFrequency::k48000Hz:
-    case hci_android::A2dpSamplingFrequency::k88200Hz:
-    case hci_android::A2dpSamplingFrequency::k96000Hz:
+    case android_hci::A2dpSamplingFrequency::HZ_44100:
+    case android_hci::A2dpSamplingFrequency::HZ_48000:
+    case android_hci::A2dpSamplingFrequency::HZ_88200:
+    case android_hci::A2dpSamplingFrequency::HZ_96000:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                                 BufferView(&ret, sizeof(ret)));
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  hci_android::A2dpBitsPerSample const bits_per_sample =
-      static_cast<hci_android::A2dpBitsPerSample>(
+  android_hci::A2dpBitsPerSample const bits_per_sample =
+      static_cast<android_hci::A2dpBitsPerSample>(
           params.bits_per_sample().Read());
   switch (bits_per_sample) {
-    case hci_android::A2dpBitsPerSample::k16BitsPerSample:
-    case hci_android::A2dpBitsPerSample::k24BitsPerSample:
-    case hci_android::A2dpBitsPerSample::k32BitsPerSample:
+    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_16:
+    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_24:
+    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_32:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                                 BufferView(&ret, sizeof(ret)));
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  hci_android::A2dpChannelMode const channel_mode =
-      static_cast<hci_android::A2dpChannelMode>(params.channel_mode().Read());
+  android_hci::A2dpChannelMode const channel_mode =
+      static_cast<android_hci::A2dpChannelMode>(params.channel_mode().Read());
   switch (channel_mode) {
-    case hci_android::A2dpChannelMode::kMono:
-    case hci_android::A2dpChannelMode::kStereo:
+    case android_hci::A2dpChannelMode::MONO:
+    case android_hci::A2dpChannelMode::STEREO:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                                 BufferView(&ret, sizeof(ret)));
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
       return;
   }
 
@@ -3028,15 +3023,14 @@ void FakeController::OnAndroidStartA2dpOffload(
       le32toh(params.encoded_audio_bitrate().Read());
   // Bits 0x01000000 to 0xFFFFFFFF are reserved
   if (encoded_audio_bitrate >= 0x01000000) {
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                               BufferView(&ret, sizeof(ret)));
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
     return;
   }
 
   OffloadedA2dpChannel state;
   state.codec_type = codec_type;
   state.max_latency = le16toh(params.max_latency().Read());
-  state.scms_t_enable = scms_t_enable;
+  state.scms_t_enable.view().CopyFrom(params.scms_t_enable());
   state.sampling_frequency = sampling_frequency;
   state.bits_per_sample = bits_per_sample;
   state.channel_mode = channel_mode;
@@ -3046,27 +3040,27 @@ void FakeController::OnAndroidStartA2dpOffload(
   state.l2cap_mtu_size = le16toh(params.l2cap_mtu_size().Read());
   offloaded_a2dp_channel_state_ = state;
 
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
 }
 
 void FakeController::OnAndroidStopA2dpOffload() {
-  hci_android::StartA2dpOffloadCommandReturnParams ret;
-  ret.opcode = hci_android::kStopA2dpOffloadCommandSubopcode;
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::A2dpOffloadCommandCompleteEventWriter>(
+      hci_android::kA2dpOffloadCommand);
+  auto view = packet.view_t();
+  view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::STOP_LEGACY);
 
   if (!offloaded_a2dp_channel_state_) {
-    ret.status = pw::bluetooth::emboss::StatusCode::REPEATED_ATTEMPTS;
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                               BufferView(&ret, sizeof(ret)));
+    view.status().Write(pw::bluetooth::emboss::StatusCode::REPEATED_ATTEMPTS);
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
     return;
   }
 
   offloaded_a2dp_channel_state_ = std::nullopt;
 
-  ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand,
-                             BufferView(&ret, sizeof(ret)));
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
 }
 
 void FakeController::OnAndroidA2dpOffloadCommand(
@@ -3076,11 +3070,8 @@ void FakeController::OnAndroidA2dpOffloadCommand(
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
     case hci_android::kStartA2dpOffloadCommandSubopcode: {
-      auto view =
-          pw::bluetooth::vendor::android_hci::MakeStartA2dpOffloadCommandView(
-              command_packet.data().data(),
-              pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommand::
-                  MaxSizeInBytes());
+      auto view = android_hci::MakeStartA2dpOffloadCommandView(
+          command_packet.data().data(), command_packet.data().size());
       OnAndroidStartA2dpOffload(view);
       break;
     }

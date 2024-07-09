@@ -78,6 +78,13 @@ class StaticPacket {
     return view;
   }
 
+  template <typename... Args>
+  T view(Args... args) const {
+    T view(args..., buffer_.data(), buffer_.size());
+    BT_ASSERT(view.IsComplete());
+    return view;
+  }
+
   BufferView data() const { return {buffer_.data(), buffer_.size()}; }
   MutableBufferView mutable_data() {
     return {buffer_.mutable_data(), buffer_.size()};

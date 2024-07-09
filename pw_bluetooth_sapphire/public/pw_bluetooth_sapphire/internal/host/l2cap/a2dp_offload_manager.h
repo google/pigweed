@@ -19,6 +19,8 @@
 
 namespace bt::l2cap {
 
+namespace android_hci = pw::bluetooth::vendor::android_hci;
+
 // Provides an API surface to start and stop A2DP offloading. A2dpOffloadManager
 // tracks the state of A2DP offloading and allows at most one channel to be
 // offloaded at a given time
@@ -27,14 +29,18 @@ class A2dpOffloadManager {
   // Configuration received from the profile server that needs to be converted
   // to a command packet in order to send the StartA2dpOffload command
   struct Configuration {
-    hci_spec::vendor::android::A2dpCodecType codec;
+    android_hci::A2dpCodecType codec;
     uint16_t max_latency;
-    hci_spec::vendor::android::A2dpScmsTEnable scms_t_enable;
-    hci_spec::vendor::android::A2dpSamplingFrequency sampling_frequency;
-    hci_spec::vendor::android::A2dpBitsPerSample bits_per_sample;
-    hci_spec::vendor::android::A2dpChannelMode channel_mode;
+    StaticPacket<android_hci::A2dpScmsTEnableWriter> scms_t_enable;
+    android_hci::A2dpSamplingFrequency sampling_frequency;
+    android_hci::A2dpBitsPerSample bits_per_sample;
+    android_hci::A2dpChannelMode channel_mode;
     uint32_t encoded_audio_bit_rate;
-    hci_spec::vendor::android::A2dpOffloadCodecInformation codec_information;
+
+    StaticPacket<android_hci::SbcCodecInformationWriter> sbc_configuration;
+    StaticPacket<android_hci::AacCodecInformationWriter> aac_configuration;
+    StaticPacket<android_hci::LdacCodecInformationWriter> ldac_configuration;
+    StaticPacket<android_hci::AptxCodecInformationWriter> aptx_configuration;
   };
 
   explicit A2dpOffloadManager(hci::CommandChannel::WeakPtr cmd_channel)

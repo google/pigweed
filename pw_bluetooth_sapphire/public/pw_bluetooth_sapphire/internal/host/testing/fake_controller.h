@@ -32,6 +32,7 @@
 namespace bt::testing {
 
 namespace hci_android = bt::hci_spec::vendor::android;
+namespace android_hci = pw::bluetooth::vendor::android_hci;
 
 class FakePeer;
 
@@ -98,18 +99,15 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Configuration of an L2CAP channel for A2DP offloading.
   struct OffloadedA2dpChannel final {
-    hci_android::A2dpCodecType codec_type = hci_android::A2dpCodecType::kSbc;
+    android_hci::A2dpCodecType codec_type = android_hci::A2dpCodecType::SBC;
     uint16_t max_latency = 0;
-    hci_android::A2dpScmsTEnable scms_t_enable = {
-        pw::bluetooth::emboss::GenericEnableParam::DISABLE,
-        0x0,
-    };
-    hci_android::A2dpSamplingFrequency sampling_frequency =
-        hci_android::A2dpSamplingFrequency::k44100Hz;
-    hci_android::A2dpBitsPerSample bits_per_sample =
-        hci_android::A2dpBitsPerSample::k16BitsPerSample;
-    hci_android::A2dpChannelMode channel_mode =
-        hci_android::A2dpChannelMode::kMono;
+    StaticPacket<android_hci::A2dpScmsTEnableWriter> scms_t_enable;
+    android_hci::A2dpSamplingFrequency sampling_frequency =
+        android_hci::A2dpSamplingFrequency::HZ_44100;
+    android_hci::A2dpBitsPerSample bits_per_sample =
+        android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_16;
+    android_hci::A2dpChannelMode channel_mode =
+        android_hci::A2dpChannelMode::MONO;
     uint32_t encoded_audio_bitrate = 0;
     hci_spec::ConnectionHandle connection_handle = 0;
     l2cap::ChannelId l2cap_channel_id = 0;
@@ -854,8 +852,7 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
 
   void OnAndroidStartA2dpOffload(
-      const pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandView&
-          params);
+      const android_hci::StartA2dpOffloadCommandView& params);
 
   void OnAndroidStopA2dpOffload();
 
