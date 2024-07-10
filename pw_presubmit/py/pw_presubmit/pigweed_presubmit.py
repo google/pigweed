@@ -785,7 +785,11 @@ def bazel_test(ctx: PresubmitContext) -> None:
 def bthost_package(ctx: PresubmitContext) -> None:
     target = '//pw_bluetooth_sapphire/fuchsia:infra'
     build_bazel(ctx, 'build', target)
-    build_bazel(ctx, 'test', f'{target}.test_all')
+    # Override the default test_tag_filters to ensure test targets tagged
+    # "integration" are still run.
+    build_bazel(
+        ctx, 'test', '--test_tag_filters=-requires_cxx_20', f'{target}.test_all'
+    )
 
     stdout_path = ctx.output_dir / 'bazel.manifest.stdout'
     with open(stdout_path, 'w') as outs:
