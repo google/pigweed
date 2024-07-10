@@ -51,7 +51,7 @@ pw_facade(
 
 label_flag(
     name = "handler_backend",
-    build_setting_default = "//pw_system:log_backend",
+    build_setting_default = "//pw_build:unspecified_backend",
 )
 
 label_flag(
