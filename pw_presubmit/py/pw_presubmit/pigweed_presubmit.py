@@ -1021,7 +1021,8 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bupstream_requirements_darwin_lock.txt$',
     r'\bupstream_requirements_linux_lock.txt$',
     r'\bupstream_requirements_windows_lock.txt$',
-    r'^(?:.+/)?\..+$',
+    r'^(?:.+/)?\.bazelversion$',
+    r'^pw_env_setup/py/pw_env_setup/cipd_setup/.cipd_version',
     # keep-sorted: end
     # Metadata
     # keep-sorted: start
