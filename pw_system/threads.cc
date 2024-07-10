@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_system/config.h"
 #include "pw_thread/thread.h"
 
 // For now, pw_system:async only supports FreeRTOS or standard library threads.
@@ -29,6 +30,13 @@
 #include "task.h"
 
 namespace pw::system {
+namespace {
+
+constexpr size_t ToWords(size_t bytes) {
+  return (bytes + sizeof(StackType_t) - 1) / sizeof(StackType_t);
+}
+
+}  // namespace
 
 [[noreturn]] void StartScheduler() {
   vTaskStartScheduler();
@@ -49,8 +57,8 @@ enum class ThreadPriority : UBaseType_t {
 static_assert(static_cast<UBaseType_t>(ThreadPriority::kNumPriorities) <=
               configMAX_PRIORITIES);
 
-static constexpr size_t kLogThreadStackWords = 1024;
-static thread::freertos::StaticContextWithStack<kLogThreadStackWords>
+static thread::freertos::StaticContextWithStack<ToWords(
+    kLogThreadStackSizeBytes)>
     log_thread_context;
 const thread::Options& LogThreadOptions() {
   static constexpr auto options =
@@ -61,8 +69,8 @@ const thread::Options& LogThreadOptions() {
   return options;
 }
 
-static constexpr size_t kRpcThreadStackWords = 512;
-static thread::freertos::StaticContextWithStack<kRpcThreadStackWords>
+static thread::freertos::StaticContextWithStack<ToWords(
+    kRpcThreadStackSizeBytes)>
     rpc_thread_context;
 const thread::Options& RpcThreadOptions() {
   static constexpr auto options =
@@ -73,8 +81,8 @@ const thread::Options& RpcThreadOptions() {
   return options;
 }
 
-static constexpr size_t kTransferThreadStackWords = 512;
-static thread::freertos::StaticContextWithStack<kTransferThreadStackWords>
+static thread::freertos::StaticContextWithStack<ToWords(
+    kTransferThreadStackSizeBytes)>
     transfer_thread_context;
 const thread::Options& TransferThreadOptions() {
   static constexpr auto options =
@@ -85,8 +93,8 @@ const thread::Options& TransferThreadOptions() {
   return options;
 }
 
-static constexpr size_t kDispatcherThreadStackWords = 512;
-static thread::freertos::StaticContextWithStack<kDispatcherThreadStackWords>
+static thread::freertos::StaticContextWithStack<ToWords(
+    kDispatcherThreadStackSizeBytes)>
     dispatcher_thread_context;
 const thread::Options& DispatcherThreadOptions() {
   static constexpr auto options =
