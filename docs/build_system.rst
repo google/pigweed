@@ -706,8 +706,10 @@ This can be added in a couple ways:
     <https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`_. Set
     the ``@bazel_tools//tools/cpp:link_extra_libs`` label flag to point to
     ``@pigweed//pw_build:default_link_extra_lib``, probably using `bazelrc
-    <https://bazel.build/run/bazelrc>`_. This is only supported in Bazel 7.0.0
-    or newer.
+    <https://bazel.build/run/bazelrc>`_. This is only likely to work if you
+    specify the ``--experimental_exclude_starlark_flags_from_exec_config``
+    flag, available in Bazel 8 and newer; see `bazelbuild/bazel#22457
+    <https://github.com/bazelbuild/bazel/issues/22457>`__.
 
     The con is that these libraries are linked into *all* C++ binaries that are
     part of your project's build, including ones that have no dependencies on

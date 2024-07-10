@@ -37,6 +37,12 @@ common --incompatible_default_to_explicit_init_py
 # Required for new toolchain resolution API.
 build --incompatible_enable_cc_toolchain_resolution
 
+# Don't propagate flags or defines to the exec config. This will become the
+# default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
+# improve cache hit rates between builds targeting different platforms.
+common --experimental_exclude_defines_from_exec_config
+common --experimental_exclude_starlark_flags_from_exec_config
+
 # Skip building or testing C++20 targets by default
 # TODO: b/340568834 Remove when a proper solution is available.
 build --build_tag_filters=-requires_cxx_20
