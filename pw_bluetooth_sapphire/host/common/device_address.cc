@@ -118,7 +118,41 @@ pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(
   }
 }
 
-DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
+pw::bluetooth::emboss::LEOwnAddressType DeviceAddress::DeviceAddrToLEOwnAddr(
+    Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEOwnAddressType::RANDOM;
+    }
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
+    }
+    case DeviceAddress::Type::kLEAnonymous:
+    case DeviceAddress::Type::kBREDR:
+    default: {
+      BT_PANIC("invalid DeviceAddressType");
+    }
+  }
+}
+
+DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
+    pw::bluetooth::emboss::LEAddressType type) {
+  switch (type) {
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC:
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY: {
+      return DeviceAddress::Type::kLEPublic;
+    }
+    case pw::bluetooth::emboss::LEAddressType::RANDOM:
+    case pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY: {
+      return DeviceAddress::Type::kLERandom;
+    }
+    default: {
+      BT_PANIC("invalid LEAddressType");
+    }
+  }
+}
+
+DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
     pw::bluetooth::emboss::LEPeerAddressType type) {
   switch (type) {
     case pw::bluetooth::emboss::LEPeerAddressType::PUBLIC: {
@@ -152,18 +186,21 @@ pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(
 }
 
 DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
-    pw::bluetooth::emboss::LEAddressType type) {
+    pw::bluetooth::emboss::LEExtendedAddressType type) {
   switch (type) {
-    case pw::bluetooth::emboss::LEAddressType::PUBLIC:
-    case pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY: {
+    case pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC:
+    case pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC_IDENTITY: {
       return DeviceAddress::Type::kLEPublic;
     }
-    case pw::bluetooth::emboss::LEAddressType::RANDOM:
-    case pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY: {
+    case pw::bluetooth::emboss::LEExtendedAddressType::RANDOM:
+    case pw::bluetooth::emboss::LEExtendedAddressType::RANDOM_IDENTITY: {
       return DeviceAddress::Type::kLERandom;
     }
+    case pw::bluetooth::emboss::LEExtendedAddressType::ANONYMOUS: {
+      return DeviceAddress::Type::kLEAnonymous;
+    }
     default: {
-      BT_PANIC("invalid LEAddressType");
+      BT_PANIC("invalid LEExtendedAddressType");
     }
   }
 }

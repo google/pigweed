@@ -2265,7 +2265,7 @@ struct LESetPeriodicAdvertisingDataCommandParams {
   LESetExtendedAdvDataOp operation;
 
   // Length of the advertising data included in this command packet, up to
-  // kMaxLEExtendedAdvertisingDataLength bytes.
+  // kMaxPduLEExtendedAdvertisingDataLength bytes.
   uint8_t adv_data_length;
 
   // Variable length advertising data.

@@ -902,6 +902,10 @@ constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
 constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
 constexpr uint8_t kNoAdvertisingDuration = 0;
 
+// Values used in enabling extended scanning. See Core Spec v5.4 Vol 4, Part E, 7.8.64.
+constexpr uint16_t kNoScanningDuration = 0;
+constexpr uint16_t kNoScanningPeriod = 0;
+
 // LE Advertising event types that can be reported in a LE Advertising Report
 // event.
 enum class LEAdvertisingEventType : uint8_t {
@@ -1104,6 +1108,9 @@ constexpr uint8_t kLEAdvertsingSIDMax = 0xEF;
 // Invalid RSSI value.
 constexpr int8_t kRSSIInvalid = 127;
 
+// Invalid advertising sid value
+constexpr uint8_t kAdvertisingSidInvalid = 0xFF;
+
 // The maximum length of a friendly name that can be assigned to a BR/EDR
 // controller, in octets.
 constexpr size_t kMaxNameLength = bt::kMaxNameLength;
@@ -1232,6 +1239,9 @@ constexpr size_t kExtendedInquiryResponseMaxNameBytes = kExtendedInquiryResponse
 // Vol 2, Part H, 1).
 constexpr uint8_t kMinEncryptionKeySize = 7;
 
+// inclusive-language: ignore
+// Ignore inclusive language check to match the language used in the spec
+//
 // Key types for BR/EDR link encryption as reported to the host using the Link
 // Key Notification event upon pairing or key changes (v5.0 Vol 2, Part E,
 // Section 7.7.24).

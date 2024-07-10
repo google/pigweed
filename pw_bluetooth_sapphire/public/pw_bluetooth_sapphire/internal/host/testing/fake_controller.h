@@ -92,8 +92,7 @@ class FakeController final : public ControllerTestDoubleBase,
     uint8_t total_num_iso_data_packets = 0;
 
     // Vendor extensions
-    StaticPacket<pw::bluetooth::vendor::android_hci::
-                     LEGetVendorCapabilitiesCommandCompleteEventWriter>
+    StaticPacket<android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>
         android_extension_settings;
   };
 

@@ -44,6 +44,12 @@ class LowEnergyScanResult {
   int8_t rssi() const { return rssi_; }
   void set_rssi(int8_t value) { rssi_ = value; }
 
+  int8_t tx_power() const { return tx_power_; }
+  void set_tx_power(int8_t value) { tx_power_ = value; }
+
+  uint8_t advertising_sid() const { return advertising_sid_; }
+  void set_advertising_sid(uint8_t value) { advertising_sid_ = value; }
+
   BufferView data() const { return buffer_.view(0, data_size_); }
   void AppendData(const ByteBuffer& data);
 
@@ -62,6 +68,13 @@ class LowEnergyScanResult {
   // The received signal strength of the advertisement packet corresponding to
   // this peer.
   int8_t rssi_ = hci_spec::kRSSIInvalid;
+
+  // The transmitted signal strength of this packet, according to the advertiser
+  int8_t tx_power_ = hci_spec::kTxPowerInvalid;
+
+  // Matches the advertising SID subfield in the ADI field of the received
+  // advertisement, used to synchronize against a periodic advertising train
+  uint8_t advertising_sid_ = hci_spec::kAdvertisingSidInvalid;
 
   // The size of the data so far accumulated in |buffer_|.
   size_t data_size_ = 0u;
@@ -289,6 +302,10 @@ class LowEnergyScanner : public LocalAddressClient {
       pw::bluetooth::emboss::GenericEnableParam enable) = 0;
 
   void AddPendingResult(LowEnergyScanResult&& scan_result);
+
+  bool HasPendingResult(const DeviceAddress& address) {
+    return pending_results_.count(address) != 0;
+  }
 
   std::unique_ptr<PendingScanResult> RemovePendingResult(
       const DeviceAddress& address);

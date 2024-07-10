@@ -36,6 +36,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
@@ -432,6 +433,28 @@ class AdapterImpl final : public Adapter {
            "controller supports only legacy advertising, using legacy LE "
            "advertiser");
     return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+  }
+
+  std::unique_ptr<hci::LowEnergyScanner> CreateScanner() {
+    // Though this method relates to scanning, feature support for extended
+    // scanning, connections, etc are all grouped under the extended advertising
+    // feature flag.
+    constexpr hci_spec::LESupportedFeature feature =
+        hci_spec::LESupportedFeature::kLEExtendedAdvertising;
+    if (state().low_energy_state.IsFeatureSupported(feature)) {
+      bt_log(
+          INFO,
+          "gap",
+          "controller supports extended scanning, using extended LE scanner");
+      return std::make_unique<hci::ExtendedLowEnergyScanner>(
+          le_address_manager_.get(), hci_, dispatcher_);
+    }
+
+    bt_log(INFO,
+           "gap",
+           "controller supports only legacy scanning, using legacy LE scanner");
+    return std::make_unique<hci::LegacyLowEnergyScanner>(
+        le_address_manager_.get(), hci_, dispatcher_);
   }
 
   // Must be initialized first so that child nodes can be passed to other
@@ -1252,8 +1275,7 @@ void AdapterImpl::InitializeStep4() {
       dispatcher_,
       fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(
           hci_le_advertiser_.get()));
-  hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-      le_address_manager_.get(), hci_, dispatcher_);
+  hci_le_scanner_ = CreateScanner();
 
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(

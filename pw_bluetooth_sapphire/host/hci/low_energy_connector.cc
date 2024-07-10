@@ -273,7 +273,7 @@ LowEnergyConnector::OnConnectionCompleteEvent(const EmbossEventPacket& event) {
 
   hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   DeviceAddress peer_address(
-      DeviceAddress::LePeerAddrToDeviceAddr(params.peer_address_type().Read()),
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read()),
       DeviceAddressBytes(params.peer_address()));
   hci_spec::LEConnectionParameters connection_params(
       params.connection_interval().UncheckedRead(),

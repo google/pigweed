@@ -202,6 +202,14 @@ class FakePeer {
   // scan response.
   DynamicByteBuffer BuildExtendedScanResponseEvent() const;
 
+  // Populate an LEExtendedAdvertisingReportData as though it was received from
+  // this fake peer
+  void FillExtendedAdvertisingReport(
+      pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
+      const ByteBuffer& data,
+      bool is_fragmented,
+      bool is_scan_response) const;
+
  private:
   friend class FakeController;
 
@@ -226,14 +234,6 @@ class FakePeer {
   DynamicByteBuffer BuildExtendedAdvertisingReports(
       const ByteBuffer& data, bool is_scan_response) const;
 
-  // Populate an LEExtendedAdvertisingReportData as though it was received from
-  // this fake peer
-  void FillExtendedAdvertisingReport(
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
-      const ByteBuffer& data,
-      bool is_fragmented,
-      bool is_scan_response) const;
-
   // The FakeController that this FakePeer has been assigned to.
   FakeController* controller_;  // weak
 
@@ -245,7 +245,7 @@ class FakePeer {
   bool advertising_enabled_;
   bool directed_;
   bool address_resolved_;
-  bool use_extended_advertising_pdus_;
+  bool use_extended_advertising_pdus_ = false;
   bool send_advertising_report_;
 
   pw::bluetooth::emboss::StatusCode connect_status_;
