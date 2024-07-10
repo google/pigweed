@@ -106,6 +106,17 @@ struct ACLDataHeader {
   uint16_t data_total_length;
 } __attribute__((packed));
 
+struct ISODataHeader {
+  // The first 16-bits contain the following fields, in order:
+  //   - 12-bits: Connection Handle
+  //   - 2-bits: Packet Boundary Flags
+  //   - 1-bit: Timestamp Flag
+  uint16_t handle_and_flags;
+
+  // Length of data following the header.
+  uint16_t data_total_length;
+} __attribute__((packed));
+
 struct SynchronousDataHeader {
   // The first 16-bits contain the following fields, in order:
   // - 12-bits: Connection Handle
