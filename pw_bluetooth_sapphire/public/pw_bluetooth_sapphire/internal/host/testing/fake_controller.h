@@ -379,6 +379,12 @@ class FakeController final : public ControllerTestDoubleBase,
   }
   void ClearScoDataCallback() { sco_data_callback_ = nullptr; }
 
+  // Callback to invoke when a packet is received over the ISO data channel.
+  void SetIsoDataCallback(DataCallback callback) {
+    iso_data_callback_ = std::move(callback);
+  }
+  void ClearIsoDataCallback() { iso_data_callback_ = nullptr; }
+
   // Automatically send HCI Number of Completed Packets event for each packet
   // received. Enabled by default.
   void set_auto_completed_packets_event_enabled(bool enabled) {
@@ -461,6 +467,17 @@ class FakeController final : public ControllerTestDoubleBase,
             pw::async::Context /*ctx*/, pw::Status status) {
           if (self.is_alive() && status.ok()) {
             self->OnScoDataPacketReceived(BufferView(data));
+          }
+        });
+  }
+
+  void SendIsoData(pw::span<const std::byte> data) override {
+    // Post the packet to simulate async HCI behavior.
+    (void)heap_dispatcher().Post(
+        [self = GetWeakPtr(), data = DynamicByteBuffer(BufferView(data))](
+            pw::async::Context /*ctx*/, pw::Status status) {
+          if (self.is_alive() && status.ok()) {
+            self->OnIsoDataPacketReceived(BufferView(data));
           }
         });
   }
@@ -889,6 +906,7 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
+  void OnIsoDataPacketReceived(const ByteBuffer& iso_data_packet);
 
   const uint8_t BIT_1 = 1;
   bool isBREDRPageScanEnabled() const {
@@ -988,6 +1006,9 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Called when SCO data packets received.
   DataCallback sco_data_callback_ = nullptr;
+
+  // Called when ISO data packets received.
+  DataCallback iso_data_callback_ = nullptr;
 
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;

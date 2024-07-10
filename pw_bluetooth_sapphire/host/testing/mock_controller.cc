@@ -254,6 +254,22 @@ void MockController::OnScoDataPacketReceived(
   sco_transactions_.pop();
 }
 
+void MockController::OnIsoDataPacketReceived(
+    const ByteBuffer& iso_data_packet) {
+  ASSERT_FALSE(iso_transactions_.empty())
+      << "Received unexpected ISO data packet: { "
+      << ByteContainerToString(iso_data_packet) << "}";
+
+  auto& expected = iso_transactions_.front();
+  if (!expected.Match(iso_data_packet.view())) {
+    auto meta = expected.expected().meta;
+    GTEST_FAIL_AT(meta.file, meta.line)
+        << "Expected ISO packet (" << meta.expectation << ")";
+  }
+
+  iso_transactions_.pop();
+}
+
 void MockController::SendCommand(pw::span<const std::byte> data) {
   // Post task to simulate async
   DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
@@ -284,6 +300,17 @@ void MockController::SendScoData(pw::span<const std::byte> data) {
                                          pw::Status status) {
         if (status.ok()) {
           OnScoDataPacketReceived(buffer);
+        }
+      });
+}
+void MockController::SendIsoData(pw::span<const std::byte> data) {
+  // Post task to simulate async
+  DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
+  (void)heap_dispatcher().Post(
+      [this, buffer = std::move(buffer)](pw::async::Context /*ctx*/,
+                                         pw::Status status) {
+        if (status.ok()) {
+          OnIsoDataPacketReceived(buffer);
         }
       });
 }

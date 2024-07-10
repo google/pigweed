@@ -62,6 +62,11 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
   // Returns the result of the write operation on the channel.
   bool SendScoDataChannelPacket(const ByteBuffer& packet);
 
+  // Sends the given packet over this ControllerTestDouble's ISO data channel
+  // endpoint.
+  // Returns the result of the write operation on the channel.
+  bool SendIsoDataChannelPacket(const ByteBuffer& packet);
+
   // Wrapper around SignalError() to support old test code.
   void Stop() { SignalError(pw::Status::Aborted()); }
 
@@ -95,6 +100,10 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
 
   void SetReceiveScoFunction(DataFunction func) override {
     sco_cb_ = std::move(func);
+  }
+
+  void SetReceiveIsoFunction(DataFunction func) override {
+    iso_cb_ = std::move(func);
   }
 
   void Initialize(PwStatusCallback complete_callback,
@@ -132,6 +141,7 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
   fit::function<void(pw::span<const std::byte>)> event_cb_;
   DataFunction acl_cb_;
   DataFunction sco_cb_;
+  DataFunction iso_cb_;
 
   PwStatusCallback error_cb_;
 

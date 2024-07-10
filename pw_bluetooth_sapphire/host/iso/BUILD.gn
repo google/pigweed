@@ -18,7 +18,10 @@ import("$dir_pw_unit_test/test.gni")
 dir_public_iso = "../../public/pw_bluetooth_sapphire/internal/host/iso"
 
 pw_source_set("iso") {
-  public = [ "$dir_public_iso/iso_stream_manager.h" ]
+  public = [
+    "$dir_public_iso/iso_common.h",
+    "$dir_public_iso/iso_stream_manager.h",
+  ]
 
   sources = [ "iso_stream_manager.cc" ]
 

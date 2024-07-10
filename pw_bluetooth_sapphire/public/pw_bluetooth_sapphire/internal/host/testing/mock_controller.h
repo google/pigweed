@@ -116,6 +116,16 @@ class ScoTransaction final : public Transaction {
   ScoTransaction& operator=(ScoTransaction&& other) = default;
 };
 
+// An IsoTransaction is used to set up an expectation for an ISO data channel.
+// ISO packets don't have a concept of "replies".
+class IsoTransaction final : public Transaction {
+ public:
+  IsoTransaction(const ByteBuffer& expected, ExpectationMetadata meta)
+      : Transaction(expected, /*replies=*/{}, meta) {}
+  IsoTransaction(IsoTransaction&& other) = default;
+  IsoTransaction& operator=(IsoTransaction&& other) = default;
+};
+
 // Helper macro for expecting a data packet and specifying a variable number of
 // responses that the MockController should send in response to the expected
 // packet.
@@ -137,6 +147,12 @@ class ScoTransaction final : public Transaction {
   (device)->QueueCommandTransaction(                 \
       (expected),                                    \
       {__VA_ARGS__},                                 \
+      bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
+
+// Helper macro for expecting an ISO packet.
+#define EXPECT_ISO_PACKET_OUT(device, expected) \
+  (device)->QueueIsoTransaction(                \
+      (expected),                               \
       bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
 
 // MockController allows unit tests to set up an expected sequence of HCI
@@ -179,6 +195,13 @@ class MockController final : public ControllerTestDoubleBase,
   void QueueScoTransaction(const ByteBuffer& expected,
                            ExpectationMetadata meta);
 
+  // Queues a transaction into the MockController's expected ISO packet queue.
+  // Each packet received through the ISO data channel endpoint will be verified
+  // against the next expected transaction in the queue. A mismatch will cause a
+  // fatal assertion.
+  void QueueIsoTransaction(const ByteBuffer& expected,
+                           ExpectationMetadata meta);
+
   // Returns true iff all transactions queued with QueueScoTransaction() have
   // been received.
   bool AllExpectedScoPacketsSent() const;
@@ -190,6 +213,10 @@ class MockController final : public ControllerTestDoubleBase,
   // Returns true iff all transactions queued with QueueCommandTransaction()
   // have been received.
   bool AllExpectedCommandPacketsSent() const;
+
+  // Returns true iff all transactions queued with QueueIsoTransaction() have
+  // been received.
+  bool AllExpectedIsoPacketsSent() const;
 
   // Callback to invoke when a packet is received over the data channel. Care
   // should be taken to ensure that a callback with a reference to test case
@@ -210,15 +237,18 @@ class MockController final : public ControllerTestDoubleBase,
   void OnCommandReceived(const ByteBuffer& data);
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
+  void OnIsoDataPacketReceived(const ByteBuffer& iso_data_packet);
 
   // Controller overrides:
   void SendCommand(pw::span<const std::byte> data) override;
   void SendAclData(pw::span<const std::byte> data) override;
   void SendScoData(pw::span<const std::byte> data) override;
+  void SendIsoData(pw::span<const std::byte> data) override;
 
   std::queue<CommandTransaction> cmd_transactions_;
   std::queue<DataTransaction> data_transactions_;
   std::queue<ScoTransaction> sco_transactions_;
+  std::queue<IsoTransaction> iso_transactions_;
   DataCallback data_callback_;
   TransactionCallback transaction_callback_;
 

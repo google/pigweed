@@ -1131,6 +1131,12 @@ constexpr size_t kMaxACLPayloadSize = 1024;
 // This is based on the maximum value of the 1-byte Data_Total_Length field of a Synchronous Data packet.
 constexpr size_t kMaxSynchronousDataPacketPayloadSize = 255;
 
+// The maximum number of bytes in an Isochronous data packet payload, based on
+// the maximum size (12 bits) of the data_total_length field of an Isochronous
+// data packet.
+// See Core Spec v5.4, Vol 4, Part E, Section 5.4.5
+constexpr size_t kMaxIsochronousDataPacketPayloadSize = 16384;
+
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
   // Packet based data flow control mode (default for a Primary Controller)

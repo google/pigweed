@@ -50,6 +50,7 @@ class FuzzerController : public ControllerTestDoubleBase,
   void SendCommand(pw::span<const std::byte> command) override {}
   void SendAclData(pw::span<const std::byte> data) override {}
   void SendScoData(pw::span<const std::byte> data) override {}
+  void SendIsoData(pw::span<const std::byte> data) override {}
 };
 
 // Reuse ControllerTest test fixture code even though we're not using gtest.

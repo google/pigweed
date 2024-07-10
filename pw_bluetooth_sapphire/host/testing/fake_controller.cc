@@ -20,6 +20,8 @@
 
 #include <cstddef>
 
+#include "pw_bluetooth/hci_android.emb.h"
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
@@ -3555,6 +3557,28 @@ void FakeController::OnScoDataPacketReceived(
     bt_log(WARN, "fake-hci", "SCO data received for unknown handle!");
     return;
   }
+
+  if (auto_completed_packets_event_enabled_) {
+    SendNumberOfCompletedPacketsEvent(handle, 1);
+  }
+}
+
+void FakeController::OnIsoDataPacketReceived(
+    const ByteBuffer& iso_data_packet) {
+  if (iso_data_callback_) {
+    iso_data_callback_(iso_data_packet);
+  }
+
+  if (iso_data_packet.size() <
+      pw::bluetooth::emboss::IsoDataFrameHeader::MinSizeInBytes()) {
+    bt_log(WARN, "fake-hci", "malformed ISO packet!");
+    return;
+  }
+
+  auto iso_header_view = pw::bluetooth::emboss::MakeIsoDataFrameHeaderView(
+      iso_data_packet.data(), iso_data_packet.size());
+  hci_spec::ConnectionHandle handle =
+      iso_header_view.connection_handle().Read();
 
   if (auto_completed_packets_event_enabled_) {
     SendNumberOfCompletedPacketsEvent(handle, 1);
