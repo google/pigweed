@@ -403,20 +403,14 @@ class AdapterImpl final : public Adapter {
   // reconfigure the LE random address.
   bool IsLeRandomAddressChangeAllowed();
 
-  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser() {
-    constexpr hci_spec::LESupportedFeature feature =
-        hci_spec::LESupportedFeature::kLEExtendedAdvertising;
-    if (state().low_energy_state.IsFeatureSupported(feature)) {
-      bt_log(INFO,
-             "gap",
-             "controller supports extended advertising, using extended LE "
-             "advertiser");
+  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
+    if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
-    if (state().IsControllerFeatureSupported(
-            pw::bluetooth::Controller::FeaturesBits::
-                kAndroidVendorExtensions)) {
+    constexpr pw::bluetooth::Controller::FeaturesBits feature =
+        pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions;
+    if (state().IsControllerFeatureSupported(feature)) {
       uint8_t max_advt =
           state().android_vendor_capabilities.max_simultaneous_advertisements();
       bt_log(INFO,
@@ -428,31 +422,25 @@ class AdapterImpl final : public Adapter {
           hci_, max_advt);
     }
 
-    bt_log(INFO,
-           "gap",
-           "controller supports only legacy advertising, using legacy LE "
-           "advertiser");
     return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   }
 
-  std::unique_ptr<hci::LowEnergyScanner> CreateScanner() {
-    // Though this method relates to scanning, feature support for extended
-    // scanning, connections, etc are all grouped under the extended advertising
-    // feature flag.
-    constexpr hci_spec::LESupportedFeature feature =
-        hci_spec::LESupportedFeature::kLEExtendedAdvertising;
-    if (state().low_energy_state.IsFeatureSupported(feature)) {
-      bt_log(
-          INFO,
-          "gap",
-          "controller supports extended scanning, using extended LE scanner");
+  std::unique_ptr<hci::LowEnergyConnector> CreateConnector(bool extended) {
+    return std::make_unique<hci::LowEnergyConnector>(
+        hci_,
+        le_address_manager_.get(),
+        dispatcher_,
+        fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(
+            hci_le_advertiser_.get()),
+        extended);
+  }
+
+  std::unique_ptr<hci::LowEnergyScanner> CreateScanner(bool extended) {
+    if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyScanner>(
           le_address_manager_.get(), hci_, dispatcher_);
     }
 
-    bt_log(INFO,
-           "gap",
-           "controller supports only legacy scanning, using legacy LE scanner");
     return std::make_unique<hci::LegacyLowEnergyScanner>(
         le_address_manager_.get(), hci_, dispatcher_);
   }
@@ -1267,15 +1255,18 @@ void AdapterImpl::InitializeStep4() {
       hci_->command_channel()->AsWeakPtr(),
       dispatcher_);
 
-  // Initialize the HCI adapters.
-  hci_le_advertiser_ = CreateAdvertiser();
-  hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
-      hci_,
-      le_address_manager_.get(),
-      dispatcher_,
-      fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(
-          hci_le_advertiser_.get()));
-  hci_le_scanner_ = CreateScanner();
+  // Initialize the HCI adapters. Note: feature support for extended
+  // scanning, connections, etc are all grouped under the extended advertising
+  // feature flag.
+  bool extended = state().low_energy_state.IsFeatureSupported(
+      hci_spec::LESupportedFeature::kLEExtendedAdvertising);
+  bt_log(INFO,
+         "gap",
+         "controller support for extended operations: %s",
+         extended ? "yes" : "no");
+  hci_le_advertiser_ = CreateAdvertiser(extended);
+  hci_le_connector_ = CreateConnector(extended);
+  hci_le_scanner_ = CreateScanner(extended);
 
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(

@@ -36,18 +36,16 @@ const DeviceAddress kLocalAddress(DeviceAddress::Type::kLEPublic, {0xFF});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {0xFE});
 const DeviceAddress kTestAddress(DeviceAddress::Type::kLEPublic, {1});
 const hci_spec::LEPreferredConnectionParameters kTestParams(6, 6, 1, 10);
-constexpr pw::chrono::SystemClock::duration kConnectTimeout =
-    std::chrono::seconds(10);
 constexpr pw::chrono::SystemClock::duration kPwConnectTimeout =
     std::chrono::seconds(10);
 
-class LowEnergyConnectorTest : public TestingBase {
+class LowEnergyConnectorTest : public TestingBase,
+                               public ::testing::WithParamInterface<bool> {
  public:
   LowEnergyConnectorTest() = default;
   ~LowEnergyConnectorTest() override = default;
 
  protected:
-  // TestingBase overrides:
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel();
@@ -57,12 +55,15 @@ class LowEnergyConnectorTest : public TestingBase {
     test_device()->set_settings(settings);
 
     fake_address_delegate_.set_local_address(kLocalAddress);
+
+    bool use_extended_operations = GetParam();
     connector_ = std::make_unique<LowEnergyConnector>(
         transport()->GetWeakPtr(),
         &fake_address_delegate_,
         dispatcher(),
         fit::bind_member<&LowEnergyConnectorTest::OnIncomingConnectionCreated>(
-            this));
+            this),
+        use_extended_operations);
 
     test_device()->set_connection_state_callback(
         fit::bind_member<&LowEnergyConnectorTest::OnConnectionStateChanged>(
@@ -76,17 +77,51 @@ class LowEnergyConnectorTest : public TestingBase {
     TestingBase::TearDown();
   }
 
+  EmbossEventPacket CreateConnectionCompleteSubevent(
+      hci_spec::ConnectionHandle conn_handle,
+      const DeviceAddress& peer_address) const {
+    auto packet = hci::EmbossEventPacket::New<
+        pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1Writer>(
+        hci_spec::kLEMetaEventCode);
+    auto params = packet.view_t();
+
+    params.le_meta_event().subevent_code().Write(
+        hci_spec::kLEEnhancedConnectionCompleteSubeventCode);
+    params.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.connection_handle().Write(conn_handle);
+    params.role().Write(pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
+    params.peer_address_type().Write(
+        pw::bluetooth::emboss::LEAddressType::PUBLIC);
+    params.peer_address().CopyFrom(peer_address.value().view());
+    params.connection_interval().Write(
+        hci_spec::defaults::kLEConnectionIntervalMin);
+    params.peripheral_latency().Write(0);
+    params.supervision_timeout().Write(10);
+    params.central_clock_accuracy().Write(
+        pw::bluetooth::emboss::LEClockAccuracy::PPM_20);
+
+    // there are also local_resolvable_private_address and
+    // peer_resolvable_private_address fields available within
+    // LEEnhancedConnectionCompleteSubeventV1. However, these fields are only
+    // valid when we use either the identity addresses in
+    // HCI_LE_Enhanced_Create_Connection for either the local device or peer
+    // device. Our tests mainly use public or random addresses, as if they
+    // have already resolved the addresses. We ignore setting these fields
+    // here to prevent confusion.
+
+    return packet;
+  }
+
   pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
-
   void DeleteConnector() { connector_ = nullptr; }
-
-  bool request_canceled = false;
+  bool request_canceled() const { return request_canceled_; }
+  LowEnergyConnector* connector() const { return connector_.get(); }
 
   const std::vector<std::unique_ptr<LowEnergyConnection>>& in_connections()
       const {
     return in_connections_;
   }
-  LowEnergyConnector* connector() const { return connector_.get(); }
+
   FakeLocalAddressDelegate* fake_address_delegate() {
     return &fake_address_delegate_;
   }
@@ -110,24 +145,24 @@ class LowEnergyConnectorTest : public TestingBase {
                                 hci_spec::ConnectionHandle handle,
                                 bool connected,
                                 bool canceled) {
-    request_canceled = canceled;
+    request_canceled_ = canceled;
   }
 
+  bool request_canceled_ = false;
   FakeLocalAddressDelegate fake_address_delegate_{dispatcher()};
   std::unique_ptr<LowEnergyConnector> connector_;
-
-  // Incoming connections.
   std::vector<std::unique_ptr<LowEnergyConnection>> in_connections_;
   pw::async::HeapDispatcher heap_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
 };
 
-using HCI_LowEnergyConnectorTest = LowEnergyConnectorTest;
+INSTANTIATE_TEST_SUITE_P(LowEnergyConnectorTest,
+                         LowEnergyConnectorTest,
+                         ::testing::Values(false, true));
 
-TEST_F(LowEnergyConnectorTest, CreateConnection) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+TEST_P(LowEnergyConnectorTest, CreateConnection) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   EXPECT_FALSE(connector()->request_pending());
@@ -182,9 +217,8 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
 }
 
 // Controller reports error from HCI Command Status event.
-TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+TEST_P(LowEnergyConnectorTest, CreateConnectionStatusError) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   fake_peer->set_connect_status(
       pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   test_device()->AddPeer(std::move(fake_peer));
@@ -223,9 +257,8 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
 }
 
 // Controller reports error from HCI LE Connection Complete event
-TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+TEST_P(LowEnergyConnectorTest, CreateConnectionEventError) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   fake_peer->set_connect_response(
       pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_SECURITY);
   test_device()->AddPeer(std::move(fake_peer));
@@ -265,9 +298,8 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
 }
 
 // Controller reports error from HCI LE Connection Complete event
-TEST_F(LowEnergyConnectorTest, Cancel) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+TEST_P(LowEnergyConnectorTest, Cancel) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
 
   // Make sure the pending connect remains pending.
   fake_peer->set_force_pending_connect(true);
@@ -294,7 +326,7 @@ TEST_F(LowEnergyConnectorTest, Cancel) {
   EXPECT_TRUE(ret);
   EXPECT_TRUE(connector()->request_pending());
 
-  ASSERT_FALSE(request_canceled);
+  ASSERT_FALSE(request_canceled());
 
   connector()->Cancel();
   EXPECT_TRUE(connector()->request_pending());
@@ -308,35 +340,20 @@ TEST_F(LowEnergyConnectorTest, Cancel) {
   EXPECT_FALSE(connector()->timeout_posted());
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_TRUE(request_canceled);
+  EXPECT_TRUE(request_canceled());
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
 
-TEST_F(LowEnergyConnectorTest, IncomingConnect) {
+TEST_P(LowEnergyConnectorTest, IncomingConnect) {
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(connector()->request_pending());
 
-  auto packet = hci::EmbossEventPacket::New<
-      pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
-  auto view = packet.view_t();
-
-  view.le_meta_event().subevent_code().Write(
-      hci_spec::kLEConnectionCompleteSubeventCode);
-  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  view.peer_address().CopyFrom(kTestAddress.value().view());
-  view.peer_address_type().Write(
-      pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
-  view.connection_interval().Write(
-      hci_spec::defaults::kLEConnectionIntervalMin);
-  view.connection_handle().Write(1);
-
+  EmbossEventPacket packet = CreateConnectionCompleteSubevent(1, kTestAddress);
   test_device()->SendCommandChannelPacket(packet.data());
 
   RunUntilIdle();
-
   ASSERT_EQ(1u, in_connections().size());
 
   auto conn = in_connections()[0].get();
@@ -347,14 +364,13 @@ TEST_F(LowEnergyConnectorTest, IncomingConnect) {
       pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 }
 
-TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
+TEST_P(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   const DeviceAddress kIncomingAddress(DeviceAddress::Type::kLEPublic, {2});
 
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(connector()->request_pending());
 
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   Result<> status = fit::ok();
@@ -382,21 +398,8 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
           return;
         }
 
-        auto packet = hci::EmbossEventPacket::New<
-            pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
-            hci_spec::kLEMetaEventCode);
-        auto view = packet.view_t();
-
-        view.le_meta_event().subevent_code().Write(
-            hci_spec::kLEConnectionCompleteSubeventCode);
-        view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
-        view.peer_address().CopyFrom(kIncomingAddress.value().view());
-        view.peer_address_type().Write(
-            pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
-        view.connection_interval().Write(
-            hci_spec::defaults::kLEConnectionIntervalMin);
-        view.connection_handle().Write(2);
-
+        EmbossEventPacket packet =
+            CreateConnectionCompleteSubevent(2, kIncomingAddress);
         test_device()->SendCommandChannelPacket(packet.data());
       });
 
@@ -419,7 +422,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
       pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 }
 
-TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
+TEST_P(LowEnergyConnectorTest, CreateConnectionTimeout) {
   // We do not set up any fake devices. This will cause the request to time out.
   EXPECT_FALSE(connector()->request_pending());
 
@@ -443,22 +446,21 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
       kPwConnectTimeout);
   EXPECT_TRUE(connector()->request_pending());
 
-  EXPECT_FALSE(request_canceled);
+  EXPECT_FALSE(request_canceled());
 
   // Make the connection attempt time out.
-  RunFor(kConnectTimeout);
+  RunFor(kPwConnectTimeout);
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_TRUE(request_canceled);
+  EXPECT_TRUE(request_canceled());
   EXPECT_EQ(ToResult(HostError::kTimedOut), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
 
-TEST_F(LowEnergyConnectorTest, SendRequestAndDelete) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
+TEST_P(LowEnergyConnectorTest, SendRequestAndDelete) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
 
   // Make sure the pending connect remains pending.
   fake_peer->set_force_pending_connect(true);
@@ -479,16 +481,15 @@ TEST_F(LowEnergyConnectorTest, SendRequestAndDelete) {
   DeleteConnector();
   RunUntilIdle();
 
-  EXPECT_TRUE(request_canceled);
+  EXPECT_TRUE(request_canceled());
   EXPECT_TRUE(in_connections().empty());
 }
 
-TEST_F(LowEnergyConnectorTest, AllowsRandomAddressChange) {
+TEST_P(LowEnergyConnectorTest, AllowsRandomAddressChange) {
   EXPECT_TRUE(connector()->AllowsRandomAddressChange());
 
-  auto fake_device =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
-  test_device()->AddPeer(std::move(fake_device));
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
 
   // Address change should not be allowed while the procedure is pending.
   connector()->CreateConnection(
@@ -507,7 +508,7 @@ TEST_F(LowEnergyConnectorTest, AllowsRandomAddressChange) {
   EXPECT_TRUE(connector()->AllowsRandomAddressChange());
 }
 
-TEST_F(LowEnergyConnectorTest,
+TEST_P(LowEnergyConnectorTest,
        AllowsRandomAddressChangeWhileRequestingLocalAddress) {
   // Make the local address delegate report its result asynchronously.
   fake_address_delegate()->set_async(true);
@@ -546,10 +547,27 @@ TEST_F(LowEnergyConnectorTest,
   EXPECT_FALSE(connector()->AllowsRandomAddressChange());
 }
 
-TEST_F(LowEnergyConnectorTest, ConnectUsingPublicAddress) {
-  auto fake_device =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
-  test_device()->AddPeer(std::move(fake_device));
+TEST_P(LowEnergyConnectorTest, ConnectUsingAcceptList) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+  connector()->CreateConnection(
+      /*use_accept_list=*/
+      true,
+      kTestAddress,
+      hci_spec::defaults::kLEScanInterval,
+      hci_spec::defaults::kLEScanWindow,
+      kTestParams,
+      [](auto, auto) {},
+      kPwConnectTimeout);
+  RunUntilIdle();
+  ASSERT_TRUE(test_device()->le_connect_params());
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            test_device()->le_connect_params()->own_address_type);
+}
+
+TEST_P(LowEnergyConnectorTest, ConnectUsingPublicAddress) {
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
   connector()->CreateConnection(
       /*use_accept_list=*/
       false,
@@ -565,12 +583,11 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingPublicAddress) {
             test_device()->le_connect_params()->own_address_type);
 }
 
-TEST_F(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
+TEST_P(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
   fake_address_delegate()->set_local_address(kRandomAddress);
 
-  auto fake_device =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
-  test_device()->AddPeer(std::move(fake_device));
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
   connector()->CreateConnection(
       /*use_accept_list=*/
       false,
@@ -586,7 +603,25 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
             test_device()->le_connect_params()->own_address_type);
 }
 
-TEST_F(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
+TEST_P(LowEnergyConnectorTest, ConnectUsingRandomPeerAddress) {
+  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+  connector()->CreateConnection(
+      /*use_accept_list=*/
+      false,
+      kRandomAddress,
+      hci_spec::defaults::kLEScanInterval,
+      hci_spec::defaults::kLEScanWindow,
+      kTestParams,
+      [](auto, auto) {},
+      kPwConnectTimeout);
+  RunUntilIdle();
+  ASSERT_TRUE(test_device()->le_connect_params());
+  EXPECT_EQ(DeviceAddress::Type::kLERandom,
+            test_device()->le_connect_params()->peer_address.type());
+}
+
+TEST_P(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
   Result<> status = fit::ok();
   std::unique_ptr<LowEnergyConnection> conn;
   auto callback = [&](auto s, auto c) {
@@ -614,23 +649,22 @@ TEST_F(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
 
   // The controller should have received no command from us.
   EXPECT_FALSE(test_device()->le_connect_params());
-  EXPECT_FALSE(request_canceled);
+  EXPECT_FALSE(request_canceled());
 
   // Our request should have resulted in an error.
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
   EXPECT_FALSE(conn);
 }
 
-TEST_F(LowEnergyConnectorTest, UseLocalIdentityAddress) {
+TEST_P(LowEnergyConnectorTest, UseLocalIdentityAddress) {
   // Public identity address and a random current local address.
   fake_address_delegate()->set_identity_address(kLocalAddress);
   fake_address_delegate()->set_local_address(kRandomAddress);
 
   connector()->UseLocalIdentityAddress();
 
-  auto fake_device =
-      std::make_unique<FakePeer>(kTestAddress, dispatcher(), true, true);
-  test_device()->AddPeer(std::move(fake_device));
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
   connector()->CreateConnection(
       /*use_accept_list=*/
       false,
@@ -646,6 +680,63 @@ TEST_F(LowEnergyConnectorTest, UseLocalIdentityAddress) {
   // The public address should have been used.
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
+}
+
+TEST_P(LowEnergyConnectorTest, ExtendedCreateConnectionUsesSameParameters) {
+  bool use_extended_operations = GetParam();
+  if (!use_extended_operations) {
+    // For this specific test, we want to test only the LE Extended Create
+    // Connection functionality. Since this is only a single test, skipping the
+    // LE Create Connection option seemed simpler. If tests for LE Extended
+    // Create Connection grow in number, we should create a separate file, test
+    // suite, etc.
+    return;
+  }
+
+  using LEConnectParams = FakeController::LEConnectParams;
+  using InitiatingPHYs = LEConnectParams::InitiatingPHYs;
+
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+
+  connector()->CreateConnection(
+      /*use_accept_list=*/
+      true,
+      kTestAddress,
+      hci_spec::defaults::kLEScanInterval,
+      hci_spec::defaults::kLEScanWindow,
+      kTestParams,
+      [](auto, auto) {},
+      kPwConnectTimeout);
+  RunUntilIdle();
+
+  const std::optional<LEConnectParams>& params =
+      test_device()->le_connect_params();
+  ASSERT_EQ(3u, params->phy_conn_params.size());
+  const auto& le_1m =
+      params->phy_conn_params.find(InitiatingPHYs::kLE_1M)->second;
+  const auto& le_2m =
+      params->phy_conn_params.find(InitiatingPHYs::kLE_2M)->second;
+  const auto& le_coded =
+      params->phy_conn_params.find(InitiatingPHYs::kLE_Coded)->second;
+
+  ASSERT_EQ(le_1m.scan_interval, le_2m.scan_interval);
+  ASSERT_EQ(le_1m.scan_window, le_2m.scan_window);
+  ASSERT_EQ(le_1m.connection_interval_min, le_2m.connection_interval_min);
+  ASSERT_EQ(le_1m.connection_interval_max, le_2m.connection_interval_max);
+  ASSERT_EQ(le_1m.max_latency, le_2m.max_latency);
+  ASSERT_EQ(le_1m.supervision_timeout, le_2m.supervision_timeout);
+  ASSERT_EQ(le_1m.min_ce_length, le_2m.min_ce_length);
+  ASSERT_EQ(le_1m.max_ce_length, le_2m.max_ce_length);
+
+  ASSERT_EQ(le_2m.scan_interval, le_coded.scan_interval);
+  ASSERT_EQ(le_2m.scan_window, le_coded.scan_window);
+  ASSERT_EQ(le_2m.connection_interval_min, le_coded.connection_interval_min);
+  ASSERT_EQ(le_2m.connection_interval_max, le_coded.connection_interval_max);
+  ASSERT_EQ(le_2m.max_latency, le_coded.max_latency);
+  ASSERT_EQ(le_2m.supervision_timeout, le_coded.supervision_timeout);
+  ASSERT_EQ(le_2m.min_ce_length, le_coded.min_ce_length);
+  ASSERT_EQ(le_2m.max_ce_length, le_coded.max_ce_length);
 }
 
 }  // namespace

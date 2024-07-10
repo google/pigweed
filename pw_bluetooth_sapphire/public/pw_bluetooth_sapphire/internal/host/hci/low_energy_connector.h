@@ -71,10 +71,14 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //   - |delegate|: The delegate that will be notified when a new logical link
   //     is established due to an incoming request (remote initiated).
+  //
+  //   - |use_extended_operations|: If true, send LE Extended Create Connection
+  //     to the Controller instead of LE Create Connection.
   LowEnergyConnector(Transport::WeakPtr hci,
                      LocalAddressDelegate* local_addr_delegate,
                      pw::async::Dispatcher& dispatcher,
-                     IncomingConnectionDelegate delegate);
+                     IncomingConnectionDelegate delegate,
+                     bool use_extended_operations = false);
 
   // Deleting an instance cancels any pending connection request.
   ~LowEnergyConnector() override;
@@ -105,17 +109,14 @@ class LowEnergyConnector : public LocalAddressClient {
       pw::chrono::SystemClock::duration timeout);
 
   // Cancels the currently pending connection attempt.
-  void Cancel();
+  void Cancel() { CancelInternal(false); }
 
   // Returns true if a connection request is currently pending.
   bool request_pending() const { return pending_request_.has_value(); }
 
   // Returns the peer address of a connection request if a connection request is
   // currently pending.
-  std::optional<DeviceAddress> pending_peer_address() const {
-    return pending_request_ ? std::optional(pending_request_->peer_address)
-                            : std::nullopt;
-  }
+  std::optional<DeviceAddress> pending_peer_address() const;
 
   // Returns true if a connection timeout has been posted. Returns false if it
   // was not posted or was canceled. This is intended for unit tests.
@@ -152,6 +153,29 @@ class LowEnergyConnector : public LocalAddressClient {
     StatusCallback status_callback;
   };
 
+  EmbossCommandPacket BuildExtendedCreateConnectionPacket(
+      const DeviceAddress& local_address,
+      const DeviceAddress& peer_address,
+      const hci_spec::LEPreferredConnectionParameters& initial_params,
+      bool use_accept_list,
+      uint16_t scan_interval,
+      uint16_t scan_window);
+
+  EmbossCommandPacket BuildCreateConnectionPacket(
+      const DeviceAddress& local_address,
+      const DeviceAddress& peer_address,
+      const hci_spec::LEPreferredConnectionParameters& initial_params,
+      bool use_accept_list,
+      uint16_t scan_interval,
+      uint16_t scan_window);
+
+  // Event handler for either the HCI LE Enhanced Connection Complete event or
+  // HCI LE Connection Complete Event
+  template <typename T>
+  void OnConnectionCompleteEvent(const EmbossEventPacket& event);
+
+  Transport::WeakPtr hci() const { return hci_; }
+
   // Called by CreateConnection() after the local device address has been
   // obtained.
   void CreateConnectionInternal(
@@ -160,16 +184,12 @@ class LowEnergyConnector : public LocalAddressClient {
       const DeviceAddress& peer_address,
       uint16_t scan_interval,
       uint16_t scan_window,
-      const hci_spec::LEPreferredConnectionParameters& initial_parameters,
+      const hci_spec::LEPreferredConnectionParameters& initial_params,
       StatusCallback status_callback,
       pw::chrono::SystemClock::duration timeout);
 
   // Called by Cancel() and by OnCreateConnectionTimeout().
   void CancelInternal(bool timed_out = false);
-
-  // Event handler for the HCI LE Connection Complete event.
-  CommandChannel::EventCallbackResult OnConnectionCompleteEvent(
-      const EmbossEventPacket& event);
 
   // Called when a LE Create Connection request has completed.
   void OnCreateConnectionComplete(Result<> result,
@@ -198,13 +218,17 @@ class LowEnergyConnector : public LocalAddressClient {
   // the HCI Command Status event.
   SmartTask request_timeout_task_{pw_dispatcher_};
 
-  // Our event handle ID for the LE Connection Complete event.
-  CommandChannel::EventHandlerId event_handler_id_;
-
   // Use the local public address if true.
   // TODO(fxbug.dev/42141593): Remove this temporary fix once we determine the
   // root cause for authentication failures.
   bool use_local_identity_address_ = false;
+
+  // send LE Extended Create Connection to the Controller instead of the legacy
+  // LE Create Connection
+  bool use_extended_operations_ = false;
+
+  // Our event handle ID for the LE Enhanced Connection Complete event.
+  std::unordered_set<CommandChannel::EventHandlerId> event_handler_ids_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

@@ -18,13 +18,25 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/util.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
+using hci_spec::ConnectionHandle;
+using hci_spec::LEConnectionParameters;
+using pw::bluetooth::emboss::ConnectionRole;
+using pw::bluetooth::emboss::GenericEnableParam;
+using pw::bluetooth::emboss::LEAddressType;
+using pw::bluetooth::emboss::LEConnectionCompleteSubeventView;
+using pw::bluetooth::emboss::LECreateConnectionCancelCommandView;
+using pw::bluetooth::emboss::LECreateConnectionCommandWriter;
+using pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1View;
+using pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1Writer;
+using pw::bluetooth::emboss::LEMetaEventView;
+using pw::bluetooth::emboss::LEOwnAddressType;
+using pw::bluetooth::emboss::LEPeerAddressType;
+using pw::bluetooth::emboss::StatusCode;
 
 LowEnergyConnector::PendingRequest::PendingRequest(
     const DeviceAddress& peer_address, StatusCallback status_callback)
@@ -34,40 +46,50 @@ LowEnergyConnector::LowEnergyConnector(
     Transport::WeakPtr hci,
     LocalAddressDelegate* local_addr_delegate,
     pw::async::Dispatcher& dispatcher,
-    IncomingConnectionDelegate delegate)
+    IncomingConnectionDelegate delegate,
+    bool use_extended_operations)
     : pw_dispatcher_(dispatcher),
       hci_(std::move(hci)),
       local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
+      use_extended_operations_(use_extended_operations),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(hci_.is_alive());
-  BT_DEBUG_ASSERT(local_addr_delegate_);
-  BT_DEBUG_ASSERT(delegate_);
-
-  auto self = weak_self_.GetWeakPtr();
-  event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      hci_spec::kLEConnectionCompleteSubeventCode,
-      [self](const EmbossEventPacket& event) {
-        if (self.is_alive()) {
-          return self->OnConnectionCompleteEvent(event);
-        }
-        return CommandChannel::EventCallbackResult::kRemove;
-      });
-
   request_timeout_task_.set_function(
       [this](pw::async::Context& /*ctx*/, pw::Status status) {
         if (status.ok()) {
           OnCreateConnectionTimeout();
         }
       });
+
+  CommandChannel::EventHandlerId id =
+      hci_->command_channel()->AddLEMetaEventHandler(
+          hci_spec::kLEConnectionCompleteSubeventCode,
+          [this](const EmbossEventPacket& event) {
+            OnConnectionCompleteEvent<LEConnectionCompleteSubeventView>(event);
+            return CommandChannel::EventCallbackResult::kContinue;
+          });
+  event_handler_ids_.insert(id);
+
+  id = hci_->command_channel()->AddLEMetaEventHandler(
+      hci_spec::kLEEnhancedConnectionCompleteSubeventCode,
+      [this](const EmbossEventPacket& event) {
+        OnConnectionCompleteEvent<LEEnhancedConnectionCompleteSubeventV1View>(
+            event);
+        return CommandChannel::EventCallbackResult::kContinue;
+      });
+  event_handler_ids_.insert(id);
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
-  if (hci_.is_alive() && hci_->command_channel()) {
-    hci_->command_channel()->RemoveEventHandler(event_handler_id_);
-  }
-  if (request_pending())
+  if (request_pending()) {
     Cancel();
+  }
+
+  if (hci_.is_alive() && hci_->command_channel()) {
+    for (CommandChannel::EventHandlerId id : event_handler_ids_) {
+      hci_->command_channel()->RemoveEventHandler(id);
+    }
+  }
 }
 
 bool LowEnergyConnector::CreateConnection(
@@ -81,25 +103,31 @@ bool LowEnergyConnector::CreateConnection(
   BT_DEBUG_ASSERT(status_callback);
   BT_DEBUG_ASSERT(timeout.count() > 0);
 
-  if (request_pending())
+  if (request_pending()) {
     return false;
+  }
 
   BT_DEBUG_ASSERT(!request_timeout_task_.is_pending());
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
+  if (use_local_identity_address_) {
+    // Use the identity address if privacy override was enabled.
+    DeviceAddress address = local_addr_delegate_->identity_address();
+    CreateConnectionInternal(address,
+                             use_accept_list,
+                             peer_address,
+                             scan_interval,
+                             scan_window,
+                             initial_parameters,
+                             std::move(status_callback),
+                             timeout);
+    return true;
+  }
+
   local_addr_delegate_->EnsureLocalAddress(
-      [this,
-       use_accept_list,
-       peer_address,
-       scan_interval,
-       scan_window,
-       initial_parameters,
-       callback = std::move(status_callback),
-       timeout](const auto& address) mutable {
-        // Use the identity address if privacy override was enabled.
-        CreateConnectionInternal(use_local_identity_address_
-                                     ? local_addr_delegate_->identity_address()
-                                     : address,
+      [=, callback = std::move(status_callback)](
+          const DeviceAddress& address) mutable {
+        CreateConnectionInternal(address,
                                  use_accept_list,
                                  peer_address,
                                  scan_interval,
@@ -112,18 +140,27 @@ bool LowEnergyConnector::CreateConnection(
   return true;
 }
 
+std::optional<DeviceAddress> LowEnergyConnector::pending_peer_address() const {
+  if (pending_request_) {
+    return pending_request_->peer_address;
+  }
+
+  return std::nullopt;
+}
+
 void LowEnergyConnector::CreateConnectionInternal(
     const DeviceAddress& local_address,
     bool use_accept_list,
     const DeviceAddress& peer_address,
     uint16_t scan_interval,
     uint16_t scan_window,
-    const hci_spec::LEPreferredConnectionParameters& initial_parameters,
+    const hci_spec::LEPreferredConnectionParameters& initial_params,
     StatusCallback status_callback,
     pw::chrono::SystemClock::duration timeout) {
   if (!hci_.is_alive()) {
     return;
   }
+
   // Check if the connection request was canceled via Cancel().
   if (!pending_request_ || pending_request_->canceled) {
     bt_log(DEBUG,
@@ -138,41 +175,14 @@ void LowEnergyConnector::CreateConnectionInternal(
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
 
-  auto request = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LECreateConnectionCommandWriter>(
-      hci_spec::kLECreateConnection);
-  auto params = request.view_t();
-  params.le_scan_interval().Write(scan_interval);
-  params.le_scan_window().Write(scan_window);
-  params.initiator_filter_policy().Write(
-      use_accept_list ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
-                      : pw::bluetooth::emboss::GenericEnableParam::DISABLE);
-
-  // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
-  params.peer_address_type().Write(
-      peer_address.IsPublic() ? pw::bluetooth::emboss::LEAddressType::PUBLIC
-                              : pw::bluetooth::emboss::LEAddressType::RANDOM);
-  params.peer_address().CopyFrom(peer_address.value().view());
-
-  params.own_address_type().Write(
-      local_address.IsPublic()
-          ? pw::bluetooth::emboss::LEOwnAddressType::PUBLIC
-          : pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
-
-  params.connection_interval_min().Write(initial_parameters.min_interval());
-  params.connection_interval_max().Write(initial_parameters.max_interval());
-  params.max_latency().Write(initial_parameters.max_latency());
-  params.supervision_timeout().Write(initial_parameters.supervision_timeout());
-  params.min_connection_event_length().Write(0x0000);
-  params.max_connection_event_length().Write(0x0000);
-
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
   auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
-    if (!self.is_alive())
+    if (!self.is_alive()) {
       return;
+    }
 
     Result<> result = event.ToResult();
     if (result.is_error()) {
@@ -187,11 +197,135 @@ void LowEnergyConnector::CreateConnectionInternal(
     self->request_timeout_task_.PostAfter(timeout);
   };
 
-  hci_->command_channel()->SendCommand(
-      std::move(request), complete_cb, hci_spec::kCommandStatusEventCode);
+  std::optional<EmbossCommandPacket> request;
+  if (use_extended_operations_) {
+    request.emplace(BuildExtendedCreateConnectionPacket(local_address,
+                                                        peer_address,
+                                                        initial_params,
+                                                        use_accept_list,
+                                                        scan_interval,
+                                                        scan_window));
+  } else {
+    request.emplace(BuildCreateConnectionPacket(local_address,
+                                                peer_address,
+                                                initial_params,
+                                                use_accept_list,
+                                                scan_interval,
+                                                scan_window));
+  }
+
+  hci_->command_channel()->SendCommand(std::move(request.value()),
+                                       complete_cb,
+                                       hci_spec::kCommandStatusEventCode);
 }
 
-void LowEnergyConnector::Cancel() { CancelInternal(false); }
+EmbossCommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
+    const DeviceAddress& local_address,
+    const DeviceAddress& peer_address,
+    const hci_spec::LEPreferredConnectionParameters& initial_params,
+    bool use_accept_list,
+    uint16_t scan_interval,
+    uint16_t scan_window) {
+  // The LE Extended Create Connection Command ends with a variable amount of
+  // data: per PHY connection settings. Depending on the PHYs we select to scan
+  // on when connecting, the variable amount of data at the end of the packet
+  // grows. Currently, we scan on all available PHYs. Thus, we use the maximum
+  // size of this packet.
+  size_t max_size = pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1::
+      MaxSizeInBytes();
+
+  auto packet =
+      EmbossCommandPacket::New<LEExtendedCreateConnectionCommandV1Writer>(
+          hci_spec::kLEExtendedCreateConnection, max_size);
+  auto params = packet.view_t();
+
+  if (use_accept_list) {
+    params.initiator_filter_policy().Write(GenericEnableParam::ENABLE);
+  } else {
+    params.initiator_filter_policy().Write(GenericEnableParam::DISABLE);
+  }
+
+  // TODO(b/328311582): Use the resolved address types for <5.0 LE
+  // Privacy.
+  if (peer_address.IsPublic()) {
+    params.peer_address_type().Write(LEPeerAddressType::PUBLIC);
+  } else {
+    params.peer_address_type().Write(LEPeerAddressType::RANDOM);
+  }
+
+  if (local_address.IsPublic()) {
+    params.own_address_type().Write(LEOwnAddressType::PUBLIC);
+  } else {
+    params.own_address_type().Write(LEOwnAddressType::RANDOM);
+  }
+
+  params.peer_address().CopyFrom(peer_address.value().view());
+
+  // We scan on all available PHYs for a connection
+  params.initiating_phys().le_1m().Write(true);
+  params.initiating_phys().le_2m().Write(true);
+  params.initiating_phys().le_coded().Write(true);
+
+  for (int i = 0; i < params.num_entries().Read(); i++) {
+    params.data()[i].scan_interval().Write(scan_interval);
+    params.data()[i].scan_window().Write(scan_window);
+    params.data()[i].connection_interval_min().Write(
+        initial_params.min_interval());
+    params.data()[i].connection_interval_max().Write(
+        initial_params.max_interval());
+    params.data()[i].max_latency().Write(initial_params.max_latency());
+    params.data()[i].supervision_timeout().Write(
+        initial_params.supervision_timeout());
+    params.data()[i].min_connection_event_length().Write(0x0000);
+    params.data()[i].max_connection_event_length().Write(0xFFFF);
+  }
+
+  return packet;
+}
+
+EmbossCommandPacket LowEnergyConnector::BuildCreateConnectionPacket(
+    const DeviceAddress& local_address,
+    const DeviceAddress& peer_address,
+    const hci_spec::LEPreferredConnectionParameters& initial_params,
+    bool use_accept_list,
+    uint16_t scan_interval,
+    uint16_t scan_window) {
+  auto packet = EmbossCommandPacket::New<LECreateConnectionCommandWriter>(
+      hci_spec::kLECreateConnection);
+  auto params = packet.view_t();
+
+  if (use_accept_list) {
+    params.initiator_filter_policy().Write(GenericEnableParam::ENABLE);
+  } else {
+    params.initiator_filter_policy().Write(GenericEnableParam::DISABLE);
+  }
+
+  // TODO(b/328311582): Use the resolved address types for <5.0 LE
+  // Privacy.
+  if (peer_address.IsPublic()) {
+    params.peer_address_type().Write(LEAddressType::PUBLIC);
+  } else {
+    params.peer_address_type().Write(LEAddressType::RANDOM);
+  }
+
+  if (local_address.IsPublic()) {
+    params.own_address_type().Write(LEOwnAddressType::PUBLIC);
+  } else {
+    params.own_address_type().Write(LEOwnAddressType::RANDOM);
+  }
+
+  params.le_scan_interval().Write(scan_interval);
+  params.le_scan_window().Write(scan_window);
+  params.peer_address().CopyFrom(peer_address.value().view());
+  params.connection_interval_min().Write(initial_params.min_interval());
+  params.connection_interval_max().Write(initial_params.max_interval());
+  params.max_latency().Write(initial_params.max_latency());
+  params.supervision_timeout().Write(initial_params.supervision_timeout());
+  params.min_connection_event_length().Write(0x0000);
+  params.max_connection_event_length().Write(0xFFFF);
+
+  return packet;
+}
 
 void LowEnergyConnector::CancelInternal(bool timed_out) {
   BT_DEBUG_ASSERT(request_pending());
@@ -221,8 +355,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
       hci_is_error(
           event, WARN, "hci-le", "failed to cancel connection request");
     };
-    auto cancel = EmbossCommandPacket::New<
-        pw::bluetooth::emboss::LECreateConnectionCancelCommandView>(
+    auto cancel = EmbossCommandPacket::New<LECreateConnectionCancelCommandView>(
         hci_spec::kLECreateConnectionCancel);
     hci_->command_channel()->SendCommand(std::move(cancel), complete_cb);
 
@@ -235,56 +368,55 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   OnCreateConnectionComplete(ToResult(HostError::kCanceled), nullptr);
 }
 
-CommandChannel::EventCallbackResult
-LowEnergyConnector::OnConnectionCompleteEvent(const EmbossEventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_DEBUG_ASSERT(event.view<pw::bluetooth::emboss::LEMetaEventView>()
-                      .subevent_code()
-                      .Read() == hci_spec::kLEConnectionCompleteSubeventCode);
+template <typename T>
+void LowEnergyConnector::OnConnectionCompleteEvent(
+    const EmbossEventPacket& event) {
+  auto params = event.view<T>();
 
-  auto params =
-      event.view<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
+  DeviceAddress::Type address_type =
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
+  DeviceAddressBytes address_bytes = DeviceAddressBytes(params.peer_address());
+  DeviceAddress peer_address = DeviceAddress(address_type, address_bytes);
 
   // First check if this event is related to the currently pending request.
   const bool matches_pending_request =
-      pending_request_ && (pending_request_->peer_address.value() ==
-                           DeviceAddressBytes{params.peer_address()});
+      pending_request_ &&
+      (pending_request_->peer_address.value() == peer_address.value());
 
   if (Result<> result = event.ToResult(); result.is_error()) {
-    if (matches_pending_request) {
-      // The "Unknown Connect Identifier" error code is returned if this event
-      // was sent due to a successful cancelation via the
-      // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
-      if (pending_request_->timed_out) {
-        result = ToResult(HostError::kTimedOut);
-      } else if (params.status().Read() ==
-                 pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID) {
-        result = ToResult(HostError::kCanceled);
-      }
-      OnCreateConnectionComplete(result, nullptr);
-    } else {
+    if (!matches_pending_request) {
       bt_log(WARN,
              "hci-le",
              "unexpected connection complete event with error received: %s",
              bt_str(result));
+      return;
     }
-    return CommandChannel::EventCallbackResult::kContinue;
+
+    // The "Unknown Connect Identifier" error code is returned if this event
+    // was sent due to a successful cancelation via the
+    // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
+    if (pending_request_->timed_out) {
+      result = ToResult(HostError::kTimedOut);
+    } else if (params.status().Read() == StatusCode::UNKNOWN_CONNECTION_ID) {
+      result = ToResult(HostError::kCanceled);
+    }
+
+    OnCreateConnectionComplete(result, nullptr);
+    return;
   }
 
-  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
-  DeviceAddress peer_address(
-      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read()),
-      DeviceAddressBytes(params.peer_address()));
-  hci_spec::LEConnectionParameters connection_params(
-      params.connection_interval().UncheckedRead(),
-      params.peripheral_latency().UncheckedRead(),
-      params.supervision_timeout().UncheckedRead());
+  ConnectionRole role = params.role().Read();
+  ConnectionHandle handle = params.connection_handle().Read();
+  LEConnectionParameters connection_params =
+      LEConnectionParameters(params.connection_interval().Read(),
+                             params.peripheral_latency().Read(),
+                             params.supervision_timeout().Read());
 
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.
   if (!matches_pending_request) {
-    delegate_(handle, params.role().Read(), peer_address, connection_params);
-    return CommandChannel::EventCallbackResult::kContinue;
+    delegate_(handle, role, peer_address, connection_params);
+    return;
   }
 
   // A new link layer connection was created. Create an object to track this
@@ -294,7 +426,7 @@ LowEnergyConnector::OnConnectionCompleteEvent(const EmbossEventPacket& event) {
                                             pending_request_->local_address,
                                             peer_address,
                                             connection_params,
-                                            params.role().Read(),
+                                            role,
                                             hci_);
 
   Result<> result = fit::ok();
@@ -311,13 +443,11 @@ LowEnergyConnector::OnConnectionCompleteEvent(const EmbossEventPacket& event) {
   }
 
   OnCreateConnectionComplete(result, std::move(connection));
-  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 void LowEnergyConnector::OnCreateConnectionComplete(
     Result<> result, std::unique_ptr<LowEnergyConnection> link) {
   BT_DEBUG_ASSERT(pending_request_);
-
   bt_log(DEBUG, "hci-le", "connection complete - status: %s", bt_str(result));
 
   request_timeout_task_.Cancel();
@@ -336,5 +466,4 @@ void LowEnergyConnector::OnCreateConnectionTimeout() {
   // connection attempt isn't using the filter accept list.
   CancelInternal(true);
 }
-
 }  // namespace bt::hci

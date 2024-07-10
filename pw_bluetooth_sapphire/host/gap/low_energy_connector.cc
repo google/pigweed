@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connector.h"
 
-#include <utility>
-
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 
 namespace bt::gap::internal {

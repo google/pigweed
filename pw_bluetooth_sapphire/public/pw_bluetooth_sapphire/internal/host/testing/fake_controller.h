@@ -31,7 +31,6 @@
 
 namespace bt::testing {
 
-namespace hci_android = bt::hci_spec::vendor::android;
 namespace android_hci = pw::bluetooth::vendor::android_hci;
 
 class FakePeer;
@@ -57,6 +56,8 @@ class FakeController final : public ControllerTestDoubleBase,
 
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
+
+    bool is_event_unmasked(hci_spec::LEEventMask event) const;
 
     // The time elapsed from the receipt of a LE Create Connection command until
     // the resulting LE Connection Complete event.
@@ -159,10 +160,27 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // The parameters of the most recent low energy connection initiation request
   struct LEConnectParams final {
-    LEConnectParams() = default;
+    enum class InitiatingPHYs {
+      kLE_1M = 0,
+      kLE_2M,
+      kLE_Coded,
+    };
 
+    struct Parameters {
+      uint16_t scan_interval = 0;
+      uint16_t scan_window = 0;
+      uint16_t connection_interval_min = 0;
+      uint16_t connection_interval_max = 0;
+      uint16_t max_latency = 0;
+      uint16_t supervision_timeout = 0;
+      uint16_t min_ce_length = 0;
+      uint16_t max_ce_length = 0;
+    };
+
+    bool use_filter_policy = false;
     pw::bluetooth::emboss::LEOwnAddressType own_address_type;
     DeviceAddress peer_address;
+    std::unordered_map<InitiatingPHYs, Parameters> phy_conn_params;
   };
 
   // Constructor initializes the controller with the minimal default settings
@@ -206,22 +224,31 @@ class FakeController final : public ControllerTestDoubleBase,
     return le_connect_params_;
   }
 
+  // Store the most recent LE Connection Parameters for inspection
+  void CaptureLEConnectParams(
+      const pw::bluetooth::emboss::LECreateConnectionCommandView& params);
+
+  // Store the most recent LE Connection Parameters for inspection
+  void CaptureLEConnectParams(
+      const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+          params);
+
   // Returns the current local name set in the controller
   const std::string& local_name() const { return local_name_; }
 
   // Returns the current class of device.
   const DeviceClass& device_class() const { return device_class_; }
 
-  // Adds a fake remote peer. Returns false if a peer with the same address was
-  // previously added.
+  // Adds a fake remote peer. Returns false if a peer with the same address
+  // was previously added.
   bool AddPeer(std::unique_ptr<FakePeer> peer);
 
-  // Removes a previously registered peer with the given device |address|. Does
-  // nothing if |address| is unrecognized.
+  // Removes a previously registered peer with the given device |address|.
+  // Does nothing if |address| is unrecognized.
   void RemovePeer(const DeviceAddress& address);
 
-  // Returns a pointer to the FakePeer with the given |address|. Returns nullptr
-  // if the |address| is unknown.
+  // Returns a pointer to the FakePeer with the given |address|. Returns
+  // nullptr if the |address| is unknown.
   FakePeer* FindPeer(const DeviceAddress& address);
 
   // Counters for HCI commands received.
@@ -274,8 +301,8 @@ class FakeController final : public ControllerTestDoubleBase,
     conn_state_cb_ = std::move(callback);
   }
 
-  // Sets a callback to be invoked when LE connection parameters are updated for
-  // a fake device.
+  // Sets a callback to be invoked when LE connection parameters are updated
+  // for a fake device.
   using LEConnectionParametersCallback = fit::function<void(
       const DeviceAddress&, const hci_spec::LEConnectionParameters&)>;
   void set_le_connection_parameters_callback(
@@ -320,8 +347,8 @@ class FakeController final : public ControllerTestDoubleBase,
   void SendNumberOfCompletedPacketsEvent(hci_spec::ConnectionHandle handle,
                                          uint16_t num);
 
-  // Sets up a LE link to the device with the given |addr|. FakeController will
-  // report a connection event in which it is in the given |role|.
+  // Sets up a LE link to the device with the given |addr|. FakeController
+  // will report a connection event in which it is in the given |role|.
   void ConnectLowEnergy(const DeviceAddress& addr,
                         pw::bluetooth::emboss::ConnectionRole role =
                             pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
@@ -415,12 +442,14 @@ class FakeController final : public ControllerTestDoubleBase,
     paused_opcode_listeners_.erase(code);
   }
 
-  // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is received.
+  // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is
+  // received.
   void OnLEReadAdvertisingChannelTxPower();
 
   // Inform the controller that the advertising handle is connected via the
-  // connection handle. This method then generates the necessary LE Meta Events
-  // (e.g. Advertising Set Terminated) to inform extended advertising listeners.
+  // connection handle. This method then generates the necessary LE Meta
+  // Events (e.g. Advertising Set Terminated) to inform extended advertising
+  // listeners.
   void SendLEAdvertisingSetTerminatedEvent(
       hci_spec::ConnectionHandle conn_handle,
       hci_spec::AdvertisingHandle adv_handle);
@@ -434,8 +463,9 @@ class FakeController final : public ControllerTestDoubleBase,
       hci_spec::AdvertisingHandle adv_handle);
 
   // The maximum number of advertising sets supported by the controller. Core
-  // Spec Volume 4, Part E, Section 7.8.58: the memory used to store advertising
-  // sets can also be used for other purposes. This value can change over time.
+  // Spec Volume 4, Part E, Section 7.8.58: the memory used to store
+  // advertising sets can also be used for other purposes. This value can
+  // change over time.
   uint8_t num_supported_advertising_sets() const {
     return num_supported_advertising_sets_;
   }
@@ -491,8 +521,8 @@ class FakeController final : public ControllerTestDoubleBase,
   void SendAdvertisingReport(const FakePeer& peer);
 
   // Sends a single LE advertising report including the scan response for the
-  // given peer. This method will send a legacy or extended advertising report,
-  // depending on which one the peer is configured to send.
+  // given peer. This method will send a legacy or extended advertising
+  // report, depending on which one the peer is configured to send.
   //
   // Does nothing if a LE scan is not currently enabled or if the peer doesn't
   // support advertising.
@@ -503,6 +533,12 @@ class FakeController final : public ControllerTestDoubleBase,
     return handle <= hci_spec::kAdvertisingHandleMax;
   }
 
+  // Helper function to capture_le_connect_params
+  void CaptureLEConnectParamsForPHY(
+      const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+          params,
+      LEConnectParams::InitiatingPHYs phy);
+
   // Finds and returns the FakePeer with the given parameters or nullptr if no
   // such device exists.
   FakePeer* FindByConnHandle(hci_spec::ConnectionHandle handle);
@@ -510,18 +546,18 @@ class FakeController final : public ControllerTestDoubleBase,
   // Returns the next available L2CAP signaling channel command ID.
   uint8_t NextL2CAPCommandId();
 
-  // Sends a HCI_Command_Complete event with the given status in response to the
-  // command with |opcode|.
+  // Sends a HCI_Command_Complete event with the given status in response to
+  // the command with |opcode|.
   //
   // NOTE: This method returns only a status field. Some HCI commands have
   // multiple fields in their return message. In those cases, it's better (and
-  // clearer) to use the other RespondWithCommandComplete (ByteBuffer as second
-  // parameter) instead.
+  // clearer) to use the other RespondWithCommandComplete (ByteBuffer as
+  // second parameter) instead.
   void RespondWithCommandComplete(hci_spec::OpCode opcode,
                                   pw::bluetooth::emboss::StatusCode status);
 
-  // Sends a HCI_Command_Complete event in response to the command with |opcode|
-  // and using the given data as the parameter payload.
+  // Sends a HCI_Command_Complete event in response to the command with
+  // |opcode| and using the given data as the parameter payload.
   void RespondWithCommandComplete(hci_spec::OpCode opcode,
                                   const ByteBuffer& params);
 
@@ -540,17 +576,17 @@ class FakeController final : public ControllerTestDoubleBase,
   // |opcode|, send a Command Status event and returns true.
   bool MaybeRespondWithDefaultCommandStatus(hci_spec::OpCode opcode);
 
-  // If a default status has been configured for the given opcode, sends back an
-  // error Command Complete event and returns true. Returns false if no response
-  // was set.
+  // If a default status has been configured for the given opcode, sends back
+  // an error Command Complete event and returns true. Returns false if no
+  // response was set.
   bool MaybeRespondWithDefaultStatus(hci_spec::OpCode opcode);
 
   // Sends Inquiry Response reports for known BR/EDR devices.
   void SendInquiryResponses();
 
-  // Sends LE advertising reports for all known peers with advertising data, if
-  // a scan is currently enabled. If duplicate filtering is disabled then the
-  // reports are continued to be sent until scan is disabled.
+  // Sends LE advertising reports for all known peers with advertising data,
+  // if a scan is currently enabled. If duplicate filtering is disabled then
+  // the reports are continued to be sent until scan is disabled.
   void SendAdvertisingReports();
 
   // Notifies |controller_parameters_cb_|.
@@ -565,18 +601,36 @@ class FakeController final : public ControllerTestDoubleBase,
                              bool connected,
                              bool canceled = false);
 
-  // Called when a HCI_Create_Connection command is received.
-  void OnCreateConnectionCommandReceived(
-      const pw::bluetooth::emboss::CreateConnectionCommandView& params);
-
   // Notifies |le_conn_params_cb_|
   void NotifyLEConnectionParameters(
       const DeviceAddress& addr,
       const hci_spec::LEConnectionParameters& params);
 
+  template <typename T>
+  void SendEnhancedConnectionCompleteEvent(
+      pw::bluetooth::emboss::StatusCode status,
+      const T& params,
+      uint16_t interval,
+      uint16_t max_latency,
+      uint16_t supervision_timeout);
+
+  void SendConnectionCompleteEvent(
+      pw::bluetooth::emboss::StatusCode status,
+      const pw::bluetooth::emboss::LECreateConnectionCommandView& params,
+      uint16_t interval);
+
+  // Called when a HCI_Create_Connection command is received.
+  void OnCreateConnectionCommandReceived(
+      const pw::bluetooth::emboss::CreateConnectionCommandView& params);
+
   // Called when a HCI_LE_Create_Connection command is received.
   void OnLECreateConnectionCommandReceived(
       const pw::bluetooth::emboss::LECreateConnectionCommandView& params);
+
+  // Called when a HCI_LE_Create_Connection command is received.
+  void OnLEExtendedCreateConnectionCommandReceived(
+      const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+          params);
 
   // Called when a HCI_LE_Connection_Update command is received.
   void OnLEConnectionUpdateCommandReceived(
@@ -837,8 +891,8 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnReadEncryptionKeySizeCommand(
       const pw::bluetooth::emboss::ReadEncryptionKeySizeCommandView& params);
 
-  // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is
-  // received.
+  // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command
+  // is received.
   void OnEnhancedAcceptSynchronousConnectionRequestCommand(
       const pw::bluetooth::emboss::
           EnhancedAcceptSynchronousConnectionRequestCommandView& params);
@@ -853,8 +907,8 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnLEReadRemoteFeaturesCommand(
       const hci_spec::LEReadRemoteFeaturesCommandParams& params);
 
-  // Called when a HCI_LE_Enable_Encryption command is received, responds with a
-  // successful encryption change event.
+  // Called when a HCI_LE_Enable_Encryption command is received, responds with
+  // a successful encryption change event.
   void OnLEStartEncryptionCommand(
       const pw::bluetooth::emboss::LEEnableEncryptionCommandView& params);
 
@@ -894,9 +948,9 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnVendorCommand(
       const PacketView<hci_spec::CommandHeader>& command_packet);
 
-  // Respond to a command packet. This may be done immediately upon reception or
-  // via a client- triggered callback if pause_responses_for_opcode has been
-  // called for that command's opcode.
+  // Respond to a command packet. This may be done immediately upon reception
+  // or via a client- triggered callback if pause_responses_for_opcode has
+  // been called for that command's opcode.
   void HandleReceivedCommandPacket(
       const PacketView<hci_spec::CommandHeader>& command_packet);
   void HandleReceivedCommandPacket(
@@ -1014,7 +1068,8 @@ class FakeController final : public ControllerTestDoubleBase,
   bool auto_disconnection_complete_event_enabled_ = true;
 
   // True if the FakeController has received any extended operations
-  // (e.g. extended advertising, extended scanning, extended connections, etc).
+  // (e.g. extended advertising, extended scanning, extended connections,
+  // etc).
   bool received_extended_operations_ = false;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);

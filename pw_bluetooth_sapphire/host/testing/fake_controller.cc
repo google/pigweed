@@ -217,6 +217,11 @@ void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   android_extension_settings.view().total_scan_results_storage().Write(1024);
 }
 
+bool FakeController::Settings::is_event_unmasked(
+    hci_spec::LEEventMask event) const {
+  return le_event_mask | static_cast<uint64_t>(event);
+}
+
 void FakeController::SetDefaultCommandStatus(
     hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode status) {
   default_command_status_map_[opcode] = status;
@@ -446,58 +451,57 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
 
 void FakeController::ConnectLowEnergy(
     const DeviceAddress& addr, pw::bluetooth::emboss::ConnectionRole role) {
-  (void)heap_dispatcher().Post(
-      [addr, role, this](pw::async::Context /*ctx*/, pw::Status status) {
-        if (!status.ok()) {
-          return;
-        }
-        FakePeer* peer = FindPeer(addr);
-        if (!peer) {
-          bt_log(WARN,
-                 "fake-hci",
-                 "no peer found with address: %s",
-                 addr.ToString().c_str());
-          return;
-        }
+  (void)heap_dispatcher().Post([addr, role, this](pw::async::Context /*ctx*/,
+                                                  pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
+    FakePeer* peer = FindPeer(addr);
+    if (!peer) {
+      bt_log(WARN,
+             "fake-hci",
+             "no peer found with address: %s",
+             addr.ToString().c_str());
+      return;
+    }
 
-        // TODO(armansito): Don't worry about managing multiple links per peer
-        // until this supports Bluetooth classic.
-        if (peer->connected()) {
-          bt_log(WARN, "fake-hci", "peer already connected");
-          return;
-        }
+    // TODO(armansito): Don't worry about managing multiple links per peer
+    // until this supports Bluetooth classic.
+    if (peer->connected()) {
+      bt_log(WARN, "fake-hci", "peer already connected");
+      return;
+    }
 
-        hci_spec::ConnectionHandle handle = ++next_conn_handle_;
-        peer->AddLink(handle);
+    hci_spec::ConnectionHandle handle = ++next_conn_handle_;
+    peer->AddLink(handle);
 
-        NotifyConnectionState(addr, handle, /*connected=*/true);
+    NotifyConnectionState(addr, handle, /*connected=*/true);
 
-        auto interval_min = hci_spec::defaults::kLEConnectionIntervalMin;
-        auto interval_max = hci_spec::defaults::kLEConnectionIntervalMax;
+    uint16_t interval_min = hci_spec::defaults::kLEConnectionIntervalMin;
+    uint16_t interval_max = hci_spec::defaults::kLEConnectionIntervalMax;
+    uint16_t interval = interval_min + ((interval_max - interval_min) / 2);
 
-        hci_spec::LEConnectionParameters conn_params(
-            interval_min + ((interval_max - interval_min) / 2),
-            0,
-            hci_spec::defaults::kLESupervisionTimeout);
-        peer->set_le_params(conn_params);
+    hci_spec::LEConnectionParameters conn_params(
+        interval, 0, hci_spec::defaults::kLESupervisionTimeout);
+    peer->set_le_params(conn_params);
 
-        auto packet = hci::EmbossEventPacket::New<
-            pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
-            hci_spec::kLEMetaEventCode);
-        auto view = packet.view_t();
-        view.le_meta_event().subevent_code().Write(
-            hci_spec::kLEConnectionCompleteSubeventCode);
-        view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
-        view.peer_address().CopyFrom(addr.value().view());
-        view.peer_address_type().Write(
-            DeviceAddress::DeviceAddrToLePeerAddr(addr.type()));
-        view.peripheral_latency().Write(conn_params.latency());
-        view.connection_interval().Write(conn_params.interval());
-        view.supervision_timeout().Write(conn_params.supervision_timeout());
-        view.role().Write(role);
-        view.connection_handle().Write(handle);
-        SendCommandChannelPacket(packet.data());
-      });
+    auto packet = hci::EmbossEventPacket::New<
+        pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1Writer>(
+        hci_spec::kLEMetaEventCode);
+    auto view = packet.view_t();
+    view.le_meta_event().subevent_code().Write(
+        hci_spec::kLEEnhancedConnectionCompleteSubeventCode);
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    view.peer_address().CopyFrom(addr.value().view());
+    view.peer_address_type().Write(
+        DeviceAddress::DeviceAddrToLeAddr(addr.type()));
+    view.peripheral_latency().Write(conn_params.latency());
+    view.connection_interval().Write(conn_params.interval());
+    view.supervision_timeout().Write(conn_params.supervision_timeout());
+    view.role().Write(role);
+    view.connection_handle().Write(handle);
+    SendCommandChannelPacket(packet.data());
+  });
 }
 
 void FakeController::SendConnectionRequest(
@@ -763,6 +767,87 @@ void FakeController::NotifyLEConnectionParameters(
   }
 }
 
+void FakeController::CaptureLEConnectParams(
+    const pw::bluetooth::emboss::LECreateConnectionCommandView& params) {
+  le_connect_params_ = LEConnectParams();
+
+  switch (params.initiator_filter_policy().Read()) {
+    case pw::bluetooth::emboss::GenericEnableParam::ENABLE:
+      le_connect_params_->use_filter_policy = true;
+      break;
+    case pw::bluetooth::emboss::GenericEnableParam::DISABLE:
+      le_connect_params_->use_filter_policy = false;
+      break;
+  }
+
+  le_connect_params_->own_address_type = params.own_address_type().Read();
+  le_connect_params_->peer_address = DeviceAddress(
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read()),
+      DeviceAddressBytes(params.peer_address()));
+
+  LEConnectParams::Parameters& connect_params =
+      le_connect_params_
+          ->phy_conn_params[LEConnectParams::InitiatingPHYs::kLE_1M];
+  connect_params.scan_interval = params.le_scan_interval().Read();
+  connect_params.scan_window = params.le_scan_window().Read();
+  connect_params.connection_interval_min =
+      params.connection_interval_min().Read();
+  connect_params.connection_interval_max =
+      params.connection_interval_max().Read();
+  connect_params.max_latency = params.max_latency().Read();
+  connect_params.supervision_timeout = params.supervision_timeout().Read();
+  connect_params.min_ce_length = params.min_connection_event_length().Read();
+  connect_params.max_ce_length = params.max_connection_event_length().Read();
+}
+
+void FakeController::CaptureLEConnectParamsForPHY(
+    const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+        params,
+    LEConnectParams::InitiatingPHYs phy) {
+  int index = static_cast<int>(phy);
+
+  LEConnectParams::Parameters& connect_params =
+      le_connect_params_->phy_conn_params[phy];
+  connect_params.scan_interval = params.data()[index].scan_interval().Read();
+  connect_params.scan_window = params.data()[index].scan_window().Read();
+  connect_params.connection_interval_min =
+      params.data()[index].connection_interval_min().Read();
+  connect_params.connection_interval_min =
+      params.data()[index].connection_interval_max().Read();
+  connect_params.max_latency = params.data()[index].max_latency().Read();
+  connect_params.supervision_timeout =
+      params.data()[index].supervision_timeout().Read();
+  connect_params.min_ce_length =
+      params.data()[index].min_connection_event_length().Read();
+  connect_params.max_ce_length =
+      params.data()[index].max_connection_event_length().Read();
+}
+
+void FakeController::CaptureLEConnectParams(
+    const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+        params) {
+  le_connect_params_ = LEConnectParams();
+
+  switch (params.initiator_filter_policy().Read()) {
+    case pw::bluetooth::emboss::GenericEnableParam::ENABLE:
+      le_connect_params_->use_filter_policy = true;
+      break;
+    case pw::bluetooth::emboss::GenericEnableParam::DISABLE:
+      le_connect_params_->use_filter_policy = false;
+      break;
+  }
+
+  le_connect_params_->own_address_type = params.own_address_type().Read();
+  le_connect_params_->peer_address = DeviceAddress(
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read()),
+      DeviceAddressBytes(params.peer_address()));
+
+  CaptureLEConnectParamsForPHY(params, LEConnectParams::InitiatingPHYs::kLE_1M);
+  CaptureLEConnectParamsForPHY(params, LEConnectParams::InitiatingPHYs::kLE_2M);
+  CaptureLEConnectParamsForPHY(params,
+                               LEConnectParams::InitiatingPHYs::kLE_Coded);
+}
+
 void FakeController::OnCreateConnectionCommandReceived(
     const pw::bluetooth::emboss::CreateConnectionCommandView& params) {
   acl_create_connection_command_count_++;
@@ -783,10 +868,11 @@ void FakeController::OnCreateConnectionCommandReceived(
   // Find the peer that matches the requested address.
   FakePeer* peer = FindPeer(peer_address);
   if (peer) {
-    if (peer->connected())
+    if (peer->connected()) {
       status = pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS;
-    else
+    } else {
       status = peer->connect_status();
+    }
   }
 
   // First send the Command Status response.
@@ -856,8 +942,9 @@ void FakeController::OnCreateConnectionCommandReceived(
   // Don't send a connection event if we were asked to force the request to
   // remain pending. This is used by test cases that operate during the pending
   // state.
-  if (peer->force_pending_connect())
+  if (peer->force_pending_connect()) {
     return;
+  }
 
   bredr_connect_rsp_task_.Cancel();
   bredr_connect_rsp_task_.set_function(
@@ -887,6 +974,14 @@ void FakeController::OnCreateConnectionCommandReceived(
 void FakeController::OnLECreateConnectionCommandReceived(
     const pw::bluetooth::emboss::LECreateConnectionCommandView& params) {
   le_create_connection_command_count_++;
+
+  if (received_extended_operations_) {
+    RespondWithCommandStatus(
+        hci_spec::kLECreateConnection,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   if (le_create_connection_cb_) {
     le_create_connection_cb_(params);
   }
@@ -901,8 +996,6 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
   DeviceAddress::Type addr_type =
       DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
-  BT_DEBUG_ASSERT(addr_type != DeviceAddress::Type::kBREDR);
-
   const DeviceAddress peer_address(addr_type,
                                    DeviceAddressBytes(params.peer_address()));
   pw::bluetooth::emboss::StatusCode status =
@@ -911,26 +1004,23 @@ void FakeController::OnLECreateConnectionCommandReceived(
   // Find the peer that matches the requested address.
   FakePeer* peer = FindPeer(peer_address);
   if (peer) {
-    if (peer->connected())
+    if (peer->connected()) {
       status = pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS;
-    else
+    } else {
       status = peer->connect_status();
+    }
   }
 
   // First send the Command Status response.
   RespondWithCommandStatus(hci_spec::kLECreateConnection, status);
 
   // If we just sent back an error status then the operation is complete.
-  if (status != pw::bluetooth::emboss::StatusCode::SUCCESS)
+  if (status != pw::bluetooth::emboss::StatusCode::SUCCESS) {
     return;
-
-  le_connect_pending_ = true;
-  if (!le_connect_params_) {
-    le_connect_params_ = LEConnectParams();
   }
 
-  le_connect_params_->own_address_type = params.own_address_type().Read();
-  le_connect_params_->peer_address = peer_address;
+  le_connect_pending_ = true;
+  CaptureLEConnectParams(params);
 
   // The procedure was initiated successfully but the peer cannot be connected
   // because it either doesn't exist or isn't connectable.
@@ -941,12 +1031,197 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
   }
 
+  // Don't send a connection event if we were asked to force the request to
+  // remain pending. This is used by test cases that operate during the pending
+  // state.
+  if (peer->force_pending_connect()) {
+    return;
+  }
+
   if (next_conn_handle_ == 0x0FFF) {
     // Ran out of handles
     status = pw::bluetooth::emboss::StatusCode::CONNECTION_LIMIT_EXCEEDED;
   } else {
     status = peer->connect_response();
   }
+
+  uint16_t interval_min = params.connection_interval_min().Read();
+  uint16_t interval_max = params.connection_interval_max().Read();
+  uint16_t interval = interval_min + ((interval_max - interval_min) / 2);
+
+  hci_spec::LEConnectionParameters conn_params(
+      interval,
+      params.max_latency().Read(),
+      params.supervision_timeout().Read());
+  peer->set_le_params(conn_params);
+
+  bool use_enhanced_connection_complete = settings_.is_event_unmasked(
+      hci_spec::LEEventMask::kLEEnhancedConnectionComplete);
+  if (use_enhanced_connection_complete) {
+    SendEnhancedConnectionCompleteEvent(status,
+                                        params,
+                                        interval,
+                                        params.max_latency().Read(),
+                                        params.supervision_timeout().Read());
+  } else {
+    SendConnectionCompleteEvent(status, params, interval);
+  }
+}
+
+void FakeController::OnLEExtendedCreateConnectionCommandReceived(
+    const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
+        params) {
+  received_extended_operations_ = true;
+
+  if (const auto& phys = params.initiating_phys();
+      !phys.le_1m().Read() && !phys.le_2m().Read() && phys.le_coded().Read()) {
+    RespondWithCommandStatus(
+        hci_spec::kLEExtendedCreateConnection,
+        pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+  }
+
+  // Cannot issue this command while a request is already pending.
+  if (le_connect_pending_) {
+    RespondWithCommandStatus(
+        hci_spec::kLEExtendedCreateConnection,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  DeviceAddress::Type addr_type =
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
+  const DeviceAddress peer_address(addr_type,
+                                   DeviceAddressBytes(params.peer_address()));
+
+  pw::bluetooth::emboss::StatusCode status =
+      pw::bluetooth::emboss::StatusCode::SUCCESS;
+
+  // Find the peer that matches the requested address.
+  FakePeer* peer = FindPeer(peer_address);
+  if (peer) {
+    if (peer->connected()) {
+      status = pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS;
+    } else {
+      status = peer->connect_status();
+    }
+  }
+
+  // First send the Command Status response.
+  RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection, status);
+
+  // If we just sent back an error status then the operation is complete.
+  if (status != pw::bluetooth::emboss::StatusCode::SUCCESS) {
+    return;
+  }
+
+  le_connect_pending_ = true;
+  CaptureLEConnectParams(params);
+
+  // The procedure was initiated successfully but the peer cannot be connected
+  // because it either doesn't exist or isn't connectable.
+  if (!peer || !peer->connectable()) {
+    bt_log(INFO,
+           "fake-hci",
+           "requested fake peer cannot be connected; request will time out");
+    return;
+  }
+
+  // Don't send a connection event if we were asked to force the request to
+  // remain pending. This is used by test cases that operate during the pending
+  // state.
+  if (peer->force_pending_connect()) {
+    return;
+  }
+
+  if (next_conn_handle_ == 0x0FFF) {
+    // Ran out of handles
+    status = pw::bluetooth::emboss::StatusCode::CONNECTION_LIMIT_EXCEEDED;
+  } else {
+    status = peer->connect_response();
+  }
+
+  uint16_t interval_min = params.data()[0].connection_interval_min().Read();
+  uint16_t interval_max = params.data()[0].connection_interval_max().Read();
+  uint16_t interval = interval_min + ((interval_max - interval_min) / 2);
+
+  hci_spec::LEConnectionParameters conn_params(
+      interval,
+      params.data()[0].max_latency().Read(),
+      params.data()[0].supervision_timeout().Read());
+  peer->set_le_params(conn_params);
+
+  SendEnhancedConnectionCompleteEvent(
+      status,
+      params,
+      interval,
+      params.data()[0].max_latency().Read(),
+      params.data()[0].supervision_timeout().Read());
+}
+
+template <typename T>
+void FakeController::SendEnhancedConnectionCompleteEvent(
+    pw::bluetooth::emboss::StatusCode status,
+    const T& params,
+    uint16_t interval,
+    uint16_t max_latency,
+    uint16_t supervision_timeout) {
+  DeviceAddress::Type addr_type =
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
+  const DeviceAddress peer_address(addr_type,
+                                   DeviceAddressBytes(params.peer_address()));
+
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1Writer>(
+      hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLEEnhancedConnectionCompleteSubeventCode);
+  view.status().Write(status);
+  view.peer_address().CopyFrom(params.peer_address());
+  view.peer_address_type().Write(DeviceAddress::DeviceAddrToLeAddr(addr_type));
+  view.peripheral_latency().Write(max_latency);
+  view.connection_interval().Write(interval);
+  view.supervision_timeout().Write(supervision_timeout);
+  view.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  view.connection_handle().Write(++next_conn_handle_);
+
+  le_connect_rsp_task_.Cancel();
+  le_connect_rsp_task_.set_function([packet, address = peer_address, this](
+                                        pw::async::Context /*ctx*/,
+                                        pw::Status status) {
+    auto peer = FindPeer(address);
+    if (!peer || !status.ok()) {
+      // The peer has been removed or dispatcher shut down; Ignore this response
+      return;
+    }
+
+    le_connect_pending_ = false;
+
+    auto view = packet.view<
+        pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1View>();
+    if (view.status().Read() == pw::bluetooth::emboss::StatusCode::SUCCESS) {
+      bool not_previously_connected = !peer->connected();
+      hci_spec::ConnectionHandle handle = view.connection_handle().Read();
+      peer->AddLink(handle);
+      if (not_previously_connected && peer->connected()) {
+        NotifyConnectionState(peer->address(), handle, /*connected=*/true);
+      }
+    }
+
+    SendCommandChannelPacket(packet.data());
+  });
+
+  le_connect_rsp_task_.PostAfter(settings_.le_connection_delay);
+}
+
+void FakeController::SendConnectionCompleteEvent(
+    pw::bluetooth::emboss::StatusCode status,
+    const pw::bluetooth::emboss::LECreateConnectionCommandView& params,
+    uint16_t interval) {
+  DeviceAddress::Type addr_type =
+      DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
+  const DeviceAddress peer_address(addr_type,
+                                   DeviceAddressBytes(params.peer_address()));
 
   auto packet = hci::EmbossEventPacket::New<
       pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
@@ -959,29 +1234,11 @@ void FakeController::OnLECreateConnectionCommandReceived(
   view.peer_address_type().Write(
       DeviceAddress::DeviceAddrToLePeerAddr(addr_type));
 
-  if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
-    uint16_t interval_min = params.connection_interval_min().UncheckedRead();
-    uint16_t interval_max = params.connection_interval_max().UncheckedRead();
-    uint16_t interval = interval_min + ((interval_max - interval_min) / 2);
-
-    hci_spec::LEConnectionParameters conn_params(
-        interval,
-        params.max_latency().UncheckedRead(),
-        params.supervision_timeout().UncheckedRead());
-    peer->set_le_params(conn_params);
-
-    view.peripheral_latency().UncheckedCopyFrom(params.max_latency());
-    view.connection_interval().UncheckedWrite(interval);
-    view.supervision_timeout().UncheckedCopyFrom(params.supervision_timeout());
-    view.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-    view.connection_handle().Write(++next_conn_handle_);
-  }
-
-  // Don't send a connection event if we were asked to force the request to
-  // remain pending. This is used by test cases that operate during the pending
-  // state.
-  if (peer->force_pending_connect())
-    return;
+  view.peripheral_latency().CopyFrom(params.max_latency());
+  view.connection_interval().Write(interval);
+  view.supervision_timeout().CopyFrom(params.supervision_timeout());
+  view.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  view.connection_handle().Write(++next_conn_handle_);
 
   le_connect_rsp_task_.Cancel();
   le_connect_rsp_task_.set_function([packet, address = peer_address, this](
@@ -1403,7 +1660,6 @@ void FakeController::OnLEReadLocalSupportedFeatures() {
 
 void FakeController::OnLECreateConnectionCancel() {
   if (!le_connect_pending_) {
-    // No request is currently pending.
     RespondWithCommandComplete(
         hci_spec::kLECreateConnectionCancel,
         pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
@@ -1419,20 +1675,43 @@ void FakeController::OnLECreateConnectionCancel() {
                         /*connected=*/false,
                         /*canceled=*/true);
 
-  auto packet = hci::EmbossEventPacket::New<
-      pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
-  auto view = packet.view_t();
-  view.le_meta_event().subevent_code().Write(
-      hci_spec::kLEConnectionCompleteSubeventCode);
-  view.status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
-  view.peer_address().CopyFrom(le_connect_params_->peer_address.value().view());
-  view.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(
-      le_connect_params_->peer_address.type()));
+  bool use_enhanced_connection_complete = settings_.is_event_unmasked(
+      hci_spec::LEEventMask::kLEEnhancedConnectionComplete);
+  if (use_enhanced_connection_complete) {
+    auto packet = hci::EmbossEventPacket::New<
+        pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1Writer>(
+        hci_spec::kLEMetaEventCode);
+    auto params = packet.view_t();
+    params.le_meta_event().subevent_code().Write(
+        hci_spec::kLEEnhancedConnectionCompleteSubeventCode);
+    params.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
+    params.peer_address().CopyFrom(
+        le_connect_params_->peer_address.value().view());
+    params.peer_address_type().Write(DeviceAddress::DeviceAddrToLeAddr(
+        le_connect_params_->peer_address.type()));
 
-  RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
-                             pw::bluetooth::emboss::StatusCode::SUCCESS);
-  SendCommandChannelPacket(packet.data());
+    RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+    SendCommandChannelPacket(packet.data());
+  } else {
+    auto packet = hci::EmbossEventPacket::New<
+        pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+        hci_spec::kLEMetaEventCode);
+    auto params = packet.view_t();
+    params.le_meta_event().subevent_code().Write(
+        hci_spec::kLEConnectionCompleteSubeventCode);
+    params.status().Write(
+        pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
+    params.peer_address().CopyFrom(
+        le_connect_params_->peer_address.value().view());
+    params.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(
+        le_connect_params_->peer_address.type()));
+
+    RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+    SendCommandChannelPacket(packet.data());
+  }
 }
 
 void FakeController::OnWriteExtendedInquiryResponse(
@@ -3751,6 +4030,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEClearAdvertisingSets:
     case hci_spec::kLEConnectionUpdate:
     case hci_spec::kLECreateConnection:
+    case hci_spec::kLEExtendedCreateConnection:
     case hci_spec::kLEReadMaxAdvertisingDataLength:
     case hci_spec::kLEReadNumSupportedAdvertisingSets:
     case hci_spec::kLESetAdvertisingData:
@@ -4102,6 +4382,12 @@ void FakeController::HandleReceivedCommandPacket(
           command_packet
               .view<pw::bluetooth::emboss::LECreateConnectionCommandView>();
       OnLECreateConnectionCommandReceived(params);
+      break;
+    }
+    case hci_spec::kLEExtendedCreateConnection: {
+      const auto& params = command_packet.view<
+          pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View>();
+      OnLEExtendedCreateConnectionCommandReceived(params);
       break;
     }
     case hci_spec::kLEConnectionUpdate: {
