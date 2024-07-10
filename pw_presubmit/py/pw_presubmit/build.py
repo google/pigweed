@@ -648,7 +648,11 @@ def fuzztest_prng_seed(ctx: PresubmitContext) -> str:
 
 
 @filter_paths(
-    file_filter=FileFilter(endswith=('.bzl', '.bazel'), name=('WORKSPACE',))
+    file_filter=FileFilter(
+        endswith=('.bzl', '.bazel'),
+        name=('WORKSPACE',),
+        exclude=(r'pw_presubmit/py/pw_presubmit/format/test_data',),
+    )
 )
 def bazel_lint(ctx: PresubmitContext):
     """Runs buildifier with lint on Bazel files.
