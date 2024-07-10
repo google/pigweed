@@ -1,5 +1,6 @@
 -c ./python_base_requirements.txt
 
+aiohttp==3.9.5
 alabaster==0.7.13
 appdirs==1.4.4
 astroid==3.0.1

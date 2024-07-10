@@ -94,7 +94,7 @@ _ROOT_LOG = logging.getLogger('')
 
 _SYSTEM_COMMAND_LOG = logging.getLogger('pw_console_system_command')
 
-_PW_CONSOLE_MODULE = 'pw_console'
+PW_CONSOLE_MODULE = 'pw_console'
 
 MAX_FPS = 30
 MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
@@ -190,10 +190,10 @@ class ConsoleApp:
 
         jinja_templates = {
             t: importlib.resources.read_text(
-                f'{_PW_CONSOLE_MODULE}.templates', t
+                f'{PW_CONSOLE_MODULE}.templates', t
             )
             for t in importlib.resources.contents(
-                f'{_PW_CONSOLE_MODULE}.templates'
+                f'{PW_CONSOLE_MODULE}.templates'
             )
             if t.endswith('.jinja')
         }
@@ -640,7 +640,7 @@ class ConsoleApp:
         if self.http_server is not None:
             return
 
-        html_package_path = f'{_PW_CONSOLE_MODULE}.html'
+        html_package_path = f'{PW_CONSOLE_MODULE}.html'
         self.html_files = {
             '/{}'.format(t): importlib.resources.read_text(html_package_path, t)
             for t in importlib.resources.contents(html_package_path)

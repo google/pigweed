@@ -1,0 +1,204 @@
+<!--
+Copyright 2024 The Pigweed Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+-->
+<div style="display: flex; flex-direction: column;">
+  <p>Placeholder page for actual console</p>
+  <div id="code"></div>
+  <button id="btn-run">Run</button>
+<div id="output">
+  <i>Output appears here...</i>
+</div>
+</div>
+
+<hr/>
+
+<button id="btn-log-sources">List log sources</button>
+
+<button id="btn-log-sources-device">Listen on Fake Device logs</button>
+<button id="btn-log-sources-device-unsub">Unlisten on Fake Device logs</button>
+<br/>
+<pre id="logs">
+  -- Logs start here --
+</pre>
+<script type="importmap">
+  {
+    "imports": {
+      "codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/"
+    }
+  }
+</script>
+
+<script async type="module">
+  import { basicSetup, EditorView } from 'codemirror/codemirror/dist/index.js';
+  import { python } from 'codemirror/lang-python/dist/index.js';
+  import { autocompletion } from 'codemirror/autocomplete/dist/index.js';
+  import { EditorState } from 'codemirror/state/dist/index.js';
+
+  // const ws = new WebSocket('/ws');
+
+  class WebSocketRPC{
+    constructor(websocket){
+      this.ws = websocket;
+      window.ws = websocket
+      this.callbacks = {};
+
+      this.ws.onopen = () => {
+        console.log('WebSocket connection opened');
+      };
+
+      this.ws.onmessage = (event) => {
+        if (this._rpcResponseHandler(event.data)) return;
+        // any other handlers
+      };
+
+      this.ws.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
+    }
+
+    // Send a message with a random call_id and wait for a response
+    call(requestType, data){
+      const payload = {
+        id: parseInt(Math.random() * 10000),
+        type: requestType,
+        data,
+      };
+      return new Promise((resolve, reject) => {
+        this.callbacks[payload.id] = resolve
+        this.ws.send(JSON.stringify(payload));
+      });
+    }
+
+    // Send a request to open a stream and subscribe a handler to all responses
+    openStream(requestType, data, streamHandler){
+      const payload = {
+        id: parseInt(Math.random() * 10000),
+        type: requestType,
+        data,
+      };
+
+      const unsub = ()=>{
+        return new Promise((resolve, reject)=>{
+          this.callbacks[payload.id] = resolve;
+          this.ws.send(JSON.stringify({...payload, close: true}))
+        })
+      }
+      return new Promise((resolve, reject) => {
+        this.callbacks[payload.id] = streamHandler;
+        this.ws.send(JSON.stringify(payload));
+        resolve(unsub);
+      });
+    }
+
+    // Check if this is a response to RPC call
+    _rpcResponseHandler(payload) {
+      try {
+        const resp = JSON.parse(payload);
+        if (resp.id && this.callbacks[resp.id]) {
+          this.callbacks[resp.id](resp.data, resp.streaming);
+          if (!resp.streaming) delete this.callbacks[resp.id];
+          return true;
+        } else if (resp.id) {
+          console.error('callback not found for', resp);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+      return false;
+    }
+
+  }
+
+  const rpc = new WebSocketRPC(new WebSocket("/ws"))
+
+  // Mock function to simulate fetching autocomplete suggestions
+  async function getAutocompleteSuggestions(code, cursor) {
+    // Simulate an API call with a delay
+    const response = await rpc.call('autocomplete', {
+      code: code,
+      cursor_pos: cursor,
+    });
+    return response;
+  }
+
+  async function myCompletions(context) {
+    const word = context.matchBefore(/\w*/);
+
+    const cursor = context.pos;
+    const code = context.state.doc.toString();
+
+    try {
+      const suggestions = await getAutocompleteSuggestions(code, cursor);
+      return {
+        from: word?.from,
+        options: suggestions.map((suggestion) => ({
+          label: suggestion.text,
+          type: suggestion.type || 'text',
+        })),
+        filter: false,
+      };
+    } catch (error) {
+      console.error('Error fetching autocomplete suggestions:', error);
+      return null;
+    }
+  }
+
+  const startState = EditorState.create({
+    doc: localStorage.getItem("code") || 'LOG',
+    extensions: [
+      basicSetup,
+      python(),
+      autocompletion({
+        override: [myCompletions],
+      }),
+    ],
+  });
+
+  const view = new EditorView({
+    state: startState,
+    parent: document.querySelector("#code"),
+  });
+
+  document.querySelector("#btn-run").addEventListener('click', async ()=>{
+    const code = view.state.doc.toString();
+    localStorage.setItem("code", code);
+    document.querySelector("#output").innerHTML = "<i>Running...</i>"
+    const response = await rpc.call("eval", {code})
+    console.log("resp", response, typeof response)
+    document.querySelector("#output").innerHTML = `
+    <span style="color: red;">${response.stderr}</span><br/>
+    <span>${response.stdout}</span><br/>
+    <span>${response.result}</span>
+    `
+  })
+
+  let log_unsub = undefined;
+
+  document.querySelector("#btn-log-sources").addEventListener('click', async ()=>{
+    const list = await rpc.call("log_source_list", {filter: ""});
+    console.log(list)
+  })
+
+  document.querySelector("#btn-log-sources-device").addEventListener('click', async ()=>{
+    log_unsub = await rpc.openStream("log_source_subscribe", {name: "Fake Device"}, (data)=>{
+      if (data.log_line) document.querySelector("#logs").innerText += JSON.stringify(data.log_line) + "\n";
+    });
+  })
+
+  document.querySelector("#btn-log-sources-device-unsub").addEventListener('click', async ()=>{
+    if (log_unsub) log_unsub()
+  })
+</script>
+

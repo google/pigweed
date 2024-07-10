@@ -77,6 +77,9 @@ py_library(
         "pw_console/templates/__init__.py",
         "pw_console/test_mode.py",
         "pw_console/text_formatting.py",
+        "pw_console/web.py",
+        "pw_console/web_kernel.py",
+        "pw_console/web_server.py",
         "pw_console/widgets/__init__.py",
         "pw_console/widgets/border.py",
         "pw_console/widgets/checkbox.py",
@@ -89,6 +92,7 @@ py_library(
     ],
     data = [
         "pw_console/docs/user_guide.rst",
+        "pw_console/html/console.html",
         "pw_console/html/index.html",
         "pw_console/html/main.js",
         "pw_console/html/style.css",

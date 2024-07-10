@@ -21,7 +21,6 @@ import sys
 
 from pw_cli import log as pw_cli_log
 from pw_cli import argument_types
-
 from pw_console import PwConsoleEmbed
 from pw_console.python_logging import create_temp_log_file
 from pw_console.log_store import LogStore
@@ -29,6 +28,7 @@ from pw_console.plugins.calc_pane import CalcPane
 from pw_console.plugins.clock_pane import ClockPane
 from pw_console.plugins.twenty48_pane import Twenty48Pane
 from pw_console.test_mode import FAKE_DEVICE_LOGGER_NAME
+from pw_console.web import PwConsoleWeb
 
 _LOG = logging.getLogger(__package__)
 _ROOT_LOG = logging.getLogger('')
@@ -63,6 +63,11 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '--console-debug-log-file',
         help='Log file to send console debug messages to.',
+    )
+    parser.add_argument(
+        "--browser",
+        action="store_true",
+        help="Start browser-based console instead of terminal.",
     )
 
     return parser
@@ -131,57 +136,70 @@ def main(args: argparse.Namespace | None = None) -> int:
         """
         )
 
-    console = PwConsoleEmbed(
-        global_vars=global_vars,
-        loggers=default_loggers,
-        test_mode=args.test_mode,
-        help_text=help_text,
-        app_title=app_title,
-        config_file_path=args.config_file,
-    )
-
-    overriden_window_config: dict | None = None
-    # Add example plugins and log panes used to validate behavior in the Pigweed
-    # Console manual test procedure: https://pigweed.dev/pw_console/testing.html
-    if args.test_mode:
-        fake_logger.propagate = False
-        console.setup_python_logging(loggers_with_no_propagation=[fake_logger])
-
-        _ROOT_LOG.debug('pw_console.PwConsoleEmbed init complete')
-        _ROOT_LOG.debug('Adding plugins...')
-        console.add_window_plugin(ClockPane())
-        console.add_window_plugin(CalcPane())
-        console.add_floating_window_plugin(
-            Twenty48Pane(include_resize_handle=False), left=4
+    if args.browser:
+        webserver = PwConsoleWeb(
+            global_vars=global_vars,
+            loggers=default_loggers,
+            test_mode=args.test_mode,
         )
-        _ROOT_LOG.debug('Starting prompt_toolkit full-screen application...')
+        webserver.start()
+    else:
+        console = PwConsoleEmbed(
+            global_vars=global_vars,
+            loggers=default_loggers,
+            test_mode=args.test_mode,
+            help_text=help_text,
+            app_title=app_title,
+            config_file_path=args.config_file,
+        )
 
-        overriden_window_config = {
-            'Split 1 stacked': {
-                'Fake Device': None,
-                'Fake Keys': {
-                    'duplicate_of': 'Fake Device',
-                    'filters': {
-                        'keys': {'regex': '[^ ]+'},
+        overridden_window_config: dict | None = None
+        # Add example plugins and log panes used to validate behavior in the
+        # Pigweed Console manual test procedure:
+        # https://pigweed.dev/pw_console/testing.html
+        if args.test_mode:
+            fake_logger.propagate = False
+            console.setup_python_logging(
+                loggers_with_no_propagation=[fake_logger]
+            )
+
+            _ROOT_LOG.debug("pw_console.PwConsoleEmbed init complete")
+            _ROOT_LOG.debug("Adding plugins...")
+            console.add_window_plugin(ClockPane())
+            console.add_window_plugin(CalcPane())
+            console.add_floating_window_plugin(
+                Twenty48Pane(include_resize_handle=False), left=4
+            )
+            _ROOT_LOG.debug(
+                "Starting prompt_toolkit full-screen application..."
+            )
+
+            overridden_window_config = {
+                "Split 1 stacked": {
+                    "Fake Device": None,
+                    "Fake Keys": {
+                        "duplicate_of": "Fake Device",
+                        "filters": {
+                            "keys": {"regex": "[^ ]+"},
+                        },
+                    },
+                    "Fake USB": {
+                        "duplicate_of": "Fake Device",
+                        "filters": {
+                            "module": {"regex": "USB"},
+                        },
                     },
                 },
-                'Fake USB': {
-                    'duplicate_of': 'Fake Device',
-                    'filters': {
-                        'module': {'regex': 'USB'},
-                    },
+                "Split 2 tabbed": {
+                    "Python Repl": None,
+                    "All Logs": None,
+                    "PwConsole Debug": None,
+                    "Calculator": None,
+                    "Clock": None,
                 },
-            },
-            'Split 2 tabbed': {
-                'Python Repl': None,
-                'All Logs': None,
-                'PwConsole Debug': None,
-                'Calculator': None,
-                'Clock': None,
-            },
-        }
+            }
 
-    console.embed(override_window_config=overriden_window_config)
+        console.embed(override_window_config=overridden_window_config)
 
     if args.logfile:
         print(f'Logs saved to: {args.logfile}')
