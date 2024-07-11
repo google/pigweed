@@ -90,11 +90,13 @@ export async function renderPWConsole(
   containerEl: HTMLElement,
   wsUrl: string = '/ws',
 ) {
+  const logsContainerEl = document.createElement('div');
+  logsContainerEl.id = 'logs-container';
+  const replContainerEl = document.createElement('div');
+  replContainerEl.id = 'repl-container';
+  createSplitPanel(logsContainerEl, replContainerEl, containerEl);
   const logSource = new PwConsoleLogSource();
-  const unsubscribe = createLogViewer(
-    logSource,
-    containerEl.querySelector('#logs-container')!,
-  );
+  const unsubscribe = createLogViewer(logSource, logsContainerEl);
   const ws = new WebSocket(wsUrl);
   const kernel = new WebSocketRPCClient(ws);
   kernel.openStream('log_source_subscribe', { name: 'Fake Device' }, (data) => {
@@ -103,9 +105,35 @@ export async function renderPWConsole(
   });
   const rpc = new WebSocketRPCReplKernel(kernel);
   const repl = new Repl(rpc);
-  document.querySelector('#repl-container')?.appendChild(repl);
+  replContainerEl.appendChild(repl);
   (window as any).rpc = rpc;
+  const resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const splitPanel = document.querySelector('sl-split-panel');
+      if (splitPanel) {
+        // Stack vertically for smaller viewport sizes
+        splitPanel.vertical = entry.contentRect.width < 800;
+      }
+    }
+  });
+  resizeObserver.observe(document.body);
   return () => {
     unsubscribe();
   };
+}
+
+export function createSplitPanel(
+  startEl: HTMLElement,
+  endEl: HTMLElement,
+  containerEl: HTMLElement,
+) {
+  const splitPanel = document.createElement('sl-split-panel');
+
+  startEl.setAttribute('slot', 'start');
+  endEl.setAttribute('slot', 'end');
+  splitPanel.setAttribute('position', '50');
+
+  splitPanel.appendChild(startEl);
+  splitPanel.appendChild(endEl);
+  containerEl.appendChild(splitPanel);
 }

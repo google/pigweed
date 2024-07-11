@@ -14,12 +14,13 @@ License for the specific language governing permissions and limitations under
 the License.
 -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="./src/index.css" />
+        <link rel="stylesheet" href="./src/console.css" />
         <style>
           body {
             margin: 0;
@@ -27,15 +28,11 @@ the License.
 
           #console-container {
             height: 100vh;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
           }
 
           #logs-container, #repl-container {
             overflow: hidden;
           }
-
         </style>
         <title>Pigweed Console</title>
         <link rel="icon" href="src/assets/favicon.svg" />
@@ -47,9 +44,6 @@ the License.
           </script>
     </head>
     <body>
-        <main id="console-container">
-          <div id="logs-container"></div>
-          <div id="repl-container"></div>
-        </main>
+        <main id="console-container"></main>
     </body>
 </html>

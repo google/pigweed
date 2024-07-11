@@ -51,8 +51,8 @@ export const styles = css`
   sl-split-panel {
     --divider-width: 8px;
     --divider-hit-area: 24px;
-    --min: 20rem;
-    --max: calc(100% - 20rem);
+    --min: 10rem;
+    --max: calc(100% - 10rem);
     height: 100%;
     width: 100%;
     contain: size style;
