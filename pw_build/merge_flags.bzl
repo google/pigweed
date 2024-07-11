@@ -13,6 +13,17 @@
 # the License.
 """Functions for merging flags for platforms and transitions."""
 
+def flags_from_dict(flags_dict):
+    """Convert a dict of flags into a list.
+
+    Args:
+      flags_dict: Dict mapping flag labels to values.
+
+    Returns:
+       A list of flags in a format accepted by the `flags` attribute of `platform`.
+    """
+    return ["--{}={}".format(k, v) for k, v in flags_dict.items()]
+
 def merge_flags(base, override):
     """Merge flags for platforms.
 
@@ -27,8 +38,7 @@ def merge_flags(base, override):
     Returns:
        A list of flags in a format accepted by the `flags` attribute of `platform`.
     """
-    flags = base | override
-    return ["--{}={}".format(k, v) for k, v in flags.items()]
+    return flags_from_dict(base | override)
 
 def merge_flags_for_transition_impl(base, override):
     """Merge flags for a transition's impl function.

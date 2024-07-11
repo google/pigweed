@@ -331,6 +331,12 @@ host_backend_alias
 An alias that resolves to the backend for host platforms. This is useful when
 declaring a facade that provides a default backend for host platform use.
 
+Flag merging rules
+------------------
+Macros that help with using platform-based flags are in
+``//pw_build:merge_flags.bzl``. These are useful, for example, when you wish to
+:ref:`docs-bazel-compatibility-facade-backend-dict`.
+
 Miscellaneous utilities
 -----------------------
 
