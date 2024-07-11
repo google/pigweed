@@ -12,9 +12,14 @@
         "test:watch": "web-test-runner test/**/*.test.js --watch"
     },
     "dependencies": {
+        "@codemirror/autocomplete": "^6.16.3",
+        "@codemirror/lang-python": "^6.1.6",
+        "@codemirror/state": "^6.4.1",
+        "@codemirror/theme-one-dark": "^6.1.2",
         "@lit-labs/virtualizer": "^2.0.7",
         "@material/web": "^1.5.0",
         "@shoelace-style/shoelace": "^2.15.0",
+        "codemirror": "^6.0.1",
         "lit": "^3.1.2",
         "prettier-plugin-jsdoc": "^0.4.2"
     },
