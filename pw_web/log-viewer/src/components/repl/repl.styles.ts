@@ -41,6 +41,12 @@ export const styles = css`
     width: 100%;
   }
 
+  .actions-container {
+    justify-content: flex-end;
+    display: flex;
+    flex: 1 0 auto;
+  }
+
   .header {
     align-items: center;
     background-color: var(--sys-repl-header-bg);
@@ -76,16 +82,26 @@ export const styles = css`
     overflow-y: auto;
   }
 
-  #repl #output li {
+  li > span {
     border-left: 3px solid transparent;
-    display: flex;
-    flex-direction: column;
-    list-style: none;
-    margin: 5px 0rem;
     padding-left: 1rem;
   }
 
-  #repl #output li:last-child {
+  #repl #output li {
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    margin-bottom: 5px;
+    padding-top: 5px;
+    white-space: pre-wrap;
+  }
+
+  #repl #output li:first-child {
+    border-top: 1px solid transparent;
+  }
+
+  #repl #output li:last-child :not(:first-child) {
     border-left: 3px solid var(--md-sys-color-primary);
   }
 

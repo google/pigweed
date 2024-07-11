@@ -36,8 +36,7 @@ export class Repl extends LitElement {
       this.replKernel.autocomplete.bind(this.replKernel),
       async (code: string) => {
         const output = await this.replKernel.eval(code);
-        this.evalResults.push({ stdin: code });
-        this.evalResults.push(output);
+        this.evalResults.push({ stdin: code, ...output });
         this.requestUpdate();
       },
     );
@@ -54,10 +53,25 @@ export class Repl extends LitElement {
     }
   }
 
+  /** Remove all results from output */
+  private clearOutput() {
+    this.evalResults = [];
+    this.requestUpdate();
+  }
+
   render() {
     return html`
       <div id="repl">
-        <div class="header">REPL</div>
+        <div class="header">
+          REPL
+          <span class="actions-container">
+            <span title="Clear REPL output">
+              <md-icon-button @click=${this.clearOutput}>
+                <md-icon>&#xe16c;</md-icon>
+              </md-icon-button>
+            </span>
+          </span>
+        </div>
         <ul id="output">
           ${this.evalResults.map(
             (result) => html`
