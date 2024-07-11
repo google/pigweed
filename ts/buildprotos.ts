@@ -14,7 +14,12 @@
 
 import { exec, ExecException } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 
+const OUT_DIR = path.join('dist', 'protos');
+if (!fs.existsSync(OUT_DIR)) {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+}
 const run = function (executable: string, args: string[]) {
   console.log(args);
   return new Promise<void>((resolve) => {
@@ -74,11 +79,18 @@ protos.forEach((protoPath) => {
     restoreProtoList.push([protoPath, protoData]);
     fs.writeFileSync(protoPath, newProtoData);
   }
+  // Also write a copy to output directory.
+  const protoDistPath = path.join(OUT_DIR, protoPath);
+  if (!fs.existsSync(path.dirname(protoDistPath))) {
+    fs.mkdirSync(path.dirname(protoDistPath), { recursive: true });
+  }
+
+  fs.writeFileSync(protoDistPath, newProtoData);
 });
 
 run(
   'ts-node',
-  [`./pw_protobuf_compiler/ts/build.ts`, `--out dist/protos`].concat(
+  [`./pw_protobuf_compiler/ts/build.ts`, `--out ${OUT_DIR}`].concat(
     protos.map((proto) => `-p ${proto}`),
   ),
 ).then(() => {
