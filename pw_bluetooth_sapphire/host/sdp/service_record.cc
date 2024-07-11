@@ -249,7 +249,11 @@ bool ServiceRecord::AddInfo(const std::string& language_code,
   if (it != attributes_.end()) {
     auto v = it->second.Get<std::vector<DataElement>>();
     base_attr_list = std::move(*v);
-    BT_DEBUG_ASSERT(base_attr_list.size() % 3 == 0);
+
+    // "%" can't be in pw_assert statements.
+    const size_t list_size_mod_3 = base_attr_list.size() % 3;
+    BT_DEBUG_ASSERT(list_size_mod_3 == 0);
+
     // 0x0100 is guaranteed to be taken, start counting from higher.
     base_attrid = 0x9000;
   }
