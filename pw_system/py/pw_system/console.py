@@ -53,6 +53,7 @@ import serial
 
 from pw_cli import log as pw_cli_log
 from pw_console import embed
+from pw_console import web
 from pw_console import log_store
 from pw_console.plugins import bandwidth_toolbar
 from pw_console import pyserial_wrapper
@@ -229,6 +230,11 @@ def get_parser() -> argparse.ArgumentParser:
         default=True,
         help='Use device tracing.',
     )
+    parser.add_argument(
+        "--browser",
+        action="store_true",
+        help="Start browser-based console instead of terminal.",
+    )
 
     return parser
 
@@ -259,6 +265,7 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     json_logfile: str,
     serial_debug: bool = False,
     config_file_path: Path | None = None,
+    browser: bool = False,
 ) -> None:
     """Starts an interactive Python terminal with preset variables."""
     local_variables = dict(
@@ -308,29 +315,36 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     if serial_debug:
         log_windows['Serial Debug'] = serial_debug_log_store
 
-    interactive_console = embed.PwConsoleEmbed(
-        global_vars=local_variables,
-        local_vars=None,
-        loggers=log_windows,
-        repl_startup_message=welcome_message,
-        help_text=__doc__,
-        config_file_path=config_file_path,
-    )
-    interactive_console.add_sentence_completer(completions)
-    if serial_debug:
-        interactive_console.add_bottom_toolbar(
-            bandwidth_toolbar.BandwidthToolbar()
+    if browser:
+        webserver = web.PwConsoleWeb(
+            global_vars=local_variables,
+            loggers=log_windows,
+        )
+        webserver.start()
+    else:
+        interactive_console = embed.PwConsoleEmbed(
+            global_vars=local_variables,
+            local_vars=None,
+            loggers=log_windows,
+            repl_startup_message=welcome_message,
+            help_text=__doc__,
+            config_file_path=config_file_path,
+        )
+        interactive_console.add_sentence_completer(completions)
+        if serial_debug:
+            interactive_console.add_bottom_toolbar(
+                bandwidth_toolbar.BandwidthToolbar()
+            )
+
+        # Setup Python logger propagation
+        interactive_console.setup_python_logging(
+            # Send any unhandled log messages to the external file.
+            last_resort_filename=log_file,
+            # Don't change propagation for these loggers.
+            loggers_with_no_propagation=[_DEVICE_LOG],
         )
 
-    # Setup Python logger propagation
-    interactive_console.setup_python_logging(
-        # Send any unhandled log messages to the external file.
-        last_resort_filename=log_file,
-        # Don't change propagation for these loggers.
-        loggers_with_no_propagation=[_DEVICE_LOG],
-    )
-
-    interactive_console.embed()
+        interactive_console.embed()
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -355,6 +369,7 @@ def console(
     channel_id: int = rpc.DEFAULT_CHANNEL_ID,
     hdlc_encoding: bool = True,
     device_tracing: bool = True,
+    browser: bool = False,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
@@ -558,6 +573,7 @@ def console(
                 json_logfile=json_logfile,
                 serial_debug=serial_debug,
                 config_file_path=config_file,
+                browser=browser,
             )
     return 0
 
