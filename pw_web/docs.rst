@@ -367,6 +367,8 @@ The following icons with codepoints are curently used:
 * brightness_alert f5cf
 * wrap_text e25b
 * more_vert e5d4
+* play_arrow e037
+* stop e047
 
 To save load time and bandwidth, we provide a pre-made subset of the font with
 just the codepoints we need, which reduces the font size from 3.74MB to 12KB.
@@ -394,11 +396,11 @@ To create your own subset, find the codepoints you want to add and:
    (The points for letters a-z, numbers 0-9 and underscore character are
    necessary for creating ligatures)
 
-.. warning::  Ensure there are nono spaces in the list of codepoints.
+.. warning::  Ensure there are no spaces in the list of codepoints.
 .. code-block:: bash
 
    fonttools subset MaterialSymbolsRounded.woff2 \
-      --unicodes=5f-7a,30-39,e16c,e000,e002,e8b2,e5c9,e868,e8ec,f083,f5cf,e25b,e5d4 \
+      --unicodes=5f-7a,30-39,e16c,e000,e002,e8b2,e5c9,e868,e8ec,f083,f5cf,e25b,e5d4,e037,e047 \
       --no-layout-closure \
       --output-file=material_symbols_rounded_subset.woff2 \
       --flavor=woff2

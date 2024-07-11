@@ -111,6 +111,7 @@ export class WebSocketRPCClient extends RPCClient {
 }
 
 export interface EvalOutput {
+  stdin?: string;
   stdout?: string;
   stderr?: string;
   result?: string;

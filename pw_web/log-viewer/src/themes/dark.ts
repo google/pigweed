@@ -53,11 +53,13 @@ export const themeDark = css`
       --md-sys-color-scrim: #000000;
       --md-sys-color-inverse-surface-rgb: 230, 225, 229;
 
-      /* General */
-      --sys-log-viewer-color-primary: var(--md-sys-color-primary);
-      --sys-log-viewer-color-on-primary: var(--md-sys-color-on-primary);
+      /* REPL */
+      --sys-repl-gutter-bg: var(--md-sys-color-surface-container-high);
+      --sys-repl-active-gutter-bg: var(--md-sys-color-surface-bright);
 
       /* Log Viewer */
+      --sys-log-viewer-color-primary: var(--md-sys-color-primary);
+      --sys-log-viewer-color-on-primary: var(--md-sys-color-on-primary);
       --sys-log-viewer-color-bg: var(--md-sys-color-surface);
 
       /* Log View */
@@ -150,11 +152,13 @@ export const themeDark = css`
     --md-sys-color-scrim: #000000;
     --md-sys-color-inverse-surface-rgb: 230, 225, 229;
 
-    /* General */
-    --sys-log-viewer-color-primary: var(--md-sys-color-primary);
-    --sys-log-viewer-color-on-primary: var(--md-sys-color-on-primary);
+    /* REPL */
+    --sys-repl-gutter-bg: var(--md-sys-color-surface-container-high);
+    --sys-repl-active-gutter-bg: var(--md-sys-color-surface-bright);
 
     /* Log Viewer */
+    --sys-log-viewer-color-primary: var(--md-sys-color-primary);
+    --sys-log-viewer-color-on-primary: var(--md-sys-color-on-primary);
     --sys-log-viewer-color-bg: var(--md-sys-color-surface);
 
     /* Log View */

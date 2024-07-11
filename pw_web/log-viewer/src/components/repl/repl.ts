@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, PropertyValues } from 'lit';
+import { customElement, query } from 'lit/decorators.js';
 import { EvalOutput, ReplKernel } from '../../repl-kernel';
 import './code-editor';
 import { CodeEditor } from './code-editor';
@@ -26,6 +26,9 @@ export class Repl extends LitElement {
   static styles = [themeDark, themeLight, styles];
   private codeEditor: CodeEditor;
   private evalResults: EvalOutput[] = [];
+
+  @query('#output') _output!: HTMLElement;
+
   constructor(private replKernel: ReplKernel) {
     super();
     this.codeEditor = new CodeEditor(
@@ -33,6 +36,7 @@ export class Repl extends LitElement {
       this.replKernel.autocomplete.bind(this.replKernel),
       async (code: string) => {
         const output = await this.replKernel.eval(code);
+        this.evalResults.push({ stdin: code });
         this.evalResults.push(output);
         this.requestUpdate();
       },
@@ -44,16 +48,27 @@ export class Repl extends LitElement {
     this.shadowRoot!.querySelector('#editor')!.appendChild(this.codeEditor);
   }
 
+  protected updated(_changedProperties: PropertyValues): void {
+    if (this._output.scrollHeight > this._output.clientHeight) {
+      this._output.scrollTop = this._output.scrollHeight;
+    }
+  }
+
   render() {
     return html`
       <div id="repl">
+        <div class="header">REPL</div>
         <ul id="output">
           ${this.evalResults.map(
             (result) => html`
               <li>
-                ${!result.stderr && !result.stdout && !result.result
+                ${!result.stderr &&
+                !result.stdout &&
+                !result.result &&
+                !result.stdin
                   ? html`<span class="stdout"><i>No output</i></span>`
                   : ''}
+                <span class="stdin">${result.stdin}</span>
                 <span class="stderr">${result.stderr}</span>
                 <span class="stdout">${result.stdout}</span>
                 <span class="stdout">${result.result}</span>

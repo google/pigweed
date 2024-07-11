@@ -27,46 +27,69 @@ export const styles = css`
 
     --sys-repl-table-cell-padding: 0.375rem 0.75rem;
     --sys-repl-table-cell-icon-size: 1.125rem;
-    --sys-repl-color-bg: var(--md-sys-color-surface-container-high);
+
+    --sys-repl-header-bg: var(--sys-repl-gutter-bg);
+    --sys-repl-color-bg: var(--md-sys-color-surface-container);
+    --sys-repl-color-outline: var(--md-sys-color-outline-variant);
+    --sys-repl-color-error-bright: var(--sys-log-viewer-color-error-bright);
 
     color: var(--md-sys-color-on-surface);
     display: flex;
     font-family: 'Roboto Mono', monospace;
     flex-direction: column;
-    overflow: hidden;
     height: 100%;
     width: 100%;
-    contain: style;
+  }
+
+  .header {
+    align-items: center;
+    background-color: var(--sys-repl-header-bg);
+    border-bottom: 1px solid var(--sys-repl-color-outline);
+    color: var(--sys-log-viewer-color-controls-text);
+    display: flex;
+    padding: 0 1rem;
+    font-size: 1.125rem;
+    font-weight: 300;
+    min-height: 3rem;
   }
 
   #repl {
+    border: var(--sys-repl-view-outline-width) solid
+      var(--sys-repl-color-outline);
+    border-radius: var(--sys-repl-view-corner-radius);
     display: flex;
     flex-direction: column;
     height: 100%;
-    gap: 1rem;
+    overflow: hidden;
+  }
+
+  #repl .stdin {
+    color: var(--md-sys-color-primary);
+    font-weight: bold;
   }
 
   #repl #output {
+    border-radius: var(--sys-repl-view-corner-radius);
+    flex: 1;
     margin: 0;
     padding: 0.5rem 1rem;
-    flex: 1;
-    background-color: var(--sys-repl-color-bg);
-    border: var(--sys-repl-view-outline-width) solid
-      var(--sys-repl-color-view-outline);
-    border-radius: var(--sys-repl-view-corner-radius);
+    overflow-y: auto;
   }
+
   #repl #output li {
-    list-style: none;
     border-left: 3px solid transparent;
-    padding-left: 1rem;
-    margin: 5px 0rem;
     display: flex;
     flex-direction: column;
+    list-style: none;
+    margin: 5px 0rem;
+    padding-left: 1rem;
   }
+
   #repl #output li:last-child {
-    border-left: 3px solid #1976d2;
+    border-left: 3px solid var(--md-sys-color-primary);
   }
+
   #repl #output .stderr {
-    color: #d32f2f;
+    color: var(--sys-repl-color-error-bright);
   }
 `;

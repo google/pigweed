@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html, css } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { LitElement, html } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
 import { basicSetup, EditorView } from 'codemirror';
 import { keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
@@ -21,6 +21,9 @@ import { CompletionContext, autocompletion } from '@codemirror/autocomplete';
 import { EditorState, Prec } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { AutocompleteSuggestion } from '../../repl-kernel';
+import { styles } from './code-editor.styles';
+import { themeDark } from '../../themes/dark';
+import { themeLight } from '../../themes/light';
 
 type AutocompleteHandler = (
   code: string,
@@ -34,39 +37,10 @@ export class CodeEditor extends LitElement {
   private view: EditorView;
   private history: string[] = this.getHistory();
   private currentHistoryItem = -1;
-  static styles = css`
-    .editor-and-run {
-      height: 15vh;
-      width: 100%;
-      color: #fff;
-      display: flex;
-      gap: 1rem;
-    }
+  static styles = [themeDark, themeLight, styles];
 
-    .editor {
-      height: 100%;
-      flex: 1;
-    }
-
-    .btn-run {
-      font-weight: bold;
-      width: 6rem;
-      border-radius: var(--sys-repl-view-corner-radius);
-      border: var(--sys-repl-view-outline-width) solid
-        var(--sys-repl-color-view-outline);
-      background-color: #09af00;
-      font-size: 0.8rem;
-    }
-
-    .editor .cm-editor {
-      background-color: var(--sys-repl-color-bg);
-      border: var(--sys-repl-view-outline-width) solid
-        var(--sys-repl-color-view-outline);
-      border-radius: var(--sys-repl-view-corner-radius);
-      height: 100%;
-      overflow: hidden;
-    }
-  `;
+  @state()
+  _enableRun = true;
 
   constructor(
     private initialCode: string,
@@ -177,15 +151,10 @@ export class CodeEditor extends LitElement {
           if (update.docChanged) {
             const isEmpty = this.view.state.doc.length === 0;
             if (isEmpty) {
-              this.shadowRoot!.querySelector('.btn-run')!.setAttribute(
-                'disabled',
-                'true',
-              );
+              this._enableRun = true;
               this.currentHistoryItem = -1;
             } else {
-              this.shadowRoot!.querySelector('.btn-run')!.removeAttribute(
-                'disabled',
-              );
+              this._enableRun = false;
             }
           }
         }),
@@ -249,13 +218,9 @@ export class CodeEditor extends LitElement {
   render() {
     return html` <div class="editor-and-run">
       <div class="editor"></div>
-      <button
-        @click="${() => this.handleEval()}"
-        disabled="true"
-        class="btn-run"
-      >
-        Run
-      </button>
+      <md-icon-button ?disabled=${this._enableRun} @click=${this.handleEval}>
+        <md-icon>&#xe037;</md-icon>
+      </md-icon-button>
     </div>`;
   }
 }
