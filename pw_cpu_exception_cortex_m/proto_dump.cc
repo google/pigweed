@@ -22,8 +22,8 @@ Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
                          const pw_cpu_exception_State& cpu_state) {
   // Note that the encoder's status is checked at the end and ignored at the
   // Write*() calls to reduce the number of branches.
-  cortex_m::ArmV7mCpuState::StreamEncoder& state_encoder =
-      *static_cast<cortex_m::ArmV7mCpuState::StreamEncoder*>(&dest);
+  cortex_m::pwpb::ArmV7mCpuState::StreamEncoder& state_encoder =
+      *static_cast<cortex_m::pwpb::ArmV7mCpuState::StreamEncoder*>(&dest);
 
   const ExceptionRegisters& base = cpu_state.base;
   const ExtraRegisters& extended = cpu_state.extended;
@@ -41,15 +41,17 @@ Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
   state_encoder.WriteMsp(extended.msp).IgnoreError();
   state_encoder.WritePsp(extended.psp).IgnoreError();
   state_encoder.WriteExcReturn(extended.exc_return).IgnoreError();
+#if !_PW_ARCH_ARM_V6M
   state_encoder.WriteCfsr(extended.cfsr).IgnoreError();
+  state_encoder.WriteMmfar(extended.mmfar).IgnoreError();
+  state_encoder.WriteBfar(extended.bfar).IgnoreError();
+  state_encoder.WriteHfsr(extended.hfsr).IgnoreError();
+#endif  // !_PW_ARCH_ARM_V6
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   state_encoder.WriteMsplim(extended.msplim).IgnoreError();
   state_encoder.WritePsplim(extended.psplim).IgnoreError();
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
-  state_encoder.WriteMmfar(extended.mmfar).IgnoreError();
-  state_encoder.WriteBfar(extended.bfar).IgnoreError();
   state_encoder.WriteIcsr(extended.icsr).IgnoreError();
-  state_encoder.WriteHfsr(extended.hfsr).IgnoreError();
   state_encoder.WriteShcsr(extended.shcsr).IgnoreError();
   state_encoder.WriteControl(extended.control).IgnoreError();
 

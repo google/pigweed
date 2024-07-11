@@ -13,12 +13,12 @@
 // the License.
 
 #include <cstdint>
-#include <type_traits>
 
 #include "pw_cpu_exception/entry.h"
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m/exception_entry_test_util.h"
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_span/span.h"
@@ -30,11 +30,10 @@ namespace {
 using pw::cpu_exception::RawFaultingCpuState;
 
 // CMSIS/Cortex-M/ARMv7 related constants.
-// These values are from the ARMv7-M Architecture Reference Manual DDI 0403E.b.
-// https://static.docs.arm.com/ddi0403/e/DDI0403E_B_armv7m_arm.pdf
+// These values are from the ARMv7-M Architecture Reference Manual DDI 0403
+// https://developer.arm.com/documentation/ddi0403/latest
 
 // CCR flags. (ARMv7-M Section B3.2.8)
-constexpr uint32_t kUnalignedTrapEnableMask = 0x1u << 3;
 constexpr uint32_t kDivByZeroTrapEnableMask = 0x1u << 4;
 
 // Masks for individual bits of SHCSR. (ARMv7-M Section B3.2.13)
@@ -52,40 +51,6 @@ volatile uint32_t& cortex_m_ccr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED14u);
 volatile uint32_t& cortex_m_cpacr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
-
-// Begin a critical section that must not be interrupted.
-// This function disables interrupts to prevent any sort of context switch until
-// the critical section ends. This is done by setting PRIMASK to 1 using the cps
-// instruction.
-//
-// Returns the state of PRIMASK before it was disabled.
-inline uint32_t BeginCriticalSection() {
-  uint32_t previous_state;
-  asm volatile(
-      " mrs %[previous_state], primask              \n"
-      " cpsid i                                     \n"
-      // clang-format off
-      : /*output=*/[previous_state]"=r"(previous_state)
-      : /*input=*/
-      : /*clobbers=*/"memory"
-      // clang-format on
-  );
-  return previous_state;
-}
-
-// Ends a critical section.
-// Restore previous previous state produced by BeginCriticalSection().
-// Note: This does not always re-enable interrupts.
-inline void EndCriticalSection(uint32_t previous_state) {
-  asm volatile(
-      // clang-format off
-      "msr primask, %0"
-      : /*output=*/
-      : /*input=*/"r"(previous_state)
-      : /*clobbers=*/"memory"
-      // clang-format on
-  );
-}
 
 void EnableFpu() {
   if (PW_ARMV7M_ENABLE_FPU == 1) {
@@ -140,23 +105,14 @@ volatile float fpu_rhs_val = 67.89f;
 // This macro provides a calculation that equals kFloatTestPattern.
 #define _PW_TEST_FPU_OPERATION (fpu_lhs_val * fpu_rhs_val)
 
-// Magic pattern to help identify if the exception handler's
-// pw_cpu_exception_State pointer was pointing to captured CPU state that was
-// pushed onto the stack.
-constexpr uint32_t kMagicPattern = 0xDEADBEEF;
+// The manually captured PC won't be the exact same as the faulting PC. This is
+// the maximum tolerated distance between the two to allow the test to pass.
+constexpr int32_t kMaxPcDistance = 4;
 
 // This pattern serves a purpose similar to kMagicPattern, but is used for
 // testing a nested fault to ensure both pw_cpu_exception_State objects are
 // correctly captured.
 constexpr uint32_t kNestedMagicPattern = 0x900DF00D;
-
-// The manually captured PC won't be the exact same as the faulting PC. This is
-// the maximum tolerated distance between the two to allow the test to pass.
-constexpr int32_t kMaxPcDistance = 4;
-
-// In-memory interrupt service routine vector table.
-using InterruptVectorTable = std::aligned_storage_t<512, 512>;
-InterruptVectorTable ram_vector_table;
 
 // Forward declaration of the exception handler.
 void TestingExceptionHandler(pw_cpu_exception_State*);
@@ -307,33 +263,6 @@ void BeginExtendedFaultUnalignedStackTest() {
   EXPECT_EQ(static_cast<uint32_t>(captured_state.extended.psp), local_psp);
 }
 
-void InstallVectorTableEntries() {
-  uint32_t prev_state = BeginCriticalSection();
-  // If vector table is installed already, this is done.
-  if (cortex_m_vtor == reinterpret_cast<uint32_t>(&ram_vector_table)) {
-    EndCriticalSection(prev_state);
-    return;
-  }
-  // Copy table to new location since it's not guaranteed that we can write to
-  // the original one.
-  std::memcpy(&ram_vector_table,
-              reinterpret_cast<uint32_t*>(cortex_m_vtor),
-              sizeof(ram_vector_table));
-
-  // Override exception handling vector table entries.
-  uint32_t* exception_entry_addr =
-      reinterpret_cast<uint32_t*>(pw_cpu_exception_Entry);
-  uint32_t** interrupts = reinterpret_cast<uint32_t**>(&ram_vector_table);
-  interrupts[kHardFaultIsrNum] = exception_entry_addr;
-  interrupts[kMemFaultIsrNum] = exception_entry_addr;
-  interrupts[kBusFaultIsrNum] = exception_entry_addr;
-  interrupts[kUsageFaultIsrNum] = exception_entry_addr;
-
-  // Update Vector Table Offset Register (VTOR) to point to new vector table.
-  cortex_m_vtor = reinterpret_cast<uint32_t>(&ram_vector_table);
-  EndCriticalSection(prev_state);
-}
-
 void EnableAllFaultHandlers() {
   cortex_m_shcsr |=
       kMemFaultEnableMask | kBusFaultEnableMask | kUsageFaultEnableMask;
@@ -347,7 +276,8 @@ void Setup(bool use_fpu) {
   }
   pw_cpu_exception_SetHandler(TestingExceptionHandler);
   EnableAllFaultHandlers();
-  InstallVectorTableEntries();
+  InstallVectorTableEntries(
+      reinterpret_cast<uint32_t*>(pw_cpu_exception_Entry));
   exceptions_handled = 0;
   current_fault_depth = 0;
   captured_state = {};

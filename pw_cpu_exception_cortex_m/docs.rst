@@ -3,9 +3,10 @@
 =========================
 pw_cpu_exception_cortex_m
 =========================
-This backend provides an implementations for the CPU exception module frontend
+This module provides backend implementations for the CPU exception module frontend
 for the following Cortex-M architectures:
 
+* ARMv6-M - Cortex M0, M0+
 * ARMv7-M - Cortex M3
 * ARMv7-EM - Cortex M4, M7
 * ARMv8-M Mainline - Cortex M33, M33P

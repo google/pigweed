@@ -155,11 +155,27 @@ pw_source_set("cpu_exception") {
 }
 
 # The following targets are deprecated, use ":cpu_exception" instead.
+group("cpu_exception_armv6m") {
+  public_deps = [ ":cpu_exception" ]
+}
 group("cpu_exception_armv7m") {
   public_deps = [ ":cpu_exception" ]
 }
 group("cpu_exception_armv8m") {
   public_deps = [ ":cpu_exception" ]
+}
+
+pw_source_set("cpu_exception_armv6m.impl") {
+  sources = [ "entry_armv6m.cc" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+    ":cpu_state",
+    ":util",
+    "$dir_pw_cpu_exception:entry.facade",
+    "$dir_pw_cpu_exception:handler",
+    "$dir_pw_preprocessor:arch",
+  ]
 }
 
 pw_source_set("cpu_exception.impl") {
@@ -231,9 +247,37 @@ group("cortex_m_constants_armv8m") {
 pw_test_group("tests") {
   tests = [
     ":cpu_exception_entry_test",
+    ":cpu_exception_entry_test_armv6m",
     ":crash_test",
     ":util_test",
   ]
+}
+
+pw_source_set("cpu_exception_entry_test_util") {
+  sources = [ "exception_entry_test_util.cc" ]
+  public = [ "public/pw_cpu_exception_cortex_m/exception_entry_test_util.h" ]
+  deps = [
+    ":cortex_m_constants",
+    ":cpu_state",
+  ]
+}
+
+pw_test("cpu_exception_entry_test_armv6m") {
+  enable_if = pw_cpu_exception_ENTRY_BACKEND ==
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv6m" &&
+              pw_cpu_exception_SUPPORT_BACKEND != ""
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+    ":cpu_exception_armv6m",
+    ":cpu_exception_entry_test_util",
+    ":cpu_state",
+    "$dir_pw_cpu_exception:entry",
+    "$dir_pw_cpu_exception:handler",
+    "$dir_pw_cpu_exception:support",
+    dir_pw_span,
+  ]
+  sources = [ "exception_entry_test_armv6m.cc" ]
 }
 
 # TODO: b/234888156 - Add ARMv8-M mainline coverage.
@@ -245,6 +289,7 @@ pw_test("cpu_exception_entry_test") {
     ":config",
     ":cortex_m_constants",
     ":cpu_exception",
+    ":cpu_exception_entry_test_util",
     ":cpu_state",
     "$dir_pw_cpu_exception:entry",
     "$dir_pw_cpu_exception:handler",
@@ -256,7 +301,9 @@ pw_test("cpu_exception_entry_test") {
 
 pw_test("util_test") {
   enable_if = pw_cpu_exception_ENTRY_BACKEND ==
-              "$dir_pw_cpu_exception_cortex_m:cpu_exception"
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception" ||
+              pw_cpu_exception_ENTRY_BACKEND ==
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv6m"
   deps = [
     ":cpu_state",
     ":util",

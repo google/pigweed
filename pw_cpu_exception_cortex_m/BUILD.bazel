@@ -64,6 +64,7 @@ pw_facade(
     hdrs = ["public/pw_cpu_exception_cortex_m/crash.h"],
     backend = ":crash_backend",
     includes = ["public"],
+    # TODO: https://pwbug.dev/350758633 - add v6m support
     target_compatible_with = select({
         "@platforms//cpu:armv7-m": [],
         "@platforms//cpu:armv7e-m": [],
@@ -95,6 +96,7 @@ cc_library(
     hdrs = ["public/pw_cpu_exception_cortex_m/util.h"],
     includes = ["public"],
     target_compatible_with = select({
+        "@platforms//cpu:armv6-m": [],
         "@platforms//cpu:armv7-m": [],
         "@platforms//cpu:armv7e-m": [],
         "@platforms//cpu:armv7e-mf": [],
@@ -131,6 +133,14 @@ cc_library(
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
     includes = ["public"],
+    target_compatible_with = select({
+        "@platforms//cpu:armv6-m": [],
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":config",
         ":cpu_state",
@@ -177,7 +187,18 @@ cc_library(
 
 cc_library(
     name = "cpu_exception_impl",
-    srcs = ["entry.cc"],
+    srcs = select({
+        "@platforms//cpu:armv6-m": ["entry_armv6m.cc"],
+        "//conditions:default": ["entry.cc"],
+    }),
+    target_compatible_with = select({
+        "@platforms//cpu:armv6-m": [],
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":config",
         ":cortex_m_constants",
@@ -215,16 +236,38 @@ cc_library(
     deps = ["//pw_preprocessor:cortex_m"],
 )
 
+cc_library(
+    name = "cpu_exception_entry_test_util",
+    srcs = ["exception_entry_test_util.cc"],
+    hdrs = ["public/pw_cpu_exception_cortex_m/exception_entry_test_util.h"],
+    target_compatible_with = select({
+        "@platforms//cpu:armv6-m": [],
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":cortex_m_constants",
+        ":cpu_state",
+    ],
+)
+
 pw_cc_test(
     name = "cpu_exception_entry_test",
-    srcs = [
-        "exception_entry_test.cc",
-    ],
+    srcs = select({
+        "@platforms//cpu:armv6-m": ["exception_entry_test_armv6m.cc"],
+        "//conditions:default": ["exception_entry_test.cc"],
+    }),
     deps = [
         ":config",
         ":cpu_exception",
+        ":cpu_exception_entry_test_util",
+        ":cpu_exception_impl",
         ":cpu_state",
         "//pw_cpu_exception:handler",
+        "//pw_cpu_exception:support",
     ],
 )
 
@@ -249,6 +292,14 @@ cc_library(
         "private/pw_cpu_exception_cortex_m_backend/crash.h",
         "public/pw_cpu_exception_cortex_m/crash.h",
     ],
+    # TODO: https://pwbug.dev/350758633 - add v6m support
+    target_compatible_with = select({
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:private"],
     deps = [
         ":config",
@@ -266,13 +317,6 @@ pw_cc_test(
     srcs = [
         "crash_test.cc",
     ],
-    target_compatible_with = select({
-        "@platforms//cpu:armv7-m": [],
-        "@platforms//cpu:armv7e-m": [],
-        "@platforms//cpu:armv7e-mf": [],
-        "@platforms//cpu:armv8-m": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":config",
         ":cortex_m_constants",

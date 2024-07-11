@@ -110,9 +110,11 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
   // These conditionals are ordered by priority to ensure the most critical
   // issues are highlighted first. These are not mutually exclusive; a bus fault
   // could occur during the handling of a MPU violation, causing a nested fault.
+#if !_PW_ARCH_ARM_V6M
   if (cpu_state.extended.hfsr & kHfsrForcedMask) {
     PW_LOG_CRITICAL("Encountered a nested CPU fault (See active CFSR fields)");
   }
+#endif  // !_PW_ARCH_ARM_V6M
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {
     if (ProcessStackActive(cpu_state)) {
@@ -122,6 +124,7 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
     }
   }
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
+#if !_PW_ARCH_ARM_V6M
   if (cpu_state.extended.cfsr & kCfsrMemFaultMask) {
     if (cpu_state.extended.cfsr & kCfsrMmarvalidMask) {
       PW_LOG_CRITICAL(
@@ -142,6 +145,7 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
   if (cpu_state.extended.cfsr & kCfsrUsageFaultMask) {
     PW_LOG_CRITICAL("Encountered usage fault (See active CFSR fields)");
   }
+#endif  // !_PW_ARCH_ARM_V6M
   if ((cpu_state.extended.icsr & kIcsrVectactiveMask) == kNmiIsrNum) {
     PW_LOG_INFO("Encountered non-maskable interrupt (NMI)");
   }
@@ -151,8 +155,8 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
 }
 
 ProcessorMode ActiveProcessorMode(const pw_cpu_exception_State& cpu_state) {
-  // See ARMv7-M Architecture Reference Manual Section B1.5.8 for the exception
-  // return values, in particular bits 0:3.
+  // See ARMv6-M and ARMv7-M Architecture Reference Manual Section B1.5.8 for
+  // the exception return values, in particular bits 0:3.
   // Bits 0:3 of EXC_RETURN:
   // 0b0001 - 0x1 Handler mode Main
   // 0b1001 - 0x9 Thread mode Main
@@ -165,8 +169,8 @@ ProcessorMode ActiveProcessorMode(const pw_cpu_exception_State& cpu_state) {
 }
 
 bool MainStackActive(const pw_cpu_exception_State& cpu_state) {
-  // See ARMv7-M Architecture Reference Manual Section B1.5.8 for the exception
-  // return values, in particular bits 0:3.
+  // See ARMv6-M and ARMv7-M Architecture Reference Manual Section B1.5.8 for
+  // the exception return values, in particular bits 0:3.
   // Bits 0:3 of EXC_RETURN:
   // 0b0001 - 0x1 Handler mode Main
   // 0b1001 - 0x9 Thread mode Main
