@@ -12,14 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/*
- * Copyright 2018 - 2022 NXP
- * All rights reserved.
- *
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #include "pw_stream_uart_mcuxpresso/dma_stream.h"
 
 #include "pw_assert/check.h"
@@ -90,14 +82,13 @@ Status UartDmaStreamMcuxpresso::Init(uint32_t srcclk) {
   // we cannot get descheduled until we release the interrupt_lock_.
   interrupt_lock_.lock();
 
+  // Temporarily enable clock to inputmux, so that RX and TX DMA requests can
+  // get enabled.
   INPUTMUX_Init(INPUTMUX);
-  // Enable DMA request.
   INPUTMUX_EnableSignal(
       INPUTMUX, config_.rx_input_mux_dmac_ch_request_en, true);
   INPUTMUX_EnableSignal(
       INPUTMUX, config_.tx_input_mux_dmac_ch_request_en, true);
-  // Turnoff clock to inputmux to save power. Clock is only needed to make
-  // changes.
   INPUTMUX_Deinit(INPUTMUX);
 
   DMA_EnableChannel(config_.dma_base, config_.tx_dma_ch);
