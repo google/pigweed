@@ -59,9 +59,9 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
       :ref:`target config <docs-build_system-bazel_configuration>` or on
       the command line:
 
-      * ``pw_unit_test_backend`` to
+      * ``//pw_unit_test:backend`` to
         ``@pigweed//pw_unit_test:googletest``.
-      * ``pw_unit_test_main`` to ``@com_google_googletest//:gtest_main``.
+      * ``//pw_unit_test:main`` to ``@com_google_googletest//:gtest_main``.
 
       For example:
 
