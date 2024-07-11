@@ -57,50 +57,50 @@ enum class ThreadPriority : UBaseType_t {
 static_assert(static_cast<UBaseType_t>(ThreadPriority::kNumPriorities) <=
               configMAX_PRIORITIES);
 
-static thread::freertos::StaticContextWithStack<ToWords(
-    kLogThreadStackSizeBytes)>
-    log_thread_context;
 const thread::Options& LogThreadOptions() {
+  static thread::freertos::StaticContextWithStack<ToWords(
+      kLogThreadStackSizeBytes)>
+      context;
   static constexpr auto options =
       pw::thread::freertos::Options()
           .set_name("LogThread")
-          .set_static_context(log_thread_context)
+          .set_static_context(context)
           .set_priority(static_cast<UBaseType_t>(ThreadPriority::kLog));
   return options;
 }
 
-static thread::freertos::StaticContextWithStack<ToWords(
-    kRpcThreadStackSizeBytes)>
-    rpc_thread_context;
 const thread::Options& RpcThreadOptions() {
+  static thread::freertos::StaticContextWithStack<ToWords(
+      kRpcThreadStackSizeBytes)>
+      context;
   static constexpr auto options =
       pw::thread::freertos::Options()
           .set_name("RpcThread")
-          .set_static_context(rpc_thread_context)
+          .set_static_context(context)
           .set_priority(static_cast<UBaseType_t>(ThreadPriority::kRpc));
   return options;
 }
 
-static thread::freertos::StaticContextWithStack<ToWords(
-    kTransferThreadStackSizeBytes)>
-    transfer_thread_context;
 const thread::Options& TransferThreadOptions() {
+  static thread::freertos::StaticContextWithStack<ToWords(
+      kTransferThreadStackSizeBytes)>
+      context;
   static constexpr auto options =
       pw::thread::freertos::Options()
           .set_name("TransferThread")
-          .set_static_context(transfer_thread_context)
+          .set_static_context(context)
           .set_priority(static_cast<UBaseType_t>(ThreadPriority::kTransfer));
   return options;
 }
 
-static thread::freertos::StaticContextWithStack<ToWords(
-    kDispatcherThreadStackSizeBytes)>
-    dispatcher_thread_context;
 const thread::Options& DispatcherThreadOptions() {
+  static thread::freertos::StaticContextWithStack<ToWords(
+      kDispatcherThreadStackSizeBytes)>
+      context;
   static constexpr auto options =
       pw::thread::freertos::Options()
           .set_name("DispatcherThread")
-          .set_static_context(dispatcher_thread_context)
+          .set_static_context(context)
           .set_priority(static_cast<UBaseType_t>(ThreadPriority::kDispatcher));
   return options;
 }
@@ -115,6 +115,11 @@ const thread::Options& DispatcherThreadOptions() {
 #include "pw_thread_stl/options.h"
 
 namespace pw::system {
+namespace {
+
+thread::stl::Options stl_thread_options;
+
+}  // namespace
 
 [[noreturn]] void StartScheduler() {
   while (true) {
@@ -122,25 +127,13 @@ namespace pw::system {
   }
 }
 
-const thread::Options& LogThreadOptions() {
-  static thread::stl::Options log_thread_options;
-  return log_thread_options;
-}
+const thread::Options& LogThreadOptions() { return stl_thread_options; }
 
-const thread::Options& RpcThreadOptions() {
-  static thread::stl::Options rpc_thread_options;
-  return rpc_thread_options;
-}
+const thread::Options& RpcThreadOptions() { return stl_thread_options; }
 
-const thread::Options& TransferThreadOptions() {
-  static thread::stl::Options transfer_thread_options;
-  return transfer_thread_options;
-}
+const thread::Options& TransferThreadOptions() { return stl_thread_options; }
 
-const thread::Options& DispatcherThreadOptions() {
-  static thread::stl::Options dispatcher_thread_options;
-  return dispatcher_thread_options;
-}
+const thread::Options& DispatcherThreadOptions() { return stl_thread_options; }
 
 }  // namespace pw::system
 
