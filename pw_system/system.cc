@@ -101,6 +101,8 @@ void AsyncCore::Init(channel::ByteReaderWriter& io_channel) {
 
   thread::DetachedThread(DispatcherThreadOptions(),
                          [] { System().dispatcher().RunToCompletion(); });
+
+  thread::DetachedThread(WorkQueueThreadOptions(), GetWorkQueue());
 }
 
 async2::Poll<> AsyncCore::InitTask(async2::Context&) {

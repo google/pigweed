@@ -21,5 +21,6 @@ const thread::Options& LogThreadOptions();
 const thread::Options& RpcThreadOptions();
 const thread::Options& TransferThreadOptions();
 const thread::Options& DispatcherThreadOptions();
+const thread::Options& WorkQueueThreadOptions();
 
 }  // namespace pw::system

@@ -48,6 +48,7 @@ enum class ThreadPriority : UBaseType_t {
   kDispatcher = tskIDLE_PRIORITY + 1,
   // TODO(amontanez): These should ideally be at different priority levels, but
   // there's synchronization issues when they are.
+  kWorkQueue = kDispatcher,
   kLog = kDispatcher,
   kRpc = kDispatcher,
   kTransfer = kDispatcher,
@@ -105,6 +106,18 @@ const thread::Options& DispatcherThreadOptions() {
   return options;
 }
 
+const thread::Options& WorkQueueThreadOptions() {
+  static thread::freertos::StaticContextWithStack<ToWords(
+      kWorkQueueThreadStackSizeBytes)>
+      context;
+  static constexpr auto options =
+      pw::thread::freertos::Options()
+          .set_name("WorkQueueThread")
+          .set_static_context(context)
+          .set_priority(static_cast<UBaseType_t>(ThreadPriority::kWorkQueue));
+  return options;
+}
+
 }  // namespace pw::system
 
 #else  // STL
@@ -134,6 +147,8 @@ const thread::Options& RpcThreadOptions() { return stl_thread_options; }
 const thread::Options& TransferThreadOptions() { return stl_thread_options; }
 
 const thread::Options& DispatcherThreadOptions() { return stl_thread_options; }
+
+const thread::Options& WorkQueueThreadOptions() { return stl_thread_options; }
 
 }  // namespace pw::system
 
