@@ -98,6 +98,9 @@ export class LogList extends LitElement {
   /** The minimum width (in px) for table columns. */
   private readonly MIN_COL_WIDTH: number = 52;
 
+  /** The minimum width (in px) for table columns. */
+  private readonly LAST_COL_MIN_WIDTH: number = 700;
+
   /** The delay (in ms) for debouncing column resizing */
   private readonly RESIZE_DEBOUNCE_DELAY = 10;
 
@@ -256,7 +259,7 @@ export class LogList extends LitElement {
         return `3rem`;
       }
       if (i === this.columnData.length - 1) {
-        return `minmax(${this.MIN_COL_WIDTH}px, 1fr)`;
+        return `minmax(${this.LAST_COL_MIN_WIDTH}px, 1fr)`;
       }
       return `clamp(${this.MIN_COL_WIDTH}px, ${chWidth}ch + ${padding}px, 80ch)`;
     };
@@ -435,7 +438,10 @@ export class LogList extends LitElement {
 
     const { columnIndex, startX, startWidth } = this.columnResizeData;
     const offsetX = event.clientX - startX;
-    const newWidth = Math.max(startWidth + offsetX, this.MIN_COL_WIDTH);
+    const newWidth =
+      this.columnData.length - 1 === columnIndex
+        ? Math.max(startWidth + offsetX, this.LAST_COL_MIN_WIDTH)
+        : Math.max(startWidth + offsetX, this.MIN_COL_WIDTH);
 
     // Ensure the column index exists in columnData
     if (this.columnData[columnIndex]) {
