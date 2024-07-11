@@ -729,7 +729,8 @@ Then use `set +x` to go back to normal.
         import importlib  # pylint: disable=import-outside-toplevel
 
         for import_path, module_name in self._project_actions:
-            sys.path.append(import_path)
+            full_import_path = os.path.join(self._project_root, import_path)
+            sys.path.append(full_import_path)
             mod = importlib.import_module(module_name)
             mod.run_action(env=self._env)
 

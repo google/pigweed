@@ -258,12 +258,12 @@ here.
   access.
 
   A plugin is specified as a dictionary with two keys: "import_path" and
-  "module_name"
+  "module_name". The "import_path" is relative to the root of the checkout.
 
   The specified module must provide a "run_actions" method which takes a single
   argument, "env_vars", which is a pw_env_setup.Environment instance.
 
-  NB: This feature is not supported when using a python2.7 system python.
+  NB: This feature is not supported when using a python2 system python.
 
   Sample plugin and pigweed.json blob:
 
