@@ -55,6 +55,7 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_containers",
         "//pw_function",
+        "//pw_result",
         "//pw_status",
         "//pw_string:string",
     ],

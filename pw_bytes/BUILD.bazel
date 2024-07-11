@@ -117,6 +117,7 @@ pw_cc_test(
     deps = [
         ":pw_bytes",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
     ],
 )
 
@@ -125,5 +126,6 @@ pw_cc_test(
     srcs = ["units_test.cc"],
     deps = [
         ":pw_bytes",
+        "//pw_unit_test",
     ],
 )

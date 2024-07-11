@@ -32,6 +32,7 @@ pw_cc_test(
     srcs = ["no_destructor_test.cc"],
     deps = [
         ":no_destructor",
+        "//pw_assert",
         "//pw_unit_test",
     ],
 )
