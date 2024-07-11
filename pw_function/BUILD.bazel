@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
@@ -83,4 +84,30 @@ pw_cc_test(
         ":pw_function",
         ":scope_guard",
     ],
+)
+
+# pw_function config for upstream builds.
+#
+# See https://pigweed.dev/pw_function/#dynamic-allocation for more context.
+alias(
+    name = "upstream_default_config",
+    actual = selects.with_or({
+        (
+            "@platforms//os:android",
+            "@platforms//os:chromiumos",
+            "@platforms//os:linux",
+            "@platforms//os:macos",
+            "@platforms//os:windows",
+        ): ":config_for_host",
+        "//conditions:default": "//pw_build:default_module_config",
+    }),
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "config_for_host",
+    defines = [
+        "PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION=1",
+    ],
+    visibility = ["//visibility:private"],
 )
