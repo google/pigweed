@@ -99,6 +99,7 @@ cc_library(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":googletest_handler_adapter",
+        ":pw_unit_test.facade",
         "@com_google_googletest//:gtest",
     ],
 )

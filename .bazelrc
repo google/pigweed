@@ -156,6 +156,7 @@ build:rp2040 --//pw_thread:id_backend=@pigweed//pw_thread_freertos:id
 build:rp2040 --//pw_thread:iteration_backend=@pigweed//pw_thread_freertos:thread_iteration
 build:rp2040 --//pw_thread:sleep_backend=@pigweed//pw_thread_freertos:sleep
 build:rp2040 --//pw_thread:thread_backend=@pigweed//pw_thread_freertos:thread
+build:rp2040 --//pw_unit_test:backend=//pw_unit_test:light
 build:rp2040 --//pw_unit_test:main=//targets/rp2040:unit_test_app
 build:rp2040 --@freertos//:freertos_config=@pigweed//targets/rp2040:freertos_config
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
