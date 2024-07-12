@@ -150,6 +150,7 @@
             "test",
             "--//pw_unit_test:backend=//pw_unit_test:googletest",
             "--//pw_unit_test:main=@com_google_googletest//:gtest_main",
+            "--platforms=//pw_unit_test:googletest_platform",
             "//..."
           ],
           [

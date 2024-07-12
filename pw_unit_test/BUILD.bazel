@@ -12,8 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@local_config_platform//:constraints.bzl", "HOST_CONSTRAINTS")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
@@ -57,6 +58,21 @@ pw_facade(
 label_flag(
     name = "backend",
     build_setting_default = ":light",
+)
+
+# TODO: b/352808542 - Remove this. DO NOT depend on this in downstream
+# projects, it's a temporary API to mitigate a bug!
+boolean_constraint_value(
+    name = "googletest_only",
+    visibility = ["//:__subpackages__"],
+)
+
+# TODO: b/352808542 - Remove this. DO NOT depend on this in downstream
+# projects, it's a temporary API to mitigate a bug!
+platform(
+    name = "googletest_platform",
+    constraint_values = [":googletest_only"] + HOST_CONSTRAINTS,
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
