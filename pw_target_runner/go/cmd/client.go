@@ -40,7 +40,10 @@ func NewClient(host string, port int) (*Client, error) {
 	// The server currently only supports running locally over an insecure
 	// connection.
 	// TODO(frolv): Investigate adding TLS support to the server and client.
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(20 * 1024 * 1024)),
+	}
 
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), opts...)
 	if err != nil {

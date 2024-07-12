@@ -51,7 +51,7 @@ type Server struct {
 // NewServer creates a gRPC server with a registered TargetRunner service.
 func NewServer() *Server {
 	s := &Server{
-		grpcServer: grpc.NewServer(),
+		grpcServer: grpc.NewServer(grpc.MaxRecvMsgSize(20 * 1024 * 1024)),
 		workerPool: newWorkerPool("ServerWorkerPool"),
 	}
 
