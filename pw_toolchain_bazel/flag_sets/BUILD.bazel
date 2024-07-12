@@ -120,3 +120,16 @@ pw_cc_flag_set(
         "-DADDRESS_SANITIZER",
     ],
 )
+
+# TODO: https://pwbug.dev/346388161 - Push this to upstream rules_cc.
+pw_cc_flag_set(
+    name = "ubsan",
+    actions = [
+        "@pw_toolchain//actions:all_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-fsanitize=undefined",
+        "-DUNDEFINED_SANITIZER",
+    ],
+)

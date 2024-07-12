@@ -114,6 +114,12 @@ build:fuzztest \
 build:fuzztest \
     --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
 
+common:ubsan --//pw_toolchain/host_clang:ubsan
+# TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
+# -requires_cxx_20 and -integration because the test_tag_filters flag does not
+# accumulate.
+test:ubsan --test_tag_filters=-requires_cxx_20,-integration,-noubsan
+
 # Configure workspace status command to test pw_build_info git_build_info
 # https://bazel.build/docs/user-manual#workspace-status-command
 # TODO: b/348046338 - Add a Windows version of this command
