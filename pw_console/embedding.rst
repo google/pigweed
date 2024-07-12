@@ -171,6 +171,8 @@ logger. This logger can then be included as a log window pane in the
 
 .. _Python's logging documentation: https://docs.python.org/3/library/logging.html#logging.Logger.debug
 
+.. _module-pw_console-embedding-ipython:
+
 ------------------------------
 Embeddeding other interpreters
 ------------------------------

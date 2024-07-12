@@ -14,10 +14,561 @@ Talk to the team at Pigweed Live
 .. _docs-changelog-latest:
 
 ------------
-Jun 27, 2024
+Jul 11, 2024
 ------------
 .. changelog_highlights_start
 
+Highlights (Jun 28, 2024 to Jul 11, 2024):
+
+* **Bazel 8**: Upstream Pigweed is now using Bazel 8, the first version to
+  include platform-based flags.
+* **ARMv6-M support**: :ref:`module-pw_cpu_exception_cortex_m` now supports
+  ARMv6-M cores.
+* **Browser-based pw_system console**: The new ``--browser`` option lets
+  you start a ``pw_system`` console in a web browser rather than the default
+  Python-based terminal console.
+* **Updated pw_rpc docs**: The :ref:`module-pw_rpc` docs
+  have been revamped to make getting started easier and to
+  provide more Bazel guidance.
+
+.. changelog_highlights_end
+
+Build systems
+=============
+
+Bazel
+-----
+Pigweed is now using version 8.0 of Bazel, the first version to include
+platform-based flags. Some backend collection targets are now being
+provided as dictionaries to enable downstream projects to use the
+pattern described in :ref:`docs-bazel-compatibility-facade-backend-dict`.
+The ``incompatible_with_mcu`` Bazel helper has been introduced to help
+express whether a target is only compatible with platforms that have a
+full-featured OS.
+
+* `Run all tests with googletest backend in CI
+  <https://pwrev.dev/222532>`__
+  (issue `#352584464 <https://pwbug.dev/352584464>`__)
+* `Add missing dependencies
+  <https://pwrev.dev/222572>`__
+  (issue `#352584464 <https://pwbug.dev/352584464>`__)
+* `Don't propagate flags to exec config
+  <https://pwrev.dev/220812>`__
+  (issues `#234877642 <https://pwbug.dev/234877642>`__,
+  `#315871648 <https://pwbug.dev/315871648>`__)
+* `Provide backend collections as dicts
+  <https://pwrev.dev/219911>`__
+  (issue `#344654805 <https://pwbug.dev/344654805>`__)
+* `Roll out incompatible_with_mcu
+  <https://pwrev.dev/216852>`__
+  (issue `#348008794 <https://pwbug.dev/348008794>`__)
+* `Introduce incompatible_with_mcu
+  <https://pwrev.dev/216851>`__
+  (issue `#348008794 <https://pwbug.dev/348008794>`__,
+  `#343481391 <https://pwbug.dev/343481391>`__)
+* `Add back to CI some building targets
+  <https://pwrev.dev/218698>`__
+  (issue `#261603269 <https://pwbug.dev/261603269>`__)
+
+Docs
+====
+* `Fix shortlink URL
+  <https://pwrev.dev/221751>`__
+* `Add shortlink to pw_enviro draft
+  <https://pwrev.dev/221533>`__
+* `Update changelog
+  <https://pwrev.dev/219131>`__
+
+Modules
+=======
+
+pw_allocator
+------------
+A bug was fixed that caused builds to break when
+``-Wmissing-template-arg-list-after-template-kw`` is turned on.
+
+* `Remove unnecessary template
+  <https://pwrev.dev/220111>`__
+
+pw_assert
+---------
+Downstream projects using Bazel now need to set the new backend label flags
+``@pigweed//pw_assert:check_backend`` and
+``@pigweed//pw_assert:check_backend_impl`` and include them in their link
+deps.
+
+* `Split up Bazel assert backend, part 2
+  <https://pwrev.dev/219791>`__
+  (issue `#350585010 <https://pwbug.dev/350585010>`__)
+* `Split up Bazel assert backend, part 1
+  <https://pwrev.dev/219611>`__
+  (issue `#350585010 <https://pwbug.dev/350585010>`__)
+
+pw_async2
+---------
+* `Add missing thread_stl dependency
+  <https://pwrev.dev/219291>`__
+
+pw_async2_epoll
+---------------
+* `Use unordered_map; silence persistent warnings
+  <https://pwrev.dev/218860>`__
+
+pw_async_basic
+--------------
+* `Fix size report build error
+  <https://pwrev.dev/219691>`__
+  (issue `#350780546 <https://pwbug.dev/350780546>`__)
+
+pw_bluetooth
+------------
+* `Format emboss files
+  <https://pwrev.dev/219351>`__
+
+pw_bluetooth_proxy
+------------------
+``pw::bluetooth::proxy::sendGattNotify()`` (lowercase first letter) has been
+removed; use ``pw::bluetooth::proxy::SendGattNotify()`` (uppercase first
+letter) instead. The new
+``pw::bluetooth::proxy::GetNumSimultaneousAclSendsSupported()`` function
+returns the max number of LE ACL sends that can be in-flight at one time.
+The new ``pw::bluetooth::proxy::AclDataChannel::Reset()`` and
+``pw::bluetooth::proxy::ProxyHost::Reset()`` methods let you reset the internal
+state of those classes.
+
+* `Delete "sendGattNotify"
+  <https://pwrev.dev/220951>`__
+  (issue `#350106534 <https://pwbug.dev/350106534>`__)
+* `Include <optional> in proxy_host.h
+  <https://pwrev.dev/220657>`__
+* `ProxyHost supports multiple sends
+  <https://pwrev.dev/220573>`__
+  (issues `#348680331 <https://pwbug.dev/348680331>`__,
+  `#326499764 <https://pwbug.dev/326499764>`__)
+* `Remove unneeded PW_EXCLUSIVE_LOCKS_REQUIRED
+  <https://pwrev.dev/219417>`__
+  (issue `#350106534 <https://pwbug.dev/350106534>`__)
+* `Soft transition to SendGattNotify
+  <https://pwrev.dev/219120>`__
+  (issue `#350106534 <https://pwbug.dev/350106534>`__)
+* `Add ProxyHost/AclDataChannel::Reset()
+  <https://pwrev.dev/219119>`__
+  (issue `#350497803 <https://pwbug.dev/350497803>`__)
+* `Dedup NOCP construction in tests
+  <https://pwrev.dev/219118>`__
+* `Document which events are expected
+  <https://pwrev.dev/219353>`__
+  (issue `#326499764 <https://pwbug.dev/326499764>`__)
+* `Adjust const for pw::span
+  <https://pwrev.dev/218877>`__
+  (issue `#326497489 <https://pwbug.dev/326497489>`__)
+* `Remove use of <mutex>
+  <https://pwrev.dev/218893>`__
+  (issue `#350009505 <https://pwbug.dev/350009505>`__)
+* `Prevent crash in GattNotifyTest
+  <https://pwrev.dev/218834>`__
+
+pw_bluetooth_sapphire
+---------------------
+* `Remove modulo operator from asserts
+  <https://pwrev.dev/222233>`__
+* `Add Bazel build files to lib/ packages
+  <https://pwrev.dev/222232>`__
+* `Use pwemb namespace alias in FakeController
+  <https://pwrev.dev/221034>`__
+* `Unmask LE Connection Complete
+  <https://pwrev.dev/221033>`__
+* `Implement ExtendedLowEnergyConnector
+  <https://pwrev.dev/221032>`__
+  (issue `#305976440 <https://pwbug.dev/305976440>`__)
+* `Enable bt-host component
+  <https://pwrev.dev/221011>`__
+  (issues `#303116559 <https://pwbug.dev/303116559>`__,
+  `# b/324109634 <https://pwbug.dev/ b/324109634>`__,
+  `#326079781 <https://pwbug.dev/326079781>`__,
+  `# b/325142183 <https://pwbug.dev/ b/325142183>`__)
+* `Support ISO Channel FIDL Protocol in Drivers
+  <https://pwrev.dev/221267>`__
+  (issue `#328457492 <https://pwbug.dev/328457492>`__,
+  issue `# b/328459391 <https://pwbug.dev/ b/328459391>`__)
+* `Add ISO support to controllers
+  <https://pwrev.dev/218992>`__
+  (issue `#311639690 <https://pwbug.dev/311639690>`__)
+* `Tag integration test
+  <https://pwrev.dev/220991>`__
+  (issue `#344654806 <https://pwbug.dev/344654806>`__)
+* `Implement ExtendedLowEnergyScanner
+  <https://pwrev.dev/218979>`__
+  (issue `#305975969 <https://pwbug.dev/305975969>`__)
+* `Add packet filtering consts to vendor protocol
+  <https://pwrev.dev/218978>`__
+* `Update LEAdvertisers to use EmbossCommandPacket
+  <https://pwrev.dev/218991>`__
+  (issue `#312896684 <https://pwbug.dev/312896684>`__)
+* `Use Emboss for android vendor exts multi advert
+  <https://pwrev.dev/218977>`__
+  (issue `#312896673 <https://pwbug.dev/312896673>`__)
+* `Use Emboss versions of a2dp offload structs
+  <https://pwrev.dev/218976>`__
+* `Refactor LowEnergyScanResult to its own class
+  <https://pwrev.dev/218975>`__
+* `Refactor TxEngine to allow queueing SDUs
+  <https://pwrev.dev/218915>`__
+* `Add incoming CIS request handler
+  <https://pwrev.dev/218972>`__
+* `Add IsoStreamManager class
+  <https://pwrev.dev/218971>`__
+* `Add CIS events and commands
+  <https://pwrev.dev/218914>`__
+  (issue `#311639432 <https://pwbug.dev/311639432>`__)
+* `Retrieve sleep clock accuracy for peers
+  <https://pwrev.dev/218913>`__
+  (issue `#311639272 <https://pwbug.dev/311639272>`__)
+* `Fix LowEnergyScanner crash
+  <https://pwrev.dev/218974>`__
+  (issue `#323098126 <https://pwbug.dev/323098126>`__)
+* `Remove unused include
+  <https://pwrev.dev/214677>`__
+* `Add infrastructure for SCA operations
+  <https://pwrev.dev/214676>`__
+  (issue `#311639272 <https://pwbug.dev/311639272>`__)
+* `Use Write instead of UncheckedWrite
+  <https://pwrev.dev/214675>`__
+* `Remove now unnecessary use of std::optional
+  <https://pwrev.dev/214654>`__
+* `Expose connection role to le handle
+  <https://pwrev.dev/214653>`__
+  (issue `#311639432 <https://pwbug.dev/311639432>`__)
+* `Disambiguate comment
+  <https://pwrev.dev/214673>`__
+* `Fix typo in comment
+  <https://pwrev.dev/214652>`__
+
+pw_build
+--------
+The new macros in ``//pw_build:merge_flags.bzl`` help with using
+platform-based flags.
+
+* `Add flags_from_dict
+  <https://pwrev.dev/221691>`__
+  (issue `#301334234 <https://pwbug.dev/301334234>`__)
+
+pw_cli
+------
+``pw_cli`` has increased support for letting users select from interactive
+prompts. The RP2040 flasher utility uses the new interactive prompting
+features to let users select which detected device to flash.
+
+* `Interactive user index prompt
+  <https://pwrev.dev/220931>`__
+
+pw_console
+----------
+* `Headless mode with web/ws server running
+  <https://pwrev.dev/215860>`__
+
+pw_cpu_exception
+----------------
+* `Remove multiplexers
+  <https://pwrev.dev/219371>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_cpu_exception_cortex_m
+-------------------------
+``pw_cpu_exception_cortex_m`` now supports ARMv6-M cores.
+
+* `Add armv6-m support
+  <https://pwrev.dev/219132>`__
+  (issues `#350747553 <https://pwbug.dev/https://pwbug.dev/350747553>`__,
+  `#350747562 <https://pwbug.dev/https://pwbug.dev/350747562>`__)
+
+pw_digital_io_rp2040
+--------------------
+The new ``enable_pull_up`` and ``enable_pull_down`` fields in the
+``pw::digital_io::Rp2040Config`` struct let you configure whether resistors
+should be pulled up or down.
+
+* `Add pull up/down resistors to Rp2040Config
+  <https://pwrev.dev/219731>`__
+* `Remove manual tags
+  <https://pwrev.dev/219052>`__
+  (issue `#261603269 <https://pwbug.dev/261603269>`__)
+
+pw_env_setup
+------------
+* `Use full paths for proj action imports
+  <https://pwrev.dev/222571>`__
+
+pw_function
+-----------
+* `Dynamic allocation for upstream host
+  <https://pwrev.dev/221871>`__
+
+pw_log_string
+-------------
+* `Require backend_impl to be set explicitly
+  <https://pwrev.dev/221293>`__
+
+pw_malloc_freertos
+------------------
+* `Fix typo
+  <https://pwrev.dev/220751>`__
+  (issue `#351945325 <https://pwbug.dev/351945325>`__)
+
+pw_presubmit
+------------
+* `Narrow copyright notice exclusions
+  <https://pwrev.dev/221532>`__
+  (issue `#347062591 <https://pwbug.dev/347062591>`__)
+* `Add copyright notice to some test data
+  <https://pwrev.dev/221395>`__
+  (issue `#347062591 <https://pwbug.dev/347062591>`__)
+* `Exclude test_data from bazel_lint
+  <https://pwrev.dev/221152>`__
+* `Exclude files from copyright
+  <https://pwrev.dev/221151>`__
+* `Don't automatically use exclusions
+  <https://pwrev.dev/216355>`__
+  (issue `#347274642 <https://pwbug.dev/347274642>`__)
+
+pw_rpc
+------
+The :ref:`module-pw_rpc` docs have been revamped to make getting started
+easier and to provide more Bazel guidance.
+
+* `Expand comment for internal::ClientServerTestComment
+  <https://pwrev.dev/220574>`__
+* `Update docs
+  <https://pwrev.dev/219392>`__
+  (issue `#349832019 <https://pwbug.dev/349832019>`__)
+
+pw_stream_uart_mcuxpresso
+-------------------------
+* `Clean up dma stream comments
+  <https://pwrev.dev/222111>`__
+
+pw_sys_io
+---------
+* `Remove multiplexer, constraints
+  <https://pwrev.dev/218736>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_sys_io_baremetal_stm32f429
+-----------------------------
+Bazel projects should now set the ``--@pigweed//pw_sys_io:backend``
+label flag to ``@pigweed//pw_sys_io_baremetal_stm32f429`` and add the
+``@pigweed//pw_sys_io_baremetal_stm32f429:compatible`` constraint to their
+platform to indicate that the platform is compatible with
+``pw_sys_io_baremetal_stm32f429``.
+
+* `Add constraint
+  <https://pwrev.dev/218831>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_sys_io_stm32cube
+-------------------
+* `Remove target_compatible_with
+  <https://pwrev.dev/218704>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_system
+---------
+The new ``--browser`` option lets you start a browser-based ``pw_system``
+console instead of a terminal-based one.Thread stack sizes for the new
+async version of ``pw_system`` can now be configured with
+``PW_SYSTEM_ASYNC_LOG_THREAD_STACK_SIZE_BYTES``,
+``PW_SYSTEM_ASYNC_RPC_THREAD_STACK_SIZE_BYTES``,
+``PW_SYSTEM_ASYNC_TRANSFER_THREAD_STACK_SIZE_BYTES``, and
+``PW_SYSTEM_ASYNC_DISPATCHER_THREAD_STACK_SIZE_BYTES``. The new
+``pw::system::AsyncCore::RunOnce()`` method provides a way to run a function
+once on a separate thread. The ``--ipython`` option has been removed from the
+``pw_system`` console. See :ref:`module-pw_console-embedding-ipython` for
+guidance on how to embed IPython.
+
+* `Add web console option
+  <https://pwrev.dev/221071>`__
+* `Add missing work queue thread
+  <https://pwrev.dev/222372>`__
+* `Clean up pw_system/threads.cc
+  <https://pwrev.dev/222371>`__
+* `Configurable thread stack sizes
+  <https://pwrev.dev/221394>`__
+* `RunOnce function for work queue functionality
+  <https://pwrev.dev/218954>`__
+* `Remove IPython from pw_system console
+  <https://pwrev.dev/218882>`__
+* `Organize pw_system:async build targets
+  <https://pwrev.dev/218737>`__
+
+pw_thread
+---------
+* `Remove backend multiplexers
+  <https://pwrev.dev/218238>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_thread_stl
+-------------
+The ``pw::thread::Thread::native_handle()`` method now returns a pointer to
+the underlying thread object instead of a reference and the docs have been
+updated to make it clear that using this is inherently non-portable.
+
+* `Change NativeThreadHandle to ptr
+  <https://pwrev.dev/219251>`__
+  (issue `#350349092 <https://pwbug.dev/350349092>`__)
+
+pw_toolchain
+------------
+Go binaries have been updated to no longer link with position-independent
+executables (PIE) on Linux.
+
+* `Disable PIE for Golang
+  <https://pwrev.dev/220191>`__
+  (issue `#347708308 <https://pwbug.dev/347708308>`__)
+
+pw_toolchain_bazel
+------------------
+* `Add native binary for clang-tidy
+  <https://pwrev.dev/221471>`__
+  (issue `#352343585 <https://pwbug.dev/352343585>`__)
+
+pw_trace
+--------
+* `Remove backend multiplexer
+  <https://pwrev.dev/219792>`__
+  (issue `#347998044 <https://pwbug.dev/347998044>`__)
+
+pw_transfer
+-----------
+* `Don't assert on resource status responder
+  <https://pwrev.dev/219037>`__
+
+pw_unit_test
+------------
+* `Fix CMake test runner argument forwarding
+  <https://pwrev.dev/218973>`__
+
+pw_web
+------
+Upstream Pigweed protos are now provided alongside downstream project protos.
+
+* `Include core .proto files in the npm bundle
+  <https://pwrev.dev/222533>`__
+* `Add newlines, separators, and clear for output
+  <https://pwrev.dev/222531>`__
+  (issue `#348650028 <https://pwbug.dev/348650028>`__)
+* `Set min width for message
+  <https://pwrev.dev/221592>`__
+  (issue `#351901512 <https://pwbug.dev/351901512>`__)
+* `Implement console-level split panels
+  <https://pwrev.dev/220691>`__
+  (issue `#348649945 <https://pwbug.dev/348649945>`__)
+* `Update REPL styles
+  <https://pwrev.dev/220971>`__
+  (issue `#348650028 <https://pwbug.dev/348650028>`__)
+* `Repl kernel interface and litjs component for repl
+  <https://pwrev.dev/217311>`__
+* `Fix columns on first load
+  <https://pwrev.dev/218551>`__
+  (issue `#346869281 <https://pwbug.dev/346869281>`__)
+* `Debounce grid template calc on resize
+  <https://pwrev.dev/218377>`__
+  (issues `#346596380 <https://pwbug.dev/346596380>`__,
+  `#342450728 <https://pwbug.dev/342450728>`__)
+
+Rolls
+=====
+Pigweed is now using version 8.0 of Bazel, the first version to include
+platform-based flags. Go was updated to version ``3@1.22.5``. CMake was
+updated to version ``3@3.30.0.chromium.8``.
+
+* `Update Bazel to 8.0 rolling release
+  <https://pwrev.dev/220118>`__
+  (issue `#344013743 <https://pwbug.dev/344013743>`__)
+* `Update Bazel to 7.2
+  <https://pwrev.dev/220571>`__
+  (issue `#347708308 <https://pwbug.dev/347708308>`__)
+* `go
+  <https://pwrev.dev/220471>`__
+* `cmake
+  <https://pwrev.dev/220351>`__
+* `310, 311
+  <https://pwrev.dev/219173>`__
+
+Targets
+=======
+
+RP2040
+------
+The RP2040 flasher now provides more feedback when a board has been
+successfully flashed.
+
+* `Fix FreeRTOS tick rate
+  <https://pwrev.dev/220791>`__
+  (issue `#351906735 <https://pwbug.dev/351906735>`__)
+* `Log on successful flash
+  <https://pwrev.dev/220575>`__
+  (issue `#352052013 <https://pwbug.dev/352052013>`__)
+* `Fix build command in docs
+  <https://pwrev.dev/219359>`__
+
+Third-party software
+====================
+
+Emboss
+------
+Emboss was updated to version ``2024.0702.215418``.
+
+* `Add missing ir_data_utils.py to GN build
+  <https://pwrev.dev/220114>`__
+  (issue `#350970460 <https://pwbug.dev/350970460>`__)
+* `Update emboss to v2024.0702.215418
+  <https://pwrev.dev/219793>`__
+  (issue `#350970460 <https://pwbug.dev/350970460>`__)
+
+FreeRTOS
+--------
+* `Add missing CM33_NTZ header
+  <https://pwrev.dev/222574>`__
+
+GoogleTest
+----------
+* `Fix the docs
+  <https://pwrev.dev/222573>`__
+  (issue `#352584464 <https://pwbug.dev/352584464>`__)
+
+ICU
+---
+* `Update Bazel rules for dependent headers
+  <https://pwrev.dev/222231>`__
+* `Add Bazel build rules
+  <https://pwrev.dev/218702>`__
+  (issue `#321300565 <https://pwbug.dev/321300565>`__)
+
+Mbed TLS
+--------
+* `Remove old build file
+  <https://pwrev.dev/220137>`__
+* `Rename build file
+  <https://pwrev.dev/218709>`__
+
+Miscellaneous
+=============
+
+GitHub
+------
+* `Add copyright notice
+  <https://pwrev.dev/221491>`__
+  (issue `#347062591 <https://pwbug.dev/347062591>`__)
+
+dotfiles
+--------
+* `Add copyright notice
+  <https://pwrev.dev/221531>`__
+  (issue `#347062591 <https://pwbug.dev/347062591>`__)
+
+------------
+Jun 27, 2024
+------------
 Highlights (Jun 14, 2024 to Jun 27, 2024):
 
 * **RP2040 implementation for pw_channel**:
@@ -31,8 +582,6 @@ Highlights (Jun 14, 2024 to Jun 27, 2024):
   it easier to log binary data as human-readable hex dumps. The number of
   input bytes to display per line can be configured via the ``kBytesPerLine``
   template parameter.
-
-.. changelog_highlights_end
 
 Build systems
 =============
