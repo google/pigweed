@@ -29,7 +29,22 @@ export const styles = css`
     justify-content: space-between;
     padding: 0 1rem;
     position: relative;
-    --md-list-item-leading-icon-size: 1.5rem;
+    --md-list-item-leading-icon-size: 1.2rem;
+    --md-filled-text-field-container-shape: 32px;
+    --md-filled-text-field-container-color: var(--md-sys-color-surface);
+    --md-filled-text-field-hover-state-layer-color: var(
+      --md-sys-color-inverse-on-surface
+    );
+    --md-filled-text-field-input-text-line-height: 0.75;
+    --md-filled-text-field-top-space: 0.375rem;
+    --md-filled-text-field-bottom-space: 0.375rem;
+    --md-filled-text-field-active-indicator-color: transparent;
+    --md-filled-text-field-hover-active-indicator-color: transparent;
+    --md-filled-text-field-focus-active-indicator-color: transparent;
+    --md-filled-text-field-input-text-placeholder-color: var(
+      --md-sys-color-outline
+    );
+    --text-field-icon-size: 1.75rem;
   }
 
   :host > * {
@@ -48,7 +63,7 @@ export const styles = css`
     flex: 1 1 auto;
   }
 
-  :host([searchexpanded]) input {
+  :host([searchexpanded]) md-filled-text-field {
     width: 100%;
   }
 
@@ -76,24 +91,12 @@ export const styles = css`
     position: relative;
   }
 
-  input[type='text'] {
-    align-items: center;
-    background-color: var(--sys-log-viewer-color-controls-input-bg);
-    border: 1px solid var(--sys-log-viewer-color-controls-input-outline);
-    border-radius: 1.5rem;
-    cursor: text;
-    display: flex;
-    font-size: 1rem;
-    height: 0.75rem;
-    justify-content: flex-end;
-    line-height: 0.75;
-    overflow: hidden;
-    padding: 0.5rem 1rem;
+  md-filled-text-field {
+    --md-icon-button-icon-size: 1.375rem;
+    --md-icon-button-icon-color: var(--md-sys-color-outline);
+    --md-icon-button-state-layer-height: var(--text-field-icon-size);
+    --md-icon-button-state-layer-width: var(--text-field-icon-size);
     width: 25rem;
-  }
-
-  input::placeholder {
-    color: var(--md-sys-color-on-surface-variant);
   }
 
   input[type='checkbox'] {
@@ -110,6 +113,10 @@ export const styles = css`
     position: absolute;
     right: 0;
     z-index: 2;
+  }
+
+  md-icon-button:nth-of-type(2) {
+    padding-right: calc(var(--text-field-icon-size) - 0.5rem);
   }
 
   md-standard-icon-button[selected] {
