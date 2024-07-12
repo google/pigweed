@@ -222,6 +222,17 @@ def log_decoded_log(
     )
 
 
+def timestamp_parser_ms_since_boot(timestamp: int) -> str:
+    """Decodes timestamp as milliseconds since boot.
+
+    Args:
+        timestamp: The timestamp as an integer.
+    Returns:
+        A string representation of the timestamp.
+    """
+    return str(datetime.timedelta(seconds=timestamp / 1e3))[:-3]
+
+
 def timestamp_parser_ns_since_boot(timestamp: int) -> str:
     """Decodes timestamp as nanoseconds since boot.
 

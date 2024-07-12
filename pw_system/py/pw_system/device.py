@@ -18,7 +18,6 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable
 
-from pw_thread_protos import thread_pb2
 from pw_hdlc import rpc
 from pw_log import log_decoder
 from pw_log_rpc import rpc_log_stream
@@ -26,16 +25,19 @@ from pw_metric import metric_parser
 import pw_rpc
 from pw_rpc import callback_client, console_tools
 from pw_thread import thread_analyzer
+from pw_thread_protos import thread_pb2
 from pw_tokenizer import detokenize
 from pw_tokenizer.proto import decode_optionally_tokenized
 from pw_unit_test.rpc import run_tests as pw_unit_test_run_tests, TestRecord
 
+
 # Internal log for troubleshooting this tool (the console).
 _LOG = logging.getLogger(__package__)
+_ROOT_LOG = logging.getLogger()
+
 DEFAULT_DEVICE_LOGGER = logging.getLogger('rpc_device')
 
 
-# pylint: disable=too-many-arguments
 class Device:
     """Represents an RPC Client for a device running a Pigweed target.
 
@@ -44,6 +46,7 @@ class Device:
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         channel_id: int,
         reader: rpc.CancellableReader,
