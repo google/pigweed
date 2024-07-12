@@ -1567,7 +1567,7 @@ Examples in C++
      void DoOtherStuff();
    }
 
-Conditional Variables
+Condition Variables
 =====================
 :cpp:class:`pw::sync::ConditionVariable` provides a condition variable
 implementation that provides semantics and an API very similar to
@@ -1575,6 +1575,36 @@ implementation that provides semantics and an API very similar to
 <https://en.cppreference.com/w/cpp/thread/condition_variable>`_ in the C++
 Standard Library.
 
+.. warning::
+   Condition variables are not a good abstraction for embedded due to spurious
+   wakeups. As a result, the only ``pw_sync`` backend provided by Pigweed that
+   supports condition variables is :ref:`module-pw_sync_stl`. Consider using
+   a ``ThreadNotification`` instead, as these do not cause spurious wakeups and
+   can be used in an interrupt context.
+
+Limitations
+-----------
+As a blocking operation, condition variables should not be waited on in an
+interrupt context. Less intuitively, condition variables should not be notified
+in an interrupt context. Notifying a condition variable involves checking the
+corresponding condition to decide whether to resume waiting threads. This check
+can happen either on the signaling thread or the waiting thread:
+
+- If the signaling thread checks the condition, it needs to exclusively access
+  the waiters and their associated conditions. Access to this list must be
+  synchronized with calls to wait on the variable. Additional state checked by
+  the conditions may also need to be synchronized. As a result, checking the
+  conditions on the signaling thread may involve blocking and is not suitable
+  for a interrupt context.
+- If the waiting threads check their conditions, access to the list of waiters
+  still needs to be synchronized. Additionally, a thread may find that its
+  condition is not satisfied, and that it needs to resume waiting. Waking
+  threads only to resume waiting is costly in terms of both power and
+  performance.
+
+The second approach leads to spurious wakeups in a thread context as well. The
+first approach may also have spurious wakeups if the condition changes between
+signaling the waiter and the waiter reacquiring its lock.
 
 .. toctree::
    :hidden:

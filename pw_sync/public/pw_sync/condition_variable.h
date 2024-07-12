@@ -13,6 +13,25 @@
 // the License.
 #pragma once
 
+// IMPORTANT: DO NOT USE!
+//
+// The interface defined below is currently ONLY implemented by the pw_sync_stl
+// backed, and cannot be implemented efficiently by other backends.
+// Specifically, it is difficult for condition variables notifying waiters
+// efficiently:
+//
+// - If wake condition(s) are checked by the waiting threads, these threads must
+//   first be awoken to check the condition, and resume sleeping if it is not
+//   met. These spurious wakeups consume time and power.
+// - If wake condition(s) are checked by the notifier, synchronization is
+//   required. This prevents the condition variable from being used in ISRs.
+//   Moreover, at least some
+//
+// As a result, the interface below WILL either change or be removed. Do not
+// depend on it.
+//
+// TODO(b/294395229): Revisit the interface.
+
 #include <mutex>
 
 #include "pw_chrono/system_clock.h"
