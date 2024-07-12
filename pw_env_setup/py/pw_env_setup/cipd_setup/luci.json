@@ -136,6 +136,20 @@
         "latest"
       ],
       "version_file": ".versions/gsutil.cipd_version"
+    },
+    {
+      "path": "infra/tools/luci-cv/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "latest"
+      ],
+      "version_file": ".versions/luci-cv.cipd_version"
     }
   ]
 }
