@@ -34,6 +34,7 @@ class LowEnergyScanResult {
       : address_(address), resolved_(resolved), connectable_(connectable) {}
 
   LowEnergyScanResult& operator=(const LowEnergyScanResult& other);
+  LowEnergyScanResult(const LowEnergyScanResult& other) { *this = other; }
 
   const DeviceAddress& address() const { return address_; }
   bool connectable() const { return connectable_; }

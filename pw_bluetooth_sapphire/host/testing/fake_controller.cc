@@ -3132,7 +3132,7 @@ void FakeController::OnAndroidStartA2dpOffload(
         params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::A2dpOffloadCommandCompleteEventWriter>(
-      hci_android::kA2dpOffloadCommand);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::START_LEGACY);
 
@@ -3234,7 +3234,7 @@ void FakeController::OnAndroidStartA2dpOffload(
 void FakeController::OnAndroidStopA2dpOffload() {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::A2dpOffloadCommandCompleteEventWriter>(
-      hci_android::kA2dpOffloadCommand);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::STOP_LEGACY);
 
@@ -3279,7 +3279,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
     const android_hci::LEMultiAdvtSetAdvtParamCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_android::kLEMultiAdvt);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_PARAMETERS);
@@ -3371,7 +3371,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
     const android_hci::LEMultiAdvtSetAdvtDataCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_android::kLEMultiAdvt);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_DATA);
@@ -3445,7 +3445,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
     const android_hci::LEMultiAdvtSetScanRespDataCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_android::kLEMultiAdvt);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_hci::LEMultiAdvtSubOpcode::SET_SCAN_RESPONSE_DATA);
@@ -3522,7 +3522,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
     const android_hci::LEMultiAdvtSetRandomAddrCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_android::kLEMultiAdvt);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_hci::LEMultiAdvtSubOpcode::SET_RANDOM_ADDRESS);
@@ -3571,7 +3571,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
     const android_hci::LEMultiAdvtEnableCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
       android_hci::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_android::kLEMultiAdvt);
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_hci::LEMultiAdvtSubOpcode::ENABLE);
 

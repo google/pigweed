@@ -1,0 +1,107 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "definitions",
+    srcs = [
+        "gap.cc",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+    ],
+)
+
+cc_library(
+    name = "gap",
+    srcs = [
+        "adapter.cc",
+        "android_vendor_capabilities.cc",
+        "bredr_connection.cc",
+        "bredr_connection_manager.cc",
+        "bredr_connection_request.cc",
+        "bredr_discovery_manager.cc",
+        "bredr_interrogator.cc",
+        "discovery_filter.cc",
+        "generic_access_client.cc",
+        "identity_resolving_list.cc",
+        "low_energy_address_manager.cc",
+        "low_energy_advertising_manager.cc",
+        "low_energy_connection.cc",
+        "low_energy_connection_handle.cc",
+        "low_energy_connection_manager.cc",
+        "low_energy_connection_request.cc",
+        "low_energy_connector.cc",
+        "low_energy_discovery_manager.cc",
+        "low_energy_interrogator.cc",
+        "pairing_state.cc",
+        "peer.cc",
+        "peer_cache.cc",
+        "peer_metrics.cc",
+        "types.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":definitions",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gatt",
+        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/iso",
+        "//pw_bluetooth_sapphire/host/l2cap",
+        "//pw_bluetooth_sapphire/host/sco",
+        "//pw_bluetooth_sapphire/host/sdp",
+        "//pw_bluetooth_sapphire/host/sm",
+        "@pigweed//pw_async:heap_dispatcher",
+        "@pigweed//pw_bluetooth",
+        "@pigweed//third_party/fuchsia:fit",
+    ],
+)
+
+# Bazel support for pw_bluetooth_sapphire has not been configured for all
+# files yet, but must be enumerated to satisfy presubmit.
+filegroup(
+    name = "_files",
+    srcs = [
+        "adapter_test.cc",
+        "bredr_connection_manager_test.cc",
+        "bredr_connection_request_test.cc",
+        "bredr_discovery_manager_test.cc",
+        "bredr_interrogator_test.cc",
+        "discovery_filter_test.cc",
+        "fake_adapter.cc",
+        "fake_pairing_delegate.cc",
+        "fake_pairing_delegate_test.cc",
+        "identity_resolving_list_test.cc",
+        "low_energy_address_manager_test.cc",
+        "low_energy_advertising_manager_test.cc",
+        "low_energy_connection_manager_test.cc",
+        "low_energy_discovery_manager_test.cc",
+        "low_energy_interrogator_test.cc",
+        "pairing_state_test.cc",
+        "peer_cache_test.cc",
+        "peer_test.cc",
+        "types_test.cc",
+    ],
+)

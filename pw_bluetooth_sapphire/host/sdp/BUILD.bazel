@@ -1,0 +1,64 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "definitions",
+    srcs = [
+        "data_element.cc",
+        "error.cc",
+        "service_record.cc",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+    ],
+)
+
+cc_library(
+    name = "sdp",
+    srcs = [
+        "client.cc",
+        "pdu.cc",
+        "server.cc",
+        "service_discoverer.cc",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":definitions",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/l2cap",
+        "@pigweed//third_party/fuchsia:stdcompat",
+    ],
+)
+
+# Bazel support for pw_bluetooth_sapphire has not been configured for all
+# files yet, but must be enumerated to satisfy presubmit.
+filegroup(
+    name = "_files",
+    srcs = [
+        "client_test.cc",
+        "data_element_test.cc",
+        "pdu_test.cc",
+        "server_test.cc",
+        "service_discoverer_test.cc",
+        "service_record_test.cc",
+    ],
+)

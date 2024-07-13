@@ -1,0 +1,87 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "definitions",
+    srcs = [
+        "error.cc",
+        "packet.cc",
+        "types.cc",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+    ],
+)
+
+cc_library(
+    name = "sm",
+    srcs = [
+        "ecdh_key.cc",
+        "pairing_channel.cc",
+        "pairing_phase.cc",
+        "phase_1.cc",
+        "phase_2_legacy.cc",
+        "phase_2_secure_connections.cc",
+        "phase_3.cc",
+        "sc_stage_1_just_works_numeric_comparison.cc",
+        "sc_stage_1_passkey.cc",
+        "security_manager.cc",
+        "security_request_phase.cc",
+        "util.cc",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":definitions",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/gap:definitions",
+        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/l2cap",
+        "@boringssl//:bssl",
+        "@pigweed//pw_string",
+        "@pigweed//third_party/fuchsia:fit",
+    ],
+)
+
+# Bazel support for pw_bluetooth_sapphire has not been configured for all
+# files yet, but must be enumerated to satisfy presubmit.
+filegroup(
+    name = "_files",
+    srcs = [
+        "ecdh_key_test.cc",
+        "error_test.cc",
+        "packet_test.cc",
+        "pairing_channel_test.cc",
+        "pairing_phase_test.cc",
+        "phase_1_test.cc",
+        "phase_2_legacy_test.cc",
+        "phase_2_secure_connections_test.cc",
+        "phase_3_test.cc",
+        "sc_stage_1_just_works_numeric_comparison_test.cc",
+        "sc_stage_1_passkey_test.cc",
+        "security_manager_test.cc",
+        "security_request_phase_test.cc",
+        "test_security_manager.cc",
+        "types_test.cc",
+        "util_test.cc",
+    ],
+)

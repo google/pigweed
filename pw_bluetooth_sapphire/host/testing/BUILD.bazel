@@ -1,0 +1,152 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "testing",
+    testonly = True,
+    srcs = [
+        "inspect_util.cc",
+        "parse_args.cc",
+        "test_packets.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    target_compatible_with = ["//pw_unit_test:googletest_only"],
+    deps = [
+        ":fake_controller",
+        ":mock_controller",
+        ":test_helpers",
+        "//pw_bluetooth_sapphire:config",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/transport",
+        "//pw_bluetooth_sapphire/host/transport:testing",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "test_helpers",
+    testonly = True,
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    target_compatible_with = ["//pw_unit_test:googletest_only"],
+    # test_helpers.h is currently in bt-host:public, but its deps are here.
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/lib/cpp-string",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "controller_test_double_base",
+    testonly = True,
+    srcs = ["controller_test_double_base.cc"],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    target_compatible_with = ["//pw_unit_test:googletest_only"],
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_unit_test",
+        "@pigweed//pw_async:heap_dispatcher",
+        "@pigweed//pw_bluetooth",
+        "@pigweed//third_party/fuchsia:fit",
+    ],
+)
+
+cc_library(
+    name = "mock_controller",
+    testonly = True,
+    srcs = ["mock_controller.cc"],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    target_compatible_with = ["//pw_unit_test:googletest_only"],
+    deps = [
+        ":controller_test_double_base",
+        ":test_helpers",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/transport",
+        "//pw_bluetooth_sapphire/host/transport:testing",
+        "//pw_unit_test",
+        "@pigweed//pw_async:heap_dispatcher",
+    ],
+)
+
+cc_library(
+    name = "fake_controller",
+    testonly = True,
+    srcs = [
+        "fake_controller.cc",
+        "fake_dynamic_channel.cc",
+        "fake_gatt_server.cc",
+        "fake_l2cap.cc",
+        "fake_peer.cc",
+        "fake_sdp_server.cc",
+        "fake_signaling_server.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    target_compatible_with = ["//pw_unit_test:googletest_only"],
+    deps = [
+        ":controller_test_double_base",
+        ":test_helpers",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/att:definitions",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_bluetooth_sapphire/host/gatt:definitions",
+        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/l2cap:definitions",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/sdp",
+        "//pw_unit_test",
+        "@pigweed//pw_bluetooth:emboss_hci",
+        "@pigweed//third_party/fuchsia:fit",
+    ],
+)
+
+cc_library(
+    name = "gtest_main",
+    testonly = True,
+    srcs = ["run_all_unittests.cc"],
+    deps = [
+        ":testing",
+        "//pw_bluetooth_sapphire/host/common",
+    ],
+)
+
+# Bazel support for pw_bluetooth_sapphire has not been configured for all
+# files yet, but must be enumerated to satisfy presubmit.
+filegroup(
+    name = "_files",
+    srcs = [
+        "fake_controller_test.cc",
+        "fake_dynamic_channel_test.cc",
+        "fake_l2cap_test.cc",
+        "fake_sdp_server_test.cc",
+        "fake_signaling_server_test.cc",
+        "inspect_util_test.cc",
+        "parse_args_test.cc",
+    ],
+)

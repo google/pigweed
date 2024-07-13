@@ -1,0 +1,83 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "transport",
+    srcs = [
+        "acl_data_channel.cc",
+        "acl_data_packet.cc",
+        "command_channel.cc",
+        "control_packets.cc",
+        "emboss_control_packets.cc",
+        "error.cc",
+        "link_type.cc",
+        "sco_data_channel.cc",
+        "sco_data_packet.cc",
+        "transport.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "@pigweed//pw_async:dispatcher",
+        "@pigweed//pw_async:task",
+        "@pigweed//pw_bluetooth",
+        "@pigweed//pw_bluetooth:emboss_hci",
+        "@pigweed//pw_bluetooth:emboss_hci_test",
+        "@pigweed//third_party/fuchsia:fit",
+    ],
+)
+
+cc_library(
+    name = "testing",
+    srcs = [
+        "fake_sco_data_channel.cc",
+        "mock_acl_data_channel.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
+    # builder issue is resolved.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":transport",
+        "//pw_bluetooth_sapphire:public",
+    ],
+)
+
+# Bazel support for pw_bluetooth_sapphire has not been configured for all
+# files yet, but must be enumerated to satisfy presubmit.
+filegroup(
+    name = "_files",
+    srcs = [
+        "acl_data_channel_test.cc",
+        "command_channel_test.cc",
+        "emboss_control_packets_test.cc",
+        "emboss_packet_test.cc",
+        "packet_test.cc",
+        "sco_data_channel_test.cc",
+        "sco_data_packet_test.cc",
+        "slab_allocators_test.cc",
+        "transport_test.cc",
+    ],
+)
