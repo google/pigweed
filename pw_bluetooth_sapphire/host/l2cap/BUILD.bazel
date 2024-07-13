@@ -45,6 +45,7 @@ cc_library(
         "channel_configuration.cc",
         "channel_manager.cc",
         "command_handler.cc",
+        "credit_based_flow_control_tx_engine.cc",
         "dynamic_channel.cc",
         "dynamic_channel_registry.cc",
         "enhanced_retransmission_mode_engines.cc",
@@ -67,6 +68,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":definitions",
+        "//pw_bluetooth:emboss_l2cap_frames",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/transport",
@@ -129,6 +131,7 @@ fuchsia_cc_test(
         "channel_manager_test.cc",
         "channel_test.cc",
         "command_handler_test.cc",
+        "credit_based_flow_control_tx_engine_test.cc",
         "dynamic_channel_registry_test.cc",
         "enhanced_retransmission_mode_engines_test.cc",
         "enhanced_retransmission_mode_rx_engine_test.cc",

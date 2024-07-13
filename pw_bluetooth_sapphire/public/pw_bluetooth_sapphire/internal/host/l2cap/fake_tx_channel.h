@@ -52,6 +52,8 @@ class FakeTxChannel : public TxEngine::TxChannel {
     return next;
   }
 
+  size_t queue_size() { return queue_.size(); }
+
  private:
   SendFrameHandler send_frame_cb_;
   std::queue<ByteBufferPtr> queue_;

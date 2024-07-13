@@ -44,6 +44,7 @@ pw_source_set("l2cap") {
     "$dir_public_l2cap/channel_configuration.h",
     "$dir_public_l2cap/channel_manager.h",
     "$dir_public_l2cap/command_handler.h",
+    "$dir_public_l2cap/credit_based_flow_control_tx_engine.h",
     "$dir_public_l2cap/dynamic_channel.h",
     "$dir_public_l2cap/dynamic_channel_registry.h",
     "$dir_public_l2cap/enhanced_retransmission_mode_engines.h",
@@ -74,6 +75,7 @@ pw_source_set("l2cap") {
     "channel_configuration.cc",
     "channel_manager.cc",
     "command_handler.cc",
+    "credit_based_flow_control_tx_engine.cc",
     "dynamic_channel.cc",
     "dynamic_channel_registry.cc",
     "enhanced_retransmission_mode_engines.cc",
@@ -99,6 +101,8 @@ pw_source_set("l2cap") {
     "$dir_pw_string",
     "$dir_pw_third_party/fuchsia:fit",
   ]
+
+  deps = [ "$dir_pw_bluetooth:emboss_l2cap_frames" ]
 }
 
 # Separate from :testing to avoid a dependency cycle.
@@ -161,6 +165,7 @@ pw_test("l2cap_tests") {
     "channel_manager_test.cc",
     "channel_test.cc",
     "command_handler_test.cc",
+    "credit_based_flow_control_tx_engine_test.cc",
     "dynamic_channel_registry_test.cc",
     "enhanced_retransmission_mode_engines_test.cc",
     "enhanced_retransmission_mode_rx_engine_test.cc",

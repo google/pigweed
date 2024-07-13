@@ -189,6 +189,7 @@ pw_source_set("_public") {
     "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_manager_mock_controller_test_fixture.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/command_handler.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/credit_based_flow_control_tx_engine.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_engines.h",
