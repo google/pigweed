@@ -215,9 +215,7 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
   std::vector<LEExtendedAdvertisingReportDataView> reports =
       ParseAdvertisingReports(event);
   for (LEExtendedAdvertisingReportDataView report : reports) {
-    DeviceAddress address;
-    bool resolved = false;
-    std::tie(address, resolved) =
+    const auto& [address, resolved] =
         BuildDeviceAddress(report.address_type().Read(), report.address());
 
     bool is_directed = report.event_type().directed().Read();

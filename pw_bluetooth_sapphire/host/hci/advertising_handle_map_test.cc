@@ -208,8 +208,9 @@ TEST(AdvertisingHandleMapTest, Clear) {
   AdvertisingHandleMap handle_map;
   std::optional<hci_spec::AdvertisingHandle> handle =
       handle_map.MapHandle(DeviceAddress(DeviceAddress::Type::kLEPublic, {0}));
+  ASSERT_TRUE(handle);
+
   EXPECT_LE(handle.value(), hci_spec::kMaxAdvertisingHandle);
-  EXPECT_TRUE(handle);
   EXPECT_EQ(1u, handle_map.Size());
 
   handle_map.Clear();

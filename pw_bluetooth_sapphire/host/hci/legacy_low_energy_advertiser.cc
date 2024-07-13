@@ -138,7 +138,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     const DeviceAddress& address,
     const AdvertisingData& data,
     const AdvertisingData& scan_rsp,
-    AdvertisingOptions options,
+    const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     ResultFunction<> result_callback) {
   fit::result<HostError> result =
@@ -179,10 +179,9 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     scan_rsp.Copy(&scan_rsp_copy);
 
     staged_params_ = StagedParams{address,
-                                  options.interval,
-                                  options.flags,
                                   std::move(data_copy),
                                   std::move(scan_rsp_copy),
+                                  options,
                                   std::move(connect_callback),
                                   std::move(result_callback)};
 
@@ -204,6 +203,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   }
 
   starting_ = true;
+  local_address_ = DeviceAddress();
 
   // If the TX Power Level is requested, read it from the controller, update the
   // data buf, and proceed with starting advertising.
@@ -222,32 +222,34 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       if (hci_is_error(event, WARN, "hci-le", "read TX power level failed")) {
         staged_params_.value().result_callback(event.ToResult());
         staged_params_ = {};
+        local_address_ = DeviceAddress();
         starting_ = false;
         return;
       }
 
-      const auto& params = event.return_params<
-          hci_spec::LEReadAdvertisingChannelTxPowerReturnParams>();
+      auto staged_params = std::move(staged_params_.value());
+      staged_params_ = {};
 
       // Update the advertising and scan response data with the TX power level.
-      auto staged_params = std::move(staged_params_.value());
+      const auto& params = event.return_params<
+          hci_spec::LEReadAdvertisingChannelTxPowerReturnParams>();
       staged_params.data.SetTxPower(params->tx_power);
       if (staged_params.scan_rsp.CalculateBlockSize()) {
         staged_params.scan_rsp.SetTxPower(params->tx_power);
       }
-      // Reset the |staged_params_| as it is no longer in use.
-      staged_params_ = {};
 
       StartAdvertisingInternal(
           staged_params.address,
           staged_params.data,
           staged_params.scan_rsp,
-          staged_params.interval,
-          staged_params.flags,
+          staged_params.options,
           std::move(staged_params.connect_callback),
-          [this, result_callback = std::move(staged_params.result_callback)](
+          [this,
+           address = staged_params.address,
+           result_callback = std::move(staged_params.result_callback)](
               const Result<>& result) {
             starting_ = false;
+            local_address_ = address;
             result_callback(result);
           });
     };
@@ -257,22 +259,24 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     return;
   }
 
-  StartAdvertisingInternal(address,
-                           data,
-                           scan_rsp,
-                           options.interval,
-                           options.flags,
-                           std::move(connect_callback),
-                           [this, result_callback = std::move(result_callback)](
-                               const Result<>& result) {
-                             starting_ = false;
-                             result_callback(result);
-                           });
+  StartAdvertisingInternal(
+      address,
+      data,
+      scan_rsp,
+      options,
+      std::move(connect_callback),
+      [this, address, result_callback = std::move(result_callback)](
+          const Result<>& result) {
+        starting_ = false;
+        local_address_ = address;
+        result_callback(result);
+      });
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising() {
   LowEnergyAdvertiser::StopAdvertising();
   starting_ = false;
+  local_address_ = DeviceAddress();
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
@@ -282,6 +286,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
 
   LowEnergyAdvertiser::StopAdvertisingInternal(address);
   starting_ = false;
+  local_address_ = DeviceAddress();
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
@@ -297,7 +302,7 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(
   // be disconnected in that case before it can propagate to higher layers.
   DeviceAddress local_address = identity_address;
   if (IsAdvertising()) {
-    local_address = connection_callbacks().begin()->first;
+    local_address = local_address_;
   }
 
   CompleteIncomingConnection(

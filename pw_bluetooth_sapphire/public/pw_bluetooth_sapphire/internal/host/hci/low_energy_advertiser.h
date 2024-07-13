@@ -41,7 +41,8 @@ class AdvertisingIntervalRange final {
   uint16_t max() const { return max_; }
 
  private:
-  uint16_t min_, max_;
+  uint16_t min_;
+  uint16_t max_;
 };
 
 class LowEnergyAdvertiser : public LocalAddressClient {
@@ -106,26 +107,27 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // will be generated.
   struct AdvertisingOptions {
     AdvertisingOptions(AdvertisingIntervalRange interval,
-                       bool anonymous,
                        AdvFlags flags,
+                       bool anonymous,
                        bool include_tx_power_level)
         : interval(interval),
-          anonymous(anonymous),
           flags(flags),
-          include_tx_power_level(include_tx_power_level) {}
+          include_tx_power_level(include_tx_power_level),
+          anonymous(anonymous) {}
 
     AdvertisingIntervalRange interval;
-    bool anonymous;  // TODO(fxbug.dev/42157563): anonymous advertising is
-                     // currently not supported
     AdvFlags flags;
     bool include_tx_power_level;
+
+    // TODO(b/42157563): anonymous advertising is currently not // supported
+    bool anonymous;
   };
   using ConnectionCallback =
       fit::function<void(std::unique_ptr<hci::LowEnergyConnection> link)>;
   virtual void StartAdvertising(const DeviceAddress& address,
                                 const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp,
-                                AdvertisingOptions options,
+                                const AdvertisingOptions& options,
                                 ConnectionCallback connect_callback,
                                 ResultFunction<> result_callback) = 0;
 
@@ -230,8 +232,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   void StartAdvertisingInternal(const DeviceAddress& address,
                                 const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp,
-                                AdvertisingIntervalRange interval,
-                                AdvFlags flags,
+                                const AdvertisingOptions& options,
                                 ConnectionCallback connect_callback,
                                 hci::ResultFunction<> callback);
 
@@ -251,11 +252,6 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   SequentialCommandRunner& hci_cmd_runner() const { return *hci_cmd_runner_; }
   hci::Transport::WeakPtr hci() const { return hci_; }
 
-  const std::unordered_map<DeviceAddress, ConnectionCallback>&
-  connection_callbacks() const {
-    return connection_callbacks_;
-  }
-
  private:
   struct StagedParameters {
     AdvertisingData data;
@@ -272,7 +268,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // callbacks in StartAdvertisingInternal. Developers should not call this
   // function directly.
   bool StartAdvertisingInternalStep2(const DeviceAddress& address,
-                                     AdvFlags flags,
+                                     const AdvertisingOptions& options,
                                      ConnectionCallback connect_callback,
                                      hci::ResultFunction<> result_callback);
 

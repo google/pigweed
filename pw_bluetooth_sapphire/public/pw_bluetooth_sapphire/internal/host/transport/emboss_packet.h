@@ -47,8 +47,8 @@ namespace bt {
 //    $next [+1] UInt num_responses
 //
 // The Emboss compiler generates two types of view for each struct. In the case
-// of InquiryCommand, it generates InquiryCommandView (read-only) and
-// InquiryCommandWriter (read & writable). We can parameterize StaticPacket over
+// of InquiryCommand, it generates InquiryCommandView (read only) and
+// InquiryCommandWriter (read write). We can parameterize StaticPacket over
 // one of these views to read and/or write an Inquiry packet:
 //
 //  bt::StaticPacket<pw::bluetooth::emboss::InquiryCommandWriter> packet;

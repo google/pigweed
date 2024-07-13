@@ -55,7 +55,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address,
                         const AdvertisingData& data,
                         const AdvertisingData& scan_rsp,
-                        AdvertisingOptions adv_options,
+                        const AdvertisingOptions& options,
                         ConnectionCallback connect_callback,
                         ResultFunction<> result_callback) override;
 
@@ -130,10 +130,6 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // we stage these parameters.
   std::unordered_map<hci_spec::ConnectionHandle, StagedConnectionParameters>
       staged_connections_map_;
-
-  // Keep this as the last member to make sure that all weak pointers are
-  // invalidated before other members get destroyed
-  WeakSelf<AndroidExtendedLowEnergyAdvertiser> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AndroidExtendedLowEnergyAdvertiser);
 };

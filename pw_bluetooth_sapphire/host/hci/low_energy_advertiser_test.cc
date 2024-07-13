@@ -229,7 +229,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
     return state;
   }
 
-  void MaybeSendMultipleAdvertisingPostConnectionEvents(
+  void SendMultipleAdvertisingPostConnectionEvents(
       hci_spec::ConnectionHandle conn_handle,
       hci_spec::AdvertisingHandle adv_handle) {
     if (std::is_same_v<T, AndroidExtendedLowEnergyAdvertiser>) {
@@ -264,8 +264,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   AdvertisingData adv_data = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   std::unique_ptr<LowEnergyConnection> link;
@@ -293,8 +293,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
-  this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
-                                                         handle.value());
+  this->SendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
+                                                    handle.value());
   this->RunUntilIdle();
 
   ASSERT_TRUE(link);
@@ -332,8 +332,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
       hci_spec::LEConnectionParameters());
   handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
-  this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
-                                                         handle.value());
+  this->SendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
+                                                    handle.value());
   this->RunUntilIdle();
 
   ASSERT_TRUE(link);
@@ -346,8 +346,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   std::unique_ptr<LowEnergyConnection> link;
@@ -392,8 +392,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
-  this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
-                                                         handle.value());
+  this->SendMultipleAdvertisingPostConnectionEvents(kConnectionHandle,
+                                                    handle.value());
 
   // Advertising should get disabled and re-enabled.
   this->RunUntilIdle();
@@ -432,7 +432,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
       pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
       kRandomAddress,
       hci_spec::LEConnectionParameters());
-  this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
+  this->SendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
   this->RunUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
   auto [connection_state_after_disconnect, disconnected_handle] =
@@ -448,8 +448,8 @@ TYPED_TEST(LowEnergyAdvertiserTest,
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kPublicAddress,
                                        ad,
@@ -486,7 +486,7 @@ TYPED_TEST(LowEnergyAdvertiserTest,
       pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
       kRandomAddress,
       hci_spec::LEConnectionParameters());
-  this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
+  this->SendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
   this->RunUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
   auto [connection_state_after_disconnect, disconnected_handle] =
@@ -500,8 +500,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartAndStop) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -525,8 +525,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   AdvertisingData scan_data = this->GetExampleData();
   auto flags = AdvFlag::kLEGeneralDiscoverableMode;
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              flags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -561,8 +561,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   // local address type is correct.
   this->advertiser()->StopAdvertising(kRandomAddress);
   AdvertisingOptions new_options(kTestInterval,
-                                 /*anonymous=*/false,
                                  kDefaultNoAdvFlags,
+                                 /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kPublicAddress,
                                        ad,
@@ -586,8 +586,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
   AdvertisingData scan_data = this->GetExampleData();
   auto flags = AdvFlag::kLEGeneralDiscoverableMode;
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              flags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   // old advertising data: ideally we would fill this completely so that in the
@@ -641,8 +641,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
       hci_spec::kLEAdvertisingIntervalMin - 1,
       hci_spec::kLEAdvertisingIntervalMax + 1);
   AdvertisingOptions options(interval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -665,8 +665,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
       hci_spec::kLEAdvertisingIntervalMin + 1,
       hci_spec::kLEAdvertisingIntervalMax - 1);
   AdvertisingOptions new_options(new_interval,
-                                 /*anonymous=*/false,
                                  kDefaultNoAdvFlags,
+                                 /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -690,14 +690,14 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStarting) {
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions old_options(old_interval,
-                                 /*anonymous=*/false,
                                  kDefaultNoAdvFlags,
+                                 /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1,
                                               kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval,
-                                 /*anonymous=*/false,
                                  kDefaultNoAdvFlags,
+                                 /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(
@@ -724,8 +724,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
   AdvertisingData scan_data = this->GetExampleData();
   DeviceAddress addr = kRandomAddress;
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   // Get to a started state.
@@ -769,8 +769,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopWhileStarting) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kPublicAddress,
@@ -793,8 +793,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingConditions) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -833,8 +833,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertiseUpdate) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -865,8 +865,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertiseUpdate) {
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1,
                                               kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval,
-                                 /*anonymous=*/false,
                                  kDefaultNoAdvFlags,
+                                 /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -900,8 +900,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
 
   // start public address advertising
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kPublicAddress,
                                        ad,
@@ -960,8 +960,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, NoAnonymous) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/true,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/true,
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -980,8 +980,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLong) {
   AdvertisingData valid_scan_rsp =
       this->GetExampleData(/*include_flags=*/false);
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
   // Advertising data too large.
@@ -1004,8 +1004,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLongWithTxPower) {
   AdvertisingData valid_scan_rsp =
       this->GetExampleData(/*include_flags=*/false);
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
 
   // Advertising data too large.
@@ -1026,8 +1026,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLong) {
   AdvertisingData invalid_scan_rsp =
       this->GetTooLargeExampleData(/*include_flags=*/false);
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        valid_ad,
@@ -1047,8 +1047,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
       /*include_flags=*/false,
       hci_spec::kMaxLEAdvertisingDataLength - kTLVTxPowerLevelSize + 1);
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        valid_ad,

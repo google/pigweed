@@ -69,8 +69,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address,
     const AdvertisingData& data,
     const AdvertisingData& scan_rsp,
-    AdvertisingIntervalRange interval,
-    AdvFlags flags,
+    const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
   if (IsAdvertising(address)) {
@@ -100,7 +99,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
   std::optional<EmbossCommandPacket> set_adv_params_packet =
-      BuildSetAdvertisingParams(address, type, own_addr_type, interval);
+      BuildSetAdvertisingParams(address, type, own_addr_type, options.interval);
   if (!set_adv_params_packet) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));
@@ -118,7 +117,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   // doesn't allow enqueuing commands within a callback (during a run).
   hci_cmd_runner_->RunCommands([this,
                                 address,
-                                flags,
+                                options,
                                 result_callback = std::move(result_callback),
                                 connect_callback = std::move(connect_callback)](
                                    hci::Result<> result) mutable {
@@ -132,7 +131,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     }
 
     bool success = StartAdvertisingInternalStep2(address,
-                                                 flags,
+                                                 options,
                                                  std::move(connect_callback),
                                                  std::move(result_callback));
     if (!success) {
@@ -143,11 +142,11 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 
 bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     const DeviceAddress& address,
-    AdvFlags flags,
+    const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
   EmbossCommandPacket set_adv_data_packet =
-      BuildSetAdvertisingData(address, staged_parameters_.data, flags);
+      BuildSetAdvertisingData(address, staged_parameters_.data, options.flags);
   EmbossCommandPacket set_scan_rsp_packet =
       BuildSetScanResponse(address, staged_parameters_.scan_rsp);
   EmbossCommandPacket enable_packet =
@@ -163,12 +162,11 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
                                 result_callback = std::move(result_callback),
                                 connect_callback = std::move(connect_callback)](
                                    Result<> result) mutable {
-    if (bt_is_error(result,
-                    WARN,
-                    "hci-le",
-                    "failed to start advertising for %s",
-                    bt_str(address))) {
-    } else {
+    if (!bt_is_error(result,
+                     WARN,
+                     "hci-le",
+                     "failed to start advertising for %s",
+                     bt_str(address))) {
       bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
       connection_callbacks_.emplace(address, std::move(connect_callback));
     }
@@ -285,9 +283,10 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
   if (!connection_callbacks_[local_address]) {
     bt_log(WARN,
            "hci-le",
-           "connection received when not connectable (role: %d, local address: "
-           "%s, peer "
-           "address: %s, connection parameters: %s)",
+           "connection received when not connectable (role: %d, "
+           "local address: %s, "
+           "peer address: %s, "
+           "connection parameters: %s)",
            static_cast<uint8_t>(role),
            bt_str(local_address),
            bt_str(peer_address),

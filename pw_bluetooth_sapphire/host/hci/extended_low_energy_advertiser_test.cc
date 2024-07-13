@@ -24,6 +24,7 @@ using bt::testing::FakeController;
 using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
+using pw::bluetooth::emboss::LEAdvertisingType;
 
 constexpr AdvertisingIntervalRange kTestInterval(
     hci_spec::kLEAdvertisingIntervalMin, hci_spec::kLEAdvertisingIntervalMax);
@@ -104,12 +105,42 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
 };
 
+// Bit values used in this test are given in a table in Core Spec Volume 4, Part
+// E, Section 7.8.53.
+TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingTypeToEventBits) {
+  ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits bits =
+      ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+          LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED);
+  ASSERT_TRUE(bits);
+  EXPECT_EQ(0b00010011, bits);
+
+  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+      LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED);
+  ASSERT_TRUE(bits);
+  EXPECT_EQ(0b00010101, bits);
+
+  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+      LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED);
+  ASSERT_TRUE(bits);
+  EXPECT_EQ(0b00011101, bits);
+
+  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+      LEAdvertisingType::SCANNABLE_UNDIRECTED);
+  ASSERT_TRUE(bits);
+  EXPECT_EQ(0b00010010, bits);
+
+  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+      LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED);
+  ASSERT_TRUE(bits);
+  EXPECT_EQ(0b00010000, bits);
+}
+
 TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
   AdvertisingOptions options(kTestInterval,
-                             /*anonymous=*/false,
                              kDefaultNoAdvFlags,
+                             /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
 
   std::unique_ptr<LowEnergyConnection> link;

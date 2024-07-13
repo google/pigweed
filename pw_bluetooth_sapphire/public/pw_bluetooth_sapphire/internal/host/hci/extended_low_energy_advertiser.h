@@ -26,6 +26,14 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   explicit ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci);
   ~ExtendedLowEnergyAdvertiser() override;
 
+  // Convert a LEAdvertisingType's properties (e.g. connectable, scannable,
+  // directed, etc) to the appropriate advertising event bits for use in
+  // HCI_LE_Set_Extended_Advertising_Parameters (Core Spec, Volume 4, Part E,
+  // Section 7.8.53)
+  using AdvertisingEventPropertiesBits = uint16_t;
+  static AdvertisingEventPropertiesBits AdvertisingTypeToLegacyPduEventBits(
+      pw::bluetooth::emboss::LEAdvertisingType type);
+
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
 
   // TODO(fxbug.dev/42161929): The maximum length of data that can be
@@ -56,7 +64,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address,
                         const AdvertisingData& data,
                         const AdvertisingData& scan_rsp,
-                        AdvertisingOptions adv_options,
+                        const AdvertisingOptions& options,
                         ConnectionCallback connect_callback,
                         ResultFunction<> result_callback) override;
 
@@ -89,6 +97,11 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   struct StagedAdvertisingParameters {
     bool include_tx_power_level = false;
     int8_t selected_tx_power_level = 0;
+
+    void clear() {
+      include_tx_power_level = false;
+      selected_tx_power_level = 0;
+    }
   };
 
   EmbossCommandPacket BuildEnablePacket(
@@ -122,9 +135,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void OnCurrentOperationComplete() override;
 
   // Event handler for the HCI LE Advertising Set Terminated event
-  CommandChannel::EventCallbackResult OnAdvertisingSetTerminatedEvent(
-      const EventPacket& event);
-  CommandChannel::EventHandlerId set_terminated_event_handler_id_;
+  void OnAdvertisingSetTerminatedEvent(const EventPacket& event);
+  CommandChannel::EventHandlerId event_handler_id_;
 
   AdvertisingHandleMap advertising_handle_map_;
   std::queue<fit::closure> op_queue_;
@@ -138,11 +150,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // obtain the advertised device address. Until we receive the
   // HCI_LE_Advertising_Set_Terminated event, we stage these parameters.
   std::unordered_map<hci_spec::ConnectionHandle, StagedConnectionParameters>
-      staged_connections_map_;
-
-  // Keep this as the last member to make sure that all weak pointers are
-  // invalidated before other members get destroyed
-  WeakSelf<ExtendedLowEnergyAdvertiser> weak_self_;
+      staged_connections_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiser);
 };

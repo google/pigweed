@@ -14,7 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
@@ -22,18 +21,13 @@ namespace pwemb = pw::bluetooth::emboss;
 
 ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(
     hci::Transport::WeakPtr hci_ptr)
-    : LowEnergyAdvertiser(std::move(hci_ptr)), weak_self_(this) {
-  auto self = weak_self_.GetWeakPtr();
-  set_terminated_event_handler_id_ =
-      hci()->command_channel()->AddLEMetaEventHandler(
-          hci_spec::kLEAdvertisingSetTerminatedSubeventCode,
-          [self](const EventPacket& event_packet) {
-            if (self.is_alive()) {
-              return self->OnAdvertisingSetTerminatedEvent(event_packet);
-            }
-
-            return CommandChannel::EventCallbackResult::kRemove;
-          });
+    : LowEnergyAdvertiser(std::move(hci_ptr)) {
+  event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
+      hci_spec::kLEAdvertisingSetTerminatedSubeventCode,
+      [this](const EventPacket& event) {
+        OnAdvertisingSetTerminatedEvent(event);
+        return CommandChannel::EventCallbackResult::kContinue;
+      });
 }
 
 ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
@@ -43,12 +37,42 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
     return;
   }
 
-  hci()->command_channel()->RemoveEventHandler(
-      set_terminated_event_handler_id_);
-  // TODO(fxbug.dev/42063496): This will only cancel one advertisement, after
-  // which the SequentialCommandRunner will have been destroyed and no further
-  // commands will be sent.
+  hci()->command_channel()->RemoveEventHandler(event_handler_id_);
+
+  // TODO(fxbug.dev/42063496): This will only cancel one advertisement,
+  // after which the SequentialCommandRunner will have been destroyed and no
+  // further commands will be sent.
   StopAdvertising();
+}
+
+ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits
+ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
+    pwemb::LEAdvertisingType type) {
+  ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits bits =
+      hci_spec::kLEAdvEventPropBitUseLegacyPDUs;
+
+  // Bluetooth Spec Volume 4, Part E, Section 7.8.53, Table 7.2 defines the
+  // mapping of legacy PDU types to the corresponding bits within
+  // adv_event_properties.
+  if (type == pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED) {
+    bits |= hci_spec::kLEAdvEventPropBitConnectable;
+    bits |= hci_spec::kLEAdvEventPropBitScannable;
+  } else if (type ==
+             pwemb::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED) {
+    bits |= hci_spec::kLEAdvEventPropBitConnectable;
+    bits |= hci_spec::kLEAdvEventPropBitDirected;
+  } else if (type ==
+             pwemb::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED) {
+    bits |= hci_spec::kLEAdvEventPropBitConnectable;
+    bits |= hci_spec::kLEAdvEventPropBitDirected;
+    bits |= hci_spec::kLEAdvEventPropBitHighDutyCycleDirectedConnectable;
+  } else if (type == pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED) {
+    bits |= hci_spec::kLEAdvEventPropBitScannable;
+  } else if (type == pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED) {
+    // no extra bits set
+  }
+
+  return bits;
 }
 
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
@@ -62,17 +86,17 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   auto packet = hci::EmbossCommandPacket::New<
       pwemb::LESetExtendedAdvertisingEnableCommandWriter>(
       hci_spec::kLESetExtendedAdvertisingEnable, kPacketSize);
-  auto packet_view = packet.view_t();
-  packet_view.enable().Write(enable);
-  packet_view.num_sets().Write(1);
+  auto view = packet.view_t();
+  view.enable().Write(enable);
+  view.num_sets().Write(1);
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
 
-  packet_view.data()[0].advertising_handle().Write(handle.value());
-  packet_view.data()[0].duration().Write(hci_spec::kNoAdvertisingDuration);
-  packet_view.data()[0].max_extended_advertising_events().Write(
+  view.data()[0].advertising_handle().Write(handle.value());
+  view.data()[0].duration().Write(hci_spec::kNoAdvertisingDuration);
+  view.data()[0].max_extended_advertising_events().Write(
       hci_spec::kNoMaxExtendedAdvertisingEvents);
 
   return packet;
@@ -84,12 +108,10 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     pwemb::LEAdvertisingType type,
     pwemb::LEOwnAddressType own_address_type,
     AdvertisingIntervalRange interval) {
-  constexpr size_t kPacketSize =
-      pwemb::LESetExtendedAdvertisingParametersV1CommandView::SizeInBytes();
   auto packet = hci::EmbossCommandPacket::New<
       pwemb::LESetExtendedAdvertisingParametersV1CommandWriter>(
-      hci_spec::kLESetExtendedAdvertisingParameters, kPacketSize);
-  auto packet_view = packet.view_t();
+      hci_spec::kLESetExtendedAdvertisingParameters);
+  auto view = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
@@ -101,11 +123,11 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
            bt_str(address));
     return std::nullopt;
   }
-  packet_view.advertising_handle().Write(handle.value());
+  view.advertising_handle().Write(handle.value());
 
   // advertising event properties
-  std::optional<hci_spec::AdvertisingEventBits> bits =
-      hci_spec::AdvertisingTypeToEventBits(type);
+  std::optional<AdvertisingEventPropertiesBits> bits =
+      AdvertisingTypeToLegacyPduEventBits(type);
   if (!bits) {
     bt_log(WARN,
            "hci-le",
@@ -114,8 +136,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     return std::nullopt;
   }
   uint16_t properties = bits.value();
-  packet_view.advertising_event_properties().BackingStorage().WriteUInt(
-      properties);
+  view.advertising_event_properties().BackingStorage().WriteUInt(properties);
 
   // advertising interval, NOTE: LE advertising parameters allow for up to 3
   // octets (10 ms to 10428 s) to configure an advertising interval. However, we
@@ -123,27 +144,26 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   // as specified in the Bluetooth Spec Volume 3, Part C, Appendix A. These
   // values are expressed as uint16_t so we simply copy them (taking care of
   // endianness) into the 3 octets as is.
-  packet_view.primary_advertising_interval_min().Write(interval.min());
-  packet_view.primary_advertising_interval_max().Write(interval.max());
+  view.primary_advertising_interval_min().Write(interval.min());
+  view.primary_advertising_interval_max().Write(interval.max());
 
   // advertise on all channels
-  packet_view.primary_advertising_channel_map().channel_37().Write(true);
-  packet_view.primary_advertising_channel_map().channel_38().Write(true);
-  packet_view.primary_advertising_channel_map().channel_39().Write(true);
+  view.primary_advertising_channel_map().channel_37().Write(true);
+  view.primary_advertising_channel_map().channel_38().Write(true);
+  view.primary_advertising_channel_map().channel_39().Write(true);
 
-  packet_view.own_address_type().Write(own_address_type);
-  packet_view.advertising_filter_policy().Write(
+  view.own_address_type().Write(own_address_type);
+  view.advertising_filter_policy().Write(
       pwemb::LEAdvertisingFilterPolicy::ALLOW_ALL);
-  packet_view.advertising_tx_power().Write(
+  view.advertising_tx_power().Write(
       hci_spec::kLEExtendedAdvertisingTxPowerNoPreference);
-  packet_view.scan_request_notification_enable().Write(
-      hci_spec::GenericEnableParam::DISABLE);
+  view.scan_request_notification_enable().Write(
+      pwemb::GenericEnableParam::DISABLE);
 
-  // TODO(fxbug.dev/42161929): using legacy PDUs requires advertisements on the
-  // LE 1M PHY.
-  packet_view.primary_advertising_phy().Write(
-      pwemb::LEPrimaryAdvertisingPHY::LE_1M);
-  packet_view.secondary_advertising_phy().Write(
+  // TODO(fxbug.dev/42161929): using legacy PDUs requires advertisements
+  // on the LE 1M PHY.
+  view.primary_advertising_phy().Write(pwemb::LEPrimaryAdvertisingPHY::LE_1M);
+  view.secondary_advertising_phy().Write(
       pwemb::LESecondaryAdvertisingPHY::LE_1M);
 
   // Payload values were initialized to zero above. By not setting the values
@@ -295,8 +315,8 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
   auto packet =
       hci::EmbossCommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
           hci_spec::kLERemoveAdvertisingSet);
-  auto packet_view = packet.view_t();
-  packet_view.advertising_handle().Write(handle.value());
+  auto view = packet.view_t();
+  view.advertising_handle().Write(handle.value());
 
   return packet;
 }
@@ -331,7 +351,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
     const DeviceAddress& address,
     const AdvertisingData& data,
     const AdvertisingData& scan_rsp,
-    AdvertisingOptions options,
+    const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     ResultFunction<> result_callback) {
   // if there is an operation currently in progress, enqueue this operation and
@@ -379,9 +399,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
            bt_str(address));
   }
 
-  std::memset(&staged_advertising_parameters_,
-              0,
-              sizeof(staged_advertising_parameters_));
+  staged_advertising_parameters_.clear();
   staged_advertising_parameters_.include_tx_power_level =
       options.include_tx_power_level;
 
@@ -401,8 +419,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
   StartAdvertisingInternal(address,
                            data,
                            scan_rsp,
-                           options.interval,
-                           options.flags,
+                           options,
                            std::move(connect_callback),
                            std::move(result_callback));
 }
@@ -446,15 +463,14 @@ void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
   // connection handle but don't know the locally advertised address that the
   // connection is for. Until we receive the HCI_LE_Advertising_Set_Terminated
   // event, we stage these parameters.
-  staged_connections_map_[handle] = {role, peer_address, conn_params};
+  staged_connections_[handle] = {role, peer_address, conn_params};
 }
 
 // The HCI_LE_Advertising_Set_Terminated event contains the mapping between
 // connection handle and advertising handle. After the
 // HCI_LE_Advertising_Set_Terminated event, we have all the information
 // necessary to create a connection object within the Host layer.
-CommandChannel::EventCallbackResult
-ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
+void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
     const EventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
   BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
@@ -466,7 +482,7 @@ ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
                   "hci-le",
                   "advertising set terminated event, error received %s",
                   bt_str(result))) {
-    return CommandChannel::EventCallbackResult::kContinue;
+    return;
   }
 
   auto params = event.subevent_params<
@@ -474,8 +490,7 @@ ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
   BT_ASSERT(params);
 
   hci_spec::ConnectionHandle connection_handle = params->connection_handle;
-  auto staged_parameters_node =
-      staged_connections_map_.extract(connection_handle);
+  auto staged_parameters_node = staged_connections_.extract(connection_handle);
 
   if (staged_parameters_node.empty()) {
     bt_log(ERROR,
@@ -483,7 +498,7 @@ ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
            "advertising set terminated event, staged params not available "
            "(handle: %d)",
            params->adv_handle);
-    return CommandChannel::EventCallbackResult::kContinue;
+    return;
   }
 
   hci_spec::AdvertisingHandle adv_handle = params->adv_handle;
@@ -509,10 +524,7 @@ ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
                              staged.peer_address,
                              staged.conn_params);
 
-  std::memset(&staged_advertising_parameters_,
-              0,
-              sizeof(staged_advertising_parameters_));
-  return CommandChannel::EventCallbackResult::kContinue;
+  staged_advertising_parameters_.clear();
 }
 
 void ExtendedLowEnergyAdvertiser::OnCurrentOperationComplete() {

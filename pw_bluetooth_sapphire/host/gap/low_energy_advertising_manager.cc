@@ -136,8 +136,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   }
   hci::LowEnergyAdvertiser::AdvertisingOptions options(
       GetIntervalRange(interval),
-      anonymous,
       AdvFlag::kLEGeneralDiscoverableMode,
+      anonymous,
       include_tx_power_level);
 
   auto self = weak_self_.GetWeakPtr();

@@ -23,8 +23,8 @@
 namespace bt::hci {
 namespace pwemb = pw::bluetooth::emboss;
 
-constexpr int8_t kTransmitPower =
-    -25;  // Android range -70 to +20, select the middle for now
+// Android range -70 to +20, select the middle for now
+constexpr int8_t kTransmitPower = -25;
 
 namespace hci_android = hci_spec::vendor::android;
 namespace android_hci = pw::bluetooth::vendor::android_hci;
@@ -32,18 +32,12 @@ namespace android_hci = pw::bluetooth::vendor::android_hci;
 AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
     hci::Transport::WeakPtr hci_ptr, uint8_t max_advertisements)
     : LowEnergyAdvertiser(std::move(hci_ptr)),
-      advertising_handle_map_(max_advertisements),
-      weak_self_(this) {
-  auto self = weak_self_.GetWeakPtr();
+      advertising_handle_map_(max_advertisements) {
   state_changed_event_handler_id_ =
       hci()->command_channel()->AddVendorEventHandler(
           hci_android::kLEMultiAdvtStateChangeSubeventCode,
-          [self](const EmbossEventPacket& event_packet) {
-            if (self.is_alive()) {
-              return self->OnAdvertisingStateChangedSubevent(event_packet);
-            }
-
-            return CommandChannel::EventCallbackResult::kRemove;
+          [this](const EmbossEventPacket& event_packet) {
+            return OnAdvertisingStateChangedSubevent(event_packet);
           });
 }
 
@@ -53,6 +47,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
   if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
+
   hci()->command_channel()->RemoveEventHandler(state_changed_event_handler_id_);
   // TODO(fxbug.dev/42063496): This will only cancel one advertisement, after
   // which the SequentialCommandRunner will have been destroyed and no further
@@ -240,9 +235,16 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     const DeviceAddress& address,
     const AdvertisingData& data,
     const AdvertisingData& scan_rsp,
-    AdvertisingOptions options,
+    const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     ResultFunction<> result_callback) {
+  fit::result<HostError> result =
+      CanStartAdvertising(address, data, scan_rsp, options);
+  if (result.is_error()) {
+    result_callback(ToResult(result.error_value()));
+    return;
+  }
+
   AdvertisingData copied_data;
   data.Copy(&copied_data);
 
@@ -274,13 +276,6 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     return;
   }
 
-  fit::result<HostError> result =
-      CanStartAdvertising(address, data, scan_rsp, options);
-  if (result.is_error()) {
-    result_callback(ToResult(result.error_value()));
-    return;
-  }
-
   if (IsAdvertising(address)) {
     bt_log(DEBUG,
            "hci-le",
@@ -296,8 +291,7 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
   StartAdvertisingInternal(address,
                            copied_data,
                            copied_scan_rsp,
-                           options.interval,
-                           options.flags,
+                           options,
                            std::move(connect_callback),
                            std::move(result_callback));
 }
@@ -358,21 +352,6 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
   }
 
   auto view = event.view<android_hci::LEMultiAdvtStateChangeSubeventView>();
-
-  hci_spec::ConnectionHandle connection_handle =
-      view.connection_handle().Read();
-  auto staged_parameters_node =
-      staged_connections_map_.extract(connection_handle);
-
-  if (staged_parameters_node.empty()) {
-    bt_log(ERROR,
-           "hci-le",
-           "advertising state change event, staged params not available "
-           "(handle: %d)",
-           view.advertising_handle().Read());
-    return CommandChannel::EventCallbackResult::kContinue;
-  }
-
   hci_spec::AdvertisingHandle adv_handle = view.advertising_handle().Read();
   std::optional<DeviceAddress> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);
@@ -388,7 +367,19 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
     local_address = opt_local_address.value();
   }
 
-  StagedConnectionParameters staged = staged_parameters_node.mapped();
+  hci_spec::ConnectionHandle connection_handle =
+      view.connection_handle().Read();
+  auto staged_node = staged_connections_map_.extract(connection_handle);
+  if (staged_node.empty()) {
+    bt_log(ERROR,
+           "hci-le",
+           "advertising state change event, staged params not available "
+           "(handle: %d)",
+           view.advertising_handle().Read());
+    return CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  StagedConnectionParameters staged = staged_node.mapped();
   CompleteIncomingConnection(connection_handle,
                              staged.role,
                              local_address,

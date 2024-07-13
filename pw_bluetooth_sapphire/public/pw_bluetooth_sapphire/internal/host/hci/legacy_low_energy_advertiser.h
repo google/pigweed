@@ -43,9 +43,9 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address,
                         const AdvertisingData& data,
                         const AdvertisingData& scan_rsp,
-                        AdvertisingOptions options,
+                        const AdvertisingOptions& options,
                         ConnectionCallback connect_callback,
-                        ResultFunction<> status_callback) override;
+                        ResultFunction<> result_callback) override;
 
   void StopAdvertising() override;
 
@@ -93,15 +93,15 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // |staged_params_| are the parameters that will be advertised.
   struct StagedParams {
     DeviceAddress address;
-    AdvertisingIntervalRange interval;
-    AdvFlags flags;
     AdvertisingData data;
     AdvertisingData scan_rsp;
+    AdvertisingOptions options;
     ConnectionCallback connect_callback;
     ResultFunction<> result_callback;
   };
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;
+  DeviceAddress local_address_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
