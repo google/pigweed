@@ -91,7 +91,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   view.num_sets().Write(1);
 
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
 
   view.data()[0].advertising_handle().Write(handle.value());
@@ -115,7 +115,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.MapHandle(address);
+      advertising_handle_map_.MapHandle(address, /*extended_pdu=*/false);
   if (!handle) {
     bt_log(WARN,
            "hci-le",
@@ -197,7 +197,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
   params.advertising_handle().Write(handle.value());
 
@@ -229,7 +229,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
@@ -262,7 +262,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
   params.advertising_handle().Write(handle.value());
 
@@ -293,7 +293,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
@@ -310,7 +310,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.GetHandle(address);
+      advertising_handle_map_.GetHandle(address, /*extended_pdu=*/false);
   BT_ASSERT(handle);
   auto packet =
       hci::EmbossCommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
@@ -448,7 +448,7 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(
   }
 
   LowEnergyAdvertiser::StopAdvertisingInternal(address);
-  advertising_handle_map_.RemoveAddress(address);
+  advertising_handle_map_.RemoveAddress(address, /*extended_pdu=*/false);
 }
 
 void ExtendedLowEnergyAdvertiser::OnIncomingConnection(

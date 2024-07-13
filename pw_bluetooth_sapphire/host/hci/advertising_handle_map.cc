@@ -17,8 +17,9 @@
 namespace bt::hci {
 
 std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
-    const DeviceAddress& address) {
-  if (auto it = addr_to_handle_.find(address); it != addr_to_handle_.end()) {
+    const DeviceAddress& address, bool extended_pdu) {
+  if (auto it = addr_to_handle_.find({address, extended_pdu});
+      it != addr_to_handle_.end()) {
     return it->second;
   }
 
@@ -29,8 +30,8 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   std::optional<hci_spec::AdvertisingHandle> handle = NextHandle();
   BT_ASSERT(handle);
 
-  addr_to_handle_[address] = handle.value();
-  handle_to_addr_[handle.value()] = address;
+  addr_to_handle_[{address, extended_pdu}] = handle.value();
+  handle_to_addr_[handle.value()] = {address, extended_pdu};
   return handle;
 }
 
@@ -38,8 +39,9 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
 // there is no AdvertisingHandle currently mapping to the provided device
 // address.
 std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::GetHandle(
-    const DeviceAddress& address) const {
-  if (auto it = addr_to_handle_.find(address); it != addr_to_handle_.end()) {
+    const DeviceAddress& address, bool extended_pdu) const {
+  if (auto it = addr_to_handle_.find({address, extended_pdu});
+      it != addr_to_handle_.end()) {
     return it->second;
   }
 
@@ -49,7 +51,8 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::GetHandle(
 std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
     hci_spec::AdvertisingHandle handle) const {
   if (handle_to_addr_.count(handle) != 0) {
-    return handle_to_addr_.at(handle);
+    const auto& [address, extended] = handle_to_addr_.at(handle);
+    return address;
   }
 
   return std::nullopt;
@@ -60,13 +63,14 @@ void AdvertisingHandleMap::RemoveHandle(hci_spec::AdvertisingHandle handle) {
     return;
   }
 
-  const DeviceAddress& address = handle_to_addr_[handle];
-  addr_to_handle_.erase(address);
+  const auto& [address, extended] = handle_to_addr_[handle];
+  addr_to_handle_.erase({address, extended});
   handle_to_addr_.erase(handle);
 }
 
-void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address) {
-  auto node = addr_to_handle_.extract(address);
+void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address,
+                                         bool extended) {
+  auto node = addr_to_handle_.extract({address, extended});
   if (node.empty()) {
     return;
   }

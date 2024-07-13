@@ -17,18 +17,34 @@
 
 namespace bt::hci {
 
-// When communicating with the controller, we do so in terms of an
-// AdvertisingHandle. This means that we frequently need to convert between a
-// DeviceAddress and an AdvertisingHandle. AdvertisingHandleMap provides a 1:1
-// bidirectional mapping between a DeviceAddress and an AdvertisingHandle,
-// allocating the next available AdvertisingHandle to new DeviceAddresses.
+// Extended advertising HCI commands refer to a particular advertising set via
+// an AdvertisingHandle. An AdvertisingHandle is an eight bit unsigned integer
+// that uniquely identifies an advertising set and vice versa. This means that
+// we frequently need to convert between a DeviceAddress and an
+// AdvertisingHandle. AdvertisingHandleMap provides a 1:1 bidirectional mapping
+// between a DeviceAddress and an AdvertisingHandle, allocating the next
+// available AdvertisingHandle to new DeviceAddresses.
+//
+// When using extended advertising, there are two types of advertising PDU
+// formats available: legacy PDUs and extended PDUs. Legacy advertising PDUs are
+// currently the most widely compatible type, discoverable by devices deployed
+// prior to the adoption of Bluetooth 5.0. Devices deployed more recently are
+// also able to discover this type of advertising packet. Conversely, extended
+// advertising PDUs are a newer format that offers a number of improvements,
+// including the ability to advertise larger amounts of data. However, devices
+// not specifically scanning for them or who are running on an older version of
+// Bluetooth (pre-5.0) won't be able to see them.
+//
+// When advertising using extended advertising PDUs, users often choose to emit
+// legacy advertising PDUs as well in order to maintain backwards compatibility
+// with older Bluetooth devices. As such, advertisers such as
+// ExtendedLowEnergyAdvertiser may need to track two real AdvertisingHandles
+// for each logical advertisement, one for legacy advertising PDUs and one for
+// extended advertising PDUs. Along with DeviceAddress, AdvertisingHandleMap
+// tracks whether the mapping is for an extended PDU or a legacy PDU.
 //
 // Users shouldn't rely on any particular ordering of the next available
 // mapping. Any available AdvertisingHandle may be used.
-//
-// TODO(fxbug.dev/42158168): implement a bidirectional map that can support
-// looking up key to value as well as value to key (two map solution is probably
-// good enough). Makes this clearer, easier to maintain, etc.
 class AdvertisingHandleMap {
  public:
   // Instantiate an AdvertisingHandleMap. The capacity parameter specifies the
@@ -43,13 +59,13 @@ class AdvertisingHandleMap {
   // doesn't already exist. The conversion may fail if there are already
   // hci_spec::kMaxAdvertisingHandles in the container.
   std::optional<hci_spec::AdvertisingHandle> MapHandle(
-      const DeviceAddress& address);
+      const DeviceAddress& address, bool extended_pdu);
 
   // Convert a DeviceAddress to an AdvertisingHandle. The conversion may fail if
   // there is no AdvertisingHandle currently mapping to the provided device
   // address.
   std::optional<hci_spec::AdvertisingHandle> GetHandle(
-      const DeviceAddress& address) const;
+      const DeviceAddress& address, bool extended_pdu) const;
 
   // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if
   // there is no DeviceAddress currently mapping to the provided handle.
@@ -57,23 +73,26 @@ class AdvertisingHandleMap {
       hci_spec::AdvertisingHandle handle) const;
 
   // Remove the mapping between an AdvertisingHandle and the DeviceAddress it
-  // maps to. Immediate future calls to GetAddress(handle) with the same
-  // AdvertisingHandle will fail because the mapping no longer exists. The
-  // container may reuse the AdvertisingHandle for other DeviceAddresses in the
-  // future. Immediate future calls to GetHandle(address) will result in a new
+  // maps to. The container may reuse the AdvertisingHandle for other
+  // DeviceAddresses in the future. Immediate future calls to GetAddress(...)
+  // with the same AdvertisingHandle will fail because the mapping no longer
+  // exists. Immediate future calls to GetHandle(...) will result in a new
   // mapping with a new AdvertisingHandle.
   //
-  // If the given handle doesn't map to any DeviceAddress, this function does
-  // nothing.
+  // If the given handle doesn't map to any (DeviceAddress, bool) tuple, this
+  // function does nothing.
   void RemoveHandle(hci_spec::AdvertisingHandle handle);
 
   // Remove the mapping between a DeviceAddress and the AdvertisingHandle it
-  // maps to. Immediate future calls to GetAddress(handle) with the preivously
-  // mapped AdvertisingHandle will fail because the mapping no longer exists.
-  // The container may reuse the AdvertisingHandle for other DeviceAddresses in
-  // the future. Immediate future calls to GetHandle(address) will result in a
+  // maps to. The container may reuse the AdvertisingHandle for other
+  // DeviceAddresses in the future. Immediate future calls to GetAddress(...)
+  // with the preivously mapped AdvertisingHandle will fail because the mapping
+  // no longer exists. Immediate future calls to GetHandle(...) will result in a
   // new mapping with a new AdvertisingHandle.
-  void RemoveAddress(const DeviceAddress& address);
+  //
+  // If the given (DeviceAddress, bool) tuple doesn't map to any
+  // AdvertisingHandle, this function does nothing.
+  void RemoveAddress(const DeviceAddress& address, bool extended_pdu);
 
   // Get the maximum number of mappings the AdvertisingHandleMap will support.
   uint8_t capacity() const { return capacity_; }
@@ -116,9 +135,22 @@ class AdvertisingHandleMap {
   // handle; defaults to kStartHandle if no handles have been generated yet.
   hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
 
-  std::unordered_map<DeviceAddress, hci_spec::AdvertisingHandle>
+  struct TupleKeyHasher {
+    size_t operator()(const std::tuple<DeviceAddress, bool>& t) const {
+      std::hash<DeviceAddress> device_address_hasher;
+      std::hash<bool> bool_hasher;
+      const auto& [address, extended_pdu] = t;
+      return device_address_hasher(address) ^ bool_hasher(extended_pdu);
+    }
+  };
+
+  std::unordered_map<std::tuple<DeviceAddress, bool>,
+                     hci_spec::AdvertisingHandle,
+                     TupleKeyHasher>
       addr_to_handle_;
-  std::unordered_map<hci_spec::AdvertisingHandle, DeviceAddress>
+
+  std::unordered_map<hci_spec::AdvertisingHandle,
+                     std::tuple<DeviceAddress, bool>>
       handle_to_addr_;
 };
 
