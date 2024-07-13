@@ -17,6 +17,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 
 namespace bt::hci {
+namespace pwemb = pw::bluetooth::emboss;
 
 LowEnergyAdvertiser::LowEnergyAdvertiser(hci::Transport::WeakPtr hci)
     : hci_(std::move(hci)),
@@ -74,26 +75,25 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     hci::ResultFunction<> result_callback) {
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
-    EmbossCommandPacket packet = BuildEnablePacket(
-        address, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+    EmbossCommandPacket packet =
+        BuildEnablePacket(address, pwemb::GenericEnableParam::DISABLE);
     hci_cmd_runner_->QueueCommand(packet);
   }
 
   // Set advertising parameters
-  pw::bluetooth::emboss::LEAdvertisingType type =
-      pw::bluetooth::emboss::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
+  pwemb::LEAdvertisingType type =
+      pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
   if (connect_callback) {
-    type = pw::bluetooth::emboss::LEAdvertisingType::
-        CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
+    type = pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
   } else if (scan_rsp.CalculateBlockSize() > 0) {
-    type = pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
+    type = pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED;
   }
 
-  pw::bluetooth::emboss::LEOwnAddressType own_addr_type;
+  pwemb::LEOwnAddressType own_addr_type;
   if (address.type() == DeviceAddress::Type::kLEPublic) {
-    own_addr_type = pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
+    own_addr_type = pwemb::LEOwnAddressType::PUBLIC;
   } else {
-    own_addr_type = pw::bluetooth::emboss::LEOwnAddressType::RANDOM;
+    own_addr_type = pwemb::LEOwnAddressType::RANDOM;
   }
 
   data.Copy(&staged_parameters_.data);
@@ -150,8 +150,8 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
       BuildSetAdvertisingData(address, staged_parameters_.data, flags);
   EmbossCommandPacket set_scan_rsp_packet =
       BuildSetScanResponse(address, staged_parameters_.scan_rsp);
-  EmbossCommandPacket enable_packet = BuildEnablePacket(
-      address, pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+  EmbossCommandPacket enable_packet =
+      BuildEnablePacket(address, pwemb::GenericEnableParam::ENABLE);
 
   hci_cmd_runner_->QueueCommand(std::move(set_adv_data_packet));
   hci_cmd_runner_->QueueCommand(std::move(set_scan_rsp_packet));
@@ -240,8 +240,8 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
     const DeviceAddress& address) {
-  EmbossCommandPacket disable_packet = BuildEnablePacket(
-      address, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  EmbossCommandPacket disable_packet =
+      BuildEnablePacket(address, pwemb::GenericEnableParam::DISABLE);
   hci::EmbossCommandPacket unset_scan_rsp_packet =
       BuildUnsetScanResponse(address);
   hci::EmbossCommandPacket unset_adv_data_packet =
@@ -258,7 +258,7 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
 
 void LowEnergyAdvertiser::CompleteIncomingConnection(
     hci_spec::ConnectionHandle handle,
-    pw::bluetooth::emboss::ConnectionRole role,
+    pwemb::ConnectionRole role,
     const DeviceAddress& local_address,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params) {

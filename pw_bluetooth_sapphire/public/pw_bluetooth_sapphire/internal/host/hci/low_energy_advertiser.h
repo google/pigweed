@@ -274,7 +274,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   bool StartAdvertisingInternalStep2(const DeviceAddress& address,
                                      AdvFlags flags,
                                      ConnectionCallback connect_callback,
-                                     hci::ResultFunction<> status_callback);
+                                     hci::ResultFunction<> result_callback);
 
   // Enqueue onto the HCI command runner the HCI commands necessary to stop
   // advertising and completely remove a given address from the controller's

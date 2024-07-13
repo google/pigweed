@@ -18,6 +18,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
+namespace pwemb = pw::bluetooth::emboss;
 
 ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(
     hci::Transport::WeakPtr hci_ptr)
@@ -41,6 +42,7 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
+
   hci()->command_channel()->RemoveEventHandler(
       set_terminated_event_handler_id_);
   // TODO(fxbug.dev/42063496): This will only cancel one advertisement, after
@@ -50,18 +52,15 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
 }
 
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address,
-    pw::bluetooth::emboss::GenericEnableParam enable) {
+    const DeviceAddress& address, pwemb::GenericEnableParam enable) {
   // We only enable or disable a single address at a time. The multiply by 1 is
   // set explicitly to show that data[] within
   // LESetExtendedAdvertisingEnableData is of size 1.
   constexpr size_t kPacketSize =
-      pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommand::
-          MinSizeInBytes() +
-      (1 * pw::bluetooth::emboss::LESetExtendedAdvertisingEnableData::
-               IntrinsicSizeInBytes());
+      pwemb::LESetExtendedAdvertisingEnableCommand::MinSizeInBytes() +
+      (1 * pwemb::LESetExtendedAdvertisingEnableData::IntrinsicSizeInBytes());
   auto packet = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandWriter>(
+      pwemb::LESetExtendedAdvertisingEnableCommandWriter>(
       hci_spec::kLESetExtendedAdvertisingEnable, kPacketSize);
   auto packet_view = packet.view_t();
   packet_view.enable().Write(enable);
@@ -82,13 +81,13 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
 std::optional<EmbossCommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pw::bluetooth::emboss::LEAdvertisingType type,
-    pw::bluetooth::emboss::LEOwnAddressType own_address_type,
+    pwemb::LEAdvertisingType type,
+    pwemb::LEOwnAddressType own_address_type,
     AdvertisingIntervalRange interval) {
-  constexpr size_t kPacketSize = pw::bluetooth::emboss::
-      LESetExtendedAdvertisingParametersV1CommandView::SizeInBytes();
+  constexpr size_t kPacketSize =
+      pwemb::LESetExtendedAdvertisingParametersV1CommandView::SizeInBytes();
   auto packet = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandWriter>(
+      pwemb::LESetExtendedAdvertisingParametersV1CommandWriter>(
       hci_spec::kLESetExtendedAdvertisingParameters, kPacketSize);
   auto packet_view = packet.view_t();
 
@@ -134,18 +133,18 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
 
   packet_view.own_address_type().Write(own_address_type);
   packet_view.advertising_filter_policy().Write(
-      pw::bluetooth::emboss::LEAdvertisingFilterPolicy::ALLOW_ALL);
+      pwemb::LEAdvertisingFilterPolicy::ALLOW_ALL);
   packet_view.advertising_tx_power().Write(
       hci_spec::kLEExtendedAdvertisingTxPowerNoPreference);
   packet_view.scan_request_notification_enable().Write(
-      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+      hci_spec::GenericEnableParam::DISABLE);
 
   // TODO(fxbug.dev/42161929): using legacy PDUs requires advertisements on the
   // LE 1M PHY.
   packet_view.primary_advertising_phy().Write(
-      pw::bluetooth::emboss::LEPrimaryAdvertisingPHY::LE_1M);
+      pwemb::LEPrimaryAdvertisingPHY::LE_1M);
   packet_view.secondary_advertising_phy().Write(
-      pw::bluetooth::emboss::LESecondaryAdvertisingPHY::LE_1M);
+      pwemb::LESecondaryAdvertisingPHY::LE_1M);
 
   // Payload values were initialized to zero above. By not setting the values
   // for the following fields, we are purposely ignoring them:
@@ -169,12 +168,10 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
   size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
 
   size_t kPayloadSize =
-      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView::
-          MinSizeInBytes()
-              .Read() +
+      pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
       block_size;
   auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandWriter>(
+      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
       hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
   auto params = packet.view_t();
 
@@ -204,11 +201,9 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   constexpr size_t kPacketSize =
-      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView::
-          MinSizeInBytes()
-              .Read();
+      pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read();
   auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandWriter>(
+      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
       hci_spec::kLESetExtendedAdvertisingData, kPacketSize);
   auto payload = packet.view_t();
 
@@ -218,13 +213,11 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not support
-  // fragmented extended advertising data at this time.
-  payload.operation().Write(
-      pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
+  // support fragmented extended advertising data at this time.
+  payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
   payload.fragment_preference().Write(
-      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::
-          SHOULD_NOT_FRAGMENT);
+      pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
   payload.advertising_data_length().Write(0);
 
   return packet;
@@ -240,12 +233,10 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
   size_t block_size = scan_rsp.CalculateBlockSize();
 
   size_t kPayloadSize =
-      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView::
-          MinSizeInBytes()
-              .Read() +
+      pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
       block_size;
   auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandWriter>(
+      pwemb::LESetExtendedScanResponseDataCommandWriter>(
       hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
   auto params = packet.view_t();
 
@@ -255,13 +246,11 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
   BT_ASSERT(handle);
   params.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not support
-  // fragmented extended advertising data at this time.
-  params.operation().Write(
-      pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
+  // support fragmented extended advertising data at this time.
+  params.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
   params.fragment_preference().Write(
-      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::
-          SHOULD_NOT_FRAGMENT);
+      pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
   // scan response data
   params.scan_response_data_length().Write(static_cast<uint8_t>(block_size));
@@ -276,11 +265,9 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   constexpr size_t kPacketSize =
-      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView::
-          MinSizeInBytes()
-              .Read();
+      pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read();
   auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandWriter>(
+      pwemb::LESetExtendedScanResponseDataCommandWriter>(
       hci_spec::kLESetExtendedScanResponseData, kPacketSize);
   auto payload = packet.view_t();
 
@@ -290,13 +277,11 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not support
-  // fragmented extended advertising data at this time.
-  payload.operation().Write(
-      pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
+  // support fragmented extended advertising data at this time.
+  payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
   payload.fragment_preference().Write(
-      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::
-          SHOULD_NOT_FRAGMENT);
+      pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
   payload.scan_response_data_length().Write(0);
 
   return packet;
@@ -307,9 +292,9 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  auto packet = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LERemoveAdvertisingSetCommandWriter>(
-      hci_spec::kLERemoveAdvertisingSet);
+  auto packet =
+      hci::EmbossCommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
+          hci_spec::kLERemoveAdvertisingSet);
   auto packet_view = packet.view_t();
   packet_view.advertising_handle().Write(handle.value());
 
@@ -451,7 +436,7 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(
 
 void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
     hci_spec::ConnectionHandle handle,
-    pw::bluetooth::emboss::ConnectionRole role,
+    pwemb::ConnectionRole role,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params) {
   // Core Spec Volume 4, Part E, Section 7.8.56: Incoming connections to LE

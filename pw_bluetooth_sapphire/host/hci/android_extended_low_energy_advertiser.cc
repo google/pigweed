@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
+namespace pwemb = pw::bluetooth::emboss;
 
 constexpr int8_t kTransmitPower =
     -25;  // Android range -70 to +20, select the middle for now
@@ -60,8 +61,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
 }
 
 EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address,
-    pw::bluetooth::emboss::GenericEnableParam enable) {
+    const DeviceAddress& address, pwemb::GenericEnableParam enable) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
@@ -79,8 +79,8 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
 std::optional<EmbossCommandPacket>
 AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pw::bluetooth::emboss::LEAdvertisingType type,
-    pw::bluetooth::emboss::LEOwnAddressType own_address_type,
+    pwemb::LEAdvertisingType type,
+    pwemb::LEOwnAddressType own_address_type,
     AdvertisingIntervalRange interval) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.MapHandle(address);
@@ -106,8 +106,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   view.adv_channel_map().channel_37().Write(true);
   view.adv_channel_map().channel_38().Write(true);
   view.adv_channel_map().channel_39().Write(true);
-  view.adv_filter_policy().Write(
-      pw::bluetooth::emboss::LEAdvertisingFilterPolicy::ALLOW_ALL);
+  view.adv_filter_policy().Write(pwemb::LEAdvertisingFilterPolicy::ALLOW_ALL);
   view.adv_handle().Write(handle.value());
   view.adv_tx_power().Write(hci_spec::kLEAdvertisingTxPowerMax);
 
@@ -232,8 +231,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
   auto packet_view = packet.view_t();
   packet_view.vendor_command().sub_opcode().Write(
       hci_android::kLEMultiAdvtEnableSubopcode);
-  packet_view.enable().Write(
-      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  packet_view.enable().Write(pwemb::GenericEnableParam::DISABLE);
   packet_view.advertising_handle().Write(handle.value());
   return packet;
 }
@@ -333,7 +331,7 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
 
 void AndroidExtendedLowEnergyAdvertiser::OnIncomingConnection(
     hci_spec::ConnectionHandle handle,
-    pw::bluetooth::emboss::ConnectionRole role,
+    pwemb::ConnectionRole role,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params) {
   staged_connections_map_[handle] = {role, peer_address, conn_params};
@@ -347,9 +345,8 @@ CommandChannel::EventCallbackResult
 AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
     const EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kVendorDebugEventCode);
-  BT_ASSERT(event.view<pw::bluetooth::emboss::VendorDebugEventView>()
-                .subevent_code()
-                .Read() == hci_android::kLEMultiAdvtStateChangeSubeventCode);
+  BT_ASSERT(event.view<pwemb::VendorDebugEventView>().subevent_code().Read() ==
+            hci_android::kLEMultiAdvtStateChangeSubeventCode);
 
   Result<> result = event.ToResult();
   if (bt_is_error(result,

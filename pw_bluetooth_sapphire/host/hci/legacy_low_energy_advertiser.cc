@@ -14,17 +14,15 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h"
 
-#include <endian.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
+namespace pwemb = pw::bluetooth::emboss;
 
 LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   // This object is probably being destroyed because the stack is shutting down,
@@ -32,15 +30,15 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
+
   StopAdvertising();
 }
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address,
-    pw::bluetooth::emboss::GenericEnableParam enable) {
-  auto packet = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetAdvertisingEnableCommandWriter>(
-      hci_spec::kLESetAdvertisingEnable);
+    const DeviceAddress& address, pwemb::GenericEnableParam enable) {
+  auto packet =
+      hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
+          hci_spec::kLESetAdvertisingEnable);
   auto packet_view = packet.view_t();
   packet_view.advertising_enable().Write(enable);
   return packet;
@@ -48,9 +46,9 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
-  auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
-      hci_spec::kLESetAdvertisingData);
+  auto packet =
+      EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
+          hci_spec::kLESetAdvertisingData);
   auto params = packet.view_t();
   const uint8_t data_length =
       static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
@@ -65,9 +63,9 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
-  auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
-      hci_spec::kLESetScanResponseData);
+  auto packet =
+      EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
+          hci_spec::kLESetScanResponseData);
   auto params = packet.view_t();
   const uint8_t data_length =
       static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
@@ -83,12 +81,12 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetScanResponse(
 std::optional<EmbossCommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pw::bluetooth::emboss::LEAdvertisingType type,
-    pw::bluetooth::emboss::LEOwnAddressType own_address_type,
+    pwemb::LEAdvertisingType type,
+    pwemb::LEOwnAddressType own_address_type,
     AdvertisingIntervalRange interval) {
-  auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetAdvertisingParametersCommandWriter>(
-      hci_spec::kLESetAdvertisingParameters);
+  auto packet =
+      EmbossCommandPacket::New<pwemb::LESetAdvertisingParametersCommandWriter>(
+          hci_spec::kLESetAdvertisingParameters);
   auto params = packet.view_t();
   params.advertising_interval_min().UncheckedWrite(interval.min());
   params.advertising_interval_max().UncheckedWrite(interval.max());
@@ -97,7 +95,7 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
   params.advertising_channel_map().BackingStorage().WriteUInt(
       hci_spec::kLEAdvertisingChannelAll);
   params.advertising_filter_policy().Write(
-      pw::bluetooth::emboss::LEAdvertisingFilterPolicy::ALLOW_ALL);
+      pwemb::LEAdvertisingFilterPolicy::ALLOW_ALL);
 
   // We don't support directed advertising yet, so leave peer_address and
   // peer_address_type as 0x00
@@ -108,33 +106,31 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
-  return EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
+  return EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
 }
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
-  auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
-      hci_spec::kLESetScanResponseData);
+  auto packet =
+      EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
+          hci_spec::kLESetScanResponseData);
   return packet;
 }
 
 EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
-  auto packet = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetAdvertisingEnableCommandWriter>(
-      hci_spec::kLESetAdvertisingEnable);
+  auto packet =
+      hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
+          hci_spec::kLESetAdvertisingEnable);
   auto packet_view = packet.view_t();
-  packet_view.advertising_enable().Write(
-      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  packet_view.advertising_enable().Write(pwemb::GenericEnableParam::DISABLE);
   return packet;
 }
 
 static EmbossCommandPacket BuildReadAdvertisingTxPower() {
   return EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LEReadAdvertisingChannelTxPowerCommandView>(
+      pwemb::LEReadAdvertisingChannelTxPowerCommandView>(
       hci_spec::kLEReadAdvertisingChannelTxPower);
 }
 
@@ -290,7 +286,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
     hci_spec::ConnectionHandle handle,
-    pw::bluetooth::emboss::ConnectionRole role,
+    pwemb::ConnectionRole role,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address =
