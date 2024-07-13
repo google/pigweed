@@ -19,11 +19,13 @@
 #include <utility>
 
 #include "pw_allocator/best_fit_block_allocator.h"
+#include "pw_allocator/synchronized_allocator.h"
 #include "pw_assert/check.h"
 #include "pw_async2/allocate_task.h"
 #include "pw_async2/pend_func_task.h"
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_pwpb.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "pw_system/config.h"
 #include "pw_system/internal/async_packet_io.h"
 #include "pw_system/thread_snapshot_service.h"
@@ -43,6 +45,9 @@ void SystemStart(channel::ByteReaderWriter& io_channel) {
 
 namespace system {
 namespace {
+
+using pw::allocator::BestFitBlockAllocator;
+using pw::allocator::SynchronizedAllocator;
 
 // TODO: b/349654108 - Standardize component declaration and initialization.
 alignas(internal::PacketIO) std::byte packet_io_[sizeof(internal::PacketIO)];
@@ -82,8 +87,10 @@ async2::Dispatcher& AsyncCore::dispatcher() {
 
 Allocator& AsyncCore::allocator() {
   alignas(uintptr_t) static std::byte buffer[8192];
-  static allocator::BestFitBlockAllocator allocator(buffer);
-  return allocator;
+  static BestFitBlockAllocator block_allocator(buffer);
+  static SynchronizedAllocator<pw::sync::InterruptSpinLock> sync_allocator(
+      block_allocator);
+  return sync_allocator;
 }
 
 bool AsyncCore::RunOnce(Function<void()>&& function) {

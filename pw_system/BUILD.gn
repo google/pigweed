@@ -332,11 +332,13 @@ pw_source_set("async") {
     ":transfer_service",
     ":work_queue",
     "$dir_pw_allocator:best_fit_block_allocator",
+    "$dir_pw_allocator:synchronized_allocator",
     "$dir_pw_async2:allocate_task",
     "$dir_pw_async2:pend_func_task",
     "$dir_pw_hdlc:router",
     "$dir_pw_multibuf:simple_allocator",
     "$dir_pw_rpc/pwpb:echo_service",
+    "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_thread:thread",
   ]
 }
