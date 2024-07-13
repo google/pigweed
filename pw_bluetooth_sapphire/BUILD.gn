@@ -258,6 +258,7 @@ pw_source_set("_public") {
     "public/pw_bluetooth_sapphire/internal/host/testing/fake_signaling_server.h",
     "public/pw_bluetooth_sapphire/internal/host/testing/inspect.h",
     "public/pw_bluetooth_sapphire/internal/host/testing/inspect_util.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h",
     "public/pw_bluetooth_sapphire/internal/host/testing/mock_controller.h",
     "public/pw_bluetooth_sapphire/internal/host/testing/parse_args.h",
     "public/pw_bluetooth_sapphire/internal/host/testing/peer_fuzzer.h",
