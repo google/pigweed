@@ -46,11 +46,11 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
-    const DeviceAddress& address,
-    const AdvertisingData& data,
-    AdvFlags flags,
-    bool /*extended_pdu*/) {
+std::vector<EmbossCommandPacket>
+LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
+                                                   const AdvertisingData& data,
+                                                   AdvFlags flags,
+                                                   bool /*extended_pdu*/) {
   auto packet =
       EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
           hci_spec::kLESetAdvertisingData);
@@ -63,13 +63,16 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
                              data_length);
   data.WriteBlock(&adv_view, flags);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetScanResponse(
-    const DeviceAddress& address,
-    const AdvertisingData& scan_rsp,
-    bool /*extended_pdu*/) {
+std::vector<EmbossCommandPacket>
+LegacyLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
+                                                const AdvertisingData& scan_rsp,
+                                                bool /*extended_pdu*/) {
   auto packet =
       EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
           hci_spec::kLESetScanResponseData);
@@ -82,7 +85,10 @@ EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildSetScanResponse(
       params.scan_response_data().BackingStorage().data(), data_length);
   scan_rsp.WriteBlock(&scan_data_view, /*flags=*/std::nullopt);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
 std::optional<EmbossCommandPacket>

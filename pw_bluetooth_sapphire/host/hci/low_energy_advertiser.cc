@@ -146,15 +146,23 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
-  EmbossCommandPacket set_adv_data_packet = BuildSetAdvertisingData(
-      address, staged_parameters_.data, options.flags, options.extended_pdu);
-  EmbossCommandPacket set_scan_rsp_packet = BuildSetScanResponse(
+  std::vector<EmbossCommandPacket> set_adv_data_packets =
+      BuildSetAdvertisingData(address,
+                              staged_parameters_.data,
+                              options.flags,
+                              options.extended_pdu);
+  for (auto& packet : set_adv_data_packets) {
+    hci_cmd_runner_->QueueCommand(std::move(packet));
+  }
+
+  std::vector<EmbossCommandPacket> set_scan_rsp_packets = BuildSetScanResponse(
       address, staged_parameters_.scan_rsp, options.extended_pdu);
+  for (auto& packet : set_scan_rsp_packets) {
+    hci_cmd_runner_->QueueCommand(std::move(packet));
+  }
+
   EmbossCommandPacket enable_packet = BuildEnablePacket(
       address, pwemb::GenericEnableParam::ENABLE, options.extended_pdu);
-
-  hci_cmd_runner_->QueueCommand(std::move(set_adv_data_packet));
-  hci_cmd_runner_->QueueCommand(std::move(set_scan_rsp_packet));
   hci_cmd_runner_->QueueCommand(enable_packet);
 
   staged_parameters_.reset();

@@ -78,17 +78,19 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) override;
 
-  EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
-                                              const AdvertisingData& data,
-                                              AdvFlags flags,
-                                              bool extended_pdu) override;
+  std::vector<EmbossCommandPacket> BuildSetAdvertisingData(
+      const DeviceAddress& address,
+      const AdvertisingData& data,
+      AdvFlags flags,
+      bool extended_pdu) override;
 
   EmbossCommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
                                                 bool extended_pdu) override;
 
-  EmbossCommandPacket BuildSetScanResponse(const DeviceAddress& address,
-                                           const AdvertisingData& scan_rsp,
-                                           bool extended_pdu) override;
+  std::vector<EmbossCommandPacket> BuildSetScanResponse(
+      const DeviceAddress& address,
+      const AdvertisingData& scan_rsp,
+      bool extended_pdu) override;
 
   EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
                                              bool extended_pdu) override;

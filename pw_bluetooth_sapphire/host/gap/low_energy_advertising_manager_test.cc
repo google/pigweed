@@ -159,13 +159,18 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::nullopt;
   }
 
-  hci::EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
-                                                   const AdvertisingData& data,
-                                                   AdvFlags flags,
-                                                   bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
-        pwemb::LESetAdvertisingDataCommandWriter>(
-        hci_spec::kLESetAdvertisingData);
+  std::vector<hci::EmbossCommandPacket> BuildSetAdvertisingData(
+      const DeviceAddress& address,
+      const AdvertisingData& data,
+      AdvFlags flags,
+      bool extended_pdu) override {
+    hci::EmbossCommandPacket packet =
+        hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
+            hci_spec::kLESetAdvertisingData);
+
+    std::vector<hci::EmbossCommandPacket> packets;
+    packets.push_back(std::move(packet));
+    return packets;
   }
 
   hci::EmbossCommandPacket BuildUnsetAdvertisingData(
@@ -175,12 +180,17 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
         hci_spec::kLESetAdvertisingData);
   }
 
-  hci::EmbossCommandPacket BuildSetScanResponse(const DeviceAddress& address,
-                                                const AdvertisingData& scan_rsp,
-                                                bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
+  std::vector<hci::EmbossCommandPacket> BuildSetScanResponse(
+      const DeviceAddress& address,
+      const AdvertisingData& scan_rsp,
+      bool extended_pdu) override {
+    hci::EmbossCommandPacket packet = hci::EmbossCommandPacket::New<
         pwemb::LESetScanResponseDataCommandWriter>(
         hci_spec::kLESetScanResponseData);
+
+    std::vector<hci::EmbossCommandPacket> packets;
+    packets.push_back(std::move(packet));
+    return packets;
   }
 
   hci::EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,

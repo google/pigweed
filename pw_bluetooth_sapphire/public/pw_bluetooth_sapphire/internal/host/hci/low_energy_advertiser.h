@@ -186,7 +186,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Build the HCI command packet to set the advertising data for the flavor of
   // low energy advertising being implemented.
-  virtual EmbossCommandPacket BuildSetAdvertisingData(
+  virtual std::vector<EmbossCommandPacket> BuildSetAdvertisingData(
       const DeviceAddress& address,
       const AdvertisingData& data,
       AdvFlags flags,
@@ -200,7 +200,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Build the HCI command packet to set the data sent in a scan response (if
   // requested) for the flavor of low energy advertising being implemented.
-  virtual EmbossCommandPacket BuildSetScanResponse(
+  virtual std::vector<EmbossCommandPacket> BuildSetScanResponse(
       const DeviceAddress& address,
       const AdvertisingData& scan_rsp,
       bool extended_pdu) = 0;

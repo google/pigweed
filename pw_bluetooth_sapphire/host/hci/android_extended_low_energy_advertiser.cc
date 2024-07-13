@@ -118,7 +118,8 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
-EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+std::vector<EmbossCommandPacket>
+AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
@@ -148,7 +149,10 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
                               adv_data_length);
   data.WriteBlock(&data_view, flags);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
 EmbossCommandPacket
@@ -173,7 +177,8 @@ AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   return packet;
 }
 
-EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
+std::vector<EmbossCommandPacket>
+AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address,
     const AdvertisingData& data,
     bool extended_pdu) {
@@ -200,7 +205,10 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
                               scan_rsp_length);
   data.WriteBlock(&data_view, std::nullopt);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
 EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(

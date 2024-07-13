@@ -189,7 +189,8 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+std::vector<EmbossCommandPacket>
+ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
@@ -229,7 +230,10 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
                               params.advertising_data_length().Read());
   adv_data.WriteBlock(&data_view, flags);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
@@ -257,10 +261,10 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   return packet;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
-    const DeviceAddress& address,
-    const AdvertisingData& data,
-    bool extended_pdu) {
+std::vector<EmbossCommandPacket>
+ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
+                                                  const AdvertisingData& data,
+                                                  bool extended_pdu) {
   AdvertisingData scan_rsp;
   data.Copy(&scan_rsp);
   if (staged_advertising_parameters_.include_tx_power_level) {
@@ -295,7 +299,10 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
       params.scan_response_data_length().Read());
   scan_rsp.WriteBlock(&scan_rsp_view, std::nullopt);
 
-  return packet;
+  std::vector<EmbossCommandPacket> packets;
+  packets.reserve(1);
+  packets.emplace_back(std::move(packet));
+  return packets;
 }
 
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
