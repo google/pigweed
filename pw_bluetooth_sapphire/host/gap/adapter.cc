@@ -122,6 +122,7 @@ class AdapterImpl final : public Adapter {
         AdvertisingData data,
         AdvertisingData scan_rsp,
         AdvertisingInterval interval,
+        bool extended_pdu,
         bool anonymous,
         bool include_tx_power_level,
         std::optional<ConnectableAdvertisingParameters> connectable,
@@ -156,6 +157,7 @@ class AdapterImpl final : public Adapter {
           std::move(scan_rsp),
           std::move(advertisement_connect_cb),
           interval,
+          extended_pdu,
           anonymous,
           include_tx_power_level,
           std::move(status_callback));

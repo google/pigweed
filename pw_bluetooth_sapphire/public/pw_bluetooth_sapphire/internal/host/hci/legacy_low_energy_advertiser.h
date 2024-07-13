@@ -28,7 +28,9 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   // LowEnergyAdvertiser overrides:
   size_t MaxAdvertisements() const override { return 1; }
-  size_t GetSizeLimit() const override {
+  size_t GetSizeLimit(bool extended_pdu) const override {
+    // LegacyLowEnergyAdvertiser is unable to take advantage of extended
+    // advertising PDUs. Return the legacy advertising PDU size limit.
     return hci_spec::kMaxLEAdvertisingDataLength;
   }
   bool AllowsRandomAddressChange() const override {
@@ -54,7 +56,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // request and proceeds with start.
   // Returns false if called while not advertising.
   // TODO(fxbug.dev/42127634): Update documentation.
-  void StopAdvertising(const DeviceAddress& address) override;
+  void StopAdvertising(const DeviceAddress& address,
+                       bool extended_pdu) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,
@@ -65,29 +68,33 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  private:
   EmbossCommandPacket BuildEnablePacket(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::GenericEnableParam enable) override;
+      pw::bluetooth::emboss::GenericEnableParam enable,
+      bool extended_pdu) override;
 
   std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) override;
+      AdvertisingIntervalRange interval,
+      bool extended_pdu) override;
 
   EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
                                               const AdvertisingData& data,
-                                              AdvFlags flags) override;
+                                              AdvFlags flags,
+                                              bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetAdvertisingData(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
-  EmbossCommandPacket BuildSetScanResponse(
-      const DeviceAddress& address, const AdvertisingData& scan_rsp) override;
+  EmbossCommandPacket BuildSetScanResponse(const DeviceAddress& address,
+                                           const AdvertisingData& scan_rsp,
+                                           bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetScanResponse(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
+                                             bool extended_pdu) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
   // |starting_| is set to true if a start is pending.
   // |staged_params_| are the parameters that will be advertised.

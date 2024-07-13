@@ -140,6 +140,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingData scan_data = GetExampleData();
   AdvertisingOptions options(kTestInterval,
                              kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
 
@@ -156,7 +157,8 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   ASSERT_TRUE(this->GetLastStatus());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                /*extended_pdu=*/false));
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();

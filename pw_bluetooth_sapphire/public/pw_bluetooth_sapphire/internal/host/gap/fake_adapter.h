@@ -55,6 +55,7 @@ class FakeAdapter final : public Adapter {
       AdvertisingData scan_rsp;
       std::optional<ConnectableAdvertisingParameters> connectable;
       AdvertisingInterval interval;
+      bool extended_pdu;
       bool anonymous;
       bool include_tx_power_level;
     };
@@ -104,6 +105,7 @@ class FakeAdapter final : public Adapter {
         AdvertisingData data,
         AdvertisingData scan_rsp,
         AdvertisingInterval interval,
+        bool extended_pdu,
         bool anonymous,
         bool include_tx_power_level,
         std::optional<ConnectableAdvertisingParameters> connectable,

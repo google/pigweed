@@ -212,6 +212,7 @@ class Adapter {
         AdvertisingData data,
         AdvertisingData scan_rsp,
         AdvertisingInterval interval,
+        bool extended_pdu,
         bool anonymous,
         bool include_tx_power_level,
         std::optional<ConnectableAdvertisingParameters> connectable,

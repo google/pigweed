@@ -79,17 +79,21 @@ void AdvertisementInstance::Reset() {
 
 class LowEnergyAdvertisingManager::ActiveAdvertisement final {
  public:
-  explicit ActiveAdvertisement(const DeviceAddress& address, AdvertisementId id)
-      : address_(address), id_(id) {}
+  explicit ActiveAdvertisement(const DeviceAddress& address,
+                               AdvertisementId id,
+                               bool extended_pdu)
+      : address_(address), id_(id), extended_pdu_(extended_pdu) {}
 
   ~ActiveAdvertisement() = default;
 
   const DeviceAddress& address() const { return address_; }
   AdvertisementId id() const { return id_; }
+  bool extended_pdu() const { return extended_pdu_; }
 
  private:
   DeviceAddress address_;
   AdvertisementId id_;
+  bool extended_pdu_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ActiveAdvertisement);
 };
@@ -107,7 +111,8 @@ LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(
 LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {
   // Turn off all the advertisements!
   for (const auto& ad : advertisements_) {
-    advertiser_->StopAdvertising(ad.second->address());
+    advertiser_->StopAdvertising(ad.second->address(),
+                                 ad.second->extended_pdu());
   }
 }
 
@@ -116,6 +121,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
     AdvertisingData scan_rsp,
     ConnectionCallback connect_callback,
     AdvertisingInterval interval,
+    bool extended_pdu,
     bool anonymous,
     bool include_tx_power_level,
     AdvertisingStatusCallback status_callback) {
@@ -137,6 +143,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   hci::LowEnergyAdvertiser::AdvertisingOptions options(
       GetIntervalRange(interval),
       AdvFlag::kLEGeneralDiscoverableMode,
+      extended_pdu,
       anonymous,
       include_tx_power_level);
 
@@ -163,7 +170,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(
         }
 
         auto ad_ptr = std::make_unique<ActiveAdvertisement>(
-            address, AdvertisementId(self->next_advertisement_id_++));
+            address,
+            AdvertisementId(self->next_advertisement_id_++),
+            options.extended_pdu);
         hci::LowEnergyAdvertiser::ConnectionCallback adv_conn_cb;
         if (connect_cb) {
           adv_conn_cb = [self,
@@ -215,7 +224,8 @@ bool LowEnergyAdvertisingManager::StopAdvertising(
     return false;
   }
 
-  advertiser_->StopAdvertising(it->second->address());
+  advertiser_->StopAdvertising(it->second->address(),
+                               it->second->extended_pdu());
   advertisements_.erase(it);
   return true;
 }

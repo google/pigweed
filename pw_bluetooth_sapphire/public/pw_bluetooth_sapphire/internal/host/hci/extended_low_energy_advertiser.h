@@ -35,21 +35,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       pw::bluetooth::emboss::LEAdvertisingType type);
 
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
-
-  // TODO(fxbug.dev/42161929): The maximum length of data that can be
-  // advertised. For backwards compatibility and because supporting it is a much
-  // larger project, we currently only support legacy PDUs. When using legacy
-  // PDUs, the maximum advertising data size is
-  // hci_spec::kMaxLEAdvertisingDataLength.
-  //
-  // TODO(fxbug.dev/42157495): Extended advertising supports sending larger
-  // amounts of data, but they have to be fragmented across multiple commands to
-  // the controller. This is not yet supported in this implementation. We should
-  // support larger than kMaxLEExtendedAdvertisingDataLength advertising data
-  // with fragmentation.
-  size_t GetSizeLimit() const override {
-    return hci_spec::kMaxLEAdvertisingDataLength;
-  }
+  size_t GetSizeLimit(bool extended_pdu) const override;
 
   // Attempt to start advertising. See LowEnergyAdvertiser::StartAdvertising for
   // full documentation.
@@ -69,7 +55,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                         ResultFunction<> result_callback) override;
 
   void StopAdvertising() override;
-  void StopAdvertising(const DeviceAddress& address) override;
+  void StopAdvertising(const DeviceAddress& address,
+                       bool extended_pdu) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,
@@ -97,38 +84,44 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   struct StagedAdvertisingParameters {
     bool include_tx_power_level = false;
     int8_t selected_tx_power_level = 0;
+    bool extended_pdu = false;
 
     void clear() {
       include_tx_power_level = false;
       selected_tx_power_level = 0;
+      extended_pdu = false;
     }
   };
 
   EmbossCommandPacket BuildEnablePacket(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::GenericEnableParam enable) override;
+      pw::bluetooth::emboss::GenericEnableParam enable,
+      bool extended_pdu) override;
 
   std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) override;
+      AdvertisingIntervalRange interval,
+      bool extended_pdu) override;
 
   EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
                                               const AdvertisingData& data,
-                                              AdvFlags flags) override;
+                                              AdvFlags flags,
+                                              bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetAdvertisingData(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
-  EmbossCommandPacket BuildSetScanResponse(
-      const DeviceAddress& address, const AdvertisingData& data) override;
+  EmbossCommandPacket BuildSetScanResponse(const DeviceAddress& address,
+                                           const AdvertisingData& data,
+                                           bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetScanResponse(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
+                                             bool extended_pdu) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
   void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
 

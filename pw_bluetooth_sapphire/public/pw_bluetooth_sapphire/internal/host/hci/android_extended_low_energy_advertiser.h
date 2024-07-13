@@ -42,7 +42,9 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   // LowEnergyAdvertiser overrides:
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
-  size_t GetSizeLimit() const override {
+  size_t GetSizeLimit(bool extended_pdu) const override {
+    // AndroidExtendedLowEnergyAdvertiser is unable to take advantage of
+    // extended advertising PDUs. Return the legacy advertising PDU size limit.
     return hci_spec::kMaxLEAdvertisingDataLength;
   }
 
@@ -60,7 +62,8 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                         ResultFunction<> result_callback) override;
 
   void StopAdvertising() override;
-  void StopAdvertising(const DeviceAddress& address) override;
+  void StopAdvertising(const DeviceAddress& address,
+                       bool extended_pdu) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,
@@ -87,29 +90,33 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   EmbossCommandPacket BuildEnablePacket(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::GenericEnableParam enable) override;
+      pw::bluetooth::emboss::GenericEnableParam enable,
+      bool extended_pdu) override;
 
   std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) override;
+      AdvertisingIntervalRange interval,
+      bool extended_pdu) override;
 
   EmbossCommandPacket BuildSetAdvertisingData(const DeviceAddress& address,
                                               const AdvertisingData& data,
-                                              AdvFlags flags) override;
+                                              AdvFlags flags,
+                                              bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetAdvertisingData(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
-  EmbossCommandPacket BuildSetScanResponse(
-      const DeviceAddress& address, const AdvertisingData& scan_rsp) override;
+  EmbossCommandPacket BuildSetScanResponse(const DeviceAddress& address,
+                                           const AdvertisingData& data,
+                                           bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetScanResponse(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
+                                             bool extended_pdu) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(
-      const DeviceAddress& address) override;
+  EmbossCommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
+                                                bool extended_pdu) override;
 
   void OnCurrentOperationComplete() override;
 

@@ -884,7 +884,7 @@ constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
 // parameter) but they must be fragmented across multiple extended advertising
 // PDUs. We don't currently support data framgentation when advertising, nor do
 // we support the use of extended advertising PDUs when advertising.
-constexpr size_t kMaxPduLEExtendedAdvertisingDataLength = 252;
+constexpr size_t kMaxPduLEExtendedAdvertisingDataLength = 248;
 
 // Core Spec Version 5.4, Volume 6, Part B, Section 2.3.4.9: the total
 // amount of Host Advertising Data before fragmentation shall not exceed 1650

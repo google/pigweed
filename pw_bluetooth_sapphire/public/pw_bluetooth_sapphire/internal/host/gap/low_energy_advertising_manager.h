@@ -117,6 +117,7 @@ class LowEnergyAdvertisingManager {
                         AdvertisingData scan_rsp,
                         ConnectionCallback connect_callback,
                         AdvertisingInterval interval,
+                        bool extended_pdu,
                         bool anonymous,
                         bool include_tx_power_level,
                         AdvertisingStatusCallback status_callback);
