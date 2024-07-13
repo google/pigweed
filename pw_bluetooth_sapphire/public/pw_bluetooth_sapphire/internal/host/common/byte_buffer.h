@@ -432,10 +432,8 @@ class StaticByteBuffer : public MutableByteBuffer {
   // ByteBuffer overrides
   const uint8_t* data() const override { return buffer_.data(); }
   size_t size() const override { return buffer_.size(); }
-  const_iterator cbegin() const override { return buffer_.data(); }
-  const_iterator cend() const override {
-    return buffer_.data() + buffer_.size();
-  }
+  const_iterator cbegin() const override { return &*buffer_.cbegin(); }
+  const_iterator cend() const override { return &*buffer_.cend(); }
 
   // MutableByteBuffer overrides:
   uint8_t* mutable_data() override { return buffer_.data(); }
