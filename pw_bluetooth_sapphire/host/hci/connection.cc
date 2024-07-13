@@ -19,6 +19,8 @@
 #include <pw_bluetooth/hci_commands.emb.h>
 #include <pw_bluetooth/hci_events.emb.h>
 
+#include <utility>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -32,13 +34,13 @@ namespace bt::hci {
 Connection::Connection(hci_spec::ConnectionHandle handle,
                        const DeviceAddress& local_address,
                        const DeviceAddress& peer_address,
-                       const Transport::WeakPtr& hci,
+                       Transport::WeakPtr hci,
                        fit::callback<void()> on_disconnection_complete)
     : handle_(handle),
       local_address_(local_address),
       peer_address_(peer_address),
       conn_state_(State::kConnected),
-      hci_(hci),
+      hci_(std::move(hci)),
       weak_self_(this) {
   BT_ASSERT(hci_.is_alive());
 

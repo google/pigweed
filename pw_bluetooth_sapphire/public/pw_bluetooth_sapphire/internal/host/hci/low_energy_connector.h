@@ -153,7 +153,7 @@ class LowEnergyConnector : public LocalAddressClient {
     StatusCallback status_callback;
   };
 
-  EmbossCommandPacket BuildExtendedCreateConnectionPacket(
+  static EmbossCommandPacket BuildExtendedCreateConnectionPacket(
       const DeviceAddress& local_address,
       const DeviceAddress& peer_address,
       const hci_spec::LEPreferredConnectionParameters& initial_params,
@@ -161,7 +161,7 @@ class LowEnergyConnector : public LocalAddressClient {
       uint16_t scan_interval,
       uint16_t scan_window);
 
-  EmbossCommandPacket BuildCreateConnectionPacket(
+  static EmbossCommandPacket BuildCreateConnectionPacket(
       const DeviceAddress& local_address,
       const DeviceAddress& peer_address,
       const hci_spec::LEPreferredConnectionParameters& initial_params,

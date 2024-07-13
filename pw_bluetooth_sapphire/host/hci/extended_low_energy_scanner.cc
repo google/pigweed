@@ -239,7 +239,7 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
     LowEnergyScanResult result;
     std::unique_ptr<PendingScanResult> pending = RemovePendingResult(address);
     if (pending) {
-      result = std::move(pending->result());
+      result = pending->result();
     } else {
       result = LowEnergyScanResult(address, resolved, is_connectable);
     }

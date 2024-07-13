@@ -57,7 +57,7 @@ class ExtendedLowEnergyScanner final : public LowEnergyScanner {
 
   // Parse out all the advertising reports that came in an HCI LE Extended
   // Advertising Report.
-  std::vector<pw::bluetooth::emboss::LEExtendedAdvertisingReportDataView>
+  static std::vector<pw::bluetooth::emboss::LEExtendedAdvertisingReportDataView>
   ParseAdvertisingReports(const EmbossEventPacket& event);
 
   // Event handler for HCI LE Extended Advertising Report event.

@@ -94,7 +94,7 @@ class Connection {
   Connection(hci_spec::ConnectionHandle handle,
              const DeviceAddress& local_address,
              const DeviceAddress& peer_address,
-             const Transport::WeakPtr& hci,
+             Transport::WeakPtr hci,
              fit::callback<void()> on_disconnection_complete);
 
   const Transport::WeakPtr& hci() { return hci_; }
