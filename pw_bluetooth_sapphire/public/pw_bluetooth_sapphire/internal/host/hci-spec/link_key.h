@@ -41,6 +41,8 @@ class LinkKey final {
            ediv() == other.ediv();
   }
 
+  bool operator!=(const LinkKey& other) const { return !(*this == other); }
+
   auto view() { return pw::bluetooth::emboss::MakeLinkKeyView(&value_); }
 
  private:

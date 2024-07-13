@@ -990,7 +990,7 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
     // Should always be present when this method is called.
     bt_log(ERROR, "sm", "Link LTK not found");
     status = fit::error(Error(HostError::kNotFound));
-  } else if (!(*le_link_->ltk() == ltk_->key())) {
+  } else if (le_link_->ltk().value() != ltk_->key()) {
     // As only SM should ever change the LE Link encryption key, these two
     // values should always be in sync, i.e. something in the system is acting
     // unreliably if they get out of sync.
