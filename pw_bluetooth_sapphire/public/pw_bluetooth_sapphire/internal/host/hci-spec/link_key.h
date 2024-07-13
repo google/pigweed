@@ -24,8 +24,9 @@ namespace bt::hci_spec {
 // Represents a key used to encrypt a link.
 class LinkKey final {
  public:
-  LinkKey();
-  LinkKey(const UInt128& value, uint64_t rand, uint16_t ediv);
+  LinkKey() : rand_(0), ediv_(0) { value_.fill(0); }
+  LinkKey(const UInt128& value, uint64_t rand, uint16_t ediv)
+      : value_(value), rand_(rand), ediv_(ediv) {}
 
   // 128-bit BR/EDR link key, LE Long Term Key, or LE Short Term key.
   const UInt128& value() const { return value_; }
@@ -36,12 +37,11 @@ class LinkKey final {
   uint64_t rand() const { return rand_; }
   uint16_t ediv() const { return ediv_; }
 
+  bool operator!=(const LinkKey& other) const { return !(*this == other); }
   bool operator==(const LinkKey& other) const {
     return value() == other.value() && rand() == other.rand() &&
            ediv() == other.ediv();
   }
-
-  bool operator!=(const LinkKey& other) const { return !(*this == other); }
 
   auto view() { return pw::bluetooth::emboss::MakeLinkKeyView(&value_); }
 

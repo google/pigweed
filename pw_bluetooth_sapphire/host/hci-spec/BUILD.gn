@@ -33,7 +33,6 @@ pw_source_set("hci-spec") {
 
   sources = [
     "le_connection_parameters.cc",
-    "link_key.cc",
     "util.cc",
   ]
 
