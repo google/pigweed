@@ -159,7 +159,7 @@ class LowEnergyConnectorTest : public TestingBase,
 
 INSTANTIATE_TEST_SUITE_P(LowEnergyConnectorTest,
                          LowEnergyConnectorTest,
-                         ::testing::Values(false, true));
+                         ::testing::Bool());
 
 TEST_P(LowEnergyConnectorTest, CreateConnection) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());

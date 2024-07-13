@@ -699,7 +699,7 @@ void FakeController::SendAdvertisingReport(const FakePeer& peer) {
   }
 
   DynamicByteBuffer buffer;
-  if (received_extended_operations_) {
+  if (advertising_procedure() == AdvertisingProcedure::kExtended) {
     buffer = peer.BuildExtendedAdvertisingReportEvent();
   } else {
     buffer = peer.BuildLegacyAdvertisingReportEvent();
@@ -724,7 +724,7 @@ void FakeController::SendScanResponseReport(const FakePeer& peer) {
   }
 
   DynamicByteBuffer buffer;
-  if (received_extended_operations_) {
+  if (advertising_procedure() == AdvertisingProcedure::kExtended) {
     buffer = peer.BuildExtendedScanResponseEvent();
   } else {
     buffer = peer.BuildLegacyScanResponseReportEvent();
@@ -963,7 +963,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     const pwemb::LECreateConnectionCommandView& params) {
   le_create_connection_command_count_++;
 
-  if (received_extended_operations_) {
+  if (advertising_procedure() == AdvertisingProcedure::kExtended) {
     RespondWithCommandStatus(hci_spec::kLECreateConnection,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
@@ -1055,7 +1055,15 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
 void FakeController::OnLEExtendedCreateConnectionCommandReceived(
     const pwemb::LEExtendedCreateConnectionCommandV1View& params) {
-  received_extended_operations_ = true;
+  if (!EnableExtendedAdvertising()) {
+    bt_log(INFO,
+           "fake-hci",
+           "extended create connection command rejected, legacy advertising is "
+           "in use");
+    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
 
   if (const auto& phys = params.initiating_phys();
       !phys.le_1m().Read() && !phys.le_2m().Read() && phys.le_coded().Read()) {
@@ -1423,6 +1431,16 @@ void FakeController::OnInquiry(const pwemb::InquiryCommandView& params) {
 
 void FakeController::OnLESetScanEnable(
     const pwemb::LESetScanEnableCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetScanEnable,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   le_scan_state_.enabled = false;
   if (params.le_scan_enable().Read() == pwemb::GenericEnableParam::ENABLE) {
     le_scan_state_.enabled = true;
@@ -1450,7 +1468,15 @@ void FakeController::OnLESetScanEnable(
 
 void FakeController::OnLESetExtendedScanEnable(
     const pwemb::LESetExtendedScanEnableCommandView& params) {
-  received_extended_operations_ = true;
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetExtendedScanEnable,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
 
   le_scan_state_.enabled = false;
   if (params.scanning_enabled().Read() == pwemb::GenericEnableParam::ENABLE) {
@@ -1483,6 +1509,16 @@ void FakeController::OnLESetExtendedScanEnable(
 
 void FakeController::OnLESetScanParameters(
     const pwemb::LESetScanParametersCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetScanParameters,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   if (le_scan_state_.enabled) {
     RespondWithCommandComplete(hci_spec::kLESetScanParameters,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
@@ -1501,7 +1537,15 @@ void FakeController::OnLESetScanParameters(
 
 void FakeController::OnLESetExtendedScanParameters(
     const pwemb::LESetExtendedScanParametersCommandView& params) {
-  received_extended_operations_ = true;
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetScanParameters,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
 
   if (le_scan_state_.enabled) {
     RespondWithCommandComplete(hci_spec::kLESetScanParameters,
@@ -1869,6 +1913,16 @@ void FakeController::OnReadBRADDR() {
 
 void FakeController::OnLESetAdvertisingEnable(
     const pwemb::LESetAdvertisingEnableCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetAdvertisingEnable,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   // TODO(fxbug.dev/42161900): if own address type is random, check that
   // a random address is set
 
@@ -1881,6 +1935,16 @@ void FakeController::OnLESetAdvertisingEnable(
 
 void FakeController::OnLESetScanResponseData(
     const pwemb::LESetScanResponseDataCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetScanResponseData,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   legacy_advertising_state_.scan_rsp_length =
       params.scan_response_data_length().Read();
 
@@ -1901,6 +1965,16 @@ void FakeController::OnLESetScanResponseData(
 
 void FakeController::OnLESetAdvertisingData(
     const pwemb::LESetAdvertisingDataCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetAdvertisingData,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   legacy_advertising_state_.data_length =
       params.advertising_data_length().Read();
 
@@ -1921,6 +1995,16 @@ void FakeController::OnLESetAdvertisingData(
 
 void FakeController::OnLESetAdvertisingParameters(
     const pwemb::LESetAdvertisingParametersCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetAdvertisingParameters,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   if (legacy_advertising_state_.enabled) {
     bt_log(INFO,
            "fake-hci",
@@ -1993,6 +2077,16 @@ void FakeController::OnLESetAdvertisingParameters(
 
 void FakeController::OnLESetRandomAddress(
     const pwemb::LESetRandomAddressCommandView& params) {
+  if (!EnableLegacyAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetRandomAddress,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   if (legacy_advertising_state().enabled || le_scan_state().enabled) {
     bt_log(INFO,
            "fake-hci",
@@ -2494,6 +2588,16 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
 
 void FakeController::OnLESetExtendedAdvertisingParameters(
     const pwemb::LESetExtendedAdvertisingParametersV1CommandView& params) {
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingParameters,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
@@ -2709,6 +2813,16 @@ void FakeController::OnLESetExtendedAdvertisingData(
   BT_ASSERT(params.fragment_preference().Read() ==
             pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingData,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
@@ -2788,6 +2902,16 @@ void FakeController::OnLESetExtendedScanResponseData(
   BT_ASSERT(params.fragment_preference().Read() ==
             pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetExtendedScanResponseData,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
@@ -2861,6 +2985,16 @@ void FakeController::OnLESetExtendedScanResponseData(
 
 void FakeController::OnLESetExtendedAdvertisingEnable(
     const pwemb::LESetExtendedAdvertisingEnableCommandView& params) {
+  if (!EnableExtendedAdvertising()) {
+    bt_log(
+        INFO,
+        "fake-hci",
+        "extended advertising command rejected, legacy advertising is in use");
+    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingEnable,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
   uint8_t num_sets = params.num_sets().Read();
 
   // do some preliminary checks before making any state changes
@@ -3785,6 +3919,24 @@ bool FakeController::LEAdvertisingState::IsConnectableAdvertising() const {
              pwemb::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
          adv_type ==
              pwemb::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
+}
+
+bool FakeController::EnableLegacyAdvertising() {
+  if (advertising_procedure() == AdvertisingProcedure::kExtended) {
+    return false;
+  }
+
+  advertising_procedure_ = AdvertisingProcedure::kLegacy;
+  return true;
+}
+
+bool FakeController::EnableExtendedAdvertising() {
+  if (advertising_procedure() == AdvertisingProcedure::kLegacy) {
+    return false;
+  }
+
+  advertising_procedure_ = AdvertisingProcedure::kExtended;
+  return true;
 }
 
 void FakeController::HandleReceivedCommandPacket(

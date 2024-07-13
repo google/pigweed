@@ -967,6 +967,19 @@ class FakeController final : public ControllerTestDoubleBase,
     return (bredr_scan_state_ >> BIT_1) & BIT_1;
   }
 
+  enum class AdvertisingProcedure : uint8_t {
+    kUnknown,
+    kLegacy,
+    kExtended,
+  };
+
+  const AdvertisingProcedure& advertising_procedure() const {
+    return advertising_procedure_;
+  }
+
+  bool EnableLegacyAdvertising();
+  bool EnableExtendedAdvertising();
+
   Settings settings_;
 
   // Value is non-null when A2DP offload is started, and null when it is
@@ -1067,10 +1080,7 @@ class FakeController final : public ControllerTestDoubleBase,
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;
 
-  // True if the FakeController has received any extended operations
-  // (e.g. extended advertising, extended scanning, extended connections,
-  // etc).
-  bool received_extended_operations_ = false;
+  AdvertisingProcedure advertising_procedure_ = AdvertisingProcedure::kUnknown;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
