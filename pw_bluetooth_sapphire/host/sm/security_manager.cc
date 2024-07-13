@@ -982,13 +982,19 @@ void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
 
 Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   Result<> status = fit::ok();
-  if (!ltk_.has_value() || !le_link_->ltk().has_value()) {
-    // The LTKs should always be present when this method is called.
+  if (!ltk_.has_value()) {
+    // Should always be present when this method is called.
+    bt_log(ERROR, "sm", "SM LTK not found");
+    status = fit::error(Error(HostError::kNotFound));
+  } else if (!le_link_->ltk().has_value()) {
+    // Should always be present when this method is called.
+    bt_log(ERROR, "sm", "Link LTK not found");
     status = fit::error(Error(HostError::kNotFound));
   } else if (!(*le_link_->ltk() == ltk_->key())) {
     // As only SM should ever change the LE Link encryption key, these two
     // values should always be in sync, i.e. something in the system is acting
     // unreliably if they get out of sync.
+    bt_log(ERROR, "sm", "SM LTK differs from LE link LTK");
     status = fit::error(Error(HostError::kNotReliable));
   }
   if (status.is_error()) {
