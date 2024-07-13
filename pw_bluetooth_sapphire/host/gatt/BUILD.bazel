@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -62,13 +68,53 @@ filegroup(
     name = "_files",
     srcs = [
         "client_test.cc",
-        "fake_client.cc",
-        "fake_layer.cc",
         "gatt_test.cc",
         "generic_attribute_service_test.cc",
         "local_service_manager_test.cc",
-        "mock_server.cc",
         "remote_service_manager_test.cc",
         "server_test.cc",
     ],
+)
+
+cc_library(
+    name = "testing",
+    testonly = True,
+    srcs = [
+        "fake_client.cc",
+        "fake_layer.cc",
+        "mock_server.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    deps = [
+        ":gatt",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "@pigweed//pw_async:heap_dispatcher",
+        "@pigweed//pw_unit_test",
+    ],
+)
+
+fuchsia_cc_test(
+    name = "gatt_test",
+    testonly = True,
+    srcs = [
+    ],
+    death_unittest = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "gatt_tests",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    unit_tests = [
+        ":gatt_test",
+    ],
+    visibility = ["//visibility:public"],
 )

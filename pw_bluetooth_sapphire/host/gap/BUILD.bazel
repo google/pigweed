@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -79,19 +85,35 @@ cc_library(
     ],
 )
 
-# Bazel support for pw_bluetooth_sapphire has not been configured for all
-# files yet, but must be enumerated to satisfy presubmit.
-filegroup(
-    name = "_files",
+cc_library(
+    name = "testing",
+    testonly = True,
+    srcs = [
+        "fake_adapter.cc",
+        "fake_pairing_delegate.cc",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    deps = [
+        ":gap",
+        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "@pigweed//pw_unit_test",
+    ],
+)
+
+fuchsia_cc_test(
+    name = "gap_test",
+    testonly = True,
     srcs = [
         "adapter_test.cc",
+        "android_vendor_capabilities_test.cc",
         "bredr_connection_manager_test.cc",
         "bredr_connection_request_test.cc",
         "bredr_discovery_manager_test.cc",
         "bredr_interrogator_test.cc",
         "discovery_filter_test.cc",
-        "fake_adapter.cc",
-        "fake_pairing_delegate.cc",
         "fake_pairing_delegate_test.cc",
         "identity_resolving_list_test.cc",
         "low_energy_address_manager_test.cc",
@@ -104,4 +126,28 @@ filegroup(
         "peer_test.cc",
         "types_test.cc",
     ],
+    death_unittest = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gap",
+        ":testing",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gatt:testing",
+        "//pw_bluetooth_sapphire/host/hci:testing",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/sm:testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "gap_tests",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    unit_tests = [
+        ":gap_test",
+    ],
+    visibility = ["//visibility:public"],
 )
