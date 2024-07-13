@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -32,12 +38,30 @@ cc_library(
     ],
 )
 
-# Bazel support for pw_bluetooth_sapphire has not been configured for all
-# files yet, but must be enumerated to satisfy presubmit.
-filegroup(
-    name = "_files",
+fuchsia_cc_test(
+    name = "sco_test",
+    testonly = True,
     srcs = [
         "sco_connection_manager_test.cc",
         "sco_connection_test.cc",
     ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sco",
+        "//pw_bluetooth_sapphire/host/hci:testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_bluetooth_sapphire/host/transport:testing",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "sco_tests",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    unit_tests = [
+        ":sco_test",
+    ],
+    visibility = ["//visibility:public"],
 )

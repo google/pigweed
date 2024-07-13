@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 
+#include <cpp-string/string_printf.h>
+
 namespace bt::hci_spec {
 
 namespace {

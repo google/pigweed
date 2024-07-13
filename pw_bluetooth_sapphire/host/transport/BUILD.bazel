@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -80,4 +86,38 @@ filegroup(
         "slab_allocators_test.cc",
         "transport_test.cc",
     ],
+)
+
+fuchsia_cc_test(
+    name = "transport_test",
+    testonly = True,
+    srcs = [
+        "acl_data_channel_test.cc",
+        "command_channel_test.cc",
+        "emboss_control_packets_test.cc",
+        "emboss_packet_test.cc",
+        "packet_test.cc",
+        "sco_data_channel_test.cc",
+        "sco_data_packet_test.cc",
+        "slab_allocators_test.cc",
+        "transport_test.cc",
+    ],
+    death_unittest = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":transport",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "transport_tests",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    unit_tests = [
+        ":transport_test",
+    ],
+    visibility = ["//visibility:public"],
 )
