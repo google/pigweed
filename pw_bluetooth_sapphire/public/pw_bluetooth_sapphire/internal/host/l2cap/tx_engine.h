@@ -73,11 +73,16 @@ class TxEngine {
   virtual void NotifySduQueued() = 0;
 
  protected:
+  ChannelId channel_id() const { return channel_id_; }
+  uint16_t max_tx_sdu_size() const { return max_tx_sdu_size_; }
+  const TxChannel& channel() const { return channel_; }
+  TxChannel& channel() { return channel_; }
+
+ private:
   const ChannelId channel_id_;
   const uint16_t max_tx_sdu_size_;
   TxChannel& channel_;
 
- private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);
 };
 

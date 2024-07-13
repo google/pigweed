@@ -20,20 +20,20 @@
 namespace bt::l2cap::internal {
 
 void BasicModeTxEngine::NotifySduQueued() {
-  std::optional<ByteBufferPtr> sdu = channel_.GetNextQueuedSdu();
+  std::optional<ByteBufferPtr> sdu = channel().GetNextQueuedSdu();
 
   BT_ASSERT(sdu);
   BT_ASSERT(*sdu);
 
-  if ((*sdu)->size() > max_tx_sdu_size_) {
+  if ((*sdu)->size() > max_tx_sdu_size()) {
     bt_log(INFO,
            "l2cap",
            "SDU size exceeds channel TxMTU (channel-id: %#.4x)",
-           channel_id_);
+           channel_id());
     return;
   }
 
-  channel_.SendFrame(std::move(*sdu));
+  channel().SendFrame(std::move(*sdu));
 }
 
 }  // namespace bt::l2cap::internal

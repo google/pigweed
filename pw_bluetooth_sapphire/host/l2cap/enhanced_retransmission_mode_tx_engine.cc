@@ -82,7 +82,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
 }
 
 void Engine::NotifySduQueued() {
-  std::optional<ByteBufferPtr> sdu = channel_.GetNextQueuedSdu();
+  std::optional<ByteBufferPtr> sdu = channel().GetNextQueuedSdu();
   BT_ASSERT(sdu);
   ProcessSdu(std::move(*sdu));
 }
@@ -90,11 +90,11 @@ void Engine::NotifySduQueued() {
 void Engine::ProcessSdu(ByteBufferPtr sdu) {
   BT_ASSERT(sdu);
   // TODO(fxbug.dev/42054330): Add support for segmentation
-  if (sdu->size() > max_tx_sdu_size_) {
+  if (sdu->size() > max_tx_sdu_size()) {
     bt_log(INFO,
            "l2cap",
            "SDU size exceeds channel TxMTU (channel-id: %#.4x)",
-           channel_id_);
+           channel_id());
     return;
   }
 
@@ -331,7 +331,7 @@ void Engine::SendReceiverReadyPoll() {
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_,
                 max_transmissions_);
-  channel_.SendFrame(
+  channel().SendFrame(
       std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
@@ -376,7 +376,7 @@ void Engine::SendPdu(PendingPdu* pdu) {
     pdu->tx_count++;
   }
   StartReceiverReadyPollTimer();
-  channel_.SendFrame(std::make_unique<DynamicByteBuffer>(pdu->buf));
+  channel().SendFrame(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
 bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
