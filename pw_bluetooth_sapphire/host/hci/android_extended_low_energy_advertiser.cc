@@ -81,7 +81,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     pwemb::LEAdvertisingType type,
     pwemb::LEOwnAddressType own_address_type,
-    AdvertisingIntervalRange interval,
+    const AdvertisingIntervalRange& interval,
     bool extended_pdu) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.MapHandle(address, extended_pdu);

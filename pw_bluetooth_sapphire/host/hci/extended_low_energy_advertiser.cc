@@ -117,7 +117,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     pwemb::LEAdvertisingType type,
     pwemb::LEOwnAddressType own_address_type,
-    AdvertisingIntervalRange interval,
+    const AdvertisingIntervalRange& interval,
     bool extended_pdu) {
   auto packet = hci::EmbossCommandPacket::New<
       pwemb::LESetExtendedAdvertisingParametersV1CommandWriter>(

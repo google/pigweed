@@ -154,7 +154,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
       const DeviceAddress& address,
       pwemb::LEAdvertisingType type,
       pwemb::LEOwnAddressType own_address_type,
-      hci::AdvertisingIntervalRange interval,
+      const hci::AdvertisingIntervalRange& interval,
       bool extended_pdu) override {
     return std::nullopt;
   }
