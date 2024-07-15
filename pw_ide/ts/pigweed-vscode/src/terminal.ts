@@ -13,7 +13,9 @@
 // the License.
 
 import * as vscode from 'vscode';
+
 import logger from './logging';
+import { settings } from './settings';
 
 type InitScript = 'activate' | 'bootstrap';
 
@@ -26,9 +28,7 @@ type InitScript = 'activate' | 'bootstrap';
 function getShellConfig(
   initScript: InitScript = 'activate',
 ): vscode.TerminalOptions {
-  const shell = vscode.workspace
-    .getConfiguration('pigweed')
-    .get('terminalShell') as string;
+  const shell = settings.terminalShell();
 
   return {
     name: 'Pigweed Terminal',

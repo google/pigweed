@@ -17,6 +17,7 @@ import * as vscode from 'vscode';
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
 import { fileBug } from './links';
+import { settings } from './settings';
 import { launchBootstrapTerminal, launchTerminal } from './terminal';
 
 function registerCommands(context: vscode.ExtensionContext) {
@@ -50,12 +51,8 @@ function registerCommands(context: vscode.ExtensionContext) {
 export async function activate(context: vscode.ExtensionContext) {
   registerCommands(context);
 
-  const shouldEnforce = vscode.workspace
-    .getConfiguration('pigweed')
-    .get('enforceExtensionRecommendations') as string;
-
-  if (shouldEnforce === 'true') {
-    logger.info('pigweed.enforceExtensionRecommendations: true');
+  if (settings.enforceExtensionRecommendations()) {
+    logger.info('Project is configured to enforce extension recommendations');
     await checkExtensions();
   }
 }
