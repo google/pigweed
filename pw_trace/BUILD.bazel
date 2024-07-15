@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
@@ -120,6 +121,7 @@ cc_library(
         "trace_null_test_c.c",
     ],
     deps = [
+        ":null",
         ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -131,8 +133,9 @@ cc_library(
     srcs = ["example/sample_app.cc"],
     hdrs = ["example/public/pw_trace/example/sample_app.h"],
     includes = ["example/public"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
+    # TODO: b/258071921 - fails to link on rp2040 with missing
+    # std::this_thread::__sleep_for symbol
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_ring_buffer",
         "//pw_trace",
@@ -142,8 +145,9 @@ cc_library(
 pw_cc_binary(
     name = "trace_example_basic",
     srcs = ["example/basic.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
+    # TODO: b/258071921 - fails to link on rp2040 with missing
+    # std::this_thread::__sleep_for symbol
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":pw_trace_sample_app",
         "//pw_log",

@@ -216,12 +216,12 @@ pw_test("tokenized_trace_buffer_log_test") {
 }
 
 pw_source_set("fake_trace_time") {
-  deps = [ ":core" ]
+  deps = [ ":config" ]
   sources = [ "fake_trace_time.cc" ]
 }
 
 pw_source_set("host_trace_time") {
-  deps = [ ":core" ]
+  deps = [ ":config" ]
   sources = [ "host_trace_time.cc" ]
 }
 

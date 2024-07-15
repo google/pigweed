@@ -16,7 +16,7 @@
 
 #include <chrono>
 
-#include "pw_trace_tokenized/trace_tokenized.h"
+#include "pw_trace_tokenized/config.h"
 
 using namespace std::chrono;
 

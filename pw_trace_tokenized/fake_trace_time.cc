@@ -14,7 +14,11 @@
 //==============================================================================
 //
 
-#include "pw_trace_tokenized/trace_tokenized.h"
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
+
+#include "pw_trace_tokenized/config.h"
 
 namespace {
 

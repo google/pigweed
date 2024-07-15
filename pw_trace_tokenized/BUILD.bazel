@@ -60,12 +60,14 @@ cc_library(
         ":config",
         "//pw_assert",
         "//pw_log",
-        "//pw_preprocessor",
         "//pw_status",
         "//pw_tokenizer",
         "//pw_trace:facade",
         "//pw_varint",
-    ],
+    ] + select({
+        "@platforms//os:none": [":pw_trace_tokenized_fake_time"],
+        "//conditions:default": [":pw_trace_host_trace_time"],
+    }),
 )
 
 cc_library(
@@ -207,8 +209,12 @@ cc_library(
     srcs = [
         "fake_trace_time.cc",
     ],
+    target_compatible_with = select({
+        "@platforms//os:none": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":pw_trace_tokenized",
+        ":config",
     ],
 )
 
@@ -221,12 +227,9 @@ pw_cc_test(
         "pw_trace_test",
         "pw_trace_test/public_overrides",
     ],
-    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
-    tags = ["manual"],
     deps = [
         ":pw_trace_tokenized",
-        "//pw_preprocessor",
-        "//pw_unit_test",
+        "//pw_trace",
     ],
 )
 
@@ -235,8 +238,6 @@ pw_cc_test(
     srcs = [
         "trace_buffer_test.cc",
     ],
-    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
-    tags = ["manual"],
     deps = [
         ":buffer",
         ":pw_trace_tokenized",
@@ -250,8 +251,6 @@ pw_cc_test(
     srcs = [
         "trace_buffer_log_test.cc",
     ],
-    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
-    tags = ["manual"],
     deps = [
         ":buffer_log",
         ":pw_trace_tokenized",
@@ -280,7 +279,8 @@ cc_library(
     name = "pw_trace_host_trace_time",
     srcs = ["host_trace_time.cc"],
     includes = ["example/public"],
-    deps = [":pw_trace_tokenized"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [":config"],
 )
 
 cc_library(
@@ -296,8 +296,6 @@ cc_library(
 pw_cc_binary(
     name = "trace_tokenized_example_basic",
     srcs = ["example/basic.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -309,8 +307,6 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_trigger",
     srcs = ["example/trigger.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -322,8 +318,6 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_filter",
     srcs = ["example/filter.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -335,9 +329,8 @@ pw_cc_binary(
 cc_library(
     name = "trace_tokenized_example_rpc",
     srcs = ["example/rpc.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
     deps = [
+        ":trace_rpc_service",
         "//pw_hdlc",
         "//pw_log",
         "//pw_rpc",
@@ -350,8 +343,10 @@ cc_library(
 cc_library(
     name = "trace_tokenized_example_linux_group_by_tid",
     srcs = ["example/linux_group_by_tid.cc"],
-    # TODO: b/258071921 - Fix puzzling compiler errors
-    tags = ["manual"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",

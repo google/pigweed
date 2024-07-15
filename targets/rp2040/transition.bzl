@@ -35,6 +35,7 @@ RP2040_SYSTEM_FLAGS = FREERTOS_FLAGS | {
     "@pigweed//pw_log_tokenized:handler_backend": "@pigweed//pw_system:log_backend",
     "@pigweed//pw_sys_io:backend": "@pigweed//pw_sys_io_rp2040",
     "@pigweed//pw_system:extra_platform_libs": "@pigweed//targets/rp2040:extra_platform_libs",
+    "@pigweed//pw_trace:backend": "@pigweed//pw_trace_tokenized:pw_trace_tokenized",
     "@pigweed//pw_unit_test:backend": "@pigweed//pw_unit_test:light",
     "@pigweed//pw_unit_test:main": "@pigweed//targets/rp2040:unit_test_app",
 }

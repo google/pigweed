@@ -27,15 +27,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-constraint_setting(
-    name = "system_example_tracing_setting",
-)
-
-constraint_value(
-    name = "system_example_tracing",
-    constraint_setting = ":system_example_tracing_setting",
-)
-
 cc_library(
     name = "config",
     hdrs = [
@@ -52,11 +43,6 @@ label_flag(
 
 cc_library(
     name = "default_config",
-    defines = [
-        # TODO(b/260641850): Remove this Bazel-only default configuration once
-        # pw_trace builds with Bazel.
-        "PW_SYSTEM_ENABLE_TRACE_SERVICE=0",
-    ],
 )
 
 cc_library(
@@ -208,25 +194,20 @@ cc_library(
     includes = ["public"],
     deps = [
         ":file_manager",
+        ":file_service",
         ":log",
         ":rpc_server",
         ":target_hooks",
         ":thread_snapshot_service",
+        ":trace_service",
         ":transfer_service",
         ":work_queue",
         "//pw_metric:global",
         "//pw_metric:metric_service_pwpb",
         "//pw_rpc/pwpb:echo_service",
         "//pw_thread:thread",
-    ] + select({
-        ":system_example_tracing": [
-            ":file_service",
-            ":trace_service",
-            "//pw_trace",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+        "//pw_trace",
+    ],
 )
 
 cc_library(
@@ -299,16 +280,11 @@ cc_library(
     includes = ["public"],
     deps = [
         ":config",
+        ":trace_service",
         ":transfer_handlers",
         "//pw_file:flat_file_system",
         "//pw_persistent_ram:flat_file_system_entry",
-    ] + select({
-        ":system_example_tracing": [
-            ":trace_service",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+    ],
 )
 
 cc_library(
