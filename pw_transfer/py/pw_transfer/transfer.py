@@ -388,7 +388,13 @@ class Transfer(abc.ABC):
         else:
             self._retry_after_data_timeout()
 
-        self._response_timer.start()
+        if (
+            self._last_chunk is not None
+            and self._last_chunk.type is Chunk.Type.START
+        ):
+            self._response_timer.start(self._initial_response_timeout_s)
+        else:
+            self._response_timer.start()
 
     def finish(self, status: Status, skip_callback: bool = False) -> None:
         """Ends the transfer with the specified status."""

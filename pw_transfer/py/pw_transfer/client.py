@@ -482,8 +482,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._read_stream.open()
 
         _LOG.debug('Starting new read transfer %d', transfer.id)
+        delay = 1
         self._loop.call_soon_threadsafe(
-            self._new_transfer_queue.put_nowait, transfer
+            self._loop.call_later,
+            delay,
+            self._new_transfer_queue.put_nowait,
+            transfer,
         )
 
     def _end_read_transfer(self, transfer: Transfer) -> None:
@@ -504,8 +508,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._write_stream.open()
 
         _LOG.debug('Starting new write transfer %d', transfer.id)
+        delay = 1
         self._loop.call_soon_threadsafe(
-            self._new_transfer_queue.put_nowait, transfer
+            self._loop.call_later,
+            delay,
+            self._new_transfer_queue.put_nowait,
+            transfer,
         )
 
     def _end_write_transfer(self, transfer: Transfer) -> None:
