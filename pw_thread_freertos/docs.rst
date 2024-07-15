@@ -193,6 +193,12 @@ A backend for ``pw::thread::yield()`` is offered using via ``taskYIELD()``.
 It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
 from a thread.
 
+---------------------------
+Test Thread Context Backend
+---------------------------
+A backend for ``pw::thread::TestThreadContext()`` is offered using default
+options and a static stack size of 8192 words.
+
 ---------
 Utilities
 ---------

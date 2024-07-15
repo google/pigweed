@@ -260,6 +260,26 @@ pw_source_set("snapshot") {
   ]
 }
 
+config("test_thread_context_public_overrides") {
+  include_dirs = [ "test_thread_context_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("test_thread_context") {
+  public_configs = [
+    ":public_include_path",
+    ":test_thread_context_public_overrides",
+  ]
+  public_deps = [
+    ":thread",
+    "$dir_pw_thread:test_thread_context.facade",
+  ]
+  public = [
+    "public/pw_thread_freertos/test_thread_context_native.h",
+    "test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":dynamic_thread_backend_test",

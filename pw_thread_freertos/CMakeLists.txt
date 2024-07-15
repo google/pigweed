@@ -153,3 +153,15 @@ pw_add_facade(pw_thread_freertos.freertos_tsktcb INTERFACE
   PUBLIC_DEPS
     pw_third_party.freertos
 )
+
+pw_add_library(pw_thread_freertos.test_thread_context INTERFACE
+  HEADERS
+    public/pw_thread_freertos/test_thread_context_native.h
+    test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h
+  PUBLIC_INCLUDES
+    public
+    test_thread_context_public_overrides
+  PUBLIC_DEPS
+    pw_thread.thread
+    pw_thread.test_thread_context.facade
+)
