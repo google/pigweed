@@ -12,12 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-const msgTemplate = (msg: string) => `[Pigweed] ${msg}`;
+import * as vscode from 'vscode';
+
+export const output = vscode.window.createOutputChannel('Pigweed', {
+  log: true,
+});
 
 const logger = {
-  info: (msg: string) => console.log(msgTemplate(msg)),
-  warn: (msg: string) => console.warn(msgTemplate(msg)),
-  error: (msg: string) => console.error(msgTemplate(msg)),
+  info: (msg: string) => output.info(msg),
+  warn: (msg: string) => output.warn(msg),
+  error: (msg: string) => output.error(msg),
 };
 
 export default logger;

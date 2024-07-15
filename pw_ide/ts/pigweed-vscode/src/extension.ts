@@ -15,10 +15,15 @@
 import * as vscode from 'vscode';
 
 import { checkExtensions } from './extensionManagement';
+import logger, { output } from './logging';
 import { fileBug } from './links';
 import { launchBootstrapTerminal, launchTerminal } from './terminal';
 
 function registerCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.open-output-panel', output.show),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.file-bug', fileBug),
   );
@@ -50,11 +55,11 @@ export async function activate(context: vscode.ExtensionContext) {
     .get('enforceExtensionRecommendations') as string;
 
   if (shouldEnforce === 'true') {
-    console.log('pigweed.enforceExtensionRecommendations: true');
+    logger.info('pigweed.enforceExtensionRecommendations: true');
     await checkExtensions();
   }
 }
 
 export function deactivate() {
-  // Do nothing.
+  output.dispose();
 }

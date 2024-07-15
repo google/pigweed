@@ -28,6 +28,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "pigweed.open-output-panel",
+        "title": "Pigweed: Open Output Panel"
+      },
+      {
         "command": "pigweed.file-bug",
         "title": "Pigweed: File Bug"
       },

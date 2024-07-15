@@ -15,6 +15,7 @@
 import * as vscode from 'vscode';
 
 import { getExtensionsJson } from './configParsing';
+import logger from './logging';
 
 /**
  * Open the extensions sidebar and show the provided extensions.
@@ -73,7 +74,7 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
 
   // All recommendations are installed; we're done.
   if (totalNumUnavailableRecs == 0) {
-    console.log('User has all recommended extensions');
+    logger.info('User has all recommended extensions');
 
     return;
   }
@@ -106,7 +107,7 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
         });
 
         if (numUnavailableRecs > 0) {
-          console.log(
+          logger.info(
             `User lacks ${numUnavailableRecs} recommended extensions`,
           );
 
@@ -114,13 +115,13 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
         }
 
         if (token.isCancellationRequested) {
-          console.log('User cancelled recommended extensions check');
+          logger.info('User cancelled recommended extensions check');
 
           break;
         }
       }
 
-      console.log('All recommended extensions are enabled');
+      logger.info('All recommended extensions are enabled');
       vscode.commands.executeCommand(
         'workbench.action.toggleSidebarVisibility',
       );
@@ -174,7 +175,7 @@ async function disableUnwantedExtensions(unwanted: string[]) {
 
   // All unwanted are disabled; we're done.
   if (totalNumEnabledUnwanted == 0) {
-    console.log('User has no unwanted extensions enabled');
+    logger.info('User has no unwanted extensions enabled');
 
     return;
   }
@@ -207,7 +208,7 @@ async function disableUnwantedExtensions(unwanted: string[]) {
         });
 
         if (numEnabledUnwanted > 0) {
-          console.log(
+          logger.info(
             `User has ${numEnabledUnwanted} unwanted extensions enabled`,
           );
 
@@ -215,13 +216,13 @@ async function disableUnwantedExtensions(unwanted: string[]) {
         }
 
         if (token.isCancellationRequested) {
-          console.log('User cancelled unwanted extensions check');
+          logger.info('User cancelled unwanted extensions check');
 
           break;
         }
       }
 
-      console.log('All unwanted extensions are disabled');
+      logger.info('All unwanted extensions are disabled');
       vscode.commands.executeCommand(
         'workbench.action.toggleSidebarVisibility',
       );
