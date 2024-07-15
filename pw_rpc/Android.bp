@@ -214,16 +214,21 @@ genrule {
 }
 
 // Generate cc and header nanopb files.
-// The output file names are based on the srcs file name with a .pb.c / .pb.h extension.
+// The output file names are based on the srcs file name with a .pb.c / .pb.h
+// extension. Only .proto files are passed to the compile script.
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_proto",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
+        "proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location protoc-gen-nanopb) " +
         "--out-dir=$(genDir) " +
         "--compile-dir=$${compile_dir} " +
         "--language nanopb " +
-        "--sources $(in) " +
+        "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--protoc=$(location aprotoc)",
     tools: [
