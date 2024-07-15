@@ -27,21 +27,23 @@ class OwnedChunk;
 
 /// A handle to a contiguous slice of data.
 ///
-/// A ``Chunk`` is similar to a ``ByteSpan``, but is aware of the underlying
-/// memory allocation, and is able to split, shrink, and grow into neighboring
-/// empty space.
+/// A ``Chunk`` is similar to a ``ByteSpan``, but is aware of its underlying
+/// memory region, and is able to split, shrink, and grow into neighboring
+/// empty space within its region.
 ///
 /// This class is optimized to allow multiple owners to write into neighboring
-/// regions of the same allocation. One important usecase for this is
-/// communication protocols which want to reserve space at the front or rear of
-/// a buffer for headers or footers.
+/// regions of the same allocation. In order to support zero-copy DMA of
+/// communications buffers, allocators can create properly-aligned ``Chunk``
+/// regions inside an allocation.
 ///
-/// In order to support zero-copy DMA of communications buffers, allocators can
-/// create properly-aligned ``Chunk`` regions in appropriate memory. The driver
-/// can then ``DiscardPrefix`` in order to reserve bytes for headers,
-/// ``Truncate`` in order to reserve bytes for footers, and then pass the
-/// ``Chunk`` to the user to fill in. The header and footer space can then
-/// be reclaimed using the ``ClaimPrefix`` and ``ClaimSuffix`` methods.
+/// One example usecase for this is communication drivers that want to reserve
+/// space at the front or rear of a buffer for headers or footers. A driver can
+/// ``DiscardPrefix`` in order to reserve bytes for headers, ``Truncate`` in
+/// order to reserve bytes for footers, and then pass the ``Chunk`` to the user
+/// to fill in. These discarded bytes are still held by the underlying region,
+/// so the header and footer space can later be reclaimed using the
+/// ``ClaimPrefix`` and ``ClaimSuffix`` methods. The region itself is only
+/// released once there are no remaining Chunks within it.
 class Chunk {
  public:
   Chunk() = delete;
@@ -83,7 +85,7 @@ class Chunk {
   /// Returns if ``next_chunk`` is mergeable into the end of this ``Chunk``.
   ///
   /// This will only succeed when the two ``Chunk`` s are adjacent in
-  /// memory and originated from the same allocation.
+  /// memory and originated from the same region.
   [[nodiscard]] bool CanMerge(const Chunk& next_chunk) const;
 
   /// Attempts to merge ``next_chunk`` into the end of this ``Chunk``.
@@ -93,7 +95,7 @@ class Chunk {
   /// will be emptied and ``Release``d.
   ///
   /// This will only succeed when the two ``Chunk`` s are adjacent in
-  /// memory and originated from the same allocation.
+  /// memory and originated from the same region.
   ///
   /// If the chunks are not mergeable, neither ``Chunk`` will be modified.
   bool Merge(OwnedChunk& next_chunk);
@@ -124,21 +126,28 @@ class Chunk {
   /// Shrinks this handle to refer to the data beginning at offset
   /// ``bytes_to_discard``.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimPrefix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void DiscardPrefix(size_t bytes_to_discard);
 
   /// Shrinks this handle to refer to data in the range ``begin..<end``.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimPrefix`` or
+  /// ``ClaimSuffix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void Slice(size_t begin, size_t end);
 
   /// Shrinks this handle to refer to only the first ``len`` bytes.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimSuffix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void Truncate(size_t len);

@@ -50,13 +50,14 @@ API Reference
 Most users of ``pw_multibuf`` will start by allocating a ``MultiBuf`` using
 a ``MultiBufAllocator`` class, such as the ``SimpleAllocator``.
 
-``MultiBuf`` s consist of a number of ``Chunk`` s of contiguous memory.
-These ``Chunk`` s can be grown, shrunk, modified, or extracted from the
-``MultiBuf``. ``MultiBuf`` exposes an ``std::byte`` iterator interface as well
-as a ``Chunk`` iterator available through the ``Chunks()`` method.
+``MultiBuf`` s consist of a number of ``Chunk`` s of contiguous memory regions.
+``Chunk`` s can be grown or shrunk which allows ``MultiBuf``s to be grown or
+shrunk. This allows, for example, lower layers to reserve part of a
+``MultiBuf`` for a header or footer (see ``Chunk`` for more details).
 
-An RAII-style ``OwnedChunk`` is also provided, and manages the lifetime of
-``Chunk`` s which are not currently stored inside of a ``MultiBuf``.
+``MultiBuf`` exposes an ``std::byte`` iterator interface as well as a ``Chunk``
+iterator available through the ``Chunks()`` method. It allows extracting a
+``Chunk`` as an RAII-style ``OwnedChunk`` which manages its own lifetime.
 
 .. doxygenclass:: pw::multibuf::Chunk
    :members:

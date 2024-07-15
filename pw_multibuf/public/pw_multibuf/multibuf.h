@@ -147,21 +147,28 @@ class MultiBuf {
   /// Shrinks this handle to refer to the data beginning at offset
   /// ``bytes_to_discard``.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimPrefix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void DiscardPrefix(size_t bytes_to_discard);
 
   /// Shrinks this handle to refer to data in the range ``begin..<end``.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimPrefix``
+  /// or ``ClaimSuffix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void Slice(size_t begin, size_t end);
 
   /// Shrinks this handle to refer to only the first ``len`` bytes.
   ///
-  /// Does not modify the underlying data.
+  /// Does not modify the underlying data. The discarded memory continues
+  /// to be held by the underlying region as long as any ``Chunk``s exist within
+  /// it. This allows the memory to be later reclaimed using ``ClaimSuffix``.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
   void Truncate(size_t len);
