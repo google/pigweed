@@ -14,15 +14,20 @@
 
 import * as vscode from 'vscode';
 
+import logger from './logging';
+
 interface Setting<T> {
   (): T | undefined;
   (value: T | undefined): void;
 }
 
+type ProjectType = 'bootstrap' | 'bazel';
 type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
   enforceExtensionRecommendations: Setting<boolean>;
+  projectRoot: Setting<string>;
+  projectType: Setting<ProjectType>;
   terminalShell: Setting<TerminalShell>;
 }
 
@@ -104,6 +109,22 @@ function enforceExtensionRecommendations(value?: boolean): boolean | undefined {
   update(value);
 }
 
+function projectRoot(): string | undefined;
+function projectRoot(value: string | undefined): void;
+function projectRoot(value?: string): string | undefined {
+  const { get, update } = stringSettingFor('projectRoot');
+  if (!value) return get();
+  update(value);
+}
+
+function projectType(): ProjectType | undefined;
+function projectType(value: ProjectType | undefined): void;
+function projectType(value?: ProjectType | undefined): ProjectType | undefined {
+  const { get, update } = stringSettingFor<ProjectType>('projectType');
+  if (!value) return get();
+  update(value);
+}
+
 function terminalShell(): TerminalShell;
 function terminalShell(value: TerminalShell | undefined): void;
 function terminalShell(
@@ -117,5 +138,87 @@ function terminalShell(
 /** Entry point for accessing settings. */
 export const settings: Settings = {
   enforceExtensionRecommendations,
+  projectRoot,
+  projectType,
   terminalShell,
 };
+
+/** Find the root directory of the project open in the editor. */
+function editorRootDir(): vscode.WorkspaceFolder {
+  const dirs = vscode.workspace.workspaceFolders;
+
+  if (!dirs || dirs.length === 0) {
+    logger.error(
+      "Couldn't get editor root dir. There's no directory open in the editor!",
+    );
+
+    throw new Error("There's no directory open in the editor!");
+  }
+
+  if (dirs.length > 1) {
+    logger.error(
+      "Couldn't get editor root dir. " +
+        "This is a multiroot workspace, which isn't currently supported.",
+    );
+
+    throw new Error(
+      "This is a multiroot workspace, which isn't currently supported.",
+    );
+  }
+
+  return dirs[0];
+}
+
+/** This should be used in place of, e.g., process.cwd(). */
+const defaultWorkingDir = () => editorRootDir().uri.fsPath;
+
+let workingDirStore: WorkingDirStore;
+
+/**
+ * A singleton for storing the project working directory.
+ *
+ * The location of this path could vary depending on project structure, and it
+ * could be stored in settings, or it may need to be inferred by traversing the
+ * project structure. The latter could be slow and shouldn't be repeated every
+ * time we need something as basic as the project root.
+ *
+ * So compute the working dir path once, store it here, then fetch it whenever
+ * you want without worrying about performance. The only downside is that you
+ * need to make sure you set a value early in your execution path.
+ *
+ * This also serves as a platform-independent interface for the working dir
+ * (for example, in Jest tests we don't have access to `vscode` so most of our
+ * directory traversal strategies are unavailable).
+ */
+class WorkingDirStore {
+  constructor(path?: string) {
+    if (workingDirStore) {
+      throw new Error("This is a singleton. You can't create it!");
+    }
+
+    if (path) {
+      this._path = path;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    workingDirStore = this;
+  }
+
+  _path: string | undefined = undefined;
+
+  set(path: string) {
+    this._path = path;
+  }
+
+  get(): string {
+    if (!this._path) {
+      throw new Error(
+        'Yikes! You tried to get this value without setting it first.',
+      );
+    }
+
+    return this._path;
+  }
+}
+
+export const workingDir = new WorkingDirStore(defaultWorkingDir());

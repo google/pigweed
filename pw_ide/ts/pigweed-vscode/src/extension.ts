@@ -16,11 +16,16 @@ import * as vscode from 'vscode';
 
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
-import { fileBug } from './links';
-import { settings } from './settings';
+import { fileBug, launchTroubleshootingLink } from './links';
+import { settings, workingDir } from './settings';
+import {
+  getPigweedProjectRoot,
+  isBazelWorkspaceProject,
+  isBootstrapProject,
+} from './project';
 import { launchBootstrapTerminal, launchTerminal } from './terminal';
 
-function registerCommands(context: vscode.ExtensionContext) {
+function registerUniversalCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.open-output-panel', output.show),
   );
@@ -35,7 +40,9 @@ function registerCommands(context: vscode.ExtensionContext) {
       checkExtensions,
     ),
   );
+}
 
+function registerBootstrapCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.launch-terminal', launchTerminal),
   );
@@ -48,8 +55,145 @@ function registerCommands(context: vscode.ExtensionContext) {
   );
 }
 
+function registerBazelCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.launch-terminal', () =>
+      vscode.window.showWarningMessage(
+        'This command is currently not supported with Bazel projects',
+      ),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.bootstrap-terminal', () =>
+      vscode.window.showWarningMessage(
+        'This command is currently not supported with Bazel projects',
+      ),
+    ),
+  );
+}
+
+/**
+ * Get the project type and configuration details on startup.
+ *
+ * This is a little long and over-complex, but essentially it does just a few
+ * things:
+ *   - Do I know where the Pigweed project root is?
+ *   - Do I know if this is a Bazel or bootstrap project?
+ *   - If I don't know any of that, ask the user to tell me and save the
+ *     selection to settings.
+ *   - If the user needs help, route them to the right place.
+ */
+async function configureProject(context: vscode.ExtensionContext) {
+  // If we're missing a piece of information, we can ask the user to manually
+  // provide it. If they do, we should re-run this flow, and that intent is
+  // signaled by setting this var.
+  let tryAgain = false;
+
+  const projectRoot = await getPigweedProjectRoot(settings, workingDir.get());
+
+  if (projectRoot) {
+    output.appendLine(`The Pigweed project root is ${projectRoot}`);
+
+    if (
+      settings.projectType() === 'bootstrap' ||
+      isBootstrapProject(projectRoot)
+    ) {
+      output.appendLine('This is a bootstrap project');
+      registerBootstrapCommands(context);
+    } else if (
+      settings.projectType() === 'bazel' ||
+      isBazelWorkspaceProject(projectRoot)
+    ) {
+      output.appendLine('This is a Bazel project');
+      registerBazelCommands(context);
+    } else {
+      vscode.window
+        .showErrorMessage(
+          "I couldn't automatically determine what type of Pigweed project " +
+            'this is. Choose one of these project types, or get more help.',
+          'Bazel',
+          'Bootstrap',
+          'Get Help',
+        )
+        .then((selection) => {
+          switch (selection) {
+            case 'Bazel': {
+              settings.projectType('bazel');
+              vscode.window.showInformationMessage(
+                'Configured as a Pigweed Bazel project',
+              );
+              tryAgain = true;
+              break;
+            }
+            case 'Bootstrap': {
+              settings.projectType('bootstrap');
+              vscode.window.showInformationMessage(
+                'Configured as a Pigweed Bootstrap project',
+              );
+              tryAgain = true;
+              break;
+            }
+            case 'Get Help': {
+              launchTroubleshootingLink('project-type');
+              break;
+            }
+          }
+        });
+    }
+  } else {
+    vscode.window
+      .showErrorMessage(
+        "I couldn't automatically determine the location of the  Pigweed " +
+          'root directory. Enter it manually, or get more help.',
+        'Browse',
+        'Get Help',
+      )
+      .then((selection) => {
+        switch (selection) {
+          case 'Browse': {
+            vscode.window
+              .showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+              })
+              .then((result) => {
+                // The user can cancel, making result undefined
+                if (result) {
+                  const [uri] = result;
+                  settings.projectRoot(uri.fsPath);
+                  vscode.window.showInformationMessage(
+                    `Set the Pigweed project root to: ${uri.fsPath}`,
+                  );
+                  tryAgain = true;
+                }
+              });
+            break;
+          }
+          case 'Get Help': {
+            launchTroubleshootingLink('project-root');
+            break;
+          }
+        }
+      });
+  }
+
+  // This should only re-run if something has materially changed, e.g., the user
+  // provided a piece of information we needed.
+  if (tryAgain) {
+    await configureProject(context);
+  }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
-  registerCommands(context);
+  // Register commands that apply to all project types
+  registerUniversalCommands(context);
+  logger.info('Extension loaded');
+
+  // Determine the project type and configuration parameters. This also
+  // registers the commands specific to each project type.
+  await configureProject(context);
 
   if (settings.enforceExtensionRecommendations()) {
     logger.info('Project is configured to enforce extension recommendations');

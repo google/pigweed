@@ -12,21 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as vscode from 'vscode';
+import { mkdtemp } from 'fs/promises';
 
-const bugUrl =
-  'https://issues.pigweed.dev/issues/new?component=1194524&template=1911548';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
-/**
- * Open the bug report template in the user's browser.
- */
-export function fileBug() {
-  vscode.env.openExternal(vscode.Uri.parse(bugUrl));
-}
-
-export const troubleshootingLink = (anchor: string) =>
-  `https://pigweed.dev/pw_ide/guide/troubleshooting.html#${anchor}`;
-
-export function launchTroubleshootingLink(anchor: string) {
-  vscode.env.openExternal(vscode.Uri.parse(troubleshootingLink(anchor)));
+export async function makeTempDir(): Promise<string> {
+  return await mkdtemp(join(tmpdir(), 'pwvsc'));
 }

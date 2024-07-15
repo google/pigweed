@@ -22,7 +22,7 @@
     "Testing"
   ],
   "activationEvents": [
-    "workspaceContains:pigweed.json"
+    "workspaceContains:**/pigweed.json"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -55,6 +55,18 @@
           "type": "boolean",
           "default": "false",
           "description": "Require installing and disabling extensions recommended in extensions.json"
+        },
+        "pigweed.projectRoot": {
+          "type": "string",
+          "description": "The root of the Pigweed project source directory"
+        },
+        "pigweed.projectType": {
+          "type": "string",
+          "enum": [
+            "bootstrap",
+            "bazel"
+          ],
+          "description": "The type of Pigweed project, either bootstrap or Bazel"
         },
         "pigweed.terminalShell": {
           "type": "string",
