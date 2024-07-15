@@ -222,6 +222,27 @@ def log_decoded_log(
     )
 
 
+def _timestamp_format(
+    timestamp: int,
+    input_resolution: int,
+    truncate_microseconds_to_three_digits: bool = False,
+) -> str:
+    time_delta = datetime.timedelta(
+        seconds=float(timestamp) / float(input_resolution)
+    )
+
+    minutes, seconds = divmod(time_delta.seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    microseconds = time_delta.microseconds
+
+    hms_str = f'{hours:02}:{minutes:02}:{seconds:02}'
+    microseconds_str = f'{microseconds:06}'
+    if truncate_microseconds_to_three_digits:
+        microseconds_str = microseconds_str[:-3]
+
+    return f'{hms_str}.{microseconds_str}'
+
+
 def timestamp_parser_ms_since_boot(timestamp: int) -> str:
     """Decodes timestamp as milliseconds since boot.
 
@@ -230,7 +251,11 @@ def timestamp_parser_ms_since_boot(timestamp: int) -> str:
     Returns:
         A string representation of the timestamp.
     """
-    return str(datetime.timedelta(seconds=timestamp / 1e3))[:-3]
+    return _timestamp_format(
+        timestamp,
+        input_resolution=10**3,
+        truncate_microseconds_to_three_digits=True,
+    )
 
 
 def timestamp_parser_ns_since_boot(timestamp: int) -> str:
@@ -241,7 +266,7 @@ def timestamp_parser_ns_since_boot(timestamp: int) -> str:
     Returns:
         A string representation of the timestamp.
     """
-    return str(datetime.timedelta(seconds=timestamp / 1e9))[:-3]
+    return _timestamp_format(timestamp, input_resolution=10**9)
 
 
 class LogStreamDecoder:
