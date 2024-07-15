@@ -150,32 +150,29 @@ beautifulsoup4==4.12.2 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   furo
-black==23.1.0 \
-    --hash=sha256:0052dba51dec07ed029ed61b18183942043e00008ec65d5028814afaab9a22fd \
-    --hash=sha256:0680d4380db3719ebcfb2613f34e86c8e6d15ffeabcf8ec59355c5e7b85bb555 \
-    --hash=sha256:121ca7f10b4a01fd99951234abdbd97728e1240be89fde18480ffac16503d481 \
-    --hash=sha256:162e37d49e93bd6eb6f1afc3e17a3d23a823042530c37c3c42eeeaf026f38468 \
-    --hash=sha256:2a951cc83ab535d248c89f300eccbd625e80ab880fbcfb5ac8afb5f01a258ac9 \
-    --hash=sha256:2bf649fda611c8550ca9d7592b69f0637218c2369b7744694c5e4902873b2f3a \
-    --hash=sha256:382998821f58e5c8238d3166c492139573325287820963d2f7de4d518bd76958 \
-    --hash=sha256:49f7b39e30f326a34b5c9a4213213a6b221d7ae9d58ec70df1c4a307cf2a1580 \
-    --hash=sha256:57c18c5165c1dbe291d5306e53fb3988122890e57bd9b3dcb75f967f13411a26 \
-    --hash=sha256:7a0f701d314cfa0896b9001df70a530eb2472babb76086344e688829efd97d32 \
-    --hash=sha256:8178318cb74f98bc571eef19068f6ab5613b3e59d4f47771582f04e175570ed8 \
-    --hash=sha256:8b70eb40a78dfac24842458476135f9b99ab952dd3f2dab738c1881a9b38b753 \
-    --hash=sha256:9880d7d419bb7e709b37e28deb5e68a49227713b623c72b2b931028ea65f619b \
-    --hash=sha256:9afd3f493666a0cd8f8df9a0200c6359ac53940cbde049dcb1a7eb6ee2dd7074 \
-    --hash=sha256:a29650759a6a0944e7cca036674655c2f0f63806ddecc45ed40b7b8aa314b651 \
-    --hash=sha256:a436e7881d33acaf2536c46a454bb964a50eff59b21b51c6ccf5a40601fbef24 \
-    --hash=sha256:a59db0a2094d2259c554676403fa2fac3473ccf1354c1c63eccf7ae65aac8ab6 \
-    --hash=sha256:a8471939da5e824b891b25751955be52ee7f8a30a916d570a5ba8e0f2eb2ecad \
-    --hash=sha256:b0bd97bea8903f5a2ba7219257a44e3f1f9d00073d6cc1add68f0beec69692ac \
-    --hash=sha256:b6a92a41ee34b883b359998f0c8e6eb8e99803aa8bf3123bf2b2e6fec505a221 \
-    --hash=sha256:bb460c8561c8c1bec7824ecbc3ce085eb50005883a6203dcfb0122e95797ee06 \
-    --hash=sha256:bfffba28dc52a58f04492181392ee380e95262af14ee01d4bc7bb1b1c6ca8d27 \
-    --hash=sha256:c1c476bc7b7d021321e7d93dc2cbd78ce103b84d5a4cf97ed535fbc0d6660648 \
-    --hash=sha256:c91dfc2c2a4e50df0026f88d2215e166616e0c80e86004d0003ece0488db2739 \
-    --hash=sha256:e6663f91b6feca5d06f2ccd49a10f254f9298cc1f7f49c46e498a0771b507104
+black==24.3.0 \
+    --hash=sha256:2818cf72dfd5d289e48f37ccfa08b460bf469e67fb7c4abb07edc2e9f16fb63f \
+    --hash=sha256:41622020d7120e01d377f74249e677039d20e6344ff5851de8a10f11f513bf93 \
+    --hash=sha256:4acf672def7eb1725f41f38bf6bf425c8237248bb0804faa3965c036f7672d11 \
+    --hash=sha256:4be5bb28e090456adfc1255e03967fb67ca846a03be7aadf6249096100ee32d0 \
+    --hash=sha256:4f1373a7808a8f135b774039f61d59e4be7eb56b2513d3d2f02a8b9365b8a8a9 \
+    --hash=sha256:56f52cfbd3dabe2798d76dbdd299faa046a901041faf2cf33288bc4e6dae57b5 \
+    --hash=sha256:65b76c275e4c1c5ce6e9870911384bff5ca31ab63d19c76811cb1fb162678213 \
+    --hash=sha256:65c02e4ea2ae09d16314d30912a58ada9a5c4fdfedf9512d23326128ac08ac3d \
+    --hash=sha256:6905238a754ceb7788a73f02b45637d820b2f5478b20fec82ea865e4f5d4d9f7 \
+    --hash=sha256:79dcf34b33e38ed1b17434693763301d7ccbd1c5860674a8f871bd15139e7837 \
+    --hash=sha256:7bb041dca0d784697af4646d3b62ba4a6b028276ae878e53f6b4f74ddd6db99f \
+    --hash=sha256:7d5e026f8da0322b5662fa7a8e752b3fa2dac1c1cbc213c3d7ff9bdd0ab12395 \
+    --hash=sha256:9f50ea1132e2189d8dff0115ab75b65590a3e97de1e143795adb4ce317934995 \
+    --hash=sha256:a0c9c4a0771afc6919578cec71ce82a3e31e054904e7197deacbc9382671c41f \
+    --hash=sha256:aadf7a02d947936ee418777e0247ea114f78aff0d0959461057cae8a04f20597 \
+    --hash=sha256:b5991d523eee14756f3c8d5df5231550ae8993e2286b8014e2fdea7156ed0959 \
+    --hash=sha256:bf21b7b230718a5f08bd32d5e4f1db7fc8788345c8aea1d155fc17852b3410f5 \
+    --hash=sha256:c45f8dff244b3c431b36e3224b6be4a127c6aca780853574c00faf99258041eb \
+    --hash=sha256:c7ed6668cbbfcd231fa0dc1b137d3e40c04c7f786e626b405c62bcd5db5857e4 \
+    --hash=sha256:d7de8d330763c66663661a1ffd432274a2f92f07feeddd89ffd085b5744f85e7 \
+    --hash=sha256:e19cb1c6365fd6dc38a6eae2dcb691d7d83935c10215aef8e6c38edee3f77abd \
+    --hash=sha256:e2af80566f43c85f5797365077fb64a393861a3730bd110971ab7a0c94e873e7
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 breathe==4.35.0 \
     --hash=sha256:5165541c3c67b6c7adde8b3ecfe895c6f7844783c4076b6d8d287e4f33d62386 \
@@ -193,9 +190,9 @@ cachetools==5.0.0 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   google-auth
-certifi==2021.10.8 \
-    --hash=sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872 \
-    --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
+certifi==2024.7.4 \
+    --hash=sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b \
+    --hash=sha256:c198e21b1289c2ab85ee4e67bb4b4ef3ead0892059901a8d5b622f24a1101e90
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   requests
@@ -407,30 +404,39 @@ coverage==7.2.7 \
     --hash=sha256:f75f7168ab25dd93110c8a8117a22450c19976afbc44234cbf71481094c1b850 \
     --hash=sha256:fdec9e8cbf13a5bf63290fc6013d216a4c7232efb51548594ca3631a7f13c3a3
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-cryptography==41.0.2 \
-    --hash=sha256:01f1d9e537f9a15b037d5d9ee442b8c22e3ae11ce65ea1f3316a41c78756b711 \
-    --hash=sha256:079347de771f9282fbfe0e0236c716686950c19dee1b76240ab09ce1624d76d7 \
-    --hash=sha256:182be4171f9332b6741ee818ec27daff9fb00349f706629f5cbf417bd50e66fd \
-    --hash=sha256:192255f539d7a89f2102d07d7375b1e0a81f7478925b3bc2e0549ebf739dae0e \
-    --hash=sha256:2a034bf7d9ca894720f2ec1d8b7b5832d7e363571828037f9e0c4f18c1b58a58 \
-    --hash=sha256:342f3767e25876751e14f8459ad85e77e660537ca0a066e10e75df9c9e9099f0 \
-    --hash=sha256:439c3cc4c0d42fa999b83ded80a9a1fb54d53c58d6e59234cfe97f241e6c781d \
-    --hash=sha256:49c3222bb8f8e800aead2e376cbef687bc9e3cb9b58b29a261210456a7783d83 \
-    --hash=sha256:674b669d5daa64206c38e507808aae49904c988fa0a71c935e7006a3e1e83831 \
-    --hash=sha256:7a9a3bced53b7f09da251685224d6a260c3cb291768f54954e28f03ef14e3766 \
-    --hash=sha256:7af244b012711a26196450d34f483357e42aeddb04128885d95a69bd8b14b69b \
-    --hash=sha256:7d230bf856164de164ecb615ccc14c7fc6de6906ddd5b491f3af90d3514c925c \
-    --hash=sha256:84609ade00a6ec59a89729e87a503c6e36af98ddcd566d5f3be52e29ba993182 \
-    --hash=sha256:9a6673c1828db6270b76b22cc696f40cde9043eb90373da5c2f8f2158957f42f \
-    --hash=sha256:9b6d717393dbae53d4e52684ef4f022444fc1cce3c48c38cb74fca29e1f08eaa \
-    --hash=sha256:9c3fe6534d59d071ee82081ca3d71eed3210f76ebd0361798c74abc2bcf347d4 \
-    --hash=sha256:a719399b99377b218dac6cf547b6ec54e6ef20207b6165126a280b0ce97e0d2a \
-    --hash=sha256:b332cba64d99a70c1e0836902720887fb4529ea49ea7f5462cf6640e095e11d2 \
-    --hash=sha256:d124682c7a23c9764e54ca9ab5b308b14b18eba02722b8659fb238546de83a76 \
-    --hash=sha256:d73f419a56d74fef257955f51b18d046f3506270a5fd2ac5febbfa259d6c0fa5 \
-    --hash=sha256:f0dc40e6f7aa37af01aba07277d3d64d5a03dc66d682097541ec4da03cc140ee \
-    --hash=sha256:f14ad275364c8b4e525d018f6716537ae7b6d369c094805cae45300847e0894f \
-    --hash=sha256:f772610fe364372de33d76edcd313636a25684edb94cee53fd790195f5989d14
+cryptography==42.0.4 \
+    --hash=sha256:01911714117642a3f1792c7f376db572aadadbafcd8d75bb527166009c9f1d1b \
+    --hash=sha256:0e89f7b84f421c56e7ff69f11c441ebda73b8a8e6488d322ef71746224c20fce \
+    --hash=sha256:12d341bd42cdb7d4937b0cabbdf2a94f949413ac4504904d0cdbdce4a22cbf88 \
+    --hash=sha256:15a1fb843c48b4a604663fa30af60818cd28f895572386e5f9b8a665874c26e7 \
+    --hash=sha256:1cdcdbd117681c88d717437ada72bdd5be9de117f96e3f4d50dab3f59fd9ab20 \
+    --hash=sha256:1df6fcbf60560d2113b5ed90f072dc0b108d64750d4cbd46a21ec882c7aefce9 \
+    --hash=sha256:3c6048f217533d89f2f8f4f0fe3044bf0b2090453b7b73d0b77db47b80af8dff \
+    --hash=sha256:3e970a2119507d0b104f0a8e281521ad28fc26f2820687b3436b8c9a5fcf20d1 \
+    --hash=sha256:44a64043f743485925d3bcac548d05df0f9bb445c5fcca6681889c7c3ab12764 \
+    --hash=sha256:4e36685cb634af55e0677d435d425043967ac2f3790ec652b2b88ad03b85c27b \
+    --hash=sha256:5f8907fcf57392cd917892ae83708761c6ff3c37a8e835d7246ff0ad251d9298 \
+    --hash=sha256:69b22ab6506a3fe483d67d1ed878e1602bdd5912a134e6202c1ec672233241c1 \
+    --hash=sha256:6bfadd884e7280df24d26f2186e4e07556a05d37393b0f220a840b083dc6a824 \
+    --hash=sha256:6d0fbe73728c44ca3a241eff9aefe6496ab2656d6e7a4ea2459865f2e8613257 \
+    --hash=sha256:6ffb03d419edcab93b4b19c22ee80c007fb2d708429cecebf1dd3258956a563a \
+    --hash=sha256:810bcf151caefc03e51a3d61e53335cd5c7316c0a105cc695f0959f2c638b129 \
+    --hash=sha256:831a4b37accef30cccd34fcb916a5d7b5be3cbbe27268a02832c3e450aea39cb \
+    --hash=sha256:887623fe0d70f48ab3f5e4dbf234986b1329a64c066d719432d0698522749929 \
+    --hash=sha256:a0298bdc6e98ca21382afe914c642620370ce0470a01e1bef6dd9b5354c36854 \
+    --hash=sha256:a1327f280c824ff7885bdeef8578f74690e9079267c1c8bd7dc5cc5aa065ae52 \
+    --hash=sha256:c1f25b252d2c87088abc8bbc4f1ecbf7c919e05508a7e8628e6875c40bc70923 \
+    --hash=sha256:c3a5cbc620e1e17009f30dd34cb0d85c987afd21c41a74352d1719be33380885 \
+    --hash=sha256:ce8613beaffc7c14f091497346ef117c1798c202b01153a8cc7b8e2ebaaf41c0 \
+    --hash=sha256:d2a27aca5597c8a71abbe10209184e1a8e91c1fd470b5070a2ea60cafec35bcd \
+    --hash=sha256:dad9c385ba8ee025bb0d856714f71d7840020fe176ae0229de618f14dae7a6e2 \
+    --hash=sha256:db4b65b02f59035037fde0998974d84244a64c3265bdef32a827ab9b63d61b18 \
+    --hash=sha256:e09469a2cec88fb7b078e16d4adec594414397e8879a4341c6ace96013463d5b \
+    --hash=sha256:e53dc41cda40b248ebc40b83b31516487f7db95ab8ceac1f042626bc43a2f992 \
+    --hash=sha256:f1e85a178384bf19e36779d91ff35c7617c885da487d689b05c1366f9933ad74 \
+    --hash=sha256:f47be41843200f7faec0683ad751e5ef11b9a56a220d57f300376cd8aba81660 \
+    --hash=sha256:fb0cef872d8193e487fc6bdb08559c3aa41b659a7d9be48b2e10747f47863925 \
+    --hash=sha256:ffc73996c4fca3d2b6c1c8c12bfd3ad00def8621da24f547626bf06441400449
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 decorator==5.1.1 \
     --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
@@ -665,9 +671,9 @@ humanfriendly==10.0 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   coloredlogs
-idna==3.4 \
-    --hash=sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4 \
-    --hash=sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2
+idna==3.7 \
+    --hash=sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc \
+    --hash=sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   requests
@@ -695,9 +701,9 @@ jedi==0.19.1 \
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   ipython
     #   ptpython
-jinja2==3.1.2 \
-    --hash=sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852 \
-    --hash=sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61
+jinja2==3.1.4 \
+    --hash=sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369 \
+    --hash=sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   sphinx
@@ -1172,9 +1178,9 @@ referencing==0.35.1 \
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   jsonschema
     #   jsonschema-specifications
-requests==2.31.0 \
-    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f \
-    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+requests==2.32.2 \
+    --hash=sha256:dd951ff5ecf3e3b3aa26b40703ba77495dab41da839ae72ef3c8e5d8e2433289 \
+    --hash=sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   google-api-core
@@ -1537,9 +1543,9 @@ typing-extensions==4.4.0 \
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   astroid
     #   mypy
-urllib3==2.0.4 \
-    --hash=sha256:8d22f86aae8ef5e410d4f539fde9ce6b2113a001bb4d189e0aed70642d602b11 \
-    --hash=sha256:de7df1803967d2c2a98e4b11bb7d6bd9210474c46e8a0401514e3a42a75ebde4
+urllib3==2.2.2 \
+    --hash=sha256:a448b2f64d686155468037e1ace9f2d2199776e17f0a46610480d311f73e3472 \
+    --hash=sha256:dd505485549a7a552833da5e6063639d0d177c04f23bc3864e41e5dc5f612168
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   requests
@@ -1755,15 +1761,15 @@ yarl==1.9.4 \
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   aiohttp
 # The following packages are considered to be unsafe in a requirements file:
-pip==23.2.1 \
-    --hash=sha256:7ccf472345f20d35bdc9d1841ff5f313260c2c33fe417f48c30ac46cccabf5be \
-    --hash=sha256:fb0bd5435b3200c602b5bf61d2d43c2f13c02e29c1707567ae7fbc514eb9faf2
+pip==23.3 \
+    --hash=sha256:bb7d4f69f488432e4e96394612f43ab43dd478d073ef7422604a570f7157561e \
+    --hash=sha256:bc38bb52bc286514f8f7cb3a1ba5ed100b76aaef29b521d48574329331c5ae7b
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pip-tools
-setuptools==68.0.0 \
-    --hash=sha256:11e52c67415a381d10d6b462ced9cfb97066179f0e871399e006c4ab101fc85f \
-    --hash=sha256:baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235
+setuptools==70.0.0 \
+    --hash=sha256:54faa7f2e8d2d11bcd2c07bed282eef1046b5c080d1c32add737d7b5817b1ad4 \
+    --hash=sha256:f211a66637b8fa059bb28183da127d4e86396c991a942b028c6650d4319c3fd0
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pip-tools
