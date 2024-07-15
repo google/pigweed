@@ -227,9 +227,7 @@ def _timestamp_format(
     input_resolution: int,
     truncate_microseconds_to_three_digits: bool = False,
 ) -> str:
-    time_delta = datetime.timedelta(
-        seconds=float(timestamp) / float(input_resolution)
-    )
+    time_delta = datetime.timedelta(seconds=timestamp / input_resolution)
 
     minutes, seconds = divmod(time_delta.seconds, 60)
     hours, minutes = divmod(minutes, 60)
