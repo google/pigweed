@@ -14,6 +14,7 @@
 
 import * as vscode from 'vscode';
 
+import { setCompileCommandsTarget } from './clangd';
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
 import { fileBug, launchTroubleshootingLink } from './links';
@@ -53,9 +54,24 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
       launchBootstrapTerminal,
     ),
   );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.select-target', () =>
+      vscode.window.showWarningMessage(
+        'This command is currently not supported with Bootstrap projects',
+      ),
+    ),
+  );
 }
 
 function registerBazelCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.select-target',
+      setCompileCommandsTarget,
+    ),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.launch-terminal', () =>
       vscode.window.showWarningMessage(

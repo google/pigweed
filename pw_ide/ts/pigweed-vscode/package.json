@@ -46,11 +46,19 @@
       {
         "command": "pigweed.bootstrap-terminal",
         "title": "Pigweed: Bootstrap Activated Terminal"
+      },
+      {
+        "command": "pigweed.select-target",
+        "title": "Pigweed: Select Code Analysis Target"
       }
     ],
     "configuration": {
       "title": "Pigweed",
       "properties": {
+        "pigweed.codeAnalysisTarget": {
+          "type": "string",
+          "description": "The build target to use for editor code intelligence"
+        },
         "pigweed.enforceExtensionRecommendations": {
           "type": "boolean",
           "default": "false",
@@ -114,5 +122,9 @@
     "typescript": "^5.5.3",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4"
-  }
+  },
+  "extensionDependencies": [
+    "BazelBuild.vscode-bazel",
+    "llvm-vs-code-extensions.vscode-clangd"
+  ]
 }

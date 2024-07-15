@@ -25,6 +25,7 @@ type ProjectType = 'bootstrap' | 'bazel';
 type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
+  codeAnalysisTarget: Setting<string>;
   enforceExtensionRecommendations: Setting<boolean>;
   projectRoot: Setting<string>;
   projectType: Setting<ProjectType>;
@@ -47,7 +48,7 @@ export function settingFor<T>(section: string, category = 'pigweed') {
  * This variation handles some edge cases of string settings, and allows you
  * to constrain the type of the string, e.g., to a union of literals.
  */
-function stringSettingFor<T extends string = string>(
+export function stringSettingFor<T extends string = string>(
   section: string,
   category = 'pigweed',
 ) {
@@ -74,7 +75,7 @@ function stringSettingFor<T extends string = string>(
  *
  * This variation handles some edge cases of boolean settings.
  */
-function boolSettingFor(section: string, category = 'pigweed') {
+export function boolSettingFor(section: string, category = 'pigweed') {
   return {
     get: (): boolean | undefined => {
       const current = vscode.workspace
@@ -99,6 +100,14 @@ function boolSettingFor(section: string, category = 'pigweed') {
     update: (value: boolean | undefined): Thenable<void> =>
       vscode.workspace.getConfiguration(category).update(section, value),
   };
+}
+
+function codeAnalysisTarget(): string | undefined;
+function codeAnalysisTarget(value: string | undefined): void;
+function codeAnalysisTarget(value?: string): string | undefined {
+  const { get, update } = stringSettingFor('codeAnalysisTarget');
+  if (!value) return get();
+  update(value);
 }
 
 function enforceExtensionRecommendations(): boolean;
@@ -137,6 +146,7 @@ function terminalShell(
 
 /** Entry point for accessing settings. */
 export const settings: Settings = {
+  codeAnalysisTarget,
   enforceExtensionRecommendations,
   projectRoot,
   projectType,
