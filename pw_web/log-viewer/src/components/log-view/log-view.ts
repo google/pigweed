@@ -169,7 +169,6 @@ export class LogView extends LitElement {
               : () => true;
 
           this.filterLogs();
-          this.requestUpdate();
         }, this.FILTER_DELAY);
         break;
       case 'clear-logs':
@@ -179,9 +178,7 @@ export class LogView extends LitElement {
       default:
         break;
     }
-
     this.filterLogs();
-    this.requestUpdate();
   }
 
   private updateFieldsFromNewLogs(newLogs: LogEntry[]): void {
@@ -328,6 +325,7 @@ export class LogView extends LitElement {
     ) {
       this._filteredLogs = newFilteredLogs;
     }
+    this.requestUpdate();
   }
 
   private updateTitle() {
