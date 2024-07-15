@@ -20,9 +20,8 @@ const webpack = require('webpack');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
-  // vscode extensions run in webworker context for VS
-  // Code web 📖 -> https://webpack.js.org/configuration/target/#target
-  target: 'webworker',
+  // We need access to node APIs, so we can't currently build for webworker.
+  target: 'node',
 
   // the entry point of this extension, 📖 ->
   // https://webpack.js.org/configuration/entry-context/
