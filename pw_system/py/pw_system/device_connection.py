@@ -89,10 +89,9 @@ def create_device_serial_or_socket_connection(
     channel_id: int = rpc.DEFAULT_CHANNEL_ID,
     hdlc_encoding: bool = True,
     device_tracing: bool = True,
-    device_class: type[pw_device.Device] = pw_device.Device,
-    device_tracing_class: type[pw_device_tracing.DeviceWithTracing] = (
-        pw_device_tracing.DeviceWithTracing
-    ),
+    device_class: type[pw_device.Device] | None = pw_device.Device,
+    device_tracing_class: type[pw_device_tracing.DeviceWithTracing]
+    | None = (pw_device_tracing.DeviceWithTracing),
 ) -> DeviceConnection:
     """Setup a pw_system.Device client connection.
 
@@ -260,8 +259,12 @@ def create_device_serial_or_socket_connection(
     device_client: pw_device_tracing.DeviceWithTracing | pw_device.Device
     if device_tracing:
         device_kwds['ticks_per_second'] = ticks_per_second
+        if device_tracing_class is None:
+            device_tracing_class = pw_device_tracing.DeviceWithTracing
         device_client = device_tracing_class(*device_args, **device_kwds)
     else:
+        if device_class is None:
+            device_class = pw_device.Device
         device_client = device_class(*device_args, **device_kwds)
 
     return DeviceConnection(device_client, reader, write)

@@ -52,12 +52,14 @@ from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 
 from pw_system.device_connection import (
+    DeviceConnection,
     add_device_args,
     create_device_serial_or_socket_connection,
 )
 
 if TYPE_CHECKING:
     from pw_system import device as pw_device
+    from pw_system import device_tracing as pw_device_tracing
 
 _LOG = logging.getLogger(__package__)
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -266,6 +268,7 @@ def console(
     hdlc_encoding: bool = True,
     device_tracing: bool = True,
     browser: bool = False,
+    device_connection: DeviceConnection | None = None,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
     # Don't send device logs to the root logger.
@@ -331,19 +334,20 @@ def console(
         json_filehandler.setFormatter(python_logging.JsonLogFormatter())
         _DEVICE_LOG.addHandler(json_filehandler)
 
-    device_connection = create_device_serial_or_socket_connection(
-        device,
-        baudrate,
-        token_databases,
-        socket_addr,
-        ticks_per_second,
-        serial_debug,
-        compiled_protos,
-        rpc_logging,
-        channel_id,
-        hdlc_encoding,
-        device_tracing,
-    )
+    if device_connection is None:
+        device_connection = create_device_serial_or_socket_connection(
+            device=device,
+            baudrate=baudrate,
+            token_databases=token_databases,
+            socket_addr=socket_addr,
+            ticks_per_second=ticks_per_second,
+            serial_debug=serial_debug,
+            compiled_protos=compiled_protos,
+            rpc_logging=rpc_logging,
+            channel_id=channel_id,
+            hdlc_encoding=hdlc_encoding,
+            device_tracing=device_tracing,
+        )
 
     with device_connection as device_client:
         _start_python_terminal(
@@ -362,14 +366,51 @@ def console(
     return 0
 
 
-def main(args: argparse.Namespace | None = None) -> int:
-    return console(**vars(_parse_args(args)))
+def main(
+    args: argparse.Namespace | None = None,
+    compiled_protos: list[ModuleType] | None = None,
+    device_connection: DeviceConnection | None = None,
+) -> int:
+    """Startup the pw console UI for a pw_system device.
+
+    Example usage:
+
+    .. code-block:: python
+
+       from pw_protobuf_protos import common_pb2
+       from pw_rpc import echo_pb2
+       import pw_system.console
+
+       def main() -> int:
+           return pw_system.console.main(
+               compiled_protos=[
+                   common_pb2,
+                   echo_pb2,
+               ]
+               device_connection=None,
+           )
+
+       if __name__ == '__main__':
+           sys.exit(main())
+    """
+    return console(
+        **vars(_parse_args(args)),
+        compiled_protos=compiled_protos,
+        device_connection=device_connection,
+    )
 
 
+# TODO(b/353327855): Deprecated function, remove when no longer used.
 def main_with_compiled_protos(
-    compiled_protos, args: argparse.Namespace | None = None
-):
-    return console(**vars(_parse_args(args)), compiled_protos=compiled_protos)
+    compiled_protos: list[ModuleType] | None = None,
+    args: argparse.Namespace | None = None,
+    device_connection: DeviceConnection | None = None,
+) -> int:
+    return main(
+        args=args,
+        compiled_protos=compiled_protos,
+        device_connection=device_connection,
+    )
 
 
 if __name__ == '__main__':

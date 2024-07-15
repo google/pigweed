@@ -20,6 +20,7 @@ import sys
 from types import ModuleType
 
 from pw_system.console import console, get_parser
+from pw_system.device_connection import DeviceConnection
 
 
 def _parse_args() -> tuple[argparse.Namespace, list[str]]:
@@ -36,6 +37,7 @@ def launch_sim(
     sim_binary: Path,
     remaining_args: list[str],
     compiled_protos: list[ModuleType] | None = None,
+    device_connection: DeviceConnection | None = None,
 ) -> int:
     """Launches a host-device-sim binary, and attaches a console to it."""
     if '-s' not in remaining_args and '--socket-addr' not in remaining_args:
@@ -52,24 +54,38 @@ def launch_sim(
     )
 
     try:
-        retval = console(**vars(console_args), compiled_protos=compiled_protos)
+        retval = console(
+            **vars(console_args),
+            compiled_protos=compiled_protos,
+            device_connection=device_connection,
+        )
     finally:
         sim_process.terminate()
 
     return retval
 
 
-def main() -> int:
-    sim_args, remaining_args = _parse_args()
-    return launch_sim(**vars(sim_args), remaining_args=remaining_args)
-
-
-def main_with_compiled_protos(compiled_protos):
+def main(
+    compiled_protos: list[ModuleType] | None = None,
+    device_connection: DeviceConnection | None = None,
+) -> int:
     sim_args, remaining_args = _parse_args()
     return launch_sim(
         **vars(sim_args),
         remaining_args=remaining_args,
         compiled_protos=compiled_protos,
+        device_connection=device_connection,
+    )
+
+
+# TODO(b/353327855): Deprecated function, remove when no longer used.
+def main_with_compiled_protos(
+    compiled_protos: list[ModuleType] | None = None,
+    device_connection: DeviceConnection | None = None,
+) -> int:
+    return main(
+        compiled_protos=compiled_protos,
+        device_connection=device_connection,
     )
 
 

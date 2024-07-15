@@ -3,6 +3,8 @@
 ===============================
 pw_system console CLI reference
 ===============================
+These are the standard pw_system console command line arguments.
+
 .. argparse::
    :module: pw_system.console
    :func: get_parser
@@ -11,9 +13,19 @@ pw_system console CLI reference
    :nodescription:
    :noepilog:
 
-===============================
-pw_system Device connection API
-===============================
+===================
+Python Console APIs
+===================
+Functions for establishing a connection to pw_system powered devices using Python.
+
+-------------------
+Console startup API
+-------------------
+.. autofunction:: pw_system.console.main
+
+---------------------
+Device connection API
+---------------------
 Device connections can be established in the same way as the pw_system console
 but through the Python function :py:func:`create_device_serial_or_socket_connection`.
 
