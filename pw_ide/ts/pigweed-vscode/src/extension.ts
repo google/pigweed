@@ -25,6 +25,12 @@ import {
   isBootstrapProject,
 } from './project';
 import { launchBootstrapTerminal, launchTerminal } from './terminal';
+import {
+  interactivelySetBazeliskPath,
+  configureBazelisk,
+  configureOtherBazelSettings,
+  setBazelRecommendedSettings,
+} from './bazel';
 
 function registerUniversalCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -56,6 +62,14 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.set-bazelisk-path', () =>
+      vscode.window.showWarningMessage(
+        'This command is currently not supported with Bootstrap projects',
+      ),
+    ),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.select-target', () =>
       vscode.window.showWarningMessage(
         'This command is currently not supported with Bootstrap projects',
@@ -65,6 +79,20 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
 }
 
 function registerBazelCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.set-bazelisk-path',
+      interactivelySetBazeliskPath,
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.set-bazel-recommended-settings',
+      setBazelRecommendedSettings,
+    ),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'pigweed.select-target',
@@ -123,6 +151,8 @@ async function configureProject(context: vscode.ExtensionContext) {
     ) {
       output.appendLine('This is a Bazel project');
       registerBazelCommands(context);
+      configureBazelisk();
+      configureOtherBazelSettings();
     } else {
       vscode.window
         .showErrorMessage(

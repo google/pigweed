@@ -50,6 +50,14 @@
       {
         "command": "pigweed.select-target",
         "title": "Pigweed: Select Code Analysis Target"
+      },
+      {
+        "command": "pigweed.set-bazelisk-path",
+        "title": "Pigweed: Set Bazelisk Path"
+      },
+      {
+        "command": "pigweed.set-bazel-recommended-settings",
+        "title": "Pigweed: Set Bazel Recommended Settings"
       }
     ],
     "configuration": {
@@ -58,6 +66,16 @@
         "pigweed.codeAnalysisTarget": {
           "type": "string",
           "description": "The build target to use for editor code intelligence"
+        },
+        "pigweed.disableBazelSettingsRecommendations": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Disable reminders to use Pigweed's Bazel settings recommendations"
+        },
+        "pigweed.disableBazeliskCheck": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Disable the recommendation to use Bazelisk"
         },
         "pigweed.enforceExtensionRecommendations": {
           "type": "boolean",
@@ -100,8 +118,11 @@
     "vscTest": "vscode-test"
   },
   "dependencies": {
+    "@bazel/bazelisk": "^1.19.0",
+    "@bazel/buildifier": "^7.1.2",
     "glob": "^10.4.5",
-    "hjson": "^3.2.2"
+    "hjson": "^3.2.2",
+    "node_modules-path": "^2.0.8"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

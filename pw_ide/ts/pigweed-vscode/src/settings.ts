@@ -26,11 +26,18 @@ type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
   codeAnalysisTarget: Setting<string>;
+  disableBazelSettingsRecommendations: Setting<boolean>;
+  disableBazeliskCheck: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
   projectRoot: Setting<string>;
   projectType: Setting<ProjectType>;
   terminalShell: Setting<TerminalShell>;
 }
+
+export type ConfigAccessor<T> = {
+  get(): T | undefined;
+  update(value: T | undefined): Thenable<void>;
+};
 
 /** Wrap the verbose ceremony of accessing/updating a particular setting. */
 export function settingFor<T>(section: string, category = 'pigweed') {
@@ -110,6 +117,24 @@ function codeAnalysisTarget(value?: string): string | undefined {
   update(value);
 }
 
+function disableBazelSettingsRecommendations(): boolean;
+function disableBazelSettingsRecommendations(value: boolean | undefined): void;
+function disableBazelSettingsRecommendations(
+  value?: boolean,
+): boolean | undefined {
+  const { get, update } = boolSettingFor('disableBazelSettingsRecommendations');
+  if (!value) return get() ?? false;
+  update(value);
+}
+
+function disableBazeliskCheck(): boolean;
+function disableBazeliskCheck(value: boolean | undefined): void;
+function disableBazeliskCheck(value?: boolean): boolean | undefined {
+  const { get, update } = boolSettingFor('disableBazeliskCheck');
+  if (!value) return get() ?? false;
+  update(value);
+}
+
 function enforceExtensionRecommendations(): boolean;
 function enforceExtensionRecommendations(value: boolean | undefined): void;
 function enforceExtensionRecommendations(value?: boolean): boolean | undefined {
@@ -147,11 +172,21 @@ function terminalShell(
 /** Entry point for accessing settings. */
 export const settings: Settings = {
   codeAnalysisTarget,
+  disableBazelSettingsRecommendations,
+  disableBazeliskCheck,
   enforceExtensionRecommendations,
   projectRoot,
   projectType,
   terminalShell,
 };
+
+// Config accessors for Bazel extension settings.
+export const bazel_codelens = boolSettingFor('enableCodeLens', 'bazel');
+export const bazel_executable = stringSettingFor('executable', 'bazel');
+export const buildifier_executable = stringSettingFor(
+  'buildifierExecutable',
+  'bazel',
+);
 
 /** Find the root directory of the project open in the editor. */
 function editorRootDir(): vscode.WorkspaceFolder {
