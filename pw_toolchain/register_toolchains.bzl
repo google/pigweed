@@ -43,7 +43,15 @@ def register_pigweed_cxx_toolchains():
     # Generate xcode repository on macOS.
     pw_xcode_command_line_tools_repository()
 
-    # Fetch llvm toolchain.
+    # Fetch llvm toolchain for device.
+    cipd_repository(
+        name = "llvm_toolchain_device",
+        build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
+        path = "fuchsia/third_party/clang/${os}-${arch}",
+        tag = "git_revision:c58bc24fcf678c55b0bf522be89eff070507a005",
+    )
+
+    # Fetch llvm toolchain for host.
     cipd_repository(
         name = "llvm_toolchain",
         build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
