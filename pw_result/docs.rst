@@ -42,8 +42,8 @@ The ``PW_TRY_ASSIGN`` macro enables shortening the above to:
 
    pw::Status UpdateChargerDisplay() {
      PW_TRY_ASSIGN(const int battery_mv, GetBatteryVoltageMillivolts());
-     PW_LOG_INFO("Battery voltage: %d mV", *battery_mv);
-     SetDisplayBatteryVoltage(*battery_mv);
+     PW_LOG_INFO("Battery voltage: %d mV", battery_mv);
+     SetDisplayBatteryVoltage(battery_mv);
      return pw::OkStatus();
    }
 
