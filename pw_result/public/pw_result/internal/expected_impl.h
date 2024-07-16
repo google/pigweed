@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstdlib>
 #include <functional>
 #include <optional>
 #include <type_traits>
