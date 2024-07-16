@@ -1030,6 +1030,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bAUTHORS$',
     r'\bLICENSE$',
     r'\bPIGWEED_MODULES$',
+    r'\b\.vscodeignore$',
     r'\bgo.(mod|sum)$',
     r'\bpackage-lock.json$',
     r'\bpackage.json$',
