@@ -44,7 +44,6 @@ config("disable_warnings") {
   cflags_cc = [
     "-Wno-unused-parameter",
     "-Wno-deprecated-copy",
-    "-Wno-format-invalid-specifier",
   ]
 }
 

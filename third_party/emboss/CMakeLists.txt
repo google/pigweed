@@ -33,7 +33,6 @@ pw_add_library(pw_third_party.emboss._disable_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     -Wno-unused-parameter
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
-    -Wno-format-invalid-specifier
 )
 
 set(dir_pw_third_party_emboss "" CACHE PATH "Path to the emboss installation.")
