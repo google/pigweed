@@ -68,7 +68,7 @@ void BeginBaseFaultTest() {
   uint32_t magic = kMagicPattern;
   asm volatile(
       " mov r0, %[magic]                                      \n"
-      " mov r1, #0                                            \n"
+      " movs r1, #0                                           \n"
       " mov r2, pc                                            \n"
       " mov r3, lr                                            \n"
       // This instruction reads a bad address.
@@ -96,7 +96,7 @@ void BeginBaseFaultUnalignedStackTest() {
       // assuming it started 8-byte aligned as expected.
       " push {r0}                                             \n"
       " mov r0, %[magic]                                      \n"
-      " mov r1, #0                                            \n"
+      " movs r1, #0                                           \n"
       " mov r2, pc                                            \n"
       " mov r3, lr                                            \n"
       // This instruction reads a bad address. Our fault handler should
@@ -125,7 +125,7 @@ void BeginExtendedFaultTest() {
   volatile uint32_t local_psp = 0;
   asm volatile(
       " mov r4, %[magic]                                      \n"
-      " mov r5, #0                                            \n"
+      " movs r5, #0                                           \n"
       " mov r11, %[magic]                                     \n"
       " mrs %[local_msp], msp                                 \n"
       " mrs %[local_psp], psp                                 \n"
@@ -162,7 +162,7 @@ void BeginExtendedFaultUnalignedStackTest() {
       // assuming it started 8-byte aligned as expected.
       " push {r0}                                             \n"
       " mov r4, %[magic]                                      \n"
-      " mov r5, #0                                            \n"
+      " movs r5, #0                                           \n"
       " mov r11, %[magic]                                     \n"
       " mrs %[local_msp], msp                                 \n"
       " mrs %[local_psp], psp                                 \n"

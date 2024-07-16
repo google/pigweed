@@ -144,9 +144,13 @@ PW_USED void pw_PackageAndHandleCpuException(
 // Captures faulting CPU state on the main stack (MSP), then calls the exception
 // handlers.
 // This function should be called immediately after an exception.
-void pw_cpu_exception_Entry(void) {
+PW_USED void pw_cpu_exception_Entry() {
   asm volatile(
       // clang-format off
+
+      // Enable unified syntax for Thumb and Thumb2.
+      " .syntax unified                         \n"
+
       //
       // This code is logically very similar to the ARMv7-M+ exception entry,
       // except simpler due to ARMv6-M limitations.  Specifically the
@@ -158,18 +162,18 @@ void pw_cpu_exception_Entry(void) {
       " sub sp, sp, %[exception_state_size]     \n"
 
       // Store GPRs to stack.
-      " str r4, [sp, #24]                       \n" // ExtraRegisters.r4
-      " str r5, [sp, #28]                       \n" // ExtraRegisters.r5
-      " str r6, [sp, #32]                       \n" // ExtraRegisters.r6
-      " str r7, [sp, #36]                       \n" // ExtraRegisters.r7
+      " str r4, [sp, #24]                       \n"  // ExtraRegisters.r4
+      " str r5, [sp, #28]                       \n"  // ExtraRegisters.r5
+      " str r6, [sp, #32]                       \n"  // ExtraRegisters.r6
+      " str r7, [sp, #36]                       \n"  // ExtraRegisters.r7
       " mov r1, r8                              \n"
-      " str r1, [sp, #40]                       \n" // ExtraRegisters.r8
+      " str r1, [sp, #40]                       \n"  // ExtraRegisters.r8
       " mov r1, r9                              \n"
-      " str r1, [sp, #44]                       \n" // ExtraRegisters.r9
+      " str r1, [sp, #44]                       \n"  // ExtraRegisters.r9
       " mov r1, r10                             \n"
-      " str r1, [sp, #48]                       \n" // ExtraRegisters.r10
+      " str r1, [sp, #48]                       \n"  // ExtraRegisters.r10
       " mov r1, r11                             \n"
-      " str r1, [sp, #52]                       \n" // ExtraRegisters.r11
+      " str r1, [sp, #52]                       \n"  // ExtraRegisters.r11
 
       // Load special registers.
       " mov r1, lr                              \n"
@@ -187,7 +191,7 @@ void pw_cpu_exception_Entry(void) {
       // start (offset 8 to skipping memory mapped registers), so they can be
       // restored later.
       " mov r4, sp                              \n"
-      " add r4, #8                              \n" // ExtraRegisters.exc_return
+      " adds r4, #8                             \n" // ExtraRegisters.exc_return
 
       // Restore captured_cpu_state pointer to r0. This makes adding more
       // memory mapped registers easier in the future since they're skipped in
@@ -212,13 +216,13 @@ void pw_cpu_exception_Entry(void) {
       // Restore high GPRs.
       " ldr r1, [r0]                            \n"
       " mov r8, r1                              \n"
-      " add r0, #4                              \n"
+      " adds r0, #4                             \n"
       " ldr r1, [r0]                            \n"
       " mov r9, r1                              \n"
-      " add r0, #4                              \n"
+      " adds r0, #4                             \n"
       " ldr r1, [r0]                            \n"
       " mov r10, r1                             \n"
-      " add r0, #4                              \n"
+      " adds r0, #4                             \n"
       " ldr r1, [r0]                            \n"
       " mov r11, r1                             \n"
 

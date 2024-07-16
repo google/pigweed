@@ -76,6 +76,19 @@ pw_cc_flag_set(
     ],
 )
 
+pw_cc_flag_set(
+    name = "unified_asm_syntax",
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-masm-syntax-unified",
+    ],
+)
+
 # This flag prevents Arm GCC from printing the resolved paths of symlinks,
 # which prevents compilation actions from being hermetic. See
 # https://github.com/bazelbuild/bazel/issues/21981 and
@@ -289,6 +302,8 @@ pw_cc_toolchain(
         "@pw_toolchain//constraints/arm_mcpu:none": [],
     }) + [
         ":thumb_abi",
+        # TODO(b/353576440): Enable unified assembly syntax.
+        # ":unified_asm_syntax",
         ":cortex_common",
         ":cortex_common_link",
         ":no_canonical_system_headers",
