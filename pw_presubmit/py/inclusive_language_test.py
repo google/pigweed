@@ -33,9 +33,9 @@ ENABLE = inclusive_language.ENABLE
 class TestInclusiveLanguage(unittest.TestCase):
     """Test inclusive language check."""
 
-    def _run(self, *contents: str) -> None:
+    def _run(self, *contents: str, filename: str | None = None) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
-            path = Path(tempdir) / 'foo'
+            path = Path(tempdir) / (filename or 'foo')
 
             with path.open('w') as outs:
                 outs.write('\n'.join(contents))
@@ -47,7 +47,11 @@ class TestInclusiveLanguage(unittest.TestCase):
                 ],
             ] = {}
 
-            inclusive_language.check_file(path, self.found_words)
+            inclusive_language.check_file(
+                path,
+                self.found_words,
+                check_path=bool(filename),
+            )
             self.success = True
 
     def assert_success(self):
@@ -176,6 +180,10 @@ class TestInclusiveLanguage(unittest.TestCase):
     def test_multiple(self) -> None:
         self._run('master', 'slave')
         self.assert_failures(2)
+
+    def test_bad_filename(self) -> None:
+        self._run(filename='slave')
+        self.assert_failures(1)
 
 
 if __name__ == '__main__':

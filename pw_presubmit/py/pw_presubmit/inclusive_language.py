@@ -107,13 +107,23 @@ class LineMatch:
 def check_file(
     path: Path,
     found_words: dict[Path, list[PathMatch | LineMatch]],
-    words_regex=NON_INCLUSIVE_WORDS_REGEX,
+    words_regex: re.Pattern = NON_INCLUSIVE_WORDS_REGEX,
+    check_path: bool = True,
 ):
-    """Check one file for non-inclusive language."""
-    match = words_regex.search(str(path))
-    if match:
-        found_words.setdefault(path, [])
-        found_words[path].append(PathMatch(match.group(0)))
+    """Check one file for non-inclusive language.
+
+    Args:
+        path: File to check.
+        found_words: Output. Data structure where found words are added.
+        words_regex: Pattern of non-inclusive terms.
+        check_path: Whether to check the path instead of just the contents.
+            (Used for testing.)
+    """
+    if check_path:
+        match = words_regex.search(str(path))
+        if match:
+            found_words.setdefault(path, [])
+            found_words[path].append(PathMatch(match.group(0)))
 
     if path.is_symlink() or path.is_dir():
         return
