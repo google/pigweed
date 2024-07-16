@@ -10,8 +10,8 @@ CI/CQ Intro
 Essentials
 ----------
 
-Submitting CLs
-==============
+Submitting Changes
+==================
 The Gerrit ``Submit`` button is hidden, replaced by the ``Submit to CQ``
 button. The ``Submit`` button is still accessible behind the ``...`` button
 in the top right corner of the Gerrit UI, but in some cases requires elevated

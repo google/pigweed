@@ -28,7 +28,8 @@ the :ref:`builder visualization <docs-builder-viz>` and looking under the
 --------------------
 How do rollers work?
 --------------------
-Project rollers will poll Gitiles every 30s for new commits to watched
+Project rollers will poll Gitiles periodically (often every three hours, but
+this is configurable) for new commits to watched
 repositories. Package rollers will poll CIPD at their configured frequencies
 for new packages which match their watched refs (e.g. 'latest').
 
@@ -38,18 +39,18 @@ luci-scheduler is configured to only allow a single job of each roller to be
 running at once. It will batch triggers until there is no job running, then
 create a roller job with the properties of the latest trigger in the batch.
 
-Once the roller job begins, it creates a CL which updates the relevant
-project or package pin(s) and attempts to submit the CL via CQ. If the CQ run
-fails, then the roller will abandon that CL. If the CQ run succeeds, the CL is
-submitted and the roller succeeds.
+Once the roller job begins, it creates a change which updates the relevant
+project or package pin(s) and attempts to submit the change via CQ. If the CQ
+run fails, then the roller will abandon that change. If the CQ run succeeds, the
+change is submitted and the roller succeeds.
 
 On most hosts, rollers vote on the ``Bot-Commit`` label which bypasses the
 ``Code-Review`` requirement. On other hosts, rollers vote on ``Code-Review``,
-or Gerrit is configured to not enforce the ``Code-Review`` requirement for CLs
-uploaded by the roller.
+or Gerrit is configured to not enforce the ``Code-Review`` requirement for
+changes uploaded by the roller.
 
 In the event of a CQ failure, if the roller attempts to re-roll the exact same
-revision or package(s), it will re-use the existing CL and only re-run the
+revision or package(s), it will re-use the existing change and only re-run the
 failing portions of CQ.
 
 -------------------------------
