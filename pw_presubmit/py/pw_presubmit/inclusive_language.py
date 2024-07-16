@@ -80,11 +80,11 @@ def _process_inclusive_language(*words):
 NON_INCLUSIVE_WORDS_REGEX = _process_inclusive_language()
 
 # If seen, ignore this line and the next.
-_IGNORE = 'inclusive-language: ignore'
+IGNORE = 'inclusive-language: ignore'
 
 # Ignore a whole section. Please do not change the order of these lines.
-_DISABLE = 'inclusive-language: disable'
-_ENABLE = 'inclusive-language: enable'
+DISABLE = 'inclusive-language: disable'
+ENABLE = 'inclusive-language: enable'
 
 
 @dataclasses.dataclass
@@ -104,6 +104,49 @@ class LineMatch:
         return f'Found non-inclusive word "{self.word}" on line {self.line}'
 
 
+def check_file(
+    path: Path,
+    found_words: dict[Path, list[PathMatch | LineMatch]],
+    words_regex=NON_INCLUSIVE_WORDS_REGEX,
+):
+    """Check one file for non-inclusive language."""
+    match = words_regex.search(str(path))
+    if match:
+        found_words.setdefault(path, [])
+        found_words[path].append(PathMatch(match.group(0)))
+
+    if path.is_symlink() or path.is_dir():
+        return
+
+    try:
+        with open(path, 'r') as ins:
+            enabled = True
+            prev = ''
+            for i, line in enumerate(ins, start=1):
+                if DISABLE in line:
+                    enabled = False
+                if ENABLE in line:
+                    enabled = True
+
+                # If we see the ignore line on this or the previous line we
+                # ignore any bad words on this line.
+                ignored = IGNORE in prev or IGNORE in line
+
+                if enabled and not ignored:
+                    match = words_regex.search(line)
+
+                    if match:
+                        found_words.setdefault(path, [])
+                        found_words[path].append(LineMatch(i, match.group(0)))
+
+                # Not using 'continue' so this line always executes.
+                prev = line
+
+    except UnicodeDecodeError:
+        # File is not text, like a gif.
+        pass
+
+
 @presubmit.check(name='inclusive_language')
 def presubmit_check(
     ctx: presubmit_context.PresubmitContext,
@@ -121,43 +164,7 @@ def presubmit_check(
     ctx.paths = presubmit_context.apply_exclusions(ctx)
 
     for path in ctx.paths:
-        match = words_regex.search(str(path.relative_to(ctx.root)))
-        if match:
-            found_words.setdefault(path, [])
-            found_words[path].append(PathMatch(match.group(0)))
-
-        if path.is_symlink() or path.is_dir():
-            continue
-
-        try:
-            with open(path, 'r') as ins:
-                enabled = True
-                prev = ''
-                for i, line in enumerate(ins, start=1):
-                    if _DISABLE in line:
-                        enabled = False
-                    if _ENABLE in line:
-                        enabled = True
-
-                    # If we see the ignore line on this or the previous line we
-                    # ignore any bad words on this line.
-                    ignored = _IGNORE in prev or _IGNORE in line
-
-                    if enabled and not ignored:
-                        match = words_regex.search(line)
-
-                        if match:
-                            found_words.setdefault(path, [])
-                            found_words[path].append(
-                                LineMatch(i, match.group(0))
-                            )
-
-                    # Not using 'continue' so this line always executes.
-                    prev = line
-
-        except UnicodeDecodeError:
-            # File is not text, like a gif.
-            pass
+        check_file(path.relative_to(ctx.root), found_words, words_regex)
 
     if found_words:
         with open(ctx.failure_summary_log, 'w') as outs:

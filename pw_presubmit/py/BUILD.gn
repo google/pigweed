@@ -79,6 +79,7 @@ pw_python_package("py") {
     "format_core_test.py",
     "gitmodules_test.py",
     "gn_format_test.py",
+    "inclusive_language_test.py",
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",
