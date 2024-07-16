@@ -114,6 +114,7 @@ pw_cc_binary(
     srcs = ["system_async_example.cc"],
     deps = [
         "//pw_channel:rp2_stdio_channel",
+        "//pw_libcxx",
         "//pw_multibuf:testing",
         "//pw_system:async",
         "//third_party/freertos:support",
