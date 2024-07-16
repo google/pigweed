@@ -133,3 +133,16 @@ pw_cc_flag_set(
         "-DUNDEFINED_SANITIZER",
     ],
 )
+
+# TODO: https://pwbug.dev/346388161 - Push this to upstream rules_cc.
+pw_cc_flag_set(
+    name = "tsan",
+    actions = [
+        "@pw_toolchain//actions:all_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-fsanitize=thread",
+        "-DTHREAD_SANITIZER",
+    ],
+)

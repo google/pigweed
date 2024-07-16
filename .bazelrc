@@ -120,6 +120,12 @@ common:ubsan --//pw_toolchain/host_clang:ubsan
 # accumulate.
 test:ubsan --test_tag_filters=-requires_cxx_20,-integration,-noubsan
 
+common:tsan --//pw_toolchain/host_clang:tsan
+# TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
+# -requires_cxx_20 and -integration because the test_tag_filters flag does not
+# accumulate.
+test:tsan --test_tag_filters=-requires_cxx_20,-integration,-notsan
+
 # Configure workspace status command to test pw_build_info git_build_info
 # https://bazel.build/docs/user-manual#workspace-status-command
 # TODO: b/348046338 - Add a Windows version of this command

@@ -181,6 +181,36 @@ pw_cc_feature_set(
     all_of = [":rules_rust_unsupported_feature"],
 )
 
+bool_flag(
+    name = "tsan",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "tsan_enabled",
+    flag_values = {
+        ":tsan": "true",
+    },
+)
+
+pw_cc_feature(
+    name = "tsan_feature",
+    enabled = select({
+        ":tsan_enabled": True,
+        "//conditions:default": False,
+    }),
+    feature_name = "tsan",
+    flag_sets = ["@pw_toolchain//flag_sets:tsan"],
+    requires_any_of = [":tsan_constraint"],
+)
+
+pw_cc_feature_set(
+    name = "tsan_constraint",
+    # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
+    # -fsanitize=undefined is not be specified during Rust linking.
+    all_of = [":rules_rust_unsupported_feature"],
+)
+
 # This is a sentinel feature defined by rules_rust. It is by definition
 # unsupported: rules_rust will disable this feature when linking Rust code.
 pw_cc_feature(
@@ -300,6 +330,7 @@ pw_cc_toolchain(
     toolchain_features = [
         ":asan_feature",
         ":ubsan_feature",
+        ":tsan_feature",
         ":verbose_compiler_output",
         ":rules_rust_unsupported_feature",
         ":supports_pic",
