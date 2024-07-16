@@ -163,6 +163,8 @@ cc_library(
     srcs = [
         "ecdsa_uecc.cc",
     ],
+    # TODO: b/261603269 - Get this to build.
+    tags = ["manual"],
     deps = [
         ":ecdsa.facade",
         "//pw_log",
