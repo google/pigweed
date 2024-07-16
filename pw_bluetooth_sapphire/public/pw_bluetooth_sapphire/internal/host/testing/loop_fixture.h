@@ -24,6 +24,7 @@ class TestLoopFixture : public ::testing::Test {
  public:
   async_dispatcher_t* dispatcher() { return loop_.dispatcher(); }
   void RunLoopUntilIdle() { loop_.RunUntilIdle(); }
+  void RunLoopFor(zx::duration duration) { loop_.RunFor(duration); }
 
  private:
   async::TestLoop loop_;
