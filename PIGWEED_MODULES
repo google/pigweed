@@ -8,6 +8,7 @@ pw_assert
 pw_assert_basic
 pw_assert_log
 pw_assert_tokenized
+pw_assert_trap
 pw_assert_zephyr
 pw_async
 pw_async2

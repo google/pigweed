@@ -1,0 +1,159 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_library(
+    name = "config",
+    hdrs = ["public/pw_assert_trap/config.h"],
+    includes = ["public"],
+)
+
+# Note: to avoid circular dependencies, this target only includes the headers
+# for pw_assert_trap. The source file and its dependencies are in the separate
+# ":impl" target.
+#
+# If you point //pw_assert:check_backend and //pw_assert:assert_backend to
+# //pw_assert_trap, then //pw_assert:check_backend_impl and
+# //pw_assert:assert_backend_impl should point to //pw_assert_trap:impl.
+cc_library(
+    name = "pw_assert_trap",
+    hdrs = [
+        "assert_public_overrides/pw_assert_backend/assert_backend.h",
+        "check_public_overrides/pw_assert_backend/check_backend.h",
+        "public/pw_assert_trap/assert_trap.h",
+        "public/pw_assert_trap/check_trap.h",
+    ],
+    includes = [
+        "assert_public_overrides",
+        "check_public_overrides",
+        "public",
+    ],
+    deps = [
+        ":handler",
+        "//pw_assert:check.facade",
+        "//pw_preprocessor",
+    ],
+)
+
+cc_library(
+    name = "handler",
+    hdrs = [
+        "public/pw_assert_trap/handler.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+cc_library(
+    name = "message",
+    hdrs = [
+        "public/pw_assert_trap/message.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        "//pw_string:string",
+    ],
+)
+
+cc_library(
+    name = "impl",
+    srcs = [
+        "trap_handler.cc",
+    ],
+    copts = ["-Wno-thread-safety-analysis"],
+    deps = [
+        ":config",
+        ":handler",
+        ":message",
+        "//pw_string:builder",
+        "//pw_sync:interrupt_spin_lock",
+    ],
+    # Other libraries may not always depend on this library, even if it is
+    # necessary at link time.
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "assert_backend",
+    hdrs = [
+        "assert_public_overrides/pw_assert_backend/assert_backend.h",
+        "public/pw_assert_trap/assert_tokenized.h",
+    ],
+    deps = [
+        ":handler",
+    ],
+)
+
+cc_library(
+    name = "check_backend",
+    hdrs = [
+        "check_public_overrides/pw_assert_backend/check_backend.h",
+        "public/pw_assert_trap/check_tokenized.h",
+    ],
+    deps = [
+        ":handler",
+    ],
+)
+
+# provide a test implementation which is compiled with a different set of
+# defines to allow unittesting.
+cc_library(
+    name = "impl_test",
+    srcs = [
+        "trap_handler.cc",
+    ],
+    copts = ["-Wno-thread-safety-analysis"],
+    defines = [
+        # Disable the trap to allow testing to continue
+        "_PW_ASSERT_TRAP_DISABLE_TRAP_FOR_TESTING=1",
+        # Disable the capture of location info to ensure tests are portable
+        "PW_ASSERT_TRAP_DISABLE_LOCATION_CAPTURE=1",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":config",
+        ":handler",
+        ":message",
+        "//pw_string:builder",
+        "//pw_sync:interrupt_spin_lock",
+    ],
+)
+
+pw_cc_test(
+    name = "handler_test",
+    srcs = [
+        "trap_handler_test.cc",
+    ],
+    # TODO: https://pwbug.dev/351889230 - this fails when trap is the used
+    # as the system assert backend, so disable and only run manually.
+    tags = ["manual"],
+    deps = [
+        ":impl_test",
+        ":pw_assert_trap",
+    ],
+)
