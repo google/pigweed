@@ -310,6 +310,10 @@ class GitRepo:
         match = regex.search(message)
         return match.group(1) if match else None
 
+    def commit_parents(self, commit: str = 'HEAD') -> list[str]:
+        args = ['log', '--pretty=%P', '-n', '1', commit]
+        return self._git(*args).split()
+
 
 def find_git_repo(path_in_repo: Path, tool_runner: ToolRunner) -> GitRepo:
     """Tries to find the root of the Git repo that owns ``path_in_repo``.
