@@ -20,6 +20,9 @@ the License.
      so that people who navigate the site with their keyboard don't need to
      tab through the entire site nav. https://pwbug.dev/344643289 #}
   <a id="skip" href="#skip-target">Skip to main content</a>
+  <!-- Preconnect with Google Fonts to speed up font loading. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {{ super() }}
 {% endblock body %}
 

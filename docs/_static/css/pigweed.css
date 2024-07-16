@@ -19,10 +19,9 @@
 /* Make the "Pigweed" logo text. One day, this will be an image. */
 .sidebar-brand {
   font-size: 2em;
-  font-family: 'Inconsolata', monospace;
+  font-family: "Lato", sans-serif;
   font-weight: bold;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-style: italic;
 }
 
 .sidebar-brand-text {
@@ -53,6 +52,19 @@ a:focus, area:focus, button:focus, input:focus, select:focus, textarea:focus {
 }
 
 /********** General document coloring ***********/
+
+code, pre {
+  font-family: "Roboto Mono", monospace;
+}
+
+div, li, p {
+  font-family: "Noto Sans", sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Lato", sans-serif;
+  font-weight: bold;
+}
 
 /* Code blocks inside block quotes end up getting italicized. */
 blockquote {

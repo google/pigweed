@@ -153,3 +153,22 @@ Background:
 * `Second fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162990>`_
 * `Third fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168555>`_
 * `Fourth fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178591>`_
+
+.. _docs-contrib-docs-website-fonts:
+
+--------------------
+Fonts and typography
+--------------------
+``pigweed.dev`` is taking an iterative approach to its fonts and typography.
+See :bug:`353530954` for context, examples of how to update fonts, and to
+leave feedback.
+
+.. _Typography: https://m3.material.io/styles/typography/fonts
+
+Rationale for current choices:
+
+* Headings: ``Lato``. Per UX team's recommendation.
+* Copy: ``Noto Sans``. ``Noto`` is one of two fonts recommended by Material
+  Design 3. It seems to complement ``Lato`` well. See `Typography`_.
+* Code: ``Roboto Mono``. Also per UX team's recommendation. ``Roboto Mono``
+  is mature and well-established in this space.
