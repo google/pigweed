@@ -40,8 +40,11 @@ export const targetCompileCommandsPath = (target: string) =>
 export async function availableTargets(): Promise<string[]> {
   // Get the name of every sub dir in the compile commands dir that contains
   // a compile commands file.
-  return (await glob(`**/${CDB_FILE_NAME}`, { cwd: CDB_DIR() })).map((path) =>
-    basename(dirname(path)),
+  return (
+    (await glob(`**/${CDB_FILE_NAME}`, { cwd: CDB_DIR() }))
+      .map((path) => basename(dirname(path)))
+      // Filter out a catch-all database in the root compile commands dir
+      .filter((name) => name.trim() !== '.')
   );
 }
 
