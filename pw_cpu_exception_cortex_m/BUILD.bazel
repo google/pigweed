@@ -260,6 +260,11 @@ pw_cc_test(
         "@platforms//cpu:armv6-m": ["exception_entry_test_armv6m.cc"],
         "//conditions:default": ["exception_entry_test.cc"],
     }),
+    # TODO: https://pwbug.dev/323215726 - Broken on Cortex-M33.
+    target_compatible_with = select({
+        "@platforms//cpu:armv8-m": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":config",
         ":cpu_exception",
@@ -282,46 +287,27 @@ pw_cc_test(
     ],
 )
 
-# This test defines a crash backend so one must not be specified.
-cc_library(
-    name = "crash_test_util",
+pw_cc_test(
+    name = "crash_test",
     srcs = [
         "crash.cc",
-    ],
-    hdrs = [
+        "crash_test.cc",
         "private/pw_cpu_exception_cortex_m_backend/crash.h",
         "public/pw_cpu_exception_cortex_m/crash.h",
     ],
-    # TODO: https://pwbug.dev/350758633 - add v6m support
+    includes = ["private"],
+    # TODO: https://pwbug.dev/350758633 - Add v6m support.
+    # TODO: https://pwbug.dev/353533678 - Failing on Cortex-M33 right now.
     target_compatible_with = select({
         "@platforms//cpu:armv7-m": [],
         "@platforms//cpu:armv7e-m": [],
         "@platforms//cpu:armv7e-mf": [],
-        "@platforms//cpu:armv8-m": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    visibility = ["//visibility:private"],
     deps = [
         ":config",
         ":cortex_m_constants",
         ":cpu_state",
-        ":util",
-        "//pw_cpu_exception:entry",
-        "//pw_preprocessor",
-        "//pw_preprocessor:cortex_m",
-    ],
-)
-
-pw_cc_test(
-    name = "crash_test",
-    srcs = [
-        "crash_test.cc",
-    ],
-    deps = [
-        ":config",
-        ":cortex_m_constants",
-        ":cpu_state",
-        ":crash_test_util",
         ":util",
         "//pw_cpu_exception:entry",
         "//pw_preprocessor",
