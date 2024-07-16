@@ -74,6 +74,7 @@ cc_library(
     name = "std_file_stream",
     srcs = ["std_file_stream.cc"],
     hdrs = ["public/pw_stream/std_file_stream.h"],
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":pw_stream",
         "//pw_assert",
