@@ -19,6 +19,7 @@ import path from 'path';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
 import postcss from 'rollup-plugin-postcss';
 import sourceMaps from 'rollup-plugin-sourcemaps';
+import terser from '@rollup/plugin-terser';
 
 export default [
   // Bundle proto collection script
@@ -151,6 +152,9 @@ export default [
 
       // Resolve source maps to the original source
       sourceMaps(),
+
+      // Minify builds
+      terser(),
     ],
   },
   // Bundle Pigweed modules
