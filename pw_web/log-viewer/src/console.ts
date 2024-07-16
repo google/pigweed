@@ -59,9 +59,6 @@ function formatDate(dt: Date) {
 
 // New LogSource to consume pw-console log json messages
 class PwConsoleLogSource extends LogSource {
-  constructor() {
-    super('PWConsole');
-  }
   // @ts-ignore
   appendLog(data) {
     const fields = [
@@ -69,7 +66,7 @@ class PwConsoleLogSource extends LogSource {
       { key: 'severity', value: logLevelToSeverity[data.levelno] },
       { key: 'time', value: data.time },
     ];
-    Object.keys(data.fields).forEach((columnName) => {
+    Object.keys(data.fields || {}).forEach((columnName) => {
       if (nonAdditionalDataFields.indexOf(columnName) === -1) {
         fields.push({ key: columnName, value: data.fields[columnName] });
       }
@@ -95,14 +92,28 @@ export async function renderPWConsole(
   const replContainerEl = document.createElement('div');
   replContainerEl.id = 'repl-container';
   createSplitPanel(logsContainerEl, replContainerEl, containerEl);
-  const logSource = new PwConsoleLogSource();
-  const unsubscribe = createLogViewer(logSource, logsContainerEl);
+
   const ws = new WebSocket(wsUrl);
   const kernel = new WebSocketRPCClient(ws);
-  kernel.openStream('log_source_subscribe', { name: 'Fake Device' }, (data) => {
-    if (data.log_line)
-      logSource.appendLog({ ...data.log_line, time: formatDate(new Date()) });
+  const allLogSourceNames: string[] = await kernel.call('log_source_list', {
+    filter: '',
   });
+  const logSources = allLogSourceNames.map(
+    (name) => new PwConsoleLogSource(name),
+  );
+  logSources.forEach((source, index) => {
+    kernel.openStream(
+      'log_source_subscribe',
+      { name: allLogSourceNames[index] },
+      (data) => {
+        if (data.log_line)
+          source.appendLog({ ...data.log_line, time: formatDate(new Date()) });
+      },
+    );
+  });
+
+  const unsubscribe = createLogViewer(logSources, logsContainerEl);
+
   const rpc = new WebSocketRPCReplKernel(kernel);
   const repl = new Repl(rpc);
   replContainerEl.appendChild(repl);

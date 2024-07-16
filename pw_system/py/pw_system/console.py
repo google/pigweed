@@ -216,9 +216,16 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
         log_windows['Serial Debug'] = serial_debug_log_store
 
     if browser:
+        loggers: dict[str, list[logging.Logger]] = {
+            "Device Logs": [_DEVICE_LOG],
+            "Host Logs": [_ROOT_LOG],
+        }
+        if serial_debug:
+            loggers['Serial Debug'] = [_SERIAL_DEBUG]
+
         webserver = web.PwConsoleWeb(
             global_vars=local_variables,
-            loggers=log_windows,
+            loggers=loggers,
         )
         webserver.start()
     else:

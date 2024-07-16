@@ -121,6 +121,38 @@ export default [
       sourceMaps(),
     ],
   },
+  // Bundle pw_console's web counterparts
+  {
+    input: path.join('ts', 'console.ts'),
+    output: [
+      {
+        file: path.join('dist', 'pw_console.umd.js'),
+        format: 'umd',
+        sourcemap: true,
+        name: 'PWConsole',
+        inlineDynamicImports: true,
+      },
+      {
+        file: path.join('dist', 'pw_console.mjs'),
+        format: 'esm',
+        sourcemap: true,
+        inlineDynamicImports: true,
+      },
+    ],
+    plugins: [
+      postcss({ plugins: [] }),
+      pluginTypescript({
+        tsconfig: './tsconfig.json',
+        exclude: ['**/*_test.ts'],
+      }),
+      nodePolyfills(),
+      resolve(),
+      commonjs(),
+
+      // Resolve source maps to the original source
+      sourceMaps(),
+    ],
+  },
   // Bundle Pigweed modules
   {
     input: path.join('ts', 'index.ts'),

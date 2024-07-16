@@ -137,9 +137,14 @@ def main(args: argparse.Namespace | None = None) -> int:
         )
 
     if args.browser:
+        loggers = {
+            'Fake Device': [fake_logger],
+            'PwConsole Debug': [logging.getLogger('pw_console')],
+            'All Logs': [_ROOT_LOG],
+        }
         webserver = PwConsoleWeb(
             global_vars=global_vars,
-            loggers=default_loggers,
+            loggers=loggers,
             test_mode=args.test_mode,
         )
         webserver.start()
