@@ -56,6 +56,8 @@ cc_binary(
     features = ["-pic"],
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:tsan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:ubsan_enabled": ["@platforms//:incompatible"],
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
@@ -77,6 +79,8 @@ cc_binary(
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:tsan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:ubsan_enabled": ["@platforms//:incompatible"],
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
@@ -94,6 +98,8 @@ cc_binary(
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:tsan_enabled": ["@platforms//:incompatible"],
+        "//pw_toolchain/host_clang:ubsan_enabled": ["@platforms//:incompatible"],
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
