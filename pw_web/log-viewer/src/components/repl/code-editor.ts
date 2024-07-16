@@ -24,6 +24,7 @@ import { AutocompleteSuggestion } from '../../repl-kernel';
 import { styles } from './code-editor.styles';
 import { themeDark } from '../../themes/dark';
 import { themeLight } from '../../themes/light';
+import { insertNewlineAndIndent } from '@codemirror/commands';
 
 type AutocompleteHandler = (
   code: string,
@@ -64,8 +65,13 @@ export class CodeEditor extends LitElement {
         Prec.highest(
           keymap.of([
             {
-              key: 'Mod-Enter',
+              key: 'Enter',
+              shift: (view) => {
+                insertNewlineAndIndent(view);
+                return true;
+              },
               run: () => {
+                // Shift key is not pressed, evaluate
                 this.handleEval();
                 return true;
               },
