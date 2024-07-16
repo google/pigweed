@@ -17,6 +17,8 @@ import * as vscode from 'vscode';
 import { glob } from 'glob';
 import { basename, dirname, join } from 'path';
 
+import { refreshCompileCommands } from './bazelWatcher';
+import { refreshManager } from './refreshManager';
 import { settingFor, settings, stringSettingFor, workingDir } from './settings';
 import { troubleshootingLink } from './links';
 
@@ -73,11 +75,25 @@ export async function setTarget(target: string): Promise<void> {
   );
 }
 
-function onSetTargetSelection(target: string | undefined) {
+const setCompileCommandsCallbacks: ((target: string) => void)[] = [];
+
+/**
+ * Register callbacks to be called when the target is changed.
+ *
+ * Setting the target does persist the target into settings, where it can be
+ * retrieved by other functions. But there's enough asyncronicity in that
+ * procedure that it's more reliable to just get the target name directly, so
+ * we provide it to the callbacks.
+ */
+export function onSetCompileCommands(cb: (target: string) => void) {
+  setCompileCommandsCallbacks.push(cb);
+}
+
+async function onSetTargetSelection(target: string | undefined) {
   if (target) {
     vscode.window.showInformationMessage(`Analysis target set to: ${target}`);
-
-    setTarget(target);
+    await setTarget(target);
+    setCompileCommandsCallbacks.forEach((cb) => cb(target));
   }
 }
 
@@ -99,4 +115,10 @@ export async function setCompileCommandsTarget() {
       canPickMany: false,
     })
     .then(onSetTargetSelection);
+}
+
+export async function refreshCompileCommandsAndSetTarget() {
+  await refreshCompileCommands();
+  await refreshManager.waitFor('didRefresh');
+  await setCompileCommandsTarget();
 }

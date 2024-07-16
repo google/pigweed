@@ -52,6 +52,10 @@
         "title": "Pigweed: Refresh Compile Commands"
       },
       {
+        "command": "pigweed.refresh-compile-commands-and-set-target",
+        "title": "Pigweed: Refresh Compile Commands and Set Code Analysis Target"
+      },
+      {
         "command": "pigweed.select-target",
         "title": "Pigweed: Select Code Analysis Target"
       },

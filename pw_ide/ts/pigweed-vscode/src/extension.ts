@@ -14,7 +14,11 @@
 
 import * as vscode from 'vscode';
 
-import { setCompileCommandsTarget } from './clangd';
+import {
+  onSetCompileCommands,
+  refreshCompileCommandsAndSetTarget,
+  setCompileCommandsTarget,
+} from './clangd';
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
 import { fileBug, launchTroubleshootingLink } from './links';
@@ -36,6 +40,10 @@ import {
   configureOtherBazelSettings,
   setBazelRecommendedSettings,
 } from './bazel';
+import {
+  getStatusBarItem as getCompileCommandsStatusBarItem,
+  updateStatusBarItem as updateCompileCommandsStatusBarItem,
+} from './statusBar';
 
 // Anything that needs to be disposed of should be stored here.
 const disposables: { dispose: () => void }[] = [output, refreshManager];
@@ -104,6 +112,13 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
+      'pigweed.refresh-compile-commands-and-set-target',
+      refreshCompileCommandsAndSetTarget,
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
       'pigweed.set-bazelisk-path',
       interactivelySetBazeliskPath,
     ),
@@ -138,6 +153,15 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
       ),
     ),
   );
+
+  context.subscriptions.push(getCompileCommandsStatusBarItem());
+  onSetCompileCommands(updateCompileCommandsStatusBarItem);
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'idle');
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'willRefresh');
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'refreshing');
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'didRefresh');
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'abort');
+  refreshManager.on(updateCompileCommandsStatusBarItem, 'fault');
 
   if (!settings.disableCompileCommandsFileWatcher()) {
     await vscode.commands.executeCommand('pigweed.refresh-compile-commands');
