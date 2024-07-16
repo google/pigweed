@@ -18,6 +18,7 @@
 #include <array>
 #include <cctype>
 #include <cstring>
+#include <string>
 
 #include "pw_varint/varint.h"
 

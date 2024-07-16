@@ -14,6 +14,7 @@
 
 #include "pw_kvs/key.h"
 
+#include <string>
 #include <string_view>
 
 #include "pw_unit_test/framework.h"

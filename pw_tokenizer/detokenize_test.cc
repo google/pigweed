@@ -14,6 +14,7 @@
 
 #include "pw_tokenizer/detokenize.h"
 
+#include <string>
 #include <string_view>
 
 #include "pw_tokenizer/example_binary_with_tokenized_strings.h"

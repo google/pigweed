@@ -14,6 +14,8 @@
 
 #include "pw_unit_test/test_record_event_handler.h"
 
+#include <string>
+
 #include "pw_assert/assert.h"
 #include "pw_unit_test/framework.h"
 

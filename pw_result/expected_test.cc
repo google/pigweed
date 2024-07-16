@@ -14,6 +14,8 @@
 
 #include "pw_result/expected.h"
 
+#include <string>
+
 #include "pw_unit_test/framework.h"
 
 namespace pw {
