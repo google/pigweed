@@ -177,6 +177,23 @@
             "--test_tag_filters=integration",
             "//..."
           ]
+        ],
+        "sanitizers": [
+          [
+            "test",
+            "--config=asan",
+            "//..."
+          ],
+          [
+            "test",
+            "--config=tsan",
+            "//..."
+          ],
+          [
+            "test",
+            "--config=ubsan",
+            "//..."
+          ]
         ]
       }
     }
