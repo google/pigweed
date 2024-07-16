@@ -57,18 +57,23 @@ def find_available_port(start_port=8080, max_retries=100) -> int:
 def pw_console_http_server(
     start_port: int, html_files: dict[str, str], kernel_params
 ) -> None:
-    handler = WebHandlers(html_files=html_files, kernel_params=kernel_params)
-    runner = aiohttp_server(handler.handle_request)
-    port = find_available_port(start_port)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, 'localhost', port)
-    loop.run_until_complete(site.start())
-    url = f'http://localhost:{port}'
-    print(url)
-    webbrowser.open(url)
-    loop.run_forever()
+    try:
+        handler = WebHandlers(
+            html_files=html_files, kernel_params=kernel_params
+        )
+        runner = aiohttp_server(handler.handle_request)
+        port = find_available_port(start_port)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(runner.setup())
+        site = web.TCPSite(runner, 'localhost', port)
+        loop.run_until_complete(site.start())
+        url = f'http://localhost:{port}'
+        print(url)
+        webbrowser.open(url)
+        loop.run_forever()
+    except KeyboardInterrupt:
+        loop.stop()
 
 
 class WebHandlers:
@@ -115,21 +120,28 @@ class WebHandlers:
             },
         )
 
-    async def handle_websocket(self, request) -> web.WebSocketResponse:
+    async def handle_websocket(
+        self, request: web.Request
+    ) -> web.WebSocketResponse:
+        """Handle a websocket connection request by creating a new web kernel"""
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         kernel = WebKernel(ws, self.kernel_params)
-        async for msg in ws:
-            if msg.type == WSMsgType.TEXT:
-                if msg.data == 'close':
-                    kernel.handle_disconnect()
-                    await ws.close()
-                else:
+        try:
+            async for msg in ws:
+                if msg.type == WSMsgType.TEXT:
+                    if msg.data == 'close':
+                        return ws
+
                     response = await kernel.handle_request(msg.data)
                     await ws.send_str(response)
-            elif msg.type == WSMsgType.ERROR:
-                _LOG.warning(
-                    'ws connection closed with exception: %s', ws.exception()
-                )
+                elif msg.type == WSMsgType.ERROR:
+                    _LOG.warning(
+                        'ws connection closed with exception: %s',
+                        ws.exception(),
+                    )
+        finally:
+            kernel.handle_disconnect()
+            await ws.close()
 
         return ws

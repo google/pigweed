@@ -22,6 +22,7 @@ import sys
 import types
 from typing import Callable, TYPE_CHECKING, List, Dict, Any
 
+from aiohttp import web
 from prompt_toolkit.completion import CompleteEvent
 from prompt_toolkit.document import Document
 from ptpython.completer import PythonCompleter
@@ -121,10 +122,15 @@ class WebSocketStreamingResponder(logging.Handler):
 class WebKernel:
     """Web Kernel implementation."""
 
-    def __init__(self, connection, kernel_params):
+    def __init__(
+        self,
+        connection: web.WebSocketResponse,
+        kernel_params,
+    ) -> None:
+        """Create a new kernel for this particular websocket connection."""
         self.connection = connection
         self.kernel_params = kernel_params
-        self.logger_handlers = {}
+        self.logger_handlers: Dict[str, WebSocketStreamingResponder] = {}
         self.connected = False
         self.python_completer = PythonCompleter(
             self.get_globals,
@@ -304,13 +310,15 @@ class WebKernel:
     def handle_disconnect(self) -> None:
         _LOG.info('pw_console.web_kernel disconnecting.')
         self.connected = False
+        # Clean up all log handlers as we are shutting down
+        for logger_name in self.kernel_params['loggers'].keys():
+            for logger in self.kernel_params['loggers'][logger_name]:
+                logger.removeHandler(self.logger_handlers[logger_name])
 
-    def get_globals(self) -> dict[str, Any] | None:
-        if self.kernel_params['global_vars']:
-            return self.kernel_params['global_vars']
-        return None
+    def get_globals(self) -> dict[str, Any]:
+        return self.kernel_params['global_vars']
 
-    def get_locals(self) -> dict[str, Any] | None:
+    def get_locals(self) -> dict[str, Any]:
         if self.kernel_params['local_vars']:
             return self.kernel_params['local_vars']
 
