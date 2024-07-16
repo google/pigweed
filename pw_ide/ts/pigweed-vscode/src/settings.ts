@@ -28,9 +28,11 @@ export interface Settings {
   codeAnalysisTarget: Setting<string>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
+  disableCompileCommandsFileWatcher: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
   projectRoot: Setting<string>;
   projectType: Setting<ProjectType>;
+  refreshCompileCommandsTarget: Setting<string>;
   terminalShell: Setting<TerminalShell>;
 }
 
@@ -135,6 +137,16 @@ function disableBazeliskCheck(value?: boolean): boolean | undefined {
   update(value);
 }
 
+function disableCompileCommandsFileWatcher(): boolean;
+function disableCompileCommandsFileWatcher(value: boolean | undefined): void;
+function disableCompileCommandsFileWatcher(
+  value?: boolean,
+): boolean | undefined {
+  const { get, update } = boolSettingFor('disableCompileCommandsFileWatcher');
+  if (!value) return get() ?? false;
+  update(value);
+}
+
 function enforceExtensionRecommendations(): boolean;
 function enforceExtensionRecommendations(value: boolean | undefined): void;
 function enforceExtensionRecommendations(value?: boolean): boolean | undefined {
@@ -159,6 +171,14 @@ function projectType(value?: ProjectType | undefined): ProjectType | undefined {
   update(value);
 }
 
+function refreshCompileCommandsTarget(): string;
+function refreshCompileCommandsTarget(value: string | undefined): void;
+function refreshCompileCommandsTarget(value?: string): string | undefined {
+  const { get, update } = stringSettingFor('refreshCompileCommandsTarget');
+  if (!value) return get() ?? '//:refresh_compile_commands';
+  update(value);
+}
+
 function terminalShell(): TerminalShell;
 function terminalShell(value: TerminalShell | undefined): void;
 function terminalShell(
@@ -174,9 +194,11 @@ export const settings: Settings = {
   codeAnalysisTarget,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
+  disableCompileCommandsFileWatcher,
   enforceExtensionRecommendations,
   projectRoot,
   projectType,
+  refreshCompileCommandsTarget,
   terminalShell,
 };
 

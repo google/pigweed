@@ -20,10 +20,15 @@ import logger, { output } from './logging';
 import { fileBug, launchTroubleshootingLink } from './links';
 import { settings, workingDir } from './settings';
 import {
+  initRefreshCompileCommandsWatcher,
+  refreshCompileCommands,
+} from './bazelWatcher';
+import {
   getPigweedProjectRoot,
   isBazelWorkspaceProject,
   isBootstrapProject,
 } from './project';
+import { refreshManager } from './refreshManager';
 import { launchBootstrapTerminal, launchTerminal } from './terminal';
 import {
   interactivelySetBazeliskPath,
@@ -31,6 +36,9 @@ import {
   configureOtherBazelSettings,
   setBazelRecommendedSettings,
 } from './bazel';
+
+// Anything that needs to be disposed of should be stored here.
+const disposables: { dispose: () => void }[] = [output, refreshManager];
 
 function registerUniversalCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -62,6 +70,14 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.refresh-compile-commands', () =>
+      vscode.window.showWarningMessage(
+        'This command is currently not supported with Bootstrap projects',
+      ),
+    ),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.set-bazelisk-path', () =>
       vscode.window.showWarningMessage(
         'This command is currently not supported with Bootstrap projects',
@@ -78,7 +94,14 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
   );
 }
 
-function registerBazelCommands(context: vscode.ExtensionContext) {
+async function registerBazelCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.refresh-compile-commands',
+      refreshCompileCommands,
+    ),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'pigweed.set-bazelisk-path',
@@ -115,6 +138,11 @@ function registerBazelCommands(context: vscode.ExtensionContext) {
       ),
     ),
   );
+
+  if (!settings.disableCompileCommandsFileWatcher()) {
+    await vscode.commands.executeCommand('pigweed.refresh-compile-commands');
+    disposables.push(initRefreshCompileCommandsWatcher());
+  }
 }
 
 /**
@@ -150,7 +178,7 @@ async function configureProject(context: vscode.ExtensionContext) {
       isBazelWorkspaceProject(projectRoot)
     ) {
       output.appendLine('This is a Bazel project');
-      registerBazelCommands(context);
+      await registerBazelCommands(context);
       configureBazelisk();
       configureOtherBazelSettings();
     } else {
@@ -248,5 +276,5 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  output.dispose();
+  disposables.forEach((item) => item.dispose());
 }

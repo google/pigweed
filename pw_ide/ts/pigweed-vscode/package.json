@@ -48,6 +48,10 @@
         "title": "Pigweed: Bootstrap Activated Terminal"
       },
       {
+        "command": "pigweed.refresh-compile-commands",
+        "title": "Pigweed: Refresh Compile Commands"
+      },
+      {
         "command": "pigweed.select-target",
         "title": "Pigweed: Select Code Analysis Target"
       },
@@ -77,6 +81,11 @@
           "default": "false",
           "description": "Disable the recommendation to use Bazelisk"
         },
+        "pigweed.disableCompileCommandsFileWatcher": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Disable automatically refreshing compile commands"
+        },
         "pigweed.enforceExtensionRecommendations": {
           "type": "boolean",
           "default": "false",
@@ -93,6 +102,11 @@
             "bazel"
           ],
           "description": "The type of Pigweed project, either bootstrap or Bazel"
+        },
+        "pigweed.refreshCompileCommandsTarget": {
+          "type": "string",
+          "default": "//:refresh_compile_commands",
+          "description": "The Bazel target to run to refresh compile commands"
         },
         "pigweed.terminalShell": {
           "type": "string",
