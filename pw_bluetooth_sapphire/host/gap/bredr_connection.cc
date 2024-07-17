@@ -32,7 +32,7 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
                                  fit::closure on_peer_disconnect_cb,
                                  l2cap::ChannelManager* l2cap,
                                  hci::Transport::WeakPtr transport,
-                                 std::optional<Request> request,
+                                 std::optional<BrEdrConnectionRequest> request,
                                  pw::async::Dispatcher& dispatcher)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
@@ -94,7 +94,7 @@ void BrEdrConnection::OnInterrogationComplete() {
 }
 
 void BrEdrConnection::AddRequestCallback(
-    BrEdrConnection::Request::OnComplete cb) {
+    BrEdrConnectionRequest::OnComplete cb) {
   if (!request_.has_value()) {
     cb(fit::ok(), this);
     return;

@@ -41,7 +41,6 @@ class BrEdrConnection final {
   // authenticaion request HCI command. |disconnect_cb| is called when an error
   // occurs and the link should be disconnected. |on_peer_disconnect_cb| is
   // called when the peer disconnects and this connection should be destroyed.
-  using Request = BrEdrConnectionRequest;
   BrEdrConnection(Peer::WeakPtr peer,
                   std::unique_ptr<hci::BrEdrConnection> link,
                   fit::closure send_auth_request_cb,
@@ -49,7 +48,7 @@ class BrEdrConnection final {
                   fit::closure on_peer_disconnect_cb,
                   l2cap::ChannelManager* l2cap,
                   hci::Transport::WeakPtr transport,
-                  std::optional<Request> request,
+                  std::optional<BrEdrConnectionRequest> request,
                   pw::async::Dispatcher& pw_dispatcher);
 
   ~BrEdrConnection();
@@ -68,7 +67,7 @@ class BrEdrConnection final {
   // Add a request callback that will be called when OnInterrogationComplete()
   // is called (or immediately if OnInterrogationComplete() has already been
   // called).
-  void AddRequestCallback(Request::OnComplete cb);
+  void AddRequestCallback(BrEdrConnectionRequest::OnComplete cb);
 
   // If |OnInterrogationComplete| has been called, opens an L2CAP channel using
   // the preferred parameters |params| on the L2cap provided. Otherwise, calls
@@ -125,7 +124,7 @@ class BrEdrConnection final {
   PeerId peer_id_;
   Peer::WeakPtr peer_;
   std::unique_ptr<hci::BrEdrConnection> link_;
-  std::optional<Request> request_;
+  std::optional<BrEdrConnectionRequest> request_;
   std::unique_ptr<PairingStateManager> pairing_state_manager_;
   l2cap::ChannelManager* l2cap_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
