@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <lib/fit/defer.h>
+#include <pw_bytes/endian.h>
 
 #include <type_traits>
 
@@ -557,7 +558,8 @@ void Bearer::SendErrorResponse(OpCode request_opcode,
   PacketWriter packet(kErrorResponse, buffer.get());
   auto* payload = packet.mutable_payload<ErrorResponseParams>();
   payload->request_opcode = request_opcode;
-  payload->attribute_handle = htole16(attribute_handle);
+  payload->attribute_handle =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, attribute_handle);
   payload->error_code = error_code;
 
   chan_->Send(std::move(buffer));
@@ -588,7 +590,8 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
       const auto& payload = packet.payload<ErrorResponseParams>();
       target_opcode = payload.request_opcode;
       const ErrorCode error_code = payload.error_code;
-      const Handle attr_in_error = le16toh(payload.attribute_handle);
+      const Handle attr_in_error = pw::bytes::ConvertOrderFrom(
+          cpp20::endian::little, payload.attribute_handle);
       error.emplace(std::pair(Error(error_code), attr_in_error));
     } else {
       bt_log(DEBUG, "att", "received malformed error response");
