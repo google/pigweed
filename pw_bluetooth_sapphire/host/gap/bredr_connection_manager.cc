@@ -247,8 +247,10 @@ BrEdrConnectionManager::~BrEdrConnectionManager() {
     return;
   }
 
-  if (pending_request_ && pending_request_->Cancel())
+  // Cancel the outstanding HCI_Connection_Request if not already cancelled
+  if (pending_request_ && pending_request_->Cancel()) {
     SendCreateConnectionCancelCommand(pending_request_->peer_address());
+  }
 
   // Become unconnectable
   SetPageScanEnabled(/*enabled=*/false, hci_, [](const auto) {});
@@ -525,8 +527,8 @@ void BrEdrConnectionManager::SetSecurityMode(BrEdrSecurityMode mode) {
   security_mode_.Set(mode);
 
   if (mode == BrEdrSecurityMode::SecureConnectionsOnly) {
-    // `Disconnect`ing the peer must not be done while iterating through
-    // `connections_` as it removes the connection from `connections_`, hence
+    // Disconnecting the peer must not be done while iterating through
+    // |connections_| as it removes the connection from |connections_|, hence
     // the helper vector.
     std::vector<PeerId> insufficiently_secure_peers;
     for (auto& [_, connection] : connections_) {
@@ -1705,11 +1707,12 @@ BrEdrConnectionManager::NextCreateConnectionParams() {
     const Peer* peer = cache_->FindById(peer_id);
     BT_ASSERT(peer);
     if (peer->bredr() && !request.HasIncoming()) {
-      return std::optional(
-          CreateConnectionParams{peer->identifier(),
-                                 request.address(),
-                                 peer->bredr()->clock_offset(),
-                                 peer->bredr()->page_scan_repetition_mode()});
+      return CreateConnectionParams{
+          .peer_id = peer->identifier(),
+          .addr = request.address(),
+          .clock_offset = peer->bredr()->clock_offset(),
+          .page_scan_repetition_mode =
+              peer->bredr()->page_scan_repetition_mode()};
     }
   }
 
@@ -1742,8 +1745,6 @@ void BrEdrConnectionManager::InitiatePendingConnection(
     if (self.is_alive())
       self->OnRequestTimeout();
   };
-  BrEdrConnectionRequest& pending_gap_req =
-      connection_requests_.find(params.peer_id)->second;
   pending_request_.emplace(
       params.peer_id, params.addr, on_timeout, dispatcher_);
   pending_request_->CreateConnection(hci_->command_channel(),
@@ -1751,7 +1752,14 @@ void BrEdrConnectionManager::InitiatePendingConnection(
                                      params.page_scan_repetition_mode,
                                      request_timeout_,
                                      on_failure);
-  pending_gap_req.RecordHciCreateConnectionAttempt();
+
+  // Record that the first create connection attempt was made (if not already
+  // attempted) for the outstanding connection request for peer with id
+  // |peer_id|
+  auto it = connection_requests_.find(params.peer_id);
+  if (it != connection_requests_.end()) {
+    it->second.RecordHciCreateConnectionAttempt();
+  }
 
   inspect_properties_.outgoing_.connection_attempts_.Add(1);
 }

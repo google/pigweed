@@ -409,12 +409,20 @@ class BrEdrConnectionManager final {
   pw::bluetooth::emboss::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
 
-  // True when local host and local controller support BR/EDR Secure Connections
+  // True when local Host and Controller support BR/EDR Secure Connections
   bool local_secure_connections_supported_;
 
-  // Outstanding connection requests based on remote peer ID.
+  // Outstanding incoming and outgoing connection requests from remote peer with
+  // |PeerId|.
   std::unordered_map<PeerId, BrEdrConnectionRequest> connection_requests_;
 
+  // Represents an outgoing HCI_Connection_Request that has not been fulfilled.
+  // There may only be one outstanding request at any given time.
+  //
+  // This request is fulfilled on either an HCI_Connection_Complete event from
+  // the peer this request was sent to or a failure during the connection
+  // process. This request might not complete if the connection closes or if the
+  // request times out.
   std::optional<hci::BrEdrConnectionRequest> pending_request_;
 
   // Time after which a connection attempt is considered to have timed out.
