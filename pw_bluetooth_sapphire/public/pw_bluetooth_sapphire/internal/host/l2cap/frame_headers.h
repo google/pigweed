@@ -13,7 +13,8 @@
 // the License.
 
 #pragma once
-#include <endian.h>
+
+#include <pw_bytes/endian.h>
 
 #include <cstdint>
 #include <type_traits>
@@ -51,55 +52,75 @@ struct EnhancedControlField {
   EnhancedControlField() : raw_value(0) {}
 
   bool designates_information_frame() const {
-    return !(le16toh(raw_value) & 0b1);
+    return !(pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
+             0b1);
   }
-  bool designates_supervisory_frame() const { return le16toh(raw_value) & 0x1; }
+  bool designates_supervisory_frame() const {
+    return pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) & 0x1;
+  }
   bool designates_start_of_segmented_sdu() const {
     return designates_information_frame() &&
-           ((le16toh(raw_value) & (0b11 << 14)) == (0b01 << 14));
+           ((pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
+             (0b11 << 14)) == (0b01 << 14));
   }
   // Returns true for all segmented frames, including the start-of-segment frame
   // (even though the start-of-segment frame has a different header format).
   bool designates_part_of_segmented_sdu() const {
     return designates_information_frame() &&
-           (le16toh(raw_value) & (0b11 << 14));
+           (pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
+            (0b11 << 14));
   }
 
   void set_supervisory_frame() {
     // See Vol 3, Part A, Section 3.3.2, Table 3.2.
-    raw_value = htole16(le16toh(raw_value) | 0x1);
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= 0x1;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
   uint8_t receive_seq_num() const {
     // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2,
     // Table 3.2.
-    return (le16toh(raw_value) >> 8) & 0b11'1111;
+    return (pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) >>
+            8) &
+           0b11'1111;
   }
 
   bool is_poll_response() const {
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2. The spec calls this the 'final'
     // bit. But poll response seems more intuitive.
-    return le16toh(raw_value) & 0b1000'0000;
+    return pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
+           0b1000'0000;
   }
 
   void set_receive_seq_num(uint8_t seq_num) {
     BT_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
     // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2,
     // Table 3.2.
-    raw_value = htole16(le16toh(raw_value) | (seq_num << 8));
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= seq_num << 8;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
   void set_is_poll_response() {
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2. The spec calls this the 'final'
     // bit. But poll response seems more intuitive.
-    raw_value = htole16(le16toh(raw_value) | 0b1000'0000);
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= 0b1000'0000;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
   void set_segmentation_status(SegmentationStatus status) {
     // "Segmentation and Reassembly - SAR" Vol 3, Part A, Section 3.3.2,
     // Table 3.4.
-    raw_value = htole16((le16toh(raw_value) & 0b0011'1111'1111'1111) |
-                        (static_cast<uint8_t>(status) << 14));
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val &= 0b0011'1111'1111'1111;
+    host_val |= static_cast<uint8_t>(status) << 14;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
  protected:
@@ -122,12 +143,17 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
 
   explicit SimpleInformationFrameHeader(uint8_t tx_seq) {
     BT_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
-    raw_value = htole16(le16toh(raw_value) | (tx_seq << 1));
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= (tx_seq << 1);
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
   uint8_t tx_seq() const {
     BT_DEBUG_ASSERT(!designates_supervisory_frame());
-    return (le16toh(raw_value) & (0b0111'1110)) >> 1;
+    return (pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
+            (0b0111'1110)) >>
+           1;
   }
 } __attribute__((packed));
 
@@ -169,23 +195,30 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
     BT_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
-    raw_value =
-        htole16(le16toh(raw_value) | (static_cast<uint8_t>(sfunc) << 2));
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= static_cast<uint8_t>(sfunc) << 2;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 
   bool is_poll_request() const {
-    return le16toh(raw_value) &
+    return pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
            0b1'0000;  // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
   }
 
   SupervisoryFunction function() const {
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
-    return static_cast<SupervisoryFunction>((le16toh(raw_value) >> 2) & 0b11);
+    return static_cast<SupervisoryFunction>(
+        (pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) >> 2) &
+        0b11);
   }
 
   void set_is_poll_request() {
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
-    raw_value = htole16(le16toh(raw_value) | 0b1'0000);
+    uint16_t host_val =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
+    host_val |= 0b1'0000;
+    raw_value = pw::bytes::ConvertOrderTo(cpp20::endian::little, host_val);
   }
 } __attribute__((packed));
 

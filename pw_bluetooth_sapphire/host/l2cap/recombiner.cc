@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
@@ -101,7 +103,9 @@ Recombiner::Result Recombiner::ProcessFirstFragment(
   // boundary flag contract for the controller-to-host flow direction.
 
   size_t expected_frame_length =
-      le16toh(GetBasicHeader(*fragment).length) + sizeof(BasicHeader);
+      static_cast<uint16_t>(pw::bytes::ConvertOrderFrom(
+          cpp20::endian::little, GetBasicHeader(*fragment).length)) +
+      sizeof(BasicHeader);
 
   if (current_length > expected_frame_length) {
     bt_log(DEBUG,

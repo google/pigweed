@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"
 
-#include <endian.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_configuration.h"

@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_command_handler.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include <type_traits>
 
@@ -29,12 +29,14 @@ namespace bt::l2cap::internal {
 bool BrEdrCommandHandler::ConnectionResponse::Decode(
     const ByteBuffer& payload_buf) {
   auto conn_rsp_payload = payload_buf.To<PayloadT>();
-  remote_cid_ = le16toh(conn_rsp_payload.dst_cid);
-  local_cid_ = le16toh(conn_rsp_payload.src_cid);
-  result_ = static_cast<ConnectionResult>(
-      le16toh(static_cast<uint16_t>(conn_rsp_payload.result)));
-  conn_status_ = static_cast<ConnectionStatus>(
-      le16toh(static_cast<uint16_t>(conn_rsp_payload.status)));
+  remote_cid_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                            conn_rsp_payload.dst_cid);
+  local_cid_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                           conn_rsp_payload.src_cid);
+  result_ = static_cast<ConnectionResult>(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, static_cast<uint16_t>(conn_rsp_payload.result)));
+  conn_status_ = static_cast<ConnectionStatus>(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, static_cast<uint16_t>(conn_rsp_payload.status)));
   return true;
 }
 
@@ -42,10 +44,13 @@ bool BrEdrCommandHandler::ConfigurationResponse::Decode(
     const ByteBuffer& payload_buf) {
   PacketView<PayloadT> config_rsp(&payload_buf,
                                   payload_buf.size() - sizeof(PayloadT));
-  local_cid_ = le16toh(config_rsp.header().src_cid);
-  flags_ = le16toh(config_rsp.header().flags);
-  result_ = static_cast<ConfigurationResult>(
-      le16toh(static_cast<uint16_t>(config_rsp.header().result)));
+  local_cid_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                           config_rsp.header().src_cid);
+  flags_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                       config_rsp.header().flags);
+  result_ = static_cast<ConfigurationResult>(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(config_rsp.header().result)));
 
   if (!config_.ReadOptions(config_rsp.payload_data())) {
     bt_log(WARN,
@@ -60,10 +65,10 @@ bool BrEdrCommandHandler::InformationResponse::Decode(
     const ByteBuffer& payload_buf) {
   PacketView<InformationResponsePayload> info_rsp(
       &payload_buf, payload_buf.size() - sizeof(InformationResponsePayload));
-  type_ =
-      InformationType{le16toh(static_cast<uint16_t>(info_rsp.header().type))};
-  result_ = InformationResult{
-      le16toh(static_cast<uint16_t>(info_rsp.header().result))};
+  type_ = InformationType{pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, static_cast<uint16_t>(info_rsp.header().type))};
+  result_ = InformationResult{pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, static_cast<uint16_t>(info_rsp.header().result))};
   if (result_ != InformationResult::kSuccess) {
     return true;
   }
@@ -108,10 +113,12 @@ void BrEdrCommandHandler::ConnectionResponder::Send(ChannelId local_cid,
                                                     ConnectionResult result,
                                                     ConnectionStatus status) {
   ConnectionResponsePayload conn_rsp = {
-      htole16(local_cid),
-      htole16(remote_cid()),
-      static_cast<ConnectionResult>(htole16(static_cast<uint16_t>(result))),
-      static_cast<ConnectionStatus>(htole16(static_cast<uint16_t>(status)))};
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, local_cid),
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, remote_cid()),
+      static_cast<ConnectionResult>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, static_cast<uint16_t>(result))),
+      static_cast<ConnectionStatus>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, static_cast<uint16_t>(status)))};
   sig_responder_->Send(BufferView(&conn_rsp, sizeof(conn_rsp)));
 }
 
@@ -133,10 +140,13 @@ void BrEdrCommandHandler::ConfigurationResponder::Send(
                                    options_size);
   MutablePacketView<ConfigurationResponsePayload> config_rsp(&config_rsp_buf,
                                                              options_size);
-  config_rsp.mutable_header()->src_cid = htole16(remote_cid);
-  config_rsp.mutable_header()->flags = htole16(flags);
+  config_rsp.mutable_header()->src_cid =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, remote_cid);
+  config_rsp.mutable_header()->flags =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, flags);
   config_rsp.mutable_header()->result =
-      static_cast<ConfigurationResult>(htole16(static_cast<uint16_t>(result)));
+      static_cast<ConfigurationResult>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, static_cast<uint16_t>(result)));
 
   auto payload_view = config_rsp.mutable_payload_data().mutable_view();
   for (auto& option : options) {
@@ -155,8 +165,9 @@ BrEdrCommandHandler::DisconnectionResponder::DisconnectionResponder(
     : Responder(sig_responder, local_cid, remote_cid) {}
 
 void BrEdrCommandHandler::DisconnectionResponder::Send() {
-  DisconnectionResponsePayload discon_rsp = {htole16(local_cid()),
-                                             htole16(remote_cid())};
+  DisconnectionResponsePayload discon_rsp = {
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, local_cid()),
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, remote_cid())};
   sig_responder_->Send(BufferView(&discon_rsp, sizeof(discon_rsp)));
 }
 
@@ -170,20 +181,22 @@ void BrEdrCommandHandler::InformationResponder::SendNotSupported() {
 
 void BrEdrCommandHandler::InformationResponder::SendConnectionlessMtu(
     uint16_t mtu) {
-  mtu = htole16(mtu);
+  mtu = pw::bytes::ConvertOrderTo(cpp20::endian::little, mtu);
   Send(InformationResult::kSuccess, BufferView(&mtu, sizeof(mtu)));
 }
 
 void BrEdrCommandHandler::InformationResponder::SendExtendedFeaturesSupported(
     ExtendedFeatures extended_features) {
-  extended_features = htole32(extended_features);
+  extended_features =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, extended_features);
   Send(InformationResult::kSuccess,
        BufferView(&extended_features, sizeof(extended_features)));
 }
 
 void BrEdrCommandHandler::InformationResponder::SendFixedChannelsSupported(
     FixedChannelsSupported channels_supported) {
-  channels_supported = htole64(channels_supported);
+  channels_supported =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, channels_supported);
   Send(InformationResult::kSuccess,
        BufferView(&channels_supported, sizeof(channels_supported)));
 }
@@ -197,9 +210,11 @@ void BrEdrCommandHandler::InformationResponder::Send(InformationResult result,
                                                               data.size());
 
   info_rsp_view.mutable_header()->type =
-      static_cast<InformationType>(htole16(static_cast<uint16_t>(type_)));
+      static_cast<InformationType>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, static_cast<uint16_t>(type_)));
   info_rsp_view.mutable_header()->result =
-      static_cast<InformationResult>(htole16(static_cast<uint16_t>(result)));
+      static_cast<InformationResult>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, static_cast<uint16_t>(result)));
   info_rsp_view.mutable_payload_data().Write(data);
   sig_responder_->Send(info_rsp_view.data());
 }
@@ -213,7 +228,9 @@ bool BrEdrCommandHandler::SendConnectionRequest(uint16_t psm,
                                                 ConnectionResponseCallback cb) {
   auto on_conn_rsp = BuildResponseHandler<ConnectionResponse>(std::move(cb));
 
-  ConnectionRequestPayload payload = {htole16(psm), htole16(local_cid)};
+  ConnectionRequestPayload payload = {
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, psm),
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, local_cid)};
   return sig()->SendRequest(kConnectionRequest,
                             BufferView(&payload, sizeof(payload)),
                             std::move(on_conn_rsp));
@@ -236,8 +253,10 @@ bool BrEdrCommandHandler::SendConfigurationRequest(
                                    options_size);
   MutablePacketView<ConfigurationRequestPayload> config_req(&config_req_buf,
                                                             options_size);
-  config_req.mutable_header()->dst_cid = htole16(remote_cid);
-  config_req.mutable_header()->flags = htole16(flags);
+  config_req.mutable_header()->dst_cid =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, remote_cid);
+  config_req.mutable_header()->flags =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, flags);
 
   auto payload_view = config_req.mutable_payload_data().mutable_view();
   for (auto& option : options) {
@@ -255,7 +274,8 @@ bool BrEdrCommandHandler::SendInformationRequest(
   auto on_info_rsp = BuildResponseHandler<InformationResponse>(std::move(cb));
 
   InformationRequestPayload payload = {
-      InformationType{htole16(static_cast<uint16_t>(type))}};
+      InformationType{pw::bytes::ConvertOrderTo(cpp20::endian::little,
+                                                static_cast<uint16_t>(type))}};
   return sig()->SendRequest(kInformationRequest,
                             BufferView(&payload, sizeof(payload)),
                             std::move(on_info_rsp));
@@ -275,8 +295,10 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
     }
 
     const auto& conn_req = request_payload.To<ConnectionRequestPayload>();
-    const Psm psm = le16toh(conn_req.psm);
-    const ChannelId remote_cid = le16toh(conn_req.src_cid);
+    const Psm psm =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, conn_req.psm);
+    const ChannelId remote_cid =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, conn_req.src_cid);
 
     ConnectionResponder responder(sig_responder, remote_cid);
 
@@ -330,9 +352,10 @@ void BrEdrCommandHandler::ServeConfigurationRequest(
     PacketView<ConfigurationRequestPayload> config_req(
         &request_payload,
         request_payload.size() - sizeof(ConfigurationRequestPayload));
-    const auto local_cid =
-        static_cast<ChannelId>(le16toh(config_req.header().dst_cid));
-    const uint16_t flags = le16toh(config_req.header().flags);
+    const auto local_cid = static_cast<ChannelId>(pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, config_req.header().dst_cid));
+    const uint16_t flags = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, config_req.header().flags);
     ConfigurationResponder responder(sig_responder, local_cid);
 
     ChannelConfiguration config;
@@ -363,8 +386,8 @@ void BrEdrCommandHandler::ServeInformationRequest(
     }
 
     const auto& info_req = request_payload.To<InformationRequestPayload>();
-    const auto type = static_cast<InformationType>(
-        le16toh(static_cast<uint16_t>(info_req.type)));
+    const auto type = static_cast<InformationType>(pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, static_cast<uint16_t>(info_req.type)));
     InformationResponder responder(sig_responder, type);
     cb(type, &responder);
   };

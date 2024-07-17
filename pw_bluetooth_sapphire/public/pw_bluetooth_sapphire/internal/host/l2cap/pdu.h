@@ -13,7 +13,8 @@
 // the License.
 
 #pragma once
-#include <endian.h>
+
+#include <pw_bytes/endian.h>
 
 #include <list>
 
@@ -54,10 +55,16 @@ class PDU final {
 
   // Returns the number of bytes that are currently contained in this PDU,
   // excluding the Basic L2CAP header.
-  uint16_t length() const { return le16toh(basic_header().length); }
+  uint16_t length() const {
+    return pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                       basic_header().length);
+  }
 
   // The L2CAP channel that this packet belongs to.
-  ChannelId channel_id() const { return le16toh(basic_header().channel_id); }
+  ChannelId channel_id() const {
+    return pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                       basic_header().channel_id);
+  }
 
   // The connection handle that identifies the logical link this PDU is intended
   // for.

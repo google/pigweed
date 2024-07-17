@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 
@@ -38,7 +40,8 @@ void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
   }
 
   SignalingPacket packet(sdu.get());
-  uint16_t expected_payload_length = le16toh(packet.header().length);
+  uint16_t expected_payload_length = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, packet.header().length);
   if (expected_payload_length != sdu->size() - sizeof(CommandHeader)) {
     bt_log(DEBUG,
            "l2cap-le",

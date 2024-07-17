@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
@@ -128,7 +130,8 @@ TEST_F(LESignalingChannelTest, DefaultMTU) {
   // matter).
   MutableSignalingPacket packet(&cmd, kCommandSize - sizeof(CommandHeader));
   packet.mutable_header()->id = kTestCmdId;
-  packet.mutable_header()->length = htole16(packet.payload_size());
+  packet.mutable_header()->length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, static_cast<uint16_t>(packet.payload_size()));
 
   // Command Reject packet.
   // clang-format off

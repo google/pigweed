@@ -14,10 +14,13 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/low_energy_command_handler.h"
 
+#include <pw_bytes/endian.h>
+
 namespace bt::l2cap::internal {
 bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
     const ByteBuffer& payload_buf) {
-  const auto result = le16toh(
+  const uint16_t result = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
       static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::result>()));
   result_ = ConnectionParameterUpdateResult{result};
   return true;
@@ -31,8 +34,8 @@ LowEnergyCommandHandler::ConnectionParameterUpdateResponder::
 void LowEnergyCommandHandler::ConnectionParameterUpdateResponder::Send(
     ConnectionParameterUpdateResult result) {
   ConnectionParameterUpdateResponsePayload payload;
-  payload.result =
-      ConnectionParameterUpdateResult{htole16(static_cast<uint16_t>(result))};
+  payload.result = ConnectionParameterUpdateResult{pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, static_cast<uint16_t>(result))};
   sig_responder_->Send(BufferView(&payload, sizeof(payload)));
 }
 
@@ -50,10 +53,14 @@ bool LowEnergyCommandHandler::SendConnectionParameterUpdateRequest(
       BuildResponseHandler<ConnectionParameterUpdateResponse>(std::move(cb));
 
   ConnectionParameterUpdateRequestPayload payload;
-  payload.interval_min = htole16(interval_min);
-  payload.interval_max = htole16(interval_max);
-  payload.peripheral_latency = htole16(peripheral_latency);
-  payload.timeout_multiplier = htole16(timeout_multiplier);
+  payload.interval_min =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, interval_min);
+  payload.interval_max =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, interval_max);
+  payload.peripheral_latency =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, peripheral_latency);
+  payload.timeout_multiplier =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, timeout_multiplier);
 
   return sig()->SendRequest(kConnectionParameterUpdateRequest,
                             BufferView(&payload, sizeof(payload)),
@@ -78,10 +85,14 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
 
     const auto& req =
         request_payload.To<ConnectionParameterUpdateRequestPayload>();
-    const auto interval_min = le16toh(req.interval_min);
-    const auto interval_max = le16toh(req.interval_max);
-    const auto peripheral_latency = le16toh(req.peripheral_latency);
-    const auto timeout_multiplier = le16toh(req.timeout_multiplier);
+    const uint16_t interval_min =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, req.interval_min);
+    const uint16_t interval_max =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, req.interval_max);
+    const uint16_t peripheral_latency = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, req.peripheral_latency);
+    const uint16_t timeout_multiplier = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, req.timeout_multiplier);
     ConnectionParameterUpdateResponder responder(sig_responder);
     cb(interval_min,
        interval_max,

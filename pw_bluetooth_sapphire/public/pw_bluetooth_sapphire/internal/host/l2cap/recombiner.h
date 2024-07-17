@@ -13,7 +13,6 @@
 // the License.
 
 #pragma once
-#include <endian.h>
 
 #include <cstdint>
 
