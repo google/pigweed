@@ -14,14 +14,17 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 
+#include <cpp-string/string_printf.h>
 #include <cpp-string/utf_codecs.h>
 #include <endian.h>
 
+#include <string>
 #include <type_traits>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/to_string.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 
 #pragma clang diagnostic ignored "-Wswitch-enum"
@@ -195,6 +198,110 @@ std::string AdvertisingData::ParseErrorToString(ParseError e) {
     case ParseError::kMissing:
       return "data missing";
   }
+}
+
+std::string AdvFlagsToString(const std::optional<AdvFlags>& flags_opt) {
+  std::string result = "Flags: {";
+
+  if (!flags_opt.has_value()) {
+    return result += "} ";
+  }
+
+  const AdvFlags& flags = flags_opt.value();
+
+  if (flags & kLELimitedDiscoverableMode) {
+    result += " LE Limited Discoverable Mode,";
+  }
+  if (flags & kLEGeneralDiscoverableMode) {
+    result += " LE General Discoverable Mode,";
+  }
+  if (flags & kBREDRNotSupported) {
+    result += " BR/EDR Not Supported,";
+  }
+  if (flags & kSimultaneousLEAndBREDRController) {
+    result += " Simultaneous LE And BR/EDR Controller,";
+  }
+  if (flags & kSimultaneousLEAndBREDRHost) {
+    result += " Simultaneous LE And BR/EDR Host,";
+  }
+  return result += " }, ";
+}
+
+std::string AdvertisingData::ToString() const {
+  std::string result = "Advertising Data { ";
+
+  if (local_name_) {
+    bt_lib_cpp_string::StringAppendf(
+        &result,
+        "%s Name: %s, ",
+        (local_name_->is_complete ? "Complete" : "Short"),
+        local_name_->name.c_str());
+  }
+
+  if (tx_power_) {
+    bt_lib_cpp_string::StringAppendf(&result, "TX Power: %hhd, ", *tx_power_);
+  }
+
+  if (appearance_) {
+    bt_lib_cpp_string::StringAppendf(
+        &result, "Appearance: 0x%04x, ", *appearance_);
+  }
+
+  if (!uris_.empty()) {
+    result += "URIs: { ";
+    for (const auto& uri : uris_) {
+      bt_lib_cpp_string::StringAppendf(&result, "%s, ", uri.c_str());
+    }
+    result += "}, ";
+  }
+
+  if (flags_.has_value()) {
+    result += AdvFlagsToString(flags_);
+  }
+
+  bool hasServiceUuids = false;
+  for (const auto& [_, bounded_uuids] : service_uuids_) {
+    if (!bounded_uuids.set().empty()) {
+      hasServiceUuids = true;
+      break;
+    }
+  }
+
+  if (hasServiceUuids) {
+    result += "Service UUIDs: { ";
+    for (const auto& [_, bounded_uuids] : service_uuids_) {
+      for (const auto& uuid : bounded_uuids.set()) {
+        bt_lib_cpp_string::StringAppendf(&result, "%s, ", bt_str(uuid));
+      }
+    }
+    result += "}, ";
+  }
+
+  if (!service_data_.empty()) {
+    result += "Service Data: { ";
+    for (const auto& [uuid, data_buffer] : service_data_) {
+      bt_lib_cpp_string::StringAppendf(
+          &result,
+          "{ UUID:%s, Data: {%s} }, ",
+          bt_str(uuid),
+          data_buffer.ToString(/*as_hex*/ true).c_str());
+    }
+    result += "}, ";
+  }
+
+  if (!manufacturer_data_.empty()) {
+    result += "Manufacturer Data: { ";
+    for (const auto& [company_id, data_buffer] : manufacturer_data_) {
+      bt_lib_cpp_string::StringAppendf(
+          &result,
+          "{ Company ID: 0x%04x, Data: {%s} }, ",
+          company_id,
+          data_buffer.ToString(/*as_hex*/ true).c_str());
+    }
+    result += "} ";
+  }
+  result += "}";
+  return result;
 }
 
 AdvertisingData::ParseResult AdvertisingData::FromBytes(

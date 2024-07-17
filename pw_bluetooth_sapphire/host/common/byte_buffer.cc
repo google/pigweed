@@ -14,7 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
+#include <cpp-string/string_printf.h>
 #include <cpp-string/utf_codecs.h>
+
+#include <string>
 
 namespace bt {
 
@@ -74,7 +77,24 @@ std::string_view ByteBuffer::AsString() const {
   return std::string_view(reinterpret_cast<const char*>(data()), size());
 }
 
-std::string ByteBuffer::ToString() const { return std::string(AsString()); }
+std::string ByteBuffer::AsHexadecimal() const {
+  std::string formatted_string;
+  for (size_t i = 0; i < size(); ++i) {
+    bt_lib_cpp_string::StringAppendf(
+        &formatted_string, "%02x", static_cast<int>(data()[i]));
+    if (i < size() - 1) {
+      formatted_string += " ";
+    }
+  }
+  return formatted_string;
+}
+
+std::string ByteBuffer::ToString(bool as_hex) const {
+  if (as_hex) {
+    return AsHexadecimal();
+  }
+  return std::string(AsString());
+}
 
 std::vector<uint8_t> ByteBuffer::ToVector() const {
   std::vector<uint8_t> vec(size());

@@ -276,9 +276,12 @@ class ByteBuffer {
   // copying its contents.
   std::string_view AsString() const;
 
+  // Returns a string in hexadecimal format.
+  std::string AsHexadecimal() const;
+
   // Returns the contents of this buffer as a C++ string after copying its
   // contents.
-  std::string ToString() const;
+  std::string ToString(bool as_hex = false) const;
 
   // Returns a copy of the contents of this buffer in a std::vector.
   std::vector<uint8_t> ToVector() const;

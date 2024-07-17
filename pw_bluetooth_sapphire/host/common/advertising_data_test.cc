@@ -17,11 +17,13 @@
 #include <cpp-string/string_printf.h>
 
 #include <limits>
+#include <string>
 #include <variant>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/to_string.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
@@ -489,6 +491,45 @@ TEST(AdvertisingDataTest, Equality) {
   EXPECT_TRUE(four.AddServiceUuid(gatt));
   EXPECT_TRUE(four.AddServiceUuid(eddy));
   EXPECT_EQ(three, four);
+}
+
+TEST(AdvertisingDataTest, ToString) {
+  AdvertisingData data;
+
+  AdvFlags flags = kLEGeneralDiscoverableMode | kBREDRNotSupported;
+  data.SetFlags(flags);
+  data.SetTxPower(-18);
+  data.SetAppearance(0x4567);
+  EXPECT_TRUE(data.SetLocalName("fuchsia"));
+  EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
+
+  uint32_t service_uuid_32 = 0x12345678;
+  UUID service_uuid_32bit = UUID(service_uuid_32);
+  UUID service_uuid_16bit = UUID(kId1As16);
+  EXPECT_TRUE(data.AddServiceUuid(service_uuid_32bit));
+  EXPECT_TRUE(data.AddServiceUuid(service_uuid_16bit));
+
+  StaticByteBuffer service_bytes(0x01, 0x02);
+  EXPECT_TRUE(data.SetServiceData(service_uuid_16bit, service_bytes.view()));
+
+  StaticByteBuffer bytes(0x01, 0x02, 0x03);
+  EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
+
+  EXPECT_EQ(
+      "Advertising Data { Complete Name: fuchsia, TX Power: -18, Appearance: "
+      "0x4567, URIs: { http://fuchsia.cl, }, Flags: { LE General Discoverable "
+      "Mode, BR/EDR Not Supported, }, Service UUIDs: { "
+      "00000212-0000-1000-8000-00805f9b34fb, "
+      "12345678-0000-1000-8000-00805f9b34fb, }, Service Data: { { "
+      "UUID:00000212-0000-1000-8000-00805f9b34fb, Data: {01 02} }, }, "
+      "Manufacturer Data: { { Company ID: 0x0123, Data: {01 02 03} }, } }",
+      data.ToString());
+}
+
+TEST(AdvertisingDataTest, ToStringHasEmptyFields) {
+  AdvertisingData data;
+
+  EXPECT_EQ("Advertising Data { }", data.ToString());
 }
 
 TEST(AdvertisingDataTest, Copy) {

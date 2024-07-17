@@ -251,6 +251,9 @@ class AdvertisingData {
   // Get the currently-set flags.
   std::optional<AdvFlags> flags() const;
 
+  // Converts the AdvertisingData class attributes to a single string.
+  std::string ToString() const;
+
   // Calculates the size of the current set of fields if they were to be written
   // to a buffer using WriteBlock().
   //
