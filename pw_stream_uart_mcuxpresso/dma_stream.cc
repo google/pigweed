@@ -21,6 +21,10 @@ namespace pw::stream {
 
 // Deinitialize the DMA channels and USART.
 void UartDmaStreamMcuxpresso::Deinit() {
+  if (!initialized_) {
+    return;
+  }
+
   // We need to touch register space that can be shared
   // among several DMA peripherals, hence we need to access
   // it exclusively. We achieve exclusive access on non-SMP systems as
@@ -36,12 +40,7 @@ void UartDmaStreamMcuxpresso::Deinit() {
   clock_tree_element_controller_.Release().IgnoreError();
 }
 
-UartDmaStreamMcuxpresso::~UartDmaStreamMcuxpresso() {
-  if (!initialized_) {
-    return;
-  }
-  Deinit();
-}
+UartDmaStreamMcuxpresso::~UartDmaStreamMcuxpresso() { Deinit(); }
 
 // Initialize the USART and DMA channels based on the configuration
 // specified during object creation.
