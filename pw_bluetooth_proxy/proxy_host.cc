@@ -226,7 +226,6 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
           acl_send_mutex_.lock();
           PW_CHECK(h4_buff_occupied_.contains(const_cast<uint8_t*>(buffer)),
                    "Received release callback for invalid buffer address.");
-          PW_LOG_DEBUG("H4 packet release fn called.");
           h4_buff_occupied_.at(const_cast<uint8_t*>(buffer)) = false;
           acl_send_mutex_.unlock();
         });
