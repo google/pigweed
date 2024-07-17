@@ -44,7 +44,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_arduino_build",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -56,6 +56,6 @@ pw_py_test(
     ],
     deps = [
         ":pw_arduino_build",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )

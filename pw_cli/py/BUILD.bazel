@@ -47,8 +47,8 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages_prompt_toolkit//:pkg",
-        "@python_packages_psutil//:pkg",
+        "@python_packages//prompt_toolkit",
+        "@python_packages//psutil",
     ],
 )
 

@@ -21,7 +21,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages_pyelftools//:pkg",
+        "@python_packages//pyelftools",
     ],
 )
 

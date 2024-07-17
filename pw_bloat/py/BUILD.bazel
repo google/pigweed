@@ -31,7 +31,7 @@ py_library(
     imports = ["."],
     deps = [
         "//pw_cli/py:pw_cli",
-        "@python_packages_pyelftools//:pkg",
+        "@python_packages//pyelftools",
         "@rules_python//python/runfiles",
     ],
 )

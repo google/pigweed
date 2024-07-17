@@ -145,7 +145,7 @@ pw_py_test(
     ],
     deps = [
         ":integration_test_fixture",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -165,7 +165,7 @@ pw_py_test(
     ],
     deps = [
         ":integration_test_fixture",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -183,7 +183,7 @@ pw_py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "@com_google_protobuf//:protobuf_python",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -201,7 +201,7 @@ pw_py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "@com_google_protobuf//:protobuf_python",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -218,7 +218,7 @@ pw_py_test(
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -235,7 +235,7 @@ pw_py_test(
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -252,7 +252,7 @@ pw_py_test(
         ":integration_test_fixture",
         "//pw_protobuf:status_proto_pb2",
         "@com_google_protobuf//:protobuf_python",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
     ],
 )
 
@@ -273,7 +273,7 @@ pw_py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "//pw_protobuf:status_proto_pb2",
-        "@python_packages_parameterized//:pkg",
+        "@python_packages//parameterized",
         "@rules_python//python/runfiles",
     ],
 )
@@ -305,6 +305,6 @@ py_binary(
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
         "@com_google_protobuf//:protobuf_python",
-        "@python_packages_pyserial//:pkg",
+        "@python_packages//pyserial",
     ],
 )

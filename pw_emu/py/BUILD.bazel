@@ -30,8 +30,8 @@ py_library(
     deps = [
         "//pw_build/py:pw_build",
         "//pw_env_setup/py:pw_env_setup",
-        "@python_packages_psutil//:pkg",
-        "@python_packages_pyserial//:pkg",
+        "@python_packages//psutil",
+        "@python_packages//pyserial",
     ],
 )
 

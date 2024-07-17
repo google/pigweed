@@ -38,7 +38,7 @@ pw_py_test(
     srcs = ["validator_test.py"],
     deps = [
         ":pw_sensor",
-        "@python_packages_jsonschema//:pkg",
-        "@python_packages_pyyaml//:pkg",
+        "@python_packages//jsonschema",
+        "@python_packages//pyyaml",
     ],
 )

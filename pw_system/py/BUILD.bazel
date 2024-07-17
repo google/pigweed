@@ -52,7 +52,8 @@ py_library(
         "//pw_transfer/py:pw_transfer",
         "//pw_unit_test:unit_test_py_pb2",
         "//pw_unit_test/py:pw_unit_test",
-        "@python_packages_pyserial//:pkg",
+        "@python_packages//ipython",
+        "@python_packages//pyserial",
     ],
 )
 
