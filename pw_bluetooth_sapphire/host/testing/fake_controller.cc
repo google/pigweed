@@ -3236,6 +3236,16 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
 }
 
 void FakeController::OnLEReadMaximumAdvertisingDataLength() {
+  constexpr size_t octet = 36;
+  constexpr hci_spec::SupportedCommand command =
+      hci_spec::SupportedCommand::kLEReadMaximumAdvertisingDataLength;
+  bool supported =
+      settings_.supported_commands[octet] & static_cast<uint8_t>(command);
+  if (!supported) {
+    RespondWithCommandComplete(hci_spec::kLEReadMaximumAdvertisingDataLength,
+                               pwemb::StatusCode::UNKNOWN_COMMAND);
+  }
+
   auto response = hci::EmbossEventPacket::New<
       pwemb::LEReadMaximumAdvertisingDataLengthCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);

@@ -42,6 +42,10 @@ class LowEnergyState final {
     return iso_data_buffer_info_;
   }
 
+  uint16_t max_advertising_data_length() const {
+    return max_advertising_data_length_;
+  }
+
  private:
   friend class Adapter;
   friend class AdapterImpl;

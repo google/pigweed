@@ -1440,6 +1440,50 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
             8u);
 }
 
+TEST_F(AdapterTest, LEReadMaximumAdvertisingDataLengthNotSupported) {
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.AddLESupportedCommands();
+  settings.lmp_features_page0 |=
+      static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
+  settings.le_acl_data_packet_length = 0x1B;
+  settings.le_total_num_acl_data_packets = 2;
+  test_device()->set_settings(settings);
+
+  const LowEnergyState& low_energy_state = adapter()->state().low_energy_state;
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(hci_spec::kMaxLEAdvertisingDataLength,
+            low_energy_state.max_advertising_data_length());
+}
+
+TEST_F(AdapterTest, LEReadMaximumAdvertisingDataLengthSupported) {
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.AddLESupportedCommands();
+  settings.lmp_features_page0 |=
+      static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
+  settings.le_acl_data_packet_length = 0x1B;
+  settings.le_total_num_acl_data_packets = 2;
+
+  constexpr size_t octet = 36;
+  settings.supported_commands[octet] |= static_cast<uint8_t>(
+      hci_spec::SupportedCommand::kLEReadMaximumAdvertisingDataLength);
+  test_device()->set_settings(settings);
+  test_device()->set_maximum_advertising_data_length(
+      hci_spec::kMaxLEExtendedAdvertisingDataLength);
+
+  const LowEnergyState& low_energy_state = adapter()->state().low_energy_state;
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(hci_spec::kMaxLEExtendedAdvertisingDataLength,
+            low_energy_state.max_advertising_data_length());
+}
+
 TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
