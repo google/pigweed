@@ -58,6 +58,9 @@ cipd_repository = repository_rule(
         "tag": attr.string(
             doc = "Tag specifying which version of the repository to fetch.",
         ),
+        "tag_by_os": attr.string_dict(
+            doc = "Dict from OS name (mac, linux, windows) to tag. Incompatible with the 'tag' attribute.",
+        ),
         "_cipd_client": attr.label(
             default = "@cipd_client//:cipd",
             doc = "Location of the CIPD client binary (internal).",

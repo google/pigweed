@@ -131,12 +131,21 @@ def cipd_repository_base(rctx):
     """
     cipd_path = rctx.path(rctx.attr._cipd_client)
     ensure_path = rctx.name + ".ensure"
+
+    if rctx.attr.tag_by_os:
+        os = platform_normalized(rctx)
+        if not os in rctx.attr.tag_by_os:
+            fail("cipd_repository specifies tags, but no tag for current OS '{}'".format(os))
+        tag = rctx.attr.tag_by_os[os]
+    else:
+        tag = rctx.attr.tag
+
     rctx.template(
         ensure_path,
         Label("@pigweed//pw_env_setup/bazel/cipd_setup:ensure.tpl"),
         {
             "%{path}": rctx.attr.path,
-            "%{tag}": rctx.attr.tag,
+            "%{tag}": tag,
         },
     )
     result = rctx.execute([cipd_path, "ensure", "-root", ".", "-ensure-file", ensure_path])

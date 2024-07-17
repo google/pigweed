@@ -14,6 +14,6 @@
 
 """Allows targets to be marked manual if the host/exec architecture is incompatible (non-x64)."""
 
-load("@host_metadata//:host_metadata.bzl", "HOST_ARCH")
+load("@host_metadata//:host_metadata.bzl", "HOST_ARCH", "HOST_OS")
 
-MANUAL_IF_NOT_HOST_X64 = ["integration"] if HOST_ARCH == "amd64" else ["manual"]
+MANUAL_IF_NOT_LINUX_X64 = ["integration"] if HOST_ARCH == "amd64" and HOST_OS == "linux" else ["manual"]

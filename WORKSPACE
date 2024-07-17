@@ -202,12 +202,19 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_SDK_VERSION = "version:20.20240408.3.1"
+FUCHSIA_LINUX_SDK_VERSION = "version:22.20240717.3.1"
+
+# The Fuchsia SDK is no longer released for MacOS, so we need to pin an older
+# version, from the halcyon days when this OS was still supported.
+FUCHSIA_MAC_SDK_VERSION = "version:20.20240408.3.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
     path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-amd64",
-    tag = FUCHSIA_SDK_VERSION,
+    tag_by_os = {
+        "linux": FUCHSIA_LINUX_SDK_VERSION,
+        "mac": FUCHSIA_MAC_SDK_VERSION,
+    },
 )
 
 load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
@@ -219,7 +226,10 @@ register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
 cipd_repository(
     name = "fuchsia_products_metadata",
     path = "fuchsia/development/product_bundles/v2",
-    tag = FUCHSIA_SDK_VERSION,
+    tag_by_os = {
+        "linux": FUCHSIA_LINUX_SDK_VERSION,
+        "mac": FUCHSIA_MAC_SDK_VERSION,
+    },
 )
 
 load("@fuchsia_sdk//fuchsia:products.bzl", "fuchsia_products_repository")

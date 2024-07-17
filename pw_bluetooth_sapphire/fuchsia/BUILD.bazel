@@ -19,7 +19,7 @@ load(
     "fuchsia_test_group",
 )
 load("@rules_license//rules:license.bzl", "license")
-load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_HOST_X64")
+load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_LINUX_X64")
 
 license(
     name = "license_fuchsia",
@@ -52,5 +52,5 @@ fuchsia_builder_group(
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_x64_cipd",
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_arm64_cipd",
     ],
-    tags = MANUAL_IF_NOT_HOST_X64,
+    tags = MANUAL_IF_NOT_LINUX_X64,
 )
