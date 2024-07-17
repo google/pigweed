@@ -293,7 +293,6 @@ template("pw_test") {
       "configs",
       "data",
       "friend",
-      "inputs",
       "metadata",
       "output_extension",
       "output_name",
