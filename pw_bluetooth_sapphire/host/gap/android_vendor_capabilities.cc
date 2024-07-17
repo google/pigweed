@@ -18,11 +18,11 @@
 
 namespace bt::gap {
 
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 namespace {
-bool AsBool(const android_hci::Capability& capability) {
-  return capability == android_hci::Capability::CAPABLE;
+bool AsBool(const android_emb::Capability& capability) {
+  return capability == android_emb::Capability::CAPABLE;
 }
 }  // namespace
 
@@ -40,7 +40,7 @@ bool AndroidVendorCapabilities::SupportsVersion(uint8_t major,
 }
 
 AndroidVendorCapabilities AndroidVendorCapabilities::New(
-    const android_hci::LEGetVendorCapabilitiesCommandCompleteEventView& e) {
+    const android_emb::LEGetVendorCapabilitiesCommandCompleteEventView& e) {
   AndroidVendorCapabilities c;
 
   if (e.status().Read() != pw::bluetooth::emboss::StatusCode::SUCCESS) {

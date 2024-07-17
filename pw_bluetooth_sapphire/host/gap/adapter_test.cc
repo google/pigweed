@@ -32,7 +32,7 @@ namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
-namespace hci_android = hci_spec::vendor::android;
+namespace android_hci = hci_spec::vendor::android;
 using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::FakeDispatcherControllerTest<FakeController>;
@@ -216,7 +216,7 @@ TEST_F(AdapterTest,
   test_device()->set_settings(settings);
 
   test_device()->SetDefaultResponseStatus(
-      hci_android::kLEGetVendorCapabilities,
+      android_hci::kLEGetVendorCapabilities,
       pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);

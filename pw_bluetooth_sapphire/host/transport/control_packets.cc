@@ -115,7 +115,7 @@ bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(
 
 }  // namespace
 
-namespace hci_android = bt::hci_spec::vendor::android;
+namespace android_hci = bt::hci_spec::vendor::android;
 
 // static
 std::unique_ptr<CommandPacket> CommandPacket::New(hci_spec::OpCode opcode,

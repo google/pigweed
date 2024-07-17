@@ -34,8 +34,8 @@
 namespace bt::l2cap {
 namespace {
 
-namespace hci_android = bt::hci_spec::vendor::android;
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_hci = bt::hci_spec::vendor::android;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 using namespace inspect::testing;
 using namespace bt::testing;
 
@@ -420,41 +420,41 @@ auto OutboundDisconnectionResponse(CommandId id) {
 }
 
 A2dpOffloadManager::Configuration BuildConfiguration(
-    android_hci::A2dpCodecType codec = android_hci::A2dpCodecType::SBC) {
+    android_emb::A2dpCodecType codec = android_emb::A2dpCodecType::SBC) {
   A2dpOffloadManager::Configuration config;
   config.codec = codec;
   config.max_latency = 0xFFFF;
   config.scms_t_enable.view().enabled().Write(
       pw::bluetooth::emboss::GenericEnableParam::DISABLE);
   config.scms_t_enable.view().header().Write(0x00);
-  config.sampling_frequency = android_hci::A2dpSamplingFrequency::HZ_44100;
-  config.bits_per_sample = android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_16;
-  config.channel_mode = android_hci::A2dpChannelMode::MONO;
+  config.sampling_frequency = android_emb::A2dpSamplingFrequency::HZ_44100;
+  config.bits_per_sample = android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_16;
+  config.channel_mode = android_emb::A2dpChannelMode::MONO;
   config.encoded_audio_bit_rate = 0x0;
 
   switch (codec) {
-    case android_hci::A2dpCodecType::SBC:
+    case android_emb::A2dpCodecType::SBC:
       config.sbc_configuration.view().block_length().Write(
-          android_hci::SbcBlockLen::BLOCK_LEN_4);
+          android_emb::SbcBlockLen::BLOCK_LEN_4);
       config.sbc_configuration.view().subbands().Write(
-          android_hci::SbcSubBands::SUBBANDS_4);
+          android_emb::SbcSubBands::SUBBANDS_4);
       config.sbc_configuration.view().allocation_method().Write(
-          android_hci::SbcAllocationMethod::SNR);
+          android_emb::SbcAllocationMethod::SNR);
       config.sbc_configuration.view().min_bitpool_value().Write(0x00);
       config.sbc_configuration.view().max_bitpool_value().Write(0xFF);
       break;
-    case android_hci::A2dpCodecType::AAC:
+    case android_emb::A2dpCodecType::AAC:
       config.aac_configuration.view().object_type().Write(0x00);
       config.aac_configuration.view().variable_bit_rate().Write(
-          android_hci::AacEnableVariableBitRate::DISABLE);
+          android_emb::AacEnableVariableBitRate::DISABLE);
       break;
-    case android_hci::A2dpCodecType::LDAC:
+    case android_emb::A2dpCodecType::LDAC:
       config.ldac_configuration.view().vendor_id().Write(
-          hci_android::kLdacVendorId);
+          android_hci::kLdacVendorId);
       config.ldac_configuration.view().codec_id().Write(
-          hci_android::kLdacCodecId);
+          android_hci::kLdacCodecId);
       config.ldac_configuration.view().bitrate_index().Write(
-          android_hci::LdacBitrateIndex::LOW);
+          android_emb::LdacBitrateIndex::LOW);
       config.ldac_configuration.view().ldac_channel_mode().stereo().Write(true);
       break;
     default:
@@ -3881,7 +3881,7 @@ TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+      CommandCompletePacket(android_hci::kA2dpOffloadCommand,
                             pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         StartA2dpOffloadRequest(config,
@@ -3945,7 +3945,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+      CommandCompletePacket(android_hci::kA2dpOffloadCommand,
                             pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         StartA2dpOffloadRequest(config,
@@ -3988,7 +3988,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+      CommandCompletePacket(android_hci::kA2dpOffloadCommand,
                             pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         StartA2dpOffloadRequest(config,

@@ -20,16 +20,16 @@
 namespace bt::gap {
 namespace {
 
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 namespace pwemb = pw::bluetooth::emboss;
 
-using android_hci::Capability;
+using android_emb::Capability;
 
 TEST(AndroidVendorCapabilitiesTest, NonSuccess) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_0_55_size());
 
   auto view = params.unchecked_view_t();
@@ -65,9 +65,9 @@ TEST(AndroidVendorCapabilitiesTest, NonSuccess) {
 
 TEST(AndroidVendorCapabilitiesTest, Version055) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_0_55_size());
 
   auto view = params.unchecked_view_t();
@@ -103,9 +103,9 @@ TEST(AndroidVendorCapabilitiesTest, Version055) {
 
 TEST(AndroidVendorCapabilitiesTest, Version095) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_0_95_size());
 
   auto view = params.unchecked_view_t();
@@ -152,9 +152,9 @@ TEST(AndroidVendorCapabilitiesTest, Version095) {
 
 TEST(AndroidVendorCapabilitiesTest, Version096) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_0_96_size());
 
   auto view = params.unchecked_view_t();
@@ -205,9 +205,9 @@ TEST(AndroidVendorCapabilitiesTest, Version096) {
 
 TEST(AndroidVendorCapabilitiesTest, Version098) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_0_98_size());
 
   auto view = params.unchecked_view_t();
@@ -264,9 +264,9 @@ TEST(AndroidVendorCapabilitiesTest, Version098) {
 
 TEST(AndroidVendorCapabilitiesTest, Version103) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_1_03_size());
 
   auto view = params.unchecked_view_t();
@@ -328,9 +328,9 @@ TEST(AndroidVendorCapabilitiesTest, Version103) {
 
 TEST(AndroidVendorCapabilitiesTest, Version104) {
   auto params = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
           version_1_04_size());
 
   auto view = params.unchecked_view_t();

@@ -29,8 +29,8 @@ constexpr int8_t kTransmitPower = -25;
 // AndroidExtendedLowEnergyAdvertiser doesn't support extended advertising PDUs
 constexpr bool kUseExtendedPdu = false;
 
-namespace hci_android = hci_spec::vendor::android;
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_hci = hci_spec::vendor::android;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
     hci::Transport::WeakPtr hci_ptr, uint8_t max_advertisements)
@@ -39,7 +39,7 @@ AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
       advertising_handle_map_(max_advertisements) {
   state_changed_event_handler_id_ =
       hci()->command_channel()->AddVendorEventHandler(
-          hci_android::kLEMultiAdvtStateChangeSubeventCode,
+          android_hci::kLEMultiAdvtStateChangeSubeventCode,
           [this](const EmbossEventPacket& event_packet) {
             return OnAdvertisingStateChangedSubevent(event_packet);
           });
@@ -68,10 +68,10 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
   BT_ASSERT(handle);
 
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtEnableCommandWriter>(hci_android::kLEMultiAdvt);
+      android_emb::LEMultiAdvtEnableCommandWriter>(android_hci::kLEMultiAdvt);
   auto packet_view = packet.view_t();
   packet_view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtEnableSubopcode);
+      android_hci::kLEMultiAdvtEnableSubopcode);
   packet_view.enable().Write(enable);
   packet_view.advertising_handle().Write(handle.value());
   return packet;
@@ -95,12 +95,12 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   }
 
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtSetAdvtParamCommandWriter>(
-      hci_android::kLEMultiAdvt);
+      android_emb::LEMultiAdvtSetAdvtParamCommandWriter>(
+      android_hci::kLEMultiAdvt);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtSetAdvtParamSubopcode);
+      android_hci::kLEMultiAdvtSetAdvtParamSubopcode);
   view.adv_interval_min().Write(interval.min());
   view.adv_interval_max().Write(interval.max());
   view.adv_type().Write(
@@ -138,17 +138,17 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
   uint8_t adv_data_length =
       static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
   size_t packet_size =
-      android_hci::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes()
+      android_emb::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes()
           .Read() +
       adv_data_length;
 
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtSetAdvtDataCommandWriter>(
-      hci_android::kLEMultiAdvt, packet_size);
+      android_emb::LEMultiAdvtSetAdvtDataCommandWriter>(
+      android_hci::kLEMultiAdvt, packet_size);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtSetAdvtDataSubopcode);
+      android_hci::kLEMultiAdvtSetAdvtDataSubopcode);
   view.adv_data_length().Write(adv_data_length);
   view.adv_handle().Write(handle.value());
 
@@ -170,14 +170,14 @@ AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   BT_ASSERT(handle);
 
   size_t packet_size =
-      android_hci::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes().Read();
+      android_emb::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes().Read();
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtSetAdvtDataCommandWriter>(
-      hci_android::kLEMultiAdvt, packet_size);
+      android_emb::LEMultiAdvtSetAdvtDataCommandWriter>(
+      android_hci::kLEMultiAdvt, packet_size);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtSetAdvtDataSubopcode);
+      android_hci::kLEMultiAdvtSetAdvtDataSubopcode);
   view.adv_data_length().Write(0);
   view.adv_handle().Write(handle.value());
 
@@ -200,16 +200,16 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 
   uint8_t scan_rsp_length = static_cast<uint8_t>(data.CalculateBlockSize());
   size_t packet_size =
-      android_hci::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
+      android_emb::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
           .Read() +
       scan_rsp_length;
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtSetScanRespDataCommandWriter>(
-      hci_android::kLEMultiAdvt, packet_size);
+      android_emb::LEMultiAdvtSetScanRespDataCommandWriter>(
+      android_hci::kLEMultiAdvt, packet_size);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtSetScanRespSubopcode);
+      android_hci::kLEMultiAdvtSetScanRespSubopcode);
   view.scan_resp_length().Write(scan_rsp_length);
   view.adv_handle().Write(handle.value());
 
@@ -230,15 +230,15 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   BT_ASSERT(handle);
 
   size_t packet_size =
-      android_hci::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
+      android_emb::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
           .Read();
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtSetScanRespDataCommandWriter>(
-      hci_android::kLEMultiAdvt, packet_size);
+      android_emb::LEMultiAdvtSetScanRespDataCommandWriter>(
+      android_hci::kLEMultiAdvt, packet_size);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtSetScanRespSubopcode);
+      android_hci::kLEMultiAdvtSetScanRespSubopcode);
   view.scan_resp_length().Write(0);
   view.adv_handle().Write(handle.value());
 
@@ -253,10 +253,10 @@ AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
   BT_ASSERT(handle);
 
   auto packet = hci::EmbossCommandPacket::New<
-      android_hci::LEMultiAdvtEnableCommandWriter>(hci_android::kLEMultiAdvt);
+      android_emb::LEMultiAdvtEnableCommandWriter>(android_hci::kLEMultiAdvt);
   auto packet_view = packet.view_t();
   packet_view.vendor_command().sub_opcode().Write(
-      hci_android::kLEMultiAdvtEnableSubopcode);
+      android_hci::kLEMultiAdvtEnableSubopcode);
   packet_view.enable().Write(pwemb::GenericEnableParam::DISABLE);
   packet_view.advertising_handle().Write(handle.value());
   return packet;
@@ -381,7 +381,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
     const EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kVendorDebugEventCode);
   BT_ASSERT(event.view<pwemb::VendorDebugEventView>().subevent_code().Read() ==
-            hci_android::kLEMultiAdvtStateChangeSubeventCode);
+            android_hci::kLEMultiAdvtStateChangeSubeventCode);
 
   Result<> result = event.ToResult();
   if (bt_is_error(result,
@@ -392,7 +392,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto view = event.view<android_hci::LEMultiAdvtStateChangeSubeventView>();
+  auto view = event.view<android_emb::LEMultiAdvtStateChangeSubeventView>();
   hci_spec::AdvertisingHandle adv_handle = view.advertising_handle().Read();
   std::optional<DeviceAddress> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);

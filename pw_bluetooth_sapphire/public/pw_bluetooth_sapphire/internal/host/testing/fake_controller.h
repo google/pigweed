@@ -31,7 +31,7 @@
 
 namespace bt::testing {
 
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 class FakePeer;
 
@@ -93,21 +93,21 @@ class FakeController final : public ControllerTestDoubleBase,
     uint8_t total_num_iso_data_packets = 0;
 
     // Vendor extensions
-    StaticPacket<android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+    StaticPacket<android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>
         android_extension_settings;
   };
 
   // Configuration of an L2CAP channel for A2DP offloading.
   struct OffloadedA2dpChannel final {
-    android_hci::A2dpCodecType codec_type = android_hci::A2dpCodecType::SBC;
+    android_emb::A2dpCodecType codec_type = android_emb::A2dpCodecType::SBC;
     uint16_t max_latency = 0;
-    StaticPacket<android_hci::A2dpScmsTEnableWriter> scms_t_enable;
-    android_hci::A2dpSamplingFrequency sampling_frequency =
-        android_hci::A2dpSamplingFrequency::HZ_44100;
-    android_hci::A2dpBitsPerSample bits_per_sample =
-        android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_16;
-    android_hci::A2dpChannelMode channel_mode =
-        android_hci::A2dpChannelMode::MONO;
+    StaticPacket<android_emb::A2dpScmsTEnableWriter> scms_t_enable;
+    android_emb::A2dpSamplingFrequency sampling_frequency =
+        android_emb::A2dpSamplingFrequency::HZ_44100;
+    android_emb::A2dpBitsPerSample bits_per_sample =
+        android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_16;
+    android_emb::A2dpChannelMode channel_mode =
+        android_emb::A2dpChannelMode::MONO;
     uint32_t encoded_audio_bitrate = 0;
     hci_spec::ConnectionHandle connection_handle = 0;
     l2cap::ChannelId l2cap_channel_id = 0;
@@ -923,7 +923,7 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
 
   void OnAndroidStartA2dpOffload(
-      const android_hci::StartA2dpOffloadCommandView& params);
+      const android_emb::StartA2dpOffloadCommandView& params);
 
   void OnAndroidStopA2dpOffload();
 
@@ -931,19 +931,19 @@ class FakeController final : public ControllerTestDoubleBase,
       const PacketView<hci_spec::CommandHeader>& command_packet);
 
   void OnAndroidLEMultiAdvtSetAdvtParam(
-      const android_hci::LEMultiAdvtSetAdvtParamCommandView& params);
+      const android_emb::LEMultiAdvtSetAdvtParamCommandView& params);
 
   void OnAndroidLEMultiAdvtSetAdvtData(
-      const android_hci::LEMultiAdvtSetAdvtDataCommandView& params);
+      const android_emb::LEMultiAdvtSetAdvtDataCommandView& params);
 
   void OnAndroidLEMultiAdvtSetScanResp(
-      const android_hci::LEMultiAdvtSetScanRespDataCommandView& params);
+      const android_emb::LEMultiAdvtSetScanRespDataCommandView& params);
 
   void OnAndroidLEMultiAdvtSetRandomAddr(
-      const android_hci::LEMultiAdvtSetRandomAddrCommandView& params);
+      const android_emb::LEMultiAdvtSetRandomAddrCommandView& params);
 
   void OnAndroidLEMultiAdvtEnable(
-      const android_hci::LEMultiAdvtEnableCommandView& params);
+      const android_emb::LEMultiAdvtEnableCommandView& params);
 
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(

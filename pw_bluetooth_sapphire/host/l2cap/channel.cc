@@ -32,7 +32,7 @@
 
 namespace bt::l2cap {
 
-namespace hci_android = bt::hci_spec::vendor::android;
+namespace android_hci = bt::hci_spec::vendor::android;
 using pw::bluetooth::AclPriority;
 
 Channel::Channel(ChannelId id,

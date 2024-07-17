@@ -22,8 +22,8 @@
 
 namespace bt::testing {
 
-namespace hci_android = bt::hci_spec::vendor::android;
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_hci = bt::hci_spec::vendor::android;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 // clang-format off
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
@@ -678,14 +678,14 @@ DynamicByteBuffer StartA2dpOffloadRequest(
     l2cap::ChannelId l2cap_channel_id,
     uint16_t l2cap_mtu_size) {
   constexpr size_t kPacketSize =
-      android_hci::StartA2dpOffloadCommand::MaxSizeInBytes();
+      android_emb::StartA2dpOffloadCommand::MaxSizeInBytes();
   auto packet =
-      hci::EmbossCommandPacket::New<android_hci::StartA2dpOffloadCommandWriter>(
-          hci_android::kA2dpOffloadCommand, kPacketSize);
+      hci::EmbossCommandPacket::New<android_emb::StartA2dpOffloadCommandWriter>(
+          android_hci::kA2dpOffloadCommand, kPacketSize);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
-      hci_android::kStartA2dpOffloadCommandSubopcode);
+      android_hci::kStartA2dpOffloadCommandSubopcode);
   view.codec_type().Write(config.codec);
   view.max_latency().Write(config.max_latency);
   view.scms_t_enable().CopyFrom(
@@ -700,17 +700,17 @@ DynamicByteBuffer StartA2dpOffloadRequest(
   view.l2cap_mtu_size().Write(l2cap_mtu_size);
 
   switch (config.codec) {
-    case android_hci::A2dpCodecType::SBC:
+    case android_emb::A2dpCodecType::SBC:
       view.sbc_codec_information().CopyFrom(
           const_cast<l2cap::A2dpOffloadManager::Configuration&>(config)
               .sbc_configuration.view());
       break;
-    case android_hci::A2dpCodecType::AAC:
+    case android_emb::A2dpCodecType::AAC:
       view.aac_codec_information().CopyFrom(
           const_cast<l2cap::A2dpOffloadManager::Configuration&>(config)
               .aac_configuration.view());
       break;
-    case android_hci::A2dpCodecType::LDAC:
+    case android_emb::A2dpCodecType::LDAC:
       view.ldac_codec_information().CopyFrom(
           const_cast<l2cap::A2dpOffloadManager::Configuration&>(config)
               .ldac_configuration.view());
@@ -725,9 +725,9 @@ DynamicByteBuffer StartA2dpOffloadRequest(
 DynamicByteBuffer StopA2dpOffloadRequest() {
   return DynamicByteBuffer(StaticByteBuffer(
       // clang-format off
-      LowerBits(hci_android::kA2dpOffloadCommand), UpperBits(hci_android::kA2dpOffloadCommand),
+      LowerBits(android_hci::kA2dpOffloadCommand), UpperBits(android_hci::kA2dpOffloadCommand),
       0x01,  // parameter_total_size (1 byte)
-      hci_android::kStopA2dpOffloadCommandSubopcode));
+      android_hci::kStopA2dpOffloadCommandSubopcode));
   // clang-format on
 }
 

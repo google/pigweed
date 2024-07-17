@@ -49,8 +49,8 @@ bool CheckBit(NUM_TYPE num_type, ENUM_TYPE bit) {
 
 }  // namespace
 
-namespace hci_android = hci_spec::vendor::android;
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_hci = hci_spec::vendor::android;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 namespace pwemb = pw::bluetooth::emboss;
 
 void FakeController::Settings::ApplyDualModeDefaults() {
@@ -3350,11 +3350,11 @@ void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
     hci_spec::ConnectionHandle conn_handle,
     hci_spec::AdvertisingHandle adv_handle) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtStateChangeSubeventWriter>(
+      android_emb::LEMultiAdvtStateChangeSubeventWriter>(
       hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.vendor_event().subevent_code().Write(
-      hci_android::kLEMultiAdvtStateChangeSubeventCode);
+      android_hci::kLEMultiAdvtStateChangeSubeventCode);
   view.advertising_handle().Write(adv_handle);
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.connection_handle().Write(conn_handle);
@@ -3384,33 +3384,33 @@ void FakeController::OnCommandPacketReceived(
 }
 
 void FakeController::OnAndroidLEGetVendorCapabilities() {
-  // We use the android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter
-  // as storage. This is the full HCI packet, including the header. Ensure we
-  // don't accidentally send the header twice by using the overloaded
+  // We use the
+  // android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter as
+  // storage. This is the full HCI packet, including the header. Ensure we don't
+  // accidentally send the header twice by using the overloaded
   // RespondWithCommandComplete that takes in an EmbossEventPacket. The one that
   // takes a BufferView allocates space for the header, assuming that it's been
   // sent only the payload.
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   MutableBufferView buffer = packet.mutable_data();
   settings_.android_extension_settings.data().Copy(&buffer);
-  RespondWithCommandComplete(hci_android::kLEGetVendorCapabilities, &packet);
+  RespondWithCommandComplete(android_hci::kLEGetVendorCapabilities, &packet);
 }
 
 void FakeController::OnAndroidStartA2dpOffload(
-    const pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandView&
-        params) {
+    const android_emb::StartA2dpOffloadCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::A2dpOffloadCommandCompleteEventWriter>(
+      android_emb::A2dpOffloadCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
-  view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::START_LEGACY);
+  view.sub_opcode().Write(android_emb::A2dpOffloadSubOpcode::START_LEGACY);
 
   // return in case A2DP offload already started
   if (offloaded_a2dp_channel_state_) {
     view.status().Write(pwemb::StatusCode::CONNECTION_ALREADY_EXISTS);
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
     return;
   }
 
@@ -3418,70 +3418,70 @@ void FakeController::OnAndroidStartA2dpOffload(
   if (params.scms_t_enable().enabled().Read() ==
       pwemb::GenericEnableParam::ENABLE) {
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
     return;
   }
 
   // return in case any parameter has an invalid value
   view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
 
-  android_hci::A2dpCodecType const codec_type =
-      static_cast<android_hci::A2dpCodecType>(
+  android_emb::A2dpCodecType const codec_type =
+      static_cast<android_emb::A2dpCodecType>(
           le32toh(static_cast<uint32_t>(params.codec_type().Read())));
   switch (codec_type) {
-    case android_hci::A2dpCodecType::SBC:
-    case android_hci::A2dpCodecType::AAC:
-    case android_hci::A2dpCodecType::APTX:
-    case android_hci::A2dpCodecType::APTX_HD:
-    case android_hci::A2dpCodecType::LDAC:
+    case android_emb::A2dpCodecType::SBC:
+    case android_emb::A2dpCodecType::AAC:
+    case android_emb::A2dpCodecType::APTX:
+    case android_emb::A2dpCodecType::APTX_HD:
+    case android_emb::A2dpCodecType::LDAC:
       break;
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  android_hci::A2dpSamplingFrequency const sampling_frequency =
-      static_cast<android_hci::A2dpSamplingFrequency>(
+  android_emb::A2dpSamplingFrequency const sampling_frequency =
+      static_cast<android_emb::A2dpSamplingFrequency>(
           le32toh(static_cast<uint32_t>(params.sampling_frequency().Read())));
   switch (sampling_frequency) {
-    case android_hci::A2dpSamplingFrequency::HZ_44100:
-    case android_hci::A2dpSamplingFrequency::HZ_48000:
-    case android_hci::A2dpSamplingFrequency::HZ_88200:
-    case android_hci::A2dpSamplingFrequency::HZ_96000:
+    case android_emb::A2dpSamplingFrequency::HZ_44100:
+    case android_emb::A2dpSamplingFrequency::HZ_48000:
+    case android_emb::A2dpSamplingFrequency::HZ_88200:
+    case android_emb::A2dpSamplingFrequency::HZ_96000:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  android_hci::A2dpBitsPerSample const bits_per_sample =
-      static_cast<android_hci::A2dpBitsPerSample>(
+  android_emb::A2dpBitsPerSample const bits_per_sample =
+      static_cast<android_emb::A2dpBitsPerSample>(
           params.bits_per_sample().Read());
   switch (bits_per_sample) {
-    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_16:
-    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_24:
-    case android_hci::A2dpBitsPerSample::BITS_PER_SAMPLE_32:
+    case android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_16:
+    case android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_24:
+    case android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_32:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
       return;
   }
 
-  android_hci::A2dpChannelMode const channel_mode =
-      static_cast<android_hci::A2dpChannelMode>(params.channel_mode().Read());
+  android_emb::A2dpChannelMode const channel_mode =
+      static_cast<android_emb::A2dpChannelMode>(params.channel_mode().Read());
   switch (channel_mode) {
-    case android_hci::A2dpChannelMode::MONO:
-    case android_hci::A2dpChannelMode::STEREO:
+    case android_emb::A2dpChannelMode::MONO:
+    case android_emb::A2dpChannelMode::STEREO:
       break;
     default:
-      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
       return;
   }
 
   uint32_t const encoded_audio_bitrate =
-      le32toh(params.encoded_audio_bitrate().Read());
+      le32toh(static_cast<uint32_t>(params.encoded_audio_bitrate().Read()));
   // Bits 0x01000000 to 0xFFFFFFFF are reserved
   if (encoded_audio_bitrate >= 0x01000000) {
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
     return;
   }
 
@@ -3499,26 +3499,26 @@ void FakeController::OnAndroidStartA2dpOffload(
   offloaded_a2dp_channel_state_ = state;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+  RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
 }
 
 void FakeController::OnAndroidStopA2dpOffload() {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::A2dpOffloadCommandCompleteEventWriter>(
+      android_emb::A2dpOffloadCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
-  view.sub_opcode().Write(android_hci::A2dpOffloadSubOpcode::STOP_LEGACY);
+  view.sub_opcode().Write(android_emb::A2dpOffloadSubOpcode::STOP_LEGACY);
 
   if (!offloaded_a2dp_channel_state_) {
     view.status().Write(pwemb::StatusCode::REPEATED_ATTEMPTS);
-    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
     return;
   }
 
   offloaded_a2dp_channel_state_ = std::nullopt;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, &packet);
+  RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
 }
 
 void FakeController::OnAndroidA2dpOffloadCommand(
@@ -3527,13 +3527,13 @@ void FakeController::OnAndroidA2dpOffloadCommand(
 
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
-    case hci_android::kStartA2dpOffloadCommandSubopcode: {
-      auto view = android_hci::MakeStartA2dpOffloadCommandView(
+    case android_hci::kStartA2dpOffloadCommandSubopcode: {
+      auto view = android_emb::MakeStartA2dpOffloadCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidStartA2dpOffload(view);
       break;
     }
-    case hci_android::kStopA2dpOffloadCommandSubopcode:
+    case android_hci::kStopA2dpOffloadCommandSubopcode:
       OnAndroidStopA2dpOffload();
       break;
     default:
@@ -3547,20 +3547,20 @@ void FakeController::OnAndroidA2dpOffloadCommand(
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
-    const android_hci::LEMultiAdvtSetAdvtParamCommandView& params) {
+    const android_emb::LEMultiAdvtSetAdvtParamCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
-      android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_PARAMETERS);
+      android_emb::LEMultiAdvtSubOpcode::SET_ADVERTISING_PARAMETERS);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3574,7 +3574,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            handle);
 
     view.status().Write(pwemb::StatusCode::MEMORY_CAPACITY_EXCEEDED);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3618,7 +3618,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_max);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3629,7 +3629,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_min,
            hci_spec::kLEAdvertisingIntervalMin);
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3640,7 +3640,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_max,
            hci_spec::kLEAdvertisingIntervalMax);
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3649,25 +3649,25 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
   extended_advertising_states_[handle] = state;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
-    const android_hci::LEMultiAdvtSetAdvtDataCommandView& params) {
+    const android_emb::LEMultiAdvtSetAdvtDataCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
-      android_hci::LEMultiAdvtSubOpcode::SET_ADVERTISING_DATA);
+      android_emb::LEMultiAdvtSubOpcode::SET_ADVERTISING_DATA);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3678,7 +3678,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3690,7 +3690,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
     state.data_length = 0;
     std::memset(state.data, 0, sizeof(state.data));
     view.status().Write(pwemb::StatusCode::SUCCESS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3702,7 +3702,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            "cannot provide advertising data when using directed advertising");
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3713,7 +3713,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            params.adv_data_length().Read());
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3723,25 +3723,25 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
               params.adv_data_length().Read());
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetScanResp(
-    const android_hci::LEMultiAdvtSetScanRespDataCommandView& params) {
+    const android_emb::LEMultiAdvtSetScanRespDataCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
-      android_hci::LEMultiAdvtSubOpcode::SET_SCAN_RESPONSE_DATA);
+      android_emb::LEMultiAdvtSubOpcode::SET_SCAN_RESPONSE_DATA);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3752,7 +3752,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3765,7 +3765,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
     std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
 
     view.status().Write(pwemb::StatusCode::SUCCESS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3778,7 +3778,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
         "cannot provide scan response data for unscannable advertising types");
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3790,7 +3790,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
            params.scan_resp_length().Read());
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3800,25 +3800,25 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
               params.scan_resp_length().Read());
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
-    const android_hci::LEMultiAdvtSetRandomAddrCommandView& params) {
+    const android_emb::LEMultiAdvtSetRandomAddrCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
-      android_hci::LEMultiAdvtSubOpcode::SET_RANDOM_ADDRESS);
+      android_emb::LEMultiAdvtSubOpcode::SET_RANDOM_ADDRESS);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle().Read();
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3829,7 +3829,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3841,7 +3841,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
         "cannot set LE random address while connectable advertising enabled");
 
     view.status().Write(pwemb::StatusCode::COMMAND_DISALLOWED);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3850,16 +3850,16 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
                     DeviceAddressBytes(params.peer_address()));
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
-    const android_hci::LEMultiAdvtEnableCommandView& params) {
+    const android_emb::LEMultiAdvtEnableCommandView& params) {
   auto packet = hci::EmbossEventPacket::New<
-      android_hci::LEMultiAdvtCommandCompleteEventWriter>(
+      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
-  view.sub_opcode().Write(android_hci::LEMultiAdvtSubOpcode::ENABLE);
+  view.sub_opcode().Write(android_emb::LEMultiAdvtSubOpcode::ENABLE);
 
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
@@ -3867,7 +3867,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
     return;
   }
 
@@ -3879,7 +3879,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
   extended_advertising_states_[handle].enabled = enabled;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_android::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
   NotifyAdvertisingState();
 }
 
@@ -3889,32 +3889,32 @@ void FakeController::OnAndroidLEMultiAdvt(
 
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
-    case hci_android::kLEMultiAdvtSetAdvtParamSubopcode: {
-      auto params = android_hci::MakeLEMultiAdvtSetAdvtParamCommandView(
+    case android_hci::kLEMultiAdvtSetAdvtParamSubopcode: {
+      auto params = android_emb::MakeLEMultiAdvtSetAdvtParamCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetAdvtParam(params);
       break;
     }
-    case hci_android::kLEMultiAdvtSetAdvtDataSubopcode: {
-      auto params = android_hci::MakeLEMultiAdvtSetAdvtDataCommandView(
+    case android_hci::kLEMultiAdvtSetAdvtDataSubopcode: {
+      auto params = android_emb::MakeLEMultiAdvtSetAdvtDataCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetAdvtData(params);
       break;
     }
-    case hci_android::kLEMultiAdvtSetScanRespSubopcode: {
-      auto params = android_hci::MakeLEMultiAdvtSetScanRespDataCommandView(
+    case android_hci::kLEMultiAdvtSetScanRespSubopcode: {
+      auto params = android_emb::MakeLEMultiAdvtSetScanRespDataCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetScanResp(params);
       break;
     }
-    case hci_android::kLEMultiAdvtSetRandomAddrSubopcode: {
-      auto params = android_hci::MakeLEMultiAdvtSetRandomAddrCommandView(
+    case android_hci::kLEMultiAdvtSetRandomAddrSubopcode: {
+      auto params = android_emb::MakeLEMultiAdvtSetRandomAddrCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtSetRandomAddr(params);
       break;
     }
-    case hci_android::kLEMultiAdvtEnableSubopcode: {
-      auto view = android_hci::MakeLEMultiAdvtEnableCommandView(
+    case android_hci::kLEMultiAdvtEnableSubopcode: {
+      auto view = android_emb::MakeLEMultiAdvtEnableCommandView(
           command_packet.data().data(), command_packet.data().size());
       OnAndroidLEMultiAdvtEnable(view);
       break;
@@ -3935,13 +3935,13 @@ void FakeController::OnVendorCommand(
   auto opcode = le16toh(command_packet.header().opcode);
 
   switch (opcode) {
-    case hci_android::kLEGetVendorCapabilities:
+    case android_hci::kLEGetVendorCapabilities:
       OnAndroidLEGetVendorCapabilities();
       break;
-    case hci_android::kA2dpOffloadCommand:
+    case android_hci::kA2dpOffloadCommand:
       OnAndroidA2dpOffloadCommand(command_packet);
       break;
-    case hci_android::kLEMultiAdvt:
+    case android_hci::kLEMultiAdvt:
       OnAndroidLEMultiAdvt(command_packet);
       break;
     default:

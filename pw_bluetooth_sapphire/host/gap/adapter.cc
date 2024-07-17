@@ -46,8 +46,8 @@
 
 namespace bt::gap {
 
-namespace hci_android = hci_spec::vendor::android;
-namespace android_hci = pw::bluetooth::vendor::android_hci;
+namespace android_hci = hci_spec::vendor::android;
+namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 static constexpr const char* kInspectLowEnergyDiscoveryManagerNodeName =
     "low_energy_discovery_manager";
@@ -804,7 +804,7 @@ void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
   // the vendor sends, and fill the rest with zero to disable the feature. If we
   // receive a response larger than what we expect, we read up to what we
   // support and drop the rest of the data.
-  StaticPacket<android_hci::LEGetVendorCapabilitiesCommandCompleteEventView>
+  StaticPacket<android_emb::LEGetVendorCapabilitiesCommandCompleteEventView>
       packet;
   packet.SetToZeros();
   size_t copy_size = std::min(packet.data().size(), event.size());
@@ -821,22 +821,22 @@ void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
     // The version_supported field was only introduced into the command in
     // Version 0.95. Controllers that use the base version, Version 0.55,
     // don't have the version_supported field.
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_0_55_size();
   } else if (major == 0 && minor == 95) {
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_0_95_size();
   } else if (major == 0 && minor == 96) {
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_0_96_size();
   } else if (major == 0 && minor == 98) {
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_0_98_size();
   } else if (major == 1 && minor == 03) {
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_1_03_size();
   } else if (major == 1 && minor == 04) {
-    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_1_04_size();
   }
 
@@ -928,8 +928,8 @@ void AdapterImpl::InitializeStep1() {
            "set");
     init_seq_runner_->QueueCommand(
         hci::EmbossCommandPacket::New<
-            android_hci::LEGetVendorCapabilitiesCommandView>(
-            hci_android::kLEGetVendorCapabilities),
+            android_emb::LEGetVendorCapabilitiesCommandView>(
+            android_hci::kLEGetVendorCapabilities),
         [this](const hci::EmbossEventPacket& event) {
           if (hci_is_error(
                   event,
