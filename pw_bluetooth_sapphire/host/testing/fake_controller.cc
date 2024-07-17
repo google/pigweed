@@ -1195,7 +1195,7 @@ void FakeController::SendEnhancedConnectionCompleteEvent(
   view.peripheral_latency().Write(max_latency);
   view.connection_interval().Write(interval);
   view.supervision_timeout().Write(supervision_timeout);
-  view.role().Write(pwemb::ConnectionRole::CENTRAL);
+  view.role().Write(settings_.le_connection_role);
   view.connection_handle().Write(++next_conn_handle_);
 
   le_connect_rsp_task_.Cancel();
@@ -1251,7 +1251,7 @@ void FakeController::SendConnectionCompleteEvent(
   view.peripheral_latency().CopyFrom(params.max_latency());
   view.connection_interval().Write(interval);
   view.supervision_timeout().CopyFrom(params.supervision_timeout());
-  view.role().Write(pwemb::ConnectionRole::CENTRAL);
+  view.role().Write(settings_.le_connection_role);
   view.connection_handle().Write(++next_conn_handle_);
 
   le_connect_rsp_task_.Cancel();

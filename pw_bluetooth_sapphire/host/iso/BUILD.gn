@@ -20,10 +20,14 @@ dir_public_iso = "../../public/pw_bluetooth_sapphire/internal/host/iso"
 pw_source_set("iso") {
   public = [
     "$dir_public_iso/iso_common.h",
+    "$dir_public_iso/iso_stream.h",
     "$dir_public_iso/iso_stream_manager.h",
   ]
 
-  sources = [ "iso_stream_manager.cc" ]
+  sources = [
+    "iso_stream.cc",
+    "iso_stream_manager.cc",
+  ]
 
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
@@ -37,7 +41,10 @@ pw_test("tests") {
     "iso_stream_manager_test.cc",
   ]
 
-  deps = [ "$dir_pw_bluetooth_sapphire/host/testing" ]
+  deps = [
+    ":iso",
+    "$dir_pw_bluetooth_sapphire/host/testing",
+  ]
 
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

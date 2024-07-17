@@ -16,7 +16,9 @@
 
 #include <pw_bluetooth/hci_data.emb.h>
 #include <pw_bluetooth/hci_events.emb.h>
+#include <pw_function/function.h>
 
+#include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 
@@ -72,6 +74,13 @@ struct CisEstablishedParameters {
   // Peripheral => Central parameters
   CisUnidirectionalParams p_to_c_params;
 };
+
+class IsoStream;
+
+using CisEstablishedCallback =
+    pw::Callback<void(pw::bluetooth::emboss::StatusCode,
+                      std::optional<WeakSelf<IsoStream>::WeakPtr>,
+                      const std::optional<CisEstablishedParameters>&)>;
 
 // A convenience class for holding an identifier that uniquely represents a
 // CIG/CIS combination.

@@ -64,6 +64,10 @@ class FakeController final : public ControllerTestDoubleBase,
     pw::chrono::SystemClock::duration le_connection_delay =
         std::chrono::seconds(0);
 
+    // Our role in any LE connections we make.
+    pw::bluetooth::emboss::ConnectionRole le_connection_role =
+        pw::bluetooth::emboss::ConnectionRole::CENTRAL;
+
     // HCI settings.
     pw::bluetooth::emboss::CoreSpecificationVersion hci_version =
         pw::bluetooth::emboss::CoreSpecificationVersion::V5_0;

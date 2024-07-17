@@ -155,6 +155,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h",
