@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
 
+#include <pw_bytes/endian.h>
+
 #include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -144,7 +146,7 @@ void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
   uint32_t tk = *maybe_tk;
   tk_ = UInt128{0};
   // Set the lower bits to |tk|.
-  tk = htole32(tk);
+  tk = pw::bytes::ConvertOrderTo(cpp20::endian::little, tk);
   std::memcpy(tk_.value().data(), &tk, sizeof(tk));
 
   // We have TK so we can generate the confirm value now.

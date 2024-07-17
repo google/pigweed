@@ -16,6 +16,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
 
+#include <pw_bytes/endian.h>
+
 #include <cstdint>
 #include <memory>
 
@@ -132,7 +134,7 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random, uint32_t tk = 0) const {
-    tk = htole32(tk);
+    tk = pw::bytes::ConvertOrderTo(cpp20::endian::little, tk);
     UInt128 tk128;
     tk128.fill(0);
     std::memcpy(tk128.data(), &tk, sizeof(tk));

@@ -13,6 +13,8 @@
 // the License.
 #include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h"
 
+#include <pw_bytes/endian.h>
+
 #include <optional>
 
 #include "lib/fit/function.h"
@@ -254,7 +256,8 @@ void ScStage1Passkey::FinishBitExchange() {
       util::MapToRoles(local_rand_, *peer_rand_, role_);
   UInt128 passkey_array{0};
   // Copy little-endian uint32 passkey to the UInt128 array needed for Stage 2
-  auto little_endian_passkey = htole32(*passkey_);
+  auto little_endian_passkey =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, *passkey_);
   std::memcpy(passkey_array.data(), &little_endian_passkey, sizeof(uint32_t));
   on_complete_(fit::ok(Output{.initiator_r = passkey_array,
                               .responder_r = passkey_array,

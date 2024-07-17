@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_3.h"
 
+#include <pw_bytes/endian.h>
+
 #include <cstdint>
 #include <memory>
 
@@ -114,8 +116,8 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
     StaticByteBuffer<PacketSize<CentralIdentificationParams>()> buffer;
     PacketWriter writer(kCentralIdentification, &buffer);
     auto* params = writer.mutable_payload<CentralIdentificationParams>();
-    params->ediv = htole16(ediv);
-    params->rand = htole64(random);
+    params->ediv = pw::bytes::ConvertOrderTo(cpp20::endian::little, ediv);
+    params->rand = pw::bytes::ConvertOrderTo(cpp20::endian::little, random);
     return buffer;
   }
 

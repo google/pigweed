@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 
+#include <pw_bytes/endian.h>
+
 #include <chrono>
 #include <cstdlib>
 
@@ -243,8 +245,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
       case kCentralIdentification: {
         const auto& params = reader.payload<CentralIdentificationParams>();
         central_ident_count_++;
-        ediv_ = le16toh(params.ediv);
-        rand_ = le64toh(params.rand);
+        ediv_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.ediv);
+        rand_ = pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.rand);
         break;
       }
       case kIdentityInformation:
@@ -323,8 +325,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
         buffer;
     PacketWriter writer(kCentralIdentification, &buffer);
     auto* params = writer.mutable_payload<CentralIdentificationParams>();
-    params->ediv = htole16(ediv);
-    params->rand = htole64(random);
+    params->ediv = pw::bytes::ConvertOrderTo(cpp20::endian::little, ediv);
+    params->rand = pw::bytes::ConvertOrderTo(cpp20::endian::little, random);
     fake_chan()->Receive(buffer);
   }
 
@@ -373,7 +375,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
                                   uint32_t tk = 0) {
     BT_DEBUG_ASSERT(out_value);
 
-    tk = htole32(tk);
+    tk = pw::bytes::ConvertOrderTo(cpp20::endian::little, tk);
     UInt128 tk128;
     tk128.fill(0);
     std::memcpy(tk128.data(), &tk, sizeof(tk));
