@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -27,13 +27,13 @@ bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
     case UUIDElemSize::k16Bit: {
       uint16_t dst;
       memcpy(&dst, bytes.data(), sizeof(dst));
-      *out_uuid = UUID(le16toh(dst));
+      *out_uuid = UUID(pw::bytes::ConvertOrderFrom(cpp20::endian::little, dst));
       return true;
     }
     case UUIDElemSize::k32Bit: {
       uint32_t dst;
       memcpy(&dst, bytes.data(), sizeof(dst));
-      *out_uuid = UUID(le32toh(dst));
+      *out_uuid = UUID(pw::bytes::ConvertOrderFrom(cpp20::endian::little, dst));
       return true;
     }
     case UUIDElemSize::k128Bit: {
@@ -176,14 +176,16 @@ std::optional<uint16_t> UUID::As16Bit() const {
 uint16_t UUID::ValueAs16Bit() const {
   BT_DEBUG_ASSERT(type_ == Type::k16Bit);
 
-  return le16toh(
+  return pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
       *reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
 }
 
 uint32_t UUID::ValueAs32Bit() const {
   BT_DEBUG_ASSERT(type_ != Type::k128Bit);
 
-  return le32toh(
+  return pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
       *reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
 }
 
