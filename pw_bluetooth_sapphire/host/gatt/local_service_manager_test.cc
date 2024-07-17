@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
@@ -1073,7 +1075,8 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
       EXPECT_EQ(2u, value.size());
 
       if (value.size() == 2u) {
-        *out_value = le16toh(value.template To<uint16_t>());
+        *out_value = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                 value.template To<uint16_t>());
       }
     };
 
@@ -1088,7 +1091,8 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     BT_ASSERT(out_status);
 
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
-    uint16_t value = htole16(ccc_value);
+    uint16_t value =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, ccc_value);
     return attr->WriteAsync(
         peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }

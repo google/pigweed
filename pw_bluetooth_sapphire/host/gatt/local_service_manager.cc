@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include <algorithm>
 
@@ -263,7 +263,7 @@ class LocalServiceManager::ServiceData final {
       value = iter->second.Get(peer_id);
     }
 
-    value = htole16(value);
+    value = pw::bytes::ConvertOrderTo(cpp20::endian::little, value);
     result_cb(
         fit::ok(),
         BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
@@ -288,7 +288,8 @@ class LocalServiceManager::ServiceData final {
       return;
     }
 
-    uint16_t ccc_value = le16toh(value.To<uint16_t>());
+    uint16_t ccc_value = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                     value.To<uint16_t>());
     if (ccc_value > (kCCCNotificationBit | kCCCIndicationBit)) {
       result_cb(fit::error(att::ErrorCode::kInvalidPDU));
       return;

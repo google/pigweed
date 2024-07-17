@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
@@ -163,7 +165,8 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
           return;
         }
 
-        auto ext_props = le16toh(data.To<uint16_t>());
+        uint16_t ext_props = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                         data.To<uint16_t>());
         self->UpdateDataWithExtendedProperties(ext_props);
 
         cb(status);

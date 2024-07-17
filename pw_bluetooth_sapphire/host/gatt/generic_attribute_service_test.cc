@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h"
@@ -38,7 +40,8 @@ class GenericAttributeServiceTest : public ::testing::Test {
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
     BT_ASSERT(attr);
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
-    uint16_t value = htole16(ccc_value);
+    uint16_t value =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, ccc_value);
     return attr->WriteAsync(
         peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }

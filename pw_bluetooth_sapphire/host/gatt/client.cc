@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -55,7 +57,8 @@ bool ProcessDescriptorDiscoveryResponse(
   while (entries.size()) {
     const EntryType& entry = entries.To<EntryType>();
 
-    att::Handle desc_handle = le16toh(entry.handle);
+    att::Handle desc_handle =
+        pw::bytes::ConvertOrderFrom(cpp20::endian::little, entry.handle);
 
     // Stop and report an error if the server erroneously responds with
     // an attribute outside the requested range.
@@ -109,7 +112,8 @@ class Impl final : public Client {
 
       bool is_ind = pdu.opcode() == att::kIndication;
       const auto& params = pdu.payload<att::NotificationParams>();
-      att::Handle handle = le16toh(params.handle);
+      att::Handle handle =
+          pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.handle);
       size_t value_size = pdu.payload_size() - sizeof(att::Handle);
 
       // Auto-confirm indications.
@@ -167,7 +171,8 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kExchangeMTURequest, pdu.get());
     auto params = writer.mutable_payload<att::ExchangeMTURequestParams>();
-    params->client_rx_mtu = htole16(att_->preferred_mtu());
+    params->client_rx_mtu =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, att_->preferred_mtu());
 
     auto rsp_cb = [this, mtu_cb = std::move(mtu_cb)](
                       att::Bearer::TransactionResult result) mutable {
@@ -184,7 +189,8 @@ class Impl final : public Client {
         }
 
         const auto& rsp_params = rsp.payload<att::ExchangeMTUResponseParams>();
-        uint16_t server_mtu = le16toh(rsp_params.server_rx_mtu);
+        uint16_t server_mtu = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little, rsp_params.server_rx_mtu);
 
         // If the minimum value is less than the default MTU, then go with the
         // default MTU (Vol 3, Part F, 3.4.2.2).
@@ -241,11 +247,14 @@ class Impl final : public Client {
     att::PacketWriter writer(att::kReadByGroupTypeRequest, pdu.get());
     auto* params =
         writer.mutable_payload<att::ReadByGroupTypeRequestParams16>();
-    params->start_handle = htole16(range_start);
-    params->end_handle = htole16(range_end);
-    params->type =
-        htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
-                                             : types::kSecondaryService16);
+    params->start_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, range_start);
+    params->end_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, range_end);
+    params->type = pw::bytes::ConvertOrderTo(cpp20::endian::little,
+                                             kind == ServiceKind::PRIMARY
+                                                 ? types::kPrimaryService16
+                                                 : types::kSecondaryService16);
 
     auto rsp_cb = [this,
                    kind,
@@ -312,10 +321,12 @@ class Impl final : public Client {
 
       std::optional<att::Handle> last_handle;
       while (attr_data_list.size()) {
-        att::Handle start = le16toh(
+        att::Handle start = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little,
             attr_data_list
                 .ReadMember<&att::AttributeGroupDataEntry::start_handle>());
-        att::Handle end = le16toh(
+        att::Handle end = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little,
             attr_data_list
                 .ReadMember<&att::AttributeGroupDataEntry::group_end_handle>());
 
@@ -444,11 +455,13 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kFindByTypeValueRequest, pdu.get());
     auto* params = writer.mutable_payload<att::FindByTypeValueRequestParams>();
-    params->start_handle = htole16(start);
-    params->end_handle = htole16(end);
-    params->type =
-        htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
-                                             : types::kSecondaryService16);
+    params->start_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, start);
+    params->end_handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, end);
+    params->type = pw::bytes::ConvertOrderTo(cpp20::endian::little,
+                                             kind == ServiceKind::PRIMARY
+                                                 ? types::kPrimaryService16
+                                                 : types::kSecondaryService16);
     MutableBufferView value_view(params->value, uuid_size_bytes);
     uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
 
@@ -495,8 +508,10 @@ class Impl final : public Client {
       while (handle_list.size()) {
         const auto& entry = handle_list.To<att::HandlesInformationList>();
 
-        att::Handle start = le16toh(entry.handle);
-        att::Handle end = le16toh(entry.group_end_handle);
+        att::Handle start =
+            pw::bytes::ConvertOrderFrom(cpp20::endian::little, entry.handle);
+        att::Handle end = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                      entry.group_end_handle);
 
         if (end < start) {
           bt_log(DEBUG, "gatt", "received malformed service range values");
@@ -608,7 +623,8 @@ class Impl final : public Client {
           auto attr_value = char_attr.value.To<
               CharacteristicDeclarationAttributeValue<att::UUIDType::k16Bit>>();
           properties = attr_value.properties;
-          value_handle = le16toh(attr_value.value_handle);
+          value_handle = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                     attr_value.value_handle);
           value_uuid = UUID(attr_value.value_uuid);
         } else if (char_attr.value.size() ==
                    sizeof(CharacteristicDeclarationAttributeValue<
@@ -617,7 +633,8 @@ class Impl final : public Client {
               char_attr.value.To<CharacteristicDeclarationAttributeValue<
                   att::UUIDType::k128Bit>>();
           properties = attr_value.properties;
-          value_handle = le16toh(attr_value.value_handle);
+          value_handle = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                     attr_value.value_handle);
           value_uuid = UUID(attr_value.value_uuid);
         } else {
           bt_log(DEBUG,
@@ -681,8 +698,10 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kFindInformationRequest, pdu.get());
     auto* params = writer.mutable_payload<att::FindInformationRequestParams>();
-    params->start_handle = htole16(range_start);
-    params->end_handle = htole16(range_end);
+    params->start_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, range_start);
+    params->end_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, range_end);
 
     auto rsp_cb = [this,
                    range_start,
@@ -779,7 +798,7 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kReadRequest, pdu.get());
     auto params = writer.mutable_payload<att::ReadRequestParams>();
-    params->handle = htole16(handle);
+    params->handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
 
     auto rsp_cb = [this, callback = std::move(callback)](
                       att::Bearer::TransactionResult result) {
@@ -822,14 +841,18 @@ class Impl final : public Client {
     att::PacketWriter writer(att::kReadByTypeRequest, pdu.get());
     if (type_size == sizeof(uint16_t)) {
       auto params = writer.mutable_payload<att::ReadByTypeRequestParams16>();
-      params->start_handle = htole16(start_handle);
-      params->end_handle = htole16(end_handle);
+      params->start_handle =
+          pw::bytes::ConvertOrderTo(cpp20::endian::little, start_handle);
+      params->end_handle =
+          pw::bytes::ConvertOrderTo(cpp20::endian::little, end_handle);
       auto type_view = MutableBufferView(&params->type, sizeof(params->type));
       type.ToBytes(&type_view, /*allow_32bit=*/false);
     } else {
       auto params = writer.mutable_payload<att::ReadByTypeRequestParams128>();
-      params->start_handle = htole16(start_handle);
-      params->end_handle = htole16(end_handle);
+      params->start_handle =
+          pw::bytes::ConvertOrderTo(cpp20::endian::little, start_handle);
+      params->end_handle =
+          pw::bytes::ConvertOrderTo(cpp20::endian::little, end_handle);
       auto type_view = MutableBufferView(&params->type, sizeof(params->type));
       type.ToBytes(&type_view, /*allow_32bit=*/false);
     }
@@ -883,7 +906,8 @@ class Impl final : public Client {
                                 rsp.payload_size() - sizeof(params.length));
       while (attr_list_view.size() >= params.length) {
         const BufferView pair_view = attr_list_view.view(0, pair_size);
-        const att::Handle handle = le16toh(pair_view.To<att::Handle>());
+        const att::Handle handle = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little, pair_view.To<att::Handle>());
 
         if (handle < start_handle || handle > end_handle) {
           bt_log(TRACE,
@@ -945,8 +969,8 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kReadBlobRequest, pdu.get());
     auto params = writer.mutable_payload<att::ReadBlobRequestParams>();
-    params->handle = htole16(handle);
-    params->offset = htole16(offset);
+    params->handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
+    params->offset = pw::bytes::ConvertOrderTo(cpp20::endian::little, offset);
 
     auto rsp_cb = [this, offset, callback = std::move(callback)](
                       att::Bearer::TransactionResult result) {
@@ -990,7 +1014,7 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kWriteRequest, pdu.get());
     auto params = writer.mutable_payload<att::WriteRequestParams>();
-    params->handle = htole16(handle);
+    params->handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
 
     auto value_view =
         writer.mutable_payload_data().mutable_view(sizeof(att::Handle));
@@ -1074,7 +1098,8 @@ class Impl final : public Client {
             // The response blob is malformed.
             status = ToResult(HostError::kNotReliable);
           } else {
-            auto blob_offset = le16toh(
+            uint16_t blob_offset = pw::bytes::ConvertOrderFrom(
+                cpp20::endian::little,
                 blob.ReadMember<&att::PrepareWriteResponseParams::offset>());
             auto blob_value =
                 blob.view(sizeof(att::PrepareWriteResponseParams));
@@ -1159,8 +1184,8 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kPrepareWriteRequest, pdu.get());
     auto params = writer.mutable_payload<att::PrepareWriteRequestParams>();
-    params->handle = htole16(handle);
-    params->offset = htole16(offset);
+    params->handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
+    params->offset = pw::bytes::ConvertOrderTo(cpp20::endian::little, offset);
 
     auto header_size = sizeof(att::Handle) + sizeof(uint16_t);
     auto value_view = writer.mutable_payload_data().mutable_view(header_size);
@@ -1249,7 +1274,7 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kWriteCommand, pdu.get());
     auto params = writer.mutable_payload<att::WriteRequestParams>();
-    params->handle = htole16(handle);
+    params->handle = pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
 
     auto value_view =
         writer.mutable_payload_data().mutable_view(sizeof(att::Handle));
