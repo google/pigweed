@@ -54,7 +54,7 @@ class ExtendedLowEnergyScannerTest : public TestingBase,
 
     FakeController::Settings settings;
     settings.ApplyExtendedLEConfig();
-    this->test_device()->set_settings(settings);
+    test_device()->set_settings(settings);
 
     scanner_ = std::make_unique<ExtendedLowEnergyScanner>(
         &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
@@ -147,7 +147,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsSingleReport) {
   test_device()->SendCommandChannelPacket(event.data());
 
   bool peer_found_callback_called = false;
-  this->set_peer_found_callback([&](const LowEnergyScanResult& result) {
+  set_peer_found_callback([&](const LowEnergyScanResult& result) {
     peer_found_callback_called = true;
     EXPECT_EQ(peer(1)->address(), result.address());
     EXPECT_EQ(peer(1)->advertising_data().size(), result.data().size());
@@ -194,7 +194,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsMultipleReports) {
   bool peer_found_callback_called = false;
   std::unordered_map<DeviceAddress, std::unique_ptr<DynamicByteBuffer>> map;
 
-  this->set_peer_found_callback([&](const LowEnergyScanResult& result) {
+  set_peer_found_callback([&](const LowEnergyScanResult& result) {
     peer_found_callback_called = true;
     map[result.address()] =
         std::make_unique<DynamicByteBuffer>(result.data().size());
@@ -242,8 +242,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsNotEnoughData) {
 
   // there wasn't enough data available so we shouldn't have parsed out any
   // advertising reports
-  this->set_peer_found_callback(
-      [&](const LowEnergyScanResult& result) { FAIL(); });
+  set_peer_found_callback([&](const LowEnergyScanResult& result) { FAIL(); });
 
   RunUntilIdle();
 }
@@ -302,7 +301,7 @@ TEST_F(ExtendedLowEnergyScannerTest, TruncateToMax) {
   report.data_length().Write(data_size);
 
   size_t result_data_length = 0;
-  this->set_peer_found_callback([&](const LowEnergyScanResult& result) {
+  set_peer_found_callback([&](const LowEnergyScanResult& result) {
     result_data_length = result.data().size();
   });
 
@@ -337,7 +336,7 @@ TEST_F(ExtendedLowEnergyScannerTest, Incomplete) {
   test_device()->SendCommandChannelPacket(event.data());
 
   bool callback_called = false;
-  this->set_peer_found_callback(
+  set_peer_found_callback(
       [&](const LowEnergyScanResult& result) { callback_called = true; });
 
   RunUntilIdle();
@@ -376,7 +375,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncated) {
   test_device()->SendCommandChannelPacket(event.data());
 
   bool callback_called = false;
-  this->set_peer_found_callback(
+  set_peer_found_callback(
       [&](const LowEnergyScanResult& result) { callback_called = true; });
 
   RunUntilIdle();
@@ -416,7 +415,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncatedNonScannable) {
   test_device()->SendCommandChannelPacket(event.data());
 
   bool callback_called = false;
-  this->set_peer_found_callback(
+  set_peer_found_callback(
       [&](const LowEnergyScanResult& result) { callback_called = true; });
 
   RunUntilIdle();

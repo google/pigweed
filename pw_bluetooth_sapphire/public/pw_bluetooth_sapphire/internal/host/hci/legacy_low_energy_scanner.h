@@ -13,8 +13,6 @@
 // the License.
 
 #pragma once
-#include <memory>
-#include <unordered_map>
 
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
@@ -65,6 +63,9 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
                           bool resolved,
                           int8_t rssi,
                           const ByteBuffer& data);
+
+  std::vector<pw::bluetooth::emboss::LEAdvertisingReportDataView>
+  ParseAdvertisingReports(const EmbossEventPacket& event);
 
   // Event handler for HCI LE Advertising Report event.
   void OnAdvertisingReportEvent(const EmbossEventPacket& event);
