@@ -15,7 +15,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 
 #include <cpp-string/string_printf.h>
-#include <endian.h>
 #include <pw_bluetooth/hci_commands.emb.h>
 #include <pw_bluetooth/hci_events.emb.h>
 

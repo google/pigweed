@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
 
-#include <endian.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"

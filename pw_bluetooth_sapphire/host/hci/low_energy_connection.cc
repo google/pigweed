@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 #pragma clang diagnostic ignored "-Wshadow"
@@ -129,7 +131,8 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
+  hci_spec::ConnectionHandle handle = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params->connection_handle);
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
@@ -138,8 +141,10 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
 
   CommandChannel::CommandPacketVariant cmd;
 
-  uint64_t rand = le64toh(params->random_number);
-  uint16_t ediv = le16toh(params->encrypted_diversifier);
+  uint64_t rand =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params->random_number);
+  uint16_t ediv = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                              params->encrypted_diversifier);
 
   bt_log(
       DEBUG, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
@@ -151,7 +156,8 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
                        ->mutable_payload<
                            hci_spec::LELongTermKeyRequestReplyCommandParams>();
 
-    params->connection_handle = htole16(handle);
+    params->connection_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
     params->long_term_key = ltk()->value();
   } else {
     bt_log(DEBUG, "hci-le", "LTK request rejected");
