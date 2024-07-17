@@ -818,10 +818,10 @@ enum class EncryptionStatus : uint8_t {
 };
 
 // HCI command timeout interval (milliseconds)
-// TODO(fxbug.dev/42070690,fxbug.dev/42070801) This was increased to handle flaking integration tests.
-// We may want to reduce this to something lower again once we have a better
-// resolution to this issue.
-constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::seconds(10);
+// TODO(fxbug.dev/42070690, fxbug.dev/42070801) This was
+// increased to handle flaking integration tests. We may want to reduce this
+// to something lower again once we have a bette resolution to this issue.
+constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::seconds(10));
 
 // The minimum and maximum range values for the LE advertising interval
 // parameters.
@@ -1350,7 +1350,7 @@ constexpr pw::chrono::SystemClock::duration kMaxAutomaticFlushTimeoutDuration = 
 
 // Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
 // The default is 5.12 sec.
-constexpr pw::chrono::SystemClock::duration kDurationPerPageTimeoutUnit = std::chrono::microseconds(625);
+constexpr pw::chrono::SystemClock::duration kDurationPerPageTimeoutUnit = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::microseconds(625));
 constexpr pw::chrono::SystemClock::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN);
 constexpr pw::chrono::SystemClock::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT);
 constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
