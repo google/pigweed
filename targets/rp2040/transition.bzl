@@ -25,6 +25,7 @@ RP2040_SYSTEM_FLAGS = FREERTOS_FLAGS | {
     "@pico-sdk//bazel/config:PICO_STDIO_USB": True,
     "@pigweed//pw_assert:check_backend": "@pigweed//pw_assert_basic",
     "@pigweed//pw_assert:check_backend_impl": "@pigweed//pw_assert_basic:impl",
+    "@pigweed//pw_build:default_module_config": "@pigweed//targets/rp2040:pigweed_module_config",
     "@pigweed//pw_cpu_exception:entry_backend": "@pigweed//pw_cpu_exception_cortex_m:cpu_exception",
     "@pigweed//pw_cpu_exception:entry_backend_impl": "@pigweed//pw_cpu_exception_cortex_m:cpu_exception_impl",
     "@pigweed//pw_cpu_exception:handler_backend": "@pigweed//pw_cpu_exception:basic_handler",

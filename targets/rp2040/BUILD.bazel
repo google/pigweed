@@ -82,8 +82,20 @@ cc_library(
 filegroup(
     name = "rp2040_files",
     srcs = [
-        "config/pigweed_module_config.h",
         "config/rp2040_hal_config.h",
+    ],
+)
+
+# This is a duplication of the contents of pigweed_module_config.h since we
+# can't do a -include because copts do not propagate to dependencies.
+cc_library(
+    name = "pigweed_module_config",
+    hdrs = ["config/pigweed_module_config.h"],
+    defines = [
+        # LINT.IfChange
+        "PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED=1",
+        "PW_ASSERT_BASIC_ACTION=PW_ASSERT_BASIC_ACTION_EXIT",
+        # LINT.ThenChange(//targets/rp2040/config/pigweed_module_config.h)
     ],
 )
 

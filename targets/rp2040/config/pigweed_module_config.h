@@ -13,5 +13,12 @@
 // the License.
 #pragma once
 
+// WARNING: If you update this file, update
+// //targets/rp2040:pigweed_module_config as well!!!
+// LINT.IfChange
 // Enable thread joining for tests.
 #define PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED 1
+
+// When using assert_basic, don't fflush and instead just exit.
+#define PW_ASSERT_BASIC_ACTION PW_ASSERT_BASIC_ACTION_EXIT
+// LINT.ThenChange(//targets/rp2040/BUILD.bazel)
