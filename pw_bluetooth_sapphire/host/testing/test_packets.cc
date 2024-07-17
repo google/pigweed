@@ -662,6 +662,23 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
       ));
 }
 
+DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,
+                                           uint16_t scan_window) {
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kWriteInquiryScanActivity),
+                       UpperBits(hci_spec::kWriteInquiryScanActivity),
+                       0x04,  // Param total size
+                       LowerBits(scan_interval),
+                       UpperBits(scan_interval),
+                       LowerBits(scan_window),
+                       UpperBits(scan_window)));
+}
+
+DynamicByteBuffer WriteInquiryScanActivityResponse() {
+  return CommandCompletePacket(hci_spec::kWriteInquiryScanActivity,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+}
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kWritePageTimeout),

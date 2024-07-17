@@ -153,6 +153,10 @@ DynamicByteBuffer ReadRemoteExtended2CompletePacket(
 DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
     hci_spec::ConnectionHandle conn, uint16_t flush_timeout);
 
+DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,
+                                           uint16_t scan_window);
+DynamicByteBuffer WriteInquiryScanActivityResponse();
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);
 
 DynamicByteBuffer WriteScanEnable(uint8_t scan_enable);
