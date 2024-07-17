@@ -327,7 +327,7 @@ void FakeController::RespondWithCommandComplete(
   auto header = packet->template view<pwemb::CommandCompleteEventWriter>();
 
   header.num_hci_command_packets().Write(settings_.num_hci_command_packets);
-  header.command_opcode().BackingStorage().WriteUInt(opcode);
+  header.command_opcode_bits().BackingStorage().WriteUInt(opcode);
 
   SendEvent(hci_spec::kCommandCompleteEventCode, packet);
 }
@@ -363,7 +363,7 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
   uint8_t parameter_total_size =
       packet->size() - pwemb::EventHeader::IntrinsicSizeInBytes();
 
-  header.event_code().Write(event_code);
+  header.event_code_uint().Write(event_code);
   header.parameter_total_size().Write(parameter_total_size);
 
   SendCommandChannelPacket(packet->data());

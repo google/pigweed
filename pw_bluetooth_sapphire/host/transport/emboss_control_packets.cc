@@ -29,22 +29,22 @@ EmbossCommandPacket::EmbossCommandPacket(hci_spec::OpCode opcode,
           pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes(),
       "command packet size must be at least 3 bytes to accomodate header");
   auto header = view<pw::bluetooth::emboss::CommandHeaderWriter>();
-  header.opcode().BackingStorage().WriteUInt(opcode);
+  header.opcode_bits().BackingStorage().WriteUInt(opcode);
   header.parameter_total_size().Write(
       packet_size -
       pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes());
 }
 
 hci_spec::OpCode EmbossCommandPacket::opcode() const {
-  return header_view().opcode().BackingStorage().ReadUInt();
+  return header_view().opcode_bits().BackingStorage().ReadUInt();
 }
 
 uint8_t EmbossCommandPacket::ogf() const {
-  return header_view().opcode().ogf().Read();
+  return header_view().opcode_bits().ogf().Read();
 }
 
 uint16_t EmbossCommandPacket::ocf() const {
-  return header_view().opcode().ocf().Read();
+  return header_view().opcode_bits().ocf().Read();
 }
 
 pw::bluetooth::emboss::CommandHeaderView EmbossCommandPacket::header_view()
@@ -60,7 +60,9 @@ EmbossEventPacket::EmbossEventPacket(size_t packet_size)
 }
 
 hci_spec::EventCode EmbossEventPacket::event_code() const {
-  return view<pw::bluetooth::emboss::EventHeaderView>().event_code().Read();
+  return view<pw::bluetooth::emboss::EventHeaderView>()
+      .event_code_uint()
+      .Read();
 }
 
 std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()

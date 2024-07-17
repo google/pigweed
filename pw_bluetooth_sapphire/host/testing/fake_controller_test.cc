@@ -32,40 +32,41 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
   FakeController controller(dispatcher());
 
   int event_cb_count = 0;
-  controller.SetEventFunction([&event_cb_count](
-                                  pw::span<const std::byte> packet_bytes) {
-    auto header_view = pw::bluetooth::emboss::MakeEventHeaderView(
-        reinterpret_cast<const uint8_t*>(packet_bytes.data()),
-        packet_bytes.size());
+  controller.SetEventFunction(
+      [&event_cb_count](pw::span<const std::byte> packet_bytes) {
+        auto header_view = pw::bluetooth::emboss::MakeEventHeaderView(
+            reinterpret_cast<const uint8_t*>(packet_bytes.data()),
+            packet_bytes.size());
 
-    if (header_view.event_code().Read() == hci_spec::kCommandStatusEventCode) {
-      std::unique_ptr<hci::EventPacket> event = hci::EventPacket::New(
-          packet_bytes.size() - sizeof(hci_spec::EventHeader));
-      event->mutable_view()->mutable_data().Write(
-          reinterpret_cast<const uint8_t*>(packet_bytes.data()),
-          packet_bytes.size());
-      event->InitializeFromBuffer();
-      pw::bluetooth::emboss::StatusCode status;
-      event->ToStatusCode(&status);
-      EXPECT_EQ(status, pw::bluetooth::emboss::StatusCode::SUCCESS);
-      ++event_cb_count;
-    }
-
-    else if (header_view.event_code().Read() ==
-             hci_spec::kInquiryCompleteEventCode) {
-      auto inquiry_complete_view =
-          pw::bluetooth::emboss::MakeInquiryCompleteEventView(
+        if (header_view.event_code_uint().Read() ==
+            hci_spec::kCommandStatusEventCode) {
+          std::unique_ptr<hci::EventPacket> event = hci::EventPacket::New(
+              packet_bytes.size() - sizeof(hci_spec::EventHeader));
+          event->mutable_view()->mutable_data().Write(
               reinterpret_cast<const uint8_t*>(packet_bytes.data()),
               packet_bytes.size());
-      EXPECT_EQ(inquiry_complete_view.status().Read(),
-                pw::bluetooth::emboss::StatusCode::SUCCESS);
-      ++event_cb_count;
-    }
+          event->InitializeFromBuffer();
+          pw::bluetooth::emboss::StatusCode status;
+          event->ToStatusCode(&status);
+          EXPECT_EQ(status, pw::bluetooth::emboss::StatusCode::SUCCESS);
+          ++event_cb_count;
+        }
 
-    else {
-      ADD_FAILURE() << "Unexpected Event packet received";
-    }
-  });
+        else if (header_view.event_code_uint().Read() ==
+                 hci_spec::kInquiryCompleteEventCode) {
+          auto inquiry_complete_view =
+              pw::bluetooth::emboss::MakeInquiryCompleteEventView(
+                  reinterpret_cast<const uint8_t*>(packet_bytes.data()),
+                  packet_bytes.size());
+          EXPECT_EQ(inquiry_complete_view.status().Read(),
+                    pw::bluetooth::emboss::StatusCode::SUCCESS);
+          ++event_cb_count;
+        }
+
+        else {
+          ADD_FAILURE() << "Unexpected Event packet received";
+        }
+      });
 
   auto inquiry = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::InquiryCommandWriter>(hci_spec::kInquiry);

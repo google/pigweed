@@ -95,7 +95,7 @@ class EmbossEventPacket : public DynamicPacket {
     EmbossEventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
     auto header =
         packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
-    header.event_code().Write(event_code);
+    header.event_code_uint().Write(event_code);
     header.parameter_total_size().Write(
         T::IntrinsicSizeInBytes().Read() -
         pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes());
@@ -113,7 +113,7 @@ class EmbossEventPacket : public DynamicPacket {
     EmbossEventPacketT<T> packet(packet_size);
     auto header =
         packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
-    header.event_code().Write(event_code);
+    header.event_code_uint().Write(event_code);
     header.parameter_total_size().Write(
         packet_size -
         pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes());
