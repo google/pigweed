@@ -17,21 +17,17 @@ import asyncio
 import io
 import json
 import logging
-import operator
 import sys
 import types
-from typing import Callable, TYPE_CHECKING, List, Dict, Any
+from typing import Any
 
-from aiohttp import web
+from aiohttp.web_ws import WebSocketResponse
 from prompt_toolkit.completion import CompleteEvent
 from prompt_toolkit.document import Document
 from ptpython.completer import PythonCompleter
 from ptpython.repl import _has_coroutine_flag
 
-from pw_console.python_logging import log_record_to_json
-
-if TYPE_CHECKING:
-    from pw_console.log_line import LogLine
+from pw_console.python_logging import log_record_to_dict
 
 _LOG = logging.getLogger(__package__)
 
@@ -48,7 +44,7 @@ class MissingCallId(Exception):
     """Exception for request with missing call id."""
 
 
-def format_completions(all_completions) -> List[Dict[str, str]]:
+def format_completions(all_completions) -> list[dict[str, str]]:
     # Hide private suggestions
     all_completions = [
         completion
@@ -89,32 +85,42 @@ def compile_code(code: str, mode: str) -> types.CodeType:
 
 
 class WebSocketStreamingResponder(logging.Handler):
-    def __init__(self, connection):
-        logging.Handler.__init__(self=self)
+    """Python logging handler that sends json serialized logs.
+
+    Args:
+      connection: the WebSocketResponse object to send json logs to.
+      loop: The asyncio loop to run the send_str in.
+    """
+
+    def __init__(
+        self,
+        connection: WebSocketResponse,
+        loop: asyncio.AbstractEventLoop,
+        *args,
+        **kwargs,
+    ) -> None:
         self.connection = connection
-        self.request_ids = []
-        self.formatter: Callable[[LogLine], str] = operator.attrgetter(
-            'ansi_stripped_log'
+        self.loop = loop
+        self.request_ids: list[int] = []
+        super().__init__(*args, **kwargs)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        # Process this log record in a separate event loop.
+        asyncio.run_coroutine_threadsafe(
+            self._process_log(record),
+            self.loop,
         )
-        self.formatter = lambda record: json.loads(log_record_to_json(record))
 
-    def emit(self, record):
-        log_string = self.formatter(record)
-        self._process_log_string(log_string)
-
-    def _process_log_string(self, log_string):
-        loop = asyncio.get_event_loop()
-        asyncio.set_event_loop(loop)
+    async def _process_log(self, record: logging.LogRecord) -> None:
+        """Send the log serialized to json via the current WebSocketResponse."""
         for req_id in self.request_ids:
-            loop.create_task(
-                self.connection.send_str(
-                    json.dumps(
-                        {
-                            'id': req_id,
-                            'streaming': True,
-                            'data': {'log_line': log_string},
-                        }
-                    )
+            await self.connection.send_str(
+                json.dumps(
+                    {
+                        'id': req_id,
+                        'streaming': True,
+                        'data': {'log_line': log_record_to_dict(record)},
+                    }
                 )
             )
 
@@ -124,13 +130,16 @@ class WebKernel:
 
     def __init__(
         self,
-        connection: web.WebSocketResponse,
-        kernel_params,
+        connection: WebSocketResponse,
+        kernel_params: dict[str, Any],
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Create a new kernel for this particular websocket connection."""
         self.connection = connection
         self.kernel_params = kernel_params
-        self.logger_handlers: Dict[str, WebSocketStreamingResponder] = {}
+        self.loop = loop
+
+        self.logger_handlers: dict[str, WebSocketStreamingResponder] = {}
         self.connected = False
         self.python_completer = PythonCompleter(
             self.get_globals,
@@ -220,7 +229,7 @@ class WebKernel:
             _LOG.error('Failed to parse request: %s', request)
             return ''
 
-    async def handle_eval(self, code: str) -> Dict[str, str] | None:
+    async def handle_eval(self, code: str) -> dict[str, str] | None:
         """Evaluate user code and return output."""
         # Patch stdout and stderr to capture repl print() statements.
         temp_stdout = io.StringIO()
@@ -231,7 +240,7 @@ class WebKernel:
         sys.stdout = temp_stdout
         sys.stderr = temp_stderr
 
-        def return_result_with_stdout_stderr(result) -> Dict[str, str]:
+        def return_result_with_stdout_stderr(result) -> dict[str, str]:
             # Always restore original stdout and stderr
             sys.stdout = original_stdout
             sys.stderr = original_stderr
@@ -297,7 +306,7 @@ class WebKernel:
 
     def handle_autocompletion(
         self, code: str, cursor_pos: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         doc = Document(code, cursor_pos)
         all_completions = list(
             self.python_completer.get_completions(
@@ -316,16 +325,13 @@ class WebKernel:
                 logger.removeHandler(self.logger_handlers[logger_name])
 
     def get_globals(self) -> dict[str, Any]:
-        return self.kernel_params['global_vars']
+        return self.kernel_params.get('global_vars', globals())
 
     def get_locals(self) -> dict[str, Any]:
-        if self.kernel_params['local_vars']:
-            return self.kernel_params['local_vars']
+        return self.kernel_params.get('local_vars', self.get_globals())
 
-        return self.get_globals()
-
-    def handle_log_source_list(self) -> List[str]:
-        if self.kernel_params['loggers']:
+    def handle_log_source_list(self) -> list[str]:
+        if 'loggers' in self.kernel_params:
             return list(self.kernel_params['loggers'].keys())
         return []
 
@@ -333,7 +339,8 @@ class WebKernel:
         if self.kernel_params['loggers'][logger_name]:
             if not logger_name in self.logger_handlers:
                 self.logger_handlers[logger_name] = WebSocketStreamingResponder(
-                    self.connection
+                    self.connection,
+                    self.loop,
                 )
                 for logger in self.kernel_params['loggers'][logger_name]:
                     logger.addHandler(self.logger_handlers[logger_name])

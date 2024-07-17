@@ -18,10 +18,12 @@ import datetime
 import email.utils
 import logging
 import mimetypes
-import socket
-import webbrowser
 from pathlib import Path
+import socket
+from threading import Thread
+import webbrowser
 from typing import Callable
+
 from aiohttp import web, WSMsgType
 
 from pw_console.web_kernel import WebKernel
@@ -61,6 +63,7 @@ def pw_console_http_server(
         handler = WebHandlers(
             html_files=html_files, kernel_params=kernel_params
         )
+        handler.start_web_socket_streaming_responder_thread()
         runner = aiohttp_server(handler.handle_request)
         port = find_available_port(start_port)
         loop = asyncio.new_event_loop()
@@ -73,18 +76,41 @@ def pw_console_http_server(
         webbrowser.open(url)
         loop.run_forever()
     except KeyboardInterrupt:
+        _LOG.info('Shutting down...')
+        handler.stop_web_socket_streaming_responder_thread()
         loop.stop()
 
 
 class WebHandlers:
     """Request handler that serves files from pw_console.html package data."""
 
-    def __init__(self, html_files: dict[str, str], kernel_params):
+    def __init__(self, html_files: dict[str, str], kernel_params) -> None:
         self.html_files = html_files
         self.date_modified = email.utils.formatdate(
             datetime.datetime.now().timestamp(), usegmt=True
         )
         self.kernel_params = kernel_params
+
+        self.web_socket_streaming_responder_loop = asyncio.new_event_loop()
+
+    def _web_socket_streaming_responder_thread_entry(self):
+        """Entry point for the web socket logging handlers thread."""
+        asyncio.set_event_loop(self.web_socket_streaming_responder_loop)
+        self.web_socket_streaming_responder_loop.run_forever()
+
+    def start_web_socket_streaming_responder_thread(self):
+        """Start thread for handling log messages to web socket responses."""
+        thread = Thread(
+            target=self._web_socket_streaming_responder_thread_entry,
+            args=(),
+            daemon=True,
+        )
+        thread.start()
+
+    def stop_web_socket_streaming_responder_thread(self):
+        self.web_socket_streaming_responder_loop.call_soon_threadsafe(
+            self.web_socket_streaming_responder_loop.stop
+        )
 
     async def handle_request(
         self, request: web.Request
@@ -123,16 +149,17 @@ class WebHandlers:
     async def handle_websocket(
         self, request: web.Request
     ) -> web.WebSocketResponse:
-        """Handle a websocket connection request by creating a new web kernel"""
+        """Handle a websocket connection request by creating a new kernel."""
         ws = web.WebSocketResponse()
         await ws.prepare(request)
-        kernel = WebKernel(ws, self.kernel_params)
+        kernel = WebKernel(
+            ws, self.kernel_params, self.web_socket_streaming_responder_loop
+        )
         try:
             async for msg in ws:
                 if msg.type == WSMsgType.TEXT:
                     if msg.data == 'close':
                         return ws
-
                     response = await kernel.handle_request(msg.data)
                     await ws.send_str(response)
                 elif msg.type == WSMsgType.ERROR:

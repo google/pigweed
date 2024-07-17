@@ -117,12 +117,15 @@ def setup_python_logging(
     logging.getLogger("pw_console.serial_debug_logger").setLevel(logging.DEBUG)
 
 
-def log_record_to_json(record: logging.LogRecord) -> str:
+def log_record_to_dict(record: logging.LogRecord) -> dict[str, Any]:
+    """Convert a log record into a dict for use with json formatting."""
     log_dict: dict[str, Any] = {}
     log_dict["message"] = record.getMessage()
     log_dict["levelno"] = record.levelno
     log_dict["levelname"] = record.levelname
-    log_dict["args"] = record.args
+    log_dict["args"] = ''
+    if record.args:
+        log_dict["args"] = [str(arg) for arg in record.args]
     log_dict["time"] = str(record.created)
     log_dict["time_string"] = datetime.fromtimestamp(record.created).isoformat(
         timespec="seconds"
@@ -145,7 +148,11 @@ def log_record_to_json(record: logging.LogRecord) -> str:
 
             log_dict["fields"][key] = str(value)
 
-    return json.dumps(log_dict)
+    return log_dict
+
+
+def log_record_to_json(record: logging.LogRecord) -> str:
+    return json.dumps(log_record_to_dict(record))
 
 
 class JsonLogFormatter(logging.Formatter):
