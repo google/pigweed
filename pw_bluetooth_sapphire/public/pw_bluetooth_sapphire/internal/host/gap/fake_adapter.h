@@ -302,11 +302,10 @@ class FakeAdapter final : public Adapter {
                       hci::ResultFunction<> callback) override;
 
   void GetSupportedDelayRange(
-      std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
-          codec_id,
+      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
       pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
       pw::bluetooth::emboss::DataPathDirection direction,
-      std::optional<std::vector<uint8_t>> codec_configuration,
+      const std::optional<std::vector<uint8_t>>& codec_configuration,
       GetSupportedDelayRangeCallback cb) override;
 
   void set_auto_connect_callback(AutoConnectCallback callback) override {}

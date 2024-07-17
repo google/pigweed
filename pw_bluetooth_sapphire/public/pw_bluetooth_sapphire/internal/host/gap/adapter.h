@@ -450,11 +450,10 @@ class Adapter {
   using GetSupportedDelayRangeCallback = fit::function<void(
       pw::Status status, uint32_t min_delay_us, uint32_t max_delay_us)>;
   virtual void GetSupportedDelayRange(
-      std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
-          codec_id,
+      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
       pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
       pw::bluetooth::emboss::DataPathDirection direction,
-      std::optional<std::vector<uint8_t>> codec_configuration,
+      const std::optional<std::vector<uint8_t>>& codec_configuration,
       GetSupportedDelayRangeCallback cb) = 0;
 
   // Assign a callback to be notified when a connection is automatically

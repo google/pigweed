@@ -1661,15 +1661,14 @@ void AdapterTest::GetSupportedDelayRangeHelper(
       };
 
   // Construct codec ID information
-  auto codec_id =
-      std::make_unique<StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>();
-  codec_id->view().coding_format().Write(
+  StaticPacket<pw::bluetooth::emboss::CodecIdWriter> codec_id;
+  codec_id.view().coding_format().Write(
       pw::bluetooth::emboss::CodingFormat::U_LAW);
-  codec_id->view().company_id().Write(0u);
-  codec_id->view().vendor_codec_id().Write(0u);
+  codec_id.view().company_id().Write(0u);
+  codec_id.view().vendor_codec_id().Write(0u);
 
   adapter()->GetSupportedDelayRange(
-      std::move(codec_id),
+      codec_id,
       pw::bluetooth::emboss::LogicalTransportType::BR_EDR_ACL,
       pw::bluetooth::emboss::DataPathDirection::INPUT,
       codec_config,

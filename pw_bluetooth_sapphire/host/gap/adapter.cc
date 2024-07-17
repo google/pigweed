@@ -351,11 +351,10 @@ class AdapterImpl final : public Adapter {
                       hci::ResultFunction<> callback) override;
 
   void GetSupportedDelayRange(
-      std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
-          codec_id,
+      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
       pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
       pw::bluetooth::emboss::DataPathDirection direction,
-      std::optional<std::vector<uint8_t>> codec_configuration,
+      const std::optional<std::vector<uint8_t>>& codec_configuration,
       GetSupportedDelayRangeCallback cb) override;
 
   void set_auto_connect_callback(AutoConnectCallback callback) override {
@@ -763,11 +762,10 @@ void AdapterImpl::SetDeviceClass(DeviceClass dev_class,
 }
 
 void AdapterImpl::GetSupportedDelayRange(
-    std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
-        codec_id,
+    const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
     pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
     pw::bluetooth::emboss::DataPathDirection direction,
-    std::optional<std::vector<uint8_t>> codec_configuration,
+    const std::optional<std::vector<uint8_t>>& codec_configuration,
     GetSupportedDelayRangeCallback cb) {
   if (!state_.IsCommandSupported(
           /*octet=*/45,
@@ -791,7 +789,10 @@ void AdapterImpl::GetSupportedDelayRange(
       pw::bluetooth::emboss::ReadLocalSupportedControllerDelayCommandWriter>(
       hci_spec::kReadLocalSupportedControllerDelay, packet_size);
   auto cmd_view = cmd_packet.view_t();
-  cmd_view.codec_id().CopyFrom(codec_id->view());
+  cmd_view.codec_id().CopyFrom(
+      const_cast<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>&>(
+          codec_id)
+          .view());
   cmd_view.logical_transport_type().Write(logical_transport_type);
   cmd_view.direction().Write(direction);
   cmd_view.codec_configuration_length().Write(codec_configuration_size);
