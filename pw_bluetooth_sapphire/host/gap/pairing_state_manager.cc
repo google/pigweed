@@ -22,11 +22,11 @@
 namespace bt::gap {
 
 PairingStateManager::PairingStateManager(Peer::WeakPtr peer,
-                                         hci::BrEdrConnection* link,
+                                         WeakPtr<hci::BrEdrConnection> link,
                                          bool link_initiated,
                                          fit::closure auth_cb,
                                          StatusCallback status_cb)
-    : peer_(std::move(peer)), link_(link) {
+    : peer_(std::move(peer)), link_(std::move(link)) {
   pairing_state_ =
       std::make_unique<PairingState>(peer_,
                                      link_,

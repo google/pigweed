@@ -188,7 +188,7 @@ class PairingState final {
   //
   // |link| must be valid for the lifetime of this object.
   PairingState(Peer::WeakPtr peer,
-               hci::BrEdrConnection* link,
+               WeakPtr<hci::BrEdrConnection> link,
                bool link_initiated,
                fit::closure auth_cb,
                StatusCallback status_cb);
@@ -456,7 +456,7 @@ class PairingState final {
   gap::BrEdrSecurityMode security_mode_;
 
   // The BR/EDR link whose pairing is being driven by this object.
-  hci::BrEdrConnection* link_;
+  WeakPtr<hci::BrEdrConnection> link_;
 
   // True when the BR/EDR |link_| was locally requested.
   bool outgoing_connection_;

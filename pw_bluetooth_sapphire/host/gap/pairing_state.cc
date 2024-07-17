@@ -35,19 +35,19 @@ const char* const kInspectSecurityPropertiesPropertyName =
 }  // namespace
 
 PairingState::PairingState(Peer::WeakPtr peer,
-                           hci::BrEdrConnection* link,
+                           WeakPtr<hci::BrEdrConnection> link,
                            bool link_initiated,
                            fit::closure auth_cb,
                            StatusCallback status_cb)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
-      link_(link),
+      link_(std::move(link)),
       outgoing_connection_(link_initiated),
       peer_missing_key_(false),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
-  BT_ASSERT(link_);
+  BT_ASSERT(link_.is_alive());
   BT_ASSERT(send_auth_request_callback_);
   BT_ASSERT(status_callback_);
   link_->set_encryption_change_callback(

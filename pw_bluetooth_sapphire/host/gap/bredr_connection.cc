@@ -40,7 +40,7 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
       request_(std::move(request)),
       pairing_state_manager_(std::make_unique<PairingStateManager>(
           peer_,
-          link_.get(),
+          link_->GetWeakPtr(),
           request_ && request_->AwaitingOutgoing(),
           std::move(send_auth_request_cb),
           fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this))),
