@@ -19,7 +19,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/pairing_state.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/pairing_state_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
@@ -95,26 +95,28 @@ class BrEdrConnection final {
   const hci::Connection& link() const { return *link_; }
   hci::BrEdrConnection& link() { return *link_; }
   PeerId peer_id() const { return peer_id_; }
-  PairingState& pairing_state() { return *pairing_state_; }
+  PairingStateManager& pairing_state_manager() {
+    return *pairing_state_manager_;
+  }
 
   // Returns the duration that this connection has been alive.
   pw::chrono::SystemClock::duration duration() const;
 
   sm::SecurityProperties security_properties() const {
-    BT_ASSERT(pairing_state_);
-    return pairing_state_->security_properties();
+    BT_ASSERT(pairing_state_manager_);
+    return pairing_state_manager_->security_properties();
   }
 
   void set_security_mode(BrEdrSecurityMode mode) {
-    BT_ASSERT(pairing_state_);
-    pairing_state_->set_security_mode(mode);
+    BT_ASSERT(pairing_state_manager_);
+    pairing_state_manager_->set_security_mode(mode);
   }
 
  private:
   // |conn_token| is a token received from Peer::MutBrEdr::RegisterConnection().
   void set_peer_connection_token(Peer::ConnectionToken conn_token);
 
-  // Called by |pairing_state_| when pairing completes with |status|.
+  // Called by |pairing_state_manager_| when pairing completes with |status|.
   void OnPairingStateStatus(hci_spec::ConnectionHandle handle,
                             hci::Result<> status);
 
@@ -124,7 +126,7 @@ class BrEdrConnection final {
   Peer::WeakPtr peer_;
   std::unique_ptr<hci::BrEdrConnection> link_;
   std::optional<Request> request_;
-  std::unique_ptr<PairingState> pairing_state_;
+  std::unique_ptr<PairingStateManager> pairing_state_manager_;
   l2cap::ChannelManager* l2cap_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;

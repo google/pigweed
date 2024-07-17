@@ -57,6 +57,7 @@ cc_library(
         "low_energy_discovery_manager.cc",
         "low_energy_interrogator.cc",
         "pairing_state.cc",
+        "pairing_state_manager.cc",
         "peer.cc",
         "peer_cache.cc",
         "peer_metrics.cc",

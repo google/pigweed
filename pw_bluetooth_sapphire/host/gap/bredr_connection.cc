@@ -38,7 +38,7 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
       peer_(std::move(peer)),
       link_(std::move(link)),
       request_(std::move(request)),
-      pairing_state_(std::make_unique<PairingState>(
+      pairing_state_manager_(std::make_unique<PairingStateManager>(
           peer_,
           link_.get(),
           request_ && request_->AwaitingOutgoing(),
@@ -72,7 +72,7 @@ BrEdrConnection::~BrEdrConnection() {
   }
 
   sco_manager_.reset();
-  pairing_state_.reset();
+  pairing_state_manager_.reset();
   link_.reset();
 }
 
@@ -149,7 +149,8 @@ void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_properties_.peer_id = inspect_node_.CreateString(
       kInspectPeerIdPropertyName, peer_id_.ToString());
 
-  pairing_state_->AttachInspect(inspect_node_, kInspectPairingStateNodeName);
+  pairing_state_manager_->AttachInspect(inspect_node_,
+                                        kInspectPairingStateNodeName);
 }
 
 void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
