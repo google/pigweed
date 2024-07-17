@@ -137,6 +137,11 @@ class WebKernel:
         """Create a new kernel for this particular websocket connection."""
         self.connection = connection
         self.kernel_params = kernel_params
+        # Make sure global and local vars are not set to None.
+        if kernel_params.get('global_vars', None) is None:
+            self.kernel_params['global_vars'] = {}
+        if kernel_params.get('local_vars', None) is None:
+            self.kernel_params['local_vars'] = {}
         self.loop = loop
 
         self.logger_handlers: dict[str, WebSocketStreamingResponder] = {}

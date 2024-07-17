@@ -22,7 +22,7 @@ from pathlib import Path
 import socket
 from threading import Thread
 import webbrowser
-from typing import Callable
+from typing import Any, Callable
 
 from aiohttp import web, WSMsgType
 
@@ -57,12 +57,12 @@ def find_available_port(start_port=8080, max_retries=100) -> int:
 
 
 def pw_console_http_server(
-    start_port: int, html_files: dict[str, str], kernel_params
+    start_port: int,
+    html_files: dict[str, str],
+    kernel_params: dict[str, Any] | None = None,
 ) -> None:
     try:
-        handler = WebHandlers(
-            html_files=html_files, kernel_params=kernel_params
-        )
+        handler = WebHandler(html_files=html_files, kernel_params=kernel_params)
         handler.start_web_socket_streaming_responder_thread()
         runner = aiohttp_server(handler.handle_request)
         port = find_available_port(start_port)
@@ -81,15 +81,21 @@ def pw_console_http_server(
         loop.stop()
 
 
-class WebHandlers:
+class WebHandler:
     """Request handler that serves files from pw_console.html package data."""
 
-    def __init__(self, html_files: dict[str, str], kernel_params) -> None:
+    def __init__(
+        self,
+        html_files: dict[str, str],
+        kernel_params: dict[str, Any] | None = None,
+    ) -> None:
         self.html_files = html_files
         self.date_modified = email.utils.formatdate(
             datetime.datetime.now().timestamp(), usegmt=True
         )
-        self.kernel_params = kernel_params
+        self.kernel_params: dict[str, Any] = {}
+        if kernel_params:
+            self.kernel_params = kernel_params
 
         self.web_socket_streaming_responder_loop = asyncio.new_event_loop()
 
