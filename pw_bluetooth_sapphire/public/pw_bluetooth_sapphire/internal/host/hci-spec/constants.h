@@ -643,11 +643,11 @@ enum class LESupportedFeature : uint64_t {
   kConnectedIsochronousStreamCentral     = (1 << 28),
   kConnectedIsochronousStreamPeripheral  = (1 << 29),
   kIsochronousBoradcaster                = (1 << 30),
-  kSynchronizedReceiver                  = (1ul << 31),
-  kConnectedIsochronousStreamHostSupport = (1ul << 32),
-  kLEPowerControlRequest                 = (1ul << 33),
-  kLEPowerChangeIndication               = (1ul << 34),
-  kLEPathLossMonitoring                  = (1ul << 35),
+  kSynchronizedReceiver                  = (1ull << 31),
+  kConnectedIsochronousStreamHostSupport = (1ull << 32),
+  kLEPowerControlRequest                 = (1ull << 33),
+  kLEPowerChangeIndication               = (1ull << 34),
+  kLEPathLossMonitoring                  = (1ull << 35),
 
   // The rest is reserved for future use.
 };
