@@ -1049,29 +1049,41 @@ void AdapterImpl::InitializeStep2() {
         state_.low_energy_state.supported_states_ = le64toh(params->le_states);
       });
 
-  // HCI_LE_Read_Maximum_Advertising_Data_Length
-  init_seq_runner_->QueueCommand(
-      hci::EmbossCommandPacket::New<
-          pw::bluetooth::emboss::LEReadMaxAdvertisingDataLengthCommandView>(
-          hci_spec::kLEReadMaximumAdvertisingDataLength),
-      [this](const hci::EmbossEventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete,
-                         WARN,
-                         "gap",
-                         "LE read maximum advertising data length failed")) {
-          return;
-        }
+  if (state_.IsCommandSupported(
+          /*octet=*/36,
+          hci_spec::SupportedCommand::kLEReadMaximumAdvertisingDataLength)) {
+    // HCI_LE_Read_Maximum_Advertising_Data_Length
+    init_seq_runner_->QueueCommand(
+        hci::EmbossCommandPacket::New<
+            pw::bluetooth::emboss::LEReadMaxAdvertisingDataLengthCommandView>(
+            hci_spec::kLEReadMaximumAdvertisingDataLength),
+        [this](const hci::EmbossEventPacket& cmd_complete) {
+          if (hci_is_error(cmd_complete,
+                           WARN,
+                           "gap",
+                           "LE read maximum advertising data length failed")) {
+            return;
+          }
 
-        auto params = cmd_complete.view<
-            pw::bluetooth::emboss::
-                LEReadMaximumAdvertisingDataLengthCommandCompleteEventView>();
-        state_.low_energy_state.max_advertising_data_length_ =
-            params.max_advertising_data_length().Read();
-        bt_log(INFO,
-               "gap",
-               "maximum advertising data length: %d",
-               state_.low_energy_state.max_advertising_data_length_);
-      });
+          auto params = cmd_complete.view<
+              pw::bluetooth::emboss::
+                  LEReadMaximumAdvertisingDataLengthCommandCompleteEventView>();
+          state_.low_energy_state.max_advertising_data_length_ =
+              params.max_advertising_data_length().Read();
+          bt_log(INFO,
+                 "gap",
+                 "maximum advertising data length: %d",
+                 state_.low_energy_state.max_advertising_data_length_);
+        });
+  } else {
+    bt_log(INFO,
+           "gap",
+           "LE read maximum advertising data command not supported, "
+           "defaulting to legacy maximum: %zu",
+           hci_spec::kMaxLEAdvertisingDataLength);
+    state_.low_energy_state.max_advertising_data_length_ =
+        hci_spec::kMaxLEAdvertisingDataLength;
+  }
 
   if (state_.IsCommandSupported(
           /*octet=*/41, hci_spec::SupportedCommand::kLEReadBufferSizeV2)) {
