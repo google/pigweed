@@ -40,56 +40,68 @@ SchedulerLock global_timer_lock;
 void HandleTimerCallback(TimerHandle_t timer_handle) {
   // The FreeRTOS timer service is always handled by a thread, ergo to ensure
   // this API is threadsafe we simply disable task switching.
-  std::unique_lock lock(global_timer_lock);
 
   // Because the timer control block, AKA what the timer handle points at, is
-  // the first member of the NativeSystemTimer struct we play a trick to cheaply
-  // get the native handle reference.
-  backend::NativeSystemTimer& native_type =
-      *reinterpret_cast<backend::NativeSystemTimer*>(timer_handle);
+  // the first member of the NativeSystemTimer struct we play a trick to
+  // cheaply get the native handle reference.
+  backend::NativeSystemTimer* native_type =
+      reinterpret_cast<backend::NativeSystemTimer*>(timer_handle);
 
-  if (native_type.state == State::kCancelled) {
-    // Do nothing, we were invoked while the stop command was in the queue.
-    //
-    // Note that xTimerIsTimerActive cannot be used here. If a timer is started
-    // after it expired, it is executed immediately from the command queue.
-    // Older versions of FreeRTOS failed to mark expired timers as inactive
-    // before executing them in this way. So, if the timer is executed in the
-    // command queue before the stop command is processed, this callback will be
-    // invoked while xTimerIsTimerActive returns true. This was fixed in
-    // https://github.com/FreeRTOS/FreeRTOS-Kernel/pull/305.
+  // We're only using this control structure so that we can be sure we never
+  // run the callbacks while the lock_guard is in scope. We need to be sure
+  // that all paths through the loop that require a manual unlock() break out of
+  // the loop. Currently, that is only for callbacks, so we don't require any
+  // control structures, but if more functionality is required, we may need a
+  // switch statement following the loop to dispatch to the correct behavior.
+  do {
+    std::lock_guard lock(global_timer_lock);
+
+    if (native_type->state == State::kCancelled) {
+      // Do nothing, we were invoked while the stop command was in the queue.
+      //
+      // Note that xTimerIsTimerActive cannot be used here. If a timer is
+      // started after it expired, it is executed immediately from the command
+      // queue. Older versions of FreeRTOS failed to mark expired timers as
+      // inactive before executing them in this way. So, if the timer is
+      // executed in the command queue before the stop command is processed,
+      // this callback will be invoked while xTimerIsTimerActive returns true.
+      // This was fixed in https://github.com/FreeRTOS/FreeRTOS-Kernel/pull/305.
+      return;
+    }
+
+    const SystemClock::duration time_until_deadline =
+        native_type->expiry_deadline - SystemClock::now();
+    if (time_until_deadline <= SystemClock::duration::zero()) {
+      // We have met the deadline, cancel the current state and execute the
+      // user's callback. Note we cannot update the state later as the user's
+      // callback may alter the desired state through the Invoke*() API.
+      native_type->state = State::kCancelled;
+
+      // Release the scheduler lock once we won't modify native_state any
+      // further.
+      break;
+    }
+
+    // We haven't met the deadline yet, reschedule as far out as possible.
+    // Note that this must be > SystemClock::duration::zero() based on the
+    // conditional above.
+    const SystemClock::duration period =
+        std::min(pw::chrono::freertos::kMaxTimeout, time_until_deadline);
+    PW_CHECK_UINT_EQ(
+        xTimerChangePeriod(reinterpret_cast<TimerHandle_t>(&native_type->tcb),
+                           static_cast<TickType_t>(period.count()),
+                           0),
+        pdPASS,
+        "Timer command queue overflowed");
+    PW_CHECK_UINT_EQ(
+        xTimerStart(reinterpret_cast<TimerHandle_t>(&native_type->tcb), 0),
+        pdPASS,
+        "Timer command queue overflowed");
     return;
-  }
+  } while (false);
 
-  const SystemClock::duration time_until_deadline =
-      native_type.expiry_deadline - SystemClock::now();
-  if (time_until_deadline <= SystemClock::duration::zero()) {
-    // We have met the deadline, cancel the current state and execute the user's
-    // callback. Note we cannot update the state later as the user's callback
-    // may alter the desired state through the Invoke*() API.
-    native_type.state = State::kCancelled;
-
-    // Release the scheduler lock once we won't modify native_state any further.
-    lock.unlock();
-    native_type.user_callback(native_type.expiry_deadline);
-    return;
-  }
-
-  // We haven't met the deadline yet, reschedule as far out as possible.
-  // Note that this must be > SystemClock::duration::zero() based on the
-  // conditional above.
-  const SystemClock::duration period =
-      std::min(pw::chrono::freertos::kMaxTimeout, time_until_deadline);
-  PW_CHECK_UINT_EQ(
-      xTimerChangePeriod(reinterpret_cast<TimerHandle_t>(&native_type.tcb),
-                         static_cast<TickType_t>(period.count()),
-                         0),
-      pdPASS,
-      "Timer command queue overflowed");
-  PW_CHECK_UINT_EQ(
-      xTimerStart(reinterpret_cast<TimerHandle_t>(&native_type.tcb), 0),
-      pdPASS,
-      "Timer command queue overflowed");
+  // Invoke user_callback once the lock is out of scope.
+  native_type->user_callback(native_type->expiry_deadline);
 }
 
 // FreeRTOS requires a timer to have a non-zero period.
