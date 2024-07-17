@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h"
 
 #include <lib/fit/defer.h>
+#include <pw_bytes/endian.h>
 
 namespace bt::hci {
 
@@ -198,7 +199,8 @@ void ScoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
     return;
   }
 
-  auto conn_iter = connections_.find(le16toh(packet->connection_handle()));
+  auto conn_iter = connections_.find(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, packet->connection_handle()));
   if (conn_iter == connections_.end()) {
     // Ignore inbound packets for connections that aren't registered. Unlike
     // ACL, buffering data received before a connection is registered is
@@ -237,7 +239,8 @@ ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
        ++i) {
     const hci_spec::NumberOfCompletedPacketsEventData* data = payload.data + i;
 
-    auto iter = pending_packet_counts_.find(le16toh(data->connection_handle));
+    auto iter = pending_packet_counts_.find(pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, data->connection_handle));
     if (iter == pending_packet_counts_.end()) {
       // This is expected if the completed packet is an ACL packet.
       bt_log(TRACE,
@@ -249,7 +252,8 @@ ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
       continue;
     }
 
-    uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
+    uint16_t comp_packets = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, data->hc_num_of_completed_packets);
 
     if (iter->second < comp_packets) {
       // TODO(fxbug.dev/42102535): This can be caused by the controller reusing
@@ -262,7 +266,8 @@ ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
              "hci",
              "SCO packet tx count mismatch! (handle: %#.4x, expected: %zu, "
              "actual : %u)",
-             le16toh(data->connection_handle),
+             pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                         data->connection_handle),
              iter->second,
              comp_packets);
       // This should eventually result in convergence with the correct pending

@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -76,14 +76,20 @@ ACLDataPacketPtr ACLDataPacket::New(
 
 hci_spec::ConnectionHandle ACLDataPacket::connection_handle() const {
   // Return the lower 12-bits of the first two octets.
-  return le16toh(ACLDataPacket::view().header().handle_and_flags) & 0x0FFF;
+  return pw::bytes::ConvertOrderFrom(
+             cpp20::endian::little,
+             ACLDataPacket::view().header().handle_and_flags) &
+         0x0FFF;
 }
 
 hci_spec::ACLPacketBoundaryFlag ACLDataPacket::packet_boundary_flag() const {
   // Return bits 4-5 in the higher octet of |handle_and_flags| or
   // "0b00xx000000000000".
   return static_cast<hci_spec::ACLPacketBoundaryFlag>(
-      (le16toh(ACLDataPacket::view().header().handle_and_flags) >> 12) &
+      (pw::bytes::ConvertOrderFrom(
+           cpp20::endian::little,
+           ACLDataPacket::view().header().handle_and_flags) >>
+       12) &
       0x0003);
 }
 
@@ -91,11 +97,14 @@ hci_spec::ACLBroadcastFlag ACLDataPacket::broadcast_flag() const {
   // Return bits 6-7 in the higher octet of |handle_and_flags| or
   // "0bxx00000000000000".
   return static_cast<hci_spec::ACLBroadcastFlag>(
-      le16toh(view().header().handle_and_flags) >> 14);
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                  view().header().handle_and_flags) >>
+      14);
 }
 
 void ACLDataPacket::InitializeFromBuffer() {
-  mutable_view()->Resize(le16toh(view().header().data_total_length));
+  mutable_view()->Resize(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, view().header().data_total_length));
 }
 
 void ACLDataPacket::WriteHeader(
@@ -114,9 +123,9 @@ void ACLDataPacket::WriteHeader(
       connection_handle | (static_cast<uint16_t>(packet_boundary_flag) << 12) |
       (static_cast<uint16_t>(broadcast_flag) << 14));
   mutable_view()->mutable_header()->handle_and_flags =
-      htole16(handle_and_flags);
-  mutable_view()->mutable_header()->data_total_length =
-      htole16(view().payload_size());
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, handle_and_flags);
+  mutable_view()->mutable_header()->data_total_length = static_cast<uint16_t>(
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, view().payload_size()));
 }
 
 }  // namespace bt::hci

@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include <iterator>
 
@@ -433,8 +433,9 @@ void AclDataChannelImpl::RequestAclPriority(
           return;
         }
 
-        hci_spec::OpCode op_code =
-            le16toh(encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
+        hci_spec::OpCode op_code = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little,
+            encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
         auto packet = bt::hci::CommandPacket::New(
             op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
         auto packet_view = packet->mutable_view()->mutable_data();
@@ -482,7 +483,8 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
        ++i) {
     const hci_spec::NumberOfCompletedPacketsEventData* data = payload.data + i;
 
-    auto iter = pending_links_.find(le16toh(data->connection_handle));
+    auto iter = pending_links_.find(pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, data->connection_handle));
     if (iter == pending_links_.end()) {
       // This is expected if the completed packet is a SCO packet.
       bt_log(TRACE,
@@ -494,7 +496,8 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
       continue;
     }
 
-    uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
+    uint16_t comp_packets = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little, data->hc_num_of_completed_packets);
 
     if (iter->second.count < comp_packets) {
       // TODO(fxbug.dev/42102535): This can be caused by the controller reusing
@@ -507,7 +510,8 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
              "hci",
              "ACL packet tx count mismatch! (handle: %#.4x, expected: %zu, "
              "actual : %u)",
-             le16toh(data->connection_handle),
+             pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                         data->connection_handle),
              iter->second.count,
              comp_packets);
       // This should eventually result in convergence with the correct pending

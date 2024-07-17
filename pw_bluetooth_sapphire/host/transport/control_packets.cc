@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
@@ -129,7 +131,8 @@ std::unique_ptr<CommandPacket> CommandPacket::New(hci_spec::OpCode opcode,
 }
 
 void CommandPacket::WriteHeader(hci_spec::OpCode opcode) {
-  mutable_view()->mutable_header()->opcode = htole16(opcode);
+  mutable_view()->mutable_header()->opcode =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
   BT_ASSERT(view().payload_size() < std::numeric_limits<uint8_t>::max());
   mutable_view()->mutable_header()->parameter_total_size =
       static_cast<uint8_t>(view().payload_size());

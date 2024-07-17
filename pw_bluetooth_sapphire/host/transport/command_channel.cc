@@ -15,10 +15,10 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 
 #include <cpp-string/string_printf.h>
-#include <endian.h>
 #include <lib/fit/defer.h>
 #include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_common.emb.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -626,12 +626,14 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   if (event->event_code() == hci_spec::kCommandCompleteEventCode) {
     const hci_spec::CommandCompleteEventParams& params =
         event->params<hci_spec::CommandCompleteEventParams>();
-    matching_opcode = le16toh(params.command_opcode);
+    matching_opcode = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                  params.command_opcode);
     allowed_command_packets_.Set(params.num_hci_command_packets);
   } else {  //  hci_spec::kCommandStatusEventCode
     const hci_spec::CommandStatusEventParams& params =
         event->params<hci_spec::CommandStatusEventParams>();
-    matching_opcode = le16toh(params.command_opcode);
+    matching_opcode = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                  params.command_opcode);
     allowed_command_packets_.Set(params.num_hci_command_packets);
     unregister_async_handler =
         params.status != pw::bluetooth::emboss::StatusCode::SUCCESS;

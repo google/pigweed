@@ -16,6 +16,7 @@
 
 #include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -115,9 +116,11 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
                       .payload<hci_spec::CommandCompleteEventParams>()
                       .num_hci_command_packets);
         EXPECT_EQ(hci_spec::kReset,
-                  le16toh(event.view()
-                              .payload<hci_spec::CommandCompleteEventParams>()
-                              .command_opcode));
+                  pw::bytes::ConvertOrderFrom(
+                      cpp20::endian::little,
+                      event.view()
+                          .payload<hci_spec::CommandCompleteEventParams>()
+                          .command_opcode));
         EXPECT_EQ(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE,
                   event.return_params<hci_spec::SimpleReturnParams>()->status);
       });
@@ -221,7 +224,8 @@ TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
                   .num_hci_command_packets);
     EXPECT_EQ(
         hci_spec::kReset,
-        le16toh(
+        pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little,
             event.params<hci_spec::CommandStatusEventParams>().command_opcode));
   };
 
@@ -286,8 +290,10 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
       expected_opcode = hci_spec::kInquiryCancel;
     }
     EXPECT_EQ(expected_opcode,
-              le16toh(event.params<hci_spec::CommandCompleteEventParams>()
-                          .command_opcode));
+              pw::bytes::ConvertOrderFrom(
+                  cpp20::endian::little,
+                  event.params<hci_spec::CommandCompleteEventParams>()
+                      .command_opcode));
     cb_event_count++;
   };
 
@@ -363,7 +369,8 @@ TEST_F(CommandChannelTest, QueuedCommands) {
   auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
                                           const EventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
-    auto opcode = le16toh(
+    uint16_t opcode = pw::bytes::ConvertOrderFrom(
+        cpp20::endian::little,
         event.params<hci_spec::CommandCompleteEventParams>().command_opcode);
     if (opcode == hci_spec::kReset) {
       reset_count++;
