@@ -276,8 +276,13 @@ EmbossCommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
     params.data()[i].max_latency().Write(initial_params.max_latency());
     params.data()[i].supervision_timeout().Write(
         initial_params.supervision_timeout());
+
+    // These fields provide the expected minimum and maximum duration of
+    // connection events. We have no preference, so we set them to zero and let
+    // the Controller decide. Some Controllers require
+    // max_ce_length < max_connection_interval * 2.
     params.data()[i].min_connection_event_length().Write(0x0000);
-    params.data()[i].max_connection_event_length().Write(0xFFFF);
+    params.data()[i].max_connection_event_length().Write(0x0000);
   }
 
   return packet;
@@ -321,8 +326,13 @@ EmbossCommandPacket LowEnergyConnector::BuildCreateConnectionPacket(
   params.connection_interval_max().Write(initial_params.max_interval());
   params.max_latency().Write(initial_params.max_latency());
   params.supervision_timeout().Write(initial_params.supervision_timeout());
+
+  // These fields provide the expected minimum and maximum duration of
+  // connection events. We have no preference, so we set them to zero and let
+  // the Controller decide. Some Controllers require
+  // max_ce_length < max_connection_interval * 2.
   params.min_connection_event_length().Write(0x0000);
-  params.max_connection_event_length().Write(0xFFFF);
+  params.max_connection_event_length().Write(0x0000);
 
   return packet;
 }

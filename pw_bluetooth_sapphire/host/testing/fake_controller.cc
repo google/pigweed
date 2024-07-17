@@ -981,6 +981,16 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
   }
 
+  // The link is considered lost after connection_interval_max * 2. Connection
+  // events (when data pdus are transmitted) must occur at least once within
+  // that time frame.
+  if (params.max_connection_event_length().Read() >
+      2 * params.connection_interval_max().Read()) {
+    RespondWithCommandStatus(hci_spec::kLECreateConnection,
+                             pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    return;
+  }
+
   std::optional<DeviceAddress::Type> addr_type =
       DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
   BT_DEBUG_ASSERT(addr_type && *addr_type != DeviceAddress::Type::kBREDR);
@@ -1079,6 +1089,16 @@ void FakeController::OnLEExtendedCreateConnectionCommandReceived(
   if (le_connect_pending_) {
     RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  // The link is considered lost after connection_interval_max * 2. Connection
+  // events (when data pdus are transmitted) must occur at least once within
+  // that time frame.
+  if (params.data()[0].max_connection_event_length().Read() >
+      2 * params.data()[0].connection_interval_max().Read()) {
+    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+                             pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
