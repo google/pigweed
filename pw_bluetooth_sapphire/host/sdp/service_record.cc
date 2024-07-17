@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_record.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include <iterator>
 #include <set>
@@ -274,7 +274,8 @@ bool ServiceRecord::AddInfo(const std::string& language_code,
   // The language code consists of two byte characters in left-to-right order,
   // so it may be considered a 16-bit big-endian integer that can be converted
   // to host byte order.
-  uint16_t lang_encoded = be16toh(*((const uint16_t*)(language_code.data())));
+  uint16_t lang_encoded = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::big, *((const uint16_t*)(language_code.data())));
   base_attr_list.emplace_back(DataElement(lang_encoded));
   base_attr_list.emplace_back(DataElement(uint16_t{106}));  // UTF-8
   base_attr_list.emplace_back(DataElement(base_attrid));

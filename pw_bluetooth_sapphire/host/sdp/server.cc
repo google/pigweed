@@ -666,8 +666,10 @@ std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu,
     return std::nullopt;
   }
   PacketView<Header> packet(sdu.get());
-  TransactionId tid = be16toh(static_cast<uint16_t>(packet.header().tid));
-  uint16_t param_length = be16toh(packet.header().param_length);
+  TransactionId tid =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::big, packet.header().tid);
+  uint16_t param_length = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::big, packet.header().param_length);
   auto error_response_builder =
       [tid, max_tx_sdu_size](ErrorCode code) -> ByteBufferPtr {
     return ErrorResponse(code).GetPDU(
