@@ -67,6 +67,12 @@ cc_library(
     }),
 )
 
+cc_library(
+    name = "uuid_string_util",
+    srcs = ["uuid_string_util.cc"],
+    deps = [":common"],
+)
+
 fuchsia_cc_test(
     name = "common_test",
     testonly = True,
@@ -95,6 +101,7 @@ fuchsia_cc_test(
     visibility = ["//visibility:public"],
     deps = [
         ":common",
+        ":uuid_string_util",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "@pigweed//pw_async:fake_dispatcher_fixture",

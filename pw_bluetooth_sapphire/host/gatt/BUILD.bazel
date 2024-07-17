@@ -91,6 +91,7 @@ cc_library(
         ":gatt",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/common:uuid_string_util",
         "@pigweed//pw_async:heap_dispatcher",
         "@pigweed//pw_unit_test",
     ],

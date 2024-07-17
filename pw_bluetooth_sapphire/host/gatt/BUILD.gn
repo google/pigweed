@@ -82,6 +82,7 @@ pw_source_set("testing") {
     ":gatt",
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/common:uuid_string_util",
     "$dir_pw_unit_test",
   ]
 }

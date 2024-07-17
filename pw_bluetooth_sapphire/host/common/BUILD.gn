@@ -96,6 +96,11 @@ pw_source_set("common") {
   }
 }
 
+pw_source_set("uuid_string_util") {
+  sources = [ "uuid_string_util.cc" ]
+  public_deps = [ ":common" ]
+}
+
 pw_test("common_tests") {
   sources = [
     "advertising_data_test.cc",
@@ -121,6 +126,7 @@ pw_test("common_tests") {
 
   deps = [
     ":common",
+    ":uuid_string_util",
     "$dir_pw_async:fake_dispatcher_fixture",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
