@@ -32,7 +32,10 @@ pw_source_set("iso") {
 }
 
 pw_test("tests") {
-  sources = [ "iso_stream_manager_test.cc" ]
+  sources = [
+    "iso_common_test.cc",
+    "iso_stream_manager_test.cc",
+  ]
 
   deps = [ "$dir_pw_bluetooth_sapphire/host/testing" ]
 
