@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 
-#include <endian.h>
-
 #pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::hci_spec {
