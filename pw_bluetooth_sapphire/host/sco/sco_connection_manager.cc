@@ -530,7 +530,9 @@ void ScoConnectionManager::SendRejectConnectionCommand(
   reject_params.reason().Write(reason);
 
   transport_->command_channel()->SendCommand(
-      std::move(reject), nullptr, hci_spec::kCommandStatusEventCode);
+      std::move(reject),
+      hci::CommandChannel::CommandCallback(nullptr),
+      hci_spec::kCommandStatusEventCode);
 }
 
 void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {

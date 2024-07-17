@@ -175,7 +175,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
     cmd_->SendCommand(
         std::move(packet),
         [self, mode = desired_inquiry_mode_](auto /*unused*/,
-                                             const auto& event) {
+                                             const hci::EventPacket& event) {
           if (!self.is_alive()) {
             return;
           }
@@ -248,10 +248,11 @@ void BrEdrDiscoveryManager::StopInquiry() {
   const hci::EmbossCommandPacket inq_cancel = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::InquiryCancelCommandView>(
       hci_spec::kInquiryCancel);
-  cmd_->SendCommand(std::move(inq_cancel), [](int64_t, const auto& event) {
-    // Warn if the command failed.
-    hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
-  });
+  cmd_->SendCommand(
+      std::move(inq_cancel), [](int64_t, const hci::EventPacket& event) {
+        // Warn if the command failed.
+        hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
+      });
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
