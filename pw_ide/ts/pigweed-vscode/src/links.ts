@@ -25,7 +25,7 @@ export function fileBug() {
 }
 
 export const troubleshootingLink = (anchor: string) =>
-  `https://pigweed.dev/pw_ide/guide/troubleshooting.html#${anchor}`;
+  `https://pigweed.dev/pw_ide/guide/vscode/troubleshooting.html#${anchor}`;
 
 export function launchTroubleshootingLink(anchor: string) {
   vscode.env.openExternal(vscode.Uri.parse(troubleshootingLink(anchor)));

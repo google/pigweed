@@ -20,7 +20,7 @@ import { basename, dirname, join } from 'path';
 import { refreshCompileCommands } from './bazelWatcher';
 import { refreshManager } from './refreshManager';
 import { settingFor, settings, stringSettingFor, workingDir } from './settings';
-import { troubleshootingLink } from './links';
+import { launchTroubleshootingLink } from './links';
 
 const CDB_FILE_NAME = 'compile_commands.json' as const;
 const CDB_FILE_DIR = '.compile_commands' as const;
@@ -104,10 +104,16 @@ export async function setCompileCommandsTarget() {
   const targets = await availableTargets();
 
   if (targets.length === 0) {
-    vscode.window.showErrorMessage(
-      "Couldn't find any targets! Get help at " +
-        troubleshootingLink('bazel-no-targets'),
-    );
+    vscode.window
+      .showErrorMessage("Couldn't find any targets!", 'Get Help')
+      .then((selection) => {
+        switch (selection) {
+          case 'Get Help': {
+            launchTroubleshootingLink('bazel-no-targets');
+            break;
+          }
+        }
+      });
 
     return;
   }
