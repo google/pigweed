@@ -9,5 +9,4 @@ Third-party hardware & software support
    ../../build_system
    ../../targets
    ../os/index
-   Code editor support <../editors>
    ../../third_party_support

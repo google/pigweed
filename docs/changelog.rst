@@ -9855,7 +9855,7 @@ Aug 11, 2023
 Highlights (Jul 27, 2023 to Aug 11, 2023):
 
 * We're prototyping a Pigweed extension for VS Code. Learn more at
-  :ref:`docs-editors`.
+  :ref:`module-pw_ide-guide-vscode`.
 * We added ``pw_toolchain_bazel``, a new LLVM toolchain for building with
   Bazel on macOS.
 * We are working on many docs improvements in parallel: auto-generating ``rustdocs``
@@ -10144,7 +10144,7 @@ finding the Java runtime.
 
 Docs
 ====
-We created a new doc (:ref:`docs-editors`) that explains how to improve Pigweed
+We created a new doc that explains how to improve Pigweed
 support in various IDEs. We standardized how we present call-to-action buttons
 on module homepages. See :ref:`module-pw_tokenizer` for an example. We fixed a
 longstanding UI issue around the site nav not scrolling to the page that you're

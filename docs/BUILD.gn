@@ -53,7 +53,6 @@ pw_doc_group("core_docs") {
     "contributing/docs/modules.rst",
     "contributing/docs/website.rst",
     "contributing/index.rst",
-    "editors.rst",
     "embedded_cpp_guide.rst",
     "facades.rst",
     "faq.rst",

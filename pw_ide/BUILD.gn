@@ -18,7 +18,19 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "design/cpp.rst",
+    "design/index.rst",
+    "design/projects.rst",
+    "docs.rst",
+    "guide/cli.rst",
+    "guide/index.rst",
+    "guide/vscode/development.rst",
+    "guide/vscode/extension_enforcement.rst",
+    "guide/vscode/index.rst",
+    "guide/vscode/legacy.rst",
+    "guide/vscode/troubleshooting.rst",
+  ]
 }
 
 pw_test_group("tests") {
