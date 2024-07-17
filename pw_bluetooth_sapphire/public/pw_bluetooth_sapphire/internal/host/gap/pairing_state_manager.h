@@ -56,8 +56,8 @@ class PairingStateManager final {
       fit::function<void(hci_spec::ConnectionHandle, hci::Result<>)>;
 
   // Constructs a PairingStateManager for the ACL connection |link| to
-  // |peer_id|. |link_initiated| should be true if this device connected, and
-  // false if it was an incoming connection. This object will receive
+  // |peer_id|. |outgoing_connection| should be true if this device connected,
+  // and false if it was an incoming connection. This object will receive
   // "encryption change" callbacks associate with |peer_id|. Successful pairing
   // is reported through |status_cb| after encryption is enabled. When errors
   // occur, this object will be put in a "failed" state and the owner shall
@@ -71,7 +71,7 @@ class PairingStateManager final {
   // |link| must be valid for the lifetime of this object.
   PairingStateManager(Peer::WeakPtr peer,
                       WeakPtr<hci::BrEdrConnection> link,
-                      bool link_initiated,
+                      bool outgoing_connection,
                       fit::closure auth_cb,
                       StatusCallback status_cb);
   PairingStateManager(PairingStateManager&&) = default;

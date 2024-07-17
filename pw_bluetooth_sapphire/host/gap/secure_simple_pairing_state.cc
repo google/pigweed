@@ -37,13 +37,13 @@ const char* const kInspectSecurityPropertiesPropertyName =
 SecureSimplePairingState::SecureSimplePairingState(
     Peer::WeakPtr peer,
     WeakPtr<hci::BrEdrConnection> link,
-    bool link_initiated,
+    bool outgoing_connection,
     fit::closure auth_cb,
     StatusCallback status_cb)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
-      outgoing_connection_(link_initiated),
+      outgoing_connection_(outgoing_connection),
       peer_missing_key_(false),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
@@ -683,9 +683,9 @@ void SecureSimplePairingState::OnEncryptionChange(hci::Result<bool> result) {
 
 std::unique_ptr<SecureSimplePairingState::Pairing>
 SecureSimplePairingState::Pairing::MakeInitiator(
-    BrEdrSecurityRequirements security_requirements, bool link_initiated) {
+    BrEdrSecurityRequirements security_requirements, bool outgoing_connection) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
+  std::unique_ptr<Pairing> pairing(new Pairing(outgoing_connection));
   pairing->initiator = true;
   pairing->preferred_security = security_requirements;
   return pairing;
@@ -693,9 +693,9 @@ SecureSimplePairingState::Pairing::MakeInitiator(
 
 std::unique_ptr<SecureSimplePairingState::Pairing>
 SecureSimplePairingState::Pairing::MakeResponder(
-    pw::bluetooth::emboss::IoCapability peer_iocap, bool link_initiated) {
+    pw::bluetooth::emboss::IoCapability peer_iocap, bool outgoing_connection) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
+  std::unique_ptr<Pairing> pairing(new Pairing(outgoing_connection));
   pairing->initiator = false;
   pairing->peer_iocap = peer_iocap;
   // Don't try to upgrade security as responder.

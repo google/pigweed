@@ -175,8 +175,8 @@ class SecureSimplePairingState final {
       fit::function<void(hci_spec::ConnectionHandle, hci::Result<>)>;
 
   // Constructs a SecureSimplePairingState for the ACL connection |link| to
-  // |peer_id|. |link_initiated| should be true if this device connected, and
-  // false if it was an incoming connection. This object will receive
+  // |peer_id|. |outgoing_connection| should be true if this device connected,
+  // and false if it was an incoming connection. This object will receive
   // "encryption change" callbacks associate with |peer_id|. Successful pairing
   // is reported through |status_cb| after encryption is enabled. When errors
   // occur, this object will be put in a "failed" state and the owner shall
@@ -190,7 +190,7 @@ class SecureSimplePairingState final {
   // |link| must be valid for the lifetime of this object.
   SecureSimplePairingState(Peer::WeakPtr peer,
                            WeakPtr<hci::BrEdrConnection> link,
-                           bool link_initiated,
+                           bool outgoing_connection,
                            fit::closure auth_cb,
                            StatusCallback status_cb);
   SecureSimplePairingState(SecureSimplePairingState&&) = default;
@@ -342,7 +342,8 @@ class SecureSimplePairingState final {
   class Pairing final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(
-        BrEdrSecurityRequirements security_requirements, bool link_initiated);
+        BrEdrSecurityRequirements security_requirements,
+        bool outgoing_connection);
     static std::unique_ptr<Pairing> MakeResponder(
         pw::bluetooth::emboss::IoCapability peer_iocap, bool link_inititated);
     // Make a responder for a peer that has initiated a pairing (asked for our

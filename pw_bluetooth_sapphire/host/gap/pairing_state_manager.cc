@@ -23,12 +23,16 @@ namespace bt::gap {
 
 PairingStateManager::PairingStateManager(Peer::WeakPtr peer,
                                          WeakPtr<hci::BrEdrConnection> link,
-                                         bool link_initiated,
+                                         bool outgoing_connection,
                                          fit::closure auth_cb,
                                          StatusCallback status_cb)
     : peer_(std::move(peer)), link_(std::move(link)) {
-  secure_simple_pairing_state_ = std::make_unique<SecureSimplePairingState>(
-      peer_, link_, link_initiated, std::move(auth_cb), std::move(status_cb));
+  secure_simple_pairing_state_ =
+      std::make_unique<SecureSimplePairingState>(peer_,
+                                                 link_,
+                                                 outgoing_connection,
+                                                 std::move(auth_cb),
+                                                 std::move(status_cb));
 }
 
 void PairingStateManager::InitiatePairing(
