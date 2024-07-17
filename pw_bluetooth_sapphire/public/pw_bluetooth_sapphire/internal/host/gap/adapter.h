@@ -373,7 +373,7 @@ class Adapter {
     // Idempotent. Returns |true| if any records were removed.
     virtual bool UnregisterService(RegistrationHandle handle) = 0;
 
-    // Initiate and outbound connection. A request will be queued if a
+    // Initiate an outbound connection. A request will be queued if a
     // connection is already in progress. On error, |callback| will be called
     // with an error result. The error will be |kCanceled| if a connection was
     // never attempted, or |kFailed| if establishing a connection failed.
