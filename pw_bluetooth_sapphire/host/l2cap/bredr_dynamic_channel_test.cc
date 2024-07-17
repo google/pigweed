@@ -472,6 +472,9 @@ const ByteBuffer& kOutboundEmptyPendingConfigRsp =
 const ByteBuffer& kInboundEmptyPendingConfigRsp =
     MakeEmptyConfigRsp(kLocalCId, ConfigurationResult::kPending);
 
+const ByteBuffer& kOutboundConfigRspRejected =
+    MakeEmptyConfigRsp(kRemoteCId, ConfigurationResult::kRejected);
+
 auto MakeConfigRspWithMtu(
     ChannelId source_cid,
     uint16_t mtu,
@@ -3506,6 +3509,60 @@ TEST_F(
                        kOutboundUnknownOptionsConfigRsp);
   RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
+}
+
+TEST_F(BrEdrDynamicChannelTest, RejectReconfigurationAfterChannelOpen) {
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kConnectionRequest,
+                      kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(),
+      kConfigurationRequest,
+      kOutboundConfigReq.view(),
+      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kDisconnectionRequest,
+                      kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+    }
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto chan) {
+    EXPECT_TRUE(chan);
+    close_cb_count++;
+  });
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  RETURN_IF_FATAL(sig()->ReceiveExpect(
+      kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+
+  // Inbound reconfiguration requests should be rejected. The channel should not
+  // be closed.
+  RETURN_IF_FATAL(sig()->ReceiveExpect(
+      kConfigurationRequest, kInboundConfigReq, kOutboundConfigRspRejected));
+  EXPECT_EQ(0, close_cb_count);
+
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunUntilIdle());
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 }  // namespace
