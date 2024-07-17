@@ -247,7 +247,7 @@ class FakeAdapter final : public Adapter {
                                        l2cap::ChannelParameters chan_params,
                                        ServiceConnectCallback conn_cb) override;
 
-    bool UnregisterService(RegistrationHandle handle) override { return false; }
+    bool UnregisterService(RegistrationHandle handle) override;
 
     std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id,
