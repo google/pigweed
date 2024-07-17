@@ -20,8 +20,8 @@ namespace bt::hci {
 namespace pwemb = pw::bluetooth::emboss;
 
 ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(
-    hci::Transport::WeakPtr hci_ptr)
-    : LowEnergyAdvertiser(std::move(hci_ptr)) {
+    hci::Transport::WeakPtr hci_ptr, uint16_t max_advertising_data_length)
+    : LowEnergyAdvertiser(std::move(hci_ptr), max_advertising_data_length) {
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingSetTerminatedSubeventCode,
       [this](const EventPacket& event) {
@@ -43,44 +43,6 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   // after which the SequentialCommandRunner will have been destroyed and no
   // further commands will be sent.
   StopAdvertising();
-}
-
-size_t ExtendedLowEnergyAdvertiser::GetSizeLimit(bool extended_pdu) const {
-  if (extended_pdu) {
-    return hci_spec::kMaxLEExtendedAdvertisingDataLength;
-  }
-
-  return hci_spec::kMaxLEAdvertisingDataLength;
-}
-
-ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits
-ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-    pwemb::LEAdvertisingType type) {
-  ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits bits =
-      hci_spec::kLEAdvEventPropBitUseLegacyPDUs;
-
-  // Bluetooth Spec Volume 4, Part E, Section 7.8.53, Table 7.2 defines the
-  // mapping of legacy PDU types to the corresponding bits within
-  // adv_event_properties.
-  if (type == pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED) {
-    bits |= hci_spec::kLEAdvEventPropBitConnectable;
-    bits |= hci_spec::kLEAdvEventPropBitScannable;
-  } else if (type ==
-             pwemb::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED) {
-    bits |= hci_spec::kLEAdvEventPropBitConnectable;
-    bits |= hci_spec::kLEAdvEventPropBitDirected;
-  } else if (type ==
-             pwemb::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED) {
-    bits |= hci_spec::kLEAdvEventPropBitConnectable;
-    bits |= hci_spec::kLEAdvEventPropBitDirected;
-    bits |= hci_spec::kLEAdvEventPropBitHighDutyCycleDirectedConnectable;
-  } else if (type == pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED) {
-    bits |= hci_spec::kLEAdvEventPropBitScannable;
-  } else if (type == pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED) {
-    // no extra bits set
-  }
-
-  return bits;
 }
 
 EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
@@ -112,10 +74,28 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
+static void WriteAdvertisingEventProperties(
+    const ExtendedLowEnergyAdvertiser::AdvertisingEventProperties& properties,
+    pwemb::LESetExtendedAdvertisingParametersV1CommandWriter& view) {
+  view.advertising_event_properties().connectable().Write(
+      properties.connectable);
+  view.advertising_event_properties().scannable().Write(properties.scannable);
+  view.advertising_event_properties().directed().Write(properties.directed);
+  view.advertising_event_properties()
+      .high_duty_cycle_directed_connectable()
+      .Write(properties.high_duty_cycle_directed_connectable);
+  view.advertising_event_properties().use_legacy_pdus().Write(
+      properties.use_legacy_pdus);
+  view.advertising_event_properties().anonymous_advertising().Write(
+      properties.anonymous_advertising);
+  view.advertising_event_properties().include_tx_power().Write(
+      properties.include_tx_power);
+}
+
 std::optional<EmbossCommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pwemb::LEAdvertisingType type,
+    const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
     const AdvertisingIntervalRange& interval,
     bool extended_pdu) {
@@ -136,18 +116,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   }
   view.advertising_handle().Write(handle.value());
 
-  // advertising event properties
-  std::optional<AdvertisingEventPropertiesBits> bits =
-      AdvertisingTypeToLegacyPduEventBits(type);
-  if (!bits) {
-    bt_log(WARN,
-           "hci-le",
-           "could not generate event bits for type: %hhu",
-           static_cast<unsigned char>(type));
-    return std::nullopt;
-  }
-  uint16_t properties = bits.value();
-  view.advertising_event_properties().BackingStorage().WriteUInt(properties);
+  WriteAdvertisingEventProperties(properties, view);
 
   // advertising interval, NOTE: LE advertising parameters allow for up to 3
   // octets (10 ms to 10428 s) to configure an advertising interval. However, we
@@ -189,50 +158,149 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
+// TODO(fxbug.dev/330935479): we can reduce code duplication by
+// templatizing this method. However, we first have to rename
+// advertising_data_length and advertising_data in
+// LESetExtendedAdvertisingDataCommand to just data_length and data,
+// respectively. We would also have to do the same in
+// LESetExtendedScanResponseDataCommand. It's not worth it to do this rename
+// right now since Sapphire lives in the Fuchsia repository and we would need to
+// do an Emboss naming transition. Once Sapphire is back in the Pigweed
+// repository, we can do this in one fell swoop rather than going through the
+// Emboss naming transition.
+EmbossCommandPacket
+ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
+    hci_spec::AdvertisingHandle handle,
+    const BufferView& data,
+    pwemb::LESetExtendedAdvDataOp operation,
+    pwemb::LEExtendedAdvFragmentPreference fragment_preference) {
+  size_t kPayloadSize =
+      pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
+      data.size();
+  auto packet = EmbossCommandPacket::New<
+      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
+      hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
+  auto params = packet.view_t();
+
+  params.advertising_handle().Write(handle);
+  params.operation().Write(operation);
+  params.fragment_preference().Write(fragment_preference);
+  params.advertising_data_length().Write(static_cast<uint8_t>(data.size()));
+
+  MutableBufferView data_view(params.advertising_data().BackingStorage().data(),
+                              data.size());
+  data.Copy(&data_view);
+
+  return packet;
+}
+
+EmbossCommandPacket
+ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
+    hci_spec::AdvertisingHandle handle,
+    const BufferView& data,
+    pwemb::LESetExtendedAdvDataOp operation,
+    pwemb::LEExtendedAdvFragmentPreference fragment_preference) {
+  size_t kPayloadSize =
+      pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
+      data.size();
+  auto packet = EmbossCommandPacket::New<
+      pwemb::LESetExtendedScanResponseDataCommandWriter>(
+      hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
+  auto params = packet.view_t();
+
+  params.advertising_handle().Write(handle);
+  params.operation().Write(operation);
+  params.fragment_preference().Write(fragment_preference);
+  params.scan_response_data_length().Write(static_cast<uint8_t>(data.size()));
+
+  MutableBufferView data_view(
+      params.scan_response_data().BackingStorage().data(), data.size());
+  data.Copy(&data_view);
+
+  return packet;
+}
+
 std::vector<EmbossCommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
     bool extended_pdu) {
+  if (data.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   AdvertisingData adv_data;
   data.Copy(&adv_data);
   if (staged_advertising_parameters_.include_tx_power_level) {
     adv_data.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
   }
-  size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
 
-  size_t kPayloadSize =
-      pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
-      block_size;
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
-      hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
-  auto params = packet.view_t();
-
-  // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   BT_ASSERT(handle);
-  params.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not support
-  // fragmented extended advertising data at this time.
-  params.operation().Write(
-      pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
-  params.fragment_preference().Write(
-      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::
-          SHOULD_NOT_FRAGMENT);
+  size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
+  DynamicByteBuffer buffer(block_size);
+  adv_data.WriteBlock(&buffer, flags);
 
-  // advertising data
-  params.advertising_data_length().Write(static_cast<uint8_t>(block_size));
-  MutableBufferView data_view(params.advertising_data().BackingStorage().data(),
-                              params.advertising_data_length().Read());
-  adv_data.WriteBlock(&data_view, flags);
+  size_t max_length =
+      pwemb::LESetExtendedAdvertisingDataCommand::advertising_data_length_max();
+
+  // If all data fits into a single HCI packet, we don't need to do any
+  // fragmentation ourselves. The Controller may still perform fragmentation
+  // over the air but we don't have to when sending the data to the Controller.
+  if (block_size <= max_length) {
+    EmbossCommandPacket packet = BuildAdvertisingDataFragmentPacket(
+        handle.value(),
+        buffer.view(),
+        pwemb::LESetExtendedAdvDataOp::COMPLETE,
+        pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+
+    std::vector<EmbossCommandPacket> packets;
+    packets.reserve(1);
+    packets.emplace_back(std::move(packet));
+    return packets;
+  }
+
+  // We have more data than will fit in a single HCI packet. Calculate the
+  // amount of packets we need to send, perform the fragmentation, and queue up
+  // the multiple LE Set Extended Advertising Data packets to the Controller.
+  size_t num_packets = block_size / max_length;
+  if (block_size % max_length != 0) {
+    num_packets++;
+  }
 
   std::vector<EmbossCommandPacket> packets;
-  packets.reserve(1);
-  packets.emplace_back(std::move(packet));
+  packets.reserve(num_packets);
+
+  for (size_t i = 0; i < num_packets; i++) {
+    size_t packet_size = max_length;
+    pwemb::LESetExtendedAdvDataOp operation =
+        pwemb::LESetExtendedAdvDataOp::INTERMEDIATE_FRAGMENT;
+
+    if (i == 0) {
+      operation = pwemb::LESetExtendedAdvDataOp::FIRST_FRAGMENT;
+    } else if (i == num_packets - 1) {
+      operation = pwemb::LESetExtendedAdvDataOp::LAST_FRAGMENT;
+
+      if (block_size % max_length != 0) {
+        packet_size = block_size % max_length;
+      }
+    }
+
+    size_t offset = i * max_length;
+    BufferView buffer_view(buffer.data() + offset, packet_size);
+
+    EmbossCommandPacket packet = BuildAdvertisingDataFragmentPacket(
+        handle.value(),
+        buffer_view,
+        operation,
+        pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+    packets.push_back(packet);
+  }
+
   return packets;
 }
 
@@ -251,8 +319,6 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
-  // support fragmented extended advertising data at this time.
   payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
   payload.fragment_preference().Write(
       pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
@@ -265,43 +331,81 @@ std::vector<EmbossCommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
                                                   const AdvertisingData& data,
                                                   bool extended_pdu) {
+  if (data.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   AdvertisingData scan_rsp;
   data.Copy(&scan_rsp);
   if (staged_advertising_parameters_.include_tx_power_level) {
     scan_rsp.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
   }
-  size_t block_size = scan_rsp.CalculateBlockSize();
 
-  size_t kPayloadSize =
-      pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
-      block_size;
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedScanResponseDataCommandWriter>(
-      hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
-  auto params = packet.view_t();
-
-  // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   BT_ASSERT(handle);
-  params.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
-  // support fragmented extended advertising data at this time.
-  params.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
-  params.fragment_preference().Write(
-      pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+  size_t block_size = scan_rsp.CalculateBlockSize(/*include_flags=*/false);
+  DynamicByteBuffer buffer(block_size);
+  scan_rsp.WriteBlock(&buffer, std::nullopt);
 
-  // scan response data
-  params.scan_response_data_length().Write(static_cast<uint8_t>(block_size));
-  MutableBufferView scan_rsp_view(
-      params.scan_response_data().BackingStorage().data(),
-      params.scan_response_data_length().Read());
-  scan_rsp.WriteBlock(&scan_rsp_view, std::nullopt);
+  size_t max_length = pwemb::LESetExtendedScanResponseDataCommand::
+      scan_response_data_length_max();
+
+  // If all data fits into a single HCI packet, we don't need to do any
+  // fragmentation ourselves. The Controller may still perform fragmentation
+  // over the air but we don't have to when sending the data to the Controller.
+  if (block_size <= max_length) {
+    EmbossCommandPacket packet = BuildScanResponseDataFragmentPacket(
+        handle.value(),
+        buffer.view(),
+        pwemb::LESetExtendedAdvDataOp::COMPLETE,
+        pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+
+    std::vector<EmbossCommandPacket> packets;
+    packets.reserve(1);
+    packets.emplace_back(std::move(packet));
+    return packets;
+  }
+
+  // We have more data than will fit in a single HCI packet. Calculate the
+  // amount of packets we need to send, perform the fragmentation, and queue up
+  // the multiple LE Set Extended Advertising Data packets to the Controller.
+  size_t num_packets = block_size / max_length;
+  if (block_size % max_length != 0) {
+    num_packets++;
+  }
 
   std::vector<EmbossCommandPacket> packets;
-  packets.reserve(1);
-  packets.emplace_back(std::move(packet));
+  packets.reserve(num_packets);
+
+  for (size_t i = 0; i < num_packets; i++) {
+    size_t packet_size = max_length;
+    pwemb::LESetExtendedAdvDataOp operation =
+        pwemb::LESetExtendedAdvDataOp::INTERMEDIATE_FRAGMENT;
+
+    if (i == 0) {
+      operation = pwemb::LESetExtendedAdvDataOp::FIRST_FRAGMENT;
+    } else if (i == num_packets - 1) {
+      operation = pwemb::LESetExtendedAdvDataOp::LAST_FRAGMENT;
+
+      if (block_size % max_length != 0) {
+        packet_size = block_size % max_length;
+      }
+    }
+
+    size_t offset = i * max_length;
+    BufferView buffer_view(buffer.data() + offset, packet_size);
+
+    EmbossCommandPacket packet = BuildScanResponseDataFragmentPacket(
+        handle.value(),
+        buffer_view,
+        operation,
+        pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+    packets.push_back(packet);
+  }
+
   return packets;
 }
 
@@ -320,8 +424,6 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   BT_ASSERT(handle);
   payload.advertising_handle().Write(handle.value());
 
-  // TODO(fxbug.dev/42161929): We support only legacy PDUs and do not
-  // support fragmented extended advertising data at this time.
   payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
   payload.fragment_preference().Write(
       pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
@@ -409,7 +511,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
   }
 
   fit::result<HostError> result =
-      CanStartAdvertising(address, data, scan_rsp, options);
+      CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
   if (result.is_error()) {
     result_callback(ToResult(result.error_value()));
     return;

@@ -51,6 +51,11 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
                                                    const AdvertisingData& data,
                                                    AdvFlags flags,
                                                    bool /*extended_pdu*/) {
+  if (data.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   auto packet =
       EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
           hci_spec::kLESetAdvertisingData);
@@ -73,6 +78,11 @@ std::vector<EmbossCommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
                                                 const AdvertisingData& scan_rsp,
                                                 bool /*extended_pdu*/) {
+  if (scan_rsp.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   auto packet =
       EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
           hci_spec::kLESetScanResponseData);
@@ -94,7 +104,7 @@ LegacyLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
 std::optional<EmbossCommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pwemb::LEAdvertisingType type,
+    const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
     const AdvertisingIntervalRange& interval,
     bool /*extended_pdu*/) {
@@ -102,9 +112,10 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
       EmbossCommandPacket::New<pwemb::LESetAdvertisingParametersCommandWriter>(
           hci_spec::kLESetAdvertisingParameters);
   auto params = packet.view_t();
-  params.advertising_interval_min().UncheckedWrite(interval.min());
-  params.advertising_interval_max().UncheckedWrite(interval.max());
-  params.adv_type().Write(type);
+  params.advertising_interval_min().Write(interval.min());
+  params.advertising_interval_max().Write(interval.max());
+  params.adv_type().Write(
+      AdvertisingEventPropertiesToLEAdvertisingType(properties));
   params.own_address_type().Write(own_address_type);
   params.advertising_channel_map().BackingStorage().WriteUInt(
       hci_spec::kLEAdvertisingChannelAll);
@@ -155,8 +166,16 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     ResultFunction<> result_callback) {
+  if (options.extended_pdu) {
+    bt_log(INFO,
+           "hci-le",
+           "legacy advertising cannot use extended advertising PDUs");
+    result_callback(ToResult(HostError::kNotSupported));
+    return;
+  }
+
   fit::result<HostError> result =
-      CanStartAdvertising(address, data, scan_rsp, options);
+      CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
   if (result.is_error()) {
     result_callback(ToResult(result.error_value()));
     return;
@@ -166,14 +185,6 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     bt_log(INFO,
            "hci-le",
            "already advertising (only one advertisement supported at a time)");
-    result_callback(ToResult(HostError::kNotSupported));
-    return;
-  }
-
-  if (options.extended_pdu) {
-    bt_log(INFO,
-           "hci-le",
-           "legacy advertising cannot use extended advertising PDUs");
     result_callback(ToResult(HostError::kNotSupported));
     return;
   }

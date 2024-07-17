@@ -338,17 +338,19 @@ void FakePeer::FillExtendedAdvertisingReport(
 
 DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
     const ByteBuffer& data, bool is_scan_response) const {
+  namespace LEExtendedAdvertisingReportData =
+      pw::bluetooth::emboss::LEExtendedAdvertisingReportData;
   using pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter;
   using pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventWriter;
 
   size_t num_full_reports =
-      data.size() / hci_spec::kMaxPduLEExtendedAdvertisingDataLength;
+      data.size() / LEExtendedAdvertisingReportData::data_length_max();
   size_t full_report_size =
       pw::bluetooth::emboss::LEExtendedAdvertisingReportData::MinSizeInBytes() +
-      hci_spec::kMaxPduLEExtendedAdvertisingDataLength;
+      LEExtendedAdvertisingReportData::data_length_max();
   size_t last_report_size =
       pw::bluetooth::emboss::LEExtendedAdvertisingReportData::MinSizeInBytes() +
-      (data.size() % hci_spec::kMaxPduLEExtendedAdvertisingDataLength);
+      (data.size() % LEExtendedAdvertisingReportData::data_length_max());
 
   size_t reports_size = num_full_reports * full_report_size + last_report_size;
   size_t packet_size =

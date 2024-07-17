@@ -23,19 +23,11 @@ class SequentialCommandRunner;
 
 class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  explicit ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci);
+  explicit ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci,
+                                       uint16_t max_advertising_data_length_);
   ~ExtendedLowEnergyAdvertiser() override;
 
-  // Convert a LEAdvertisingType's properties (e.g. connectable, scannable,
-  // directed, etc) to the appropriate advertising event bits for use in
-  // HCI_LE_Set_Extended_Advertising_Parameters (Core Spec, Volume 4, Part E,
-  // Section 7.8.53)
-  using AdvertisingEventPropertiesBits = uint16_t;
-  static AdvertisingEventPropertiesBits AdvertisingTypeToLegacyPduEventBits(
-      pw::bluetooth::emboss::LEAdvertisingType type);
-
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
-  size_t GetSizeLimit(bool extended_pdu) const override;
 
   // Attempt to start advertising. See LowEnergyAdvertiser::StartAdvertising for
   // full documentation.
@@ -100,7 +92,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::LEAdvertisingType type,
+      const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) override;
@@ -124,6 +116,20 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   EmbossCommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
                                                 bool extended_pdu) override;
+
+  EmbossCommandPacket BuildAdvertisingDataFragmentPacket(
+      hci_spec::AdvertisingHandle handle,
+      const BufferView& data,
+      pw::bluetooth::emboss::LESetExtendedAdvDataOp operation,
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
+          fragment_preference);
+
+  EmbossCommandPacket BuildScanResponseDataFragmentPacket(
+      hci_spec::AdvertisingHandle handle,
+      const BufferView& data,
+      pw::bluetooth::emboss::LESetExtendedAdvDataOp operation,
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
+          fragment_preference);
 
   void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
 

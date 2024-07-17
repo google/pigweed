@@ -62,18 +62,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
   FakeLowEnergyAdvertiser(
       const hci::Transport::WeakPtr& hci,
-      size_t max_ad_size,
       std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
-      : hci::LowEnergyAdvertiser(hci),
-        max_ad_size_(max_ad_size),
+      : hci::LowEnergyAdvertiser(hci, kDefaultMaxAdSize),
         ads_(ad_store),
         hci_(hci) {
     BT_ASSERT(ads_);
   }
 
   ~FakeLowEnergyAdvertiser() override = default;
-
-  size_t GetSizeLimit(bool extended_pdu) const override { return max_ad_size_; }
 
   size_t MaxAdvertisements() const override { return 1; }
 
@@ -84,20 +80,17 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
                         const AdvertisingData& scan_rsp,
                         const AdvertisingOptions& options,
                         ConnectionCallback connect_callback,
-                        hci::ResultFunction<> callback) override {
+                        hci::ResultFunction<> result_callback) override {
     if (pending_error_.is_error()) {
-      callback(pending_error_);
+      result_callback(pending_error_);
       pending_error_ = fit::ok();
       return;
     }
 
-    if (data.CalculateBlockSize(/*include_flags=*/true) > max_ad_size_) {
-      callback(ToResult(HostError::kInvalidParameters));
-      return;
-    }
-
-    if (scan_rsp.CalculateBlockSize(/*include_flags=*/false) > max_ad_size_) {
-      callback(ToResult(HostError::kInvalidParameters));
+    fit::result<HostError> result =
+        CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
+    if (result.is_error()) {
+      result_callback(ToResult(result.error_value()));
       return;
     }
 
@@ -110,7 +103,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     new_status.anonymous = options.anonymous;
     new_status.extended_pdu = options.extended_pdu;
     ads_->emplace(address, std::move(new_status));
-    callback(fit::ok());
+    result_callback(fit::ok());
   }
 
   void StopAdvertising(const DeviceAddress& address,
@@ -152,7 +145,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   std::optional<hci::EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
-      pwemb::LEAdvertisingType type,
+      const AdvertisingEventProperties& properties,
       pwemb::LEOwnAddressType own_address_type,
       const hci::AdvertisingIntervalRange& interval,
       bool extended_pdu) override {
@@ -207,7 +200,6 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
         hci_spec::kLERemoveAdvertisingSet);
   }
 
-  size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Result<> pending_error_ = fit::ok();
   hci::Transport::WeakPtr hci_;
@@ -271,9 +263,9 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
     };
   }
 
-  void MakeFakeAdvertiser(size_t max_ad_size = kDefaultMaxAdSize) {
+  void MakeFakeAdvertiser() {
     advertiser_ = std::make_unique<FakeLowEnergyAdvertiser>(
-        transport()->GetWeakPtr(), max_ad_size, &ad_store_);
+        transport()->GetWeakPtr(), &ad_store_);
   }
 
   void MakeAdvertisingManager() {
@@ -348,7 +340,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
                               AdvertisingData(),
                               /*connect_callback=*/nullptr,
                               kTestInterval,
-                              /*extended_pdu=*/false,
+                              /*extended_pdu=*/true,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
                               GetSuccessCallback());
@@ -362,7 +354,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
                               AdvertisingData(),
                               /*connect_callback=*/nullptr,
                               kTestInterval,
-                              /*extended_pdu=*/false,
+                              /*extended_pdu=*/true,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
                               GetErrorCallback());

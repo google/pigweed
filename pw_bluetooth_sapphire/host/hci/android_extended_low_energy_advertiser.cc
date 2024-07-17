@@ -34,7 +34,8 @@ namespace android_hci = pw::bluetooth::vendor::android_hci;
 
 AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
     hci::Transport::WeakPtr hci_ptr, uint8_t max_advertisements)
-    : LowEnergyAdvertiser(std::move(hci_ptr)),
+    : LowEnergyAdvertiser(std::move(hci_ptr),
+                          hci_spec::kMaxLEAdvertisingDataLength),
       advertising_handle_map_(max_advertisements) {
   state_changed_event_handler_id_ =
       hci()->command_channel()->AddVendorEventHandler(
@@ -79,7 +80,7 @@ EmbossCommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
 std::optional<EmbossCommandPacket>
 AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
-    pwemb::LEAdvertisingType type,
+    const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
     const AdvertisingIntervalRange& interval,
     bool extended_pdu) {
@@ -102,7 +103,8 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
       hci_android::kLEMultiAdvtSetAdvtParamSubopcode);
   view.adv_interval_min().Write(interval.min());
   view.adv_interval_max().Write(interval.max());
-  view.adv_type().Write(type);
+  view.adv_type().Write(
+      AdvertisingEventPropertiesToLEAdvertisingType(properties));
   view.own_addr_type().Write(own_address_type);
   view.adv_channel_map().channel_37().Write(true);
   view.adv_channel_map().channel_38().Write(true);
@@ -124,6 +126,11 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const AdvertisingData& data,
     AdvFlags flags,
     bool extended_pdu) {
+  if (data.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   BT_ASSERT(handle);
@@ -182,6 +189,11 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address,
     const AdvertisingData& data,
     bool extended_pdu) {
+  if (data.CalculateBlockSize() == 0) {
+    std::vector<EmbossCommandPacket> packets;
+    return packets;
+  }
+
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   BT_ASSERT(handle);
@@ -257,18 +269,18 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     ResultFunction<> result_callback) {
-  fit::result<HostError> result =
-      CanStartAdvertising(address, data, scan_rsp, options);
-  if (result.is_error()) {
-    result_callback(ToResult(result.error_value()));
-    return;
-  }
-
   if (options.extended_pdu) {
     bt_log(WARN,
            "hci-le",
            "android vendor extensions cannot use extended advertising PDUs");
     result_callback(ToResult(HostError::kNotSupported));
+    return;
+  }
+
+  fit::result<HostError> result =
+      CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
+  if (result.is_error()) {
+    result_callback(ToResult(result.error_value()));
     return;
   }
 

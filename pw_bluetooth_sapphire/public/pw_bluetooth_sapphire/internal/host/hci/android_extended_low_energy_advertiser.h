@@ -42,11 +42,6 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   // LowEnergyAdvertiser overrides:
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
-  size_t GetSizeLimit(bool extended_pdu) const override {
-    // AndroidExtendedLowEnergyAdvertiser is unable to take advantage of
-    // extended advertising PDUs. Return the legacy advertising PDU size limit.
-    return hci_spec::kMaxLEAdvertisingDataLength;
-  }
 
   // Attempt to start advertising. See LowEnergyAdvertiser::StartAdvertising for
   // full documentation.
@@ -95,7 +90,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::LEAdvertisingType type,
+      const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) override;

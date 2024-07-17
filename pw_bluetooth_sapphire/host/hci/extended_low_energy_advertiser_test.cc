@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::hci {
 namespace {
@@ -24,13 +25,13 @@ using bt::testing::FakeController;
 using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
-using pw::bluetooth::emboss::LEAdvertisingType;
 
 constexpr AdvertisingIntervalRange kTestInterval(
     hci_spec::kLEAdvertisingIntervalMin, hci_spec::kLEAdvertisingIntervalMax);
 
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
+const bool kExtendedPdu = true;
 
 class ExtendedLowEnergyAdvertiserTest : public TestingBase {
  public:
@@ -50,9 +51,12 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     FakeController::Settings settings;
     settings.ApplyExtendedLEConfig();
     this->test_device()->set_settings(settings);
+    this->test_device()->set_maximum_advertising_data_length(
+        hci_spec::kMaxLEExtendedAdvertisingDataLength);
 
     advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(
-        transport()->GetWeakPtr());
+        transport()->GetWeakPtr(),
+        hci_spec::kMaxLEExtendedAdvertisingDataLength);
   }
 
   void TearDown() override {
@@ -90,6 +94,31 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     return result;
   }
 
+  AdvertisingData GetExampleDataMultiplePDUs() {
+    AdvertisingData result;
+
+    int num_pdus = 2;
+    for (int i = 0; i < num_pdus; i++) {
+      SetServiceData(result, i, kMaxEncodedServiceDataLength);
+    }
+
+    return result;
+  }
+
+  AdvertisingData GetExampleDataTooLarge() {
+    AdvertisingData result;
+
+    size_t num_pdus = hci_spec::kMaxLEExtendedAdvertisingDataLength /
+                          kMaxEncodedServiceDataLength +
+                      1;
+
+    for (size_t i = 0; i < num_pdus; i++) {
+      SetServiceData(result, i, kMaxEncodedServiceDataLength);
+    }
+
+    return result;
+  }
+
   std::optional<Result<>> GetLastStatus() {
     if (!last_status_) {
       return std::nullopt;
@@ -99,48 +128,33 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   }
 
  private:
+  void SetServiceData(AdvertisingData& result, uint16_t id, uint8_t size) {
+    // subtract 2 to allow for uuid size and service data tag
+    std::string data(size - 2, 'a');
+
+    auto service_uuid = UUID(id);
+    EXPECT_TRUE(result.AddServiceUuid(service_uuid));
+
+    DynamicByteBuffer service_data(data);
+    EXPECT_TRUE(result.SetServiceData(service_uuid, service_data.view()));
+  }
+
   std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser_;
   std::optional<Result<>> last_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
 };
 
-// Bit values used in this test are given in a table in Core Spec Volume 4, Part
-// E, Section 7.8.53.
-TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingTypeToEventBits) {
-  ExtendedLowEnergyAdvertiser::AdvertisingEventPropertiesBits bits =
-      ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-          LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED);
-  ASSERT_TRUE(bits);
-  EXPECT_EQ(0b00010011, bits);
-
-  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-      LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED);
-  ASSERT_TRUE(bits);
-  EXPECT_EQ(0b00010101, bits);
-
-  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-      LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED);
-  ASSERT_TRUE(bits);
-  EXPECT_EQ(0b00011101, bits);
-
-  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-      LEAdvertisingType::SCANNABLE_UNDIRECTED);
-  ASSERT_TRUE(bits);
-  EXPECT_EQ(0b00010010, bits);
-
-  bits = ExtendedLowEnergyAdvertiser::AdvertisingTypeToLegacyPduEventBits(
-      LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED);
-  ASSERT_TRUE(bits);
-  EXPECT_EQ(0b00010000, bits);
-}
-
+// Ensure tx power level is included in advertising data and scan response data.
+// We check for hci_spec::kLEAdvertisingTxPowerMax simply because that's the
+// value used in FakeController when handling HCI LE Set Extended Advertising
+// Parameters.
 TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingData ad = GetExampleData();
-  AdvertisingData scan_data = GetExampleData();
+  AdvertisingData scan_data;
   AdvertisingOptions options(kTestInterval,
                              kDefaultNoAdvFlags,
-                             /*extended_pdu=*/false,
+                             kExtendedPdu,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
 
@@ -157,8 +171,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   ASSERT_TRUE(this->GetLastStatus());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
@@ -168,14 +181,316 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
 
   AdvertisingData::ParseResult actual_ad =
       AdvertisingData::FromBytes(st.advertised_view());
+  ASSERT_EQ(fit::ok(), actual_ad);
+  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
+}
+
+// Ensure we can use extended advertising PDUs and advertise a connectable
+// advertisement with some advertising data.
+TEST_F(ExtendedLowEnergyAdvertiserTest, ExtendedPDUsConnectable) {
+  AdvertisingData ad = GetExampleData();
+  AdvertisingData scan_data;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      [](auto) {},
+      this->MakeExpectSuccessCallback());
+  RunUntilIdle();
+
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                /*extended_pdu=*/true));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                 /*extended_pdu=*/false));
+
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle);
+
+  const LEAdvertisingState& st =
+      this->test_device()->extended_advertising_state(handle.value());
+  ASSERT_TRUE(st.properties.connectable);
+  ASSERT_FALSE(st.properties.scannable);
+  ASSERT_FALSE(st.properties.directed);
+  ASSERT_FALSE(st.properties.high_duty_cycle_directed_connectable);
+  ASSERT_FALSE(st.properties.use_legacy_pdus);
+  ASSERT_FALSE(st.properties.anonymous_advertising);
+  ASSERT_FALSE(st.properties.include_tx_power);
+
+  AdvertisingData::ParseResult actual_ad =
+      AdvertisingData::FromBytes(st.advertised_view());
+  ASSERT_EQ(fit::ok(), actual_ad);
+}
+
+// Ensure we can use extended advertising PDUs and advertise a scannable
+// advertisement with some scan response data.
+TEST_F(ExtendedLowEnergyAdvertiserTest, ExtendedPDUsScannable) {
+  AdvertisingData ad;
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress,
+                                       ad,
+                                       scan_data,
+                                       options,
+                                       nullptr,
+                                       this->MakeExpectSuccessCallback());
+  RunUntilIdle();
+
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                /*extended_pdu=*/true));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                 /*extended_pdu=*/false));
+
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle);
+
+  const LEAdvertisingState& st =
+      this->test_device()->extended_advertising_state(handle.value());
+  ASSERT_FALSE(st.properties.connectable);
+  ASSERT_TRUE(st.properties.scannable);
+  ASSERT_FALSE(st.properties.directed);
+  ASSERT_FALSE(st.properties.high_duty_cycle_directed_connectable);
+  ASSERT_FALSE(st.properties.use_legacy_pdus);
+  ASSERT_FALSE(st.properties.anonymous_advertising);
+  ASSERT_FALSE(st.properties.include_tx_power);
+
   AdvertisingData::ParseResult actual_scan_rsp =
       AdvertisingData::FromBytes(st.scan_rsp_view());
-
-  ASSERT_EQ(fit::ok(), actual_ad);
   ASSERT_EQ(fit::ok(), actual_scan_rsp);
-  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
-  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax,
-            actual_scan_rsp.value().tx_power());
+}
+
+// Core Spec Version 5.4, Volume 5, Part E, Section 7.8.53: If extended
+// advertising PDU types are being used then the advertisement shall not be both
+// connectable and scannable.
+TEST_F(ExtendedLowEnergyAdvertiserTest, ExtendedPDUsConnectableAndScannable) {
+  AdvertisingData ad;
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      [](auto) {},
+      this->MakeExpectErrorCallback());
+  RunUntilIdle();
+
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+}
+
+// Ensure we can send fragmented advertising data to the Controller across
+// multiple HCI packets
+TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingDataFragmented) {
+  AdvertisingData ad = GetExampleDataMultiplePDUs();
+  AdvertisingData scan_data;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      [](auto) {},
+      this->MakeExpectSuccessCallback());
+  RunUntilIdle();
+
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                 /*extended_pdu=*/false));
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle);
+
+  const LEAdvertisingState& st =
+      this->test_device()->extended_advertising_state(handle.value());
+  ASSERT_EQ(ad.CalculateBlockSize(/*include_flags=*/true), st.data_length);
+
+  AdvertisingData::ParseResult actual_ad =
+      AdvertisingData::FromBytes(st.advertised_view());
+  ASSERT_EQ(fit::ok(), actual_ad);
+
+  size_t block_size = ad.CalculateBlockSize(/*include_flags=*/true);
+  DynamicByteBuffer buffer(block_size);
+  ad.WriteBlock(&buffer, options.flags);
+  ASSERT_EQ(buffer.ToString(), st.advertised_view().ToString());
+}
+
+// Ensure we can send fragmented scan response data to the Controller across
+// multiple HCI packets
+TEST_F(ExtendedLowEnergyAdvertiserTest, ScanResponseDataFragmented) {
+  AdvertisingData ad;
+  AdvertisingData scan_data = GetExampleDataMultiplePDUs();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress,
+                                       ad,
+                                       scan_data,
+                                       options,
+                                       nullptr,
+                                       this->MakeExpectSuccessCallback());
+  RunUntilIdle();
+
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
+                                                 /*extended_pdu=*/false));
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle);
+
+  const LEAdvertisingState& st =
+      this->test_device()->extended_advertising_state(handle.value());
+  ASSERT_EQ(scan_data.CalculateBlockSize(), st.scan_rsp_length);
+
+  AdvertisingData::ParseResult actual_scan_rsp =
+      AdvertisingData::FromBytes(st.scan_rsp_view());
+  ASSERT_EQ(fit::ok(), actual_scan_rsp);
+
+  size_t block_size = scan_data.CalculateBlockSize();
+  DynamicByteBuffer buffer(block_size);
+  scan_data.WriteBlock(&buffer, std::nullopt);
+  ASSERT_EQ(buffer.ToString(), st.scan_rsp_view().ToString());
+}
+
+// Ensure that we aren't able to advertise if we are sending advertising data
+// larger than what the spec allows.
+TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingDataTooLarge) {
+  AdvertisingData ad = GetExampleDataTooLarge();
+  AdvertisingData scan_data;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      [](auto) {},
+      this->MakeExpectErrorCallback());
+  RunUntilIdle();
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+}
+
+// Ensure that we aren't able to advertise if we are sending scan response data
+// larger than what the spec allows.
+TEST_F(ExtendedLowEnergyAdvertiserTest, ScanResposneDataTooLarge) {
+  AdvertisingData ad;
+  AdvertisingData scan_data = GetExampleDataTooLarge();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress,
+                                       ad,
+                                       scan_data,
+                                       options,
+                                       nullptr,
+                                       this->MakeExpectErrorCallback());
+  RunUntilIdle();
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+}
+
+// Ensure that we aren't able to advertise if we are sending advertising data
+// larger than what is currently configured by the Controller.
+TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingDataLargerThanConfigured) {
+  test_device()->set_maximum_advertising_data_length(
+      hci_spec::kMaxLEAdvertisingDataLength);
+
+  // Use our own local advertiser. Just for this test, we don't want to modify
+  // the entire test API in this file to be able to reset the advertiser.
+  std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser =
+      std::make_unique<ExtendedLowEnergyAdvertiser>(
+          transport()->GetWeakPtr(), hci_spec::kMaxLEAdvertisingDataLength);
+
+  AdvertisingData ad = GetExampleDataMultiplePDUs();
+  AdvertisingData scan_data;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  advertiser->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      [](auto) {},
+      this->MakeExpectErrorCallback());
+  RunUntilIdle();
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+}
+
+// Ensure that we aren't able to advertise if we are sending data larger than
+// what is currently configured by the Controller.
+TEST_F(ExtendedLowEnergyAdvertiserTest, ScanResponseDataLargerThanConfigured) {
+  test_device()->set_maximum_advertising_data_length(
+      hci_spec::kMaxLEAdvertisingDataLength);
+
+  // Use our own local advertiser. Just for this test, we don't want to modify
+  // the entire test API in this file to be able to reset the advertiser.
+  std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser =
+      std::make_unique<ExtendedLowEnergyAdvertiser>(
+          transport()->GetWeakPtr(), hci_spec::kMaxLEAdvertisingDataLength);
+
+  AdvertisingData ad;
+  AdvertisingData scan_data = GetExampleDataMultiplePDUs();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             kExtendedPdu,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+
+  advertiser->StartAdvertising(kPublicAddress,
+                               ad,
+                               scan_data,
+                               options,
+                               nullptr,
+                               this->MakeExpectErrorCallback());
+  RunUntilIdle();
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
 }
 
 }  // namespace

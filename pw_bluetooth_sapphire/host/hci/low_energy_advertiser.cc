@@ -19,16 +19,46 @@
 namespace bt::hci {
 namespace pwemb = pw::bluetooth::emboss;
 
-LowEnergyAdvertiser::LowEnergyAdvertiser(hci::Transport::WeakPtr hci)
+LowEnergyAdvertiser::LowEnergyAdvertiser(hci::Transport::WeakPtr hci,
+                                         uint16_t max_advertising_data_length)
     : hci_(std::move(hci)),
       hci_cmd_runner_(std::make_unique<SequentialCommandRunner>(
-          hci_->command_channel()->AsWeakPtr())) {}
+          hci_->command_channel()->AsWeakPtr())),
+      max_advertising_data_length_(max_advertising_data_length) {}
+
+size_t LowEnergyAdvertiser::GetSizeLimit(
+    const AdvertisingEventProperties& properties,
+    const AdvertisingOptions& options) const {
+  if (!properties.use_legacy_pdus) {
+    return max_advertising_data_length_;
+  }
+
+  // Core Spec Version 5.4, Volume 6, Part B, Section 2.3.1.2: legacy
+  // advertising PDUs that use directed advertising (ADV_DIRECT_IND) don't
+  // have an advertising data field in their payloads.
+  if (properties.IsDirected()) {
+    return 0;
+  }
+
+  uint16_t size_limit = hci_spec::kMaxLEAdvertisingDataLength;
+
+  // Core Spec Version 5.4, Volume 6, Part B, Section 2.3, Figure 2.5: Legacy
+  // advertising PDUs headers don't have a predesignated field for tx power.
+  // Instead, we include it in the Host advertising data itself. Subtract the
+  // size it will take up from the allowable remaining data size.
+  if (options.include_tx_power_level) {
+    size_limit -= kTLVTxPowerLevelSize;
+  }
+
+  return size_limit;
+}
 
 fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     const DeviceAddress& address,
     const AdvertisingData& data,
     const AdvertisingData& scan_rsp,
-    const AdvertisingOptions& options) const {
+    const AdvertisingOptions& options,
+    const ConnectionCallback& connect_callback) const {
   BT_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (options.anonymous) {
@@ -36,12 +66,22 @@ fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     return fit::error(HostError::kNotSupported);
   }
 
-  // If the TX Power Level is requested, ensure both buffers have enough space.
-  size_t size_limit = GetSizeLimit(options.extended_pdu);
-  if (options.include_tx_power_level) {
-    size_limit -= kTLVTxPowerLevelSize;
+  AdvertisingEventProperties properties =
+      GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
+
+  // Core Spec Version 5.4, Volume 5, Part E, Section 7.8.53: If extended
+  // advertising PDU types are being used then the advertisement shall not be
+  // both connectable and scannable.
+  if (!properties.use_legacy_pdus && properties.connectable &&
+      properties.scannable) {
+    bt_log(
+        WARN,
+        "hci-le",
+        "extended advertising pdus cannot be both connectable and scannable");
+    return fit::error(HostError::kNotSupported);
   }
 
+  size_t size_limit = GetSizeLimit(properties, options);
   if (size_t size = data.CalculateBlockSize(/*include_flags=*/true);
       size > size_limit) {
     bt_log(WARN,
@@ -65,6 +105,114 @@ fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
   return fit::ok();
 }
 
+static LowEnergyAdvertiser::AdvertisingEventProperties
+GetExtendedAdvertisingEventProperties(
+    const AdvertisingData& data,
+    const AdvertisingData& scan_rsp,
+    const LowEnergyAdvertiser::AdvertisingOptions& options,
+    const LowEnergyAdvertiser::ConnectionCallback& connect_callback) {
+  LowEnergyAdvertiser::AdvertisingEventProperties properties;
+
+  if (connect_callback) {
+    properties.connectable = true;
+  }
+
+  if (scan_rsp.CalculateBlockSize() > 0) {
+    properties.scannable = true;
+  }
+
+  // don't set the following fields because we don't currently support sending
+  // out directed advertisements:
+  //   - directed
+  //   - high_duty_cycle_directed_connectable
+
+  if (!options.extended_pdu) {
+    properties.use_legacy_pdus = true;
+  }
+
+  if (options.anonymous) {
+    properties.anonymous_advertising = true;
+  }
+
+  if (options.include_tx_power_level) {
+    properties.include_tx_power = true;
+  }
+
+  return properties;
+}
+
+static LowEnergyAdvertiser::AdvertisingEventProperties
+GetLegacyAdvertisingEventProperties(
+    const AdvertisingData& data,
+    const AdvertisingData& scan_rsp,
+    const LowEnergyAdvertiser::AdvertisingOptions& options,
+    const LowEnergyAdvertiser::ConnectionCallback& connect_callback) {
+  LowEnergyAdvertiser::AdvertisingEventProperties properties;
+  properties.use_legacy_pdus = true;
+
+  // ADV_IND
+  if (connect_callback) {
+    properties.connectable = true;
+    properties.scannable = true;
+    return properties;
+  }
+
+  // ADV_SCAN_IND
+  if (scan_rsp.CalculateBlockSize() > 0) {
+    properties.scannable = true;
+    return properties;
+  }
+
+  // ADV_NONCONN_IND
+  return properties;
+}
+
+LowEnergyAdvertiser::AdvertisingEventProperties
+LowEnergyAdvertiser::GetAdvertisingEventProperties(
+    const AdvertisingData& data,
+    const AdvertisingData& scan_rsp,
+    const AdvertisingOptions& options,
+    const ConnectionCallback& connect_callback) {
+  if (options.extended_pdu) {
+    return GetExtendedAdvertisingEventProperties(
+        data, scan_rsp, options, connect_callback);
+  }
+
+  return GetLegacyAdvertisingEventProperties(
+      data, scan_rsp, options, connect_callback);
+}
+
+pwemb::LEAdvertisingType
+LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+    const AdvertisingEventProperties& p) {
+  // ADV_IND
+  if (!p.high_duty_cycle_directed_connectable && !p.directed && p.scannable &&
+      p.connectable) {
+    return pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
+  }
+
+  // ADV_DIRECT_IND
+  if (!p.high_duty_cycle_directed_connectable && p.directed && !p.scannable &&
+      p.connectable) {
+    return pwemb::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
+  }
+
+  // ADV_DIRECT_IND
+  if (p.high_duty_cycle_directed_connectable && p.directed && !p.scannable &&
+      p.connectable) {
+    return pwemb::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED;
+  }
+
+  // ADV_SCAN_IND
+  if (!p.high_duty_cycle_directed_connectable && !p.directed && p.scannable &&
+      !p.connectable) {
+    return pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED;
+  }
+
+  // ADV_NONCONN_IND
+  return pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
+}
+
 void LowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address,
     const AdvertisingData& data,
@@ -79,14 +227,8 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     hci_cmd_runner_->QueueCommand(packet);
   }
 
-  // Set advertising parameters
-  pwemb::LEAdvertisingType type =
-      pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
-  if (connect_callback) {
-    type = pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
-  } else if (scan_rsp.CalculateBlockSize() > 0) {
-    type = pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED;
-  }
+  data.Copy(&staged_parameters_.data);
+  scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
   pwemb::LEOwnAddressType own_addr_type;
   if (address.type() == DeviceAddress::Type::kLEPublic) {
@@ -95,12 +237,14 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     own_addr_type = pwemb::LEOwnAddressType::RANDOM;
   }
 
-  data.Copy(&staged_parameters_.data);
-  scan_rsp.Copy(&staged_parameters_.scan_rsp);
-
+  AdvertisingEventProperties properties =
+      GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
   std::optional<EmbossCommandPacket> set_adv_params_packet =
-      BuildSetAdvertisingParams(
-          address, type, own_addr_type, options.interval, options.extended_pdu);
+      BuildSetAdvertisingParams(address,
+                                properties,
+                                own_addr_type,
+                                options.interval,
+                                options.extended_pdu);
   if (!set_adv_params_packet) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));

@@ -24,6 +24,8 @@
 namespace bt {
 
 // EIR Data Type, Advertising Data Type (AD Type), OOB Data Type definitions.
+// TODO(fxbug.dev/337934217): Switch to using the Emboss defined versions
+// of this enum class
 // clang-format off
 enum class DataType : uint8_t {
   kFlags                        = 0x01,

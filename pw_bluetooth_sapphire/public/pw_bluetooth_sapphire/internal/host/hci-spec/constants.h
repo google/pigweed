@@ -899,14 +899,6 @@ constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
 // information.
 constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
 
-// The number of bytes of advertising data that can be sent in a single extended
-// advertisement. The Bluetooth spec allows for a larger amount of bytes (based
-// on the value returned for the LE Read Maximum Advertising Data Length
-// parameter) but they must be fragmented across multiple extended advertising
-// PDUs. We don't currently support data framgentation when advertising, nor do
-// we support the use of extended advertising PDUs when advertising.
-constexpr size_t kMaxPduLEExtendedAdvertisingDataLength = 248;
-
 // Core Spec Version 5.4, Volume 6, Part B, Section 2.3.4.9: the total
 // amount of Host Advertising Data before fragmentation shall not exceed 1650
 // octets.

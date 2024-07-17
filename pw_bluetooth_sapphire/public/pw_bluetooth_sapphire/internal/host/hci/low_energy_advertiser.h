@@ -47,11 +47,12 @@ class AdvertisingIntervalRange final {
 
 class LowEnergyAdvertiser : public LocalAddressClient {
  public:
-  explicit LowEnergyAdvertiser(hci::Transport::WeakPtr hci);
+  explicit LowEnergyAdvertiser(hci::Transport::WeakPtr hci,
+                               uint16_t max_advertising_data_length);
   ~LowEnergyAdvertiser() override = default;
 
-  // Get the current limit in bytes of the advertisement data supported.
-  virtual size_t GetSizeLimit(bool extended_pdu) const = 0;
+  using ConnectionCallback =
+      fit::function<void(std::unique_ptr<hci::LowEnergyConnection> link)>;
 
   // TODO(armansito): The |address| parameter of this function doesn't always
   // correspond to the advertised device address as the local address for an
@@ -125,8 +126,44 @@ class LowEnergyAdvertiser : public LocalAddressClient {
     // TODO(b/42157563): anonymous advertising is currently not // supported
     bool anonymous;
   };
-  using ConnectionCallback =
-      fit::function<void(std::unique_ptr<hci::LowEnergyConnection> link)>;
+
+  // Core Spec Version 5.4, Volume 4, Part E, Section 7.8.53: These fields are
+  // the same as those defined in advertising event properties.
+  //
+  // TODO(fxbug.dev/333129711): LEAdvertisingEventProperties is
+  // currently defined in Emboss as a bits field. Unfortunately, this means that
+  // we cannot use it as storage within our own code. Instead, we have to
+  // redefine a struct with the same fields in it if we want to use it as
+  // storage.
+  struct AdvertisingEventProperties {
+    bool connectable = false;
+    bool scannable = false;
+    bool directed = false;
+    bool high_duty_cycle_directed_connectable = false;
+    bool use_legacy_pdus = false;
+    bool anonymous_advertising = false;
+    bool include_tx_power = false;
+
+    bool IsDirected() const {
+      return directed || high_duty_cycle_directed_connectable;
+    }
+  };
+
+  // Determine the properties of an advertisement based on the parameters the
+  // client has passed in. For example, if the client has included a scan
+  // response, the advertisement should be scannable.
+  static AdvertisingEventProperties GetAdvertisingEventProperties(
+      const AdvertisingData& data,
+      const AdvertisingData& scan_rsp,
+      const AdvertisingOptions& options,
+      const ConnectionCallback& connect_callback);
+
+  // Convert individual advertisement properties (e.g. connecatble, scannable,
+  // directed, etc) to a legacy LEAdvertisingType
+  static pw::bluetooth::emboss::LEAdvertisingType
+  AdvertisingEventPropertiesToLEAdvertisingType(
+      const AdvertisingEventProperties& p);
+
   virtual void StartAdvertising(const DeviceAddress& address,
                                 const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp,
@@ -179,7 +216,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // flavor of low energy advertising being implemented.
   virtual std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
-      pw::bluetooth::emboss::LEAdvertisingType type,
+      const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) = 0;
@@ -226,6 +263,10 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // available once again.
   virtual void OnCurrentOperationComplete() {}
 
+  // Get the current limit in bytes of the advertisement data supported.
+  size_t GetSizeLimit(const AdvertisingEventProperties& properties,
+                      const AdvertisingOptions& options) const;
+
   // Check whether we can actually start advertising given the combination of
   // input parameters (e.g. check that the requested advertising data and scan
   // response will actually fit within the size limitations of the advertising
@@ -234,7 +275,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
       const DeviceAddress& address,
       const AdvertisingData& data,
       const AdvertisingData& scan_rsp,
-      const AdvertisingOptions& options) const;
+      const AdvertisingOptions& options,
+      const ConnectionCallback& connect_callback) const;
 
   // Unconditionally start advertising (all checks must be performed in the
   // methods that call this one).
@@ -305,6 +347,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                      ConnectionCallback,
                      TupleKeyHasher>
       connection_callbacks_;
+
+  uint16_t max_advertising_data_length_ = hci_spec::kMaxLEAdvertisingDataLength;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiser);
 };

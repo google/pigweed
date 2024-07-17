@@ -2157,15 +2157,8 @@ constexpr OpCode kLESetExtendedAdvertisingEnable =
 
 // ===========================================================
 // LE Read Maximum Advertising Data Length Command (v5.0) (LE)
-constexpr OpCode kLEReadMaxAdvertisingDataLength =
+constexpr OpCode kLEReadMaximumAdvertisingDataLength =
     LEControllerCommandOpCode(0x003A);
-
-struct LEReadMaxAdvertisingDataLengthReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  uint16_t max_adv_data_length;
-} __attribute__((packed));
 
 // ================================================================
 // LE Read Number of Supported Advertising Sets Command (v5.0) (LE)

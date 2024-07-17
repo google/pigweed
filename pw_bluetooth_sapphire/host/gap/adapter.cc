@@ -34,7 +34,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h"
@@ -413,7 +412,8 @@ class AdapterImpl final : public Adapter {
 
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
     if (extended) {
-      return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
+      return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(
+          hci_, state_.low_energy_state.max_advertising_data_length_);
     }
 
     constexpr pw::bluetooth::Controller::FeaturesBits feature =
@@ -1047,6 +1047,30 @@ void AdapterImpl::InitializeStep2() {
             cmd_complete
                 .return_params<hci_spec::LEReadSupportedStatesReturnParams>();
         state_.low_energy_state.supported_states_ = le64toh(params->le_states);
+      });
+
+  // HCI_LE_Read_Maximum_Advertising_Data_Length
+  init_seq_runner_->QueueCommand(
+      hci::EmbossCommandPacket::New<
+          pw::bluetooth::emboss::LEReadMaxAdvertisingDataLengthCommandView>(
+          hci_spec::kLEReadMaximumAdvertisingDataLength),
+      [this](const hci::EmbossEventPacket& cmd_complete) {
+        if (hci_is_error(cmd_complete,
+                         WARN,
+                         "gap",
+                         "LE read maximum advertising data length failed")) {
+          return;
+        }
+
+        auto params = cmd_complete.view<
+            pw::bluetooth::emboss::
+                LEReadMaximumAdvertisingDataLengthCommandCompleteEventView>();
+        state_.low_energy_state.max_advertising_data_length_ =
+            params.max_advertising_data_length().Read();
+        bt_log(INFO,
+               "gap",
+               "maximum advertising data length: %d",
+               state_.low_energy_state.max_advertising_data_length_);
       });
 
   if (state_.IsCommandSupported(

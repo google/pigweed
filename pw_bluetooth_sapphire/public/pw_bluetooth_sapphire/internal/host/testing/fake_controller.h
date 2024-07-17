@@ -24,7 +24,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test_double_base.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
@@ -138,12 +138,9 @@ class FakeController final : public ControllerTestDoubleBase,
     }
 
     bool IsDirectedAdvertising() const;
-    bool IsScannableAdvertising() const;
-    bool IsConnectableAdvertising() const;
 
     bool enabled = false;
-    pw::bluetooth::emboss::LEAdvertisingType adv_type = pw::bluetooth::emboss::
-        LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
+    hci::LowEnergyAdvertiser::AdvertisingEventProperties properties;
 
     std::optional<DeviceAddress> random_address;
     pw::bluetooth::emboss::LEOwnAddressType own_address_type =
@@ -152,10 +149,10 @@ class FakeController final : public ControllerTestDoubleBase,
     uint32_t interval_min = 0;
     uint32_t interval_max = 0;
 
-    uint8_t data_length = 0;
-    uint8_t data[hci_spec::kMaxLEAdvertisingDataLength] = {0};
-    uint8_t scan_rsp_length = 0;
-    uint8_t scan_rsp_data[hci_spec::kMaxLEAdvertisingDataLength] = {0};
+    uint16_t data_length = 0;
+    uint8_t data[hci_spec::kMaxLEExtendedAdvertisingDataLength] = {0};
+    uint16_t scan_rsp_length = 0;
+    uint8_t scan_rsp_data[hci_spec::kMaxLEExtendedAdvertisingDataLength] = {0};
   };
 
   // The parameters of the most recent low energy connection initiation request
@@ -440,6 +437,10 @@ class FakeController final : public ControllerTestDoubleBase,
 
   void clear_pause_listener_for_opcode(hci_spec::OpCode code) {
     paused_opcode_listeners_.erase(code);
+  }
+
+  void set_maximum_advertising_data_length(uint16_t value) {
+    max_advertising_data_length_ = value;
   }
 
   // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is
@@ -1081,6 +1082,7 @@ class FakeController final : public ControllerTestDoubleBase,
   bool auto_disconnection_complete_event_enabled_ = true;
 
   AdvertisingProcedure advertising_procedure_ = AdvertisingProcedure::kUnknown;
+  uint16_t max_advertising_data_length_ = hci_spec::kMaxLEAdvertisingDataLength;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };

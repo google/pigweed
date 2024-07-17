@@ -109,7 +109,9 @@ class LowEnergyAdvertiserTest : public TestingBase {
   template <bool same = std::is_same_v<T, ExtendedLowEnergyAdvertiser>>
   std::enable_if_t<same, ExtendedLowEnergyAdvertiser>*
   CreateAdvertiserInternal() {
-    return new ExtendedLowEnergyAdvertiser(transport()->GetWeakPtr());
+    return new ExtendedLowEnergyAdvertiser(
+        transport()->GetWeakPtr(),
+        hci_spec::kMaxLEExtendedAdvertisingDataLength);
   }
 
   template <bool same = std::is_same_v<T, LegacyLowEnergyAdvertiser>>
@@ -175,12 +177,8 @@ class LowEnergyAdvertiserTest : public TestingBase {
       size -= kTLVFlagsSize;
     }
 
-    std::ostringstream oss;
-    for (unsigned int i = 0; i <= size; i++) {
-      oss << 'a';
-    }
-
-    EXPECT_TRUE(result.SetLocalName(oss.str()));
+    std::string data(size + 1, 'a');
+    EXPECT_TRUE(result.SetLocalName(data));
 
     // The maximum advertisement packet is:
     // |hci_spec::kMaxLEAdvertisingDataLength| = 31, and |result| = 32 bytes.
@@ -262,6 +260,262 @@ using Implementations = ::testing::Types<LegacyLowEnergyAdvertiser,
                                          ExtendedLowEnergyAdvertiser,
                                          AndroidExtendedLowEnergyAdvertiser>;
 TYPED_TEST_SUITE(LowEnergyAdvertiserTest, Implementations);
+
+TYPED_TEST(LowEnergyAdvertiserTest, GetLegacyAdvertisingEventPropertiesAdvInd) {
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(this->GetExampleData(),
+                                                         this->GetExampleData(),
+                                                         options,
+                                                         [](auto value) {});
+  EXPECT_TRUE(properties.connectable);
+  EXPECT_TRUE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_TRUE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetLegacyAdvertisingEventPropertiesAdvScanInd) {
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          this->GetExampleData(),
+          this->GetExampleData(),
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_TRUE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_TRUE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetLegacyAdvertisingEventPropertiesAdvNonConnInd) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          this->GetExampleData(),
+          empty,
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_TRUE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+// Ensure we can't set include anonymous for legacy pdus
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetLegacyAdvertisingEventPropertiesNoAnonymous) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/true,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty,
+          empty,
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_TRUE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+// Ensure we can't set include tx power level for legacy pdus
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetLegacyAdvertisingEventPropertiesNoIncludeTxPower) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/true);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty,
+          empty,
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_TRUE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetExtendedAdvertisingEventPropertiesConnectable) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/true,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty, empty, options, [](auto value) {});
+  EXPECT_TRUE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_FALSE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetExtendedAdvertisingEventPropertiesScannable) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/true,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty,
+          this->GetExampleData(),
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_TRUE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_FALSE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetExtendedAdvertisingEventPropertiesAnonymous) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/true,
+                             /*anonymous=*/true,
+                             /*include_tx_power_level=*/false);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty,
+          empty,
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_FALSE(properties.use_legacy_pdus);
+  EXPECT_TRUE(properties.anonymous_advertising);
+  EXPECT_FALSE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           GetExtendedAdvertisingEventPropertiesIncludeTxPower) {
+  AdvertisingData empty;
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/true,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/true);
+  LowEnergyAdvertiser::AdvertisingEventProperties properties =
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          empty,
+          empty,
+          options,
+          /*connect_callback=*/nullptr);
+  EXPECT_FALSE(properties.connectable);
+  EXPECT_FALSE(properties.scannable);
+  EXPECT_FALSE(properties.directed);
+  EXPECT_FALSE(properties.high_duty_cycle_directed_connectable);
+  EXPECT_FALSE(properties.use_legacy_pdus);
+  EXPECT_FALSE(properties.anonymous_advertising);
+  EXPECT_TRUE(properties.include_tx_power);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest,
+           AdvertisingEventPropertiesToLEAdvertisingType) {
+  {
+    LowEnergyAdvertiser::AdvertisingEventProperties properties;
+    properties.scannable = true;
+    properties.connectable = true;
+    pwemb::LEAdvertisingType adv_type =
+        LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+            properties);
+    EXPECT_EQ(adv_type,
+              pwemb::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED);
+  }
+
+  {
+    LowEnergyAdvertiser::AdvertisingEventProperties properties;
+    properties.directed = true;
+    properties.connectable = true;
+    pwemb::LEAdvertisingType adv_type =
+        LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+            properties);
+    EXPECT_EQ(adv_type,
+              pwemb::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED);
+  }
+
+  {
+    LowEnergyAdvertiser::AdvertisingEventProperties properties;
+    properties.high_duty_cycle_directed_connectable = true;
+    properties.directed = true;
+    properties.connectable = true;
+    pwemb::LEAdvertisingType adv_type =
+        LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+            properties);
+    EXPECT_EQ(adv_type,
+              pwemb::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED);
+  }
+
+  {
+    LowEnergyAdvertiser::AdvertisingEventProperties properties;
+    properties.scannable = true;
+    pwemb::LEAdvertisingType adv_type =
+        LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+            properties);
+    EXPECT_EQ(adv_type, pwemb::LEAdvertisingType::SCANNABLE_UNDIRECTED);
+  }
+
+  {
+    LowEnergyAdvertiser::AdvertisingEventProperties properties;
+    pwemb::LEAdvertisingType adv_type =
+        LowEnergyAdvertiser::AdvertisingEventPropertiesToLEAdvertisingType(
+            properties);
+    EXPECT_EQ(adv_type, pwemb::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED);
+  }
+}
 
 // - Stops the advertisement when an incoming connection comes in
 // - Possible to restart advertising
@@ -347,7 +601,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_EQ(kPublicAddress, link->peer_address());
 }
 
-// Tests that advertising can be restarted right away in a connection callback.
+// Tests that advertising can be restarted right away in a connection
+// callback.
 TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
@@ -597,11 +852,11 @@ TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
-  // old advertising data: ideally we would fill this completely so that in the
-  // next start advertising call, we can confirm that none of the remnants are
-  // left. However, doing so results in the advertising data being too long.
-  // Instead, we rely on other unit tests within advertising data unittests to
-  // ensure all previous remnants are removed.
+  // old advertising data: ideally we would fill this completely so that in
+  // the next start advertising call, we can confirm that none of the remnants
+  // are left. However, doing so results in the advertising data being too
+  // long. Instead, we rely on other unit tests within advertising data
+  // unittests to ensure all previous remnants are removed.
   AdvertisingData ad;
   ad.SetTxPower(4);
   ad.SetAppearance(0x4567);
@@ -642,8 +897,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
 
-  // Pass min and max values that are outside the allowed range. These should be
-  // capped.
+  // Pass min and max values that are outside the allowed range. These should
+  // be capped.
   constexpr AdvertisingIntervalRange interval(
       hci_spec::kLEAdvertisingIntervalMin - 1,
       hci_spec::kLEAdvertisingIntervalMax + 1);
@@ -667,8 +922,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, state->interval_min);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, state->interval_max);
 
-  // Reconfigure with values that are within the range. These should get passed
-  // down as is.
+  // Reconfigure with values that are within the range. These should get
+  // passed down as is.
   const AdvertisingIntervalRange new_interval(
       hci_spec::kLEAdvertisingIntervalMin + 1,
       hci_spec::kLEAdvertisingIntervalMax - 1);
@@ -931,7 +1186,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
 
   constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
-  // check that advertiser and controller both report the same advertising state
+  // check that advertiser and controller both report the same advertising
+  // state
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
                                                 /*extended_pdu=*/false));
@@ -954,7 +1210,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   this->advertiser()->StopAdvertising(kPublicAddress, /*extended_pdu=*/false);
   this->RunUntilIdle();
 
-  // check that advertiser and controller both report the same advertising state
+  // check that advertiser and controller both report the same advertising
+  // state
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
   EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
                                                  /*extended_pdu=*/false));
