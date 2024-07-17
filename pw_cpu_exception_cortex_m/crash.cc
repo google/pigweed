@@ -22,6 +22,16 @@
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_preprocessor/arch.h"
 
+#if PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR
+#define _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING \
+  " PC=0x%08" PRIx32 " LR=0x%08" PRIx32
+#define _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS \
+  cpu_state.base.pc, cpu_state.base.lr,
+#else
+#define _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING ""
+#define _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+#endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR
+
 namespace pw::cpu_exception::cortex_m {
 
 void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
@@ -45,24 +55,28 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (ProcessStackActive(cpu_state)) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "PSP stack overflow. Thread=%s PC=0x%08" PRIx32 " LR=0x%08" PRIx32
+          "PSP stack overflow."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
           " CFSR=0x%08" PRIx32 " PSP=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           cpu_state.extended.psp,
           is_nested_fault,
           has_multiple_faults);
     } else {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "MSP stack overflow. Thread=%s PC=0x%08" PRIx32 " LR=0x%08" PRIx32
+          "MSP stack overflow."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
           " CFSR=0x%08" PRIx32 " MSP=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           cpu_state.extended.msp,
           is_nested_fault,
           has_multiple_faults);
@@ -81,13 +95,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the MMFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "IACCVIOL: MPU violation on instruction fetch. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " Nested=%d Multiple=%d",
+          "IACCVIOL: MPU violation on instruction fetch."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          //clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -95,13 +110,15 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrDaccviolMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "DACCVIOL: MPU violation on memory read/write. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " ValidMmfar=%d MMFAR=0x%08" PRIx32 "Nested=%d Multiple=%d",
+          "DACCVIOL: MPU violation on memory read/write."
+          " Thread=%s " _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " ValidMmfar=%d MMFAR=0x%08" PRIx32
+          " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_mmfar_valid,
           cpu_state.extended.mmfar,
           is_nested_fault,
@@ -112,13 +129,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the MMFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "MUNSTKERR: MPU violation on exception return. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " Nested=%d Multiple=%d",
+          "MUNSTKERR: MPU violation on exception return."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -127,12 +145,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the MMFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "MSTKERR: MPU violation on exception entry. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "MSTKERR: MPU violation on exception entry."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -140,13 +160,15 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrMlsperrMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "MLSPERR: MPU violation on lazy FPU state preservation. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " ValidMmfar=%d MMFAR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "MLSPERR: MPU violation on lazy FPU state preservation."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " ValidMmfar=%d MMFAR=0x%08" PRIx32
+          " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_mmfar_valid,
           cpu_state.extended.mmfar,
           is_nested_fault,
@@ -155,19 +177,20 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     }
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
 
-    PW_CPU_EXCEPTION_CORTEX_M_CRASH(cpu_state,
-                                    "MPU fault. Thread=%s PC=0x%08" PRIx32
-                                    " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-                                    " ValidMmfar=%d MMFAR=0x%08" PRIx32
-                                    " Nested=%d Multiple=%d",
-                                    thread_name,
-                                    cpu_state.base.pc,
-                                    cpu_state.base.lr,
-                                    cpu_state.extended.cfsr,
-                                    is_mmfar_valid,
-                                    cpu_state.extended.mmfar,
-                                    is_nested_fault,
-                                    has_multiple_faults);
+    PW_CPU_EXCEPTION_CORTEX_M_CRASH(
+        cpu_state,
+        "MPU fault. Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+        " CFSR=0x%08" PRIx32 " ValidMmfar=%d MMFAR=0x%08" PRIx32
+        " Nested=%d Multiple=%d",
+        thread_name,
+        // clang-format off
+        _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+        cpu_state.extended.cfsr,
+        // clang-format on
+        is_mmfar_valid,
+        cpu_state.extended.mmfar,
+        is_nested_fault,
+        has_multiple_faults);
     return;
   }
 
@@ -179,12 +202,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the BFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "IBUSERR: Bus fault on instruction fetch. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "IBUSERR: Bus fault on instruction fetch."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -192,13 +217,15 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrPreciserrMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "PRECISERR: Precise bus fault. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " ValidBfar=%d BFAR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "PRECISERR: Precise bus fault."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " ValidBfar=%d BFAR=0x%08" PRIx32
+          " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_bfar_valid,
           cpu_state.extended.bfar,
           is_nested_fault,
@@ -209,12 +236,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the BFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "IMPRECISERR: Imprecise bus fault. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "IMPRECISERR: Imprecise bus fault."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -223,13 +252,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the BFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "UNSTKERR: Derived bus fault on exception context save. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " Nested=%d Multiple=%d",
+          "UNSTKERR: Derived bus fault on exception context save."
+          " Thread=%s " _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -238,13 +268,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
       // The processor does not write the fault address to the BFAR.
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "STKERR: Derived bus fault on exception context restore. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " Nested=%d Multiple=%d",
+          "STKERR: Derived bus fault on exception context restore."
+          " Thread=%s " _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -252,13 +283,15 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrLsperrMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "LSPERR: Derived bus fault on lazy FPU state preservation. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " ValidBfar=%d BFAR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "LSPERR: Derived bus fault on lazy FPU state preservation."
+          " Thread=%s " _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " ValidBfar=%d BFAR=0x%08" PRIx32
+          " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_bfar_valid,
           cpu_state.extended.bfar,
           is_nested_fault,
@@ -267,19 +300,20 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     }
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
 
-    PW_CPU_EXCEPTION_CORTEX_M_CRASH(cpu_state,
-                                    "Bus Fault. Thread=%s PC=0x%08" PRIx32
-                                    " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-                                    " ValidBfar=%d BFAR=0x%08" PRIx32
-                                    " Nested=%d Multiple=%d",
-                                    thread_name,
-                                    cpu_state.base.pc,
-                                    cpu_state.base.lr,
-                                    cpu_state.extended.cfsr,
-                                    is_bfar_valid,
-                                    cpu_state.extended.bfar,
-                                    is_nested_fault,
-                                    has_multiple_faults);
+    PW_CPU_EXCEPTION_CORTEX_M_CRASH(
+        cpu_state,
+        "Bus Fault. Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+        " CFSR=0x%08" PRIx32 " ValidBfar=%d BFAR=0x%08" PRIx32
+        " Nested=%d Multiple=%d",
+        thread_name,
+        // clang-format off
+        _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+        cpu_state.extended.cfsr,
+        // clang-format on
+        is_bfar_valid,
+        cpu_state.extended.bfar,
+        is_nested_fault,
+        has_multiple_faults);
     return;
   }
 
@@ -287,29 +321,31 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
   if (cpu_state.extended.cfsr & kCfsrUsageFaultMask) {
 #if PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
     if (cpu_state.extended.cfsr & kCfsrUndefinstrMask) {
-      PW_CPU_EXCEPTION_CORTEX_M_CRASH(cpu_state,
-                                      "UNDEFINSTR: Encountered invalid "
-                                      "instruction. Thread=%s PC=0x%08" PRIx32
-                                      " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-                                      "  Nested=%d Multiple=%d",
-                                      thread_name,
-                                      cpu_state.base.pc,
-                                      cpu_state.base.lr,
-                                      cpu_state.extended.cfsr,
-                                      is_nested_fault,
-                                      has_multiple_faults);
+      PW_CPU_EXCEPTION_CORTEX_M_CRASH(
+          cpu_state,
+          "UNDEFINSTR: Encountered invalid instruction."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          thread_name,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+          cpu_state.extended.cfsr,
+          // clang-format on
+          is_nested_fault,
+          has_multiple_faults);
       return;
     }
     if (cpu_state.extended.cfsr & kCfsrInvstateMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "INVSTATE: Attempted instruction with invalid EPSR value. Thread=%s "
-          "PC=0x%08" PRIx32 " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-          " Nested=%d Multiple=%d",
+          "INVSTATE: Attempted instruction with invalid EPSR value."
+          " Thread=%s " _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -317,12 +353,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrInvpcMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "INVPC: Invalid program counter. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "INVPC: Invalid program counter."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -330,12 +368,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrNocpMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "NOCP: Coprocessor disabled or not present. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "NOCP: Coprocessor disabled or not present."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -343,12 +383,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrUnalignedMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "UNALIGNED: Unaligned memory access. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "UNALIGNED: Unaligned memory access."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -356,12 +398,14 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
     if (cpu_state.extended.cfsr & kCfsrDivbyzeroMask) {
       PW_CPU_EXCEPTION_CORTEX_M_CRASH(
           cpu_state,
-          "DIVBYZERO: Division by zero. Thread=%s PC=0x%08" PRIx32
-          " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+          "DIVBYZERO: Division by zero."
+          " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+          " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
           thread_name,
-          cpu_state.base.pc,
-          cpu_state.base.lr,
+          // clang-format off
+          _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
           cpu_state.extended.cfsr,
+          // clang-format on
           is_nested_fault,
           has_multiple_faults);
       return;
@@ -369,41 +413,48 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
     PW_CPU_EXCEPTION_CORTEX_M_CRASH(
         cpu_state,
-        "Fault=Usage Nested=%d Multiple=%d Thread=%s PC=0x%08" PRIx32
-        " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32,
-        is_nested_fault,
-        has_multiple_faults,
+        "Usage Fault. Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+        " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d ",
         thread_name,
-        cpu_state.base.pc,
-        cpu_state.base.lr,
-        cpu_state.extended.cfsr);
+        // clang-format off
+        _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+        cpu_state.extended.cfsr,
+        // clang-format on
+        is_nested_fault,
+        has_multiple_faults);
     return;
   }
   if ((cpu_state.extended.icsr & kIcsrVectactiveMask) == kNmiIsrNum) {
     PW_CPU_EXCEPTION_CORTEX_M_CRASH(
         cpu_state,
-        "Non-Maskable Interrupt triggered. Thread=%s PC=0x%08" PRIx32
-        " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+        "Non-Maskable Interrupt triggered."
+        " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+        " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
         thread_name,
-        cpu_state.base.pc,
-        cpu_state.base.lr,
+        // clang-format off
+        _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
         cpu_state.extended.cfsr,
+        // clang-format on
         is_nested_fault,
         has_multiple_faults);
     return;
   }
 
-  PW_CPU_EXCEPTION_CORTEX_M_CRASH(cpu_state,
-                                  "Unknown fault. Thread=%s PC=0x%08" PRIx32
-                                  " LR=0x%08" PRIx32 " CFSR=0x%08" PRIx32
-                                  " Nested=%d Multiple=%d",
-                                  thread_name,
-                                  cpu_state.base.pc,
-                                  cpu_state.base.lr,
-                                  cpu_state.extended.cfsr,
-                                  is_nested_fault,
-                                  has_multiple_faults);
+  PW_CPU_EXCEPTION_CORTEX_M_CRASH(
+      cpu_state,
+      "Unknown fault. Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+      " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+      thread_name,
+      // clang-format off
+      _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+      cpu_state.extended.cfsr,
+      // clang-format on
+      is_nested_fault,
+      has_multiple_faults);
   return;
 }
 
 }  // namespace pw::cpu_exception::cortex_m
+
+#undef _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+#undef _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS

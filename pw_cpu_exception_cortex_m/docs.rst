@@ -102,6 +102,9 @@ Configuration Options
   analysis in ``AnalyzeCpuStateAndCrash()`` that collects important register
   values depending on the fault type.
 
+- ``PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR``: Enable including
+  the PC and LR register values in the ``AnalyzeCpuStateAndCrash()`` analysis.
+
 Module Usage
 ============
 For lightweight exception handlers that don't need to access

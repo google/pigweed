@@ -51,6 +51,11 @@
 #define PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS 1
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_EXTENDED_CPU_ANALYSIS
 
+// Includes the PC and LR registers in AnalyzeCpuStateAndCrash() analysis.
+#ifndef PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR
+#define PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR 1
+#endif  // PW_CPU_EXCEPTION_CORTEX_M_CRASH_ANALYSIS_INCLUDE_PC_LR
+
 // Whether the floating-point unit is enabled.
 // TODO: b/264897542 - This should be an Arm target trait.
 #ifndef PW_ARMV7M_ENABLE_FPU
