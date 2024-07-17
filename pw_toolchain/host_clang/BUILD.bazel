@@ -23,6 +23,7 @@ load(
     "pw_cc_toolchain",
 )
 load("@pw_xcode_command_line_tools//:defs.bzl", "XCODE_SDK_PATH")
+load("//pw_toolchain/host_clang:linux_sysroot.bzl", "LINUX_SYSROOT")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -267,7 +268,7 @@ pw_cc_toolchain(
         "@llvm_toolchain//:llvm-strip",
     ],
     builtin_sysroot = select({
-        "@platforms//os:linux": "external/linux_sysroot",
+        "@platforms//os:linux": LINUX_SYSROOT,
         "@platforms//os:macos": XCODE_SDK_PATH,
         "//conditions:default": "",
     }),
