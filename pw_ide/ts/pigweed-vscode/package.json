@@ -24,7 +24,7 @@
   "activationEvents": [
     "workspaceContains:**/pigweed.json"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -125,15 +125,18 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "webpack": "webpack --mode development",
-    "webpack-dev": "webpack --mode development --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "clean": "rimraf out dist",
+    "build": "tsc -p ./",
+    "bundle": "webpack --mode production --devtool hidden-source-map",
+    "watch:build": "tsc -watch -p ./",
+    "watch:bundle": "webpack --mode development --watch",
     "lint": "eslint src --ext ts",
-    "jestTest": "jest '.*.test.ts'",
-    "vscTest": "vscode-test"
+    "prePackage": "tsx scripts/prepostPackage.mts --pre",
+    "doPackage": "vsce package",
+    "postPackage": "tsx scripts/prepostPackage.mts --post",
+    "package": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackage && npm run postPackage",
+    "test:jest": "jest '.*.test.ts'",
+    "test:vscode": "vscode-test"
   },
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",
@@ -154,10 +157,12 @@
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^8.56.0",
     "prettier": "^3.3.2",
+    "rimraf": "^6.0.1",
     "jest": "^29.7.0",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "ts-jest": "^29.2.2",
     "ts-loader": "^9.5.1",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.3",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4"
