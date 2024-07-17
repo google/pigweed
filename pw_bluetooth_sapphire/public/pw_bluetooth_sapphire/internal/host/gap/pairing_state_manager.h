@@ -20,7 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/pairing_state.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/types.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
@@ -30,13 +30,13 @@
 namespace bt::gap {
 
 // In order to support BR/EDR Legacy Pairing, each BrEdrConnection must manage
-// either a LegacyPairingState or SecurePairingState object since the two
+// either a LegacyPairingState or SecureSimplePairingState object since the two
 // pairing processes differ. The PairingStateManager class's purpose is to
 // abstract this management logic out of BrEdrConnection and
 // BrEdrConnectionManager.
 //
 // PairingStateManager exists for each BrEdrConnection and routes the events
-// received by the connection to either SecurePairingState or
+// received by the connection to either SecureSimplePairingState or
 // LegacyPairingState.
 //
 // Sometimes we can receive pairing events before the L2CAP connection is
@@ -85,8 +85,8 @@ class PairingStateManager final {
   // be asked to confirm pairing, even when Core Spec v5.0, Vol 3, Part C,
   // Section 5.2.2.6 indicates "automatic confirmation."
   void SetPairingDelegate(const PairingDelegate::WeakPtr& pairing_delegate) {
-    if (pairing_state_) {
-      pairing_state_->SetPairingDelegate(pairing_delegate);
+    if (secure_simple_pairing_state_) {
+      secure_simple_pairing_state_->SetPairingDelegate(pairing_delegate);
     }
   }
 
@@ -105,7 +105,7 @@ class PairingStateManager final {
                        StatusCallback status_cb);
 
   // Event handlers. Caller must ensure that the event is addressed to the link
-  // for this PairingState.
+  // for this SecureSimplePairingState.
 
   // Returns value for IO Capability Request Reply, else std::nullopt for IO
   // Capability Negative Reply.
@@ -153,21 +153,21 @@ class PairingStateManager final {
   void OnEncryptionChange(hci::Result<bool> result);
 
   sm::SecurityProperties& security_properties() {
-    return pairing_state_->security_properties();
+    return secure_simple_pairing_state_->security_properties();
   }
 
   // Sets the BR/EDR Security Mode of the pairing state - see enum definition
   // for details of each mode. If a security upgrade is in-progress, only takes
   // effect on the next security upgrade.
   void set_security_mode(gap::BrEdrSecurityMode mode) {
-    pairing_state_->set_security_mode(mode);
+    secure_simple_pairing_state_->set_security_mode(mode);
   }
 
   // Attach pairing state inspect node named |name| as a child of |parent|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
-  std::unique_ptr<PairingState> pairing_state_;
+  std::unique_ptr<SecureSimplePairingState> secure_simple_pairing_state_;
 
   Peer::WeakPtr peer_;
 

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/internal/host/gap/pairing_state.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h"
 
 #include <inttypes.h>
 
@@ -34,11 +34,12 @@ const char* const kInspectSecurityPropertiesPropertyName =
 
 }  // namespace
 
-PairingState::PairingState(Peer::WeakPtr peer,
-                           WeakPtr<hci::BrEdrConnection> link,
-                           bool link_initiated,
-                           fit::closure auth_cb,
-                           StatusCallback status_cb)
+SecureSimplePairingState::SecureSimplePairingState(
+    Peer::WeakPtr peer,
+    WeakPtr<hci::BrEdrConnection> link,
+    bool link_initiated,
+    fit::closure auth_cb,
+    StatusCallback status_cb)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
@@ -51,8 +52,8 @@ PairingState::PairingState(Peer::WeakPtr peer,
   BT_ASSERT(send_auth_request_callback_);
   BT_ASSERT(status_callback_);
   link_->set_encryption_change_callback(
-      fit::bind_member<&PairingState::OnEncryptionChange>(this));
-  cleanup_cb_ = [](PairingState* self) {
+      fit::bind_member<&SecureSimplePairingState::OnEncryptionChange>(this));
+  cleanup_cb_ = [](SecureSimplePairingState* self) {
     self->link_->set_encryption_change_callback(nullptr);
     auto callbacks_to_signal =
         self->CompletePairingRequests(ToResult(HostError::kLinkDisconnected));
@@ -69,13 +70,13 @@ PairingState::PairingState(Peer::WeakPtr peer,
   };
 }
 
-PairingState::~PairingState() {
+SecureSimplePairingState::~SecureSimplePairingState() {
   if (cleanup_cb_) {
     cleanup_cb_(this);
   }
 }
 
-void PairingState::InitiatePairing(
+void SecureSimplePairingState::InitiatePairing(
     BrEdrSecurityRequirements security_requirements, StatusCallback status_cb) {
   // TODO(fxbug.dev/42082728): Reject pairing if peer/local device don't support
   // Secure Connections and SC is required
@@ -136,7 +137,7 @@ void PairingState::InitiatePairing(
   }
 }
 
-void PairingState::InitiateNextPairingRequest() {
+void SecureSimplePairingState::InitiateNextPairingRequest() {
   BT_ASSERT(state() == State::kIdle);
   BT_ASSERT(!is_pairing());
 
@@ -157,7 +158,7 @@ void PairingState::InitiateNextPairingRequest() {
   send_auth_request_callback_();
 }
 
-std::optional<IoCapability> PairingState::OnIoCapabilityRequest() {
+std::optional<IoCapability> SecureSimplePairingState::OnIoCapabilityRequest() {
   if (state() != State::kInitiatorWaitIoCapRequest &&
       state() != State::kResponderWaitIoCapRequest) {
     FailWithUnexpectedEvent(__func__);
@@ -197,7 +198,7 @@ std::optional<IoCapability> PairingState::OnIoCapabilityRequest() {
   return current_pairing_->local_iocap;
 }
 
-void PairingState::OnIoCapabilityResponse(IoCapability peer_iocap) {
+void SecureSimplePairingState::OnIoCapabilityResponse(IoCapability peer_iocap) {
   // If we preivously provided a key for peer to pair, but that didn't work,
   // they may try to re-pair.  Cancel the previous pairing if they try to
   // restart.
@@ -225,8 +226,8 @@ void PairingState::OnIoCapabilityResponse(IoCapability peer_iocap) {
   }
 }
 
-void PairingState::OnUserConfirmationRequest(uint32_t numeric_value,
-                                             UserConfirmationCallback cb) {
+void SecureSimplePairingState::OnUserConfirmationRequest(
+    uint32_t numeric_value, UserConfirmationCallback cb) {
   if (state() != State::kWaitUserConfirmationRequest) {
     FailWithUnexpectedEvent(__func__);
     cb(false);
@@ -292,7 +293,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value,
   }
 }
 
-void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
+void SecureSimplePairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
   if (state() != State::kWaitUserPasskeyRequest) {
     FailWithUnexpectedEvent(__func__);
     cb(std::nullopt);
@@ -330,7 +331,8 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
   pairing_delegate()->RequestPasskey(peer_id(), std::move(passkey_cb));
 }
 
-void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
+void SecureSimplePairingState::OnUserPasskeyNotification(
+    uint32_t numeric_value) {
   if (state() != State::kWaitUserPasskeyNotification) {
     FailWithUnexpectedEvent(__func__);
     return;
@@ -359,7 +361,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
                                      std::move(confirm_cb));
 }
 
-void PairingState::OnSimplePairingComplete(
+void SecureSimplePairingState::OnSimplePairingComplete(
     pw::bluetooth::emboss::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an
   // Simple Pairing Complete with a non-success status. Log and proxy the error
@@ -392,7 +394,7 @@ void PairingState::OnSimplePairingComplete(
   state_ = State::kWaitLinkKey;
 }
 
-std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
+std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
   if (state() != State::kIdle &&
       state() != State::kInitiatorWaitLinkKeyRequest) {
     FailWithUnexpectedEvent(__func__);
@@ -455,7 +457,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   return std::nullopt;
 }
 
-void PairingState::OnLinkKeyNotification(
+void SecureSimplePairingState::OnLinkKeyNotification(
     const UInt128& link_key,
     hci_spec::LinkKeyType key_type,
     bool local_secure_connections_supported) {
@@ -591,7 +593,7 @@ void PairingState::OnLinkKeyNotification(
   }
 }
 
-void PairingState::OnAuthenticationComplete(
+void SecureSimplePairingState::OnAuthenticationComplete(
     pw::bluetooth::emboss::StatusCode status_code) {
   if (is_pairing() && peer_->bredr() && peer_->bredr()->bonded() &&
       status_code == pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING) {
@@ -634,7 +636,7 @@ void PairingState::OnAuthenticationComplete(
   EnableEncryption();
 }
 
-void PairingState::OnEncryptionChange(hci::Result<bool> result) {
+void SecureSimplePairingState::OnEncryptionChange(hci::Result<bool> result) {
   // Update inspect properties
   pw::bluetooth::emboss::EncryptionStatus encryption_status =
       link_->encryption_status();
@@ -679,7 +681,8 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
                __func__);
 }
 
-std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
+std::unique_ptr<SecureSimplePairingState::Pairing>
+SecureSimplePairingState::Pairing::MakeInitiator(
     BrEdrSecurityRequirements security_requirements, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
@@ -688,7 +691,8 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
   return pairing;
 }
 
-std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
+std::unique_ptr<SecureSimplePairingState::Pairing>
+SecureSimplePairingState::Pairing::MakeResponder(
     pw::bluetooth::emboss::IoCapability peer_iocap, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
@@ -700,8 +704,8 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
   return pairing;
 }
 
-std::unique_ptr<PairingState::Pairing>
-PairingState::Pairing::MakeResponderForBonded() {
+std::unique_ptr<SecureSimplePairingState::Pairing>
+SecureSimplePairingState::Pairing::MakeResponderForBonded() {
   std::unique_ptr<Pairing> pairing(new Pairing(/* link initiated */ false));
   pairing->initiator = false;
   // Don't try to upgrade security as responder.
@@ -710,7 +714,7 @@ PairingState::Pairing::MakeResponderForBonded() {
   return pairing;
 }
 
-void PairingState::Pairing::ComputePairingData() {
+void SecureSimplePairingState::Pairing::ComputePairingData() {
   if (initiator) {
     action = GetInitiatorPairingAction(local_iocap, peer_iocap);
   } else {
@@ -736,7 +740,8 @@ void PairingState::Pairing::ComputePairingData() {
          allow_automatic ? "" : " (auto not allowed)");
 }
 
-const char* PairingState::ToString(PairingState::State state) {
+const char* SecureSimplePairingState::ToString(
+    SecureSimplePairingState::State state) {
   switch (state) {
     case State::kIdle:
       return "Idle";
@@ -770,7 +775,8 @@ const char* PairingState::ToString(PairingState::State state) {
   return "";
 }
 
-PairingState::State PairingState::GetStateForPairingEvent(
+SecureSimplePairingState::State
+SecureSimplePairingState::GetStateForPairingEvent(
     hci_spec::EventCode event_code) {
   switch (event_code) {
     case hci_spec::kUserConfirmationRequestEventCode:
@@ -785,7 +791,8 @@ PairingState::State PairingState::GetStateForPairingEvent(
   return State::kFailed;
 }
 
-void PairingState::SignalStatus(hci::Result<> status, const char* caller) {
+void SecureSimplePairingState::SignalStatus(hci::Result<> status,
+                                            const char* caller) {
   bt_log(INFO,
          "gap-bredr",
          "Signaling pairing listeners for %#.4x (id: %s) from %s with %s",
@@ -798,16 +805,16 @@ void PairingState::SignalStatus(hci::Result<> status, const char* caller) {
   // CompletePairingRequests() can safely access members.
   auto callbacks_to_signal = CompletePairingRequests(status);
 
-  // This PairingState may be destroyed by these callbacks (e.g. if signaling an
-  // error causes a disconnection), so care must be taken not to access any
-  // members.
+  // This SecureSimplePairingState may be destroyed by these callbacks (e.g. if
+  // signaling an error causes a disconnection), so care must be taken not to
+  // access any members.
   status_callback_(handle(), status);
   for (auto& cb : callbacks_to_signal) {
     cb();
   }
 }
 
-std::vector<fit::closure> PairingState::CompletePairingRequests(
+std::vector<fit::closure> SecureSimplePairingState::CompletePairingRequests(
     hci::Result<> status) {
   std::vector<fit::closure> callbacks_to_signal;
 
@@ -884,7 +891,7 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(
   return callbacks_to_signal;
 }
 
-void PairingState::EnableEncryption() {
+void SecureSimplePairingState::EnableEncryption() {
   if (!link_->StartEncryption()) {
     bt_log(ERROR,
            "gap-bredr",
@@ -899,7 +906,8 @@ void PairingState::EnableEncryption() {
   state_ = State::kWaitEncryption;
 }
 
-void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
+void SecureSimplePairingState::FailWithUnexpectedEvent(
+    const char* handler_name) {
   bt_log(ERROR,
          "gap-bredr",
          "%#.4x (id: %s): Unexpected event %s while in state \"%s\"",
@@ -911,7 +919,7 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   SignalStatus(ToResult(HostError::kNotSupported), __func__);
 }
 
-bool PairingState::IsPeerSecureConnectionsSupported() const {
+bool SecureSimplePairingState::IsPeerSecureConnectionsSupported() const {
   return peer_->features().HasBit(
              /*page=*/1, hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
          peer_->features().HasBit(
@@ -919,7 +927,8 @@ bool PairingState::IsPeerSecureConnectionsSupported() const {
              hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
 }
 
-void PairingState::AttachInspect(inspect::Node& parent, std::string name) {
+void SecureSimplePairingState::AttachInspect(inspect::Node& parent,
+                                             std::string name) {
   inspect_node_ = parent.CreateChild(name);
 
   inspect_properties_.encryption_status = inspect_node_.CreateString(

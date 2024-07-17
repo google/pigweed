@@ -13,6 +13,7 @@
 // the License.
 
 #pragma once
+
 #include <list>
 #include <optional>
 #include <vector>
@@ -165,7 +166,7 @@ enum class PairingAction {
 //
 // This class is not thread-safe and should only be called on the thread on
 // which it was created.
-class PairingState final {
+class SecureSimplePairingState final {
  public:
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
@@ -173,28 +174,28 @@ class PairingState final {
   using StatusCallback =
       fit::function<void(hci_spec::ConnectionHandle, hci::Result<>)>;
 
-  // Constructs a PairingState for the ACL connection |link| to |peer_id|.
-  // |link_initiated| should be true if this device connected, and false if it
-  // was an incoming connection.
-  // This object will receive "encryption change" callbacks associate with
-  // |peer_id|. Successful pairing is reported through |status_cb| after
-  // encryption is enabled. When errors occur, this object will be put in a
-  // "failed" state and the owner shall disconnect the link and destroy its
-  // PairingState.  When destroyed, status callbacks for any waiting pairings
-  // are called. |status_cb| is not called on destruction.
+  // Constructs a SecureSimplePairingState for the ACL connection |link| to
+  // |peer_id|. |link_initiated| should be true if this device connected, and
+  // false if it was an incoming connection. This object will receive
+  // "encryption change" callbacks associate with |peer_id|. Successful pairing
+  // is reported through |status_cb| after encryption is enabled. When errors
+  // occur, this object will be put in a "failed" state and the owner shall
+  // disconnect the link and destroy its SecureSimplePairingState.  When
+  // destroyed, status callbacks for any waiting pairings are called.
+  // |status_cb| is not called on destruction.
   //
   // |auth_cb| will be called to indicate that the caller should send an
   // Authentication Request for this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  PairingState(Peer::WeakPtr peer,
-               WeakPtr<hci::BrEdrConnection> link,
-               bool link_initiated,
-               fit::closure auth_cb,
-               StatusCallback status_cb);
-  PairingState(PairingState&&) = default;
-  PairingState& operator=(PairingState&&) = default;
-  ~PairingState();
+  SecureSimplePairingState(Peer::WeakPtr peer,
+                           WeakPtr<hci::BrEdrConnection> link,
+                           bool link_initiated,
+                           fit::closure auth_cb,
+                           StatusCallback status_cb);
+  SecureSimplePairingState(SecureSimplePairingState&&) = default;
+  SecureSimplePairingState& operator=(SecureSimplePairingState&&) = default;
+  ~SecureSimplePairingState();
 
   // True if there is currently a pairing procedure in progress that the local
   // device initiated.
@@ -219,8 +220,8 @@ class PairingState final {
   // an additional pairing that upgrades the link key succeeds or fails.
   //
   // If no PairingDelegate is available, |status_cb| is immediately called with
-  // HostError::kNotReady, but the PairingState status callback (provided in the
-  // ctor) is not called.
+  // HostError::kNotReady, but the SecureSimplePairingState status callback
+  // (provided in the ctor) is not called.
   //
   // When pairing completes or errors out, the |status_cb| of each call to this
   // function will be invoked with the result.
@@ -228,7 +229,7 @@ class PairingState final {
                        StatusCallback status_cb);
 
   // Event handlers. Caller must ensure that the event is addressed to the link
-  // for this PairingState.
+  // for this SecureSimplePairingState.
 
   // Returns value for IO Capability Request Reply, else std::nullopt for IO
   // Capability Negative Reply.
@@ -492,9 +493,9 @@ class PairingState final {
   StatusCallback status_callback_;
 
   // Cleanup work that should occur only once per connection; uniqueness is
-  // guaranteed by being moved with PairingState. |self| shall be a pointer to
-  // the moved-to instance being cleaned up.
-  fit::callback<void(PairingState* self)> cleanup_cb_;
+  // guaranteed by being moved with SecureSimplePairingState. |self| shall be a
+  // pointer to the moved-to instance being cleaned up.
+  fit::callback<void(SecureSimplePairingState* self)> cleanup_cb_;
 
   struct InspectProperties {
     inspect::StringProperty encryption_status;
@@ -502,7 +503,7 @@ class PairingState final {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecureSimplePairingState);
 };
 
 PairingAction GetInitiatorPairingAction(

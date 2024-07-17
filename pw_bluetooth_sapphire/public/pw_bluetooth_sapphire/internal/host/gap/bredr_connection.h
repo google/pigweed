@@ -30,7 +30,7 @@
 namespace bt::gap {
 
 class PeerCache;
-class PairingState;
+class SecureSimplePairingState;
 
 // Represents an ACL connection that is currently open with the controller (i.e.
 // after receiving a Connection Complete and before either user disconnection or

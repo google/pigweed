@@ -21,7 +21,7 @@ namespace bt::gap {
 namespace {
 
 const char* const kInspectPeerIdPropertyName = "peer_id";
-const char* const kInspectPairingStateNodeName = "pairing_state";
+const char* const kInspectPairingStateNodeName = "secure_simple_pairing_state";
 
 }  // namespace
 
@@ -155,11 +155,12 @@ void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
 
 void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
                                            hci::Result<> status) {
-  if (bt_is_error(status,
-                  DEBUG,
-                  "gap-bredr",
-                  "PairingState error status, disconnecting (peer id: %s)",
-                  bt_str(peer_id_))) {
+  if (bt_is_error(
+          status,
+          DEBUG,
+          "gap-bredr",
+          "SecureSimplePairingState error status, disconnecting (peer id: %s)",
+          bt_str(peer_id_))) {
     if (disconnect_cb_) {
       disconnect_cb_();
     }
