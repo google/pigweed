@@ -155,6 +155,9 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
 
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);
 
+DynamicByteBuffer WriteScanEnable(uint8_t scan_enable);
+DynamicByteBuffer WriteScanEnableResponse();
+
 DynamicByteBuffer ScoDataPacket(
     hci_spec::ConnectionHandle conn,
     hci_spec::SynchronousDataPacketStatusFlag flag,

@@ -672,6 +672,19 @@ DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
       ));
 }
 
+DynamicByteBuffer WriteScanEnable(uint8_t scan_enable) {
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kWriteScanEnable),
+                       UpperBits(hci_spec::kWriteScanEnable),
+                       0x01,
+                       scan_enable));
+}
+
+DynamicByteBuffer WriteScanEnableResponse() {
+  return CommandCompletePacket(hci_spec::kWriteScanEnable,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+}
+
 DynamicByteBuffer ScoDataPacket(
     hci_spec::ConnectionHandle conn,
     hci_spec::SynchronousDataPacketStatusFlag flag,
