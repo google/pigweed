@@ -96,6 +96,9 @@ class AdapterTest : public TestingBase {
   }
 
  protected:
+  void GetSupportedDelayRangeHelper(
+      bool supported, const std::optional<std::vector<uint8_t>>& codec_config);
+
   bool transport_closed_called() const { return transport_closed_called_; }
 
   Adapter* adapter() const { return adapter_.get(); }
@@ -1616,6 +1619,89 @@ TEST_F(AdapterTest, InitializeWriteSecureConnectionsHostSupport) {
   EXPECT_TRUE(adapter()->bredr());
   EXPECT_EQ(TechnologyType::kDualMode, adapter()->state().type());
   EXPECT_FALSE(transport_closed_called());
+}
+
+void AdapterTest::GetSupportedDelayRangeHelper(
+    bool supported, const std::optional<std::vector<uint8_t>>& codec_config) {
+  FakeController::Settings settings;
+
+  // Define minimum required settings for an LE controller
+  settings.lmp_features_page0 |=
+      static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+
+  // Enable or disable the "Read Local Supported Controller Delay" command
+  constexpr size_t kReadLocalSupportedControllerDelayOctet = 45;
+  if (supported) {
+    settings.supported_commands[kReadLocalSupportedControllerDelayOctet] |=
+        static_cast<uint8_t>(
+            hci_spec::SupportedCommand::kReadLocalSupportedControllerDelay);
+  } else {
+    settings.supported_commands[kReadLocalSupportedControllerDelayOctet] &=
+        ~static_cast<uint8_t>(
+            hci_spec::SupportedCommand::kReadLocalSupportedControllerDelay);
+  }
+
+  test_device()->set_settings(settings);
+
+  bool init_success = false;
+  InitializeAdapter([&](bool success) { init_success = success; });
+  ASSERT_TRUE(init_success);
+
+  pw::Status cb_status = static_cast<pw::Status::Code>(
+      200);  // Error code that should never be returned
+  uint32_t min_delay_us = -1;
+  uint32_t max_delay_us = -1;
+  Adapter::GetSupportedDelayRangeCallback cb =
+      [&](pw::Status status, uint32_t min_delay, uint32_t max_delay) {
+        cb_status = status;
+        min_delay_us = min_delay;
+        max_delay_us = max_delay;
+      };
+
+  // Construct codec ID information
+  auto codec_id =
+      std::make_unique<StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>();
+  codec_id->view().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::U_LAW);
+  codec_id->view().company_id().Write(0u);
+  codec_id->view().vendor_codec_id().Write(0u);
+
+  adapter()->GetSupportedDelayRange(
+      std::move(codec_id),
+      pw::bluetooth::emboss::LogicalTransportType::BR_EDR_ACL,
+      pw::bluetooth::emboss::DataPathDirection::INPUT,
+      codec_config,
+      std::move(cb));
+  RunUntilIdle();
+  if (!supported) {
+    EXPECT_EQ(cb_status, PW_STATUS_UNIMPLEMENTED);
+  } else {
+    EXPECT_TRUE(cb_status.ok());
+    EXPECT_LE(min_delay_us, max_delay_us);
+    EXPECT_LE(max_delay_us, 0x3D0900u);
+  }
+}
+
+// Verify proper behavior when "Read Local Supported Controller Delay" command
+// is not supported in the controller.
+TEST_F(AdapterTest, ReadLocalSupportedControllerDelayNotSupported) {
+  GetSupportedDelayRangeHelper(false, std::nullopt);
+}
+
+// Verify proper behavior when "Read Local Supported Controller Delay" command
+// is supported in the controller and behaves properly when codec configuration
+// is empty.
+TEST_F(AdapterTest, ReadLocalSupportedControllerDelayBasic) {
+  GetSupportedDelayRangeHelper(true, std::nullopt);
+}
+// Verify proper behavior when "Read Local Supported Controller Delay" command
+// is supported in the controller and behaves properly when codec configuration
+// is present.
+TEST_F(AdapterTest, ReadLocalSupportedControllerDelayWithCodecConfig) {
+  std::vector<uint8_t> codec_configuration{0x11, 0x22, 0x33, 0x44, 0x55};
+  GetSupportedDelayRangeHelper(true, codec_configuration);
 }
 
 }  // namespace

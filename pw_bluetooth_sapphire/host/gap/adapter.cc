@@ -350,6 +350,14 @@ class AdapterImpl final : public Adapter {
   void SetDeviceClass(DeviceClass dev_class,
                       hci::ResultFunction<> callback) override;
 
+  void GetSupportedDelayRange(
+      std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
+          codec_id,
+      pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
+      pw::bluetooth::emboss::DataPathDirection direction,
+      std::optional<std::vector<uint8_t>> codec_configuration,
+      GetSupportedDelayRangeCallback cb) override;
+
   void set_auto_connect_callback(AutoConnectCallback callback) override {
     auto_conn_cb_ = std::move(callback);
   }
@@ -751,6 +759,65 @@ void AdapterImpl::SetDeviceClass(DeviceClass dev_class,
       [cb = std::move(callback)](auto, const hci::EventPacket& event) {
         hci_is_error(event, WARN, "gap", "set device class failed");
         cb(event.ToResult());
+      });
+}
+
+void AdapterImpl::GetSupportedDelayRange(
+    std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
+        codec_id,
+    pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
+    pw::bluetooth::emboss::DataPathDirection direction,
+    std::optional<std::vector<uint8_t>> codec_configuration,
+    GetSupportedDelayRangeCallback cb) {
+  if (!state_.IsCommandSupported(
+          /*octet=*/45,
+          hci_spec::SupportedCommand::kReadLocalSupportedControllerDelay)) {
+    bt_log(WARN,
+           "gap",
+           "read local supported controller delay command not supported");
+    cb(PW_STATUS_UNIMPLEMENTED, /*min=*/0, /*max=*/0);
+    return;
+  }
+  bt_log(INFO, "gap", "retrieving controller codec delay");
+  size_t codec_configuration_size = 0;
+  if (codec_configuration.has_value()) {
+    codec_configuration_size = codec_configuration->size();
+  }
+  size_t packet_size =
+      pw::bluetooth::emboss::ReadLocalSupportedControllerDelayCommand::
+          MinSizeInBytes() +
+      codec_configuration_size;
+  auto cmd_packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::ReadLocalSupportedControllerDelayCommandWriter>(
+      hci_spec::kReadLocalSupportedControllerDelay, packet_size);
+  auto cmd_view = cmd_packet.view_t();
+  cmd_view.codec_id().CopyFrom(codec_id->view());
+  cmd_view.logical_transport_type().Write(logical_transport_type);
+  cmd_view.direction().Write(direction);
+  cmd_view.codec_configuration_length().Write(codec_configuration_size);
+  if (codec_configuration.has_value()) {
+    std::memcpy(cmd_view.codec_configuration().BackingStorage().data(),
+                codec_configuration->data(),
+                codec_configuration_size);
+  }
+
+  hci_->command_channel()->SendCommand(
+      std::move(cmd_packet),
+      [cb = std::move(cb)](auto /*id*/, const hci::EmbossEventPacket& event) {
+        auto view = event.view<
+            pw::bluetooth::emboss::
+                ReadLocalSupportedControllerDelayCommandCompleteEventView>();
+        if (hci_is_error(event,
+                         WARN,
+                         "gap",
+                         "read local supported controller delay failed")) {
+          cb(PW_STATUS_UNKNOWN, /*min=*/0, /*max=*/0);
+          return;
+        }
+        bt_log(INFO, "gap", "controller delay read successfully");
+        cb(PW_STATUS_OK,
+           view.min_controller_delay().Read(),
+           view.max_controller_delay().Read());
       });
 }
 

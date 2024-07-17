@@ -175,6 +175,20 @@ void FakeAdapter::SetDeviceClass(DeviceClass dev_class,
   callback(fit::ok());
 }
 
+void FakeAdapter::GetSupportedDelayRange(
+    std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
+        codec_id,
+    pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
+    pw::bluetooth::emboss::DataPathDirection direction,
+    std::optional<std::vector<uint8_t>> codec_configuration,
+    GetSupportedDelayRangeCallback cb) {
+  cb(PW_STATUS_OK,
+     0,
+     pw::bluetooth::emboss::
+         ReadLocalSupportedControllerDelayCommandCompleteEvent::
+             max_delay_usecs());
+}
+
 BrEdrConnectionManager::SearchId FakeAdapter::FakeBrEdr::AddServiceSearch(
     const UUID& uuid,
     std::unordered_set<sdp::AttributeId> attributes,

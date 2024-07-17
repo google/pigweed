@@ -734,6 +734,11 @@ struct ReadDataBlockSizeReturnParams {
   uint16_t total_num_data_blocks;
 } __attribute__((packed));
 
+// ====================================================
+// Read Local Supported Controller Delay Command (v5.2)
+constexpr OpCode kReadLocalSupportedControllerDelay =
+    InformationalParamsOpCode(0x000F);
+
 // ======= Events =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.7
 

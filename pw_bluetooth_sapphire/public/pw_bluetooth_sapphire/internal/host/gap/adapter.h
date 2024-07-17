@@ -13,7 +13,9 @@
 // the License.
 
 #pragma once
+
 #include <lib/fit/function.h>
+#include <pw_status/status.h>
 
 #include <memory>
 #include <string>
@@ -438,6 +440,22 @@ class Adapter {
   // Sets the Device Class of this adapter.
   virtual void SetDeviceClass(DeviceClass dev_class,
                               hci::ResultFunction<> callback) = 0;
+
+  // If the operation is successful, specifies the minimum and maximum local
+  // delay (in microseconds) supported by the controller for the codec
+  // specified.
+  // Returns PW_STATUS_UNIMPLEMENTED if the operation is not supported on this
+  // controller. Returns PW_STATUS_UNKNOWN if the operation fails to complete
+  // successfully.
+  using GetSupportedDelayRangeCallback = fit::function<void(
+      pw::Status status, uint32_t min_delay_us, uint32_t max_delay_us)>;
+  virtual void GetSupportedDelayRange(
+      std::unique_ptr<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>>
+          codec_id,
+      pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
+      pw::bluetooth::emboss::DataPathDirection direction,
+      std::optional<std::vector<uint8_t>> codec_configuration,
+      GetSupportedDelayRangeCallback cb) = 0;
 
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,

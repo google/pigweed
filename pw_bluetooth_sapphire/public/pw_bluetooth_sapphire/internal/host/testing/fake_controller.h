@@ -917,6 +917,10 @@ class FakeController final : public ControllerTestDoubleBase,
       const pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView&
           params);
 
+  void OnReadLocalSupportedControllerDelay(
+      const pw::bluetooth::emboss::ReadLocalSupportedControllerDelayCommandView&
+          params);
+
   void OnAndroidLEGetVendorCapabilities();
 
   void OnAndroidA2dpOffloadCommand(
