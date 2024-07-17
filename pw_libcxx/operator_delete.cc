@@ -12,26 +12,21 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <cstdlib>
 #include <new>
 
-// fxbug.dev/42082880: We should look into compiler changes to avoid emitting
-// references to these symbols.
-// These operator delete implementations are provided to satisfy references from
-// the vtable for the deleting destructor. In practice, these will never be
-// reached because users should not be using new/delete.
+void operator delete(void* ptr) noexcept { free(ptr); }
+void operator delete[](void* ptr) noexcept { free(ptr); }
 
-void operator delete(void*) noexcept { __builtin_trap(); }
-void operator delete[](void*) noexcept { __builtin_trap(); }
+void operator delete(void* ptr, std::align_val_t) noexcept { free(ptr); }
+void operator delete[](void* ptr, std::align_val_t) noexcept { free(ptr); }
 
-void operator delete(void*, std::align_val_t) noexcept { __builtin_trap(); }
-void operator delete[](void*, std::align_val_t) noexcept { __builtin_trap(); }
+void operator delete(void* ptr, std::size_t) noexcept { free(ptr); }
+void operator delete[](void* ptr, std::size_t) noexcept { free(ptr); }
 
-void operator delete(void*, std::size_t) noexcept { __builtin_trap(); }
-void operator delete[](void*, std::size_t) noexcept { __builtin_trap(); }
-
-void operator delete(void*, std::size_t, std::align_val_t) noexcept {
-  __builtin_trap();
+void operator delete(void* ptr, std::size_t, std::align_val_t) noexcept {
+  free(ptr);
 }
-void operator delete[](void*, std::size_t, std::align_val_t) noexcept {
-  __builtin_trap();
+void operator delete[](void* ptr, std::size_t, std::align_val_t) noexcept {
+  free(ptr);
 }
