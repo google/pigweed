@@ -27,7 +27,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint256.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/util.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"

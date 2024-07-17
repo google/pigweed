@@ -18,7 +18,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
-#include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 
@@ -141,120 +140,130 @@ void FakePeer::SendPacket(hci_spec::ConnectionHandle conn,
 }
 
 void FakePeer::WriteScanResponseReport(
-    hci_spec::LEAdvertisingReportData* report) const {
+    pw::bluetooth::emboss::LEAdvertisingReportDataWriter report) const {
   BT_DEBUG_ASSERT(scannable_);
-  report->event_type = hci_spec::LEAdvertisingEventType::kScanRsp;
+  report.data_length().Write(scan_response_.size());
+  report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+      report.BackingStorage().data(),
+      report.SizeInBytes() + scan_response_.size());
 
-  report->address = address_.value();
-  report->address_type = hci_spec::LEAddressType::kPublic;
-  if (address_.type() == DeviceAddress::Type::kLERandom) {
-    report->address_type = hci_spec::LEAddressType::kRandom;
-  }
+  report.event_type().Write(
+      pw::bluetooth::emboss::LEAdvertisingEventType::SCAN_RESPONSE);
 
-  report->length_data = scan_response_.size();
-  std::memcpy(report->data, scan_response_.data(), scan_response_.size());
+  report.address().CopyFrom(address_.value().view());
+  report.address_type().Write(
+      address_.type() == DeviceAddress::Type::kLERandom
+          ? pw::bluetooth::emboss::LEAddressType::RANDOM
+          : pw::bluetooth::emboss::LEAddressType::PUBLIC);
 
-  report->data[report->length_data] = rssi();
+  std::memcpy(report.data().BackingStorage().data(),
+              scan_response_.data(),
+              scan_response_.size());
+
+  report.rssi().Write(rssi());
 }
 
 DynamicByteBuffer FakePeer::BuildLegacyAdvertisingReportEvent(
     bool include_scan_rsp) const {
   BT_DEBUG_ASSERT(advertising_data_.size() <=
                   hci_spec::kMaxLEAdvertisingDataLength);
-  size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) +
-                      advertising_data_.size() + sizeof(int8_t);
+  std::vector<size_t> reports_sizes;
+  reports_sizes.push_back(
+      pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes() +
+      advertising_data_.size());
+  size_t reports_size = reports_sizes[0];
 
   if (include_scan_rsp) {
     BT_DEBUG_ASSERT(scannable_);
-    BT_DEBUG_ASSERT(scan_response_.size() <=
-                    hci_spec::kMaxLEAdvertisingDataLength);
-    param_size += sizeof(hci_spec::LEAdvertisingReportData) +
-                  scan_response_.size() + sizeof(int8_t);
+    reports_sizes.push_back(
+        pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes() +
+        scan_response_.size());
+    reports_size += reports_sizes[1];
   }
 
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
-  event.mutable_header()->event_code = hci_spec::kLEMetaEventCode;
-  event.mutable_header()->parameter_total_size = param_size;
+  size_t packet_size =
+      reports_size +
+      pw::bluetooth::emboss::LEAdvertisingReportSubevent::MinSizeInBytes();
+  auto event = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEAdvertisingReportSubeventWriter>(
+      hci_spec::kLEMetaEventCode, packet_size);
 
-  auto payload = event.mutable_payload<hci_spec::LEMetaEventParams>();
-  payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
+  auto view = event.view_t();
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLEAdvertisingReportSubeventCode);
 
-  auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
-          payload->subevent_parameters);
-  subevent_payload->num_reports = 1;
-  if (include_scan_rsp) {
-    subevent_payload->num_reports++;
-  }
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-      subevent_payload->reports);
+  view.num_reports().Write(reports_sizes.size());
+
+  // Initially construct an incomplete view to write the |data_length| field.
+  auto report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+      view.reports().BackingStorage().data(), reports_sizes[0]);
+  report.data_length().Write(advertising_data_.size());
+  // Remake view with the proper size, taking into account |data_length|.
+  report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+      view.reports().BackingStorage().data(), reports_sizes[0]);
   if (directed_) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvDirectInd;
+    report.event_type().Write(
+        pw::bluetooth::emboss::LEAdvertisingEventType::CONNECTABLE_DIRECTED);
   } else if (connectable_) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvInd;
+    report.event_type().Write(pw::bluetooth::emboss::LEAdvertisingEventType::
+                                  CONNECTABLE_AND_SCANNABLE_UNDIRECTED);
   } else if (scannable_) {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvScanInd;
+    report.event_type().Write(
+        pw::bluetooth::emboss::LEAdvertisingEventType::SCANNABLE_UNDIRECTED);
   } else {
-    report->event_type = hci_spec::LEAdvertisingEventType::kAdvNonConnInd;
+    report.event_type().Write(pw::bluetooth::emboss::LEAdvertisingEventType::
+                                  NON_CONNECTABLE_UNDIRECTED);
   }
-
   if (address_.type() == DeviceAddress::Type::kLERandom) {
-    report->address_type = hci_spec::LEAddressType::kRandom;
-    if (address_resolved_) {
-      report->address_type = hci_spec::LEAddressType::kRandomIdentity;
-    }
+    report.address_type().Write(
+        address_resolved_
+            ? pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY
+            : pw::bluetooth::emboss::LEAddressType::RANDOM);
   } else {
-    report->address_type = hci_spec::LEAddressType::kPublic;
-    if (address_resolved_) {
-      report->address_type = hci_spec::LEAddressType::kPublicIdentity;
-    }
+    report.address_type().Write(
+        address_resolved_
+            ? pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY
+            : pw::bluetooth::emboss::LEAddressType::PUBLIC);
   }
-
-  report->address = address_.value();
-  report->length_data = advertising_data_.size();
-  std::memcpy(report->data, advertising_data_.data(), advertising_data_.size());
-  report->data[report->length_data] = rssi();
+  report.address().CopyFrom(address_.value().view());
+  std::memcpy(report.data().BackingStorage().data(),
+              advertising_data_.data(),
+              advertising_data_.size());
+  report.rssi().Write(rssi());
 
   if (include_scan_rsp) {
-    auto* scan_response_report =
-        reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-            report->data + report->length_data + sizeof(int8_t));
-    WriteScanResponseReport(scan_response_report);
+    WriteScanResponseReport(
+        pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+            view.reports().BackingStorage().data() + reports_sizes[0],
+            reports_sizes[1]));
   }
 
-  return buffer;
+  return DynamicByteBuffer(event.data());
 }
 
 DynamicByteBuffer FakePeer::BuildLegacyScanResponseReportEvent() const {
   BT_DEBUG_ASSERT(scannable_);
   BT_DEBUG_ASSERT(scan_response_.size() <=
                   hci_spec::kMaxLEAdvertisingDataLength);
-  size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) +
-                      scan_response_.size() + sizeof(int8_t);
+  size_t report_size =
+      pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes() +
+      scan_response_.size();
+  size_t packet_size =
+      report_size +
+      pw::bluetooth::emboss::LEAdvertisingReportSubevent::MinSizeInBytes();
+  auto event = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEAdvertisingReportSubeventWriter>(
+      hci_spec::kLEMetaEventCode, packet_size);
+  auto view = event.view_t();
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLEAdvertisingReportSubeventCode);
+  view.num_reports().Write(1);
 
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
-  event.mutable_header()->event_code = hci_spec::kLEMetaEventCode;
-  event.mutable_header()->parameter_total_size = param_size;
+  WriteScanResponseReport(
+      pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+          view.reports().BackingStorage().data(), report_size));
 
-  auto payload = event.mutable_payload<hci_spec::LEMetaEventParams>();
-  payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
-
-  auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
-          payload->subevent_parameters);
-  subevent_payload->num_reports = 1;
-
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-      subevent_payload->reports);
-  WriteScanResponseReport(report);
-
-  return buffer;
+  return DynamicByteBuffer(event.data());
 }
 
 void FakePeer::FillExtendedAdvertisingReport(

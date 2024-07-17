@@ -94,6 +94,46 @@ class LegacyLowEnergyScannerTest : public TestingBase,
   LowEnergyScanner::ScanStatus last_scan_status_;
 };
 
+TEST(LegacyLowEnergyScannerUtilTest,
+     ParseAddressUsingDeviceAddressFromAdvReport) {
+  constexpr size_t report_size =
+      pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes();
+  StaticByteBuffer<report_size> buffer;
+  auto view = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+      buffer.mutable_data(), report_size);
+
+  view.address().CopyFrom(DeviceAddress({}, {0, 1, 2, 3, 4, 5}).value().view());
+  view.address_type().Write(
+      pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY);
+
+  DeviceAddress address;
+  bool resolved;
+
+  EXPECT_TRUE(LegacyLowEnergyScanner::DeviceAddressFromAdvReport(
+      view, &address, &resolved));
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, address.type());
+  EXPECT_TRUE(resolved);
+
+  view.address_type().Write(pw::bluetooth::emboss::LEAddressType::PUBLIC);
+  EXPECT_TRUE(LegacyLowEnergyScanner::DeviceAddressFromAdvReport(
+      view, &address, &resolved));
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, address.type());
+  EXPECT_FALSE(resolved);
+
+  view.address_type().Write(
+      pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY);
+  EXPECT_TRUE(LegacyLowEnergyScanner::DeviceAddressFromAdvReport(
+      view, &address, &resolved));
+  EXPECT_EQ(DeviceAddress::Type::kLERandom, address.type());
+  EXPECT_TRUE(resolved);
+
+  view.address_type().Write(pw::bluetooth::emboss::LEAddressType::RANDOM);
+  EXPECT_TRUE(LegacyLowEnergyScanner::DeviceAddressFromAdvReport(
+      view, &address, &resolved));
+  EXPECT_EQ(DeviceAddress::Type::kLERandom, address.type());
+  EXPECT_FALSE(resolved);
+}
+
 // Ensure we can parse an advertising report that is batched with a scan
 // response
 TEST_F(LegacyLowEnergyScannerTest, ParseBatchedAdvertisingReport) {

@@ -39,6 +39,14 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
   bool StartScan(const ScanOptions& options,
                  ScanStatusCallback callback) override;
 
+  // Parse address field from |report| into |out_addr| and return whether or not
+  // it is a resolved address in |out_resolved|. Returns false if the address
+  // field was invalid.
+  static bool DeviceAddressFromAdvReport(
+      const pw::bluetooth::emboss::LEAdvertisingReportDataView& report,
+      DeviceAddress* out_addr,
+      bool* out_resolved);
+
  private:
   // Build the HCI command packet to set the scan parameters for the flavor of
   // low energy scanning being implemented.
@@ -59,7 +67,7 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
                           const ByteBuffer& data);
 
   // Event handler for HCI LE Advertising Report event.
-  void OnAdvertisingReportEvent(const EventPacket& event);
+  void OnAdvertisingReportEvent(const EmbossEventPacket& event);
 
   // Our event handler ID for the LE Advertising Report event.
   CommandChannel::EventHandlerId event_handler_id_;

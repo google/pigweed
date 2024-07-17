@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
-#include <climits>
-
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_string/format.h"
 
@@ -200,7 +198,7 @@ DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
   }
 }
 
-DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
+std::optional<DeviceAddress::Type> DeviceAddress::LeAddrToDeviceAddr(
     pw::bluetooth::emboss::LEExtendedAddressType type) {
   switch (type) {
     case pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC:
@@ -215,7 +213,7 @@ DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
       return DeviceAddress::Type::kLEAnonymous;
     }
     default: {
-      BT_PANIC("invalid LEExtendedAddressType");
+      return std::nullopt;
     }
   }
 }

@@ -216,7 +216,8 @@ class FakePeer {
   // Called by a FakeController when a FakePeer is registered with it.
   void set_controller(FakeController* ctrl) { controller_ = ctrl; }
 
-  void WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report) const;
+  void WriteScanResponseReport(
+      pw::bluetooth::emboss::LEAdvertisingReportDataWriter report) const;
 
   // Validate received L2CAP packets and then route them to the FakeL2cap
   // instance owned by the device. The FakeL2cap instance will process the

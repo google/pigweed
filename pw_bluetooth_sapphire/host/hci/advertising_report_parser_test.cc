@@ -16,7 +16,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_unit_test/framework.h"
 
 namespace bt::hci::test {
@@ -25,16 +24,15 @@ namespace {
 TEST(AdvertisingReportParserTest, EmptyReport) {
   StaticByteBuffer bytes(0x3E, 0x02, 0x02, 0x00);
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  hci::AdvertisingReportParser parser(*event);
+  hci::AdvertisingReportParser parser(event);
   EXPECT_FALSE(parser.HasMoreReports());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
 }
 
 TEST(AdvertisingReportParserTest, SingleReportMalformed) {
@@ -49,17 +47,16 @@ TEST(AdvertisingReportParserTest, SingleReportMalformed) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  hci::AdvertisingReportParser parser(*event);
+  hci::AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
   EXPECT_TRUE(parser.encountered_error());
 }
 
@@ -75,25 +72,27 @@ TEST(AdvertisingReportParserTest, SingleReportNoData) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  AdvertisingReportParser parser(*event);
+  AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
-  EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
-  EXPECT_EQ(0u, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(
+      pw::bluetooth::emboss::LEAdvertisingEventType::NON_CONNECTABLE_UNDIRECTED,
+      view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY,
+            view.address_type().Read());
+  EXPECT_EQ("06:05:04:03:02:01", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(0u, view.data_length().Read());
   EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // No other reports
   EXPECT_FALSE(parser.HasMoreReports());
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
 
   EXPECT_FALSE(parser.encountered_error());
 }
@@ -113,21 +112,23 @@ TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  AdvertisingReportParser parser(*event);
+  AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
-  EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
-  EXPECT_EQ(0u, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(
+      pw::bluetooth::emboss::LEAdvertisingEventType::NON_CONNECTABLE_UNDIRECTED,
+      view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY,
+            view.address_type().Read());
+  EXPECT_EQ("06:05:04:03:02:01", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(0u, view.data_length().Read());
   EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // There are more reports...
@@ -135,7 +136,7 @@ TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
   EXPECT_FALSE(parser.encountered_error());
 
   // ...but the report is malformed.
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
   EXPECT_TRUE(parser.encountered_error());
 }
 
@@ -160,50 +161,57 @@ TEST(AdvertisingReportParserTest, ReportsAllValid) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  AdvertisingReportParser parser(*event);
+  AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
-  EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
-  EXPECT_EQ(0u, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(
+      pw::bluetooth::emboss::LEAdvertisingEventType::NON_CONNECTABLE_UNDIRECTED,
+      view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY,
+            view.address_type().Read());
+  EXPECT_EQ("06:05:04:03:02:01", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(0u, view.data_length().Read());
   EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // There are more reports
   EXPECT_TRUE(parser.HasMoreReports());
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kRandom, data->address_type);
-  EXPECT_EQ("0C:0B:0A:09:08:07", data->address.ToString());
-  EXPECT_EQ(3, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(pw::bluetooth::emboss::LEAdvertisingEventType::
+                CONNECTABLE_AND_SCANNABLE_UNDIRECTED,
+            view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::RANDOM,
+            view.address_type().Read());
+  EXPECT_EQ("0C:0B:0A:09:08:07", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(3, view.data_length().Read());
   EXPECT_TRUE(ContainersEqual(std::array<uint8_t, 3>{{0x01, 0x02, 0x03}},
-                              data->data,
-                              data->length_data));
+                              view.data().BackingStorage().data(),
+                              view.data_length().Read()));
   EXPECT_EQ(15, rssi);
 
   // There are more reports
   EXPECT_TRUE(parser.HasMoreReports());
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvDirectInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublic, data->address_type);
-  EXPECT_EQ("12:11:10:0F:0E:0D", data->address.ToString());
-  EXPECT_EQ(5, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(pw::bluetooth::emboss::LEAdvertisingEventType::CONNECTABLE_DIRECTED,
+            view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC,
+            view.address_type().Read());
+  EXPECT_EQ("12:11:10:0F:0E:0D", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(5, view.data_length().Read());
   EXPECT_TRUE(
       ContainersEqual(std::array<uint8_t, 5>{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}},
-                      data->data,
-                      data->length_data));
+                      view.data().BackingStorage().data(),
+                      view.data_length().Read()));
   EXPECT_EQ(1, rssi);
 
   // No more reports.
   EXPECT_FALSE(parser.HasMoreReports());
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
 
   EXPECT_FALSE(parser.encountered_error());
 }
@@ -230,21 +238,23 @@ TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  AdvertisingReportParser parser(*event);
+  AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
-  EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
-  EXPECT_EQ(0u, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(
+      pw::bluetooth::emboss::LEAdvertisingEventType::NON_CONNECTABLE_UNDIRECTED,
+      view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY,
+            view.address_type().Read());
+  EXPECT_EQ("06:05:04:03:02:01", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(0u, view.data_length().Read());
   EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // Since the packet is malformed (the event payload contains 3 reports while
@@ -253,7 +263,7 @@ TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   EXPECT_FALSE(parser.HasMoreReports());
   EXPECT_TRUE(parser.encountered_error());
 
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
   EXPECT_TRUE(parser.encountered_error());
 }
 
@@ -270,20 +280,22 @@ TEST(AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
-  event->mutable_view()->mutable_data().Write(bytes);
-  event->InitializeFromBuffer();
+  auto event = EmbossEventPacket::New(bytes.size());
+  event.mutable_data().Write(bytes);
 
-  AdvertisingReportParser parser(*event);
+  AdvertisingReportParser parser(event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const hci_spec::LEAdvertisingReportData* data;
+  pw::bluetooth::emboss::LEAdvertisingReportDataView view;
   int8_t rssi;
-  EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
-  EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
-  EXPECT_EQ(0u, data->length_data);
+  EXPECT_TRUE(parser.GetNextReport(&view, &rssi));
+  EXPECT_EQ(
+      pw::bluetooth::emboss::LEAdvertisingEventType::NON_CONNECTABLE_UNDIRECTED,
+      view.event_type().Read());
+  EXPECT_EQ(pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY,
+            view.address_type().Read());
+  EXPECT_EQ("06:05:04:03:02:01", DeviceAddressBytes(view.address()).ToString());
+  EXPECT_EQ(0u, view.data_length().Read());
   EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   EXPECT_FALSE(parser.encountered_error());
@@ -291,7 +303,7 @@ TEST(AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
   // Since the packet is malformed (the event payload contains 1 report while
   // the header states there are 2) this should return false.
   EXPECT_FALSE(parser.HasMoreReports());
-  EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
+  EXPECT_FALSE(parser.GetNextReport(&view, &rssi));
 
   EXPECT_TRUE(parser.encountered_error());
 }

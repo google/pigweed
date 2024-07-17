@@ -14,61 +14,56 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
-
 namespace bt::hci {
 
-AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
+AdvertisingReportParser::AdvertisingReportParser(const EmbossEventPacket& event)
     : encountered_error_(false) {
   BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
 
-  const auto& params = event.params<hci_spec::LEMetaEventParams>();
-  BT_DEBUG_ASSERT(params.subevent_code ==
+  auto view = event.view<pw::bluetooth::emboss::LEMetaEventView>();
+
+  BT_DEBUG_ASSERT(view.subevent_code().Read() ==
                   hci_spec::kLEAdvertisingReportSubeventCode);
 
-  static const size_t report_packet_header_size =
-      sizeof(hci_spec::LEMetaEventParams) +
-      sizeof(hci_spec::LEAdvertisingReportSubeventParams);
+  auto subevent_view =
+      event.view<pw::bluetooth::emboss::LEAdvertisingReportSubeventView>();
 
-  BT_DEBUG_ASSERT(event.view().payload_size() <= UINT8_MAX);
-  BT_DEBUG_ASSERT(event.view().payload_size() >= report_packet_header_size);
-
-  auto subevent_params =
-      event.subevent_params<hci_spec::LEAdvertisingReportSubeventParams>();
-
-  remaining_reports_ = subevent_params->num_reports;
-
-  remaining_bytes_ = event.view().payload_size() - report_packet_header_size;
-  ptr_ = subevent_params->reports;
+  remaining_reports_ = subevent_view.num_reports().Read();
+  remaining_bytes_ = subevent_view.reports_size().Read();
+  ptr_ = subevent_view.reports().BackingStorage().data();
 }
 
 bool AdvertisingReportParser::GetNextReport(
-    const hci_spec::LEAdvertisingReportData** out_data, int8_t* out_rssi) {
-  BT_DEBUG_ASSERT(out_data);
+    pw::bluetooth::emboss::LEAdvertisingReportDataView* out_data,
+    int8_t* out_rssi) {
   BT_DEBUG_ASSERT(out_rssi);
 
-  if (encountered_error_ || !HasMoreReports())
+  if (encountered_error_ || !HasMoreReports()) {
     return false;
+  }
 
-  const hci_spec::LEAdvertisingReportData* data =
-      reinterpret_cast<const hci_spec::LEAdvertisingReportData*>(ptr_);
+  // Construct an incomplete view at first to read the |data_length| field.
+  auto report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
+      ptr_, pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes());
 
-  // Each report contains the all the report data, followed by the advertising
-  // payload, followed by a single octet for the RSSI.
-  size_t report_size = sizeof(*data) + data->length_data + 1;
+  int32_t data_size = report.data_length().Read();
+  size_t report_size =
+      pw::bluetooth::emboss::LEAdvertisingReportData::MinSizeInBytes() +
+      data_size;
   if (report_size > remaining_bytes_) {
     // Report exceeds the bounds of the packet.
     encountered_error_ = true;
     return false;
   }
 
-  remaining_bytes_ -= report_size;
-  remaining_reports_--;
-  ptr_ += report_size;
+  // Remake the view with the proper size.
+  *out_data =
+      pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(ptr_, report_size);
+  *out_rssi = out_data->rssi().Read();
 
-  *out_data = data;
-  *out_rssi = *(ptr_ - 1);
+  remaining_bytes_ -= report_size;
+  --remaining_reports_;
+  ptr_ += report_size;
 
   return true;
 }

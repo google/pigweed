@@ -37,7 +37,6 @@ pw_source_set("hci") {
     "$dir_public_hci/low_energy_scanner.h",
     "$dir_public_hci/sco_connection.h",
     "$dir_public_hci/sequential_command_runner.h",
-    "$dir_public_hci/util.h",
   ]
 
   sources = [
@@ -58,7 +57,6 @@ pw_source_set("hci") {
     "low_energy_scanner.cc",
     "sco_connection.cc",
     "sequential_command_runner.cc",
-    "util.cc",
   ]
 
   public_deps = [
@@ -106,7 +104,6 @@ pw_test("tests") {
     "low_energy_multiple_advertising_test.cc",
     "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
-    "util_test.cc",
   ]
 
   deps = [

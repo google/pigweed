@@ -184,8 +184,9 @@ ExtendedLowEnergyScanner::ParseAdvertisingReports(
 
 static std::tuple<DeviceAddress, bool> BuildDeviceAddress(
     LEExtendedAddressType report_type, BdAddrView address_view) {
-  DeviceAddress::Type address_type =
+  std::optional<DeviceAddress::Type> address_type =
       DeviceAddress::LeAddrToDeviceAddr(report_type);
+  BT_DEBUG_ASSERT(address_type);
 
   bool resolved = false;
   switch (report_type) {
@@ -202,7 +203,7 @@ static std::tuple<DeviceAddress, bool> BuildDeviceAddress(
   }
 
   DeviceAddress address =
-      DeviceAddress(address_type, DeviceAddressBytes(address_view));
+      DeviceAddress(*address_type, DeviceAddressBytes(address_view));
   return std::make_tuple(address, resolved);
 }
 

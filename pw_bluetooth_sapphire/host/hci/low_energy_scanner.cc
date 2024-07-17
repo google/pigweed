@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
-#include "pw_bluetooth_sapphire/internal/host/hci/util.h"
-
 namespace bt::hci {
 
 static std::string ScanStateToString(LowEnergyScanner::State state) {
