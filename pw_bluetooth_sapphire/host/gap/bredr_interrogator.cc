@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -155,7 +157,9 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
         event.view()
             .payload<
                 hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams>();
-    peer_->SetFeaturePage(0, le64toh(params.lmp_features));
+    peer_->SetFeaturePage(0,
+                          pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                      params.lmp_features));
 
     if (peer_->features().HasBit(/*page=*/0,
                                  hci_spec::LMPFeature::kExtendedFeatures)) {

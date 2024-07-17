@@ -17,6 +17,7 @@
 #include <endian.h>
 #include <pw_async/dispatcher.h>
 #include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -1064,16 +1065,19 @@ void AdapterImpl::InitializeStep2() {
           auto params =
               cmd_complete
                   .return_params<hci_spec::ReadBufferSizeReturnParams>();
-          uint16_t acl_mtu = le16toh(params->hc_acl_data_packet_length);
-          uint16_t acl_max_count =
-              le16toh(params->hc_total_num_acl_data_packets);
+          uint16_t acl_mtu = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little, params->hc_acl_data_packet_length);
+          uint16_t acl_max_count = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little, params->hc_total_num_acl_data_packets);
           if (acl_mtu && acl_max_count) {
             state_.bredr_data_buffer_info =
                 hci::DataBufferInfo(acl_mtu, acl_max_count);
           }
-          uint16_t sco_mtu = le16toh(params->hc_synchronous_data_packet_length);
-          uint16_t sco_max_count =
-              le16toh(params->hc_total_num_synchronous_data_packets);
+          uint16_t sco_mtu = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little, params->hc_synchronous_data_packet_length);
+          uint16_t sco_max_count = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little,
+              params->hc_total_num_synchronous_data_packets);
           if (sco_mtu && sco_max_count) {
             state_.sco_buffer_info =
                 hci::DataBufferInfo(sco_mtu, sco_max_count);
@@ -1096,7 +1100,8 @@ void AdapterImpl::InitializeStep2() {
         auto params = cmd_complete.return_params<
             hci_spec::LEReadLocalSupportedFeaturesReturnParams>();
         state_.low_energy_state.supported_features_ =
-            le64toh(params->le_features);
+            pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                        params->le_features);
       });
 
   // HCI_LE_Read_Supported_States
@@ -1114,7 +1119,8 @@ void AdapterImpl::InitializeStep2() {
         auto params =
             cmd_complete
                 .return_params<hci_spec::LEReadSupportedStatesReturnParams>();
-        state_.low_energy_state.supported_states_ = le64toh(params->le_states);
+        state_.low_energy_state.supported_states_ = pw::bytes::ConvertOrderFrom(
+            cpp20::endian::little, params->le_states);
       });
 
   if (state_.IsCommandSupported(
@@ -1198,7 +1204,8 @@ void AdapterImpl::InitializeStep2() {
           auto params =
               cmd_complete
                   .return_params<hci_spec::LEReadBufferSizeV1ReturnParams>();
-          uint16_t mtu = le16toh(params->hc_le_acl_data_packet_length);
+          uint16_t mtu = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little, params->hc_le_acl_data_packet_length);
           uint8_t max_count = params->hc_total_num_le_acl_data_packets;
           if (mtu && max_count) {
             state_.low_energy_state.acl_data_buffer_info_ =
@@ -1585,7 +1592,10 @@ void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
           }
           auto params = cmd_complete.return_params<
               hci_spec::ReadLocalSupportedFeaturesReturnParams>();
-          state_.features.SetPage(page, le64toh(params->lmp_features));
+          state_.features.SetPage(
+              page,
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          params->lmp_features));
         });
     return;
   }
@@ -1616,7 +1626,10 @@ void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
           }
           auto params = cmd_complete.return_params<
               hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features.SetPage(page, le64toh(params->extended_lmp_features));
+          state_.features.SetPage(
+              page,
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          params->extended_lmp_features));
           max_lmp_feature_page_index_ = params->maximum_page_number;
         });
   }

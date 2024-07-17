@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/generic_access_client.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 
 namespace bt::gap::internal {
@@ -150,7 +152,8 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
             return;
           }
 
-          uint16_t char_value = le16toh(buffer.template To<uint16_t>());
+          uint16_t char_value = pw::bytes::ConvertOrderFrom(
+              cpp20::endian::little, buffer.template To<uint16_t>());
           cb(fit::ok(char_value));
         });
   });
@@ -228,10 +231,14 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
           auto char_value = buffer.template To<
               PeripheralPreferredConnectionParametersCharacteristicValue>();
           hci_spec::LEPreferredConnectionParameters params(
-              le16toh(char_value.min_interval),
-              le16toh(char_value.max_interval),
-              le16toh(char_value.max_latency),
-              le16toh(char_value.supervision_timeout));
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          char_value.min_interval),
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          char_value.max_interval),
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          char_value.max_latency),
+              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                          char_value.supervision_timeout));
 
           cb(fit::ok(params));
         });
