@@ -17,10 +17,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
+#include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_chrono/system_clock.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::gap {
 namespace {
@@ -31,6 +36,13 @@ const DeviceAddress kTestAddr(DeviceAddress::Type::kBREDR, {1});
 const PeerId kPeerId;
 constexpr hci::Error RetryableError =
     ToResult(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT).error_value();
+const StaticByteBuffer kCreateConnectionRsp(
+    hci_spec::kCommandStatusEventCode,  // event code
+    0x04,
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    0xF0,                                        // num_hci_command_packets
+    LowerBits(hci_spec::kCreateConnection),
+    UpperBits(hci_spec::kCreateConnection));
 
 using BrEdrConnectionRequestTests = pw::async::test::FakeDispatcherFixture;
 
@@ -99,11 +111,10 @@ TEST_F(BrEdrConnectionRequestTests, Inspect) {
 }
 #endif  // NINSPECT
 
-class BrEdrConnectionRequestLoopTest
-    : public pw::async::test::FakeDispatcherFixture {
+using TestingBase =
+    testing::FakeDispatcherControllerTest<testing::MockController>;
+class BrEdrConnectionRequestLoopTest : public TestingBase {
  protected:
-  using OnComplete = BrEdrConnectionRequest::OnComplete;
-
   BrEdrConnectionRequestLoopTest()
       : req_(dispatcher(),
              kTestAddr,
@@ -114,6 +125,8 @@ class BrEdrConnectionRequestLoopTest
                  handler_(res, conn);
                }
              }) {
+    TestingBase::SetUp();
+
     // By default, an outbound ConnectionRequest with a complete handler that
     // just logs the result.
     handler_ = [](hci::Result<> res, auto /*ignore*/) {
@@ -124,47 +137,142 @@ class BrEdrConnectionRequestLoopTest
     };
   }
 
-  void set_on_complete(BrEdrConnectionRequest::OnComplete handler) {
-    handler_ = std::move(handler);
-  }
-
   BrEdrConnectionRequest& connection_req() { return req_; }
 
  private:
   BrEdrConnectionRequest req_;
-  OnComplete handler_;
+  BrEdrConnectionRequest::OnComplete handler_;
 };
-using BrEdrConnectionRequestLoopDeathTest = BrEdrConnectionRequestLoopTest;
 
-TEST_F(BrEdrConnectionRequestLoopTest,
-       RetryableErrorCodeShouldRetryAfterFirstCreateConnection) {
-  connection_req().RecordHciCreateConnectionAttempt();
-  RunFor(std::chrono::seconds(1));
-  EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
+TEST_F(BrEdrConnectionRequestLoopTest, CreateHciConnectionRequest) {
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+
+  bool failure = false;
+  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+    if (result.is_error()) {
+      failure = true;
+    }
+  };
+
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
+
+  RunUntilIdle();
+
+  ASSERT_FALSE(failure);
 }
 
 TEST_F(BrEdrConnectionRequestLoopTest,
        ShouldntRetryBeforeFirstCreateConnection) {
   EXPECT_FALSE(connection_req().ShouldRetry(RetryableError));
 }
+TEST_F(BrEdrConnectionRequestLoopTest,
+       RetryableErrorCodeShouldRetryAfterFirstCreateConnection) {
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+
+  bool failure = false;
+  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+    if (result.is_error()) {
+      failure = true;
+    }
+  };
+
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
+
+  RunFor(std::chrono::seconds(1));
+  ASSERT_FALSE(failure);
+  EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
+}
 
 TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryWithNonRetriableErrorCode) {
-  connection_req().RecordHciCreateConnectionAttempt();
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+
+  bool failure = false;
+  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+    if (result.is_error()) {
+      failure = true;
+    }
+  };
+
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
+
   RunFor(std::chrono::seconds(1));
+  ASSERT_FALSE(failure);
   EXPECT_FALSE(connection_req().ShouldRetry(hci::Error(HostError::kCanceled)));
 }
 
 TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryAfterThirtySeconds) {
-  connection_req().RecordHciCreateConnectionAttempt();
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+
+  bool failure = false;
+  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+    if (result.is_error()) {
+      failure = true;
+    }
+  };
+
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
   RunFor(std::chrono::seconds(15));
+  ASSERT_FALSE(failure);
   // Should be OK to retry after 15 seconds
   EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
-  connection_req().RecordHciCreateConnectionAttempt();
+
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
 
   // Should still be OK to retry, even though we've already retried
   RunFor(std::chrono::seconds(14));
   EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
-  connection_req().RecordHciCreateConnectionAttempt();
+
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::CreateConnectionPacket(kTestAddr),
+                        &kCreateConnectionRsp);
+  connection_req().CreateHciConnectionRequest(
+      cmd_channel(),
+      /*clock_offset=*/std::nullopt,
+      /*page_scan_repetition_mode=*/std::nullopt,
+      /*timeout_cb=*/[]() {},
+      std::move(failure_cb),
+      dispatcher());
 
   RunFor(std::chrono::seconds(1));
   EXPECT_FALSE(connection_req().ShouldRetry(RetryableError));

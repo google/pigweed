@@ -72,10 +72,33 @@ void BrEdrConnectionRequest::AttachInspect(inspect::Node& parent,
                                                  peer_id_.ToString());
 }
 
-void BrEdrConnectionRequest::RecordHciCreateConnectionAttempt() {
+std::unique_ptr<hci::BrEdrConnectionRequest>
+BrEdrConnectionRequest::CreateHciConnectionRequest(
+    hci::CommandChannel* command_channel,
+    std::optional<uint16_t> clock_offset,
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
+        page_scan_repetition_mode,
+    OnTimeout timeout_cb,
+    OnFailure failure_cb,
+    pw::async::Dispatcher& dispatcher) {
+  std::unique_ptr<hci::BrEdrConnectionRequest> request =
+      std::make_unique<hci::BrEdrConnectionRequest>(
+          peer_id_, address_, std::move(timeout_cb), dispatcher);
+
+  request->CreateConnection(command_channel,
+                            clock_offset,
+                            page_scan_repetition_mode,
+                            request_timeout_,
+                            std::move(failure_cb));
+
+  // Record that the first create connection attempt was made (if not already
+  // attempted) for the outstanding HCI connection request for peer with id
+  // |peer_id_|
   if (!first_create_connection_req_made_.value()) {
     first_create_connection_req_made_.Set(dispatcher_.now());
   }
+
+  return request;
 }
 
 bool BrEdrConnectionRequest::ShouldRetry(hci::Error failure_mode) {

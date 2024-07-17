@@ -291,21 +291,6 @@ class BrEdrConnectionManager final {
   // attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
 
-  // Collective parameters needed to begin a CreateConnection procedure
-  struct CreateConnectionParams {
-    PeerId peer_id;
-    DeviceAddress addr;
-    std::optional<uint16_t> clock_offset;
-    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
-        page_scan_repetition_mode;
-  };
-
-  // Find the next valid Request that is available to begin connecting
-  std::optional<CreateConnectionParams> NextCreateConnectionParams();
-
-  // Begin a CreateConnection procedure for a given Request
-  void InitiatePendingConnection(CreateConnectionParams request);
-
   // Called when a request times out waiting for a connection complete packet,
   // *after* the command status was received. This is responsible for canceling
   // the request and initiating the next one in the queue
@@ -423,11 +408,7 @@ class BrEdrConnectionManager final {
   // the peer this request was sent to or a failure during the connection
   // process. This request might not complete if the connection closes or if the
   // request times out.
-  std::optional<hci::BrEdrConnectionRequest> pending_request_;
-
-  // Time after which a connection attempt is considered to have timed out.
-  pw::chrono::SystemClock::duration request_timeout_{
-      kBrEdrCreateConnectionTimeout};
+  std::unique_ptr<hci::BrEdrConnectionRequest> pending_request_;
 
   struct InspectProperties {
     BoundedInspectListNode last_disconnected_list =

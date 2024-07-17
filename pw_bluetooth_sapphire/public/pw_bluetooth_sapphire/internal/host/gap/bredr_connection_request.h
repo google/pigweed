@@ -16,11 +16,12 @@
 #include <lib/fit/function.h>
 
 #include <list>
+#include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::gap {
@@ -42,6 +43,8 @@ class BrEdrConnection;
 class BrEdrConnectionRequest final {
  public:
   using OnComplete = fit::function<void(hci::Result<>, BrEdrConnection*)>;
+  using OnTimeout = fit::function<void()>;
+  using OnFailure = fit::function<void(hci::Result<>, PeerId)>;
   using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
@@ -58,7 +61,16 @@ class BrEdrConnectionRequest final {
 
   BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
 
-  void RecordHciCreateConnectionAttempt();
+  // Creates a hci::BrEdrConnectionRequest from this gap::BrEdrConnectionRequest
+  std::unique_ptr<hci::BrEdrConnectionRequest> CreateHciConnectionRequest(
+      hci::CommandChannel* command_channel,
+      std::optional<uint16_t> clock_offset,
+      std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
+          page_scan_repetition_mode,
+      OnTimeout timeout_cb,
+      OnFailure failure_cb,
+      pw::async::Dispatcher& dispatcher);
+
   bool ShouldRetry(hci::Error failure_mode);
 
   void AddCallback(OnComplete cb) {
@@ -117,6 +129,10 @@ class BrEdrConnectionRequest final {
   inspect::Node inspect_node_;
 
   std::optional<Peer::InitializingConnectionToken> peer_init_conn_token_;
+
+  // Time after which a connection attempt is considered to have timed out.
+  pw::chrono::SystemClock::duration request_timeout_{
+      kBrEdrCreateConnectionTimeout};
 
   pw::async::Dispatcher& dispatcher_;
 

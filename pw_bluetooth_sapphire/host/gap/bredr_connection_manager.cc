@@ -19,6 +19,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
@@ -814,8 +815,7 @@ void BrEdrConnectionManager::InitializeConnection(
   });
 
   // If this was our in-flight request, close it
-  if (pending_request_.has_value() &&
-      addr == pending_request_->peer_address()) {
+  if (pending_request_ && addr == pending_request_->peer_address()) {
     pending_request_.reset();
   }
 
@@ -853,8 +853,9 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
 
   auto error_handler =
       [self, peer_id, connection = connection->GetWeakPtr(), handle] {
-        if (!self.is_alive() || !connection.is_alive())
+        if (!self.is_alive() || !connection.is_alive()) {
           return;
+        }
         bt_log(
             WARN,
             "gap-bredr",
@@ -1039,8 +1040,9 @@ BrEdrConnectionManager::OnConnectionRequest(
   SendAcceptConnectionRequest(
       addr.value(),
       [addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
-        if (self.is_alive() && status.is_error())
+        if (self.is_alive() && status.is_error()) {
           self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
+        }
       });
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
@@ -1098,8 +1100,8 @@ void BrEdrConnectionManager::CompleteRequest(
   }
   auto& request = req_iter->second;
 
-  bool completes_outgoing_request = pending_request_.has_value() &&
-                                    pending_request_->peer_address() == address;
+  bool completes_outgoing_request =
+      pending_request_ && pending_request_->peer_address() == address;
   bool failed = status.is_error();
 
   const char* direction = completes_outgoing_request ? "outgoing" : "incoming";
@@ -1135,7 +1137,7 @@ void BrEdrConnectionManager::CompleteRequest(
     // interesting.
     // TODO(fxbug.dev/42173957): Added to investigate timing and can be removed
     // if it adds no value
-    if (pending_request_.has_value()) {
+    if (pending_request_) {
       bt_log(
           INFO,
           "gap-bredr",
@@ -1699,67 +1701,54 @@ bool BrEdrConnectionManager::Connect(
   return true;
 }
 
-std::optional<BrEdrConnectionManager::CreateConnectionParams>
-BrEdrConnectionManager::NextCreateConnectionParams() {
-  for (auto& [peer_id, request] : connection_requests_) {
-    // The peer should still be in PeerCache because it was marked
-    // "initializing" when the connection was requested.
-    const Peer* peer = cache_->FindById(peer_id);
-    BT_ASSERT(peer);
-    if (peer->bredr() && !request.HasIncoming()) {
-      return CreateConnectionParams{
-          .peer_id = peer->identifier(),
-          .addr = request.address(),
-          .clock_offset = peer->bredr()->clock_offset(),
-          .page_scan_repetition_mode =
-              peer->bredr()->page_scan_repetition_mode()};
-    }
-  }
-
-  bt_log(
-      TRACE, "gap-bredr", "no pending outbound connection requests remaining");
-  return std::nullopt;
-}
-
 void BrEdrConnectionManager::TryCreateNextConnection() {
   // There can only be one outstanding BrEdr CreateConnection request at a time
   if (pending_request_) {
     return;
   }
 
-  auto next = NextCreateConnectionParams();
-  if (next) {
-    InitiatePendingConnection(*next);
-  }
-}
+  // Find next outgoing BR/EDR request if available
+  auto is_bredr_and_outgoing = [this](const auto& key_val) {
+    PeerId peer_id = key_val.first;
+    const BrEdrConnectionRequest* request = &key_val.second;
+    const Peer* peer = cache_->FindById(peer_id);
+    return peer->bredr() && !request->HasIncoming();
+  };
 
-void BrEdrConnectionManager::InitiatePendingConnection(
-    CreateConnectionParams params) {
+  auto it = std::find_if(connection_requests_.begin(),
+                         connection_requests_.end(),
+                         is_bredr_and_outgoing);
+  if (it == connection_requests_.end()) {
+    return;
+  }
+
+  PeerId peer_id = it->first;
+  BrEdrConnectionRequest& request = it->second;
+  const Peer* peer = cache_->FindById(peer_id);
+
   auto self = weak_self_.GetWeakPtr();
-  auto on_failure = [self, addr = params.addr](hci::Result<> status,
-                                               auto peer_id) {
-    if (self.is_alive() && status.is_error())
+  auto on_failure = [self, addr = request.address()](hci::Result<> status,
+                                                     PeerId peer_id) {
+    if (self.is_alive() && status.is_error()) {
       self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
+    }
   };
   auto on_timeout = [self] {
-    if (self.is_alive())
+    if (self.is_alive()) {
       self->OnRequestTimeout();
+    }
   };
-  pending_request_.emplace(
-      params.peer_id, params.addr, on_timeout, dispatcher_);
-  pending_request_->CreateConnection(hci_->command_channel(),
-                                     params.clock_offset,
-                                     params.page_scan_repetition_mode,
-                                     request_timeout_,
-                                     on_failure);
 
-  // Record that the first create connection attempt was made (if not already
-  // attempted) for the outstanding connection request for peer with id
-  // |peer_id|
-  auto it = connection_requests_.find(params.peer_id);
-  if (it != connection_requests_.end()) {
-    it->second.RecordHciCreateConnectionAttempt();
-  }
+  const std::optional<uint16_t> clock_offset = peer->bredr()->clock_offset();
+  const std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
+      page_scan_repetition_mode = peer->bredr()->page_scan_repetition_mode();
+  pending_request_ =
+      request.CreateHciConnectionRequest(hci_->command_channel(),
+                                         clock_offset,
+                                         page_scan_repetition_mode,
+                                         std::move(on_timeout),
+                                         std::move(on_failure),
+                                         dispatcher_);
 
   inspect_properties_.outgoing_.connection_attempts_.Add(1);
 }
