@@ -279,6 +279,11 @@ pw_cc_binary(
     srcs = [
         "logging_main.cc",
     ],
+    # TODO: b/353588407 - Won't build on RP2040 until //pw_libcxx is added to link_extra_lib.
+    target_compatible_with = select({
+        "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":logging",
         "//pw_unit_test",
