@@ -2032,12 +2032,18 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
 #else
 #define PW_STRING_WRAP_TEST_EXPANSION(expr)
 #endif  // __cpp_constexpr >= 201603L
-
+#ifdef _LIBCPP_HAS_NO_WIDE_CHARACTERS
+#define TEST_FOR_TYPES_BASE(test_macro, ...)                        \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__));     \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char16_t, __VA_ARGS__)); \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char32_t, __VA_ARGS__));
+#else
 #define TEST_FOR_TYPES_BASE(test_macro, ...)                        \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__));     \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(wchar_t, __VA_ARGS__));  \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char16_t, __VA_ARGS__)); \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char32_t, __VA_ARGS__));
+#endif  // _LIBCPP_HAS_NO_WIDE_CHARACTERS
 
 #ifdef __cpp_char8_t
 #define TEST_FOR_TYPES(test_macro, ...)        \
