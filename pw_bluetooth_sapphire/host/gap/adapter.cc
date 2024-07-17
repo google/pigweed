@@ -48,6 +48,7 @@
 namespace bt::gap {
 
 namespace hci_android = hci_spec::vendor::android;
+namespace android_hci = pw::bluetooth::vendor::android_hci;
 
 static constexpr const char* kInspectLowEnergyDiscoveryManagerNodeName =
     "low_energy_discovery_manager";
@@ -405,6 +406,11 @@ class AdapterImpl final : public Adapter {
   // reconfigure the LE random address.
   bool IsLeRandomAddressChangeAllowed();
 
+  // Called when we receive an LE Get Vendor Capabilities Command Complete from
+  // the Controller
+  void ParseLEGetVendorCapabilitiesCommandComplete(
+      const hci::EmbossEventPacket& event);
+
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
@@ -412,19 +418,28 @@ class AdapterImpl final : public Adapter {
 
     constexpr pw::bluetooth::Controller::FeaturesBits feature =
         pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions;
-    if (state().IsControllerFeatureSupported(feature)) {
-      uint8_t max_advt =
-          state().android_vendor_capabilities.max_simultaneous_advertisements();
-      bt_log(INFO,
-             "gap",
-             "controller supports android vendor extensions, max simultaneous "
-             "advertisements: %d",
-             max_advt);
-      return std::make_unique<hci::AndroidExtendedLowEnergyAdvertiser>(
-          hci_, max_advt);
+    if (!state().IsControllerFeatureSupported(feature)) {
+      return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
     }
 
-    return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+    if (!state().android_vendor_capabilities) {
+      bt_log(
+          WARN,
+          "gap",
+          "controller supports android vendor extensions, but failed to parse "
+          "LEGetVendorCapabilitiesCommandComplete, using legacy advertiser");
+      return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+    }
+
+    uint8_t max_advt =
+        state().android_vendor_capabilities->max_simultaneous_advertisements();
+    bt_log(INFO,
+           "gap",
+           "controller supports android vendor extensions, max simultaneous "
+           "advertisements: %d",
+           max_advt);
+    return std::make_unique<hci::AndroidExtendedLowEnergyAdvertiser>(hci_,
+                                                                     max_advt);
   }
 
   std::unique_ptr<hci::LowEnergyConnector> CreateConnector(bool extended) {
@@ -775,6 +790,68 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
       metrics_bredr_node_, "open_l2cap_channel_requests");
 }
 
+void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
+    const hci::EmbossEventPacket& event) {
+  // NOTE: There can be various versions of this command complete event
+  // sent by the Controller. As fields are added, the version_supported
+  // field is incremented to signify which fields are available. In a previous
+  // undertaking (pwrev.dev/203950, fxrev.dev/1029396), we attempted to use
+  // Emboss' conditional fields feature to define fields based on the version
+  // they are included in. However, in practice, we've found vendors sometimes
+  // send the wrong number of bytes required for the version they claim to send.
+  // To tolerate these types of errors, we simply define all the fields in
+  // Emboss. If we receive a response smaller than what we expect, we use what
+  // the vendor sends, and fill the rest with zero to disable the feature. If we
+  // receive a response larger than what we expect, we read up to what we
+  // support and drop the rest of the data.
+  StaticPacket<android_hci::LEGetVendorCapabilitiesCommandCompleteEventView>
+      packet;
+  packet.SetToZeros();
+  size_t copy_size = std::min(packet.data().size(), event.size());
+  packet.mutable_data().Write(event.data().data(), copy_size);
+
+  auto params = packet.view();
+  state_.android_vendor_capabilities = AndroidVendorCapabilities::New(params);
+
+  size_t expected_size = 0;
+  uint8_t major = params.version_supported().major_number().Read();
+  uint8_t minor = params.version_supported().minor_number().Read();
+
+  if (major == 0 && minor == 0) {
+    // The version_supported field was only introduced into the command in
+    // Version 0.95. Controllers that use the base version, Version 0.55,
+    // don't have the version_supported field.
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_0_55_size();
+  } else if (major == 0 && minor == 95) {
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_0_95_size();
+  } else if (major == 0 && minor == 96) {
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_0_96_size();
+  } else if (major == 0 && minor == 98) {
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_0_98_size();
+  } else if (major == 1 && minor == 03) {
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_1_03_size();
+  } else if (major == 1 && minor == 04) {
+    expected_size = android_hci::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_1_04_size();
+  }
+
+  if (event.size() != expected_size) {
+    bt_log(WARN,
+           "gap",
+           "LE Get Vendor Capabilities Command Complete, received %zu bytes, "
+           "expected %zu bytes, version: %d.%d",
+           event.size(),
+           expected_size,
+           major,
+           minor);
+  }
+}
+
 void AdapterImpl::InitializeStep1() {
   state_.controller_features = hci_->GetFeatures();
 
@@ -850,8 +927,8 @@ void AdapterImpl::InitializeStep1() {
            "controller supports android hci extensions, querying exact feature "
            "set");
     init_seq_runner_->QueueCommand(
-        hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::
-                                          LEGetVendorCapabilitiesCommandView>(
+        hci::EmbossCommandPacket::New<
+            android_hci::LEGetVendorCapabilitiesCommandView>(
             hci_android::kLEGetVendorCapabilities),
         [this](const hci::EmbossEventPacket& event) {
           if (hci_is_error(
@@ -862,10 +939,7 @@ void AdapterImpl::InitializeStep1() {
             return;
           }
 
-          auto params =
-              event.view<pw::bluetooth::vendor::android_hci::
-                             LEGetVendorCapabilitiesCommandCompleteEventView>();
-          state_.android_vendor_capabilities.Initialize(params);
+          ParseLEGetVendorCapabilitiesCommandComplete(event);
         });
   }
 

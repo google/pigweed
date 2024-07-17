@@ -163,6 +163,11 @@ class EmbossEventPacketT : public EmbossEventPacket {
     return view<ViewT>(args...);
   }
 
+  template <typename... Args>
+  ViewT unchecked_view_t(Args... args) {
+    return unchecked_view<ViewT>(args...);
+  }
+
  private:
   friend class EmbossEventPacket;
 

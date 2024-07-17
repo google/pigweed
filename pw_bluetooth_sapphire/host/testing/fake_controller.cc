@@ -209,12 +209,13 @@ void FakeController::Settings::ApplyExtendedLEConfig() {
 void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   // Settings for the android vendor extensions component within the Fake
   // Controller. These settings correspond to the vendor capabilities returned
-  // by the controller. See
-  // pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h
-  // and LEGetVendorCapabilities for more information.
-  android_extension_settings.view().status().Write(pwemb::StatusCode::SUCCESS);
-  android_extension_settings.view().max_advt_instances().Write(3);
-  android_extension_settings.view().total_scan_results_storage().Write(1024);
+  // by the controller. See hci_vendor.emb LEGetVendorCapabilities for more
+  // information.
+  auto view = android_extension_settings.view();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.max_advt_instances().Write(3);
+  view.version_supported().major_number().Write(0);
+  view.version_supported().minor_number().Write(55);
 }
 
 bool FakeController::Settings::is_event_unmasked(
@@ -3257,8 +3258,18 @@ void FakeController::OnCommandPacketReceived(
 }
 
 void FakeController::OnAndroidLEGetVendorCapabilities() {
-  RespondWithCommandComplete(hci_android::kLEGetVendorCapabilities,
-                             settings_.android_extension_settings.data());
+  // We use the android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter
+  // as storage. This is the full HCI packet, including the header. Ensure we
+  // don't accidentally send the header twice by using the overloaded
+  // RespondWithCommandComplete that takes in an EmbossEventPacket. The one that
+  // takes a BufferView allocates space for the header, assuming that it's been
+  // sent only the payload.
+  auto packet = hci::EmbossEventPacket::New<
+      android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  MutableBufferView buffer = packet.mutable_data();
+  settings_.android_extension_settings.data().Copy(&buffer);
+  RespondWithCommandComplete(hci_android::kLEGetVendorCapabilities, &packet);
 }
 
 void FakeController::OnAndroidStartA2dpOffload(

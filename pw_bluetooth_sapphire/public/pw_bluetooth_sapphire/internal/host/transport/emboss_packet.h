@@ -137,6 +137,11 @@ class DynamicPacket {
   }
 
   template <typename T, typename... Args>
+  T unchecked_view(Args... args) {
+    return T(args..., buffer_.mutable_data(), size());
+  }
+
+  template <typename T, typename... Args>
   T unchecked_view(Args... args) const {
     return T(args..., buffer_.data(), size());
   }

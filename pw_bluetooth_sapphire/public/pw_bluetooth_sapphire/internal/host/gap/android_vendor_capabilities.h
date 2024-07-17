@@ -17,13 +17,11 @@
 
 namespace bt::gap {
 
-namespace hci_android = hci_spec::vendor::android;
-
 class AndroidVendorCapabilities final {
  public:
-  void Initialize(const pw::bluetooth::vendor::android_hci::
-                      LEGetVendorCapabilitiesCommandCompleteEventView& c);
-  bool IsInitialized() const { return initialized_; }
+  static AndroidVendorCapabilities New(
+      const pw::bluetooth::vendor::android_hci::
+          LEGetVendorCapabilitiesCommandCompleteEventView& c);
 
   // Number of advertisement instances supported.
   //
@@ -102,8 +100,16 @@ class AndroidVendorCapabilities final {
     return supports_dynamic_audio_buffer_;
   }
 
+  // Supports A2DP offloading with version 2 commands
+  bool supports_a2dp_offload_v2() const { return a2dp_offload_v2_support_; }
+
  private:
-  bool initialized_ = false;
+  AndroidVendorCapabilities() = default;
+
+  // Determines if the currently configured version is less than or equal to the
+  // given version's major and minor.
+  bool SupportsVersion(uint8_t major, uint8_t minor) const;
+
   uint8_t max_simultaneous_advertisement_ = 0;
   bool supports_offloaded_rpa_ = false;
   uint16_t scan_results_storage_bytes_ = 0;
@@ -111,8 +117,8 @@ class AndroidVendorCapabilities final {
   bool supports_filtering_ = false;
   uint8_t max_filters_ = 0;
   bool supports_activity_energy_info_ = false;
-  uint8_t version_minor_ = 0;
   uint8_t version_major_ = 0;
+  uint8_t version_minor_ = 0;
   uint16_t max_advertisers_tracked_ = 0;
   bool supports_extended_scan_ = false;
   bool supports_debug_logging_ = false;
@@ -120,5 +126,6 @@ class AndroidVendorCapabilities final {
   uint32_t a2dp_source_offload_capability_mask_ = 0;
   bool supports_bluetooth_quality_report_ = false;
   uint32_t supports_dynamic_audio_buffer_ = 0;
+  bool a2dp_offload_v2_support_ = false;
 };
 }  // namespace bt::gap

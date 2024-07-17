@@ -111,7 +111,7 @@ struct AdapterState final {
   // Android vendor extensions capabilities
   // NOTE: callers should separately check that the controller actually supports
   // android vendor extensions first.
-  AndroidVendorCapabilities android_vendor_capabilities;
+  std::optional<AndroidVendorCapabilities> android_vendor_capabilities;
 
   // Local name
   std::string local_name;

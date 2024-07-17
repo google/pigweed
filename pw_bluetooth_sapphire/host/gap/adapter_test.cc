@@ -32,6 +32,7 @@ namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
+namespace hci_android = hci_spec::vendor::android;
 using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::FakeDispatcherControllerTest<FakeController>;
@@ -194,7 +195,7 @@ TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
   EXPECT_EQ(1, init_cb_count);
-  EXPECT_TRUE(adapter()->state().android_vendor_capabilities.IsInitialized());
+  EXPECT_TRUE(adapter()->state().android_vendor_capabilities.has_value());
 }
 
 TEST_F(AdapterTest,
@@ -220,7 +221,7 @@ TEST_F(AdapterTest,
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);
   EXPECT_EQ(1, init_cb_count);
-  EXPECT_FALSE(adapter()->state().android_vendor_capabilities.IsInitialized());
+  EXPECT_FALSE(adapter()->state().android_vendor_capabilities.has_value());
 }
 
 TEST_F(AdapterTest, InitializeSuccess) {
