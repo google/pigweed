@@ -55,8 +55,6 @@ class Transport;
 // RunCommands will report success.
 class SequentialCommandRunner final {
  public:
-  using CommandPacketVariant = CommandChannel::CommandPacketVariant;
-
   explicit SequentialCommandRunner(hci::CommandChannel::WeakPtr cmd_channel);
   ~SequentialCommandRunner() = default;
 
@@ -128,7 +126,7 @@ class SequentialCommandRunner final {
 
  private:
   struct QueuedCommand {
-    CommandPacketVariant packet;
+    EmbossCommandPacket packet;
     hci_spec::EventCode complete_event_code;
     bool is_le_async_command;
     CommandCompleteCallbackVariant callback;
