@@ -40,7 +40,7 @@ Status Dispatcher::NativeInit() {
   }
 
   int pipefd[2];
-  if (pipe2(pipefd, O_DIRECT) == -1) {
+  if (pipe2(pipefd, O_DIRECT | O_NONBLOCK) == -1) {
     PW_LOG_ERROR("Failed to create pipe: %s", std::strerror(errno));
     return Status::Internal();
   }
@@ -182,9 +182,12 @@ Status Dispatcher::NativeUnregisterFileDescriptor(int fd) {
 
 void Dispatcher::DoWake() {
   // Perform a write to unblock the waiting dispatcher.
-  ssize_t bytes_written = write(notify_fd_, &kNotificationSignal, 1);
-  PW_CHECK_INT_EQ(
-      bytes_written, 1, "Dispatcher failed to write wake notification");
+  //
+  // We ignore the result of the write, since nonblocking writes can
+  // fail due to there already being messages in the `notify_fd_` pipe.
+  // This is fine, since it means that the dispatcher thread is already queued
+  // to wake up.
+  write(notify_fd_, &kNotificationSignal, 1);
 }
 
 }  // namespace pw::async2
