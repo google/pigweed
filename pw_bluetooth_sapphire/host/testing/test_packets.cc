@@ -66,12 +66,14 @@ DynamicByteBuffer CommandCompletePacket(
 }
 
 DynamicByteBuffer CommandStatusPacket(
-    hci_spec::OpCode op_code, pw::bluetooth::emboss::StatusCode status_code) {
+    hci_spec::OpCode op_code,
+    pw::bluetooth::emboss::StatusCode status_code,
+    uint8_t num_packets) {
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kCommandStatusEventCode,
       0x04,         // parameter_total_size (4 bytes)
       status_code,  // Status
-      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      num_packets,  // Num_HCI_Command_Packets allowed to be sent to controller
       LowerBits(op_code),  // Command_Opcode
       UpperBits(op_code)   // Command_Opcode
       ));
@@ -226,6 +228,24 @@ DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
   view.connection_parameters().CopyFrom(params.view());
 
   return DynamicByteBuffer(packet.data());
+}
+
+DynamicByteBuffer InquiryCommandPacket(uint16_t inquiry_length) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kInquiry),
+      UpperBits(hci_spec::kInquiry),
+      0x05,            // parameter_total_size (5 bytes)
+      0x33,            // LAP (GIAC)
+      0x8B,            // LAP (GIAC)
+      0x9E,            // LAP (GIAC)
+      inquiry_length,  // Inquiry_Length
+      0x00             // Num_Responses (Unlimited)
+      ));
+}
+
+DynamicByteBuffer InquiryCommandResponse(
+    pw::bluetooth::emboss::StatusCode status_code) {
+  return CommandStatusPacket(hci_spec::kInquiry, status_code);
 }
 
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
