@@ -143,14 +143,11 @@ http_archive(
 )
 
 # Set up Python support.
-# Required by: rules_fuzzing, com_github_nanopb_nanopb.
-# Used in modules: None.
-# TODO: b/310293060 - Switch to an official release when it includes the fix for
-# macOS hosts running Python <=3.8.
-git_repository(
+http_archive(
     name = "rules_python",
-    commit = "e06b4bae446706db3414e75d301f56821001b554",
-    remote = "https://github.com/bazelbuild/rules_python.git",
+    sha256 = "e3f1cc7a04d9b09635afb3130731ed82b5f58eadc8233d4efb59944d92ffc06f",
+    strip_prefix = "rules_python-0.33.2",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.33.2/rules_python-0.33.2.tar.gz",
 )
 
 load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
