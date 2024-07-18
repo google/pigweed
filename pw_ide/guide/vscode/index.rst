@@ -134,10 +134,18 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 
 .. describe:: Pigweed: Set Bazelisk Path
 
-   Pigweed recommends using `Bazelisk <http://localhost/404>`_ instead of plain Bazel to ensure that
-   the right version of Bazel is used. This command allows you to set the path to
-   Bazelisk, selecting from versions installed on your system or the version
-   bundled with the Pigweed extension.
+   Pigweed recommends using `Bazelisk <https://github.com/bazelbuild/bazelisk>`_
+   instead of plain Bazel to ensure that the right version of Bazel is used.
+   This command allows you to set the path to Bazelisk, selecting from versions
+   installed on your system or the version bundled with the Pigweed extension.
+
+.. describe:: Pigweed: Activate Bazelisk in Terminal
+
+   This will change the `$PATH` of your active integrated terminal to include
+   the path to Bazelisk configured in your editor settings. This allows you to
+   run Bazel actions via Visual Studio Code commands or via `bazelisk ...`
+   invocations in the integrated terminal, while working in the same Bazel
+   environment.
 
 Configuration options
 =====================

@@ -14,8 +14,18 @@
 
 import * as vscode from 'vscode';
 
+// Convert `exec` from callback style to promise style.
+import { exec as cbExec } from 'child_process';
+import util from 'node:util';
+const exec = util.promisify(cbExec);
+
+import { symlink } from 'fs';
+import { platform } from 'process';
+import { basename, dirname, join } from 'path';
+
 import logger from './logging';
-import { settings } from './settings';
+import { bazel_executable, settings } from './settings';
+import { vendoredBazeliskPath } from './bazel';
 
 type InitScript = 'activate' | 'bootstrap';
 
@@ -53,4 +63,141 @@ export function launchBootstrapTerminal() {
   const shellConfig = getShellConfig();
   logger.info(`Launching bootstrapepd terminal with: ${shellConfig.shellPath}`);
   vscode.window.createTerminal(getShellConfig('bootstrap')).show();
+}
+
+/**
+ * Get the type of shell running in an integrated terminal, e.g. bash, zsh, etc.
+ *
+ * This is a bit roundabout; it grabs the shell pid because that seems to be
+ * the only useful piece of information we can get from the VSC API. Then we
+ * use `ps` to find the name of the binary associated with that pid.
+ */
+async function getShellTypeFromTerminal(
+  terminal: vscode.Terminal,
+): Promise<string | undefined> {
+  const pid = await terminal.processId;
+
+  if (!pid) {
+    logger.error('Terminal has no pid');
+    return;
+  }
+
+  logger.info(`Searching for shell with pid=${pid}`);
+
+  let cmd: string;
+  let pidPos: number;
+  let namePos: number;
+
+  switch (platform) {
+    case 'linux': {
+      cmd = `ps -A`;
+      pidPos = 1;
+      namePos = 4;
+      break;
+    }
+    case 'darwin': {
+      cmd = `ps -ax`;
+      pidPos = 0;
+      namePos = 3;
+      break;
+    }
+    default: {
+      logger.error(`Platform not currently supported: ${platform}`);
+      return;
+    }
+  }
+
+  const { stdout } = await exec(cmd);
+
+  // Split the output into a list of processes, each of which is a tuple of
+  // data from each column of the process table.
+  const processes = stdout.split('\n').map((line) => line.split(/[ ]+/));
+
+  // Find the shell process by pid and extract the process name
+  const shellProcessName = processes
+    .filter((it) => pid === parseInt(it[pidPos]))
+    .at(0)
+    ?.at(namePos);
+
+  if (!shellProcessName) {
+    logger.error(`Could not find process with pid=${pid}`);
+    return;
+  }
+
+  return basename(shellProcessName);
+}
+
+/** Prepend the path to Bazelisk into the active terminal's path. */
+export async function patchBazeliskIntoTerminalPath(): Promise<void> {
+  const bazeliskPath = bazel_executable.get() ?? vendoredBazeliskPath();
+
+  if (!bazeliskPath) {
+    logger.error(
+      "Couldn't activate Bazelisk in terminal because none could be found",
+    );
+    return;
+  }
+
+  // When using the vendored Bazelisk, the binary name won't be `bazelisk` --
+  // it will be something like `bazelisk-darwin_arm64`. But the user expects
+  // to just run `bazelisk` in the terminal. So while this is not entirely
+  // ideal, we just create a symlink in the same directory if the binary name
+  // isn't plain `bazelisk`.
+  if (basename(bazeliskPath) !== 'bazelisk') {
+    try {
+      symlink(
+        bazeliskPath,
+        join(dirname(bazeliskPath), 'bazelisk'),
+        (error) => {
+          const message = error
+            ? `${error.errno} ${error.message}`
+            : 'unknown error';
+          throw new Error(message);
+        },
+      );
+    } catch (error: unknown) {
+      logger.error(`Failed to create Bazelisk symlink for ${bazeliskPath}`);
+      return;
+    }
+  }
+
+  // Should grab the currently active terminal or most recently active
+  let terminal = vscode.window.activeTerminal;
+
+  // If there's no terminal, create one
+  if (!terminal) {
+    terminal = vscode.window.createTerminal();
+  }
+
+  if (!terminal) {
+    logger.error(
+      "Couldn't activate Bazelisk in terminal because no terminals could be found",
+    );
+    return;
+  }
+
+  const shellType = await getShellTypeFromTerminal(terminal);
+
+  let cmd: string;
+
+  switch (shellType) {
+    case 'bash':
+    case 'zsh': {
+      cmd = `export PATH="${dirname(bazeliskPath)}:$\{PATH}"`;
+      break;
+    }
+    default: {
+      const message = shellType
+        ? `This shell is not currently supported: ${shellType}`
+        : "Couldn't determine how to activate Bazelisk in your terminal. " +
+          'Check the Pigweed output panel for more information.';
+
+      vscode.window.showErrorMessage(message);
+      return;
+    }
+  }
+
+  logger.info(`Patching Bazelisk path into ${shellType} terminal`);
+  terminal.sendText(cmd, true);
+  terminal.show();
 }

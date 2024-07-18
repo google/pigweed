@@ -60,7 +60,7 @@ function findPathsTo(name: string): string[] {
   }
 }
 
-function vendoredBazeliskPath(): string | undefined {
+export function vendoredBazeliskPath(): string | undefined {
   const result = getBazeliskBinary();
 
   // If there isn't a binary for this platform, the function appears to return

@@ -48,6 +48,10 @@
         "title": "Pigweed: Bootstrap Activated Terminal"
       },
       {
+        "command": "pigweed.activate-bazelisk-in-terminal",
+        "title": "Pigweed: Activate Bazelisk in Terminal"
+      },
+      {
         "command": "pigweed.refresh-compile-commands",
         "title": "Pigweed: Refresh Compile Commands"
       },

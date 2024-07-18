@@ -33,7 +33,11 @@ import {
   isBootstrapProject,
 } from './project';
 import { refreshManager } from './refreshManager';
-import { launchBootstrapTerminal, launchTerminal } from './terminal';
+import {
+  launchBootstrapTerminal,
+  launchTerminal,
+  patchBazeliskIntoTerminalPath,
+} from './terminal';
 import {
   interactivelySetBazeliskPath,
   configureBazelisk,
@@ -151,6 +155,13 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
       vscode.window.showWarningMessage(
         'This command is currently not supported with Bazel projects',
       ),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.activate-bazelisk-in-terminal',
+      patchBazeliskIntoTerminalPath,
     ),
   );
 
