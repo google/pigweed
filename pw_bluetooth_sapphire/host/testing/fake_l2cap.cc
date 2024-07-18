@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -186,9 +186,11 @@ void FakeL2cap::HandlePdu(hci_spec::ConnectionHandle conn,
 
   // Extract channel ID and strip the L2CAP header from the pdu.
   const auto& header = pdu.To<l2cap::BasicHeader>();
-  l2cap::ChannelId cid = le16toh(header.channel_id);
+  l2cap::ChannelId cid =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, header.channel_id);
   auto header_len = sizeof(header);
-  auto payload_len = le16toh(header.length);
+  uint16_t payload_len =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, header.length);
   auto sdu = DynamicByteBuffer(payload_len);
   pdu.Copy(&sdu, header_len, payload_len);
 

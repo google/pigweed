@@ -14,8 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 
-#include <endian.h>
-#include <pw_bluetooth/hci_android.emb.h>
+#include <pw_bytes/endian.h>
 
 #include <cstddef>
 
@@ -318,7 +317,8 @@ void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
 
   event.mutable_header()->num_hci_command_packets =
       settings_.num_hci_command_packets;
-  event.mutable_header()->command_opcode = htole16(opcode);
+  event.mutable_header()->command_opcode =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
   event.mutable_payload_data().Write(params);
 
   SendEvent(hci_spec::kCommandCompleteEventCode, buffer);
@@ -342,7 +342,8 @@ void FakeController::RespondWithCommandStatus(hci_spec::OpCode opcode,
   event.mutable_header()->status = status;
   event.mutable_header()->num_hci_command_packets =
       settings_.num_hci_command_packets;
-  event.mutable_header()->command_opcode = htole16(opcode);
+  event.mutable_header()->command_opcode =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
 
   SendEvent(hci_spec::kCommandStatusEventCode, buffer);
 }
@@ -387,9 +388,10 @@ void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle,
   DynamicByteBuffer buffer(sizeof(hci_spec::ACLDataHeader) + payload.size());
   MutablePacketView<hci_spec::ACLDataHeader> acl(&buffer, payload.size());
 
-  acl.mutable_header()->handle_and_flags = htole16(handle);
-  acl.mutable_header()->data_total_length =
-      htole16(static_cast<uint16_t>(payload.size()));
+  acl.mutable_header()->handle_and_flags =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
+  acl.mutable_header()->data_total_length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, static_cast<uint16_t>(payload.size()));
   acl.mutable_payload_data().Write(payload);
 
   SendACLDataChannelPacket(buffer);
@@ -404,8 +406,10 @@ void FakeController::SendL2CAPBFrame(hci_spec::ConnectionHandle handle,
   DynamicByteBuffer buffer(sizeof(l2cap::BasicHeader) + payload.size());
   MutablePacketView<l2cap::BasicHeader> bframe(&buffer, payload.size());
 
-  bframe.mutable_header()->length = htole16(payload.size());
-  bframe.mutable_header()->channel_id = htole16(channel_id);
+  bframe.mutable_header()->length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, static_cast<uint16_t>(payload.size()));
+  bframe.mutable_header()->channel_id =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, channel_id);
   bframe.mutable_payload_data().Write(payload);
 
   SendACLPacket(handle, buffer);
@@ -440,8 +444,10 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
       reinterpret_cast<hci_spec::NumberOfCompletedPacketsEventParams*>(
           buffer.mutable_data());
   params->number_of_handles = 1;
-  params->data->connection_handle = htole16(handle);
-  params->data->hc_num_of_completed_packets = htole16(num);
+  params->data->connection_handle =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
+  params->data->hc_num_of_completed_packets =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, num);
 
   SendEvent(hci_spec::kNumberOfCompletedPacketsEventCode, buffer);
 }
@@ -523,41 +529,45 @@ void FakeController::SendConnectionRequest(const DeviceAddress& addr,
 void FakeController::L2CAPConnectionParameterUpdate(
     const DeviceAddress& addr,
     const hci_spec::LEPreferredConnectionParameters& params) {
-  (void)heap_dispatcher().Post(
-      [addr, params, this](pw::async::Context /*ctx*/, pw::Status status) {
-        if (!status.ok()) {
-          return;
-        }
-        FakePeer* peer = FindPeer(addr);
-        if (!peer) {
-          bt_log(WARN,
-                 "fake-hci",
-                 "no peer found with address: %s",
-                 addr.ToString().c_str());
-          return;
-        }
+  (void)heap_dispatcher().Post([addr, params, this](pw::async::Context /*ctx*/,
+                                                    pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
+    FakePeer* peer = FindPeer(addr);
+    if (!peer) {
+      bt_log(WARN,
+             "fake-hci",
+             "no peer found with address: %s",
+             addr.ToString().c_str());
+      return;
+    }
 
-        if (!peer->connected()) {
-          bt_log(WARN, "fake-hci", "peer not connected");
-          return;
-        }
+    if (!peer->connected()) {
+      bt_log(WARN, "fake-hci", "peer not connected");
+      return;
+    }
 
-        BT_DEBUG_ASSERT(!peer->logical_links().empty());
+    BT_DEBUG_ASSERT(!peer->logical_links().empty());
 
-        l2cap::ConnectionParameterUpdateRequestPayload payload;
-        payload.interval_min = htole16(params.min_interval());
-        payload.interval_max = htole16(params.max_interval());
-        payload.peripheral_latency = htole16(params.max_latency());
-        payload.timeout_multiplier = htole16(params.supervision_timeout());
+    l2cap::ConnectionParameterUpdateRequestPayload payload;
+    payload.interval_min =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, params.min_interval());
+    payload.interval_max =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, params.max_interval());
+    payload.peripheral_latency =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, params.max_latency());
+    payload.timeout_multiplier = pw::bytes::ConvertOrderTo(
+        cpp20::endian::little, params.supervision_timeout());
 
-        // TODO(armansito): Instead of picking the first handle we should pick
-        // the handle that matches the current LE-U link.
-        SendL2CAPCFrame(*peer->logical_links().begin(),
-                        /*is_le=*/true,
-                        l2cap::kConnectionParameterUpdateRequest,
-                        NextL2CAPCommandId(),
-                        BufferView(&payload, sizeof(payload)));
-      });
+    // TODO(armansito): Instead of picking the first handle we should pick
+    // the handle that matches the current LE-U link.
+    SendL2CAPCFrame(*peer->logical_links().begin(),
+                    /*is_le=*/true,
+                    l2cap::kConnectionParameterUpdateRequest,
+                    NextL2CAPCommandId(),
+                    BufferView(&payload, sizeof(payload)));
+  });
 }
 
 void FakeController::SendLEConnectionUpdateCompleteSubevent(
@@ -1614,13 +1624,16 @@ void FakeController::OnReadLocalExtendedFeatures(
 
   switch (params.page_number().Read()) {
     case 0:
-      out_params.extended_lmp_features = htole64(settings_.lmp_features_page0);
+      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, settings_.lmp_features_page0);
       break;
     case 1:
-      out_params.extended_lmp_features = htole64(settings_.lmp_features_page1);
+      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, settings_.lmp_features_page1);
       break;
     case 2:
-      out_params.extended_lmp_features = htole64(settings_.lmp_features_page2);
+      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
+          cpp20::endian::little, settings_.lmp_features_page2);
       break;
     default:
       out_params.status = pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
@@ -1647,8 +1660,8 @@ void FakeController::OnLESetEventMask(
 void FakeController::OnLEReadBufferSizeV1() {
   hci_spec::LEReadBufferSizeV1ReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.hc_le_acl_data_packet_length =
-      htole16(settings_.le_acl_data_packet_length);
+  params.hc_le_acl_data_packet_length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, settings_.le_acl_data_packet_length);
   params.hc_total_num_le_acl_data_packets =
       settings_.le_total_num_acl_data_packets;
   RespondWithCommandComplete(hci_spec::kLEReadBufferSizeV1,
@@ -1674,7 +1687,8 @@ void FakeController::OnLEReadBufferSizeV2() {
 void FakeController::OnLEReadSupportedStates() {
   hci_spec::LEReadSupportedStatesReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.le_states = htole64(settings_.le_supported_states);
+  params.le_states = pw::bytes::ConvertOrderTo(cpp20::endian::little,
+                                               settings_.le_supported_states);
   RespondWithCommandComplete(hci_spec::kLEReadSupportedStates,
                              BufferView(&params, sizeof(params)));
 }
@@ -1682,7 +1696,8 @@ void FakeController::OnLEReadSupportedStates() {
 void FakeController::OnLEReadLocalSupportedFeatures() {
   hci_spec::LEReadLocalSupportedFeaturesReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.le_features = htole64(settings_.le_features);
+  params.le_features =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, settings_.le_features);
   RespondWithCommandComplete(hci_spec::kLEReadLocalSupportedFeatures,
                              BufferView(&params, sizeof(params)));
 }
@@ -1834,8 +1849,10 @@ void FakeController::OnWritePageScanActivity(
 void FakeController::OnReadPageScanActivity() {
   hci_spec::ReadPageScanActivityReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.page_scan_interval = htole16(page_scan_interval_);
-  params.page_scan_window = htole16(page_scan_window_);
+  params.page_scan_interval =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, page_scan_interval_);
+  params.page_scan_window =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, page_scan_window_);
   RespondWithCommandComplete(hci_spec::kReadPageScanActivity,
                              BufferView(&params, sizeof(params)));
 }
@@ -1917,10 +1934,11 @@ void FakeController::OnCreateConnectionCancel() {
 void FakeController::OnReadBufferSize() {
   hci_spec::ReadBufferSizeReturnParams params;
   std::memset(&params, 0, sizeof(params));
-  params.hc_acl_data_packet_length = htole16(settings_.acl_data_packet_length);
+  params.hc_acl_data_packet_length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, settings_.acl_data_packet_length);
   params.hc_total_num_acl_data_packets = settings_.total_num_acl_data_packets;
-  params.hc_synchronous_data_packet_length =
-      htole16(settings_.synchronous_data_packet_length);
+  params.hc_synchronous_data_packet_length = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, settings_.synchronous_data_packet_length);
   params.hc_total_num_synchronous_data_packets =
       settings_.total_num_synchronous_data_packets;
   RespondWithCommandComplete(hci_spec::kReadBufferSize,
@@ -2151,7 +2169,8 @@ void FakeController::OnLESetRandomAddress(
 void FakeController::OnReadLocalSupportedFeatures() {
   hci_spec::ReadLocalSupportedFeaturesReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.lmp_features = htole64(settings_.lmp_features_page0);
+  params.lmp_features = pw::bytes::ConvertOrderTo(cpp20::endian::little,
+                                                  settings_.lmp_features_page0);
   RespondWithCommandComplete(hci_spec::kReadLocalSupportedFeatures,
                              BufferView(&params, sizeof(params)));
 }
@@ -2212,7 +2231,8 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
 
   hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams response = {};
   response.status = pwemb::StatusCode::SUCCESS;
-  response.connection_handle = htole16(params.connection_handle().Read());
+  response.connection_handle = pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, params.connection_handle().Read());
   response.lmp_features = settings_.lmp_features_page0;
   SendEvent(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
             BufferView(&response, sizeof(response)));
@@ -2540,7 +2560,8 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
     le_read_remote_features_cb_();
   }
 
-  const hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+  const hci_spec::ConnectionHandle handle = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params.connection_handle);
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
@@ -3281,7 +3302,7 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
 void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
   hci_spec::LEReadNumSupportedAdvertisingSetsReturnParams params;
   params.status = pwemb::StatusCode::SUCCESS;
-  params.num_supported_adv_sets = htole16(num_supported_advertising_sets_);
+  params.num_supported_adv_sets = num_supported_advertising_sets_;
   RespondWithCommandComplete(hci_spec::kLEReadNumSupportedAdvertisingSets,
                              BufferView(&params, sizeof(params)));
 }
@@ -3408,7 +3429,8 @@ void FakeController::OnReadLocalSupportedControllerDelay(
 
 void FakeController::OnCommandPacketReceived(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
-  hci_spec::OpCode opcode = le16toh(command_packet.header().opcode);
+  hci_spec::OpCode opcode = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, command_packet.header().opcode);
 
   bt_log(
       TRACE, "fake-hci", "received command packet with opcode: %#.4x", opcode);
@@ -3470,9 +3492,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   // return in case any parameter has an invalid value
   view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
 
-  android_emb::A2dpCodecType const codec_type =
-      static_cast<android_emb::A2dpCodecType>(
-          le32toh(static_cast<uint32_t>(params.codec_type().Read())));
+  android_emb::A2dpCodecType const codec_type = params.codec_type().Read();
   switch (codec_type) {
     case android_emb::A2dpCodecType::SBC:
     case android_emb::A2dpCodecType::AAC:
@@ -3485,8 +3505,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   }
 
   android_emb::A2dpSamplingFrequency const sampling_frequency =
-      static_cast<android_emb::A2dpSamplingFrequency>(
-          le32toh(static_cast<uint32_t>(params.sampling_frequency().Read())));
+      params.sampling_frequency().Read();
   switch (sampling_frequency) {
     case android_emb::A2dpSamplingFrequency::HZ_44100:
     case android_emb::A2dpSamplingFrequency::HZ_48000:
@@ -3522,8 +3541,8 @@ void FakeController::OnAndroidStartA2dpOffload(
       return;
   }
 
-  uint32_t const encoded_audio_bitrate =
-      le32toh(static_cast<uint32_t>(params.encoded_audio_bitrate().Read()));
+  uint32_t const encoded_audio_bitrate = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params.encoded_audio_bitrate().Read());
   // Bits 0x01000000 to 0xFFFFFFFF are reserved
   if (encoded_audio_bitrate >= 0x01000000) {
     RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
@@ -3532,15 +3551,19 @@ void FakeController::OnAndroidStartA2dpOffload(
 
   OffloadedA2dpChannel state;
   state.codec_type = codec_type;
-  state.max_latency = le16toh(params.max_latency().Read());
+  state.max_latency = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                                  params.max_latency().Read());
   state.scms_t_enable.view().CopyFrom(params.scms_t_enable());
   state.sampling_frequency = sampling_frequency;
   state.bits_per_sample = bits_per_sample;
   state.channel_mode = channel_mode;
   state.encoded_audio_bitrate = encoded_audio_bitrate;
-  state.connection_handle = le16toh(params.connection_handle().Read());
-  state.l2cap_channel_id = le16toh(params.l2cap_channel_id().Read());
-  state.l2cap_mtu_size = le16toh(params.l2cap_mtu_size().Read());
+  state.connection_handle = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params.connection_handle().Read());
+  state.l2cap_channel_id = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params.l2cap_channel_id().Read());
+  state.l2cap_mtu_size = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, params.l2cap_mtu_size().Read());
   offloaded_a2dp_channel_state_ = state;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
@@ -3977,7 +4000,8 @@ void FakeController::OnAndroidLEMultiAdvt(
 
 void FakeController::OnVendorCommand(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
-  auto opcode = le16toh(command_packet.header().opcode);
+  auto opcode = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                            command_packet.header().opcode);
 
   switch (opcode) {
     case android_hci::kLEGetVendorCapabilities:
@@ -4020,7 +4044,9 @@ void FakeController::OnACLDataPacketReceived(
 
   const auto& header = acl_data_packet.To<hci_spec::ACLDataHeader>();
   hci_spec::ConnectionHandle handle =
-      le16toh(header.handle_and_flags) & 0x0FFFF;
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                  header.handle_and_flags) &
+      0x0FFFF;
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     bt_log(WARN, "fake-hci", "ACL data received for unknown handle!");
@@ -4047,7 +4073,9 @@ void FakeController::OnScoDataPacketReceived(
 
   const auto& header = sco_data_packet.To<hci_spec::SynchronousDataHeader>();
   hci_spec::ConnectionHandle handle =
-      le16toh(header.handle_and_flags) & 0x0FFFF;
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                  header.handle_and_flags) &
+      0x0FFFF;
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     bt_log(WARN, "fake-hci", "SCO data received for unknown handle!");
@@ -4120,7 +4148,8 @@ bool FakeController::EnableExtendedAdvertising() {
 
 void FakeController::HandleReceivedCommandPacket(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
-  hci_spec::OpCode opcode = le16toh(command_packet.header().opcode);
+  hci_spec::OpCode opcode = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, command_packet.header().opcode);
 
   if (MaybeRespondWithDefaultCommandStatus(opcode)) {
     return;

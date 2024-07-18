@@ -14,8 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h"
 
-#include <endian.h>
 #include <lib/fit/function.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/att/packet.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -48,7 +48,8 @@ void FakeGattServer::HandlePdu(hci_spec::ConnectionHandle conn,
     return;
   }
 
-  att::OpCode opcode = le16toh(pdu.To<att::OpCode>());
+  att::OpCode opcode = static_cast<uint16_t>(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, pdu.To<att::OpCode>()));
   switch (opcode) {
     case att::kExchangeMTURequest:
       // Always reply back with the default ATT_MTU.
@@ -82,8 +83,10 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn,
   }
 
   const auto& params = bytes.To<att::ReadByGroupTypeRequestParams16>();
-  att::Handle start = le16toh(params.start_handle);
-  att::Handle end = le16toh(params.end_handle);
+  att::Handle start =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.start_handle);
+  att::Handle end =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.end_handle);
   if (!start || end < start) {
     SendErrorRsp(conn,
                  att::kReadByGroupTypeRequest,
@@ -93,7 +96,8 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn,
   }
 
   // Only support primary service discovery.
-  uint16_t grp_type = le16toh(params.type);
+  uint16_t grp_type =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.type);
   if (grp_type != gatt::types::kPrimaryService16 || start > att::kHandleMin) {
     SendErrorRsp(conn,
                  att::kReadByGroupTypeRequest,
@@ -122,8 +126,10 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn,
               UUIDElemSize::k16Bit);
     att::AttributeGroupDataEntry* entry =
         next_entry.AsMutable<att::AttributeGroupDataEntry>();
-    entry->start_handle = htole16(service.start_handle);
-    entry->group_end_handle = htole16(service.end_handle);
+    entry->start_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, service.start_handle);
+    entry->group_end_handle =
+        pw::bytes::ConvertOrderTo(cpp20::endian::little, service.end_handle);
     next_entry.Write(service.type.CompactView(/*allow_32bit=*/false),
                      sizeof(att::AttributeGroupDataEntry));
     next_entry = next_entry.mutable_view(entry_size);
@@ -143,12 +149,15 @@ void FakeGattServer::HandleFindByTypeValue(hci_spec::ConnectionHandle conn,
 
   // It is safe to read members because bytes is at least the size of the
   // params, and the params struct is packed.
-  att::Handle start = le16toh(
+  att::Handle start = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
       bytes.ReadMember<&att::FindByTypeValueRequestParams::start_handle>());
-  att::Handle end = le16toh(
+  att::Handle end = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
       bytes.ReadMember<&att::FindByTypeValueRequestParams::end_handle>());
-  att::AttributeType16 service_kind =
-      le16toh(bytes.ReadMember<&att::FindByTypeValueRequestParams::type>());
+  att::AttributeType16 service_kind = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      bytes.ReadMember<&att::FindByTypeValueRequestParams::type>());
   BufferView service_uuid_bytes =
       bytes.view(sizeof(att::FindByTypeValueRequestParams));
   UUID service_uuid;
@@ -198,9 +207,9 @@ void FakeGattServer::HandleFindByTypeValue(hci_spec::ConnectionHandle conn,
   att::FindByTypeValueResponseParams* rsp_params =
       writer.mutable_payload<att::FindByTypeValueResponseParams>();
   rsp_params->handles_information_list[0].handle =
-      htole16(service.start_handle);
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, service.start_handle);
   rsp_params->handles_information_list[0].group_end_handle =
-      htole16(service.end_handle);
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, service.end_handle);
   Send(conn, rsp);
 }
 
@@ -221,8 +230,10 @@ void FakeGattServer::SendErrorRsp(hci_spec::ConnectionHandle conn,
       buffer;
   att::PacketWriter writer(att::kErrorResponse, &buffer);
   auto* params = writer.mutable_payload<att::ErrorResponseParams>();
-  params->request_opcode = htole16(opcode);
-  params->attribute_handle = htole16(handle);
+  params->request_opcode =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
+  params->attribute_handle =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
   params->error_code = ecode;
 
   Send(conn, buffer);

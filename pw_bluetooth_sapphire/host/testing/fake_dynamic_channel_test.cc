@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h"
 
+#include <pw_bytes/endian.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
@@ -50,7 +52,8 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   const auto& connection_header =
       connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
-  auto connection_payload_len = le16toh(connection_header.data_total_length);
+  uint16_t connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
   connection_acl_packet.Copy(
       &connection_packet, connection_header_len, connection_payload_len);
@@ -92,8 +95,8 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
       configuration_response_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_response_header_len =
       sizeof(configuration_response_header);
-  auto configuration_response_payload_len =
-      le16toh(configuration_response_header.data_total_length);
+  uint16_t configuration_response_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, configuration_response_header.data_total_length);
   auto configuration_response_packet =
       DynamicByteBuffer(configuration_response_payload_len);
   configuration_response_acl_packet.Copy(&configuration_response_packet,
@@ -117,8 +120,8 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   const auto& configuration_request_header =
       configuration_request_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_request_header_len = sizeof(configuration_request_header);
-  auto configuration_request_payload_len =
-      le16toh(configuration_request_header.data_total_length);
+  uint16_t configuration_request_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, configuration_request_header.data_total_length);
   auto configuration_request_packet =
       DynamicByteBuffer(configuration_request_payload_len);
   configuration_request_acl_packet.Copy(&configuration_request_packet,
@@ -161,8 +164,8 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   const auto& disconnection_header =
       disconnection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto disconnection_header_len = sizeof(disconnection_header);
-  auto disconnection_payload_len =
-      le16toh(disconnection_header.data_total_length);
+  uint16_t disconnection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, disconnection_header.data_total_length);
   auto disconnection_packet = DynamicByteBuffer(disconnection_payload_len);
   disconnection_acl_packet.Copy(&disconnection_packet,
                                 disconnection_header_len,
@@ -208,7 +211,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   const auto& connection_header =
       connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
-  auto connection_payload_len = le16toh(connection_header.data_total_length);
+  uint16_t connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
   connection_acl_packet.Copy(
       &connection_packet, connection_header_len, connection_payload_len);
@@ -252,7 +256,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   const auto& connection_header =
       connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
-  auto connection_payload_len = le16toh(connection_header.data_total_length);
+  uint16_t connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
   connection_acl_packet.Copy(
       &connection_packet, connection_header_len, connection_payload_len);
@@ -293,7 +298,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   const auto& connection_header =
       connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
-  auto connection_payload_len = le16toh(connection_header.data_total_length);
+  uint16_t connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
   connection_acl_packet.Copy(
       &connection_packet, connection_header_len, connection_payload_len);
@@ -335,8 +341,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
       configuration_response_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_response_header_len =
       sizeof(configuration_response_header);
-  auto configuration_response_payload_len =
-      le16toh(configuration_response_header.data_total_length);
+  uint16_t configuration_response_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, configuration_response_header.data_total_length);
   auto configuration_response_packet =
       DynamicByteBuffer(configuration_response_payload_len);
   configuration_response_acl_packet.Copy(&configuration_response_packet,
@@ -360,8 +366,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   const auto& configuration_request_header =
       configuration_request_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_request_header_len = sizeof(configuration_request_header);
-  auto configuration_request_payload_len =
-      le16toh(configuration_request_header.data_total_length);
+  uint16_t configuration_request_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, configuration_request_header.data_total_length);
   auto configuration_request_packet =
       DynamicByteBuffer(configuration_request_payload_len);
   configuration_request_acl_packet.Copy(&configuration_request_packet,
@@ -401,8 +407,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   const auto& second_connection_header =
       second_connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto second_connection_header_len = sizeof(second_connection_header);
-  auto second_connection_payload_len =
-      le16toh(second_connection_header.data_total_length);
+  uint16_t second_connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, second_connection_header.data_total_length);
   auto second_connection_packet =
       DynamicByteBuffer(second_connection_payload_len);
   second_connection_acl_packet.Copy(&second_connection_packet,
@@ -445,7 +451,8 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   const auto& connection_header =
       connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
-  auto connection_payload_len = le16toh(connection_header.data_total_length);
+  uint16_t connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
   connection_acl_packet.Copy(
       &connection_packet, connection_header_len, connection_payload_len);
@@ -461,8 +468,8 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   const auto& second_connection_header =
       second_connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto second_connection_header_len = sizeof(second_connection_header);
-  auto second_connection_payload_len =
-      le16toh(second_connection_header.data_total_length);
+  uint16_t second_connection_payload_len = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, second_connection_header.data_total_length);
   auto second_connection_packet =
       DynamicByteBuffer(second_connection_payload_len);
   second_connection_acl_packet.Copy(&second_connection_packet,

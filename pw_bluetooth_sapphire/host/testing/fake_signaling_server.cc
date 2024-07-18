@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_signaling_server.h"
 
-#include <endian.h>
+#include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
@@ -83,8 +83,10 @@ void FakeSignalingServer::ProcessConnectionRequest(
     l2cap::CommandId id,
     const ByteBuffer& connection_req) {
   const auto& conn_req = connection_req.To<l2cap::ConnectionRequestPayload>();
-  const l2cap::Psm psm = le16toh(conn_req.psm);
-  const l2cap::ChannelId remote_cid = le16toh(conn_req.src_cid);
+  const l2cap::Psm psm =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, conn_req.psm);
+  const l2cap::ChannelId remote_cid =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, conn_req.src_cid);
 
   // Validate the remote channel ID prior to assigning it a local ID.
   if (remote_cid == l2cap::kInvalidChannelId) {
@@ -217,8 +219,10 @@ void FakeSignalingServer::ProcessDisconnectionRequest(
     const ByteBuffer& disconnection_req) {
   const auto& disconn_req =
       disconnection_req.To<l2cap::DisconnectionRequestPayload>();
-  const l2cap::ChannelId local_cid = le16toh(disconn_req.dst_cid);
-  const l2cap::ChannelId remote_cid = le16toh(disconn_req.src_cid);
+  const l2cap::ChannelId local_cid =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, disconn_req.dst_cid);
+  const l2cap::ChannelId remote_cid =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, disconn_req.src_cid);
   auto channel = fake_l2cap_->FindDynamicChannelByLocalId(conn, local_cid);
   if (channel.is_alive()) {
     fake_l2cap_->DeleteDynamicChannelByLocalId(conn, local_cid);
@@ -269,11 +273,16 @@ void FakeSignalingServer::SendInformationResponseExtendedFeatures(
   MutablePacketView<l2cap::InformationResponsePayload> payload_view(
       &payload_buffer, sizeof(l2cap::ExtendedFeatures));
   payload_view.mutable_header()->type =
-      static_cast<l2cap::InformationType>(htole16(static_cast<uint16_t>(
-          l2cap::InformationType::kExtendedFeaturesSupported)));
-  payload_view.mutable_header()->result = static_cast<l2cap::InformationResult>(
-      htole16(static_cast<uint16_t>(l2cap::InformationResult::kSuccess)));
-  payload_view.mutable_payload_data().WriteObj(htole32(extended_features));
+      static_cast<l2cap::InformationType>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little,
+          static_cast<uint16_t>(
+              l2cap::InformationType::kExtendedFeaturesSupported)));
+  payload_view.mutable_header()->result =
+      static_cast<l2cap::InformationResult>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little,
+          static_cast<uint16_t>(l2cap::InformationResult::kSuccess)));
+  payload_view.mutable_payload_data().WriteObj(
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, extended_features));
   SendCFrame(conn, l2cap::kInformationResponse, id, payload_buffer);
 }
 
@@ -287,11 +296,16 @@ void FakeSignalingServer::SendInformationResponseFixedChannels(
   MutablePacketView<l2cap::InformationResponsePayload> payload_view(
       &payload_buffer, sizeof(l2cap::FixedChannelsSupported));
   payload_view.mutable_header()->type =
-      static_cast<l2cap::InformationType>(htole16(static_cast<uint16_t>(
-          l2cap::InformationType::kFixedChannelsSupported)));
-  payload_view.mutable_header()->result = static_cast<l2cap::InformationResult>(
-      htole16(static_cast<uint16_t>(l2cap::InformationResult::kSuccess)));
-  payload_view.mutable_payload_data().WriteObj(htole64(fixed_channels));
+      static_cast<l2cap::InformationType>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little,
+          static_cast<uint16_t>(
+              l2cap::InformationType::kFixedChannelsSupported)));
+  payload_view.mutable_header()->result =
+      static_cast<l2cap::InformationResult>(pw::bytes::ConvertOrderTo(
+          cpp20::endian::little,
+          static_cast<uint16_t>(l2cap::InformationResult::kSuccess)));
+  payload_view.mutable_payload_data().WriteObj(
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, fixed_channels));
   SendCFrame(conn, l2cap::kInformationResponse, id, payload_buffer);
 }
 

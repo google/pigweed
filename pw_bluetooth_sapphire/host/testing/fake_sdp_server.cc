@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_sdp_server.h"
 
-#include <endian.h>
-
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
 #pragma clang diagnostic ignored "-Wshadow"
