@@ -82,7 +82,7 @@ class SequentialCommandRunner final {
   // Same as QueueCommand(), except the command completes on the LE Meta Event
   // with subevent code |le_meta_subevent_code|.
   void QueueLeAsyncCommand(
-      CommandPacketVariant command_packet,
+      EmbossCommandPacket command_packet,
       hci_spec::EventCode le_meta_subevent_code,
       CommandCompleteCallbackVariant callback = CommandCompleteCallback(),
       bool wait = true);

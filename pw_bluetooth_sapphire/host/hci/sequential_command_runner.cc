@@ -57,7 +57,7 @@ void SequentialCommandRunner::QueueCommand(
 }
 
 void SequentialCommandRunner::QueueLeAsyncCommand(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     hci_spec::EventCode le_meta_subevent_code,
     CommandCompleteCallbackVariant callback,
     bool wait) {

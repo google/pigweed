@@ -741,7 +741,8 @@ TEST_F(SequentialCommandRunnerTest,
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
   cmd_runner->QueueLeAsyncCommand(
-      CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+          hci_spec::kLEReadRemoteFeatures),
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
       cb,
       /*wait=*/false);
@@ -833,7 +834,8 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
     EXPECT_CMD_PACKET_OUT(
         test_device(), command1, &command1_status_event, &command1_cmpl_event);
     cmd_runner.QueueLeAsyncCommand(
-        CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+        EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+            hci_spec::kLEReadRemoteFeatures),
         hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
         cb,
         /*wait=*/false);
