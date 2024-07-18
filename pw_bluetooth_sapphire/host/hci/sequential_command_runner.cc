@@ -31,18 +31,11 @@ SequentialCommandRunner::SequentialCommandRunner(
 }
 
 void SequentialCommandRunner::QueueCommand(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     CommandCompleteCallbackVariant callback,
     bool wait,
     hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
-  if (std::holds_alternative<std::unique_ptr<CommandPacket>>(command_packet)) {
-    BT_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <=
-                    std::get<std::unique_ptr<CommandPacket>>(command_packet)
-                        ->view()
-                        .size());
-  }
-
   command_queue_.emplace(
       QueuedCommand{.packet = std::move(command_packet),
                     .complete_event_code = complete_event_code,

@@ -72,7 +72,7 @@ class SequentialCommandRunner final {
   using CommandCompleteCallbackVariant =
       std::variant<CommandCompleteCallback, EmbossCommandCompleteCallback>;
   void QueueCommand(
-      CommandPacketVariant command_packet,
+      EmbossCommandPacket command_packet,
       CommandCompleteCallbackVariant callback = CommandCompleteCallback(),
       bool wait = true,
       hci_spec::EventCode complete_event_code =
