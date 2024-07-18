@@ -416,10 +416,8 @@ def _proto_compiler_aspect_impl(target, ctx):
 
     all_tools = [
         ctx.executable._protoc,
-        ctx.executable._python_runtime,
         ctx.executable._protoc_plugin,
     ]
-    run_path = [tool.dirname for tool in all_tools]
 
     ctx.actions.run(
         inputs = depset(
@@ -434,12 +432,10 @@ def _proto_compiler_aspect_impl(target, ctx):
         executable = ctx.executable._protoc,
         arguments = [args],
         env = {
-
             # The nanopb protobuf plugin likes to compile some temporary protos
             # next to source files. This forces them to be written to Bazel's
             # genfiles directory.
             "NANOPB_PB2_TEMP_DIR": str(ctx.genfiles_dir),
-            "PATH": ":".join(run_path),
         },
     )
 
@@ -487,15 +483,10 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
                 executable = True,
                 cfg = "exec",
             ),
-            "_python_runtime": attr.label(
-                default = Label("//:python3_interpreter"),
-                allow_single_file = True,
-                executable = True,
-                cfg = "exec",
-            ),
         },
         implementation = _proto_compiler_aspect_impl,
         provides = [PwProtoInfo],
+        toolchains = ["@rules_python//python:toolchain_type"],
     )
 
 def _impl_pw_proto_library(ctx):
