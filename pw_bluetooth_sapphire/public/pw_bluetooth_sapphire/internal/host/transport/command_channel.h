@@ -125,7 +125,7 @@ class CommandChannel final {
   //
   // |le_meta_subevent_code| cannot be a code that has been registered for
   // events via AddLEMetaEventHandler.
-  TransactionId SendLeAsyncCommand(CommandPacketVariant command_packet,
+  TransactionId SendLeAsyncCommand(EmbossCommandPacket command_packet,
                                    CommandCallback callback,
                                    hci_spec::EventCode le_meta_subevent_code);
 
@@ -144,7 +144,7 @@ class CommandChannel final {
   // As SendExclusiveCommand, but the transaction completes on the LE Meta Event
   // with subevent code |le_meta_subevent_code|.
   TransactionId SendLeAsyncExclusiveCommand(
-      CommandPacketVariant command_packet,
+      EmbossCommandPacket command_packet,
       CommandCallback callback,
       std::optional<hci_spec::EventCode> le_meta_subevent_code,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
