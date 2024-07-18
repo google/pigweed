@@ -18,6 +18,8 @@
 #include <cpp-string/utf_codecs.h>
 #include <pw_bytes/endian.h>
 
+#include <cinttypes>
+
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h"
@@ -80,7 +82,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
       features_(std::nullopt,
                 [](const std::optional<hci_spec::LESupportedFeatures> f) {
-                  return f ? bt_lib_cpp_string::StringPrintf("%#.16lx",
+                  return f ? bt_lib_cpp_string::StringPrintf("%#.16" PRIx64,
                                                              f->le_features)
                            : "";
                 }),

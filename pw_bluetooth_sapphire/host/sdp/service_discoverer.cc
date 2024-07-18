@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h"
 
+#include <cinttypes>
 #include <functional>
 
 namespace bt::sdp {
@@ -71,7 +72,7 @@ void ServiceDiscoverer::SingleSearch(SearchId search_id,
   BT_DEBUG_ASSERT(session_iter != sessions_.end());
   auto search_it = searches_.find(search_id);
   if (search_it == searches_.end()) {
-    bt_log(INFO, "sdp", "Couldn't find search with id %lu", search_id);
+    bt_log(INFO, "sdp", "Couldn't find search with id %" PRIu64, search_id);
     return;
   }
   Search& search = search_it->second;

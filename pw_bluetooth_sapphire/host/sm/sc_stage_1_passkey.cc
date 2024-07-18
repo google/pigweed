@@ -15,6 +15,7 @@
 
 #include <pw_bytes/endian.h>
 
+#include <cinttypes>
 #include <optional>
 
 #include "lib/fit/function.h"
@@ -107,7 +108,7 @@ void ScStage1Passkey::Run() {
       }
       bt_log(INFO,
              "sm",
-             "SC passkey entry display (passkey: %ld) accepted by user",
+             "SC passkey entry display (passkey: %" PRId64 ") accepted by user",
              passkey);
       responder(passkey_response);
     });

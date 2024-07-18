@@ -14,10 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 
-#include <endian.h>
 #include <pw_async/dispatcher.h>
 #include <pw_bluetooth/hci_commands.emb.h>
 #include <pw_bytes/endian.h>
+
+#include <cinttypes>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -1662,7 +1663,7 @@ void AdapterImpl::UpdateInspectProperties() {
       adapter_node_.CreateString("lmp_features", state_.features.ToString());
 
   auto le_features = bt_lib_cpp_string::StringPrintf(
-      "0x%016lx", state_.low_energy_state.supported_features());
+      "0x%016" PRIx64, state_.low_energy_state.supported_features());
   inspect_properties_.le_features =
       adapter_node_.CreateString("le_features", le_features);
 }

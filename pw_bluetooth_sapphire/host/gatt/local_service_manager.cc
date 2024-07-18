@@ -17,6 +17,7 @@
 #include <pw_bytes/endian.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -103,7 +104,7 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
   std::unordered_set<IdType> ids;
   for (const auto& chrc_ptr : service.characteristics()) {
     if (ids.count(chrc_ptr->id()) != 0u) {
-      bt_log(TRACE, "gatt", "server: repeated ID: %lu", chrc_ptr->id());
+      bt_log(TRACE, "gatt", "server: repeated ID: %" PRIu64, chrc_ptr->id());
       return false;
     }
 
@@ -122,7 +123,7 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
 
     for (const auto& desc_ptr : chrc_ptr->descriptors()) {
       if (ids.count(desc_ptr->id()) != 0u) {
-        bt_log(TRACE, "gatt", "server: repeated ID: %lu", desc_ptr->id());
+        bt_log(TRACE, "gatt", "server: repeated ID: %" PRIu64, desc_ptr->id());
         return false;
       }
 

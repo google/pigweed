@@ -15,6 +15,7 @@
 #pragma once
 #include <cpp-string/string_printf.h>
 
+#include <cinttypes>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -31,7 +32,7 @@ struct IdentifierTraits {
 template <>
 struct IdentifierTraits<uint64_t> {
   static std::string ToString(uint64_t value) {
-    return bt_lib_cpp_string::StringPrintf("%.16lx", value);
+    return bt_lib_cpp_string::StringPrintf("%.16" PRIx64, value);
   }
 };
 

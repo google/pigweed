@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 
+#include <cinttypes>
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -808,7 +809,7 @@ void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
     if (!self.is_alive() || self->next_pairing_id_ != id) {
       bt_log(TRACE,
              "sm",
-             "ignoring user confirmation for expired pairing: id = %lu",
+             "ignoring user confirmation for expired pairing: id = %" PRIu64,
              id);
       return;
     }
@@ -830,7 +831,7 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey,
         if (!self.is_alive() || self->next_pairing_id_ != id) {
           bt_log(TRACE,
                  "sm",
-                 "ignoring %s response for expired pairing: id = %lu",
+                 "ignoring %s response for expired pairing: id = %" PRIu64,
                  util::DisplayMethodToString(method).c_str(),
                  id);
           return;

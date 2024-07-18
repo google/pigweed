@@ -13,6 +13,9 @@
 // the License.
 
 #pragma once
+
+#include <cinttypes>
+
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -116,7 +119,10 @@ class ScoConnectionManager final {
     ConnectionRequest& operator=(ConnectionRequest&&) = default;
     ~ConnectionRequest() {
       if (callback) {
-        bt_log(DEBUG, "sco", "Cancelling SCO connection request (id: %zu)", id);
+        bt_log(DEBUG,
+               "sco",
+               "Cancelling SCO connection request (id: %" PRIu64 ")",
+               id);
         callback(fit::error(HostError::kCanceled));
       }
     }

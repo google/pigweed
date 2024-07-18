@@ -16,6 +16,8 @@
 
 #include <pw_bytes/endian.h>
 
+#include <cinttypes>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
@@ -252,7 +254,10 @@ bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
 
   auto handler_iter = notify_handlers_.find(handler_id);
   if (handler_iter == notify_handlers_.end()) {
-    bt_log(TRACE, "gatt", "notify handler not found (id: %lu)", handler_id);
+    bt_log(TRACE,
+           "gatt",
+           "notify handler not found (id: %" PRIu64 ")",
+           handler_id);
     return false;
   }
 

@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 
+#include <cinttypes>
 #include <functional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -669,11 +670,11 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     return;
   }
 
-  bt_log(
-      TRACE,
-      "l2cap",
-      "Received Fixed Channels Supported Information Response (mask: %#016lx)",
-      rsp.fixed_channels());
+  bt_log(TRACE,
+         "l2cap",
+         "Received Fixed Channels Supported Information Response (mask: "
+         "%#016" PRIx64 ")",
+         rsp.fixed_channels());
 }
 
 void LogicalLink::SendConnectionParameterUpdateRequest(
