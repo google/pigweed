@@ -20,17 +20,20 @@
 
 namespace pw::chrono {
 
-inline SystemTimer::SystemTimer(ExpiryCallback&& callback) : native_type_() {
-  native_type_.callback_context =
-      std::make_shared<backend::NativeSystemTimer::CallbackContext>(
-          std::move(callback));
-}
+inline SystemTimer::SystemTimer(ExpiryCallback&& callback)
+    : native_type_(std::move(callback)) {}
 
-inline SystemTimer::~SystemTimer() { Cancel(); }
+inline SystemTimer::~SystemTimer() { native_type_.Kill(); }
 
 inline void SystemTimer::InvokeAfter(SystemClock::duration delay) {
   InvokeAt(SystemClock::TimePointAfterAtLeast(delay));
 }
+
+inline void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
+  native_type_.InvokeAt(timestamp);
+}
+
+inline void SystemTimer::Cancel() { native_type_.Cancel(); }
 
 inline SystemTimer::native_handle_type SystemTimer::native_handle() {
   return native_type_;

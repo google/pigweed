@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 
@@ -20,30 +21,58 @@
 #include "pw_function/function.h"
 
 namespace pw::chrono::backend {
+namespace internal {
 
-struct NativeSystemTimer {
+using ExpiryFn = Function<void(SystemClock::time_point expired_deadline)>;
+
+class NoDepsTimedThreadNotification {
+ public:
+  NoDepsTimedThreadNotification() = default;
+  bool try_acquire();
+  bool try_acquire_until(SystemClock::time_point deadline);
+  void notify();
+
+ private:
+  std::mutex lock_;
+  std::condition_variable cv_;
+  // Guarded by lock_.
+  bool is_set_ = false;
+};
+
+class TimerState {
+ public:
+  TimerState(ExpiryFn&& cb) : callback_(std::move(cb)) {}
+
+  NoDepsTimedThreadNotification timer_thread_wakeup_;
+
+  // The mutex is used both to ensure the public API is threadsafe and to
+  // ensure that only one expiry callback is executed at time.
+  // A recursive mutex is used as the timer callback must be able to invoke
+  // its own public API.
+  std::recursive_mutex lock_;
+
+  // All guarded by `lock_`;
+  const ExpiryFn callback_;
+  SystemClock::time_point expiry_deadline_;
+  bool enabled_ = false;
+  bool running_ = true;
+};
+
+}  // namespace internal
+
+class NativeSystemTimer {
+ public:
+  NativeSystemTimer(internal::ExpiryFn&& callback);
+  void InvokeAt(SystemClock::time_point timestamp);
+  void Cancel();
+  void Kill();
+
+ private:
   // Instead of using a more complex blocking timer cleanup, a shared_pointer is
   // used so that the heap allocation is still valid for the detached threads
   // even after the NativeSystemTimer has been destructed. Note this is shared
   // with all detached threads.
-  struct CallbackContext {
-    CallbackContext(
-        Function<void(SystemClock::time_point expired_deadline)>&& cb)
-        : callback(std::move(cb)) {}
-
-    const Function<void(SystemClock::time_point expired_deadline)> callback;
-
-    // The mutex is used both to ensure the public API is threadsafe and to
-    // ensure that only one expiry callback is executed at time.
-    // A recurisve mutex is used as the timer callback must be able to invoke
-    // its own public API.
-    std::recursive_mutex mutex;
-  };
-  std::shared_ptr<CallbackContext> callback_context;
-
-  // This is only shared with the last active timer if there is one. Note that
-  // this is guarded by the callback_context's mutex.
-  std::shared_ptr<bool> active_timer_enabled;
+  std::shared_ptr<internal::TimerState> timer_state_;
 };
 
 using NativeSystemTimerHandle = NativeSystemTimer&;
