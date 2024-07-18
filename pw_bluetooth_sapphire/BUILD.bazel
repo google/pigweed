@@ -253,6 +253,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/transport/error.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h",
+        "public/pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/link_type.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/mock_acl_data_channel.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/packet.h",

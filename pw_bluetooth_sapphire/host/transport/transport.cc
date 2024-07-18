@@ -111,6 +111,19 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
   return true;
 }
 
+bool Transport::InitializeIsoDataChannel(const DataBufferInfo& buffer_info) {
+  BT_ASSERT(buffer_info.IsAvailable());
+
+  if (static_cast<uint32_t>(*features_ & FeaturesBits::kHciIso) == 0) {
+    bt_log(WARN, "hci", "HCI ISO not supported");
+    return false;
+  }
+
+  iso_data_channel_ = IsoDataChannel::Create(
+      buffer_info, command_channel_.get(), controller_.get());
+  return true;
+}
+
 FeaturesBits Transport::GetFeatures() {
   BT_ASSERT(features_);
   return features_.value();

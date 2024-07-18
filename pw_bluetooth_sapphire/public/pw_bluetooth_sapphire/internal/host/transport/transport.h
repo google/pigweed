@@ -23,13 +23,14 @@
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h"
 
 namespace bt::hci {
 
 // Represents the HCI transport layer. This object owns the HCI command, ACL,
-// and SCO channels and provides the necessary control-flow mechanisms to send
-// and receive HCI packets from the underlying Bluetooth controller.
+// SCO, and ISO data channels and provides the necessary control-flow mechanisms
+// to send and receive HCI packets from the underlying Bluetooth controller.
 class Transport final : public WeakSelf<Transport> {
  public:
   explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci,
@@ -59,6 +60,10 @@ class Transport final : public WeakSelf<Transport> {
   // if an error occurs during initialization.
   bool InitializeScoDataChannel(const DataBufferInfo& buffer_info);
 
+  // Initializes the ISO data channel with the given parameters. Returns false
+  // if an error occurs during initialization.
+  bool InitializeIsoDataChannel(const DataBufferInfo& buffer_info);
+
   pw::bluetooth::Controller::FeaturesBits GetFeatures();
 
   // Returns a pointer to the HCI command and event flow control handler.
@@ -75,6 +80,11 @@ class Transport final : public WeakSelf<Transport> {
   // InitializeScoDataChannel succeeds.
   // ScoDataChannel is guaranteed to live as long as Transport.
   ScoDataChannel* sco_data_channel() const { return sco_data_channel_.get(); }
+
+  // Returns a pointer to the HCI ISO data flow control handler. Nullptr until
+  // InitializeIsoDataChannel succeeds. IsoDataChannel is guaranteed to live as
+  // long as Transport.
+  IsoDataChannel* iso_data_channel() const { return iso_data_channel_.get(); }
 
   // Set a callback that should be invoked when any one of the underlying
   // channels experiences a fatal error (e.g. the HCI device has disappeared).
@@ -118,6 +128,9 @@ class Transport final : public WeakSelf<Transport> {
 
   // The SCO data flow control handler.
   std::unique_ptr<ScoDataChannel> sco_data_channel_;
+
+  // The ISO data flow control handler.
+  std::unique_ptr<IsoDataChannel> iso_data_channel_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };

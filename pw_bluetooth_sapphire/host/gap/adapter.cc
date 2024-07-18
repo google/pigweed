@@ -1364,6 +1364,29 @@ void AdapterImpl::InitializeStep3() {
            sco_flow_control_supported);
   }
 
+  const hci::DataBufferInfo iso_data_buffer_info =
+      state_.low_energy_state.iso_data_buffer_info();
+  if (iso_data_buffer_info.IsAvailable()) {
+    bt_log(INFO,
+           "gap",
+           "ISO data buffer information available (size: %zu, count: %zu)",
+           iso_data_buffer_info.max_data_length(),
+           iso_data_buffer_info.max_num_packets());
+    if (hci_->InitializeIsoDataChannel(iso_data_buffer_info)) {
+      bt_log(INFO, "gap", "IsoDataChannel initialized successfully");
+    } else {
+      bt_log(WARN,
+             "gap",
+             "Failed to initialize IsoDataChannel, proceeding without HCI ISO "
+             "support");
+    }
+  } else {
+    bt_log(
+        INFO,
+        "gap",
+        "No ISO data buffer information available, not starting data channel");
+  }
+
   hci_->AttachInspect(adapter_node_);
 
   // Create ChannelManager, if we haven't been provided one for testing. Doing

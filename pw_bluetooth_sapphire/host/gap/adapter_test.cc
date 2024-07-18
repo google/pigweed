@@ -47,7 +47,8 @@ const DeviceAddress kTestAddrBrEdr(DeviceAddress::Type::kBREDR,
                                    {3, 0, 0, 0, 0, 0});
 
 constexpr FeaturesBits kDefaultFeaturesBits =
-    FeaturesBits::kHciSco | FeaturesBits::kSetAclPriorityCommand;
+    FeaturesBits::kHciSco | FeaturesBits::kHciIso |
+    FeaturesBits::kSetAclPriorityCommand;
 
 class AdapterTest : public TestingBase {
  public:
@@ -111,7 +112,7 @@ class AdapterTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
 };
 
-class AdapterScoDisabledTest : public AdapterTest {
+class AdapterScoAndIsoDisabledTest : public AdapterTest {
  public:
   void SetUp() override { AdapterTest::SetUp(FeaturesBits{0}); }
 };
@@ -1563,7 +1564,7 @@ TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseBufferInfoNotAvailable) {
   EXPECT_FALSE(transport()->sco_data_channel());
 }
 
-TEST_F(AdapterScoDisabledTest,
+TEST_F(AdapterScoAndIsoDisabledTest,
        ScoDataChannelFailsToInitializeBecauseScoDisabled) {
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
@@ -1587,6 +1588,44 @@ TEST_F(AdapterScoDisabledTest,
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
   EXPECT_FALSE(transport()->sco_data_channel());
+}
+
+TEST_F(AdapterTest, IsoDataChannelInitializedSuccessfully) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_TRUE(transport()->iso_data_channel());
+}
+
+TEST_F(AdapterTest, IsoDataChannelNotInitializedNoBufferData) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  settings.iso_data_packet_length = 0;
+  settings.total_num_iso_data_packets = 0;
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(transport()->iso_data_channel());
+}
+
+TEST_F(AdapterScoAndIsoDisabledTest, IsoDataChannelNoControllerSupport) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(transport()->iso_data_channel());
 }
 
 TEST_F(AdapterTest, InitializeWriteSecureConnectionsHostSupport) {
