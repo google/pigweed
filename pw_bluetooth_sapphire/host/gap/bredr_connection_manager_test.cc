@@ -23,13 +23,11 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
@@ -42,7 +40,6 @@ namespace {
 
 using namespace inspect::testing;
 
-using bt::testing::CommandTransaction;
 using pw::bluetooth::emboss::AuthenticationRequirements;
 using pw::bluetooth::emboss::IoCapability;
 
@@ -108,18 +105,11 @@ const auto kWriteScanEnableRsp = testing::WriteScanEnableResponse();
                    UpperBits((opcode)),                 \
                    pw::bluetooth::emboss::StatusCode::SUCCESS)
 
-const StaticByteBuffer kWritePageScanActivity(
-    LowerBits(hci_spec::kWritePageScanActivity),
-    UpperBits(hci_spec::kWritePageScanActivity),
-    0x04,  // parameter_total_size (4 bytes)
-    0x00,
-    0x08,  // 1.28s interval (R1)
-    0x11,
-    0x00  // 10.625ms window (R1)
-);
-
-const auto kWritePageScanActivityRsp =
-    COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanActivity);
+const uint16_t kScanInterval = 0x0800;  // 1280 ms
+const uint16_t kScanWindow = 0x0011;    // 10.625 ms
+const auto kWritePageScanActivity =
+    testing::WritePageScanActivityPacket(kScanInterval, kScanWindow);
+const auto kWritePageScanActivityRsp = testing::WritePageScanActivityResponse();
 
 const StaticByteBuffer kWritePageScanType(
     LowerBits(hci_spec::kWritePageScanType),

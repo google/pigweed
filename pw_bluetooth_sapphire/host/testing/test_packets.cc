@@ -812,6 +812,24 @@ DynamicByteBuffer WriteLocalNameResponse(
   return CommandCompletePacket(hci_spec::kWriteLocalName, status_code);
 }
 
+DynamicByteBuffer WritePageScanActivityPacket(uint16_t scan_interval,
+                                              uint16_t scan_window) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kWritePageScanActivity),
+      UpperBits(hci_spec::kWritePageScanActivity),
+      0x04,                      // parameter_total_size (4 bytes)
+      LowerBits(scan_interval),  // Page_Scan_Interval
+      UpperBits(scan_interval),  // Page_Scan_Interval
+      LowerBits(scan_window),    // Page_Scan_Window
+      UpperBits(scan_window)     // Page_Scan_Window
+      ));
+}
+
+DynamicByteBuffer WritePageScanActivityResponse() {
+  return CommandCompletePacket(hci_spec::kWritePageScanActivity,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+}
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kWritePageTimeout),
