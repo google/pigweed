@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
 // LowEnergyAdvertiser has many potential subclasses (e.g.
 // LegacyLowEnergyAdvertiser, ExtendedLowEnergyAdvertiser,
@@ -243,6 +244,23 @@ class LowEnergyAdvertiserTest : public TestingBase {
                                                          adv_handle);
       return;
     }
+  }
+
+  void SetRandomAddress(DeviceAddress random_address) {
+    if (std::is_same_v<T, LegacyLowEnergyAdvertiser>) {
+      auto emboss_packet = EmbossCommandPacket::New<
+          pw::bluetooth::emboss::LESetRandomAddressCommandWriter>(
+          hci_spec::kLESetRandomAddress);
+      emboss_packet.view_t().random_address().CopyFrom(
+          random_address.value().view());
+
+      test_device()->SendCommand(emboss_packet.data().subspan());
+      RunUntilIdle();
+    }
+
+    // TODO(fxbug.dev/42161900): Support setting a random address
+    // for extended advertisers when proper checks are introduced in
+    // `FakeController::OnLESetExtendedAdvertisingEnable()`.
   }
 
   bool SupportsExtendedPdus() const {
@@ -573,6 +591,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
 
   // Restart advertising using a different local address
+  this->SetRandomAddress(kRandomAddress);
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        adv_data,
                                        scan_data,
@@ -764,6 +783,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartAndStop) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -790,6 +810,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -861,6 +882,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
   ad.SetTxPower(4);
   ad.SetAppearance(0x4567);
   EXPECT_TRUE(ad.SetLocalName("fuchsia"));
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -907,6 +929,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
+
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
                                        scan_data,
@@ -965,6 +989,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStarting) {
                                  /*extended_pdu=*/false,
                                  /*anonymous=*/false,
                                  /*include_tx_power_level=*/false);
+  this->SetRandomAddress(addr);
 
   this->advertiser()->StartAdvertising(
       addr, ad, scan_data, old_options, nullptr, [](auto) {});
@@ -994,6 +1019,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(addr);
 
   // Get to a started state.
   this->advertiser()->StartAdvertising(
@@ -1065,6 +1091,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingConditions) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -1106,6 +1133,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertiseUpdate) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -1240,6 +1268,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, NoAnonymous) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/true,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
@@ -1261,6 +1290,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLong) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   // Advertising data too large.
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -1286,6 +1316,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLongWithTxPower) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
+  this->SetRandomAddress(kRandomAddress);
 
   // Advertising data too large.
   this->advertiser()->StartAdvertising(kRandomAddress,
@@ -1309,6 +1340,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLong) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
+
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        valid_ad,
                                        invalid_scan_rsp,
@@ -1331,6 +1364,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
                              /*extended_pdu=*/false,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/true);
+  this->SetRandomAddress(kRandomAddress);
+
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        valid_ad,
                                        invalid_scan_rsp,
@@ -1362,6 +1397,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ExtendedPdusReturnsErrorWhenNotSupported) {
                              /*extended_pdu=*/true,
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
+  this->SetRandomAddress(kRandomAddress);
 
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        ad,
