@@ -14,4 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream.h"
 
-namespace bt::iso {}  // namespace bt::iso
+namespace bt::iso {
+
+void IsoStream::Close() {}
+
+}  // namespace bt::iso

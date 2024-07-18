@@ -30,6 +30,18 @@ constexpr size_t kMaxIsochronousDataPacketSize =
     pw::bluetooth::emboss::IsoDataFrameHeader::MaxSizeInBytes() +
     hci_spec::kMaxIsochronousDataPacketPayloadSize;
 
+// Possible outcomes from an AcceptCis call
+enum class AcceptCisStatus {
+  // We're now waiting for an incoming CIS request with the specified attributes
+  kSuccess,
+
+  // This connection is not operating as a peripheral
+  kNotPeripheral,
+
+  // A request is already pending for this CIG/CIS combination
+  kAlreadyExists,
+};
+
 // Our internal representation of the parameters returned from the
 // HCI_LE_CIS_Established event.
 struct CisEstablishedParameters {

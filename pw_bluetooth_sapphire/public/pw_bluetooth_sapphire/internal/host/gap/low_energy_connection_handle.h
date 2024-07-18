@@ -15,6 +15,7 @@
 #pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::gap {
@@ -27,15 +28,21 @@ class LowEnergyConnectionManager;
 
 class LowEnergyConnectionHandle final {
  public:
+  using AcceptCisCallback = fit::function<iso::AcceptCisStatus(
+      iso::CigCisIdentifier, iso::CisEstablishedCallback)>;
+
   // |release_cb| will be called when this handle releases its reference to the
-  // connection. |bondable_cb| returns the current bondable mode of the
-  // connection. It will only be called while the connection is active.
-  // |security_mode| returns the current security properties of the connection.
-  // It will only be called while the connection is active.
+  // connection. |accept_cis_cb| will be called to allow an incoming Isochronous
+  // stream to be established with the specified CIG/CIS identifier pair.
+  // |bondable_cb| returns the current bondable mode of the connection. It will
+  // only be called while the connection is active. |security_mode| returns the
+  // current security properties of the connection. It will only be called while
+  // the connection is active.
   LowEnergyConnectionHandle(
       PeerId peer_id,
       hci_spec::ConnectionHandle handle,
       fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
+      AcceptCisCallback accept_cis_cb,
       fit::function<sm::BondableMode()> bondable_cb,
       fit::function<sm::SecurityProperties()> security_cb,
       fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb);
@@ -53,6 +60,12 @@ class LowEnergyConnectionHandle final {
   void set_closed_callback(fit::closure callback) {
     closed_cb_ = std::move(callback);
   }
+
+  // Allow an incoming Isochronous stream for the specified CIG/CIS identifier
+  // pair. Upon receiving the request, invoke |cis_established_cb| with the
+  // status and if successful, connection parameters.
+  [[nodiscard]] iso::AcceptCisStatus AcceptCis(
+      iso::CigCisIdentifier id, iso::CisEstablishedCallback cis_established_cb);
 
   // Returns the operational bondable mode of the underlying connection. See
   // spec V5.1 Vol 3 Part C Section 9.4 for more details.
@@ -78,6 +91,7 @@ class LowEnergyConnectionHandle final {
   hci_spec::ConnectionHandle handle_;
   fit::closure closed_cb_;
   fit::callback<void(LowEnergyConnectionHandle*)> release_cb_;
+  AcceptCisCallback accept_cis_cb_;
   fit::function<sm::BondableMode()> bondable_cb_;
   fit::function<sm::SecurityProperties()> security_cb_;
   fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb_;

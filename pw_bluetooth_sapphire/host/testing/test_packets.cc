@@ -278,6 +278,16 @@ DynamicByteBuffer LECISRequestEventPacket(
   );
 }
 
+DynamicByteBuffer LEAcceptCISRequestCommandPacket(
+    hci_spec::ConnectionHandle cis_handle) {
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kLEAcceptCISRequest),
+                       UpperBits(hci_spec::kLEAcceptCISRequest),
+                       0x02,
+                       LowerBits(cis_handle),
+                       UpperBits(cis_handle)));
+}
+
 DynamicByteBuffer LERejectCISRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason) {

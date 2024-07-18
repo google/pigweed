@@ -87,6 +87,9 @@ DynamicByteBuffer LECISRequestEventPacket(
     uint8_t cig_id,
     uint8_t cis_id);
 
+DynamicByteBuffer LEAcceptCISRequestCommandPacket(
+    hci_spec::ConnectionHandle cis_handle);
+
 DynamicByteBuffer LERejectCISRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason);

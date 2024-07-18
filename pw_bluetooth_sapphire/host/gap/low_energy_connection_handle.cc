@@ -23,6 +23,7 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
     PeerId peer_id,
     hci_spec::ConnectionHandle handle,
     fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
+    AcceptCisCallback accept_cis_cb,
     fit::function<sm::BondableMode()> bondable_cb,
     fit::function<sm::SecurityProperties()> security_cb,
     fit::function<pw::bluetooth::emboss::ConnectionRole()> role_cb)
@@ -30,6 +31,7 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
       peer_id_(peer_id),
       handle_(handle),
       release_cb_(std::move(release_cb)),
+      accept_cis_cb_(std::move(accept_cis_cb)),
       bondable_cb_(std::move(bondable_cb)),
       security_cb_(std::move(security_cb)),
       role_cb_(std::move(role_cb)) {
@@ -58,6 +60,12 @@ void LowEnergyConnectionHandle::MarkClosed() {
     auto f = std::move(closed_cb_);
     f();
   }
+}
+
+iso::AcceptCisStatus LowEnergyConnectionHandle::AcceptCis(
+    iso::CigCisIdentifier id, iso::CisEstablishedCallback cis_established_cb) {
+  BT_ASSERT(active_);
+  return accept_cis_cb_(id, std::move(cis_established_cb));
 }
 
 sm::BondableMode LowEnergyConnectionHandle::bondable_mode() const {

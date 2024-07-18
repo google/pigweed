@@ -40,6 +40,27 @@ IsoStreamManager::~IsoStreamManager() {
   }
 }
 
+AcceptCisStatus IsoStreamManager::AcceptCis(CigCisIdentifier id,
+                                            CisEstablishedCallback cb) {
+  bt_log(INFO,
+         "iso",
+         "IsoStreamManager: preparing to accept incoming connection (CIG: %u, "
+         "CIS: %u)",
+         id.cig_id(),
+         id.cis_id());
+
+  if (accept_handlers_.count(id) != 0) {
+    return AcceptCisStatus::kAlreadyExists;
+  }
+
+  if (streams_.count(id) != 0) {
+    return AcceptCisStatus::kAlreadyExists;
+  }
+
+  accept_handlers_[id] = std::move(cb);
+  return AcceptCisStatus::kSuccess;
+}
+
 void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
 
@@ -50,6 +71,16 @@ void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
 
   hci_spec::ConnectionHandle request_handle =
       event_view.acl_connection_handle().Read();
+  uint8_t cig_id = event_view.cig_id().Read();
+  uint8_t cis_id = event_view.cis_id().Read();
+  CigCisIdentifier id(cig_id, cis_id);
+
+  bt_log(INFO,
+         "iso",
+         "CIS request received for handle 0x%x (CIG: %u, CIS: %u)",
+         request_handle,
+         cig_id,
+         cis_id);
 
   // Ignore any requests that are not intended for this connection.
   if (request_handle != acl_handle_) {
@@ -61,8 +92,61 @@ void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
     return;
   }
 
-  // For now, just reject all incoming requests.
-  RejectCisRequest(event_view);
+  // If we are not waiting on this request, reject it
+  if (accept_handlers_.count(id) == 0) {
+    bt_log(INFO, "iso", "Rejecting incoming request");
+    RejectCisRequest(event_view);
+    return;
+  }
+
+  bt_log(INFO, "iso", "Accepting incoming request");
+
+  // We should not already have an established stream using this same CIG/CIS
+  // permutation.
+  BT_ASSERT_MSG(
+      streams_.count(id) == 0, "(cig = %u, cis = %u)", cig_id, cis_id);
+  CisEstablishedCallback cb = std::move(accept_handlers_[id]);
+  accept_handlers_.erase(id);
+  AcceptCisRequest(event_view, std::move(cb));
+}
+
+void IsoStreamManager::AcceptCisRequest(
+    const pw::bluetooth::emboss::LECISRequestSubeventView& event_view,
+    CisEstablishedCallback cb) {
+  uint8_t cig_id = event_view.cig_id().Read();
+  uint8_t cis_id = event_view.cis_id().Read();
+  CigCisIdentifier id(cig_id, cis_id);
+
+  hci_spec::ConnectionHandle cis_handle =
+      event_view.cis_connection_handle().Read();
+
+  BT_ASSERT(streams_.count(id) == 0);
+  streams_[id] =
+      std::make_unique<IsoStream>(cig_id, cis_id, cis_handle, std::move(cb));
+
+  auto command = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(
+      hci_spec::kLEAcceptCISRequest);
+  auto cmd_view = command.view_t();
+  cmd_view.connection_handle().Write(cis_handle);
+
+  auto self = GetWeakPtr();
+  auto cmd_complete_cb = [cis_handle, id, self](auto cmd_id,
+                                                const hci::EventPacket& event) {
+    bt_log(INFO, "iso", "LE_Accept_CIS_Request command response received");
+    if (hci_is_error(event,
+                     WARN,
+                     "bt-iso",
+                     "accept CIS request failed for handle %#x",
+                     cis_handle)) {
+      if (self.is_alive()) {
+        BT_ASSERT(self->streams_.count(id) > 0);
+        self->streams_.erase(id);
+      }
+    }
+  };
+
+  cmd_->SendCommand(std::move(command), cmd_complete_cb);
 }
 
 void IsoStreamManager::RejectCisRequest(
@@ -79,6 +163,7 @@ void IsoStreamManager::RejectCisRequest(
 
   cmd_->SendCommand(std::move(command),
                     [cis_handle](auto id, const hci::EventPacket& event) {
+                      bt_log(INFO, "iso", "LE_Reject_CIS_Request command sent");
                       hci_is_error(event,
                                    ERROR,
                                    "bt-iso",

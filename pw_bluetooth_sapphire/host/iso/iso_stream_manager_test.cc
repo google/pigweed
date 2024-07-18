@@ -27,6 +27,7 @@ constexpr hci_spec::ConnectionHandle kCisHandleId = 0xe09;
 
 constexpr hci_spec::CigIdentifier kCigId = 0x11;
 constexpr hci_spec::CisIdentifier kCisId = 0x18;
+const bt::iso::CigCisIdentifier kCigCisId(kCigId, kCisId);
 
 using MockControllerTestBase =
     bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
@@ -35,11 +36,31 @@ class IsoStreamManagerTest : public MockControllerTestBase {
  public:
   IsoStreamManagerTest() = default;
   ~IsoStreamManagerTest() override = default;
+  IsoStreamManager* iso_stream_manager() { return iso_stream_manager_.get(); }
 
   void SetUp() override {
     MockControllerTestBase::SetUp();
     iso_stream_manager_ = std::make_unique<IsoStreamManager>(
         kAclConnectionHandleId1, cmd_channel()->AsWeakPtr());
+  }
+
+  AcceptCisStatus CallAcceptCis(CigCisIdentifier id,
+                                bool* cb_invoked = nullptr) {
+    AcceptCisStatus status;
+    if (cb_invoked) {
+      *cb_invoked = false;
+    }
+    status = iso_stream_manager_->AcceptCis(
+        id,
+        [cb_invoked](
+            pw::bluetooth::emboss::StatusCode status,
+            std::optional<WeakSelf<IsoStream>::WeakPtr> iso_weak_ptr,
+            const std::optional<CisEstablishedParameters>& cis_parameters) {
+          if (cb_invoked) {
+            *cb_invoked = true;
+          }
+        });
+    return status;
   }
 
  private:
@@ -54,7 +75,8 @@ TEST_F(IsoStreamManagerTest, IgnoreIncomingWrongConnection) {
   test_device()->SendCommandChannelPacket(request_packet);
 }
 
-// Verify that we reject a CIS request whose ACL connection handle matches ours.
+// Verify that we reject a CIS request whose ACL connection handle matches ours,
+// but that we are not waiting for.
 TEST_F(IsoStreamManagerTest, RejectIncomingConnection) {
   const auto le_reject_cis_packet = testing::LERejectCISRequestCommandPacket(
       kCisHandleId, pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
@@ -63,6 +85,43 @@ TEST_F(IsoStreamManagerTest, RejectIncomingConnection) {
   DynamicByteBuffer request_packet = testing::LECISRequestEventPacket(
       kAclConnectionHandleId1, kCisHandleId, kCigId, kCisId);
   test_device()->SendCommandChannelPacket(request_packet);
+}
+
+// We should be able to wait on multiple CIS requests simultaneously, as long as
+// they do not have the identical CIG/CIS values.
+TEST_F(IsoStreamManagerTest, MultipleCISAcceptRequests) {
+  const CigCisIdentifier kId1(0x14, 0x04);
+  const CigCisIdentifier kId2(0x14, 0x05);
+
+  // We should not be waiting on these connections
+  ASSERT_FALSE(iso_stream_manager()->HandlerRegistered(kId1));
+  ASSERT_FALSE(iso_stream_manager()->HandlerRegistered(kId2));
+
+  // Start waiting
+  EXPECT_EQ(CallAcceptCis(kId1), AcceptCisStatus::kSuccess);
+  ASSERT_TRUE(iso_stream_manager()->HandlerRegistered(kId1));
+  EXPECT_EQ(CallAcceptCis(kId2), AcceptCisStatus::kSuccess);
+  ASSERT_TRUE(iso_stream_manager()->HandlerRegistered(kId2));
+
+  // When a duplicate request comes in, we should decline it but continue to
+  // wait
+  EXPECT_EQ(CallAcceptCis(kId1), AcceptCisStatus::kAlreadyExists);
+  ASSERT_TRUE(iso_stream_manager()->HandlerRegistered(kId1));
+
+  // When a matching request arrives, we should accept it and stop waiting on it
+  const auto le_accept_cis_packet =
+      testing::LEAcceptCISRequestCommandPacket(kCisHandleId);
+  EXPECT_CMD_PACKET_OUT(test_device(), le_accept_cis_packet);
+  DynamicByteBuffer request_packet = testing::LECISRequestEventPacket(
+      kAclConnectionHandleId1, kCisHandleId, kId1.cig_id(), kId1.cis_id());
+  test_device()->SendCommandChannelPacket(request_packet);
+  RunUntilIdle();
+  ASSERT_FALSE(iso_stream_manager()->HandlerRegistered(kId1));
+
+  // Because we've already accepted the request, we should disallow any requests
+  // that have the same CIG/CIS as an existing stream
+  EXPECT_EQ(CallAcceptCis(kId1), AcceptCisStatus::kAlreadyExists);
+  ASSERT_FALSE(iso_stream_manager()->HandlerRegistered(kId1));
 }
 
 }  // namespace bt::iso

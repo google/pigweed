@@ -35,6 +35,8 @@ class IsoStream final {
         cis_established_cb_(std::move(cb)),
         weak_self_(this) {}
 
+  void Close();
+
   using WeakPtr = WeakSelf<IsoStream>::WeakPtr;
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 

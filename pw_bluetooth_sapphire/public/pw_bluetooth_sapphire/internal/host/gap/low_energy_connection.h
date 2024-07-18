@@ -103,6 +103,13 @@ class LowEnergyConnection final : public sm::Delegate {
   // parameters if all initialization procedures have completed.
   void OnInterrogationComplete();
 
+  // Accept a future incoming request to establish an Isochronous stream on this
+  // LE connection. |id| specifies the CIG/CIS pair that identify the stream.
+  // |cb| will be called after the request is received to indicate success of
+  // establishing a stream, and the associated parameters.
+  iso::AcceptCisStatus AcceptCis(iso::CigCisIdentifier id,
+                                 iso::CisEstablishedCallback cb);
+
   // Attach connection as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
