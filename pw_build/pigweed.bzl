@@ -236,6 +236,7 @@ def _pw_cc_blob_library_impl(ctx):
         progress_message = "Generating cc blob library for %s" % (ctx.label.name),
         tools = [
             ctx.executable._generate_cc_blob_library,
+            ctx.executable._python_runtime,
         ],
         outputs = [hdr, src],
         executable = ctx.executable._generate_cc_blob_library,
@@ -305,10 +306,16 @@ pw_cc_blob_library = rule(
             executable = True,
             cfg = "exec",
         ),
+        "_python_runtime": attr.label(
+            default = Label("//:python3_interpreter"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
     },
     provides = [CcInfo],
     fragments = ["cpp"],
-    toolchains = ["@rules_python//python:toolchain_type"] + use_cpp_toolchain(),
+    toolchains = use_cpp_toolchain(),
 )
 
 def _pw_cc_binary_with_map_impl(ctx):
