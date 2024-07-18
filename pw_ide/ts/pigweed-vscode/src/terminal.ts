@@ -186,6 +186,10 @@ export async function patchBazeliskIntoTerminalPath(): Promise<void> {
       cmd = `export PATH="${dirname(bazeliskPath)}:$\{PATH}"`;
       break;
     }
+    case 'fish': {
+      cmd = `set -x --prepend PATH "${dirname(bazeliskPath)}"`;
+      break;
+    }
     default: {
       const message = shellType
         ? `This shell is not currently supported: ${shellType}`
