@@ -13,11 +13,12 @@
 # the License.
 
 load("@rules_platform//platform_data:defs.bzl", "platform_data")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
-py_binary(
+pw_py_binary(
     name = "flash",
     srcs = [
         "rp2040_utils/flasher.py",
@@ -62,7 +63,7 @@ py_library(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "rpc_unit_test_runner",
     srcs = [
         "rp2040_utils/rpc_unit_test_runner.py",
@@ -74,7 +75,7 @@ py_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "unit_test_server",
     srcs = [
         "rp2040_utils/unit_test_server.py",
@@ -91,7 +92,7 @@ py_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "_unit_test_client",
     srcs = [
         "rp2040_utils/unit_test_client.py",

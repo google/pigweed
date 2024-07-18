@@ -13,11 +13,11 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pigweed.bzl", "pw_cc_binary")
-load("//pw_build:python.bzl", "pw_py_test")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 pw_cc_binary(
     name = "server",
@@ -36,7 +36,7 @@ pw_cc_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "proxy",
     srcs = ["proxy.py"],
     deps = [
@@ -295,7 +295,7 @@ java_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "python_client",
     srcs = ["python_client.py"],
     deps = [

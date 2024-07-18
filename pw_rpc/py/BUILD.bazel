@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,7 +44,7 @@ filegroup(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "plugin_raw",
     srcs = [":pw_rpc_common_sources"],
     imports = ["."],
@@ -58,7 +58,7 @@ py_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "plugin_nanopb",
     srcs = [":pw_rpc_common_sources"],
     imports = ["."],
@@ -72,7 +72,7 @@ py_binary(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "plugin_pwpb",
     srcs = [":pw_rpc_common_sources"],
     imports = ["."],

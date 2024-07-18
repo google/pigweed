@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
+load("//pw_build:python.bzl", "pw_py_binary")
 load(
     "//pw_build_info:substitute_workspace_status.bzl",
     "pw_substitute_workspace_status",
@@ -113,7 +114,7 @@ pw_cc_test(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "substitute_workspace_status_tool",
     srcs = ["substitute_workspace_status_tool.py"],
 )

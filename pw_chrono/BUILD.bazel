@@ -18,6 +18,7 @@ load(
     "pw_cc_test",
     "pw_facade",
 )
+load("//pw_build:python.bzl", "pw_py_binary")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -159,7 +160,7 @@ pw_cc_test(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "generate_build_time_header",
     srcs = ["generate_build_time_header.py"],
 )
