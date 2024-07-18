@@ -14,7 +14,7 @@
 """Pigweed python build environment for bazel."""
 
 load("@rules_python//python:defs.bzl", "py_test")
-load("//pw_build:selects.bzl", "TARGET_COMPATIBLE_WITH_HOST_SELECT")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 def pw_py_test(**kwargs):
     """Wrapper for py_test providing some defaults.
@@ -22,7 +22,7 @@ def pw_py_test(**kwargs):
     Specifically, this wrapper,
 
     * Defaults to setting `target_compatible_with` to
-      `select(TARGET_COMPATIBLE_WITH_HOST_SELECT)`
+      `incompatible_with_mcu()`.
 
     Args:
       **kwargs: Passed to py_test.
@@ -31,6 +31,6 @@ def pw_py_test(**kwargs):
     # Python tests are always host only, but allow a user to override
     # the default value.
     if kwargs.get("target_compatible_with") == None:
-        kwargs["target_compatible_with"] = select(TARGET_COMPATIBLE_WITH_HOST_SELECT)
+        kwargs["target_compatible_with"] = incompatible_with_mcu()
 
     py_test(**kwargs)
