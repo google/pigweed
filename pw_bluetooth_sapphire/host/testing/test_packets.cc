@@ -800,6 +800,11 @@ DynamicByteBuffer WriteInquiryScanActivityResponse() {
                                pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
+DynamicByteBuffer WriteLocalNameResponse(
+    pw::bluetooth::emboss::StatusCode status_code) {
+  return CommandCompletePacket(hci_spec::kWriteLocalName, status_code);
+}
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kWritePageTimeout),
