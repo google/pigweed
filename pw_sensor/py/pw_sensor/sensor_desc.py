@@ -123,6 +123,7 @@ def main() -> None:
         "attributes": {},
         "channels": {},
         "triggers": {},
+        "units": {},
         "sensors": {},
     }
     for descriptor_file in args.descriptor_paths:
@@ -140,16 +141,24 @@ def main() -> None:
             superset["sensors"][sensor_id] = values
         # Add channels
         for chan_id, chan_spec in content["channels"].items():
-            assert superset["channels"].get(chan_id) is None
+            conflict = superset["channels"].get(chan_id)
+            assert conflict is None or conflict == chan_spec
             superset["channels"][chan_id] = chan_spec
         # Add attributes
         for attr_id, attr_spec in content["attributes"].items():
-            assert superset["attributes"].get(attr_id) is None
+            conflict = superset["attributes"].get(attr_id)
+            assert conflict is None or conflict == attr_spec
             superset["attributes"][attr_id] = attr_spec
         # Add triggers
         for trig_id, trig_spec in content["triggers"].items():
-            assert superset["triggers"].get(trig_id) is None
+            conflict = superset["triggers"].get(trig_id)
+            assert conflict is None or conflict == trig_spec
             superset["triggers"][trig_id] = trig_spec
+        # Add units
+        for units_id, units_spec in content["units"].items():
+            conflict = superset["units"].get(units_id)
+            assert conflict is None or conflict == units_spec
+            superset["units"][units_id] = units_spec
 
     _LOG.debug("Final descriptor:\n%s", yaml.safe_dump(superset, indent=2))
     _LOG.info("Validating...")
@@ -178,6 +187,7 @@ def main() -> None:
 
         if out:
             if args.output_file:
+                args.output_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(args.output_file, mode="w", encoding="utf-8") as o:
                     o.write(out.decode("utf-8"))
             else:
@@ -186,6 +196,8 @@ def main() -> None:
             _LOG.error(err.decode("utf-8"))
         if process.returncode != 0:
             sys.exit(-1)
+    else:
+        print(content_string)
 
 
 if __name__ == '__main__':

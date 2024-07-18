@@ -14,7 +14,7 @@
 """Sensor schema validation tooling."""
 
 from collections.abc import Sequence
-import importlib
+import importlib.resources
 import logging
 from pathlib import Path
 
@@ -79,15 +79,15 @@ class Validator:
             org: "Bosch"
             part: "BMA4xx
           channels:
-            acceleration: {}
-            die_temperature: {}
+            acceleration: []
+            die_temperature: []
 
         Args:
           metadata: Structured sensor data, this will NOT be modified
 
         Returns:
-          A set of channels and a single sensor which match the schema in
-          resolved_schema.json.
+          A set of attributes, channels, triggers, and units along with a single
+          sensor which match the schema in resolved_schema.json.
 
         Raises:
           RuntimeError: An error in the schema validation or a missing
@@ -98,9 +98,12 @@ class Validator:
             "attributes": {},
             "channels": {},
             "triggers": {},
+            "units": {},
             "sensors": {},
         }
         metadata = metadata.copy()
+
+        # Validate the incoming schema
         try:
             jsonschema.validate(instance=metadata, schema=_METADATA_SCHEMA)
         except jsonschema.exceptions.ValidationError as e:
@@ -109,11 +112,13 @@ class Validator:
                 f"{yaml.safe_dump(metadata, indent=2)}"
             ) from e
 
-        # Resolve all the dependencies, after this, 'resolved' will have a
-        # list of channel and attribute specifiers
+        # Resolve all the dependencies, after this, 'result' will have all the
+        # missing properties for which defaults can be provided
         self._resolve_dependencies(metadata=metadata, out=result)
 
-        self._logger.debug(yaml.safe_dump(result, indent=2))
+        self._logger.debug(
+            "Resolved dependencies:\n%s", yaml.safe_dump(result, indent=2)
+        )
 
         # Resolve all channel entries
         self._resolve_channels(metadata=metadata, out=result)
@@ -133,8 +138,10 @@ class Validator:
             "channels": channels,
             "attributes": attributes,
             "triggers": triggers,
+            "description": metadata.get("description", ""),
         }
 
+        # Validate the final output before returning
         try:
             jsonschema.validate(instance=result, schema=_RESOLVED_SCHEMA)
         except jsonschema.exceptions.ValidationError as e:
@@ -166,12 +173,17 @@ class Validator:
         deps: None | list[str] = metadata.get("deps")
         if not deps:
             self._logger.debug("No dependencies found, skipping imports")
-            out["channels"] = {}
-            out["attributes"] = {}
-            out["triggers"] = {}
             return
 
+        merged_deps: dict = {
+            "attributes": {},
+            "channels": {},
+            "triggers": {},
+            "units": {},
+        }
         for dep in deps:
+            # Load each of the dependencies, then merge them. This avoids any
+            # include dependency order issues.
             dep_file = self._get_dependency_file(dep)
             with open(dep_file, mode="r", encoding="utf-8") as dep_yaml_file:
                 dep_yaml = yaml.safe_load(dep_yaml_file)
@@ -184,7 +196,33 @@ class Validator:
                         "ERROR: Malformed dependency YAML: "
                         f"{yaml.safe_dump(dep_yaml, indent=2)}"
                     ) from e
-                self._backfill_declarations(declarations=dep_yaml, out=out)
+                # Merge all the loaded values into 'merged_deps'
+                for category in merged_deps:
+                    self._merge_deps(
+                        category=category,
+                        dep_yaml=dep_yaml,
+                        merged_deps=merged_deps,
+                    )
+        # Backfill any default values from the merged dependencies and put them
+        # into 'out'
+        self._backfill_declarations(declarations=merged_deps, out=out)
+
+    @staticmethod
+    def _merge_deps(category: str, dep_yaml: dict, merged_deps: dict) -> None:
+        """
+        Pull all properties from dep_yaml[category] and put them into
+        merged_deps after validating that no key duplicates exist.
+
+        Args:
+          category: The index of dep_yaml and merged_deps to merge
+          dep_yaml: The newly loaded dependency YAML
+          merged_deps: The accumulated dependency map
+        """
+        for key, value in dep_yaml.get(category, {}).items():
+            assert (
+                key not in merged_deps[category]
+            ), f"'{key}' was already found under '{category}'"
+            merged_deps[category][key] = value
 
     def _backfill_declarations(self, declarations: dict, out: dict) -> None:
         """
@@ -193,10 +231,37 @@ class Validator:
         Args:
           declarations: The top level declarations dictionary loaded from the
             dependency file.
+          out: The already resolved map of all defined dependencies
         """
+        self._backfill_units(declarations=declarations, out=out)
         self._backfill_channels(declarations=declarations, out=out)
         self._backfill_attributes(declarations=declarations, out=out)
         self._backfill_triggers(declarations=declarations, out=out)
+
+    @staticmethod
+    def _backfill_units(declarations: dict, out: dict) -> None:
+        """
+        Move units from 'declarations' to 'out' while also filling in any
+        default values.
+
+        Args:
+          declarations: The original YAML declaring units.
+          out: Output dictionary where we'll add the key "units" wit the result.
+        """
+        if out.get("units") is None:
+            out["units"] = {}
+        resolved_units: dict = out["units"]
+        if not declarations.get("units"):
+            return
+
+        for units_id, unit in declarations["units"].items():
+            # Copy unit to resolved_units and fill any default values
+            assert resolved_units.get(units_id) is None
+            resolved_units[units_id] = unit
+            if not unit.get("name"):
+                unit["name"] = unit["symbol"]
+            if unit.get("description") is None:
+                unit["description"] = ""
 
     @staticmethod
     def _backfill_attributes(declarations: dict, out: dict) -> None:
@@ -216,14 +281,13 @@ class Validator:
             return
 
         for attr_id, attribute in declarations["attributes"].items():
+            # Copy attribute to resolved_attributes and fill any default values
             assert resolved_attributes.get(attr_id) is None
             resolved_attributes[attr_id] = attribute
             if not attribute.get("name"):
                 attribute["name"] = attr_id
             if not attribute.get("description"):
                 attribute["description"] = ""
-            if not attribute["units"].get("name"):
-                attribute["units"]["name"] = attribute["units"]["symbol"]
 
     @staticmethod
     def _backfill_channels(declarations: dict, out: dict) -> None:
@@ -243,25 +307,17 @@ class Validator:
             return
 
         for chan_id, channel in declarations["channels"].items():
+            # Copy channel to resolved_channels and fill any default values
             assert resolved_channels.get(chan_id) is None
             resolved_channels[chan_id] = channel
             if not channel.get("name"):
                 channel["name"] = chan_id
             if not channel.get("description"):
                 channel["description"] = ""
-            units = channel["units"]
-            if not units.get("name"):
-                units["name"] = units["symbol"]
-            # Resolve sub-channels
-            for sub, sub_channel in channel.get("sub-channels", {}).items():
-                subchan_id = f"{chan_id}_{sub}"
-                if sub_channel.get("name") is None:
-                    sub_channel["name"] = subchan_id
-                if sub_channel.get("description") is None:
-                    sub_channel["description"] = channel.get("description")
-                sub_channel["units"] = channel["units"]
-                resolved_channels[subchan_id] = sub_channel
-            channel.pop("sub-channels", None)
+            assert channel["units"] in out["units"], (
+                f"'{channel['units']}' not found in\n"
+                + f"{yaml.safe_dump(out.get('units', {}), indent=2)}"
+            )
 
     @staticmethod
     def _backfill_triggers(declarations: dict, out: dict) -> None:
@@ -281,6 +337,7 @@ class Validator:
             return
 
         for trigger_id, trigger in declarations["triggers"].items():
+            # Copy trigger to resolved_triggers and fill any default values
             assert resolved_triggers.get(trigger_id) is None
             resolved_triggers[trigger_id] = trigger
             if not trigger.get("name"):
@@ -308,28 +365,17 @@ class Validator:
           RuntimeError: An error in the schema validation or a missing
             definition.
         """
-        attributes: dict | None = metadata.get("attributes")
+        attributes: list | None = metadata.get("attributes")
         if not attributes:
-            metadata["attributes"] = {}
+            metadata["attributes"] = []
             self._logger.debug("No attributes found, skipping")
             return
 
-        for attribute_name, attribute_value in attributes.items():
-            # Check if the attribute_name exists in 'out/attributes', we can
-            # assume 'out/attributes' exists because _resolve_dependencies() is
-            # required to have been called first.
-            attribute = self._check_scalar_name(
-                name=attribute_name,
-                haystack=out["attributes"],
-                overrides=attribute_value,
-            )
-            # The content of 'attribute' came from the 'out/attributes' list
-            # which was already validated and every field added if missing. At
-            # this point it's safe to access the attribute's name, description,
-            # and units.
-            attribute_value["name"] = attribute["name"]
-            attribute_value["description"] = attribute["description"]
-            attribute_value["units"] = attribute["units"]
+        attribute: dict
+        for attribute in attributes:
+            assert attribute["attribute"] in out["attributes"]
+            assert attribute["channel"] in out["channels"]
+            assert attribute["units"] in out["units"]
 
     def _resolve_channels(self, metadata: dict, out: dict) -> None:
         """
@@ -357,30 +403,30 @@ class Validator:
             metadata["channels"] = {}
             return
 
-        for channel_name, channel_values in channels.items():
-            # Check if the channel_name exists in 'out/channels', we can assume
-            # 'out/channels' exists because _resolve_dependencies() is required
-            # to have been called first.
-            channel = self._check_scalar_name(
-                name=channel_name,
-                haystack=out["channels"],
-                overrides=channel_values,
-            )
+        channel_name: str
+        indices: list[dict]
+        for channel_name, indices in channels.items():
+            # channel_name must have been resolved by now.
+            if out["channels"].get(channel_name) is None:
+                raise RuntimeError(
+                    f"Failed to find a definition for '{channel_name}', did you"
+                    " forget a dependency?"
+                )
+            channel = out["channels"][channel_name]
             # The content of 'channel' came from the 'out/channels' dict which
             # was already validated and every field added if missing. At this
             # point it's safe to access the channel's name, description, and
             # units.
-            channel_values["name"] = channel["name"]
-            channel_values["description"] = channel["description"]
-            channel_values["units"] = channel["units"]
 
-            if not channel_values.get("indicies"):
-                channel_values["indicies"] = [{}]
-            for index in channel_values["indicies"]:
+            if not indices:
+                indices.append({})
+
+            index: dict
+            for index in indices:
                 if not index.get("name"):
-                    index["name"] = channel_values["name"]
+                    index["name"] = channel["name"]
                 if not index.get("description"):
-                    index["description"] = channel_values["description"]
+                    index["description"] = channel["description"]
 
     def _resolve_triggers(self, metadata: dict, out: dict) -> None:
         """
@@ -402,26 +448,14 @@ class Validator:
           RuntimeError: An error in the schema validation or a missing
             definition.
         """
-        triggers: dict | None = metadata.get("triggers")
+        triggers: list | None = metadata.get("triggers")
         if not triggers:
-            metadata["triggers"] = {}
+            metadata["triggers"] = []
             self._logger.debug("No triggers found, skipping")
             return
 
-        for trigger_name, trigger_value in triggers.items():
-            # Check if the trigger_name exists in 'out/triggers', we can
-            # assume 'out/triggers' exists because _resolve_dependencies() is
-            # required to have been called first.
-            trigger = self._check_scalar_name(
-                name=trigger_name,
-                haystack=out["triggers"],
-                overrides=trigger_value,
-            )
-            # The content of 'trigger' came from the 'out/triggers' dict
-            # which was already validated and every field added if missing. At
-            # this point it's safe to access the trigger's name and description.
-            trigger_value["name"] = trigger["name"]
-            trigger_value["description"] = trigger["description"]
+        for trigger_name in triggers:
+            assert trigger_name in out["triggers"]
 
     def _get_dependency_file(self, dep: str) -> Path:
         """
@@ -448,57 +482,3 @@ class Validator:
             error_string += f"\n- {path}"
 
         raise FileNotFoundError(error_string)
-
-    @staticmethod
-    def _check_scalar_name(name: str, haystack: dict, overrides: dict) -> dict:
-        """
-        Given a name and the resolved list of dependencies, try to find
-        the full definition of a scalar (channel or attribute) with the name,
-        description, and units OR trigger with just a name/description.
-
-        We rely on the schema to ensure that channels and attributes have units
-        so if we can't find units, then we must be looking for a trigger.
-
-        Args:
-          name: The name of the channel/attribute/trigger to search for in the
-            dependencies
-          haystack: The dictionary of resolved properties which define the
-            available channels/attributes/triggers
-
-        Returns:
-          A dictionary with the following structure:
-            name: string
-            description: string
-            (optional)
-            units:
-              name: string
-              symbol: string
-
-        Raises:
-          RuntimeError: If the 'name' isn't in the dependency list
-        """
-        # Check if we can find 'name' in the 'haystack' dictionary
-        if not haystack.get(name):
-            raise RuntimeError(
-                f"Failed to find a definition for '{name}', did you forget a "
-                "dependency?"
-            )
-
-        item = haystack[name]
-        name = overrides.get("name", item.get("name", name))
-        description = overrides.get("description", item.get("description", ""))
-        if item.get("units") is None:
-            return {
-                "name": name,
-                "description": description,
-            }
-
-        units = {
-            "name": item["units"].get("name", item["units"]["symbol"]),
-            "symbol": item["units"]["symbol"],
-        }
-        return {
-            "name": name,
-            "description": description,
-            "units": units,
-        }

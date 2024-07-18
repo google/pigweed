@@ -16,24 +16,9 @@ attributes:
   sample_rate:
     name: "sample rate"
     description: "the frequency at which samples are collected"
-    units:
-      name: "frequency"
-      symbol: "Hz"
-  acceleration_range:
-    name: "acceleration range"
-    description: "measurable range of acceleration values"
-    units:
-      name: "acceleration"
-      symbol: "m/s^2"
-  rotational_velocity_range:
-    name: "rotational velocity range"
-    description: "measurable range of rotational velocity values"
-    units:
-      name: "rotational velocity"
-      symbol: "rad/s"
-  magnetic_field_range:
-    name: "magnetic field range"
-    description: "measurable range of magnetic field values"
-    units:
-      name: "magnetic field"
-      symbol: "Gs"
+  range:
+    name: "range"
+    description: "range of some measurement type"
+  batch_duration:
+    name: "batch duration"
+    description: "Duration (in cycles) for hardware batching"

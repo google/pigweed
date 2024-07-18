@@ -12,24 +12,28 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-channels:
+units:
+  frequency:
+    name: "frequency"
+    description: "rate of occurrence"
+    symbol: "Hz"
   acceleration:
     name: "acceleration"
-    description: ""
-    units: "acceleration"
+    description: "rate of velocity change"
+    symbol: "m/s^2"
   rotational_velocity:
     name: "rotational velocity"
-    description: "rotational velocity"
-    units: "rotational_velocity"
+    description: "rate at which an object is spinning"
+    symbol: "rad/s"
   magnetic_field:
     name: "magnetic field"
-    description: "magnetic field"
-    units: "magnetic_field"
-  die_temperature:
-    name: "die temperature"
-    description: "internal temperature of the IC"
-    units: "temperature"
-  ambient_temperature:
-    name: "ambient temperature"
-    description: "measured temperature of the environment"
-    units: "temperature"
+    description: ""
+    symbol: "Gs"
+  time_cycles:
+    name: "time cycles"
+    description: "time duration measured by clock cycles"
+    symbol: "cycles"
+  temperature:
+    name: "temperature"
+    description: "measurement of thermal energy"
+    symbol: "C"

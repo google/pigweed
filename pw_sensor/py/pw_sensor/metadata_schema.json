@@ -30,91 +30,72 @@
         "part"
       ]
     },
+    "description": {
+      "type": "string",
+      "description": "A description of the sensor"
+    },
     "attributes": {
-      "type": "object",
-      "description": "A set of attributes supported by this sensor",
-      "patternProperties": {
-        "^[a-zA-Z_]\\w*$": {
-          "type": "object",
-          "description": "A supported channel",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "A name override for the channel"
-            },
-            "description": {
-              "type": "string",
-              "description": "A description override for the channel"
-            }
+      "type": "array",
+      "description": "A set of attribute/channel pairs supported by this sensor",
+      "items": {
+        "type": "object",
+        "description": "Pair of supported attribute and channel",
+        "properties": {
+          "attribute": {
+            "type": "string",
+            "description": "Name of the attribute"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Name of the channel"
+          },
+          "units": {
+            "type": "string",
+            "description": "Name of the units"
           }
-        }
-      },
-      "additionalProperties": false,
-      "minProperties": 1
+        },
+        "additionalProperties": false,
+        "required": [
+          "attribute",
+          "channel",
+          "units"
+        ]
+      }
     },
     "channels": {
       "type": "object",
       "description": "A set of channels supported by this sensor",
       "patternProperties": {
         "^[a-zA-Z_]\\w*$": {
-          "type": "object",
-          "description": "A supported channel",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "A name override for the channel"
-            },
-            "description": {
-              "type": "string",
-              "description": "A description override for the channel"
-            },
-            "indicies": {
-              "type": "array",
-              "description": "A list specifying each instance of this channel, if not specified then it is assumed to be 1 with the same properties as the parent channel",
-              "items": {
-                "type": "object",
-                "description": "A single instance of a sensor channel",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "A name override for the channel instance"
-                  },
-                  "description": {
-                    "type": "string",
-                    "description": "A description override for the channel instance"
-                  }
-                },
-                "additionalProperties": false
+          "type": "array",
+          "description": "A list specifying each instance of this channel, if not specified then it is assumed to be 1 with the same properties as the parent channel",
+          "items": {
+            "type": "object",
+            "description": "A single instance of a sensor channel",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "A name override for the channel instance"
+              },
+              "description": {
+                "type": "string",
+                "description": "A description override for the channel instance"
               }
-            }
-          },
-          "additionalProperties": false
+            },
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false,
       "minProperties": 1
     },
     "triggers": {
-      "type": "object",
+      "type": "array",
       "description": "A mapping of triggers to their definitions",
-      "patternProperties": {
-        "^[a-zA-Z_]\\w*$": {
-          "type": "object",
-          "description": "A trigger definition",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The name of the trigger"
-            },
-            "description": {
-              "type": "string",
-              "description": "The description of the trigger"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
+      "items": {
+        "type": "string",
+        "description": "Trigger name"
+      }
     }
   },
   "additionalProperties": false,

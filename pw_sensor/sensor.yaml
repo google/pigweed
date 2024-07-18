@@ -16,6 +16,7 @@ deps:
   - "pw_sensor/attributes.yaml"
   - "pw_sensor/channels.yaml"
   - "pw_sensor/triggers.yaml"
+  - "pw_sensor/units.yaml"
 compatible:
   org: "Google"
   part: "pigweed"

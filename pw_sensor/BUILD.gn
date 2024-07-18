@@ -15,10 +15,47 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_sensor/sensor.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("pw_sensor_types") {
+  public = [ "public/pw_sensor/types.h" ]
+  public_configs = [ ":default_config" ]
+}
+
+pw_sensor_library("test_constants_lib") {
+  out_header = "pw_sensor/generated/sensor_constants.h"
+  sources = [ "sensor.yaml" ]
+  inputs = [
+    "attributes.yaml",
+    "channels.yaml",
+    "triggers.yaml",
+    "units.yaml",
+  ]
+  generator_includes = [ getenv("PW_ROOT") ]
+  public_deps = [
+    ":pw_sensor_types",
+    "$dir_pw_containers:flat_map",
+    "$dir_pw_tokenizer:pw_tokenizer",
+  ]
+}
+
+pw_test("constants_test") {
+  deps = [ ":test_constants_lib" ]
+  sources = [
+    "attributes_test.cc",
+    "channels_test.cc",
+    "triggers_test.cc",
+    "units_test.cc",
+  ]
+}
+
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":constants_test" ]
 }
 
 pw_doc_group("docs") {

@@ -1,0 +1,112 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/cc_library.gni")
+import("$dir_pw_build/python_action.gni")
+
+# Generates a sensor library
+#
+# Args:
+#   out_header: The path/to/header.h to generate
+#   sources: YAML files defining sensors
+#   inputs: [optional] YAML files included by the sensors, these will be
+#     used to optimize re-building.
+#   generator: [optional] Python generator script, if not set, the default
+#     Pigweed generator will be used.
+#   generator_args: [optional] Command line arguments to pass to the generator.
+#   generator_includes: [optional] Include paths to pass to the generator. These
+#     are used to resolve the sensor dependencies.
+#   public_deps: [optional] Public dependencies to pass to the final generated
+#     target.
+template("pw_sensor_library") {
+  current_dir = rebase_path(get_path_info(".", "abspath"))
+
+  # Get the output header path
+  assert(defined(invoker.out_header) && invoker.out_header != "",
+         "pw_sensor_library requires an out_header name")
+  out_header = "$target_gen_dir/${invoker.out_header}"
+
+  # Get the source yaml files
+  assert(defined(invoker.sources) && invoker.sources != [],
+         "pw_sensor_library requires .yaml source files")
+  source_files = []
+  foreach(src, invoker.sources) {
+    source_files += [ "$current_dir/$src" ]
+  }
+
+  # Get the optional inputs
+  in_inputs = []
+  foreach(file, invoker.inputs) {
+    in_inputs += [ "$current_dir/$file" ]
+  }
+
+  # Get the include paths for the generator
+  include_list = []
+  foreach(file, invoker.generator_includes) {
+    include_list += [
+      "-I",
+      rebase_path(file, root_build_dir),
+    ]
+  }
+
+  # Get the generator args if provided
+  generator_args = []
+  if (defined(invoker.generator_args)) {
+    generator_args = invoker.generator_args
+  }
+
+  # Get the generator if provided (use the default otherwise)
+  if (defined(invoker.generator)) {
+    generator = rebase_path(invoker.generator, root_build_dir)
+  } else {
+    generator =
+        rebase_path("$dir_pw_sensor/py/pw_sensor/constants_generator.py")
+    if (!defined(invoker.generator_args)) {
+      generator_args = [
+        "--package",
+        "pw.sensor",
+      ]
+    }
+  }
+  generator_args_string = string_join(" ", generator_args)
+
+  pw_python_action("${target_name}_generate_header") {
+    script = "$dir_pw_sensor/py/pw_sensor/sensor_desc.py"
+    python_deps = [ "$dir_pw_sensor/py" ]
+    args = [] + include_list + [
+             "-g",
+             "python3 $generator $generator_args_string",
+             "-o",
+             rebase_path(out_header),
+           ] + source_files
+    inputs = source_files + [ generator ] + in_inputs
+    outputs = [ out_header ]
+  }
+
+  config("${target_name}_config") {
+    include_dirs = [ target_gen_dir ]
+  }
+
+  in_public_deps = []
+  if (defined(invoker.public_deps)) {
+    in_public_deps = invoker.public_deps
+  }
+
+  pw_source_set(target_name) {
+    public = [ out_header ]
+    public_configs = [ ":${target_name}_config" ]
+    public_deps = [ ":${target_name}_generate_header" ] + in_public_deps
+  }
+}

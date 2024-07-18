@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -26,11 +26,44 @@ py_library(
         "pw_sensor/validator.py",
     ],
     data = [
+        ":base_schemas",
+    ],
+    imports = ["."],
+    deps = [
+        "@python_packages_jsonschema//:pkg",
+        "@python_packages_pyyaml//:pkg",
+    ],
+)
+
+py_binary(
+    name = "constants_generator",
+    srcs = [
+        "pw_sensor/constants_generator.py",
+    ],
+    imports = ["."],
+    deps = [
+        ":pw_sensor",
+        "@python_packages_pyyaml//:pkg",
+    ],
+)
+
+py_binary(
+    name = "sensor_desc",
+    srcs = ["pw_sensor/sensor_desc.py"],
+    imports = ["."],
+    deps = [
+        ":pw_sensor",
+        "@python_packages_pyyaml//:pkg",
+    ],
+)
+
+filegroup(
+    name = "base_schemas",
+    srcs = [
         "pw_sensor/dependency_schema.json",
         "pw_sensor/metadata_schema.json",
         "pw_sensor/resolved_schema.json",
     ],
-    imports = ["."],
 )
 
 pw_py_test(

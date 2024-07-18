@@ -12,9 +12,61 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+load(
+    "sensor.bzl",
+    "pw_sensor_library",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+cc_library(
+    name = "pw_sensor_types",
+    srcs = [],
+    hdrs = [
+        "public/pw_sensor/types.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_tokenizer",
+    ],
+)
+
+pw_sensor_library(
+    name = "test_constants_lib",
+    srcs = [":sensor.yaml"],
+    generator_includes = ["../"],
+    inputs = [
+        ":attributes.yaml",
+        ":channels.yaml",
+        ":triggers.yaml",
+        ":units.yaml",
+    ],
+    out_header = "public/pw_sensor/generated/sensor_constants.h",
+    deps = [
+        ":pw_sensor_types",
+        "//pw_containers:flat_map",
+    ],
+)
+
+pw_cc_test(
+    name = "constants_test",
+    srcs = [
+        "attributes_test.cc",
+        "channels_test.cc",
+        "triggers_test.cc",
+        "units_test.cc",
+    ],
+    deps = [
+        ":pw_sensor_types",
+        ":test_constants_lib",
+    ],
+)
 
 # Bazel does not yet support building docs.
 filegroup(

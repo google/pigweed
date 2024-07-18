@@ -78,14 +78,16 @@ class ValidatorTest(unittest.TestCase):
             "sensors": {
                 "google,foo": {
                     "compatible": {"org": "google", "part": "foo"},
+                    "description": "",
                     "channels": {},
-                    "attributes": {},
-                    "triggers": {},
+                    "attributes": [],
+                    "triggers": [],
                 },
             },
             "channels": {},
             "attributes": {},
             "triggers": {},
+            "units": {},
         }
         metadata = {
             "compatible": {"org": "google", "part": "foo"},
@@ -121,7 +123,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
-                "channels": {"bar": {}},
+                "channels": {"bar": []},
             },
             exception_string="Failed to find a definition for 'bar', did"
             " you forget a dependency?",
@@ -140,33 +142,35 @@ class ValidatorTest(unittest.TestCase):
             dep.write(
                 yaml.safe_dump(
                     {
-                        "attributes": {
-                            "sample_rate": {
-                                "units": {"symbol": "Hz"},
+                        "units": {
+                            "rate": {
+                                "symbol": "Hz",
                             },
+                            "sandwiches": {
+                                "symbol": "sandwiches",
+                            },
+                            "squeaks": {"symbol": "squeaks"},
+                            "items": {
+                                "symbol": "items",
+                            },
+                        },
+                        "attributes": {
+                            "sample_rate": {},
                         },
                         "channels": {
                             "bar": {
-                                "units": {"symbol": "sandwiches"},
+                                "units": "sandwiches",
                             },
                             "soap": {
                                 "name": "The soap",
                                 "description": (
                                     "Measurement of how clean something is"
                                 ),
-                                "units": {"symbol": "sqeaks"},
+                                "units": "squeaks",
                             },
                             "laundry": {
                                 "description": "Clean clothes count",
-                                "units": {"symbol": "items"},
-                                "sub-channels": {
-                                    "shirts": {
-                                        "description": "Clean shirt count",
-                                    },
-                                    "pants": {
-                                        "description": "Clean pants count",
-                                    },
-                                },
+                                "units": "items",
                             },
                         },
                         "triggers": {
@@ -182,188 +186,123 @@ class ValidatorTest(unittest.TestCase):
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
                 "deps": [dep_filename.name],
-                "attributes": {
-                    "sample_rate": {},
-                },
+                "attributes": [
+                    {
+                        "attribute": "sample_rate",
+                        "channel": "laundry",
+                        "units": "rate",
+                    },
+                ],
                 "channels": {
-                    "bar": {},
-                    "soap": {
-                        "name": "soap name override",
-                    },
-                    "laundry_shirts": {},
-                    "laundry_pants": {},
-                    "laundry": {
-                        "indicies": [
-                            {"name": "kids' laundry"},
-                            {"name": "adults' laundry"},
-                        ]
-                    },
+                    "bar": [],
+                    "soap": [],
+                    "laundry": [
+                        {"name": "kids' laundry"},
+                        {"name": "adults' laundry"},
+                    ],
                 },
-                "triggers": {
-                    "data_ready": {},
-                },
+                "triggers": [
+                    "data_ready",
+                ],
             },
         )
-        expected_trigger_data_ready = {
-            "name": "data_ready",
-            "description": "notify when new data is ready",
-        }
-        expected_attribute_sample_rate = {
-            "name": "sample_rate",
-            "description": "",
-            "units": {"name": "Hz", "symbol": "Hz"},
-        }
-        expected_channel_bar = {
-            "name": "bar",
-            "description": "",
-            "units": {
-                "name": "sandwiches",
-                "symbol": "sandwiches",
-            },
-        }
-        expected_channel_soap = {
-            "name": "The soap",
-            "description": "Measurement of how clean something is",
-            "units": {
-                "name": "sqeaks",
-                "symbol": "sqeaks",
-            },
-        }
-        expected_channel_laundry_shirts = {
-            "name": "laundry_shirts",
-            "description": "Clean shirt count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-        }
-        expected_channel_laundry_pants = {
-            "name": "laundry_pants",
-            "description": "Clean pants count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-        }
-        expected_channel_laundry = {
-            "name": "laundry",
-            "description": "Clean clothes count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-        }
-        expected_sensor_channel_bar = {
-            "name": "bar",
-            "description": "",
-            "units": {
-                "name": "sandwiches",
-                "symbol": "sandwiches",
-            },
-            "indicies": [
-                {
-                    "name": "bar",
-                    "description": "",
-                },
-            ],
-        }
-        expected_sensor_channel_soap = {
-            "name": "soap name override",
-            "description": "Measurement of how clean something is",
-            "units": {
-                "name": "sqeaks",
-                "symbol": "sqeaks",
-            },
-            "indicies": [
-                {
-                    "name": "soap name override",
-                    "description": "Measurement of how clean something is",
-                },
-            ],
-        }
-        expected_sensor_channel_laundry_shirts = {
-            "name": "laundry_shirts",
-            "description": "Clean shirt count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-            "indicies": [
-                {
-                    "name": "laundry_shirts",
-                    "description": "Clean shirt count",
-                },
-            ],
-        }
-        expected_sensor_channel_laundry_pants = {
-            "name": "laundry_pants",
-            "description": "Clean pants count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-            "indicies": [
-                {
-                    "name": "laundry_pants",
-                    "description": "Clean pants count",
-                },
-            ],
-        }
-        expected_sensor_channel_laundry = {
-            "name": "laundry",
-            "description": "Clean clothes count",
-            "units": {
-                "name": "items",
-                "symbol": "items",
-            },
-            "indicies": [
-                {
-                    "name": "kids' laundry",
-                    "description": "Clean clothes count",
-                },
-                {
-                    "name": "adults' laundry",
-                    "description": "Clean clothes count",
-                },
-            ],
-        }
+
+        # Check attributes
         self.assertEqual(
             metadata,
             {
-                "attributes": {"sample_rate": expected_attribute_sample_rate},
+                "attributes": {
+                    "sample_rate": {
+                        "name": "sample_rate",
+                        "description": "",
+                    },
+                },
                 "channels": {
-                    "bar": expected_channel_bar,
-                    "soap": expected_channel_soap,
-                    "laundry_shirts": expected_channel_laundry_shirts,
-                    "laundry_pants": expected_channel_laundry_pants,
-                    "laundry": expected_channel_laundry,
+                    "bar": {
+                        "name": "bar",
+                        "description": "",
+                        "units": "sandwiches",
+                    },
+                    "soap": {
+                        "name": "The soap",
+                        "description": "Measurement of how clean something is",
+                        "units": "squeaks",
+                    },
+                    "laundry": {
+                        "name": "laundry",
+                        "description": "Clean clothes count",
+                        "units": "items",
+                    },
                 },
                 "triggers": {
-                    "data_ready": expected_trigger_data_ready,
+                    "data_ready": {
+                        "name": "data_ready",
+                        "description": "notify when new data is ready",
+                    },
+                },
+                "units": {
+                    "rate": {
+                        "name": "Hz",
+                        "symbol": "Hz",
+                        "description": "",
+                    },
+                    "sandwiches": {
+                        "name": "sandwiches",
+                        "symbol": "sandwiches",
+                        "description": "",
+                    },
+                    "squeaks": {
+                        "name": "squeaks",
+                        "symbol": "squeaks",
+                        "description": "",
+                    },
+                    "items": {
+                        "name": "items",
+                        "symbol": "items",
+                        "description": "",
+                    },
                 },
                 "sensors": {
                     "google,foo": {
+                        "description": "",
                         "compatible": {
                             "org": "google",
                             "part": "foo",
                         },
-                        "attributes": {
-                            "sample_rate": expected_attribute_sample_rate,
-                        },
-                        "triggers": {
-                            "data_ready": expected_trigger_data_ready,
-                        },
+                        "attributes": [
+                            {
+                                "attribute": "sample_rate",
+                                "channel": "laundry",
+                                "units": "rate",
+                            },
+                        ],
                         "channels": {
-                            "bar": expected_sensor_channel_bar,
-                            "soap": expected_sensor_channel_soap,
-                            "laundry_shirts": (
-                                expected_sensor_channel_laundry_shirts
-                            ),
-                            "laundry_pants": (
-                                expected_sensor_channel_laundry_pants
-                            ),
-                            "laundry": expected_sensor_channel_laundry,
+                            "bar": [
+                                {
+                                    "name": "bar",
+                                    "description": "",
+                                },
+                            ],
+                            "soap": [
+                                {
+                                    "name": "The soap",
+                                    "description": (
+                                        "Measurement of how clean something is"
+                                    ),
+                                },
+                            ],
+                            "laundry": [
+                                {
+                                    "name": "kids' laundry",
+                                    "description": "Clean clothes count",
+                                },
+                                {
+                                    "name": "adults' laundry",
+                                    "description": "Clean clothes count",
+                                },
+                            ],
                         },
+                        "triggers": ["data_ready"],
                     },
                 },
             },

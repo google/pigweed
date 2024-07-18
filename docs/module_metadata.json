@@ -449,6 +449,14 @@
       "TypeScript"
     ]
   },
+  "pw_sensor": {
+    "tagline": "A modular way to see the world",
+    "status": "experimental",
+    "languages": [
+      "Python",
+      "C++17"
+    ]
+  },
   "pw_software_update": {
     "tagline": "Secure software delivery",
     "status": "experimental",
