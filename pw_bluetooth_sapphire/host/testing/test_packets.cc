@@ -339,6 +339,50 @@ DynamicByteBuffer LERequestPeerScaCompletePacket(
   return DynamicByteBuffer(packet.data());
 }
 
+DynamicByteBuffer LECisEstablishedEventPacket(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::ConnectionHandle connection_handle,
+    uint32_t cig_sync_delay_us,
+    uint32_t cis_sync_delay_us,
+    uint32_t transport_latency_c_to_p_us,
+    uint32_t transport_latency_p_to_c_us,
+    pw::bluetooth::emboss::IsoPhyType phy_c_to_p,
+    pw::bluetooth::emboss::IsoPhyType phy_p_to_c,
+    uint8_t nse,
+    uint8_t bn_c_to_p,
+    uint8_t bn_p_to_c,
+    uint8_t ft_c_to_p,
+    uint8_t ft_p_to_c,
+    uint16_t max_pdu_c_to_p,
+    uint16_t max_pdu_p_to_c,
+    uint16_t iso_interval) {
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LECISEstablishedSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLECISEstablishedSubeventCode);
+  view.status().Write(status);
+  view.connection_handle().Write(connection_handle);
+  view.cig_sync_delay().Write(cig_sync_delay_us);
+  view.cis_sync_delay().Write(cis_sync_delay_us);
+  view.transport_latency_c_to_p().Write(transport_latency_c_to_p_us);
+  view.transport_latency_p_to_c().Write(transport_latency_p_to_c_us);
+  view.phy_c_to_p().Write(phy_c_to_p);
+  view.phy_p_to_c().Write(phy_p_to_c);
+  view.nse().Write(nse);
+  view.bn_c_to_p().Write(bn_c_to_p);
+  view.bn_p_to_c().Write(bn_p_to_c);
+  view.ft_c_to_p().Write(ft_c_to_p);
+  view.ft_p_to_c().Write(ft_p_to_c);
+  view.max_pdu_c_to_p().Write(max_pdu_c_to_p);
+  view.max_pdu_p_to_c().Write(max_pdu_p_to_c);
+  view.iso_interval().Write(iso_interval);
+
+  return DynamicByteBuffer(packet.data());
+}
+
 DynamicByteBuffer LERequestPeerScaPacket(hci_spec::ConnectionHandle conn) {
   auto packet = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::LERequestPeerSCACommandWriter>(

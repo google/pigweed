@@ -39,6 +39,7 @@ pw_test("tests") {
   sources = [
     "iso_common_test.cc",
     "iso_stream_manager_test.cc",
+    "iso_stream_test.cc",
   ]
 
   deps = [

@@ -103,6 +103,26 @@ DynamicByteBuffer LERejectCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason);
 
+DynamicByteBuffer LECisEstablishedEventPacket(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::ConnectionHandle connection_handle,
+    uint32_t cig_sync_delay_us,
+    uint32_t cis_sync_delay_us,
+    uint32_t transport_latency_c_to_p_us,
+    uint32_t transport_latency_p_to_c_us,
+    pw::bluetooth::emboss::IsoPhyType phy_c_to_p,
+    pw::bluetooth::emboss::IsoPhyType phy_p_to_c,
+    uint8_t nse,        // maximum number of subevents
+    uint8_t bn_c_to_p,  // burst number C => P
+    uint8_t bn_p_to_c,  // burst number P => C
+    uint8_t
+        ft_c_to_p,  // flush timeout (in multiples of the ISO_Interval) C => P
+    uint8_t
+        ft_p_to_c,  // flush timeout (in multiples of the ISO_Interval) P => C
+    uint16_t max_pdu_c_to_p,
+    uint16_t max_pdu_p_to_c,
+    uint16_t iso_interval);
+
 DynamicByteBuffer LERequestPeerScaCompletePacket(
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca);

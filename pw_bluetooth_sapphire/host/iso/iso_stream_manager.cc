@@ -121,8 +121,16 @@ void IsoStreamManager::AcceptCisRequest(
       event_view.cis_connection_handle().Read();
 
   BT_ASSERT(streams_.count(id) == 0);
-  streams_[id] =
-      std::make_unique<IsoStream>(cig_id, cis_id, cis_handle, std::move(cb));
+
+  auto self = GetWeakPtr();
+  auto on_closed_cb = [self, id]() {
+    if (self.is_alive()) {
+      self->streams_.erase(id);
+    }
+  };
+
+  streams_[id] = std::make_unique<IsoStream>(
+      cig_id, cis_id, cis_handle, std::move(cb), cmd_, on_closed_cb);
 
   auto command = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(
@@ -130,7 +138,6 @@ void IsoStreamManager::AcceptCisRequest(
   auto cmd_view = command.view_t();
   cmd_view.connection_handle().Write(cis_handle);
 
-  auto self = GetWeakPtr();
   auto cmd_complete_cb = [cis_handle, id, self](auto cmd_id,
                                                 const hci::EventPacket& event) {
     bt_log(INFO, "iso", "LE_Accept_CIS_Request command response received");
@@ -140,7 +147,6 @@ void IsoStreamManager::AcceptCisRequest(
                      "accept CIS request failed for handle %#x",
                      cis_handle)) {
       if (self.is_alive()) {
-        BT_ASSERT(self->streams_.count(id) > 0);
         self->streams_.erase(id);
       }
     }

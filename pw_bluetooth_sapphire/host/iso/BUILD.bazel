@@ -45,6 +45,7 @@ fuchsia_cc_test(
     srcs = [
         "iso_common_test.cc",
         "iso_stream_manager_test.cc",
+        "iso_stream_test.cc",
     ],
     death_unittest = True,
     visibility = ["//visibility:public"],
