@@ -166,9 +166,6 @@ class ScoConnectionManager final {
 
   void CompleteRequest(ConnectionResult);
 
-  void SendCommandWithStatusCallback(
-      std::unique_ptr<hci::CommandPacket> command_packet,
-      hci::ResultFunction<> cb);
   void SendCommandWithStatusCallback(hci::EmbossCommandPacket command_packet,
                                      hci::ResultFunction<> cb);
 

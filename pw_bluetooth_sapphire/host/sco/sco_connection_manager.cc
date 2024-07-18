@@ -486,19 +486,6 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
 }
 
 void ScoConnectionManager::SendCommandWithStatusCallback(
-    std::unique_ptr<hci::CommandPacket> command_packet,
-    hci::ResultFunction<> cb) {
-  hci::CommandChannel::CommandCallback command_cb;
-  if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
-      cb(event.ToResult());
-    };
-  }
-  transport_->command_channel()->SendCommand(std::move(command_packet),
-                                             std::move(command_cb));
-}
-
-void ScoConnectionManager::SendCommandWithStatusCallback(
     hci::EmbossCommandPacket command_packet, hci::ResultFunction<> cb) {
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
