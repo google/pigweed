@@ -90,16 +90,16 @@ DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
     hci_spec::ConnectionHandle conn, hci_spec::LESupportedFeatures le_features);
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn);
 
-DynamicByteBuffer LECISRequestEventPacket(
+DynamicByteBuffer LECisRequestEventPacket(
     hci_spec::ConnectionHandle acl_connection_handle,
     hci_spec::ConnectionHandle cis_connection_handle,
     uint8_t cig_id,
     uint8_t cis_id);
 
-DynamicByteBuffer LEAcceptCISRequestCommandPacket(
+DynamicByteBuffer LEAcceptCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle);
 
-DynamicByteBuffer LERejectCISRequestCommandPacket(
+DynamicByteBuffer LERejectCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason);
 

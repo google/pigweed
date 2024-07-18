@@ -280,7 +280,7 @@ DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn) {
       ));
 }
 
-DynamicByteBuffer LECISRequestEventPacket(
+DynamicByteBuffer LECisRequestEventPacket(
     hci_spec::ConnectionHandle acl_connection_handle,
     hci_spec::ConnectionHandle cis_connection_handle,
     hci_spec::CigIdentifier cig_id,
@@ -298,7 +298,7 @@ DynamicByteBuffer LECISRequestEventPacket(
   );
 }
 
-DynamicByteBuffer LEAcceptCISRequestCommandPacket(
+DynamicByteBuffer LEAcceptCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle) {
   return DynamicByteBuffer(
       StaticByteBuffer(LowerBits(hci_spec::kLEAcceptCISRequest),
@@ -308,7 +308,7 @@ DynamicByteBuffer LEAcceptCISRequestCommandPacket(
                        UpperBits(cis_handle)));
 }
 
-DynamicByteBuffer LERejectCISRequestCommandPacket(
+DynamicByteBuffer LERejectCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason) {
   return DynamicByteBuffer(

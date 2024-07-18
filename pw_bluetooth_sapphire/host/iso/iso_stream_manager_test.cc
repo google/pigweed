@@ -70,7 +70,7 @@ class IsoStreamManagerTest : public MockControllerTestBase {
 // Verify that we ignore a CIS request whose ACL connection handle doesn't match
 // ours.
 TEST_F(IsoStreamManagerTest, IgnoreIncomingWrongConnection) {
-  DynamicByteBuffer request_packet = testing::LECISRequestEventPacket(
+  DynamicByteBuffer request_packet = testing::LECisRequestEventPacket(
       kAclConnectionHandleId2, kCisHandleId, kCigId, kCisId);
   test_device()->SendCommandChannelPacket(request_packet);
 }
@@ -78,11 +78,11 @@ TEST_F(IsoStreamManagerTest, IgnoreIncomingWrongConnection) {
 // Verify that we reject a CIS request whose ACL connection handle matches ours,
 // but that we are not waiting for.
 TEST_F(IsoStreamManagerTest, RejectIncomingConnection) {
-  const auto le_reject_cis_packet = testing::LERejectCISRequestCommandPacket(
+  const auto le_reject_cis_packet = testing::LERejectCisRequestCommandPacket(
       kCisHandleId, pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
   EXPECT_CMD_PACKET_OUT(test_device(), le_reject_cis_packet);
 
-  DynamicByteBuffer request_packet = testing::LECISRequestEventPacket(
+  DynamicByteBuffer request_packet = testing::LECisRequestEventPacket(
       kAclConnectionHandleId1, kCisHandleId, kCigId, kCisId);
   test_device()->SendCommandChannelPacket(request_packet);
 }
@@ -110,9 +110,9 @@ TEST_F(IsoStreamManagerTest, MultipleCISAcceptRequests) {
 
   // When a matching request arrives, we should accept it and stop waiting on it
   const auto le_accept_cis_packet =
-      testing::LEAcceptCISRequestCommandPacket(kCisHandleId);
+      testing::LEAcceptCisRequestCommandPacket(kCisHandleId);
   EXPECT_CMD_PACKET_OUT(test_device(), le_accept_cis_packet);
-  DynamicByteBuffer request_packet = testing::LECISRequestEventPacket(
+  DynamicByteBuffer request_packet = testing::LECisRequestEventPacket(
       kAclConnectionHandleId1, kCisHandleId, kId1.cig_id(), kId1.cis_id());
   test_device()->SendCommandChannelPacket(request_packet);
   RunUntilIdle();
