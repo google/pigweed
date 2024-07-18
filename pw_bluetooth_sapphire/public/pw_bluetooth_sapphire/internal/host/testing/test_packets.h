@@ -180,6 +180,9 @@ DynamicByteBuffer SynchronousConnectionCompletePacket(
 DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
     hci_spec::ConnectionHandle conn, uint16_t flush_timeout);
 
+DynamicByteBuffer WriteExtendedInquiryResponse(
+    pw::bluetooth::emboss::StatusCode status_code);
+
 DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,
                                            uint16_t scan_window);
 DynamicByteBuffer WriteInquiryScanActivityResponse();

@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
+#include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -780,6 +781,12 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
       LowerBits(flush_timeout),  // Flush_Timeout
       UpperBits(flush_timeout)   // Flush_Timeout
       ));
+}
+
+DynamicByteBuffer WriteExtendedInquiryResponse(
+    pw::bluetooth::emboss::StatusCode status_code) {
+  return CommandCompletePacket(hci_spec::kWriteExtendedInquiryResponse,
+                               status_code);
 }
 
 DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,

@@ -120,12 +120,12 @@ const auto kWriteLocalNameRspError = testing::WriteLocalNameResponse(
     pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const auto kWriteExtendedInquiryResponseRsp =
-    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse,
-                       pw::bluetooth::emboss::StatusCode::SUCCESS);
+    testing::WriteExtendedInquiryResponse(
+        pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kWriteExtendedInquiryResponseRspError =
-    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse,
-                       pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
+    testing::WriteExtendedInquiryResponse(
+        pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const auto kInquiryRsp =
     testing::InquiryCommandResponse(pw::bluetooth::emboss::StatusCode::SUCCESS);
