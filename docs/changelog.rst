@@ -20,8 +20,8 @@ Jul 11, 2024
 
 Highlights (Jun 28, 2024 to Jul 11, 2024):
 
-* **Bazel 8**: Upstream Pigweed is now using Bazel 8, the first version to
-  include platform-based flags.
+* **Bazel 8 pre-release**: Upstream Pigweed is now using a pre-release version
+  of Bazel 8, the first version to include platform-based flags.
 * **ARMv6-M support**: :ref:`module-pw_cpu_exception_cortex_m` now supports
   ARMv6-M cores.
 * **Browser-based pw_system console**: The new ``--browser`` option lets
@@ -38,13 +38,13 @@ Build systems
 
 Bazel
 -----
-Pigweed is now using version 8.0 of Bazel, the first version to include
-platform-based flags. Some backend collection targets are now being
-provided as dictionaries to enable downstream projects to use the
-pattern described in :ref:`docs-bazel-compatibility-facade-backend-dict`.
-The ``incompatible_with_mcu`` Bazel helper has been introduced to help
-express whether a target is only compatible with platforms that have a
-full-featured OS.
+Pigweed is now using version 8.0.0-pre.20240618.2 of Bazel, the first version
+to include platform-based flags. Some backend collection targets are now being
+provided as dictionaries to enable downstream projects to use the pattern
+described in :ref:`docs-bazel-compatibility-facade-backend-dict`.  The
+``incompatible_with_mcu`` Bazel helper has been introduced to help express
+whether a target is only compatible with platforms that have a full-featured
+OS.
 
 * `Run all tests with googletest backend in CI
   <https://pwrev.dev/222532>`__
@@ -477,9 +477,9 @@ Upstream Pigweed protos are now provided alongside downstream project protos.
 
 Rolls
 =====
-Pigweed is now using version 8.0 of Bazel, the first version to include
-platform-based flags. Go was updated to version ``3@1.22.5``. CMake was
-updated to version ``3@3.30.0.chromium.8``.
+Pigweed is now using version 8.0.0-pre.20240618.2 of Bazel, the first version
+to include platform-based flags. Go was updated to version ``3@1.22.5``. CMake
+was updated to version ``3@3.30.0.chromium.8``.
 
 * `Update Bazel to 8.0 rolling release
   <https://pwrev.dev/220118>`__
