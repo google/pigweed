@@ -18,33 +18,15 @@ common --noenable_bzlmod
 # Improve debugability by printing all arguments for failing commands.
 common --verbose_failures
 
+# Standard flags required for all Pigweed projects.
+import %workspace%/pw_build/pigweed.bazelrc
+
 # Silence all C/C++ warnings in external code.
 #
 # Note that this will not silence warnings from external headers #include'd in
 # first-party code.
 common --per_file_copt=external/.*@-w
 common --host_per_file_copt=external/.*@-w
-
-# Don't automatically create __init__.py files.
-#
-# This prevents spurious package name collisions at import time, and should be
-# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
-# particularly helpful for Pigweed, because we have many potential package name
-# collisions due to a profusion of stuttering paths like
-# pw_transfer/py/pw_transfer.
-common --incompatible_default_to_explicit_init_py
-
-# Required for new toolchain resolution API.
-build --incompatible_enable_cc_toolchain_resolution
-
-# Expose exec toolchains for Python.
-build --@rules_python//python/config_settings:exec_tools_toolchain=enabled
-
-# Don't propagate flags or defines to the exec config. This will become the
-# default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
-# improve cache hit rates between builds targeting different platforms.
-common --experimental_exclude_defines_from_exec_config
-common --experimental_exclude_starlark_flags_from_exec_config
 
 # Skip building or testing C++20 targets by default
 # TODO: b/340568834 Remove when a proper solution is available.
@@ -55,10 +37,6 @@ build --build_tag_filters=-requires_cxx_20
 # list.
 test --test_tag_filters=-requires_cxx_20,-integration
 
-# Do not attempt to configure an autodetected (local) toolchain. We vendor all
-# our toolchains, and CI VMs may not have any local toolchain to detect.
-common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-
 # Required for combined code coverage reports.
 coverage --experimental_generate_llvm_lcov
 coverage --combined_report=lcov
@@ -66,11 +44,6 @@ coverage --combined_report=lcov
 # Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
 # messages from our third-party dependencies.
 build --ui_event_filters=-debug
-
-# Enforces consistent action environment variables. This is important to
-# address Protobuf's rebuild sensitivity on changes to the environment
-# variables.
-build --incompatible_strict_action_env
 
 # Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
 build --java_language_version=11

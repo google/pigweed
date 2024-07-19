@@ -93,6 +93,17 @@ embedded-friendly replacement for ``std::vector``.
         ],
       )
 
+----------------------------
+Set the required Bazel flags
+----------------------------
+Pigweed projects need to set certain flags in their ``.bazelrc``. These
+generally pre-adopt Bazel features that will become default in the future and
+improve cache performance, disambiguate Python imports, etc. These flags are
+listed below.  Unfortunately there's no way to automatically import them, see
+:bug:`353750350`.
+
+.. literalinclude:: ../../pw_build/pigweed.bazelrc
+
 --------------------------------------------
 Configure backends for facades you depend on
 --------------------------------------------

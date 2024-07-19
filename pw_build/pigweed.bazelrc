@@ -1,0 +1,48 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Standard Bazel configuration flags required for all Pigweed projects.
+
+# Don't automatically create __init__.py files.
+#
+# This prevents spurious package name collisions at import time, and should be
+# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
+# particularly helpful for Pigweed, because we have many potential package name
+# collisions due to a profusion of stuttering paths like
+# pw_transfer/py/pw_transfer.
+common --incompatible_default_to_explicit_init_py
+
+# Required for new toolchain resolution API.
+build --incompatible_enable_cc_toolchain_resolution
+
+# Do not attempt to configure an autodetected (local) toolchain. We vendor all
+# our toolchains, and CI VMs may not have any local toolchain to detect.
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# Don't propagate flags or defines to the exec config. This will become the
+# default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
+# improve cache hit rates between builds targeting different platforms.
+common --experimental_exclude_defines_from_exec_config
+common --experimental_exclude_starlark_flags_from_exec_config
+
+# Enforces consistent action environment variables. This is important to
+# address Protobuf's rebuild sensitivity on changes to the environment
+# variables. It also improves cache hit rates. Should be true by default one
+# day (https://github.com/bazelbuild/bazel/issues/7026).
+build --incompatible_strict_action_env
+
+# Expose exec toolchains for Python. We use these toolchains in some rule
+# implementations (git grep for
+# "@rules_python//python:exec_tools_toolchain_type").
+build --@rules_python//python/config_settings:exec_tools_toolchain=enabled
