@@ -1487,8 +1487,9 @@ _LINTFORMAT = (
     format_code.presubmit_checks(),
     inclusive_language.presubmit_check.with_filter(
         exclude=(
-            r'\byarn.lock$',
+            r'\bgo.sum$',
             r'\bpackage-lock.json$',
+            r'\byarn.lock$',
         )
     ),
     cpp_checks.pragma_once,
