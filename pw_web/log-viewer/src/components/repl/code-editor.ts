@@ -174,8 +174,10 @@ export class CodeEditor extends LitElement {
   }
 
   private handleEval() {
-    this.onEvalHandler(this.view.state.doc.toString());
-    this.addToHistory(this.view.state.doc.toString());
+    const code = this.view.state.doc.toString().trim();
+    if (!code) return;
+    this.onEvalHandler(code);
+    this.addToHistory(code);
     this.view.dispatch({
       changes: { from: 0, to: this.view.state.doc.length, insert: '' },
     });
