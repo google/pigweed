@@ -37,6 +37,9 @@ common --incompatible_default_to_explicit_init_py
 # Required for new toolchain resolution API.
 build --incompatible_enable_cc_toolchain_resolution
 
+# Expose exec toolchains for Python.
+build --@rules_python//python/config_settings:exec_tools_toolchain=enabled
+
 # Don't propagate flags or defines to the exec config. This will become the
 # default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
 # improve cache hit rates between builds targeting different platforms.

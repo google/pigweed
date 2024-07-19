@@ -49,9 +49,6 @@ def _pw_sensor_library_impl(ctx):
             sources + inputs + generator_target.files.to_list() +
             sensor_desc_target.files.to_list()
         ),
-        tools = [
-            ctx.executable._python_runtime,
-        ],
         outputs = [out_header],
         executable = sensor_desc_target.files_to_run.executable,
         arguments = args,
@@ -95,12 +92,6 @@ pw_sensor_library = rule(
         "inputs": attr.label_list(allow_files = True),
         "out_header": attr.string(),
         "srcs": attr.label_list(allow_files = True),
-        "_python_runtime": attr.label(
-            default = Label("//:python3_interpreter"),
-            allow_single_file = True,
-            executable = True,
-            cfg = "exec",
-        ),
         "_sensor_desc": attr.label(
             default = "@pigweed//pw_sensor/py:sensor_desc",
             executable = True,
@@ -108,4 +99,5 @@ pw_sensor_library = rule(
         ),
     },
     provides = [CcInfo],
+    toolchains = ["@rules_python//python:exec_tools_toolchain_type"],
 )
