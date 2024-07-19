@@ -1045,6 +1045,8 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
                                   pw::span(attribute_value))
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+  // Proxy host took all credits so will not pass NOCP on to host.
+  EXPECT_EQ(capture.sends_called, 1);
 
   // Send packet over Connection 1, which will not have a packet completed in
   // the Number_of_Completed_Packets event.
@@ -1070,7 +1072,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
             PW_STATUS_UNAVAILABLE);
 
   // Send Number_of_Completed_Packets event that reports 1 packet on Connection
-  // 0, no packets on Connection 1, and 1 packet on Connection 2. Checks in
+  // 0, 0 packets on Connection 1, and 1 packet on Connection 2. Checks in
   // send_to_host_fn will ensure we have reclaimed 2 of 3 credits.
   SendNumberOfCompletedPackets(
       proxy,
@@ -1078,7 +1080,8 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
                                        {capture.connection_handles[1], 0},
                                        {capture.connection_handles[2], 1}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
-  EXPECT_EQ(capture.sends_called, 2);
+  // Proxy host took all credits so will not pass NOCP event on to host.
+  EXPECT_EQ(capture.sends_called, 1);
 }
 
 TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
@@ -1230,6 +1233,7 @@ TEST(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
       FlatMap<uint16_t, uint16_t, 2>({{{capture.connection_handles[0], 10},
                                        {capture.connection_handles[1], 15}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
+  // NOCP has credits remaining so will be passed on to host.
   EXPECT_EQ(capture.sends_called, 2);
 }
 
@@ -1283,6 +1287,7 @@ TEST(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
       FlatMap<uint16_t, uint16_t, 2>({{{capture.connection_handles[0], 10},
                                        {capture.connection_handles[1], 15}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 10);
+  // NOCP has credits remaining so will be passed on to host.
   EXPECT_EQ(capture.sends_called, 2);
 }
 
@@ -1333,7 +1338,8 @@ TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
 
   // Send Number_of_Completed_Packets event with no entries.
   SendNumberOfCompletedPackets(proxy, FlatMap<uint16_t, uint16_t, 0>({{}}));
-  EXPECT_EQ(capture.sends_called, 2);
+  // NOCP has no entries, so will not be passed on to host.
+  EXPECT_EQ(capture.sends_called, 1);
 
   // Send Number_of_Completed_Packets event that reports 0 packets for various
   // connections.
@@ -1345,7 +1351,8 @@ TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
                                        {capture.connection_handles[3], 0},
                                        {capture.connection_handles[4], 0}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 10);
-  EXPECT_EQ(capture.sends_called, 3);
+  // Proxy host will not pass on a NOCP with no credits.
+  EXPECT_EQ(capture.sends_called, 1);
 }
 
 // ########## DisconnectionCompleteTest
@@ -1414,6 +1421,7 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
       proxy,
       FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 10}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 8);
+  // NOCP has credits remaining so will be passed on to host.
   EXPECT_EQ(capture.sends_called, 3);
 }
 
@@ -1533,7 +1541,8 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
       proxy,
       FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 1}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
-  EXPECT_EQ(capture.sends_called, 3);
+  // Since proxy reclaimed the one credit, it does not pass event on to host.
+  EXPECT_EQ(capture.sends_called, 2);
 }
 
 // ########## ResetTest
@@ -1613,6 +1622,7 @@ TEST(ResetTest, ResetClearsActiveConnections) {
       proxy,
       FlatMap<uint16_t, uint16_t, 1>({{{host_capture.connection_handle, 1}}}));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+  // NOCP has credits remaining so will be passed on to host.
   EXPECT_EQ(host_capture.sends_called, 3);
 }
 

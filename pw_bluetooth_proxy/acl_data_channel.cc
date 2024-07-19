@@ -90,25 +90,40 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     return;
   }
   credit_allocation_mutex_.lock();
+  bool should_send_to_host = false;
   for (uint8_t i = 0; i < nocp_event.num_handles().Read(); ++i) {
     uint16_t handle = nocp_event.nocp_data()[i].connection_handle().Read();
+    uint16_t num_completed_packets =
+        nocp_event.nocp_data()[i].num_completed_packets().Read();
+
+    if (num_completed_packets == 0) {
+      continue;
+    }
+
     AclConnection* connection_ptr = FindConnection(handle);
     if (!connection_ptr) {
+      // Credits for connection we are not tracking, so should pass event on to
+      // host.
+      should_send_to_host = true;
       continue;
     }
 
     // Reclaim proxy's credits before event is forwarded to host
-    uint16_t num_completed_packets =
-        nocp_event.nocp_data()[i].num_completed_packets().Read();
     uint16_t num_reclaimed =
         std::min(num_completed_packets, connection_ptr->num_pending_packets);
     proxy_pending_le_acl_packets_ -= num_reclaimed;
     connection_ptr->num_pending_packets -= num_reclaimed;
-    nocp_event.nocp_data()[i].num_completed_packets().Write(
-        num_completed_packets - num_reclaimed);
+    uint16_t credits_remaining = num_completed_packets - num_reclaimed;
+    nocp_event.nocp_data()[i].num_completed_packets().Write(credits_remaining);
+    if (credits_remaining > 0) {
+      // Connection has credits remaining, so should past event on to host.
+      should_send_to_host = true;
+    }
   }
   credit_allocation_mutex_.unlock();
-  hci_transport_.SendToHost(std::move(h4_packet));
+  if (should_send_to_host) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+  }
 }
 
 void AclDataChannel::HandleDisconnectionCompleteEvent(
