@@ -29,7 +29,9 @@ class StreamRpcFrameSender : public RpcFrameSender {
   size_t MaximumTransmissionUnit() const override { return kMtu; }
 
   Status Send(RpcFrame frame) override {
-    PW_TRY(writer_.Write(frame.header));
+    if (!frame.header.empty()) {
+      PW_TRY(writer_.Write(frame.header));
+    }
     return writer_.Write(frame.payload);
   }
 
