@@ -77,8 +77,18 @@ AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
     emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
     emboss::LEReadBufferSizeV2CommandCompleteEventWriter read_buffer_event);
 
-void AclDataChannel::ProcessNumberOfCompletedPacketsEvent(
-    emboss::NumberOfCompletedPacketsEventWriter nocp_event) {
+void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
+    H4PacketWithHci&& h4_packet) {
+  emboss::NumberOfCompletedPacketsEventWriter nocp_event =
+      MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+          h4_packet.GetHciSpan());
+  if (!nocp_event.IsComplete()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for NUMBER_OF_COMPLETED_PACKETS event. So "
+        "will not process.");
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
   credit_allocation_mutex_.lock();
   for (uint8_t i = 0; i < nocp_event.num_handles().Read(); ++i) {
     uint16_t handle = nocp_event.nocp_data()[i].connection_handle().Read();
@@ -98,10 +108,21 @@ void AclDataChannel::ProcessNumberOfCompletedPacketsEvent(
         num_completed_packets - num_reclaimed);
   }
   credit_allocation_mutex_.unlock();
+  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
-void AclDataChannel::ProcessDisconnectionCompleteEvent(
-    emboss::DisconnectionCompleteEventWriter dc_event) {
+void AclDataChannel::HandleDisconnectionCompleteEvent(
+    H4PacketWithHci&& h4_packet) {
+  emboss::DisconnectionCompleteEventWriter dc_event =
+      MakeEmboss<emboss::DisconnectionCompleteEventWriter>(
+          h4_packet.GetHciSpan());
+  if (!dc_event.IsComplete()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
+        "process.");
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
   credit_allocation_mutex_.lock();
   if (dc_event.status().Read() != emboss::StatusCode::SUCCESS) {
     PW_LOG_WARN(
@@ -109,6 +130,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
         "associated credits.",
         static_cast<unsigned char>(dc_event.status().Read()));
     credit_allocation_mutex_.unlock();
+    hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
   PW_LOG_INFO(
@@ -122,6 +144,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     active_connections_.erase(connection_ptr);
   }
   credit_allocation_mutex_.unlock();
+  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 uint16_t AclDataChannel::GetLeAclCreditsToReserve() const {

@@ -47,10 +47,14 @@ void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
   hci_transport_.SendToController(std::move(h4_packet));
 }
 
-void ProxyHost::ProcessH4HciFromController(pw::span<uint8_t> hci_buffer) {
+void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
   auto event = MakeEmboss<emboss::EventHeaderView>(hci_buffer);
   if (!event.IsComplete()) {
-    PW_LOG_ERROR("Buffer is too small for EventHeader. So will not process.");
+    PW_LOG_ERROR(
+        "Buffer is too small for EventHeader. So will pass on to host without "
+        "processing.");
+    hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
 
@@ -58,47 +62,34 @@ void ProxyHost::ProcessH4HciFromController(pw::span<uint8_t> hci_buffer) {
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (event.event_code_enum().Read()) {
     case emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS: {
-      auto nocp_event =
-          MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(hci_buffer);
-      if (!nocp_event.IsComplete()) {
-        PW_LOG_ERROR(
-            "Buffer is too small for NUMBER_OF_COMPLETED_PACKETS event. So "
-            "will not process.");
-        break;
-      }
-      acl_data_channel_.ProcessNumberOfCompletedPacketsEvent(nocp_event);
+      acl_data_channel_.HandleNumberOfCompletedPacketsEvent(
+          std::move(h4_packet));
       break;
     }
     case emboss::EventCode::DISCONNECTION_COMPLETE: {
-      auto dc_event =
-          MakeEmboss<emboss::DisconnectionCompleteEventWriter>(hci_buffer);
-      if (!dc_event.IsComplete()) {
-        PW_LOG_ERROR(
-            "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
-            "process.");
-        break;
-      }
-      acl_data_channel_.ProcessDisconnectionCompleteEvent(dc_event);
+      acl_data_channel_.HandleDisconnectionCompleteEvent(std::move(h4_packet));
       break;
     }
     case emboss::EventCode::COMMAND_COMPLETE: {
-      ProcessCommandCompleteEvent(hci_buffer);
+      HandleCommandCompleteEvent(std::move(h4_packet));
       break;
     }
     default: {
-      PW_LOG_ERROR("Received unexpected HCI event. So will not process.");
+      hci_transport_.SendToHost(std::move(h4_packet));
       return;
     }
   }
   PW_MODIFY_DIAGNOSTICS_POP();
 }
 
-void ProxyHost::ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer) {
-  auto command_complete_event =
+void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  emboss::CommandCompleteEventView command_complete_event =
       MakeEmboss<emboss::CommandCompleteEventView>(hci_buffer);
   if (!command_complete_event.IsComplete()) {
     PW_LOG_ERROR(
         "Buffer is too small for COMMAND_COMPLETE event. So will not process.");
+    hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
 
@@ -132,18 +123,9 @@ void ProxyHost::ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer) {
       break;
     }
     default:
-      // Nothing to process
       break;
   }
   PW_MODIFY_DIAGNOSTICS_POP();
-}
-
-void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
-  if (h4_packet.GetHciSpan().empty()) {
-    PW_LOG_ERROR("Received empty H4 buffer. So will not process.");
-  } else if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
-    ProcessH4HciFromController(h4_packet.GetHciSpan());
-  }
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 

@@ -120,9 +120,6 @@ class ProxyHost {
   }
 
  private:
-  // Process/update the packet.
-  void ProcessH4HciFromController(pw::span<uint8_t> hci_buffer);
-
   // Populate the fields of the provided ATT_HANDLE_VALUE_NTF packet view.
   void BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
                       uint16_t connection_handle,
@@ -130,7 +127,7 @@ class ProxyHost {
                       pw::span<const uint8_t> attribute_value);
 
   // Process a Command_Complete event.
-  void ProcessCommandCompleteEvent(pw::span<uint8_t> hci_buffer);
+  void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
 
   // TODO: https://pwbug.dev/349700888 - Make sizes configurable.
   static constexpr size_t kNumH4Buffs = 2;
