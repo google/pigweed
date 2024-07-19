@@ -38,6 +38,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_bluetooth.emboss_hci_data
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
+    pw_bluetooth.emboss_l2cap_frames
     pw_containers
     pw_function
     pw_log
@@ -68,6 +69,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   PRIVATE_DEPS
     pw_bluetooth_proxy
     pw_third_party.fuchsia.stdcompat
+    pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_events
