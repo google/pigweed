@@ -117,8 +117,9 @@ void TransferThread::StartTransfer(
     uint8_t max_retries,
     uint32_t max_lifetime_retries,
     uint32_t initial_offset) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   bool is_client_transfer = stream != nullptr;
 
@@ -205,8 +206,9 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
     return;
   }
 
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   std::memcpy(chunk_buffer_.data(), chunk.data(), chunk.size());
 
@@ -225,8 +227,9 @@ void TransferThread::SendStatus(TransferStream stream,
                                 uint32_t session_id,
                                 ProtocolVersion version,
                                 Status status) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = EventType::kSendStatusChunk;
   next_event_.send_status_chunk = {
@@ -244,8 +247,9 @@ void TransferThread::EndTransfer(EventType type,
                                  uint32_t id,
                                  Status status,
                                  bool send_status_chunk) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = type;
   next_event_.end_transfer = {
@@ -259,8 +263,9 @@ void TransferThread::EndTransfer(EventType type,
 }
 
 void TransferThread::SetStream(TransferStream stream) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = EventType::kSetStream;
   next_event_.set_stream = {
@@ -272,8 +277,9 @@ void TransferThread::SetStream(TransferStream stream) {
 
 void TransferThread::UpdateClientTransfer(uint32_t handle_id,
                                           size_t transfer_size_bytes) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = EventType::kUpdateClientTransfer;
   next_event_.update_transfer.handle_id = handle_id;
@@ -283,8 +289,9 @@ void TransferThread::UpdateClientTransfer(uint32_t handle_id,
 }
 
 void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = type;
   if (type == EventType::kAddTransferHandler) {
@@ -566,8 +573,9 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
 // GetResourceStatusEvent in process.
 void TransferThread::EnqueueResourceEvent(uint32_t resource_id,
                                           ResourceStatusCallback&& callback) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
+  if (!TryWaitForEventToProcess()) {
+    return;
+  }
 
   next_event_.type = EventType::kGetResourceStatus;
 

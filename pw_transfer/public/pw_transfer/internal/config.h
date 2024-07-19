@@ -188,6 +188,17 @@ static_assert(PW_TRANSFER_LOG_DEFAULT_CHUNKS_BEFORE_RATE_LIMIT > 0);
 
 static_assert(PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS >= 0);
 
+// Maximum time to wait for a transfer event to be processed before dropping
+// further queued events. In systems which can perform long-running operations
+// to process transfer data, this can be used to prevent threads from blocking
+// for extended periods. A value of 0 results in indefinite blocking.
+#ifndef PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS
+#define PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS \
+  PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS
+#endif  // PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS
+
+static_assert(PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS >= 0);
+
 namespace pw::transfer::cfg {
 
 inline constexpr uint8_t kDefaultMaxClientRetries =
@@ -216,5 +227,11 @@ inline constexpr uint16_t kLogDefaultChunksBeforeRateLimit =
 inline constexpr chrono::SystemClock::duration kLogDefaultRateLimit =
     chrono::SystemClock::for_at_least(
         std::chrono::milliseconds(PW_TRANSFER_LOG_DEFAULT_RATE_PERIOD_MS));
+
+inline constexpr bool kWaitForEventProcessingIndefinitely =
+    PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS == 0;
+inline constexpr chrono::SystemClock::duration kEventProcessingTimeout =
+    chrono::SystemClock::for_at_least(
+        std::chrono::milliseconds(PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS));
 
 }  // namespace pw::transfer::cfg

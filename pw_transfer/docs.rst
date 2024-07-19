@@ -431,6 +431,13 @@ more details.
   disable logging. These chunks are moderated (rate-limited) by the same
   ``PW_TRANSFER_RATE_PERIOD_MS`` as other repetitive logs.
 
+.. c:macro:: PW_TRANSFER_EVENT_PROCESSING_TIMEOUT_MS
+
+   Maximum time to wait for a transfer event to be processed before dropping
+   further queued events. In systems which can perform long-running operations
+   to process transfer data, this can be used to prevent threads from blocking
+   for extended periods. A value of 0 results in indefinite blocking.
+
 .. _pw_transfer-nonzero-transfers:
 
 Non-zero Starting Offset Transfers

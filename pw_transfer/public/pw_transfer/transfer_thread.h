@@ -27,6 +27,7 @@
 #include "pw_thread/thread_core.h"
 #include "pw_transfer/handler.h"
 #include "pw_transfer/internal/client_context.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/context.h"
 #include "pw_transfer/internal/event.h"
 #include "pw_transfer/internal/server_context.h"
@@ -344,6 +345,14 @@ class TransferThread : public thread::ThreadCore {
     // An unknown TransferStream value was passed, which means this function
     // was passed an invalid enum value.
     PW_ASSERT(false);
+  }
+
+  bool TryWaitForEventToProcess() {
+    if constexpr (cfg::kWaitForEventProcessingIndefinitely) {
+      next_event_ownership_.acquire();
+      return true;
+    }
+    return next_event_ownership_.try_acquire_for(cfg::kEventProcessingTimeout);
   }
 
   // Returns the earliest timeout among all active transfers, up to kMaxTimeout.
