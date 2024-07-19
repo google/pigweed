@@ -281,6 +281,7 @@ class ValidatorTest(unittest.TestCase):
                                 {
                                     "name": "bar",
                                     "description": "",
+                                    "units": "sandwiches",
                                 },
                             ],
                             "soap": [
@@ -289,16 +290,19 @@ class ValidatorTest(unittest.TestCase):
                                     "description": (
                                         "Measurement of how clean something is"
                                     ),
+                                    "units": "squeaks",
                                 },
                             ],
                             "laundry": [
                                 {
                                     "name": "kids' laundry",
                                     "description": "Clean clothes count",
+                                    "units": "items",
                                 },
                                 {
                                     "name": "adults' laundry",
                                     "description": "Clean clothes count",
+                                    "units": "items",
                                 },
                             ],
                         },

@@ -97,24 +97,7 @@ the following structure for a channel:
    <channel_id>:
       "name": "string"
       "description": "string"
-      "representation" "enum[signed, unsigned, float]"
       "units": <string_units_id>
-
-The current design allows us to define red, green, blue, UV, and IR as
-"sub-channels". While we could define them on their own, having a sub-channel
-allows us to make the units immutable. This means that ``illuminance`` will
-always have the same units as ``illuminance_red``, ``illuminance_green``,
-``illuminance_blue``, etc. These are described with a ``sub-channels`` key that
-allows only ``name`` and ``description`` overrides:
-
-.. code-block:: yaml
-
-   <channel_id>:
-      ...
-      subchannels:
-         red:
-            name: "custom name"
-            description: "custom description"
 
 When we construct the final sensor metadata, we can list the channels supported
 by that sensor. In some cases, the same channel may be available more than once.
@@ -129,8 +112,10 @@ something like:
       ambient_temperature:
          -  name: "-X"
             description: "temperature measured in the -X direction"
+            units: "temperature"
          -  name: "X"
             description: "temperature measured in the +X direction"
+            units: "temperature"
 
 What are attributes?
 ====================
@@ -209,13 +194,13 @@ large/small cake count (for a total of 3 channels):
    channels:
      cakes:
          description: "The number of cakes seen by the sensor"
-         representation: "unsigned"
          units: "cake"
-         sub-channels:
-            small:
-               description: "The number of cakes measuring 6 inches or less"
-            large:
-               description: "The number of cakes measuring more than 6 inches"
+      cakes_small:
+         description: "The number of cakes measuring 6 inches or less"
+         units: "cake"
+      cakes_large:
+         description: "The number of cakes measuring more than 6 inches"
+         units: "cake"
 
 The above YAML file will enable a 3 new channels: ``cakes``, ``cakes_small``,
 and ``cakes_large``. All 3 channels will use a unit ``cake``. A sensor

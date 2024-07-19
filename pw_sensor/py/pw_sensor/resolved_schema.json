@@ -166,12 +166,17 @@
                       "description": {
                         "type": "string",
                         "description": "A description override for the channel instance"
+                      },
+                      "units": {
+                        "type": "string",
+                        "description": "The units of the channel"
                       }
                     },
                     "additionalProperties": false,
                     "required": [
                       "name",
-                      "description"
+                      "description",
+                      "units"
                     ]
                   }
                 }

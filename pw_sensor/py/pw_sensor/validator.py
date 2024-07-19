@@ -427,6 +427,8 @@ class Validator:
                     index["name"] = channel["name"]
                 if not index.get("description"):
                     index["description"] = channel["description"]
+                # Always use the same units
+                index["units"] = channel["units"]
 
     def _resolve_triggers(self, metadata: dict, out: dict) -> None:
         """

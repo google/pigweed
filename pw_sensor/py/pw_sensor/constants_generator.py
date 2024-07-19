@@ -107,6 +107,16 @@ class Units(Printable):
     def __hash__(self) -> int:
         return hash((super().__hash__(), self.symbol))
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Units):
+            return False
+        return (
+            self.id == value.id
+            and self.name == value.name
+            and self.description == value.description
+            and self.symbol == value.symbol
+        )
+
     def print(self, writer: io.TextIOWrapper) -> None:
         """
         Print header definition for this unit
@@ -186,6 +196,16 @@ class Channel(Printable):
 
     def __hash__(self) -> int:
         return hash((super().__hash__(), self.units))
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Channel):
+            return False
+        return (
+            self.id == value.id
+            and self.name == value.name
+            and self.description == value.description
+            and self.units == value.units
+        )
 
     def print(self, writer: io.TextIOWrapper) -> None:
         """
@@ -337,7 +357,7 @@ class SensorSpec:
     description: str
     compatible: CompatibleSpec
     attributes: List[SensorAttributeSpec]
-    channels: List[Any]
+    channels: dict[str, List[ChannelSpec]]
     triggers: List[Any]
 
 
@@ -698,32 +718,55 @@ class InputData:
             self.all_sensors.add(sensor)
 
 
-def create_dataclass_from_dict(cls, data):
+def is_list_type(t) -> bool:
+    """
+    Checks if the given type `t` is either a list or typing.List.
+
+    Args:
+        t: The type to check.
+    Returns:
+        True if `t` is a list type, False otherwise.
+    """
+    origin = typing.get_origin(t)
+    return origin is list or (origin is list and typing.get_args(t) == ())
+
+
+def create_dataclass_from_dict(cls, data, indent: int = 0):
     """Recursively creates a dataclass instance from a nested dictionary."""
 
     field_values = {}
+
+    if is_list_type(cls):
+        result = []
+        for item in data:
+            result.append(
+                create_dataclass_from_dict(
+                    typing.get_args(cls)[0], item, indent + 2
+                )
+            )
+        return result
+
     for field in fields(cls):
         field_value = data[field.name]
 
         # We need to check if the field is a List, dictionary, or another
         # dataclass. If it is, recurse.
-        if (
-            typing.get_origin(field.type) is list
-            or typing.get_origin(field.type) is List
-        ):
+        if is_list_type(field.type):
             item_type = typing.get_args(field.type)[0]
             field_value = [
-                create_dataclass_from_dict(item_type, item)
+                create_dataclass_from_dict(item_type, item, indent + 2)
                 for item in field_value
             ]
         elif dict in field.type.__mro__:
             value_type = typing.get_args(field.type)[1]
             field_value = {
-                key: create_dataclass_from_dict(value_type, val)
+                key: create_dataclass_from_dict(value_type, val, indent + 2)
                 for key, val in field_value.items()
             }
         elif is_dataclass(field.type):
-            field_value = create_dataclass_from_dict(field.type, field_value)
+            field_value = create_dataclass_from_dict(
+                field.type, field_value, indent + 2
+            )
 
         field_values[field.name] = field_value
 
