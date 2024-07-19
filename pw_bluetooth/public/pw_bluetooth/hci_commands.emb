@@ -520,6 +520,15 @@ enum DataPathDirection:
 # ========================= HCI Command packets =========================
 # Core Spec v5.3 Vol 4, Part E, Section 7
 
+
+struct GenericHciCommand:
+  -- In general, the command-specific variants are preferred. This definition is
+  -- for the rare cases where we are generating a packet whose type we don't know
+  -- a priori.
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                     hci.CommandHeader                    header
+  $next [+header.parameter_total_size]  UInt:8[header.parameter_total_size]  payload
+
 # ========== 7.1 Link Control Commands ==========
 
 
