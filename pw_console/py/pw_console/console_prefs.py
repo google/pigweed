@@ -47,6 +47,7 @@ _DEFAULT_CONFIG = {
     'show_python_logger': False,
     'show_source_file': False,
     'hide_date_from_log_time': False,
+    'recolor_log_lines_to_match_level': True,
     # Window arrangement
     'windows': {},
     'window_column_split_method': 'vertical',
@@ -225,6 +226,10 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     @property
     def hide_date_from_log_time(self) -> bool:
         return self._config.get('hide_date_from_log_time', False)
+
+    @property
+    def recolor_log_lines_to_match_level(self) -> bool:
+        return self._config.get('recolor_log_lines_to_match_level', True)
 
     @property
     def show_python_file(self) -> bool:

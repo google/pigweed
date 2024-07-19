@@ -16,7 +16,11 @@
 import collections
 import copy
 
-from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.formatted_text import (
+    ANSI,
+    OneStyleAndTextTuple,
+    StyleAndTextTuples,
+)
 
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
@@ -218,30 +222,23 @@ class TableView:
             else:
                 columns[name] = value.rjust(width)
 
-        # Grab the message to appear after the justified columns with ANSI
-        # escape sequences removed.
-        message_text = strip_ansi(log.record.message)
-        message = log.metadata.fields.get(
-            'msg',
-            message_text.rstrip(),  # Remove any trailing line breaks
+        # Grab the message to appear after the justified columns.
+        message_text = log.metadata.fields.get(
+            'msg', log.record.message.rstrip()
         )
-        # Alternatively ANSI formatting can be preserved with:
-        #   message = ANSI(log.record.message).__pt_formatted_text__()
+        ansi_stripped_message_text = strip_ansi(message_text)
 
-        # Convert to FormattedText if we have a raw string from fields.
-        if isinstance(message, str):
-            message_style = default_style
-            if log.record.levelno >= 30:  # Warning, Error and Critical
-                # Style the whole message to match it's level
-                message_style = 'class:log-level-{}'.format(log.record.levelno)
-            message = (message_style, message)
-        # Add to columns
-        columns['message'] = message
+        # Add to columns for width calculations with ansi sequences removed.
+        columns['message'] = ansi_stripped_message_text
 
         index_modifier = 0
         # Go through columns and convert to FormattedText where needed.
         for i, column in enumerate(columns.items()):
             column_name, column_value = column
+            if column_name == 'message':
+                # Skip the message column in this loop.
+                continue
+
             if i in [0, 1] and column_name in ['time', 'level']:
                 index_modifier -= 1
             # For raw strings that don't have their own ANSI colors, apply the
@@ -265,6 +262,23 @@ class TableView:
                 # Add padding if not the last column.
                 if i < len(columns) - 1:
                     table_fragments.append(padding_formatted_text)
+
+        # Handle message column.
+        if self.prefs.recolor_log_lines_to_match_level:
+            message_style = default_style
+            if log.record.levelno >= 30:  # Warning, Error and Critical
+                # Style the whole message to match the level
+                message_style = 'class:log-level-{}'.format(log.record.levelno)
+
+            message: OneStyleAndTextTuple = (
+                message_style,
+                ansi_stripped_message_text,
+            )
+            table_fragments.append(message)
+        else:
+            # Format the message preserving any ANSI color sequences.
+            message_fragments = ANSI(message_text).__pt_formatted_text__()
+            table_fragments.extend(message_fragments)
 
         # Add the final new line for this row.
         table_fragments.append(('', '\n'))
