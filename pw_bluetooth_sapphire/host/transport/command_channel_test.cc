@@ -1292,8 +1292,8 @@ TEST_F(CommandChannelTest,
                        UpperBits(hci_spec::kInquiry),  // HCI_Inquiry opcode
                        0x00                            // parameter_total_size
       );
-  auto cmd_status = testing::InquiryCommandResponse(
-      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  auto cmd_status = testing::CommandStatusPacket(
+      hci_spec::kInquiry, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status);
 

@@ -18,10 +18,12 @@
 
 #include <cpp-string/string_printf.h>
 
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/error.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
@@ -71,6 +73,42 @@ const hci_spec::LinkKey kRawKey({0xc0,
                                  0xfe},
                                 0,
                                 0);
+const hci_spec::LinkKey kChangedKey({0xfa,
+                                     0xce,
+                                     0xb0,
+                                     0x0c,
+                                     0xa5,
+                                     0x1c,
+                                     0xcd,
+                                     0x15,
+                                     0xea,
+                                     0x5e,
+                                     0xfe,
+                                     0xdb,
+                                     0x1d,
+                                     0x0d,
+                                     0x0a,
+                                     0xd5},
+                                    0,
+                                    0);
+const hci_spec::LinkKey kLegacyKey({0x41,
+                                    0x33,
+                                    0x7c,
+                                    0x0d,
+                                    0xef,
+                                    0xee,
+                                    0xda,
+                                    0xda,
+                                    0xba,
+                                    0xad,
+                                    0x0f,
+                                    0xf1,
+                                    0xce,
+                                    0xc0,
+                                    0xff,
+                                    0xee},
+                                   0,
+                                   0);
 const sm::LTK kLinkKey(
     sm::SecurityProperties(hci_spec::LinkKeyType::kAuthenticatedCombination192),
     kRawKey);
@@ -83,7 +121,8 @@ constexpr BrEdrSecurityRequirements kAuthSecurityRequirements{
 // A default size for PDUs when generating responses for testing.
 const uint16_t PDU_MAX = 0xFFF;
 
-#define TEST_DEV_ADDR_BYTES_LE 0x01, 0x00, 0x00, 0x00, 0x00, 0x00
+const DeviceAddress TEST_DEV_ADDR(DeviceAddress::Type::kLEPublic,
+                                  {0x01, 0x00, 0x00, 0x00, 0x00, 0x00});
 
 const auto kReadScanEnable = testing::ReadScanEnable();
 const auto kReadScanEnableRspNone = testing::ReadScanEnableResponse(0x00);
@@ -95,7 +134,8 @@ const auto kWriteScanEnableNone = testing::WriteScanEnable(0x00);
 const auto kWriteScanEnableInq = testing::WriteScanEnable(0x01);
 const auto kWriteScanEnablePage = testing::WriteScanEnable(0x02);
 const auto kWriteScanEnableBoth = testing::WriteScanEnable(0x03);
-const auto kWriteScanEnableRsp = testing::WriteScanEnableResponse();
+const auto kWriteScanEnableRsp =
+    testing::CommandCompletePacket(hci_spec::kWriteScanEnable);
 
 #define COMMAND_COMPLETE_RSP(opcode)                    \
   StaticByteBuffer(hci_spec::kCommandCompleteEventCode, \
@@ -109,11 +149,13 @@ const uint16_t kScanInterval = 0x0800;  // 1280 ms
 const uint16_t kScanWindow = 0x0011;    // 10.625 ms
 const auto kWritePageScanActivity =
     testing::WritePageScanActivityPacket(kScanInterval, kScanWindow);
-const auto kWritePageScanActivityRsp = testing::WritePageScanActivityResponse();
+const auto kWritePageScanActivityRsp =
+    testing::CommandCompletePacket(hci_spec::kWritePageScanActivity);
 
 const uint8_t kScanType = 0x01;  // Interlaced scan
 const auto kWritePageScanType = testing::WritePageScanTypePacket(kScanType);
-const auto kWritePageScanTypeRsp = testing::WritePageScanTypeResponse();
+const auto kWritePageScanTypeRsp =
+    testing::CommandCompletePacket(hci_spec::kWritePageScanType);
 
 #define COMMAND_STATUS_RSP(opcode, statuscode)        \
   StaticByteBuffer(hci_spec::kCommandStatusEventCode, \
@@ -132,8 +174,7 @@ const auto kAcceptConnectionRequest =
     testing::AcceptConnectionRequestPacket(kTestDevAddr);
 
 const auto kAcceptConnectionRequestRsp =
-    COMMAND_STATUS_RSP(hci_spec::kAcceptConnectionRequest,
-                       pw::bluetooth::emboss::StatusCode::SUCCESS);
+    testing::CommandStatusPacket(hci_spec::kAcceptConnectionRequest);
 
 const auto kConnectionComplete =
     testing::ConnectionCompletePacket(kTestDevAddr, kConnectionHandle);
@@ -143,42 +184,17 @@ const auto kConnectionCompletePageTimeout = testing::ConnectionCompletePacket(
     kConnectionHandle,
     pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT);
 
-const StaticByteBuffer kConnectionCompleteError(
-    hci_spec::kConnectionCompleteEventCode,
-    0x0B,  // parameter_total_size (11 byte payload)
-    pw::bluetooth::emboss::StatusCode::
-        CONNECTION_FAILED_TO_BE_ESTABLISHED,  // status
-    0x00,
-    0x00,                    // connection_handle
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0x01,                    // link_type (ACL)
-    0x00                     // encryption not enabled
-);
+const auto kConnectionCompleteError = testing::ConnectionCompletePacket(
+    TEST_DEV_ADDR,
+    0x0000,
+    pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
-const StaticByteBuffer kConnectionCompleteCanceled(
-    hci_spec::kConnectionCompleteEventCode,
-    0x0B,  // parameter_total_size (11 byte payload)
-    pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID,  // status
-    0x00,
-    0x00,                    // connection_handle
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0x01,                    // link_type (ACL)
-    0x00                     // encryption not enabled
-);
+const auto kConnectionCompleteCanceled = testing::ConnectionCompletePacket(
+    TEST_DEV_ADDR,
+    0x0000,
+    pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
 
-const StaticByteBuffer kCreateConnection(
-    LowerBits(hci_spec::kCreateConnection),
-    UpperBits(hci_spec::kCreateConnection),
-    0x0d,                                   // parameter_total_size (13 bytes)
-    TEST_DEV_ADDR_BYTES_LE,                 // peer address
-    LowerBits(hci::kEnableAllPacketTypes),  // allowable packet types
-    UpperBits(hci::kEnableAllPacketTypes),  // allowable packet types
-    0x02,                                   // page_scan_repetition_mode (R2)
-    0x00,                                   // reserved
-    0x00,
-    0x00,  // clock_offset
-    0x00   // allow_role_switch (don't)
-);
+const auto kCreateConnection = testing::CreateConnectionPacket(TEST_DEV_ADDR);
 
 const auto kCreateConnectionRsp = COMMAND_STATUS_RSP(
     hci_spec::kCreateConnection, pw::bluetooth::emboss::StatusCode::SUCCESS);
@@ -187,26 +203,13 @@ const auto kCreateConnectionRspError = COMMAND_STATUS_RSP(
     hci_spec::kCreateConnection,
     pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
-const StaticByteBuffer kCreateConnectionCancel(
-    LowerBits(hci_spec::kCreateConnectionCancel),
-    UpperBits(hci_spec::kCreateConnectionCancel),
-    0x06,                   // parameter_total_size (6 bytes)
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
+const auto kCreateConnectionCancel =
+    testing::CreateConnectionCancelPacket(TEST_DEV_ADDR);
 
 const auto kCreateConnectionCancelRsp =
-    COMMAND_COMPLETE_RSP(hci_spec::kCreateConnectionCancel);
+    testing::CommandCompletePacket(hci_spec::kCreateConnectionCancel);
 
-const StaticByteBuffer kRemoteNameRequest(
-    LowerBits(hci_spec::kRemoteNameRequest),
-    UpperBits(hci_spec::kRemoteNameRequest),
-    0x0a,                    // parameter_total_size (10 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0x00,                    // page_scan_repetition_mode (R0)
-    0x00,                    // reserved
-    0x00,
-    0x00  // clock_offset
-);
+const auto kRemoteNameRequest = testing::RemoteNameRequestPacket(TEST_DEV_ADDR);
 const auto kRemoteNameRequestRsp = COMMAND_STATUS_RSP(
     hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
@@ -360,210 +363,78 @@ const auto kAuthenticationCompleteFailed = StaticByteBuffer(
     0x0B  // connection_handle
 );
 
-const StaticByteBuffer kLinkKeyRequest(hci_spec::kLinkKeyRequestEventCode,
-                                       0x06,  // parameter_total_size (6 bytes)
-                                       TEST_DEV_ADDR_BYTES_LE  // peer address
-);
+const auto kLinkKeyRequest = testing::LinkKeyRequestPacket(TEST_DEV_ADDR);
 
 const auto kLinkKeyRequestNegativeReply =
-    StaticByteBuffer(LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
-                     UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
-                     0x06,                   // parameter_total_size (6 bytes)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::LinkKeyRequestNegativeReplyPacket(TEST_DEV_ADDR);
 
 const auto kLinkKeyRequestNegativeReplyRsp =
-    StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                     0x0A,
-                     0xF0,
-                     LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
-                     UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
-                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::LinkKeyRequestNegativeReplyResponse(TEST_DEV_ADDR);
 
-auto MakeIoCapabilityResponse(IoCapability io_cap,
-                              AuthenticationRequirements auth_req) {
-  return StaticByteBuffer(hci_spec::kIOCapabilityResponseEventCode,
-                          0x09,  // parameter_total_size (9 bytes)
-                          TEST_DEV_ADDR_BYTES_LE,  // address
-                          io_cap,
-                          0x00,  // OOB authentication data not present
-                          auth_req);
+DynamicByteBuffer MakeIoCapabilityResponse(
+    IoCapability io_cap, AuthenticationRequirements auth_req) {
+  return testing::IoCapabilityResponsePacket(TEST_DEV_ADDR, io_cap, auth_req);
 }
 
-const StaticByteBuffer kIoCapabilityRequest(
-    hci_spec::kIOCapabilityRequestEventCode,
-    0x06,                   // parameter_total_size (6 bytes)
-    TEST_DEV_ADDR_BYTES_LE  // address
-);
+const auto kIoCapabilityRequest =
+    testing::IoCapabilityRequestPacket(TEST_DEV_ADDR);
 
-auto MakeIoCapabilityRequestReply(IoCapability io_cap,
-                                  AuthenticationRequirements auth_req) {
-  return StaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestReply),
-                          UpperBits(hci_spec::kIOCapabilityRequestReply),
-                          0x09,  // parameter_total_size (9 bytes)
-                          TEST_DEV_ADDR_BYTES_LE,  // peer address
-                          io_cap,
-                          0x00,  // No OOB data present
-                          auth_req);
+DynamicByteBuffer MakeIoCapabilityRequestReply(
+    IoCapability io_cap, AuthenticationRequirements auth_req) {
+  return testing::IoCapabilityRequestReplyPacket(
+      TEST_DEV_ADDR, io_cap, auth_req);
 }
 
-const StaticByteBuffer kIoCapabilityRequestReplyRsp(
-    hci_spec::kCommandCompleteEventCode,
-    0x0A,
-    0xF0,
-    LowerBits(hci_spec::kIOCapabilityRequestReply),
-    UpperBits(hci_spec::kIOCapabilityRequestReply),
-    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-    TEST_DEV_ADDR_BYTES_LE                       // peer address
-);
+const auto kIoCapabilityRequestReplyRsp =
+    testing::IoCapabilityRequestReplyResponse(TEST_DEV_ADDR);
 
 const auto kIoCapabilityRequestNegativeReply =
-    StaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                     UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                     0x07,                    // parameter_total_size (7 bytes)
-                     TEST_DEV_ADDR_BYTES_LE,  // peer address
-                     pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
+    testing::IoCapabilityRequestNegativeReplyPacket(
+        TEST_DEV_ADDR, pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
 
 const auto kIoCapabilityRequestNegativeReplyRsp =
-    StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                     0x0A,
-                     0xF0,
-                     LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                     UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE);  // peer address
+    testing::IoCapabilityRequestNegativeReplyResponse(TEST_DEV_ADDR);
 
-auto MakeUserConfirmationRequest(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return StaticByteBuffer(hci_spec::kUserConfirmationRequestEventCode,
-                          0x0A,  // parameter_total_size (10 byte payload)
-                          TEST_DEV_ADDR_BYTES_LE,  // peer address
-                          passkey_bytes[0],
-                          passkey_bytes[1],
-                          passkey_bytes[2],
-                          0x00  // numeric value
-  );
+DynamicByteBuffer MakeUserConfirmationRequest(uint32_t passkey) {
+  return testing::UserConfirmationRequestPacket(TEST_DEV_ADDR, kPasskey);
 }
 
 const auto kUserConfirmationRequestReply =
-    StaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestReply),
-                     UpperBits(hci_spec::kUserConfirmationRequestReply),
-                     0x06,                   // parameter_total_size (6 bytes)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::UserConfirmationRequestReplyPacket(TEST_DEV_ADDR);
 
 const auto kUserConfirmationRequestReplyRsp =
     COMMAND_COMPLETE_RSP(hci_spec::kUserConfirmationRequestReply);
 
 const auto kUserConfirmationRequestNegativeReply =
-    StaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestNegativeReply),
-                     UpperBits(hci_spec::kUserConfirmationRequestNegativeReply),
-                     0x06,                   // parameter_total_size (6 bytes)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::UserConfirmationRequestNegativeReplyPacket(TEST_DEV_ADDR);
 
 const auto kUserConfirmationRequestNegativeReplyRsp =
     COMMAND_COMPLETE_RSP(hci_spec::kUserConfirmationRequestNegativeReply);
 
-const auto kSimplePairingCompleteSuccess =
-    StaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
-                     0x07,  // parameter_total_size (7 byte payload)
-                     0x00,  // status (success)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+const auto kSimplePairingCompleteSuccess = testing::SimplePairingCompletePacket(
+    TEST_DEV_ADDR, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kSimplePairingCompleteError =
-    StaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
-                     0x07,  // parameter_total_size (7 byte payload)
-                     0x05,  // status (authentication failure)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+const auto kSimplePairingCompleteError = testing::SimplePairingCompletePacket(
+    TEST_DEV_ADDR, pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
 DynamicByteBuffer MakeLinkKeyNotification(hci_spec::LinkKeyType key_type) {
-  return DynamicByteBuffer(StaticByteBuffer(
-      hci_spec::kLinkKeyNotificationEventCode,
-      0x17,                    // parameter_total_size (17 bytes)
-      TEST_DEV_ADDR_BYTES_LE,  // peer address
-      0xc0,
-      0xde,
-      0xfa,
-      0x57,
-      0x4b,
-      0xad,
-      0xf0,
-      0x0d,
-      0xa7,
-      0x60,
-      0x06,
-      0x1e,
-      0xca,
-      0x1e,
-      0xca,
-      0xfe,                           // link key
-      static_cast<uint8_t>(key_type)  // key type
-      ));
+  return testing::LinkKeyNotificationPacket(
+      TEST_DEV_ADDR, kRawKey.value(), key_type);
 }
 
 const auto kLinkKeyNotification = MakeLinkKeyNotification(
     hci_spec::LinkKeyType::kAuthenticatedCombination192);
 
-const StaticByteBuffer kLinkKeyRequestReply(
-    LowerBits(hci_spec::kLinkKeyRequestReply),
-    UpperBits(hci_spec::kLinkKeyRequestReply),
-    0x16,                    // parameter_total_size (22 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0xc0,
-    0xde,
-    0xfa,
-    0x57,
-    0x4b,
-    0xad,
-    0xf0,
-    0x0d,
-    0xa7,
-    0x60,
-    0x06,
-    0x1e,
-    0xca,
-    0x1e,
-    0xca,
-    0xfe  // link key
-);
+const auto kLinkKeyRequestReply =
+    testing::LinkKeyRequestReplyPacket(TEST_DEV_ADDR, kRawKey.value());
 
-const StaticByteBuffer kLinkKeyRequestReplyRsp(
-    hci_spec::kCommandCompleteEventCode,
-    0x0A,
-    0xF0,
-    LowerBits(hci_spec::kLinkKeyRequestReply),
-    UpperBits(hci_spec::kLinkKeyRequestReply),
-    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-    TEST_DEV_ADDR_BYTES_LE                       // peer address
-);
+const auto kLinkKeyRequestReplyRsp =
+    testing::LinkKeyRequestReplyResponse(TEST_DEV_ADDR);
 
-const auto kLinkKeyNotificationChanged =
-    StaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
-                     0x17,                    // parameter_total_size (17 bytes)
-                     TEST_DEV_ADDR_BYTES_LE,  // peer address
-                     0xfa,
-                     0xce,
-                     0xb0,
-                     0x0c,
-                     0xa5,
-                     0x1c,
-                     0xcd,
-                     0x15,
-                     0xea,
-                     0x5e,
-                     0xfe,
-                     0xdb,
-                     0x1d,
-                     0x0d,
-                     0x0a,
-                     0xd5,  // link key
-                     0x06   // key type (Changed Combination Key)
-    );
+const auto kLinkKeyNotificationChanged = testing::LinkKeyNotificationPacket(
+    TEST_DEV_ADDR,
+    kChangedKey.value(),
+    hci_spec::LinkKeyType::kChangedCombination);
 
 const StaticByteBuffer kSetConnectionEncryption(
     LowerBits(hci_spec::kSetConnectionEncryption),
@@ -607,39 +478,15 @@ const StaticByteBuffer kReadEncryptionKeySizeRsp(
     0x10   // encryption key size: 16
 );
 
-auto MakeUserPasskeyRequestReply(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return StaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestReply),
-                          UpperBits(hci_spec::kUserPasskeyRequestReply),
-                          0x0A,  // parameter_total_size (10 bytes)
-                          TEST_DEV_ADDR_BYTES_LE,  // peer address
-                          passkey_bytes[0],
-                          passkey_bytes[1],
-                          passkey_bytes[2],
-                          0x00  // numeric value
-  );
+DynamicByteBuffer MakeUserPasskeyRequestReply() {
+  return testing::UserPasskeyRequestReplyPacket(TEST_DEV_ADDR, kPasskey);
 }
 
-const StaticByteBuffer kUserPasskeyRequestReplyRsp(
-    hci_spec::kCommandCompleteEventCode,
-    0x0A,
-    0xF0,
-    LowerBits(hci_spec::kUserPasskeyRequestReply),
-    UpperBits(hci_spec::kUserPasskeyRequestReply),
-    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-    TEST_DEV_ADDR_BYTES_LE                       // peer address
-);
+const auto kUserPasskeyRequestReplyRsp =
+    testing::UserPasskeyRequestReplyResponse(TEST_DEV_ADDR);
 
-auto MakeUserPasskeyNotification(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return StaticByteBuffer(hci_spec::kUserPasskeyNotificationEventCode,
-                          0x0A,  // parameter_total_size (10 byte payload)
-                          TEST_DEV_ADDR_BYTES_LE,  // peer address
-                          passkey_bytes[0],
-                          passkey_bytes[1],
-                          passkey_bytes[2],
-                          0x00  // numeric value
-  );
+DynamicByteBuffer MakeUserPasskeyNotification(uint32_t passkey) {
+  return testing::UserPasskeyNotificationPacket(TEST_DEV_ADDR, kPasskey);
 }
 
 const hci::DataBufferInfo kBrEdrBufferInfo(1024, 1);
@@ -1363,27 +1210,13 @@ TEST_F(BrEdrConnectionManagerTest,
 }
 
 const auto kUserPasskeyRequest =
-    StaticByteBuffer(hci_spec::kUserPasskeyRequestEventCode,
-                     0x06,  // parameter_total_size (6 byte payload)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::UserPasskeyRequestPacket(TEST_DEV_ADDR);
 
 const auto kUserPasskeyRequestNegativeReply =
-    StaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                     UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                     0x06,                   // parameter_total_size (6 bytes)
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::UserPasskeyRequestNegativeReply(TEST_DEV_ADDR);
 
 const auto kUserPasskeyRequestNegativeReplyRsp =
-    StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                     0x0A,
-                     0xF0,
-                     LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                     UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+    testing::UserPasskeyRequestNegativeReplyResponse(TEST_DEV_ADDR);
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry
 // association after the user declines or provides invalid input
@@ -1546,7 +1379,7 @@ TEST_F(BrEdrConnectionManagerTest,
   });
 
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeUserPasskeyRequestReply(kPasskey),
+                        MakeUserPasskeyRequestReply(),
                         &kUserPasskeyRequestReplyRsp);
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
@@ -1743,28 +1576,8 @@ TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
   QueueDisconnection(kConnectionHandle);
 }
 
-const auto kLinkKeyNotificationLegacy =
-    StaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
-                     0x17,                    // parameter_total_size (17 bytes)
-                     TEST_DEV_ADDR_BYTES_LE,  // peer address
-                     0x41,
-                     0x33,
-                     0x7c,
-                     0x0d,
-                     0xef,
-                     0xee,
-                     0xda,
-                     0xda,
-                     0xba,
-                     0xad,
-                     0x0f,
-                     0xf1,
-                     0xce,
-                     0xc0,
-                     0xff,
-                     0xee,  // link key
-                     0x00   // key type (Combination Key)
-    );
+const auto kLinkKeyNotificationLegacy = testing::LinkKeyNotificationPacket(
+    TEST_DEV_ADDR, kLegacyKey.value(), hci_spec::LinkKeyType::kCombination);
 
 // Test: don't bond or mark successfully connected if the link key resulted from
 // legacy pairing

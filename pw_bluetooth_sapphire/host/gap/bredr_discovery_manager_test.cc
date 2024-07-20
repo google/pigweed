@@ -46,7 +46,7 @@ const auto kWriteInquiryActivity =
     testing::WriteInquiryScanActivity(kInquiryScanInterval, kInquiryScanWindow);
 
 const auto kWriteInquiryActivityRsp =
-    testing::WriteInquiryScanActivityResponse();
+    testing::CommandCompletePacket(hci_spec::kWriteInquiryScanActivity);
 
 const StaticByteBuffer kWriteInquiryType(
     LowerBits(hci_spec::kWriteInquiryScanType),
@@ -113,25 +113,27 @@ using BrEdrDiscoveryManagerDeathTest = BrEdrDiscoveryManagerTest;
 
 const auto kInquiry = testing::InquiryCommandPacket();
 
-const auto kWriteLocalNameRsp =
-    testing::WriteLocalNameResponse(pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kWriteLocalNameRsp = testing::CommandCompletePacket(
+    hci_spec::kWriteLocalName, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kWriteLocalNameRspError = testing::WriteLocalNameResponse(
+const auto kWriteLocalNameRspError = testing::CommandCompletePacket(
+    hci_spec::kWriteLocalName,
     pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const auto kWriteExtendedInquiryResponseRsp =
-    testing::WriteExtendedInquiryResponse(
-        pw::bluetooth::emboss::StatusCode::SUCCESS);
+    testing::CommandCompletePacket(hci_spec::kWriteExtendedInquiryResponse,
+                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kWriteExtendedInquiryResponseRspError =
-    testing::WriteExtendedInquiryResponse(
+    testing::CommandCompletePacket(
+        hci_spec::kWriteExtendedInquiryResponse,
         pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
-const auto kInquiryRsp =
-    testing::InquiryCommandResponse(pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kInquiryRsp = testing::CommandStatusPacket(
+    hci_spec::kInquiry, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kInquiryRspError = testing::InquiryCommandResponse(
-    pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
+const auto kInquiryRspError = testing::CommandStatusPacket(
+    hci_spec::kInquiry, pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const StaticByteBuffer kInquiryComplete(
     hci_spec::kInquiryCompleteEventCode,
@@ -364,7 +366,7 @@ const auto kWriteScanEnableNone = testing::WriteScanEnable(0x00);
 const auto kWriteScanEnableInq = testing::WriteScanEnable(0x01);
 const auto kWriteScanEnablePage = testing::WriteScanEnable(0x02);
 const auto kWriteScanEnableBoth = testing::WriteScanEnable(0x03);
-const auto kWriteScanEnableRsp = testing::WriteScanEnableResponse();
+const auto kWriteScanEnableRsp = testing::CommandCompletePacket(hci_spec::kWriteScanEnable);
 
 #undef COMMAND_COMPLETE_RSP
 // clang-format on

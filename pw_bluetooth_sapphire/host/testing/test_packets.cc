@@ -84,7 +84,7 @@ DynamicByteBuffer ConnectionCompletePacket(
     DeviceAddress address,
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::StatusCode status) {
-  auto addr = address.value().bytes();
+  const auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kConnectionCompleteEventCode,
       0x0B,             // parameter_total_size (11 bytes)
@@ -124,7 +124,7 @@ DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
 }
 
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
-  auto addr = address.value().bytes();
+  const auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kCreateConnection),
       UpperBits(hci_spec::kCreateConnection),
@@ -144,6 +144,21 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
       0x00,                                   // Clock_Offset
       0x00                                    // Allow_Role_Switch (Not allowed)
       ));
+}
+
+DynamicByteBuffer CreateConnectionCancelPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kCreateConnectionCancel),
+                       UpperBits(hci_spec::kCreateConnectionCancel),
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
 }
 
 DynamicByteBuffer DisconnectionCompletePacket(
@@ -244,9 +259,116 @@ DynamicByteBuffer InquiryCommandPacket(uint16_t inquiry_length) {
       ));
 }
 
-DynamicByteBuffer InquiryCommandResponse(
-    pw::bluetooth::emboss::StatusCode status_code) {
-  return CommandStatusPacket(hci_spec::kInquiry, status_code);
+DynamicByteBuffer IoCapabilityRequestNegativeReplyPacket(
+    DeviceAddress address, pw::bluetooth::emboss::StatusCode status_code) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
+      UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
+      0x07,  // parameter_total_size (7 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      status_code  // Reason
+      ));
+}
+
+DynamicByteBuffer IoCapabilityRequestNegativeReplyResponse(
+    DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),  // Command_Opcode
+      UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,              // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer IoCapabilityRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(hci_spec::kIOCapabilityRequestEventCode,
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer IoCapabilityRequestReplyPacket(
+    DeviceAddress address,
+    pw::bluetooth::emboss::IoCapability io_cap,
+    pw::bluetooth::emboss::AuthenticationRequirements auth_req) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kIOCapabilityRequestReply),
+      UpperBits(hci_spec::kIOCapabilityRequestReply),
+      0x09,  // parameter_total_size (9 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      io_cap,   // IO_Capability
+      0x00,     // OOB_Data_Present (Not present)
+      auth_req  // Authentication_Requirements
+      ));
+}
+
+DynamicByteBuffer IoCapabilityRequestReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kIOCapabilityRequestReply),  // Command_Opcode
+      UpperBits(hci_spec::kIOCapabilityRequestReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,      // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer IoCapabilityResponsePacket(
+    DeviceAddress address,
+    pw::bluetooth::emboss::IoCapability io_cap,
+    pw::bluetooth::emboss::AuthenticationRequirements auth_req) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kIOCapabilityResponseEventCode,
+      0x09,  // parameter_total_size (9 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      io_cap,   // IO_Capability
+      0x00,     // OOB_Data_Present (Not present)
+      auth_req  // Authentication_Requirements
+      ));
 }
 
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
@@ -433,6 +555,139 @@ DynamicByteBuffer LEStartEncryptionPacket(hci_spec::ConnectionHandle conn,
       ltk[15]));
 }
 
+DynamicByteBuffer LinkKeyNotificationPacket(DeviceAddress address,
+                                            UInt128 link_key,
+                                            hci_spec::LinkKeyType key_type) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kLinkKeyNotificationEventCode,
+      0x17,  // parameter_total_size (23 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      // Link_Key (16 bytes)
+      link_key[0],
+      link_key[1],
+      link_key[2],
+      link_key[3],
+      link_key[4],
+      link_key[5],
+      link_key[6],
+      link_key[7],
+      link_key[8],
+      link_key[9],
+      link_key[10],
+      link_key[11],
+      link_key[12],
+      link_key[13],
+      link_key[14],
+      link_key[15],
+      key_type  // Key_Type
+      ));
+}
+
+DynamicByteBuffer LinkKeyRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(hci_spec::kLinkKeyRequestEventCode,
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer LinkKeyRequestNegativeReplyPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
+                       UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer LinkKeyRequestNegativeReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kLinkKeyRequestNegativeReply),  // Command_Opcode
+      UpperBits(hci_spec::kLinkKeyRequestNegativeReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,         // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer LinkKeyRequestReplyPacket(DeviceAddress address,
+                                            UInt128 link_key) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kLinkKeyRequestReply),
+                       UpperBits(hci_spec::kLinkKeyRequestReply),
+                       0x16,  // parameter_total_size (22 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5],
+                       // Link_Key (16 bytes)
+                       link_key[0],
+                       link_key[1],
+                       link_key[2],
+                       link_key[3],
+                       link_key[4],
+                       link_key[5],
+                       link_key[6],
+                       link_key[7],
+                       link_key[8],
+                       link_key[9],
+                       link_key[10],
+                       link_key[11],
+                       link_key[12],
+                       link_key[13],
+                       link_key[14],
+                       link_key[15]));
+}
+
+DynamicByteBuffer LinkKeyRequestReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kLinkKeyRequestReply),   // Command_Opcode
+      UpperBits(hci_spec::kLinkKeyRequestReply),   // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
 DynamicByteBuffer NumberOfCompletedPacketsPacket(
     hci_spec::ConnectionHandle conn, uint16_t num_packets) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -588,8 +843,8 @@ DynamicByteBuffer ReadScanEnableResponse(uint8_t scan_enable) {
       hci_spec::kCommandCompleteEventCode,
       0x05,  // parameter_total_size (5 bytes)
       0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
-      LowerBits(hci_spec::kReadScanEnable),
-      UpperBits(hci_spec::kReadScanEnable),
+      LowerBits(hci_spec::kReadScanEnable),        // Command_Opcode
+      UpperBits(hci_spec::kReadScanEnable),        // Command_Opcode
       pw::bluetooth::emboss::StatusCode::SUCCESS,  // Status
       scan_enable                                  // Scan_Enable
       ));
@@ -632,7 +887,7 @@ DynamicByteBuffer RejectSynchronousConnectionRequest(
 
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address,
                                                   const std::string& name) {
-  auto addr = address.value().bytes();
+  const auto addr = address.value().bytes();
   auto event = DynamicByteBuffer(
       pw::bluetooth::emboss::RemoteNameRequestCompleteEventView::
           IntrinsicSizeInBytes()
@@ -657,7 +912,7 @@ DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address,
 }
 
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
-  auto addr = address.value().bytes();
+  const auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kRemoteNameRequest),
       UpperBits(hci_spec::kRemoteNameRequest),
@@ -724,6 +979,22 @@ DynamicByteBuffer SetConnectionEncryption(hci_spec::ConnectionHandle conn,
       UpperBits(conn),              // Connection_Handle
       static_cast<uint8_t>(enable)  // Encryption_Enable
       ));
+}
+
+DynamicByteBuffer SimplePairingCompletePacket(
+    DeviceAddress address, pw::bluetooth::emboss::StatusCode status_code) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
+                       0x07,  // parameter_total_size (7 bytes)
+                       status_code,
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
 }
 
 DynamicByteBuffer StartA2dpOffloadRequest(
@@ -814,6 +1085,167 @@ DynamicByteBuffer SynchronousConnectionCompletePacket(
       ));
 }
 
+DynamicByteBuffer UserConfirmationRequestPacket(DeviceAddress address,
+                                                uint32_t passkey) {
+  const auto addr = address.value().bytes();
+  const auto passkey_bytes = ToBytes(passkey);
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kUserConfirmationRequestEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      passkey_bytes[0],  // Numeric_Value
+      passkey_bytes[1],  // Numeric_Value
+      passkey_bytes[2],  // Numeric_Value
+      passkey_bytes[3]   // Numeric_Value
+      ));
+}
+
+DynamicByteBuffer UserConfirmationRequestNegativeReplyPacket(
+    DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kUserConfirmationRequestNegativeReply),
+      UpperBits(hci_spec::kUserConfirmationRequestNegativeReply),
+      0x06,  // parameter_total_size (6 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer UserConfirmationRequestReplyPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestReply),
+                       UpperBits(hci_spec::kUserConfirmationRequestReply),
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer UserPasskeyNotificationPacket(DeviceAddress address,
+                                                uint32_t passkey) {
+  const auto addr = address.value().bytes();
+  const auto passkey_bytes = ToBytes(passkey);
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kUserPasskeyNotificationEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      passkey_bytes[0],  // Numeric_Value
+      passkey_bytes[1],  // Numeric_Value
+      passkey_bytes[2],  // Numeric_Value
+      passkey_bytes[3]   // Numeric_Value
+      ));
+}
+
+DynamicByteBuffer UserPasskeyRequestNegativeReply(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                       UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer UserPasskeyRequestNegativeReplyResponse(
+    DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),  // Command_Opcode
+      UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,             // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer UserPasskeyRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(hci_spec::kUserPasskeyRequestEventCode,
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer UserPasskeyRequestReplyPacket(DeviceAddress address,
+                                                uint32_t passkey) {
+  const auto addr = address.value().bytes();
+  const auto passkey_bytes = ToBytes(passkey);
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kUserPasskeyRequestReply),
+      UpperBits(hci_spec::kUserPasskeyRequestReply),
+      0x0A,  // parameter_total_size (10 bytes)
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5],
+      passkey_bytes[0],  // Numeric_Value
+      passkey_bytes[1],  // Numeric_Value
+      passkey_bytes[2],  // Numeric_Value
+      passkey_bytes[3]   // Numeric_Value
+      ));
+}
+
+DynamicByteBuffer UserPasskeyRequestReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kUserPasskeyRequestReply),  // Command_Opcode
+      UpperBits(hci_spec::kUserPasskeyRequestReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,     // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
 DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
     hci_spec::ConnectionHandle conn, uint16_t flush_timeout) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -825,12 +1257,6 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(
       LowerBits(flush_timeout),  // Flush_Timeout
       UpperBits(flush_timeout)   // Flush_Timeout
       ));
-}
-
-DynamicByteBuffer WriteExtendedInquiryResponse(
-    pw::bluetooth::emboss::StatusCode status_code) {
-  return CommandCompletePacket(hci_spec::kWriteExtendedInquiryResponse,
-                               status_code);
 }
 
 DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,
@@ -846,16 +1272,6 @@ DynamicByteBuffer WriteInquiryScanActivity(uint16_t scan_interval,
       ));
 }
 
-DynamicByteBuffer WriteInquiryScanActivityResponse() {
-  return CommandCompletePacket(hci_spec::kWriteInquiryScanActivity,
-                               pw::bluetooth::emboss::StatusCode::SUCCESS);
-}
-
-DynamicByteBuffer WriteLocalNameResponse(
-    pw::bluetooth::emboss::StatusCode status_code) {
-  return CommandCompletePacket(hci_spec::kWriteLocalName, status_code);
-}
-
 DynamicByteBuffer WritePageScanActivityPacket(uint16_t scan_interval,
                                               uint16_t scan_window) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -867,11 +1283,6 @@ DynamicByteBuffer WritePageScanActivityPacket(uint16_t scan_interval,
       LowerBits(scan_window),    // Page_Scan_Window
       UpperBits(scan_window)     // Page_Scan_Window
       ));
-}
-
-DynamicByteBuffer WritePageScanActivityResponse() {
-  return CommandCompletePacket(hci_spec::kWritePageScanActivity,
-                               pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 DynamicByteBuffer WritePageScanTypePacket(uint8_t scan_type) {
@@ -905,11 +1316,6 @@ DynamicByteBuffer WriteScanEnable(uint8_t scan_enable) {
       0x01,        // parameter_total_size (1 byte)
       scan_enable  // Scan_Enable
       ));
-}
-
-DynamicByteBuffer WriteScanEnableResponse() {
-  return CommandCompletePacket(hci_spec::kWriteScanEnable,
-                               pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 }  // namespace bt::testing
