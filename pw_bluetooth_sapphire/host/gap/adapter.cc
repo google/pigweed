@@ -43,6 +43,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 

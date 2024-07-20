@@ -25,9 +25,12 @@
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
+
+namespace bt::sm {
+class SecurityManager;
+}
 
 namespace bt::gap {
 
@@ -113,10 +116,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Attach connection as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  void set_security_mode(LESecurityMode mode) {
-    BT_ASSERT(sm_);
-    sm_->set_security_mode(mode);
-  }
+  void set_security_mode(LESecurityMode mode);
 
   // Sets a callback that will be called when the peer disconnects.
   void set_peer_disconnect_callback(PeerDisconnectCallback cb) {
@@ -143,15 +143,9 @@ class LowEnergyConnection final : public sm::Delegate {
   PeerId peer_id() const { return peer_->identifier(); }
   hci_spec::ConnectionHandle handle() const { return link_->handle(); }
   hci::LowEnergyConnection* link() const { return link_.get(); }
-  sm::BondableMode bondable_mode() const {
-    BT_ASSERT(sm_);
-    return sm_->bondable_mode();
-  }
+  sm::BondableMode bondable_mode() const;
 
-  sm::SecurityProperties security() const {
-    BT_ASSERT(sm_);
-    return sm_->security();
-  }
+  sm::SecurityProperties security() const;
 
   pw::bluetooth::emboss::ConnectionRole role() const { return link()->role(); }
 

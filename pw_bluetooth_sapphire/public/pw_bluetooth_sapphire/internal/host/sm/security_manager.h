@@ -14,24 +14,12 @@
 
 #pragma once
 #include <memory>
-#include <queue>
-#include <variant>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
-#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
-#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/phase_1.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/phase_3.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"

@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"
 
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 
 namespace bt::gap::internal {
 
@@ -269,6 +270,21 @@ void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level,
   BT_ASSERT(sm_);
   sm_->set_bondable_mode(bondable_mode);
   OnSecurityRequest(level, std::move(cb));
+}
+
+void LowEnergyConnection::set_security_mode(LESecurityMode mode) {
+  BT_ASSERT(sm_);
+  sm_->set_security_mode(mode);
+}
+
+sm::BondableMode LowEnergyConnection::bondable_mode() const {
+  BT_ASSERT(sm_);
+  return sm_->bondable_mode();
+}
+
+sm::SecurityProperties LowEnergyConnection::security() const {
+  BT_ASSERT(sm_);
+  return sm_->security();
 }
 
 // Cancels any on-going pairing procedures and sets up SMP to use the provided

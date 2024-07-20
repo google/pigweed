@@ -28,9 +28,9 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/lmp_feature_set.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 #pragma clang diagnostic ignored "-Wshadow"

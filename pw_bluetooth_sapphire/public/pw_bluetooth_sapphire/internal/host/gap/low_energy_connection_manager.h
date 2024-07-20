@@ -44,6 +44,17 @@
 
 namespace bt {
 
+namespace sm {
+using SecurityManagerFactory = std::function<std::unique_ptr<SecurityManager>(
+    hci::LowEnergyConnection::WeakPtr,
+    l2cap::Channel::WeakPtr,
+    IOCapability,
+    Delegate::WeakPtr,
+    BondableMode,
+    gap::LESecurityMode,
+    pw::async::Dispatcher&)>;
+}  // namespace sm
+
 namespace hci {
 class LocalAddressDelegate;
 }  // namespace hci

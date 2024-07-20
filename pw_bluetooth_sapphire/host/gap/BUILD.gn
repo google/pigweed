@@ -87,6 +87,8 @@ pw_source_set("gap") {
     "types.cc",
   ]
 
+  deps = [ "$dir_pw_bluetooth_sapphire/host/sm" ]
+
   public_deps = [
     ":definitions",
     "$dir_pw_async:heap_dispatcher",
@@ -98,7 +100,7 @@ pw_source_set("gap") {
     "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_bluetooth_sapphire/host/sco",
     "$dir_pw_bluetooth_sapphire/host/sdp",
-    "$dir_pw_bluetooth_sapphire/host/sm",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_third_party/fuchsia:fit",
   ]
 
@@ -154,6 +156,7 @@ pw_test("gap_tests") {
     "$dir_pw_bluetooth_sapphire/host/gatt:testing",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/sm",
     "$dir_pw_bluetooth_sapphire/host/sm:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
