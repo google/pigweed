@@ -214,6 +214,9 @@ DynamicByteBuffer WritePageScanActivityPacket(uint16_t scan_interval,
                                               uint16_t scan_window);
 DynamicByteBuffer WritePageScanActivityResponse();
 
+DynamicByteBuffer WritePageScanTypePacket(uint8_t scan_type);
+DynamicByteBuffer WritePageScanTypeResponse();
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);
 
 DynamicByteBuffer WriteScanEnable(uint8_t scan_enable);

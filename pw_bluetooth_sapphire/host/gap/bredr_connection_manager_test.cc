@@ -111,15 +111,9 @@ const auto kWritePageScanActivity =
     testing::WritePageScanActivityPacket(kScanInterval, kScanWindow);
 const auto kWritePageScanActivityRsp = testing::WritePageScanActivityResponse();
 
-const StaticByteBuffer kWritePageScanType(
-    LowerBits(hci_spec::kWritePageScanType),
-    UpperBits(hci_spec::kWritePageScanType),
-    0x01,  // parameter_total_size (1 byte)
-    0x01   // Interlaced scan
-);
-
-const auto kWritePageScanTypeRsp =
-    COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanType);
+const uint8_t kScanType = 0x01;  // Interlaced scan
+const auto kWritePageScanType = testing::WritePageScanTypePacket(kScanType);
+const auto kWritePageScanTypeRsp = testing::WritePageScanTypeResponse();
 
 #define COMMAND_STATUS_RSP(opcode, statuscode)        \
   StaticByteBuffer(hci_spec::kCommandStatusEventCode, \

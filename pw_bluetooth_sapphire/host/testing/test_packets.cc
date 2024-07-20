@@ -874,6 +874,20 @@ DynamicByteBuffer WritePageScanActivityResponse() {
                                pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
+DynamicByteBuffer WritePageScanTypePacket(uint8_t scan_type) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kWritePageScanType),
+      UpperBits(hci_spec::kWritePageScanType),
+      0x01,      // parameter_total_size (1 byte)
+      scan_type  // Page_Scan_Type
+      ));
+}
+
+DynamicByteBuffer WritePageScanTypeResponse() {
+  return CommandCompletePacket(hci_spec::kWritePageScanType,
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+}
+
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kWritePageTimeout),
