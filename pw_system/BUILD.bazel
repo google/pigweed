@@ -535,11 +535,11 @@ device_simulator_console(
     script = "//pw_system/py:device_sim",
 )
 
-# Conect to a device running :system_example over serial with the
+# Conect to a Pico running :system_example over serial with the
 # pw-system-console.
 device_console(
-    name = "system_example_console",
+    name = "rp2040_system_example_console",
     testonly = True,
-    binary = ":system_example",
+    binary = ":rp2040_system_example",
     script = "//pw_system/py:pw_system_console",
 )
