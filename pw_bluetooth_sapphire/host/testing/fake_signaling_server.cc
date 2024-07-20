@@ -246,7 +246,8 @@ void FakeSignalingServer::SendCFrame(hci_spec::ConnectionHandle conn,
                                                          payload_buffer.size());
   command_packet.mutable_header()->code = code;
   command_packet.mutable_header()->id = id;
-  command_packet.mutable_header()->length = payload_buffer.size();
+  command_packet.mutable_header()->length =
+      static_cast<uint16_t>(payload_buffer.size());
   command_packet.mutable_payload_data().Write(payload_buffer);
   auto& callback = fake_l2cap_->send_frame_callback();
   return callback(conn, l2cap::kSignalingChannelId, response_buffer);

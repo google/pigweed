@@ -65,7 +65,7 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
   auto packet = EmbossEventPacket::New<
       pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto view = packet.view_t(reports_size);
+  auto view = packet.view_t(static_cast<int32_t>(reports_size));
   view.num_reports().Write(2);
   ASSERT_TRUE(view.Ok());
   EXPECT_EQ(view.reports().SizeInBytes(), reports_size);
@@ -77,7 +77,8 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
           pw::bluetooth::emboss::LEExtendedAdvertisingReportData::
                   MinSizeInBytes() +
               first_report_data_size);
-  first_report_view.data_length().Write(first_report_data_size);
+  first_report_view.data_length().Write(
+      static_cast<int32_t>(first_report_data_size));
   first_report_view.data()
       .BackingStorage()
       .WriteBigEndianUInt<first_report_data_size * BITS_IN_BYTE>(0x123456);
@@ -94,7 +95,8 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
           pw::bluetooth::emboss::LEExtendedAdvertisingReportData::
                   MinSizeInBytes() +
               second_report_data_size);
-  second_report_view.data_length().Write(second_report_data_size);
+  second_report_view.data_length().Write(
+      static_cast<int32_t>(second_report_data_size));
   second_report_view.data()
       .BackingStorage()
       .WriteBigEndianUInt<second_report_data_size * BITS_IN_BYTE>(0x1234);

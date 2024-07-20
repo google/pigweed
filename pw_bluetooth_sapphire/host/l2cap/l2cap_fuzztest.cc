@@ -37,7 +37,7 @@ constexpr uint16_t kMaxAclPacketSize = 100;
 constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
 
 // Don't toggle connection too often or else l2cap won't get very far.
-constexpr float kToggleConnectionChance = 0.04;
+constexpr float kToggleConnectionChance = 0.04f;
 
 class FuzzerController : public ControllerTestDoubleBase,
                          public WeakSelf<FuzzerController> {
@@ -107,8 +107,8 @@ class DataFuzzTest : public TestingBase {
     // Consumes 8 bytes.
     auto packet_size = data_.ConsumeIntegralInRange<uint16_t>(
         sizeof(hci_spec::ACLDataHeader),
-        std::min(static_cast<size_t>(kMaxAclPacketSize),
-                 data_.remaining_bytes()));
+        static_cast<uint16_t>(std::min(static_cast<size_t>(kMaxAclPacketSize),
+                                       data_.remaining_bytes())));
 
     auto packet_data = data_.ConsumeBytes<uint8_t>(packet_size);
     if (packet_data.size() < packet_size) {

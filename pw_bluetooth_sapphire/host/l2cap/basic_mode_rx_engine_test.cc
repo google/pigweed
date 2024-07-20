@@ -47,8 +47,8 @@ TEST(BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
                                   0xFF,
                                   0xFF  // Basic L2CAP header
   );
-  auto hci_packet = hci::ACLDataPacket::New(byte_buf.size() -
-                                            sizeof(hci_spec::ACLDataHeader));
+  auto hci_packet = hci::ACLDataPacket::New(
+      static_cast<uint16_t>(byte_buf.size() - sizeof(hci_spec::ACLDataHeader)));
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);
   hci_packet->InitializeFromBuffer();
 

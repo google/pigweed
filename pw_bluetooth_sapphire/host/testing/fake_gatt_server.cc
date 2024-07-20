@@ -48,8 +48,8 @@ void FakeGattServer::HandlePdu(hci_spec::ConnectionHandle conn,
     return;
   }
 
-  att::OpCode opcode = static_cast<uint16_t>(pw::bytes::ConvertOrderFrom(
-      cpp20::endian::little, pdu.To<att::OpCode>()));
+  att::OpCode opcode =
+      pw::bytes::ConvertOrderFrom(cpp20::endian::little, pdu.To<att::OpCode>());
   switch (opcode) {
     case att::kExchangeMTURequest:
       // Always reply back with the default ATT_MTU.

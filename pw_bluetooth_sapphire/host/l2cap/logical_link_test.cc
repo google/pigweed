@@ -159,7 +159,7 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
       kConnHandle,
       hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
       hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
-      group_frame.size());
+      static_cast<uint16_t>(group_frame.size()));
   ASSERT_TRUE(packet);
   packet->mutable_view()->mutable_payload_data().Write(group_frame);
 

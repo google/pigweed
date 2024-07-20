@@ -317,7 +317,8 @@ TEST(FragmenterTest, SingleFragmentExactFit) {
 
   // Make the fragment limit large enough to fit exactly one B-frame containing
   // |payload|.
-  Fragmenter fragmenter(kTestHandle, payload.size() + sizeof(BasicHeader));
+  Fragmenter fragmenter(
+      kTestHandle, static_cast<uint16_t>(payload.size() + sizeof(BasicHeader)));
   PDU pdu = fragmenter.BuildFrame(
       kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
   ASSERT_TRUE(pdu.is_valid());
@@ -362,7 +363,9 @@ TEST(FragmenterTest, TwoFragmentsOffByOne) {
   // Make the fragment limit large enough to fit exactly one B-frame containing
   // 1 octet less than |payload|. The last octet should be placed in a second
   // fragment.
-  Fragmenter fragmenter(kTestHandle, payload.size() + sizeof(BasicHeader) - 1);
+  Fragmenter fragmenter(
+      kTestHandle,
+      static_cast<uint16_t>(payload.size() + sizeof(BasicHeader) - 1));
   PDU pdu = fragmenter.BuildFrame(
       kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
   ASSERT_TRUE(pdu.is_valid());
@@ -410,8 +413,9 @@ TEST(FragmenterTest, TwoFragmentsExact) {
   // Make the fragment limit large enough to fit exactly half a B-frame
   // containing |payload|. The frame should be evenly divided across two
   // fragments.
-  Fragmenter fragmenter(kTestHandle,
-                        (payload.size() + sizeof(BasicHeader)) / 2);
+  Fragmenter fragmenter(
+      kTestHandle,
+      static_cast<uint16_t>((payload.size() + sizeof(BasicHeader)) / 2));
   PDU pdu = fragmenter.BuildFrame(
       kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
   ASSERT_TRUE(pdu.is_valid());

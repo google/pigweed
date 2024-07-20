@@ -150,7 +150,7 @@ class ServerTest : public TestingBase {
 
     // Trigger inbound L2CAP channels for the remaining. |id|, |remote_id|
     // aren't important.
-    auto id = 0x40;
+    l2cap::ChannelId id = 0x40;
     for (auto it = allocated.begin(); it != allocated.end(); it++) {
       EXPECT_TRUE(
           l2cap()->TriggerInboundL2capChannel(kTestHandle1, *it, id, id));
@@ -1175,10 +1175,10 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
     if (!rsp.complete()) {
       // Repeat the request with the continuation state if it was returned.
       auto continuation = rsp.ContinuationState();
-      uint8_t cont_size = continuation.size();
+      uint8_t cont_size = static_cast<uint8_t>(continuation.size());
       EXPECT_NE(0u, cont_size);
       // Make another request with the continuation data.
-      size_t param_size = 8 + cont_size;
+      uint16_t param_size = 8 + cont_size;
       StaticByteBuffer kContinuedRequestStart(
           0x02,  // SDP_ServiceSearchRequest
           0x10,
@@ -1302,10 +1302,10 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
     if (!rsp.complete()) {
       // Repeat the request with the continuation state if it was returned.
       auto continuation = rsp.ContinuationState();
-      uint8_t cont_size = continuation.size();
+      uint8_t cont_size = static_cast<uint8_t>(continuation.size());
       EXPECT_NE(0u, cont_size);
       // Make another request with the continuation data.
-      size_t param_size = 17 + cont_size;
+      uint16_t param_size = 17 + cont_size;
       auto kContinuedRequestAttrStart = StaticByteBuffer(
           0x04,  // SDP_ServiceAttributeRequest
           0x10,
@@ -1494,10 +1494,10 @@ TEST_F(ServerTest, SearchAttributeRequest) {
     if (!rsp.complete()) {
       // Repeat the request with the continuation state if it was returned.
       auto continuation = rsp.ContinuationState();
-      uint8_t cont_size = continuation.size();
+      uint8_t cont_size = static_cast<uint8_t>(continuation.size());
       EXPECT_NE(0u, cont_size);
       // Make another request with the continuation data.
-      size_t param_size = 18 + cont_size;
+      uint16_t param_size = 18 + cont_size;
       auto kContinuedRequestAttrStart = StaticByteBuffer(
           0x06,  // SDP_ServiceAttributeRequest
           0x10,
@@ -1542,7 +1542,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   EXPECT_GE(received, 1u);
   // We should receive both of our entered records.
   EXPECT_EQ(2u, rsp.num_attribute_lists());
-  for (size_t i = 0; i < rsp.num_attribute_lists(); i++) {
+  for (uint32_t i = 0; i < rsp.num_attribute_lists(); i++) {
     const auto& attrs = rsp.attributes(i);
     // Every service has a record handle
     auto handle_it = attrs.find(kServiceRecordHandle);

@@ -178,7 +178,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest,
       'l',
       'o');
   for (size_t i = 0; i < 64; ++i) {
-    payload[0] = i << 1;  // Set TxSeq
+    payload[0] = static_cast<uint8_t>(i << 1);  // Set TxSeq
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle)
             .BuildFrame(kTestChannelId,

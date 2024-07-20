@@ -158,7 +158,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
     auto name = "fuchsia";
     EXPECT_TRUE(result.SetLocalName(name));
 
-    auto appearance = 0x1234;
+    uint16_t appearance = 0x1234;
     result.SetAppearance(appearance);
 
     EXPECT_LE(result.CalculateBlockSize(include_flags),

@@ -1284,7 +1284,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                      channel(),
                      NoOpFailureCallback,
                      dispatcher());
-  for (size_t i = 0; i <= EnhancedControlField::kMaxSeqNum; ++i) {
+  for (uint8_t i = 0; i <= EnhancedControlField::kMaxSeqNum; ++i) {
     tx_engine.UpdateAckSeq(i, /*is_poll_response=*/true);
   }
 }
@@ -2385,9 +2385,10 @@ TEST_F(
 
   // Send and acknowledge enough frames to roll over AckSeq.
   n_info_frames = 0;
-  for (size_t i = 0; i < EnhancedControlField::kMaxSeqNum + 1; i++) {
-    const auto ack_seq =
-        (tx_seq.value() + 1) % (EnhancedControlField::kMaxSeqNum + 1);
+  for (uint8_t i = 0; i < EnhancedControlField::kMaxSeqNum + 1; i++) {
+    const uint8_t ack_seq =
+        (tx_seq.value() + 1) %
+        (static_cast<uint8_t>(EnhancedControlField::kMaxSeqNum) + 1);
     tx_engine.UpdateAckSeq(ack_seq, /*is_poll_response=*/false);
     QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }

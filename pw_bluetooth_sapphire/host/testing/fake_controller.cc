@@ -17,6 +17,7 @@
 #include <pw_bytes/endian.h>
 
 #include <cstddef>
+#include <cstdint>
 
 #include "pw_bluetooth/hci_android.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -354,7 +355,8 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
   MutablePacketView<hci_spec::EventHeader> event(&buffer, payload.size());
 
   event.mutable_header()->event_code = event_code;
-  event.mutable_header()->parameter_total_size = payload.size();
+  event.mutable_header()->parameter_total_size =
+      static_cast<uint8_t>(payload.size());
   event.mutable_payload_data().Write(payload);
 
   SendCommandChannelPacket(buffer);
@@ -363,8 +365,8 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
 void FakeController::SendEvent(hci_spec::EventCode event_code,
                                hci::EmbossEventPacket* packet) {
   auto header = packet->template view<pwemb::EventHeaderWriter>();
-  uint8_t parameter_total_size =
-      packet->size() - pwemb::EventHeader::IntrinsicSizeInBytes();
+  uint8_t parameter_total_size = static_cast<uint8_t>(
+      packet->size() - pwemb::EventHeader::IntrinsicSizeInBytes());
 
   header.event_code_uint().Write(event_code);
   header.parameter_total_size().Write(parameter_total_size);
@@ -425,7 +427,7 @@ void FakeController::SendL2CAPCFrame(hci_spec::ConnectionHandle handle,
 
   cframe.mutable_header()->code = code;
   cframe.mutable_header()->id = id;
-  cframe.mutable_header()->length = payload.size();
+  cframe.mutable_header()->length = static_cast<uint16_t>(payload.size());
   cframe.mutable_payload_data().Write(payload);
 
   SendL2CAPBFrame(
@@ -1938,7 +1940,8 @@ void FakeController::OnReadBufferSize() {
       cpp20::endian::little, settings_.acl_data_packet_length);
   params.hc_total_num_acl_data_packets = settings_.total_num_acl_data_packets;
   params.hc_synchronous_data_packet_length = pw::bytes::ConvertOrderTo(
-      cpp20::endian::little, settings_.synchronous_data_packet_length);
+      cpp20::endian::little,
+      static_cast<uint8_t>(settings_.synchronous_data_packet_length));
   params.hc_total_num_synchronous_data_packets =
       settings_.total_num_synchronous_data_packets;
   RespondWithCommandComplete(hci_spec::kReadBufferSize,
@@ -3015,7 +3018,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
     std::memcpy(state.data,
                 params.advertising_data().BackingStorage().data(),
                 advertising_data_length);
-    state.data_length = advertising_data_length;
+    state.data_length = static_cast<uint16_t>(advertising_data_length);
   } else {
     std::memcpy(state.data + state.data_length,
                 params.advertising_data().BackingStorage().data(),
@@ -3142,7 +3145,7 @@ void FakeController::OnLESetExtendedScanResponseData(
     std::memcpy(state.scan_rsp_data,
                 params.scan_response_data().BackingStorage().data(),
                 scan_response_data_length);
-    state.scan_rsp_length = scan_response_data_length;
+    state.scan_rsp_length = static_cast<uint16_t>(scan_response_data_length);
   } else {
     std::memcpy(state.scan_rsp_data + state.scan_rsp_length,
                 params.scan_response_data().BackingStorage().data(),

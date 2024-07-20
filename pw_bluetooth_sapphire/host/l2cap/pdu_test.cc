@@ -29,8 +29,8 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   StaticByteBuffer bytes(std::forward<T>(data)...);
   BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-  auto packet =
-      hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
+  auto packet = hci::ACLDataPacket::New(
+      static_cast<uint16_t>(bytes.size() - sizeof(hci_spec::ACLDataHeader)));
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
 

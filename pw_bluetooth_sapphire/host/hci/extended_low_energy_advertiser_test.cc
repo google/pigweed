@@ -97,8 +97,8 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   AdvertisingData GetExampleDataMultiplePDUs() {
     AdvertisingData result;
 
-    int num_pdus = 2;
-    for (int i = 0; i < num_pdus; i++) {
+    const uint16_t num_pdus = 2;
+    for (uint16_t i = 0; i < num_pdus; i++) {
       SetServiceData(result, i, kMaxEncodedServiceDataLength);
     }
 
@@ -112,7 +112,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
                           kMaxEncodedServiceDataLength +
                       1;
 
-    for (size_t i = 0; i < num_pdus; i++) {
+    for (uint16_t i = 0; i < num_pdus; i++) {
       SetServiceData(result, i, kMaxEncodedServiceDataLength);
     }
 

@@ -140,7 +140,8 @@ void FakePeer::SendPacket(hci_spec::ConnectionHandle conn,
 void FakePeer::WriteScanResponseReport(
     pw::bluetooth::emboss::LEAdvertisingReportDataWriter report) const {
   BT_DEBUG_ASSERT(scannable_);
-  report.data_length().Write(scan_response_.size());
+  BT_DEBUG_ASSERT(scan_response_.size() < 0xFF);
+  report.data_length().Write(static_cast<uint8_t>(scan_response_.size()));
   report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
       report.BackingStorage().data(),
       report.SizeInBytes() + scan_response_.size());
@@ -190,12 +191,13 @@ DynamicByteBuffer FakePeer::BuildLegacyAdvertisingReportEvent(
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEAdvertisingReportSubeventCode);
 
-  view.num_reports().Write(reports_sizes.size());
+  BT_DEBUG_ASSERT(reports_sizes.size() < 0xFF);
+  view.num_reports().Write(static_cast<uint8_t>(reports_sizes.size()));
 
   // Initially construct an incomplete view to write the |data_length| field.
   auto report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
       view.reports().BackingStorage().data(), reports_sizes[0]);
-  report.data_length().Write(advertising_data_.size());
+  report.data_length().Write(static_cast<int32_t>(advertising_data_.size()));
   // Remake view with the proper size, taking into account |data_length|.
   report = pw::bluetooth::emboss::MakeLEAdvertisingReportDataView(
       view.reports().BackingStorage().data(), reports_sizes[0]);
@@ -330,7 +332,8 @@ void FakePeer::FillExtendedAdvertisingReport(
 
   // skip direct_address_type and direct_address for now since we don't use it
 
-  report.data_length().Write(data.size());
+  BT_DEBUG_ASSERT(data.size() < 0xFF);
+  report.data_length().Write(static_cast<uint8_t>(data.size()));
   std::memcpy(report.data().BackingStorage().begin(), data.data(), data.size());
 }
 
@@ -359,12 +362,12 @@ DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
   auto event =
       hci::EmbossEventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
           hci_spec::kLEMetaEventCode, packet_size);
-  auto packet =
-      event.view<LEExtendedAdvertisingReportSubeventWriter>(reports_size);
+  auto packet = event.view<LEExtendedAdvertisingReportSubeventWriter>(
+      static_cast<int32_t>(reports_size));
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
 
-  uint8_t num_reports = num_full_reports + 1;
+  uint8_t num_reports = static_cast<uint8_t>(num_full_reports + 1);
   packet.num_reports().Write(num_reports);
 
   for (size_t i = 0; i < num_full_reports; i++) {

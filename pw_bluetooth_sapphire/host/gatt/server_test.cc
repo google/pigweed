@@ -813,7 +813,7 @@ TEST_F(ServerTest, ReadByGroupTypeSingleTruncated) {
 
   // Force the MTU to exactly fit |kExpected| which partially contains
   // |kTestValue|.
-  att()->set_mtu(kExpected.size());
+  att()->set_mtu(static_cast<uint16_t>(kExpected.size()));
 
   EXPECT_PACKET_OUT(kExpected);
   fake_chan()->Receive(kRequest);
@@ -861,7 +861,7 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
 
   // Set the MTU to be one byte too short to include the 5th attribute group.
   // The 3rd group is omitted as its group type does not match.
-  att()->set_mtu(kExpected1.size() + 6);
+  att()->set_mtu(static_cast<uint16_t>(kExpected1.size() + 6));
 
   EXPECT_PACKET_OUT(kExpected1);
   fake_chan()->Receive(kRequest1);
@@ -1245,7 +1245,7 @@ TEST_F(ServerTest, ReadByTypeSingleTruncated) {
   // Force the MTU to exactly fit |kExpected| which partially contains
   // |kTestValue2| (the packet is crafted so that both |kRequest| and
   // |kExpected| fit within the MTU).
-  att()->set_mtu(kExpected.size());
+  att()->set_mtu(static_cast<uint16_t>(kExpected.size()));
 
   EXPECT_PACKET_OUT(kExpected);
   fake_chan()->Receive(kRequest);
@@ -1325,7 +1325,7 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   fake_chan()->Receive(kRequest1);
 
   // Set the MTU 1 byte too short for |kExpected1|.
-  att()->set_mtu(kExpected1.size() - 1);
+  att()->set_mtu(static_cast<uint16_t>(kExpected1.size() - 1));
 
   // clang-format off
   const StaticByteBuffer kExpected2(
