@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+
+#include <optional>
 #include <string>
 #include <unordered_set>
 
