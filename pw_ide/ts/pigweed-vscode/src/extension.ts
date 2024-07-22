@@ -90,10 +90,30 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.refresh-compile-commands-and-set-target',
+      () =>
+        vscode.window.showWarningMessage(
+          'This command is currently not supported with Bootstrap projects',
+        ),
+    ),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('pigweed.set-bazelisk-path', () =>
       vscode.window.showWarningMessage(
         'This command is currently not supported with Bootstrap projects',
       ),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.set-bazel-recommended-settings',
+      () =>
+        vscode.window.showWarningMessage(
+          'This command is currently not supported with Bootstrap projects',
+        ),
     ),
   );
 
