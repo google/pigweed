@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.1.1]
+
+- Adds support for [fish shell](https://fishshell.com/) to the
+  `Pigweed: Activate Bazelisk in Terminal` command (in addition to the existing
+  support for `bash` and `zsh`).
+
 ## [1.1.0]
 
 - Adds `Pigweed: Activate Bazelisk in Terminal`: This command will modify the
