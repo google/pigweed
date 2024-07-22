@@ -213,16 +213,23 @@ genrule {
     ],
 }
 
-// Generate cc and header nanopb files.
-// The output file names are based on the srcs file name with a .pb.c / .pb.h
-// extension. Only .proto files are passed to the compile script.
+// Generates .pb.c and .pb.h nanopb files.
+// The output file name is based on the srcs file name with an added extension.
+// All dependencies, including .options files, must be listed in srcs and cannot
+// be prefixed. Use the _with_prefix rules if prefixed. Only .proto files are
+// passed to the compile script.
+//
+// Args:
+//   srcs: The list of source files without a prefix.
+//   out: A one-element list with the output file without a prefix.
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_proto",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
         "proto_files=(); " +
         "for f in \"$${in_files[@]}\"; do " +
         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
-        "proto_files+=(\"$${f}\"); fi; done; " +
+        "proto_files+=(\"$${f}\"); " +
+        "fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location protoc-gen-nanopb) " +
         "--out-dir=$(genDir) " +
@@ -242,19 +249,30 @@ genrule_defaults {
 // single prefix, which can be added with pw_rpc_add_prefix_to_proto.
 // Since pw_rpc_add_prefix_to_proto may include .option files as an input, only
 // .proto files are passed to the compile script. Make sure .option files are
-// prefixed in the same rule as their .proto files.
+// prefixed in the same rule as their .proto files. All dependencies must also
+// be listed in srcs and have a single prefix.
 //
 // See the pw_rpc_echo_service_nanopb target for an example. The echo.proto file
 // is compiled with "pw_rpc" as the prefix.
+//
+// Args:
+//   srcs: The list of source files all with one prefix folder.
+//   out: A one-element list with the output file with a prefix folder. The
+//     prefix is based on the parent name of the first item in srcs.
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_proto_with_prefix",
     cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "compile_dir=$$(dirname $${prefix_dir}); " +
+        "proto_files=(); " +
+        "proto_paths_args=\"\"; " +
         "for f in \"$${in_files[@]}\"; do " +
         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
-        "proto_files+=(\"$${f}\"); fi; done; " +
+        "proto_files+=(\"$${f}\"); " +
+        "proto_path_args+=\"--proto-path=$$(dirname $$(dirname $${f})) \"; " +
+        "fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location protoc-gen-nanopb) " +
+        "$${proto_path_args} " +
         "--out-dir=$(genDir) " +
         "--compile-dir=$${compile_dir} " +
         "--language nanopb " +
@@ -268,8 +286,12 @@ genrule_defaults {
     ],
 }
 
-// Generate the header nanopb RPC file.
-// The output file name is based on the srcs file name with a .rpc.pb.h extension.
+// Generate the header nanopb RPC file (.rpc.pb.h).
+//
+// Args:
+//   srcs: The list of source files without a prefix.
+//   out: A one-element list with the output file without a prefix. The name is
+//     based on the srcs file name with a .rpc.pb.h extension.
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_rpc_header",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
@@ -292,19 +314,30 @@ genrule_defaults {
 // with a single prefix, which can be added with pw_rpc_add_prefix_to_proto.
 // Since pw_rpc_add_prefix_to_proto may include .option files as an input, only
 // .proto files are passed to the compile script. Make sure .option files are
-// prefixed in the same rule as their .proto files.
+// prefixed in the same rule as their .proto files. All dependencies must also
+// be listed in srcs and have a single prefix.
 //
 // See the pw_rpc_echo_service_nanopb target for an example. The echo.proto file
 // is compiled with "pw_rpc" as the prefix.
+//
+// Args:
+//   srcs: The list of source files all with one prefix folder.
+//   out: A one-element list with the output file with a prefix folder. The
+//     prefix is based on the parent name of the first item in srcs.
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_rpc_header_with_prefix",
     cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "compile_dir=$$(dirname $${prefix_dir}); " +
+        "proto_files=(); " +
+        "proto_paths_args=\"\"; " +
         "for f in \"$${in_files[@]}\"; do " +
         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
-        "proto_files+=(\"$${f}\"); fi; done; " +
+        "proto_files+=(\"$${f}\"); " +
+        "proto_path_args+=\"--proto-path=$$(dirname $$(dirname $${f})) \"; " +
+        "fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
+        "$${proto_path_args} " +
         "--out-dir=$(genDir) " +
         "--compile-dir=$${compile_dir} " +
         "--language nanopb_rpc " +
