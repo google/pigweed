@@ -23,7 +23,7 @@ load(
     "pw_cc_toolchain",
 )
 load("@pw_xcode_command_line_tools//:defs.bzl", "XCODE_SDK_PATH")
-load("//pw_toolchain/host_clang:linux_sysroot.bzl", "LINUX_SYSROOT")
+load("//pw_toolchain/host_clang:paths.bzl", "LINUX_SYSROOT", "LLVM_TOOLCHAIN")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,7 +38,7 @@ pw_cc_flag_set(
         # Force dropping the system libc++.
         "-nostdlib++",
         # Use libc++ provided by the toolchain.
-        "external/llvm_toolchain/lib/libc++.a",
+        LLVM_TOOLCHAIN + "/lib/libc++.a",
     ],
     target_compatible_with = ["@platforms//os:macos"],
 )

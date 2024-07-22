@@ -16,3 +16,4 @@
 
 # TODO: https://pwbug.dev/346388161 - Remove this once we migrate to rules_cc.
 LINUX_SYSROOT = "external/" + Label("@linux_sysroot").repo_name
+LLVM_TOOLCHAIN = "external/" + Label("@llvm_toolchain").repo_name
