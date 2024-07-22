@@ -21,12 +21,14 @@
 
 import * as vscode from 'vscode';
 
-// Convert `exec` from callback style to promise style.
-import { exec as cbExec } from 'child_process';
-import util from 'node:util';
-const exec = util.promisify(cbExec);
+import { spawn } from 'child_process';
 
-import { RefreshCallback, OK, refreshManager } from './refreshManager';
+import {
+  RefreshCallback,
+  OK,
+  refreshManager,
+  RefreshCallbackResult,
+} from './refreshManager';
 import logger from './logging';
 import { getPigweedProjectRoot } from './project';
 import { bazel_executable, settings, workingDir } from './settings';
@@ -45,6 +47,23 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
   // This callback will be registered with the RefreshManager to be called
   // when it's time to do the refresh.
   const cb: RefreshCallback = async () => {
+    // This package is an ES module, but we're still building with CommonJS
+    // modules. This is the workaround.
+    // TODO: https://pwbug.dev/354034542 - Change when we're ES modules
+    const { default: stripAnsi } = await import('strip-ansi');
+
+    const cleanLogLine = (line: Buffer) => {
+      // Remove ANSI escape codes that aren't supported in the output window
+      const stripped = stripAnsi(line.toString());
+
+      // Remove superfluous newlines
+      if (stripped.at(-1) === '\n') {
+        return stripped.substring(0, stripped.length - 1);
+      }
+
+      return stripped;
+    };
+
     const cwd = (await getPigweedProjectRoot(
       settings,
       workingDir.get(),
@@ -52,42 +71,64 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
 
     logger.info('Refreshing compile commands');
 
-    try {
-      const { stdout, stderr } = await exec(
-        // TODO: https://pwbug.dev/350861417 - This should use the Bazel
-        // extension commands instead, but doing that through the VS Code
-        // command API is not simple.
-        `${bazel_executable.get()} run ${settings.refreshCompileCommandsTarget()}`,
-        {
-          cwd,
-          signal,
-        },
-      );
+    const cmd = bazel_executable.get();
 
-      if (stdout.length > 0) {
-        logger.info(stdout);
-      }
-
-      if (stderr.length > 0) {
-        logger.info(stderr);
-      }
-    } catch (err: unknown) {
-      const { message, code } = err as unknown as {
-        message: string;
-        code: string;
-      };
-
-      if (code === 'ABORT_ERR') {
-        logger.info('Aborted refreshing compile commands');
-        return OK;
-      } else {
-        logger.error(`Error refreshing compile commands: ${message}`);
-        return { error: message };
-      }
+    if (!cmd) {
+      const message = "Couldn't find a Bazel or Bazelisk executable";
+      logger.error(message);
+      return { error: message };
     }
 
-    logger.info('Finished refreshing compile commands');
-    return OK;
+    const refreshTarget = settings.refreshCompileCommandsTarget();
+
+    if (!refreshTarget) {
+      const message =
+        "There's no configured Bazel target to refresh compile commands";
+      logger.error(message);
+      return { error: message };
+    }
+
+    const args = ['run', settings.refreshCompileCommandsTarget()!];
+
+    let result: RefreshCallbackResult = OK;
+
+    // TODO: https://pwbug.dev/350861417 - This should use the Bazel
+    // extension commands instead, but doing that through the VS Code
+    // command API is not simple.
+    const spawnedProcess = spawn(cmd, args, { cwd, signal });
+
+    spawnedProcess.on('spawn', () => {
+      logger.info(`Running ${cmd} ${args.join(' ')}`);
+    });
+
+    spawnedProcess.on('exit', (code) => {
+      if (code === 0) {
+        logger.info('Finished refreshing compile commands');
+      } else {
+        const message =
+          'Failed to complete compile commands refresh ' +
+          `(error code: ${code})`;
+
+        logger.error(message);
+        result = { error: message };
+      }
+    });
+
+    spawnedProcess.on('error', (err) => {
+      const { name, message } = err;
+
+      if (name === 'ABORT_ERR') {
+        logger.info('Aborted refreshing compile commands');
+      } else {
+        logger.error(`[${name}] while refreshing compile commands: ${message}`);
+        result = { error: message };
+      }
+    });
+
+    // All of the output actually goes out on stderr
+    spawnedProcess.stderr.on('data', (data) => logger.info(cleanLogLine(data)));
+
+    return result;
   };
 
   return [cb, abort];

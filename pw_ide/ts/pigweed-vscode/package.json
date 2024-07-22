@@ -147,7 +147,8 @@
     "@bazel/buildifier": "^7.1.2",
     "glob": "^10.4.5",
     "hjson": "^3.2.2",
-    "node_modules-path": "^2.0.8"
+    "node_modules-path": "^2.0.8",
+    "strip-ansi": "^7.1.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
