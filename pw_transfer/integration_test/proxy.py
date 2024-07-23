@@ -32,9 +32,9 @@ from typing import Awaitable, Callable, Iterable, NamedTuple
 
 from google.protobuf import text_format
 
-from pigweed.pw_rpc.internal import packet_pb2
-from pigweed.pw_transfer import transfer_pb2
-from pigweed.pw_transfer.integration_test import config_pb2
+from pw_rpc.internal import packet_pb2
+from pw_transfer import transfer_pb2
+from pw_transfer.integration_test import config_pb2
 from pw_hdlc import decode
 from pw_transfer import ProtocolVersion
 from pw_transfer.chunk import Chunk

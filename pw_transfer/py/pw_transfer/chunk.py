@@ -20,11 +20,7 @@ from typing import Any
 
 from pw_status import Status
 
-try:
-    from pw_transfer import transfer_pb2
-except ImportError:
-    # For the bazel build, which puts generated protos in a different location.
-    from pigweed.pw_transfer import transfer_pb2  # type: ignore
+from pw_transfer import transfer_pb2
 
 
 class ProtocolVersion(enum.Enum):

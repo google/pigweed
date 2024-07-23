@@ -20,50 +20,20 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load(
     "//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
-    "cipd_client_repository",
     "cipd_repository",
 )
 
-# Set up Bazel platforms.
-# Required by: pigweed.
-# Used in modules: //pw_build, (Assorted modules via select statements).
-http_archive(
-    name = "platforms",
-    sha256 = "8150406605389ececb6da07cbcb509d5637a3ab9a24bc69b1101531367d89d74",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz",
-        "https://github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz",
-    ],
+register_toolchains(
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0plus",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33+nofp",
+    "//pw_toolchain/host_clang:host_cc_toolchain_linux",
+    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
-
-http_archive(
-    name = "rules_platform",
-    sha256 = "0aadd1bd350091aa1f9b6f2fbcac8cd98201476289454e475b28801ecf85d3fd",
-    urls = [
-        "https://github.com/bazelbuild/rules_platform/releases/download/0.1.0/rules_platform-0.1.0.tar.gz",
-    ],
-)
-
-http_archive(
-    name = "rules_cc",
-    sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",
-    strip_prefix = "rules_cc-0.0.9",
-    urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.9/rules_cc-0.0.9.tar.gz"],
-)
-
-local_repository(
-    name = "pw_toolchain",
-    path = "pw_toolchain_bazel",
-)
-
-# Setup CIPD client and packages.
-# Required by: pigweed.
-# Used by modules: all.
-cipd_client_repository()
-
-load("//pw_toolchain:register_toolchains.bzl", "register_pigweed_cxx_toolchains")
-
-register_pigweed_cxx_toolchains()
 
 # Set up legacy pw_transfer test binaries.
 # Required by: pigweed.
@@ -82,104 +52,6 @@ cipd_repository(
     path = "fuchsia/third_party/bloaty/${os}-amd64",
     tag = "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3",
 )
-
-# Set up Starlark library.
-# Required by: io_bazel_rules_go, com_google_protobuf, rules_python
-# Used in modules: None.
-# This must be instantiated before com_google_protobuf as protobuf_deps() pulls
-# in an older version of bazel_skylib. However io_bazel_rules_go requires a
-# newer version.
-http_archive(
-    name = "bazel_skylib",  # 2022-09-01
-    sha256 = "4756ab3ec46d94d99e5ed685d2d24aece484015e45af303eb3a11cab3cdc2e71",
-    strip_prefix = "bazel-skylib-1.3.0",
-    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.3.0.zip"],
-)
-
-load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
-
-bazel_skylib_workspace()
-
-# Used in modules: //pw_grpc
-#
-# TODO: b/345806988 - remove this fork and update to upstream HEAD.
-git_repository(
-    name = "io_bazel_rules_go",
-    commit = "d5ba42f3ca0b8510526ed5df2cf5807bdba43856",
-    remote = "https://github.com/cramertj/rules_go.git",
-)
-
-# Used in modules: //pw_grpc
-http_archive(
-    name = "bazel_gazelle",
-    sha256 = "32938bda16e6700063035479063d9d24c60eda8d79fd4739563f50d331cb3209",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.35.0/bazel-gazelle-v0.35.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.35.0/bazel-gazelle-v0.35.0.tar.gz",
-    ],
-)
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-
-go_rules_dependencies()
-
-go_register_toolchains(version = "1.21.5")
-
-gazelle_dependencies()
-
-load("//pw_grpc:deps.bzl", "pw_grpc_deps")
-
-# gazelle:repository_macro pw_grpc/deps.bzl%pw_grpc_deps
-pw_grpc_deps()
-
-http_archive(
-    name = "rules_proto",
-    sha256 = "dc3fb206a2cb3441b485eb1e423165b231235a1ea9b031b4433cf7bc1fa460dd",
-    strip_prefix = "rules_proto-5.3.0-21.7",
-    urls = [
-        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
-    ],
-)
-
-# Set up Python support.
-http_archive(
-    name = "rules_python",
-    sha256 = "e3f1cc7a04d9b09635afb3130731ed82b5f58eadc8233d4efb59944d92ffc06f",
-    strip_prefix = "rules_python-0.33.2",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.33.2/rules_python-0.33.2.tar.gz",
-)
-
-load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
-
-py_repositories()
-
-# Use Python 3.11 for bazel Python rules.
-python_register_toolchains(
-    name = "python3",
-    # Allows building as root in a docker container. Required by oss-fuzz.
-    ignore_root_user_error = True,
-    python_version = "3.11",
-)
-
-load("@python3//:defs.bzl", "interpreter")
-load("@rules_python//python:pip.bzl", "pip_parse")
-
-# Specify third party Python package versions with pip_parse.
-# pip_parse will generate and expose a repository for each package in the
-# requirements_lock file named @python_packages_{PACKAGE}.
-pip_parse(
-    name = "python_packages",
-    python_interpreter_target = interpreter,
-    requirements_darwin = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_darwin_lock.txt",
-    requirements_linux = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_linux_lock.txt",
-    requirements_windows = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_windows_lock.txt",
-)
-
-load("@python_packages//:requirements.bzl", "install_deps")
-
-# Run pip install for all @python_packages_*//:pkg deps.
-install_deps()
 
 # Setup Fuchsia SDK.
 # Required by: bt-host.
@@ -258,96 +130,13 @@ host_metadata_repository(
     name = "host_metadata",
 )
 
-# Set up rules for Abseil C++.
-# Must be included before com_google_googletest and rules_fuzzing.
-# Required by: rules_fuzzing, fuzztest
-# Generated by //pw_build/py/pw_build/bazel_to_gn.py
-http_archive(
-    name = "com_google_absl",
-    sha256 = "338420448b140f0dfd1a1ea3c3ce71b3bc172071f24f4d9a57d59b45037da440",
-    strip_prefix = "abseil-cpp-20240116.0",
-    url = "https://github.com/abseil/abseil-cpp/releases/download/20240116.0/abseil-cpp-20240116.0.tar.gz",
-)
-
-# Set up upstream googletest and googlemock.
-# Required by: Pigweed, Fuchsia SDK.
-# Used in modules: //pw_analog, //pw_fuzzer, //pw_i2c, //pw_bluetooth_sapphire.
+# TODO: b/354268150 - googletest is in the BCR, but its MODULE.bazel doesn't
+# express its dependency on the Fuchsia SDK correctly.
 git_repository(
     name = "com_google_googletest",
     commit = "3b6d48e8d5c1d9b3f9f10ac030a94008bfaf032b",
     remote = "https://pigweed.googlesource.com/third_party/github/google/googletest",
 )
-
-# Sets up Bazels documentation generator.
-# Required by modules: All
-git_repository(
-    name = "io_bazel_stardoc",
-    commit = "2b801dc9b93f73812948ee4e505805511b0f55dc",
-    remote = "https://github.com/bazelbuild/stardoc.git",
-)
-
-# Set up Protobuf rules.
-# Required by: pigweed.
-# Used in modules: //pw_protobuf.
-# TODO: pwbug.dev/319717451 - Keep this in sync with the pip requirements.
-http_archive(
-    name = "com_google_protobuf",
-    sha256 = "616bb3536ac1fff3fb1a141450fa28b875e985712170ea7f1bfe5e5fc41e2cd8",
-    strip_prefix = "protobuf-24.4",
-    url = "https://github.com/protocolbuffers/protobuf/releases/download/v24.4/protobuf-24.4.tar.gz",
-)
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-protobuf_deps()
-
-# Setup Nanopb protoc plugin.
-# Required by: Pigweed.
-# Used in modules: pw_protobuf.
-http_archive(
-    name = "com_github_nanopb_nanopb",
-    sha256 = "3f78bf63722a810edb6da5ab5f0e76c7db13a961c2aad4ab49296e3095d0d830",
-    strip_prefix = "nanopb-0.4.8",
-    url = "https://github.com/nanopb/nanopb/archive/refs/tags/0.4.8.tar.gz",
-)
-
-load("@com_github_nanopb_nanopb//extra/bazel:nanopb_deps.bzl", "nanopb_deps")
-
-nanopb_deps()
-
-load("@com_github_nanopb_nanopb//extra/bazel:python_deps.bzl", "nanopb_python_deps")
-
-nanopb_python_deps(interpreter)
-
-load("@com_github_nanopb_nanopb//extra/bazel:nanopb_workspace.bzl", "nanopb_workspace")
-
-nanopb_workspace()
-
-# Rust Support
-#
-http_archive(
-    name = "rules_rust",
-    integrity = "sha256-+bWb47wg0VchIADaHt6L5Dma2Gn+Q589nz/MKcTi+lo=",
-    patch_args = ["-p1"],
-    patches = [
-        # Fix rustdoc test w/ proc macros
-        # https://github.com/bazelbuild/rules_rust/pull/1952
-        "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
-        # Adds prototype functionality for documenting multiple crates in one
-        # HTML output directory.  While the approach in this patch may have
-        # issues scaling to giant mono-repos, it is apporpriate for embedded
-        # projects and minimally invasive and should be easy to maintain.  Once
-        # the `rules_rust` community decides on a way to propperly support this,
-        # we will migrate to that solution.
-        # https://github.com/konkers/rules_rust/tree/wip/rustdoc
-        "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
-    ],
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.45.1/rules_rust-v0.45.1.tar.gz"],
-)
-
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies")
-
-rules_rust_dependencies()
 
 load(
     "//pw_toolchain/rust:defs.bzl",
@@ -376,30 +165,7 @@ git_repository(
 # Registers platforms for use with toolchain resolution
 register_execution_platforms("@local_config_platform//:host", "//pw_build/platforms:all")
 
-# Set up rules for fuzz testing.
-# Required by: pigweed.
-# Used in modules: //pw_protobuf, //pw_tokenizer, //pw_fuzzer.
-#
-# TODO(b/311746469): Switch back to a released version when possible.
-git_repository(
-    name = "rules_fuzzing",
-    commit = "67ba0264c46c173a75825f2ae0a0b4b9b17c5e59",
-    remote = "https://github.com/bazelbuild/rules_fuzzing",
-)
-
-load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")
-
-rules_fuzzing_dependencies()
-
-load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
-
-rules_fuzzing_init()
-
-load("@fuzzing_py_deps//:requirements.bzl", fuzzing_install_deps = "install_deps")
-
-fuzzing_install_deps()
-
-# Required by: fuzztest
+# Required by fuzztest
 http_archive(
     name = "com_googlesource_code_re2",
     sha256 = "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f",
@@ -407,26 +173,41 @@ http_archive(
     url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
 )
 
-# Set up rules for FuzzTest.
-# Required by: fuzztest
-# Used in modules: //pw_fuzzer.
-# Generated by //pw_build/py/pw_build/bazel_to_gn.py
+# Required by fuzztest
+http_archive(
+    name = "com_google_absl",
+    sha256 = "338420448b140f0dfd1a1ea3c3ce71b3bc172071f24f4d9a57d59b45037da440",
+    strip_prefix = "abseil-cpp-20240116.0",
+    url = "https://github.com/abseil/abseil-cpp/releases/download/20240116.0/abseil-cpp-20240116.0.tar.gz",
+)
+
+# Fuzztest is not in the BCR yet (https://github.com/google/fuzztest/issues/950).
 http_archive(
     name = "com_google_fuzztest",
     strip_prefix = "fuzztest-6eb010c7223a6aa609b94d49bfc06ac88f922961",
     url = "https://github.com/google/fuzztest/archive/6eb010c7223a6aa609b94d49bfc06ac88f922961.zip",
 )
 
-RULES_JVM_EXTERNAL_TAG = "2.8"
+# TODO: https://pwbug.dev/258836641 - Move this to MODULE.bazel. Requires a
+# bunch of BUILD.bazel changes, so left to a followup.
+RULES_JVM_EXTERNAL_TAG = "6.2"
 
-RULES_JVM_EXTERNAL_SHA = "79c9850690d7614ecdb72d68394f994fef7534b292c4867ce5e7dec0aa7bdfad"
+RULES_JVM_EXTERNAL_SHA = "808cb5c30b5f70d12a2a745a29edc46728fd35fa195c1762a596b63ae9cebe05"
 
 http_archive(
     name = "rules_jvm_external",
     sha256 = RULES_JVM_EXTERNAL_SHA,
     strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
-    url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
+    url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG),
 )
+
+load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
+
+rules_jvm_external_deps()
+
+load("@rules_jvm_external//:setup.bzl", "rules_jvm_external_setup")
+
+rules_jvm_external_setup()
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
@@ -456,12 +237,7 @@ new_git_repository(
     remote = "https://github.com/kmackay/micro-ecc.git",
 )
 
-git_repository(
-    name = "boringssl",
-    commit = "0fd67c76fc4bfb05a665c087ebfead77a3267f6d",
-    remote = "https://boringssl.googlesource.com/boringssl",
-)
-
+# TODO: https://pwbug.dev/354749299 - Use the BCR version of mbedtls.
 git_repository(
     name = "mbedtls",
     build_file = "//:third_party/mbedtls/mbedtls.BUILD.bazel",
@@ -470,6 +246,7 @@ git_repository(
     remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
 )
 
+# TODO: https://pwbug.dev/354747966 - Update the BCR version of Emboss.
 git_repository(
     name = "com_google_emboss",
     remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
@@ -482,14 +259,6 @@ git_repository(
     build_file = "//third_party/icu:icu.BUILD.bazel",
     commit = "ef02cc27c0faceffc9345e11a35769ae92b836fb",
     remote = "https://fuchsia.googlesource.com/third_party/icu",
-)
-
-http_archive(
-    name = "freertos",
-    build_file = "//third_party/freertos:freertos.BUILD.bazel",
-    sha256 = "89af32b7568c504624f712c21fe97f7311c55fccb7ae6163cda7adde1cde7f62",
-    strip_prefix = "FreeRTOS-Kernel-10.5.1",
-    urls = ["https://github.com/FreeRTOS/FreeRTOS-Kernel/archive/refs/tags/V10.5.1.tar.gz"],
 )
 
 http_archive(
@@ -526,10 +295,6 @@ new_local_repository(
     build_file_content = 'cc_library(name="hal_driver")',
     path = ".",
 )
-
-load("//targets/rp2040:deps.bzl", "pigweed_rp2_deps")
-
-pigweed_rp2_deps()
 
 load("//pw_ide:deps.bzl", "pw_ide_deps")
 

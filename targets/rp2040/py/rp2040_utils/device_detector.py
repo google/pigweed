@@ -114,7 +114,7 @@ def _custom_find_library(name: str) -> str | None:
     # libusb provided by Bazel
     try:
         # pylint: disable=import-outside-toplevel
-        from rules_python.python.runfiles import runfiles  # type: ignore
+        from python.runfiles import runfiles  # type: ignore
 
         r = runfiles.Create()
         libusb_dir = os.path.dirname(

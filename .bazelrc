@@ -11,9 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
-# TODO: https://pwbug.dev/258836641#comment4: Enabling bzlmod breaks the build.
-common --noenable_bzlmod
+#
 
 # Improve debugability by printing all arguments for failing commands.
 common --verbose_failures

@@ -150,6 +150,9 @@ fuchsia_cipd_releases(
         ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.x64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 fuchsia_cipd_releases(
@@ -160,4 +163,7 @@ fuchsia_cipd_releases(
         ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.arm64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
 )

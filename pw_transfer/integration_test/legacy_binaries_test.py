@@ -33,10 +33,10 @@ import itertools
 from parameterized import parameterized
 import random
 
-from pigweed.pw_transfer.integration_test import config_pb2
-from pigweed.pw_transfer.integration_test import test_fixture
+from pw_transfer.integration_test import config_pb2
+from pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness
-from rules_python.python.runfiles import runfiles
+from python.runfiles import runfiles
 
 # Each set of transfer tests uses a different client/server port pair to
 # allow tests to be run in parallel.

@@ -33,9 +33,9 @@ Which tests to run can be specified as command-line arguments:
 from parameterized import parameterized
 import random
 
-from pigweed.pw_transfer.integration_test import test_fixture
+from pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness, BasicTransfer
-from pigweed.pw_transfer.integration_test import config_pb2
+from pw_transfer.integration_test import config_pb2
 
 
 class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):

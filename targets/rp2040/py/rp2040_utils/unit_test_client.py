@@ -29,7 +29,7 @@ except ImportError:
 # If the script is being run through Bazel, our client is provided at a well
 # known location in its runfiles.
 try:
-    from rules_python.python.runfiles import runfiles  # type: ignore
+    from python.python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
     _TARGET_CLIENT_COMMAND = r.Rlocation(

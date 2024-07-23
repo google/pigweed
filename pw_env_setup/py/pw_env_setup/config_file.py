@@ -21,7 +21,7 @@ import os
 
 try:
     # This will only succeed when using config_file from Bazel.
-    from rules_python.python.runfiles import runfiles  # type: ignore
+    from python.runfiles import runfiles  # type: ignore
 except (ImportError, ModuleNotFoundError):
     runfiles = None
 

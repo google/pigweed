@@ -1,0 +1,226 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+module(
+    name = "pigweed",
+    version = "0.0.1",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.6.1")
+bazel_dep(name = "boringssl", version = "0.0.0-20240530-2db0eb3")
+bazel_dep(name = "freertos", version = "10.5.1")
+bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
+bazel_dep(name = "nanopb", repo_name = "com_github_nanopb_nanopb")
+bazel_dep(name = "pico-sdk", version = "1.6.0-rc1")
+bazel_dep(name = "picotool")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "protobuf", version = "24.4", repo_name = "com_google_protobuf")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_fuzzing", version = "0.5.2")
+bazel_dep(name = "rules_go", version = "0.44.2", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "rules_libusb", version = "0.1.0-rc1")
+bazel_dep(name = "rules_platform", version = "0.1.0")
+bazel_dep(name = "rules_proto", version = "6.0.0")
+bazel_dep(name = "rules_python", version = "0.34.0")
+bazel_dep(name = "rules_rust", version = "0.45.1")
+
+# Repository overrides
+# ====================
+
+# TODO: https://pwbug.dev/258836641 - Pre-release version needed for the Pico
+# SDK. Remove this once rules_cc 0.10.0 is released and the Pico SDK
+# MODULE.bazel declares its dependency on it.
+archive_override(
+    module_name = "rules_cc",
+    integrity = "sha256-NddP6xi6LzsIHT8bMSVJ2NtoURbN+l3xpjvmIgB6aSg=",
+    strip_prefix = "rules_cc-1acf5213b6170f1f0133e273cb85ede0e732048f",
+    urls = [
+        "https://github.com/bazelbuild/rules_cc/archive/1acf5213b6170f1f0133e273cb85ede0e732048f.zip",
+    ],
+)
+
+# TODO: https://pwbug.dev/354274498 - nanopb is not yet in the BCR.
+git_override(
+    module_name = "nanopb",
+    commit = "f9191cd0be4177abd0d04546d61d59a9b6c32de3",
+    remote = "https://github.com/nanopb/nanopb.git",
+)
+
+# TODO: https://pwbug.dev/354270165 - Add picotool to the BCR.
+git_override(
+    module_name = "picotool",
+    commit = "6cd88302465919ff2005c88494f4f8dafc3b207e",
+    remote = "https://github.com/armandomontanez/picotool",
+)
+
+# TODO: b/345806988 - remove this fork and update to upstream HEAD.
+git_override(
+    module_name = "rules_go",
+    commit = "d5ba42f3ca0b8510526ed5df2cf5807bdba43856",
+    remote = "https://github.com/cramertj/rules_go.git",
+)
+
+archive_override(
+    module_name = "rules_rust",
+    integrity = "sha256-+bWb47wg0VchIADaHt6L5Dma2Gn+Q589nz/MKcTi+lo=",
+    patch_strip = 1,
+    patches = [
+        # Fix rustdoc test w/ proc macros
+        # https://github.com/bazelbuild/rules_rust/pull/1952
+        "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
+        # Adds prototype functionality for documenting multiple crates in one
+        # HTML output directory.  While the approach in this patch may have
+        # issues scaling to giant mono-repos, it is appropriate for embedded
+        # projects and minimally invasive and should be easy to maintain.  Once
+        # the `rules_rust` community decides on a way to propperly support this,
+        # we will migrate to that solution.
+        # https://github.com/konkers/rules_rust/tree/wip/rustdoc
+        "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
+    ],
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.45.1/rules_rust-v0.45.1.tar.gz"],
+)
+
+# Configure libusb
+# ================
+#
+# The rules_libusb lets you configure which actual libusb version to use.
+libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
+libusb.source_release(min_version = "1.0.22")
+use_repo(libusb, "libusb")
+
+# Configure C++ toolchains
+# ========================
+#
+# TODO: https://pwbug.dev/346388161 - Migrate to the rules_cc toolchain API.
+bazel_dep(name = "pw_toolchain")
+local_path_override(
+    module_name = "pw_toolchain",
+    path = "pw_toolchain_bazel",
+)
+
+xcode = use_repo_rule("@pw_toolchain//features/macos/private:xcode_command_line_tools.bzl", "pw_xcode_repository")
+
+xcode(name = "pw_xcode_command_line_tools")
+
+cipd_client_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "_cipd_client_repository")
+
+cipd_client_repository(name = "cipd_client")
+
+cipd_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
+
+# Fetch llvm toolchain.
+cipd_repository(
+    name = "llvm_toolchain",
+    build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
+    path = "fuchsia/third_party/clang/${os}-${arch}",
+    tag = "git_revision:c58bc24fcf678c55b0bf522be89eff070507a005",
+)
+
+# Fetch linux sysroot for host builds.
+cipd_repository(
+    name = "linux_sysroot",
+    path = "fuchsia/third_party/sysroot/bionic",
+    tag = "git_revision:702eb9654703a7cec1cadf93a7e3aa269d053943",
+)
+
+# Fetch gcc-arm-none-eabi toolchain.
+cipd_repository(
+    name = "gcc_arm_none_eabi_toolchain",
+    build_file = "@pw_toolchain//build_external:gcc_arm_none_eabi.BUILD",
+    path = "fuchsia/third_party/armgcc/${os}-${arch}",
+    tag = "version:2@12.2.MPACBTI-Rel1.1",
+)
+
+# Get probe-rs
+# ============
+#
+# TODO: https://pwbug.dev/354742574 - Make it simpler to depend on probe-rs.
+http_archive = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
+)
+
+http_archive(
+    name = "probe-rs-tools-x86_64-unknown-linux-gnu",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    sha256 = "21e8d7df39fa0cdc9a0421e0ac2ac5ba81ec295ea11306f26846089f6fe975c0",
+    strip_prefix = "probe-rs-tools-x86_64-unknown-linux-gnu",
+    url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
+)
+
+http_archive(
+    name = "probe-rs-tools-aarch64-unknown-linux-gnu",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    sha256 = "95d91ebe08868d5119a698e3268ff60a4d71d72afa26ab207d43c807c729c90a",
+    strip_prefix = "probe-rs-tools-aarch64-unknown-linux-gnu",
+    url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
+)
+
+http_archive(
+    name = "probe-rs-tools-x86_64-apple-darwin",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    sha256 = "0e35cc92ff34af1b1c72dd444e6ddd57c039ed31c2987e37578864211e843cf1",
+    strip_prefix = "probe-rs-tools-x86_64-apple-darwin",
+    url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-x86_64-apple-darwin.tar.xz",
+)
+
+http_archive(
+    name = "probe-rs-tools-aarch64-apple-darwin",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    sha256 = "7140d9c2c61f8712ba15887f74df0cb40a7b16728ec86d5f45cc93fe96a0a29a",
+    strip_prefix = "probe-rs-tools-aarch64-apple-darwin",
+    url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-aarch64-apple-darwin.tar.xz",
+)
+
+http_archive(
+    name = "probe-rs-tools-x86_64-pc-windows-msvc",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    sha256 = "d195dfa3466a87906251e27d6d70a0105274faa28ebf90ffadad0bdd89b1ec77",
+    strip_prefix = "probe-rs-tools-x86_64-pc-windows-msvc",
+    url = "https://github.com/probe-rs/probe-rs/releases/download/v0.24.0/probe-rs-tools-x86_64-pc-windows-msvc.zip",
+)
+
+# Configure Python toolchains and pip dependencies.
+# =================================================
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    # Allows building as root in a docker container. Required by oss-fuzz.
+    ignore_root_user_error = True,
+    is_default = True,
+    python_version = "3.11",
+)
+use_repo(python, "pythons_hub")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "python_packages",
+    python_version = "3.11",
+    requirements_darwin = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_darwin_lock.txt",
+    requirements_linux = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_linux_lock.txt",
+    requirements_windows = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_windows_lock.txt",
+)
+use_repo(pip, "python_packages")
+
+# TODO: b/354241571 - The next two lines are only required because the Fuchsia
+# SDK doesn't correctly restrict the target platform compatibility of all its
+# targets. We should remove them once the bug is fixed.
+register_toolchains("@pythons_hub//:all")
+
+register_toolchains("@rules_python//python/runtime_env_toolchains:all")
+
+# Configure Go dependencies
+# =========================
+go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(go_deps, "org_golang_google_grpc", "org_golang_google_grpc_examples", "org_golang_google_protobuf")

@@ -36,7 +36,7 @@ DEFAULT_PORT = 34172
 # If the script is being run through Bazel, our runner and server are provided
 # at well known locations in the runfiles.
 try:
-    from rules_python.python.runfiles import runfiles  # type: ignore
+    from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
     _TEST_RUNNER_COMMAND = r.Rlocation(

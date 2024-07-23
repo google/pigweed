@@ -275,9 +275,9 @@ pw_cc_toolchain(
     compiler = "clang",
     cxx_builtin_include_directories = select({
         "@platforms//os:linux": [
-            "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
-            "%package(@llvm_toolchain//)%/include/c++/v1",
-            "%package(@llvm_toolchain//)%/lib/clang/18/include",
+            "%package(@@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
+            "%package(@@llvm_toolchain//)%/include/c++/v1",
+            "%package(@@llvm_toolchain//)%/lib/clang/18/include",
             "%sysroot%/usr/local/include",
             "%sysroot%/usr/include/x86_64-linux-gnu",
             "%sysroot%/usr/include",
@@ -287,8 +287,8 @@ pw_cc_toolchain(
             "%sysroot%/System/Library/Frameworks/CoreFoundation.framework/Headers",
             "%sysroot%/System/Library/Frameworks/IOKit.framework/Headers",
             "%sysroot%/System/Library/Frameworks/Security.framework/Headers",
-            "%package(@llvm_toolchain//)%/include/c++/v1",
-            "%package(@llvm_toolchain//)%/lib/clang/18/include",
+            "%package(@@llvm_toolchain//)%/include/c++/v1",
+            "%package(@@llvm_toolchain//)%/lib/clang/18/include",
         ],
         "//conditions:default": [],
     }),

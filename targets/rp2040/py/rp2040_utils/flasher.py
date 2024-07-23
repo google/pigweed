@@ -35,7 +35,7 @@ _LOG = logging.getLogger()
 # If the script is being run through Bazel, our support binaries are provided
 # at well known locations in its runfiles.
 try:
-    from rules_python.python.runfiles import runfiles  # type: ignore
+    from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
     _PROBE_RS_COMMAND = r.Rlocation('pigweed/third_party/probe-rs/probe-rs')

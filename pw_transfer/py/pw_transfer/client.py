@@ -30,12 +30,7 @@ from pw_transfer.transfer import (
     WriteTransfer,
 )
 from pw_transfer.chunk import Chunk
-
-try:
-    from pw_transfer import transfer_pb2
-except ImportError:
-    # For the bazel build, which puts generated protos in a different location.
-    from pigweed.pw_transfer import transfer_pb2  # type: ignore
+from pw_transfer import transfer_pb2
 
 _LOG = logging.getLogger(__package__)
 

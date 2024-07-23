@@ -20,8 +20,8 @@ from struct import pack
 import time
 import unittest
 
-from pigweed.pw_rpc.internal import packet_pb2
-from pigweed.pw_transfer import transfer_pb2
+from pw_rpc.internal import packet_pb2
+from pw_transfer import transfer_pb2
 from pw_hdlc import encode
 from pw_transfer.chunk import Chunk, ProtocolVersion
 

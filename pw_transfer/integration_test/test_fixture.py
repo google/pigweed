@@ -30,8 +30,8 @@ import unittest
 from google.protobuf import text_format
 
 from pw_protobuf_protos import status_pb2
-from pigweed.pw_transfer.integration_test import config_pb2
-from rules_python.python.runfiles import runfiles
+from pw_transfer.integration_test import config_pb2
+from python.runfiles import runfiles
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
 _LOG.level = logging.DEBUG

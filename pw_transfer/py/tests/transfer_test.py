@@ -27,11 +27,7 @@ from pw_rpc.internal import packet_pb2
 import pw_transfer
 from pw_transfer import ProtocolVersion
 
-try:
-    from pw_transfer import transfer_pb2
-except ImportError:
-    # For the bazel build, which puts generated protos in a different location.
-    from pigweed.pw_transfer import transfer_pb2  # type: ignore
+from pw_transfer import transfer_pb2
 
 _TRANSFER_SERVICE_ID = ids.calculate('pw.transfer.Transfer')
 _FIRST_SESSION_ID = 1

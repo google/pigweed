@@ -104,7 +104,7 @@ def run_bloaty(
         # If running from within a Bazel context, find the Bloaty executable
         # within the project's runfiles.
         # pylint: disable=import-outside-toplevel
-        from rules_python.python.runfiles import runfiles  # type: ignore
+        from python.runfiles import runfiles  # type: ignore
 
         r = runfiles.Create()
         bloaty_path = r.Rlocation("bloaty/bloaty")
