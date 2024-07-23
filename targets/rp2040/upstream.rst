@@ -25,16 +25,20 @@ Build everything
 ================
 .. code-block:: console
 
-   bazelisk build --config=rp2040 //...
+   $ bazelisk build --config=rp2040 //...
 
 Run on-device tests
 ===================
 .. _PicoPico: https://pigweed.googlesource.com/pigweed/hardware/picopico
 
-The recommended way to run on-device RP2040 tests is
+The recommended way to run on-device RP2040 tests is with a
+`Raspberry Pi Pico <https://www.raspberrypi.com/products/raspberry-pi-pico/>`_
+connected through a
+`Raspberry Pi Debug Probe <https://www.raspberrypi.com/products/debug-probe/>`_.
+
+The Pigweed team uses
 `PicoPico <https://pigweed.googlesource.com/pigweed/hardware/picopico>`_,
-a custom hardware setup that the Pigweed team built to make parallel
-testing easier.
+a custom hardware setup that makes parallel on-device testing easier.
 
 .. _Updating the firmware on the Debug Probe: https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html#updating-the-firmware-on-the-debug-probe
 .. _Getting Started: https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html#getting-started
@@ -44,14 +48,8 @@ testing easier.
 
    .. tab-set::
 
-      .. tab-item:: PicoPico
-         :sync: picopico
-
-         Connect the USB-Micro port of the **DEBUG PROBE** Pico
-         to a USB port on your development host. Don't connect the
-         **DEVICE UNDER TEST** Pico to anything.
-
       .. tab-item:: Raspberry Pi Debug Probe
+         :sync: debug_probe
 
          Make sure that your Debug Probe is running firmware version 2.0.1
          or later. See `Updating the firmware on the Debug Probe`_.
@@ -62,17 +60,55 @@ testing easier.
 
             UART must be wired up as described in `Getting Started`_.
 
+      .. tab-item:: Standalone Raspberry Pi Pico
+         :sync: single_pico
+
+         You can run Pigweed's tests with a single Pi Pico and no additional
+         hardware with the following limitations:
+
+         * Tests will not be parallelized if more than one Pi Pico is attached.
+         * If the Pi Pico crashes during a test, the failure will cascade into
+           subsequent tests. You'll need to manually disconnect and re-connect
+           the device to get it working again.
+
+      .. tab-item:: PicoPico
+         :sync: picopico
+
+         Connect the USB-Micro port of the **DEBUG PROBE** Pico
+         to a USB port on your development host. Don't connect the
+         **DEVICE UNDER TEST** Pico to anything.
+
 #. Start the test runner server:
 
-   .. code-block:: console
+   .. tab-set::
 
-      bazelisk run //targets/rp2040/py:unit_test_server
+      .. tab-item:: Raspberry Pi Debug Probe
+         :sync: debug_probe
+
+         .. code-block:: console
+
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --debug-probe-only
+
+      .. tab-item:: Standalone Raspberry Pi Pico
+         :sync: single_pico
+
+         .. code-block:: console
+
+            $ bazelisk run //targets/rp2040/py:unit_test_server
+
+      .. tab-item:: PicoPico
+         :sync: picopico
+
+         .. code-block:: console
+
+            $ bazelisk run //targets/rp2040/py:unit_test_server
+
 
 #. Open another terminal and run the tests:
 
    .. code-block:: console
 
-      bazelisk test --config=rp2040 //...
+      $ bazelisk test --config=rp2040 //...
 
 ---------------
 Older GN guides
@@ -105,9 +141,9 @@ were downloaded to.
       .. tab-item:: Linux
          :sync: linux
 
-         .. code-block:: sh
+         .. code-block:: console
 
-            sudo apt-get install libusb-1.0-0-dev
+            $ sudo apt-get install libusb-1.0-0-dev
 
          .. admonition:: Note
             :class: tip
@@ -117,10 +153,10 @@ were downloaded to.
       .. tab-item:: macOS
          :sync: macos
 
-         .. code-block:: sh
+         .. code-block:: console
 
-            brew install libusb
-            brew install pkg-config
+            $ brew install libusb
+            $ brew install pkg-config
 
          .. admonition:: Note
             :class: tip
