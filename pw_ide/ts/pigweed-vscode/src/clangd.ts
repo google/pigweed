@@ -14,13 +14,16 @@
 
 import * as vscode from 'vscode';
 
+import { createInterface } from 'readline/promises';
+import { createReadStream } from 'fs';
 import { glob } from 'glob';
-import { basename, dirname, join } from 'path';
+import { basename, dirname, isAbsolute, join } from 'path';
 
 import { refreshCompileCommands } from './bazelWatcher';
-import { refreshManager } from './refreshManager';
+import { OK, RefreshCallback, refreshManager } from './refreshManager';
 import { settingFor, settings, stringSettingFor, workingDir } from './settings';
 import { launchTroubleshootingLink } from './links';
+import logger from './logging';
 
 const CDB_FILE_NAME = 'compile_commands.json' as const;
 const CDB_FILE_DIR = '.compile_commands' as const;
@@ -76,6 +79,68 @@ export async function setTarget(target: string): Promise<void> {
     // Restart the clangd server so it picks up the new setting.
     vscode.commands.executeCommand('clangd.restart'),
   );
+}
+
+/** Parse a compilation database and get the source files in the build. */
+async function parseForSourceFiles(target: string): Promise<Set<string>> {
+  const rd = createInterface({
+    input: createReadStream(targetCompileCommandsPath(target)),
+    crlfDelay: Infinity,
+  });
+
+  const regex = /^\s*"file":\s*"([^"]*)",$/;
+  const files = new Set<string>();
+
+  for await (const line of rd) {
+    const match = regex.exec(line);
+
+    if (match) {
+      const matchedPath = match[1];
+
+      if (
+        // Ignore files outside of this project dir
+        !isAbsolute(matchedPath) &&
+        // Ignore build artifacts
+        !matchedPath.startsWith('bazel') &&
+        // Ignore external dependencies
+        !matchedPath.startsWith('external')
+      ) {
+        files.add(matchedPath);
+      }
+    }
+  }
+
+  return files;
+}
+
+/** A cache of files that are in the builds of each target. */
+let activeFiles: Record<string, Set<string>> = {};
+
+export const refreshActiveFiles: RefreshCallback = async () => {
+  logger.info('Refreshing active files cache');
+  const targets = await availableTargets();
+
+  const targetSourceFiles = await Promise.all(
+    targets.map(
+      async (target) => [target, await parseForSourceFiles(target)] as const,
+    ),
+  );
+
+  activeFiles = Object.fromEntries(targetSourceFiles);
+  logger.info('Finished refreshing active files cache');
+  return OK;
+};
+
+// Refresh the active files cache after refreshing compile commands
+refreshManager.on(refreshActiveFiles, 'didRefresh');
+
+/** Get the active files for a particular target. */
+export async function getActiveFiles(target: string): Promise<Set<string>> {
+  if (!Object.keys(activeFiles).includes(target)) {
+    return new Set();
+  }
+
+  return activeFiles[target];
 }
 
 const setCompileCommandsCallbacks: ((target: string) => void)[] = [];
