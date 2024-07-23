@@ -23,18 +23,6 @@ load(
     "cipd_repository",
 )
 
-register_toolchains(
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0plus",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33+nofp",
-    "//pw_toolchain/host_clang:host_cc_toolchain_linux",
-    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
-)
-
 # Set up legacy pw_transfer test binaries.
 # Required by: pigweed.
 # Used in modules: //pw_transfer.
