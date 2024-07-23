@@ -32,13 +32,27 @@ if (current_toolchain != default_toolchain) {
     deps = [
       "$PICO_ROOT/src/common/pico_base",
       "$PICO_ROOT/src/common/pico_stdlib",
+      "$PICO_ROOT/src/rp2_common/hardware_exception",
+      "$PICO_ROOT/src/rp2_common/hardware_watchdog",
       "$PICO_ROOT/src/rp2_common/pico_malloc",
+      "$dir_pw_cpu_exception:entry",
       "$dir_pw_string",
       "$dir_pw_system",
+      "$dir_pw_system:crash_handler",
       "$dir_pw_third_party/freertos",
       "$dir_pw_third_party/freertos:support",
     ]
     sources = [ "boot.cc" ]
+  }
+
+  pw_source_set("device_handler") {
+    deps = [
+      "$PICO_ROOT/src/rp2_common/hardware_watchdog",
+      "$dir_pw_cpu_exception:entry",
+      "$dir_pw_cpu_exception_cortex_m:snapshot",
+      "$dir_pw_system:device_handler.facade",
+    ]
+    sources = [ "device_handler.cc" ]
   }
 
   config("config_includes") {
@@ -99,6 +113,9 @@ pw_system_target("rp2040") {
         get_path_info("$dir_pigweed/targets/rp2040/pico_executable.gni",
                       "abspath")
 
+    pw_assert_BACKEND = dir_pw_assert_trap
+    pw_assert_LITE_BACKEND = dir_pw_assert_trap
+
     pw_cpu_exception_ENTRY_BACKEND =
         "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv6m"
     pw_cpu_exception_HANDLER_BACKEND = "$dir_pw_cpu_exception:basic_handler"
@@ -112,6 +129,12 @@ pw_system_target("rp2040") {
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm0"
 
     pw_sys_io_BACKEND = dir_pw_sys_io_stdio
+
+    pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
+        "$dir_pw_sync_freertos:interrupt_spin_lock"
+
+    pw_system_DEVICE_HANDLER = "$dir_pigweed/targets/rp2040:device_handler"
+
     pw_build_LINK_DEPS += [
       "$dir_pigweed/targets/rp2040:pre_init",
       "$dir_pw_assert:impl",

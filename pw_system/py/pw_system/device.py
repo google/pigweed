@@ -13,17 +13,23 @@
 # the License.
 """Device classes to interact with targets via RPC."""
 
+
 import logging
+import os
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
+from pw_file import file_pb2
 from pw_hdlc import rpc
 from pw_log import log_decoder
 from pw_log_rpc import rpc_log_stream
 from pw_metric import metric_parser
 import pw_rpc
 from pw_rpc import callback_client, console_tools
+import pw_transfer
+from pw_transfer import transfer_pb2
+from pw_system import snapshot
 from pw_thread import thread_analyzer
 from pw_thread_protos import thread_pb2
 from pw_tokenizer import detokenize
@@ -33,7 +39,6 @@ from pw_unit_test.rpc import run_tests as pw_unit_test_run_tests, TestRecord
 
 # Internal log for troubleshooting this tool (the console).
 _LOG = logging.getLogger(__package__)
-_ROOT_LOG = logging.getLogger()
 
 DEFAULT_DEVICE_LOGGER = logging.getLogger('rpc_device')
 
@@ -41,7 +46,11 @@ DEFAULT_DEVICE_LOGGER = logging.getLogger('rpc_device')
 class Device:
     """Represents an RPC Client for a device running a Pigweed target.
 
-    The target must have and RPC support, RPC logging.
+    The target must have RPC support for the following services:
+     - logging
+     - file
+     - transfer
+
     Note: use this class as a base for specialized device representations.
     """
 
@@ -84,6 +93,12 @@ class Device:
 
             for line in log_messages.splitlines():
                 self.logger.info(line)
+
+        # Device has a hard dependency on transfer_pb2, so ensure it's
+        # always been added to the list of compiled protos, rather than
+        # requiring all clients to include it.
+        if transfer_pb2 not in self.protos:
+            self.protos.append(transfer_pb2)
 
         self.client: rpc.RpcClient
         if use_hdlc_encoding:
@@ -128,6 +143,15 @@ class Device:
                 self.rpcs, self._log_decoder
             )
             self.log_stream_handler.listen_to_logs()
+
+        # Create the transfer manager
+        self.transfer_service = self.rpcs.pw.transfer.Transfer
+        self.transfer_manager = pw_transfer.Manager(
+            self.transfer_service,
+            default_response_timeout_s=self.rpc_timeout_s,
+            initial_response_timeout_s=self.rpc_timeout_s,
+            default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
+        )
 
     def __enter__(self):
         return self
@@ -179,3 +203,103 @@ class Device:
             thread_analyzer.ThreadSnapshotAnalyzer(thread_info)
         ).splitlines():
             _LOG.info('%s', line)
+
+    def list_files(self) -> Sequence[file_pb2.ListResponse]:
+        """Lists all files on this device.
+        Returns:
+            A sequence of responses from the List() RPC.
+        """
+        fs_service = self.rpcs.pw.file.FileSystem
+        stream_response = fs_service.List()
+        if not stream_response.status.ok():
+            _LOG.error('Failed to list files %s', stream_response.status)
+            return []
+
+        return stream_response.responses
+
+    def delete_file(self, path: str) -> bool:
+        """Delete a file on this device.
+        Args:
+            path: The path of the file to delete.
+        Returns:
+            True on successful deletion, False on failure.
+        """
+
+        fs_service = self.rpcs.pw.file.FileSystem
+        req = file_pb2.DeleteRequest(path=path)
+        stream_response = fs_service.Delete(req)
+        if not stream_response.status.ok():
+            _LOG.error(
+                'Failed to delete file %s file: %s',
+                path,
+                stream_response.status,
+            )
+            return False
+
+        return True
+
+    def transfer_file(self, file_id: int, dest_path: str) -> bool:
+        """Transfer a file on this device to the host.
+        Args:
+            file_id: The file_id of the file to transfer from device.
+            dest_path: The destination path to save the file to on the host.
+        Returns:
+            True on successful transfer, False on failure.
+        Raises:
+            pw_transfer.Error the transfer failed.
+        """
+        try:
+            data = self.transfer_manager.read(file_id)
+            with open(dest_path, "wb") as bin_file:
+                bin_file.write(data)
+            _LOG.info(
+                'Successfully wrote file to %s', os.path.abspath(dest_path)
+            )
+        except pw_transfer.Error:
+            _LOG.exception('Failed to transfer file_id %i', file_id)
+            return False
+
+        return True
+
+    def get_crash_snapshots(self, crash_log_path: str = "") -> bool:
+        """Transfer any crash snapshots on this device to the host.
+        Args:
+            crash_log_path: The host path to store the crash files.  CWD
+            if not specified.
+        Returns:
+            True on successful download of snapshot, or no snapshots
+            on device.  False on failure to download snapshot.
+        """
+
+        snapshot_paths: list[file_pb2.Path] = []
+        for response in self.list_files():
+            for snapshot_path in response.paths:
+                if snapshot_path.path.startswith('/snapshots/crash_'):
+                    snapshot_paths.append(snapshot_path)
+
+        if len(snapshot_paths) == 0:
+            _LOG.info('No crash snapshot on the device.')
+            return True
+
+        for snapshot_path in snapshot_paths:
+            dest_snapshot = os.path.join(
+                crash_log_path, os.path.basename(snapshot_path.path)
+            )
+            if not self.transfer_file(snapshot_path.file_id, dest_snapshot):
+                return False
+
+            decoded_snapshot: str
+            with open(dest_snapshot, 'rb') as f:
+                decoded_snapshot = snapshot.decode_snapshot(
+                    self.detokenizer, f.read()
+                )
+
+            dest_text_snapshot = dest_snapshot.replace(".snapshot", ".txt")
+            with open(dest_text_snapshot, 'w') as f:
+                f.write(decoded_snapshot)
+            _LOG.info('Wrote crash snapshot to: %s', dest_text_snapshot)
+
+            if not self.delete_file(snapshot_path.path):
+                return False
+
+        return True

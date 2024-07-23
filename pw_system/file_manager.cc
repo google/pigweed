@@ -14,9 +14,13 @@
 
 #include "pw_system/file_manager.h"
 
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+#include "pw_system/crash_snapshot.h"
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
 #include "pw_system/trace_service.h"
-#endif
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 
 namespace pw::system {
 
@@ -27,21 +31,39 @@ FileManager file_manager;
 FileManager& GetFileManager() { return file_manager; }
 
 FileManager::FileManager()
+    :
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+      crash_snapshot_handler_(kCrashSnapshotTransferHandlerId,
+                              GetCrashSnapshotBuffer()),
+      crash_snapshot_filesystem_entry_(
+          kCrashSnapshotFilename,
+          kCrashSnapshotTransferHandlerId,
+          file::FlatFileSystemService::Entry::FilePermissions::READ,
+          GetCrashSnapshotBuffer()),
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+// TODO: b/354777918 - this will fail if both services disabled.  Need to come
+// up with a more scalable pattern for registering files.
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
-    : trace_data_handler_(kTraceTransferHandlerId, GetTraceData()),
+      trace_data_handler_(kTraceTransferHandlerId, GetTraceData()),
       trace_data_filesystem_entry_(
-          "/trace/0.bin",
+          kTraceFilename,
           kTraceTransferHandlerId,
           file::FlatFileSystemService::Entry::FilePermissions::READ,
           GetTraceData())
-#endif
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 {
   // Every handler & filesystem element must be added to the collections, using
   // the associated handler ID as the index.
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  transfer_handlers_[kCrashSnapshotTransferHandlerId] =
+      &crash_snapshot_handler_;
+  file_system_entries_[kCrashSnapshotTransferHandlerId] =
+      &crash_snapshot_filesystem_entry_;
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
   transfer_handlers_[kTraceTransferHandlerId] = &trace_data_handler_;
   file_system_entries_[kTraceTransferHandlerId] = &trace_data_filesystem_entry_;
-#endif
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 }
 
 }  // namespace pw::system

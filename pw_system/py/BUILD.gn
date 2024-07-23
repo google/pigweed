@@ -29,6 +29,7 @@ pw_python_package("py") {
     "pw_system/device_sim.py",
     "pw_system/device_tracing.py",
     "pw_system/find_serial_port.py",
+    "pw_system/snapshot.py",
     "pw_system/trace_client.py",
   ]
   python_deps = [
@@ -44,6 +45,8 @@ pw_python_package("py") {
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc:protos.python",
     "$dir_pw_rpc/py",
+    "$dir_pw_snapshot/py:pw_snapshot",
+    "$dir_pw_system:device_service_proto.python",
     "$dir_pw_thread:protos.python",
     "$dir_pw_thread/py",
     "$dir_pw_tokenizer/py",

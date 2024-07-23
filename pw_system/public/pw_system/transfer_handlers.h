@@ -14,23 +14,42 @@
 #pragma once
 
 #include "pw_persistent_ram/persistent_buffer.h"
+#include "pw_system/config.h"
 #include "pw_trace_tokenized/config.h"
 #include "pw_transfer/transfer.h"
 
 namespace pw::system {
 
-using TracePersistentBuffer =
-    persistent_ram::PersistentBuffer<PW_TRACE_BUFFER_SIZE_BYTES>;
+using CrashSnapshotPersistentBuffer = persistent_ram::PersistentBuffer<
+    PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES>;
 
-class TracePersistentBufferTransfer : public transfer::ReadOnlyHandler {
+// CrashSnapshotBufferTransfer handler to connect a crash snapshot transfer
+// resource ID to a data stream
+class CrashSnapshotBufferTransfer : public transfer::ReadOnlyHandler {
  public:
-  TracePersistentBufferTransfer(uint32_t id,
-                                TracePersistentBuffer& persistent_buffer);
+  CrashSnapshotBufferTransfer(uint32_t id,
+                              CrashSnapshotPersistentBuffer& buffer);
 
   Status PrepareRead() final;
 
  private:
-  TracePersistentBuffer& persistent_buffer_;
+  CrashSnapshotPersistentBuffer& buffer_;
+  stream::MemoryReader reader_;
+};
+
+using TracePersistentBuffer =
+    persistent_ram::PersistentBuffer<PW_TRACE_BUFFER_SIZE_BYTES>;
+
+// TraceBufferTransfer handler to connect a trace transfer
+// resource ID to a data stream
+class TraceBufferTransfer : public transfer::ReadOnlyHandler {
+ public:
+  TraceBufferTransfer(uint32_t id, TracePersistentBuffer& buffer);
+
+  Status PrepareRead() final;
+
+ private:
+  TracePersistentBuffer& buffer_;
   stream::MemoryReader reader_;
 };
 

@@ -15,23 +15,40 @@
 
 namespace pw::system {
 
-TracePersistentBufferTransfer::TracePersistentBufferTransfer(
-    uint32_t id, TracePersistentBuffer& persistent_buffer)
-    : transfer::ReadOnlyHandler(id),
-      persistent_buffer_(persistent_buffer),
-      reader_({}) {
+CrashSnapshotBufferTransfer::CrashSnapshotBufferTransfer(
+    uint32_t id, CrashSnapshotPersistentBuffer& buffer)
+    : transfer::ReadOnlyHandler(id), buffer_(buffer), reader_({}) {
   set_reader(reader_);
 }
 
-Status TracePersistentBufferTransfer::PrepareRead() {
-  if (!persistent_buffer_.has_value()) {
+Status CrashSnapshotBufferTransfer::PrepareRead() {
+  if (!buffer_.has_value()) {
     return Status::Unavailable();
   }
 
   // As seeking is not yet supported, reinitialize the reader from the start
   // of the snapshot buffer.
-  new (&reader_) stream::MemoryReader(
-      pw::ConstByteSpan{persistent_buffer_.data(), persistent_buffer_.size()});
+  new (&reader_)
+      stream::MemoryReader(pw::ConstByteSpan{buffer_.data(), buffer_.size()});
+
+  return OkStatus();
+}
+
+TraceBufferTransfer::TraceBufferTransfer(uint32_t id,
+                                         TracePersistentBuffer& buffer)
+    : transfer::ReadOnlyHandler(id), buffer_(buffer), reader_({}) {
+  set_reader(reader_);
+}
+
+Status TraceBufferTransfer::PrepareRead() {
+  if (!buffer_.has_value()) {
+    return Status::Unavailable();
+  }
+
+  // As seeking is not yet supported, reinitialize the reader from the start
+  // of the snapshot buffer.
+  new (&reader_)
+      stream::MemoryReader(pw::ConstByteSpan{buffer_.data(), buffer_.size()});
 
   return OkStatus();
 }

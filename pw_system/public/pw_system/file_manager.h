@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <string_view>
+
 #include "pw_persistent_ram/flat_file_system_entry.h"
 #include "pw_system/config.h"
 #include "pw_system/transfer_handlers.h"
@@ -27,11 +29,22 @@ class FileManager {
   // NOTE: the enumerators should never have values defined, to ensure they
   // increment from zero and kNumFileSystemEntries is correct
   enum TransferHandlerId : uint32_t {
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+    kCrashSnapshotTransferHandlerId,
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
     kTraceTransferHandlerId,
-#endif
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
     kNumFileSystemEntries
   };
+
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  static constexpr std::string_view kCrashSnapshotFilename{
+      "/snapshots/crash_0.snapshot"};
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+#if PW_SYSTEM_ENABLE_TRACE_SERVICE
+  static constexpr std::string_view kTraceFilename{"/trace/0.bin"};
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 
   FileManager();
 
@@ -44,12 +57,19 @@ class FileManager {
   }
 
  private:
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  CrashSnapshotBufferTransfer crash_snapshot_handler_;
+  persistent_ram::FlatFileSystemPersistentBufferEntry<
+      PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES>
+      crash_snapshot_filesystem_entry_;
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
-  TracePersistentBufferTransfer trace_data_handler_;
+  TraceBufferTransfer trace_data_handler_;
   persistent_ram::FlatFileSystemPersistentBufferEntry<
       PW_TRACE_BUFFER_SIZE_BYTES>
       trace_data_filesystem_entry_;
-#endif
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 
   std::array<transfer::Handler*, kNumFileSystemEntries> transfer_handlers_;
   std::array<file::FlatFileSystemService::Entry*, kNumFileSystemEntries>

@@ -20,6 +20,7 @@
 #include "pw_metric/metric_service_pwpb.h"
 #include "pw_rpc/echo_service_pwpb.h"
 #include "pw_system/config.h"
+#include "pw_system/device_service.h"
 #include "pw_system/rpc_server.h"
 #include "pw_system/target_hooks.h"
 #include "pw_system/work_queue.h"
@@ -41,6 +42,11 @@
 #if PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
 #include "pw_system/thread_snapshot_service.h"
 #endif  // PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
+
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+#include "pw_system/crash_handler.h"
+#include "pw_system/crash_snapshot.h"
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
 
 namespace pw::system {
 namespace {
@@ -70,6 +76,7 @@ void InitImpl() {
   GetRpcServer().RegisterService(echo_service);
   GetRpcServer().RegisterService(GetLogService());
   GetRpcServer().RegisterService(metric_service);
+  RegisterDeviceService(GetRpcServer());
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
   RegisterTransferService(GetRpcServer());
@@ -100,6 +107,16 @@ void InitImpl() {
 }  // namespace
 
 void Init() {
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  RegisterCrashHandler();
+
+  if (HasCrashSnapshot()) {
+    PW_LOG_WARN("Crash snapshot available.");
+  } else {
+    PW_LOG_DEBUG("No crash snapshot");
+  }
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+
   thread::DetachedThread(system::WorkQueueThreadOptions(), GetWorkQueue());
   GetWorkQueue().CheckPushWork(InitImpl);
 }

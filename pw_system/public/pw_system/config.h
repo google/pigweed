@@ -150,6 +150,29 @@
 #define PW_SYSTEM_ASYNC_WORK_QUEUE_THREAD_STACK_SIZE_BYTES 2048
 #endif  // PW_SYSTEM_ASYNC_WORK_QUEUE_THREAD_STACK_SIZE_BYTES
 
+// PW_SYSTEM_ENABLE_CRASH_HANDLER specifies if the crash handler is enabled.
+//
+// Defaults to 1.
+#ifndef PW_SYSTEM_ENABLE_CRASH_HANDLER
+#define PW_SYSTEM_ENABLE_CRASH_HANDLER 1
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+
+// PW_SYSTEM_CRASH_SNAPSHOT_NOINIT_MEMORY_SECTION specifies the section of
+// memory to store the snapshot data.
+//
+// Defaults to ".noinit"
+#ifndef PW_SYSTEM_CRASH_SNAPSHOT_NOINIT_MEMORY_SECTION
+#define PW_SYSTEM_CRASH_SNAPSHOT_NOINIT_MEMORY_SECTION ".noinit"
+#endif  // PW_SYSTEM_CRASH_SNAPSHOT_NOINIT_MEMORY_SECTION
+
+// PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES specifies how much memory  to
+// reserver for snapshots.
+//
+// Defaults to 2048
+#ifndef PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES
+#define PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES 2048
+#endif  // PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES
+
 namespace pw::system {
 
 // This is the default channel used by the pw_system RPC server. Some other

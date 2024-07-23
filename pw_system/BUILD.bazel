@@ -12,11 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_test",
     "pw_facade",
+)
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_filegroup",
+    "pw_proto_library",
 )
 load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
 load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
@@ -43,6 +49,12 @@ label_flag(
 
 cc_library(
     name = "default_config",
+    defines = select({
+        "//pw_cpu_exception:enabled": [],
+        "//conditions:default": [
+            "PW_SYSTEM_ENABLE_CRASH_HANDLER=0",
+        ],
+    }),
 )
 
 cc_library(
@@ -183,6 +195,34 @@ label_flag(
     build_setting_default = "//pw_system:sys_io_target_io",
 )
 
+pw_facade(
+    name = "device_handler",
+    hdrs = [
+        "public/pw_system/device_handler.h",
+    ],
+    backend = ":device_handler_backend",
+    includes = ["public"],
+    deps = [
+        "//pw_snapshot:snapshot_proto_cc.pwpb",
+    ],
+)
+
+label_flag(
+    name = "device_handler_backend",
+    build_setting_default = "//pw_system:unknown_device_handler",
+)
+
+cc_library(
+    name = "unknown_device_handler",
+    srcs = [
+        "unknown_device_handler.cc",
+    ],
+    includes = ["public"],
+    deps = [
+        ":device_handler.facade",
+    ],
+)
+
 cc_library(
     name = "init",
     srcs = [
@@ -193,6 +233,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":device_service",
         ":file_manager",
         ":file_service",
         ":log",
@@ -206,8 +247,13 @@ cc_library(
         "//pw_metric:metric_service_pwpb",
         "//pw_rpc/pwpb:echo_service",
         "//pw_thread:thread",
-        "//pw_trace",
-    ],
+    ] + select({
+        "//pw_cpu_exception:enabled": [
+            ":crash_handler",
+            ":crash_snapshot",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -263,6 +309,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         "//pw_persistent_ram",
         "//pw_trace_tokenized:config",
         "//pw_transfer",
@@ -284,7 +331,12 @@ cc_library(
         ":transfer_handlers",
         "//pw_file:flat_file_system",
         "//pw_persistent_ram:flat_file_system_entry",
-    ],
+    ] + select({
+        "//pw_cpu_exception:enabled": [
+            ":crash_snapshot",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -329,6 +381,96 @@ cc_library(
         ":transfer_handlers",
         "//pw_persistent_ram",
         "//pw_trace_tokenized:trace_service_pwpb",
+    ],
+)
+
+cc_library(
+    name = "crash_handler",
+    srcs = [
+        "crash_handler.cc",
+    ],
+    hdrs = [
+        "public/pw_system/crash_handler.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":crash_snapshot",
+        ":device_handler",
+        ":log",
+        "//pw_assert_trap:message",
+        "//pw_cpu_exception:handler",
+    ],
+)
+
+cc_library(
+    name = "crash_snapshot",
+    srcs = [
+        "crash_snapshot.cc",
+    ],
+    hdrs = [
+        "public/pw_system/crash_snapshot.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":device_handler",
+        ":log",
+        ":transfer_handlers",
+        "//pw_cpu_exception:entry",
+        "//pw_multisink:util",
+        "//pw_persistent_ram",
+        "//pw_snapshot:snapshot_proto_cc.pwpb",
+        "//pw_snapshot:uuid",
+    ],
+)
+
+pw_proto_filegroup(
+    name = "device_service_proto_and_options",
+    srcs = ["pw_system_protos/device_service.proto"],
+    options_files = ["pw_system_protos/device_service.options"],
+)
+
+proto_library(
+    name = "device_service_proto",
+    srcs = [":device_service_proto_and_options"],
+    strip_import_prefix = "/pw_system",
+)
+
+pw_proto_library(
+    name = "device_service_cc",
+    deps = [":device_service_proto"],
+)
+
+py_proto_library(
+    name = "device_service_py_pb2",
+    deps = [":device_service_proto"],
+)
+
+cc_library(
+    name = "device_service_pwpb",
+    srcs = [
+        "device_service_pwpb.cc",
+    ],
+    hdrs = [
+        "public/pw_system/device_service_pwpb.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":device_handler",
+        ":device_service_cc.pwpb_rpc",
+    ],
+)
+
+cc_library(
+    name = "device_service",
+    srcs = [
+        "device_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/device_service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":device_service_pwpb",
     ],
 )
 

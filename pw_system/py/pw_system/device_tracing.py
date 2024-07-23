@@ -17,12 +17,6 @@ import os
 import logging
 import tempfile
 
-# from pathlib import Path
-# from types import ModuleType
-# from typing import Callable, List
-
-import pw_transfer
-from pw_file import file_pb2
 from pw_rpc.callback_client.errors import RpcError
 from pw_system.device import Device
 from pw_trace import trace
@@ -37,10 +31,8 @@ class DeviceWithTracing(Device):
     tracing.
 
     The target must have RPC support for the following services:
-     - logging
-     - file
-     - transfer
      - tracing
+
     Note: use this class as a base for specialized device representations.
     """
 
@@ -53,14 +45,6 @@ class DeviceWithTracing(Device):
     ):
         super().__init__(*device_args, **device_kwargs)
 
-        # Create the transfer manager
-        self.transfer_service = self.rpcs.pw.transfer.Transfer
-        self.transfer_manager = pw_transfer.Manager(
-            self.transfer_service,
-            default_response_timeout_s=self.rpc_timeout_s,
-            initial_response_timeout_s=self.rpc_timeout_s,
-            default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
-        )
         self.time_offset = time_offset
 
         if ticks_per_second:
@@ -84,44 +68,6 @@ class DeviceWithTracing(Device):
             return DEFAULT_TICKS_PER_SECOND
 
         return resp.response.clock_parameters.tick_period_seconds_denominator
-
-    def list_files(self) -> list:
-        """Lists all files on this device."""
-        fs_service = self.rpcs.pw.file.FileSystem
-        stream_response = fs_service.List()
-
-        if not stream_response.status.ok():
-            _LOG.error('Failed to list files %s', stream_response.status)
-            return []
-
-        return stream_response.responses
-
-    def delete_file(self, path: str) -> bool:
-        """Delete a file on this device."""
-        fs_service = self.rpcs.pw.file.FileSystem
-        req = file_pb2.DeleteRequest(path=path)
-        stream_response = fs_service.Delete(req)
-        if not stream_response.status.ok():
-            _LOG.error(
-                'Failed to delete file %s file: %s',
-                path,
-                stream_response.status,
-            )
-            return False
-
-        return True
-
-    def transfer_file(self, file_id: int, dest_path: str) -> bool:
-        """Transfer a file on this device to the host."""
-        try:
-            data = self.transfer_manager.read(file_id)
-            with open(dest_path, "wb") as bin_file:
-                bin_file.write(data)
-        except pw_transfer.Error:
-            _LOG.exception('Failed to transfer file_id %i', file_id)
-            return False
-
-        return True
 
     def start_tracing(self) -> None:
         """Turns on tracing on this device."""

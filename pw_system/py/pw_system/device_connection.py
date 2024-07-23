@@ -41,8 +41,10 @@ from pw_metric_proto import metric_service_pb2
 from pw_rpc import echo_pb2
 from pw_thread_protos import thread_snapshot_service_pb2
 from pw_trace_protos import trace_service_pb2
-from pw_transfer import transfer_pb2
+
+from pw_system_protos import device_service_pb2
 from pw_unit_test_proto import unit_test_pb2
+
 
 # pylint: enable=ungrouped-imports
 
@@ -185,7 +187,7 @@ def create_device_serial_or_socket_connection(
     protos.append(file_pb2)
     protos.append(echo_pb2)
     protos.append(trace_service_pb2)
-    protos.append(transfer_pb2)
+    protos.append(device_service_pb2)
 
     timestamp_decoder = None
     reader: rpc.SelectableReader | rpc.SerialReader

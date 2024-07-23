@@ -117,6 +117,8 @@ template("pw_system_target") {
     pw_system_RPC_SERVER_BACKEND = "$dir_pw_system:hdlc_rpc_server"
     pw_system_IO_BACKEND = "$dir_pw_system:sys_io_target_io"
 
+    pw_system_DEVICE_HANDLER = "$dir_pw_system:unknown_device_handler"
+
     # TODO(amontanez): This should be set to pw_assert_log ASAP.
     pw_assert_BACKEND = dir_pw_assert_basic
 

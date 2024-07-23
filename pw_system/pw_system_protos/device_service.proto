@@ -1,0 +1,37 @@
+// Copyright 2024 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+package pw.system.proto;
+
+// The DeviceService is intended to provide an RPC to triggering events on a
+// device, such as reboot or crash.
+service DeviceService {
+  // Reboot the device.
+  // Note that this method is currently not intended to return and will
+  // timeout when invoked, as the reboot will be triggered inline.
+  rpc Reboot(RebootRequest) returns (RebootResponse) {}
+  // Trigger a Crash on the device.
+  // Note that this method is currently not intended to return and will
+  // timeout when invoked, as the crash will be triggered inline.
+  rpc Crash(CrashRequest) returns (CrashResponse) {}
+}
+
+message RebootRequest {}
+
+message RebootResponse {}
+
+message CrashRequest {}
+
+message CrashResponse {}

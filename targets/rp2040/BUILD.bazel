@@ -29,6 +29,7 @@ platform(
         "freertos_config_cv",
         "//pw_build/constraints/chipset:rp2040",
         "//pw_build/constraints/rtos:freertos",
+        "//pw_cpu_exception:enabled",
         "//pw_interrupt_cortex_m:backend",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",
@@ -111,13 +112,28 @@ cc_library(
         ":freertos_config",
         "//pw_assert",
         "//pw_assert:backend_impl",
+        "//pw_cpu_exception:entry_backend_impl",
         "//pw_string",
         "//pw_system:init",
         "//third_party/freertos:support",
         "@freertos",
+        "@pico-sdk//src/rp2_common/hardware_exception:hardware_exception",
         "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
     ],
     alwayslink = 1,
+)
+
+cc_library(
+    name = "device_handler",
+    srcs = [
+        "device_handler.cc",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_cpu_exception_cortex_m:snapshot",
+        "//pw_system:device_handler.facade",
+        "@pico-sdk//src/rp2_common/hardware_watchdog:hardware_watchdog",
+    ],
 )
 
 pw_cc_binary(

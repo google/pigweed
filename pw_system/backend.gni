@@ -28,6 +28,13 @@ declare_args() {
   # can automatically configure this for your project.
   pw_system_IO_BACKEND = ""
 
+  # The pw_system backend that provides an interface for device specific
+  # functions such as reboot to be implemented in the relevant target.
+  #
+  # There's no default backend as this is target specific. pw_system_target
+  # can automatically configure this for your project.
+  pw_system_DEVICE_HANDLER = ""
+
   # The pw_system backend that provides the system RPC server.
   #
   # This defaults to a single-channel HDLC server provided by pw_system

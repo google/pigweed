@@ -25,7 +25,9 @@ import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_cpu_exception/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -60,6 +62,14 @@ config("multi_endpoint_rpc_overrides") {
   ]
 }
 
+config("pw_cpu_exception_config") {
+  # disable the crash handler entirely if the cpu exception backend has
+  # not been set.
+  if (pw_cpu_exception_ENTRY_BACKEND == "") {
+    defines = [ "PW_SYSTEM_ENABLE_CRASH_HANDLER=0" ]
+  }
+}
+
 # The Pigweed config pattern requires a pw_source_set to provide the
 # configuration defines. This provides the flags in
 # multi_endpoint_rpc_overrides.
@@ -69,7 +79,10 @@ pw_source_set("multi_endpoint_rpc_config") {
 
 pw_source_set("config") {
   sources = [ "public/pw_system/config.h" ]
-  public_configs = [ ":public_include_path" ]
+  public_configs = [
+    ":public_include_path",
+    ":pw_cpu_exception_config",
+  ]
   public_deps = [ pw_system_CONFIG ]
   visibility = [ "./*" ]
 }
@@ -136,11 +149,24 @@ pw_facade("io") {
   public_deps = [ "$dir_pw_stream" ]
 }
 
+pw_facade("device_handler") {
+  backend = pw_system_DEVICE_HANDLER
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/device_handler.h" ]
+  public_deps = [ "$dir_pw_snapshot:snapshot_proto.pwpb" ]
+}
+
+pw_source_set("unknown_device_handler") {
+  sources = [ "unknown_device_handler.cc" ]
+  deps = [ ":device_handler.facade" ]
+}
+
 pw_source_set("init") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_system/init.h" ]
   sources = [ "init.cc" ]
   deps = [
+    ":device_service",
     ":file_manager",
     ":file_service",
     ":log",
@@ -156,6 +182,16 @@ pw_source_set("init") {
     "$dir_pw_thread:thread",
     "$dir_pw_trace",
   ]
+  if (pw_cpu_exception_ENTRY_BACKEND != "") {
+    deps += [
+      ":crash_handler",
+      ":crash_snapshot",
+    ]
+  }
+
+  # disable include checking, as there are conditional includes dependent on
+  # whether the pw_cpu_exception_ENTRY_BACKEND is set.
+  check_includes = false
 }
 
 pw_source_set("hdlc_rpc_server") {
@@ -206,6 +242,7 @@ pw_source_set("transfer_handlers") {
   public = [ "public/pw_system/transfer_handlers.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":config",
     "$dir_pw_persistent_ram",
     "$dir_pw_trace_tokenized:config",
     "$dir_pw_transfer",
@@ -225,6 +262,13 @@ pw_source_set("file_manager") {
   ]
   sources = [ "file_manager.cc" ]
   deps = [ ":trace_service" ]
+  if (pw_cpu_exception_ENTRY_BACKEND != "") {
+    deps += [ ":crash_snapshot" ]
+  }
+
+  # disable include checking, as there are conditional includes dependent on
+  # whether the pw_cpu_exception_ENTRY_BACKEND is set.
+  check_includes = false
 }
 
 pw_source_set("transfer_service") {
@@ -252,6 +296,61 @@ pw_source_set("trace_service") {
     "$dir_pw_persistent_ram",
     "$dir_pw_trace_tokenized:trace_service_pwpb",
   ]
+}
+
+pw_source_set("crash_handler") {
+  public = [ "public/pw_system/crash_handler.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = []
+  sources = [ "crash_handler.cc" ]
+  deps = [
+    ":crash_snapshot",
+    ":device_handler",
+    ":log",
+    "$dir_pw_assert_trap:message",
+    "$dir_pw_cpu_exception:handler",
+  ]
+}
+
+pw_source_set("crash_snapshot") {
+  public = [ "public/pw_system/crash_snapshot.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":transfer_handlers",
+    "$dir_pw_cpu_exception:entry",
+    "$dir_pw_persistent_ram",
+    "$dir_pw_snapshot:snapshot_proto.pwpb",
+  ]
+  sources = [ "crash_snapshot.cc" ]
+  deps = [
+    ":device_handler",
+    ":log",
+    "$dir_pw_multisink:util",
+    "$dir_pw_snapshot:uuid",
+  ]
+}
+
+pw_proto_library("device_service_proto") {
+  sources = [ "pw_system_protos/device_service.proto" ]
+  inputs = [ "pw_system_protos/device_service.options" ]
+  deps = []
+}
+
+pw_source_set("device_service_pwpb") {
+  public = [ "public/pw_system/device_service_pwpb.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = []
+  sources = [ "device_service_pwpb.cc" ]
+  public_deps = [ ":device_service_proto.pwpb_rpc" ]
+  deps = [ ":device_handler" ]
+}
+
+pw_source_set("device_service") {
+  public = [ "public/pw_system/device_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = []
+  sources = [ "device_service.cc" ]
+  deps = [ ":device_service_pwpb" ]
 }
 
 pw_source_set("thread_snapshot_service") {

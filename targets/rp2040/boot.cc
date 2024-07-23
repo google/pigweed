@@ -12,15 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <array>
-
 #define PW_LOG_MODULE_NAME "pw_system"
 
 #include "FreeRTOS.h"
+#include "hardware/exception.h"
 #include "pico/stdlib.h"
-#include "pw_assert/check.h"
+#include "pw_cpu_exception/entry.h"
 #include "pw_log/log.h"
-#include "pw_string/util.h"
 #include "pw_system/init.h"
 #include "task.h"
 
@@ -29,6 +27,10 @@ int main() {
   stdio_init_all();
   setup_default_uart();
   // stdio_usb_init();
+
+  // Install the CPU exception handler.
+  exception_set_exclusive_handler(HARDFAULT_EXCEPTION, pw_cpu_exception_Entry);
+
   PW_LOG_INFO("pw_system main");
 
   pw::system::Init();
