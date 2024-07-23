@@ -105,6 +105,7 @@ pw_python_package("py") {
     "pw_console/templates/keybind_list.jinja",
     "pw_console/templates/repl_output.jinja",
     "pw_console/html/console.html",
+    "pw_console/html/defaultconfig.json",
     "pw_console/html/index.html",
     "pw_console/html/main.js",
     "pw_console/html/style.css",

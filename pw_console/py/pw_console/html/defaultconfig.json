@@ -1,0 +1,148 @@
+{
+  "rootNode": {
+    "type": "split",
+    "children": [
+      {
+        "type": "view",
+        "children": [],
+        "logViewId": "d3416f44-b5ff-4673-aa8a-4bd4ee4f0484",
+        "logViewState": {
+          "columnData": [
+            {
+              "fieldName": "severity",
+              "characterLength": 0,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "log_source",
+              "characterLength": 11,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "time",
+              "characterLength": 17,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "timestamp",
+              "characterLength": 15,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "py_file",
+              "characterLength": 18,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "py_logger",
+              "characterLength": 213,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "module",
+              "characterLength": 6,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "source_name",
+              "characterLength": 11,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "file",
+              "characterLength": 33,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "message",
+              "characterLength": 213,
+              "manualWidth": null,
+              "isVisible": true
+            }
+          ],
+          "searchText": "log_source:device"
+        }
+      },
+      {
+        "type": "view",
+        "children": [],
+        "logViewId": "2683651c-7df1-4414-9335-54f91a470d17",
+        "logViewState": {
+          "columnData": [
+            {
+              "fieldName": "severity",
+              "characterLength": 0,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "log_source",
+              "characterLength": 11,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "time",
+              "characterLength": 17,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "timestamp",
+              "characterLength": 15,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "py_file",
+              "characterLength": 18,
+              "manualWidth": null,
+              "isVisible": true
+            },
+            {
+              "fieldName": "py_logger",
+              "characterLength": 213,
+              "manualWidth": 284,
+              "isVisible": true
+            },
+            {
+              "fieldName": "module",
+              "characterLength": 6,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "source_name",
+              "characterLength": 11,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "file",
+              "characterLength": 33,
+              "manualWidth": null,
+              "isVisible": false
+            },
+            {
+              "fieldName": "message",
+              "characterLength": 213,
+              "manualWidth": null,
+              "isVisible": true
+            }
+          ],
+          "searchText": "log_source:host"
+        }
+      }
+    ],
+    "orientation": "vertical"
+  }
+}

@@ -644,7 +644,7 @@ class ConsoleApp:
         self.html_files = {
             '/{}'.format(t): importlib.resources.read_text(html_package_path, t)
             for t in importlib.resources.contents(html_package_path)
-            if Path(t).suffix in ['.css', '.html', '.js']
+            if Path(t).suffix in ['.css', '.html', '.js', '.json']
         }
 
         server_thread = Thread(

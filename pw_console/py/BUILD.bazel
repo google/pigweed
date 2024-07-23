@@ -93,6 +93,7 @@ py_library(
     data = [
         "pw_console/docs/user_guide.rst",
         "pw_console/html/console.html",
+        "pw_console/html/defaultconfig.json",
         "pw_console/html/index.html",
         "pw_console/html/main.js",
         "pw_console/html/style.css",

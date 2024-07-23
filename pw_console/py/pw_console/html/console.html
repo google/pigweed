@@ -38,6 +38,18 @@ the License.
         <main id="console-container"></main>
         <script src="https://unpkg.com/pigweedjs@0.0.20/dist/pw_console.umd.js"></script>
         <script>
+          // TODO: b/355005802 - Ideally their should be an API to pass this to instead.
+          async function initStateToDefault(){
+            const res = await fetch("defaultconfig.json")
+            const json = await res.json()
+            localStorage.setItem("logViewerState", JSON.stringify(json))
+          }
+          // Set a default log viewer config
+          if (!localStorage.getItem("logViewerState")) {
+            initStateToDefault();
+          }
+        </script>
+        <script>
           PWConsole.renderPWConsole(document.querySelector("#console-container"), "/ws")
         </script>
     </body>
