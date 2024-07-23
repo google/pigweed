@@ -239,7 +239,12 @@ function editorRootDir(): vscode.WorkspaceFolder {
 /** This should be used in place of, e.g., process.cwd(). */
 const defaultWorkingDir = () => editorRootDir().uri.fsPath;
 
-let workingDirStore: WorkingDirStore;
+export interface WorkingDirStore {
+  get(): string;
+  set(path: string): void;
+}
+
+let workingDirStore: WorkingDirStoreImpl;
 
 /**
  * A singleton for storing the project working directory.
@@ -257,7 +262,7 @@ let workingDirStore: WorkingDirStore;
  * (for example, in Jest tests we don't have access to `vscode` so most of our
  * directory traversal strategies are unavailable).
  */
-class WorkingDirStore {
+class WorkingDirStoreImpl implements WorkingDirStore {
   constructor(path?: string) {
     if (workingDirStore) {
       throw new Error("This is a singleton. You can't create it!");
@@ -288,4 +293,4 @@ class WorkingDirStore {
   }
 }
 
-export const workingDir = new WorkingDirStore(defaultWorkingDir());
+export const workingDir = new WorkingDirStoreImpl(defaultWorkingDir());

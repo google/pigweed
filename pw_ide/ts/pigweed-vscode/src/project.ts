@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import { glob } from 'glob';
 import * as path from 'path';
 
-import type { Settings } from './settings';
+import type { Settings, WorkingDirStore } from './settings';
 
 const PIGWEED_JSON = 'pigweed.json' as const;
 
@@ -99,10 +99,10 @@ export async function inferPigweedProjectRoot(
  */
 export async function getPigweedProjectRoot(
   settings: Settings,
-  workingDir: string,
+  workingDir: WorkingDirStore,
 ): Promise<string | null> {
   if (!settings.projectRoot()) {
-    return inferPigweedProjectRoot(workingDir);
+    return inferPigweedProjectRoot(workingDir.get());
   }
 
   return settings.projectRoot()!;

@@ -64,10 +64,7 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
       return stripped;
     };
 
-    const cwd = (await getPigweedProjectRoot(
-      settings,
-      workingDir.get(),
-    )) as string;
+    const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
 
     logger.info('Refreshing compile commands');
 

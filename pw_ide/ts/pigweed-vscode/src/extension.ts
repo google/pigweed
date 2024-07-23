@@ -217,7 +217,7 @@ async function configureProject(context: vscode.ExtensionContext) {
   // signaled by setting this var.
   let tryAgain = false;
 
-  const projectRoot = await getPigweedProjectRoot(settings, workingDir.get());
+  const projectRoot = await getPigweedProjectRoot(settings, workingDir);
 
   if (projectRoot) {
     output.appendLine(`The Pigweed project root is ${projectRoot}`);
