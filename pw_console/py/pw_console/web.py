@@ -34,6 +34,7 @@ class PwConsoleWeb:
         local_vars=None,
         test_mode=False,
         loggers: dict[str, Iterable[logging.Logger]] | Iterable | None = None,
+        sentence_completions: dict[str, str] | None = None,
     ) -> None:
         self.test_mode = test_mode
         self.test_mode_log_loop = asyncio.new_event_loop()
@@ -46,6 +47,7 @@ class PwConsoleWeb:
         self.global_vars = global_vars
         self.loggers = loggers
         self.local_vars = local_vars
+        self.sentence_completions = sentence_completions
 
     def _test_mode_log_thread_entry(self) -> None:
         """Entry point for the user code thread."""
@@ -70,5 +72,6 @@ class PwConsoleWeb:
                 'global_vars': self.global_vars,
                 'local_vars': self.local_vars,
                 'loggers': self.loggers,
+                'sentence_completions': self.sentence_completions,
             },
         )

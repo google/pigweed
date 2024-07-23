@@ -22,11 +22,12 @@ import types
 from typing import Any
 
 from aiohttp.web_ws import WebSocketResponse
-from prompt_toolkit.completion import CompleteEvent
+from prompt_toolkit.completion import CompleteEvent, merge_completers
 from prompt_toolkit.document import Document
-from ptpython.completer import PythonCompleter
+from ptpython.completer import PythonCompleter, Completer
 from ptpython.repl import _has_coroutine_flag
 
+from pw_console.embed import create_word_completer
 from pw_console.python_logging import log_record_to_dict
 
 _LOG = logging.getLogger(__package__)
@@ -146,11 +147,21 @@ class WebKernel:
 
         self.logger_handlers: dict[str, WebSocketStreamingResponder] = {}
         self.connected = False
-        self.python_completer = PythonCompleter(
+        python_completer = PythonCompleter(
             self.get_globals,
             self.get_locals,
             lambda: True,
         )
+        all_completers: list[Completer] = [python_completer]
+
+        if kernel_params.get('sentence_completions'):
+            word_completer = create_word_completer(
+                kernel_params.get('sentence_completions', {})
+            )
+            all_completers.append(word_completer)
+
+        # Merge default Python completer with the new custom one.
+        self.completer = merge_completers(all_completers)
 
     async def handle_request(self, request) -> str:
         """Handle the request from web browser."""
@@ -314,7 +325,7 @@ class WebKernel:
     ) -> list[dict[str, str]]:
         doc = Document(code, cursor_pos)
         all_completions = list(
-            self.python_completer.get_completions(
+            self.completer.get_completions(
                 doc,
                 CompleteEvent(completion_requested=False, text_inserted=True),
             )

@@ -226,6 +226,7 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
         webserver = web.PwConsoleWeb(
             global_vars=local_variables,
             loggers=loggers,
+            sentence_completions=completions,
         )
         webserver.start()
     else:
