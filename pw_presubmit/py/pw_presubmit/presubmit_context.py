@@ -423,9 +423,12 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
             first compilation error.
         rng_seed: Seed for a random number generator, for the few steps that
             need one.
+        full: Whether this is a full or incremental presubmit run.
         _failed: Whether the presubmit step in question has failed. Set to True
             by calling ctx.fail().
-        full: Whether this is a full or incremental presubmit run.
+        dry_run: Whether to actually execute commands or just log them.
+        use_remote_cache: Whether to tell the build system to use RBE.
+        pw_root: The path to the Pigweed repository.
     """
 
     root: Path
