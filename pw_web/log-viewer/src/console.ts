@@ -87,11 +87,11 @@ export async function renderPWConsole(
   containerEl: HTMLElement,
   wsUrl: string = '/ws',
 ) {
-  const logsContainerEl = document.createElement('div');
-  logsContainerEl.id = 'logs-container';
   const replContainerEl = document.createElement('div');
   replContainerEl.id = 'repl-container';
-  createSplitPanel(logsContainerEl, replContainerEl, containerEl);
+  const logsContainerEl = document.createElement('div');
+  logsContainerEl.id = 'logs-container';
+  createSplitPanel(replContainerEl, logsContainerEl, containerEl, 40);
 
   const ws = new WebSocket(wsUrl);
   const kernel = new WebSocketRPCClient(ws);
@@ -137,12 +137,13 @@ export function createSplitPanel(
   startEl: HTMLElement,
   endEl: HTMLElement,
   containerEl: HTMLElement,
+  initialPosition: number = 50,
 ) {
   const splitPanel = document.createElement('sl-split-panel');
 
   startEl.setAttribute('slot', 'start');
   endEl.setAttribute('slot', 'end');
-  splitPanel.setAttribute('position', '50');
+  splitPanel.setAttribute('position', `${initialPosition}`);
 
   splitPanel.appendChild(startEl);
   splitPanel.appendChild(endEl);
