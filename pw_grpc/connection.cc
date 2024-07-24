@@ -735,7 +735,7 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     connection_.UnlockState(std::move(state));
     const auto status = callbacks_.OnMessage(frame.stream_id, message);
     state = connection_.LockState();
-    auto maybe_stream = state->LookupStream(frame.stream_id);
+    maybe_stream = state->LookupStream(frame.stream_id);
     if (!maybe_stream.ok()) {
       return OkStatus();
     }
