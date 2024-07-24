@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import { TemplateResult } from 'lit';
+
 export interface RPCPayload {
   id: number;
   type: string;
@@ -114,7 +116,7 @@ export interface EvalOutput {
   stdin?: string;
   stdout?: string;
   stderr?: string;
-  result?: string;
+  result?: string | TemplateResult;
 }
 
 export interface AutocompleteSuggestion {

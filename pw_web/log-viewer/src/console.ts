@@ -115,7 +115,7 @@ export async function renderPWConsole(
   const unsubscribe = createLogViewer(logSources, logsContainerEl);
 
   const rpc = new WebSocketRPCReplKernel(kernel);
-  const repl = new Repl(rpc);
+  const repl = new Repl(rpc, 'Python Shell');
   replContainerEl.appendChild(repl);
   (window as any).rpc = rpc;
   const resizeObserver = new ResizeObserver((entries) => {

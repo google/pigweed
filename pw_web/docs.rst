@@ -439,3 +439,4 @@ Guides
 
   testing
   log_viewer
+  repl

@@ -13,7 +13,7 @@
 // the License.
 
 import { LitElement, html, PropertyValues } from 'lit';
-import { customElement, query } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 import { EvalOutput, ReplKernel } from '../../repl-kernel';
 import './code-editor';
 import { CodeEditor } from './code-editor';
@@ -26,11 +26,36 @@ export class Repl extends LitElement {
   static styles = [themeDark, themeLight, styles];
   private codeEditor: CodeEditor;
   private evalResults: EvalOutput[] = [];
+  private readonly LOCALSTORAGE_KEY = 'replHistory';
+
+  // prettier-ignore
+  private welcomeMsg = html`Welcome to the Pigweed Web Console!
+
+  Input keyboard shortcuts:
+    Press <kbd>Enter</kbd> to run
+    Press <kbd>Shift</kbd> + <kbd>Enter</kbd> to create multi-line commands
+    Press <kbd>Up</kbd> or <kbd>Down</kbd> to navigate command history
+
+  Example Python commands:
+    device.rpcs.pw.rpc.EchoService.Echo(msg='hello!')
+    LOG.warning('Message appears in Host Logs window.')
+    DEVICE_LOG.warning('Message appears in Device Logs window.')`;
 
   @query('#output') _output!: HTMLElement;
 
-  constructor(private replKernel: ReplKernel) {
+  @state()
+  replTitle: string;
+
+  constructor(
+    private replKernel: ReplKernel,
+    title: string = 'REPL',
+  ) {
     super();
+    this.replTitle = title;
+
+    if (!localStorage.getItem(this.LOCALSTORAGE_KEY)?.length) {
+      this.evalResults.push({ result: this.welcomeMsg });
+    }
     this.codeEditor = new CodeEditor(
       '',
       this.replKernel.autocomplete.bind(this.replKernel),
@@ -63,13 +88,20 @@ export class Repl extends LitElement {
     return html`
       <div id="repl">
         <div class="header">
-          REPL
+          ${this.replTitle}
           <span class="actions-container">
-            <span title="Clear REPL output">
-              <md-icon-button @click=${this.clearOutput}>
-                <md-icon>&#xe16c;</md-icon>
-              </md-icon-button>
-            </span>
+            <md-icon-button
+              @click=${this.clearOutput}
+              title="Clear Repl output"
+            >
+              <md-icon>&#xe16c;</md-icon>
+            </md-icon-button>
+            <md-icon-button
+              href="https://pigweed.dev/pw_web/repl.html#python-shell"
+              title="Go to the python shell documentation page"
+            >
+              <md-icon>&#xe8fd;</md-icon>
+            </md-icon-button>
           </span>
         </div>
         <ul id="output">

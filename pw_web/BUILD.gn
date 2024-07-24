@@ -21,6 +21,7 @@ pw_doc_group("docs") {
   sources = [
     "docs.rst",
     "log_viewer.rst",
+    "repl.rst",
     "testing.rst",
   ]
 }
