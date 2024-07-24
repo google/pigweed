@@ -147,6 +147,8 @@ export async function refreshCompileCommands() {
 
 /** Create file watchers to refresh compile commands on Bazel file changes. */
 export function initRefreshCompileCommandsWatcher(): { dispose: () => void } {
+  logger.info('Initializing refresh compile commands file watcher');
+
   const watchers = [
     vscode.workspace.createFileSystemWatcher('**/BUILD.bazel'),
     vscode.workspace.createFileSystemWatcher('**/WORKSPACE'),

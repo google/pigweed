@@ -48,6 +48,8 @@ import {
   getStatusBarItem as getCompileCommandsStatusBarItem,
   updateStatusBarItem as updateCompileCommandsStatusBarItem,
 } from './statusBar';
+import { initSettingsFilesWatcher } from './settingsWatcher';
+import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 
 // Anything that needs to be disposed of should be stored here.
 const disposables: { dispose: () => void }[] = [output, refreshManager];
@@ -65,6 +67,12 @@ function registerUniversalCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'pigweed.check-extensions',
       checkExtensions,
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pigweed.sync-settings', async () =>
+      syncSettingsSharedToProject(await getSettingsData(), true),
     ),
   );
 }
@@ -184,6 +192,8 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
       patchBazeliskIntoTerminalPath,
     ),
   );
+
+  disposables.push(initSettingsFilesWatcher());
 
   context.subscriptions.push(getCompileCommandsStatusBarItem());
   onSetCompileCommands(updateCompileCommandsStatusBarItem);

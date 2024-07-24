@@ -33,8 +33,9 @@ including:
    In the meantime, bootstrap projects can use the :ref:`command-line interface<module-pw_ide-guide-cli>`
    with the :ref:`legacy support for Visual Studio Code<module-pw_ide-guide-vscode-legacy>`.
 
+---------------
 Getting started
-===============
+---------------
 All you need to do is install the `Pigweed extension <http://localhost/404>`_ from the extension
 marketplace. If you start your project from one of Pigweed's quickstart or
 showcase example projects, you will be prompted to install the extension as soon
@@ -58,7 +59,7 @@ configured to use the ``clang`` toolchain in the Bazel environment and the
 compilation database associated with the selected target group.
 
 What this gives you
--------------------
+===================
 Here's a non-exhaustive list of cool features you can now enjoy:
 
 * Code navigation, including routing through facades to the correct backend
@@ -77,8 +78,45 @@ Here's a non-exhaustive list of cool features you can now enjoy:
 
 * A tree view of all Bazel targets, allowing you to build or run them directly
 
+----------------
+Project settings
+----------------
+Pigweed manipulates some editor and ``clangd`` settings to support features like
+the ones described above. For example, when you select a code analysis target,
+Pigweed sets the ``clangd`` extensions settings in ``.vscode/settings.json`` to
+configure ``clangd`` to use the selected target.
+
+These files shouldn't be committed to the project repository, because they
+contain state that is specific to what an individual developer is working on.
+Nonetheless, most projects will want to commit certain shared settings to their
+repository to help create a more consistent development environment.
+
+Pigweed provides a mechanism to achieve that through additional settings files.
+
+Visual Studio Code settings
+===========================
+The ``.vscode/settings.json`` file should be excluded from source control.
+Instead, add your shared project settings to ``.vscode/settings.shared.json``
+and commit *that* file to source control.
+
+The Pigweed extension watches the shared settings file and automatically applies
+those settings to you local settings file. So shared project settings can be
+committed to ``.vscode/settings.shared.json``, and your current editor state, as
+well as your personal configuration preferences, can be stored in
+``.vscode/settings.json``.
+
+The automatic sync process will respect any settings you have in your personal
+settings file. In other words, if a conflicting setting appears in the shared
+settings file, the automatic sync will not override your personal setting.
+
+At some point, you may wish to *fully* synchronize with the shared settings,
+overriding any conflicting settings you may already have in your personal
+settings file. You can accomplish that by running the
+:ref:`settings sync command<module-pw_ide-guide-vscode-commands-sync-settings>`.
+
+--------
 Commands
-========
+--------
 Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 (:kbd:`Cmd+Shift+P` on Mac).
 
@@ -93,6 +131,17 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 
    Found a problem in the Pigweed Visual Studio Code extension, other Pigweed
    tools, or Pigweed itself? Add a bug to our bug tracker to help us fix it.
+
+.. _module-pw_ide-guide-vscode-commands-sync-settings:
+
+.. describe:: Pigweed: Sync Settings
+
+   Pigweed automatically syncronizes shared Visual Studio Code settings from
+   ``.vscode/settings.shared.json`` to ``.vscode/settings.json``, but in the
+   case of conflicts, the automatic process will preserve the value in
+   ``.vscode/settings.json``. If you want to do a full sync of the shared
+   settings to your personal settings, including overriding conflicting values,
+   run this command.
 
 .. describe:: Pigweed: Open Output Panel
 
@@ -147,9 +196,9 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
    invocations in the integrated terminal, while working in the same Bazel
    environment.
 
+---------------------
 Configuration options
-=====================
-
+---------------------
 .. py:data:: pigweed.codeAnalysisTarget
    :type: string
 

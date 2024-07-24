@@ -36,6 +36,10 @@
         "title": "Pigweed: File Bug"
       },
       {
+        "command": "pigweed.sync-settings",
+        "title": "Pigweed: Sync Shared Settings"
+      },
+      {
         "command": "pigweed.check-extensions",
         "title": "Pigweed: Check Extensions"
       },
