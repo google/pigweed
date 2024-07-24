@@ -77,7 +77,7 @@ function(emboss_cc_library NAME)
   set(embossc "${dir_pw_third_party_emboss}/embossc")
   set(runner "$ENV{PW_ROOT}/third_party/emboss/embossc_runner.py")
 
-  list(APPEND emboss_cmd python3
+  list(APPEND emboss_cmd python3 "-OO"
     "${runner}" "${embossc}" "--generate" "cc" "--no-cc-enum-traits"
     "--output-path" "${out_dir}")
 
