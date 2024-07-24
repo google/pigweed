@@ -413,6 +413,11 @@ class Awaitable final : AwaitableBase {
 template <std::constructible_from<pw::Status> T>
 class Coro final {
  public:
+  /// Creates an empty, invalid coroutine object.
+  static Coro Empty() {
+    return Coro(internal::OwningCoroutineHandle<promise_type>(nullptr));
+  }
+
   /// Whether or not this `Coro<T>` is a valid coroutine.
   ///
   /// This will return `false` if coroutine state allocation failed or if
