@@ -27,6 +27,7 @@ import {
   ConfigAccessor,
   bazel_codelens,
 } from './settings';
+import logger from './logging';
 
 /**
  * Is there a path to the given tool configured in VS Code settings
@@ -210,6 +211,9 @@ export async function setBazelRecommendedSettings() {
 }
 
 export async function configureOtherBazelSettings() {
+  await updateVendoredBazelisk();
+  await updateVendoredBuildifier();
+
   if (settings.disableBazelSettingsRecommendations()) return;
 
   await vscode.window
@@ -233,4 +237,26 @@ export async function configureOtherBazelSettings() {
         }
       }
     });
+}
+
+export async function updateVendoredBazelisk() {
+  const isUsingVendoredBazelisk = !!bazel_executable
+    .get()
+    ?.match(/pigweed\.pigweed-.*/);
+
+  if (isUsingVendoredBazelisk && !settings.preserveBazelPath()) {
+    logger.info('Updating Bazelisk path for current extension version');
+    await bazel_executable.update(vendoredBazeliskPath());
+  }
+}
+
+export async function updateVendoredBuildifier() {
+  const isUsingVendoredBuildifier = !!buildifier_executable
+    .get()
+    ?.match(/pigweed\.pigweed-.*/);
+
+  if (isUsingVendoredBuildifier) {
+    logger.info('Updating Buildifier path for current extension version');
+    await buildifier_executable.update(vendoredBuildifierPath());
+  }
 }
