@@ -25,7 +25,7 @@ export const styles = css`
     display: flex;
     flex-shrink: 0;
     gap: 1rem;
-    height: 3rem;
+    height: var(--sys-log-viewer-header-height);
     justify-content: space-between;
     padding: 0 1rem;
     position: relative;
@@ -35,6 +35,7 @@ export const styles = css`
     --md-filled-text-field-hover-state-layer-color: var(
       --md-sys-color-inverse-on-surface
     );
+    --md-filled-text-field-input-text-size: 0.875rem;
     --md-filled-text-field-input-text-line-height: 0.75;
     --md-filled-text-field-top-space: 0.375rem;
     --md-filled-text-field-bottom-space: 0.375rem;
@@ -44,7 +45,7 @@ export const styles = css`
     --md-filled-text-field-input-text-placeholder-color: var(
       --md-sys-color-outline
     );
-    --text-field-icon-size: 1.75rem;
+    --text-field-icon-size: 1.375rem;
   }
 
   :host > * {
@@ -70,7 +71,7 @@ export const styles = css`
   .host-name {
     display: block;
     flex: 0 1 auto;
-    font-size: 1.125rem;
+    font-size: var(--sys-log-viewer-header-title-font-size);
     font-weight: 300;
     margin: 0;
     max-width: 30rem;
@@ -87,15 +88,20 @@ export const styles = css`
   }
 
   .actions-container {
+    --md-icon-button-icon-size: 1.375rem;
     flex: 0 0 auto;
     position: relative;
   }
 
   md-filled-text-field {
-    --md-icon-button-icon-size: 1.375rem;
+    --md-icon-button-icon-size: var(--text-field-icon-size);
     --md-icon-button-icon-color: var(--md-sys-color-outline);
-    --md-icon-button-state-layer-height: var(--text-field-icon-size);
-    --md-icon-button-state-layer-width: var(--text-field-icon-size);
+    --md-icon-button-state-layer-height: calc(
+      var(--text-field-icon-size) + 0.5rem
+    );
+    --md-icon-button-state-layer-width: calc(
+      var(--text-field-icon-size) + 0.5rem
+    );
     width: 25rem;
   }
 
@@ -115,8 +121,13 @@ export const styles = css`
     z-index: 2;
   }
 
-  md-icon-button:nth-of-type(2) {
-    padding-right: calc(var(--text-field-icon-size) - 0.5rem);
+  .field-buttons {
+    padding-right: 0.5rem;
+  }
+
+  .field-buttons md-icon-button[hidden] {
+    display: block;
+    visibility: hidden;
   }
 
   md-standard-icon-button[selected] {

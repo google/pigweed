@@ -24,7 +24,7 @@ export const styles = css`
     color: var(--sys-log-viewer-color-table-text);
     display: block;
     font-family: 'Roboto Mono', monospace;
-    font-size: 1rem;
+    font-size: 0.875rem;
     height: 100%;
     overflow: hidden;
     position: relative;
@@ -166,6 +166,13 @@ export const styles = css`
     align-items: flex-start;
   }
 
+  .level-cell {
+    align-items: flex-start;
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   .cell-text {
     line-height: normal;
     text-overflow: ellipsis;
@@ -226,6 +233,7 @@ export const styles = css`
     display: grid;
     place-content: center;
     place-items: center;
+    width: var(--sys-log-viewer-table-cell-icon-size);
   }
 
   .overflow-indicator {
@@ -272,7 +280,6 @@ export const styles = css`
     background-color: var(--sys-log-viewer-color-table-mark);
     border-radius: 4px;
     color: var(--sys-log-viewer-color-table-mark-text);
-    outline: 1px solid var(--sys-log-viewer-color-table-mark);
   }
 
   .jump-to-bottom-btn,

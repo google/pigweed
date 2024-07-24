@@ -247,7 +247,7 @@ export class LogList extends LitElement {
 
     const calculateColumnWidth = (col: TableColumn, i: number) => {
       const chWidth = col.characterLength;
-      const padding = 34;
+      const padding = 24 + 1; // +1 pixel to avoid ellipsis jitter when highlighting text
 
       if (i === resizingIndex) {
         return `${newWidth}px`;
@@ -256,7 +256,7 @@ export class LogList extends LitElement {
         return `${col.manualWidth}px`;
       }
       if (i === 0) {
-        return `3rem`;
+        return `calc(var(--sys-log-viewer-table-cell-icon-size) + 1rem)`;
       }
       if (i === this.columnData.length - 1) {
         return `minmax(${this.LAST_COL_MIN_WIDTH}px, 1fr)`;
@@ -583,7 +583,7 @@ export class LogList extends LitElement {
       };
 
       return html`
-        <td ?hidden=${!isVisible}>
+        <td class="level-cell" ?hidden=${!isVisible}>
           <div class="cell-content">
             <md-icon
               class="cell-icon"

@@ -42,6 +42,7 @@ export const styles = css`
   }
 
   .actions-container {
+    --md-icon-button-icon-size: 1.375rem;
     justify-content: flex-end;
     display: flex;
     flex: 1 0 auto;
@@ -54,9 +55,9 @@ export const styles = css`
     color: var(--sys-log-viewer-color-controls-text);
     display: flex;
     padding: 0 1rem;
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 300;
-    min-height: 3rem;
+    min-height: 2.75rem;
   }
 
   #repl {

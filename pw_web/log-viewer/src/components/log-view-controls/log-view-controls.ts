@@ -335,67 +335,69 @@ export class LogViewControls extends LitElement {
           @input="${this.handleInput}"
           @keydown="${this.handleKeydown}"
         >
-          <md-icon-button
-            @click=${this.handleClearSearchClick}
-            ?hidden=${this._searchField?.value === '' && !this.searchExpanded}
-            title="Clear filter query"
-            slot="trailing-icon"
-          >
-            <md-icon>&#xe888;</md-icon>
-          </md-icon-button>
-          <md-icon-button
-            href="https://pigweed.dev/pw_web/log_viewer.html#filter-logs"
-            target="_blank"
-            slot="trailing-icon"
-            title="Go to the log filter documentation page"
-          >
-            <md-icon>&#xe8fd;</md-icon>
-          </md-icon-button>
+          <div class="field-buttons" slot="trailing-icon">
+            <md-icon-button
+              @click=${this.handleClearSearchClick}
+              ?hidden=${this._searchField?.value === '' && !this.searchExpanded}
+              title="Clear filter query"
+            >
+              <md-icon>&#xe888;</md-icon>
+            </md-icon-button>
+            <md-icon-button
+              href="https://pigweed.dev/pw_web/log_viewer.html#filter-logs"
+              target="_blank"
+              title="Go to the log filter documentation page"
+              aria-label="Go to the log filter documentation page"
+            >
+              <md-icon>&#xe8fd;</md-icon>
+            </md-icon-button>
+          </div>
         </md-filled-text-field>
 
         <div class="actions-container">
-          <span
-            class="action-button"
-            title="Expand search field"
-            ?hidden=${!this._toolbarCollapsed}
-          >
+          <span class="action-button" ?hidden=${!this._toolbarCollapsed}>
             <md-icon-button
               @click=${this.toggleSearchField}
               ?toggle=${this.searchExpanded}
               ?selected=${this.searchExpanded}
               ?hidden=${this.searchExpanded}
+              title="Toggle search field"
             >
               <md-icon>&#xe8b6;</md-icon>
               <md-icon slot="selected">&#xea76;</md-icon>
             </md-icon-button>
           </span>
 
-          <span
-            class="action-button"
-            title="Clear logs"
-            ?hidden=${this._toolbarCollapsed}
-          >
-            <md-icon-button @click=${this.handleClearLogsClick}>
+          <span class="action-button" ?hidden=${this._toolbarCollapsed}>
+            <md-icon-button
+              @click=${this.handleClearLogsClick}
+              title="Clear logs"
+              aria-label="Clear logs"
+            >
               <md-icon>&#xe16c;</md-icon>
             </md-icon-button>
           </span>
 
-          <span
-            class="action-button"
-            title="Toggle line wrapping"
-            ?hidden=${this._toolbarCollapsed}
-          >
-            <md-icon-button @click=${this.handleWrapToggle} toggle>
+          <span class="action-button" ?hidden=${this._toolbarCollapsed}>
+            <md-icon-button
+              @click=${this.handleWrapToggle}
+              toggle
+              title="Toggle line wrapping"
+              aria-label="Toggle line wrapping"
+            >
               <md-icon>&#xe25b;</md-icon>
             </md-icon-button>
           </span>
 
           <span
             class="action-button field-toggle"
-            title="Toggle columns"
             ?hidden=${this._toolbarCollapsed}
           >
-            <md-icon-button @click=${this.toggleColumnVisibilityMenu}>
+            <md-icon-button
+              @click=${this.toggleColumnVisibilityMenu}
+              title="Toggle columns"
+              aria-label="Toggle columns"
+            >
               <md-icon>&#xe8ec;</md-icon>
             </md-icon-button>
           </span>
@@ -418,10 +420,12 @@ export class LogViewControls extends LitElement {
             )}
           </menu>
 
-          <span class="" title="Additional actions">
+          <span class="action-button">
             <md-icon-button
               @click=${this.toggleAddlActionsMenu}
               class="addl-actions-button"
+              title="Open additional actions menu"
+              aria-label="Open additional actions menu"
             >
               <md-icon>&#xe5d4;</md-icon>
             </md-icon-button>
