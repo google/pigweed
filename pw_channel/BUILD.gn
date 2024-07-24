@@ -18,6 +18,7 @@ import("$dir_pigweed/build_overrides/pi_pico.gni")
 import("$dir_pw_async2/backend.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -125,6 +126,34 @@ if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
       dir_pw_log,
     ]
   }
+}
+
+pw_source_set("stream_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/stream_channel.h" ]
+  sources = [ "stream_channel.cc" ]
+  public_deps = [
+    ":pw_channel",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:thread",
+    dir_pw_stream,
+  ]
+  deps = [ dir_pw_log ]
+}
+
+pw_test("stream_channel_test") {
+  sources = [ "stream_channel_test.cc" ]
+  deps = [
+    ":stream_channel",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_multibuf:testing",
+    "$dir_pw_stream:mpsc_stream",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_unit_test",
+    dir_pw_stream,
+  ]
 }
 
 pw_doc_group("docs") {

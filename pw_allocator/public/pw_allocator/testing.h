@@ -24,6 +24,7 @@
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
@@ -125,6 +126,44 @@ class AllocatorForTest : public Allocator {
   void* resize_ptr_;
   size_t resize_old_size_;
   size_t resize_new_size_;
+};
+
+/// An `AllocatorForTest` that is thread and interrupt-safe and automatically
+/// initialized on construction.
+template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
+class SynchronizedAllocatorForTest : public Allocator {
+ private:
+  using Base = AllocatorForTest<kBufferSize, MetricsType>;
+
+  /// @copydoc Allocator::Allocate
+  void* DoAllocate(Layout layout) override {
+    std::lock_guard lock(lock_);
+    return base_.Allocate(layout);
+  }
+
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr) override {
+    std::lock_guard lock(lock_);
+    base_.Deallocate(ptr);
+  }
+
+  /// @copydoc Allocator::Deallocate
+  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
+
+  /// @copydoc Allocator::Resize
+  bool DoResize(void* ptr, size_t new_size) override {
+    std::lock_guard lock(lock_);
+    return base_.Resize(ptr, new_size);
+  }
+
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
+    std::lock_guard lock(lock_);
+    return GetInfo(base_, info_type, ptr);
+  }
+
+  mutable pw::sync::InterruptSpinLock lock_;
+  Base base_;
 };
 
 }  // namespace test

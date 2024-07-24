@@ -139,3 +139,33 @@ cc_library(
         "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
     ],
 )
+
+cc_library(
+    name = "stream_channel",
+    srcs = ["stream_channel.cc"],
+    hdrs = ["public/pw_channel/stream_channel.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_channel",
+        "//pw_log",
+        "//pw_stream",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:thread_notification",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_channel_test",
+    srcs = ["stream_channel_test.cc"],
+    deps = [
+        ":stream_channel",
+        "//pw_async2:pend_func_task",
+        "//pw_multibuf:testing",
+        "//pw_stream",
+        "//pw_stream:mpsc_stream",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_unit_test",
+    ],
+)

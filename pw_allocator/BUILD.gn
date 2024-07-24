@@ -321,6 +321,7 @@ pw_source_set("testing") {
     ":buffer",
     ":first_fit_block_allocator",
     ":tracking_allocator",
+    "$dir_pw_sync:interrupt_spin_lock",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,

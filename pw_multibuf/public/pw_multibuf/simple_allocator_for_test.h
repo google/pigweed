@@ -43,7 +43,7 @@ class SimpleAllocatorForTest : public SimpleAllocator {
 
  private:
   std::byte data_area_[kDataSizeBytes];
-  allocator::test::AllocatorForTest<kMetaSizeBytes> meta_alloc_;
+  allocator::test::SynchronizedAllocatorForTest<kMetaSizeBytes> meta_alloc_;
 };
 
 }  // namespace pw::multibuf::test

@@ -67,3 +67,7 @@ Channel implementations
 .. doxygengroup:: pw_channel_rp2_stdio
    :content-only:
    :members:
+
+.. doxygengroup:: pw_channel_stream_channel
+   :content-only:
+   :members:
