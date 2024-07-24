@@ -30,6 +30,7 @@ export interface Settings {
   disableBazeliskCheck: Setting<boolean>;
   disableCompileCommandsFileWatcher: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
+  preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string>;
   projectType: Setting<ProjectType>;
   refreshCompileCommandsTarget: Setting<string>;
@@ -167,6 +168,16 @@ function enforceExtensionRecommendations(
   return update(value);
 }
 
+function preserveBazelPath(): boolean;
+function preserveBazelPath(value: boolean | undefined): Thenable<void>;
+function preserveBazelPath(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('preserveBazelPath');
+  if (value === undefined) return get() ?? false;
+  update(value);
+}
+
 function projectRoot(): string | undefined;
 function projectRoot(value: string | undefined): Thenable<void>;
 function projectRoot(value?: string): string | undefined | Thenable<void> {
@@ -214,6 +225,7 @@ export const settings: Settings = {
   disableBazeliskCheck,
   disableCompileCommandsFileWatcher,
   enforceExtensionRecommendations,
+  preserveBazelPath,
   projectRoot,
   projectType,
   refreshCompileCommandsTarget,

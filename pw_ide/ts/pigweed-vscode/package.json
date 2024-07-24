@@ -103,6 +103,11 @@
           "default": "false",
           "description": "Require installing and disabling extensions recommended in extensions.json"
         },
+        "pigweed.preserveBazelPath": {
+          "type": "boolean",
+          "default": "false",
+          "description": "When enabled, this extension won't override the specified Bazel path under any circumstances"
+        },
         "pigweed.projectRoot": {
           "type": "string",
           "description": "The root of the Pigweed project source directory"

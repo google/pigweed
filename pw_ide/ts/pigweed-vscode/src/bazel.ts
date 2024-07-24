@@ -168,11 +168,11 @@ export const interactivelySetBazeliskPath = () =>
     vendoredBazeliskPath(),
   );
 
-export function configureBazelisk() {
+export async function configureBazelisk() {
   if (settings.disableBazeliskCheck()) return;
   if (hasConfiguredPathTo('bazelisk', bazel_executable)) return;
 
-  vscode.window
+  await vscode.window
     .showInformationMessage(
       'Pigweed recommends using Bazelisk to manage your Bazel environment. ' +
         'The Pigweed extension comes with Bazelisk built in, or you can select ' +
@@ -200,30 +200,34 @@ export function configureBazelisk() {
     });
 }
 
-export function setBazelRecommendedSettings() {
-  buildifier_executable.update(vendoredBuildifierPath());
-  bazel_codelens.update(true);
+export async function setBazelRecommendedSettings() {
+  if (!settings.preserveBazelPath()) {
+    await bazel_executable.update(vendoredBazeliskPath());
+  }
+
+  await buildifier_executable.update(vendoredBuildifierPath());
+  await bazel_codelens.update(true);
 }
 
-export function configureOtherBazelSettings() {
+export async function configureOtherBazelSettings() {
   if (settings.disableBazelSettingsRecommendations()) return;
 
-  vscode.window
+  await vscode.window
     .showInformationMessage(
       "Would you like to use Pigweed's recommended Bazel settings?",
       'Yes',
       'No',
       'Disable',
     )
-    .then((value) => {
+    .then(async (value) => {
       switch (value) {
         case 'Yes': {
-          setBazelRecommendedSettings();
-          settings.disableBazelSettingsRecommendations(true);
+          await setBazelRecommendedSettings();
+          await settings.disableBazelSettingsRecommendations(true);
           break;
         }
         case 'Disable': {
-          settings.disableBazelSettingsRecommendations(true);
+          await settings.disableBazelSettingsRecommendations(true);
           vscode.window.showInformationMessage("Okay, I won't ask again.");
           break;
         }

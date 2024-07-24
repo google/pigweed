@@ -244,8 +244,8 @@ async function configureProject(context: vscode.ExtensionContext) {
     ) {
       output.appendLine('This is a Bazel project');
       await registerBazelCommands(context);
-      configureBazelisk();
-      configureOtherBazelSettings();
+      await configureOtherBazelSettings();
+      await configureBazelisk();
     } else {
       vscode.window
         .showErrorMessage(

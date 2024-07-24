@@ -238,6 +238,13 @@ Configuration options
 
    Require installing and disabling extensions recommended in ``extensions.json``
 
+.. py:data:: pigweed.preserveBazelPath
+   :type: boolean
+   :value: false
+
+   When enabled, this extension won't override the specified Bazel path under
+   any circumstances.
+
 .. _module-pw_ide-guide-vscode-settings-project-root:
 
 .. py:data:: pigweed.projectRoot
