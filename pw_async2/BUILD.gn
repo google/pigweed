@@ -59,6 +59,7 @@ pw_source_set("dispatcher_base") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
     "$dir_pw_toolchain:no_destructor",
   ]
   deps = [ "$dir_pw_assert:check" ]

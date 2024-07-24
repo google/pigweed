@@ -90,7 +90,7 @@ void Dispatcher::DoRunToCompletion(Task* task) {
       return;
     }
     if (!result.ran_a_task()) {
-      SleepInfo sleep_info = AttemptRequestWake();
+      SleepInfo sleep_info = AttemptRequestWake(/*allow_empty=*/false);
       if (sleep_info.should_sleep()) {
         if (!NativeWaitForWake().ok()) {
           break;

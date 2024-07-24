@@ -54,6 +54,54 @@ void Task::RemoveWakerLocked(Waker& waker) {
   waker.next_ = nullptr;
 }
 
+void Task::Deregister() {
+  pw::sync::Mutex* task_execution_lock;
+  {
+    // Fast path: the task is not running.
+    std::lock_guard lock(dispatcher_lock());
+    if (TryDeregister()) {
+      return;
+    }
+    // The task was running, so we have to wait for the task to stop being
+    // run by acquiring the `task_lock`.
+    task_execution_lock = &dispatcher_->task_execution_lock_;
+  }
+
+  // NOTE: there is a race here where `task_execution_lock_` may be
+  // invalidated by concurrent destruction of the dispatcher.
+  //
+  // This restriction is documented above, but is still fairly footgun-y.
+  std::lock_guard task_lock(*task_execution_lock);
+  std::lock_guard lock(dispatcher_lock());
+  PW_CHECK(TryDeregister());
+}
+
+bool Task::TryDeregister() {
+  switch (state_) {
+    case Task::State::kUnposted:
+      return true;
+    case Task::State::kSleeping:
+      dispatcher_->RemoveSleepingTaskLocked(*this);
+      break;
+    case Task::State::kRunning:
+      return false;
+    case Task::State::kWoken:
+      dispatcher_->RemoveWokenTaskLocked(*this);
+      break;
+  }
+  state_ = Task::State::kUnposted;
+  RemoveAllWakersLocked();
+
+  // Wake the dispatcher up if this was the last task so that it can see that
+  // all tasks have completed.
+  if (dispatcher_->first_woken_ == nullptr &&
+      dispatcher_->sleeping_ == nullptr && dispatcher_->wants_wake_) {
+    dispatcher_->DoWake();
+  }
+  dispatcher_ = nullptr;
+  return true;
+}
+
 Waker::Waker(Waker&& other) noexcept {
   std::lock_guard lock(dispatcher_lock());
   if (other.task_ == nullptr) {

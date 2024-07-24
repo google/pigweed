@@ -158,5 +158,16 @@ TEST(Dispatcher, RunToCompletionPendsPostedTask) {
   EXPECT_EQ(task.destroyed, 1);
 }
 
+TEST(Dispatcher, RunToCompletionIgnoresDeregisteredTask) {
+  Dispatcher dispatcher;
+  MockTask task;
+  task.should_complete = false;
+  dispatcher.Post(task);
+  task.Deregister();
+  dispatcher.RunToCompletion();
+  EXPECT_EQ(task.polled, 0);
+  EXPECT_EQ(task.destroyed, 0);
+}
+
 }  // namespace
 }  // namespace pw::async2

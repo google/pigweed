@@ -45,6 +45,7 @@ pw_add_library(pw_async2.dispatcher_base STATIC
     pw_chrono.system_clock
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
+    pw_sync.mutex
     pw_toolchain.no_destructor
   SOURCES
     dispatcher_base.cc

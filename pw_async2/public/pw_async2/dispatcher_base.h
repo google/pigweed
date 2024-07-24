@@ -21,6 +21,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
+#include "pw_sync/mutex.h"
 #include "pw_toolchain/no_destructor.h"
 
 namespace pw::async2 {
@@ -106,9 +107,16 @@ class Context {
 /// to make progress.
 ///
 /// Note that ``Task`` objects *must not* be destroyed while they are actively
-/// being ``Pend``'d by a ``Dispatcher``. The best way to ensure this is to
-/// create ``Task`` objects that continue to live until they receive a
-/// ``DoDestroy`` call or which outlive their associated ``Dispatcher``.
+/// being ``Pend``'d by a ``Dispatcher``. To protect against this, be sure to
+/// do one of the following:
+///
+/// - Use dynamic lifetimes by creating ``Task`` objects that continue to live
+///   until they receive a ``DoDestroy`` call.
+/// - Create ``Task`` objects whose stack-based lifetimes outlive their
+///   associated ``Dispatcher``.
+/// - Call ``Deregister`` on the ``Task`` prior to its destruction. NOTE that
+///   ``Deregister`` may not be called from inside the ``Task``'s own ``Pend``
+///   method.
 class Task {
   friend class Waker;
   friend class DispatcherBase;
@@ -136,26 +144,48 @@ class Task {
     // read by the ``Pend`` implementation.
   }
 
-  // A public interface for ``DoPend``.
-  //
-  // ``DoPend`` is normally invoked by a ``Dispatcher`` after a ``Task`` has
-  // been ``Post`` ed.
-  //
-  // This wrapper should only be called by ``Task`` s delegating to other
-  // ``Task`` s.  For example, a ``class MainTask`` might have separate fields
-  // for  ``TaskA` and ``TaskB``, and could invoke ``Pend`` on these types
-  // within its own ``DoPend`` implementation.
+  /// A public interface for ``DoPend``.
+  ///
+  /// ``DoPend`` is normally invoked by a ``Dispatcher`` after a ``Task`` has
+  /// been ``Post`` ed.
+  ///
+  /// This wrapper should only be called by ``Task`` s delegating to other
+  /// ``Task`` s.  For example, a ``class MainTask`` might have separate fields
+  /// for  ``TaskA` and ``TaskB``, and could invoke ``Pend`` on these types
+  /// within its own ``DoPend`` implementation.
   Poll<> Pend(Context& cx) { return DoPend(cx); }
 
-  // A public interface for ``DoDestroy``.
-  //
-  // ``DoDestroy`` is normally invoked by a ``Dispatcher`` after a ``Post`` ed
-  // ``Task`` has completed.
-  //
-  // This should only be called by ``Task`` s delegating to other ``Task`` s.
+  /// Deregisters this ``Task`` from the linked ``Dispatcher`` and any
+  /// associated ``Waker`` values.
+  ///
+  /// This must not be invoked from inside this task's ``Pend`` function, as
+  /// this will result in a deadlock.
+  ///
+  /// NOTE: If this task's ``Pend`` method is currently being run on the
+  /// dispatcher, this method will block until ``Pend`` completes.
+  ///
+  /// NOTE: This method sadly cannot guard against the dispatcher itself being
+  /// destroyed, so this method must not be called concurrently with
+  /// destruction of the dispatcher associated with this ``Task``.
+  ///
+  /// Note that this will *not* destroy the underlying ``Task``.
+  void Deregister();
+
+  /// A public interface for ``DoDestroy``.
+  ///
+  /// ``DoDestroy`` is normally invoked by a ``Dispatcher`` after a ``Post`` ed
+  /// ``Task`` has completed.
+  ///
+  /// This should only be called by ``Task`` s delegating to other ``Task`` s.
   void Destroy() { DoDestroy(); }
 
  private:
+  /// Attempts to deregister this task.
+  ///
+  /// If the task is currently running, this will return false and the task
+  /// will not be deregistered.
+  bool TryDeregister() PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+
   /// Attempts to advance this ``Task`` to completion.
   ///
   /// This method should not perform synchronous waiting, as doing so may block
@@ -400,6 +430,19 @@ class DispatcherBase {
   // For use by ``RunOneTask``.
   Task* PopWokenTask() PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
 
+  // A lock guarding ``Task`` execution.
+  //
+  // This will be acquired prior to pulling any tasks off of the ``Task``
+  // queue, and only released after they have been run and possibly
+  // destroyed.
+  //
+  // If acquiring this lock and ``dispatcher_lock()``, this lock must
+  // be acquired first in order to avoid deadlocks.
+  //
+  // Acquiring this lock may be a slow process, as it must wait until
+  // the running task has finished executing ``Task::Pend``.
+  pw::sync::Mutex task_execution_lock_;
+
   Task* first_woken_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
   Task* last_woken_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
   // Note: the sleeping list's order is not significant.
@@ -528,10 +571,17 @@ class DispatcherImpl : public DispatcherBase {
   /// ``Dispatcher`` implementation should go to sleep. Notably it will return
   /// that the ``Dispatcher`` should not sleep if there is still more work to
   /// be done.
-  SleepInfo AttemptRequestWake() PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+  ///
+  /// @param  allow_empty Whether or not to allow sleeping when no tasks are
+  ///                     registered.
+  SleepInfo AttemptRequestWake(bool allow_empty)
+      PW_LOCKS_EXCLUDED(dispatcher_lock()) {
     std::lock_guard lock(dispatcher_lock());
     // Don't allow sleeping if there are already tasks waiting to be run.
     if (first_woken_ != nullptr) {
+      return SleepInfo::DontSleep();
+    }
+    if (!allow_empty && sleeping_ == nullptr) {
       return SleepInfo::DontSleep();
     }
     /// Indicate that the ``Dispatcher`` is sleeping and will need a ``DoWake``
@@ -545,6 +595,7 @@ class DispatcherImpl : public DispatcherBase {
   /// run, and whether `task_to_look_for` was run.
   [[nodiscard]] RunOneTaskResult RunOneTask(Task* task_to_look_for)
       PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    std::lock_guard task_lock(task_execution_lock_);
     Task* task;
     {
       std::lock_guard lock(dispatcher_lock());
