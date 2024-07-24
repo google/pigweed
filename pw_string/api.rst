@@ -27,6 +27,11 @@ with strings.
 .. doxygenfile:: pw_string/util.h
    :sections: briefdescription
 
+**UTF-8 Helpers**
+
+.. doxygenfile:: pw_string/utf_codecs.h
+   :sections: briefdescription
+
 -----------------
 pw::StringBuilder
 -----------------
@@ -96,3 +101,13 @@ pw::string::NullTerminatedLength()
 pw::string::PrintableCopy()
 ---------------------------
 .. doxygenfunction:: pw::string::PrintableCopy(std::string_view source, span<char> dest)
+
+-------------
+UTF-8 Helpers
+-------------
+.. doxygenfile:: pw_string/utf_codecs.h
+   :sections: detaileddescription
+
+.. doxygenfunction:: pw::utf8::EncodeCodePoint(uint32_t code_point)
+.. doxygenfunction:: pw::utf8::WriteCodePoint(uint32_t code_point, pw::StringBuilder& output)
+.. doxygenfunction:: pw::utf8::ReadCodePoint(std::string_view str)

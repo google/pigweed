@@ -120,6 +120,19 @@ pw_source_set("to_string") {
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
+pw_source_set("utf_codecs") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/utf_codecs.h" ]
+  sources = [ "utf_codecs.cc" ]
+  public_deps = [
+    ":builder",
+    dir_pw_assert,
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+}
+
 pw_source_set("util") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_string/util.h" ]
@@ -140,6 +153,7 @@ pw_test_group("tests") {
     ":string_builder_test",
     ":to_string_test",
     ":type_to_string_test",
+    ":utf_codecs_test",
     ":util_test",
   ]
   group_deps = [
@@ -190,6 +204,11 @@ pw_test("type_to_string_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("utf_codecs_test") {
+  deps = [ ":utf_codecs" ]
+  sources = [ "utf_codecs_test.cc" ]
 }
 
 pw_test("util_test") {

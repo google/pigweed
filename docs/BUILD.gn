@@ -269,6 +269,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_string/public/pw_string/format.h",
   "$dir_pw_string/public/pw_string/string.h",
   "$dir_pw_string/public/pw_string/string_builder.h",
+  "$dir_pw_string/public/pw_string/utf_codecs.h",
   "$dir_pw_string/public/pw_string/util.h",
   "$dir_pw_sync/public/pw_sync/binary_semaphore.h",
   "$dir_pw_sync/public/pw_sync/borrow.h",
