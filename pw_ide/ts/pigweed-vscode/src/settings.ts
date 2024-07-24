@@ -18,7 +18,7 @@ import logger from './logging';
 
 interface Setting<T> {
   (): T | undefined;
-  (value: T | undefined): void;
+  (value: T | undefined): Thenable<void>;
 }
 
 type ProjectType = 'bootstrap' | 'bazel';
@@ -112,81 +112,99 @@ export function boolSettingFor(section: string, category = 'pigweed') {
 }
 
 function codeAnalysisTarget(): string | undefined;
-function codeAnalysisTarget(value: string | undefined): void;
-function codeAnalysisTarget(value?: string): string | undefined {
+function codeAnalysisTarget(value: string | undefined): Thenable<void>;
+function codeAnalysisTarget(
+  value?: string,
+): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor('codeAnalysisTarget');
-  if (!value) return get();
-  update(value);
+  if (value === undefined) return get();
+  return update(value);
 }
 
 function disableBazelSettingsRecommendations(): boolean;
-function disableBazelSettingsRecommendations(value: boolean | undefined): void;
+function disableBazelSettingsRecommendations(
+  value: boolean | undefined,
+): Thenable<void>;
 function disableBazelSettingsRecommendations(
   value?: boolean,
-): boolean | undefined {
+): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('disableBazelSettingsRecommendations');
-  if (!value) return get() ?? false;
-  update(value);
+  if (value === undefined) return get() ?? false;
+  return update(value);
 }
 
 function disableBazeliskCheck(): boolean;
-function disableBazeliskCheck(value: boolean | undefined): void;
-function disableBazeliskCheck(value?: boolean): boolean | undefined {
+function disableBazeliskCheck(value: boolean | undefined): Thenable<void>;
+function disableBazeliskCheck(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('disableBazeliskCheck');
-  if (!value) return get() ?? false;
-  update(value);
+  if (value === undefined) return get() ?? false;
+  return update(value);
 }
 
 function disableCompileCommandsFileWatcher(): boolean;
-function disableCompileCommandsFileWatcher(value: boolean | undefined): void;
+function disableCompileCommandsFileWatcher(
+  value: boolean | undefined,
+): Thenable<void>;
 function disableCompileCommandsFileWatcher(
   value?: boolean,
-): boolean | undefined {
+): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('disableCompileCommandsFileWatcher');
-  if (!value) return get() ?? false;
-  update(value);
+  if (value === undefined) return get() ?? false;
+  return update(value);
 }
 
 function enforceExtensionRecommendations(): boolean;
-function enforceExtensionRecommendations(value: boolean | undefined): void;
-function enforceExtensionRecommendations(value?: boolean): boolean | undefined {
+function enforceExtensionRecommendations(
+  value: boolean | undefined,
+): Thenable<void>;
+function enforceExtensionRecommendations(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('enforceExtensionRecommendations');
-  if (!value) return get() ?? false;
-  update(value);
+  if (value === undefined) return get() ?? false;
+  return update(value);
 }
 
 function projectRoot(): string | undefined;
-function projectRoot(value: string | undefined): void;
-function projectRoot(value?: string): string | undefined {
+function projectRoot(value: string | undefined): Thenable<void>;
+function projectRoot(value?: string): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor('projectRoot');
-  if (!value) return get();
-  update(value);
+  if (value === undefined) return get();
+  return update(value);
 }
 
 function projectType(): ProjectType | undefined;
-function projectType(value: ProjectType | undefined): void;
-function projectType(value?: ProjectType | undefined): ProjectType | undefined {
+function projectType(value: ProjectType | undefined): Thenable<void>;
+function projectType(
+  value?: ProjectType | undefined,
+): ProjectType | undefined | Thenable<void> {
   const { get, update } = stringSettingFor<ProjectType>('projectType');
-  if (!value) return get();
-  update(value);
+  if (value === undefined) return get();
+  return update(value);
 }
 
 function refreshCompileCommandsTarget(): string;
-function refreshCompileCommandsTarget(value: string | undefined): void;
-function refreshCompileCommandsTarget(value?: string): string | undefined {
+function refreshCompileCommandsTarget(
+  value: string | undefined,
+): Thenable<void>;
+function refreshCompileCommandsTarget(
+  value?: string,
+): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor('refreshCompileCommandsTarget');
-  if (!value) return get() ?? '//:refresh_compile_commands';
-  update(value);
+  if (value === undefined) return get() ?? '//:refresh_compile_commands';
+  return update(value);
 }
 
 function terminalShell(): TerminalShell;
-function terminalShell(value: TerminalShell | undefined): void;
+function terminalShell(value: TerminalShell | undefined): Thenable<void>;
 function terminalShell(
   value?: TerminalShell | undefined,
-): TerminalShell | undefined {
+): TerminalShell | undefined | Thenable<void> {
   const { get, update } = stringSettingFor<TerminalShell>('terminalShell');
-  if (!value) return get() ?? 'bash';
-  update(value);
+  if (value === undefined) return get() ?? 'bash';
+  return update(value);
 }
 
 /** Entry point for accessing settings. */
