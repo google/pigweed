@@ -28,11 +28,11 @@
 #include "pw_thread/detached_thread.h"
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+#include "pw_system/file_service.h"
 #include "pw_system/transfer_service.h"
 #endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
 
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
-#include "pw_system/file_service.h"
 #include "pw_system/trace_service.h"
 #include "pw_trace/trace.h"
 #endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
@@ -80,10 +80,10 @@ void InitImpl() {
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
   RegisterTransferService(GetRpcServer());
+  RegisterFileService(GetRpcServer());
 #endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
 
 #if PW_SYSTEM_ENABLE_TRACE_SERVICE
-  RegisterFileService(GetRpcServer());
   RegisterTraceService(GetRpcServer(), FileManager::kTraceTransferHandlerId);
 #endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
 
@@ -111,7 +111,10 @@ void Init() {
   RegisterCrashHandler();
 
   if (HasCrashSnapshot()) {
-    PW_LOG_WARN("Crash snapshot available.");
+    PW_LOG_WARN(
+        "Crash snapshots available.\n"
+        "To download and clear the snapshots run the following from the"
+        " console: device.get_crash_snapshots()");
   } else {
     PW_LOG_DEBUG("No crash snapshot");
   }
