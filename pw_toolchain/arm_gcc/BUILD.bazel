@@ -281,7 +281,6 @@ pw_cc_toolchain(
     ],
     flag_sets = [
         "@pw_toolchain//flag_sets:oz",
-        "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
         "@pw_toolchain//flag_sets:reduced_size",
         "@pw_toolchain//flag_sets:no_canonical_prefixes",
@@ -320,6 +319,10 @@ pw_cc_toolchain(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m7": [],
         "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
     }),
+    toolchain_features = [
+        "//pw_toolchain/cc:c++17_feature",
+        "//pw_toolchain/cc:c++20_feature",
+    ],
     toolchain_identifier = "arm-gcc-toolchain",
 )
 

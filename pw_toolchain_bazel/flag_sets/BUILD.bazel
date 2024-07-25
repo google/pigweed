@@ -77,6 +77,16 @@ pw_cc_flag_set(
     flags = ["-std=c++17"],
 )
 
+# Compile for the C++20 standard.
+pw_cc_flag_set(
+    name = "c++20",
+    actions = [
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = ["-std=c++20"],
+)
+
 # Issue a warning when a class appears to be polymorphic, yet it declares a
 # non-virtual destructor
 pw_cc_flag_set(

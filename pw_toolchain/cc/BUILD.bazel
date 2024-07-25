@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
     "pw_cc_feature",
@@ -84,4 +85,47 @@ pw_cc_feature(
     feature_name = "internal_strict_warnings",
     flag_sets = [":internal_strict_warnings_flags"],
     visibility = ["//:__subpackages__"],
+)
+
+string_flag(
+    name = "cxx_standard",
+    build_setting_default = "20",
+    values = [
+        "17",
+        "20",
+    ],
+)
+
+config_setting(
+    name = "c++17_enabled",
+    flag_values = {
+        ":cxx_standard": "17",
+    },
+)
+
+pw_cc_feature(
+    name = "c++17_feature",
+    enabled = select({
+        ":c++17_enabled": True,
+        "//conditions:default": False,
+    }),
+    feature_name = "c++17",
+    flag_sets = ["@pw_toolchain//flag_sets:c++17"],
+)
+
+config_setting(
+    name = "c++20_enabled",
+    flag_values = {
+        ":cxx_standard": "20",
+    },
+)
+
+pw_cc_feature(
+    name = "c++20_feature",
+    enabled = select({
+        ":c++20_enabled": True,
+        "//conditions:default": False,
+    }),
+    feature_name = "c++20",
+    flag_sets = ["@pw_toolchain//flag_sets:c++20"],
 )

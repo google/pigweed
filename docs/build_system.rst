@@ -647,10 +647,6 @@ use the following additional tags:
 
    will run all tests *except* for these integration tests.
 
-*  ``requires_cxx_20``: targets which can only be built with C++20.
-   `b/340568834 <https://issues.pigweed.dev/issues//340568834>`_
-   tracks replacing this with a proper upstream Bazel solution.
-
 .. _docs-build_system-bazel_coverage:
 
 Code Coverage

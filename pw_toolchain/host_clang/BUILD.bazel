@@ -305,7 +305,6 @@ pw_cc_toolchain(
         "//conditions:default": [],
     }) + [
         ":thread_safety_warnings",
-        "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
         "@pw_toolchain//flag_sets:reduced_size",
         "@pw_toolchain//flag_sets:no_canonical_prefixes",
@@ -335,6 +334,8 @@ pw_cc_toolchain(
         ":verbose_compiler_output",
         ":rules_rust_unsupported_feature",
         ":supports_pic",
+        "//pw_toolchain/cc:c++17_feature",
+        "//pw_toolchain/cc:c++20_feature",
     ],
     toolchain_identifier = "host-toolchain",
 )

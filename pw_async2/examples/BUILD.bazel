@@ -24,7 +24,6 @@ licenses(["notice"])
 pw_cc_test(
     name = "coro",
     srcs = ["coro.cc"],
-    tags = ["requires_cxx_20"],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",

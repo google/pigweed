@@ -26,14 +26,15 @@ import %workspace%/pw_build/pigweed.bazelrc
 common --per_file_copt=external/.*@-w
 common --host_per_file_copt=external/.*@-w
 
-# Skip building or testing C++20 targets by default
-# TODO: b/340568834 Remove when a proper solution is available.
-build --build_tag_filters=-requires_cxx_20
+# Default to C++17 to ensure compatibility.
+common --//pw_toolchain/cc:cxx_standard=17
+common:cxx20 --//pw_toolchain/cc:cxx_standard=20
+
 # Also exclude integration tests from the default build. The test_tag_filters
 # flag doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we
 # have to specify it only once, setting all the exclusions in a comma-separated
 # list.
-test --test_tag_filters=-requires_cxx_20,-integration
+test --test_tag_filters=-integration
 
 # Required for combined code coverage reports.
 coverage --experimental_generate_llvm_lcov
@@ -70,9 +71,9 @@ build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
 common:asan --//pw_toolchain/host_clang:asan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
-# -requires_cxx_20 and -integration because the test_tag_filters flag does not
+# -integration because the test_tag_filters flag does not
 # accumulate.
-test:asan --test_tag_filters=-requires_cxx_20,-integration,-noasan
+test:asan --test_tag_filters=-integration,-noasan
 
 # Define the --config=asan-libfuzzer configuration.
 build:asan-libfuzzer \
@@ -90,15 +91,13 @@ build:fuzztest \
 
 common:ubsan --//pw_toolchain/host_clang:ubsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
-# -requires_cxx_20 and -integration because the test_tag_filters flag does not
-# accumulate.
-test:ubsan --test_tag_filters=-requires_cxx_20,-integration,-noubsan
+# -integration because the test_tag_filters flag does not accumulate.
+test:ubsan --test_tag_filters=-integration,-noubsan
 
 common:tsan --//pw_toolchain/host_clang:tsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
-# -requires_cxx_20 and -integration because the test_tag_filters flag does not
-# accumulate.
-test:tsan --test_tag_filters=-requires_cxx_20,-integration,-notsan
+# -integration because the test_tag_filters flag does not accumulate.
+test:tsan --test_tag_filters=-integration,-notsan
 
 # Configure workspace status command to test pw_build_info git_build_info
 # https://bazel.build/docs/user-manual#workspace-status-command

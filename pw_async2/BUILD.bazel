@@ -12,7 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load(
+    "//pw_build:compatibility.bzl",
+    "incompatible_with_mcu",
+    "minimum_cxx_20",
+)
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
@@ -186,7 +190,7 @@ cc_library(
     includes = [
         "public",
     ],
-    tags = ["requires_cxx_20"],
+    target_compatible_with = minimum_cxx_20(),
     deps = [
         ":dispatcher",
         "//pw_allocator:allocator",
@@ -196,7 +200,6 @@ cc_library(
 pw_cc_test(
     name = "coro_test",
     srcs = ["coro_test.cc"],
-    tags = ["requires_cxx_20"],
     deps = [
         ":coro",
         ":dispatcher",
@@ -213,7 +216,6 @@ cc_library(
     includes = [
         "public",
     ],
-    tags = ["requires_cxx_20"],
     deps = [
         ":coro",
         ":dispatcher",
@@ -224,7 +226,6 @@ cc_library(
 pw_cc_test(
     name = "coro_or_else_task_test",
     srcs = ["coro_or_else_task_test.cc"],
-    tags = ["requires_cxx_20"],
     deps = [
         ":coro",
         ":coro_or_else_task",

@@ -86,3 +86,14 @@ def incompatible_with_mcu(unless_platform_has = None):
         "@platforms//os:none": [unless_platform_has] if (unless_platform_has != None) else ["@platforms//:incompatible"],
         "//conditions:default": [],
     })
+
+def minimum_cxx_20():
+    """Helper for expressing a C++20 requirement.
+
+    This helper should be used in `target_compatible_with` attributes to express
+    that a target requires C++20 or newer.
+    """
+    return select({
+        "//pw_toolchain/cc:c++20_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    })

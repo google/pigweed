@@ -754,8 +754,7 @@ def bazel_test(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'test',
-        '--build_tag_filters=-requires_cxx_20',
-        '--test_tag_filters=-requires_cxx_20',
+        '--config=cxx20',
         '--',
         '//...',
     )
@@ -787,9 +786,7 @@ def bthost_package(ctx: PresubmitContext) -> None:
     build_bazel(ctx, 'build', target)
     # Override the default test_tag_filters to ensure test targets tagged
     # "integration" are still run.
-    build_bazel(
-        ctx, 'test', '--test_tag_filters=-requires_cxx_20', f'{target}.test_all'
-    )
+    build_bazel(ctx, 'test', '--test_tag_filters=', f'{target}.test_all')
 
     stdout_path = ctx.output_dir / 'bazel.manifest.stdout'
     with open(stdout_path, 'w') as outs:
@@ -830,7 +827,6 @@ def bazel_build(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'build',
-        '--build_tag_filters=-requires_cxx_20',
         '--',
         '//...',
     )
@@ -846,11 +842,9 @@ def bazel_build(ctx: PresubmitContext) -> None:
         ],
     }
 
-    for cxxversion in ('c++17', 'c++20'):
+    for cxxversion in ('17', '20'):
         # Explicitly build for each supported C++ version.
-        args = [ctx, 'build', f"--cxxopt=-std={cxxversion}"]
-        if cxxversion == 'c++17':
-            args += ['--build_tag_filters=-requires_cxx_20']
+        args = [ctx, 'build', f"--//pw_toolchain/cc:cxx_standard={cxxversion}"]
         args += ['--', '//...']
         build_bazel(*args)
 
@@ -859,7 +853,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
                 ctx,
                 'build',
                 f'--config={config}',
-                f"--cxxopt='-std={cxxversion}'",
+                f"--//pw_toolchain/cc:cxx_standard={cxxversion}",
                 *targets,
             )
 
