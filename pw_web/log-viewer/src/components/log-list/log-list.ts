@@ -564,6 +564,7 @@ export class LogList extends LitElement {
 
     if (field.key == 'severity') {
       const severityIcons = new Map<Severity, string>([
+        [Severity.INFO, `\ue88e`],
         [Severity.WARNING, '\uf083'],
         [Severity.ERROR, '\ue888'],
         [Severity.CRITICAL, '\uf5cf'],

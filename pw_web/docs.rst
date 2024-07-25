@@ -363,6 +363,7 @@ The following icons with codepoints are curently used:
 * warning f083
 * cancel e5c9
 * bug_report e868
+* info e88e
 * view_column e8ec
 * brightness_alert f5cf
 * wrap_text e25b
@@ -400,7 +401,7 @@ To create your own subset, find the codepoints you want to add and:
 .. code-block:: bash
 
    fonttools subset MaterialSymbolsRounded.woff2 \
-      --unicodes=5f-7a,30-39,e16c,e000,e002,e8b2,e5c9,e868,e8ec,f083,f5cf,e25b,e5d4,e037,e047 \
+      --unicodes=5f-7a,30-39,e16c,e000,e002,e8b2,e5c9,e868,,e88e,e8ec,f083,f5cf,e25b,e5d4,e037,e047 \
       --no-layout-closure \
       --output-file=material_symbols_rounded_subset.woff2 \
       --flavor=woff2

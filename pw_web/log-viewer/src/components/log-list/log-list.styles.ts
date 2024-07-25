@@ -71,6 +71,10 @@ export const styles = css`
     will-change: transform, grid-template-columns;
   }
 
+  .log-row--info {
+    --icon-color: var(--sys-log-viewer-color-info);
+  }
+
   .log-row--warning {
     --bg-color: var(--sys-log-viewer-color-surface-yellow);
     --text-color: var(--sys-log-viewer-color-on-surface-yellow);
@@ -90,6 +94,7 @@ export const styles = css`
     --icon-color: var(--sys-log-viewer-color-debug);
   }
 
+  .log-row--info .cell-icon,
   .log-row--warning .cell-icon,
   .log-row--error .cell-icon,
   .log-row--critical .cell-icon {

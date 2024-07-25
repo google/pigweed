@@ -104,7 +104,7 @@ export const themeDark = css`
         --md-sys-color-inverse-surface-rgb
       );
 
-      /* Severity */
+      /* Log Level */
       --sys-log-viewer-color-error-bright: #e46962;
       --sys-log-viewer-color-surface-error: #601410;
       --sys-log-viewer-color-on-surface-error: #f9dedc;
@@ -112,6 +112,7 @@ export const themeDark = css`
       --sys-log-viewer-color-surface-yellow: #402d00;
       --sys-log-viewer-color-on-surface-yellow: #ffdfa0;
       --sys-log-viewer-color-debug: var(--md-sys-color-primary-60);
+      --sys-log-viewer-color-info: #575c5b;
     }
   }
 
@@ -203,7 +204,7 @@ export const themeDark = css`
       --md-sys-color-inverse-surface-rgb
     );
 
-    /* Severity */
+    /* Log Level */
     --sys-log-viewer-color-error-bright: #e46962;
     --sys-log-viewer-color-surface-error: #601410;
     --sys-log-viewer-color-on-surface-error: #f9dedc;
@@ -211,5 +212,6 @@ export const themeDark = css`
     --sys-log-viewer-color-surface-yellow: #402d00;
     --sys-log-viewer-color-on-surface-yellow: #ffdfa0;
     --sys-log-viewer-color-debug: var(--md-sys-color-primary-60);
+    --sys-log-viewer-color-info: #575c5b;
   }
 `;
