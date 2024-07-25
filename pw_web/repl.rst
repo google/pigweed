@@ -10,5 +10,5 @@ with your devices and the log viewer.
 Input keyboard shortcuts
 ------------------------
 -  Type code and hit :kbd:`Enter` to run.
--  :kbd:`Shift` + :kbd:`Enter` to create mult-line commands.
--  :kbd:`Up` / :kbd:`Down` Navigate command history
+-  :kbd:`Shift+Enter` to create mult-line commands.
+-  :kbd:`Up` / :kbd:`Down` Navigate command history.
