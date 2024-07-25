@@ -151,7 +151,7 @@ class Task {
   ///
   /// This wrapper should only be called by ``Task`` s delegating to other
   /// ``Task`` s.  For example, a ``class MainTask`` might have separate fields
-  /// for  ``TaskA` and ``TaskB``, and could invoke ``Pend`` on these types
+  /// for  ``TaskA`` and ``TaskB``, and could invoke ``Pend`` on these types
   /// within its own ``DoPend`` implementation.
   Poll<> Pend(Context& cx) { return DoPend(cx); }
 

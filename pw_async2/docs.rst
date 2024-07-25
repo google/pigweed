@@ -34,7 +34,7 @@ progress, the ``Dispatcher`` will run it again. For example:
    using ::pw::async2::Pending;
    using ::pw::async2::Task;
 
-   class ReceiveAndSend: public Task {
+   class ReceiveAndSend : public Task {
     public:
      ReceiveAndSend(Receiver receiver, Sender sender):
        receiver_(receiver), sender_(sender) {}

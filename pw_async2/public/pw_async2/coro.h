@@ -397,7 +397,7 @@ class Awaitable final : AwaitableBase {
 ///   argument. This allocator will be used to allocate storage for coroutine
 ///   stack variables held across a `co_await` point.
 ///
-/// # Using `co_await`
+/// # Using co_await
 /// Inside a coroutine function, `co_await <expr>` can be used on any type
 /// with a `Poll<T> Pend(Context&)` method. The result will be a value of
 /// type `T`.
