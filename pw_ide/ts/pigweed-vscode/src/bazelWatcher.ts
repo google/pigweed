@@ -64,10 +64,8 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
       return stripped;
     };
 
-    const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
-
     logger.info('Refreshing compile commands');
-
+    const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
     const cmd = bazel_executable.get();
 
     if (!cmd) {
@@ -86,7 +84,6 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
     }
 
     const args = ['run', settings.refreshCompileCommandsTarget()!];
-
     let result: RefreshCallbackResult = OK;
 
     // TODO: https://pwbug.dev/350861417 - This should use the Bazel
@@ -94,38 +91,51 @@ function createRefreshProcess(): [RefreshCallback, () => void] {
     // command API is not simple.
     const spawnedProcess = spawn(cmd, args, { cwd, signal });
 
-    spawnedProcess.on('spawn', () => {
-      logger.info(`Running ${cmd} ${args.join(' ')}`);
+    // Wrapping this in a promise that only resolves on exit or error ensures
+    // that this refresh callback blocks until the spawned process is complete.
+    // Otherwise, the callback would return early while the spawned process is
+    // still executing, prematurely moving on to later refresh manager states
+    // that depend on *this* callback being finished.
+    return new Promise((resolve) => {
+      spawnedProcess.on('spawn', () => {
+        logger.info(`Running ${cmd} ${args.join(' ')}`);
+      });
+
+      // All of the output actually goes out on stderr
+      spawnedProcess.stderr.on('data', (data) =>
+        logger.info(cleanLogLine(data)),
+      );
+
+      spawnedProcess.on('error', (err) => {
+        const { name, message } = err;
+
+        if (name === 'ABORT_ERR') {
+          logger.info('Aborted refreshing compile commands');
+        } else {
+          logger.error(
+            `[${name}] while refreshing compile commands: ${message}`,
+          );
+          result = { error: message };
+        }
+
+        resolve(result);
+      });
+
+      spawnedProcess.on('exit', (code) => {
+        if (code === 0) {
+          logger.info('Finished refreshing compile commands');
+        } else {
+          const message =
+            'Failed to complete compile commands refresh ' +
+            `(error code: ${code})`;
+
+          logger.error(message);
+          result = { error: message };
+        }
+
+        resolve(result);
+      });
     });
-
-    spawnedProcess.on('exit', (code) => {
-      if (code === 0) {
-        logger.info('Finished refreshing compile commands');
-      } else {
-        const message =
-          'Failed to complete compile commands refresh ' +
-          `(error code: ${code})`;
-
-        logger.error(message);
-        result = { error: message };
-      }
-    });
-
-    spawnedProcess.on('error', (err) => {
-      const { name, message } = err;
-
-      if (name === 'ABORT_ERR') {
-        logger.info('Aborted refreshing compile commands');
-      } else {
-        logger.error(`[${name}] while refreshing compile commands: ${message}`);
-        result = { error: message };
-      }
-    });
-
-    // All of the output actually goes out on stderr
-    spawnedProcess.stderr.on('data', (data) => logger.info(cleanLogLine(data)));
-
-    return result;
   };
 
   return [cb, abort];
