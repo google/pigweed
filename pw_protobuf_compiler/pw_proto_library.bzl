@@ -40,11 +40,11 @@ _proto_compiler_aspect.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(
-    "@pigweed//pw_build/bazel_internal:pigweed_internal.bzl",
+    "//pw_build/bazel_internal:pigweed_internal.bzl",
     _compile_cc = "compile_cc",
 )
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 
 # For Copybara use only
 ADDITIONAL_PWPB_DEPS = []
