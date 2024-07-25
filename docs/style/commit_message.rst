@@ -110,8 +110,9 @@ are rarely read after the change lands.
 ---------------------------
 Lists instead of paragraphs
 ---------------------------
-Use bulleted lists when multiple changes are in a single CL. Ideally, try to
-create smaller CLs so this isn't needed, but larger CLs are a practical reality.
+Use bulleted lists when multiple changes are in a single change. Ideally, try to
+create smaller changes so this isn't needed, but larger changes are a practical
+reality.
 
 .. admonition:: **Yes**: Uses bulleted lists
    :class: checkmark
@@ -135,7 +136,7 @@ create smaller CLs so this isn't needed, but larger CLs are a practical reality.
 
       pw_foo: Many things in a giant BWOT
 
-      This CL does A, B, and C. The commit message is a Big Wall Of Text
+      This change does A, B, and C. The commit message is a Big Wall Of Text
       (BWOT), which we try to discourage in Pigweed. Also changes X and Y,
       because Z and Q. Furthermore, in some cases, adds a new Foo (with Bar,
       because we want to). Also refactors qux and quz.
