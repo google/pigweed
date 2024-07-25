@@ -84,7 +84,9 @@ Project settings
 Pigweed manipulates some editor and ``clangd`` settings to support features like
 the ones described above. For example, when you select a code analysis target,
 Pigweed sets the ``clangd`` extensions settings in ``.vscode/settings.json`` to
-configure ``clangd`` to use the selected target.
+configure ``clangd`` to use the selected target. Likewise, when using the
+:ref:`feature to disable code intelligence for source files not in the target's build graph<module-pw_ide-guide-vscode-settings-disable-inactive-file-code-intelligence>`,
+Pigweed will manipulate the ``.clangd`` `configuration file <https://clangd.llvm.org/config#files>`_.
 
 These files shouldn't be committed to the project repository, because they
 contain state that is specific to what an individual developer is working on.
@@ -113,6 +115,15 @@ At some point, you may wish to *fully* synchronize with the shared settings,
 overriding any conflicting settings you may already have in your personal
 settings file. You can accomplish that by running the
 :ref:`settings sync command<module-pw_ide-guide-vscode-commands-sync-settings>`.
+
+``clangd`` settings
+===================
+Additional configuration for ``clangd`` can be stored in ``.clangd.shared``,
+following the `YAML configuration format <https://clangd.llvm.org/config>`_.
+The Pigweed extension watches this file and automatically applies its settings
+to a ``.clangd`` file that *should not* be committed to source control. That
+file will *also* be used to configure ``clangd`` in ways that are specific to
+your selected analysis target and the state of your code tree.
 
 --------
 Commands
@@ -170,6 +181,14 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 .. describe:: Pigweed: Select Code Analysis Target
 
    Select the target group that ``clangd`` should use for code analysis.
+
+.. describe:: Pigweed: Disable Inactive File Code Intelligence
+
+   See :ref:`the associated setting<module-pw_ide-guide-vscode-settings-disable-inactive-file-code-intelligence>`.
+
+.. describe:: Pigweed: Enable Inactive File Code Intelligence
+
+   See :ref:`the associated setting<module-pw_ide-guide-vscode-settings-disable-inactive-file-code-intelligence>`.
 
 .. describe:: Pigweed: Set Bazel Recommended Settings
 
@@ -229,6 +248,24 @@ Configuration options
    :value: false
 
    Disable automatically refreshing compile commands
+
+.. _module-pw_ide-guide-vscode-settings-disable-inactive-file-code-intelligence:
+
+.. py:data:: pigweed.disableInactiveFileCodeIntelligence
+   :type: boolean
+   :value: true
+
+   When you select a target for code analysis, some source files in the project
+   may not appear in the compilation database for that target because they are
+   not part of the build graph for the target. By default, ``clangd`` will
+   attempt to provide code intelligence for those files anyway by inferring
+   compile commands from similar files in the build graph, but this code
+   intelligence is incorrect and meaningless, as the file won't actually be
+   compiled for that target.
+
+   Enabling this option will configure ``clangd`` to suppress all diagnostics
+   for any source files that are *not* part of the build graph for the currently
+   selected target.
 
 .. _module-pw_ide-guide-vscode-settings-enforce-extension-recommendations:
 

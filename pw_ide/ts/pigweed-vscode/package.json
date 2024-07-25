@@ -68,6 +68,14 @@
         "title": "Pigweed: Select Code Analysis Target"
       },
       {
+        "command": "pigweed.disable-inactive-file-code-intelligence",
+        "title": "Pigweed: Disable Inactive File Code intelligence"
+      },
+      {
+        "command": "pigweed.enable-inactive-file-code-intelligence",
+        "title": "Pigweed: Enable Inactive File Code intelligence"
+      },
+      {
         "command": "pigweed.set-bazelisk-path",
         "title": "Pigweed: Set Bazelisk Path"
       },
@@ -97,6 +105,11 @@
           "type": "boolean",
           "default": "false",
           "description": "Disable automatically refreshing compile commands"
+        },
+        "pigweed.disableInactiveFileCodeIntelligence": {
+          "type": "boolean",
+          "default": "true",
+          "description": "By default, Pigweed disables code intelligence for files not in the current target's build graph. Setting this to false disables that behavior."
         },
         "pigweed.enforceExtensionRecommendations": {
           "type": "boolean",
@@ -156,6 +169,7 @@
     "@bazel/buildifier": "^7.1.2",
     "glob": "^10.4.5",
     "hjson": "^3.2.2",
+    "js-yaml": "^4.1.0",
     "node_modules-path": "^2.0.8",
     "strip-ansi": "^7.1.0"
   },
@@ -163,6 +177,7 @@
     "@types/glob": "^8.1.0",
     "@types/hjson": "^2.4.6",
     "@types/jest": "29.5.12",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.10",
     "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^7.16.0",

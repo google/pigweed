@@ -14,10 +14,13 @@
 
 import * as vscode from 'vscode';
 
+import { createHash } from 'crypto';
 import { createInterface } from 'readline/promises';
-import { createReadStream } from 'fs';
+import { createReadStream, existsSync } from 'fs';
+import { copyFile, readFile, unlink, writeFile } from 'fs/promises';
 import { glob } from 'glob';
 import { basename, dirname, isAbsolute, join } from 'path';
+import * as yaml from 'js-yaml';
 
 import { refreshCompileCommands } from './bazelWatcher';
 import { OK, RefreshCallback, refreshManager } from './refreshManager';
@@ -75,6 +78,7 @@ export async function setTarget(target: string): Promise<void> {
       '--header-insertion=never',
       '--background-index',
     ]),
+    writeClangdSettingsFile(target),
   ]).then(() =>
     // Restart the clangd server so it picks up the new setting.
     vscode.commands.executeCommand('clangd.restart'),
@@ -195,4 +199,95 @@ export async function refreshCompileCommandsAndSetTarget() {
   await refreshCompileCommands();
   await refreshManager.waitFor('didRefresh');
   await setCompileCommandsTarget();
+}
+
+// See: https://clangd.llvm.org/config#files
+const clangdSettingsDisableFiles = (paths: string[]) => ({
+  If: {
+    PathExclude: paths,
+  },
+  Diagnostics: {
+    Suppress: '*',
+  },
+});
+
+/**
+ * Handle the case where inactive file code intelligence is enabled.
+ *
+ * When this setting is enabled, we don't want to disable clangd for any files.
+ * That's easy enough, but we also need to revert any configuration we created
+ * while the setting was disabled (in other words, while we were disabling
+ * clangd for certain files). This handles that and ends up at one of two
+ * outcomes:
+ *
+ * - If there's a `.clangd.shared` file, that will become `.clangd`
+ * - If there's not, `.clangd` will be removed
+ */
+async function handleInactiveFileCodeIntelligenceEnabled(
+  settingsPath: string,
+  sharedSettingsPath: string,
+) {
+  if (existsSync(sharedSettingsPath)) {
+    if (!existsSync(settingsPath)) {
+      // If there's a shared settings file, but no active settings file, copy
+      // the shared settings file to make an active settings file.
+      await copyFile(sharedSettingsPath, settingsPath);
+    } else {
+      // If both shared settings and active settings are present, check if they
+      // are identical. If so, no action is required. Otherwise, copy the shared
+      // settings file over the active settings file.
+      const settingsHash = createHash('md5').update(
+        await readFile(settingsPath),
+      );
+      const sharedSettingsHash = createHash('md5').update(
+        await readFile(sharedSettingsPath),
+      );
+
+      if (settingsHash !== sharedSettingsHash) {
+        await copyFile(sharedSettingsPath, settingsPath);
+      }
+    }
+  } else if (existsSync(settingsPath)) {
+    // If there's no shared settings file, then we just need to remove the
+    // active settings file if it's present.
+    unlink(settingsPath);
+  }
+}
+
+export async function writeClangdSettingsFile(target?: string) {
+  const settingsPath = join(workingDir.get(), '.clangd');
+  const sharedSettingsPath = join(workingDir.get(), '.clangd.shared');
+
+  // If the setting to disable code intelligence for files not in the build of
+  // this target is disabled, then we need to:
+  // 1. *Not* add configuration to disable clangd for any files
+  // 2. *Remove* any prior such configuration that may have existed
+  if (!settings.disableInactiveFileCodeIntelligence()) {
+    await handleInactiveFileCodeIntelligenceEnabled(
+      settingsPath,
+      sharedSettingsPath,
+    );
+
+    return;
+  }
+
+  if (!target) return;
+
+  // Create clangd settings that disable code intelligence for all files
+  // except those that are in the build for the specified target.
+  const activeFilesForTarget = [...(await getActiveFiles(target))];
+  let data = yaml.dump(clangdSettingsDisableFiles(activeFilesForTarget));
+
+  // If there are other clangd settings for the project, append this fragment
+  // to the end of those settings.
+  if (existsSync(sharedSettingsPath)) {
+    const sharedSettingsData = (await readFile(sharedSettingsPath)).toString();
+    data = `${sharedSettingsData}\n---\n${data}`;
+  }
+
+  await writeFile(settingsPath, data, { flag: 'w+' });
+
+  logger.info(
+    `Updated .clangd to exclude files not in the build for: ${target}`,
+  );
 }

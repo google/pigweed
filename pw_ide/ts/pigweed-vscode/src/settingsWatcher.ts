@@ -14,6 +14,7 @@
 
 import * as vscode from 'vscode';
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
+import { writeClangdSettingsFile } from './clangd';
 import { settings } from './settings';
 import logger from './logging';
 
@@ -55,4 +56,36 @@ async function handleClangdFileEvent() {
   if (target) {
     await writeClangdSettingsFile(target);
   }
+}
+
+export function initClangdFileWatcher(): { dispose: () => void } {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) return { dispose: () => null };
+
+  const workspaceFolder = workspaceFolders[0];
+
+  logger.info('Initializing clangd file watcher');
+
+  const watcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(workspaceFolder, '.clangd.shared'),
+  );
+
+  watcher.onDidChange(async () => {
+    logger.info('[onDidChange] triggered from clangd file watcher');
+    await handleClangdFileEvent();
+  });
+
+  watcher.onDidCreate(async () => {
+    logger.info('[onDidCreate] triggered from clangd file watcher');
+    await handleClangdFileEvent();
+  });
+
+  watcher.onDidDelete(async () => {
+    logger.info('[onDidDelete] triggered from clangd file watcher');
+    await handleClangdFileEvent();
+  });
+
+  return {
+    dispose: () => watcher.dispose(),
+  };
 }

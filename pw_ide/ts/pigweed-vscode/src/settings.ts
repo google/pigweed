@@ -29,6 +29,8 @@ export interface Settings {
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
   disableCompileCommandsFileWatcher: Setting<boolean>;
+  disableInactiveFileNotice: Setting<boolean>;
+  disableInactiveFileCodeIntelligence: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
   preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string>;
@@ -144,6 +146,28 @@ function disableBazeliskCheck(
   return update(value);
 }
 
+function disableInactiveFileNotice(): boolean;
+function disableInactiveFileNotice(value: boolean | undefined): Thenable<void>;
+function disableInactiveFileNotice(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('disableInactiveFileNotice');
+  if (value === undefined) return get() ?? false;
+  return update(value);
+}
+
+function disableInactiveFileCodeIntelligence(): boolean;
+function disableInactiveFileCodeIntelligence(
+  value: boolean | undefined,
+): Thenable<void>;
+function disableInactiveFileCodeIntelligence(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('disableInactiveFileCodeIntelligence');
+  if (value === undefined) return get() ?? true;
+  return update(value);
+}
+
 function disableCompileCommandsFileWatcher(): boolean;
 function disableCompileCommandsFileWatcher(
   value: boolean | undefined,
@@ -224,6 +248,8 @@ export const settings: Settings = {
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
   disableCompileCommandsFileWatcher,
+  disableInactiveFileNotice,
+  disableInactiveFileCodeIntelligence,
   enforceExtensionRecommendations,
   preserveBazelPath,
   projectRoot,

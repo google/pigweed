@@ -18,6 +18,7 @@ import {
   onSetCompileCommands,
   refreshCompileCommandsAndSetTarget,
   setCompileCommandsTarget,
+  writeClangdSettingsFile,
 } from './clangd';
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
@@ -48,7 +49,10 @@ import {
   getStatusBarItem as getCompileCommandsStatusBarItem,
   updateStatusBarItem as updateCompileCommandsStatusBarItem,
 } from './statusBar';
-import { initSettingsFilesWatcher } from './settingsWatcher';
+import {
+  initClangdFileWatcher,
+  initSettingsFilesWatcher,
+} from './settingsWatcher';
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 
 // Anything that needs to be disposed of should be stored here.
@@ -86,6 +90,26 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'pigweed.bootstrap-terminal',
       launchBootstrapTerminal,
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.disable-inactive-file-code-intelligence',
+      () =>
+        vscode.window.showWarningMessage(
+          'This command is currently not supported with Bootstrap projects',
+        ),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.enable-inactive-file-code-intelligence',
+      () =>
+        vscode.window.showWarningMessage(
+          'This command is currently not supported with Bootstrap projects',
+        ),
     ),
   );
 
@@ -135,6 +159,31 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
 }
 
 async function registerBazelCommands(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.disable-inactive-file-code-intelligence',
+      async () => {
+        settings
+          .disableInactiveFileCodeIntelligence(true)
+          .then(
+            async () =>
+              await writeClangdSettingsFile(settings.codeAnalysisTarget()),
+          );
+      },
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'pigweed.enable-inactive-file-code-intelligence',
+      async () => {
+        settings
+          .disableInactiveFileCodeIntelligence(false)
+          .then(async () => await writeClangdSettingsFile());
+      },
+    ),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'pigweed.refresh-compile-commands',
@@ -194,6 +243,7 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
   );
 
   disposables.push(initSettingsFilesWatcher());
+  disposables.push(initClangdFileWatcher());
 
   context.subscriptions.push(getCompileCommandsStatusBarItem());
   onSetCompileCommands(updateCompileCommandsStatusBarItem);
