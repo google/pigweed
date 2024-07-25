@@ -239,7 +239,7 @@ git_repository(
     name = "com_google_emboss",
     remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
     # Also update emboss tag in pw_package/py/pw_package/packages/emboss.py
-    tag = "v2024.0716.040724",
+    tag = "v2024.0718.173957",
 )
 
 git_repository(
