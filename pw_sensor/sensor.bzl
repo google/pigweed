@@ -81,7 +81,7 @@ pw_sensor_library = rule(
     attrs = {
         "deps": attr.label_list(),
         "generator": attr.label(
-            default = "@pigweed//pw_sensor/py:constants_generator",
+            default = str(Label("//pw_sensor/py:constants_generator")),
             executable = True,
             cfg = "exec",
         ),
@@ -93,7 +93,7 @@ pw_sensor_library = rule(
         "out_header": attr.string(),
         "srcs": attr.label_list(allow_files = True),
         "_sensor_desc": attr.label(
-            default = "@pigweed//pw_sensor/py:sensor_desc",
+            default = str(Label("//pw_sensor/py:sensor_desc")),
             executable = True,
             cfg = "exec",
         ),

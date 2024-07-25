@@ -31,7 +31,7 @@ def flash_rp2040(
 
     native_binary(
         name = name,
-        src = "@pigweed//targets/rp2040/py:flash",
+        src = str(Label("//targets/rp2040/py:flash")),
         args = args,
         data = data,
         # Note: out is mandatory in older bazel-skylib versions.

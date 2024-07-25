@@ -27,7 +27,7 @@ def host_backend_alias(name, backend):
                 "@platforms//os:macos",
                 "@platforms//os:windows",
             ): backend,
-            "//conditions:default": "@pigweed//pw_build:unspecified_backend",
+            "//conditions:default": str(Label("//pw_build:unspecified_backend")),
         }),
     )
 

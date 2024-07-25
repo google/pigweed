@@ -18,22 +18,22 @@ def _host_device_simulator_transition_impl(settings, attr):
     # buildifier: disable=unused-variable
     _ignore = settings, attr
     return {
-        "@pigweed//pw_log:backend": "@pigweed//pw_log_string",
-        "@pigweed//pw_log:backend_impl": "@pigweed//pw_log_string:impl",
-        "@pigweed//pw_log_string:handler_backend": "@pigweed//pw_system:log_backend",
-        "@pigweed//pw_sys_io:backend": "@pigweed//pw_sys_io_stdio",
-        "@pigweed//pw_system:io_backend": "@pigweed//pw_system:socket_target_io",
+        str(Label("//pw_log:backend")): str(Label("//pw_log_string")),
+        str(Label("//pw_log:backend_impl")): str(Label("//pw_log_string:impl")),
+        str(Label("//pw_log_string:handler_backend")): str(Label("//pw_system:log_backend")),
+        str(Label("//pw_sys_io:backend")): str(Label("//pw_sys_io_stdio")),
+        str(Label("//pw_system:io_backend")): str(Label("//pw_system:socket_target_io")),
     }
 
 _host_device_simulator_transition = transition(
     implementation = _host_device_simulator_transition_impl,
     inputs = [],
     outputs = [
-        "@pigweed//pw_log:backend",
-        "@pigweed//pw_log:backend_impl",
-        "@pigweed//pw_log_string:handler_backend",
-        "@pigweed//pw_sys_io:backend",
-        "@pigweed//pw_system:io_backend",
+        str(Label("//pw_log:backend")),
+        str(Label("//pw_log:backend_impl")),
+        str(Label("//pw_log_string:handler_backend")),
+        str(Label("//pw_sys_io:backend")),
+        str(Label("//pw_system:io_backend")),
     ],
 )
 

@@ -15,16 +15,16 @@
 
 # LINT.IfChange
 FREERTOS_FLAGS = {
-    "@pigweed//pw_chrono:system_clock_backend": "@pigweed//pw_chrono_freertos:system_clock",
-    "@pigweed//pw_chrono:system_timer_backend": "@pigweed//pw_chrono_freertos:system_timer",
-    "@pigweed//pw_sync:binary_semaphore_backend": "@pigweed//pw_sync_freertos:binary_semaphore",
-    "@pigweed//pw_sync:interrupt_spin_lock_backend": "@pigweed//pw_sync_freertos:interrupt_spin_lock",
-    "@pigweed//pw_sync:mutex_backend": "@pigweed//pw_sync_freertos:mutex",
-    "@pigweed//pw_sync:thread_notification_backend": "@pigweed//pw_sync_freertos:thread_notification",
-    "@pigweed//pw_sync:timed_thread_notification_backend": "@pigweed//pw_sync_freertos:timed_thread_notification",
-    "@pigweed//pw_thread:id_backend": "@pigweed//pw_thread_freertos:id",
-    "@pigweed//pw_thread:iteration_backend": "@pigweed//pw_thread_freertos:thread_iteration",
-    "@pigweed//pw_thread:sleep_backend": "@pigweed//pw_thread_freertos:sleep",
-    "@pigweed//pw_thread:thread_backend": "@pigweed//pw_thread_freertos:thread",
+    str(Label("//pw_chrono:system_clock_backend")): str(Label("//pw_chrono_freertos:system_clock")),
+    str(Label("//pw_chrono:system_timer_backend")): str(Label("//pw_chrono_freertos:system_timer")),
+    str(Label("//pw_sync:binary_semaphore_backend")): str(Label("//pw_sync_freertos:binary_semaphore")),
+    str(Label("//pw_sync:interrupt_spin_lock_backend")): str(Label("//pw_sync_freertos:interrupt_spin_lock")),
+    str(Label("//pw_sync:mutex_backend")): str(Label("//pw_sync_freertos:mutex")),
+    str(Label("//pw_sync:thread_notification_backend")): str(Label("//pw_sync_freertos:thread_notification")),
+    str(Label("//pw_sync:timed_thread_notification_backend")): str(Label("//pw_sync_freertos:timed_thread_notification")),
+    str(Label("//pw_thread:id_backend")): str(Label("//pw_thread_freertos:id")),
+    str(Label("//pw_thread:iteration_backend")): str(Label("//pw_thread_freertos:thread_iteration")),
+    str(Label("//pw_thread:sleep_backend")): str(Label("//pw_thread_freertos:sleep")),
+    str(Label("//pw_thread:thread_backend")): str(Label("//pw_thread_freertos:thread")),
 }
 # LINT.ThenChange(//.bazelrc)

@@ -86,7 +86,7 @@ def pw_cc_binary(**kwargs):
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs.get("deps", []) + ["@pigweed//pw_build:default_link_extra_lib"]
+    kwargs["deps"] = kwargs.get("deps", []) + [str(Label("//pw_build:default_link_extra_lib"))]
     native.cc_binary(**kwargs)
 
 def pw_cc_test(**kwargs):
@@ -111,16 +111,16 @@ def pw_cc_test(**kwargs):
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs.get("deps", []) + ["@pigweed//pw_build:default_link_extra_lib"]
+    kwargs["deps"] = kwargs.get("deps", []) + [str(Label("//pw_build:default_link_extra_lib"))]
 
     # Depend on the backend. E.g. to pull in gtest.h include paths.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_unit_test:backend"]
+    kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_unit_test:backend"))]
 
     # Save the base set of deps minus pw_unit_test:main for the .lib target.
     original_deps = kwargs["deps"]
 
     # Add the unit test main label flag dep.
-    test_main = kwargs.pop("test_main", "@pigweed//pw_unit_test:main")
+    test_main = kwargs.pop("test_main", str(Label("//pw_unit_test:main")))
     kwargs["deps"] = original_deps + [test_main]
 
     native.cc_test(**kwargs)
@@ -162,9 +162,9 @@ def pw_cc_perf_test(**kwargs):
       **kwargs: Passed to cc_binary.
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
-                     ["@pigweed//pw_perf_test:logging_main"]
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:assert_backend_impl"]
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert:check_backend_impl"]
+                     [str(Label("//pw_perf_test:logging_main"))]
+    kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_assert:assert_backend_impl"))]
+    kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_assert:check_backend_impl"))]
     kwargs["testonly"] = True
     native.cc_binary(**kwargs)
 

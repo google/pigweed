@@ -142,7 +142,7 @@ def cipd_repository_base(rctx):
 
     rctx.template(
         ensure_path,
-        Label("@pigweed//pw_env_setup/bazel/cipd_setup:ensure.tpl"),
+        Label(str(Label("//pw_env_setup/bazel/cipd_setup:ensure.tpl"))),
         {
             "%{path}": rctx.attr.path,
             "%{tag}": tag,

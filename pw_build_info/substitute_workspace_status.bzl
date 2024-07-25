@@ -26,5 +26,5 @@ def pw_substitute_workspace_status(name, src, out):
               " --status-file bazel-out/stable-status.txt" +
               " $< $@",
         stamp = True,
-        tools = ["@pigweed//pw_build_info:substitute_workspace_status_tool"],
+        tools = [str(Label("//pw_build_info:substitute_workspace_status_tool"))],
     )
