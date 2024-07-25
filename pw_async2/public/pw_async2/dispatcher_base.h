@@ -155,6 +155,16 @@ class Task {
   /// within its own ``DoPend`` implementation.
   Poll<> Pend(Context& cx) { return DoPend(cx); }
 
+  /// Whether or not the ``Task`` is registered with a ``Dispatcher``.
+  ///
+  /// Returns ``true`` after this ``Task`` is passed to ``Dispatcher::Post``
+  /// until one of the following occurs:
+  ///
+  /// - This ``Task`` returns ``Ready`` from its ``Pend`` method.
+  /// - ``Task::Deregister`` is called.
+  /// - The associated ``Dispatcher`` is destroyed.
+  bool IsRegistered();
+
   /// Deregisters this ``Task`` from the linked ``Dispatcher`` and any
   /// associated ``Waker`` values.
   ///

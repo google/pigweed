@@ -54,6 +54,11 @@ void Task::RemoveWakerLocked(Waker& waker) {
   waker.next_ = nullptr;
 }
 
+bool Task::IsRegistered() {
+  std::lock_guard lock(dispatcher_lock());
+  return state_ != Task::State::kUnposted;
+}
+
 void Task::Deregister() {
   pw::sync::Mutex* task_execution_lock;
   {

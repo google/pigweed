@@ -45,9 +45,11 @@ TEST(Dispatcher, RunUntilStalledPendsPostedTask) {
   task.should_complete = true;
   Dispatcher dispatcher;
   dispatcher.Post(task);
+  EXPECT_TRUE(task.IsRegistered());
   EXPECT_TRUE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 1);
+  EXPECT_FALSE(task.IsRegistered());
 }
 
 TEST(Dispatcher, RunUntilStalledReturnsOnNotReady) {
@@ -163,7 +165,9 @@ TEST(Dispatcher, RunToCompletionIgnoresDeregisteredTask) {
   MockTask task;
   task.should_complete = false;
   dispatcher.Post(task);
+  EXPECT_TRUE(task.IsRegistered());
   task.Deregister();
+  EXPECT_FALSE(task.IsRegistered());
   dispatcher.RunToCompletion();
   EXPECT_EQ(task.polled, 0);
   EXPECT_EQ(task.destroyed, 0);
