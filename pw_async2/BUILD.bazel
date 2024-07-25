@@ -204,3 +204,32 @@ pw_cc_test(
         "//pw_allocator:testing",
     ],
 )
+
+cc_library(
+    name = "coro_or_else_task",
+    hdrs = [
+        "public/pw_async2/coro_or_else_task.h",
+    ],
+    includes = [
+        "public",
+    ],
+    tags = ["requires_cxx_20"],
+    deps = [
+        ":coro",
+        ":dispatcher",
+        "//pw_function",
+    ],
+)
+
+pw_cc_test(
+    name = "coro_or_else_task_test",
+    srcs = ["coro_or_else_task_test.cc"],
+    tags = ["requires_cxx_20"],
+    deps = [
+        ":coro",
+        ":coro_or_else_task",
+        ":dispatcher",
+        "//pw_allocator:null_allocator",
+        "//pw_allocator:testing",
+    ],
+)

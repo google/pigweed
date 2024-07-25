@@ -149,6 +149,28 @@ if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
       pw_allocator.testing
       pw_async2.coro
   )
+
+  pw_add_library(pw_async2.coro_or_else_task INTERFACE
+    HEADERS
+      public/pw_async2/coro.h
+    PUBLIC_DEPS
+      pw_async2.coro
+      pw_async2.dispatcher
+      pw_function
+    PUBLIC_INCLUDES
+      public
+  )
+
+  pw_add_test(pw_async2.coro_or_else_task_test
+    SOURCES
+      coro_or_else_task_test.cc
+    PRIVATE_DEPS
+      pw_async2.coro
+      pw_async2.coro_or_else_task
+      pw_async2.dispatcher
+      pw_allocator.null_allocator
+      pw_allocator.testing
+  )
 endif()
 
 add_subdirectory(examples)
