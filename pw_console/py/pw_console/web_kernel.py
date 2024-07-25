@@ -22,7 +22,11 @@ import types
 from typing import Any
 
 from aiohttp.web_ws import WebSocketResponse
-from prompt_toolkit.completion import CompleteEvent, merge_completers
+from prompt_toolkit.completion import (
+    CompleteEvent,
+    merge_completers,
+    Completion,
+)
 from prompt_toolkit.document import Document
 from ptpython.completer import PythonCompleter, Completer
 from ptpython.repl import _has_coroutine_flag
@@ -45,13 +49,54 @@ class MissingCallId(Exception):
     """Exception for request with missing call id."""
 
 
-def format_completions(all_completions) -> list[dict[str, str]]:
-    # Hide private suggestions
-    all_completions = [
-        completion
-        for completion in all_completions
-        if not completion.text.startswith('_')
-    ]
+def process_partial_expressions(
+    suggestions: list[Completion],
+) -> list[Completion]:
+    """
+    Some completions returned are full expressions, we need to trim them.
+
+    Example:
+    if input is 'device.rp', WordCompleter suggests:
+      'device.rpcs.blinky.Blinky.Blink'
+    We actually need `rpcs.blinky.Blinky`
+    """
+    processed_completions = []
+    for suggestion in suggestions:
+        completion_text = suggestion.text
+        start_position = suggestion.start_position
+
+        # Handle negative start positions
+        if start_position < 0:
+            last_dot = completion_text.rfind('.', 0, -1 * start_position)
+            if last_dot != -1:
+                # We are completing a nested property
+                trimmed_text = completion_text[last_dot + 1 :]
+            else:
+                # No dot found, return full expression
+                trimmed_text = completion_text
+            processed_completions.append(
+                Completion(trimmed_text, 0, suggestion.display)
+            )
+        else:
+            # Return full expression
+            processed_completions.append(
+                Completion(completion_text, 0, suggestion.display)
+            )
+
+    return processed_completions
+
+
+def format_completions(
+    all_completions: list[Completion],
+) -> list[dict[str, str]]:
+    all_completions = process_partial_expressions(
+        # Hide private suggestions
+        [
+            completion
+            for completion in all_completions
+            if not completion.text.startswith('_')
+        ]
+    )
 
     return list(
         map(
