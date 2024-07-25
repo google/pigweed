@@ -558,6 +558,7 @@ cc_library(
     hdrs = ["public/pw_system/system.h"],
     implementation_deps = [
         ":async_packet_io",
+        ":device_service",
         ":file_manager",
         ":file_service",
         ":log",
@@ -573,7 +574,13 @@ cc_library(
         "//pw_rpc/pwpb:echo_service",
         "//pw_sync:interrupt_spin_lock",
         "//pw_thread:thread",
-    ],
+    ] + select({
+        "//pw_cpu_exception:enabled": [
+            ":crash_handler",
+            ":crash_snapshot",
+        ],
+        "//conditions:default": [],
+    }),
     includes = ["public"],
     deps = [
         "//pw_allocator:allocator",

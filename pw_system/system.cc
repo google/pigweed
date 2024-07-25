@@ -27,6 +27,8 @@
 #include "pw_rpc/echo_service_pwpb.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_system/config.h"
+#include "pw_system/device_service.h"
+#include "pw_system/file_service.h"
 #include "pw_system/internal/async_packet_io.h"
 #include "pw_system/thread_snapshot_service.h"
 #include "pw_system/transfer_service.h"
@@ -34,6 +36,11 @@
 #include "pw_system_private/log.h"
 #include "pw_system_private/threads.h"
 #include "pw_thread/detached_thread.h"
+
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+#include "pw_system/crash_handler.h"
+#include "pw_system/crash_snapshot.h"
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
 
 namespace pw {
 
@@ -98,7 +105,22 @@ bool AsyncCore::RunOnce(Function<void()>&& function) {
 }
 
 void AsyncCore::Init(channel::ByteReaderWriter& io_channel) {
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  RegisterCrashHandler();
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
+
   PW_LOG_INFO("Initializing pw_system");
+
+#if PW_SYSTEM_ENABLE_CRASH_HANDLER
+  if (HasCrashSnapshot()) {
+    PW_LOG_WARN(
+        "Crash snapshots available.\n"
+        "To download and clear the snapshots run the following from the"
+        " console: device.get_crash_snapshots()");
+  } else {
+    PW_LOG_DEBUG("No crash snapshot");
+  }
+#endif  // PW_SYSTEM_ENABLE_CRASH_HANDLER
 
   PostTaskFunctionOrCrash(InitTask);
 
@@ -128,12 +150,15 @@ async2::Poll<> AsyncCore::InitTask(async2::Context&) {
   static rpc::EchoService echo_service;
   System().rpc_server().RegisterService(echo_service);
 
+  RegisterDeviceService(System().rpc_server());
+
   if (PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE != 0) {
     RegisterThreadSnapshotService(System().rpc_server());
   }
 
   if (PW_SYSTEM_ENABLE_TRANSFER_SERVICE != 0) {
     RegisterTransferService(System().rpc_server());
+    RegisterFileService(System().rpc_server());
     thread::DetachedThread(system::TransferThreadOptions(),
                            GetTransferThread());
     InitTransferService();
