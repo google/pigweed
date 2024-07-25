@@ -19,7 +19,7 @@ module(
 
 bazel_dep(name = "bazel_skylib", version = "1.6.1")
 bazel_dep(name = "boringssl", version = "0.0.0-20240530-2db0eb3")
-bazel_dep(name = "freertos", version = "10.5.1.bcr.1")
+bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "nanopb", repo_name = "com_github_nanopb_nanopb")
 bazel_dep(name = "pico-sdk", version = "1.6.0-rc1")
