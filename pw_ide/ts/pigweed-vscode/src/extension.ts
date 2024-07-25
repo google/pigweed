@@ -46,8 +46,10 @@ import {
   setBazelRecommendedSettings,
 } from './bazel';
 import {
-  getStatusBarItem as getCompileCommandsStatusBarItem,
-  updateStatusBarItem as updateCompileCommandsStatusBarItem,
+  getInactiveVisibilityStatusBarItem,
+  getTargetStatusBarItem,
+  updateInactiveVisibilityStatusBarItem,
+  updateTargetStatusBarItem,
 } from './statusBar';
 import {
   initClangdFileWatcher,
@@ -163,12 +165,11 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'pigweed.disable-inactive-file-code-intelligence',
       async () => {
-        settings
-          .disableInactiveFileCodeIntelligence(true)
-          .then(
-            async () =>
-              await writeClangdSettingsFile(settings.codeAnalysisTarget()),
-          );
+        logger.info('Disabling inactive file code intelligence');
+        await settings.disableInactiveFileCodeIntelligence(true);
+        updateInactiveVisibilityStatusBarItem();
+        await writeClangdSettingsFile(settings.codeAnalysisTarget());
+        await vscode.commands.executeCommand('clangd.restart');
       },
     ),
   );
@@ -177,9 +178,11 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'pigweed.enable-inactive-file-code-intelligence',
       async () => {
-        settings
-          .disableInactiveFileCodeIntelligence(false)
-          .then(async () => await writeClangdSettingsFile());
+        logger.info('Enabling inactive file code intelligence');
+        await settings.disableInactiveFileCodeIntelligence(false);
+        updateInactiveVisibilityStatusBarItem();
+        await writeClangdSettingsFile();
+        await vscode.commands.executeCommand('clangd.restart');
       },
     ),
   );
@@ -245,14 +248,16 @@ async function registerBazelCommands(context: vscode.ExtensionContext) {
   disposables.push(initSettingsFilesWatcher());
   disposables.push(initClangdFileWatcher());
 
-  context.subscriptions.push(getCompileCommandsStatusBarItem());
-  onSetCompileCommands(updateCompileCommandsStatusBarItem);
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'idle');
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'willRefresh');
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'refreshing');
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'didRefresh');
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'abort');
-  refreshManager.on(updateCompileCommandsStatusBarItem, 'fault');
+  context.subscriptions.push(getTargetStatusBarItem());
+  onSetCompileCommands(updateTargetStatusBarItem);
+  refreshManager.on(updateTargetStatusBarItem, 'idle');
+  refreshManager.on(updateTargetStatusBarItem, 'willRefresh');
+  refreshManager.on(updateTargetStatusBarItem, 'refreshing');
+  refreshManager.on(updateTargetStatusBarItem, 'didRefresh');
+  refreshManager.on(updateTargetStatusBarItem, 'abort');
+  refreshManager.on(updateTargetStatusBarItem, 'fault');
+
+  context.subscriptions.push(getInactiveVisibilityStatusBarItem());
 
   if (!settings.disableCompileCommandsFileWatcher()) {
     await vscode.commands.executeCommand('pigweed.refresh-compile-commands');

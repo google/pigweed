@@ -14,48 +14,84 @@
 
 import * as vscode from 'vscode';
 
-import { OK, RefreshStatus, refreshManager } from './refreshManager';
+import { OK, refreshManager } from './refreshManager';
 import { settings } from './settings';
 
-const statusBarItem = vscode.window.createStatusBarItem(
+const targetStatusBarItem = vscode.window.createStatusBarItem(
   vscode.StatusBarAlignment.Left,
   100,
 );
 
-export function getStatusBarItem(): vscode.StatusBarItem {
-  statusBarItem.command = 'pigweed.select-target';
-  updateStatusBarItem();
-  statusBarItem.show();
-  return statusBarItem;
+export function getTargetStatusBarItem(): vscode.StatusBarItem {
+  targetStatusBarItem.command = 'pigweed.select-target';
+  updateTargetStatusBarItem();
+  targetStatusBarItem.show();
+  return targetStatusBarItem;
 }
 
-function icon(status: RefreshStatus) {
-  switch (status) {
-    case 'idle':
-      return '$(check)';
-    case 'fault':
-      return '$(warning)';
-    default:
-      return '$(sync~spin)';
-  }
-}
+export function updateTargetStatusBarItem(target?: string) {
+  const status = refreshManager.state;
 
-function command(status: RefreshStatus) {
-  switch (status) {
-    case 'idle':
-      return 'pigweed.select-target';
-    case 'fault':
-      return 'pigweed.refresh-compile-commands-and-set-target';
-    default:
-      return 'pigweed.open-output-panel';
-  }
-}
-
-export function updateStatusBarItem(target?: string) {
   const targetText =
     target ?? settings.codeAnalysisTarget() ?? 'Select a Target';
 
-  statusBarItem.text = `${icon(refreshManager.state)} ${targetText}`;
-  statusBarItem.command = command(refreshManager.state);
+  const text = (icon: string) => `${icon} ${targetText}`;
+
+  switch (status) {
+    case 'idle':
+      targetStatusBarItem.tooltip = 'Click to select a code analysis target';
+      targetStatusBarItem.text = text('$(check)');
+      targetStatusBarItem.command = 'pigweed.select-target';
+      break;
+    case 'fault':
+      targetStatusBarItem.tooltip = 'An error occurred! Click to try again';
+      targetStatusBarItem.text = text('$(warning)');
+
+      targetStatusBarItem.command =
+        'pigweed.refresh-compile-commands-and-set-target';
+
+      break;
+    default:
+      targetStatusBarItem.tooltip =
+        'Refreshing compile commands. Click to open the output panel';
+
+      targetStatusBarItem.text = text('$(sync~spin)');
+      targetStatusBarItem.command = 'pigweed.open-output-panel';
+      break;
+  }
+
   return OK;
+}
+
+const inactiveVisibilityStatusBarItem = vscode.window.createStatusBarItem(
+  vscode.StatusBarAlignment.Left,
+  99,
+);
+
+export function getInactiveVisibilityStatusBarItem(): vscode.StatusBarItem {
+  updateInactiveVisibilityStatusBarItem();
+  inactiveVisibilityStatusBarItem.show();
+  return inactiveVisibilityStatusBarItem;
+}
+
+export function updateInactiveVisibilityStatusBarItem() {
+  if (settings.disableInactiveFileCodeIntelligence()) {
+    inactiveVisibilityStatusBarItem.tooltip =
+      'Code intelligence is disabled for files not in current ' +
+      "target's build. Click to enable.";
+
+    inactiveVisibilityStatusBarItem.text = '$(eye-closed)';
+
+    inactiveVisibilityStatusBarItem.command =
+      'pigweed.enable-inactive-file-code-intelligence';
+  } else {
+    inactiveVisibilityStatusBarItem.tooltip =
+      'Code intelligence is enabled for all files.' +
+      "Click to disable for files not in current target's build.";
+
+    inactiveVisibilityStatusBarItem.text = '$(eye)';
+
+    inactiveVisibilityStatusBarItem.command =
+      'pigweed.disable-inactive-file-code-intelligence';
+  }
 }
