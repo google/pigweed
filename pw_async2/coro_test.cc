@@ -60,6 +60,18 @@ Coro<Status> StoresFiveThenReturns(CoroContext& coro_cx, int& out) {
   co_return OkStatus();
 }
 
+class ObjectWithCoroMethod {
+ public:
+  ObjectWithCoroMethod(int x) : x_(x) {}
+  Coro<Status> CoroMethodStoresField(CoroContext&, int& out) {
+    out = x_;
+    co_return OkStatus();
+  }
+
+ private:
+  int x_;
+};
+
 TEST(CoroTest, BasicFunctionsWithoutYieldingRun) {
   AllocatorForTest<256> alloc;
   CoroContext coro_cx(alloc);
@@ -76,6 +88,18 @@ TEST(CoroTest, AllocationFailureProducesInvalidCoro) {
   EXPECT_FALSE(ImmediatelyReturnsFive(coro_cx).IsValid());
   int x = 0;
   EXPECT_FALSE(StoresFiveThenReturns(coro_cx, x).IsValid());
+}
+
+TEST(CoroTest, ObjectWithCoroMethodIsCallable) {
+  AllocatorForTest<256> alloc;
+  CoroContext coro_cx(alloc);
+  ObjectWithCoroMethod obj(4);
+  int out = 22;
+  ExpectCoroTask task = obj.CoroMethodStoresField(coro_cx, out);
+  Dispatcher dispatcher;
+  dispatcher.Post(task);
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(out, 4);
 }
 
 struct MockPendable {

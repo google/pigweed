@@ -235,6 +235,11 @@ class CoroPromiseType final {
   CoroPromiseType(CoroContext& cx, const Args&...)
       : dealloc_(cx.alloc()), current_awaitable_(nullptr), in_out_(nullptr) {}
 
+  // Method-receiver version.
+  template <typename MethodReceiver, typename... Args>
+  CoroPromiseType(const MethodReceiver&, CoroContext& cx, const Args&...)
+      : dealloc_(cx.alloc()), current_awaitable_(nullptr), in_out_(nullptr) {}
+
   // Get the `Coro<T>` after successfully allocating the coroutine space
   // and constructing `this`.
   Coro<T> get_return_object();
@@ -272,6 +277,15 @@ class CoroPromiseType final {
   // state.
   template <typename... Args>
   static void* operator new(std::size_t n,
+                            CoroContext& coro_cx,
+                            const Args&...) noexcept {
+    return coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+  }
+
+  // Method-receiver form.
+  template <typename MethodReceiver, typename... Args>
+  static void* operator new(std::size_t n,
+                            const MethodReceiver&,
                             CoroContext& coro_cx,
                             const Args&...) noexcept {
     return coro_cx.alloc().Allocate(pw::allocator::Layout(n));
