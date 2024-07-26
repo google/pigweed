@@ -23,8 +23,13 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("backend_config") {
-  include_dirs = [ "public_overrides" ]
+config("clock_backend_config") {
+  include_dirs = [ "clock_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+config("timer_backend_config") {
+  include_dirs = [ "timer_public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -32,13 +37,13 @@ config("backend_config") {
 pw_source_set("system_clock") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":clock_backend_config",
   ]
   public = [
+    "clock_public_overrides/pw_chrono_backend/system_clock_config.h",
+    "clock_public_overrides/pw_chrono_backend/system_clock_inline.h",
     "public/pw_chrono_stl/system_clock_config.h",
     "public/pw_chrono_stl/system_clock_inline.h",
-    "public_overrides/pw_chrono_backend/system_clock_config.h",
-    "public_overrides/pw_chrono_backend/system_clock_inline.h",
   ]
   public_deps = [
     "$dir_pw_chrono:epoch",
@@ -50,13 +55,13 @@ pw_source_set("system_clock") {
 pw_source_set("system_timer") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":timer_backend_config",
   ]
   public = [
     "public/pw_chrono_stl/system_timer_inline.h",
     "public/pw_chrono_stl/system_timer_native.h",
-    "public_overrides/pw_chrono_backend/system_timer_inline.h",
-    "public_overrides/pw_chrono_backend/system_timer_native.h",
+    "timer_public_overrides/pw_chrono_backend/system_timer_inline.h",
+    "timer_public_overrides/pw_chrono_backend/system_timer_native.h",
   ]
   public_deps = [
     "$dir_pw_chrono:system_clock",

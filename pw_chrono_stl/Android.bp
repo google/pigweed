@@ -21,7 +21,8 @@ cc_library_static {
     cpp_std: "c++20",
     export_include_dirs: [
         "public",
-        "public_overrides",
+        "clock_public_overrides",
+        "timer_public_overrides",
     ],
     vendor_available: true,
     host_supported: true,

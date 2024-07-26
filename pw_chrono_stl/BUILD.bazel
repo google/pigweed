@@ -21,14 +21,14 @@ licenses(["notice"])
 cc_library(
     name = "system_clock",
     hdrs = [
+        "clock_public_overrides/pw_chrono_backend/system_clock_config.h",
+        "clock_public_overrides/pw_chrono_backend/system_clock_inline.h",
         "public/pw_chrono_stl/system_clock_config.h",
         "public/pw_chrono_stl/system_clock_inline.h",
-        "public_overrides/pw_chrono_backend/system_clock_config.h",
-        "public_overrides/pw_chrono_backend/system_clock_inline.h",
     ],
     includes = [
+        "clock_public_overrides",
         "public",
-        "public_overrides",
     ],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -45,12 +45,12 @@ cc_library(
     hdrs = [
         "public/pw_chrono_stl/system_timer_inline.h",
         "public/pw_chrono_stl/system_timer_native.h",
-        "public_overrides/pw_chrono_backend/system_timer_inline.h",
-        "public_overrides/pw_chrono_backend/system_timer_native.h",
+        "timer_public_overrides/pw_chrono_backend/system_timer_inline.h",
+        "timer_public_overrides/pw_chrono_backend/system_timer_native.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "timer_public_overrides",
     ],
     target_compatible_with = incompatible_with_mcu(),
     deps = [

@@ -19,11 +19,11 @@ pw_add_library(pw_chrono_stl.system_clock INTERFACE
   HEADERS
     public/pw_chrono_stl/system_clock_config.h
     public/pw_chrono_stl/system_clock_inline.h
-    public_overrides/pw_chrono_backend/system_clock_config.h
-    public_overrides/pw_chrono_backend/system_clock_inline.h
+    clock_public_overrides/pw_chrono_backend/system_clock_config.h
+    clock_public_overrides/pw_chrono_backend/system_clock_inline.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    clock_public_overrides
   PUBLIC_DEPS
     pw_chrono.epoch
     pw_chrono.system_clock.facade
@@ -34,11 +34,11 @@ pw_add_library(pw_chrono_stl.system_timer STATIC
   HEADERS
     public/pw_chrono_stl/system_timer_inline.h
     public/pw_chrono_stl/system_timer_native.h
-    public_overrides/pw_chrono_backend/system_timer_inline.h
-    public_overrides/pw_chrono_backend/system_timer_native.h
+    timer_public_overrides/pw_chrono_backend/system_timer_inline.h
+    timer_public_overrides/pw_chrono_backend/system_timer_native.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    timer_public_overrides
   PUBLIC_DEPS
     pw_chrono.system_clock
     pw_chrono.system_timer.facade
