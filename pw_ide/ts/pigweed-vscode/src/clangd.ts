@@ -12,43 +12,45 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import * as fs from 'fs';
+import * as fs_p from 'fs/promises';
+import * as path from 'path';
+import * as readline_p from 'readline/promises';
+
 import * as vscode from 'vscode';
 
 import { createHash } from 'crypto';
-import { createInterface } from 'readline/promises';
-import { createReadStream, existsSync } from 'fs';
-import { copyFile, readFile, unlink, writeFile } from 'fs/promises';
 import { glob } from 'glob';
-import { basename, dirname, isAbsolute, join } from 'path';
 import * as yaml from 'js-yaml';
 
-import { refreshCompileCommands } from './bazelWatcher';
-import { OK, RefreshCallback, refreshManager } from './refreshManager';
-import { settingFor, settings, stringSettingFor, workingDir } from './settings';
+import { Disposable } from './disposables';
+import { didChangeClangdConfig, didChangeTarget } from './events';
 import { launchTroubleshootingLink } from './links';
 import logger from './logging';
+import { OK, RefreshCallback, RefreshManager } from './refreshManager';
+import { settingFor, settings, stringSettingFor, workingDir } from './settings';
 
 const CDB_FILE_NAME = 'compile_commands.json' as const;
 const CDB_FILE_DIR = '.compile_commands' as const;
 
 // Need this indirection to prevent `workingDir` being called before init.
-const CDB_DIR = () => join(workingDir.get(), CDB_FILE_DIR);
+const CDB_DIR = () => path.join(workingDir.get(), CDB_FILE_DIR);
 
 // TODO: https://pwbug.dev/352601321 - This is brittle and also probably
 // doesn't work on Windows.
 const clangdPath = () =>
-  join(workingDir.get(), 'external', 'llvm_toolchain', 'bin', 'clangd');
+  path.join(workingDir.get(), 'external', 'llvm_toolchain', 'bin', 'clangd');
 
-export const targetPath = (target: string) => join(`${CDB_DIR()}`, target);
+export const targetPath = (target: string) => path.join(`${CDB_DIR()}`, target);
 export const targetCompileCommandsPath = (target: string) =>
-  join(targetPath(target), CDB_FILE_NAME);
+  path.join(targetPath(target), CDB_FILE_NAME);
 
 export async function availableTargets(): Promise<string[]> {
   // Get the name of every sub dir in the compile commands dir that contains
   // a compile commands file.
   return (
     (await glob(`**/${CDB_FILE_NAME}`, { cwd: CDB_DIR() }))
-      .map((path) => basename(dirname(path)))
+      .map((filePath) => path.basename(path.dirname(filePath)))
       // Filter out a catch-all database in the root compile commands dir
       .filter((name) => name.trim() !== '.')
   );
@@ -58,7 +60,10 @@ export function getTarget(): string | undefined {
   return settings.codeAnalysisTarget();
 }
 
-export async function setTarget(target: string): Promise<void> {
+export async function setTarget(
+  target: string,
+  settingsFileWriter: (target: string) => Promise<void>,
+): Promise<void> {
   if (!(await availableTargets()).includes(target)) {
     throw new Error(`Target not among available targets: ${target}`);
   }
@@ -78,7 +83,7 @@ export async function setTarget(target: string): Promise<void> {
       '--header-insertion=never',
       '--background-index',
     ]),
-    writeClangdSettingsFile(target),
+    settingsFileWriter(target),
   ]).then(() =>
     // Restart the clangd server so it picks up the new setting.
     vscode.commands.executeCommand('clangd.restart'),
@@ -87,8 +92,8 @@ export async function setTarget(target: string): Promise<void> {
 
 /** Parse a compilation database and get the source files in the build. */
 async function parseForSourceFiles(target: string): Promise<Set<string>> {
-  const rd = createInterface({
-    input: createReadStream(targetCompileCommandsPath(target)),
+  const rd = readline_p.createInterface({
+    input: fs.createReadStream(targetCompileCommandsPath(target)),
     crlfDelay: Infinity,
   });
 
@@ -103,7 +108,7 @@ async function parseForSourceFiles(target: string): Promise<Set<string>> {
 
       if (
         // Ignore files outside of this project dir
-        !isAbsolute(matchedPath) &&
+        !path.isAbsolute(matchedPath) &&
         // Ignore build artifacts
         !matchedPath.startsWith('bazel') &&
         // Ignore external dependencies
@@ -117,59 +122,87 @@ async function parseForSourceFiles(target: string): Promise<Set<string>> {
   return files;
 }
 
-/** A cache of files that are in the builds of each target. */
-let activeFiles: Record<string, Set<string>> = {};
+// See: https://clangd.llvm.org/config#files
+const clangdSettingsDisableFiles = (paths: string[]) => ({
+  If: {
+    PathExclude: paths,
+  },
+  Diagnostics: {
+    Suppress: '*',
+  },
+});
 
-export const refreshActiveFiles: RefreshCallback = async () => {
-  logger.info('Refreshing active files cache');
-  const targets = await availableTargets();
+export class ClangdActiveFilesCache extends Disposable {
+  activeFiles: Record<string, Set<string>> = {};
 
-  const targetSourceFiles = await Promise.all(
-    targets.map(
-      async (target) => [target, await parseForSourceFiles(target)] as const,
-    ),
-  );
+  /** Get the active files for a particular target. */
+  getForTarget = async (target: string): Promise<Set<string>> => {
+    if (!Object.keys(this.activeFiles).includes(target)) {
+      return new Set();
+    }
 
-  activeFiles = Object.fromEntries(targetSourceFiles);
-  logger.info('Finished refreshing active files cache');
-  return OK;
-};
+    return this.activeFiles[target];
+  };
 
-// Refresh the active files cache after refreshing compile commands
-refreshManager.on(refreshActiveFiles, 'didRefresh');
+  refresh: RefreshCallback = async () => {
+    logger.info('Refreshing active files cache');
+    const targets = await availableTargets();
 
-/** Get the active files for a particular target. */
-export async function getActiveFiles(target: string): Promise<Set<string>> {
-  if (!Object.keys(activeFiles).includes(target)) {
-    return new Set();
-  }
+    const targetSourceFiles = await Promise.all(
+      targets.map(
+        async (target) => [target, await parseForSourceFiles(target)] as const,
+      ),
+    );
 
-  return activeFiles[target];
+    this.activeFiles = Object.fromEntries(targetSourceFiles);
+    logger.info('Finished refreshing active files cache');
+    return OK;
+  };
+
+  writeToSettings = async (target?: string) => {
+    const settingsPath = path.join(workingDir.get(), '.clangd');
+    const sharedSettingsPath = path.join(workingDir.get(), '.clangd.shared');
+
+    // If the setting to disable code intelligence for files not in the build
+    // of this target is disabled, then we need to:
+    // 1. *Not* add configuration to disable clangd for any files
+    // 2. *Remove* any prior such configuration that may have existed
+    if (!settings.disableInactiveFileCodeIntelligence()) {
+      await handleInactiveFileCodeIntelligenceEnabled(
+        settingsPath,
+        sharedSettingsPath,
+      );
+
+      return;
+    }
+
+    if (!target) return;
+
+    // Create clangd settings that disable code intelligence for all files
+    // except those that are in the build for the specified target.
+    const activeFilesForTarget = [...(await this.getForTarget(target))];
+    let data = yaml.dump(clangdSettingsDisableFiles(activeFilesForTarget));
+
+    // If there are other clangd settings for the project, append this fragment
+    // to the end of those settings.
+    if (fs.existsSync(sharedSettingsPath)) {
+      const sharedSettingsData = (
+        await fs_p.readFile(sharedSettingsPath)
+      ).toString();
+      data = `${sharedSettingsData}\n---\n${data}`;
+    }
+
+    await fs_p.writeFile(settingsPath, data, { flag: 'w+' });
+
+    logger.info(
+      `Updated .clangd to exclude files not in the build for: ${target}`,
+    );
+  };
 }
 
-const setCompileCommandsCallbacks: ((target: string) => void)[] = [];
-
-/**
- * Register callbacks to be called when the target is changed.
- *
- * Setting the target does persist the target into settings, where it can be
- * retrieved by other functions. But there's enough asyncronicity in that
- * procedure that it's more reliable to just get the target name directly, so
- * we provide it to the callbacks.
- */
-export function onSetCompileCommands(cb: (target: string) => void) {
-  setCompileCommandsCallbacks.push(cb);
-}
-
-async function onSetTargetSelection(target: string | undefined) {
-  if (target) {
-    vscode.window.showInformationMessage(`Analysis target set to: ${target}`);
-    await setTarget(target);
-    setCompileCommandsCallbacks.forEach((cb) => cb(target));
-  }
-}
-
-export async function setCompileCommandsTarget() {
+export async function setCompileCommandsTarget(
+  activeFilesCache: ClangdActiveFilesCache,
+) {
   const targets = await availableTargets();
 
   if (targets.length === 0) {
@@ -192,24 +225,23 @@ export async function setCompileCommandsTarget() {
       title: 'Select a target',
       canPickMany: false,
     })
-    .then(onSetTargetSelection);
+    .then(async (target) => {
+      if (target) {
+        await setTarget(target, activeFilesCache.writeToSettings);
+        didChangeTarget.fire(target);
+      }
+    });
 }
 
-export async function refreshCompileCommandsAndSetTarget() {
-  await refreshCompileCommands();
+export async function refreshCompileCommandsAndSetTarget(
+  refresh: () => void,
+  refreshManager: RefreshManager<any>,
+  activeFilesCache: ClangdActiveFilesCache,
+) {
+  refresh();
   await refreshManager.waitFor('didRefresh');
-  await setCompileCommandsTarget();
+  await setCompileCommandsTarget(activeFilesCache);
 }
-
-// See: https://clangd.llvm.org/config#files
-const clangdSettingsDisableFiles = (paths: string[]) => ({
-  If: {
-    PathExclude: paths,
-  },
-  Diagnostics: {
-    Suppress: '*',
-  },
-});
 
 /**
  * Handle the case where inactive file code intelligence is enabled.
@@ -227,67 +259,49 @@ async function handleInactiveFileCodeIntelligenceEnabled(
   settingsPath: string,
   sharedSettingsPath: string,
 ) {
-  if (existsSync(sharedSettingsPath)) {
-    if (!existsSync(settingsPath)) {
+  if (fs.existsSync(sharedSettingsPath)) {
+    if (!fs.existsSync(settingsPath)) {
       // If there's a shared settings file, but no active settings file, copy
       // the shared settings file to make an active settings file.
-      await copyFile(sharedSettingsPath, settingsPath);
+      await fs_p.copyFile(sharedSettingsPath, settingsPath);
     } else {
       // If both shared settings and active settings are present, check if they
       // are identical. If so, no action is required. Otherwise, copy the shared
       // settings file over the active settings file.
       const settingsHash = createHash('md5').update(
-        await readFile(settingsPath),
+        await fs_p.readFile(settingsPath),
       );
       const sharedSettingsHash = createHash('md5').update(
-        await readFile(sharedSettingsPath),
+        await fs_p.readFile(sharedSettingsPath),
       );
 
       if (settingsHash !== sharedSettingsHash) {
-        await copyFile(sharedSettingsPath, settingsPath);
+        await fs_p.copyFile(sharedSettingsPath, settingsPath);
       }
     }
-  } else if (existsSync(settingsPath)) {
+  } else if (fs.existsSync(settingsPath)) {
     // If there's no shared settings file, then we just need to remove the
     // active settings file if it's present.
-    unlink(settingsPath);
+    await fs_p.unlink(settingsPath);
   }
 }
 
-export async function writeClangdSettingsFile(target?: string) {
-  const settingsPath = join(workingDir.get(), '.clangd');
-  const sharedSettingsPath = join(workingDir.get(), '.clangd.shared');
+export async function disableInactiveFileCodeIntelligence(
+  activeFilesCache: ClangdActiveFilesCache,
+) {
+  logger.info('Disabling inactive file code intelligence');
+  await settings.disableInactiveFileCodeIntelligence(true);
+  didChangeClangdConfig.fire();
+  await activeFilesCache.writeToSettings(settings.codeAnalysisTarget());
+  await vscode.commands.executeCommand('clangd.restart');
+}
 
-  // If the setting to disable code intelligence for files not in the build of
-  // this target is disabled, then we need to:
-  // 1. *Not* add configuration to disable clangd for any files
-  // 2. *Remove* any prior such configuration that may have existed
-  if (!settings.disableInactiveFileCodeIntelligence()) {
-    await handleInactiveFileCodeIntelligenceEnabled(
-      settingsPath,
-      sharedSettingsPath,
-    );
-
-    return;
-  }
-
-  if (!target) return;
-
-  // Create clangd settings that disable code intelligence for all files
-  // except those that are in the build for the specified target.
-  const activeFilesForTarget = [...(await getActiveFiles(target))];
-  let data = yaml.dump(clangdSettingsDisableFiles(activeFilesForTarget));
-
-  // If there are other clangd settings for the project, append this fragment
-  // to the end of those settings.
-  if (existsSync(sharedSettingsPath)) {
-    const sharedSettingsData = (await readFile(sharedSettingsPath)).toString();
-    data = `${sharedSettingsData}\n---\n${data}`;
-  }
-
-  await writeFile(settingsPath, data, { flag: 'w+' });
-
-  logger.info(
-    `Updated .clangd to exclude files not in the build for: ${target}`,
-  );
+export async function enableInactiveFileCodeIntelligence(
+  activeFilesCache: ClangdActiveFilesCache,
+) {
+  logger.info('Enabling inactive file code intelligence');
+  await settings.disableInactiveFileCodeIntelligence(false);
+  didChangeClangdConfig.fire();
+  await activeFilesCache.writeToSettings();
+  await vscode.commands.executeCommand('clangd.restart');
 }

@@ -40,6 +40,8 @@
  * in-progress refresh process.
  */
 
+import logger from './logging';
+
 /** Refresh statuses that broadly represent a refresh in progress. */
 export type RefreshStatusInProgress =
   | 'willRefresh'
@@ -257,7 +259,28 @@ export class RefreshManager<State extends RefreshStatus> {
         // Run the callbacks associated with this state transition.
         await this.runCallbacks(previous);
       } catch (err: unknown) {
-        // If an error occurs while during callbacks, move into the fault state.
+        // An error occurred while running the callbacks associated with this
+        // state change.
+
+        // Report errors to the output window.
+        // Errors can come from well-behaved refresh callbacks that return
+        // an object like `{ error: '...' }`, but since those errors are
+        // hoisted to here by `throw`ing them, we will also catch unexpected or
+        // not-well-behaved errors as exceptions (`{ message: '...' }`-style).
+        if (typeof err === 'string') {
+          logger.error(err);
+        } else {
+          const { message } = err as { message: string | undefined };
+
+          if (message) {
+            logger.error(message);
+          } else {
+            logger.error('Unknown error occurred');
+          }
+        }
+
+        // Move into the fault state, running the callbacks associated with
+        // that state transition.
         const previous = this._state;
         this._state = 'fault';
         await this.runCallbacks(previous);
@@ -474,5 +497,3 @@ export class RefreshManager<State extends RefreshStatus> {
     }
   }
 }
-
-export const refreshManager = RefreshManager.create();

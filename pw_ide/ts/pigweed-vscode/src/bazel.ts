@@ -12,14 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/** Set up and manage the Bazel tools integration. */
+import * as child_process from 'child_process';
+import * as path from 'path';
 
 import * as vscode from 'vscode';
 
-import { execSync } from 'child_process';
-import { resolve, basename } from 'path';
 import { getNativeBinary as getBazeliskBinary } from '@bazel/bazelisk';
 import node_modules from 'node_modules-path';
+
+import logger from './logging';
+
 import {
   bazel_executable,
   buildifier_executable,
@@ -27,10 +29,9 @@ import {
   ConfigAccessor,
   bazel_codelens,
 } from './settings';
-import logger from './logging';
 
 /**
- * Is there a path to the given tool configured in VS Code settings
+ * Is there a path to the given tool configured in VS Code settings?
  *
  * @param name The name of the tool
  * @param configAccessor A config accessor for the setting
@@ -41,7 +42,9 @@ function hasConfiguredPathTo(
   configAccessor: ConfigAccessor<string>,
 ): boolean {
   const exe = configAccessor.get();
-  return exe ? basename(exe).toLowerCase().includes(name.toLowerCase()) : false;
+  return exe
+    ? path.basename(exe).toLowerCase().includes(name.toLowerCase())
+    : false;
 }
 
 /**
@@ -52,7 +55,9 @@ function hasConfiguredPathTo(
 function findPathsTo(name: string): string[] {
   // TODO: https://pwbug.dev/351883170 - This only works on Unix-ish OSes.
   try {
-    const stdout = execSync(`which -a ${name.toLowerCase()}`).toString();
+    const stdout = child_process
+      .execSync(`which -a ${name.toLowerCase()}`)
+      .toString();
     // Parse the output into a list of paths, removing any duplicates/blanks.
     return [...new Set(stdout.split('\n'))].filter((item) => item.length > 0);
   } catch (err: unknown) {
@@ -69,7 +74,12 @@ export function vendoredBazeliskPath(): string | undefined {
   // have a path.
   if (typeof result !== 'string') return undefined;
 
-  return resolve(node_modules()!, '@bazel', 'bazelisk', basename(result));
+  return path.resolve(
+    node_modules()!,
+    '@bazel',
+    'bazelisk',
+    path.basename(result),
+  );
 }
 
 function vendoredBuildifierPath(): string | undefined {
@@ -82,9 +92,9 @@ function vendoredBuildifierPath(): string | undefined {
 
   // Unlike the @bazel/bazelisk package, @bazel/buildifer doesn't export any
   // code. The logic is exactly the same, but with a different name.
-  const binaryName = basename(result).replace('bazelisk', 'buildifier');
+  const binaryName = path.basename(result).replace('bazelisk', 'buildifier');
 
-  return resolve(node_modules()!, '@bazel', 'buildifier', binaryName);
+  return path.resolve(node_modules()!, '@bazel', 'buildifier', binaryName);
 }
 
 const VENDORED_LABEL = 'Use the version built in to the Pigweed extension';
@@ -210,7 +220,7 @@ export async function setBazelRecommendedSettings() {
   await bazel_codelens.update(true);
 }
 
-export async function configureOtherBazelSettings() {
+export async function configureBazelSettings() {
   await updateVendoredBazelisk();
   await updateVendoredBuildifier();
 

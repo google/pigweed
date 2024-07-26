@@ -13,85 +13,137 @@
 // the License.
 
 import * as vscode from 'vscode';
+import { StatusBarItem } from 'vscode';
 
-import { OK, refreshManager } from './refreshManager';
+import { Disposable } from './disposables';
+
+import {
+  didChangeClangdConfig,
+  didChangeRefreshStatus,
+  didChangeTarget,
+} from './events';
+
+import { RefreshStatus } from './refreshManager';
 import { settings } from './settings';
 
-const targetStatusBarItem = vscode.window.createStatusBarItem(
-  vscode.StatusBarAlignment.Left,
-  100,
-);
+const DEFAULT_TARGET_TEXT = 'Select a Target';
+const ICON_IDLE = '$(check)';
+const ICON_FAULT = '$(warning)';
+const ICON_INPROGRESS = '$(sync~spin)';
 
-export function getTargetStatusBarItem(): vscode.StatusBarItem {
-  targetStatusBarItem.command = 'pigweed.select-target';
-  updateTargetStatusBarItem();
-  targetStatusBarItem.show();
-  return targetStatusBarItem;
-}
+export class TargetStatusBarItem extends Disposable {
+  private statusBarItem: StatusBarItem;
+  private targetText = DEFAULT_TARGET_TEXT;
+  private icon = ICON_IDLE;
 
-export function updateTargetStatusBarItem(target?: string) {
-  const status = refreshManager.state;
+  constructor() {
+    super();
 
-  const targetText =
-    target ?? settings.codeAnalysisTarget() ?? 'Select a Target';
+    this.statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      100,
+    );
 
-  const text = (icon: string) => `${icon} ${targetText}`;
+    // Seed the initial state, then make it visible
+    this.updateTarget();
+    this.updateRefreshStatus();
+    this.statusBarItem.show();
 
-  switch (status) {
-    case 'idle':
-      targetStatusBarItem.tooltip = 'Click to select a code analysis target';
-      targetStatusBarItem.text = text('$(check)');
-      targetStatusBarItem.command = 'pigweed.select-target';
-      break;
-    case 'fault':
-      targetStatusBarItem.tooltip = 'An error occurred! Click to try again';
-      targetStatusBarItem.text = text('$(warning)');
+    // Subscribe to relevant events
+    didChangeTarget.event(this.updateTarget);
+    didChangeRefreshStatus.event(this.updateRefreshStatus);
 
-      targetStatusBarItem.command =
-        'pigweed.refresh-compile-commands-and-set-target';
-
-      break;
-    default:
-      targetStatusBarItem.tooltip =
-        'Refreshing compile commands. Click to open the output panel';
-
-      targetStatusBarItem.text = text('$(sync~spin)');
-      targetStatusBarItem.command = 'pigweed.open-output-panel';
-      break;
+    // Dispose this when the extension is deactivated
+    this.disposables.push(this.statusBarItem);
   }
 
-  return OK;
+  label = () => `${this.icon} ${this.targetText}`;
+
+  updateProps = (
+    props: Partial<{ command: string; icon: string; tooltip: string }> = {},
+  ): void => {
+    this.icon = props.icon ?? this.icon;
+    this.statusBarItem.command = props.command ?? this.statusBarItem.command;
+    this.statusBarItem.tooltip = props.tooltip ?? this.statusBarItem.tooltip;
+    this.statusBarItem.text = this.label();
+  };
+
+  updateTarget = (target?: string): void => {
+    this.targetText =
+      target ?? settings.codeAnalysisTarget() ?? DEFAULT_TARGET_TEXT;
+
+    this.updateProps();
+  };
+
+  updateRefreshStatus = (status: RefreshStatus = 'idle'): void => {
+    switch (status) {
+      case 'idle':
+        this.updateProps({
+          command: 'pigweed.select-target',
+          icon: ICON_IDLE,
+          tooltip: 'Click to select a code analysis target',
+        });
+        break;
+      case 'fault':
+        this.updateProps({
+          command: 'pigweed.refresh-compile-commands-and-set-target',
+          icon: ICON_FAULT,
+          tooltip: 'An error occurred! Click to try again',
+        });
+        break;
+      default:
+        this.updateProps({
+          command: 'pigweed.open-output-panel',
+          icon: ICON_INPROGRESS,
+          tooltip:
+            'Refreshing compile commands. Click to open the output panel',
+        });
+        break;
+    }
+  };
 }
 
-const inactiveVisibilityStatusBarItem = vscode.window.createStatusBarItem(
-  vscode.StatusBarAlignment.Left,
-  99,
-);
+export class InactiveVisibilityStatusBarItem extends Disposable {
+  private statusBarItem: StatusBarItem;
 
-export function getInactiveVisibilityStatusBarItem(): vscode.StatusBarItem {
-  updateInactiveVisibilityStatusBarItem();
-  inactiveVisibilityStatusBarItem.show();
-  return inactiveVisibilityStatusBarItem;
-}
+  constructor() {
+    super();
 
-export function updateInactiveVisibilityStatusBarItem() {
-  if (settings.disableInactiveFileCodeIntelligence()) {
-    inactiveVisibilityStatusBarItem.tooltip =
-      'Code intelligence is disabled for files not in current ' +
-      "target's build. Click to enable.";
+    this.statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      99,
+    );
 
-    inactiveVisibilityStatusBarItem.text = '$(eye-closed)';
+    // Seed the initial state, then make it visible
+    this.update();
+    this.statusBarItem.show();
 
-    inactiveVisibilityStatusBarItem.command =
-      'pigweed.enable-inactive-file-code-intelligence';
-  } else {
-    inactiveVisibilityStatusBarItem.tooltip =
-      'Code intelligence is enabled for all files.' +
-      "Click to disable for files not in current target's build.";
+    // Update state on clangd config change events
+    didChangeClangdConfig.event(this.update);
 
-    inactiveVisibilityStatusBarItem.text = '$(eye)';
-
-    inactiveVisibilityStatusBarItem.command =
-      'pigweed.disable-inactive-file-code-intelligence';
+    // Dispose this when the extension is deactivated
+    this.disposables.push(this.statusBarItem);
   }
+
+  update = (): void => {
+    if (settings.disableInactiveFileCodeIntelligence()) {
+      this.statusBarItem.text = '$(eye-closed)';
+
+      this.statusBarItem.tooltip =
+        'Code intelligence is disabled for files not in current ' +
+        "target's build. Click to enable.";
+
+      this.statusBarItem.command =
+        'pigweed.enable-inactive-file-code-intelligence';
+    } else {
+      this.statusBarItem.text = '$(eye)';
+
+      this.statusBarItem.tooltip =
+        'Code intelligence is enabled for all files.' +
+        "Click to disable for files not in current target's build.";
+
+      this.statusBarItem.command =
+        'pigweed.disable-inactive-file-code-intelligence';
+    }
+  };
 }

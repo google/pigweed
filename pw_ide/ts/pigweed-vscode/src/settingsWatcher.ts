@@ -13,79 +13,88 @@
 // the License.
 
 import * as vscode from 'vscode';
+import { RelativePattern } from 'vscode';
+
+import { Disposable } from './disposables';
+import { ClangdActiveFilesCache } from './clangd';
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
-import { writeClangdSettingsFile } from './clangd';
-import { settings } from './settings';
 import logger from './logging';
+import { settings } from './settings';
 
-export function initSettingsFilesWatcher(): { dispose: () => void } {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) return { dispose: () => null };
+export class SettingsFileWatcher extends Disposable {
+  constructor() {
+    super();
 
-  const workspaceFolder = workspaceFolders[0];
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) return;
 
-  logger.info('Initializing settings file watcher');
+    const workspaceFolder = workspaceFolders[0];
 
-  const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(workspaceFolder, '.vscode/settings.shared.json'),
-  );
+    logger.info('Initializing settings file watcher');
 
-  watcher.onDidChange(async () => {
-    logger.info('[onDidChange] triggered from settings file watcher');
-    syncSettingsSharedToProject(await getSettingsData());
-  });
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new RelativePattern(workspaceFolder, '.vscode/settings.shared.json'),
+    );
 
-  watcher.onDidCreate(async () => {
-    logger.info('[onDidCreate] triggered from settings file watcher');
-    syncSettingsSharedToProject(await getSettingsData());
-  });
+    watcher.onDidChange(async () => {
+      logger.info('[onDidChange] triggered from settings file watcher');
+      syncSettingsSharedToProject(await getSettingsData());
+    });
 
-  watcher.onDidDelete(async () => {
-    logger.info('[onDidDelete] triggered from settings file watcher');
-    syncSettingsSharedToProject(await getSettingsData());
-  });
+    watcher.onDidCreate(async () => {
+      logger.info('[onDidCreate] triggered from settings file watcher');
+      syncSettingsSharedToProject(await getSettingsData());
+    });
 
-  return {
-    dispose: () => watcher.dispose(),
-  };
-}
+    watcher.onDidDelete(async () => {
+      logger.info('[onDidDelete] triggered from settings file watcher');
+      syncSettingsSharedToProject(await getSettingsData());
+    });
 
-async function handleClangdFileEvent() {
-  const target = settings.codeAnalysisTarget();
-
-  if (target) {
-    await writeClangdSettingsFile(target);
+    this.disposables.push(watcher);
   }
 }
 
-export function initClangdFileWatcher(): { dispose: () => void } {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) return { dispose: () => null };
+async function handleClangdFileEvent(
+  settingsFileWriter: (target: string) => Promise<void>,
+) {
+  const target = settings.codeAnalysisTarget();
 
-  const workspaceFolder = workspaceFolders[0];
+  if (target) {
+    await settingsFileWriter(target);
+  }
+}
 
-  logger.info('Initializing clangd file watcher');
+export class ClangdFileWatcher extends Disposable {
+  constructor(clangdActiveFilesCache: ClangdActiveFilesCache) {
+    super();
 
-  const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(workspaceFolder, '.clangd.shared'),
-  );
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) return;
 
-  watcher.onDidChange(async () => {
-    logger.info('[onDidChange] triggered from clangd file watcher');
-    await handleClangdFileEvent();
-  });
+    const workspaceFolder = workspaceFolders[0];
 
-  watcher.onDidCreate(async () => {
-    logger.info('[onDidCreate] triggered from clangd file watcher');
-    await handleClangdFileEvent();
-  });
+    logger.info('Initializing clangd file watcher');
 
-  watcher.onDidDelete(async () => {
-    logger.info('[onDidDelete] triggered from clangd file watcher');
-    await handleClangdFileEvent();
-  });
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new RelativePattern(workspaceFolder, '.clangd.shared'),
+    );
 
-  return {
-    dispose: () => watcher.dispose(),
-  };
+    watcher.onDidChange(async () => {
+      logger.info('[onDidChange] triggered from clangd file watcher');
+      await handleClangdFileEvent(clangdActiveFilesCache.writeToSettings);
+    });
+
+    watcher.onDidCreate(async () => {
+      logger.info('[onDidCreate] triggered from clangd file watcher');
+      await handleClangdFileEvent(clangdActiveFilesCache.writeToSettings);
+    });
+
+    watcher.onDidDelete(async () => {
+      logger.info('[onDidDelete] triggered from clangd file watcher');
+      await handleClangdFileEvent(clangdActiveFilesCache.writeToSettings);
+    });
+
+    this.disposables.push(watcher);
+  }
 }

@@ -14,51 +14,35 @@
 
 import * as vscode from 'vscode';
 
-import {
-  onSetCompileCommands,
-  refreshCompileCommandsAndSetTarget,
-  setCompileCommandsTarget,
-  writeClangdSettingsFile,
-} from './clangd';
+import { registerBazelProjectCommands } from './commands/bazel';
+import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
+import { configureBazelisk, configureBazelSettings } from './bazel';
+import { BazelRefreshCompileCommandsWatcher } from './bazelWatcher';
+import { Disposer } from './disposables';
+import { linkRefreshManagerToEvents } from './events';
+import { ClangdActiveFilesCache } from './clangd';
 import { checkExtensions } from './extensionManagement';
 import logger, { output } from './logging';
 import { fileBug, launchTroubleshootingLink } from './links';
-import { settings, workingDir } from './settings';
-import {
-  initRefreshCompileCommandsWatcher,
-  refreshCompileCommands,
-} from './bazelWatcher';
+
 import {
   getPigweedProjectRoot,
   isBazelWorkspaceProject,
   isBootstrapProject,
 } from './project';
-import { refreshManager } from './refreshManager';
-import {
-  launchBootstrapTerminal,
-  launchTerminal,
-  patchBazeliskIntoTerminalPath,
-} from './terminal';
-import {
-  interactivelySetBazeliskPath,
-  configureBazelisk,
-  configureOtherBazelSettings,
-  setBazelRecommendedSettings,
-} from './bazel';
-import {
-  getInactiveVisibilityStatusBarItem,
-  getTargetStatusBarItem,
-  updateInactiveVisibilityStatusBarItem,
-  updateTargetStatusBarItem,
-} from './statusBar';
-import {
-  initClangdFileWatcher,
-  initSettingsFilesWatcher,
-} from './settingsWatcher';
-import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 
-// Anything that needs to be disposed of should be stored here.
-const disposables: { dispose: () => void }[] = [output, refreshManager];
+import { RefreshManager } from './refreshManager';
+import { settings, workingDir } from './settings';
+import { ClangdFileWatcher, SettingsFileWatcher } from './settingsWatcher';
+
+import {
+  InactiveVisibilityStatusBarItem,
+  TargetStatusBarItem,
+} from './statusBar';
+
+import { launchBootstrapTerminal, launchTerminal } from './terminal';
+
+const disposer = new Disposer();
 
 function registerUniversalCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -160,108 +144,40 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
   );
 }
 
-async function registerBazelCommands(context: vscode.ExtensionContext) {
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.disable-inactive-file-code-intelligence',
-      async () => {
-        logger.info('Disabling inactive file code intelligence');
-        await settings.disableInactiveFileCodeIntelligence(true);
-        updateInactiveVisibilityStatusBarItem();
-        await writeClangdSettingsFile(settings.codeAnalysisTarget());
-        await vscode.commands.executeCommand('clangd.restart');
-      },
+async function initAsBazelProject(context: vscode.ExtensionContext) {
+  // Marshall all of our components and dependencies.
+  const refreshManager = disposer.add(RefreshManager.create());
+  linkRefreshManagerToEvents(refreshManager);
+
+  const { clangdActiveFilesCache, compileCommandsWatcher } = disposer.addMany({
+    clangdActiveFilesCache: new ClangdActiveFilesCache(),
+    compileCommandsWatcher: new BazelRefreshCompileCommandsWatcher(
+      refreshManager,
+      settings.disableCompileCommandsFileWatcher(),
     ),
+    inactiveVisibilityStatusBarItem: new InactiveVisibilityStatusBarItem(),
+    settingsFileWatcher: new SettingsFileWatcher(),
+    targetStatusBarItem: new TargetStatusBarItem(),
+  });
+
+  disposer.add(new ClangdFileWatcher(clangdActiveFilesCache));
+
+  // Refresh the active files cache after refreshing compile commands.
+  refreshManager.on(clangdActiveFilesCache.refresh, 'didRefresh');
+
+  registerBazelProjectCommands(
+    context,
+    refreshManager,
+    compileCommandsWatcher,
+    clangdActiveFilesCache,
   );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.enable-inactive-file-code-intelligence',
-      async () => {
-        logger.info('Enabling inactive file code intelligence');
-        await settings.disableInactiveFileCodeIntelligence(false);
-        updateInactiveVisibilityStatusBarItem();
-        await writeClangdSettingsFile();
-        await vscode.commands.executeCommand('clangd.restart');
-      },
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.refresh-compile-commands',
-      refreshCompileCommands,
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.refresh-compile-commands-and-set-target',
-      refreshCompileCommandsAndSetTarget,
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.set-bazelisk-path',
-      interactivelySetBazeliskPath,
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.set-bazel-recommended-settings',
-      setBazelRecommendedSettings,
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.select-target',
-      setCompileCommandsTarget,
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('pigweed.launch-terminal', () =>
-      vscode.window.showWarningMessage(
-        'This command is currently not supported with Bazel projects',
-      ),
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('pigweed.bootstrap-terminal', () =>
-      vscode.window.showWarningMessage(
-        'This command is currently not supported with Bazel projects',
-      ),
-    ),
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.activate-bazelisk-in-terminal',
-      patchBazeliskIntoTerminalPath,
-    ),
-  );
-
-  disposables.push(initSettingsFilesWatcher());
-  disposables.push(initClangdFileWatcher());
-
-  context.subscriptions.push(getTargetStatusBarItem());
-  onSetCompileCommands(updateTargetStatusBarItem);
-  refreshManager.on(updateTargetStatusBarItem, 'idle');
-  refreshManager.on(updateTargetStatusBarItem, 'willRefresh');
-  refreshManager.on(updateTargetStatusBarItem, 'refreshing');
-  refreshManager.on(updateTargetStatusBarItem, 'didRefresh');
-  refreshManager.on(updateTargetStatusBarItem, 'abort');
-  refreshManager.on(updateTargetStatusBarItem, 'fault');
-
-  context.subscriptions.push(getInactiveVisibilityStatusBarItem());
+  // Do stuff that we want to do on load.
+  await configureBazelSettings();
+  await configureBazelisk();
 
   if (!settings.disableCompileCommandsFileWatcher()) {
-    await vscode.commands.executeCommand('pigweed.refresh-compile-commands');
-    disposables.push(initRefreshCompileCommandsWatcher());
+    compileCommandsWatcher.refresh();
   }
 }
 
@@ -298,9 +214,7 @@ async function configureProject(context: vscode.ExtensionContext) {
       isBazelWorkspaceProject(projectRoot)
     ) {
       output.appendLine('This is a Bazel project');
-      await registerBazelCommands(context);
-      await configureOtherBazelSettings();
-      await configureBazelisk();
+      await initAsBazelProject(context);
     } else {
       vscode.window
         .showErrorMessage(
@@ -396,5 +310,5 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  disposables.forEach((item) => item.dispose());
+  disposer.dispose();
 }

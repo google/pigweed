@@ -159,8 +159,10 @@
     "lint": "eslint src --ext ts",
     "prePackage": "tsx scripts/prepostPackage.mts --pre",
     "doPackage": "vsce package",
+    "doPackagePrerelease": "vsce package --pre-release",
     "postPackage": "tsx scripts/prepostPackage.mts --post",
     "package": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackage && npm run postPackage",
+    "packagePrerelease": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackagePrerelease && npm run postPackage",
     "test:jest": "jest '.*.test.ts'",
     "test:vscode": "vscode-test"
   },
@@ -170,8 +172,7 @@
     "glob": "^10.4.5",
     "hjson": "^3.2.2",
     "js-yaml": "^4.1.0",
-    "node_modules-path": "^2.0.8",
-    "strip-ansi": "^7.1.0"
+    "node_modules-path": "^2.0.8"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

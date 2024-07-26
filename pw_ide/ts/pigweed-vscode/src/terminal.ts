@@ -12,20 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as process from 'process';
 
 // Convert `exec` from callback style to promise style.
 import { exec as cbExec } from 'child_process';
 import util from 'node:util';
 const exec = util.promisify(cbExec);
 
-import { symlink } from 'fs';
-import { platform } from 'process';
-import { basename, dirname, join } from 'path';
+import * as vscode from 'vscode';
 
+import { vendoredBazeliskPath } from './bazel';
 import logger from './logging';
 import { bazel_executable, settings } from './settings';
-import { vendoredBazeliskPath } from './bazel';
 
 type InitScript = 'activate' | 'bootstrap';
 
@@ -88,7 +88,7 @@ async function getShellTypeFromTerminal(
   let pidPos: number;
   let namePos: number;
 
-  switch (platform) {
+  switch (process.platform) {
     case 'linux': {
       cmd = `ps -A`;
       pidPos = 1;
@@ -102,7 +102,7 @@ async function getShellTypeFromTerminal(
       break;
     }
     default: {
-      logger.error(`Platform not currently supported: ${platform}`);
+      logger.error(`Platform not currently supported: ${process.platform}`);
       return;
     }
   }
@@ -124,7 +124,7 @@ async function getShellTypeFromTerminal(
     return;
   }
 
-  return basename(shellProcessName);
+  return path.basename(shellProcessName);
 }
 
 /** Prepend the path to Bazelisk into the active terminal's path. */
@@ -143,11 +143,11 @@ export async function patchBazeliskIntoTerminalPath(): Promise<void> {
   // to just run `bazelisk` in the terminal. So while this is not entirely
   // ideal, we just create a symlink in the same directory if the binary name
   // isn't plain `bazelisk`.
-  if (basename(bazeliskPath) !== 'bazelisk') {
+  if (path.basename(bazeliskPath) !== 'bazelisk') {
     try {
-      symlink(
+      fs.symlink(
         bazeliskPath,
-        join(dirname(bazeliskPath), 'bazelisk'),
+        path.join(path.dirname(bazeliskPath), 'bazelisk'),
         (error) => {
           const message = error
             ? `${error.errno} ${error.message}`
@@ -183,11 +183,11 @@ export async function patchBazeliskIntoTerminalPath(): Promise<void> {
   switch (shellType) {
     case 'bash':
     case 'zsh': {
-      cmd = `export PATH="${dirname(bazeliskPath)}:$\{PATH}"`;
+      cmd = `export PATH="${path.dirname(bazeliskPath)}:$\{PATH}"`;
       break;
     }
     case 'fish': {
-      cmd = `set -x --prepend PATH "${dirname(bazeliskPath)}"`;
+      cmd = `set -x --prepend PATH "${path.dirname(bazeliskPath)}"`;
       break;
     }
     default: {

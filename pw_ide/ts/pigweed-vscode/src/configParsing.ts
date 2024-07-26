@@ -12,8 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as hjson from 'hjson';
 import * as vscode from 'vscode';
+
+import * as hjson from 'hjson';
+
 import logger from './logging';
 
 /**

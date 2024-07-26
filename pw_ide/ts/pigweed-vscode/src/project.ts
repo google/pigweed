@@ -13,8 +13,9 @@
 // the License.
 
 import * as fs from 'fs';
-import { glob } from 'glob';
 import * as path from 'path';
+
+import { glob } from 'glob';
 
 import type { Settings, WorkingDirStore } from './settings';
 
