@@ -1567,6 +1567,8 @@ Examples in C++
      void DoOtherStuff();
    }
 
+.. _module-pw_sync-condition-variables:
+
 Condition Variables
 =====================
 :cpp:class:`pw::sync::ConditionVariable` provides a condition variable
