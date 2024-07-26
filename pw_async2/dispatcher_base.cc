@@ -54,7 +54,7 @@ void Task::RemoveWakerLocked(Waker& waker) {
   waker.next_ = nullptr;
 }
 
-bool Task::IsRegistered() {
+bool Task::IsRegistered() const {
   std::lock_guard lock(dispatcher_lock());
   return state_ != Task::State::kUnposted;
 }

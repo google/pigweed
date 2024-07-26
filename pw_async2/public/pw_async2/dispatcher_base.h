@@ -163,7 +163,7 @@ class Task {
   /// - This ``Task`` returns ``Ready`` from its ``Pend`` method.
   /// - ``Task::Deregister`` is called.
   /// - The associated ``Dispatcher`` is destroyed.
-  bool IsRegistered();
+  bool IsRegistered() const;
 
   /// Deregisters this ``Task`` from the linked ``Dispatcher`` and any
   /// associated ``Waker`` values.
