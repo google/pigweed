@@ -286,7 +286,7 @@ export class LogView extends LitElement {
     }
 
     // Toggle the column's visibility
-    column.isVisible = event.detail.isChecked;
+    column.isVisible = !event.detail.isChecked;
 
     // Clear the manually-set width of the last visible column
     const lastVisibleColumn = this.columnData

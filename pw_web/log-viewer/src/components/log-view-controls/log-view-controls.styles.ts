@@ -93,6 +93,21 @@ export const styles = css`
     position: relative;
   }
 
+  .col-toggle-menu {
+    --md-checkbox-state-layer-size: 0;
+  }
+
+  .col-toggle-menu md-checkbox,
+  .col-toggle-menu label {
+    pointer-events: none;
+  }
+
+  .col-toggle-menu label {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
   md-filled-text-field {
     --md-icon-button-icon-size: var(--text-field-icon-size);
     --md-icon-button-icon-color: var(--md-sys-color-outline);
@@ -105,22 +120,6 @@ export const styles = css`
     width: 25rem;
   }
 
-  input[type='checkbox'] {
-    accent-color: var(--md-sys-color-primary);
-    height: 1.125rem;
-    width: 1.125rem;
-  }
-
-  .col-toggle-menu {
-    background-color: var(--md-sys-color-surface-container);
-    border-radius: 4px;
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    position: absolute;
-    right: 0;
-    z-index: 2;
-  }
-
   .field-buttons {
     padding-right: 0.5rem;
   }
@@ -128,26 +127,5 @@ export const styles = css`
   .field-buttons md-icon-button[hidden] {
     display: block;
     visibility: hidden;
-  }
-
-  md-standard-icon-button[selected] {
-    background-color: var(--sys-log-viewer-color-controls-button-enabled);
-    border-radius: 100%;
-  }
-
-  .col-toggle-menu-item {
-    align-items: center;
-    display: flex;
-    height: 3rem;
-    width: max-content;
-  }
-
-  .field-toggle {
-    border-radius: 1.5rem;
-    position: relative;
-  }
-
-  label {
-    padding-left: 0.75rem;
   }
 `;

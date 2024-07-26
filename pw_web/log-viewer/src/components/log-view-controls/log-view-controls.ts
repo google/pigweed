@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -71,15 +71,17 @@ export class LogViewControls extends LitElement {
   @state()
   _toolbarCollapsed = false;
 
-  @query('.col-toggle-menu') _colToggleMenu!: HTMLElement;
-
   @query('.search-field') _searchField!: HTMLInputElement;
+
+  @query('.col-toggle-button') _colToggleMenuButton!: HTMLElement;
+
+  @query('#col-toggle-menu') _colToggleMenu!: HTMLElement;
 
   @query('.addl-actions-button') _addlActionsButton!: HTMLElement;
 
   @query('.addl-actions-menu') _addlActionsMenu!: HTMLElement;
 
-  @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
+  @queryAll('.item-checkbox') _itemCheckboxes!: HTMLCollection[];
 
   /** The timer identifier for debouncing search input. */
   private _inputDebounceTimer: number | null = null;
@@ -107,6 +109,9 @@ export class LogViewControls extends LitElement {
     // Supply anchor element to Material Web menus
     if (this._addlActionsMenu) {
       (this._addlActionsMenu as MdMenu).anchorElement = this._addlActionsButton;
+    }
+    if (this._colToggleMenu) {
+      (this._colToggleMenu as MdMenu).anchorElement = this._colToggleMenuButton;
     }
   }
 
@@ -228,18 +233,30 @@ export class LogViewControls extends LitElement {
    * @param {Event} event - The click event object.
    */
   private handleColumnToggle(event: Event) {
-    const inputEl = event.target as HTMLInputElement;
-    const columnToggle = new CustomEvent('column-toggle', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        viewId: this.viewId,
-        field: inputEl.value,
-        isChecked: inputEl.checked,
-      },
-    });
+    const target = event.currentTarget as HTMLElement;
+    if (target) {
+      const field = target.dataset.field as string;
+      const isChecked = target.hasAttribute('data-checked');
 
-    this.dispatchEvent(columnToggle);
+      const columnToggle = new CustomEvent('column-toggle', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          viewId: this.viewId,
+          field: field,
+          isChecked: isChecked,
+          columnData: this.columnData,
+        },
+      });
+
+      this.dispatchEvent(columnToggle);
+
+      if (isChecked) {
+        target.removeAttribute('data-checked');
+      } else {
+        target.setAttribute('data-checked', '');
+      }
+    }
   }
 
   private handleSplitRight() {
@@ -300,7 +317,7 @@ export class LogViewControls extends LitElement {
     this._colToggleMenuOpen = !this._colToggleMenuOpen;
   }
 
-  /** Opens and closes the Additional Actions menu. */
+  /** Opens and closes the additional actions dropdown menu. */
   private toggleAddlActionsMenu() {
     this._addlActionsMenuOpen = !this._addlActionsMenuOpen;
   }
@@ -389,36 +406,50 @@ export class LogViewControls extends LitElement {
             </md-icon-button>
           </span>
 
-          <span
-            class="action-button field-toggle"
-            ?hidden=${this._toolbarCollapsed}
-          >
+          <span class="action-button" ?hidden=${this._toolbarCollapsed}>
             <md-icon-button
               @click=${this.toggleColumnVisibilityMenu}
+              class="col-toggle-button"
               title="Toggle columns"
               aria-label="Toggle columns"
             >
               <md-icon>&#xe8ec;</md-icon>
             </md-icon-button>
-          </span>
 
-          <menu class="col-toggle-menu" ?hidden=${!this._colToggleMenuOpen}>
-            ${this.columnData.map(
-              (column) => html`
-                <li class="col-toggle-menu-item">
-                  <input
-                    class="item-checkboxes"
+            <md-menu
+              quick
+              id="col-toggle-menu"
+              class="col-toggle-menu"
+              positioning="popover"
+              ?open=${this._colToggleMenuOpen}
+              @closed=${() => {
+                this._colToggleMenuOpen = false;
+              }}
+            >
+              ${this.columnData.map(
+                (column) => html`
+                  <md-menu-item
+                    type="button"
+                    keep-open="true"
                     @click=${this.handleColumnToggle}
-                    ?checked=${column.isVisible}
-                    type="checkbox"
-                    value=${column.fieldName}
-                    id=${column.fieldName}
-                  />
-                  <label for=${column.fieldName}>${column.fieldName}</label>
-                </li>
-              `,
-            )}
-          </menu>
+                    data-field=${column.fieldName}
+                    ?data-checked=${column.isVisible}
+                  >
+                    <label>
+                      <md-checkbox
+                        class="item-checkbox"
+                        id=${column.fieldName}
+                        data-field=${column.fieldName}
+                        ?checked=${column.isVisible}
+                        tabindex="-1"
+                      ></md-checkbox>
+                      ${column.fieldName}</label
+                    >
+                  </md-menu-item>
+                `,
+              )}
+            </md-menu>
+          </span>
 
           <span class="action-button">
             <md-icon-button
@@ -432,6 +463,7 @@ export class LogViewControls extends LitElement {
 
             <md-menu
               quick
+              has-overflow
               class="addl-actions-menu"
               positioning="popover"
               ?open=${this._addlActionsMenuOpen}
@@ -439,9 +471,56 @@ export class LogViewControls extends LitElement {
                 this._addlActionsMenuOpen = false;
               }}
             >
+              <md-sub-menu
+                quick
+                id="col-toggle-sub-menu"
+                class="col-toggle-menu"
+                positioning="popover"
+                ?open=${this._colToggleMenuOpen}
+                @closed=${() => {
+                  this._colToggleMenuOpen = false;
+                }}
+              >
+                <md-menu-item
+                  slot="item"
+                  type="button"
+                  title="Toggle columns"
+                  ?hidden=${!this._toolbarCollapsed}
+                >
+                  <md-icon slot="start" data-variant="icon">&#xe8ec;</md-icon>
+                  <div slot="headline">Toggle columns</div>
+                  <md-icon slot="end" data-variant="icon">&#xe5df;</md-icon>
+                </md-menu-item>
+
+                <md-menu slot="menu" positioning="popover">
+                  ${this.columnData.map(
+                    (column) => html`
+                      <md-menu-item
+                        type="button"
+                        keep-open="true"
+                        @click=${this.handleColumnToggle}
+                        data-field=${column.fieldName}
+                        ?data-checked=${column.isVisible}
+                      >
+                        <label>
+                          <md-checkbox
+                            class="item-checkbox"
+                            id=${column.fieldName}
+                            data-field=${column.fieldName}
+                            ?checked=${column.isVisible}
+                            tabindex="-1"
+                          ></md-checkbox>
+                          ${column.fieldName}</label
+                        >
+                      </md-menu-item>
+                    `,
+                  )}
+                </md-menu>
+              </md-sub-menu>
+
               <md-menu-item
                 @click=${this.handleWrapToggle}
-                role="button"
+                type="button"
                 title="Toggle line wrapping"
                 ?hidden=${!this._toolbarCollapsed}
               >
@@ -450,18 +529,8 @@ export class LogViewControls extends LitElement {
               </md-menu-item>
 
               <md-menu-item
-                @click=${this.toggleColumnVisibilityMenu}
-                role="button"
-                title="Toggle columns"
-                ?hidden=${!this._toolbarCollapsed}
-              >
-                <md-icon slot="start" data-variant="icon">&#xe8ec;</md-icon>
-                <div slot="headline">Toggle columns</div>
-              </md-menu-item>
-
-              <md-menu-item
                 @click=${this.handleSplitRight}
-                role="button"
+                type="button"
                 title="Open a new view to the right of the current view"
                 ?hidden=${!this.useShoelaceFeatures}
               >
@@ -471,7 +540,7 @@ export class LogViewControls extends LitElement {
 
               <md-menu-item
                 @click=${this.handleSplitDown}
-                role="button"
+                type="button"
                 title="Open a new view below the current view"
                 ?hidden=${!this.useShoelaceFeatures}
               >
@@ -481,7 +550,7 @@ export class LogViewControls extends LitElement {
 
               <md-menu-item
                 @click=${this.handleDownloadLogs}
-                role="button"
+                type="button"
                 title="Download current logs as a plaintext file"
               >
                 <md-icon slot="start" data-variant="icon">&#xf090;</md-icon>
@@ -490,7 +559,7 @@ export class LogViewControls extends LitElement {
 
               <md-menu-item
                 @click=${this.handleClearLogsClick}
-                role="button"
+                type="button"
                 title="Clear logs"
                 ?hidden=${!this._toolbarCollapsed}
               >
@@ -500,10 +569,11 @@ export class LogViewControls extends LitElement {
             </md-menu>
           </span>
 
-          <span class="action-button" title="Close view">
+          <span class="action-button">
             <md-icon-button
               ?hidden=${this.hideCloseButton}
               @click=${this.handleCloseViewClick}
+              title="Close view"
             >
               <md-icon>&#xe5cd;</md-icon>
             </md-icon-button>

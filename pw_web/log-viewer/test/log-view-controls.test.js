@@ -145,10 +145,20 @@ describe('log-view-controls', () => {
       const logViews = await getLogViews();
       const logControls =
         logViews[0].shadowRoot.querySelector('log-view-controls');
-      const fieldMenu =
-        logControls.shadowRoot.querySelectorAll('.item-checkboxes');
+      const colToggleMenu = logControls.shadowRoot
+        .querySelector('#col-toggle-menu')
+        .querySelectorAll('.item-checkbox');
 
-      fieldMenu.forEach((field, index) => {
+      colToggleMenu.forEach((field, index) => {
+        const columnData = state.rootNode.children[0].logViewState.columnData;
+        expect(field.checked).to.equal(columnData[index].isVisible);
+      });
+
+      const colToggleSubMenu = logControls.shadowRoot
+        .querySelector('#col-toggle-sub-menu')
+        .querySelectorAll('.item-checkbox');
+
+      colToggleSubMenu.forEach((field, index) => {
         const columnData = state.rootNode.children[0].logViewState.columnData;
         expect(field.checked).to.equal(columnData[index].isVisible);
       });

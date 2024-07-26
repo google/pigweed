@@ -302,7 +302,7 @@ export class LogViewer extends LitElement {
       }
     }
 
-    if (event.type === 'resize-column') {
+    if (event.type === 'resize-column' || event.type === 'column-toggle') {
       const { columnData } = (event as ResizeColumnEvent).detail;
       if (nodeToUpdate.logViewState) {
         nodeToUpdate.logViewState.columnData = columnData;
@@ -324,8 +324,8 @@ export class LogViewer extends LitElement {
         .useShoelaceFeatures=${this.useShoelaceFeatures}
         @split-view="${this.splitLogView}"
         @input-change="${this.handleViewEvent}"
-        @column-toggle="${this.handleViewEvent}"
         @resize-column="${this.handleViewEvent}"
+        @column-toggle="${this.handleViewEvent}"
       ></log-view>`;
     } else {
       const [startChild, endChild] = node.children;
