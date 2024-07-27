@@ -12,10 +12,31 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
+
+# Path to the `llvm-symbolizer` binary for the toolchain being
+# decoded.
+#
+# This should be overriden for toolchains which don't use
+# `@llvm-toolchain`.
+label_flag(
+    name = "llvm-symbolizer",
+    build_setting_default = "@llvm_toolchain//:bin/llvm-symbolizer",
+)
+
+# Symlink the `llvm-symbolizer` binary (whose path may be different
+# based on the label flag above) into a common location.
+copy_file(
+    name = "llvm-symbolizer-symlink",
+    src = ":llvm-symbolizer",
+    out = "llvm-symbolizer-copy",
+    allow_symlink = True,
+    is_executable = True,
+)
 
 py_library(
     name = "pw_symbolizer",
@@ -24,6 +45,7 @@ py_library(
         "pw_symbolizer/llvm_symbolizer.py",
         "pw_symbolizer/symbolizer.py",
     ],
+    data = [":llvm-symbolizer-symlink"],
     imports = ["."],
 )
 

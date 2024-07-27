@@ -20,6 +20,18 @@ import json
 from pathlib import Path
 from pw_symbolizer import symbolizer
 
+# If the script is being run through Bazel, our support binaries are provided
+# at well known locations in its runfiles.
+try:
+    from python.runfiles import runfiles  # type: ignore
+
+    r = runfiles.Create()
+    _LLVM_SYMBOLIZER = r.Rlocation(
+        'pigweed/pw_symbolizer/py/llvm-symbolizer-copy'
+    )
+except ImportError:
+    _LLVM_SYMBOLIZER = 'llvm-symbolizer'
+
 
 class LlvmSymbolizer(symbolizer.Symbolizer):
     """A symbolizer that wraps llvm-symbolizer."""
@@ -35,7 +47,7 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
         if llvm_symbolizer_binary:
             self._symbolizer_binary = str(llvm_symbolizer_binary)
         else:
-            self._symbolizer_binary = 'llvm-symbolizer'
+            self._symbolizer_binary = _LLVM_SYMBOLIZER
             if shutil.which(self._symbolizer_binary) is None:
                 raise FileNotFoundError(
                     'llvm-symbolizer not installed. Run bootstrap, or download '
