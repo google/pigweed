@@ -13,6 +13,7 @@
 # the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
     "pw_cc_action_files",
@@ -253,6 +254,14 @@ pw_cc_feature(
     enabled = True,
     feature_name = "supports_pic",
     overrides = "@pw_toolchain//features/well_known:supports_pic",
+)
+
+# Symlink to clangd, for user convenience.
+copy_file(
+    name = "copy_clangd",
+    src = "@llvm_toolchain//:bin/clangd",
+    out = "clangd",
+    allow_symlink = True,
 )
 
 pw_cc_toolchain(
