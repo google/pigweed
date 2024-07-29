@@ -113,10 +113,13 @@ void AsyncCore::Init(channel::ByteReaderWriter& io_channel) {
 
 #if PW_SYSTEM_ENABLE_CRASH_HANDLER
   if (HasCrashSnapshot()) {
-    PW_LOG_WARN(
-        "Crash snapshots available.\n"
-        "To download and clear the snapshots run the following from the"
-        " console: device.get_crash_snapshots()");
+    PW_LOG_ERROR("==========================");
+    PW_LOG_ERROR("======CRASH DETECTED======");
+    PW_LOG_ERROR("==========================");
+    PW_LOG_ERROR("Crash snapshots available.");
+    PW_LOG_ERROR(
+        "Run `device.get_crash_snapshots()` to download and clear the "
+        "snapshots.");
   } else {
     PW_LOG_DEBUG("No crash snapshot");
   }
