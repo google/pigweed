@@ -17,6 +17,7 @@
 import logging
 import os
 from pathlib import Path
+import tempfile
 from types import ModuleType
 from typing import Any, Callable, Sequence
 
@@ -261,15 +262,17 @@ class Device:
 
         return True
 
-    def get_crash_snapshots(self, crash_log_path: str = "") -> bool:
-        """Transfer any crash snapshots on this device to the host.
+    def get_crash_snapshots(self, crash_log_path: str | None = None) -> bool:
+        r"""Transfer any crash snapshots on this device to the host.
         Args:
-            crash_log_path: The host path to store the crash files.  CWD
-            if not specified.
+            crash_log_path: The host path to store the crash files.
+              If not specified, defaults to `/tmp` or `C:\TEMP` on Windows.
         Returns:
             True on successful download of snapshot, or no snapshots
             on device.  False on failure to download snapshot.
         """
+        if crash_log_path is None:
+            crash_log_path = tempfile.gettempdir()
 
         snapshot_paths: list[file_pb2.Path] = []
         for response in self.list_files():
