@@ -69,6 +69,9 @@ from pw_presubmit.tools import (
 _LOG = logging.getLogger(__name__)
 
 
+BAZEL_EXECUTABLE = 'bazel'
+
+
 def bazel(
     ctx: PresubmitContext,
     cmd: str,
@@ -109,10 +112,16 @@ def bazel(
             with (ctx.output_dir / 'bazel.output.base').open('w') as outs, (
                 ctx.output_dir / 'bazel.output.base.err'
             ).open('w') as errs:
-                call('bazel', 'info', 'output_base', tee=outs, stderr=errs)
+                call(
+                    BAZEL_EXECUTABLE,
+                    'info',
+                    'output_base',
+                    tee=outs,
+                    stderr=errs,
+                )
 
             call(
-                'bazel',
+                BAZEL_EXECUTABLE,
                 cmd,
                 '--verbose_failures',
                 '--worker_verbose',
@@ -482,7 +491,10 @@ def check_bazel_build_for_files(
     for directory in bazel_dirs:
         bazel_builds.update(
             _get_paths_from_command(
-                directory, 'bazel', 'query', 'kind("source file", //...:*)'
+                directory,
+                BAZEL_EXECUTABLE,
+                'query',
+                'kind("source file", //...:*)',
             )
         )
 
