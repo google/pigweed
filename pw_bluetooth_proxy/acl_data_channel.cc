@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"
@@ -139,24 +140,26 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
     return;
   }
   credit_allocation_mutex_.lock();
-  if (dc_event.status().Read() != emboss::StatusCode::SUCCESS) {
-    PW_LOG_WARN(
-        "Proxy viewed failed disconnect (status: %#.2hhx). Not releasing "
-        "associated credits.",
-        static_cast<unsigned char>(dc_event.status().Read()));
-    credit_allocation_mutex_.unlock();
-    hci_transport_.SendToHost(std::move(h4_packet));
-    return;
-  }
-  PW_LOG_INFO(
-      "Proxy viewed disconnect (reason: %#.2hhx). Releasing associated credits",
-      static_cast<unsigned char>(dc_event.reason().Read()));
 
-  AclConnection* connection_ptr =
-      FindConnection(dc_event.connection_handle().Read());
-  if (connection_ptr) {
-    proxy_pending_le_acl_packets_ -= connection_ptr->num_pending_packets;
-    active_connections_.erase(connection_ptr);
+  uint16_t conn_handle = dc_event.connection_handle().Read();
+  AclConnection* connection_ptr = FindConnection(conn_handle);
+  if (connection_ptr && connection_ptr->num_pending_packets > 0) {
+    emboss::StatusCode status = dc_event.status().Read();
+    if (status == emboss::StatusCode::SUCCESS) {
+      PW_LOG_WARN(
+          "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
+          "with packets in flight. Releasing associated credits",
+          cpp23::to_underlying(dc_event.reason().Read()),
+          conn_handle);
+      proxy_pending_le_acl_packets_ -= connection_ptr->num_pending_packets;
+      active_connections_.erase(connection_ptr);
+    } else {
+      PW_LOG_WARN(
+          "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
+          "%#.4hx with packets in flight. Not releasing associated credits.",
+          cpp23::to_underlying(status),
+          conn_handle);
+    }
   }
   credit_allocation_mutex_.unlock();
   hci_transport_.SendToHost(std::move(h4_packet));
