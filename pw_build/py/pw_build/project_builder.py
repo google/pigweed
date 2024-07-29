@@ -588,6 +588,15 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
         # Progress bar enable/disable flag
         self.allow_progress_bars = allow_progress_bars
+
+        # Disable progress bars if the terminal is not a tty or the
+        # $TERM env var is set accordingly.
+        term = os.environ.get('TERM', '')
+        # inclusive-language: disable
+        if not sys.stdout.isatty() or term.lower() in ['dumb', 'unknown']:
+            self.allow_progress_bars = False
+        # inclusive-language: enable
+
         self.log_build_steps = log_build_steps
         self.stdout_proxy: StdoutProxy | None = None
 
