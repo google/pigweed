@@ -19,9 +19,10 @@ import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 import { configureBazelisk, configureBazelSettings } from './bazel';
 import { BazelRefreshCompileCommandsWatcher } from './bazelWatcher';
 import { Disposer } from './disposables';
-import { linkRefreshManagerToEvents } from './events';
+import { didInit, linkRefreshManagerToEvents } from './events';
 import { ClangdActiveFilesCache } from './clangd';
 import { checkExtensions } from './extensionManagement';
+import { InactiveFileDecorationProvider } from './inactiveFileDecoration';
 import logger, { output } from './logging';
 import { fileBug, launchTroubleshootingLink } from './links';
 
@@ -150,7 +151,7 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   linkRefreshManagerToEvents(refreshManager);
 
   const { clangdActiveFilesCache, compileCommandsWatcher } = disposer.addMany({
-    clangdActiveFilesCache: new ClangdActiveFilesCache(),
+    clangdActiveFilesCache: new ClangdActiveFilesCache(refreshManager),
     compileCommandsWatcher: new BazelRefreshCompileCommandsWatcher(
       refreshManager,
       settings.disableCompileCommandsFileWatcher(),
@@ -161,9 +162,7 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   });
 
   disposer.add(new ClangdFileWatcher(clangdActiveFilesCache));
-
-  // Refresh the active files cache after refreshing compile commands.
-  refreshManager.on(clangdActiveFilesCache.refresh, 'didRefresh');
+  disposer.add(new InactiveFileDecorationProvider(clangdActiveFilesCache));
 
   registerBazelProjectCommands(
     context,
@@ -179,6 +178,8 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   if (!settings.disableCompileCommandsFileWatcher()) {
     compileCommandsWatcher.refresh();
   }
+
+  didInit.fire();
 }
 
 /**

@@ -18,13 +18,21 @@ import * as path from 'path';
 import * as readline_p from 'readline/promises';
 
 import * as vscode from 'vscode';
+import { Uri } from 'vscode';
 
 import { createHash } from 'crypto';
 import { glob } from 'glob';
 import * as yaml from 'js-yaml';
 
 import { Disposable } from './disposables';
-import { didChangeClangdConfig, didChangeTarget } from './events';
+
+import {
+  didChangeClangdConfig,
+  didChangeTarget,
+  didInit,
+  didUpdateActiveFilesCache,
+} from './events';
+
 import { launchTroubleshootingLink } from './links';
 import logger from './logging';
 import { OK, RefreshCallback, RefreshManager } from './refreshManager';
@@ -68,7 +76,8 @@ export async function setTarget(
     throw new Error(`Target not among available targets: ${target}`);
   }
 
-  settings.codeAnalysisTarget(target);
+  await settings.codeAnalysisTarget(target);
+  didChangeTarget.fire(target);
 
   const { update: updatePath } = stringSettingFor('path', 'clangd');
   const { update: updateArgs } = settingFor<string[]>('arguments', 'clangd');
@@ -132,8 +141,16 @@ const clangdSettingsDisableFiles = (paths: string[]) => ({
   },
 });
 
+export type FileStatus = 'ACTIVE' | 'INACTIVE' | 'ORPHANED';
+
 export class ClangdActiveFilesCache extends Disposable {
   activeFiles: Record<string, Set<string>> = {};
+
+  constructor(refreshManager: RefreshManager<any>) {
+    super();
+    refreshManager.on(this.refresh, 'didRefresh');
+    this.disposables.push(didInit.event(this.refresh));
+  }
 
   /** Get the active files for a particular target. */
   getForTarget = async (target: string): Promise<Set<string>> => {
@@ -142,6 +159,28 @@ export class ClangdActiveFilesCache extends Disposable {
     }
 
     return this.activeFiles[target];
+  };
+
+  /** Get all the targets that include the provided file. */
+  targetsForFile = (fileName: string): string[] =>
+    Object.entries(this.activeFiles)
+      .map(([target, files]) => (files.has(fileName) ? target : undefined))
+      .filter((it) => it !== undefined);
+
+  fileStatus = async (projectRoot: string, target: string, uri: Uri) => {
+    const fileName = path.relative(projectRoot, uri.fsPath);
+    const activeFiles = await this.getForTarget(target);
+    const targets = this.targetsForFile(fileName);
+
+    const status: FileStatus =
+      // prettier-ignore
+      activeFiles.has(fileName) ? 'ACTIVE' :
+      targets.length === 0 ? 'ORPHANED' : 'INACTIVE';
+
+    return {
+      status,
+      targets,
+    };
   };
 
   refresh: RefreshCallback = async () => {
@@ -156,6 +195,7 @@ export class ClangdActiveFilesCache extends Disposable {
 
     this.activeFiles = Object.fromEntries(targetSourceFiles);
     logger.info('Finished refreshing active files cache');
+    didUpdateActiveFilesCache.fire();
     return OK;
   };
 
@@ -200,10 +240,20 @@ export class ClangdActiveFilesCache extends Disposable {
   };
 }
 
+/** Show a checkmark next to the item if it's the current setting. */
+function markIfActive(active: boolean): vscode.ThemeIcon | undefined {
+  return active ? new vscode.ThemeIcon('check') : undefined;
+}
+
 export async function setCompileCommandsTarget(
   activeFilesCache: ClangdActiveFilesCache,
 ) {
-  const targets = await availableTargets();
+  const currentTarget = getTarget();
+
+  const targets = (await availableTargets()).sort().map((target) => ({
+    label: target,
+    iconPath: markIfActive(target === currentTarget),
+  }));
 
   if (targets.length === 0) {
     vscode.window
@@ -225,11 +275,10 @@ export async function setCompileCommandsTarget(
       title: 'Select a target',
       canPickMany: false,
     })
-    .then(async (target) => {
-      if (target) {
-        await setTarget(target, activeFilesCache.writeToSettings);
-        didChangeTarget.fire(target);
-      }
+    .then(async (selection) => {
+      if (!selection) return;
+      const { label: target } = selection;
+      await setTarget(target, activeFilesCache.writeToSettings);
     });
 }
 

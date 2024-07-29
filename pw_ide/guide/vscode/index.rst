@@ -10,6 +10,7 @@ Visual Studio Code
    :maxdepth: 1
    :hidden:
 
+   code_intelligence
    extension_enforcement
    troubleshooting
    legacy
@@ -77,6 +78,11 @@ Here's a non-exhaustive list of cool features you can now enjoy:
 * Linting and debugging for Starlark files
 
 * A tree view of all Bazel targets, allowing you to build or run them directly
+
+-----------------
+Code intelligence
+-----------------
+Learn more about using and configuring code intelligence :ref:`here<module-pw_ide-guide-vscode-code-intelligence>`.
 
 ----------------
 Project settings
@@ -153,6 +159,8 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
    ``.vscode/settings.json``. If you want to do a full sync of the shared
    settings to your personal settings, including overriding conflicting values,
    run this command.
+
+.. _module-pw_ide-guide-vscode-commands-open-output-panel:
 
 .. describe:: Pigweed: Open Output Panel
 
@@ -275,6 +283,16 @@ Configuration options
 
    Require installing and disabling extensions recommended in ``extensions.json``
 
+.. _module-pw_ide-guide-vscode-settings-hide-inactive-file-indicators:
+
+.. py:data:: pigweed.hideInactiveFileIndicators
+   :type: boolean
+   :value: false
+
+   When code intelligence is enabled for all files, hide indicators for inactive
+   and orphaned files. Note that changing this setting requires you to reload
+   Visual Studio Code to take effect.
+
 .. py:data:: pigweed.preserveBazelPath
    :type: boolean
    :value: false
@@ -295,6 +313,8 @@ Configuration options
    :type: bootstrap or bazel
 
    The type of Pigweed project, either bootstrap or Bazel
+
+.. _module-pw_ide-guide-vscode-settings-refresh-compile-commands-target:
 
 .. py:data:: pigweed.refreshCompileCommandsTarget
    :type: string

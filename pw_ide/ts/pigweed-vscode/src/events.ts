@@ -23,8 +23,14 @@ import {
   RefreshStatus,
 } from './refreshManager';
 
+/** Event emitted on extension load. */
+export const didInit = new EventEmitter<void>();
+
 /** Event emitted when the code analysis target is changed. */
 export const didChangeTarget = new EventEmitter<string>();
+
+/** Event emitted when the active files cache has been updated. */
+export const didUpdateActiveFilesCache = new EventEmitter<void>();
 
 /** Event emitted whenever the `clangd` configuration is changed. */
 export const didChangeClangdConfig = new EventEmitter<void>();

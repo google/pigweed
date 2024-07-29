@@ -32,6 +32,7 @@ export interface Settings {
   disableInactiveFileNotice: Setting<boolean>;
   disableInactiveFileCodeIntelligence: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
+  hideInactiveFileIndicators: Setting<boolean>;
   preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string>;
   projectType: Setting<ProjectType>;
@@ -192,6 +193,16 @@ function enforceExtensionRecommendations(
   return update(value);
 }
 
+function hideInactiveFileIndicators(): boolean;
+function hideInactiveFileIndicators(value: boolean | undefined): Thenable<void>;
+function hideInactiveFileIndicators(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('hideInactiveFileIndicators');
+  if (value === undefined) return get() ?? false;
+  update(value);
+}
+
 function preserveBazelPath(): boolean;
 function preserveBazelPath(value: boolean | undefined): Thenable<void>;
 function preserveBazelPath(
@@ -251,6 +262,7 @@ export const settings: Settings = {
   disableInactiveFileNotice,
   disableInactiveFileCodeIntelligence,
   enforceExtensionRecommendations,
+  hideInactiveFileIndicators,
   preserveBazelPath,
   projectRoot,
   projectType,

@@ -25,6 +25,7 @@ pw_doc_group("docs") {
     "docs.rst",
     "guide/cli.rst",
     "guide/index.rst",
+    "guide/vscode/code_intelligence.rst",
     "guide/vscode/development.rst",
     "guide/vscode/extension_enforcement.rst",
     "guide/vscode/index.rst",

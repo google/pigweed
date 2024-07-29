@@ -116,6 +116,11 @@
           "default": "false",
           "description": "Require installing and disabling extensions recommended in extensions.json"
         },
+        "pigweed.hideInactiveFileIndicators": {
+          "type": "boolean",
+          "default": "false",
+          "description": "When code intelligence is enabled for all files, hide indicators for inactive and orphaned files"
+        },
         "pigweed.preserveBazelPath": {
           "type": "boolean",
           "default": "false",
