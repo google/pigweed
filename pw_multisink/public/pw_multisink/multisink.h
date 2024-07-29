@@ -219,6 +219,14 @@ class MultiSink {
       return reader_.EntriesSize();
     }
 
+    // Return number of unread entries in the sink for this drain. This is a
+    // thread-safe version and must not be used inside a
+    // Listener::OnNewEntryAvailable() to avoid deadlocks.
+    size_t GetUnreadEntriesCount() const PW_LOCKS_EXCLUDED(multisink_->lock_) {
+      std::lock_guard lock(multisink_->lock_);
+      return reader_.EntryCount();
+    }
+
    protected:
     friend MultiSink;
 
