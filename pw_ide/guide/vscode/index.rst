@@ -226,6 +226,12 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 ---------------------
 Configuration options
 ---------------------
+.. py:data:: pigweed.activateBazeliskInNewTerminals
+   :type: boolean
+   :value: true
+
+   When enabled, the path to Bazelisk will be added to the integrated terminal when launched
+
 .. py:data:: pigweed.codeAnalysisTarget
    :type: string
 

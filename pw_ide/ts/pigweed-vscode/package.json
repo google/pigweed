@@ -87,6 +87,11 @@
     "configuration": {
       "title": "Pigweed",
       "properties": {
+        "pigweed.activateBazeliskInNewTerminals": {
+          "type": "boolean",
+          "default": "true",
+          "description": "When enabled, the path to Bazelisk will be added to the integrated terminal when launched"
+        },
         "pigweed.codeAnalysisTarget": {
           "type": "string",
           "description": "The build target to use for editor code intelligence"

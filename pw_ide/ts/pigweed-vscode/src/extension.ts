@@ -41,7 +41,11 @@ import {
   TargetStatusBarItem,
 } from './statusBar';
 
-import { launchBootstrapTerminal, launchTerminal } from './terminal';
+import {
+  launchBootstrapTerminal,
+  launchTerminal,
+  patchBazeliskIntoTerminalPath,
+} from './terminal';
 
 const disposer = new Disposer();
 
@@ -150,6 +154,10 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   await initClangdPath();
   await configureBazelSettings();
   await configureBazelisk();
+
+  if (settings.activateBazeliskInNewTerminals()) {
+    vscode.window.onDidOpenTerminal(patchBazeliskIntoTerminalPath);
+  }
 
   // Marshall all of our components and dependencies.
   const refreshManager = disposer.add(RefreshManager.create());

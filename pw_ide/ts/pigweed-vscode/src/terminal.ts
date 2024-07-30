@@ -128,7 +128,9 @@ async function getShellTypeFromTerminal(
 }
 
 /** Prepend the path to Bazelisk into the active terminal's path. */
-export async function patchBazeliskIntoTerminalPath(): Promise<void> {
+export async function patchBazeliskIntoTerminalPath(
+  terminal?: vscode.Terminal,
+): Promise<void> {
   const bazeliskPath = bazel_executable.get() ?? vendoredBazeliskPath();
 
   if (!bazeliskPath) {
@@ -161,8 +163,9 @@ export async function patchBazeliskIntoTerminalPath(): Promise<void> {
     }
   }
 
-  // Should grab the currently active terminal or most recently active
-  let terminal = vscode.window.activeTerminal;
+  // Should grab the currently active terminal or most recently active, if a
+  // specific terminal reference wasn't provided.
+  terminal = terminal ?? vscode.window.activeTerminal;
 
   // If there's no terminal, create one
   if (!terminal) {

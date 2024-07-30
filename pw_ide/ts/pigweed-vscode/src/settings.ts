@@ -25,6 +25,7 @@ type ProjectType = 'bootstrap' | 'bazel';
 type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
+  activateBazeliskInNewTerminals: Setting<boolean>;
   codeAnalysisTarget: Setting<string>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
@@ -113,6 +114,18 @@ export function boolSettingFor(section: string, category = 'pigweed') {
     update: (value: boolean | undefined): Thenable<void> =>
       vscode.workspace.getConfiguration(category).update(section, value),
   };
+}
+
+function activateBazeliskInNewTerminals(): boolean;
+function activateBazeliskInNewTerminals(
+  value: boolean | undefined,
+): Thenable<void>;
+function activateBazeliskInNewTerminals(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('activateBazeliskInNewTerminals');
+  if (value === undefined) return get() ?? true;
+  return update(value);
 }
 
 function codeAnalysisTarget(): string | undefined;
@@ -255,6 +268,7 @@ function terminalShell(
 
 /** Entry point for accessing settings. */
 export const settings: Settings = {
+  activateBazeliskInNewTerminals,
   codeAnalysisTarget,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
