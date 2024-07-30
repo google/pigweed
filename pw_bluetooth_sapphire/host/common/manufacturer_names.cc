@@ -27,7 +27,7 @@ namespace bt {
 // Numbers document, see
 // https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers.
 //
-// TODO(https://fxbug.dev/321947674) - Remove or rename.
+// TODO: https://fxbug.dev/321947674 - Remove or rename.
 std::string GetManufacturerName(uint16_t manufacturer_id) {
   char buffer[std::string_view("0x0000").size() + 1];
   snprintf(buffer, sizeof(buffer), "0x%04x", manufacturer_id);

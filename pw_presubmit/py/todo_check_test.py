@@ -326,6 +326,48 @@ class TestTodoCheck(unittest.TestCase):
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
+    def test_fxbug_dev(self) -> None:
+        contents = 'TODO: fxbug.dev/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_https_fxbug_dev(self) -> None:
+        contents = 'TODO: https://fxbug.dev/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_issues_fuchsia_dev(self) -> None:
+        contents = 'TODO: https://issues.fuchsia.dev/issues/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_crbug_com(self) -> None:
+        contents = 'TODO: crbug.com/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_https_crbug_com(self) -> None:
+        contents = 'TODO: https://crbug.com/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_issues_chromium_org(self) -> None:
+        contents = 'TODO: https://issues.chromium.org/issues/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

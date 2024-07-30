@@ -45,10 +45,11 @@ EXCLUDE: Sequence[str] = (
 BUGS_ONLY = re.compile(
     r'(?:\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w)|'
     r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )|'
-    r'(?:\bTODO: https://issues.pigweed.dev/issues/\d+ - )|'
-    r'(?:\bTODO: https://pwbug.dev/\d+ - )|'
-    r'(?:\bTODO: pwbug.dev/\d+ - )|'
-    r'(?:\bTODO: <pwbug.dev/\d+> - )|'
+    r'(?:\bTODO: https://issues\.(?:pigweed|fuchsia)\.dev/(?:issues/)?\d+ - )|'
+    r'(?:\bTODO: https://issues\.chromium\.org/(?:issues/)?\d+ - )|'
+    r'(?:\bTODO: https://(?:(?:pw|fx)bug\.dev|crbug\.com)/\d+ - )|'
+    r'(?:\bTODO: (?:(?:pw|fx)bug\.dev|crbug\.com)/\d+ - )|'
+    r'(?:\bTODO: <(?:(?:pw|fx)bug\.dev|crbug\.com)/\d+> - )|'
     r'(?:\bTODO: https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+[ ]-[ ])'
 )
 BUGS_OR_USERNAMES = re.compile(
@@ -64,10 +65,11 @@ BUGS_OR_USERNAMES = re.compile(
     \bTODO:[ ]
     (?:
         b/\d+|  # Bug.
-        https://pwbug.dev/\d+| # Short URL
-        pwbug.dev/\d+| # Even shorter URL
-        <pwbug.dev/\d+>| # Markdown compatible even shorter URL
-        https://issues.pigweed.dev/issues/\d+| # Fully qualified bug for rustdoc
+        https://(?:(?:pw|fx)bug\.dev|crbug\.com)(?:/issues)?/\d+| # Short URL
+        (?:(?:pw|fx)bug\.dev|crbug\.com)(?:/issues)?/\d+| # Even shorter URL
+        <(?:(?:pw|fx)bug\.dev|crbug\.com)/\d+>| # Markdown compatible
+        https://issues\.(?:pigweed|fuchsia)\.dev(?:/issues)?/\d+| # Fully qualified bug for rustdoc
+        https://issues.chromium.org/issues/\d+| # Fully qualified bug for rustdoc
         # Username@ with optional domain.
         [a-z]+@(?:[a-z][-a-z0-9]*(?:\.[a-z][-a-z0-9]*)+)?
     )
