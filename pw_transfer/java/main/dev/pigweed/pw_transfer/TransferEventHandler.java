@@ -84,6 +84,13 @@ class TransferEventHandler {
                   writeStream = null;
                 }
               });
+              // TODO(b/355249134): Revert this sleep workaround when transfer
+              // sets on_next_ sooner
+              try {
+                Thread.sleep(10);
+              } catch (InterruptedException e) {
+                logger.atWarning().log("Interrupted while waiting for write stream");
+              }
             }
             return writeStream;
           }
@@ -110,6 +117,13 @@ class TransferEventHandler {
                   readStream = null;
                 }
               });
+              // TODO(b/355249134): Revert this sleep workaround when transfer
+              // sets on_next_ sooner
+              try {
+                Thread.sleep(10);
+              } catch (InterruptedException e) {
+                logger.atWarning().log("Interrupted while waiting for read stream");
+              }
             }
             return readStream;
           }
