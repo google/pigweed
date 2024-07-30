@@ -1760,6 +1760,42 @@ TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
   }
 }
 
+// Verify we can send packets over many different connections. Test sends a
+// packet and then NOCP one at a time over more connections than our max active
+// connections size. This should succeed since we only track proxy-related
+// connections, not all host connections.
+TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
+  // This should match AclConnection::kMaxConnections.
+  static constexpr size_t kMaxProxyActiveConnections = 10;
+  constexpr uint16_t kSends = kMaxProxyActiveConnections * 2;
+  std::array<uint8_t, 1> attribute_value = {0xF};
+  struct {
+    uint16_t sends_called = 0;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) { ++capture.sends_called; });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  SendReadBufferResponseFromController(proxy, 1);
+
+  for (uint16_t send = 1; send <= kSends; send++) {
+    // Use current send count as the connection handle.
+    uint16_t conn_handle = send;
+    EXPECT_TRUE(
+        proxy.SendGattNotify(conn_handle, 345, pw::span(attribute_value)).ok());
+    EXPECT_EQ(capture.sends_called, send);
+
+    SendNumberOfCompletedPackets(proxy,
+                                 FlatMap<uint16_t, uint16_t, 1>({{
+                                     {conn_handle, 1},
+                                 }}));
+  }
+}
+
 TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
   constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
   struct {

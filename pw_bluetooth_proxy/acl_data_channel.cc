@@ -114,6 +114,9 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
         std::min(num_completed_packets, connection_ptr->num_pending_packets);
     proxy_pending_le_acl_packets_ -= num_reclaimed;
     connection_ptr->num_pending_packets -= num_reclaimed;
+    if (connection_ptr->num_pending_packets == 0) {
+      active_connections_.erase(connection_ptr);
+    }
     uint16_t credits_remaining = num_completed_packets - num_reclaimed;
     nocp_event.nocp_data()[i].num_completed_packets().Write(credits_remaining);
     if (credits_remaining > 0) {
