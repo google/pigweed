@@ -461,10 +461,15 @@ abstract class Transfer<T> extends AbstractFuture<T> {
           timeoutSettings.timeoutMillis(),
           retries,
           timeoutSettings.maxRetries());
-      sendChunk(getChunkForRetry());
+      VersionedChunk retryChunk = getChunkForRetry();
+      sendChunk(retryChunk);
       retries += 1;
       lifetimeRetries += 1;
-      setNextChunkTimeout();
+      if (retryChunk.type() == Chunk.Type.START) {
+        setInitialTimeout();
+      } else {
+        setNextChunkTimeout();
+      }
     }
   }
 
