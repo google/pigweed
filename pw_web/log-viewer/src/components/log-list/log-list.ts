@@ -22,7 +22,7 @@ import {
 } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styles } from './log-list.styles';
-import { LogEntry, Severity, TableColumn } from '../../shared/interfaces';
+import { LogEntry, Level, TableColumn } from '../../shared/interfaces';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 import '@lit-labs/virtualizer';
 import { debounce } from '../../utils/debounce';
@@ -202,7 +202,7 @@ export class LogList extends LitElement {
       ) as HTMLTableCellElement[];
 
       cells.forEach((cell, columnIndex) => {
-        if (visibleColumnData[columnIndex].fieldName == 'severity') return;
+        if (visibleColumnData[columnIndex].fieldName == 'level') return;
 
         const textLength = cell.textContent?.trim().length || 0;
 
@@ -533,9 +533,9 @@ export class LogList extends LitElement {
       'log-row': true,
       'log-row--nowrap': !this.lineWrap,
     };
-    const logSeverityClass = ('log-row--' +
-      (log?.severity || Severity.INFO).toLowerCase()) as keyof typeof classes;
-    classes[logSeverityClass] = true;
+    const logLevelClass = ('log-row--' +
+      (log?.level || Level.INFO).toLowerCase()) as keyof typeof classes;
+    classes[logLevelClass] = true;
 
     return html`
       <tr class="${classMap(classes)}">
@@ -562,21 +562,21 @@ export class LogList extends LitElement {
       value: '',
     };
 
-    if (field.key == 'severity') {
-      const severityIcons = new Map<Severity, string>([
-        [Severity.INFO, `\ue88e`],
-        [Severity.WARNING, '\uf083'],
-        [Severity.ERROR, '\ue888'],
-        [Severity.CRITICAL, '\uf5cf'],
-        [Severity.DEBUG, '\ue868'],
+    if (field.key == 'level') {
+      const levelIcons = new Map<Level, string>([
+        [Level.INFO, `\ue88e`],
+        [Level.WARNING, '\uf083'],
+        [Level.ERROR, '\ue888'],
+        [Level.CRITICAL, '\uf5cf'],
+        [Level.DEBUG, '\ue868'],
       ]);
 
-      const severityValue: Severity = field.value
-        ? (field.value as Severity)
-        : log.severity
-          ? log.severity
-          : Severity.INFO;
-      const iconId = severityIcons.get(severityValue) || '';
+      const levelValue: Level = field.value
+        ? (field.value as Level)
+        : log.level
+          ? log.level
+          : Level.INFO;
+      const iconId = levelIcons.get(levelValue) || '';
       const toTitleCase = (input: string): string => {
         return input.replace(/\b\w+/g, (match) => {
           return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();

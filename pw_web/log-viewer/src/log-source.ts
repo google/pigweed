@@ -95,10 +95,22 @@ export abstract class LogSource {
         return 'Log entry fields must not be empty';
       }
 
+      // Handle backwards compatibility
+      if (logEntry.severity) {
+        logEntry.level = logEntry.severity;
+        delete logEntry.severity;
+      }
+
       for (const field of logEntry.fields) {
         if (!field.key || typeof field.key !== 'string') {
           return 'Invalid field key';
         }
+
+        // Handle backwards compatibility
+        if (field.key === 'severity') {
+          field.key = 'level';
+        }
+
         if (
           field.value === undefined ||
           (typeof field.value !== 'string' &&
@@ -110,11 +122,8 @@ export abstract class LogSource {
         }
       }
 
-      if (
-        logEntry.severity !== undefined &&
-        typeof logEntry.severity !== 'string'
-      ) {
-        return 'Invalid severity value';
+      if (logEntry.level !== undefined && typeof logEntry.level !== 'string') {
+        return 'Invalid level value';
       }
 
       return null;

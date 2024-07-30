@@ -74,15 +74,15 @@ describe('log-list', () => {
     // Iterate through log entries and compare each one to its respective <tr> element.
     for (let i = 0; i < numLogs; i++) {
       const logEntry = logEntries[i];
-      const logEntryFieldsExceptSeverity = logEntry.fields.filter(
-        (field) => field.key !== 'severity', // Skip `severity`
+      const logEntryFieldsExceptLevel = logEntry.fields.filter(
+        (field) => field.key !== 'level', // Skip `level`
       );
       const tds = tableRows[i].querySelectorAll('td');
 
       // Iterate through the fields and compare them to the text content of the <td> elements
-      for (let j = 0; j < logEntryFieldsExceptSeverity.length; j++) {
-        const field = logEntryFieldsExceptSeverity[j];
-        let tdTextContent = tds[j + 1].textContent; // Skip `severity`
+      for (let j = 0; j < logEntryFieldsExceptLevel.length; j++) {
+        const field = logEntryFieldsExceptLevel[j];
+        let tdTextContent = tds[j + 1].textContent; // Skip `level`
 
         // Remove extraneous characters (spaces, newlines, etc.)
         const fieldText = field.value

@@ -25,10 +25,19 @@ export interface TableColumn {
 }
 
 export interface LogEntry {
-  severity?: Severity;
+  severity?: Level;
+  level?: Level;
   timestamp: Date;
   fields: Field[];
   sourceData?: SourceData;
+}
+
+export enum Level {
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  CRITICAL = 'CRITICAL',
 }
 
 export enum Severity {

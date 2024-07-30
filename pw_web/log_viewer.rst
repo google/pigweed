@@ -35,7 +35,7 @@ filter. For example, the ``message`` column uses the format
 
 The supported qualifiers are:
 
-* ``severity``: Filters log level, such as ``info``, ``debug``,
+* ``level``: Filters log level, such as ``info``, ``debug``,
   ``warning``, ``error``, and ``critical``.
 * ``<column_name>``: Any column header name can be prefixed.
 
@@ -82,23 +82,23 @@ or strings ``"a phrase"``.
      - | ``" "``
      - | Between conditions ``column:value``
        | or strings ``"a phrase"``
-     - | ``severity:warn "hello world"``
+     - | ``level:warn "hello world"``
 
    * - OR
      - | ``|``
      - | Between conditions ``column:value``
        | or strings ``"a phrase"``
-     - | ``severity:warn | "hello world"``
+     - | ``level:warn | "hello world"``
        | ``message:hello | message:world``
 
    * - NOT
      - | ``!``
      - | Before condition ``column:value``
-     - | ``!severity:warn``
+     - | ``!level:warn``
        | ``!message:goodbye``
 
 Parenthesis ``(`` and ``)`` dennote order of operations. Example of use is
-``(message:hello | message:"hello world") !severity:error``.
+``(message:hello | message:"hello world") !level:error``.
 
 ---------------------------
 Pause and resume autoscroll

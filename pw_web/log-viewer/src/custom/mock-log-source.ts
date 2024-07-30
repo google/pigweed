@@ -13,7 +13,7 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { LogEntry, Severity } from '../shared/interfaces';
+import { LogEntry, Level } from '../shared/interfaces';
 import { timeFormat } from '../shared/time-format';
 
 export class MockLogSource extends LogSource {
@@ -46,31 +46,31 @@ export class MockLogSource extends LogSource {
     }
   }
 
-  getSeverity(): Severity {
+  getLevel(): Level {
     interface ValueWeightPair {
-      severity: Severity;
+      level: Level;
       weight: number;
     }
 
     const valueWeightPairs: ValueWeightPair[] = [
-      { severity: Severity.INFO, weight: 7.45 },
-      { severity: Severity.DEBUG, weight: 0.25 },
-      { severity: Severity.WARNING, weight: 1.5 },
-      { severity: Severity.ERROR, weight: 0.5 },
-      { severity: Severity.CRITICAL, weight: 0.05 },
+      { level: Level.INFO, weight: 7.45 },
+      { level: Level.DEBUG, weight: 0.25 },
+      { level: Level.WARNING, weight: 1.5 },
+      { level: Level.ERROR, weight: 0.5 },
+      { level: Level.CRITICAL, weight: 0.05 },
     ];
 
     const totalWeight = valueWeightPairs.reduce(
       (acc, pair) => acc + pair.weight,
       0,
     );
-    let randomValue = Severity.INFO;
+    let randomValue = Level.INFO;
     let randomNum = Math.random() * totalWeight;
 
     for (let i = 0; i < valueWeightPairs.length; i++) {
       randomNum -= valueWeightPairs[i].weight;
       if (randomNum <= 0) {
-        randomValue = valueWeightPairs[i].severity;
+        randomValue = valueWeightPairs[i].level;
         break;
       }
     }
@@ -94,7 +94,7 @@ export class MockLogSource extends LogSource {
       'Network congestion detected. Traffic is high, please try again later.',
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam condimentum auctor justo, sit amet condimentum nibh facilisis non. Quisque in quam a urna dignissim cursus. Suspendisse egestas nisl sed massa dictum dictum. In tincidunt arcu nec odio eleifend, vel pharetra justo iaculis. Vivamus quis tellus ac velit vehicula consequat. Nam eu felis sed risus hendrerit faucibus ac id lacus. Vestibulum tincidunt tellus in ex feugiat interdum. Nulla sit amet luctus neque. Mauris et aliquet nunc, vel finibus massa. Curabitur laoreet eleifend nibh eget luctus. Fusce sodales augue nec purus faucibus, vel tristique enim vehicula. Aenean eu magna eros. Fusce accumsan dignissim dui auctor scelerisque. Proin ultricies nunc vel tincidunt facilisis.',
     ];
-    const severity = this.getSeverity();
+    const level = this.getLevel();
     const timestamp: Date = new Date();
     const getRandomValue = (values: string[]) => {
       const randomIndex = Math.floor(Math.random() * values.length);
@@ -102,10 +102,10 @@ export class MockLogSource extends LogSource {
     };
 
     const logEntry: LogEntry = {
-      severity: severity,
+      level: level,
       timestamp: timestamp,
       fields: [
-        { key: 'severity', value: severity },
+        { key: 'level', value: level },
         { key: 'time', value: timeFormat.format(timestamp) },
         { key: 'source', value: getRandomValue(sources) },
         { key: 'message', value: getRandomValue(messages) },

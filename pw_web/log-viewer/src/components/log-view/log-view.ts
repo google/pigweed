@@ -21,6 +21,7 @@ import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
 import '../log-view-controls/log-view-controls';
 import { downloadTextLogs } from '../../utils/download';
+import { LogViewControls } from '../log-view-controls/log-view-controls';
 
 type FilterFunction = (logEntry: LogEntry) => boolean;
 
@@ -78,6 +79,7 @@ export class LogView extends LitElement {
   columnOrder: string[] = [];
 
   @query('log-list') _logList!: LogList;
+  @query('log-view-controls') _logControls!: LogViewControls;
 
   /** A map containing data from present log sources */
   sources: Map<string, SourceData> = new Map();
@@ -133,7 +135,8 @@ export class LogView extends LitElement {
     }
 
     if (changedProperties.has('columnData')) {
-      this._logList.columnData = this.columnData;
+      this._logList.columnData = [...this.columnData];
+      this._logControls.columnData = [...this.columnData];
     }
   }
 
@@ -202,7 +205,7 @@ export class LogView extends LitElement {
   }
 
   /**
-   * Orders fields by the following: severity, init defined fields, undefined fields, and message
+   * Orders fields by the following: level, init defined fields, undefined fields, and message
    * @param columnData ColumnData is used to check for undefined fields.
    */
   private updateColumnOrder(columnData: TableColumn[]) {
@@ -214,12 +217,12 @@ export class LogView extends LitElement {
       this.columnOrder = columnOrder;
     }
 
-    if (this.columnOrder.indexOf('severity') != 0) {
-      const index = this.columnOrder.indexOf('severity');
+    if (this.columnOrder.indexOf('level') != 0) {
+      const index = this.columnOrder.indexOf('level');
       if (index != -1) {
         this.columnOrder.splice(index, 1);
       }
-      this.columnOrder.unshift('severity');
+      this.columnOrder.unshift('level');
     }
 
     if (this.columnOrder.indexOf('message') != this.columnOrder.length) {
@@ -231,6 +234,14 @@ export class LogView extends LitElement {
     }
 
     columnData.forEach((tableColumn) => {
+      // Do not display severity in log views
+      if (tableColumn.fieldName == 'severity') {
+        console.warn(
+          'The field `severity` has been deprecated. Please use `level` instead.',
+        );
+        return;
+      }
+
       if (!this.columnOrder.includes(tableColumn.fieldName)) {
         this.columnOrder.splice(
           this.columnOrder.length - 1,
@@ -258,7 +269,6 @@ export class LogView extends LitElement {
         orderedColumns.push(columnData[index]);
       }
     });
-
     return orderedColumns;
   }
 
@@ -348,7 +358,6 @@ export class LogView extends LitElement {
 
   render() {
     return html` <log-view-controls
-        .columnData=${this.columnData}
         .viewId=${this.id}
         .viewTitle=${this.viewTitle}
         .hideCloseButton=${!this.isOneOfMany}

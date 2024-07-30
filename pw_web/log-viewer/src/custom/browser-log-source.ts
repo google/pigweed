@@ -13,7 +13,7 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { LogEntry, Severity } from '../shared/interfaces';
+import { LogEntry, Level } from '../shared/interfaces';
 import { timeFormat } from '../shared/time-format';
 
 export class BrowserLogSource extends LogSource {
@@ -110,17 +110,17 @@ export class BrowserLogSource extends LogSource {
   }
 
   private publishFormattedLogEntry(
-    severity: Severity,
+    level: Level,
     originalArgs: IArguments | string[] | object[],
   ): void {
     const formattedMessage = this.formatMessage(originalArgs);
     const fileInfo = this.getFileInfo();
 
     const logEntry: LogEntry = {
-      severity: severity,
+      level: level,
       timestamp: new Date(),
       fields: [
-        { key: 'severity', value: severity },
+        { key: 'level', value: level },
         { key: 'time', value: timeFormat.format(new Date()) },
         { key: 'message', value: formattedMessage },
         { key: 'file', value: fileInfo || '' },
@@ -132,27 +132,27 @@ export class BrowserLogSource extends LogSource {
 
   start(): void {
     console.log = (...args: string[] | object[]) => {
-      this.publishFormattedLogEntry(Severity.INFO, args);
+      this.publishFormattedLogEntry(Level.INFO, args);
       this.originalMethods.log(...args);
     };
 
     console.info = (...args: string[] | object[]) => {
-      this.publishFormattedLogEntry(Severity.INFO, args);
+      this.publishFormattedLogEntry(Level.INFO, args);
       this.originalMethods.info(...args);
     };
 
     console.warn = (...args: string[] | object[]) => {
-      this.publishFormattedLogEntry(Severity.WARNING, args);
+      this.publishFormattedLogEntry(Level.WARNING, args);
       this.originalMethods.warn(...args);
     };
 
     console.error = (...args: string[] | object[]) => {
-      this.publishFormattedLogEntry(Severity.ERROR, args);
+      this.publishFormattedLogEntry(Level.ERROR, args);
       this.originalMethods.error(...args);
     };
 
     console.debug = (...args: string[] | object[]) => {
-      this.publishFormattedLogEntry(Severity.DEBUG, args);
+      this.publishFormattedLogEntry(Level.DEBUG, args);
       this.originalMethods.debug(...args);
     };
   }

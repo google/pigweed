@@ -49,12 +49,12 @@ export class LogStore {
     }
 
     const order = this.columnOrder;
-    if (order.indexOf('severity') != 0) {
-      const index = order.indexOf('severity');
+    if (order.indexOf('level') != 0) {
+      const index = order.indexOf('level');
       if (index != -1) {
         order.splice(index, 1);
       }
-      order.unshift('severity');
+      order.unshift('level');
     }
 
     if (order.indexOf('message') != order.length) {

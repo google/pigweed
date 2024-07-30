@@ -203,7 +203,7 @@ export class LogFilter {
 
   /**
    * Checks if the provided search string exists in any of the log entry
-   * columns (excluding `severity`).
+   * columns (excluding `level`).
    *
    * @param {LogEntry} logEntry - The log entry to be searched.
    * @param {string} searchString - The search string to be matched against
@@ -217,7 +217,7 @@ export class LogFilter {
   ): boolean {
     const escapedSearchString = this.escapeRegEx(searchString);
     const columnsToSearch = logEntry.fields.filter(
-      (field) => field.key !== 'severity',
+      (field) => field.key !== 'level',
     );
     return columnsToSearch.some((field) =>
       new RegExp(escapedSearchString, 'i').test(field.value.toString()),
@@ -226,7 +226,7 @@ export class LogFilter {
 
   /**
    * Checks if the exact phrase exists in any of the log entry columns
-   * (excluding `severity`).
+   * (excluding `level`).
    *
    * @param {LogEntry} logEntry - The log entry to be searched.
    * @param {string} exactPhrase - The exact phrase to search for within the
@@ -241,7 +241,7 @@ export class LogFilter {
     const escapedExactPhrase = this.escapeRegEx(exactPhrase);
     const searchRegex = new RegExp(escapedExactPhrase, 'i');
     const columnsToSearch = logEntry.fields.filter(
-      (field) => field.key !== 'severity',
+      (field) => field.key !== 'level',
     );
     return columnsToSearch.some((field) =>
       searchRegex.test(field.value.toString()),

@@ -13,7 +13,7 @@
 // the License.
 
 import { LogFilter } from './log-filter';
-import { Severity, LogEntry } from '../../shared/interfaces';
+import { Level, LogEntry } from '../../shared/interfaces';
 import testData from './test-data';
 
 describe('LogFilter', () => {
@@ -32,7 +32,7 @@ describe('LogFilter', () => {
     describe('filters log entries correctly', () => {
       const logEntry1: LogEntry = {
         timestamp: new Date(),
-        severity: Severity.INFO,
+        level: Level.INFO,
         fields: [
           { key: 'source', value: 'application' },
           {
@@ -44,7 +44,7 @@ describe('LogFilter', () => {
 
       const logEntry2: LogEntry = {
         timestamp: new Date(),
-        severity: Severity.WARNING,
+        level: Level.WARNING,
         fields: [
           { key: 'source', value: 'database' },
           {
@@ -56,7 +56,7 @@ describe('LogFilter', () => {
 
       const logEntry3: LogEntry = {
         timestamp: new Date(),
-        severity: Severity.ERROR,
+        level: Level.ERROR,
         fields: [
           { key: 'source', value: 'network' },
           {

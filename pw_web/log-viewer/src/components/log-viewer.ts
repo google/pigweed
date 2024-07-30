@@ -14,7 +14,12 @@
 
 import { LitElement, PropertyValues, TemplateResult, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { LogEntry, LogSourceEvent, SourceData } from '../shared/interfaces';
+import {
+  LogEntry,
+  LogSourceEvent,
+  SourceData,
+  TableColumn,
+} from '../shared/interfaces';
 import {
   LocalStateStorage,
   LogViewerState,
@@ -86,7 +91,7 @@ export class LogViewer extends LitElement {
    * Create a log-viewer
    * @param logSources - Collection of sources from where logs originate
    * @param options - Optional parameters to change default settings
-   * @param options.columnOrder - defines column order between severity and
+   * @param options.columnOrder - defines column order between level and
    *   message undefined fields are added between defined order and message.
    * @param options.state - handles state between sessions, defaults to localStorage
    */
@@ -150,6 +155,10 @@ export class LogViewer extends LitElement {
         this.colorScheme = storedScheme;
       }
     }
+  }
+
+  firstUpdated() {
+    this.delSevFromState(this._rootNode);
   }
 
   updated(changedProperties: PropertyValues) {
@@ -308,6 +317,36 @@ export class LogViewer extends LitElement {
         nodeToUpdate.logViewState.columnData = columnData;
         this._stateService.saveState({ rootNode: this._rootNode });
       }
+    }
+  }
+
+  /**
+   * Handles case if switching from level -> severity -> level, state will be
+   * restructured to remove severity and move up level if it exists.
+   *
+   * @param node The state node.
+   */
+  private delSevFromState(node: ViewNode) {
+    const fields = node.logViewState?.columnData.map(
+      (field) => field.fieldName,
+    );
+
+    if (fields?.includes('level')) {
+      const index = fields.indexOf('level');
+      if (index !== 0) {
+        const level = node.logViewState?.columnData[index] as TableColumn;
+        node.logViewState?.columnData.splice(index, 1);
+        node.logViewState?.columnData.unshift(level);
+      }
+    }
+
+    if (fields?.includes('severity')) {
+      const index = fields.indexOf('severity');
+      node.logViewState?.columnData.splice(index, 1);
+    }
+
+    if (node.type === 'split') {
+      node.children.forEach((child) => this.delSevFromState(child));
     }
   }
 

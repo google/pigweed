@@ -262,7 +262,7 @@ like this:
 
 .. code-block:: typescript
 
-   import { LogSource, LogEntry, Severity } from 'pigweedjs/logging';
+   import { LogSource, LogEntry, Level } from 'pigweedjs/logging';
 
    export class MockLogSource extends LogSource {
      constructor(){
@@ -274,10 +274,10 @@ like this:
 
        }
        this.publishLogEntry({
-         severity: Severity.INFO,
+         level: Level.INFO,
          timestamp: new Date(),
          fields: [
-           { key: 'severity', value: severity }
+           { key: 'level', value: level }
            { key: 'timestamp', value: new Date().toISOString() },
            { key: 'source', value: "LEFT SHOE" },
            { key: 'message', value: "Running mode activated." }
@@ -311,10 +311,10 @@ Only fields that exist in the Log Source will render as columns in the Log Viewe
 
   )
 
-Note, columns will always start with ``severity`` and end with ``message``, these fields do not need to be defined.
+Note, columns will always start with ``level`` and end with ``message``, these fields do not need to be defined.
 Columns are ordered in the following format:
 
-1. ``severity``
+1. ``level``
 2. ``columnOrder``
 3. Fields that exist in Log Source but not listed will be added here.
 4. ``message``

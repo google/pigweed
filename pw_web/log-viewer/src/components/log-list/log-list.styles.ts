@@ -160,7 +160,7 @@ export const styles = css`
     white-space: nowrap;
   }
 
-  th[title='severity'] {
+  th[title='level'] {
     visibility: hidden;
   }
 

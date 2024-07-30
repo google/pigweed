@@ -13,13 +13,13 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { LogEntry, Field, Severity } from '../shared/interfaces';
+import { LogEntry, Field, Level } from '../shared/interfaces';
 import { timeFormat } from '../shared/time-format';
 
 import log_data from './log_data.json';
 
-interface LevelToSeverity {
-  [level: number]: Severity;
+interface LevelMap {
+  [level: number]: Level;
 }
 
 export class JsonLogSource extends LogSource {
@@ -27,14 +27,14 @@ export class JsonLogSource extends LogSource {
   private logIndex: number = 0;
   private previousLogTime: number = 0;
 
-  private logLevelToSeverity: LevelToSeverity = {
-    10: Severity.DEBUG,
-    20: Severity.INFO,
-    21: Severity.INFO,
-    30: Severity.WARNING,
-    40: Severity.ERROR,
-    50: Severity.CRITICAL,
-    70: Severity.CRITICAL,
+  private logLevelMap: LevelMap = {
+    10: Level.DEBUG,
+    20: Level.INFO,
+    21: Level.INFO,
+    30: Level.WARNING,
+    40: Level.ERROR,
+    50: Level.CRITICAL,
+    70: Level.CRITICAL,
   };
 
   private nonAdditionalDataFields = [
@@ -95,7 +95,7 @@ export class JsonLogSource extends LogSource {
   readLogEntryFromJson(): LogEntry {
     const data = log_data[this.logIndex];
     const fields: Array<Field> = [
-      { key: 'severity', value: this.logLevelToSeverity[data.levelno] },
+      { key: 'level', value: this.logLevelMap[data.levelno] },
       { key: 'time', value: timeFormat.format(new Date()) },
     ];
 
@@ -111,7 +111,7 @@ export class JsonLogSource extends LogSource {
     fields.push({ key: 'py_logger', value: data.py_logger || '' });
 
     const logEntry: LogEntry = {
-      severity: this.logLevelToSeverity[data.levelno],
+      level: this.logLevelMap[data.levelno],
       timestamp: new Date(),
       fields: fields,
     };
