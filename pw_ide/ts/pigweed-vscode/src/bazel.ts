@@ -82,6 +82,16 @@ export function vendoredBazeliskPath(): string | undefined {
   );
 }
 
+/**
+ * Get a path to Bazel no matter what.
+ *
+ * The difference between this and `bazel_executable.get()` is that this will
+ * return the vendored Bazelisk as a last resort, whereas the former only
+ * returns whatever path has been configured.
+ */
+export const getReliableBazelExecutable = () =>
+  bazel_executable.get() ?? vendoredBazeliskPath();
+
 function vendoredBuildifierPath(): string | undefined {
   const result = getBazeliskBinary();
 

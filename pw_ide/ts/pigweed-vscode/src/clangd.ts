@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as fs_p from 'fs/promises';
 import * as path from 'path';
@@ -24,6 +25,7 @@ import { createHash } from 'crypto';
 import { glob } from 'glob';
 import * as yaml from 'js-yaml';
 
+import { getReliableBazelExecutable } from './bazel';
 import { Disposable } from './disposables';
 
 import {
@@ -35,6 +37,7 @@ import {
 
 import { launchTroubleshootingLink } from './links';
 import logger from './logging';
+import { getPigweedProjectRoot } from './project';
 import { OK, RefreshCallback, RefreshManager } from './refreshManager';
 import { settingFor, settings, stringSettingFor, workingDir } from './settings';
 
@@ -44,10 +47,59 @@ const CDB_FILE_DIR = '.compile_commands' as const;
 // Need this indirection to prevent `workingDir` being called before init.
 const CDB_DIR = () => path.join(workingDir.get(), CDB_FILE_DIR);
 
-// TODO: https://pwbug.dev/352601321 - This is brittle and also probably
-// doesn't work on Windows.
-const clangdPath = () =>
-  path.join(workingDir.get(), 'external', 'llvm_toolchain', 'bin', 'clangd');
+const clangdPath = () => path.join(workingDir.get(), 'bazel-bin', 'clangd');
+
+const createClangdSymlinkTarget = ':copy_clangd' as const;
+
+/** Create the `clangd` symlink and add it to settings. */
+export async function initClangdPath(): Promise<void> {
+  logger.info('Ensuring presence of stable clangd symlink');
+  const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
+  const cmd = getReliableBazelExecutable();
+
+  if (!cmd) {
+    const message = "Couldn't find a Bazel or Bazelisk executable";
+    logger.error(message);
+    return;
+  }
+
+  const args = ['build', createClangdSymlinkTarget];
+  const spawnedProcess = child_process.spawn(cmd, args, { cwd });
+
+  const success = await new Promise<boolean>((resolve) => {
+    spawnedProcess.on('spawn', () => {
+      logger.info(`Running ${cmd} ${args.join(' ')}`);
+    });
+
+    spawnedProcess.stdout.on('data', (data) => logger.info(data.toString()));
+    spawnedProcess.stderr.on('data', (data) => logger.info(data.toString()));
+
+    spawnedProcess.on('error', (err) => {
+      const { name, message } = err;
+      logger.error(`[${name}] while creating clangd symlink: ${message}`);
+      resolve(false);
+    });
+
+    spawnedProcess.on('exit', (code) => {
+      if (code === 0) {
+        logger.info('Finished ensuring presence of stable clangd symlink');
+        resolve(true);
+      } else {
+        const message =
+          'Failed to ensure presence of stable clangd symlink ' +
+          `(error code: ${code})`;
+
+        logger.error(message);
+        resolve(false);
+      }
+    });
+  });
+
+  if (!success) return;
+
+  const { update: updatePath } = stringSettingFor('path', 'clangd');
+  await updatePath(clangdPath());
+}
 
 export const targetPath = (target: string) => path.join(`${CDB_DIR()}`, target);
 export const targetCompileCommandsPath = (target: string) =>

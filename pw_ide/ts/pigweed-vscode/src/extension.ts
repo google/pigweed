@@ -14,13 +14,13 @@
 
 import * as vscode from 'vscode';
 
-import { registerBazelProjectCommands } from './commands/bazel';
-import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 import { configureBazelisk, configureBazelSettings } from './bazel';
 import { BazelRefreshCompileCommandsWatcher } from './bazelWatcher';
+import { ClangdActiveFilesCache, initClangdPath } from './clangd';
+import { registerBazelProjectCommands } from './commands/bazel';
+import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 import { Disposer } from './disposables';
 import { didInit, linkRefreshManagerToEvents } from './events';
-import { ClangdActiveFilesCache } from './clangd';
 import { checkExtensions } from './extensionManagement';
 import { InactiveFileDecorationProvider } from './inactiveFileDecoration';
 import logger, { output } from './logging';
@@ -146,6 +146,11 @@ function registerBootstrapCommands(context: vscode.ExtensionContext) {
 }
 
 async function initAsBazelProject(context: vscode.ExtensionContext) {
+  // Do stuff that we want to do on load.
+  await initClangdPath();
+  await configureBazelSettings();
+  await configureBazelisk();
+
   // Marshall all of our components and dependencies.
   const refreshManager = disposer.add(RefreshManager.create());
   linkRefreshManagerToEvents(refreshManager);
@@ -170,10 +175,6 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
     compileCommandsWatcher,
     clangdActiveFilesCache,
   );
-
-  // Do stuff that we want to do on load.
-  await configureBazelSettings();
-  await configureBazelisk();
 
   if (!settings.disableCompileCommandsFileWatcher()) {
     compileCommandsWatcher.refresh();
