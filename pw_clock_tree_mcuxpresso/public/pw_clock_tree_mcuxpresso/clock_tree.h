@@ -397,4 +397,44 @@ using ClockMcuxpressoRtcBlocking = ClockMcuxpressoRtc<ElementBlocking>;
 /// cannot fail.
 using ClockMcuxpressoRtcNonBlocking =
     ClockMcuxpressoRtc<ElementNonBlockingCannotFail>;
+
+/// Class template implementing the `clock_ip_name_t` clocks.
+/// Managing `clock_ip_name_t` clocks with the clock tree allows to
+/// save power when `FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL` is set.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoClockIp final : public DependentElement<ElementType> {
+ public:
+  /// Constructor specifying the dependent clock tree element to enable the
+  /// `clock_ip_name_t` clock source.
+  constexpr ClockMcuxpressoClockIp(ElementType& source, clock_ip_name_t clock)
+      : DependentElement<ElementType>(source), clock_(clock) {}
+
+ private:
+  /// Enable the clock.
+  Status DoEnable() final {
+    CLOCK_EnableClock(clock_);
+    return OkStatus();
+  }
+
+  /// Disable the clock.
+  Status DoDisable() final {
+    CLOCK_DisableClock(clock_);
+    return OkStatus();
+  }
+
+  clock_ip_name_t clock_;
+};
+
+/// Alias for a blocking ClockIp clock tree element.
+/// This class should be used if the ClockIp clock source depends on
+/// another blocking clock tree element to enable the ClockIp clock source.
+using ClockMcuxpressoClockIpBlocking = ClockMcuxpressoClockIp<ElementBlocking>;
+
+/// Alias for a non-blocking ClockIp clock tree element where updates
+/// cannot fail.
+using ClockMcuxpressoClockIpNonBlocking =
+    ClockMcuxpressoClockIp<ElementNonBlockingCannotFail>;
 }  // namespace pw::clock_tree

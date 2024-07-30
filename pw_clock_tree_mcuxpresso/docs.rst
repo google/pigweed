@@ -22,6 +22,7 @@ that can be directly instantiated:
 * Clock Divider
 * Audio PLL
 * RTC
+* ClockIp
 
 .. inclusive-language: enable
 
@@ -54,9 +55,24 @@ Definition of clock tree elements:
     flowchart LR
           A(fro_div_4) -->B(frg_0)
           B-->C(flexcomm_selector_0)
+          C-->D(flexcomm_0)
           style A fill:#0f0,stroke:#333,stroke-width:2px
           style B fill:#0f0,stroke:#333,stroke-width:2px
           style C fill:#0f0,stroke:#333,stroke-width:2px
+          style D fill:#0f0,stroke:#333,stroke-width:2px
+
+.. cpp:namespace-push:: pw::clock_tree::ClockTree
+
+Please note that the clock tree element ``flexcomm_0`` is only required if the SDK is compiled with
+the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
+``flexcomm_selector_0`` and ``flexcomm_0`` represents only a logical dependency connection between
+the two clock tree elements. The ``flexcomm_0`` :cpp:class:`ClockMcuxpressoClockIp` gates the register
+access to the ``Flexcomm 0`` IP block, but it doesn't gate the ``Flexcomm 0`` clock source itself.
+Nevertheless, to use ``Flexcomm 0`` the ``Flexcomm 0`` IP block and ``Flexcomm 0`` clock source need
+to be enabled, hence we established the dependency  between ``flexcomm_selector_0`` and ``flexcomm_0``,
+so that enabling ``flexcomm_0`` enabled the ``Flexcomm 0`` IP block and clock source.
+
+.. cpp:namespace-pop::
 
 .. literalinclude:: examples.cc
    :language: cpp
@@ -67,11 +83,26 @@ Definition of clock tree elements:
 .. mermaid::
 
     flowchart LR
-          D(fro_div_8)--> E(i3c_selector)
-          E --> F(i3c_divider)
+          D(fro_div_8)--> E(i3c0_selector)
+          E --> F(i3c0_divider)
+          F --> G(i3c0)
           style D fill:#f0f,stroke:#333,stroke-width:2px
           style E fill:#f0f,stroke:#333,stroke-width:2px
           style F fill:#f0f,stroke:#333,stroke-width:2px
+          style G fill:#f0f,stroke:#333,stroke-width:2px
+
+.. cpp:namespace-push:: pw::clock_tree::ClockTree
+
+Please note that the clock tree element ``i3c0`` is only required if the SDK is compiled with
+the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
+``i3c0_selector`` and ``i3c0`` represents only a logical dependency connection between
+the two clock tree elements. The ``i3c0`` :cpp:class:`ClockMcuxpressoClockIp` gates the register
+access to the ``I3C`` IP block, but it doesn't gate the ``I3C`` clock source itself.
+Nevertheless, to use ``I3C`` the ``I3C`` IP block and ``I3C`` clock source need
+to be enabled, hence we established the dependency  between ``i3c0_selector`` and ``i3c0``,
+so that enabling ``i3c0`` enabled the ``I3C`` IP block and clock source.
+
+.. cpp:namespace-pop::
 
 .. literalinclude:: examples.cc
    :language: cpp
@@ -88,9 +119,24 @@ Definition of clock tree elements:
 .. mermaid::
 
     flowchart LR
-          G(mclk) --> H(ctimer_0)
+          G(mclk) --> H(ctimer_selector_0)
+          H --> I(ctimer_0)
           style G fill:#0ff,stroke:#333,stroke-width:2px
           style H fill:#0ff,stroke:#333,stroke-width:2px
+          style I fill:#0ff,stroke:#333,stroke-width:2px
+
+.. cpp:namespace-push:: pw::clock_tree::ClockTree
+
+Please note that the clock tree element ``ctimer_0`` is only required if the SDK is compiled with
+the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
+``ctimer_selector_0`` and ``ctimer_0`` represents only a logical dependency connection between
+the two clock tree elements. The ``ctimer_0`` :cpp:class:`ClockMcuxpressoClockIp` gates the register
+access to the ``CTimer 0`` IP block, but it doesn't gate the ``CTimer 0`` clock source itself.
+Nevertheless, to use ``CTimer 0`` the ``CTimer 0`` IP block and ``CTimer 0`` clock source need
+to be enabled, hence we established the dependency  between ``ctimer_selector_0`` and ``ctimer_0``,
+so that enabling ``ctimer_0`` enabled the ``CTimer 0`` IP block and clock source.
+
+.. cpp:namespace-pop::
 
 .. literalinclude:: examples.cc
    :language: cpp
@@ -274,4 +320,10 @@ ClockMcuxpressoAudioPll
 ClockMcuxpressoRtc
 ------------------
 .. doxygenclass:: pw::clock_tree::ClockMcuxpressoRtc
+   :members:
+
+----------------------
+ClockMcuxpressoClockIp
+----------------------
+.. doxygenclass:: pw::clock_tree::ClockMcuxpressoClockIp
    :members:
