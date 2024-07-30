@@ -175,6 +175,26 @@ class Device:
         """Runs the unit tests on this device."""
         return pw_unit_test_run_tests(self.rpcs, timeout_s=timeout_s)
 
+    def echo(self, msg: str) -> str:
+        """Sends a string to the device and back, returning the result."""
+        return self.rpcs.pw.rpc.EchoService.Echo(msg=msg).unwrap_or_raise().msg
+
+    def reboot(self):
+        """Triggers a reboot to run asynchronously on the device.
+
+        This function *does not* wait for the reboot to complete."""
+        # `invoke` rather than call in order to ignore the result. No result
+        # will be sent when the device reboots.
+        self.rpcs.pw.system.proto.DeviceService.Reboot.invoke()
+
+    def crash(self):
+        """Triggers a crash to run asynchronously on the device.
+
+        This function *does not* wait for the crash to complete."""
+        # `invoke` rather than call in order to ignore the result. No result
+        # will be sent when the device crashes.
+        self.rpcs.pw.system.proto.DeviceService.Crash.invoke()
+
     def get_and_log_metrics(self) -> dict:
         """Retrieves the parsed metrics and logs them to the console."""
         metrics = metric_parser.parse_metrics(
