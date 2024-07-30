@@ -19,19 +19,15 @@
 namespace bt {
 namespace {
 
-TEST(ManufacturerNamesTest, ExhaustiveLookUp) {
-  constexpr uint16_t kReservedId = 0x049E;
-
-  // Looking up beyond the maximum entry shouldn't crash.
-  EXPECT_EQ("", GetManufacturerName(kReservedId));
-
-  // Do an incremental look up of all entries up to |kReservedId|. The
-  // code shouldn't crash. We don't make an exact comparison of all entries
-  // since this is a resiliency test.
-  for (uint16_t i = 0; i < kReservedId; ++i) {
-    std::string result = GetManufacturerName(i);
-    EXPECT_FALSE(result.empty()) << "Failed for id: " << i;
-  }
+TEST(ManufacturerNamesTest, NameIsHexString) {
+  EXPECT_EQ("0x0000", GetManufacturerName(0x0000));
+  EXPECT_EQ("0x1234", GetManufacturerName(0x1234));
+  EXPECT_EQ("0x9999", GetManufacturerName(0x9999));
+  EXPECT_EQ("0x0123", GetManufacturerName(0x0123));
+  EXPECT_EQ("0x0fff", GetManufacturerName(0x0fff));
+  EXPECT_EQ("0x0023", GetManufacturerName(0x0023));
+  EXPECT_EQ("0xffff", GetManufacturerName(0xffff));
+  EXPECT_EQ("0x0abc", GetManufacturerName(0x0abc));
 }
 
 }  // namespace
