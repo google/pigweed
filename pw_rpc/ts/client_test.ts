@@ -841,7 +841,7 @@ describe('RPC', () => {
 
       const stream = clientStreaming.invoke();
       const result = await stream.finishAndWait();
-      expect(result[1]).toEqual([enqueuedResponse]);
+      expect(result[1]).toEqual(enqueuedResponse);
 
       expect(await stream.finishAndWait()).toEqual(result);
       expect(await stream.finishAndWait()).toEqual(result);

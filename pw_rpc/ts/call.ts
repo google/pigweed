@@ -283,9 +283,9 @@ export class ClientStreamingCall extends Call {
   async finishAndWait(
     requests: Message[] = [],
     timeoutMs?: number,
-  ): Promise<[Status, Message[]]> {
+  ): Promise<[Status, Message]> {
     this.finishClientStream(requests);
-    return await this.streamWait(timeoutMs);
+    return await this.unaryWait(timeoutMs);
   }
 }
 

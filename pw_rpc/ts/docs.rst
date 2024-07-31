@@ -157,8 +157,8 @@ Client Streaming RPC
    // Send three more requests, end the stream, and wait for a response.
    const timeout = 2000 // 2 seconds
    request.finishAndWait([request, request, request], timeout)
-       .then(() => {
-         console.log('Client stream finished successfully');
+       .then((status, response) => {
+         console.log(`Client stream finished successfully: ${response}`);
        })
        .catch((reason) => {
          console.log(`Client stream error: ${reason}`);
