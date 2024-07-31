@@ -2779,7 +2779,7 @@ rp2040
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/214794>`__
 * `Support bazel wildcard build on rp2040
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/213071>`__
-  (issue `#343467774, <https://issues.pigweed.dev/issues/343467774,>`__)
+  (issue `#343467774 <https://issues.pigweed.dev/issues/343467774>`__)
 
 stm32f429i
 ----------
@@ -3132,7 +3132,9 @@ rp2040
 ------
 * `Additional bazel build file coverage
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211351>`__
-  (issue `#303255049, 305746219 <https://issues.pigweed.dev/issues/303255049, 305746219>`__)
+  (issue `#303255049 <https://issues.pigweed.dev/issues/303255049>`__,
+  issue `#305746219 <https://issues.pigweed.dev/issues/305746219>`__)
+
 * `Enable thread high water accounting
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210831>`__
 * `Update docs to add missing picotool dependency
@@ -3309,7 +3311,8 @@ pw_build
 --------
 * `pw_cc_test.lib fixup
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/210231>`__
-  (issue `#307825072, 341109859 <https://issues.pigweed.dev/issues/307825072, 341109859>`__)
+  (issue `#307825072 <https://issues.pigweed.dev/issues/307825072>`__,
+  issue `#341109859 <https://issues.pigweed.dev/issues/341109859>`__)
 * `Fix type hint
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/208137>`__
   (issue `#338462905 <https://issues.pigweed.dev/issues/338462905>`__)
@@ -3521,7 +3524,8 @@ pw_sys_io_rp2040
 ----------------
 * `Bazel build file update
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209877>`__
-  (issue `#261603269, 300318025 <https://issues.pigweed.dev/issues/261603269, 300318025>`__)
+  (issue `#261603269 <https://issues.pigweed.dev/issues/261603269>`__,
+  issue `#300318025 <https://issues.pigweed.dev/issues/300318025>`__)
 
 pw_sys_io_stdio
 ---------------
@@ -4159,16 +4163,20 @@ In CIPD ``bt-host`` artifacts are now uploaded to ``fuchsia/prebuilt/bt-host``.
   (issue `#321267610 <https://issues.pigweed.dev/issues/321267610>`__)
 * `Bump @fuchsia_sdk
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/202490>`__
-  (issue `#329933586, 321267476 <https://issues.pigweed.dev/issues/329933586, 321267476>`__)
+  (issue `#329933586 <https://issues.pigweed.dev/issues/329933586>`__,
+  issue `#321267476 <https://issues.pigweed.dev/issues/321267476>`__)
 
 pw_build
 --------
 * `Disable deprecated pragma warnings
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/203856>`__
-  (issue `#333448202 <https://issues.pigweed.dev/issues/335328444, b/333448202>`__)
+  (issue `#333448202 <https://issues.pigweed.dev/issues/335328444>`__,
+  issue `#333448202 <https://issues.pigweed.dev/issues/333448202>`__)
 * `Iterators
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/203330>`__
-  (issue `#335021928 <https://issues.pigweed.dev/issues/333448202, b/335024633, b/335021928>`__)
+  (issue `#333448202 <https://issues.pigweed.dev/issues/333448202>`__,
+  issue `#335024633 <https://issues.pigweed.dev/issues/335024633>`__,
+  issue `#335021928 <https://issues.pigweed.dev/issues/335021928>`__)
 * `Collect wheel fix
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/202921>`__
 * `Disable C23 extension warnings
