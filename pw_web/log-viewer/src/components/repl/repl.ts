@@ -53,9 +53,7 @@ export class Repl extends LitElement {
     super();
     this.replTitle = title;
 
-    if (!localStorage.getItem(this.LOCALSTORAGE_KEY)?.length) {
-      this.evalResults.push({ result: this.welcomeMsg });
-    }
+    this.evalResults.push({ result: this.welcomeMsg });
     this.codeEditor = new CodeEditor(
       '',
       this.replKernel.autocomplete.bind(this.replKernel),
