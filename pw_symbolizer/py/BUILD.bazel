@@ -47,6 +47,7 @@ py_library(
     ],
     data = [":llvm-symbolizer-symlink"],
     imports = ["."],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 pw_py_test(
