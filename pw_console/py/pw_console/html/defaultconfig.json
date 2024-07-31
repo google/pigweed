@@ -69,7 +69,8 @@
               "isVisible": true
             }
           ],
-          "searchText": "log_source:device"
+          "searchText": "log_source:device",
+          "viewTitle": "Device Logs"
         }
       },
       {
@@ -139,7 +140,8 @@
               "isVisible": true
             }
           ],
-          "searchText": "log_source:host"
+          "searchText": "log_source:host",
+          "viewTitle": "Host Logs"
         }
       }
     ],
