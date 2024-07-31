@@ -89,11 +89,30 @@ class TestDetokenizeProtoFields(unittest.TestCase):
             proto.message.decode(), encode.prefixed_base64(b'\1\2\3\4')
         )
 
+    def test_no_detokenizer_plain_text(self) -> None:
+        proto = TheMessage(message=b'boring conversation anyway!')
+        detokenize_fields(None, proto)
+        self.assertEqual(proto.message, b'boring conversation anyway!')
+
+    def test_no_detokenizer_unknown_token_not_utf8(self) -> None:
+        proto = TheMessage(message=b'\xFE\xED\xF0\x0D')
+        detokenize_fields(None, proto)
+        self.assertEqual(
+            proto.message.decode(), encode.prefixed_base64(b'\xFE\xED\xF0\x0D')
+        )
+
+    def test_no_detokenizer_only_control_characters(self) -> None:
+        proto = TheMessage(message=b'\1\2\3\4')
+        detokenize_fields(None, proto)
+        self.assertEqual(
+            proto.message.decode(), encode.prefixed_base64(b'\1\2\3\4')
+        )
+
 
 class TestDecodeOptionallyTokenized(unittest.TestCase):
     """Tests optional detokenization directly."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.detok = detokenize.Detokenizer(
             tokens.Database(
                 [
@@ -105,42 +124,62 @@ class TestDecodeOptionallyTokenized(unittest.TestCase):
             )
         )
 
-    def test_found_binary_token(self):
+    def test_found_binary_token(self) -> None:
         self.assertEqual(
             'on pizza',
             decode_optionally_tokenized(self.detok, b'\x01\x00\x00\x00'),
         )
 
-    def test_missing_binary_token(self):
+    def test_missing_binary_token(self) -> None:
         self.assertEqual(
             '$' + base64.b64encode(b'\xD5\x8A\xF9\x2A\x8A').decode(),
             decode_optionally_tokenized(self.detok, b'\xD5\x8A\xF9\x2A\x8A'),
         )
 
-    def test_found_b64_token(self):
+    def test_found_b64_token(self) -> None:
         b64_bytes = b'$' + base64.b64encode(b'\x03\x00\x00\x00')
         self.assertEqual(
             'they say', decode_optionally_tokenized(self.detok, b64_bytes)
         )
 
-    def test_missing_b64_token(self):
+    def test_missing_b64_token(self) -> None:
         b64_bytes = b'$' + base64.b64encode(b'\xD5\x8A\xF9\x2A\x8A')
         self.assertEqual(
             b64_bytes.decode(),
             decode_optionally_tokenized(self.detok, b64_bytes),
         )
 
-    def test_found_alternate_prefix(self):
+    def test_found_alternate_prefix(self) -> None:
         b64_bytes = b'~' + base64.b64encode(b'\x00\x00\x00\x00')
         self.assertEqual(
-            'cheese', decode_optionally_tokenized(self.detok, b64_bytes, b'~')
+            'cheese', decode_optionally_tokenized(self.detok, b64_bytes, '~')
         )
 
-    def test_missing_alternate_prefix(self):
+    def test_missing_alternate_prefix(self) -> None:
         b64_bytes = b'~' + base64.b64encode(b'\x02\x00\x00\x00')
         self.assertEqual(
             b64_bytes.decode(),
-            decode_optionally_tokenized(self.detok, b64_bytes, b'^'),
+            decode_optionally_tokenized(self.detok, b64_bytes, '^'),
+        )
+
+    def test_no_detokenizer_binary(self) -> None:
+        data = b'\x01\x00\x00\x00'
+        self.assertEqual(
+            encode.prefixed_base64(data),
+            decode_optionally_tokenized(None, data),
+        )
+
+    def test_no_detokenizer_printable_utf8(self) -> None:
+        self.assertEqual(
+            'this\tis\r\nsome\ntext',
+            decode_optionally_tokenized(None, b'this\tis\r\nsome\ntext'),
+        )
+
+    def test_no_detokenizer_nonprintable_utf8(self) -> None:
+        data = b'\a\0wh\nat?'
+        self.assertEqual(
+            encode.prefixed_base64(data),
+            decode_optionally_tokenized(None, data),
         )
 
 
