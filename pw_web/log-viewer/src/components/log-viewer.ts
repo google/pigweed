@@ -13,7 +13,7 @@
 // the License.
 
 import { LitElement, PropertyValues, TemplateResult, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, queryAll, state } from 'lit/decorators.js';
 import {
   LogEntry,
   LogSourceEvent,
@@ -75,6 +75,8 @@ export class LogViewer extends LitElement {
   /** An array that stores the preferred column order of columns  */
   @state()
   private _columnOrder: string[] = ['log_source', 'time', 'timestamp'];
+
+  @queryAll('log-view') logViews!: LogView[];
 
   /** A map containing data from present log sources */
   private _sources: Map<string, SourceData> = new Map();
@@ -206,7 +208,8 @@ export class LogViewer extends LitElement {
   }
 
   private splitLogView(event: SplitViewEvent) {
-    const { parentId, orientation, columnData, searchText } = event.detail;
+    const { parentId, orientation, columnData, searchText, viewTitle } =
+      event.detail;
 
     // Find parent node, handle errors if not found
     const parentNode = this.findNodeById(this._rootNode, parentId);
@@ -223,6 +226,7 @@ export class LogViewer extends LitElement {
         JSON.stringify(columnData || parentNode.logViewState?.columnData),
       ),
       searchText: searchText || parentNode.logViewState?.searchText,
+      viewTitle: viewTitle || parentNode.logViewState?.viewTitle,
     });
 
     // Both views receive the same values for `searchText` and `columnData`
@@ -327,22 +331,24 @@ export class LogViewer extends LitElement {
    * @param node The state node.
    */
   private delSevFromState(node: ViewNode) {
-    const fields = node.logViewState?.columnData.map(
-      (field) => field.fieldName,
-    );
+    if (node.logViewState?.columnData) {
+      const fields = node.logViewState?.columnData.map(
+        (field) => field.fieldName,
+      );
 
-    if (fields?.includes('level')) {
-      const index = fields.indexOf('level');
-      if (index !== 0) {
-        const level = node.logViewState?.columnData[index] as TableColumn;
-        node.logViewState?.columnData.splice(index, 1);
-        node.logViewState?.columnData.unshift(level);
+      if (fields?.includes('level')) {
+        const index = fields.indexOf('level');
+        if (index !== 0) {
+          const level = node.logViewState?.columnData[index] as TableColumn;
+          node.logViewState?.columnData.splice(index, 1);
+          node.logViewState?.columnData.unshift(level);
+        }
       }
-    }
 
-    if (fields?.includes('severity')) {
-      const index = fields.indexOf('severity');
-      node.logViewState?.columnData.splice(index, 1);
+      if (fields?.includes('severity')) {
+        const index = fields.indexOf('severity');
+        node.logViewState?.columnData.splice(index, 1);
+      }
     }
 
     if (node.type === 'split') {
@@ -360,6 +366,7 @@ export class LogViewer extends LitElement {
         .columnOrder=${this._columnOrder}
         .searchText=${node.logViewState?.searchText ?? ''}
         .columnData=${node.logViewState?.columnData ?? []}
+        .viewTitle=${node.logViewState?.viewTitle || ''}
         .useShoelaceFeatures=${this.useShoelaceFeatures}
         @split-view="${this.splitLogView}"
         @input-change="${this.handleViewEvent}"

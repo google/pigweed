@@ -20,8 +20,9 @@ export interface LogViewerState {
 }
 
 export interface LogViewState {
-  searchText: string;
-  columnData: TableColumn[];
+  searchText?: string;
+  columnData?: TableColumn[];
+  viewTitle?: string;
 }
 
 interface StateStorage {

@@ -32,6 +32,7 @@ export interface ViewNodeOptions {
   children?: ViewNode[];
   columnData?: TableColumn[];
   searchText?: string;
+  viewTitle?: string;
 }
 
 /**
@@ -47,8 +48,8 @@ export interface ViewNodeOptions {
  */
 export class ViewNode {
   logViewId?: string;
-  type: NodeType;
-  orientation: Orientation | undefined;
+  type?: NodeType;
+  orientation?: Orientation | undefined;
   children: ViewNode[];
   logViewState?: LogViewState;
 
@@ -62,6 +63,7 @@ export class ViewNode {
       this.logViewState = {
         columnData: options?.columnData || [],
         searchText: options?.searchText || '',
+        viewTitle: options?.viewTitle || '',
       };
     }
   }

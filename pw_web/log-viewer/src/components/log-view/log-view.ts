@@ -66,13 +66,13 @@ export class LogView extends LitElement {
   @property({ type: Boolean })
   useShoelaceFeatures = true;
 
+  /** A string representing the value contained in the search field. */
+  @property()
+  searchText = '';
+
   /** Whether line wrapping in table cells should be used. */
   @state()
   _lineWrap = false;
-
-  /** A string representing the value contained in the search field. */
-  @state()
-  searchText = '';
 
   /** Preferred column order to reference */
   @state()
@@ -107,12 +107,10 @@ export class LogView extends LitElement {
   /** The amount of time, in ms, before the filter expression is executed. */
   private readonly FILTER_DELAY = 100;
 
-  protected firstUpdated(): void {
-    // Update view title with log source names if a view title isn't already provided
-    if (!this.viewTitle) {
-      this.updateTitle();
-    }
+  /** A default header title for the log view. */
+  private readonly DEFAULT_VIEW_TITLE: string = 'Log View';
 
+  protected firstUpdated(): void {
     this.updateColumnOrder(this.columnData);
     if (this.columnData) {
       this.columnData = this.updateColumnRender(this.columnData);
@@ -127,7 +125,6 @@ export class LogView extends LitElement {
       this._lastKnownLogLength = this.logs.length;
 
       this.updateFieldsFromNewLogs(newLogs);
-      this.updateTitle();
     }
 
     if (changedProperties.has('logs') || changedProperties.has('searchText')) {
@@ -338,13 +335,6 @@ export class LogView extends LitElement {
     this.requestUpdate();
   }
 
-  private updateTitle() {
-    const sourceNames = Array.from(this.sources.values())?.map(
-      (tag: SourceData) => tag.name,
-    );
-    this.viewTitle = sourceNames.join(', ');
-  }
-
   /**
    * Generates a log file in the specified format and initiates its download.
    *
@@ -359,7 +349,7 @@ export class LogView extends LitElement {
   render() {
     return html` <log-view-controls
         .viewId=${this.id}
-        .viewTitle=${this.viewTitle}
+        .viewTitle=${this.viewTitle || this.DEFAULT_VIEW_TITLE}
         .hideCloseButton=${!this.isOneOfMany}
         .searchText=${this.searchText}
         .useShoelaceFeatures=${this.useShoelaceFeatures}

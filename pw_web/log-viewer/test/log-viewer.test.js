@@ -209,6 +209,17 @@ describe('log-viewer', () => {
     checkTableBodyCells(table, logViewer.logs);
   });
 
+  it('should expose log view subcomponent(s) and properties', async () => {
+    await logViewer.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const logView = logViewer.logViews;
+    expect(logView).to.have.lengthOf(1);
+
+    logView[0].viewTitle = 'Test';
+    expect(logView[0].viewTitle).to.equal('Test');
+  });
+
   describe('column order', async () => {
     const logEntry1 = {
       timestamp: new Date(),
