@@ -1,6 +1,6 @@
 {
   "name": "pigweedjs",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "An open source collection of embedded-targeted libraries",
   "author": "The Pigweed Authors",
   "license": "Apache-2.0",
@@ -29,7 +29,6 @@
     "jest": "jest"
   },
   "devDependencies": {
-    "@grpc/grpc-js": "^1.3.7",
     "@material-ui/core": "^4.12.1",
     "@material-ui/lab": "^4.0.0-alpha.60",
     "@rollup/plugin-commonjs": "^19.0.0",
@@ -49,8 +48,6 @@
     "debug": "^4.3.2",
     "eslint": "^8.47.0",
     "eslint-plugin-lit-a11y": "^4.1.0",
-    "grpc-tools": "^1.11.2",
-    "grpc-web": "^1.2.1",
     "gts": "^3.1.0",
     "html-react-parser": "^1.4.0",
     "http-server": "^13.0.2",
