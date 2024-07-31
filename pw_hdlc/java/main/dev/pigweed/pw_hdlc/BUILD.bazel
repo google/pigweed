@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
+
 PW_HDLC_SOURCES = [
     "CustomVarInt.java",
     "Decoder.java",
@@ -28,8 +30,8 @@ java_library(
         "//pw_log/java/main/dev/pigweed/pw_log",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.guava:guava"),
     ],
 )
 
@@ -42,7 +44,7 @@ android_library(
         "//pw_log/java/android_main/dev/pigweed/pw_log",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.guava:guava"),
     ],
 )

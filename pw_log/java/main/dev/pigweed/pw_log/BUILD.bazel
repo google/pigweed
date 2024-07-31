@@ -15,11 +15,13 @@
 # Logging API that maps to Google's Flogger (https://google.github.io/flogger/),
 # or an alternate API if Flogger is not supported.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
+
 java_library(
     name = "pw_log",
     srcs = ["Logger.java"],
     visibility = ["//visibility:public"],
     deps = [
-        "@maven//:com_google_flogger_flogger",
+        artifact("com.google.flogger:flogger"),
     ],
 )

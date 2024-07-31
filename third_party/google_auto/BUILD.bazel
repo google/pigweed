@@ -12,12 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
+
 java_plugin(
     name = "value_plugin",
     processor_class = "com.google.auto.value.processor.AutoValueProcessor",
     visibility = ["//visibility:private"],
     deps = [
-        "@maven//:com_google_auto_value_auto_value",
+        artifact("com.google.auto.value:auto-value"),
     ],
 )
 
@@ -29,7 +31,7 @@ java_library(
     neverlink = 1,
     visibility = ["//visibility:public"],
     exports = [
-        "@maven//:com_google_auto_value_auto_value",
-        "@maven//:com_google_auto_value_auto_value_annotations",
+        artifact("com.google.auto.value:auto-value"),
+        artifact("com.google.auto.value:auto-value-annotations"),
     ],
 )

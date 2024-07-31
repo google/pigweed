@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
@@ -25,10 +26,10 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -41,9 +42,9 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -56,10 +57,10 @@ java_test(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.truth:truth"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.flogger:flogger-system-backend"),
     ],
 )
 

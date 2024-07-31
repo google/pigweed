@@ -15,6 +15,8 @@
 # Client for the pw_transfer RPC service, which is used to send and receive data
 # over pw_rpc.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
+
 TRANSFER_CLIENT_SOURCES = [
     "ProtocolVersion.java",
     "ReadTransfer.java",
@@ -40,9 +42,9 @@ java_library(
         "//pw_transfer:transfer_proto_java",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_failureaccess",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.guava:failureaccess"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.code.findbugs:jsr305"),
     ],
 )
 
@@ -56,9 +58,9 @@ java_library(
         "//pw_transfer:transfer_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_failureaccess",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.guava:failureaccess"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.code.findbugs:jsr305"),
     ],
 )
 
@@ -73,8 +75,8 @@ android_library(
         "//pw_transfer:transfer_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_failureaccess",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.guava:failureaccess"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.code.findbugs:jsr305"),
     ],
 )

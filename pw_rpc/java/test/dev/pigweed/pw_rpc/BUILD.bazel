@@ -14,6 +14,7 @@
 
 # Tests for the generic pw_rpc client.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
@@ -31,8 +32,8 @@ java_library(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.guava:guava"),
     ],
 )
 
@@ -47,10 +48,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
+        artifact("com.google.guava:guava"),
+        artifact("org.mockito:mockito-core"),
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -65,10 +66,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
+        artifact("com.google.guava:guava"),
+        artifact("org.mockito:mockito-core"),
     ],
 )
 
@@ -83,10 +84,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
+        artifact("org.mockito:mockito-core"),
+        artifact("com.google.guava:guava"),
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -98,8 +99,8 @@ java_test(
     test_class = "dev.pigweed.pw_rpc.IdsTest",
     deps = [
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -113,8 +114,8 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -127,8 +128,8 @@ java_test(
     deps = [
         ":test_proto_java",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_truth_truth",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
     ],
 )
 
@@ -142,10 +143,10 @@ java_test(
         ":test_proto_java",
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
+        artifact("com.google.guava:guava"),
+        artifact("org.mockito:mockito-core"),
     ],
 )
 
@@ -160,10 +161,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.truth:truth"),
+        artifact("com.google.guava:guava"),
+        artifact("org.mockito:mockito-core"),
     ],
 )
 

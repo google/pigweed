@@ -176,48 +176,6 @@ http_archive(
     url = "https://github.com/google/fuzztest/archive/6eb010c7223a6aa609b94d49bfc06ac88f922961.zip",
 )
 
-# TODO: https://pwbug.dev/258836641 - Move this to MODULE.bazel. Requires a
-# bunch of BUILD.bazel changes, so left to a followup.
-RULES_JVM_EXTERNAL_TAG = "6.2"
-
-RULES_JVM_EXTERNAL_SHA = "808cb5c30b5f70d12a2a745a29edc46728fd35fa195c1762a596b63ae9cebe05"
-
-http_archive(
-    name = "rules_jvm_external",
-    sha256 = RULES_JVM_EXTERNAL_SHA,
-    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
-    url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG),
-)
-
-load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
-
-rules_jvm_external_deps()
-
-load("@rules_jvm_external//:setup.bzl", "rules_jvm_external_setup")
-
-rules_jvm_external_setup()
-
-load("@rules_jvm_external//:defs.bzl", "maven_install")
-
-# Pull in packages for the pw_rpc Java client with Maven.
-maven_install(
-    artifacts = [
-        "com.google.auto.value:auto-value:1.8.2",
-        "com.google.auto.value:auto-value-annotations:1.8.2",
-        "com.google.code.findbugs:jsr305:3.0.2",
-        "com.google.flogger:flogger:0.7.1",
-        "com.google.flogger:flogger-system-backend:0.7.1",
-        "com.google.guava:guava:31.0.1-jre",
-        "com.google.truth:truth:1.1.3",
-        "org.mockito:mockito-core:4.1.0",
-    ],
-    repositories = [
-        "https://maven.google.com/",
-        "https://jcenter.bintray.com/",
-        "https://repo1.maven.org/maven2",
-    ],
-)
-
 new_git_repository(
     name = "micro_ecc",
     build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",

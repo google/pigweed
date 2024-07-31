@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_jvm_external//:defs.bzl", "artifact")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
@@ -290,8 +291,8 @@ java_binary(
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
         "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
         "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
+        artifact("com.google.flogger:flogger-system-backend"),
+        artifact("com.google.guava:guava"),
     ],
 )
 
