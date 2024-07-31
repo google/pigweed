@@ -62,6 +62,27 @@ cc_library(
     deps = [":pw_rpc"],
 )
 
+# See https://pigweed.dev/pw_rpc/cpp.html#c.PW_RPC_YIELD_MODE for documentation.
+constraint_setting(
+    name = "yield_mode",
+    default_constraint_value = ":yield_mode_sleep",
+)
+
+constraint_value(
+    name = "yield_mode_busy_loop",
+    constraint_setting = ":yield_mode",
+)
+
+constraint_value(
+    name = "yield_mode_sleep",
+    constraint_setting = ":yield_mode",
+)
+
+constraint_value(
+    name = "yield_mode_yield",
+    constraint_setting = ":yield_mode",
+)
+
 cc_library(
     name = "pw_rpc",
     srcs = [
@@ -108,6 +129,13 @@ cc_library(
         "public/pw_rpc/service.h",
         "public/pw_rpc/service_id.h",
     ],
+    # LINT.IfChange
+    defines = select({
+        ":yield_mode_busy_loop": ["PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_BUSY_LOOP"],
+        ":yield_mode_sleep": ["PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_SLEEP"],
+        ":yield_mode_yield": ["PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_YIELD"],
+    }),
+    # LINT.ThenChange(//pw_rpc/public/pw_rpc/internal/config.h)
     includes = ["public"],
     deps = [
         ":config_override",
@@ -124,9 +152,12 @@ cc_library(
         "//pw_status",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "//pw_thread:sleep",
         "//pw_toolchain:no_destructor",
-    ],
+    ] + select({
+        ":yield_mode_busy_loop": [],
+        ":yield_mode_sleep": ["//pw_thread:sleep"],
+        ":yield_mode_yield": ["//pw_thread:yield"],
+    }),
 )
 
 label_flag(

@@ -91,6 +91,14 @@
 ///     @cpp_func{pw::this_thread::yield()} does not yield to lower priority
 ///     tasks and should not be used here.
 ///
+/// Note: The dependencies of pw_rpc depend on the value of PW_RPC_YIELD_MODE.
+/// When building pw_rpc with Bazel, you should NOT set this module config value
+/// directly. Instead, tell the build system which value you wish to select by
+/// adding one of the following constraint_values to the target platform:
+///
+///   - `@pigweed//pw_rpc:yield_mode_busy_loop`
+///   - `@pigweed//pw_rpc:yield_mode_busy_sleep` (the default)
+///   - `@pigweed//pw_rpc:yield_mode_busy_yield`
 #ifndef PW_RPC_YIELD_MODE
 #if PW_RPC_USE_GLOBAL_MUTEX == 0
 #define PW_RPC_YIELD_MODE PW_RPC_YIELD_MODE_BUSY_LOOP
@@ -104,9 +112,11 @@
 /// @def PW_RPC_YIELD_MODE_YIELD
 ///
 /// Supported configuration values for @c_macro{PW_RPC_YIELD_MODE}.
+// LINT.IfChange
 #define PW_RPC_YIELD_MODE_BUSY_LOOP 100
 #define PW_RPC_YIELD_MODE_SLEEP 101
 #define PW_RPC_YIELD_MODE_YIELD 102
+// LINT.ThenChange(//pw_rpc/BUILD.bazel)
 
 /// If `PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP`,
 /// `PW_RPC_YIELD_SLEEP_DURATION` sets how long to sleep during each iteration
