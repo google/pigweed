@@ -284,6 +284,7 @@ class WindowList:
         self.refresh_ui()
 
     def set_display_mode(self, mode: DisplayMode):
+        old_display_mode = self.display_mode
         self.display_mode = mode
 
         if self.display_mode == DisplayMode.TABBED:
@@ -294,7 +295,10 @@ class WindowList:
                 pane.show_pane = False
             # Keep the selected tab visible
             self.active_panes[self.focused_pane_index].show_pane = True
-        else:
+        elif (
+            old_display_mode == DisplayMode.TABBED
+            and self.display_mode == DisplayMode.STACK
+        ):
             # Un-hide all panes if switching from tabbed back to stacked.
             for pane in self.active_panes:
                 pane.show_pane = True

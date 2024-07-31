@@ -119,6 +119,7 @@ class WindowPane(ABC):
         repr_str = f'{type(self).__qualname__}(pane_title="{self.pane_title()}"'
         if self.pane_subtitle():
             repr_str += f', pane_subtitle="{self.pane_subtitle()}"'
+        repr_str += f', visible={self.show_pane}'
         repr_str += ')'
         return repr_str
 

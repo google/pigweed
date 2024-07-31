@@ -57,6 +57,7 @@ import pygments.plugin
 from pw_console.pigweed_code_style import (
     PigweedCodeStyle,
     PigweedCodeLightStyle,
+    Synthwave84CodeStyle,
 )
 from pw_console.text_formatting import remove_formatting
 
@@ -77,6 +78,7 @@ def _wrapped_find_plugin_styles():
     for style in [
         ('pigweed-code', PigweedCodeStyle),
         ('pigweed-code-light', PigweedCodeLightStyle),
+        ('synthwave84', Synthwave84CodeStyle),
     ]:
         yield style
     yield from _original_find_plugin_styles()

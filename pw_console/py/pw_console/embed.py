@@ -340,7 +340,7 @@ class PwConsoleEmbed:
 
         # Load external config if passed in.
         if self.config_file_path:
-            self.console_app.load_clean_config(self.config_file_path)
+            self.console_app.load_config(self.config_file_path)
 
         if override_window_config:
             self.console_app.prefs.set_windows(override_window_config)

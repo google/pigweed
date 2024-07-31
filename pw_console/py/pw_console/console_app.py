@@ -79,7 +79,7 @@ from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
-from pw_console.style import generate_styles
+from pw_console.style import generate_styles, THEME_NAME_MAPPING
 from pw_console.test_mode import start_fake_logger
 from pw_console.widgets import (
     FloatingWindowPane,
@@ -680,13 +680,8 @@ class ConsoleApp:
             MenuItem(
                 'UI Themes',
                 children=[
-                    MenuItem('Default: Dark', self.set_ui_theme('dark')),
-                    MenuItem(
-                        'High Contrast', self.set_ui_theme('high-contrast-dark')
-                    ),
-                    MenuItem('Nord', self.set_ui_theme('nord')),
-                    MenuItem('Nord Light', self.set_ui_theme('nord-light')),
-                    MenuItem('Moonlight', self.set_ui_theme('moonlight')),
+                    MenuItem(theme.display_name, self.set_ui_theme(theme_name))
+                    for theme_name, theme in THEME_NAME_MAPPING.items()
                 ],
             ),
             MenuItem(
@@ -699,6 +694,10 @@ class ConsoleApp:
                     MenuItem(
                         'Code: pigweed-code-light',
                         self.set_code_theme('pigweed-code-light'),
+                    ),
+                    MenuItem(
+                        'Code: synthwave84',
+                        self.set_code_theme('synthwave84'),
                     ),
                     MenuItem('Code: material', self.set_code_theme('material')),
                     MenuItem(
@@ -1062,9 +1061,12 @@ class ConsoleApp:
         self.window_manager.add_pane(log_pane)
         return log_pane
 
-    def load_clean_config(self, config_file: Path) -> None:
+    def load_config(self, config_file: Path) -> None:
         self.prefs.reset_config()
         self.prefs.load_config_file(config_file)
+        # Re-apply user settings.
+        if self.prefs.user_file:
+            self.prefs.load_config_file(self.prefs.user_file)
 
         # Reset colors
         self.load_theme(self.prefs.ui_theme)

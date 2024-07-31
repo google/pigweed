@@ -26,7 +26,11 @@ _LOG = logging.getLogger(__package__)
 
 @dataclass
 class HighContrastDarkColors:
+    """Dark high contrast colors."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'High Contrast'
+
     default_bg = '#100f10'
     default_fg = '#ffffff'
 
@@ -58,7 +62,11 @@ class HighContrastDarkColors:
 
 @dataclass
 class DarkColors:
+    """The default dark UI color theme."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'Dark'
+
     default_bg = '#2e2e2e'
     default_fg = '#eeeeee'
 
@@ -90,7 +98,11 @@ class DarkColors:
 
 @dataclass
 class NordColors:
+    """Nord UI color theme."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'Nord'
+
     default_bg = '#2e3440'
     default_fg = '#eceff4'
 
@@ -122,7 +134,11 @@ class NordColors:
 
 @dataclass
 class NordLightColors:
+    """Nord light UI color theme."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'Nord Light'
+
     default_bg = '#e5e9f0'
     default_fg = '#3b4252'
     dim_bg = '#d8dee9'
@@ -149,7 +165,11 @@ class NordLightColors:
 
 @dataclass
 class MoonlightColors:
+    """Moonlight UI color theme."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'Moonlight'
+
     default_bg = '#212337'
     default_fg = '#c8d3f5'
     dim_bg = '#191a2a'
@@ -175,8 +195,43 @@ class MoonlightColors:
 
 
 @dataclass
-class AnsiTerm:
+class Synthwave84Colors:
+    """Synthwave84 UI color theme."""
+
     # pylint: disable=too-many-instance-attributes
+    display_name = 'Synthwave84'
+
+    default_bg = '#252334'
+    default_fg = '#ffffff'
+    dim_bg = '#2a2139'
+    dim_fg = '#ffffff'
+    button_active_bg = '#614d85'
+    button_inactive_bg = '#2f334d'
+    active_bg = '#2f334d'
+    active_fg = '#c8d3f5'
+    inactive_bg = '#222436'
+    inactive_fg = '#a9b8e8'
+    line_highlight_bg = '#383e5c'
+    selected_line_bg = '#444a73'
+    dialog_bg = '#1e2030'
+
+    red_accent = '#fe4450'
+    orange_accent = '#f97e72'
+    yellow_accent = '#fede5d'
+    green_accent = '#72f1b8'
+    cyan_accent = '#03edf9'
+    blue_accent = '#2ee2fa'
+    purple_accent = '#9d8bca'
+    magenta_accent = '#ff7edb'
+
+
+@dataclass
+class AnsiTerm:
+    """Color theme that uses the default terminal color codes."""
+
+    # pylint: disable=too-many-instance-attributes
+    display_name = 'ANSI Term'
+
     default_bg = 'default'
     default_fg = 'default'
 
@@ -206,25 +261,26 @@ class AnsiTerm:
     magenta_accent = 'ansimagenta'
 
 
-_THEME_NAME_MAPPING = {
-    'moonlight': MoonlightColors(),
-    'nord': NordColors(),
-    'nord-light': NordLightColors(),
+THEME_NAME_MAPPING = {
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
+    'nord': NordColors(),
+    'nord-light': NordLightColors(),
+    'synthwave84': Synthwave84Colors(),
+    'moonlight': MoonlightColors(),
     'ansi': AnsiTerm(),
 }
 
 
 def get_theme_colors(theme_name=''):
-    theme = _THEME_NAME_MAPPING.get(theme_name, DarkColors())
+    theme = THEME_NAME_MAPPING.get(theme_name, DarkColors())
     return theme
 
 
 def generate_styles(theme_name='dark'):
     """Return prompt_toolkit styles for the given theme name."""
     # Use DarkColors() if name not found.
-    theme = _THEME_NAME_MAPPING.get(theme_name, DarkColors())
+    theme = THEME_NAME_MAPPING.get(theme_name, DarkColors())
 
     pw_console_styles = {
         # Default text and background.
