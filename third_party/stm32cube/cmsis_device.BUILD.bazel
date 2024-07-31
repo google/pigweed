@@ -20,7 +20,15 @@
 # family of STM processors.
 label_flag(
     name = "cmsis_core",
-    build_setting_default = "@cmsis_core",
+    build_setting_default = ":unspecified",
+)
+
+# Special target used as a default value of the cmsis_core label_flag. It's not
+# compatible with any platform: To use Pigweed's STM32Cube integration, you
+# must provide a path to cmsis_core.
+cc_library(
+    name = "unspecified",
+    target_compatible_with = ["@platforms//:incompatible"],
 )
 
 cc_library(

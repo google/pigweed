@@ -35,5 +35,5 @@ cc_library(
 # project that requires more than one STM32Cube MCU Package.
 label_flag(
     name = "hal_driver",
-    build_setting_default = "@hal_driver",
+    build_setting_default = "//pw_build:unspecified_backend",
 )

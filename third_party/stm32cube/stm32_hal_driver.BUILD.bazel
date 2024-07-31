@@ -33,17 +33,17 @@ label_flag(
 # family of STM processors.
 label_flag(
     name = "cmsis_device",
-    build_setting_default = "@cmsis_device",
+    build_setting_default = ":unspecified",
 )
 
 label_flag(
     name = "cmsis_init",
-    build_setting_default = "@cmsis_device//:default_cmsis_init",
+    build_setting_default = ":unspecified",
 )
 
-# Special target used as a default value of the hal_config label_flag. It's not
+# Special target used as a default value of the label_flags. It's not
 # compatible with any platform: To use Pigweed's STM32Cube integration, you
-# must provide a hal_config.
+# must configure these label flags.
 cc_library(
     name = "unspecified",
     target_compatible_with = ["@platforms//:incompatible"],

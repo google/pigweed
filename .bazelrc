@@ -110,6 +110,7 @@ build --workspace_status_command=pw_build_info/git_workspace_status_command.sh
 common --//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
 common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
 common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
+common --@cmsis_device_f4//:cmsis_core=@cmsis_core
 
 common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 
