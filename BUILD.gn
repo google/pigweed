@@ -507,7 +507,7 @@ group("host_tools") {
   deps = []
 
   if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
-    deps += [ "$dir_pw_rust/examples/host_executable:host_executable($dir_pigweed/targets/host:host_clang_debug)" ]
+    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_debug)" ]
   }
 }
 

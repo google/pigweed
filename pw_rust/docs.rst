@@ -69,8 +69,8 @@ Once that is set, you can build and run the ``hello`` example:
 
 .. code-block:: bash
 
-   $ ninja -C out host_clang_debug/obj/pw_rust/example/bin/hello
-   $ ./out/host_clang_debug/obj/pw_rust/examples/host_executable/bin/hello
+   $ ninja -C out host_clang_debug/obj/pw_rust/examples/basic_executable/bin/hello
+   $ ./out/host_clang_debug/obj/pw_rust/examples/basic_executable/bin/hello
    Hello, Pigweed!
 
 ------------------
