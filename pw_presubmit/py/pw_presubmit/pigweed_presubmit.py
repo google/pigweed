@@ -1498,9 +1498,6 @@ SAPPHIRE = (
     # keep-sorted: end
 )
 
-# TODO: b/356888002 - Remove MISC program.
-MISC = SAPPHIRE
-
 SANITIZERS = (cpp_checks.all_sanitizers(),)
 
 SECURITY = (
@@ -1572,7 +1569,6 @@ PROGRAMS = Programs(
     fuzz=FUZZ,
     internal=INTERNAL,
     lintformat=LINTFORMAT,
-    misc=MISC,
     other_checks=OTHER_CHECKS,
     quick=QUICK,
     sanitizers=SANITIZERS,
