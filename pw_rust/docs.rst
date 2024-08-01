@@ -73,6 +73,15 @@ Once that is set, you can build and run the ``hello`` example:
    $ ./out/host_clang_debug/obj/pw_rust/examples/basic_executable/bin/hello
    Hello, Pigweed!
 
+no_std
+------
+Set ``pw_rust_USE_STD = false`` in the toolchain configuration, if the target
+toolchain does not support ``std``.
+
+``no_std`` toolchain builds target
+``//pw_rust/examples/basic_executable/bin/hello_pw_log``. It also prints
+"Hello, Pigweed!", but links and uses ``pw_log`` C++ backend.
+
 ------------------
 Third Party Crates
 ------------------

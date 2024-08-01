@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/gn_internal/build_target.gni")
+import("$dir_pw_rust/rust.gni")
 
 # Note: In general, prefer to import target_types.gni rather than this file.
 #
@@ -47,6 +48,15 @@ template("pw_rust_executable") {
       configs = []
     }
     configs += [ "$dir_pw_build:rust_edition_${_edition}" ]
+
+    if (!defined(rustflags)) {
+      rustflags = []
+    }
+    if (defined(features)) {
+      foreach(i, features) {
+        rustflags += [ "--cfg=feature=\"${i}\"" ]
+      }
+    }
 
     output_dir = "${target_out_dir}/bin"
     if (defined(invoker.output_dir)) {

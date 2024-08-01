@@ -17,12 +17,17 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 
 group("basic_executable") {
-  deps = [
-    ":hello",
-    ":proc_macro",
-    ":test_hello",
-    ":test_proc_macro",
-  ]
+  if (pw_rust_USE_STD) {
+    deps = [
+      ":hello",
+      ":hello_pw_log",
+      ":proc_macro",
+      ":test_hello",
+      ":test_proc_macro",
+    ]
+  } else {
+    deps = [ ":hello_pw_log" ]
+  }
 }
 
 pw_rust_executable("hello") {
@@ -34,6 +39,22 @@ pw_rust_executable("hello") {
     ":a",
     ":c",
   ]
+}
+
+# `hello_pw_log` is a re-implementation of `hello` with no_std support.
+# It uses `pw_log()` instead of `println!()`.
+pw_rust_executable("hello_pw_log") {
+  sources = [
+    "bin/hello_pw_log/main.rs",
+    "other.rs",
+  ]
+  deps = [
+    ":a",
+    ":c",
+  ]
+  if (pw_rust_USE_STD) {
+    features = [ "std" ]
+  }
 }
 
 pw_rust_test("test_hello") {
@@ -53,17 +74,26 @@ pw_rust_library("a") {
   crate_root = "a/lib.rs"
   sources = [ "a/lib.rs" ]
   deps = [ ":b" ]
+  if (pw_rust_USE_STD) {
+    features = [ "std" ]
+  }
 }
 
 pw_rust_library("b") {
   crate_root = "b/lib.rs"
   sources = [ "b/lib.rs" ]
   deps = [ ":c" ]
+  if (pw_rust_USE_STD) {
+    features = [ "std" ]
+  }
 }
 
 pw_rust_library("c") {
   crate_root = "c/lib.rs"
   sources = [ "c/lib.rs" ]
+  if (pw_rust_USE_STD) {
+    features = [ "std" ]
+  }
 }
 
 pw_rust_proc_macro("proc_macro") {

@@ -17,4 +17,6 @@ declare_args() {
   #
   # WARNING: This is experimental and *not* guaranteed to work.
   pw_rust_ENABLE_EXPERIMENTAL_BUILD = false
+
+  pw_rust_USE_STD = true
 }

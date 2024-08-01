@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::all)]
 
 use b::RequiredB;
