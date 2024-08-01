@@ -21,7 +21,6 @@ group("basic_executable") {
     deps = [
       ":hello",
       ":hello_pw_log",
-      ":proc_macro",
       ":test_hello",
       ":test_proc_macro",
     ]
@@ -38,6 +37,7 @@ pw_rust_executable("hello") {
   deps = [
     ":a",
     ":c",
+    ":proc_macro",
   ]
 }
 
@@ -51,6 +51,7 @@ pw_rust_executable("hello_pw_log") {
   deps = [
     ":a",
     ":c",
+    ":proc_macro",
   ]
   if (pw_rust_USE_STD) {
     features = [ "std" ]
@@ -65,6 +66,7 @@ pw_rust_test("test_hello") {
   deps = [
     ":a",
     ":c",
+    ":proc_macro",
   ]
 }
 

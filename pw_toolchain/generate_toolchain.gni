@@ -15,19 +15,8 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/static_analysis_toolchain.gni")
+import("$dir_pw_toolchain/toolchain_args.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
-
-declare_args() {
-  # Scope defining the current toolchain. Contains all of the arguments required
-  # by the generate_toolchain template. This should NOT be manually modified.
-  pw_toolchain_SCOPE = {
-  }
-
-  # Prefix for compilation commands (e.g. the path to a Goma or CCache compiler
-  # launcher). Example for ccache:
-  #   gn gen out --args='pw_command_launcher="ccache"'
-  pw_command_launcher = ""
-}
 
 # Creates a toolchain target.
 #
@@ -387,14 +376,6 @@ template("generate_toolchain") {
 
       _generate_rust_tools = defined(invoker.rustc)
       if (_generate_rust_tools) {
-        if (toolchain_os == "mac") {
-          _dylib_extension = ".dylib"
-        } else if (toolchain_os == "win") {
-          _dylib_extension = ".dll"
-        } else {
-          _dylib_extension = ".so"
-        }
-
         if (defined(invoker.ld)) {
           _rustc_linker = "-Clinker=${invoker.ld}"
         } else {
@@ -451,14 +432,24 @@ template("generate_toolchain") {
           outputs = [ _output ]
         }
 
-        tool("rust_macro") {
-          description = "rustc {{output}}"
-          default_output_dir = "{{target_out_dir}}/lib"
-          depfile = "{{output}}.d"
-          output_prefix = "lib"
-          default_output_extension = _dylib_extension
-          command = _rustc_command
-          outputs = [ _output ]
+        if (defined(invoker.is_host_toolchain) && invoker.is_host_toolchain) {
+          if (toolchain_os == "mac") {
+            _dylib_extension = ".dylib"
+          } else if (toolchain_os == "win") {
+            _dylib_extension = ".dll"
+          } else {
+            _dylib_extension = ".so"
+          }
+
+          tool("rust_macro") {
+            description = "rustc {{output}}"
+            default_output_dir = "{{target_out_dir}}/lib"
+            depfile = "{{output}}.d"
+            output_prefix = "lib"
+            default_output_extension = _dylib_extension
+            command = _rustc_command
+            outputs = [ _output ]
+          }
         }
       }
     }

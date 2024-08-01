@@ -25,6 +25,8 @@ fn main() {
     // ensure we can run code from dependent libraries
     println!("{}", a::RequiredA::default().required_b.value);
     println!("{}", c::value());
+
+    println!("{}", proc_macro::fn_like_proc_macro!(123));
 }
 
 #[cfg(test)]

@@ -1,0 +1,25 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+declare_args() {
+  # Scope defining the current toolchain. Contains all of the arguments required
+  # by the generate_toolchain template. This should NOT be manually modified.
+  pw_toolchain_SCOPE = {
+  }
+
+  # Prefix for compilation commands (e.g. the path to a Goma or CCache compiler
+  # launcher). Example for ccache:
+  #   gn gen out --args='pw_command_launcher="ccache"'
+  pw_command_launcher = ""
+}

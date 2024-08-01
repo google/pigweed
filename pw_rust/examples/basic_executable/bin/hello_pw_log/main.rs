@@ -65,6 +65,11 @@ pub extern "C" fn main() -> isize {
         a::RequiredA::default().required_b.value
     );
     pw_log_info!("%d\0".as_ptr() as *const i8, c::value());
+
+    pw_log_info!(
+      "%d\0".as_ptr() as *const i8,
+      proc_macro::fn_like_proc_macro!(123)
+    );
     return 0;
 }
 
