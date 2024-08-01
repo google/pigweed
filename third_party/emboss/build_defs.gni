@@ -169,7 +169,10 @@ template("emboss_cc_library") {
 
     sources = [ compiled_header_path ]
 
-    public_deps = [
+    if (!defined(invoker.public_deps)) {
+      public_deps = []
+    }
+    public_deps += [
       ":${target_name}_header",
       "$dir_pw_third_party/emboss:cpp_utils",
     ]
