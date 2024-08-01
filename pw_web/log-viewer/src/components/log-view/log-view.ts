@@ -71,8 +71,8 @@ export class LogView extends LitElement {
   searchText = '';
 
   /** Whether line wrapping in table cells should be used. */
-  @state()
-  _lineWrap = false;
+  @property()
+  lineWrap = true;
 
   /** Preferred column order to reference */
   @state()
@@ -314,7 +314,7 @@ export class LogView extends LitElement {
    * @param {CustomEvent} event - The click event.
    */
   private toggleWrapping() {
-    this._lineWrap = !this._lineWrap;
+    this.lineWrap = !this.lineWrap;
   }
 
   /**
@@ -353,6 +353,7 @@ export class LogView extends LitElement {
         .hideCloseButton=${!this.isOneOfMany}
         .searchText=${this.searchText}
         .useShoelaceFeatures=${this.useShoelaceFeatures}
+        .lineWrap=${this.lineWrap}
         @input-change="${this.updateFilter}"
         @clear-logs="${this.updateFilter}"
         @column-toggle="${this.toggleColumns}"
@@ -362,7 +363,7 @@ export class LogView extends LitElement {
       </log-view-controls>
 
       <log-list
-        .lineWrap=${this._lineWrap}
+        .lineWrap=${this.lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}
         .searchText=${this.searchText}

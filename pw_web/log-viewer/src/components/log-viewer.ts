@@ -35,6 +35,7 @@ import { LogStore } from '../log-store';
 import CloseViewEvent from '../events/close-view';
 import SplitViewEvent from '../events/split-view';
 import InputChangeEvent from '../events/input-change';
+import WrapToggleEvent from '../events/wrap-toggle';
 import ColumnToggleEvent from '../events/column-toggle';
 import ResizeColumnEvent from '../events/resize-column';
 
@@ -298,13 +299,25 @@ export class LogViewer extends LitElement {
   }
 
   private handleViewEvent(
-    event: InputChangeEvent | ColumnToggleEvent | ResizeColumnEvent,
+    event:
+      | InputChangeEvent
+      | ColumnToggleEvent
+      | ResizeColumnEvent
+      | WrapToggleEvent,
   ) {
     const { viewId } = event.detail;
     const nodeToUpdate = this.findNodeById(this._rootNode, viewId);
 
     if (!nodeToUpdate) {
       return;
+    }
+
+    if (event.type === 'wrap-toggle') {
+      const { isChecked } = (event as WrapToggleEvent).detail;
+      if (nodeToUpdate.logViewState) {
+        nodeToUpdate.logViewState.wordWrap = isChecked;
+        this._stateService.saveState({ rootNode: this._rootNode });
+      }
     }
 
     if (event.type === 'input-change') {
@@ -367,9 +380,11 @@ export class LogViewer extends LitElement {
         .searchText=${node.logViewState?.searchText ?? ''}
         .columnData=${node.logViewState?.columnData ?? []}
         .viewTitle=${node.logViewState?.viewTitle || ''}
+        .lineWrap=${node.logViewState?.wordWrap ?? true}
         .useShoelaceFeatures=${this.useShoelaceFeatures}
         @split-view="${this.splitLogView}"
         @input-change="${this.handleViewEvent}"
+        @wrap-toggle="${this.handleViewEvent}"
         @resize-column="${this.handleViewEvent}"
         @column-toggle="${this.handleViewEvent}"
       ></log-view>`;

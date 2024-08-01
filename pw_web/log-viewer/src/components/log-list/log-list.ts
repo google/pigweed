@@ -52,7 +52,7 @@ export class LogList extends LitElement {
 
   /** Whether line wrapping in table cells should be used. */
   @property({ type: Boolean })
-  lineWrap = false;
+  lineWrap = true;
 
   @state()
   columnData: TableColumn[] = [];

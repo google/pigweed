@@ -33,6 +33,7 @@ export interface ViewNodeOptions {
   columnData?: TableColumn[];
   searchText?: string;
   viewTitle?: string;
+  wordWrap?: boolean;
 }
 
 /**
@@ -64,6 +65,7 @@ export class ViewNode {
         columnData: options?.columnData || [],
         searchText: options?.searchText || '',
         viewTitle: options?.viewTitle || '',
+        wordWrap: options?.wordWrap !== undefined ? options.wordWrap : true,
       };
     }
   }

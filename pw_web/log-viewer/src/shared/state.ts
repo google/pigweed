@@ -23,6 +23,7 @@ export interface LogViewState {
   searchText?: string;
   columnData?: TableColumn[];
   viewTitle?: string;
+  wordWrap?: boolean;
 }
 
 interface StateStorage {

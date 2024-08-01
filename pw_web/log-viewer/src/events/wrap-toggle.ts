@@ -14,6 +14,7 @@
 
 interface WrapToggleEvent extends CustomEvent {
   detail: {
+    viewId: string;
     isChecked: boolean;
   };
 }

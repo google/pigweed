@@ -52,6 +52,9 @@ export class LogViewControls extends LitElement {
   @property()
   searchText = '';
 
+  @property()
+  lineWrap = true;
+
   @property({ type: Boolean, reflect: true })
   searchExpanded = false;
 
@@ -201,7 +204,9 @@ export class LogViewControls extends LitElement {
 
   /** Dispatches a custom event for toggling wrapping. */
   private handleWrapToggle() {
+    this.lineWrap = !this.lineWrap;
     const wrapToggle = new CustomEvent('wrap-toggle', {
+      detail: { viewId: this.viewId, isChecked: this.lineWrap },
       bubbles: true,
       composed: true,
     });
@@ -398,7 +403,8 @@ export class LogViewControls extends LitElement {
           <span class="action-button" ?hidden=${this._toolbarCollapsed}>
             <md-icon-button
               @click=${this.handleWrapToggle}
-              toggle
+              toggle=${this.lineWrap}
+              ?selected=${this.lineWrap}
               title="Toggle line wrapping"
               aria-label="Toggle line wrapping"
             >

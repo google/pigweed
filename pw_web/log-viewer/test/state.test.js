@@ -49,6 +49,7 @@ describe('state', () => {
           type: NodeType.View,
           columnData: mockColumnData,
           viewTitle: 'Child Node 1',
+          wordWrap: true,
         }),
         new ViewNode({
           searchText: 'world',
@@ -56,6 +57,7 @@ describe('state', () => {
           type: NodeType.View,
           columnData: mockColumnData,
           viewTitle: 'Child Node 2',
+          wordWrap: false,
         }),
       ],
     }),
@@ -78,8 +80,10 @@ describe('state', () => {
 
       expect(childNode1.logViewState.viewTitle).to.equal('Child Node 1');
       expect(childNode1.logViewState.searchText).to.equal('hello');
+      expect(childNode1.logViewState.wordWrap).to.equal(true);
       expect(childNode2.logViewState.viewTitle).to.equal('Child Node 2');
       expect(childNode2.logViewState.searchText).to.equal('world');
+      expect(childNode2.logViewState.wordWrap).to.equal(false);
     });
   });
 });
