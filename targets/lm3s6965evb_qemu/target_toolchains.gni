@@ -69,6 +69,8 @@ _target_config = {
     "$dir_pw_log:impl",
   ]
 
+  pw_rust_USE_STD = false
+
   current_cpu = "arm"
   current_os = ""
 }

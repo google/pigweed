@@ -65,6 +65,10 @@ template("pw_clang_arm_config") {
       ldflags = []
     }
 
+    if (!defined(rustflags)) {
+      rustflags = []
+    }
+
     # Invoke the script that will generate clang flags based on the current
     # compiler version and desired arch.
     _script_flags = [
@@ -79,6 +83,9 @@ template("pw_clang_arm_config") {
     cflags += _arm_flags.cflags
     ldflags += _arm_flags.cflags
     ldflags += _arm_flags.ldflags
+    foreach(f, ldflags) {
+      rustflags += [ "-Clink-arg=$f" ]
+    }
 
     libs = [
       "c_nano",

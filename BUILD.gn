@@ -320,6 +320,10 @@ if (pw_BUILD_BROKEN_GROUPS) {
   }
   group("qemu_clang_size_optimized") {
     deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
+
+    if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
+      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
+    }
   }
   group("qemu_clang") {
     deps = [ ":qemu_clang_size_optimized" ]

@@ -120,6 +120,10 @@ template("pw_linker_script") {
       ldflags = []
     }
     ldflags += [ "-T" + rebase_path(_final_linker_script, root_build_dir) ]
+    rustflags = []
+    foreach(f, ldflags) {
+      rustflags += [ "-Clink-args=$f" ]
+    }
   }
 
   # The target that adds the linker script config to this library and everything

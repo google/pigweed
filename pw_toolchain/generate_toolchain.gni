@@ -395,6 +395,12 @@ template("generate_toolchain") {
           _dylib_extension = ".so"
         }
 
+        if (defined(invoker.ld)) {
+          _rustc_linker = "-Clinker=${invoker.ld}"
+        } else {
+          _rustc_linker = ""
+        }
+
         _rustc_command = string_join(
                 " ",
                 [
@@ -405,6 +411,7 @@ template("generate_toolchain") {
                   "{{source}}",
                   "--crate-name {{crate_name}}",
                   "--crate-type {{crate_type}}",
+                  _rustc_linker,
                   "{{externs}}",
                   "{{rustdeps}}",
                   "{{rustflags}}",

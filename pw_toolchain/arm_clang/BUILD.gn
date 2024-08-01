@@ -63,6 +63,7 @@ pw_clang_arm_config("cortex_m3") {
   cflags += cortex_m_software_fpu_flags
   asmflags = cflags
   ldflags = cflags
+  rustflags = [ "--target=thumbv7m-none-eabi" ]
 }
 
 pw_clang_arm_config("cortex_m4") {
