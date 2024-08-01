@@ -1492,13 +1492,14 @@ ARDUINO_PICO = (
 
 INTERNAL = (gn_mimxrt595_build, gn_mimxrt595_freertos_build)
 
-# The misc program differs from other_checks in that checks in the misc
-# program block CQ on Linux.
-MISC = (
+SAPPHIRE = (
     # keep-sorted: start
     gn_chre_googletest_nanopb_sapphire_build,
     # keep-sorted: end
 )
+
+# TODO: b/356888002 - Remove MISC program.
+MISC = SAPPHIRE
 
 SANITIZERS = (cpp_checks.all_sanitizers(),)
 
@@ -1575,6 +1576,7 @@ PROGRAMS = Programs(
     other_checks=OTHER_CHECKS,
     quick=QUICK,
     sanitizers=SANITIZERS,
+    sapphire=SAPPHIRE,
     security=SECURITY,
     # keep-sorted: end
 )
