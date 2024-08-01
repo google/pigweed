@@ -129,6 +129,19 @@
       ]
     },
     {
+      "path": "fuchsia/third_party/rust/target/thumbv7m-none-eabi",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64"
+      ],
+      "subdir": "rust",
+      "tags": [
+        "git_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72"
+      ]
+    },
+    {
       "path": "infra/3pp/tools/openocd/${platform}",
       "platforms": [
         "linux-amd64",
