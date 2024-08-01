@@ -170,6 +170,16 @@ bool SPI_RxFifoIsEmpty(SPI_Type* base) {
   return !(base->FIFOSTAT & SPI_FIFOSTAT_RXNOTEMPTY_MASK);
 }
 
+#if 0
+bool SPI_RxError(SPI_Type* base) {
+  return (base->FIFOSTAT & SPI_FIFOSTAT_RXERR_MASK);
+}
+
+bool SPI_TxError(SPI_Type* base) {
+  return (base->FIFOSTAT & SPI_FIFOSTAT_TXERR_MASK);
+}
+#endif
+
 // Non-FIFO interrupt sources
 enum _spi_interrupt_sources {
   kSPI_SlaveSelAssertIrq = SPI_INTENSET_SSAEN_MASK,
