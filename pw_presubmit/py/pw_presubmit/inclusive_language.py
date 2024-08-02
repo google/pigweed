@@ -109,6 +109,7 @@ def check_file(
     found_words: dict[Path, list[PathMatch | LineMatch]],
     words_regex: re.Pattern = NON_INCLUSIVE_WORDS_REGEX,
     check_path: bool = True,
+    root: Path | None = None,
 ):
     """Check one file for non-inclusive language.
 
@@ -118,6 +119,7 @@ def check_file(
         words_regex: Pattern of non-inclusive terms.
         check_path: Whether to check the path instead of just the contents.
             (Used for testing.)
+        root: Path to add as a prefix to path.
     """
     if check_path:
         match = words_regex.search(str(path))
@@ -129,6 +131,9 @@ def check_file(
         return
 
     try:
+        if root:
+            path = root / path
+
         with open(path, 'r') as ins:
             enabled = True
             prev = ''
@@ -174,7 +179,12 @@ def presubmit_check(
     ctx.paths = presubmit_context.apply_exclusions(ctx)
 
     for path in ctx.paths:
-        check_file(path.relative_to(ctx.root), found_words, words_regex)
+        check_file(
+            path.relative_to(ctx.root),
+            found_words,
+            words_regex,
+            root=ctx.root,
+        )
 
     if found_words:
         with open(ctx.failure_summary_log, 'w') as outs:
