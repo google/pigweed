@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <array>
+
 #include "pw_assert/check.h"
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_log/log.h"

@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <cstring>
 #include <optional>
