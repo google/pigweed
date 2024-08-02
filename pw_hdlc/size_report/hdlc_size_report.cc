@@ -72,7 +72,9 @@ void HdlcSizeReport() {
   std::array<std::byte, 100> data;
   std::fill(data.begin(), data.end(), std::byte(0));
   stream::MemoryWriterBuffer<250> destination;
-  destination.Write(data);
+  if (destination.Write(data).ok()) {
+    PW_LOG_INFO("Began write successfully");
+  }
   if (destination.Write(GetBufferSpan()).ok()) {
     PW_LOG_INFO("Wrote successfully");
   }
@@ -82,7 +84,7 @@ void HdlcSizeReport() {
 #endif
 
 #ifdef ENABLE_ENCODE
-  hdlc::WriteUIFrame(123, data, destination);
+  hdlc::WriteUIFrame(123, data, destination).IgnoreError();
 #endif
 
 #ifdef ENABLE_DECODE

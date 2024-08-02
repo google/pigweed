@@ -28,7 +28,8 @@
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char* pcTaskName) {
   // Copy the task name to a buffer in case it is corrupted.
   static char temp_thread_name_buffer[configMAX_TASK_NAME_LEN];
-  pw::string::Copy(pcTaskName, temp_thread_name_buffer);
+  // TODO: https://pwbug.dev/357139112 - Review the IgnoreError call.
+  pw::string::Copy(pcTaskName, temp_thread_name_buffer).IgnoreError();
   PW_CRASH("Stack overflow for task %s", temp_thread_name_buffer);
 }
 

@@ -14,12 +14,14 @@
 
 #include <cstddef>
 
+#include "pw_assert/check.h"
 #include "pw_hdlc/decoder.h"
 #include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_log_basic/log_basic.h"
 #include "pw_rpc_system_server/rpc_server.h"
+#include "pw_status/try.h"
 #include "pw_stream/sys_io_stream.h"
 
 namespace pw::rpc::system_server {
@@ -47,8 +49,8 @@ void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
   // with pw_rpc communications.
   pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc::WriteUIFrame(
-        pw::hdlc::kDefaultLogAddress, as_bytes(span<const char>(log)), writer);
+    PW_CHECK_OK(pw::hdlc::WriteUIFrame(
+        pw::hdlc::kDefaultLogAddress, as_bytes(span<const char>(log)), writer));
   });
 }
 
@@ -63,14 +65,11 @@ Status Start() {
 
   while (true) {
     std::byte byte;
-    Status ret_val = pw::sys_io::ReadByte(&byte);
-    if (!ret_val.ok()) {
-      return ret_val;
-    }
+    PW_TRY(pw::sys_io::ReadByte(&byte));
     if (auto result = decoder.Process(byte); result.ok()) {
       hdlc::Frame& frame = result.value();
       if (frame.address() == hdlc::kDefaultRpcAddress) {
-        server.ProcessPacket(frame.data());
+        PW_TRY(server.ProcessPacket(frame.data()));
       }
     }
   }

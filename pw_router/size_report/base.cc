@@ -44,8 +44,8 @@ int main() {
   PW_LOG_INFO("pw_StatusString %s", pw::OkStatus().str());
 
   std::array<std::byte, sizeof(BasicPacket)> packet_buffer;
-  pw::sys_io::ReadBytes(packet_buffer);
-  pw::sys_io::WriteBytes(packet_buffer);
+  pw::sys_io::ReadBytes(packet_buffer).IgnoreError();
+  pw::sys_io::WriteBytes(packet_buffer).IgnoreError();
 
   return static_cast<int>(packet.payload);
 }

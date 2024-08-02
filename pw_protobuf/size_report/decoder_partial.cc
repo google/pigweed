@@ -42,19 +42,19 @@ int main() {
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
       case 1:
-        decoder.ReadInt32(&test_int32);
+        decoder.ReadInt32(&test_int32).IgnoreError();
         break;
       case 2:
-        decoder.ReadSint32(&test_sint32);
+        decoder.ReadSint32(&test_sint32).IgnoreError();
         break;
       case 3:
-        decoder.ReadString(&str);
+        decoder.ReadString(&str).IgnoreError();
         break;
       case 4:
-        decoder.ReadFloat(&f);
+        decoder.ReadFloat(&f).IgnoreError();
         break;
       case 5:
-        decoder.ReadDouble(&d);
+        decoder.ReadDouble(&d).IgnoreError();
         break;
     }
   }

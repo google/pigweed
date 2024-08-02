@@ -45,6 +45,7 @@ int main() {
   pw::bloat::BloatThisBinary();
 
   pw::crypto::ecdsa::VerifyP256Signature(
-      STR_TO_BYTES(PUBKEY), STR_TO_BYTES(DIGEST), STR_TO_BYTES(SIGNATURE));
+      STR_TO_BYTES(PUBKEY), STR_TO_BYTES(DIGEST), STR_TO_BYTES(SIGNATURE))
+      .IgnoreError();
   return 0;
 }

@@ -115,14 +115,17 @@ class RpcDispatchThread final : public thread::ThreadCore {
     PW_LOG_INFO("Running RPC server");
     while (true) {
       auto ret_val = GetReader().Read(data);
-      if (ret_val.ok()) {
-        for (std::byte byte : ret_val.value()) {
-          if (auto result = decoder.Process(byte); result.ok()) {
-            hdlc::Frame& frame = result.value();
-            PW_TRACE_SCOPE("RPC process frame");
-            if (frame.address() == PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS ||
-                frame.address() == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS) {
-              server.ProcessPacket(frame.data());
+      if (!ret_val.ok()) {
+        continue;
+      }
+      for (std::byte byte : ret_val.value()) {
+        if (auto result = decoder.Process(byte); result.ok()) {
+          hdlc::Frame& frame = result.value();
+          PW_TRACE_SCOPE("RPC process frame");
+          if (frame.address() == PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS ||
+              frame.address() == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS) {
+            if (!server.ProcessPacket(frame.data()).ok()) {
+              PW_LOG_ERROR("Failed to process packet");
             }
           }
         }

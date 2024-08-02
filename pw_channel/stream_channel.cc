@@ -201,7 +201,7 @@ Poll<Status> StreamChannel::DoPendReadyToWrite(Context&) { return OkStatus(); }
 
 pw::Result<pw::channel::WriteToken> StreamChannel::DoWrite(
     pw::multibuf::MultiBuf&& data) {
-  write_state_.SendData(std::move(data));
+  PW_TRY(write_state_.SendData(std::move(data)));
   const uint32_t token = write_token_++;
   return CreateWriteToken(token);
 }

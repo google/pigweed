@@ -92,9 +92,11 @@ cc_library(
         ":default_addresses",
         ":pw_hdlc",
         ":rpc_channel_output",
+        "//pw_assert",
         "//pw_log",
         "//pw_log_basic:headers",
         "//pw_rpc/system_server:facade",
+        "//pw_status",
         "//pw_stream:sys_io_stream",
     ],
 )

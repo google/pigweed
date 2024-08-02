@@ -396,6 +396,7 @@ cc_library(
     deps = [
         ":pw_unit_test",
         ":rpc_service",
+        "//pw_assert",
         "//pw_hdlc:default_addresses",
         "//pw_log",
         "//pw_rpc",

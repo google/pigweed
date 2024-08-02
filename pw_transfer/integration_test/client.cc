@@ -96,8 +96,9 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
                               transfer_thread,
                               kDefaultMaxWindowSizeBytes);
 
-  client.set_max_retries(config.max_retries());
-  client.set_max_lifetime_retries(config.max_lifetime_retries());
+  // TODO: https://pwbug.dev/357145010 - Don't IgnoreError here.
+  client.set_max_retries(config.max_retries()).IgnoreError();
+  client.set_max_lifetime_retries(config.max_lifetime_retries()).IgnoreError();
 
   Status status = pw::OkStatus();
   for (int i = 0; i < num_actions; i++) {

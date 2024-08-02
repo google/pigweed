@@ -71,14 +71,16 @@ Status CrashSnapshot::CaptureMetadata(
   // TODO: b/354770559 - generate a snapshot UUID.
   std::optional<snapshot::ConstUuidSpan> snapshot_uuid;
   if (snapshot_uuid.has_value()) {
-    metadata_encoder.WriteSnapshotUuid(snapshot_uuid.value());
+    // TODO: https://pwbug.dev/357138320 - Review IgnoreError calls in this
+    // file.
+    metadata_encoder.WriteSnapshotUuid(snapshot_uuid.value()).IgnoreError();
   }
 
   if (!reason.empty()) {
-    metadata_encoder.WriteReason(as_bytes(span(reason)));
+    metadata_encoder.WriteReason(as_bytes(span(reason))).IgnoreError();
   }
 
-  metadata_encoder.WriteFatal(true);
+  metadata_encoder.WriteFatal(true).IgnoreError();
 
   // TODO: b/354775975 - populate the metadata with version, build uuid
   // and project name.
@@ -91,7 +93,7 @@ Status CrashSnapshot::CaptureMetadata(
 Status CrashSnapshot::CaptureLogs(
     snapshot::pwpb::Snapshot::StreamEncoder& snapshot_encoder) {
   log::pwpb::LogEntries::StreamEncoder encoder(writer_, ByteSpan());
-  multisink::UnsafeDumpMultiSinkLogs(GetMultiSink(), encoder);
+  multisink::UnsafeDumpMultiSinkLogs(GetMultiSink(), encoder).IgnoreError();
   return snapshot_encoder.status();
 }
 

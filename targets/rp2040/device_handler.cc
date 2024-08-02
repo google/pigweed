@@ -23,7 +23,9 @@ void RebootSystem() { watchdog_reboot(0, 0, 0); }
 
 void CapturePlatformMetadata(
     snapshot::pwpb::Metadata::StreamEncoder& metadata_encoder) {
-  metadata_encoder.WriteCpuArch(snapshot::pwpb::CpuArchitecture::Enum::ARMV6M);
+  // TODO: https://pwbug.dev/357132837 - Review if IgnoreError is correct here.
+  metadata_encoder.WriteCpuArch(snapshot::pwpb::CpuArchitecture::Enum::ARMV6M)
+      .IgnoreError();
 }
 
 Status CaptureCpuState(

@@ -96,14 +96,14 @@ class FakeMessageEncoder : public protobuf::StreamEncoder {
  public:
   FakeMessageEncoder(stream::Writer& writer)
       : protobuf::StreamEncoder(writer, ByteSpan()) {}
-  void DoBloat() { Write(ByteSpan(), kFakeTable); }
+  void DoBloat() { Write(ByteSpan(), kFakeTable).IgnoreError(); }
 };
 
 class FakeMessageDecoder : public protobuf::StreamDecoder {
  public:
   FakeMessageDecoder(stream::Reader& reader)
       : protobuf::StreamDecoder(reader) {}
-  void DoBloat() { Read(ByteSpan(), kFakeTable); }
+  void DoBloat() { Read(ByteSpan(), kFakeTable).IgnoreError(); }
 };
 
 void CodeToSetUpSizeReportEnvironment() {
@@ -135,8 +135,8 @@ void Dependencies() {
   std::array<std::byte, 2> buffer;
   stream::NullStream null_stream;
   stream::MemoryWriter memory_writer(buffer);
-  memory_writer.Write(buffer);
-  null_stream.Write(buffer);
+  memory_writer.Write(buffer).IgnoreError();
+  null_stream.Write(buffer).IgnoreError();
   stream::MemoryReader memory_reader(buffer);
   memory_reader.Read(buffer).IgnoreError();
 }
@@ -145,68 +145,70 @@ void CodeToPullInProtoEncoder() {
   std::array<std::byte, 1024> buffer;
   protobuf::MemoryEncoder encoder(buffer);
 
-  encoder.WriteUint32(1, 1);
-  encoder.WritePackedUint32(1, GetIntegerArray<uint32_t>());
-  encoder.WriteRepeatedUint32(1, GetIntegerVector<uint32_t>());
+  encoder.WriteUint32(1, 1).IgnoreError();
+  encoder.WritePackedUint32(1, GetIntegerArray<uint32_t>()).IgnoreError();
+  encoder.WriteRepeatedUint32(1, GetIntegerVector<uint32_t>()).IgnoreError();
 
-  encoder.WriteInt32(1, 1);
-  encoder.WritePackedInt32(1, GetIntegerArray<int32_t>());
-  encoder.WriteRepeatedInt32(1, GetIntegerVector<int32_t>());
+  encoder.WriteInt32(1, 1).IgnoreError();
+  encoder.WritePackedInt32(1, GetIntegerArray<int32_t>()).IgnoreError();
+  encoder.WriteRepeatedInt32(1, GetIntegerVector<int32_t>()).IgnoreError();
 
-  encoder.WriteUint64(1, 1);
-  encoder.WritePackedUint64(1, GetIntegerArray<uint64_t>());
-  encoder.WriteRepeatedUint64(1, GetIntegerVector<uint64_t>());
+  encoder.WriteUint64(1, 1).IgnoreError();
+  encoder.WritePackedUint64(1, GetIntegerArray<uint64_t>()).IgnoreError();
+  encoder.WriteRepeatedUint64(1, GetIntegerVector<uint64_t>()).IgnoreError();
 
-  encoder.WriteInt64(1, 1);
-  encoder.WritePackedInt64(1, GetIntegerArray<int64_t>());
-  encoder.WriteRepeatedInt64(1, GetIntegerVector<int64_t>());
+  encoder.WriteInt64(1, 1).IgnoreError();
+  encoder.WritePackedInt64(1, GetIntegerArray<int64_t>()).IgnoreError();
+  encoder.WriteRepeatedInt64(1, GetIntegerVector<int64_t>()).IgnoreError();
 
-  encoder.WriteSint32(1, 1);
-  encoder.WritePackedSint32(1, GetIntegerArray<int32_t>());
-  encoder.WriteRepeatedSint32(1, GetIntegerVector<int32_t>());
+  encoder.WriteSint32(1, 1).IgnoreError();
+  encoder.WritePackedSint32(1, GetIntegerArray<int32_t>()).IgnoreError();
+  encoder.WriteRepeatedSint32(1, GetIntegerVector<int32_t>()).IgnoreError();
 
-  encoder.WriteSint64(1, 1);
-  encoder.WritePackedSint64(1, GetIntegerArray<int64_t>());
-  encoder.WriteRepeatedSint64(1, GetIntegerVector<int64_t>());
+  encoder.WriteSint64(1, 1).IgnoreError();
+  encoder.WritePackedSint64(1, GetIntegerArray<int64_t>()).IgnoreError();
+  encoder.WriteRepeatedSint64(1, GetIntegerVector<int64_t>()).IgnoreError();
 
-  encoder.WriteFixed32(1, 1);
-  encoder.WritePackedFixed32(1, GetIntegerArray<uint32_t>());
-  encoder.WriteRepeatedFixed32(1, GetIntegerVector<uint32_t>());
+  encoder.WriteFixed32(1, 1).IgnoreError();
+  encoder.WritePackedFixed32(1, GetIntegerArray<uint32_t>()).IgnoreError();
+  encoder.WriteRepeatedFixed32(1, GetIntegerVector<uint32_t>()).IgnoreError();
 
-  encoder.WriteFixed64(1, 1);
-  encoder.WritePackedFixed64(1, GetIntegerArray<uint64_t>());
-  encoder.WriteRepeatedFixed64(1, GetIntegerVector<uint64_t>());
+  encoder.WriteFixed64(1, 1).IgnoreError();
+  encoder.WritePackedFixed64(1, GetIntegerArray<uint64_t>()).IgnoreError();
+  encoder.WriteRepeatedFixed64(1, GetIntegerVector<uint64_t>()).IgnoreError();
 
-  encoder.WriteSfixed32(1, 1);
-  encoder.WritePackedSfixed32(1, GetIntegerArray<int32_t>());
-  encoder.WriteRepeatedSfixed32(1, GetIntegerVector<int32_t>());
+  encoder.WriteSfixed32(1, 1).IgnoreError();
+  encoder.WritePackedSfixed32(1, GetIntegerArray<int32_t>()).IgnoreError();
+  encoder.WriteRepeatedSfixed32(1, GetIntegerVector<int32_t>()).IgnoreError();
 
-  encoder.WriteSfixed64(1, 1);
-  encoder.WritePackedSfixed64(1, GetIntegerArray<int64_t>());
-  encoder.WriteRepeatedSfixed64(1, GetIntegerVector<int64_t>());
+  encoder.WriteSfixed64(1, 1).IgnoreError();
+  encoder.WritePackedSfixed64(1, GetIntegerArray<int64_t>()).IgnoreError();
+  encoder.WriteRepeatedSfixed64(1, GetIntegerVector<int64_t>()).IgnoreError();
 
   {
     protobuf::StreamEncoder child = encoder.GetNestedEncoder(0xc01dfee7);
 
-    child.WriteFloat(234, 3.14f);
-    child.WritePackedFloat(234, GetFloatArray());
-    child.WriteRepeatedFloat(234, GetFloatVector());
+    child.WriteFloat(234, 3.14f).IgnoreError();
+    child.WritePackedFloat(234, GetFloatArray()).IgnoreError();
+    child.WriteRepeatedFloat(234, GetFloatVector()).IgnoreError();
 
-    child.WriteFloat(234, 3.14);
-    child.WritePackedDouble(234, GetDoubleArray());
-    child.WriteRepeatedDouble(234, GetDoubleVector());
+    child.WriteFloat(234, 3.14).IgnoreError();
+    child.WritePackedDouble(234, GetDoubleArray()).IgnoreError();
+    child.WriteRepeatedDouble(234, GetDoubleVector()).IgnoreError();
 
-    child.WriteBool(7, true);
-    child.WritePackedBool(8, GetBoolArray());
-    child.WriteRepeatedBool(8, GetBoolVector());
+    child.WriteBool(7, true).IgnoreError();
+    child.WritePackedBool(8, GetBoolArray()).IgnoreError();
+    child.WriteRepeatedBool(8, GetBoolVector()).IgnoreError();
 
-    encoder.WriteBytes(93, as_bytes(span<const double>(GetDoubleArray())));
-    encoder.WriteString(21343, kTestString);
+    encoder.WriteBytes(93, as_bytes(span<const double>(GetDoubleArray())))
+        .IgnoreError();
+    encoder.WriteString(21343, kTestString).IgnoreError();
   }
 
   stream::NullStream null_stream;
   protobuf::StreamEncoder stream_encoder(null_stream, buffer);
-  stream_encoder.WriteBytesFromStream(3636, null_stream, 10824, buffer);
+  stream_encoder.WriteBytesFromStream(3636, null_stream, 10824, buffer)
+      .IgnoreError();
 }
 
 void CodeToPullInTableEncoder() {

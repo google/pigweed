@@ -59,17 +59,17 @@ PW_NO_INLINE void BasicEncode() {
   volatile bool has_timestamp = true;
   volatile bool has_has_value = false;
   if (which_key == KeyType::KEY_STRING) {
-    encoder.WriteString(1, "test");
+    encoder.WriteString(1, "test").IgnoreError();
   } else if (which_key == KeyType::KEY_TOKEN) {
-    encoder.WriteFixed32(2, 99999);
+    encoder.WriteFixed32(2, 99999).IgnoreError();
   }
 
   if (has_timestamp) {
-    encoder.WriteInt64(3, 1663003467);
+    encoder.WriteInt64(3, 1663003467).IgnoreError();
   }
 
   if (has_has_value) {
-    encoder.WriteBool(4, true);
+    encoder.WriteBool(4, true).IgnoreError();
   }
 
   {
@@ -189,17 +189,17 @@ PW_NO_INLINE void BasicEncode() {
   volatile bool has_timestamp = true;
   volatile bool has_has_value = false;
   if (which_key == KeyType::KEY_STRING) {
-    encoder.WriteKeyString("test");
+    encoder.WriteKeyString("test").IgnoreError();
   } else if (which_key == KeyType::KEY_TOKEN) {
-    encoder.WriteKeyToken(99999);
+    encoder.WriteKeyToken(99999).IgnoreError();
   }
 
   if (has_timestamp) {
-    encoder.WriteTimestamp(1663003467);
+    encoder.WriteTimestamp(1663003467).IgnoreError();
   }
 
   if (has_has_value) {
-    encoder.WriteHasValue(true);
+    encoder.WriteHasValue(true).IgnoreError();
   }
 
   {
@@ -334,8 +334,7 @@ PW_NO_INLINE void BasicEncode() {
   if (which_key == KeyType::KEY_STRING) {
     message.key_string.SetEncoder(
         [](ResponseInfo::StreamEncoder& key_string_encoder) -> pw::Status {
-          key_string_encoder.WriteKeyString("test");
-          return pw::OkStatus();
+          return key_string_encoder.WriteKeyString("test");
         });
   } else if (which_key == KeyType::KEY_TOKEN) {
     message.key_token = 99999;

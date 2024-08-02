@@ -73,14 +73,26 @@ int main() {
   PW_LOG_INFO("pw_StatusString %s", pw::OkStatus().str());
 
   std::array<std::byte, sizeof(BasicPacket)> packet_buffer;
-  pw::sys_io::ReadBytes(packet_buffer);
-  pw::sys_io::WriteBytes(packet_buffer);
+  if (!pw::sys_io::ReadBytes(packet_buffer).ok()) {
+    PW_LOG_ERROR("Failed to read packet");
+    return 0;
+  }
+  if (!pw::sys_io::WriteBytes(packet_buffer).ok()) {
+    PW_LOG_ERROR("Failed to write packet");
+    return 0;
+  }
 
   BasicPacketParser parser;
 
   while (true) {
-    pw::sys_io::ReadBytes(packet_buffer);
-    router.RoutePacket(packet_buffer, parser);
+    if (!pw::sys_io::ReadBytes(packet_buffer).ok()) {
+      PW_LOG_ERROR("Failed to read packet");
+      return 0;
+    }
+    if (!router.RoutePacket(packet_buffer, parser).ok()) {
+      PW_LOG_ERROR("Failed to route packet");
+      return 0;
+    }
   }
 
   return static_cast<int>(packet.payload);

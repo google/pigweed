@@ -56,8 +56,10 @@ Status CaptureMainStack(
     thread_state = thread::proto::pwpb::ThreadState::Enum::RUNNING;
     PW_LOG_DEBUG("Thread state: RUNNING");
   }
-  encoder.WriteState(thread_state);
-  encoder.WriteName(as_bytes(span(std::string_view(thread_name))));
+  // TODO: https://pwbug.dev/357138093 - Review IgnoreError calls in this file.
+  encoder.WriteState(thread_state).IgnoreError();
+  encoder.WriteName(as_bytes(span(std::string_view(thread_name))))
+      .IgnoreError();
 
   const thread::StackContext thread_ctx = {
       .thread_name = thread_name,
@@ -77,7 +79,7 @@ Status SnapshotCpuState(
   {
     pwpb::ArmV7mCpuState::StreamEncoder cpu_state_encoder =
         snapshot_encoder.GetArmv7mCpuStateEncoder();
-    DumpCpuStateProto(cpu_state_encoder, cpu_state);
+    DumpCpuStateProto(cpu_state_encoder, cpu_state).IgnoreError();
   }
   return snapshot_encoder.status();
 }

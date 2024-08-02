@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_unit_test/unit_test_service.h"
@@ -27,7 +28,7 @@ int main() {
   pw::rpc::system_server::Server().RegisterService(unit_test_service);
 
   PW_LOG_INFO("Starting pw_rpc server");
-  pw::rpc::system_server::Start();
+  PW_CHECK_OK(pw::rpc::system_server::Start());
 
   return 0;
 }
