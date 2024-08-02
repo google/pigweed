@@ -167,6 +167,9 @@ def run_clang_tidy(
         )
     )
 
+    if "-c" in command:
+        command.remove("-c")
+
     process = subprocess.run(
         command,
         stdout=subprocess.PIPE,

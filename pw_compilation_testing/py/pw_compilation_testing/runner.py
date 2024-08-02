@@ -205,6 +205,12 @@ def _should_skip_test(base_command: str) -> bool:
     # illegal statement (defined() with no identifier). If the preprocessor
     # passes, the test was skipped.
     preprocessor_cmd = f'{base_command}{shlex.quote("defined()")} -E'
+
+    split_cmd = shlex.split(preprocessor_cmd)
+    if "-c" in split_cmd:
+        split_cmd.remove("-c")
+        preprocessor_cmd = shlex.join(split_cmd)
+
     process = subprocess.run(
         preprocessor_cmd,
         shell=True,

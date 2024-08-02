@@ -105,6 +105,7 @@ TEST(LocalRpcEgressTest, PacketsGetDeliveredToPacketProcessor) {
     sync::CountingSemaphore sem;
   } state;
 
+  receivers.reserve(kNumRequests);
   for (size_t i = 0; i < kNumRequests; i++) {
     receivers.push_back(client.Echo(
         {.msg = kTestMessage},

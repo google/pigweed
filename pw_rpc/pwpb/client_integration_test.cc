@@ -35,7 +35,8 @@ constexpr int kIterations = 10;
 class PayloadReceiver {
  public:
   const char* Wait() {
-    PW_CHECK(sem_.try_acquire_for(1500ms));
+    constexpr auto kWaitTimeout = 1500ms;
+    PW_CHECK(sem_.try_acquire_for(kWaitTimeout));
     return reinterpret_cast<const char*>(payload_.payload.data());
   }
 

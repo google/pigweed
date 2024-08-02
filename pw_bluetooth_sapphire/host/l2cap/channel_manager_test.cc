@@ -769,7 +769,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
   hci::ACLPacketHandler packet_rx_handler_;
   hci::testing::MockAclDataChannel acl_data_channel_;
 
-  std::queue<const PacketExpectation> expected_packets_;
+  std::queue<PacketExpectation> expected_packets_;
 
   CommandId next_command_id_;
 
