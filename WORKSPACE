@@ -206,11 +206,3 @@ git_repository(
     commit = "ef02cc27c0faceffc9345e11a35769ae92b836fb",
     remote = "https://fuchsia.googlesource.com/third_party/icu",
 )
-
-load("//pw_ide:deps.bzl", "pw_ide_deps")
-
-pw_ide_deps()
-
-load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
-
-hedron_compile_commands_setup()

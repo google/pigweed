@@ -36,8 +36,18 @@ bazel_dep(name = "rules_proto", version = "6.0.0")
 bazel_dep(name = "rules_python", version = "0.34.0")
 bazel_dep(name = "rules_rust", version = "0.45.1")
 
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+
 # Repository overrides
 # ====================
+
+# TODO: https://pwbug.dev/349880767 - Point this back to the upstream repo once
+# this PR is merged.
+archive_override(
+    module_name = "hedron_compile_commands",
+    strip_prefix = "bazel-compile-commands-extractor-163521345aa6366fd1ed801b989b668b5c806f69",
+    urls = ["https://github.com/chadnorvell/bazel-compile-commands-extractor/archive/163521345aa6366fd1ed801b989b668b5c806f69.tar.gz"],
+)
 
 # TODO: https://pwbug.dev/258836641 - Pre-release version needed for the Pico
 # SDK. Remove this once rules_cc 0.10.0 is released and the Pico SDK
