@@ -34,7 +34,7 @@ template <typename Lock>
 struct is_basic_lockable<Lock,
                          std::void_t<decltype(std::declval<Lock>().lock()),
                                      decltype(std::declval<Lock>().unlock())>>
-    : std::true_type{};
+    : std::true_type {};
 /// @}
 
 /// Helper variable template for `is_basic_lockable<Lock>::value`.

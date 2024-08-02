@@ -227,7 +227,7 @@ struct IsContainer : std::false_type {};
 
 template <typename T>
 struct IsContainer<T, std::void_t<decltype(T().begin(), T().end())>>
-    : std::true_type{};
+    : std::true_type {};
 
 }  // namespace internal
 

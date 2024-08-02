@@ -80,7 +80,7 @@ struct IsError : std::false_type {};
 template <template <typename> class T, typename U>
 struct IsError<T<U>,
                std::void_t<decltype(std::declval<void (&)(Error<U>)>()(
-                   std::declval<T<U>>()))>> : std::true_type{};
+                   std::declval<T<U>>()))>> : std::true_type {};
 
 template <typename T>
 constexpr bool IsErrorV = IsError<T>::value;
@@ -94,7 +94,7 @@ template <typename ProtocolErrorCode>
 struct CanRepresentSuccess<
     ProtocolErrorCode,
     std::void_t<decltype(ProtocolErrorTraits<ProtocolErrorCode>::is_success(
-        std::declval<ProtocolErrorCode>()))>> : std::true_type{};
+        std::declval<ProtocolErrorCode>()))>> : std::true_type {};
 
 template <typename ProtocolErrorCode>
 constexpr bool CanRepresentSuccessV =

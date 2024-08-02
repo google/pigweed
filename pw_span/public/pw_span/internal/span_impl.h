@@ -83,7 +83,7 @@ template <typename T>
 struct IsSpanImpl : std::false_type {};
 
 template <typename T, size_t Extent>
-struct IsSpanImpl<span<T, Extent>> : std::true_type{};
+struct IsSpanImpl<span<T, Extent>> : std::true_type {};
 
 template <typename T>
 using IsSpan = IsSpanImpl<std::decay_t<T>>;
@@ -92,7 +92,7 @@ template <typename T>
 struct IsStdArrayImpl : std::false_type {};
 
 template <typename T, size_t N>
-struct IsStdArrayImpl<std::array<T, N>> : std::true_type{};
+struct IsStdArrayImpl<std::array<T, N>> : std::true_type {};
 
 template <typename T>
 using IsStdArray = IsStdArrayImpl<std::decay_t<T>>;

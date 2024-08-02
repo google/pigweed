@@ -68,8 +68,8 @@ struct has_emplace_front : std::false_type {};
 template <typename T>
 struct has_emplace_front<
     T,
-    std::void_t<decltype(std::declval<T>().emplace_front())>>
-    : std::true_type{};
+    std::void_t<decltype(std::declval<T>().emplace_front())>> : std::true_type {
+};
 
 template <typename T, typename = void>
 struct has_emplace_back : std::false_type {};
@@ -77,20 +77,20 @@ struct has_emplace_back : std::false_type {};
 template <typename T>
 struct has_emplace_back<T,
                         std::void_t<decltype(std::declval<T>().emplace_back())>>
-    : std::true_type{};
+    : std::true_type {};
 
 template <typename T, typename = void>
 struct has_key_type : std::false_type {};
 
 template <typename T>
-struct has_key_type<T, std::void_t<typename T::key_type>> : std::true_type{};
+struct has_key_type<T, std::void_t<typename T::key_type>> : std::true_type {};
 
 template <typename T, typename = void>
 struct has_mapped_type : std::false_type {};
 
 template <typename T>
 struct has_mapped_type<T, std::void_t<typename T::mapped_type>>
-    : std::true_type{};
+    : std::true_type {};
 
 template <typename Container, size_t kCapacity = 256>
 void TestPmrAllocator() {

@@ -219,24 +219,24 @@ public final class ClientTest {
   @Test
   public void processPacket_packetNotForClient_isNotProcessed() {
     assertThat(client.processPacket(RpcPacket.newBuilder()
-                                        .setType(PacketType.REQUEST)
-                                        .setChannelId(CHANNEL_ID)
-                                        .setServiceId(123)
-                                        .setMethodId(456)
-                                        .build()
-                                        .toByteArray()))
+                       .setType(PacketType.REQUEST)
+                       .setChannelId(CHANNEL_ID)
+                       .setServiceId(123)
+                       .setMethodId(456)
+                       .build()
+                       .toByteArray()))
         .isFalse();
   }
 
   @Test
   public void processPacket_unrecognizedChannel_isNotProcessed() {
     assertThat(client.processPacket(RpcPacket.newBuilder()
-                                        .setType(PacketType.RESPONSE)
-                                        .setChannelId(CHANNEL_ID + 100)
-                                        .setServiceId(123)
-                                        .setMethodId(456)
-                                        .build()
-                                        .toByteArray()))
+                       .setType(PacketType.RESPONSE)
+                       .setChannelId(CHANNEL_ID + 100)
+                       .setServiceId(123)
+                       .setMethodId(456)
+                       .build()
+                       .toByteArray()))
         .isFalse();
   }
 
@@ -246,9 +246,9 @@ public final class ClientTest {
 
     assertThat(packetsSent)
         .containsExactly(packetBuilder("pw.rpc.test1.NotAService", "SomeUnary")
-                             .setType(PacketType.CLIENT_ERROR)
-                             .setStatus(Status.NOT_FOUND.code())
-                             .build());
+                .setType(PacketType.CLIENT_ERROR)
+                .setStatus(Status.NOT_FOUND.code())
+                .build());
   }
 
   @Test
@@ -257,9 +257,9 @@ public final class ClientTest {
 
     assertThat(packetsSent)
         .containsExactly(packetBuilder("pw.rpc.test1.TheTestService", "NotMethod")
-                             .setType(PacketType.CLIENT_ERROR)
-                             .setStatus(Status.NOT_FOUND.code())
-                             .build());
+                .setType(PacketType.CLIENT_ERROR)
+                .setStatus(Status.NOT_FOUND.code())
+                .build());
   }
 
   @Test
@@ -268,9 +268,9 @@ public final class ClientTest {
 
     assertThat(packetsSent)
         .containsExactly(packetBuilder("pw.rpc.test1.TheTestService", "SomeUnary")
-                             .setType(PacketType.CLIENT_ERROR)
-                             .setStatus(Status.FAILED_PRECONDITION.code())
-                             .build());
+                .setType(PacketType.CLIENT_ERROR)
+                .setStatus(Status.FAILED_PRECONDITION.code())
+                .build());
   }
 
   @Test
@@ -408,10 +408,10 @@ public final class ClientTest {
 
     verify(channelOutput)
         .send(requestPacket("pw.rpc.test1.TheTestService", "SomeUnary", REQUEST_PAYLOAD)
-                  .toBuilder()
-                  .setChannelId(newChannelId)
-                  .build()
-                  .toByteArray());
+                .toBuilder()
+                .setChannelId(newChannelId)
+                .build()
+                .toByteArray());
   }
 
   @Test

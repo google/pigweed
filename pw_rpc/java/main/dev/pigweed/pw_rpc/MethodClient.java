@@ -190,7 +190,7 @@ public class MethodClient {
   }
 
   public <RequestT extends MessageLite, ResponseT extends MessageLite, CallT
-              extends FutureCall<RequestT, ResponseT, ?>> CallT
+          extends FutureCall<RequestT, ResponseT, ?>> CallT
   invokeFuture(BiFunction<Endpoint, PendingRpc, CallT> createCall, @Nullable MessageLite request) {
     try {
       return client.invokeRpc(channelId, method, createCall, request);

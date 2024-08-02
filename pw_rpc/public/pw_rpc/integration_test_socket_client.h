@@ -102,11 +102,11 @@ class SocketClientContext {
     void set_channel_manipulator(ChannelManipulator* new_channel_manipulator) {
       if (new_channel_manipulator != nullptr) {
         new_channel_manipulator->set_send_packet(
-            ChannelManipulator::SendCallback([&](
-                ConstByteSpan
-                    payload) __attribute__((no_thread_safety_analysis)) {
-              return actual_output_.Send(payload);
-            }));
+            ChannelManipulator::SendCallback(
+                [&](ConstByteSpan payload)
+                    __attribute__((no_thread_safety_analysis)) {
+                      return actual_output_.Send(payload);
+                    }));
       }
       channel_manipulator_ = new_channel_manipulator;
     }

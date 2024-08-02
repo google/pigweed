@@ -112,10 +112,10 @@ public final class StreamObserverCallTest {
 
     verify(mockOutput)
         .send(packetBuilder()
-                  .setType(PacketType.CLIENT_STREAM)
-                  .setPayload(request.toByteString())
-                  .build()
-                  .toByteArray());
+                .setType(PacketType.CLIENT_STREAM)
+                .setPayload(request.toByteString())
+                .build()
+                .toByteArray());
   }
 
   @Test

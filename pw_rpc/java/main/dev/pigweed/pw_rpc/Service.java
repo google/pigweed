@@ -33,8 +33,8 @@ public class Service {
     this.id = Ids.calculate(name);
     Arrays.stream(methodBuilders).forEach(m -> m.setService(this));
     this.methods = ImmutableMap.copyOf(Arrays.stream(methodBuilders)
-                                           .map(Method.Builder::build)
-                                           .collect(Collectors.toMap(Method::id, m -> m)));
+            .map(Method.Builder::build)
+            .collect(Collectors.toMap(Method::id, m -> m)));
   }
 
   /** Returns the fully qualified name of this service (package.Service). */
