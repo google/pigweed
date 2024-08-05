@@ -27,3 +27,13 @@ pw_add_library(pw_hex_dump STATIC
     pw_status
 )
 
+pw_add_library(pw_hex_dump.log_bytes INTERFACE
+  HEADERS
+    public/pw_hex_dump/log_bytes.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_hex_dump
+    pw_log
+)
