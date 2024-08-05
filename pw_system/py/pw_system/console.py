@@ -73,11 +73,32 @@ def add_logfile_args(
     parser: argparse.ArgumentParser,
 ) -> argparse.ArgumentParser:
     """Add logfile specific arguments needed by the interactive console."""
+
+    def log_level(arg: str) -> int:
+        try:
+            return getattr(logging, arg.upper())
+        except AttributeError:
+            raise argparse.ArgumentTypeError(
+                f'{arg.upper()} is not a valid log level'
+            )
+
     parser.add_argument(
         '-v',
         '--verbose',
         action='store_true',
-        help='Enables debug logging when set.',
+        help='Set the host log level to debug.',
+    )
+    parser.add_argument(
+        '--host-log-level',
+        type=log_level,
+        default=logging.INFO,
+        help='Set the host log level (debug, info, warning, error, critical)',
+    )
+    parser.add_argument(
+        '--device-log-level',
+        type=log_level,
+        default=logging.DEBUG,
+        help='Set the device log level (debug, info, warning, error, critical)',
     )
     parser.add_argument(
         '--json-logfile', help='Device only JSON formatted log file.'
@@ -269,6 +290,8 @@ def console(
     serial_debug: bool = False,
     config_file: Path | None = None,
     verbose: bool = False,
+    host_log_level: int = logging.INFO,
+    device_log_level: int = logging.DEBUG,
     compiled_protos: list[ModuleType] | None = None,
     merge_device_and_host_logs: bool = False,
     rpc_logging: bool = True,
@@ -298,15 +321,19 @@ def console(
         # would corrupt the prompt toolkit UI.
         logfile = python_logging.create_temp_log_file()
 
-    log_level = logging.DEBUG if verbose else logging.INFO
+    if verbose:
+        host_log_level = logging.DEBUG
 
     pw_cli_log.install(
-        level=log_level, use_color=False, hide_timestamp=False, log_file=logfile
+        level=host_log_level,
+        use_color=False,
+        hide_timestamp=False,
+        log_file=logfile,
     )
 
     if device_logfile:
         pw_cli_log.install(
-            level=log_level,
+            level=device_log_level,
             use_color=False,
             hide_timestamp=False,
             log_file=device_logfile,
@@ -314,7 +341,7 @@ def console(
         )
     if host_logfile:
         pw_cli_log.install(
-            level=log_level,
+            level=host_log_level,
             use_color=False,
             hide_timestamp=False,
             log_file=host_logfile,
@@ -324,21 +351,21 @@ def console(
     if merge_device_and_host_logs:
         # Add device logs to the default logfile.
         pw_cli_log.install(
-            level=log_level,
+            level=device_log_level,
             use_color=False,
             hide_timestamp=False,
             log_file=logfile,
             logger=_DEVICE_LOG,
         )
 
-    _LOG.setLevel(log_level)
-    _DEVICE_LOG.setLevel(log_level)
-    _ROOT_LOG.setLevel(log_level)
+    _LOG.setLevel(host_log_level)
+    _DEVICE_LOG.setLevel(device_log_level)
+    _ROOT_LOG.setLevel(host_log_level)
     _SERIAL_DEBUG.setLevel(logging.DEBUG)
 
     if json_logfile:
         json_filehandler = logging.FileHandler(json_logfile, encoding='utf-8')
-        json_filehandler.setLevel(log_level)
+        json_filehandler.setLevel(device_log_level)
         json_filehandler.setFormatter(python_logging.JsonLogFormatter())
         _DEVICE_LOG.addHandler(json_filehandler)
 
