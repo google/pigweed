@@ -50,10 +50,10 @@ TEST(DigitalIoTest, LogicalToPhysical) {
 
 TEST(DigitalIoTest, Init) {
   // Simple test only meant to ensure module is compiled.
-  output_pin.Enable();
-  output_pin.SetState(pw::digital_io::State::kActive);
+  ASSERT_EQ(OkStatus(), output_pin.Enable());
+  ASSERT_EQ(OkStatus(), output_pin.SetState(pw::digital_io::State::kActive));
 
-  input_pin.Enable();
+  ASSERT_EQ(OkStatus(), input_pin.Enable());
   Result<State> state_result = input_pin.GetState();
   ASSERT_EQ(OkStatus(), state_result.status());
   ASSERT_EQ(State::kInactive, state_result.value());
