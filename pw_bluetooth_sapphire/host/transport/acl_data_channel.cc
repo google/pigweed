@@ -436,10 +436,11 @@ void AclDataChannelImpl::RequestAclPriority(
         hci_spec::OpCode op_code = pw::bytes::ConvertOrderFrom(
             cpp20::endian::little,
             encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
-        auto packet = bt::hci::CommandPacket::New(
-            op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
-        auto packet_view = packet->mutable_view()->mutable_data();
-        encoded.Copy(&packet_view);
+        auto packet = EmbossCommandPacket::New<
+            pw::bluetooth::emboss::GenericHciCommandWriter>(op_code,
+                                                            encoded.size());
+        auto packet_data = packet.mutable_data();
+        encoded.Copy(&packet_data);
 
         transport_->command_channel()->SendCommand(
             std::move(packet),
