@@ -161,7 +161,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsSingleReport) {
 // Ensure we can parse multiple extended advertising reports correctly
 TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsMultipleReports) {
   size_t data_size = peer(1)->advertising_data().size();
-  size_t num_reports = 2;
+  uint8_t num_reports = 2;
   size_t single_report_size = report_prefix_size + data_size;
   size_t reports_size = num_reports * single_report_size;
   size_t packet_size = event_prefix_size + reports_size;
@@ -172,7 +172,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsMultipleReports) {
   auto packet = event.view_t(static_cast<int32_t>(reports_size));
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
-  packet.num_reports().Write(static_cast<uint8_t>(num_reports));
+  packet.num_reports().Write(num_reports);
 
   LEExtendedAdvertisingReportDataWriter report_a(
       packet.reports().BackingStorage().begin(), single_report_size);

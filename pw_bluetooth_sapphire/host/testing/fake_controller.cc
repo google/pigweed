@@ -1939,9 +1939,8 @@ void FakeController::OnReadBufferSize() {
   params.hc_acl_data_packet_length = pw::bytes::ConvertOrderTo(
       cpp20::endian::little, settings_.acl_data_packet_length);
   params.hc_total_num_acl_data_packets = settings_.total_num_acl_data_packets;
-  params.hc_synchronous_data_packet_length = pw::bytes::ConvertOrderTo(
-      cpp20::endian::little,
-      static_cast<uint8_t>(settings_.synchronous_data_packet_length));
+  params.hc_synchronous_data_packet_length =
+      settings_.synchronous_data_packet_length;
   params.hc_total_num_synchronous_data_packets =
       settings_.total_num_synchronous_data_packets;
   RespondWithCommandComplete(hci_spec::kReadBufferSize,
