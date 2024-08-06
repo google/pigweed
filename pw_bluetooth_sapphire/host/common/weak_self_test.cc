@@ -17,6 +17,7 @@
 #include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async/heap_dispatcher.h>
 
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_unit_test/framework.h"
 
 namespace bt {
@@ -225,6 +226,68 @@ TEST_F(WeakSelfTest, StaticDeathWhenExhausted) {
   EXPECT_FALSE(ptr2.is_alive());
 
   EXPECT_DEATH_IF_SUPPORTED(test3.GetWeakPtr(), ".*");
+}
+
+class GetWeakRefTester;
+
+class CountingWeakManager {
+ public:
+  explicit CountingWeakManager(GetWeakRefTester* self_ptr)
+      : manager_(self_ptr) {}
+
+  using RefType = DynamicWeakManager<GetWeakRefTester>::RefType;
+
+  ~CountingWeakManager() = default;
+
+  std::optional<pw::IntrusivePtr<RefType>> GetWeakRef() {
+    // Make sure the weak ref doesn't accidentally get cleared after it's set.
+    if (count_get_weak_ref_ == 0) {
+      BT_ASSERT(!manager_.HasWeakRef());
+    } else {
+      BT_ASSERT(manager_.HasWeakRef());
+    }
+    count_get_weak_ref_++;
+    return manager_.GetWeakRef();
+  }
+
+  void InvalidateAll() { return manager_.InvalidateAll(); }
+
+ private:
+  size_t count_get_weak_ref_{0};
+  DynamicWeakManager<GetWeakRefTester> manager_;
+};
+
+class GetWeakRefTester
+    : public WeakSelf<GetWeakRefTester, CountingWeakManager> {
+ public:
+  explicit GetWeakRefTester(uint8_t testval)
+      : WeakSelf(this), value_(testval) {}
+
+  uint8_t value() const { return value_; }
+
+ private:
+  uint8_t value_;
+};
+
+TEST_F(WeakSelfTest, GetWeakRefNotMoved) {
+  GetWeakRefTester test_val{1};
+  {
+    // This is the main test, just make sure there are no assertions in
+    // `GetWeakPtr`.
+    auto ptr1 = test_val.GetWeakPtr();
+    auto ptr2 = test_val.GetWeakPtr();
+
+    EXPECT_TRUE(ptr1.is_alive());
+    EXPECT_TRUE(ptr2.is_alive());
+    EXPECT_EQ(&ptr1.get(), &ptr2.get());
+  }
+
+  auto ptr1 = test_val.GetWeakPtr();
+  auto ptr2 = test_val.GetWeakPtr();
+
+  EXPECT_TRUE(ptr1.is_alive());
+  EXPECT_TRUE(ptr2.is_alive());
+  EXPECT_EQ(&ptr1.get(), &ptr2.get());
 }
 
 class BaseClass {

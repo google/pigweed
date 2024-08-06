@@ -148,6 +148,8 @@ class DynamicWeakManager {
     }
   }
 
+  bool HasWeakRef() const { return weak_ptr_ref_ != nullptr; }
+
  private:
   T* self_ptr_;
   pw::IntrusivePtr<WeakRef> weak_ptr_ref_;
@@ -191,7 +193,13 @@ class WeakPtr {
   // Only WeakSelf<T> should have access to the constructor.
   friend class WeakSelf<T, WeakPtrManager>;
 
-  explicit WeakPtr(pw::IntrusivePtr<typename WeakPtrManager::RefType> ptr)
+  // Copy construct from an existing `IntrusivePtr`.
+  explicit WeakPtr(
+      const pw::IntrusivePtr<typename WeakPtrManager::RefType>& ptr)
+      : ptr_(ptr) {}
+
+  // Move construct from an existing `IntrusivePtr`.
+  explicit WeakPtr(pw::IntrusivePtr<typename WeakPtrManager::RefType>&& ptr)
       : ptr_(std::move(ptr)) {}
 
   pw::IntrusivePtr<typename WeakPtrManager::RefType> ptr_;
@@ -256,7 +264,7 @@ class WeakSelf {
   WeakPtr GetWeakPtr() {
     auto weak_ref = manager_.GetWeakRef();
     BT_ASSERT_MSG(weak_ref.has_value(), "weak pointer not available");
-    return WeakPtr(*weak_ref);
+    return WeakPtr(*std::move(weak_ref));
   }
 
  private:
