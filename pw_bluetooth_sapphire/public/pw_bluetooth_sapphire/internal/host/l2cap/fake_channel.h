@@ -92,6 +92,8 @@ class FakeChannel : public Channel {
     a2dp_offload_error_ = error_code;
   }
 
+  A2dpOffloadStatus a2dp_offload_status() { return audio_offloading_status_; }
+
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
   bool Activate(RxCallback rx_callback,
@@ -133,6 +135,8 @@ class FakeChannel : public Channel {
 
   bool acl_priority_fails_;
   bool flush_timeout_succeeds_ = true;
+
+  A2dpOffloadStatus audio_offloading_status_ = A2dpOffloadStatus::kStopped;
 
   std::optional<HostError> a2dp_offload_error_;
 

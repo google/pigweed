@@ -148,6 +148,21 @@ enum class OptionType : uint8_t {
   kExtendedWindowSize = 0x07,
 };
 
+// Defines the state of A2DP offloading to the controller.
+enum class A2dpOffloadStatus : uint8_t {
+  // The A2DP offload command was received and successfully started.
+  kStarted,
+  // The A2DP offload command was sent and the L2CAP channel is waiting for a
+  // response.
+  kStarting,
+  // The A2DP offload stop command was sent and the L2CAP channel is waiting
+  // for a response.
+  kStopping,
+  // Either an error or an A2DP offload command stopped offloading to the
+  // controller.
+  kStopped,
+};
+
 // Signaling packet formats (Core Spec v5.0, Vol 3, Part A, Section 4):
 
 using CommandCode = uint8_t;

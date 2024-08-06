@@ -74,21 +74,6 @@ class A2dpOffloadManager {
   WeakPtr<A2dpOffloadManager> GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
-  // Defines the state of A2DP offloading to the controller.
-  enum class A2dpOffloadStatus : uint8_t {
-    // The A2DP offload command was received and successfully started.
-    kStarted,
-    // The A2DP offload command was sent and the L2CAP channel is waiting for a
-    // response.
-    kStarting,
-    // The A2DP offload stop command was sent and the L2CAP channel is waiting
-    // for a response.
-    kStopping,
-    // Either an error or an A2DP offload command stopped offloading to the
-    // controller.
-    kStopped,
-  };
-
   hci::CommandChannel::WeakPtr cmd_channel_;
 
   A2dpOffloadStatus a2dp_offload_status_ = A2dpOffloadStatus::kStopped;

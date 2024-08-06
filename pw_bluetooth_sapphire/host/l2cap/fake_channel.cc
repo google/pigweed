@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
 namespace bt::l2cap::testing {
 
@@ -178,8 +179,10 @@ void FakeChannel::StartA2dpOffload(
     hci::ResultCallback<> callback) {
   if (a2dp_offload_error_.has_value()) {
     callback(ToResult(a2dp_offload_error_.value()));
+    audio_offloading_status_ = A2dpOffloadStatus::kStopped;
     return;
   }
+  audio_offloading_status_ = A2dpOffloadStatus::kStarted;
   callback(fit::ok());
 }
 
@@ -188,6 +191,7 @@ void FakeChannel::StopA2dpOffload(hci::ResultCallback<> callback) {
     callback(ToResult(a2dp_offload_error_.value()));
     return;
   }
+  audio_offloading_status_ = A2dpOffloadStatus::kStopped;
   callback(fit::ok());
 }
 
