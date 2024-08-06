@@ -38,7 +38,12 @@ cc_library(
 
 label_flag(
     name = "config_override",
-    build_setting_default = "//pw_build:default_module_config",
+    build_setting_default = ":default_config",
+)
+
+cc_library(
+    name = "default_config",
+    defines = ["PW_STATUS_CFG_CHECK_IF_USED=1"],
 )
 
 pw_cc_test(
