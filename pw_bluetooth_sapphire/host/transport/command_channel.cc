@@ -57,7 +57,7 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
 }
 
 CommandChannel::QueuedCommand::QueuedCommand(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     std::unique_ptr<TransactionData> transaction_data)
     : packet(std::move(command_packet)), data(std::move(transaction_data)) {
   BT_DEBUG_ASSERT(data);
@@ -187,7 +187,7 @@ CommandChannel::~CommandChannel() {
 }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     CommandCallbackVariant callback,
     const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(
@@ -203,7 +203,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     CommandCallbackVariant callback,
     const hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -227,7 +227,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
-    CommandPacketVariant command_packet,
+    EmbossCommandPacket command_packet,
     CommandCallbackVariant callback,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
@@ -261,10 +261,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     next_transaction_id_.Set(1);
   }
 
-  const hci_spec::OpCode opcode = std::visit(
-      overloaded{[](std::unique_ptr<CommandPacket>& p) { return p->opcode(); },
-                 [](EmbossCommandPacket& p) { return p.opcode(); }},
-      command_packet);
+  const hci_spec::OpCode opcode = command_packet.opcode();
   const TransactionId transaction_id = next_transaction_id_.value();
   next_transaction_id_.Set(transaction_id + 1);
 
@@ -515,12 +512,7 @@ void CommandChannel::TrySendQueuedCommands() {
 }
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
-  pw::span packet_span = std::visit(
-      overloaded{[](std::unique_ptr<CommandPacket>& p) {
-                   return p->view().data().subspan();
-                 },
-                 [](EmbossCommandPacket& p) { return p.data().subspan(); }},
-      cmd.packet);
+  pw::span packet_span = cmd.packet.data().subspan();
   hci_->SendCommand(packet_span);
 
   allowed_command_packets_.Set(allowed_command_packets_.value() - 1);

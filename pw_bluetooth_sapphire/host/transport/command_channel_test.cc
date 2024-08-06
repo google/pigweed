@@ -291,7 +291,9 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
           hci_spec::kReset);
   [[maybe_unused]] auto reset_id =
       cmd_channel()->SendCommand(std::move(reset), cb);
-  auto inquiry = CommandPacket::New(hci_spec::kInquiryCancel);
+  auto inquiry = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::InquiryCancelCommandWriter>(
+      hci_spec::kInquiryCancel);
   [[maybe_unused]] auto inquiry_id =
       cmd_channel()->SendCommand(std::move(inquiry), cb);
 
@@ -1711,7 +1713,9 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
         auto params = event.params<hci_spec::CommandStatusEventParams>();
         EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS, params.status);
-        auto packet = CommandPacket::New(kExclusiveTwo);
+        auto packet =
+            EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+                kExclusiveTwo);
         id2 = cmd_channel->SendExclusiveCommand(std::move(packet),
                                                 exclusive_cb.share(),
                                                 kExclTwoCompleteEvent,
@@ -1724,13 +1728,17 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         EXPECT_EQ(id1, callback_id);
         EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
         // Add the second command when the first one completes.
-        auto packet = CommandPacket::New(kExclusiveOne);
+        auto packet =
+            EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+                kExclusiveOne);
         id3 = cmd_channel->SendExclusiveCommand(std::move(packet),
                                                 exclusive_cb.share(),
                                                 kExclOneCompleteEvent,
                                                 {kExclusiveTwo});
         std::cout << "queued Second Exclusive One: " << id3 << std::endl;
-        packet = CommandPacket::New(kNonExclusive);
+        packet =
+            EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+                kNonExclusive);
         cmd_channel->SendCommand(std::move(packet), nonexclusive_cb.share());
 
         break;
@@ -1770,12 +1778,16 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
   EXPECT_CMD_PACKET_OUT(
       test_device(), nonexclusive_cmd, &nonexclusive_complete);
-  id1 = cmd_channel()->SendExclusiveCommand(CommandPacket::New(kExclusiveOne),
-                                            exclusive_cb.share(),
-                                            kExclOneCompleteEvent,
-                                            {kExclusiveTwo});
-  cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive),
-                             nonexclusive_cb.share());
+  id1 = cmd_channel()->SendExclusiveCommand(
+      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+          kExclusiveOne),
+      exclusive_cb.share(),
+      kExclOneCompleteEvent,
+      {kExclusiveTwo});
+  cmd_channel()->SendCommand(
+      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+          kNonExclusive),
+      nonexclusive_cb.share());
   RunUntilIdle();
   // Should have received the ExclusiveOne status but not the complete.
   // ExclusiveTwo should be queued.
@@ -1800,8 +1812,10 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
       test_device(), nonexclusive_cmd, &nonexclusive_complete);
   EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
   test_device()->SendCommandChannelPacket(rsp_two_complete);
-  cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive),
-                             nonexclusive_cb.share());
+  cmd_channel()->SendCommand(
+      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+          kNonExclusive),
+      nonexclusive_cb.share());
   RunUntilIdle();
   EXPECT_EQ(5u,
             exclusive_cb_count);  // +2: rsp_two_complete, rsp_excl_one_status
