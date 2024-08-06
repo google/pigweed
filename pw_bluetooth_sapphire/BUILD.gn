@@ -177,6 +177,7 @@ pw_source_set("_public") {
     "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/util.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",

@@ -29,9 +29,16 @@ class IsoStreamImpl final : public IsoStream {
 
   bool OnCisEstablished(const hci::EmbossEventPacket& event) override;
 
+  void SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection direction,
+      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
+      std::optional<std::vector<uint8_t>> codec_configuration,
+      uint32_t controller_delay_usecs,
+      fit::function<void(SetupDataPathError)> cb) override;
+
   void Close() override;
 
-  IsoStream::WeakPtr GetWeakPtr() override;
+  IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
  private:
   enum class IsoStreamState {
@@ -58,7 +65,6 @@ class IsoStreamImpl final : public IsoStream {
 
   hci::CommandChannel::EventHandlerId cis_established_handler_;
 
-  //  WeakSelf<IsoStream> iso_stream_weak_self_;
   WeakSelf<IsoStreamImpl> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
@@ -70,7 +76,8 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
                              CisEstablishedCallback on_established_cb,
                              hci::CommandChannel::WeakPtr cmd_channel,
                              pw::Callback<void()> on_closed_cb)
-    : state_(IsoStreamState::kNotEstablished),
+    : IsoStream(),
+      state_(IsoStreamState::kNotEstablished),
       cig_id_(cig_id),
       cis_id_(cis_id),
       cis_hci_handle_(cis_handle),
@@ -78,8 +85,11 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
       on_closed_cb_(std::move(on_closed_cb)),
       cmd_(cmd_channel),
       weak_self_(this) {
-  BT_ASSERT(cmd_.is_alive());
   auto self = weak_self_.GetWeakPtr();
+
+  if (!cmd_.is_alive()) {
+    return;
+  }
 
   cis_established_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISEstablishedSubeventCode,
@@ -93,7 +103,6 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
         }
         return hci::CommandChannel::EventCallbackResult::kContinue;
       });
-
   BT_ASSERT(cis_established_handler_ != 0u);
 }
 
@@ -162,11 +171,17 @@ bool IsoStreamImpl::OnCisEstablished(const hci::EmbossEventPacket& event) {
   return true;
 }
 
-void IsoStreamImpl::Close() { on_closed_cb_(); }
-
-IsoStream::WeakPtr IsoStreamImpl::GetWeakPtr() {
-  return weak_self_.GetWeakPtr();
+void IsoStreamImpl::SetupDataPath(
+    pw::bluetooth::emboss::DataPathDirection direction,
+    const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
+    std::optional<std::vector<uint8_t>> codec_configuration,
+    uint32_t controller_delay_usecs,
+    fit::function<void(IsoStream::SetupDataPathError)> cb) {
+  // TODO(fxbug.dev/311639690): implement
+  cb(kSuccess);
 }
+
+void IsoStreamImpl::Close() { on_closed_cb_(); }
 
 std::unique_ptr<IsoStream> IsoStream::Create(
     uint8_t cig_id,

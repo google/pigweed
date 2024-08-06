@@ -31,6 +31,20 @@ class IsoStream {
   // indicating whether the vent was handled.
   virtual bool OnCisEstablished(const hci::EmbossEventPacket& event) = 0;
 
+  enum SetupDataPathError {
+    kSuccess,
+    kStreamAlreadyExists,
+    kCisNotEstablished,
+    kInvalidArgs,
+  };
+
+  virtual void SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection direction,
+      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
+      std::optional<std::vector<uint8_t>> codec_configuration,
+      uint32_t controller_delay_usecs,
+      fit::function<void(SetupDataPathError)> cb) = 0;
+
   // Terminate this stream.
   virtual void Close() = 0;
 
