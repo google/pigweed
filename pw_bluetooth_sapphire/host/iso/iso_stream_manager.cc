@@ -129,7 +129,7 @@ void IsoStreamManager::AcceptCisRequest(
     }
   };
 
-  streams_[id] = std::make_unique<IsoStream>(
+  streams_[id] = IsoStream::Create(
       cig_id, cis_id, cis_handle, std::move(cb), cmd_, on_closed_cb);
 
   auto command = hci::EmbossCommandPacket::New<

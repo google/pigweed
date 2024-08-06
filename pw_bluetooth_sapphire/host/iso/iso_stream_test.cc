@@ -34,7 +34,7 @@ class IsoStreamTest : public MockControllerTestBase {
 
   void SetUp() override {
     MockControllerTestBase::SetUp();
-    iso_stream_ = std::make_unique<IsoStream>(
+    iso_stream_ = IsoStream::Create(
         kCigId,
         kCisId,
         kCisHandleId,

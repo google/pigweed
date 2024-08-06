@@ -18,12 +18,58 @@
 
 namespace bt::iso {
 
-IsoStream::IsoStream(uint8_t cig_id,
-                     uint8_t cis_id,
-                     hci_spec::ConnectionHandle cis_handle,
-                     CisEstablishedCallback on_established_cb,
-                     hci::CommandChannel::WeakPtr cmd_channel,
-                     pw::Callback<void()> on_closed_cb)
+class IsoStreamImpl final : public IsoStream {
+ public:
+  IsoStreamImpl(uint8_t cig_id,
+                uint8_t cis_id,
+                hci_spec::ConnectionHandle cis_handle,
+                CisEstablishedCallback on_established_cb,
+                hci::CommandChannel::WeakPtr cmd_channel,
+                pw::Callback<void()> on_closed_cb);
+
+  bool OnCisEstablished(const hci::EmbossEventPacket& event) override;
+
+  void Close() override;
+
+  IsoStream::WeakPtr GetWeakPtr() override;
+
+ private:
+  enum class IsoStreamState {
+    kNotEstablished,
+    kEstablished,
+  } state_;
+
+  uint8_t cig_id_ __attribute__((unused));
+  uint8_t cis_id_ __attribute__((unused));
+
+  // Connection parameters, only valid after CIS is established
+  CisEstablishedParameters cis_params_;
+
+  // Handle assigned by the controller
+  hci_spec::ConnectionHandle cis_hci_handle_;
+
+  // Called after HCI_LE_CIS_Established event is received and handled
+  CisEstablishedCallback cis_established_cb_;
+
+  // Called when stream is closed
+  pw::Callback<void()> on_closed_cb_;
+
+  hci::CommandChannel::WeakPtr cmd_;
+
+  hci::CommandChannel::EventHandlerId cis_established_handler_;
+
+  //  WeakSelf<IsoStream> iso_stream_weak_self_;
+  WeakSelf<IsoStreamImpl> weak_self_;
+
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
+};
+
+IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
+                             uint8_t cis_id,
+                             hci_spec::ConnectionHandle cis_handle,
+                             CisEstablishedCallback on_established_cb,
+                             hci::CommandChannel::WeakPtr cmd_channel,
+                             pw::Callback<void()> on_closed_cb)
     : state_(IsoStreamState::kNotEstablished),
       cig_id_(cig_id),
       cis_id_(cis_id),
@@ -33,7 +79,7 @@ IsoStream::IsoStream(uint8_t cig_id,
       cmd_(cmd_channel),
       weak_self_(this) {
   BT_ASSERT(cmd_.is_alive());
-  auto self = GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   cis_established_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISEstablishedSubeventCode,
@@ -51,7 +97,7 @@ IsoStream::IsoStream(uint8_t cig_id,
   BT_ASSERT(cis_established_handler_ != 0u);
 }
 
-bool IsoStream::OnCisEstablished(const hci::EmbossEventPacket& event) {
+bool IsoStreamImpl::OnCisEstablished(const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
   BT_ASSERT(event.view<pw::bluetooth::emboss::LEMetaEventView>()
                 .subevent_code()
@@ -116,6 +162,25 @@ bool IsoStream::OnCisEstablished(const hci::EmbossEventPacket& event) {
   return true;
 }
 
-void IsoStream::Close() { on_closed_cb_(); }
+void IsoStreamImpl::Close() { on_closed_cb_(); }
+
+IsoStream::WeakPtr IsoStreamImpl::GetWeakPtr() {
+  return weak_self_.GetWeakPtr();
+}
+
+std::unique_ptr<IsoStream> IsoStream::Create(
+    uint8_t cig_id,
+    uint8_t cis_id,
+    hci_spec::ConnectionHandle cis_handle,
+    CisEstablishedCallback on_established_cb,
+    hci::CommandChannel::WeakPtr cmd_channel,
+    pw::Callback<void()> on_closed_cb) {
+  return std::make_unique<IsoStreamImpl>(cig_id,
+                                         cis_id,
+                                         cis_handle,
+                                         std::move(on_established_cb),
+                                         std::move(cmd_channel),
+                                         std::move(on_closed_cb));
+}
 
 }  // namespace bt::iso

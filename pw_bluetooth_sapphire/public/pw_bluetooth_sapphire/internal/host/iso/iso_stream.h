@@ -23,53 +23,27 @@
 
 namespace bt::iso {
 
-class IsoStream final {
+class IsoStream {
  public:
-  IsoStream(uint8_t cig_id,
-            uint8_t cis_id,
-            hci_spec::ConnectionHandle cis_handle,
-            CisEstablishedCallback cb,
-            hci::CommandChannel::WeakPtr cmd_channel,
-            pw::Callback<void()> on_closed_cb);
+  virtual ~IsoStream() = default;
 
   // Handler for incoming HCI_LE_CIS_Established events. Returns a value
   // indicating whether the vent was handled.
-  bool OnCisEstablished(const hci::EmbossEventPacket& event);
+  virtual bool OnCisEstablished(const hci::EmbossEventPacket& event) = 0;
 
   // Terminate this stream.
-  void Close();
+  virtual void Close() = 0;
+
+  static std::unique_ptr<IsoStream> Create(
+      uint8_t cig_id,
+      uint8_t cis_id,
+      hci_spec::ConnectionHandle cis_handle,
+      CisEstablishedCallback on_established_cb,
+      hci::CommandChannel::WeakPtr cmd_channel,
+      pw::Callback<void()> on_closed_cb);
 
   using WeakPtr = WeakSelf<IsoStream>::WeakPtr;
-  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
-
- private:
-  enum class IsoStreamState {
-    kNotEstablished,
-    kEstablished,
-  } state_;
-
-  uint8_t cig_id_ __attribute__((unused));
-  uint8_t cis_id_ __attribute__((unused));
-
-  // Connection parameters, only valid after CIS is established
-  CisEstablishedParameters cis_params_;
-
-  // Handle assigned by the controller
-  hci_spec::ConnectionHandle cis_hci_handle_;
-
-  // Called after HCI_LE_CIS_Established event is received and handled
-  CisEstablishedCallback cis_established_cb_;
-
-  // Called when stream is closed
-  pw::Callback<void()> on_closed_cb_;
-
-  hci::CommandChannel::WeakPtr cmd_;
-
-  hci::CommandChannel::EventHandlerId cis_established_handler_;
-
-  WeakSelf<IsoStream> weak_self_;
-
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStream);
+  virtual WeakPtr GetWeakPtr() = 0;
 };
 
 }  // namespace bt::iso
