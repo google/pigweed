@@ -1119,6 +1119,29 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
 
 
+struct LEReadAdvertisingChannelTxPowerCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.6 LE Read Advertising Physical Channel Tx Power command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         UInt                      tx_power_level
+    -- Units: dBm
+    -- Accuracy: +/-4 dB
+    [requires: this <= 20]
+
+
+struct LESetExtendedAdvertisingParametersCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.53 LE Set Extended Advertising Parameters command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         UInt                      selected_tx_power
+    -- Units: dBm
+    [requires: this <= 20]
+
+
 struct LEReadMaximumAdvertisingDataLengthCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.57 LE Read Maximum Advertising Data
   -- Length command)

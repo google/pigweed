@@ -398,6 +398,27 @@ enum OpCode:
   LE_ENHANCED_TRANSMITTER_TEST                                 = 0x2034
     -- LE Enhanced Transmitter Test Command (v5.0) (LE)
 
+  LE_SET_ADVERTISING_SET_RANDOM_ADDRESS                        = 0x2035
+    -- LE Set Advertising Set Random Address Command (v5.0) (LE)
+
+  LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1                    = 0x2036
+    -- LE Set Extended Advertising Parameters [v1] (v5.0) (LE)
+
+  LE_SET_EXTENDED_ADVERTISING_DATA                             = 0x2037
+    -- LE Set Extended Advertising Data Command (v5.0) (LE)
+
+  LE_SET_EXTENDED_SCAN_RESPONSE_DATA                           = 0x2038
+    -- LE Set Extended Scan Response Data Command (v5.0) (LE)
+
+  LE_SET_EXTENDED_ADVERTISING_ENABLE                           = 0x2039
+    -- LE Set Extended Advertising Enable Command (v5.0) (LE)
+
+  LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH                      = 0x203A
+    -- LE Read Maximum Advertising Data Length Command (v5.0) (LE)
+
+  LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS                 = 0x203B
+    -- LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
+
   LE_REMOVE_ADVERTISING_SET                                    = 0x203C
     -- LE Remove Advertising Set Command (v5.0) (LE)
 
@@ -502,6 +523,9 @@ enum OpCode:
 
   LE_READ_ISO_LINK_QUALITY                                     = 0x2075
     -- LE Read ISO Link Quality Command (v5.2) (LE)
+
+  LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V2                    = 0x207F
+    -- LE Set Extended Advertising Parameters Command (v5.4) (LE)
 
 
 enum EventCode:
