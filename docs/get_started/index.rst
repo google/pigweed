@@ -32,6 +32,23 @@ but only need to be done once per machine.
 
       Recommendations on how to install Bazel.
 
+---------------
+Tour of Pigweed
+---------------
+Want a guided, hands-on tour of Pigweed's core features? Try our
+brand new :ref:`Tour of Pigweed <showcase-sense>`!
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`rocket` Tour of Pigweed
+      :link: showcase-sense
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Explore key Pigweed features, such as hermetic building, full C++
+      code intelligence in VS Code, communicating with devices over RPC,
+      host-side and on-device unit tests, and lots more.
+
 ------------------------------
 Create a Pigweed-based project
 ------------------------------
@@ -45,7 +62,7 @@ Create a Pigweed-based project
       Fork our minimal, Bazel-based starter code. Bazel is the recommended
       build system for new projects using Pigweed.
 
-.. grid:: 1
+.. grid:: 2
 
    .. grid-item-card:: :octicon:`rocket` Zephyr
       :link: docs-quickstart-zephyr
@@ -54,8 +71,6 @@ Create a Pigweed-based project
 
       Learn how to set up a C++-based Zephyr project that is ready to use
       Pigweed and then build the app with Zephyr's ``native_sim`` board.
-
-.. grid:: 1
 
    .. grid-item-card:: :octicon:`code` Examples
       :link: https://pigweed.dev/examples/index.html

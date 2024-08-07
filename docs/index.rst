@@ -12,15 +12,22 @@ Pigweed
         locally here. -->
    <br>
 
+---------------
+Tour of Pigweed
+---------------
+Want a guided, hands-on tour of Pigweed's core features? Try our
+brand new :ref:`Tour of Pigweed <showcase-sense>`!
+
 .. grid:: 1
 
-   .. grid-item-card:: :octicon:`rocket` Get started
-      :link: docs-get-started
+   .. grid-item-card:: :octicon:`rocket` Tour of Pigweed
+      :link: showcase-sense
       :link-type: ref
       :class-item: sales-pitch-cta-primary
 
-      Create a new project, integrate Pigweed into an existing project, browse
-      example apps, or contribute to upstream Pigweed
+      Explore key Pigweed features, such as hermetic building, full C++
+      code intelligence in VS Code, communicating with devices over RPC,
+      host-side and on-device unit tests, and lots more.
 
 ----------------
 What is Pigweed?
@@ -140,10 +147,11 @@ Talk to us
    :hidden:
 
    Home <self>
+   Tour of Pigweed <docs/showcases/sense/index>
    What's new <changelog>
    docs/get_started/index
-   docs/showcases/index
    Source code <https://cs.pigweed.dev/pigweed>
+   docs/showcases/index
    docs/concepts/index
    docs/3p/index
    modules

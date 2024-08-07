@@ -18,6 +18,8 @@ See :ref:`module-pw_console-user_guide-start`.
    Press :kbd:`Shift+O` or click **Open in browser** in the log pane to start a
    websocket log server.
 
+.. _module-pw_web-log-viewer-filter:
+
 -----------
 Filter logs
 -----------

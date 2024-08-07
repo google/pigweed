@@ -3,6 +3,7 @@
 ========================
 Get started with Pigweed
 ========================
+
 .. _docs-first-time-setup-guide-express-setup:
 
 -------------
@@ -10,6 +11,8 @@ Express setup
 -------------
 Run the following commands, and you should be ready to start developing with
 Pigweed:
+
+.. _Gatekeeper: https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web
 
 .. tab-set::
 
@@ -21,7 +24,7 @@ Pigweed:
       .. code-block:: sh
 
          sudo apt install git build-essential
-         curl -LJo /etc/udev/rules.d/60-openocd.rules https://raw.githubusercontent.com/openocd-org/openocd/master/contrib/60-openocd.rules
+         sudo curl -LJo /etc/udev/rules.d/60-openocd.rules https://raw.githubusercontent.com/openocd-org/openocd/master/contrib/60-openocd.rules
 
       .. inclusive-language: enable
 
@@ -40,10 +43,12 @@ Pigweed:
       .. code-block:: sh
 
          xcode-select --install
-         pyv=`python3 -c "import sys; v=sys.version_info; print('{0}.{1}'.format(v[0], v[1]))"`; /Applications/Python\ $pyv/Install\ Certificates.command
-         sudo spctl --master-disable
+         sudo spctl --master-disable  # Turn off Gatekeeper
 
       .. inclusive-language: enable
+
+      `Gatekeeper`_ needs to be turned off in order to run the unsigned binaries
+      that Pigweed builds.
 
    .. tab-item:: Windows
       :sync: windows
@@ -53,7 +58,7 @@ Pigweed:
          curl https://pigweed.googlesource.com/pigweed/examples/+/main/tools/setup_windows_prerequisites.bat?format=TEXT > setup_pigweed_prerequisites.b64 && certutil -decode -f setup_pigweed_prerequisites.b64 setup_pigweed_prerequisites.bat && del setup_pigweed_prerequisites.b64
          setup_pigweed_prerequisites.bat
 
-         This script requires admin privileges.
+      This script requires admin privileges.
 
       .. admonition:: Note
          :class: warning
