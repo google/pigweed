@@ -20,6 +20,7 @@
 #include <set>
 
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"
 
 namespace bt::sdp {
 
@@ -44,6 +45,19 @@ void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
 
 ServiceRecord::ServiceRecord() {
   SetAttribute(kServiceId, DataElement(UUID::Generate()));
+}
+
+ServiceRecord::ServiceRecord(const ServiceRecord& other) {
+  handle_ = other.handle_;
+  security_level_ = other.security_level_;
+
+  for (const auto& attribute : other.attributes_) {
+    attributes_.emplace(attribute.first, attribute.second.Clone());
+  }
+
+  for (const auto& protocol : other.addl_protocols_) {
+    addl_protocols_.emplace(protocol.first, protocol.second.Clone());
+  }
 }
 
 void ServiceRecord::SetAttribute(AttributeId id, DataElement value) {

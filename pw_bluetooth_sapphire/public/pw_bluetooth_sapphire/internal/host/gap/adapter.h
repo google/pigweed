@@ -373,6 +373,11 @@ class Adapter {
     // Idempotent. Returns |true| if any records were removed.
     virtual bool UnregisterService(RegistrationHandle handle) = 0;
 
+    // Return the set of registered services that were previously registered
+    // with RegisterService, identified by |handle|.
+    virtual std::vector<sdp::ServiceRecord> GetRegisteredServices(
+        RegistrationHandle handle) const = 0;
+
     // Initiate an outbound connection. A request will be queued if a
     // connection is already in progress. On error, |callback| will be called
     // with an error result. The error will be |kCanceled| if a connection was

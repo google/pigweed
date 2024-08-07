@@ -82,6 +82,11 @@ class Server final {
   // Returns |true| if any records were removed.
   bool UnregisterService(RegistrationHandle handle);
 
+  // Returns a list of records for the provided |handle|.
+  // The returned list may be empty if |handle| is not registered.
+  std::vector<ServiceRecord> GetRegisteredServices(
+      RegistrationHandle handle) const;
+
   // Define the ServiceDiscoveryService record for the SDP server object.
   // This method is public for testing purposes.
   static ServiceRecord MakeServiceDiscoveryService();
@@ -97,7 +102,7 @@ class Server final {
                                              uint16_t max_tx_sdu_size);
 
   // Returns the set of allocated L2CAP PSMs in the SDP server.
-  // This is a TEST ONLY hook and should not be used otherwise.
+  // TESTONLY hook and should not be used otherwise.
   std::set<l2cap::Psm> AllocatedPsmsForTest() const;
 
  private:

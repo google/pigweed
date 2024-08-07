@@ -309,6 +309,11 @@ class AdapterImpl final : public Adapter {
       return adapter_->sdp_server_->UnregisterService(handle);
     }
 
+    std::vector<sdp::ServiceRecord> GetRegisteredServices(
+        RegistrationHandle handle) const override {
+      return adapter_->sdp_server_->GetRegisteredServices(handle);
+    }
+
     std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id,
         const bt::StaticPacket<

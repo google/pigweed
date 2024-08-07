@@ -360,7 +360,7 @@ std::optional<UUID> DataElement::Get<UUID>() const {
 template <>
 std::optional<std::vector<DataElement>>
 DataElement::Get<std::vector<DataElement>>() const {
-  if (type_ != Type::kSequence) {
+  if ((type_ != Type::kSequence) && (type_ != Type::kAlternative)) {
     return std::nullopt;
   }
 

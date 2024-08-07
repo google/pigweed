@@ -31,8 +31,10 @@ class ServiceRecord {
   // Generates a UUID and sets the Service ID attribute.
   ServiceRecord();
 
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceRecord);
-  // Allow move.
+  // Disallow assign.
+  ServiceRecord& operator=(const ServiceRecord&) = delete;
+  // Allow copy and move.
+  ServiceRecord(const ServiceRecord&);
   ServiceRecord(ServiceRecord&&) = default;
 
   // Directly sets an attribute to a specific DataElement

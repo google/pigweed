@@ -249,6 +249,11 @@ class FakeAdapter final : public Adapter {
 
     bool UnregisterService(RegistrationHandle handle) override;
 
+    std::vector<sdp::ServiceRecord> GetRegisteredServices(
+        RegistrationHandle handle) const override {
+      return {};
+    }
+
     std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id,
         const bt::StaticPacket<

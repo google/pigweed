@@ -432,6 +432,26 @@ TEST(DataElementTest, SetAndGetUrl) {
   EXPECT_EQ(std::string("https://foobar.dev"), *elem.GetUrl());
 }
 
+TEST(DataElementTest, SetAndGetAlt) {
+  std::vector<DataElement> alternatives;
+  DataElement elem1;
+  elem1.Set<uint8_t>(5);
+  alternatives.emplace_back(std::move(elem1));
+  DataElement elem2;
+  elem2.Set(std::string("foo"));
+  alternatives.emplace_back(std::move(elem2));
+  DataElement alt_elem;
+  alt_elem.SetAlternative(std::move(alternatives));
+
+  EXPECT_EQ(DataElement::Type::kAlternative, alt_elem.type());
+  auto alt_get = alt_elem.Get<std::vector<DataElement>>();
+  EXPECT_TRUE(alt_get);
+  EXPECT_EQ(alt_get.value().size(), 2u);
+  EXPECT_EQ(alt_get.value().at(0).Get<uint8_t>().value(), 5);
+  EXPECT_EQ(alt_get.value().at(1).Get<std::string>().value(),
+            std::string("foo"));
+}
+
 TEST(DataElementTest, SetInvalidUrlStringIsNoOp) {
   DataElement elem;
   EXPECT_EQ(DataElement::Type::kNull, elem.type());

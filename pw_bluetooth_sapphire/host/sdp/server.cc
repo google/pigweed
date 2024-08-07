@@ -64,34 +64,71 @@ bool IsValidPsm(l2cap::Psm psm) {
   return true;
 }
 
-// Updates the |protocol_list| with the provided dynamic |psm|.
-// Returns true if the list was updated, false if the list couldn't be updated.
-bool UpdateProtocolWithPsm(DataElement& protocol_list, l2cap::Psm psm) {
-  const auto* l2cap_protocol = protocol_list.At(0);
-  BT_DEBUG_ASSERT(l2cap_protocol);
-  const auto* prot_uuid = l2cap_protocol->At(0);
-  if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid ||
-      *prot_uuid->Get<UUID>() != protocol::kL2CAP) {
-    bt_log(TRACE, "sdp", "ProtocolDescriptorList is not valid or not L2CAP");
+// Updates the L2CAP |protocol| with the provided dynamic |new_psm|.
+// Returns true if the list was updated, false if |protocol| is invalid.
+bool UpdateProtocolWithL2capPsm(DataElement* protocol, l2cap::Psm new_psm) {
+  bt_log(TRACE,
+         "sdp",
+         "Updating protocol with dynamic PSM: %s",
+         protocol->ToString().c_str());
+
+  // A valid protocol is a sequence containing a UUID and PSM value (2
+  // elements).
+  auto l2cap_protocol = protocol->Get<std::vector<DataElement>>();
+  if (!l2cap_protocol || (*l2cap_protocol).size() != 2) {
     return false;
   }
-  std::vector<DataElement> result;
-  // Rebuild the L2CAP protocol by adding UUID & new PSM.
-  result.emplace_back(prot_uuid->Clone());
-  result.emplace_back(DataElement(uint16_t{psm}));
 
-  // Copy over the remaining protocol descriptors.
-  const DataElement* it;
-  for (size_t idx = 1; nullptr != (it = protocol_list.At(idx)); idx++) {
-    result.emplace_back(it->Clone());
+  // The protocol should specify the L2CAP UUID.
+  const auto prot_uuid = (*l2cap_protocol).data();
+  if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid ||
+      *prot_uuid->Get<UUID>() != protocol::kL2CAP) {
+    return false;
   }
 
-  protocol_list = DataElement(std::move(result));
+  // The second element should be the dynamic PSM. If found, update it.
+  auto dynamic_psm_elem = &(*l2cap_protocol)[1];
+  if (!dynamic_psm_elem->Get<uint16_t>() ||
+      dynamic_psm_elem->Get<uint16_t>() != Server::kDynamicPsm) {
+    bt_log(WARN, "sdp", "Request to update non-dynamic L2CAP PSM. Ignoring");
+    return false;
+  }
+  (*l2cap_protocol)[1] = DataElement(uint16_t{new_psm});
+  protocol->Set(std::move(*l2cap_protocol));
+
   bt_log(TRACE,
          "sdp",
          "Updated protocol list with dynamic PSM %s",
-         protocol_list.ToString().c_str());
+         protocol->ToString().c_str());
   return true;
+}
+
+// Updates the L2CAP |protocol_list| with the dynamic |new_psm|.
+// |protocol_list| must be a list of protocols- one of which must be L2CAP.
+// Returns true if the list was updated with the |new_psm|, false otherwise.
+bool UpdateProtocolListWithL2capPsm(DataElement& protocol_list,
+                                    l2cap::Psm new_psm) {
+  bt_log(TRACE,
+         "sdp",
+         "Updating protocol list with dynamic psm: %s",
+         protocol_list.ToString().c_str());
+
+  auto protocol_seq = protocol_list.Get<std::vector<DataElement>>();
+  if (!protocol_seq) {
+    bt_log(TRACE, "sdp", "ProtocolDescriptorList is not a valid sequence");
+    return false;
+  }
+
+  bool updated = false;
+  for (DataElement& protocol : (*protocol_seq)) {
+    if (UpdateProtocolWithL2capPsm(&protocol, new_psm)) {
+      updated = true;
+      break;
+    }
+  }
+
+  protocol_list.Set(std::move(*protocol_seq));
+  return updated;
 }
 
 // Finds the PSM that is specified in a ProtocolDescriptorList
@@ -354,7 +391,7 @@ bool Server::QueueService(ServiceRecord* record,
       bt_log(TRACE, "sdp", "Primary protocol contains dynamic PSM");
       auto primary_protocol_copy = primary_protocol.Clone();
       psm = GetDynamicPsm(protocols_to_register);
-      if (!UpdateProtocolWithPsm(primary_protocol_copy, psm)) {
+      if (!UpdateProtocolListWithL2capPsm(primary_protocol_copy, psm)) {
         return false;
       }
       record->SetAttribute(kProtocolDescriptorList,
@@ -391,7 +428,7 @@ bool Server::QueueService(ServiceRecord* record,
       if (psm == kDynamicPsm) {
         bt_log(TRACE, "sdp", "Additional protocol contains dynamic PSM");
         psm = GetDynamicPsm(protocols_to_register);
-        if (!UpdateProtocolWithPsm(additional_protocol_copy, psm)) {
+        if (!UpdateProtocolListWithL2capPsm(additional_protocol_copy, psm)) {
           return l2cap::kInvalidPsm;
         }
       }
@@ -576,6 +613,29 @@ bool Server::UnregisterService(RegistrationHandle handle) {
   UpdateInspectProperties();
 
   return true;
+}
+
+std::vector<ServiceRecord> Server::GetRegisteredServices(
+    RegistrationHandle handle) const {
+  std::vector<ServiceRecord> out;
+  if (handle == kNotRegistered) {
+    return out;
+  }
+
+  auto service_handles_it = reg_to_service_.find(handle);
+  if (service_handles_it == reg_to_service_.end()) {
+    return out;
+  }
+
+  for (const auto& service_handle : service_handles_it->second) {
+    auto record_it = records_.find(service_handle);
+    if (record_it != records_.end()) {
+      ServiceRecord record_copy = record_it->second;
+      out.emplace_back(std::move(record_copy));
+    }
+  }
+
+  return out;
 }
 
 ServiceHandle Server::GetNextHandle() {
