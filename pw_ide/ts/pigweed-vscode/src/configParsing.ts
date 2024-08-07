@@ -13,6 +13,7 @@
 // the License.
 
 import * as vscode from 'vscode';
+import { Uri } from 'vscode';
 
 import * as hjson from 'hjson';
 
@@ -119,22 +120,32 @@ export async function getSettingsData(): Promise<SettingsData> {
   let project: SettingsJson | undefined;
   let workspace: SettingsJson | undefined;
 
-  const sharedSettingsFiles = await vscode.workspace.findFiles(
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) return {};
+  const workspaceFolder = workspaceFolders[0];
+
+  const sharedSettingsFilePath = Uri.joinPath(
+    workspaceFolder.uri,
     '.vscode/settings.shared.json',
   );
 
-  if (sharedSettingsFiles.length > 0) {
-    const buffer = await vscode.workspace.fs.readFile(sharedSettingsFiles[0]);
+  try {
+    const buffer = await vscode.workspace.fs.readFile(sharedSettingsFilePath);
     shared = hjson.parse(buffer.toString());
+  } catch (err: unknown) {
+    // do nothing, shared remains undefined if the file doesn't exist
   }
 
-  const projectSettingsFiles = await vscode.workspace.findFiles(
+  const projectSettingsFilePath = Uri.joinPath(
+    workspaceFolder.uri,
     '.vscode/settings.json',
   );
 
-  if (projectSettingsFiles.length > 0) {
-    const buffer = await vscode.workspace.fs.readFile(projectSettingsFiles[0]);
+  try {
+    const buffer = await vscode.workspace.fs.readFile(projectSettingsFilePath);
     project = hjson.parse(buffer.toString());
+  } catch (err: unknown) {
+    // do nothing, project remains undefined if the file doesn't exist
   }
 
   const workspaceFile = vscode.workspace.workspaceFile;
