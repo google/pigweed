@@ -264,21 +264,30 @@ TEST(ServiceRecordTest, AddProfile) {
   EXPECT_TRUE(ContainersEqual(expected_dun, block_dun));
 }
 
-// Test: AddInfo
+// Test: AddInfo, GetInfo
 //  - Requires at least one is set.
 //  - Adds the right attributes to a set.
-TEST(ServiceRecordTest, AddInfo) {
+//  - Returns the right attributes when retrieved.
+TEST(ServiceRecordTest, AddAndGetInfo) {
   ServiceRecord record;
 
   EXPECT_FALSE(record.HasAttribute(kLanguageBaseAttributeIdList));
+  EXPECT_TRUE(record.GetInfo().empty());
 
   // Can't add with nothing specified.
+  EXPECT_FALSE(record.AddInfo("", "", "", ""));
+  EXPECT_FALSE(record.HasAttribute(kLanguageBaseAttributeIdList));
+  // Can't add with only language code set.
   EXPECT_FALSE(record.AddInfo("en", "", "", ""));
   EXPECT_FALSE(record.HasAttribute(kLanguageBaseAttributeIdList));
+  // Can't add with an invalid language code.
+  EXPECT_FALSE(record.AddInfo("english", "foo", "bar", "baz"));
+  EXPECT_FALSE(record.HasAttribute(kLanguageBaseAttributeIdList));
 
+  // Can add valid information.
   EXPECT_TRUE(record.AddInfo("en", "SDP", "💖", ""));
-
   EXPECT_TRUE(record.HasAttribute(kLanguageBaseAttributeIdList));
+  // Can manually get the information from the base attribute ID list.
   const DataElement& val = record.GetAttribute(kLanguageBaseAttributeIdList);
 
   auto triplets = val.Get<std::vector<DataElement>>();
@@ -315,6 +324,20 @@ TEST(ServiceRecordTest, AddInfo) {
   EXPECT_EQ("💖", *desc);
 
   EXPECT_FALSE(record.HasAttribute(*base_attrid + kProviderNameOffset));
+
+  // Can add a second set of information.
+  EXPECT_TRUE(record.AddInfo("fr", "French SDP", "", "Foo"));
+  // Should be able to retrieve both sets of info.
+  auto infos = record.GetInfo();
+  EXPECT_EQ(infos.size(), 2u);
+  EXPECT_EQ(infos.at(0).language_code, "en");
+  EXPECT_EQ(infos.at(0).name.value(), "SDP");
+  EXPECT_EQ(infos.at(0).description.value(), "💖");
+  EXPECT_FALSE(infos.at(0).provider);
+  EXPECT_EQ(infos.at(1).language_code, "fr");
+  EXPECT_EQ(infos.at(1).name.value(), "French SDP");
+  EXPECT_FALSE(infos.at(1).description);
+  EXPECT_EQ(infos.at(1).provider.value(), "Foo");
 }
 
 // Test: IsRegisterable

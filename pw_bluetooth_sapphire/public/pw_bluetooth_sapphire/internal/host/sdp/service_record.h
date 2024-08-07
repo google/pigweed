@@ -112,6 +112,20 @@ class ServiceRecord {
                const std::string& description,
                const std::string& provider);
 
+  // A set of language attributes representing human-readable information.
+  // All strings are UTF-8 encoded.
+  struct Information {
+    // |language_code| is expected to be two characters long.
+    std::string language_code;
+    std::optional<std::string> name;
+    std::optional<std::string> description;
+    std::optional<std::string> provider;
+  };
+  // Returns the set of language attributes stored in this record.
+  // The returned list may be empty if kLanguageBaseAttributeIdList doesn't
+  // exist in the record.
+  std::vector<Information> GetInfo() const;
+
   // Set the security level required to connect to this service.
   // See v5.0, Vol 3, Part C, Section 5.2.2.8
   void set_security_level(SecurityLevel security_level) {
