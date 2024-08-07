@@ -17,6 +17,10 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_att = "../../public/pw_bluetooth_sapphire/internal/host/att"
 
+config("warnings") {
+  cflags_cc = [ "-Wswitch-enum" ]
+}
+
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
@@ -60,7 +64,12 @@ pw_source_set("att") {
     "$dir_pw_third_party/fuchsia:fit",
   ]
 
-  deps = [ "$dir_pw_string" ]
+  configs = [ ":warnings" ]
+
+  deps = [
+    "$dir_pw_preprocessor",
+    "$dir_pw_string",
+  ]
 
   public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }

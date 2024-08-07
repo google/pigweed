@@ -14,14 +14,15 @@
 
 #include "pw_bluetooth_sapphire/internal/host/att/error.h"
 
+#include "pw_preprocessor/compiler.h"
 #include "pw_string/format.h"
-
-#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt {
 namespace {
 
 constexpr const char* ErrorToString(att::ErrorCode ecode) {
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (ecode) {
     case att::ErrorCode::kInvalidHandle:
       return "invalid handle";
@@ -60,6 +61,7 @@ constexpr const char* ErrorToString(att::ErrorCode ecode) {
     default:
       break;
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 
   return "(unknown)";
 }

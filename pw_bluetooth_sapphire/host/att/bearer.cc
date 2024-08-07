@@ -17,6 +17,7 @@
 #include <cpp-string/string_printf.h>
 #include <lib/fit/defer.h>
 #include <pw_bytes/endian.h>
+#include <pw_preprocessor/compiler.h>
 
 #include <type_traits>
 
@@ -24,8 +25,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
-
-#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::att {
 
@@ -44,6 +43,8 @@ sm::SecurityLevel CheckSecurity(ErrorCode ecode,
                                 const sm::SecurityProperties& security) {
   bool encrypted = (security.level() != sm::SecurityLevel::kNoSecurity);
 
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (ecode) {
     // "Insufficient Encryption" error code is specified for cases when the peer
     // is paired (i.e. a LTK or STK exists for it) but the link is not
@@ -76,6 +77,7 @@ sm::SecurityLevel CheckSecurity(ErrorCode ecode,
     default:
       break;
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 
   return sm::SecurityLevel::kNoSecurity;
 }
@@ -394,6 +396,8 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
 
   TransactionQueue* tq = nullptr;
 
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (type) {
     case MethodType::kCommand:
     case MethodType::kNotification:
@@ -414,6 +418,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
     default:
       BT_PANIC("unsupported opcode: %#.2x", reader.opcode());
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 
   BT_ASSERT_MSG(
       callback,
@@ -785,6 +790,8 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   }
 
   PacketReader packet(sdu.get());
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (GetMethodType(packet.opcode())) {
     case MethodType::kResponse:
       HandleEndTransaction(&request_queue_, packet);
@@ -807,6 +814,7 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
       SendErrorResponse(packet.opcode(), 0, ErrorCode::kRequestNotSupported);
       break;
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 }
 
 }  // namespace bt::att
