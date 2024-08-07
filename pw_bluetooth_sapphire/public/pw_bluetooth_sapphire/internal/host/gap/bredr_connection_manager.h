@@ -228,6 +228,9 @@ class BrEdrConnectionManager final {
                              bool interlaced,
                              hci::ResultFunction<> cb);
 
+  // Write PIN type used for legacy pairing to the controller.
+  void WritePinType(pw::bluetooth::emboss::PinType pin_type);
+
   // Helper to register an event handler to run.
   hci::CommandChannel::EventHandlerId AddEventHandler(
       const hci_spec::EventCode& code,

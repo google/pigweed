@@ -317,6 +317,14 @@ constexpr OpCode kSetEventMask = ControllerAndBasebandOpCode(0x0001);
 constexpr OpCode kReset = ControllerAndBasebandOpCode(0x0003);
 
 // ========================================
+// Read PIN Type Command (v1.1) (BR/EDR)
+constexpr OpCode kReadPinType = ControllerAndBasebandOpCode(0x0009);
+
+// ========================================
+// Write PIN Type Command (v1.1) (BR/EDR)
+constexpr OpCode kWritePinType = ControllerAndBasebandOpCode(0x000A);
+
+// ========================================
 // Write Local Name Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteLocalName = ControllerAndBasebandOpCode(0x0013);
 

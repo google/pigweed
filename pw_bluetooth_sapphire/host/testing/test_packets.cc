@@ -1309,6 +1309,15 @@ DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
       ));
 }
 
+DynamicByteBuffer WritePinTypePacket(uint8_t pin_type) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci_spec::kWritePinType),
+      UpperBits(hci_spec::kWritePinType),
+      0x01,     // parameter_total_size (1 byte)
+      pin_type  // PIN_Type
+      ));
+}
+
 DynamicByteBuffer WriteScanEnable(uint8_t scan_enable) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kWriteScanEnable),

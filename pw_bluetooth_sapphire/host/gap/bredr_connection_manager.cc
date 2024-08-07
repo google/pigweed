@@ -241,6 +241,9 @@ BrEdrConnectionManager::BrEdrConnectionManager(
         [[maybe_unused]] bool _ =
             bt_is_error(status, WARN, "gap-bredr", "write page timeout failed");
       });
+
+  // Set variable PIN type for legacy pairing
+  WritePinType(pw::bluetooth::emboss::PinType::VARIABLE);
 }
 
 BrEdrConnectionManager::~BrEdrConnectionManager() {
@@ -691,6 +694,22 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
       });
 
   hci_cmd_runner_->RunCommands(std::move(cb));
+}
+
+void BrEdrConnectionManager::WritePinType(
+    pw::bluetooth::emboss::PinType pin_type) {
+  auto write_pin_type_cmd = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::WritePinTypeCommandWriter>(
+      hci_spec::kWritePinType);
+  auto params = write_pin_type_cmd.view_t();
+  params.pin_type().Write(pin_type);
+
+  hci_->command_channel()->SendCommand(
+      std::move(write_pin_type_cmd),
+      [](auto id, const hci::EventPacket& event) {
+        [[maybe_unused]] bool _ = bt_is_error(
+            event.ToResult(), WARN, "gap-bredr", "Write PIN Type failed");
+      });
 }
 
 std::optional<BrEdrConnectionRequest*>

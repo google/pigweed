@@ -261,6 +261,8 @@ DynamicByteBuffer WritePageScanTypeResponse();
 
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);
 
+DynamicByteBuffer WritePinTypePacket(uint8_t pin_type);
+
 DynamicByteBuffer WriteScanEnable(uint8_t scan_enable);
 
 }  // namespace bt::testing
