@@ -33,8 +33,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
-#pragma clang diagnostic ignored "-Wshadow"
-
 namespace bt::gap {
 
 class PeerCache;
@@ -113,7 +111,7 @@ class Peer final {
   // source location. `RegisterName()` will update the device name attribute if
   // the newly encountered name's source is of higher priority (lower enum
   // value) than that of the existing name.
-  enum NameSource {
+  enum class NameSource {
     kGenericAccessService = /*highest priority*/ 0,
     kNameDiscoveryProcedure = 1,
     kInquiryResultComplete = 2,
@@ -620,7 +618,8 @@ class Peer final {
   // Returns true if a name change occurs.  If the name is updated and
   // `notify_listeners` is false, then listeners will not be notified of an
   // update to this peer.
-  bool RegisterName(const std::string& name, NameSource source = kUnknown);
+  bool RegisterName(const std::string& name,
+                    NameSource source = NameSource::kUnknown);
 
   // Updates the appearance of this device.
   void SetAppearance(uint16_t appearance) { appearance_ = appearance; }

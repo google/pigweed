@@ -20,6 +20,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
@@ -35,8 +36,6 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
-
-#pragma clang diagnostic ignored "-Wshadow"
 
 namespace bt::hci {
 namespace {
@@ -910,10 +909,10 @@ TEST_P(AclDataChannelAllBufferCombinations,
 
 TEST_F(AclDataChannelTest,
        SendMoreBREDRAndLEPacketsThanMaximumBREDRBufferSpace) {
-  constexpr size_t kBufferMaxNumPackets = 5;
+  constexpr size_t kBufferMaxPackets = 5;
 
   // Only BR/EDR buffer available
-  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kBufferMaxNumPackets),
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kBufferMaxPackets),
                            DataBufferInfo());
 
   FakeAclConnection connection_0(
@@ -988,11 +987,11 @@ TEST_F(AclDataChannelTest,
 }
 
 TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumLEBufferSpace) {
-  constexpr size_t kBufferMaxNumPackets = 3;
+  constexpr size_t kBufferMaxPackets = 3;
 
   // Only LE buffer available
   InitializeACLDataChannel(DataBufferInfo(),
-                           DataBufferInfo(kMaxMtu, kBufferMaxNumPackets));
+                           DataBufferInfo(kMaxMtu, kBufferMaxPackets));
 
   FakeAclConnection connection_0(
       acl_data_channel(), kConnectionHandle0, bt::LinkType::kLE);

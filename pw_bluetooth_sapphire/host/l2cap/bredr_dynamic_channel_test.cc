@@ -19,13 +19,12 @@
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
-
-#pragma clang diagnostic ignored "-Wshadow"
 
 namespace bt::l2cap::internal {
 namespace {
@@ -1941,7 +1940,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   RETURN_IF_FATAL(RunUntilIdle());
 
-  const auto kInboundConfigReq = MakeConfigReqWithMtuAndRfc(
+  const auto inbound_config_req = MakeConfigReqWithMtuAndRfc(
       kLocalCId,
       kPeerMtu,
       RetransmissionAndFlowControlMode::kEnhancedRetransmission,
@@ -1962,7 +1961,7 @@ TEST_F(BrEdrDynamicChannelTest,
       kPeerMps);
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(
-      kConfigurationRequest, kInboundConfigReq, kOutboundConfigRsp));
+      kConfigurationRequest, inbound_config_req, kOutboundConfigRsp));
 
   EXPECT_TRUE(channel_opened);
 
@@ -2229,10 +2228,11 @@ TEST_P(
       kOutboundConfigReq.view(),
       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
 
-  const auto kExtendedFeaturesInfoRsp = MakeExtendedFeaturesInfoRsp(GetParam());
-  sig()->ReceiveResponses(
-      ext_info_transaction_id(),
-      {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
+  const auto extended_features_info_rsp =
+      MakeExtendedFeaturesInfoRsp(GetParam());
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess,
+                            extended_features_info_rsp.view()}});
 
   RunUntilIdle();
 
@@ -3331,7 +3331,7 @@ TEST_F(BrEdrDynamicChannelTest,
       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
 
   constexpr uint16_t kPeerMtu = kDefaultMTU + 2;
-  const auto kInboundConfigReq = MakeConfigReqWithMtu(kLocalCId, kPeerMtu);
+  const auto inbound_config_req = MakeConfigReqWithMtu(kLocalCId, kPeerMtu);
 
   int open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
@@ -3352,7 +3352,7 @@ TEST_F(BrEdrDynamicChannelTest,
   const ByteBuffer& kExpectedOutboundOkConfigRsp =
       MakeConfigRspWithMtu(kRemoteCId, kPeerMtu);
   sig()->ReceiveExpect(
-      kConfigurationRequest, kInboundConfigReq, kExpectedOutboundOkConfigRsp);
+      kConfigurationRequest, inbound_config_req, kExpectedOutboundOkConfigRsp);
   RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 

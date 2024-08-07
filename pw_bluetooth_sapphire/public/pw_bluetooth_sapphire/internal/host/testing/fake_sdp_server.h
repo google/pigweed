@@ -35,7 +35,7 @@ class FakeSdpServer {
   // Register this FakeSdpServer as a service on PSM l2cap::kSDP on |l2cap|.
   // Any channel registered with this service will have its packet handler
   // calllback set to FakeSdpServer::HandleSdu()
-  void RegisterWithL2cap(FakeL2cap* l2cap_);
+  void RegisterWithL2cap(FakeL2cap* l2cap);
 
   // Handle an inbound packet |sdu| using the production SDP server instance,
   // and then respond using the |channel| send_packet_callback.

@@ -20,8 +20,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
-#pragma clang diagnostic ignored "-Wshadow"
-
 namespace bt::hci {
 
 LowEnergyConnection::LowEnergyConnection(

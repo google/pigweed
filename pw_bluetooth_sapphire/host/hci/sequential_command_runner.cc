@@ -17,8 +17,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 
-#pragma clang diagnostic ignored "-Wshadow"
-
 namespace bt::hci {
 
 SequentialCommandRunner::SequentialCommandRunner(
@@ -150,12 +148,12 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
 
     std::visit(
         [&event_packet, &emboss_packet](auto& cmd_cb) {
-          using T = std::decay_t<decltype(cmd_cb)>;
-          if constexpr (std::is_same_v<T, CommandCompleteCallback>) {
+          using cmd_cb_t = std::decay_t<decltype(cmd_cb)>;
+          if constexpr (std::is_same_v<cmd_cb_t, CommandCompleteCallback>) {
             if (cmd_cb) {
               cmd_cb(event_packet);
             }
-          } else if constexpr (std::is_same_v<T,
+          } else if constexpr (std::is_same_v<cmd_cb_t,
                                               EmbossCommandCompleteCallback>) {
             if (cmd_cb) {
               cmd_cb(*emboss_packet);

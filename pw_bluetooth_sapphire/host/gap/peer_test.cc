@@ -488,7 +488,7 @@ TEST_F(PeerTest,
   set_notify_listeners_cb(
       [&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
 
-  const StaticByteBuffer kAdvData(
+  const StaticByteBuffer kBadAdvData(
       0x05,  // Length
       0x09,  // AD type: Complete Local Name
       'T',
@@ -498,7 +498,7 @@ TEST_F(PeerTest,
   );
 
   peer().MutLe().SetAdvertisingData(
-      /*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point());
+      /*rssi=*/0, kBadAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(listener_notified);  // Fresh AD still results in an update
   EXPECT_FALSE(peer().name().has_value());
 }
@@ -1037,23 +1037,26 @@ TEST_F(PeerTest, MovingLowEnergyConnectionTokenWorksAsExpected) {
 
 TEST_F(PeerTest, RegisterNamesWithVariousSources) {
   ASSERT_FALSE(peer().name().has_value());
-  ASSERT_TRUE(peer().RegisterName("test", Peer::kAdvertisingDataComplete));
+  ASSERT_TRUE(
+      peer().RegisterName("test", Peer::NameSource::kAdvertisingDataComplete));
 
   // Test that name with lower source priority does not replace stored name with
   // higher priority.
-  ASSERT_FALSE(peer().RegisterName("test", Peer::kUnknown));
+  ASSERT_FALSE(peer().RegisterName("test", Peer::NameSource::kUnknown));
 
   // Test that name with higher source priority replaces stored name with lower
   // priority.
-  ASSERT_TRUE(peer().RegisterName("test", Peer::kGenericAccessService));
+  ASSERT_TRUE(
+      peer().RegisterName("test", Peer::NameSource::kGenericAccessService));
 
   // Test that stored name is not replaced with an identical name from an
   // identical source.
-  ASSERT_FALSE(peer().RegisterName("test", Peer::kGenericAccessService));
+  ASSERT_FALSE(
+      peer().RegisterName("test", Peer::NameSource::kGenericAccessService));
 
   // Test that stored name is replaced by a different name from the same source.
-  ASSERT_TRUE(
-      peer().RegisterName("different_name", Peer::kGenericAccessService));
+  ASSERT_TRUE(peer().RegisterName("different_name",
+                                  Peer::NameSource::kGenericAccessService));
 }
 
 TEST_F(PeerTest, SetValidAdvertisingData) {
@@ -1463,18 +1466,18 @@ TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
   data.local_ltk = kLTK;
   peer().MutLe().SetBondData(data);
 
-  const StaticByteBuffer kAdvData(0x08,  // Length
-                                  0x09,  // AD type: Complete Local Name
-                                  'M',
-                                  'a',
-                                  'l',
-                                  'l',
-                                  'o',
-                                  'r',
-                                  'y');
+  const StaticByteBuffer kBondedAdvData(0x08,  // Length
+                                        0x09,  // AD type: Complete Local Name
+                                        'M',
+                                        'a',
+                                        'l',
+                                        'l',
+                                        'o',
+                                        'r',
+                                        'y');
   peer().MutLe().SetAdvertisingData(
       /*rssi=*/0,
-      kAdvData,
+      kBondedAdvData,
       pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   ASSERT_TRUE(peer().name().has_value());

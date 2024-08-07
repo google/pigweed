@@ -674,7 +674,6 @@ TEST_F(PeerCacheTestBondingTest, AddLowEnergyBondedPeerSuccess) {
 }
 
 TEST_F(PeerCacheTestBondingTest, AddBrEdrBondedPeerSuccess) {
-  PeerId kId(5);
   sm::PairingData data;
 
   EXPECT_TRUE(
@@ -1086,7 +1085,6 @@ class DualModeBondingTest
       public ::testing::WithParamInterface<DeviceAddress> {};
 
 TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
-  PeerId kId(5);
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;

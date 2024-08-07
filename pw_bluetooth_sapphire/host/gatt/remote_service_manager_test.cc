@@ -26,8 +26,6 @@
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
-#pragma clang diagnostic ignored "-Wshadow"
-
 namespace bt::gatt::internal {
 namespace {
 
@@ -1964,10 +1962,10 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
     SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("Error Code: %s", name));
     size_t read_count = 0;
     fake_client()->set_read_by_type_request_callback(
-        [&, code = code](const UUID& type,
-                         att::Handle start,
-                         att::Handle end,
-                         auto callback) {
+        [&, err_code = code](const UUID& type,
+                             att::Handle start,
+                             att::Handle end,
+                             auto callback) {
           ASSERT_EQ(0u, read_count++);
           switch (read_count++) {
             case 0:
@@ -1975,7 +1973,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
               break;
             case 1:
               callback(fit::error(
-                  Client::ReadByTypeError{att::Error(code), std::nullopt}));
+                  Client::ReadByTypeError{att::Error(err_code), std::nullopt}));
               break;
             default:
               FAIL();
@@ -3394,7 +3392,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
 
   // Disabling all should send out an ATT transaction.
   while (!handler_ids.empty()) {
-    att::Result<> status = ToResult(HostError::kFailed);
+    status = ToResult(HostError::kFailed);
     service->DisableNotifications(
         kDefaultCharacteristic,
         handler_ids.back(),
