@@ -23,7 +23,7 @@ bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "nanopb", repo_name = "com_github_nanopb_nanopb")
 bazel_dep(name = "pico-sdk", version = "1.6.0-rc1")
-bazel_dep(name = "picotool")
+bazel_dep(name = "picotool", version = "1.1.3-rc1")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "protobuf", version = "24.4", repo_name = "com_google_protobuf")
 bazel_dep(name = "rules_cc", version = "0.0.9")
@@ -66,13 +66,6 @@ git_override(
     module_name = "nanopb",
     commit = "f9191cd0be4177abd0d04546d61d59a9b6c32de3",
     remote = "https://github.com/nanopb/nanopb.git",
-)
-
-# TODO: https://pwbug.dev/354270165 - Add picotool to the BCR.
-git_override(
-    module_name = "picotool",
-    commit = "6cd88302465919ff2005c88494f4f8dafc3b207e",
-    remote = "https://github.com/armandomontanez/picotool",
 )
 
 # TODO: b/345806988 - remove this fork and update to upstream HEAD.
