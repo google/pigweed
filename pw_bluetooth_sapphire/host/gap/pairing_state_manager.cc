@@ -17,16 +17,45 @@
 #include <memory>
 #include <utility>
 
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 
 namespace bt::gap {
 
-PairingStateManager::PairingStateManager(Peer::WeakPtr peer,
-                                         WeakPtr<hci::BrEdrConnection> link,
-                                         bool outgoing_connection,
-                                         fit::closure auth_cb,
-                                         StatusCallback status_cb)
+PairingStateManager::PairingStateManager(
+    Peer::WeakPtr peer,
+    WeakPtr<hci::BrEdrConnection> link,
+    std::unique_ptr<LegacyPairingState> legacy_pairing_state,
+    bool outgoing_connection,
+    fit::closure auth_cb,
+    StatusCallback status_cb)
     : peer_(std::move(peer)), link_(std::move(link)) {
+  // If |legacy_pairing_state| is non-null, this means we were responding to
+  // Legacy Pairing before the ACL connection between the two devices was
+  // complete
+  if (legacy_pairing_state) {
+    // Use |legacy_pairing_state| because it already contains information and
+    // state we want to keep
+    legacy_pairing_state_ = std::move(legacy_pairing_state);
+
+    // Since PairingStateManager is created when the ACL connection is complete,
+    // we need to initialize |legacy_pairing_state_| with information that we
+    // didn't have until after the connection was complete (e.g. link, auth_cb,
+    // status_cb)
+    legacy_pairing_state_->BuildEstablishedLink(
+        link_, std::move(auth_cb), std::move(status_cb));
+    legacy_pairing_state_->set_link_ltk();
+
+    // We should also check that |peer| and |outgoing_connection| are unchanged
+    // before and after connection is complete
+    BT_ASSERT(legacy_pairing_state_->peer()->identifier() ==
+              peer_->identifier());
+    BT_ASSERT(legacy_pairing_state_->outgoing_connection() ==
+              outgoing_connection);
+    return;
+  }
+
   secure_simple_pairing_state_ =
       std::make_unique<SecureSimplePairingState>(peer_,
                                                  link_,

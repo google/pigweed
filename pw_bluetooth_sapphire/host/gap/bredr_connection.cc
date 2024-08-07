@@ -38,12 +38,6 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
       peer_(std::move(peer)),
       link_(std::move(link)),
       request_(std::move(request)),
-      pairing_state_manager_(std::make_unique<PairingStateManager>(
-          peer_,
-          link_->GetWeakPtr(),
-          request_ && request_->AwaitingOutgoing(),
-          std::move(send_auth_request_cb),
-          fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this))),
       l2cap_(l2cap),
       sco_manager_(
           std::make_unique<sco::ScoConnectionManager>(peer_id_,
@@ -61,6 +55,23 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
   link_->set_peer_disconnect_callback(
       [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](
           const auto& conn, auto /*reason*/) { peer_disconnect_cb(); });
+
+  std::unique_ptr<LegacyPairingState> legacy_pairing_state = nullptr;
+  if (request_ && request_->legacy_pairing_state()) {
+    // This means that we were responding to Legacy Pairing before the
+    // ACL connection between the two devices was complete.
+    legacy_pairing_state = request_->take_legacy_pairing_state();
+
+    // TODO(fxbug.dev/356165942): Check that legacy pairing is done
+  }
+
+  pairing_state_manager_ = std::make_unique<PairingStateManager>(
+      peer_,
+      link_->GetWeakPtr(),
+      std::move(legacy_pairing_state),
+      request_ && request_->AwaitingOutgoing(),
+      std::move(send_auth_request_cb),
+      fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this));
 }
 
 BrEdrConnection::~BrEdrConnection() {

@@ -37,19 +37,19 @@ LegacyPairingState::LegacyPairingState(Peer::WeakPtr peer,
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       outgoing_connection_(outgoing_connection) {
-  // We may receive a request for Legacy Pairing prior to the ACL connection
-  // being complete. We can only populate |link_|,
-  // |send_auth_request_callback_|, and |status_callback_| if the ACL
-  // connection is complete.
-  if (link.is_alive()) {
-    link_ = std::move(link);
-    send_auth_request_callback_ = std::move(auth_cb);
-    status_callback_ = std::move(status_cb);
+  // We can only populate |link_|, |send_auth_request_callback_|, and
+  // |status_callback_| if the ACL connection is complete.
+  BT_ASSERT(link.is_alive());
 
-    link_->set_encryption_change_callback(
-        fit::bind_member<&LegacyPairingState::OnEncryptionChange>(this));
-  }
+  BuildEstablishedLink(
+      std::move(link), std::move(auth_cb), std::move(status_cb));
 }
+
+LegacyPairingState::LegacyPairingState(Peer::WeakPtr peer,
+                                       bool outgoing_connection)
+    : peer_id_(peer->identifier()),
+      peer_(std::move(peer)),
+      outgoing_connection_(outgoing_connection) {}
 
 LegacyPairingState::~LegacyPairingState() {
   if (link_.is_alive()) {
@@ -69,6 +69,18 @@ LegacyPairingState::~LegacyPairingState() {
       cb();
     }
   }
+}
+
+void LegacyPairingState::BuildEstablishedLink(
+    WeakPtr<hci::BrEdrConnection> link,
+    fit::closure auth_cb,
+    StatusCallback status_cb) {
+  link_ = std::move(link);
+  send_auth_request_callback_ = std::move(auth_cb);
+  status_callback_ = std::move(status_cb);
+
+  link_->set_encryption_change_callback(
+      fit::bind_member<&LegacyPairingState::OnEncryptionChange>(this));
 }
 
 void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {

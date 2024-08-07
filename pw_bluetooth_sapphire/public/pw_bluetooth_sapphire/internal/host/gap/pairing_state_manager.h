@@ -19,6 +19,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/types.h"
@@ -69,8 +70,14 @@ class PairingStateManager final {
   // Authentication Request for this peer.
   //
   // |link| must be valid for the lifetime of this object.
+  //
+  // If |legacy_pairing_state| is non-null, this means we were responding to
+  // a Legacy Pairing request before the ACL connection between the two devices
+  // was complete. |legacy_pairing_state| is transferred to the
+  // PairingStateManager.
   PairingStateManager(Peer::WeakPtr peer,
                       WeakPtr<hci::BrEdrConnection> link,
+                      std::unique_ptr<LegacyPairingState> legacy_pairing_state,
                       bool outgoing_connection,
                       fit::closure auth_cb,
                       StatusCallback status_cb);
@@ -168,6 +175,7 @@ class PairingStateManager final {
 
  private:
   std::unique_ptr<SecureSimplePairingState> secure_simple_pairing_state_;
+  std::unique_ptr<LegacyPairingState> legacy_pairing_state_;
 
   Peer::WeakPtr peer_;
 

@@ -233,6 +233,11 @@ class BrEdrConnectionManager final {
       const hci_spec::EventCode& code,
       hci::CommandChannel::EventCallbackVariant cb);
 
+  // Find the outstanding connection request object for a connection request
+  // to/from |peer_id|. Returns nullopt if no request for |peer_id| exists.
+  std::optional<BrEdrConnectionRequest*> FindConnectionRequestById(
+      PeerId peer_id);
+
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
   std::optional<std::pair<hci_spec::ConnectionHandle, BrEdrConnection*>>

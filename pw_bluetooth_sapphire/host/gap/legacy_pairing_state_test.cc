@@ -171,6 +171,40 @@ class TestStatusHandler final {
   std::optional<hci::Result<>> status_;
 };
 
+TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false);
+
+  // |pairing_state|'s temporary |link_key_| is empty
+  EXPECT_FALSE(pairing_state.link_key().has_value());
+
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+
+  std::optional<hci_spec::LinkKey> reply_key = pairing_state.OnLinkKeyRequest();
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+
+  // Connection not complete yet so link key is stored in LegacyPairingState and
+  // not the connection
+  EXPECT_FALSE(connection()->ltk().has_value());
+  EXPECT_TRUE(pairing_state.link_key().has_value());
+  EXPECT_EQ(kTestLinkKey, pairing_state.link_key().value());
+
+  // Authentication is done and connection has been made so we can set the link
+  // info using |connection()|
+  pairing_state.BuildEstablishedLink(connection()->GetWeakPtr(),
+                                     MakeAuthRequestCallback(),
+                                     NoOpStatusCallback);
+
+  // Store |link_key_| into the connection
+  pairing_state.set_link_ltk();
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
 TEST_F(LegacyPairingStateTest, PairingStateStartsAsResponder) {
   LegacyPairingState pairing_state(peer()->GetWeakPtr(),
                                    connection()->GetWeakPtr(),
@@ -183,10 +217,7 @@ TEST_F(LegacyPairingStateTest, PairingStateStartsAsResponder) {
 TEST_F(LegacyPairingStateTest,
        NeverInitiateLegacyPairingBeforeAclConnectionCompletes) {
   LegacyPairingState pairing_state(peer()->GetWeakPtr(),
-                                   incomplete_connection(),
-                                   /*outgoing_connection=*/false,
-                                   MakeAuthRequestCallback(),
-                                   NoOpStatusCallback);
+                                   /*outgoing_connection=*/false);
   EXPECT_FALSE(pairing_state.initiator());
 
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
@@ -255,10 +286,7 @@ TEST_F(
     LegacyPairingStateTest,
     PairingResponderOnLinkKeyRequestReturnsLinkKeyWhenBondDataExistsBeforeAclConnectionCompletes) {
   LegacyPairingState pairing_state(peer()->GetWeakPtr(),
-                                   incomplete_connection(),
-                                   /*outgoing_connection=*/false,
-                                   MakeAuthRequestCallback(),
-                                   NoOpStatusCallback);
+                                   /*outgoing_connection=*/false);
   EXPECT_FALSE(pairing_state.initiator());
 
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
@@ -302,6 +330,7 @@ TEST_F(
 
   // Connection was complete so link key was stored in connection
   EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
   EXPECT_FALSE(pairing_state.link_key().has_value());
 }
 
@@ -332,6 +361,7 @@ TEST_F(
 
   // Connection was complete so link key was stored in the connection
   EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
   EXPECT_FALSE(pairing_state.link_key().has_value());
 }
 
@@ -339,10 +369,7 @@ TEST_F(
     LegacyPairingStateTest,
     PairingResponderOnLinkKeyRequestReturnsNullWhenBondDataDoesNotExistBeforeAclComplete) {
   LegacyPairingState pairing_state(peer()->GetWeakPtr(),
-                                   incomplete_connection(),
-                                   /*outgoing_connection=*/false,
-                                   MakeAuthRequestCallback(),
-                                   NoOpStatusCallback);
+                                   /*outgoing_connection=*/false);
   EXPECT_FALSE(pairing_state.initiator());
 
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
