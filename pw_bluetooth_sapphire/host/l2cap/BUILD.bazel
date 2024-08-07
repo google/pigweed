@@ -65,6 +65,7 @@ cc_library(
     ],
     copts = [
         "-Wno-unused-parameter",
+        "-Wswitch-enum",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
