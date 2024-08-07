@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <pw_bytes/endian.h>
+#include <pw_preprocessor/compiler.h>
 #include <pw_string/utf_codecs.h>
 
 #include <string>
@@ -26,8 +27,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/to_string.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
-
-#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt {
 
@@ -324,6 +323,8 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
     // validate that per-field sizes do not overflow a uint8_t because they, by
     // construction, are obtained from a uint8_t.
     BT_DEBUG_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
+    PW_MODIFY_DIAGNOSTICS_PUSH();
+    PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
@@ -441,6 +442,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
                static_cast<unsigned int>(type));
         break;
     }
+    PW_MODIFY_DIAGNOSTICS_POP();
   }
 
   return fit::ok(std::move(out_ad));

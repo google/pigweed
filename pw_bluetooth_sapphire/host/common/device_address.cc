@@ -15,9 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_string/format.h"
-
-#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt {
 namespace {
@@ -97,6 +96,8 @@ DeviceAddress::DeviceAddress(Type type,
 
 pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(
     DeviceAddress::Type type) {
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (type) {
     case DeviceAddress::Type::kLEPublic: {
       return pw::bluetooth::emboss::LEAddressType::PUBLIC;
@@ -108,6 +109,7 @@ pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(
       BT_PANIC("invalid DeviceAddressType");
     }
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
 }
 
 pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(

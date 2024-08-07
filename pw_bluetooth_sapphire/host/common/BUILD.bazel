@@ -40,6 +40,7 @@ cc_library(
         "supplement_data.cc",
         "uuid.cc",
     ],
+    copts = ["-Wswitch-enum"],
     # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
     # builder issue is resolved.
     target_compatible_with = ["@platforms//os:linux"],
