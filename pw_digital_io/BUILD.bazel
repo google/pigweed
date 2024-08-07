@@ -82,3 +82,29 @@ py_proto_library(
     name = "digital_io_proto_py_pb2",
     deps = [":digital_io_proto"],
 )
+
+cc_library(
+    name = "digital_io_mock",
+    srcs = ["digital_io_mock.cc"],
+    hdrs = ["public/pw_digital_io/digital_io_mock.h"],
+    implementation_deps = [
+        "//pw_log",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert:check",
+        "//pw_chrono:system_clock",
+        "//pw_containers:inline_deque",
+        "//pw_digital_io",
+        "//pw_result",
+    ],
+)
+
+pw_cc_test(
+    name = "digital_io_mock_test",
+    srcs = ["digital_io_mock_test.cc"],
+    deps = [
+        ":digital_io_mock",
+        "//pw_unit_test",
+    ],
+)

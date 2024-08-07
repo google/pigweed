@@ -31,7 +31,7 @@ pw_add_library(pw_digital_io STATIC
     pw_toolchain._sibling_cast
 )
 
-pw_add_test(pw_digital_io.stream_test
+pw_add_test(pw_digital_io.digital_io_test
   SOURCES
     digital_io_test.cc
   PRIVATE_DEPS
@@ -40,3 +40,31 @@ pw_add_test(pw_digital_io.stream_test
     modules
     pw_digital_io
 )
+
+pw_add_library(pw_digital_io.digital_io_mock STATIC
+  HEADERS
+    public/pw_digital_io/digital_io_mock.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    digital_io_mock.cc
+  PRIVATE_DEPS
+    pw_log
+  PUBLIC_DEPS
+    pw_assert.check
+    pw_chrono.system_clock
+    pw_containers.inline_deque
+    pw_digital_io
+    pw_result
+)
+
+pw_add_test(pw_digital_io.digital_io_mock_test
+  SOURCES
+    digital_io_mock_test.cc
+  PRIVATE_DEPS
+    pw_digital_io.digital_io_mock
+  GROUPS
+    modules
+    pw_digital_io
+)
+

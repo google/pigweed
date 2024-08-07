@@ -214,6 +214,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_crypto/public/pw_crypto/ecdsa.h",
   "$dir_pw_crypto/public/pw_crypto/sha256.h",
   "$dir_pw_digital_io/public/pw_digital_io/digital_io.h",
+  "$dir_pw_digital_io/public/pw_digital_io/digital_io_mock.h",
   "$dir_pw_function/public/pw_function/function.h",
   "$dir_pw_function/public/pw_function/pointer.h",
   "$dir_pw_function/public/pw_function/scope_guard.h",

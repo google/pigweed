@@ -309,6 +309,10 @@ API reference
    :members:
    :private-members:
 
+.. doxygenclass:: pw::digital_io::DigitalInOutMock
+   :members:
+   :private-members:
+
 ------------
 Dependencies
 ------------
