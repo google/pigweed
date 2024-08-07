@@ -121,9 +121,12 @@ export function getTarget(): string | undefined {
 }
 
 export async function setTarget(
-  target: string,
+  target: string | undefined,
   settingsFileWriter: (target: string) => Promise<void>,
 ): Promise<void> {
+  target = target ?? getTarget();
+  if (!target) return;
+
   if (!(await availableTargets()).includes(target)) {
     throw new Error(`Target not among available targets: ${target}`);
   }
@@ -333,6 +336,14 @@ export async function setCompileCommandsTarget(
       await setTarget(target, activeFilesCache.writeToSettings);
     });
 }
+
+export const setCompileCommandsTargetOnSettingsChange =
+  (activeFilesCache: ClangdActiveFilesCache) =>
+  (e: vscode.ConfigurationChangeEvent) => {
+    if (e.affectsConfiguration('pigweed')) {
+      setTarget(undefined, activeFilesCache.writeToSettings);
+    }
+  };
 
 export async function refreshCompileCommandsAndSetTarget(
   refresh: () => void,

@@ -17,7 +17,7 @@ interface IDisposable {
 }
 
 export class Disposable implements IDisposable {
-  protected disposables: IDisposable[] = [];
+  disposables: IDisposable[] = [];
 
   dispose = () => {
     this.disposables.forEach((it) => it.dispose());

@@ -190,6 +190,13 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 
    Select the target group that ``clangd`` should use for code analysis.
 
+   .. tip::
+
+      You might notice that the currently-selected code analysis target is
+      stored in the ``pigweed.codeAnalysisTarget`` setting. If you edit this
+      value manually, don't worry! The Pigweed extension will immediately do
+      everything it would have done if you had run this command.
+
 .. describe:: Pigweed: Disable Inactive File Code Intelligence
 
    See :ref:`the associated setting<module-pw_ide-guide-vscode-settings-disable-inactive-file-code-intelligence>`.

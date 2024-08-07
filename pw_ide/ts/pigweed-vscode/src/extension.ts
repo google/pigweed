@@ -16,7 +16,12 @@ import * as vscode from 'vscode';
 
 import { configureBazelisk, configureBazelSettings } from './bazel';
 import { BazelRefreshCompileCommandsWatcher } from './bazelWatcher';
-import { ClangdActiveFilesCache, initClangdPath } from './clangd';
+import {
+  ClangdActiveFilesCache,
+  initClangdPath,
+  setCompileCommandsTargetOnSettingsChange,
+  setTarget,
+} from './clangd';
 import { registerBazelProjectCommands } from './commands/bazel';
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 import { Disposer } from './disposables';
@@ -156,7 +161,10 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   await configureBazelisk();
 
   if (settings.activateBazeliskInNewTerminals()) {
-    vscode.window.onDidOpenTerminal(patchBazeliskIntoTerminalPath);
+    vscode.window.onDidOpenTerminal(
+      patchBazeliskIntoTerminalPath,
+      disposer.disposables,
+    );
   }
 
   // Marshall all of our components and dependencies.
@@ -173,6 +181,14 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
     settingsFileWatcher: new SettingsFileWatcher(),
     targetStatusBarItem: new TargetStatusBarItem(),
   });
+
+  // If the current target is changed directly via a settings file change (in
+  // other words, not by running a command), detect that and do all the other
+  // stuff that the command would otherwise have done.
+  vscode.workspace.onDidChangeConfiguration(
+    setCompileCommandsTargetOnSettingsChange(clangdActiveFilesCache),
+    disposer.disposables,
+  );
 
   disposer.add(new ClangdFileWatcher(clangdActiveFilesCache));
   disposer.add(new InactiveFileDecorationProvider(clangdActiveFilesCache));
