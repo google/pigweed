@@ -1380,8 +1380,8 @@ BrEdrConnectionManager::OnLinkKeyNotification(
     // Reuse current properties
     BT_DEBUG_ASSERT(peer->bredr()->link_key());
     sec_props = peer->bredr()->link_key()->security();
-    key_type = static_cast<pw::bluetooth::emboss::KeyType>(
-        sec_props.GetLinkKeyType().value());
+    key_type =
+        static_cast<pw::bluetooth::emboss::KeyType>(sec_props.GetLinkKeyType());
   } else {
     sec_props =
         sm::SecurityProperties(static_cast<hci_spec::LinkKeyType>(key_type));

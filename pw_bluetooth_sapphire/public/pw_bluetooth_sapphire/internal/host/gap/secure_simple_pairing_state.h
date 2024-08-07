@@ -442,10 +442,6 @@ class SecureSimplePairingState final {
   // |state_| to kFailed. Logs an error using |handler_name| for identification.
   void FailWithUnexpectedEvent(const char* handler_name);
 
-  // Compute the expected pairing event and state to occur after receiving the
-  // peer IO Capability and write it to |current_pairing_| (which must exist).
-  void WritePairingData();
-
   // Returns true when the peer's host and peer's controller support Secure
   // Connections
   bool IsPeerSecureConnectionsSupported() const;

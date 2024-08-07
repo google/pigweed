@@ -370,20 +370,20 @@ TEST_F(PeerTest, SetBrEdrBondDataUpdatesInspectProperties) {
 
   const sm::SecurityProperties security_properties =
       peer().bredr()->link_key().value().security();
-  auto link_key_matcher = AllOf(NodeMatches(AllOf(
-      NameMatches("link_key"),
-      PropertyList(UnorderedElementsAre(
-          StringIs(kInspectLevelPropertyName,
-                   LevelToString(security_properties.level())),
-          BoolIs(kInspectEncryptedPropertyName,
-                 security_properties.encrypted()),
-          BoolIs(kInspectSecureConnectionsPropertyName,
-                 security_properties.secure_connections()),
-          BoolIs(kInspectAuthenticatedPropertyName,
-                 security_properties.authenticated()),
-          StringIs(kInspectKeyTypePropertyName,
-                   hci_spec::LinkKeyTypeToString(
-                       security_properties.GetLinkKeyType().value())))))));
+  auto link_key_matcher = AllOf(NodeMatches(
+      AllOf(NameMatches("link_key"),
+            PropertyList(UnorderedElementsAre(
+                StringIs(kInspectLevelPropertyName,
+                         LevelToString(security_properties.level())),
+                BoolIs(kInspectEncryptedPropertyName,
+                       security_properties.encrypted()),
+                BoolIs(kInspectSecureConnectionsPropertyName,
+                       security_properties.secure_connections()),
+                BoolIs(kInspectAuthenticatedPropertyName,
+                       security_properties.authenticated()),
+                StringIs(kInspectKeyTypePropertyName,
+                         hci_spec::LinkKeyTypeToString(
+                             security_properties.GetLinkKeyType())))))));
 
   auto bredr_data_matcher2 =
       AllOf(NodeMatches(AllOf(

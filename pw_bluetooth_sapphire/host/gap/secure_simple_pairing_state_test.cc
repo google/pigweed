@@ -2874,12 +2874,14 @@ TEST_F(PairingStateTest, Inspect) {
 
   pairing_state.AttachInspect(inspector.GetRoot(), "pairing_state");
 
-  auto security_properties_matcher = AllOf(NodeMatches(AllOf(
-      NameMatches("security_properties"),
-      PropertyList(UnorderedElementsAre(StringIs("level", "not secure"),
-                                        BoolIs("encrypted", false),
-                                        BoolIs("secure_connections", false),
-                                        BoolIs("authenticated", false))))));
+  auto security_properties_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("security_properties"),
+                              PropertyList(UnorderedElementsAre(
+                                  StringIs("level", "not secure"),
+                                  BoolIs("encrypted", false),
+                                  BoolIs("secure_connections", false),
+                                  BoolIs("authenticated", false),
+                                  StringIs("key_type", "kCombination"))))));
 
   auto pairing_state_matcher =
       AllOf(NodeMatches(AllOf(NameMatches("pairing_state"),

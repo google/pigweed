@@ -83,42 +83,37 @@ TEST(TypesTest, LinkKeyTypeToSecurityProperties) {
 
 TEST(TypesTest, SecurityPropertiesToLinkKeyType) {
   SecurityProperties props(hci_spec::LinkKeyType::kCombination);
-  EXPECT_EQ(std::nullopt, props.GetLinkKeyType());
+  EXPECT_EQ(hci_spec::LinkKeyType::kCombination, props.GetLinkKeyType());
 
   props = SecurityProperties(hci_spec::LinkKeyType::kLocalUnit);
-  EXPECT_EQ(std::nullopt, props.GetLinkKeyType());
+  EXPECT_EQ(hci_spec::LinkKeyType::kCombination, props.GetLinkKeyType());
 
   props = SecurityProperties(hci_spec::LinkKeyType::kRemoteUnit);
-  EXPECT_EQ(std::nullopt, props.GetLinkKeyType());
+  EXPECT_EQ(hci_spec::LinkKeyType::kCombination, props.GetLinkKeyType());
 
   props = SecurityProperties(hci_spec::LinkKeyType::kDebugCombination);
-  ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci_spec::LinkKeyType::kUnauthenticatedCombination192,
-            *props.GetLinkKeyType());
+            props.GetLinkKeyType());
 
   props =
       SecurityProperties(hci_spec::LinkKeyType::kUnauthenticatedCombination192);
-  ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci_spec::LinkKeyType::kUnauthenticatedCombination192,
-            *props.GetLinkKeyType());
+            props.GetLinkKeyType());
 
   props =
       SecurityProperties(hci_spec::LinkKeyType::kAuthenticatedCombination192);
-  ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci_spec::LinkKeyType::kAuthenticatedCombination192,
-            *props.GetLinkKeyType());
+            props.GetLinkKeyType());
 
   props =
       SecurityProperties(hci_spec::LinkKeyType::kUnauthenticatedCombination256);
-  ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci_spec::LinkKeyType::kUnauthenticatedCombination256,
-            *props.GetLinkKeyType());
+            props.GetLinkKeyType());
 
   props =
       SecurityProperties(hci_spec::LinkKeyType::kAuthenticatedCombination256);
-  ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci_spec::LinkKeyType::kAuthenticatedCombination256,
-            *props.GetLinkKeyType());
+            props.GetLinkKeyType());
 }
 
 TEST(TypesTest, CorrectPropertiesToLevelMapping) {
@@ -291,12 +286,14 @@ TEST(TypesTest, InspectSecurityProperties) {
 
   // kInsecure
   kInsecure.AttachInspect(inspector.GetRoot(), "security_properties");
-  auto insecure_matcher = AllOf(NodeMatches(AllOf(
-      NameMatches("security_properties"),
-      PropertyList(UnorderedElementsAre(StringIs("level", "not secure"),
-                                        BoolIs("encrypted", false),
-                                        BoolIs("secure_connections", false),
-                                        BoolIs("authenticated", false))))));
+  auto insecure_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("security_properties"),
+                              PropertyList(UnorderedElementsAre(
+                                  StringIs("level", "not secure"),
+                                  BoolIs("encrypted", false),
+                                  BoolIs("secure_connections", false),
+                                  BoolIs("authenticated", false),
+                                  StringIs("key_type", "kCombination"))))));
 
   // kEncryptedLegacy
   kEncryptedLegacy.AttachInspect(inspector.GetRoot(), "security_properties");

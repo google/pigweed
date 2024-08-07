@@ -133,11 +133,16 @@ SecurityLevel SecurityProperties::level() const {
   return level;
 }
 
-std::optional<hci_spec::LinkKeyType> SecurityProperties::GetLinkKeyType()
-    const {
+hci_spec::LinkKeyType SecurityProperties::GetLinkKeyType() const {
   if (level() == SecurityLevel::kNoSecurity) {
-    return std::nullopt;
+    // Sapphire considers legacy pairing keys to have security level
+    // kNoSecurity. Returning kCombination type since the kLocalUnit and
+    // kRemoteUnit key types are deprecated.
+    //
+    // TODO(fxbug.dev/42113587): Implement BR/EDR security database
+    return hci_spec::LinkKeyType::kCombination;
   }
+
   if (authenticated()) {
     if (secure_connections()) {
       return hci_spec::LinkKeyType::kAuthenticatedCombination256;
@@ -189,11 +194,9 @@ void SecurityProperties::AttachInspect(inspect::Node& parent,
       kInspectSecureConnectionsPropertyName, secure_connections());
   inspect_properties_.authenticated = inspect_node_.CreateBool(
       kInspectAuthenticatedPropertyName, authenticated());
-  if (GetLinkKeyType().has_value()) {
-    inspect_properties_.key_type = inspect_node_.CreateString(
-        kInspectKeyTypePropertyName,
-        hci_spec::LinkKeyTypeToString(GetLinkKeyType().value()));
-  }
+  inspect_properties_.key_type = inspect_node_.CreateString(
+      kInspectKeyTypePropertyName,
+      hci_spec::LinkKeyTypeToString(GetLinkKeyType()));
 }
 
 LTK::LTK(const SecurityProperties& security, const hci_spec::LinkKey& key)

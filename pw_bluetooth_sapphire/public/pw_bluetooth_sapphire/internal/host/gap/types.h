@@ -28,6 +28,9 @@ struct BrEdrSecurityRequirements {
   }
 };
 
+const BrEdrSecurityRequirements kNoSecurityRequirements = {
+    .authentication = false, .secure_connections = false};
+
 // Returns true if a key's security properties satisfy the specified security
 // requirements.
 bool SecurityPropertiesMeetRequirements(sm::SecurityProperties properties,

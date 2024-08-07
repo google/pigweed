@@ -422,9 +422,7 @@ std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
               hci_spec::kBrEdrLinkKeySize);
 
     const auto link_key_type = link_key->security().GetLinkKeyType();
-    BT_ASSERT(link_key_type.has_value());
-
-    link_->set_link_key(link_key->key(), link_key_type.value());
+    link_->set_link_key(link_key->key(), link_key_type);
   } else {
     bt_log(
         INFO, "gap-bredr", "peer %s not bonded", bt_str(peer_->identifier()));
