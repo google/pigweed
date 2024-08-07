@@ -460,7 +460,7 @@ gn_pw_system_demo_build = PigweedGnGenNinja(
 gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
     name='gn_chre_googletest_nanopb_sapphire_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('boringssl', 'chre', 'emboss', 'googletest', 'icu', 'nanopb'),
+    packages=('boringssl', 'chre', 'emboss', 'googletest', 'nanopb'),
     gn_args=dict(
         dir_pw_third_party_chre=lambda ctx: '"{}"'.format(
             ctx.package_root / 'chre'
@@ -476,9 +476,6 @@ gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
         ),
         dir_pw_third_party_boringssl=lambda ctx: '"{}"'.format(
             ctx.package_root / 'boringssl'
-        ),
-        dir_pw_third_party_icu=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'icu'
         ),
         pw_unit_test_MAIN=lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest:gmock_main'

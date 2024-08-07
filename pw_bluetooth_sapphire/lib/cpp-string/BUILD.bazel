@@ -20,17 +20,12 @@ cc_library(
     name = "cpp-string",
     srcs = [
         "string_printf.cc",
-        "utf_codecs.cc",
     ],
     hdrs = [
         "public/cpp-string/string_printf.h",
-        "public/cpp-string/utf_codecs.h",
     ],
     includes = [
         "public",
-    ],
-    deps = [
-        "@icu",
     ],
 )
 

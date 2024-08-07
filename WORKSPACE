@@ -199,10 +199,3 @@ git_repository(
     # Also update emboss tag in pw_package/py/pw_package/packages/emboss.py
     tag = "v2024.0718.173957",
 )
-
-git_repository(
-    name = "icu",
-    build_file = "//third_party/icu:icu.BUILD.bazel",
-    commit = "ef02cc27c0faceffc9345e11a35769ae92b836fb",
-    remote = "https://fuchsia.googlesource.com/third_party/icu",
-)
