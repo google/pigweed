@@ -161,7 +161,7 @@ export const styles = css`
   }
 
   th[title='level'] {
-    visibility: hidden;
+    color: transparent;
   }
 
   td {
@@ -198,7 +198,6 @@ export const styles = css`
     content: '';
     cursor: col-resize;
     height: 100%;
-    left: 0;
     mix-blend-mode: luminosity;
     opacity: 1;
     pointer-events: auto;

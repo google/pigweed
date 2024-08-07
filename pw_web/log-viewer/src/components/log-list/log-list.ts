@@ -99,7 +99,7 @@ export class LogList extends LitElement {
   private readonly MIN_COL_WIDTH: number = 52;
 
   /** The minimum width (in px) for table columns. */
-  private readonly LAST_COL_MIN_WIDTH: number = 700;
+  private readonly LAST_COL_MIN_WIDTH: number = 250;
 
   /** The delay (in ms) for debouncing column resizing */
   private readonly RESIZE_DEBOUNCE_DELAY = 10;
@@ -245,20 +245,34 @@ export class LogList extends LitElement {
   ): string {
     let gridTemplateColumns = '';
 
+    let lastVisibleCol = -1;
+    for (let i = this.columnData.length - 1; i >= 0; i--) {
+      if (this.columnData[i].isVisible) {
+        lastVisibleCol = i;
+        break;
+      }
+    }
+
     const calculateColumnWidth = (col: TableColumn, i: number) => {
       const chWidth = col.characterLength;
       const padding = 24 + 1; // +1 pixel to avoid ellipsis jitter when highlighting text
 
       if (i === resizingIndex) {
+        if (i === lastVisibleCol) {
+          return `minmax(${newWidth}px, 1fr)`;
+        }
         return `${newWidth}px`;
       }
       if (col.manualWidth !== null) {
+        if (i === lastVisibleCol) {
+          return `minmax(${col.manualWidth}px, 1fr)`;
+        }
         return `${col.manualWidth}px`;
       }
       if (i === 0) {
         return `calc(var(--sys-log-viewer-table-cell-icon-size) + 1rem)`;
       }
-      if (i === this.columnData.length - 1) {
+      if (i === lastVisibleCol) {
         return `minmax(${this.LAST_COL_MIN_WIDTH}px, 1fr)`;
       }
       return `clamp(${this.MIN_COL_WIDTH}px, ${chWidth}ch + ${padding}px, 80ch)`;
@@ -506,8 +520,7 @@ export class LogList extends LitElement {
   ) {
     return html`
       <th title="${fieldKey}" ?hidden=${!isVisible}>
-        ${fieldKey}
-        ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+        ${fieldKey} ${this.resizeHandle(columnIndex)}
       </th>
     `;
   }
@@ -593,6 +606,7 @@ export class LogList extends LitElement {
               ${iconId}
             </md-icon>
           </div>
+          ${this.resizeHandle(columnIndex)}
         </td>
       `;
     }
@@ -606,7 +620,7 @@ export class LogList extends LitElement {
               : ''}</span
           >
         </div>
-        ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+        ${this.resizeHandle(columnIndex)}
       </td>
     `;
   }
