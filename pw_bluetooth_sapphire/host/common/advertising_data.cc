@@ -15,8 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 
 #include <cpp-string/string_printf.h>
-#include <cpp-string/utf_codecs.h>
 #include <pw_bytes/endian.h>
+#include <pw_string/utf_codecs.h>
 
 #include <string>
 #include <type_traits>
@@ -100,18 +100,21 @@ const char* kUriSchemes[] = {"aaa:", "aaas:", "about:", "acap:", "acct:", "cap:"
 const size_t kUriSchemesSize = std::extent<decltype(kUriSchemes)>::value;
 
 std::string EncodeUri(const std::string& uri) {
-  std::string encoded_scheme;
   for (uint32_t i = 0; i < kUriSchemesSize; i++) {
     const char* scheme = kUriSchemes[i];
     size_t scheme_len = strlen(scheme);
     if (std::equal(scheme, scheme + scheme_len, uri.begin())) {
-      bt_lib_cpp_string::WriteUnicodeCharacter(i + 2, &encoded_scheme);
-      return encoded_scheme + uri.substr(scheme_len);
+      const pw::Result<pw::utf8::EncodedCodePoint> encoded_scheme =
+          pw::utf8::EncodeCodePoint(i + 2);
+      BT_DEBUG_ASSERT(encoded_scheme.ok());
+      return std::string(encoded_scheme->as_view()) + uri.substr(scheme_len);
     }
   }
   // First codepoint (U+0001) is for uncompressed schemes.
-  bt_lib_cpp_string::WriteUnicodeCharacter(1, &encoded_scheme);
-  return encoded_scheme + uri;
+  const pw::Result<pw::utf8::EncodedCodePoint> encoded_scheme =
+      pw::utf8::EncodeCodePoint(1u);
+  BT_DEBUG_ASSERT(encoded_scheme.ok());
+  return std::string(encoded_scheme->as_view()) + uri;
 }
 
 const char kUndefinedScheme = 0x01;
@@ -120,19 +123,18 @@ std::string DecodeUri(const std::string& uri) {
   if (uri[0] == kUndefinedScheme) {
     return uri.substr(1);
   }
-  uint32_t code_point = 0;
-  size_t index = 0;
 
   // NOTE: as we are reading UTF-8 from `uri`, it is possible that `code_point`
   // corresponds to > 1 byte of `uri` (even for valid URI encoding schemes, as
   // U+00(>7F) encodes to 2 bytes).
-  if (!bt_lib_cpp_string::ReadUnicodeCharacter(
-          uri.c_str(), uri.size(), &index, &code_point)) {
+  const auto result = pw::utf8::ReadCodePoint(uri);
+  if (!result.ok()) {
     bt_log(INFO,
            "gap-le",
            "Attempted to decode malformed UTF-8 in AdvertisingData URI");
     return "";
   }
+  const uint32_t code_point = result->code_point();
   // `uri` is not a c-string, so URIs that start with '\0' after c_str
   // conversion (i.e. both empty URIs and URIs with leading null bytes '\0') are
   // caught by the code_point < 2 check. We check
@@ -149,7 +151,7 @@ std::string DecodeUri(const std::string& uri) {
         kUriSchemesSize + 1);
     return "";
   }
-  return kUriSchemes[code_point - 2] + uri.substr(index + 1);
+  return kUriSchemes[code_point - 2] + uri.substr(result->size());
 }
 
 template <typename T>

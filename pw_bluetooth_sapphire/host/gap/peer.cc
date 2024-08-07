@@ -15,8 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 
 #include <cpp-string/string_printf.h>
-#include <cpp-string/utf_codecs.h>
 #include <pw_bytes/endian.h>
+#include <pw_string/utf_codecs.h>
 
 #include <cinttypes>
 
@@ -667,7 +667,7 @@ bool Peer::SetRssiInternal(int8_t rssi) {
 
 bool Peer::RegisterNameInternal(const std::string& name,
                                 Peer::NameSource source) {
-  if (!bt_lib_cpp_string::IsStringUTF8(name)) {
+  if (!pw::utf8::IsStringValid(name)) {
     bt_log(WARN,
            "gap",
            "%s: not setting name to string that is not valid UTF-8",

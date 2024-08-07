@@ -57,6 +57,7 @@ cc_library(
         "@pigweed//pw_random",
         "@pigweed//pw_span",
         "@pigweed//pw_string",
+        "@pigweed//pw_string:utf_codecs",
         "@pigweed//third_party/fuchsia:fit",
     ] + fuchsia_select({
         "@platforms//os:fuchsia": [

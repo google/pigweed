@@ -82,6 +82,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/sm:definitions",
         "@pigweed//pw_async:heap_dispatcher",
         "@pigweed//pw_bluetooth",
+        "@pigweed//pw_string:utf_codecs",
         "@pigweed//third_party/fuchsia:fit",
     ],
 )
