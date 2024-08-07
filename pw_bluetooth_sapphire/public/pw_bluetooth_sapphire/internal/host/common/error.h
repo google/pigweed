@@ -22,8 +22,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 
-#pragma clang diagnostic ignored "-Wvariadic-macros"
 #pragma clang diagnostic ignored \
     "-Wgnu-statement-expression-from-macro-expansion"
 
@@ -492,10 +492,10 @@ OStream& operator<<(
 //
 // It will log with the string prepended to the stringified result if result is
 // a failure. Evaluates to true if the result indicates failure.
-#define bt_is_error(result, level, tag, fmt, args...)          \
-  ({                                                           \
-    auto _result = result;                                     \
-    if (_result.is_error())                                    \
-      bt_log(level, tag, "%s: " fmt, bt_str(_result), ##args); \
-    _result.is_error();                                        \
+#define bt_is_error(result, level, tag, fmt, /*args*/...)             \
+  ({                                                                  \
+    auto _result = result;                                            \
+    if (_result.is_error())                                           \
+      bt_log(level, tag, "%s: " fmt, bt_str(_result), ##__VA_ARGS__); \
+    _result.is_error();                                               \
   })

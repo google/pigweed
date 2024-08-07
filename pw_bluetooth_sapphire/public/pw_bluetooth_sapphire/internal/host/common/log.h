@@ -19,8 +19,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/to_string.h"
 #include "pw_log/log.h"
 
-#pragma clang diagnostic ignored "-Wvariadic-macros"
-
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a
 // driver) and printf (when it's used in unit tests and command-line tools).
@@ -139,9 +137,9 @@ constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
 // TODO(fxbug.dev/42086925): Due to limitations, |tag| is processed by
 // printf-style formatters as a format string, so check that |tag| does not
 // specify any additional args.
-#define bt_log(level, tag, fmt...)                 \
+#define bt_log(level, tag, /*fmt*/...)             \
   PW_LOG(static_cast<int>(bt::LogSeverity::level), \
          tag,                                      \
          GetPwLogFlags(bt::LogSeverity::level),    \
-         fmt);                                     \
+         __VA_ARGS__);                             \
   ::bt::internal::CheckFormat(tag)
