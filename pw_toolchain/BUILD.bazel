@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
@@ -20,6 +21,58 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+# One specific flavor of duct tape for now.
+string_flag(
+    name = "cortex-m_toolchain_kind",
+    build_setting_default = "gcc",
+    values = [
+        "clang",
+        "gcc",
+    ],
+)
+
+config_setting(
+    name = "use_clang_for_cortex-m",
+    flag_values = {":cortex-m_toolchain_kind": "clang"},
+)
+
+alias(
+    name = "cortex-m_cc_toolchain",
+    actual = select({
+        ":use_clang_for_cortex-m": "//pw_toolchain/arm_clang:arm_clang_toolchain_cortex-m",
+        "//conditions:default": "//pw_toolchain/arm_gcc:arm_gcc_toolchain_cortex-m",
+    }),
+)
+
+# This is an interim solution to allow flag-based toolchain selection.
+# Do not rely on this, as it is likely to change.
+toolchain(
+    name = "cc_toolchain_cortex-m0",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+    ],
+    toolchain = ":cortex-m_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cc_toolchain_cortex-m0plus",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
+    ],
+    toolchain = ":cortex-m_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cc_toolchain_cortex-m33",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
+    ],
+    toolchain = ":cortex-m_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
 
 cc_library(
     name = "no_destructor",

@@ -60,6 +60,10 @@ EXTRA_TARGETS = [
         "cpu": "armv7e-m",
         "triple": "thumbv7m-none-eabi",
     },
+    {
+        "cpu": "armv8-m",
+        "triple": "thumbv7m-none-eabi",  # TODO: https://pwbug.dev/352342797 - This should be some variant of ARMv8-M.
+    },
 ]
 
 CHANNELS = [

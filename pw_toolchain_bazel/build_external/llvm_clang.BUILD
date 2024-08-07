@@ -33,6 +33,22 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "llvm-libc_arm-none-eabi_compile_files",
+    srcs = glob([
+        "include/armv*-unknown-none-eabi/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "llvm-libc_arm-none-eabi_link_files",
+    srcs = glob([
+        "lib/armv*-unknown-none-eabi/**",
+        "lib/clang/*/lib/armv*-unknown-none-eabi/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
 
 # TODO(amontanez): Add sysroot for macos to the `data` field selection once
 # Pigweed migrates to use rules_cc toolchains.

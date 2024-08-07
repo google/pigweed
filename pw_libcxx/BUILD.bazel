@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "pw_libcxx",
     srcs = [
@@ -25,4 +27,11 @@ cc_library(
         "@rules_cc//cc/compiler:clang": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+)
+
+filegroup(
+    name = "cxx_lib_configs",
+    srcs = [
+        "include/__external_threading",
+    ],
 )

@@ -43,7 +43,15 @@ def register_pigweed_cxx_toolchains():
     # Generate xcode repository on macOS.
     pw_xcode_command_line_tools_repository()
 
-    # Fetch llvm toolchain for host and supported device builds.
+    # Fetch llvm toolchain for device.
+    cipd_repository(
+        name = "llvm_toolchain_device",
+        build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
+        path = "fuchsia/third_party/clang/${os}-${arch}",
+        tag = "git_revision:b5e4d323badbd24324bfab4366b670977b16df07",
+    )
+
+    # Fetch llvm toolchain for host.
     cipd_repository(
         name = "llvm_toolchain",
         build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
@@ -67,8 +75,9 @@ def register_pigweed_cxx_toolchains():
     )
 
     native.register_toolchains(
-        "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
-        "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0plus",
+        "//pw_toolchain:cc_toolchain_cortex-m0",
+        "//pw_toolchain:cc_toolchain_cortex-m0plus",
+        "//pw_toolchain:cc_toolchain_cortex-m33",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
         "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",

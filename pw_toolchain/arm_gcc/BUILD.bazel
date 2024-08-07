@@ -324,6 +324,7 @@ pw_cc_toolchain(
         "//pw_toolchain/cc:c++20_feature",
     ],
     toolchain_identifier = "arm-gcc-toolchain",
+    visibility = ["//pw_toolchain:__pkg__"],
 )
 
 toolchain(
