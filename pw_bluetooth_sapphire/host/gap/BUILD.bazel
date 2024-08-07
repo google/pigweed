@@ -65,6 +65,7 @@ cc_library(
     ],
     copts = [
         "-Wno-unused-parameter",
+        "-Wswitch-enum",
     ],
     # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
     # builder issue is resolved.

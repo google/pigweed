@@ -18,6 +18,10 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_gap = "../../public/pw_bluetooth_sapphire/internal/host/gap"
 
+config("warnings") {
+  cflags_cc = [ "-Wswitch-enum" ]
+}
+
 pw_source_set("definitions") {
   public = [ "$dir_public_gap/gap.h" ]
 
@@ -87,7 +91,12 @@ pw_source_set("gap") {
     "types.cc",
   ]
 
-  deps = [ "$dir_pw_bluetooth_sapphire/host/sm" ]
+  configs = [ ":warnings" ]
+
+  deps = [
+    "$dir_pw_bluetooth_sapphire/host/sm",
+    "$dir_pw_preprocessor",
+  ]
 
   public_deps = [
     ":definitions",
