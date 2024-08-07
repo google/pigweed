@@ -15,8 +15,10 @@
 import * as child_process from 'child_process';
 
 import * as vscode from 'vscode';
+import { ProgressLocation } from 'vscode';
 
 import { Disposable } from './disposables';
+import { launchTroubleshootingLink } from './links';
 import logger from './logging';
 import { getPigweedProjectRoot } from './project';
 
@@ -200,4 +202,111 @@ export class BazelRefreshCompileCommandsWatcher extends Disposable {
     this.refreshManager.onOnce(wrappedAbort, 'abort');
     this.refreshManager.refresh();
   };
+}
+
+/** Show an informative progress indicator when refreshing. */
+export async function showProgressDuringRefresh(
+  refreshManager: RefreshManager<any>,
+) {
+  return vscode.window.withProgress(
+    {
+      location: ProgressLocation.Notification,
+      cancellable: true,
+    },
+    async (progress, token) => {
+      progress.report({
+        message: 'Refreshing code intelligence data...',
+      });
+
+      // If it takes a while, notify the user that this is normal.
+      setTimeout(
+        () =>
+          progress.report({
+            message:
+              'Refreshing code intelligence data... ' +
+              "This can take a while, but it's still working.",
+          }),
+        5000,
+      );
+
+      // Clicking cancel will send the abort signal.
+      token.onCancellationRequested(() => refreshManager.abort());
+
+      // Indicate that we're actually done refreshing compile commands, and now
+      // we're updating the active files cache. This is also a multi-seconds
+      // long process, but doesn't produce any output in the interim, so it's
+      // helpful to be clear that something is happening.
+      refreshManager.on(
+        () => {
+          progress.report({
+            message: 'Refreshing active files cache...',
+          });
+
+          // If it takes a while, notify the user that this is normal.
+          setTimeout(
+            () =>
+              progress.report({
+                message: 'Refreshing active files cache... Almost done!',
+              }),
+            15000,
+          );
+
+          return OK;
+
+          // This is kind of an unfortunate load-bearing hack.
+          // Shouldn't registering this just to 'didRefresh' work?
+          //
+          // Yes, but:
+          //   - Refresh manager callbacks registered to the same state run
+          //     strictly in order of registration
+          //   - This callback will be registered *after* the active files cache
+          //     refresh callback, which is also registered to 'didRefresh'
+          //   - So this would be called only after the active files cache
+          //     refresh was done, which is obviously not what we want.
+          //
+          // So to ensure that this runs first, it takes advantage of the purely
+          // incidental fact that the more specific 'refreshing->didRefresh'
+          // callbacks are run before the less specific 'didRefresh' callbacks.
+          // So this works, but it's a bad design that should be fixed.
+          // TODO: https://pwbug.dev/357720042 - See above
+        },
+        'didRefresh',
+        'refreshing',
+      );
+
+      return new Promise<void>((resolve) => {
+        // On abort, complete the progress bar, notify that it was aborted.
+        refreshManager.on(() => {
+          vscode.window.showInformationMessage(
+            'Aborted refreshing code intelligence data!',
+          );
+          resolve();
+          return OK;
+        }, 'abort');
+
+        // If a fault occurs, notify with an error message.
+        refreshManager.on(() => {
+          vscode.window
+            .showErrorMessage(
+              'An error occurred while refreshing code intelligence data!',
+              'Get Help',
+            )
+            .then((selection) => {
+              if (selection === 'Get Help') {
+                launchTroubleshootingLink(
+                  'failed-to-refresh-code-intelligence',
+                );
+              }
+            });
+          resolve();
+          return OK;
+        }, 'fault');
+
+        refreshManager.on(() => {
+          resolve();
+          return OK;
+        }, 'idle');
+      });
+    },
+  );
 }

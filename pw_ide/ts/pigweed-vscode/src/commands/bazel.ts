@@ -20,7 +20,10 @@ import {
   setBazelRecommendedSettings,
 } from '../bazel';
 
-import { BazelRefreshCompileCommandsWatcher } from '../bazelWatcher';
+import {
+  BazelRefreshCompileCommandsWatcher,
+  showProgressDuringRefresh,
+} from '../bazelWatcher';
 
 import {
   ClangdActiveFilesCache,
@@ -54,10 +57,10 @@ export function registerBazelProjectCommands(
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'pigweed.refresh-compile-commands',
-      compileCommandsWatcher.refresh,
-    ),
+    vscode.commands.registerCommand('pigweed.refresh-compile-commands', () => {
+      compileCommandsWatcher.refresh();
+      showProgressDuringRefresh(refreshManager);
+    }),
   );
 
   context.subscriptions.push(

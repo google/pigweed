@@ -363,10 +363,10 @@ export class RefreshManager<State extends RefreshStatus> {
     this.transientCallbacks = remainingTransient;
 
     const callbacks = [
-      ...(this.callbacks[this._state] ?? []),
       ...(this.callbacks[`${this._state}:${previous}`] ?? []),
-      ...(transientForState ?? []),
+      ...(this.callbacks[this._state] ?? []),
       ...(transientForTransition ?? []),
+      ...(transientForState ?? []),
     ];
 
     // Run each callback, throw an error if any of them return an error.

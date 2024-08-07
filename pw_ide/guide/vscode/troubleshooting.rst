@@ -34,6 +34,21 @@ may happen if you have an unusual project structure.
 You can resolve it by :ref:`explicitly setting the project root<module-pw_ide-guide-vscode-settings-project-root>`
 in your settings.
 
+.. _failed_to_refresh_code_intelligence:
+
+----------------------------------------
+Failed to refresh code intelligence data
+----------------------------------------
+The Pigweed extension failed to refresh the compilation databases or other data
+used to provide code intelligences. Some troubleshooting steps:
+
+* Check the output panel (``Pigweed: Open Output Panel``) to find more specific
+  information about what went wrong.
+
+* Verify that the Bazel ``refresh_compile_commands`` target is configured
+  properly in the top-level ``//BUILD.bazel`` file. There will be relevant
+  content in the output panel if this is not configured correctly.
+
 .. _bazel_no_targets:
 
 ---------------------------------
