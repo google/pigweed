@@ -209,4 +209,49 @@ TEST_F(BucketBlockAllocatorTest, CanMeasureFragmentation) {
   CanMeasureFragmentation();
 }
 
+TEST_F(BucketBlockAllocatorTest, FirstSmallSplitIsRecycled) {
+  auto& allocator = GetAllocator({
+      {128 + (BlockType::kBlockOverhead * 2), Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+
+  // Deallocate to fill buckets.
+  allocator.Deallocate(Fetch(0));
+  Store(0, nullptr);
+
+  Store(2, allocator.Allocate(Layout(129, 1)));
+  ASSERT_NE(Fetch(2), nullptr);
+
+  auto& bucket_block_allocator = static_cast<BucketBlockAllocator&>(allocator);
+  for (auto* block : bucket_block_allocator.blocks()) {
+    ASSERT_TRUE(block->IsValid());
+  }
+}
+
+TEST_F(BucketBlockAllocatorTest, LaterSmallSplitNotIsRecycled) {
+  auto& allocator = GetAllocator({
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {128 + (BlockType::kBlockOverhead * 2), Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+
+  // Deallocate to fill buckets.
+  allocator.Deallocate(Fetch(1));
+  Store(1, nullptr);
+
+  auto& bucket_block_allocator = static_cast<BucketBlockAllocator&>(allocator);
+  size_t old_size = (*bucket_block_allocator.blocks().begin())->OuterSize();
+
+  // The leftover space is not larger than `kBlockOverhead`, and so should be
+  // merged with the previous block.
+  Store(3, allocator.Allocate(Layout(128, 1)));
+  ASSERT_NE(Fetch(3), nullptr);
+  size_t new_size = (*bucket_block_allocator.blocks().begin())->OuterSize();
+  EXPECT_NE(old_size, new_size);
+
+  for (auto* block : bucket_block_allocator.blocks()) {
+    ASSERT_TRUE(block->IsValid());
+  }
+}
+
 }  // namespace

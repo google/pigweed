@@ -116,9 +116,9 @@ designed with the following features:
 - **Splitting and merging**: This class centralizes the logic for splitting
   memory regions into smaller pieces. Usable sub-blocks can either be split from
   the beginning or end of a block. Additionally, blocks from  either end can be
-  split at specified alignment boundaries. This class also provides the logic for
-  merging blocks back together. Together, these methods provide the invariant
-  that a free block is only ever adjacent to blocks in use.
+  split at specified alignment boundaries. This class also provides the logic
+  for merging blocks back together. Together, these methods provide the
+  invariant that a free block is only ever adjacent to blocks in use.
 - **Validation and poisoning**: On every deallocation, blocks validate their
   metadata against their neighbors. A block can fail to be validated if it or
   its neighbors have had their headers overwritten. In this case, it's unsafe to

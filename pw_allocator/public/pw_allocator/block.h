@@ -21,8 +21,10 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/buffer.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
@@ -46,6 +48,29 @@ void CrashPrevMismatched(uintptr_t addr, uintptr_t prev_next);
 void CrashPoisonCorrupted(uintptr_t addr);
 
 }  // namespace internal
+
+/// Describes the side effects of fulfilling and allocation request.
+enum BlockAllocType {
+  /// The allocation fit exactly, and no other blocks were affected.
+  kExact,
+
+  /// Extra trailing space was split off into a new block.
+  kNewNext,
+
+  /// Extra leading space was split off into a new block.
+  kNewPrev,
+
+  /// Extra leading and trailing space was split off into new blocks.
+  kNewPrevAndNewNext,
+
+  /// A small amount of leading space was shifted to the end of the previous
+  /// block.
+  kShiftToPrev,
+
+  /// A small amount of leading space was shifted to the end of the previous
+  /// block, and extra trailing space was split off into a new block.
+  kShiftToPrevAndNewNext,
+};
 
 /// Memory region with links to adjacent blocks.
 ///
@@ -202,7 +227,7 @@ class Block {
   ///    is greater than the current size.
   ///
   /// @endrst
-  static Status AllocFirst(Block*& block, Layout layout);
+  static Result<BlockAllocType> AllocFirst(Block*& block, Layout layout);
 
   /// Checks if an aligned block could be split from the end of the block.
   ///
@@ -254,7 +279,7 @@ class Block {
   ///    block.
   ///
   /// @endrst
-  static Status AllocLast(Block*& block, Layout layout);
+  static Result<BlockAllocType> AllocLast(Block*& block, Layout layout);
 
   /// Marks the block as free and merges it with any free neighbors.
   ///
@@ -406,7 +431,7 @@ class Block {
   /// pointer with a pointer to the new, smaller block.
   ///
   /// @pre The block must not be in use.
-  static void ShiftBlock(Block*& block, size_t pad_size);
+  static BlockAllocType ShiftBlock(Block*& block, size_t pad_size);
 
   /// Split a block into two smaller blocks.
   ///
@@ -574,8 +599,8 @@ Block<OffsetType, kAlign, kCanPoison>::Init(ByteSpan region) {
 }
 
 template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Status Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
-                                                         Layout layout) {
+Result<BlockAllocType> Block<OffsetType, kAlign, kCanPoison>::AllocFirst(
+    Block*& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
     return Status::InvalidArgument();
   }
@@ -597,6 +622,9 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
   } else if (prev == nullptr) {
     // First block; increase padding to at least the minimum block size.
     pad_size += AlignUp(kBlockOverhead, alignment);
+  } else {
+    // Less than a block's worth of padding is needed; shift bytes to the
+    // previous block.
   }
 
   // Make sure everything fits.
@@ -604,19 +632,36 @@ Status Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
   if (block->InnerSize() < pad_size + inner_size) {
     return Status::OutOfRange();
   }
-  ShiftBlock(block, pad_size);
+  BlockAllocType alloc_type = ShiftBlock(block, pad_size);
 
   // If the block is large enough to have a trailing block, split it to get the
   // requested usable space.
   if (inner_size + kBlockOverhead <= block->InnerSize()) {
     Block* trailing = Split(block, inner_size);
     trailing->Poison(should_poison);
+    switch (alloc_type) {
+      case BlockAllocType::kExact:
+        alloc_type = kNewNext;
+        break;
+      case BlockAllocType::kNewPrev:
+        alloc_type = kNewPrevAndNewNext;
+        break;
+      case BlockAllocType::kShiftToPrev:
+        alloc_type = kShiftToPrevAndNewNext;
+        break;
+      case BlockAllocType::kNewNext:
+      case BlockAllocType::kNewPrevAndNewNext:
+      case BlockAllocType::kShiftToPrevAndNewNext:
+      default:
+        // `AllocLast` never creates a trailing block.
+        PW_CRASH("unreachable");
+    }
   }
 
   block->MarkUsed();
   block->info_.alignment = alignment;
   block->padding_ = block->InnerSize() - layout.size();
-  return OkStatus();
+  return alloc_type;
 }
 
 template <typename OffsetType, size_t kAlign, bool kCanPoison>
@@ -643,26 +688,27 @@ StatusWithSize Block<OffsetType, kAlign, kCanPoison>::CanAllocLast(
 }
 
 template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Status Block<OffsetType, kAlign, kCanPoison>::AllocLast(Block*& block,
-                                                        Layout layout) {
+Result<BlockAllocType> Block<OffsetType, kAlign, kCanPoison>::AllocLast(
+    Block*& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
     return Status::InvalidArgument();
   }
   size_t pad_size = 0;
   PW_TRY_ASSIGN(pad_size, block->CanAllocLast(layout));
-  ShiftBlock(block, pad_size);
+
+  BlockAllocType alloc_type = ShiftBlock(block, pad_size);
 
   block->MarkUsed();
   block->info_.alignment = layout.alignment();
   block->padding_ = block->InnerSize() - layout.size();
-  return OkStatus();
+  return alloc_type;
 }
 
 template <typename OffsetType, size_t kAlign, bool kCanPoison>
-void Block<OffsetType, kAlign, kCanPoison>::ShiftBlock(Block*& block,
-                                                       size_t pad_size) {
+BlockAllocType Block<OffsetType, kAlign, kCanPoison>::ShiftBlock(
+    Block*& block, size_t pad_size) {
   if (pad_size == 0) {
-    return;
+    return BlockAllocType::kExact;
   }
 
   // Check if this is the first block.
@@ -677,12 +723,14 @@ void Block<OffsetType, kAlign, kCanPoison>::ShiftBlock(Block*& block,
     Block::Resize(prev, prev->InnerSize() + pad_size).IgnoreError();
     prev->padding_ += pad_size;
     block = prev->Next();
+    return BlockAllocType::kShiftToPrev;
 
-  } else if (kBlockOverhead < pad_size) {
+  } else {
     // Split the large padding off the front.
     Block* leading = block;
     block = Split(leading, pad_size - kBlockOverhead);
     leading->Poison(should_poison);
+    return BlockAllocType::kNewPrev;
   }
 }
 
@@ -692,12 +740,24 @@ void Block<OffsetType, kAlign, kCanPoison>::Free(Block*& block) {
     return;
   }
   block->MarkFree();
+  MergeNext(block);
   Block* prev = block->Prev();
-  if (prev != nullptr && !prev->Used()) {
+  if (prev == nullptr) {
+    // First block, nothing prior to merge with.
+    return;
+  }
+  if (!prev->Used()) {
+    // Previous block is free; merge with it.
     MergeNext(prev);
     block = prev;
+    return;
   }
-  MergeNext(block);
+  if (prev->padding_ >= kAlignment) {
+    // Previous block has trailing unused space from `ShiftBlock`. Resizing will
+    // automatically add it to the block that has been freed.
+    Resize(prev, prev->InnerSize() - prev->padding_).IgnoreError();
+    block = prev->Next();
+  }
 }
 
 template <typename OffsetType, size_t kAlign, bool kCanPoison>

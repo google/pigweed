@@ -68,7 +68,6 @@ pw_add_library(pw_allocator.block STATIC
     pw_status
   PRIVATE_DEPS
     pw_allocator.buffer
-    pw_assert
   SOURCES
     block.cc
 )

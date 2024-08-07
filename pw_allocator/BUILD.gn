@@ -78,10 +78,7 @@ pw_source_set("block") {
     dir_pw_result,
     dir_pw_status,
   ]
-  deps = [
-    ":buffer",
-    dir_pw_assert,
-  ]
+  deps = [ ":buffer" ]
   sources = [ "block.cc" ]
 }
 

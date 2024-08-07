@@ -110,12 +110,27 @@ class BucketBlockAllocator
         continue;
       }
       BlockType* block = BlockType::FromUsableSpace(chosen);
-      BlockType* prev = block;
-      BlockType::AllocLast(block, layout).IgnoreError();
-
-      // If the chunk was split, what we have is the leading free block.
-      if (prev != block) {
-        RecycleBlock(prev);
+      auto result = BlockType::AllocLast(block, layout);
+      if (!result.ok()) {
+        break;
+      }
+      BlockType* prev = block->Prev();
+      switch (*result) {
+        case BlockAllocType::kExact:
+          break;
+        case BlockAllocType::kNewPrev:
+          // The new free block needs to be added to a bucket.
+          RecycleBlock(prev);
+          break;
+        case BlockAllocType::kShiftToPrev:
+          // The previous block is guaranteed to be in use, and so does not need
+          // to be moved between buckets, even if its size changes.
+          break;
+        case BlockAllocType::kNewNext:
+        case BlockAllocType::kNewPrevAndNewNext:
+        case BlockAllocType::kShiftToPrevAndNewNext:
+          // `AllocLast` never creates a trailing block.
+          PW_CRASH("unreachable");
       }
       return block;
     }

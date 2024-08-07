@@ -27,6 +27,7 @@
 namespace {
 
 // Test fixtures.
+using ::pw::allocator::BlockAllocType;
 using ::pw::allocator::Layout;
 using ::pw::allocator::test::Preallocate;
 using ::pw::allocator::test::Preallocation;
@@ -170,7 +171,6 @@ TEST_FOR_EACH_BLOCK_TYPE(CanCreateUnalignedSingleBlock) {
 TEST_FOR_EACH_BLOCK_TYPE(CannotCreateTooSmallBlock) {
   std::array<std::byte, 2> bytes;
   auto result = BlockType::Init(bytes);
-  EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
 }
 
@@ -195,7 +195,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst) {
 
   // Allocate from the front of the block.
   BlockType* prev = block->Prev();
-  EXPECT_EQ(BlockType::AllocFirst(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kNewNext);
+
   EXPECT_EQ(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -225,7 +228,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstWithNewPrevBlock) {
   BlockType* prev = block->Prev();
 
   // Allocate from the front of the block.
-  EXPECT_EQ(BlockType::AllocFirst(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kNewPrevAndNewNext);
+
   EXPECT_EQ(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -255,7 +261,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstWithNoNewNextBlock) {
   block = block->Next();
   BlockType* next = block->Next();
 
-  EXPECT_EQ(BlockType::AllocFirst(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kExact);
+
   EXPECT_EQ(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -283,7 +292,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstWithResizedPrevBlock) {
   size_t prev_inner_size = prev->InnerSize();
 
   // Allocate from the front of the block.
-  EXPECT_EQ(BlockType::AllocFirst(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kShiftToPrevAndNewNext);
+
   EXPECT_EQ(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -295,6 +307,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirstWithResizedPrevBlock) {
 
   // Extra was split from the end of the block.
   EXPECT_FALSE(block->Last());
+
+  // On freeing the block, the previous block goes back to its original size.
+  BlockType::Free(block);
+  EXPECT_EQ(prev->InnerSize(), prev_inner_size);
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstIfTooSmallForAlignment) {
@@ -313,14 +329,15 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstIfTooSmallForAlignment) {
   block = block->Next();
 
   // Cannot allocate without room to a split a block for alignment.
-  EXPECT_EQ(BlockType::AllocFirst(block, kLayout), pw::Status::OutOfRange());
+  auto result = BlockType::AllocFirst(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::OutOfRange());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstFromNull) {
   BlockType* block = nullptr;
-  Layout layout(1, 1);
-  EXPECT_EQ(BlockType::AllocFirst(block, layout),
-            pw::Status::InvalidArgument());
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocFirst(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstZeroSize) {
@@ -329,9 +346,9 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstZeroSize) {
       {
           {Preallocation::kSizeRemaining, Preallocation::kFree},
       });
-  Layout layout(0, 1);
-  EXPECT_EQ(BlockType::AllocFirst(block, layout),
-            pw::Status::InvalidArgument());
+  constexpr Layout kLayout(0, 1);
+  auto result = BlockType::AllocFirst(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstFromUsed) {
@@ -340,9 +357,9 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirstFromUsed) {
       {
           {Preallocation::kSizeRemaining, Preallocation::kUsed},
       });
-  Layout layout(1, 1);
-  EXPECT_EQ(BlockType::AllocFirst(block, layout),
-            pw::Status::FailedPrecondition());
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocFirst(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::FailedPrecondition());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CanAllocLastWithNewPrevBlock) {
@@ -355,7 +372,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLastWithNewPrevBlock) {
       });
 
   // Allocate from the back of the block.
-  EXPECT_EQ(BlockType::AllocLast(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocLast(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kNewPrev);
+
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -384,7 +404,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLastWithResizedPrevBlock) {
   size_t prev_inner_size = prev->InnerSize();
 
   // Allocate from the back of the block.
-  EXPECT_EQ(BlockType::AllocLast(block, kLayout), pw::OkStatus());
+  auto result = BlockType::AllocLast(block, kLayout);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(*result, BlockAllocType::kShiftToPrev);
+
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
@@ -396,6 +419,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLastWithResizedPrevBlock) {
 
   // No new trailing block was created.
   EXPECT_EQ(next, block->Next());
+
+  // On freeing the block, the previous block goes back to its original size.
+  BlockType::Free(block);
+  EXPECT_EQ(prev->InnerSize(), prev_inner_size);
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastIfTooSmallForAlignment) {
@@ -414,14 +441,15 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastIfTooSmallForAlignment) {
   block = block->Next();
 
   // Cannot allocate without room to a split a block for alignment.
-  EXPECT_EQ(BlockType::AllocLast(block, kLayout),
-            pw::Status::ResourceExhausted());
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromNull) {
   BlockType* block = nullptr;
-  Layout layout(1, 1);
-  EXPECT_EQ(BlockType::AllocLast(block, layout), pw::Status::InvalidArgument());
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastZeroSize) {
@@ -430,8 +458,9 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastZeroSize) {
       {
           {Preallocation::kSizeRemaining, Preallocation::kFree},
       });
-  Layout layout(0, 1);
-  EXPECT_EQ(BlockType::AllocLast(block, layout), pw::Status::InvalidArgument());
+  constexpr Layout kLayout(0, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromUsed) {
@@ -440,9 +469,9 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromUsed) {
       {
           {Preallocation::kSizeRemaining, Preallocation::kUsed},
       });
-  Layout layout(1, 1);
-  EXPECT_EQ(BlockType::AllocLast(block, layout),
-            pw::Status::FailedPrecondition());
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::FailedPrecondition());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(FreeingNullDoesNothing) {
@@ -791,10 +820,12 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetAlignmentFromUsedBlock) {
           {Preallocation::kSizeRemaining, Preallocation::kFree},
       });
 
-  EXPECT_EQ(BlockType::AllocFirst(block1, kLayout1), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block1, kLayout1);
+  ASSERT_EQ(result.status(), pw::OkStatus());
 
   BlockType* block2 = block1->Next();
-  EXPECT_EQ(BlockType::AllocFirst(block2, kLayout2), pw::OkStatus());
+  result = BlockType::AllocFirst(block2, kLayout2);
+  ASSERT_EQ(result.status(), pw::OkStatus());
 
   EXPECT_EQ(block1->Alignment(), kAlign);
   EXPECT_EQ(block2->Alignment(), kAlign * 2);
@@ -810,10 +841,12 @@ TEST_FOR_EACH_BLOCK_TYPE(FreeBlockAlignmentIsAlwaysOne) {
           {Preallocation::kSizeRemaining, Preallocation::kFree},
       });
 
-  EXPECT_EQ(BlockType::AllocFirst(block1, kLayout1), pw::OkStatus());
+  auto result = BlockType::AllocFirst(block1, kLayout1);
+  ASSERT_EQ(result.status(), pw::OkStatus());
 
   BlockType* block2 = block1->Next();
-  EXPECT_EQ(BlockType::AllocFirst(block2, kLayout2), pw::OkStatus());
+  result = BlockType::AllocFirst(block2, kLayout2);
+  ASSERT_EQ(result.status(), pw::OkStatus());
 
   EXPECT_EQ(block1->Alignment(), kAlign);
   BlockType::Free(block1);
