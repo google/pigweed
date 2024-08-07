@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#pragma clang diagnostic ignored "-Wcast-qual"
-
 #include "pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h"
 
 #include <openssl/ec_key.h>
