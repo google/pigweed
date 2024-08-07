@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 
-#pragma clang diagnostic ignored "-Wswitch-enum"
+#include <pw_preprocessor/compiler.h>
 
 namespace bt::hci_spec {
 
@@ -57,6 +57,8 @@ std::string HCIVersionToString(
 
 // clang-format off
 std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code) {
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (code) {
     case pw::bluetooth::emboss::StatusCode::SUCCESS: return "success";
     case pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND: return "unknown command";
@@ -126,6 +128,8 @@ std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code) {
     case pw::bluetooth::emboss::StatusCode::OPERATION_CANCELLED_BY_HOST: return "operation cancelled by host";
     default: break;
   };
+  PW_MODIFY_DIAGNOSTICS_POP();
+
   return "unknown status";
 }
 // clang-format on
