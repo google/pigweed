@@ -156,9 +156,10 @@ Configure system settings
 
       To flash devices using `OpenOCD <https://openocd.org/>`_, you will need to
       extend your system udev rules by adding a new configuration file in
-      ``/etc/udev/rules.d/`` that lists the hardware debuggers you'll be using. The
-      OpenOCD repository has a good
-      `example udev rules file <https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules>`_
+      ``/etc/udev/rules.d/`` or ``/usr/lib/udev/rules.d`` that lists the
+      hardware debuggers you'll be using. The OpenOCD repository has a good
+      `example udev rules file
+      <https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules>`_
       that includes many popular hardware debuggers.
 
       .. inclusive-language: enable

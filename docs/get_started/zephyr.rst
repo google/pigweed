@@ -223,19 +223,12 @@ Raspberry Pi Pico
       pw package install pico_sdk
       pw package install picotool
 
-#. Put the following rules into ``/usr/lib/udev/rules.d/49-picoprobe.rules``:
+#. Add the following rules to ``/etc/udev/rules.d/49-pico.rules`` or
+   ``/usr/lib/udev/rules.d/49-pico.rules``. Create the file if it doesn't exist.
 
-   .. code-block:: none
-
-      # Pico app mode
-      SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666"
-      KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666", SYMLINK+="rp2040"
-      # RP2 Boot
-      SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666"
-      KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666", SYMLINK+="rp2040"
-      # Picoprobe
-      SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-      KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666", SYMLINK+="picoprobe"
+   .. literalinclude:: /targets/rp2040/49-pico.rules
+      :language: linuxconfig
+      :start-at: # Raspberry
 
 #. Apply the rules:
 

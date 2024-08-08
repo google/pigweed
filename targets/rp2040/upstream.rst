@@ -195,23 +195,22 @@ were downloaded to.
 
 Setting up udev rules
 =====================
-On Linux, you may need to update your udev rules at
-``/etc/udev/rules.d/49-pico.rules`` to include the following:
+On Linux, you may need to update your udev rules to access the device as a
+normal user (not root).
 
-.. code-block:: none
+Add the following rules to ``/etc/udev/rules.d/49-pico.rules`` or
+``/usr/lib/udev/rules.d/49-pico.rules``. Create the file if it doesn't exist.
 
-   # RaspberryPi Debug probe: https://github.com/raspberrypi/debugprobe
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000c", MODE:="0666"
-   KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000c", MODE:="0666"
-   # RaspberryPi Legacy Picoprobe (early Debug probe version)
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-   KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-   # RP2040 Bootloader mode
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666"
-   KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666"
-   # RP2040 USB Serial
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666"
-   KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666"
+.. literalinclude:: /targets/rp2040/49-pico.rules
+   :language: linuxconfig
+   :start-at: # Raspberry
+
+Then reload the rules:
+
+.. code-block:: console
+
+   sudo udevadm control --reload-rules
+   sudo udevadm trigger
 
 Building
 ========

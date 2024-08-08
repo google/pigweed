@@ -107,25 +107,13 @@ Configure your host to properly detect Raspberry Pi hardware.
 
    .. tab-item:: Linux
 
-      .. TODO: b/355291899 - Update udev rules
+      #. Add the following rules to ``/etc/udev/rules.d/49-pico.rules`` or
+         ``/usr/lib/udev/rules.d/49-pico.rules``. Create the file if it doesn't
+         exist.
 
-      #. Add the following rules to ``/etc/udev/rules.d/49-pico.rules``. Create the
-         file if it doesn't exist.
-
-      .. code-block:: text
-
-         # RaspberryPi Debug probe: https://github.com/raspberrypi/debugprobe
-         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000c", MODE:="0666"
-         KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000c", MODE:="0666"
-         # RaspberryPi Legacy Picoprobe (early Debug probe version)
-         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-         KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-         # RP2040 Bootloader mode
-         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666"
-         KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE:="0666"
-         # RP2040 USB Serial
-         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666"
-         KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE:="0666"
+         .. literalinclude:: /targets/rp2040/49-pico.rules
+            :language: linuxconfig
+            :start-at: # Raspberry
 
       #. Reload the rules:
 

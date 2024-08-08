@@ -167,4 +167,5 @@ pw_doc_group("target_docs") {
     "target_docs.rst",
     "upstream.rst",
   ]
+  inputs = [ "49-pico.rules" ]
 }
