@@ -68,18 +68,6 @@ git_override(
     remote = "https://github.com/nanopb/nanopb.git",
 )
 
-git_override(
-    module_name = "pico-sdk",
-    commit = "efe2103f9b28458a1615ff096054479743ade236",
-    remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
-)
-
-git_override(
-    module_name = "picotool",
-    commit = "8a9af99ab10b20b1c6afb30cd9384e562a6647f9",
-    remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/picotool",
-)
-
 # TODO: b/345806988 - remove this fork and update to upstream HEAD.
 git_override(
     module_name = "rules_go",
