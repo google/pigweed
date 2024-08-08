@@ -3,11 +3,6 @@
 ================
 3. Build the app
 ================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 You can start building right away. There's no need to manually
 install dependencies or toolchains; Sense takes full advantage of Bazel's
 ability to automate dependency and toolchain management.

@@ -3,11 +3,6 @@
 ===============
 14. Wrapping up
 ===============
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Thank you for trying out Sense! We hope you enjoyed the tutorial and
 are excited to build more stuff with Pigweed.
 

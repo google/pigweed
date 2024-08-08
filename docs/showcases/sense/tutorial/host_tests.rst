@@ -3,11 +3,6 @@
 =================
 5. Run host tests
 =================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 :ref:`module-pw_unit_test` provides an extensive GoogleTest-compatible
 unit testing framework. Before building and running the app, let's first
 verify that the app's logic is correct by exercising the app's unit

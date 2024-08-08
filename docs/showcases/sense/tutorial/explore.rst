@@ -3,11 +3,6 @@
 ========================
 2. Explore build targets
 ========================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 .. _targets: https://bazel.build/concepts/build-ref#targets
 
 Throughout the Sense repository there are lots of ``BUILD.bazel`` files.

@@ -298,3 +298,17 @@ div.font-monospace {
   top: 10px;
   z-index: 1000;
 }
+
+.announcement {
+  background-color: #00a100;
+  color: var(--sd-color-light);
+  font-style: italic;
+  font-weight: bold;
+  a {
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--sd-color-light);
+    text-decoration: underline;
+  }
+}

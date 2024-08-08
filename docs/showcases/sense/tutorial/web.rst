@@ -3,11 +3,6 @@
 ======================================================
 11. Communicate with your Pico over the Web Serial API
 ======================================================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 .. _Web Serial API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API
 
 :ref:`module-pw_web` makes it possible to create custom web apps that
@@ -58,14 +53,12 @@ monitoring and controlling your Pico over the web now.
    not work in other browsers like Apple Safari or Mozilla Firefox** because
    `those browsers don't support`_ the Web Serial API.
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/web_app.png
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_splash.png
 
 #. Click **Connect** and select the **Pico** option (or the
    **Debug Probe (CMSIS-DAP)** option if you're using a Debug Probe).
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/web_app_connect.png
-
-#. Click **Blink 5 Times**. You should see the LED on your Pico blink 5 times.
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_connect.png
 
    .. note::
 
@@ -73,17 +66,21 @@ monitoring and controlling your Pico over the web now.
       server and then communicates with the Pico by sending RPCs over the
       Web Serial API.
 
-#. Click **Chart Temperature**. You should see a chart of the Pico's onboard
-   temperature getting updated every second.
+   You should see a chart of the Pico's onboard temperature getting updated
+   every second.
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/web_app_temperature.png
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_home.png
 
-   .. admonition:: Troubleshooting
+   .. note::
 
-      **Nothing happens after clicking the Chart Temperature button**. This is a
-      known issue that we're actively debugging.
+      We recently updated this web app to support the Pico application
+      described in :ref:`showcase-sense-tutorial-prod`. Check back next
+      week for updates.
 
 #. Close the browser tab running the web app.
+
+#. In the terminal where you launched the web app, press
+   :kbd:`Control+C` to stop the web server.
 
 .. _showcase-sense-tutorial-webapp-summary:
 

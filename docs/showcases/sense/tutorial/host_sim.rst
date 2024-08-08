@@ -3,11 +3,6 @@
 ===================
 6. Run the host app
 ===================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Teams creating projects on top of Pigweed often create host versions of
 their apps to speed up development. "Host" means that there's no physical
 embedded device in the loop; a simulated version of the app runs directly

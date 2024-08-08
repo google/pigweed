@@ -3,22 +3,15 @@
 =========================================
 Sense: An interactive tour though Pigweed
 =========================================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Welcome to Pigweed Sense: **a tour of key Pigweed components experienced through
 an imagined air quality monitor product**. Since Pigweed is intended for larger
 teams and higher-complexity products, it’s important to experience Pigweed in a
 medium-size project like Sense that shows a lot of Pigweed components working
 together.
 
-.. 09:54
-
 .. _showcase-sense-figure-1:
 
-.. figure:: https://storage.googleapis.com/pigweed-media/sense/product_concept.png
+.. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/hero.png
 
    Figure 1. :ref:`showcase-sense-product-concept`
 
@@ -107,16 +100,16 @@ threshold up/down via button press, and silencing/snoozing an active alarm with
 a button press. Additionally, the RGB LED’s brightness is adjusted to match
 ambient light to avoid being too distracting in low light conditions.
 
-.. _Raspberry Pi Pico: https://www.raspberrypi.com/products/raspberry-pi-pico/
+.. _Raspberry Pi Pico 1: https://www.raspberrypi.com/products/raspberry-pi-pico/
 .. _Pimoroni Enviro+ Pack: https://shop.pimoroni.com/products/pico-enviro-pack
 .. _Raspberry Pi Debug Probe: https://www.raspberrypi.com/products/debug-probe/
 .. _Pimoroni Pico Omnibus (Dual Expander): https://shop.pimoroni.com/products/pico-omnibus?variant=32369533321299
 
 While there is no real Pigweed Sense product, the imagined product can
-be assembled from a `Raspberry Pi Pico`_ and a `Pimoroni Enviro+ Pack`_.
-It is useful to also have a `Raspberry Pi Debug Probe`_ and a
-`Pimoroni Pico Omnibus (Dual Expander)`_. See
-:ref:`Figure 1 <showcase-sense-figure-1>`.
+be assembled from a `Raspberry Pi Pico 1`_ (or the new Pico 2) and a
+`Pimoroni Enviro+ Pack`_. It is useful to also have a
+`Raspberry Pi Debug Probe`_ and a `Pimoroni Pico Omnibus (Dual Expander)`_.
+See :ref:`Figure 1 <showcase-sense-figure-1>`.
 
 .. note::
 

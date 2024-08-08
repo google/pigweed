@@ -3,11 +3,6 @@
 ======================================
 9. Communicate with your Pico over RPC
 ======================================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Now, let's revisit ``pw_console`` and ``pw_rpc``. This time, we'll send commands
 to and view logs from the real Pico device.
 

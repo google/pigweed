@@ -3,11 +3,6 @@
 ==============
 Sense tutorial
 ==============
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 .. _repo: https://pigweed.googlesource.com/pigweed/showcase/sense/
 
 Welcome to the :ref:`Sense <showcase-sense>` tutorial! If you want a hands-on,
@@ -58,6 +53,8 @@ fit for you:
   with C++ and common tasks such as flashing a Pico over USB. You may still
   be able to complete the tutorial without this background knowledge but should
   expect the tutorial to be more challenging.
+
+You can use either the Pico 1 or Pico 2; we support both.
 
 .. _Pico W: https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html#raspberry-pi-pico-w-and-pico-wh
 

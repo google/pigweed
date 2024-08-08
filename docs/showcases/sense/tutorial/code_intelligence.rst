@@ -3,11 +3,6 @@
 ================================
 4. Explore C++ code intelligence
 ================================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Sense's integration with :ref:`module-pw_ide` enables fast and accurate
 code navigation, autocompletion based on a deep understanding of the
 code structure, and instant compiler warnings and errors. Try the

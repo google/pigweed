@@ -3,11 +3,6 @@
 ========
 1. Setup
 ========
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 First things first: install prerequisite software and set up the
 Sense project.
 

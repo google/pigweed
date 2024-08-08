@@ -56,20 +56,17 @@ class PigweedLiveDirective(Directive):
         meeting_text = nodes.strong()
         meeting_text += nodes.Text(next_meeting)
         paragraph += meeting_text
-        paragraph += nodes.Text(". Please ")
-        refuri = (
-            'https://discord.com/channels/691686718377558037/'
-            '951228399119126548'
-        )
-        link = nodes.reference(refuri=refuri)
-        link += nodes.Text('join us')
-        paragraph += link
         paragraph += nodes.Text(
             (
-                " to discuss what's new in Pigweed and anything else "
-                "Pigweed-related."
+                ". Please join us to discuss what's new in Pigweed and "
+                "anything else Pigweed-related that's on your mind. "
             )
         )
+        refuri = 'https://groups.google.com/g/pigweed'
+        link = nodes.reference(refuri=refuri)
+        link += nodes.Text('Join our mailing list')
+        paragraph += link
+        paragraph += nodes.Text(" to receive an invite to the next meeting.")
         return paragraph
 
     def _find_next_meeting(self) -> str:

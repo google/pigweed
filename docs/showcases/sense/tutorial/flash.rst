@@ -3,19 +3,13 @@
 ==================
 7. Flash your Pico
 ==================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 Enough with the simulations. Let's work with some real hardware!
+You'll need a physical Raspberry Pi Pico for the rest of the tutorial.
+You can use either the Pico 1 or Pico 2; we support both.
 
-.. caution::
-
-   If you're trying out the tutorial with just a development host, this is
-   the end of the line for your tutorial experience. Everything beyond
-   this point requires a physical Raspberry Pi Pico. Skip ahead to
-   :ref:`showcase-sense-tutorial-outro`.
+If you don't have a Pico, you can just skim the remaining pages of
+the tutorial without actually doing the workflows, or skip ahead to
+:ref:`showcase-sense-tutorial-outro`.
 
 .. _showcase-sense-tutorial-hardware:
 

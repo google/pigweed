@@ -3,11 +3,6 @@
 ===================================
 13. Run the air quality monitor app
 ===================================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 .. caution::
 
    This section and the ones after it require a Pimoroni Enviro+ Pack. See

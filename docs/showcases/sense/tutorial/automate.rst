@@ -3,11 +3,6 @@
 =============================
 10. Automate common workflows
 =============================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 If you find yourself repeating the same sequence of steps in
 ``pw_console`` over and over again, there are a few ways to automate
 those workflows.

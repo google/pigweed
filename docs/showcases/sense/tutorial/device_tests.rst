@@ -3,11 +3,6 @@
 ======================
 8. Run on-device tests
 ======================
-.. warning::
-
-   (2024 August 7) This tutorial doesn't quite work yet.
-   Check back tomorrow!
-
 .. note::
 
    This step requires the :ref:`full hardware

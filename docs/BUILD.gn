@@ -44,6 +44,7 @@ pw_doc_group("core_docs") {
     "3p/index.rst",
     "blog/01-kudzu.rst",
     "blog/02-bazel-feature-flags.rst",
+    "blog/03-pigweed-sdk.rst",
     "blog/index.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",
