@@ -26,7 +26,6 @@ cc_library(
         "//pw_sync:thread_notification",
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:pw_sys_io.facade",
-        "@pico-sdk//src/common/pico_stdlib:pico_stdlib",
-        "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
+        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
 )

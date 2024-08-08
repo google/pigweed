@@ -18,15 +18,34 @@
 // Disable formatting to make it easier to compare with other config files.
 // clang-format off
 
+extern uint32_t SystemCoreClock;
+
 #define vPortSVCHandler         SVC_Handler
 #define xPortPendSVHandler      PendSV_Handler
 #define xPortSysTickHandler     SysTick_Handler
 
+#if defined(__ARM_FP) && __ARM_FP
+#define configENABLE_FPU                        1
+#else
+#define configENABLE_FPU                        0
+#endif  // defined(__ARM_FP) && __ARM_FP
+
+// TODO: https://pwbug.dev/353570428 - Set up the MPU.
+#define configENABLE_MPU                        0
+#define configENABLE_TRUSTZONE                  0
+#define configRUN_FREERTOS_SECURE_ONLY          1
+
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_TICKLESS_IDLE                 0
+#if defined(_PW_PICO_GN_BUILD) && _PW_PICO_GN_BUILD
+// GN Pico build is less complete than Bazel, so SystemCoreClock isn't properly
+// referenced.
 #define configCPU_CLOCK_HZ                      133000000
-#define configTICK_RATE_HZ                      1000
+#else
+#define configCPU_CLOCK_HZ                      (SystemCoreClock)
+#endif  // defined(_PW_PICO_GN_BUILD) && _PW_PICO_GN_BUILD
+#define configTICK_RATE_HZ                      ((TickType_t)1000)
 #define configMAX_PRIORITIES                    5
 #define configMINIMAL_STACK_SIZE                ((uint32_t)(256))
 #define configMAX_TASK_NAME_LEN                 16
@@ -71,6 +90,14 @@
 #define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE
 
 #define configRECORD_STACK_HIGH_ADDRESS         1
+
+/* __NVIC_PRIO_BITS in CMSIS */
+#define configPRIO_BITS 4
+
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY ((1U << (configPRIO_BITS)) - 1)
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 2
+#define configKERNEL_INTERRUPT_PRIORITY (configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
 
 // Instead of defining configASSERT(), include a header that provides a
 // definition that redirects to pw_assert.

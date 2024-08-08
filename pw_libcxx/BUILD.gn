@@ -39,6 +39,10 @@ if (dir_pw_third_party_llvm_libcxx != "") {
     ]
     remove_public_deps = [ dir_pw_libcxx ]
   }
+
+  pw_test("operator_new_test") {
+    sources = [ "operator_new_test.cc" ]
+  }
 } else {
   pw_static_library("pw_libcxx") {
     add_global_link_deps = false

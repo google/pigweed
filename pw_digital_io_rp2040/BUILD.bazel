@@ -35,8 +35,8 @@ cc_library(
     deps = [
         "//pw_digital_io",
         "//pw_status",
-        "@pico-sdk//src/common/pico_stdlib",
         "@pico-sdk//src/rp2_common/hardware_gpio",
+        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
 )
 

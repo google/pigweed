@@ -26,6 +26,28 @@ import %workspace%/pw_build/pigweed.bazelrc
 common --per_file_copt=external/.*@-w
 common --host_per_file_copt=external/.*@-w
 
+# Picotool needs to build with exceptions and RTTI enabled.
+common --per_file_copt=external.*picotool.*@-fexceptions,-frtti
+common --host_per_file_copt=external.*picotool.*@-fexceptions,-frtti
+
+# Don't automatically create __init__.py files.
+#
+# This prevents spurious package name collisions at import time, and should be
+# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
+# particularly helpful for Pigweed, because we have many potential package name
+# collisions due to a profusion of stuttering paths like
+# pw_transfer/py/pw_transfer.
+common --incompatible_default_to_explicit_init_py
+
+# Required for new toolchain resolution API.
+build --incompatible_enable_cc_toolchain_resolution
+
+# Don't propagate flags or defines to the exec config. This will become the
+# default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
+# improve cache hit rates between builds targeting different platforms.
+common --experimental_exclude_defines_from_exec_config
+common --experimental_exclude_starlark_flags_from_exec_config
+
 # Default to C++17 to ensure compatibility.
 common --//pw_toolchain/cc:cxx_standard=17
 common:cxx20 --//pw_toolchain/cc:cxx_standard=20
@@ -116,7 +138,7 @@ common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 
 build --//pw_function:config_override=//pw_function:upstream_default_config
 
-# Config for the rp2040 platform.
+# Config for all RP2xxx platforms.
 #
 # TODO: b/301334234 - Make the platform set the flags below.
 # LINT.IfChange
@@ -145,6 +167,7 @@ build:rp2040 --//pw_thread:id_backend=@pigweed//pw_thread_freertos:id
 build:rp2040 --//pw_thread:iteration_backend=@pigweed//pw_thread_freertos:thread_iteration
 build:rp2040 --//pw_thread:sleep_backend=@pigweed//pw_thread_freertos:sleep
 build:rp2040 --//pw_thread:thread_backend=@pigweed//pw_thread_freertos:thread
+build:rp2040 --//pw_toolchain:cortex-m_toolchain_kind=clang
 build:rp2040 --//pw_trace:backend=@pigweed//pw_trace_tokenized:pw_trace_tokenized
 build:rp2040 --//pw_unit_test:backend=//pw_unit_test:light
 build:rp2040 --//pw_unit_test:main=//targets/rp2040:unit_test_app
@@ -152,8 +175,14 @@ build:rp2040 --//pw_build:default_module_config=//targets/rp2040:pigweed_module_
 build:rp2040 --@freertos//:freertos_config=@pigweed//targets/rp2040:freertos_config
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
 build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_UART=True
+build:rp2040 --@pico-sdk//bazel/config:PICO_CLIB=llvm_libc
+build:rp2040 --@pico-sdk//bazel/config:PICO_TOOLCHAIN="clang"
 test:rp2040 --run_under=//targets/rp2040/py:unit_test_client
 # LINT.ThenChange(//targets/rp2040/transition.bzl)
+
+# RP2350 is the same but with a different --platforms setting.
+build:rp2350 --config=rp2040
+build:rp2350 --platforms=@pigweed//targets/rp2040:rp2350
 
 # Config for the stm32f429i_disc1 baremetal platform.
 #

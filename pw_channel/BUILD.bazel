@@ -135,8 +135,7 @@ cc_library(
         ":pw_channel",
         "//pw_log",
         "//pw_multibuf:allocator",
-        "@pico-sdk//src/common/pico_stdlib:pico_stdlib",
-        "@pico-sdk//src/rp2_common/pico_stdlib:pico_stdlib",
+        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
 )
 

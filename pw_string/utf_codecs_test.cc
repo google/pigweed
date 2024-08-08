@@ -15,7 +15,6 @@
 #include "pw_string/utf_codecs.h"
 
 #include <array>
-#include <regex>
 #include <string>
 #include <string_view>
 

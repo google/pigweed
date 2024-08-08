@@ -23,6 +23,11 @@ cc_library(
         "configs/config_default.h",
         "configs/config_pigweed_common.h",
     ],
-    defines = ['MBEDTLS_CONFIG_FILE=\\"configs/config_default.h\\"'],
+    defines = [
+        'MBEDTLS_CONFIG_FILE=\\"configs/config_default.h\\"',
+    ] + select({
+        "@platforms//os:none": [],
+        "//conditions:default": ["_PW_MBEDTLS_IS_HOST=1"],
+    }),
     includes = ["."],
 )

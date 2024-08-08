@@ -57,6 +57,7 @@ if (current_toolchain != default_toolchain) {
 
   config("config_includes") {
     include_dirs = [ "config" ]
+    defines = [ "_PW_PICO_GN_BUILD=1" ]
   }
 
   config("module_config_include") {

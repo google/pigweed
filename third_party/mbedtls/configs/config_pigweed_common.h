@@ -61,6 +61,10 @@
 #define MBEDTLS_PLATFORM_FPRINTF_MACRO(stream, format, ...) (0)
 #define MBEDTLS_PLATFORM_PRINTF_MACRO(format, ...) (0)
 #define MBEDTLS_PLATFORM_EXIT_MACRO(exit_code)
+
+#elif defined(_PW_MBEDTLS_IS_HOST) && _PW_MBEDTLS_IS_HOST
+// Needed for Picotool.
+#define MBEDTLS_FS_IO
 #endif  // defined(_PW_MBEDTLS_IS_HOST) && !_PW_MBEDTLS_IS_HOST
 
 #include "mbedtls/check_config.h"

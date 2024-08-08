@@ -18,6 +18,32 @@
 
 void* operator new(size_t size) { return malloc(size); }
 
+void* operator new[](size_t size) { return malloc(size); }
+
+void* operator new(size_t size, std::align_val_t alignment) {
+  return aligned_alloc(static_cast<size_t>(alignment), size);
+}
+
+void* operator new[](size_t size, std::align_val_t alignment) {
+  return aligned_alloc(static_cast<size_t>(alignment), size);
+}
+
 void* operator new(size_t size, const std::nothrow_t&) noexcept {
   return ::operator new(size);
+}
+
+void* operator new[](size_t size, const std::nothrow_t&) noexcept {
+  return ::operator new[](size);
+}
+
+void* operator new(size_t size,
+                   std::align_val_t alignment,
+                   const std::nothrow_t&) noexcept {
+  return ::operator new(size, alignment);
+}
+
+void* operator new[](size_t size,
+                     std::align_val_t alignment,
+                     const std::nothrow_t&) noexcept {
+  return ::operator new[](size, alignment);
 }

@@ -22,8 +22,8 @@ bazel_dep(name = "boringssl", version = "0.0.0-20240530-2db0eb3")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "nanopb", repo_name = "com_github_nanopb_nanopb")
-bazel_dep(name = "pico-sdk", version = "1.6.0-rc1")
-bazel_dep(name = "picotool", version = "1.1.3-rc1")
+bazel_dep(name = "pico-sdk", version = "2.0.0")
+bazel_dep(name = "picotool", version = "2.0.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "protobuf", version = "24.4", repo_name = "com_google_protobuf")
 bazel_dep(name = "rules_cc", version = "0.0.9")
@@ -68,6 +68,18 @@ git_override(
     remote = "https://github.com/nanopb/nanopb.git",
 )
 
+git_override(
+    module_name = "pico-sdk",
+    commit = "efe2103f9b28458a1615ff096054479743ade236",
+    remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
+)
+
+git_override(
+    module_name = "picotool",
+    commit = "8a9af99ab10b20b1c6afb30cd9384e562a6647f9",
+    remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/picotool",
+)
+
 # TODO: b/345806988 - remove this fork and update to upstream HEAD.
 git_override(
     module_name = "rules_go",
@@ -95,12 +107,19 @@ archive_override(
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.45.1/rules_rust-v0.45.1.tar.gz"],
 )
 
+# Transitive deps not in BCR
+# ==========================
+http_archive = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
+)
+
 # Configure libusb
 # ================
 #
 # The rules_libusb lets you configure which actual libusb version to use.
 libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
-libusb.source_release(min_version = "1.0.22")
+libusb.source_release(min_version = "1.0.27")
 use_repo(libusb, "libusb")
 
 # Configure C++ toolchains
@@ -169,10 +188,6 @@ register_toolchains(
 # ============
 #
 # TODO: https://pwbug.dev/354742574 - Make it simpler to depend on probe-rs.
-http_archive = use_repo_rule(
-    "@bazel_tools//tools/build_defs/repo:http.bzl",
-    "http_archive",
-)
 
 http_archive(
     name = "probe-rs-tools-x86_64-unknown-linux-gnu",

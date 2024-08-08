@@ -38,8 +38,8 @@ cc_library(
         "//pw_spi:chip_selector_digital_out",
         "//pw_spi:initiator",
         "//pw_status",
-        "@pico-sdk//src/common/pico_stdlib",
         "@pico-sdk//src/rp2_common/hardware_spi",
+        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
 )
 

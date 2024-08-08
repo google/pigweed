@@ -40,16 +40,15 @@ def pigweed_rp2_deps():
     maybe(
         git_repository,
         name = "pico-sdk",
-        commit = "6ff3e4fab27441de19fd53c0eb5aacbe83a18221",
+        commit = "efe2103f9b28458a1615ff096054479743ade236",
         remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/pico-sdk",
     )
 
-    # TODO: https://pwbug.dev/345244650 - Upstream bazel build.
     maybe(
         git_repository,
         name = "picotool",
-        commit = "49072f6ebbc814dcc74d6f8b753b89c24af12971",
-        remote = "https://github.com/armandomontanez/picotool",
+        commit = "8a9af99ab10b20b1c6afb30cd9384e562a6647f9",
+        remote = "https://pigweed.googlesource.com/third_party/github/raspberrypi/picotool",
     )
 
     # ---- probe-rs Paths ----

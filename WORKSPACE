@@ -184,12 +184,12 @@ new_git_repository(
 )
 
 # TODO: https://pwbug.dev/354749299 - Use the BCR version of mbedtls.
-git_repository(
+http_archive(
     name = "mbedtls",
     build_file = "//:third_party/mbedtls/mbedtls.BUILD.bazel",
-    # mbedtls-3.2.1 released 2022-07-12
-    commit = "869298bffeea13b205343361b7a7daf2b210e33d",
-    remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
+    sha256 = "241c68402cef653e586be3ce28d57da24598eb0df13fcdea9d99bfce58717132",
+    strip_prefix = "mbedtls-2.28.8",
+    url = "https://github.com/Mbed-TLS/mbedtls/releases/download/v2.28.8/mbedtls-2.28.8.tar.bz2",
 )
 
 # TODO: https://pwbug.dev/354747966 - Update the BCR version of Emboss.

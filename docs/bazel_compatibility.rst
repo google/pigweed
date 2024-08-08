@@ -208,7 +208,7 @@ values to indicate target compatibility.
        name = "pw_digital_io_rp2040",
        deps = [
            # Depends on the Pico SDK.
-           "@pico-sdk//src/common/pico_stdlib",
+           "@pico-sdk//src/rp2_common/pico_stdlib",
            "@pico-sdk//src/rp2_common/hardware_gpio",
        ],
        # The Pico SDK provides authoritative constraint_values.
