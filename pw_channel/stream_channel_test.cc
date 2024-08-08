@@ -57,24 +57,28 @@ void ExpectElementsEqual(const ActualIterable& actual,
                                                                 expected);
 }
 
+struct LiveForeverTestData {
+  LiveForeverTestData() {
+    pw::stream::CreateMpscStream(channel_input_reader, channel_input_writer);
+    pw::stream::CreateMpscStream(channel_output_reader, channel_output_writer);
+  }
+  pw::stream::BufferedMpscReader<512> channel_input_reader;
+  pw::stream::MpscWriter channel_input_writer;
+  pw::stream::BufferedMpscReader<512> channel_output_reader;
+  pw::stream::MpscWriter channel_output_writer;
+  SimpleAllocatorForTest<> allocator;
+  pw::thread::test::TestThreadContext read_thread_cx;
+  pw::thread::test::TestThreadContext write_thread_cx;
+};
+
 TEST(StreamChannel, ReadsAndWritesData) {
-  static pw::stream::BufferedMpscReader<512> channel_input_reader;
-  static pw::stream::MpscWriter channel_input_writer;
-  pw::stream::CreateMpscStream(channel_input_reader, channel_input_writer);
-
-  static pw::stream::BufferedMpscReader<512> channel_output_reader;
-  static pw::stream::MpscWriter channel_output_writer;
-  pw::stream::CreateMpscStream(channel_output_reader, channel_output_writer);
-
-  static pw::NoDestructor<SimpleAllocatorForTest<>> allocator;
-  static pw::thread::test::TestThreadContext read_thread_cx;
-  static pw::thread::test::TestThreadContext write_thread_cx;
+  static pw::NoDestructor<LiveForeverTestData> test_data;
   static pw::NoDestructor<pw::channel::StreamChannel> stream_channel(
-      *allocator,
-      channel_input_reader,
-      read_thread_cx.options(),
-      channel_output_writer,
-      write_thread_cx.options());
+      test_data->allocator,
+      test_data->channel_input_reader,
+      test_data->read_thread_cx.options(),
+      test_data->channel_output_writer,
+      test_data->write_thread_cx.options());
 
   PendFuncTask read_task([&](Context& cx) -> Poll<> {
     auto read = stream_channel->PendRead(cx);
@@ -88,7 +92,7 @@ TEST(StreamChannel, ReadsAndWritesData) {
     return Ready();
   });
 
-  MultiBuf to_send = allocator->BufWith({4_b, 5_b, 6_b});
+  MultiBuf to_send = test_data->allocator.BufWith({4_b, 5_b, 6_b});
   PendFuncTask write_task([&](Context& cx) -> Poll<> {
     if (stream_channel->PendReadyToWrite(cx).IsPending()) {
       return Pending();
@@ -104,7 +108,8 @@ TEST(StreamChannel, ReadsAndWritesData) {
 
   EXPECT_EQ(Pending(), dispatcher.RunUntilStalled());
   std::array<const std::byte, 3> data_to_send({1_b, 2_b, 3_b});
-  ASSERT_EQ(pw::OkStatus(), channel_input_writer.Write(data_to_send));
+  ASSERT_EQ(pw::OkStatus(),
+            test_data->channel_input_writer.Write(data_to_send));
   dispatcher.RunToCompletion();
 }
 
