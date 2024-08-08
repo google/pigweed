@@ -97,7 +97,13 @@ What is Pigweed?
 --------------------
 Who's using Pigweed?
 --------------------
-Pigweed has shipped on millions of devices.
+.. _satellites: https://www.spinlaunch.com/
+.. _autonomous aerial drones: https://www.flyzipline.com/
+
+.. TODO: b/358432838 - Update this section once the banned word list is fixed.
+
+Pigweed has shipped in millions of devices, including Google's suite of Pixel
+devices, Nest thermostats, `satellites`_, and `autonomous aerial drones`_.
 
 --------------------
 Showcase: pw_console
