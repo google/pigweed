@@ -8,6 +8,13 @@ Sense tutorial
 Welcome to the :ref:`Sense <showcase-sense>` tutorial! If you want a hands-on,
 guided tour of the Sense `repo`_, you're in the right place.
 
+.. _Bazel quickstart: https://cs.opensource.google/pigweed/quickstart/bazel
+
+.. note::
+
+   If you'd like to start a Bazel-based project from scratch from a
+   minimal starter repo, check out our `Bazel quickstart`_.
+
 .. _showcase-sense-tutorial-intro-expectations:
 
 --------------

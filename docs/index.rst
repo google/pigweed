@@ -12,12 +12,9 @@ Pigweed
         locally here. -->
    <br>
 
----------------
-Tour of Pigweed
----------------
-Want a guided, hands-on tour of Pigweed's core features? Try our
-brand new :ref:`Tour of Pigweed <showcase-sense>`!
-
+-----------
+Get started
+-----------
 .. grid:: 1
 
    .. grid-item-card:: :octicon:`rocket` Tour of Pigweed
@@ -27,7 +24,28 @@ brand new :ref:`Tour of Pigweed <showcase-sense>`!
 
       Explore key Pigweed features, such as hermetic building, full C++
       code intelligence in VS Code, communicating with devices over RPC,
-      host-side and on-device unit tests, and lots more.
+      host-side and on-device unit tests, and lots more in a guided
+      walkthrough.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Bazel quickstart
+      :link: https://cs.opensource.google/pigweed/quickstart/bazel
+      :link-type: url
+      :class-item: sales-pitch-cta-secondary
+
+      Fork our minimal, Bazel-based starter project to create a new
+      Pigweed project from scratch. The project includes a basic
+      blinky LED program that runs on Raspberry Pi Picos and can
+      be simulated on your development host.
+
+   .. grid-item-card:: :octicon:`list-ordered` More get started guides
+      :link: docs-get-started
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Set up a C++-based Zephyr project, set up GitHub Actions,
+      integrate Pigweed into an existing Bazel project, and more.
 
 ----------------
 What is Pigweed?

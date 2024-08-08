@@ -54,13 +54,15 @@ Create a Pigweed-based project
 ------------------------------
 .. grid:: 1
 
-   .. grid-item-card:: :octicon:`rocket` Bazel
-      :link: docs-get-started-bazel
-      :link-type: ref
-      :class-item: sales-pitch-cta-primary
+   .. grid-item-card:: :octicon:`code-square` Bazel quickstart
+      :link: https://cs.opensource.google/pigweed/quickstart/bazel
+      :link-type: url
+      :class-item: sales-pitch-cta-secondary
 
-      Fork our minimal, Bazel-based starter code. Bazel is the recommended
-      build system for new projects using Pigweed.
+      Fork our minimal, Bazel-based starter project to create a new
+      Pigweed project from scratch. The project includes a basic
+      blinky LED program that runs on Raspberry Pi Picos and can
+      be simulated on your development host.
 
 .. grid:: 2
 

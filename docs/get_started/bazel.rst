@@ -3,5 +3,10 @@
 ==================================
 Get Started With Pigweed And Bazel
 ==================================
-(August 2024) We are updating this guide. Stay tuned for updates.
-In the meantime, check out :ref:`showcase-sense`.
+We recently updated our Bazel quickstart repository and are in the process
+of updating this tutorial. You can browse the new repository here (the
+README has instructions on how to get started):
+https://cs.opensource.google/pigweed/quickstart/bazel
+
+In the meantime, you can also check out :ref:`showcase-sense` for a guided,
+interactive tour of Pigweed's core features.
