@@ -136,6 +136,7 @@ template("emboss_cc_library") {
       "$dir_pw_third_party_emboss/compiler/util/error.py",
       "$dir_pw_third_party_emboss/compiler/util/expression_parser.py",
       "$dir_pw_third_party_emboss/compiler/util/ir_data.py",
+      "$dir_pw_third_party_emboss/compiler/util/ir_data_fields.py",
       "$dir_pw_third_party_emboss/compiler/util/ir_data_utils.py",
       "$dir_pw_third_party_emboss/compiler/util/ir_util.py",
       "$dir_pw_third_party_emboss/compiler/util/name_conversion.py",
