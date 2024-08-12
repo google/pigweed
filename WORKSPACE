@@ -195,7 +195,8 @@ http_archive(
 # TODO: https://pwbug.dev/354747966 - Update the BCR version of Emboss.
 git_repository(
     name = "com_google_emboss",
+    # LINT.IfChange(emboss)
     remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
-    # Also update emboss tag in pw_package/py/pw_package/packages/emboss.py
-    tag = "v2024.0718.173957",
+    tag = "v2024.0809.170004",
+    # LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
 )
