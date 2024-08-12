@@ -305,8 +305,17 @@ enum OpCode:
   LE_READ_BUFFER_SIZE_V1                                       = 0x2002
     -- LE Read Buffer Size [v1] Command (v4.0) (LE)
 
+  LE_READ_LOCAL_SUPPORTED_FEATURES                             = 0x2003
+    -- LE Read Local Supported Features Command (v4.0) (LE)
+
   LE_SET_RANDOM_ADDRESS                                        = 0x2005
     -- LE Set Random Address Command (v4.0) (LE)
+
+  LE_SET_ADVERTISING_PARAMETERS                                = 0x2006
+    -- LE Set Advertising Parameters Command (v4.0) (LE)
+
+  LE_READ_ADVERTISING_CHANNEL_TX_POWER                         = 0x2007
+    -- LE Read Advertising Physical Channel Tx Power Command (v4.0) (LE)
 
   LE_SET_ADVERTISING_DATA                                      = 0x2008
     -- LE Set Advertising Data Command (v4.0) (LE)
