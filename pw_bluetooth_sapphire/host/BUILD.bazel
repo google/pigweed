@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# Note, this file is not copybara'd from upstream Fuchsia.
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
