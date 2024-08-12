@@ -1069,6 +1069,16 @@ def _is_upstream() -> bool:
     return _PW_ROOT == _project_root()
 
 
+_COMMENTS = re.compile(r'\w*#.*$')
+
+
+def _read_root_owners(project_root: Path) -> Iterable[str]:
+    for line in (project_root / 'OWNERS').read_text().splitlines():
+        line = _COMMENTS.sub('', line).strip()
+        if line:
+            yield line
+
+
 def _create_module(
     module: str,
     languages: Iterable[str],
@@ -1117,7 +1127,7 @@ def _create_module(
                     'Owners should be email addresses, but found `%s`', owner
                 )
                 sys.exit(1)
-        root_owners = (project_root / 'OWNERS').read_text().split('\n')
+        root_owners = list(_read_root_owners(project_root))
         if not any(owner in root_owners for owner in owners):
             root_owners_str = '\n'.join(root_owners)
             _LOG.error(
