@@ -862,6 +862,15 @@ bits ClassOfDevice:
   $next [+11]   MajorServiceClasses          major_service_classes
 
 
+bits ScanEnableBits:
+  -- Bitmask Values for the Scan_Enable parameter in a HCI_(Read,Write)_Scan_Enable command.
+  0 [+1]  Flag  inquiry
+    -- Inquiry scan enabled
+
+  1 [+1]  Flag  page
+    -- Page scan enabled
+
+
 enum ConnectionRole:
   [maximum_bits: 8]
   CENTRAL    = 0x00

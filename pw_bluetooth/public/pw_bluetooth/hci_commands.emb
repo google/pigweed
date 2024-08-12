@@ -122,15 +122,6 @@ enum OobDataPresent:
   P192_AND_P256 = 0x03
 
 
-bits ScanEnableBits:
-  -- Bitmask Values for the Scan_Enable parameter in a HCI_(Read,Write)_Scan_Enable command.
-  0 [+1]  Flag  inquiry
-    -- Inquiry scan enabled
-
-  1 [+1]  Flag  page
-    -- Page scan enabled
-
-
 enum InquiryScanType:
   [maximum_bits: 8]
   STANDARD   = 0x00
@@ -1224,9 +1215,9 @@ struct WriteScanEnableCommand:
   -- 7.3.18 Write Scan Enable command (v1.1) (BR/EDR)
   -- HCI_Write_Scan_Enable
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                        hci.CommandHeader  header
+  0     [+hdr_size]                            hci.CommandHeader   header
   $next [+1]  bits:
-    0     [+ScanEnableBits.$size_in_bits]  ScanEnableBits     scan_enable
+    0     [+hci.ScanEnableBits.$size_in_bits]  hci.ScanEnableBits  scan_enable
 
 
 struct ReadPageScanActivityCommand:

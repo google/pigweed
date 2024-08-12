@@ -493,6 +493,15 @@ struct WritePinTypeCommandCompleteEvent:
   $next [+1]         hci.StatusCode            status
 
 
+struct ReadScanEnableCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.17 Read Scan Enable command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                            hci.CommandCompleteEvent  command_complete
+  $next [+1]                                   hci.StatusCode            status
+  $next [+1]  bits:
+    0     [+hci.ScanEnableBits.$size_in_bits]  hci.ScanEnableBits        scan_enable
+
+
 struct ReadLocalVersionInfoCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.1 Read Local Version Information command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
@@ -1022,6 +1031,18 @@ struct ReadRssiCommandCompleteEvent:
   $next [+1]         Int                       rssi
     -- BR/EDR (Range: -128 to 127, Units: dB)
     -- LE (Range: -127 to 20, 127, Units: dBm)
+
+
+struct ReadEncryptionKeySizeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.5.7 Read Encryption Key Size command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         UInt                      key_size
+    -- Encryption key size
 
 
 struct LEReadBufferSizeV1CommandCompleteEvent:
