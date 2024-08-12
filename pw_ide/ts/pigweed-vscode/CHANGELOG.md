@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.3.3]
+
+- The `pigweed.activateBazeliskInNewTerminals` option has been set to a default
+  of `false` because, as currently implemented, this feature interferes with
+  interactive tasks like flashing scripts and `pw_console`.
+
 ## [1.3.2]
 
 - When you manually run `Pigweed: Refresh Compile Commands`, we now show a

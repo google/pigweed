@@ -124,7 +124,7 @@ function activateBazeliskInNewTerminals(
   value?: boolean,
 ): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('activateBazeliskInNewTerminals');
-  if (value === undefined) return get() ?? true;
+  if (value === undefined) return get() ?? false;
   return update(value);
 }
 
