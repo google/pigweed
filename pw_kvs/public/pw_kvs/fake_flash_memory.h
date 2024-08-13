@@ -137,7 +137,7 @@ class FakeFlashMemory : public FlashMemory {
   }
 
  private:
-  static inline Vector<FlashError, 0> no_errors_;
+  static Vector<FlashError, 0> no_errors_;
 
   const span<std::byte> buffer_;
   Vector<FlashError>& read_errors_;

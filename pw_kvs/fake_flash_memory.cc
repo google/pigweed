@@ -57,6 +57,8 @@ Status FlashError::Check(FlashMemory::Address start_address, size_t size) {
   return status_;
 }
 
+Vector<FlashError, 0> FakeFlashMemory::no_errors_;
+
 Status FakeFlashMemory::Erase(Address address, size_t num_sectors) {
   if (address % sector_size_bytes() != 0) {
     PW_LOG_ERROR(

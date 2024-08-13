@@ -62,11 +62,6 @@ pw_cc_test(
     srcs = [
         "blob_store_test.cc",
     ],
-    # TODO: b/357162923 - Fails on clang + Pico.
-    target_compatible_with = select({
-        "//targets/rp2040:pico_clang_build": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":pw_blob_store",
         "//pw_kvs:crc16",
@@ -84,11 +79,6 @@ pw_cc_test(
     srcs = [
         "blob_store_chunk_write_test.cc",
     ],
-    # TODO: b/357162923 - Fails on clang + Pico.
-    target_compatible_with = select({
-        "//targets/rp2040:pico_clang_build": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":pw_blob_store",
         "//pw_kvs:crc16",
@@ -105,11 +95,6 @@ pw_cc_test(
     srcs = [
         "blob_store_deferred_write_test.cc",
     ],
-    # TODO: b/357162923 - Fails on clang + Pico.
-    target_compatible_with = select({
-        "//targets/rp2040:pico_clang_build": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":pw_blob_store",
         "//pw_kvs:crc16",
@@ -124,11 +109,6 @@ pw_cc_test(
 pw_cc_test(
     name = "flat_file_system_entry_test",
     srcs = ["flat_file_system_entry_test.cc"],
-    # TODO: b/357162923 - Fails on clang + Pico.
-    target_compatible_with = select({
-        "//targets/rp2040:pico_clang_build": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":flat_file_system_entry",
         ":pw_blob_store",
