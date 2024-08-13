@@ -28,6 +28,32 @@
 /// @{
 
 /// Marks a struct or class as packed.
+///
+/// Use packed structs with extreme caution! Packed structs are rarely needed.
+/// Instead, define the struct and `static_assert` to verify that the size and
+/// alignement are as expected.
+///
+/// Packed structs should only be used to avoid standard padding or to force
+/// unaligned members when describing in-memory or wire format data structures.
+/// Packed struct members should NOT be accessed directly because they may be
+/// unaligned. Instead, `memcpy` the fields into variables. For example:
+///
+/// @code{.cpp}
+///   PW_PACKED(struct) PackedStruct {
+///     uint8_t a;
+///     uint32_t b;
+///     uint16_t c;
+///   };
+///
+///   void UsePackedStruct(const PackedStruct& packed_struct) {
+///     uint8_t a;
+///     uint32_t b;
+///     uint16_t c;
+///     std::memcpy(&a, &packed_struct.a, sizeof(a));
+///     std::memcpy(&b, &packed_struct.b, sizeof(b));
+///     std::memcpy(&c, &packed_struct.c, sizeof(c));
+///   }
+/// @endcode
 #define PW_PACKED(declaration) declaration __attribute__((packed))
 
 /// Marks a function or object as used, ensuring code for it is generated.
