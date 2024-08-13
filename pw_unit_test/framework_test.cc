@@ -123,9 +123,20 @@ TEST(PigweedTest, SucceedAndFailMacros) {
     ADD_FAILURE();
     FAIL();
   }
+
+  // Without braces, clang-tidy complains if these are multiple statements.
+  if (false)
+    ADD_FAILURE();
+
+  if (false)
+    FAIL();
 }
 
 TEST(PigweedTest, SkipMacro) {
+  // Without a brace, clang-tidy complains if GTEST_SKIP is multiple statements.
+  if (false)
+    GTEST_SKIP();
+
   GTEST_SKIP();
   // This code should not run.
   EXPECT_TRUE(false);
