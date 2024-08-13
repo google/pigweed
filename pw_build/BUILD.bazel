@@ -19,6 +19,8 @@ load(
     "pw_cc_blob_library",
     "pw_cc_test",
 )
+load(":glob_dirs.bzl", "glob_dirs", "match_dir", "match_dir_internal")
+load(":load_phase_test.bzl", "pw_string_comparison_test", "pw_string_list_comparison_test", "return_error")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -147,4 +149,90 @@ cc_library(
     name = "must_place",
     hdrs = ["public/pw_build/must_place.ld.h"],
     includes = ["public"],
+)
+
+pw_string_list_comparison_test(
+    name = "simple_glob",
+    actual = glob_dirs(["test_data/**"]),
+    expected = [
+        "test_data",
+        "test_data/glob_dirs",
+        "test_data/glob_dirs/nested_1",
+        "test_data/glob_dirs/nested_1/foo",
+        "test_data/glob_dirs/nested_2",
+    ],
+)
+
+pw_string_comparison_test(
+    name = "single_match",
+    actual = match_dir(["test_data/glob_dirs/nested_1"]),
+    expected = "test_data/glob_dirs/nested_1",
+)
+
+pw_string_comparison_test(
+    name = "no_match_single",
+    actual = match_dir(["test_data/glob_dirs/nested_1/nope"]),
+    expected = None,
+)
+
+pw_string_comparison_test(
+    name = "no_match_single_fail",
+    actual = match_dir_internal(
+        ["test_data/glob_dirs/**/*.txt"],
+        _fail_callback = return_error,
+        allow_empty = False,
+    ),
+    expected = "glob pattern [\"test_data/glob_dirs/**/*.txt\"] didn't match anything, but allow_empty is set to False",
+)
+
+pw_string_comparison_test(
+    name = "bad_match_multiple",
+    actual = match_dir_internal(
+        ["test_data/glob_dirs/**"],
+        _fail_callback = return_error,
+        allow_empty = False,
+    ),
+    expected = "glob pattern [\"test_data/glob_dirs/**\"] matches multiple directories when only one was requested: [\"test_data/glob_dirs\", \"test_data/glob_dirs/nested_1\", \"test_data/glob_dirs/nested_1/foo\", \"test_data/glob_dirs/nested_2\"]",
+)
+
+pw_string_comparison_test(
+    name = "match_exclusions",
+    actual = match_dir(
+        ["test_data/glob_dirs/**"],
+        allow_empty = False,
+        exclude = ["test_data/glob_dirs/*/**"],
+    ),
+    expected = "test_data/glob_dirs",
+)
+
+pw_string_list_comparison_test(
+    name = "single_match_glob",
+    actual = glob_dirs(["test_data/glob_dirs/nested_1"]),
+    expected = [
+        "test_data/glob_dirs/nested_1",
+    ],
+)
+
+pw_string_list_comparison_test(
+    name = "partial_match_glob",
+    actual = glob_dirs(["test_data/glob_dirs/nested_*"]),
+    expected = [
+        "test_data/glob_dirs/nested_1",
+        "test_data/glob_dirs/nested_2",
+    ],
+)
+
+pw_string_list_comparison_test(
+    name = "nested_match_glob",
+    actual = glob_dirs(["test_data/glob_dirs/*/foo"]),
+    expected = [
+        "test_data/glob_dirs/nested_1/foo",
+    ],
+)
+
+pw_string_list_comparison_test(
+    name = "no_match_glob",
+    actual = glob_dirs(["test_data/glob_dirs/others/**"]),
+    expected = [
+    ],
 )
