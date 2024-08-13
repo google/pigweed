@@ -44,7 +44,7 @@ from pw_rpc import ids
 @dataclass(frozen=True)
 class Channel:
     id: int
-    output: Callable[[bytes], Any] | None
+    output: Callable[[bytes], Any]
 
     def __repr__(self) -> str:
         return f'Channel({self.id})'

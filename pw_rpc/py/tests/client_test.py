@@ -90,7 +90,7 @@ def create_protos() -> Any:
 
 def create_client(
     proto_modules: Any,
-    first_channel_output_fn: Callable[[bytes], Any] | None = None,
+    first_channel_output_fn: Callable[[bytes], Any] = lambda _: None,
 ) -> client.Client:
     return client.Client.from_modules(
         callback_client.Impl(),

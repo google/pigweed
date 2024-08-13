@@ -123,15 +123,13 @@ class PendingRpcs:
         previous = self.open(rpc, context, override_pending)
         packet = packets.encode_request(rpc, request)
 
-        # TODO(hepler): Remove `type: ignore[misc]` below when
-        #     https://github.com/python/mypy/issues/10711 is fixed.
         if ignore_errors:
             try:
-                rpc.channel.output(packet)  # type: ignore[misc]
+                rpc.channel.output(packet)
             except Exception as err:  # pylint: disable=broad-except
                 _LOG.debug('Ignoring exception when starting RPC: %s', err)
         else:
-            rpc.channel.output(packet)  # type: ignore[misc]
+            rpc.channel.output(packet)
 
         return previous
 
@@ -168,9 +166,7 @@ class PendingRpcs:
         if rpc not in self._pending:
             raise Error(f'Attempt to send client stream for inactive RPC {rpc}')
 
-        rpc.channel.output(  # type: ignore
-            packets.encode_client_stream(rpc, message)
-        )
+        rpc.channel.output(packets.encode_client_stream(rpc, message))
 
     def send_client_stream_end(self, rpc: PendingRpc) -> None:
         if rpc not in self._pending:
@@ -178,9 +174,7 @@ class PendingRpcs:
                 f'Attempt to send client stream end for inactive RPC {rpc}'
             )
 
-        rpc.channel.output(  # type: ignore
-            packets.encode_client_stream_end(rpc)
-        )
+        rpc.channel.output(packets.encode_client_stream_end(rpc))
 
     def cancel(self, rpc: PendingRpc) -> bytes:
         """Cancels the RPC.
@@ -204,7 +198,7 @@ class PendingRpcs:
             return False
 
         if packet:
-            rpc.channel.output(packet)  # type: ignore
+            rpc.channel.output(packet)
 
         return True
 
@@ -669,6 +663,4 @@ def _send_client_error(
 ) -> None:
     # Never send responses to SERVER_ERRORs.
     if packet.type != PacketType.SERVER_ERROR:
-        client.channel.output(  # type: ignore
-            packets.encode_client_error(packet, error)
-        )
+        client.channel.output(packets.encode_client_error(packet, error))
