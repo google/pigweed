@@ -22,6 +22,7 @@ from typing import Iterable
 from pw_bloat import bloat
 from pw_bloat.label import DataSourceMap
 from pw_bloat.label_output import BloatTableOutput
+from pw_cli.color import colors
 import pw_cli.log
 
 _LOG = logging.getLogger(__name__)
@@ -37,11 +38,19 @@ def _parse_args() -> argparse.Namespace:
         type=Path,
     )
     parser.add_argument(
+        '-c',
+        '--custom-config',
+        help=(
+            'Use a provided Bloaty config instead of generating one '
+            'from memory regions defined in the binary'
+        ),
+        type=Path,
+    )
+    parser.add_argument(
         '-d',
         '--data-sources',
         help='Comma-separated list of Bloaty data sources to report',
         type=lambda s: s.split(','),
-        default=('memoryregions,sections'),
     )
     parser.add_argument(
         '--diff',
@@ -60,7 +69,9 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _run_size_report(
-    elf: Path, data_sources: Iterable[str] = ()
+    elf: Path,
+    custom_config: Path | None = None,
+    data_sources: Iterable[str] = (),
 ) -> DataSourceMap:
     """Runs a size analysis on an ELF file, returning a pw_bloat size map.
 
@@ -71,24 +82,52 @@ def _run_size_report(
         NoMemoryRegions: The binary does not define bloat memory region symbols.
     """
 
-    bloaty_tsv = bloat.memory_regions_size_report(
-        elf, data_sources=data_sources, extra_args=('--tsv',)
-    )
+    extra_args = ('--tsv',)
+
+    if custom_config is not None:
+        bloaty_tsv = bloat.basic_size_report(
+            elf,
+            custom_config,
+            data_sources=data_sources,
+            extra_args=extra_args,
+        )
+    else:
+        bloaty_tsv = bloat.memory_regions_size_report(
+            elf,
+            data_sources=data_sources,
+            extra_args=extra_args,
+        )
 
     return DataSourceMap.from_bloaty_tsv(bloaty_tsv)
 
 
 def _no_memory_regions_error(elf: Path) -> None:
-    _LOG.error('Executable %s does not define any bloat memory regions', elf)
+    col = colors()
+
+    _LOG.error('Executable file')
+    _LOG.error('  %s', col.bold_white(elf))
+    _LOG.error('does not define any bloat memory regions.')
+    _LOG.error('')
     _LOG.error(
-        'Refer to https://pigweed.dev/pw_bloat/#memoryregions-data-source'
+        (
+            'Either provide a custom Bloaty configuration file via the '
+            '%s option,'
+        ),
+        col.bold_white('--custom-config'),
+    )
+    _LOG.error(
+        'or refer to https://pigweed.dev/pw_bloat/#memoryregions-data-source'
     )
     _LOG.error('for information on how to configure them.')
 
 
-def _single_binary_report(elf: Path, data_sources: Iterable[str] = ()) -> int:
+def _single_binary_report(
+    elf: Path,
+    custom_config: Path | None = None,
+    data_sources: Iterable[str] = (),
+) -> int:
     try:
-        data_source_map = _run_size_report(elf, data_sources)
+        data_source_map = _run_size_report(elf, custom_config, data_sources)
     except bloat.NoMemoryRegions:
         _no_memory_regions_error(elf)
         return 1
@@ -98,11 +137,14 @@ def _single_binary_report(elf: Path, data_sources: Iterable[str] = ()) -> int:
 
 
 def _diff_report(
-    target: Path, base: Path, data_sources: Iterable[str] = ()
+    target: Path,
+    base: Path,
+    custom_config: Path | None = None,
+    data_sources: Iterable[str] = (),
 ) -> int:
     try:
-        base_map = _run_size_report(base, data_sources)
-        target_map = _run_size_report(target, data_sources)
+        base_map = _run_size_report(base, custom_config, data_sources)
+        target_map = _run_size_report(target, custom_config, data_sources)
     except bloat.NoMemoryRegions as err:
         _no_memory_regions_error(err.elf)
         return 1
@@ -116,17 +158,36 @@ def _diff_report(
 def main() -> int:
     """Run binary size reports."""
 
+    pw_cli.log.install()
+
     args = _parse_args()
+
+    if args.data_sources:
+        data_sources = args.data_sources
+    elif args.custom_config is not None:
+        # If a custom config is provided, automatic memoryregions are not being
+        # used. Fallback to segments as the primary data source.
+        data_sources = ('segments', 'sections')
+    else:
+        # No custom config will attempt to generate one from memoryregions.
+        data_sources = ('memoryregions', 'sections')
 
     if not args.verbose:
         pw_cli.log.set_all_loggers_minimum_level(logging.ERROR)
 
     if args.diff is not None:
         return _diff_report(
-            args.binary, args.diff, data_sources=args.data_sources
+            args.binary,
+            args.diff,
+            custom_config=args.custom_config,
+            data_sources=data_sources,
         )
 
-    return _single_binary_report(args.binary, data_sources=args.data_sources)
+    return _single_binary_report(
+        args.binary,
+        custom_config=args.custom_config,
+        data_sources=data_sources,
+    )
 
 
 if __name__ == '__main__':

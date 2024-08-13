@@ -24,16 +24,16 @@ size reports on ELF binaries.
 .. note::
 
    The bloat CLI plugin is still experimental and only supports a small subset
-   of ``pw_bloat``'s capabilities. Notably, it currently only runs on binaries
-   which define memory region symbols; refer to the
-   :ref:`memoryregions documentation <module-pw_bloat-memoryregions>`
-   for details.
+   of ``pw_bloat``'s capabilities.
 
 Basic usage
 ===========
 
 Running a size report on a single executable
 --------------------------------------------
+By default, ``pw bloat`` assumes that
+:ref:`memoryregions <module-pw_bloat-memoryregions>` symbols are defined in
+binaries, and uses them to automatically generate a Bloaty config file.
 
 .. code-block:: sh
 
@@ -103,6 +103,63 @@ Running a size report diff
    |Total|                      |                                               |    -4|
    +-----+----------------------+-----------------------------------------------+------+
 
+Specifying a custom Bloaty config file
+--------------------------------------
+If the linker script for a target does not define memory regions, a custom
+Bloaty config can be provided using the ``-c / --custom-config`` option.
+
+.. code-block::
+
+   $ pw bloat out/pw_strict_host_clang_debug/obj/pw_status/test/status_test -c targets/host/linux.bloaty
+
+    ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+     ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+     ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+     ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+     ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+
+   +------------+---------------------+-------+
+   |  segments  |       sections      | sizes |
+   +============+=====================+=======+
+   |LOAD #3 [RX]|                     |138,176|
+   |            |.text                |137,524|
+   |            |.plt                 |    608|
+   |            |.init                |     24|
+   |            |.fini                |     20|
+   +------------+---------------------+-------+
+   |LOAD #2 [R] |                     | 87,816|
+   |            |.rela.dyn            | 32,664|
+   |            |.rodata              | 23,176|
+   |            |.eh_frame            | 23,152|
+   |            |.eh_frame_hdr        |  4,236|
+   |            |.gcc_except_table    |  1,140|
+   |            |.dynsym              |  1,008|
+   |            |.rela.plt            |    888|
+   |            |[ELF Program Headers]|    616|
+   |            |.dynstr              |    556|
+   |            |.gnu.version_r       |    116|
+   |            |.gnu.version         |     84|
+   |            |[ELF Header]         |     64|
+   |            |.note.ABI-tag        |     32|
+   |            |.gnu.hash            |     28|
+   |            |.interp              |     28|
+   |            |.note.gnu.build-id   |     28|
+   +------------+---------------------+-------+
+   |LOAD #5 [RW]|                     | 20,216|
+   |            |.bss                 | 19,824|
+   |            |.got.plt             |    328|
+   |            |.data                |     64|
+   +------------+---------------------+-------+
+   |LOAD #4 [RW]|                     | 15,664|
+   |            |.data.rel.ro         | 12,240|
+   |            |.relro_padding       |  2,872|
+   |            |.dynamic             |    464|
+   |            |.got                 |     56|
+   |            |.fini_array          |     16|
+   |            |.init_array          |     16|
+   +============+=====================+=======+
+   |Total       |                     |261,872|
+   +------------+---------------------+-------+
 
 .. _bloat-howto:
 
