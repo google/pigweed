@@ -250,8 +250,6 @@ constexpr Poll<T> Ready(T&& value) {
 /// Returns a value indicating that an operation was not yet able to complete.
 inline constexpr PendingType Pending() { return PendingType(); }
 
-#undef PW_NODISCARD_STR
-
 }  // namespace async2
 
 // --- ToString implementations for ``Poll`` types ---
