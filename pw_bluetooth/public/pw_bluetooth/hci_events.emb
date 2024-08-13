@@ -1095,6 +1095,60 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
 
 
+struct LESupportedStates:
+  0  [+8]  bits:
+    0  [+1]       Flag  non_connectable_non_scannable_undirected_advertising
+    1  [+1]       Flag  scannable_undirected_advertising
+    2  [+1]       Flag  connectable_scannable_undirected_advertising
+    3  [+1]       Flag  high_duty_cycle_connectable_directed_advertising
+    4  [+1]       Flag  passive_scanning
+    5  [+1]       Flag  active_scanning
+    6  [+1]       Flag  initiating
+    7  [+1]       Flag  peripheral_role_connection
+    8  [+1]       Flag  passive_scanning_and_non_connectable_non_scannable_undirected_advertising
+    9  [+1]       Flag  passive_scanning_and_scannable_undirected_advertising
+    10 [+1]       Flag  passive_scanning_and_connectable_scannable_undirected_advertising
+    11 [+1]       Flag  passive_scanning_and_high_duty_cycle_connectable_directed_advertising
+    12 [+1]       Flag  active_scanning_and_non_connectable_non_scannable_undirected_advertising
+    13 [+1]       Flag  active_scanning_and_scannable_undirected_advertising
+    14 [+1]       Flag  active_scanning_and_connectable_scannable_undirected_advertising
+    15 [+1]       Flag  active_scanning_and_high_duty_cycle_connectable_directed_advertising
+    16 [+1]       Flag  initiating_and_non_connectable_non_scannable_undirected_advertising
+    17 [+1]       Flag  initiating_and_scannable_undirected_advertising
+    18 [+1]       Flag  central_role_connection_and_non_connectable_non_scannable_undirected_advertising
+    19 [+1]       Flag  central_role_connection_and_scannable_undirected_advertising
+    20 [+1]       Flag  peripheral_role_connection_and_non_connectable_non_scannable_undirected_advertising
+    21 [+1]       Flag  peripheral_role_connection_and_scannable_undirected_advertising
+    22 [+1]       Flag  initiating_and_passive_scanning
+    23 [+1]       Flag  initiating_and_active_scanning
+    24 [+1]       Flag  central_role_connection_and_passive_scanning
+    25 [+1]       Flag  central_role_connection_and_active_scanning
+    26 [+1]       Flag  peripheral_role_connection_and_passive_scanning
+    27 [+1]       Flag  peripheral_role_connection_and_active_scanning
+    28 [+1]       Flag  central_role_connection_and_initiating
+    29 [+1]       Flag  low_duty_cycle_connectable_directed_advertising
+    30 [+1]       Flag  passive_scanning_and_low_duty_cycle_connectable_directed_advertising
+    31 [+1]       Flag  active_scanning_and_low_duty_cycle_connectable_directed_advertising
+    32 [+1]       Flag  initiating_and_connectable_scannable_undirected_advertising
+    33 [+1]       Flag  initiating_and_high_duty_cycle_connectable_directed_advertising
+    34 [+1]       Flag  initiating_and_low_duty_cycle_connectable_directed_advertising
+    35 [+1]       Flag  central_role_connection_and_connectable_scannable_undirected_advertising
+    36 [+1]       Flag  central_role_connection_and_high_duty_cycle_connectable_directed_advertising
+    37 [+1]       Flag  central_role_connection_and_low_duty_cycle_connectable_directed_advertising
+    38 [+1]       Flag  peripheral_role_connection_and_connectable_scannable_undirected_advertising
+    39 [+1]       Flag  peripheral_role_connection_and_high_duty_cycle_connectable_directed_advertising
+    40 [+1]       Flag  peripheral_role_connection_and_low_duty_cycle_connectable_directed_advertising
+    41 [+1]       Flag  peripheral_role_connection_and_initiating
+
+
+struct LEReadSupportedStatesCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.27 LE Read Supported States command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+8]         LESupportedStates         le_states
+
+
 struct LEReadAdvertisingChannelTxPowerCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.6 LE Read Advertising Physical Channel Tx Power command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
