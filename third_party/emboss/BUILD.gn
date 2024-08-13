@@ -41,10 +41,7 @@ pw_source_set("default_overrides") {
 }
 
 config("disable_warnings") {
-  cflags_cc = [
-    "-Wno-unused-parameter",
-    "-Wno-deprecated-copy",
-  ]
+  cflags_cc = [ "-Wno-unused-parameter" ]
 }
 
 pw_source_set("cpp_utils") {
