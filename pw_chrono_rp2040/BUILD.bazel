@@ -36,10 +36,10 @@ cc_library(
     target_compatible_with = [
         "//pw_build/constraints/chipset:rp2040",
     ],
-    # TODO: b/261603269 - This should depend on the Pi Pico SDK build rules.
     deps = [
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock.facade",
+        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
 )
 
@@ -49,7 +49,6 @@ pw_cc_test(
     target_compatible_with = [
         "//pw_build/constraints/chipset:rp2040",
     ],
-    # TODO: b/261603269 - This should depend on the Pi Pico SDK build rules.
     deps = [":system_clock"],
 )
 

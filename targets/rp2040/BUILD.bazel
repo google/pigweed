@@ -154,8 +154,6 @@ cc_library(
     srcs = [
         "boot.cc",
     ],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
     target_compatible_with = [":freertos_config_cv"],
     deps = [
         ":freertos_config",

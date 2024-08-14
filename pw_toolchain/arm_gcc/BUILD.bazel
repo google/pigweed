@@ -29,7 +29,7 @@ cc_library(
         "-Wl,--wrap=__sseek",
         "-Wl,--wrap=__sclose",
     ],
-    # TODO: b/261603269 - Get this to build.
+    # Only built as part of the ARM GCC toolchain.
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//pw_assert"],
@@ -38,7 +38,7 @@ cc_library(
 
 cc_library(
     name = "arm_none_eabi_gcc_support",
-    # TODO: b/261603269 - Get this to build.
+    # Only built as part of the ARM GCC toolchain.
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
