@@ -3476,5 +3476,57 @@ TEST_F(WriteTransfer, Write_TransferSize_SmallerThanResource) {
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
+TEST_F(ReadTransfer, Version2_CancelBeforeServerResponse) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  Result<Client::Handle> transfer = client_.Read(
+      3,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      cfg::kDefaultClientTimeout,
+      cfg::kDefaultClientTimeout);
+  ASSERT_EQ(transfer.status(), OkStatus());
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Initial chunk of the transfer is sent. This chunk should contain all the
+  // fields from both legacy and version 2 protocols for backwards
+  // compatibility.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads[0]);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.desired_session_id(), 1u);
+  EXPECT_EQ(chunk.resource_id(), 3u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.window_end_offset(), 37u);
+  EXPECT_EQ(chunk.max_chunk_size_bytes(), 37u);
+
+  // Cancel the transfer before the server responds. Since no contact was made,
+  // no cancellation chunk should be sent.
+  transfer->Cancel();
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(payloads.size(), 1u);
+
+  // The server responds after the cancellation. The client should notify it
+  // that the transfer is no longer active.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAck)
+                      .set_session_id(1)
+                      .set_resource_id(3)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kCompletion);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.status(), Status::Cancelled());
+}
+
 }  // namespace
 }  // namespace pw::transfer::test

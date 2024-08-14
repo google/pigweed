@@ -24,6 +24,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_log/rate_limited.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/serialized_size.h"
 #include "pw_transfer/internal/config.h"
 #include "pw_transfer/transfer.pwpb.h"
@@ -581,16 +582,12 @@ void Context::HandleTransmitChunk(const Chunk& chunk) {
       PW_CRASH("Never should handle chunk while inactive");
 
     case TransferState::kCompleted:
-      // If the transfer has already completed and another chunk is received,
-      // tell the other end that the transfer is over.
-      //
-      // TODO(frolv): Final status chunks should be ACKed by the other end. When
-      // that is added, this case should be updated to check if the received
-      // chunk is an ACK. If so, the transfer state can be reset to INACTIVE.
-      // Otherwise, the final status should be re-sent.
-      if (!chunk.IsInitialChunk()) {
+      // In a legacy transfer, if the transfer has already completed and another
+      // chunk is received, tell the other end that the transfer is over.
+      if (!chunk.IsInitialChunk() && status_.ok()) {
         status_ = Status::FailedPrecondition();
       }
+
       SendFinalStatusChunk();
       return;
 
@@ -806,6 +803,13 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
     return;
   }
 
+  if (transfer_state_ == TransferState::kCompleted) {
+    // If the transfer has already completed and another chunk is received,
+    // re-send the final status chunk.
+    SendFinalStatusChunk();
+    return;
+  }
+
   if (chunk.protocol_version() != configured_protocol_version_) {
     PW_LOG_ERROR(
         "Receive transfer %u was configured to use protocol version %d "
@@ -825,15 +829,8 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
                static_cast<int>(transfer_state_));
 
     case TransferState::kCompleted:
-      // If the transfer has already completed and another chunk is received,
-      // re-send the final status chunk.
-      //
-      // TODO(frolv): Final status chunks should be ACKed by the other end. When
-      // that is added, this case should be updated to check if the received
-      // chunk is an ACK. If so, the transfer state can be reset to INACTIVE.
-      // Otherwise, the final status should be re-sent.
-      SendFinalStatusChunk();
-      return;
+      // Handled earlier.
+      PW_UNREACHABLE;
 
     case TransferState::kRecovery:
       if (chunk.offset() != offset_) {
@@ -1075,6 +1072,18 @@ void Context::HandleTermination(Status status) {
 void Context::SendFinalStatusChunk(bool with_resource_id) {
   PW_DCHECK(transfer_state_ == TransferState::kCompleted ||
             transfer_state_ == TransferState::kTerminating);
+
+  if (configured_protocol_version_ == ProtocolVersion::kUnknown) {
+    // If the transfer is ended before contact is made with the peer,
+    // the protocol version may not yet be configured. Use the desired
+    // version for the status chunk.
+    configured_protocol_version_ = desired_protocol_version_;
+    PW_LOG_WARN(
+        "Transfer %u ending before protocol version was confirmed; using "
+        "version %u",
+        id_for_log(),
+        static_cast<unsigned>(desired_protocol_version_));
+  }
 
   PW_LOG_INFO("Sending final chunk for transfer %u with status %u",
               static_cast<unsigned>(session_id_),
