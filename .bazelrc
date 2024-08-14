@@ -30,6 +30,9 @@ common --host_per_file_copt=external/.*@-w
 common --per_file_copt=external.*picotool.*@-fexceptions,-frtti
 common --host_per_file_copt=external.*picotool.*@-fexceptions,-frtti
 
+# RP2xxx PIO assembler also needs exceptions.
+common --host_per_file_copt=external.*pioasm.*@-fexceptions,-frtti
+
 # Don't automatically create __init__.py files.
 #
 # This prevents spurious package name collisions at import time, and should be
