@@ -61,7 +61,7 @@ class Device:
         self,
         channel_id: int,
         reader: rpc.CancellableReader,
-        write,
+        write: Callable[[bytes], Any],
         proto_library: Iterable[ModuleType | Path],
         detokenizer: detokenize.Detokenizer | None = None,
         timestamp_decoder: Callable[[int], str] | None = None,
