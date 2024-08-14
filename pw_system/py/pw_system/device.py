@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 import tempfile
 from types import ModuleType
+from collections.abc import Iterable
 from typing import Any, Callable, Sequence
 
 from pw_file import file_pb2
@@ -61,7 +62,7 @@ class Device:
         channel_id: int,
         reader: rpc.CancellableReader,
         write,
-        proto_library: list[ModuleType | Path],
+        proto_library: Iterable[ModuleType | Path],
         detokenizer: detokenize.Detokenizer | None = None,
         timestamp_decoder: Callable[[int], str] | None = None,
         rpc_timeout_s: float = 5,
@@ -70,7 +71,7 @@ class Device:
         logger: logging.Logger | logging.LoggerAdapter = DEFAULT_DEVICE_LOGGER,
     ):
         self.channel_id = channel_id
-        self.protos = proto_library
+        self.protos = list(proto_library)
         self.detokenizer = detokenizer
         self.rpc_timeout_s = rpc_timeout_s
 
