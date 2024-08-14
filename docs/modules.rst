@@ -47,6 +47,7 @@ Libraries (modules)
    pw_cpu_exception/docs
    pw_crypto/docs
    pw_digital_io/docs
+   pw_display/docs
    pw_dma_mcuxpresso/docs
    pw_docgen/docs
    pw_doctor/docs

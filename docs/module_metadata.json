@@ -238,6 +238,11 @@
       "C++17"
     ]
   },
+  "pw_display": {
+    "tagline": "Graphic display support and framebuffer management",
+    "status": "experimental",
+    "languages": []
+  },
   "pw_dma_mcuxpresso": {
     "tagline": "DMA helpers for MCUXpresso SDK",
     "status": "unstable",

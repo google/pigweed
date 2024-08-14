@@ -32,71 +32,71 @@ STM32F429I. This enables developers to quickly and easily add display support
 for supported devices and an implementation to model when adding new device
 support.
 
----------------
+--------
 Proposal
----------------
-This proposes no changes to existing modules, but suggests several new modules
-that together define a framework for rendering to displays.
+--------
+This proposes no changes to existing modules, but suggests several new libraries
+all within a single new module titled ``pw_display`` that together define a
+framework for rendering to displays.
 
 
-New Modules
------------
-
+New Libraries
+=============
 .. list-table::
    :widths: 5 45
    :header-rows: 1
 
-   * - Module
+   * - Library
      - Function
 
-   * - pw_display
+   * - pw_display/display
      - Manage draw thread, framebuffers, and driver
 
-   * - pw_display_driver
+   * - pw_display/driver
      - Display driver interface definition
 
-   * - pw_display_driver_ili9341
-     - Display driver for the ILI9341 display controller
-
-   * - pw_display_driver_imgui
-     - Host display driver using `Dear ImGui <https://www.dearimgui.com/>`_
-
-   * - pw_display_driver_mipi
-     - Display driver for `MIPI DSI <https://www.mipi.org/specifications/dsi>`_ controllers
-
-   * - pw_display_driver_null
-     - Null display driver for headless devices
-
-   * - pw_display_driver_st7735
-     - Display driver for the `ST7735 <https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf>`_ display controller
-
-   * - pw_display_driver_st7789
-     - Display driver for the ST7789 display controller
-
-   * - pw_simple_draw
-     - Very basic drawing library for test purposes
-
-   * - pw_framebuffer
-     - Manage access to pixel buffer.
-
-   * - pw_framebuffer_mcuxpresso
-     - Specialization of the framebuffer for the MCUxpresso devices
-
-   * - pw_geometry
-     - Basic shared math types such as 2D vectors, etc.
-
-   * - pw_pixel_pusher
+   * - pw_display/pixel_pusher
      - Transport of pixel data to display controller
 
+   * - pw_display/drivers/ili9341
+     - Display driver for the ILI9341 display controller
 
-Math
-----
-``pw_geometry`` contains two helper structures for common values usually used as
-a pair.
+   * - pw_display/drivers/imgui
+     - Host display driver using `Dear ImGui <https://www.dearimgui.com/>`_
+
+   * - pw_display/drivers/mipi
+     - Display driver for `MIPI DSI <https://www.mipi.org/specifications/dsi>`_ controllers
+
+   * - pw_display/drivers/null
+     - Null display driver for headless devices
+
+   * - pw_display/drivers/st7735
+     - Display driver for the `ST7735 <https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf>`_ display controller
+
+   * - pw_display/drivers/st7789
+     - Display driver for the ST7789 display controller
+
+   * - pw_display/draw
+     - Very basic drawing library for test and bring-up purposes
+
+   * - pw_display/framebuffer
+     - Manage access to pixel buffer.
+
+   * - pw_display/framebuffer_mcuxpresso
+     - Specialization of the framebuffer for the MCUxpresso devices
+
+   * - pw_display/geometry
+     - Basic shared math types such as 2D vectors, etc.
+
+
+Geometry
+========
+``pw_display/geometry`` contains two helper structures for common values usually
+used as a pair.
 
 .. code-block:: cpp
 
-   namespace pw::math {
+   namespace pw::display {
 
    template <typename T>
    struct Size {
@@ -110,18 +110,18 @@ a pair.
      T y;
    };
 
-   }  // namespace pw::math
+   }  // namespace pw::display
 
 
 Framebuffer
------------
+===========
 A framebuffer is a small class that provides access to a pixel buffer. It
 keeps a copy of the pixel buffer metadata and provides accessor methods for
 those values.
 
 .. code-block:: cpp
 
-   namespace pw::framebuffer {
+   namespace pw::display {
 
    enum class PixelFormat {
      None,
@@ -156,7 +156,7 @@ those values.
      uint16_t row_bytes() const;
    };
 
-   }  // namespace pw::framebuffer
+   }  // namespace pw::display
 
 FrameBuffer is a moveable class that is intended to signify read/write
 privileges to the underlying pixel data. This makes it easier to track when the
@@ -190,8 +190,7 @@ can be given the pixel buffer pointer retrieved by calling ``data()``.
    DrawScreen(&fb);
 
 FramebufferPool
----------------
-
+===============
 The FramebufferPool is intended to simplify the use of multiple framebuffers
 when multi-buffered rendering is being used. It is a collection of framebuffers
 which can be retrieved, used, and then returned to the pool for reuse. All
@@ -202,7 +201,7 @@ until it has been returned by calling ``ReleaseFramebuffer()``.
 
 .. code-block:: cpp
 
-   namespace pw::framebuffer_pool {
+   namespace pw::display {
 
    class FramebufferPool {
    public:
@@ -240,7 +239,7 @@ until it has been returned by calling ``ReleaseFramebuffer()``.
      virtual Status ReleaseFramebuffer(pw::framebuffer::Framebuffer framebuffer);
    };
 
-   }  // namespace pw::framebuffer
+   }  // namespace pw::display
 
 An example use of the framebuffer pool is:
 
@@ -257,8 +256,7 @@ An example use of the framebuffer pool is:
    framebuffer_pool.ReleaseFramebuffer(std::move(fb));
 
 DisplayDriver
--------------
-
+=============
 A DisplayDriver is usually the sole class responsible for communicating with the
 display controller. Its primary responsibilities are the display controller
 initialization, and the writing of pixel data when a display update is needed.
@@ -273,7 +271,7 @@ Because of this approach the DisplayDriver is defined as an interface:
 
 .. code-block:: cpp
 
-   namespace pw::display_driver {
+   namespace pw::display {
 
    class DisplayDriver {
    public:
@@ -290,14 +288,14 @@ Because of this approach the DisplayDriver is defined as an interface:
      virtual pw::math::Size<uint16_t> size() const = 0;
    };
 
-   }  // namespace pw::display_driver
+   }  // namespace pw::display
 
 Each driver then provides a concrete implementation of the driver. Below is the
 definition of the display driver for the ILI9341:
 
 .. code-block:: cpp
 
-   namespace pw::display_driver {
+   namespace pw::display {
 
    class DisplayDriverILI9341 : public DisplayDriver {
    public:
@@ -338,7 +336,7 @@ definition of the display driver for the ILI9341:
                          const Command& command);
    };
 
-   }  // namespace pw::display_driver
+   }  // namespace pw::display
 
 Here is an example retrieving a framebuffer from the framebuffer pool, drawing
 into the framebuffer, using the display driver to write the pixel data, and then
@@ -374,7 +372,7 @@ may use a background write and the write callback is called when the write
 is complete. The write callback **may be called during an interrupt**.
 
 PixelPusher
------------
+===========
 Pixel data for Simple SPI based display controllers can be written to the
 display controller using ``pw_spi``. There are some controllers which use
 other interfaces (RGB, MIPI, etc.). Also, some vendors provide an API for
@@ -387,7 +385,7 @@ a framebuffer to the display controller. Specializations of this will use
 
 .. code-block:: cpp
 
-   namespace pw::pixel_pusher {
+   namespace pw::display {
 
    class PixelPusher {
     public:
@@ -402,11 +400,10 @@ a framebuffer to the display controller. Specializations of this will use
                                    WriteCallback complete_callback) = 0;
    };
 
-   }  // namespace pw::pixel_pusher
+   }  // namespace pw::display
 
 Display
--------
-
+=======
 Each display has:
 
 1. One and only one display driver.
@@ -466,17 +463,16 @@ A simplified application rendering loop would resemble:
    // controller by the display's display driver.
    display.ReleaseFramebuffer(std::move(fb), [](Status){});
 
-Simple Drawing Module
----------------------
-
-``pw_simple_draw`` was created for testing and verification purposes only. It is
+Drawing Library
+===============
+``pw_display/draw`` was created for testing and verification purposes only. It is
 not intended to be feature rich or performant in any way. This is small
 collection of basic drawing primitives not intended to be used by shipping
 applications.
 
 .. code-block:: cpp
 
-   namespace pw::draw {
+   namespace pw::display {
 
    void DrawLine(pw::framebuffer::Framebuffer& fb,
                  int x1,
@@ -541,11 +537,10 @@ applications.
                                   const FontSet& font,
                                   pw::framebuffer::Framebuffer& framebuffer);
 
-   }  // namespace pw::draw
+   }  // namespace pw::display
 
 Class Interaction Diagram
--------------------------
-
+=========================
 .. mermaid::
    :alt: Framebuffer Classes
    :align: center
@@ -646,7 +641,6 @@ be easily interfaced with those libraries.
 ---------------
 Detailed design
 ---------------
-
 This proposal suggests no changes to existing APIs. All changes introduce new
 modules that leverage the existing API. It supports static allocation of the
 pixel buffers and all display framework objects. Additionally pixel buffers
@@ -685,7 +679,7 @@ is available. This unburdens the application drawing loop from the task of
 managing framebuffers or tracking screen update completion.
 
 Testing
--------
+=======
 All classes will be accompanied by a robust set of unit tests. These can be
 run on the host or the device. Test applications will be able to run on a
 workstation (i.e. not an MCU) in order to enable tests that depend on
@@ -696,7 +690,7 @@ based tests. Desktop tests will use
 them to be run in a headless continuous integration environment.
 
 Performance
------------
+===========
 Display support will include performance tests. Although this proposal does not
 include a rendering library, it will include support for specific platforms
 that will utilize means of transferring pixel data to the display controller
@@ -705,7 +699,6 @@ in the background.
 ------------
 Alternatives
 ------------
-
 One alternative is to create the necessary port/HAL, the terminology varies by
 library, for the popular embedded graphics libraries. This would make it easier
 for Pigweed applications to add display support - bot only for those supported
@@ -723,7 +716,7 @@ Open questions
 --------------
 
 Parameter Configuration
------------------------
+=======================
 One open question is what parameters to specify in initialization parameters
 to a driver ``Init()`` function, which to set in build flags via ``config(...)``
 in GN, and which to hard-code into the driver. The most ideal, from the
@@ -751,19 +744,20 @@ with the various display controller APIs as possible to increase the likelihood
 of a well crafted API.
 
 Module Hierarchy
-----------------
+================
 At present Pigweed's module structure is flat and at the project root level.
 There are currently 134 top level ``pw_*`` directories. This proposal could
 significantly increase this count as each new display driver will be a new
 module. This might be a good time to consider putting modules into a hierarchy.
 
 Pixel Pusher
-------------
+============
 ``PixelPusher`` was created to remove the details of writing pixels from the
 display driver. Many displays support multiple ways to send pixel data. For
 example the ILI9341 supports SPI and a parallel bus for pixel transport.
 The `STM32F429I-DISC1 <https://www.st.com/en/evaluation-tools/32f429idiscovery.html>`_
-also has a display controller (`LTDC <https://www.st.com/resource/en/application_note/an4861-lcdtft-display-controller-ltdc-on-stm32-mcus-stmicroelectronics.pdf>`_)
+also has a display controller (`LTDC
+<https://www.st.com/resource/en/application_note/an4861-lcdtft-display-controller-ltdc-on-stm32-mcus-stmicroelectronics.pdf>`_)
 which uses an STM proprietary API. The ``PixelPusher`` was essentially created
 to allow that driver to use the LTDC API without the need to be coupled in any
 way to a vendor API.
@@ -775,7 +769,7 @@ be cleaner to move the command writes into the ``PixelPusher`` and remove any
 should be renamed.
 
 Copyrighted SDKs
-----------------
+================
 Some vendors have copyrighted SDKs which cannot be included in the Pigweed
 source code unless the project is willing to have the source covered by more
 than one license. Additionally some SDKs have no simple download link and the

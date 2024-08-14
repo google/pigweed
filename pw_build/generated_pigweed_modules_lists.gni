@@ -91,6 +91,7 @@ declare_args() {
   dir_pw_digital_io_mcuxpresso =
       get_path_info("../pw_digital_io_mcuxpresso", "abspath")
   dir_pw_digital_io_rp2040 = get_path_info("../pw_digital_io_rp2040", "abspath")
+  dir_pw_display = get_path_info("../pw_display", "abspath")
   dir_pw_dma_mcuxpresso = get_path_info("../pw_dma_mcuxpresso", "abspath")
   dir_pw_docgen = get_path_info("../pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("../pw_doctor", "abspath")
@@ -280,6 +281,7 @@ declare_args() {
     dir_pw_digital_io_linux,
     dir_pw_digital_io_mcuxpresso,
     dir_pw_digital_io_rp2040,
+    dir_pw_display,
     dir_pw_dma_mcuxpresso,
     dir_pw_docgen,
     dir_pw_doctor,
@@ -457,6 +459,7 @@ declare_args() {
     "$dir_pw_digital_io_linux:tests",
     "$dir_pw_digital_io_mcuxpresso:tests",
     "$dir_pw_digital_io_rp2040:tests",
+    "$dir_pw_display:tests",
     "$dir_pw_dma_mcuxpresso:tests",
     "$dir_pw_docgen:tests",
     "$dir_pw_doctor:tests",
@@ -634,6 +637,7 @@ declare_args() {
     "$dir_pw_digital_io_linux:docs",
     "$dir_pw_digital_io_mcuxpresso:docs",
     "$dir_pw_digital_io_rp2040:docs",
+    "$dir_pw_display:docs",
     "$dir_pw_dma_mcuxpresso:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
