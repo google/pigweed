@@ -46,9 +46,7 @@ typedef struct {
 #include "pw_containers/to_array.h"
 #include "pw_preprocessor/compiler.h"
 
-namespace pw {
-namespace tokenizer {
-namespace internal {
+namespace pw::tokenizer::internal {
 
 static_assert(sizeof(_pw_tokenizer_EntryHeader) == 4 * sizeof(uint32_t));
 
@@ -89,9 +87,7 @@ constexpr Entry<kDomainSize, kStringSize> MakeEntry(
   return {token, domain, string};
 }
 
-}  // namespace internal
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer::internal
 
 #else  // In C, define a struct inline with appropriately-sized string members.
 

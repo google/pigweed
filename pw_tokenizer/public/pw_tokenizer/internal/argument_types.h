@@ -82,10 +82,7 @@ typedef uint64_t pw_tokenizer_ArgTypes;
 
 #define _PW_VARARGS_TYPE(arg) ::pw::tokenizer::VarargsType<decltype(arg)>()
 
-namespace pw {
-namespace tokenizer {
-
-#ifdef __cpp_if_constexpr  // C++17 version
+namespace pw::tokenizer {
 
 // This function selects the matching type enum for supported argument types.
 template <typename T>
@@ -105,44 +102,7 @@ constexpr pw_tokenizer_ArgTypes VarargsType() {
   }
 }
 
-#else  // C++14 version
-
-template <typename T,
-          bool kIsDouble = std::is_floating_point<T>(),
-          bool kIsString = !std::is_null_pointer<T>() &&
-                           std::is_convertible<T, const char*>(),
-          bool kIsInt64 = sizeof(T) == sizeof(int64_t)>
-struct SelectVarargsType;
-
-template <typename T, bool kDontCare1, bool kDontCare2>
-struct SelectVarargsType<T, true, kDontCare1, kDontCare2> {
-  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_DOUBLE;
-};
-
-template <typename T, bool kDontCare>
-struct SelectVarargsType<T, false, true, kDontCare> {
-  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_STRING;
-};
-
-template <typename T>
-struct SelectVarargsType<T, false, false, true> {
-  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT64;
-};
-
-template <typename T>
-struct SelectVarargsType<T, false, false, false> {
-  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT;
-};
-
-template <typename T>
-constexpr pw_tokenizer_ArgTypes VarargsType() {
-  return SelectVarargsType<typename std::decay<T>::type>::kValue;
-}
-
-#endif  // __cpp_if_constexpr
-
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer
 
 #else  // C version
 

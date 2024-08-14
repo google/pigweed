@@ -24,8 +24,7 @@ static_assert((PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4) ||
                   (PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 8),
               "PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES must be 4 or 8");
 
-namespace pw {
-namespace tokenizer {
+namespace pw::tokenizer {
 namespace {
 
 // Declare the types as an enum for convenience.
@@ -141,5 +140,4 @@ extern "C" size_t pw_tokenizer_EncodeArgs(pw_tokenizer_ArgTypes types,
                                     output_buffer_size));
 }
 
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer

@@ -22,7 +22,7 @@
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_varint/varint.h"
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+#ifdef __cplusplus
 
 #include <cstring>
 
@@ -138,7 +138,7 @@ class EncodedMessage {
 
 }  // namespace pw::tokenizer
 
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+#endif  // __cplusplus
 
 PW_EXTERN_C_START
 

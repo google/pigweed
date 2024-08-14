@@ -23,8 +23,7 @@
 #include "pw_span/span.h"
 #include "pw_tokenizer/encode_args.h"
 
-namespace pw {
-namespace tokenizer {
+namespace pw::tokenizer {
 namespace {
 
 static_assert(sizeof(PW_TOKENIZER_NESTED_PREFIX_STR) == 2,
@@ -81,23 +80,14 @@ extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
 
   va_list args;
   va_start(args, types);
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   const size_t encoded_bytes = EncodeArgs(
       types,
       args,
       span<std::byte>(static_cast<std::byte*>(buffer) + sizeof(token),
                       *buffer_size_bytes - sizeof(token)));
-#else
-  const size_t encoded_bytes =
-      pw_tokenizer_EncodeArgs(types,
-                              args,
-                              static_cast<std::byte*>(buffer) + sizeof(token),
-                              *buffer_size_bytes - sizeof(token));
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
   va_end(args);
 
   *buffer_size_bytes = sizeof(token) + encoded_bytes;
 }
 
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer

@@ -290,13 +290,11 @@ PW_EXTERN_C_END
       _pw_tokenizer_string_entry_) =                                           \
       ::pw::tokenizer::internal::MakeEntry(token, domain, string)
 
-namespace pw {
-namespace tokenizer {
+namespace pw::tokenizer {
 
 using Token = ::pw_tokenizer_Token;
 
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer
 
 #else
 

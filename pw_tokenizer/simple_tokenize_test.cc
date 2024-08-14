@@ -19,8 +19,7 @@
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw {
-namespace tokenizer {
+namespace pw::tokenizer {
 namespace {
 
 template <size_t kSize>
@@ -73,5 +72,4 @@ class TokenizeToBuffer : public ::testing::Test {
 };
 
 }  // namespace
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer
