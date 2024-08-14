@@ -170,6 +170,23 @@ C++ Utilities
 .. doxygenclass:: pw::async2::PendableAsTask
   :members:
 
+
+.. doxygenfunction:: pw::async2::MakeOnceSenderAndReceiver
+
+.. doxygenclass:: pw::async2::OnceSender
+  :members:
+
+.. doxygenclass:: pw::async2::OnceReceiver
+  :members:
+
+.. doxygenfunction:: pw::async2::MakeOnceRefSenderAndReceiver
+
+.. doxygenclass:: pw::async2::OnceRefSender
+  :members:
+
+.. doxygenclass:: pw::async2::OnceRefReceiver
+  :members:
+
 .. toctree::
    :hidden:
    :maxdepth: 1

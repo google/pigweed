@@ -183,6 +183,31 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "once_sender",
+    hdrs = [
+        "public/pw_async2/once_sender.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":dispatcher",
+        "//pw_function",
+    ],
+)
+
+pw_cc_test(
+    name = "once_sender_test",
+    srcs = [
+        "once_sender_test.cc",
+    ],
+    deps = [
+        ":once_sender",
+        "//pw_containers:vector",
+    ],
+)
+
+cc_library(
     name = "coro",
     hdrs = [
         "public/pw_async2/coro.h",

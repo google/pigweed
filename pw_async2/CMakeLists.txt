@@ -130,6 +130,24 @@ pw_add_test(pw_async2.allocate_task_test
     pw_allocator.testing
 )
 
+pw_add_library(pw_async2.once_sender INTERFACE
+  HEADERS
+    public/pw_async2/once_sender.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_function
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.once_sender_test
+  SOURCES
+    once_sender_test.cc
+  PRIVATE_DEPS
+    pw_async2.once_sender
+    pw_containers.vector
+)
+
 if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
   pw_add_library(pw_async2.coro INTERFACE
     HEADERS
