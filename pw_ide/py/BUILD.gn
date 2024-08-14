@@ -36,6 +36,7 @@ pw_python_package("py") {
     "pw_ide/vscode.py",
   ]
   tests = [
+    "activate_tests.py",
     "commands_test.py",
     "cpp_test.py",
     "cpp_test_fake_env.py",

@@ -63,11 +63,10 @@ from __future__ import annotations
 # TODO(chadnorvell): Import collections.OrderedDict when we don't need to
 # support Python 3.8 anymore.
 from enum import Enum
-import os
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any, OrderedDict
+from typing import Any, Callable, OrderedDict
 
 from pw_cli.env import pigweed_environment
 
@@ -373,7 +372,9 @@ def _default_launch(
     return _DEFAULT_LAUNCH
 
 
-DEFAULT_SETTINGS_PATH = Path(os.path.expandvars('$PW_PROJECT_ROOT')) / '.vscode'
+DEFAULT_SETTINGS_PATH: Callable[[PigweedIdeSettings], Path] = (
+    lambda settings: settings.workspace_root / '.vscode'
+)
 
 
 class VscSettingsType(Enum):

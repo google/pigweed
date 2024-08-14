@@ -133,6 +133,7 @@ files have the same schema, in which these options can be configured:
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.cascade_targets
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.sync
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.clangd_additional_query_drivers
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.workspace_root
 
 When to provide additional configuration to support your use cases
 ==================================================================

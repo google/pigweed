@@ -527,6 +527,14 @@ _SettingsTypeT = TypeVar('_SettingsTypeT')
 EditorSettingsTypesWithDefaults = dict[_SettingsTypeT, DefaultSettingsCallback]
 
 
+def undefined_default_settings_dir(
+    _pw_ide_settings: PigweedIdeSettings,
+) -> Path:
+    """Raise an error if a subclass doesn't define default_settings_dir."""
+
+    raise NotImplementedError()
+
+
 class EditorSettingsManager(Generic[_SettingsTypeT]):
     """Manages all settings for a particular editor.
 
@@ -547,9 +555,14 @@ class EditorSettingsManager(Generic[_SettingsTypeT]):
     }
 
     # These must be overridden in child classes.
-    default_settings_dir: Path = None  # type: ignore
     file_format: _StructuredFileFormat = _StructuredFileFormat()
     types_with_defaults: EditorSettingsTypesWithDefaults[_SettingsTypeT] = {}
+
+    # The settings directory can be defined as a static path, or as a lambda
+    # that takes an instance of `PigweedIdeSettings` as an argument.
+    default_settings_dir: Path | Callable[
+        [PigweedIdeSettings], Path
+    ] = undefined_default_settings_dir
 
     def __init__(
         self,
@@ -577,11 +590,18 @@ class EditorSettingsManager(Generic[_SettingsTypeT]):
         # `default_settings_dir`, and that value is used the vast majority of
         # the time. But you can inject an alternative directory in the
         # constructor if needed (e.g. for tests).
-        self._settings_dir = (
-            settings_dir
-            if settings_dir is not None
-            else self.__class__.default_settings_dir
-        )
+        if settings_dir is not None:
+            self._settings_dir = settings_dir
+        else:
+            if isinstance(self.__class__.default_settings_dir, Path):
+                self._settings_dir = self.__class__.default_settings_dir
+            else:
+                self._settings_dir = self.__class__.default_settings_dir(
+                    pw_ide_settings
+                )
+
+        if not self._settings_dir.exists():
+            self._settings_dir.mkdir()
 
         # The backing file format should normally be defined by the class
         # attribute ``file_format``, but can be overridden in the constructor.
