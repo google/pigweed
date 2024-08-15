@@ -184,7 +184,7 @@ class Entry {
   constexpr Entry(FlashPartition* partition,
                   Address address,
                   const EntryFormat& format,
-                  EntryHeader header)
+                  const EntryHeader& header)
       : partition_(partition),
         address_(address),
         checksum_algo_(format.checksum),
