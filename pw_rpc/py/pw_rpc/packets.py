@@ -13,11 +13,10 @@
 # the License.
 """Functions for working with pw_rpc packets."""
 
-import dataclasses
-
 from google.protobuf import message
 from pw_status import Status
 
+from pw_rpc.descriptors import PendingRpc
 from pw_rpc.internal import packet_pb2
 
 
@@ -33,46 +32,36 @@ def decode_payload(packet, payload_type):
     return payload
 
 
-@dataclasses.dataclass(eq=True, frozen=True)
-class RpcIds:
-    """Integer IDs that uniquely identify a remote procedure call."""
-
-    channel_id: int
-    service_id: int
-    method_id: int
-    call_id: int
-
-
-def encode_request(rpc: RpcIds, request: message.Message | None) -> bytes:
+def encode_request(rpc: PendingRpc, request: message.Message | None) -> bytes:
     payload = request.SerializeToString() if request is not None else bytes()
 
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.REQUEST,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
         payload=payload,
     ).SerializeToString()
 
 
-def encode_response(rpc: RpcIds, response: message.Message) -> bytes:
+def encode_response(rpc: PendingRpc, response: message.Message) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.RESPONSE,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
         payload=response.SerializeToString(),
     ).SerializeToString()
 
 
-def encode_client_stream(rpc: RpcIds, request: message.Message) -> bytes:
+def encode_client_stream(rpc: PendingRpc, request: message.Message) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_STREAM,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
         payload=request.SerializeToString(),
     ).SerializeToString()
@@ -89,23 +78,23 @@ def encode_client_error(packet: packet_pb2.RpcPacket, status: Status) -> bytes:
     ).SerializeToString()
 
 
-def encode_cancel(rpc: RpcIds) -> bytes:
+def encode_cancel(rpc: PendingRpc) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_ERROR,
         status=Status.CANCELLED.value,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
 
-def encode_client_stream_end(rpc: RpcIds) -> bytes:
+def encode_client_stream_end(rpc: PendingRpc) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_REQUEST_COMPLETION,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
     ).SerializeToString()
 

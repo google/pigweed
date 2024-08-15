@@ -30,7 +30,7 @@ from google.protobuf.message import DecodeError, Message
 from pw_status import Status
 
 from pw_rpc import descriptors, packets
-from pw_rpc.descriptors import Channel, Service, Method
+from pw_rpc.descriptors import Channel, Service, Method, PendingRpc
 from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 
 _LOG = logging.getLogger(__package__)
@@ -45,32 +45,6 @@ _MAX_CALL_ID: int = 1 << 14
 
 class Error(Exception):
     """Error from incorrectly using the RPC client classes."""
-
-
-class PendingRpc(packets.RpcIds):
-    """Uniquely identifies an RPC call.
-
-    Attributes:
-      channel: Channel
-      service: Service
-      method: Method
-      channel_id: int
-      service_id: int
-      method_id: int
-      call_id: int
-    """
-
-    def __init__(
-        self,
-        channel: Channel,
-        service: Service,
-        method: Method,
-        call_id: int,
-    ) -> None:
-        super().__init__(channel.id, service.id, method.id, call_id)
-        self.channel = channel
-        self.service = service
-        self.method = method
 
 
 class _PendingRpcMetadata:

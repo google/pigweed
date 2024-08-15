@@ -23,7 +23,8 @@ from google.protobuf import message
 from pw_log.log_decoder import Log, LogStreamDecoder
 from pw_log.proto import log_pb2
 from pw_log_rpc.rpc_log_stream import LogStreamHandler
-from pw_rpc import callback_client, client, packets
+from pw_rpc import callback_client, client
+from pw_rpc.descriptors import fake_pending_rpc, PendingRpc
 from pw_rpc.internal import packet_pb2
 from pw_status import Status
 
@@ -31,47 +32,47 @@ _LOG = logging.getLogger(__name__)
 
 
 def _encode_server_stream_packet(
-    rpc: packets.RpcIds, payload: message.Message
+    rpc: PendingRpc, payload: message.Message
 ) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.SERVER_STREAM,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
         payload=payload.SerializeToString(),
     ).SerializeToString()
 
 
-def _encode_cancel(rpc: packets.RpcIds) -> bytes:
+def _encode_cancel(rpc: PendingRpc) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.SERVER_ERROR,
         status=Status.CANCELLED.value,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
 
-def _encode_error(rpc: packets.RpcIds) -> bytes:
+def _encode_error(rpc: PendingRpc) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.SERVER_ERROR,
         status=Status.UNKNOWN.value,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
 
-def _encode_completed(rpc: packets.RpcIds, status: Status) -> bytes:
+def _encode_completed(rpc: PendingRpc, status: Status) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.RESPONSE,
         status=status.value,
-        channel_id=rpc.channel_id,
-        service_id=rpc.service_id,
-        method_id=rpc.method_id,
+        channel_id=rpc.channel.id,
+        service_id=rpc.service.id,
+        method_id=rpc.method.id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
@@ -121,14 +122,15 @@ class TestRpcLogStreamHandler(TestCase):
             self.client.channel(self._channel_id).rpcs, log_decoder
         )
 
-    def _get_rpc_ids(self) -> packets.RpcIds:
+    def _get_rpc_ids(self) -> PendingRpc:
         service = next(iter(self.client.services))
         method = next(iter(service.methods))
 
         # To handle unrequested log streams, packets' call Ids are set to
         # kOpenCallId.
-        call_id = client.OPEN_CALL_ID
-        return packets.RpcIds(self._channel_id, service.id, method.id, call_id)
+        return fake_pending_rpc(
+            self._channel_id, service.id, method.id, client.OPEN_CALL_ID
+        )
 
     def test_listen_to_logs_subsequent_calls(self):
         """Test a stream of RPC Logs."""
