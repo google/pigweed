@@ -105,7 +105,7 @@ class _MethodClient:
         docstring = inspect.getdoc(self.__call__)  # type: ignore[operator] # pylint: disable=no-member
         assert docstring is not None
 
-        annotation = inspect.Signature.from_callable(self).return_annotation  # type: ignore[arg-type] # pylint: disable=line-too-long
+        annotation = inspect.signature(self).return_annotation  # type: ignore[arg-type] # pylint: disable=line-too-long
         if isinstance(annotation, type):
             annotation = annotation.__name__
 
@@ -125,7 +125,6 @@ class _MethodClient:
         on_next: OnNextCallback | None,
         on_completed: OnCompletedCallback | None,
         on_error: OnErrorCallback | None,
-        ignore_errors: bool = False,
     ) -> CallTypeT:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
@@ -143,7 +142,7 @@ class _MethodClient:
         call = call_type(
             self._rpcs, rpc, timeout_s, on_next, on_completed, on_error
         )
-        call._invoke(request, ignore_errors)  # pylint: disable=protected-access
+        call._invoke(request)  # pylint: disable=protected-access
         return call
 
     def _open_call(
@@ -306,7 +305,6 @@ class _ClientStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
-            True,
         )
 
     def open(
@@ -404,16 +402,11 @@ class Impl(client.ClientImpl):
         default_unary_timeout_s: float | None = None,
         default_stream_timeout_s: float | None = None,
         on_call_hook: Callable[[CallInfo], Any] | None = None,
-        cancel_duplicate_calls: bool | None = True,
     ) -> None:
         super().__init__()
         self._default_unary_timeout_s = default_unary_timeout_s
         self._default_stream_timeout_s = default_stream_timeout_s
         self.on_call_hook = on_call_hook
-        # Temporary workaround for clients that rely on mulitple in-flight
-        # instances of an RPC on the same channel, which is not supported.
-        # TODO(hepler): Remove this option when clients have updated.
-        self._cancel_duplicate_calls = cancel_duplicate_calls
 
     @property
     def default_unary_timeout_s(self) -> float | None:
@@ -425,14 +418,6 @@ class Impl(client.ClientImpl):
 
     def method_client(self, channel: Channel, method: Method) -> _MethodClient:
         """Returns an object that invokes a method using the given chanel."""
-
-        # Temporarily attach the cancel_duplicate_calls option to the
-        # PendingRpcs object.
-        # TODO(hepler): Remove this workaround.
-        assert self.rpcs
-        self.rpcs.cancel_duplicate_calls = (  # type: ignore[attr-defined]
-            self._cancel_duplicate_calls
-        )
 
         if method.type is Method.Type.UNARY:
             return self._create_unary_method_client(
@@ -543,12 +528,8 @@ class Impl(client.ClientImpl):
         rpc: PendingRpc,
         context: Call,
         payload,
-        *,
-        args: tuple = (),
-        kwargs: dict | None = None,
     ) -> None:
         """Invokes the callback associated with this RPC."""
-        assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_response(payload)  # pylint: disable=protected-access
 
     def handle_completion(
@@ -556,11 +537,7 @@ class Impl(client.ClientImpl):
         rpc: PendingRpc,
         context: Call,
         status: Status,
-        *,
-        args: tuple = (),
-        kwargs: dict | None = None,
     ):
-        assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_completion(status)  # pylint: disable=protected-access
 
     def handle_error(
@@ -568,9 +545,5 @@ class Impl(client.ClientImpl):
         rpc: PendingRpc,
         context: Call,
         status: Status,
-        *,
-        args: tuple = (),
-        kwargs: dict | None = None,
     ) -> None:
-        assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_error(status)  # pylint: disable=protected-access
