@@ -12,6 +12,27 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "@pigweed//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+cc_library(
+    name = "color",
+    hdrs = [
+        "public/pw_display/color.h",
+        "public/pw_display/colors_endesga64.h",
+        "public/pw_display/colors_pico8.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "color_test",
+    srcs = ["color_test.cc"],
+    deps = [":color"],
+)

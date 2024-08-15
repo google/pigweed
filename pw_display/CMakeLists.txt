@@ -13,3 +13,22 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+pw_add_library(pw_display.color INTERFACE
+  HEADERS
+    public/pw_display/color.h
+    public/pw_display/colors_endesga64.h
+    public/pw_display/colors_pico8.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_display.color_test
+  SOURCES
+    color_test.cc
+  PRIVATE_DEPS
+    pw_display.color
+  GROUPS
+    modules
+    pw_display
+)

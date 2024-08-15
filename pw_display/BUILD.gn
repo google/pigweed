@@ -19,10 +19,31 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("color") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_display/color.h",
+    "public/pw_display/colors_endesga64.h",
+    "public/pw_display/colors_pico8.h",
+  ]
+}
+
+pw_test("color_test") {
+  deps = [ ":color" ]
+  sources = [ "color_test.cc" ]
+}
+
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":color_test" ]
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "api.rst",
+    "docs.rst",
+  ]
 }
