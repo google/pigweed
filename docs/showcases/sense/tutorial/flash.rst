@@ -134,6 +134,13 @@ Configure your host to properly detect Raspberry Pi hardware.
 ----------------------------------------
 Flash an application binary to your Pico
 ----------------------------------------
+.. _Your First Binaries: https://www.raspberrypi.com/documentation/microcontrollers/c_sdk.html#your-first-binaries
+
+#. If your Pico's firmware is **not** in good working order, put
+   your Pico into **BOOTSEL** mode. See `Your First Binaries`_.
+   If your Pico is in working order (i.e. you have functioning
+   app running correctly on your Pico) you can skip this step.
+
 #. Flash the blinky binary to your Pico.
 
    .. tab-set::
@@ -143,9 +150,6 @@ Flash an application binary to your Pico
 
          In **Bazel Build Targets** expand **//apps/blinky**, then right-click
          **:flash (alias)**, then select **Run target**.
-
-         If you see an interactive prompt to select a device, see
-         the note below.
 
          A successful flash looks similar to this:
 
@@ -168,39 +172,18 @@ Flash an application binary to your Pico
             20240806 18:16:58 INF Only one device detected.
             20240806 18:16:58 INF Flashing bus 3 port 6
 
-         If you see an interactive prompt to select a device, see
-         the note below.
-
-.. admonition:: :ref:`Full setup <showcase-sense-tutorial-full>` flashing
-
-   If the Pico and Debug Probe are both connected to your development
-   host, you'll see an interactive prompt asking you to
-   select a device. Choose ``Raspberry Pi - Debug Probe (CMSIS-DAP)``.
-   When the Debug Probe receives the flashing command, it knows that
-   the command is intended for the Pico it's connected to, not itself.
-
-   .. code-block:: console
-
-      INFO: Running command line: bazel-bin/apps/blinky/flash_rp2040.exe apps/blinky/rp2040_blinky.elf
-      Multiple devices detected. Please select one:
-        1 - bus 3, port 1 (Raspberry Pi - Pico)
-        2 - bus 3, port 6 (Raspberry Pi - Debug Probe (CMSIS-DAP))
-
-      Enter an item index or press up/down (Ctrl-C to cancel)
-      > 2
-      20240729 16:29:46 INF Flashing bus 3 port 6
+If you see an interactive prompt asking you to select a device, see
+:ref:`showcase-sense-tutorial-flash-prompt`.
 
 You should see your Raspberry Pi Pico's LED start blinking on and off at a
 1-second interval.
 
-.. _Your First Binaries: https://www.raspberrypi.com/documentation/microcontrollers/c_sdk.html#your-first-binaries
-
 .. admonition:: Troubleshooting
 
-   If the firmware on your Pico is in good working order, you
-   won't need to hold down **BOOTSEL** while connecting the
-   USB. If the flashing doesn't work, try the **BOOTSEL** workflow
-   that's described in `Your First Binaries`_.
+   If you see ``A connected device has an inaccessible serial number: The
+   device has no langid (permission issue, no string descriptors supported or
+   device error)`` it probably means you need to update your udev rules. See
+   :ref:`showcase-sense-tutorial-udev`.
 
 .. _showcase-sense-tutorial-flash-summary:
 
@@ -221,3 +204,25 @@ attempting to flash.
 
 Next, head over to :ref:`showcase-sense-tutorial-devicetests` to
 try out on-device unit tests.
+
+.. _showcase-sense-tutorial-flash-prompt:
+
+--------------------------------------
+Appendix: Interactive prompt selection
+--------------------------------------
+If you're using the :ref:`full setup <showcase-sense-tutorial-full>` you'll
+see an interactive prompt asking you to select a device. Choose
+``Raspberry Pi - Debug Probe (CMSIS-DAP)``, *not* ``Raspberry Pi - Pico``.
+When the Debug Probe receives the flashing command, it knows that the command
+is intended for the Pico it's connected to, not itself.
+
+.. code-block:: console
+
+   INFO: Running command line: bazel-bin/apps/blinky/flash_rp2040.exe apps/blinky/rp2040_blinky.elf
+   Multiple devices detected. Please select one:
+     1 - bus 3, port 1 (Raspberry Pi - Pico)
+     2 - bus 3, port 6 (Raspberry Pi - Debug Probe (CMSIS-DAP))
+
+   Enter an item index or press up/down (Ctrl-C to cancel)
+   > 2
+   20240729 16:29:46 INF Flashing bus 3 port 6
