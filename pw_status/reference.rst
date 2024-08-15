@@ -373,6 +373,10 @@ C++ API
    ``PW_STATUS_``. For example, ``PW_STATUS_DATA_LOSS`` corresponds with
    :c:enumerator:`DATA_LOSS`.
 
+.. doxygenclass:: pw::StatusWithSize
+   :members:
+   :undoc-members:
+
 .. doxygendefine:: PW_TRY
 .. doxygendefine:: PW_TRY_ASSIGN
 .. doxygendefine:: PW_TRY_WITH_SIZE

@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -20,31 +20,32 @@
 
 namespace pw {
 
-// StatusWithSize stores a status and an unsigned integer. The integer must not
-// exceed StatusWithSize::max_size(), which is 134,217,727 (2**27 - 1) on 32-bit
-// systems.
-//
-// StatusWithSize is useful for reporting the number of bytes read or written in
-// an operation along with the status. For example, a function that writes a
-// formatted string may want to report both the number of characters written and
-// whether it ran out of space.
-//
-// StatusWithSize is more efficient than its alternatives. It packs a status and
-// size into a single word, which can be returned from a function in a register.
-// Because they are packed together, the size is limited to max_size().
-//
-// StatusWithSize's alternatives result in larger code size. For example:
-//
-//   1. Return status, pass size output as a pointer argument.
-//
-//      Requires an additional argument and forces the output argument to the
-//      stack in order to pass an address, increasing code size.
-//
-//   2. Return an object with Status and size members.
-//
-//      At least for ARMv7-M, the returned struct is created on the stack, which
-//      increases code size.
-//
+/// `StatusWithSize` stores a status and an unsigned integer. The integer must
+/// not exceed `StatusWithSize::max_size()`, which is 134,217,727 (2**27 - 1) on
+/// 32-bit systems.
+///
+/// `StatusWithSize` is useful for reporting the number of bytes read or written
+/// in an operation along with the status. For example, a function that writes a
+/// formatted string may want to report both the number of characters written
+/// and whether it ran out of space.
+///
+/// `StatusWithSize` is more efficient than its alternatives. It packs a status
+/// and size into a single word, which can be returned from a function in a
+/// register. Because they are packed together, the size is limited to
+/// max_size().
+///
+/// `StatusWithSize`'s alternatives result in larger code size. For example:
+///
+/// 1. Return status, pass size output as a pointer argument.
+///
+///    Requires an additional argument and forces the output argument to the
+///    stack in order to pass an address, increasing code size.
+///
+/// 2. Return an object with Status and size members.
+///
+///    At least for ARMv7-M, the returned struct is created on the stack,
+///    which increases code size.
+///
 class _PW_STATUS_NO_DISCARD StatusWithSize {
  public:
   static constexpr StatusWithSize Cancelled(size_t size = 0) {
@@ -96,17 +97,18 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
     return StatusWithSize(Status::DataLoss(), size);
   }
 
-  // Creates a StatusWithSize with OkStatus() and a size of 0.
+  /// Creates a `StatusWithSize` with status `OK` and a size of 0.
   explicit constexpr StatusWithSize() : size_(0) {}
 
-  // Creates a StatusWithSize with status OK and the provided size.
-  // std::enable_if is used to prevent enum types (e.g. Status) from being used.
-  // TODO(hepler): Add debug-only assert that size <= max_size().
+  /// Creates a `StatusWithSize` with status `OK` and the provided size.
+  /// `std::enable_if` is used to prevent enum types (e.g. `Status::Code`) from
+  /// being used.
   template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-  explicit constexpr StatusWithSize(T size)
-      : size_(static_cast<size_t>(size)) {}
+  explicit constexpr StatusWithSize(T size) : size_(static_cast<size_t>(size)) {
+    // TODO(hepler): Add debug-only assert that size <= max_size().
+  }
 
-  // Creates a StatusWithSize with the provided status and size.
+  /// Creates a StatusWithSize with the provided status and size.
   explicit constexpr StatusWithSize(Status status, size_t size)
       : StatusWithSize((static_cast<size_t>(status.code()) << kStatusShift) |
                        size) {}
@@ -114,13 +116,13 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   constexpr StatusWithSize(const StatusWithSize&) = default;
   constexpr StatusWithSize& operator=(const StatusWithSize&) = default;
 
-  /// ``Update`` s this status and adds to ``size``.
+  /// `Update` s this status and adds to `size`.
   ///
-  /// The resulting ``StatusWithSize`` will have a size of
-  /// ``this->size() + new_status_with_size.size()``
+  /// The resulting `StatusWithSize` will have a size of `this->size() +
+  /// new_status_with_size.size()`
   ///
-  /// The resulting status will be Ok if both statuses are ``Ok``,
-  /// otherwise it will take on the earliest non-``Ok`` status.
+  /// The resulting status will be `OK` if both statuses are `OK`, otherwise it
+  /// will take on the earliest non-`OK` status.
   constexpr void UpdateAndAdd(StatusWithSize new_status_with_size) {
     Status new_status;
     if (ok()) {
@@ -132,27 +134,28 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
     *this = StatusWithSize(new_status, new_size);
   }
 
-  /// Zeros this size if the status is not ``Ok``.
+  /// Zeroes the size if the status is not `OK`.
   constexpr void ZeroIfNotOk() {
     if (!ok()) {
       *this = StatusWithSize(status(), 0);
     }
   }
 
-  // Returns the size. The size is always present, even if status() is an error.
+  /// Returns the size. The size is always present, even if `status()` is an
+  /// error.
   [[nodiscard]] constexpr size_t size() const { return size_ & kSizeMask; }
 
-  // The maximum valid value for size.
+  /// The maximum valid value for size.
   [[nodiscard]] static constexpr size_t max_size() { return kSizeMask; }
 
-  // True if status() == OkStatus().
+  /// True if status() == OkStatus().
   [[nodiscard]] constexpr bool ok() const {
     return (size_ & kStatusMask) == 0u;
   }
 
-  // Ignores any errors. This method does nothing except potentially suppress
-  // complaints from any tools that are checking that errors are not dropped on
-  // the floor.
+  /// Ignores any errors. This method does nothing except potentially suppress
+  /// complaints from any tools that are checking that errors are not dropped on
+  /// the floor.
   constexpr void IgnoreError() const {}
 
   [[nodiscard]] constexpr Status status() const {
