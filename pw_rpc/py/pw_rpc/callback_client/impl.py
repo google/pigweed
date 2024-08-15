@@ -146,6 +146,24 @@ class _MethodClient:
         call._invoke(request, ignore_errors)  # pylint: disable=protected-access
         return call
 
+    def _open_call(
+        self,
+        call_type: Type[CallTypeT],
+        on_next: OnNextCallback | None,
+        on_completed: OnCompletedCallback | None,
+        on_error: OnErrorCallback | None,
+    ) -> CallTypeT:
+        """Creates a Call object with the open call ID."""
+        rpc = PendingRpc(
+            self._channel,
+            self.service,
+            self.method,
+            client.OPEN_CALL_ID,
+        )
+        call = call_type(self._rpcs, rpc, None, on_next, on_completed, on_error)
+        call._open()  # pylint: disable=protected-access
+        return call
+
     def _client_streaming_call_type(
         self, base: Type[CallTypeT]
     ) -> Type[CallTypeT]:
@@ -226,23 +244,12 @@ class _UnaryMethodClient(_MethodClient):
 
     def open(
         self,
-        request: Message | None = None,
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
-        *,
-        request_args: dict[str, Any] | None = None,
     ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
-        return self._start_call(
-            UnaryCall,
-            self.method.get_request(request, request_args),
-            None,
-            on_next,
-            on_completed,
-            on_error,
-            True,
-        )
+        return self._open_call(UnaryCall, on_next, on_completed, on_error)
 
 
 class _ServerStreamingMethodClient(_MethodClient):
@@ -268,26 +275,17 @@ class _ServerStreamingMethodClient(_MethodClient):
 
     def open(
         self,
-        request: Message | None = None,
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
-        *,
-        request_args: dict[str, Any] | None = None,
     ) -> ServerStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
         Can be used to listen for responses from an RPC server that may yet be
         available.
         """
-        return self._start_call(
-            ServerStreamingCall,
-            self.method.get_request(request, request_args),
-            None,
-            on_next,
-            on_completed,
-            on_error,
-            True,
+        return self._open_call(
+            ServerStreamingCall, on_next, on_completed, on_error
         )
 
 
@@ -322,14 +320,11 @@ class _ClientStreamingMethodClient(_MethodClient):
         Can be used to listen for responses from an RPC server that may yet be
         available.
         """
-        return self._start_call(
+        return self._open_call(
             self._client_streaming_call_type(ClientStreamingCall),
-            None,
-            None,
             on_next,
             on_completed,
             on_error,
-            True,
         )
 
     def __call__(
@@ -371,14 +366,11 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         Can be used to listen for responses from an RPC server that may yet be
         available.
         """
-        return self._start_call(
+        return self._open_call(
             self._client_streaming_call_type(BidirectionalStreamingCall),
-            None,
-            None,
             on_next,
             on_completed,
             on_error,
-            True,
         )
 
     def __call__(

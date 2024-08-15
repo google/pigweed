@@ -176,24 +176,54 @@ class PendingRpcs:
 
         return True
 
-    def get_pending(self, rpc: PendingRpc, status: Status | None):
+    def _match_unrequested_rpcs(
+        self, rpc: PendingRpc, completed: bool
+    ) -> _PendingRpcMetadata | None:
+        # If the inbound packet is unrequested, route to any matching call.
+        # If both the client and server calls use the open ID, they would have
+        # matched in the initial lookup before this function is called.
+        if rpc.call_id in (OPEN_CALL_ID, LEGACY_OPEN_CALL_ID):
+            for pending, context in self._pending.items():
+                if rpc.matches_channel_service_method(pending):
+                    if completed:
+                        del self._pending[pending]
+
+                    return context
+
+        # Otherwise, look for an existing open call that matches. If one is
+        # found, the unrequested call adopts the inbound call's ID.
+        for pending in self._pending:
+            if (
+                pending.call_id == OPEN_CALL_ID
+                and rpc.matches_channel_service_method(pending)
+            ):
+                # Change the call ID in the PendingRpc object. The PendingRpc
+                # MUST be removed from the self._pending dict first since it is
+                # hashable.
+                #
+                # TODO: https://pwbug.dev/359401616 - Changing a hashable object
+                # is not good, but the ClientImpl abstraction boundary makes
+                # updating the call's PendingRpc instance difficult. This code
+                # should be updated after the client is refactored.
+                context = self._pending.pop(pending)
+                object.__setattr__(pending, 'call_id', rpc.call_id)
+                if not completed:
+                    self._pending[pending] = context
+                return context
+
+        return None
+
+    def get_pending(
+        self, rpc: PendingRpc, completed: bool
+    ) -> _PendingRpcMetadata | None:
         """Gets the pending RPC's context. If status is set, clears the RPC."""
-        if rpc.call_id == OPEN_CALL_ID or rpc.call_id == LEGACY_OPEN_CALL_ID:
-            # Calls with ID `OPEN_CALL_ID` were unrequested, and are updated to
-            # have the call ID of the first matching request.
-            for pending in self._pending:
-                if (
-                    pending.channel == rpc.channel
-                    and pending.service == rpc.service
-                    and pending.method == rpc.method
-                ):
-                    rpc = pending
+        # Look up the RPC. If there is no match, check for unrequested RPCs.
+        if (meta := self._pending.get(rpc)) is None:
+            meta = self._match_unrequested_rpcs(rpc, completed)
+        elif completed:
+            del self._pending[rpc]
 
-        if status is None:
-            return self._pending[rpc].context
-
-        _LOG.debug('%s finished with status %s', rpc, status)
-        return self._pending.pop(rpc).context
+        return meta
 
 
 class ClientImpl(abc.ABC):
@@ -571,10 +601,10 @@ class Client:
                 rpc, payload, status
             )
 
-        try:
-            assert self._impl.rpcs
-            context = self._impl.rpcs.get_pending(rpc, status)
-        except KeyError:
+        assert self._impl.rpcs
+        meta = self._impl.rpcs.get_pending(rpc, status is not None)
+
+        if meta is None:
             _send_client_error(
                 channel_client, packet, Status.FAILED_PRECONDITION
             )
@@ -585,17 +615,17 @@ class Client:
             assert status is not None and not status.ok()
             _LOG.warning('%s: invocation failed with %s', rpc, status)
             self._impl.handle_error(
-                rpc, context, status, args=impl_args, kwargs=impl_kwargs
+                rpc, meta.context, status, args=impl_args, kwargs=impl_kwargs
             )
             return Status.OK
 
         if payload is not None:
             self._impl.handle_response(
-                rpc, context, payload, args=impl_args, kwargs=impl_kwargs
+                rpc, meta.context, payload, args=impl_args, kwargs=impl_kwargs
             )
         if status is not None:
             self._impl.handle_completion(
-                rpc, context, status, args=impl_args, kwargs=impl_kwargs
+                rpc, meta.context, status, args=impl_args, kwargs=impl_kwargs
             )
 
         return Status.OK

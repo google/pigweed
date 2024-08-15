@@ -137,6 +137,9 @@ class Call:
                 Status.CANCELLED
             )
 
+    def _open(self) -> None:
+        self._rpcs.open(self._rpc, self)
+
     def _default_response(self, response: Message) -> None:
         _LOG.debug('%s received response: %s', self._rpc, response)
 

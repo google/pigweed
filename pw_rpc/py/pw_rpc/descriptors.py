@@ -485,6 +485,13 @@ class PendingRpc:
             f'call_id={self.call_id})'
         )
 
+    def matches_channel_service_method(self, other: PendingRpc) -> bool:
+        return (
+            self.channel.id == other.channel.id
+            and self.service.id == other.service.id
+            and self.method.id == other.method.id
+        )
+
 
 def fake_pending_rpc(
     channel_id: int, service_id: int, method_id: int, call_id: int
