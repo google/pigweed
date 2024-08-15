@@ -47,6 +47,9 @@ from pw_rpc.callback_client.call import (
 _LOG = logging.getLogger(__package__)
 
 
+DEFAULT_MAX_STREAM_RESPONSES = 2**14
+
+
 @dataclass(eq=True, frozen=True)
 class CallInfo:
     method: Method
@@ -125,6 +128,7 @@ class _MethodClient:
         on_next: OnNextCallback | None,
         on_completed: OnCompletedCallback | None,
         on_error: OnErrorCallback | None,
+        max_responses: int,
     ) -> CallTypeT:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
@@ -140,7 +144,13 @@ class _MethodClient:
             self._rpcs.allocate_call_id(),
         )
         call = call_type(
-            self._rpcs, rpc, timeout_s, on_next, on_completed, on_error
+            self._rpcs,
+            rpc,
+            timeout_s,
+            on_next,
+            on_completed,
+            on_error,
+            max_responses,
         )
         call._invoke(request)  # pylint: disable=protected-access
         return call
@@ -151,6 +161,7 @@ class _MethodClient:
         on_next: OnNextCallback | None,
         on_completed: OnCompletedCallback | None,
         on_error: OnErrorCallback | None,
+        max_responses: int,
     ) -> CallTypeT:
         """Creates a Call object with the open call ID."""
         rpc = PendingRpc(
@@ -159,7 +170,15 @@ class _MethodClient:
             self.method,
             client.OPEN_CALL_ID,
         )
-        call = call_type(self._rpcs, rpc, None, on_next, on_completed, on_error)
+        call = call_type(
+            self._rpcs,
+            rpc,
+            None,
+            on_next,
+            on_completed,
+            on_error,
+            max_responses,
+        )
         call._open()  # pylint: disable=protected-access
         return call
 
@@ -239,6 +258,7 @@ class _UnaryMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=1,
         )
 
     def open(
@@ -248,7 +268,9 @@ class _UnaryMethodClient(_MethodClient):
         on_error: OnErrorCallback | None = None,
     ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
-        return self._open_call(UnaryCall, on_next, on_completed, on_error)
+        return self._open_call(
+            UnaryCall, on_next, on_completed, on_error, max_responses=1
+        )
 
 
 class _ServerStreamingMethodClient(_MethodClient):
@@ -258,6 +280,7 @@ class _ServerStreamingMethodClient(_MethodClient):
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
+        max_responses: int = DEFAULT_MAX_STREAM_RESPONSES,
         *,
         request_args: dict[str, Any] | None = None,
         timeout_s: OptionalTimeout = UseDefault.VALUE,
@@ -270,6 +293,7 @@ class _ServerStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=max_responses,
         )
 
     def open(
@@ -277,6 +301,7 @@ class _ServerStreamingMethodClient(_MethodClient):
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
+        max_responses: int = DEFAULT_MAX_STREAM_RESPONSES,
     ) -> ServerStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
@@ -284,7 +309,7 @@ class _ServerStreamingMethodClient(_MethodClient):
         available.
         """
         return self._open_call(
-            ServerStreamingCall, on_next, on_completed, on_error
+            ServerStreamingCall, on_next, on_completed, on_error, max_responses
         )
 
 
@@ -305,6 +330,7 @@ class _ClientStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=1,
         )
 
     def open(
@@ -323,6 +349,7 @@ class _ClientStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=1,
         )
 
     def __call__(
@@ -340,6 +367,7 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
+        max_responses: int = DEFAULT_MAX_STREAM_RESPONSES,
         *,
         timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> BidirectionalStreamingCall:
@@ -351,6 +379,7 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=max_responses,
         )
 
     def open(
@@ -358,6 +387,7 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         on_next: OnNextCallback | None = None,
         on_completed: OnCompletedCallback | None = None,
         on_error: OnErrorCallback | None = None,
+        max_responses: int = DEFAULT_MAX_STREAM_RESPONSES,
     ) -> BidirectionalStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
@@ -369,6 +399,7 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
             on_next,
             on_completed,
             on_error,
+            max_responses=max_responses,
         )
 
     def __call__(

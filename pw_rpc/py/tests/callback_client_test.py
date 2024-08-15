@@ -1224,7 +1224,7 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
 
             self.assertIs(context.exception.status, Status.UNAVAILABLE)
             self.assertIs(call.error, Status.UNAVAILABLE)
-            self.assertEqual(call.responses, [reply])
+            self.assertEqual(list(call.responses), [reply])
 
     def test_nonblocking_duplicate_calls_not_cancelled(self) -> None:
         first_call = self.rpc.invoke()
@@ -1234,6 +1234,33 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
 
         self.assertIs(first_call.error, None)
         self.assertIs(second_call.error, None)
+
+    def test_max_responses(self) -> None:
+        rep1 = self.method.response_type(payload='a')
+        rep2 = self.method.response_type(payload='b')
+        rep3 = self.method.response_type(payload='c')
+        rep4 = self.method.response_type(payload='d')
+        rep5 = self.method.response_type(payload='e')
+
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, rep1)
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, rep2)
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, rep3)
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, rep4)
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, rep5)
+        self._enqueue_response(CLIENT_CHANNEL_ID, self.method, Status.OK)
+
+        responses: list = []
+        call = self.rpc.invoke(
+            on_next=lambda _, res, responses=responses: responses.append(res),
+            max_responses=4,
+        )
+        result = call.finish_and_wait()
+
+        # All 5 responses are received, but only the most recent 4 are stored
+        # in the call.
+        self.assertEqual(responses, [rep1, rep2, rep3, rep4, rep5])
+        self.assertEqual(result.responses, [rep2, rep3, rep4, rep5])
+        self.assertEqual(result.responses, list(call.responses))
 
     def test_stream_response(self) -> None:
         proto = self._protos.packages.pw.test1.SomeMessage(magic_number=123)

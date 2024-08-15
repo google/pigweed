@@ -16,12 +16,14 @@
 from __future__ import annotations
 
 import enum
+from collections import deque
 import logging
 import math
 import queue
 from typing import (
     Any,
     Callable,
+    Deque,
     Iterable,
     Iterator,
     NamedTuple,
@@ -102,6 +104,7 @@ class Call:
         on_next: OnNextCallback | None,
         on_completed: OnCompletedCallback | None,
         on_error: OnErrorCallback | None,
+        max_responses: int,
     ) -> None:
         self._rpcs = rpcs
         self._rpc = rpc
@@ -110,7 +113,7 @@ class Call:
         self.status: Status | None = None
         self.error: Status | None = None
         self._callback_exception: Exception | None = None
-        self._responses: list = []
+        self._responses: Deque = deque(maxlen=max_responses)
         self._response_queue: queue.SimpleQueue = queue.SimpleQueue()
 
         self.on_next = on_next or Call._default_response
@@ -182,7 +185,7 @@ class Call:
             pass
 
         assert self.status is not None
-        return StreamResponse(self.status, self._responses)
+        return StreamResponse(self.status, list(self._responses))
 
     def _get_responses(
         self, *, count: int | None = None, timeout_s: OptionalTimeout
@@ -234,8 +237,6 @@ class Call:
             raise RpcError(self._rpc, self.error)
 
     def _handle_response(self, response: Any) -> None:
-        # TODO(frolv): These lists could grow very large for persistent
-        # streaming RPCs such as logs. The size should be limited.
         self._responses.append(response)
         self._response_queue.put(response)
 
