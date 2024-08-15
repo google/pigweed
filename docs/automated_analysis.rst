@@ -226,7 +226,7 @@ AddressSanitizer by building with the appropriate flag:
 
 .. code-block:: sh
 
-   bazel build --@pigweed//pw_toolchain/host_clang:asan //...
+   bazelisk build --@pigweed//pw_toolchain/host_clang:asan //...
 
 If you're building your own toolchain, you can add
 ``@pigweed//pw_toolchain_bazel/flag_sets:asan`` to it.

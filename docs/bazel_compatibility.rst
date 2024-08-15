@@ -10,7 +10,7 @@ upstream Pigweed for non-host platforms:
 
 .. code-block:: sh
 
-   bazel build --config=rp2040 //...
+   bazelisk build --config=rp2040 //...
 
 The bulk of this document describes :ref:`recommended patterns
 <docs-bazel-compatibility-recommended>` for expressing compatibility in various
@@ -120,7 +120,7 @@ intended platform by explicitly listing it in CI invocations:
 
    # //pw_system:system_example is a binary that should build for this
    # platform.
-   bazel build --config=rp2040 //... //pw_system:system_example
+   bazelisk build --config=rp2040 //... //pw_system:system_example
 
 .. _docs-bazel-compatibility-well-known:
 
@@ -843,7 +843,7 @@ is known to fall into one of those three buckets. If you run:
 
 .. code-block:: sh
 
-   bazel build --config=rp2040 //...
+   bazelisk build --config=rp2040 //...
 
 Bazel will attempt to build all Pigweed build targets for the specified
 platform, with the exception of targets that are explicitly annotated as not

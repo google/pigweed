@@ -586,9 +586,9 @@ commonly used commands used in bazel are;
 
 .. code-block:: sh
 
-   bazel build //your:target
-   bazel test //your:target
-   bazel coverage //your:target
+   bazelisk build //your:target
+   bazelisk test //your:target
+   bazelisk coverage //your:target
 
 .. note:: Code coverage support is only available on the host for now.
 
@@ -599,7 +599,7 @@ platform (e.g. stm32f429i-discovery) a slight variation is required.
 
 .. code-block:: sh
 
-   bazel build //your:target \
+   bazelisk build //your:target \
      --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 For more information on how to create your own platforms refer to the official
@@ -628,7 +628,7 @@ Then, run:
 
    .. code-block:: sh
 
-      bazel test //your:test --platforms=//your/platform --run_under=//your_handler
+      bazelisk test //your:test --platforms=//your/platform --run_under=//your_handler
 
 Tag conventions
 ~~~~~~~~~~~~~~~
@@ -643,7 +643,7 @@ use the following additional tags:
 
    .. code-block:: sh
 
-      bazel test --test_tag_filters=-integration //...
+      bazelisk test --test_tag_filters=-integration //...
 
    will run all tests *except* for these integration tests.
 
@@ -668,7 +668,7 @@ Making use of the code coverage functionality in Bazel is straightforward.
 
    .. code-block:: sh
 
-      bazel coverage //pw_log/...
+      bazelisk coverage //pw_log/...
 
 3. View the results using the command line utility 'lcov'.
 
@@ -774,7 +774,7 @@ and the build will continue. e.g.
 
 .. code-block:: sh
 
-   bazel build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
+   bazelisk build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 This allows for you to easily create compatibility matricies without adversely
 affecting your ability build your entire repo for a given Pigweed target.
@@ -825,7 +825,7 @@ however it is possible to override this from the command line. e.g.
 
 .. code-block:: sh
 
-   bazel build //:some_target_that_needs_io --//:io=//:some_other_io
+   bazelisk build //:some_target_that_needs_io --//:io=//:some_other_io
 
 
 
@@ -864,7 +864,7 @@ This should work out of the box for any host operating system. E.g., running,
 
 .. code-block:: console
 
-   bazel build //:time_is_relative
+   bazelisk build //:time_is_relative
 
 will produce a working library for your host OS.
 
@@ -878,7 +878,7 @@ could build your library with:
 
 .. code-block:: console
 
-   bazel build \
+   bazelisk build \
      --@pigweed/pw_chrono:system_clock_backend=@pigweed//pw_chrono_freertos:system_clock \
      //:time_is_relative
 
@@ -961,7 +961,7 @@ To build your ``//:time_is_relative`` target using this backend, you'd run,
 
 .. code-block:: console
 
-   bazel build //:time_is_relative \
+   bazelisk build //:time_is_relative \
      --@pigweed//pw_chrono:system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
 
 This modifies the build graph to look something like this:
@@ -1007,4 +1007,4 @@ you just specify the ``--config`` on the command line:
 
 .. code-block:: console
 
-   bazel build --config=m4 //:time_is_relative
+   bazelisk build --config=m4 //:time_is_relative
