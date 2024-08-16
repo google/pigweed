@@ -93,15 +93,11 @@ pw_source_set("light") {
     ":config",
     ":event_handler",
     "$dir_pw_bytes:alignment",
+    "$dir_pw_string:builder",
     dir_pw_polyfill,
     dir_pw_preprocessor,
     dir_pw_span,
   ]
-
-  # If C++17 is supported, depend on StringBuilder.
-  if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX17) {
-    public_deps += [ "$dir_pw_string:builder" ]
-  }
 
   deps = [ dir_pw_assert ]
 

@@ -27,20 +27,16 @@
 #include <cstdint>
 #include <cstring>
 #include <new>
+#include <string_view>
 
 #include "pw_bytes/alignment.h"
 #include "pw_polyfill/standard.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 #include "pw_span/span.h"
+#include "pw_string/string_builder.h"
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
-#include <string_view>
-
-#include "pw_string/string_builder.h"
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 /// @def GTEST_TEST
 /// Alias for `TEST`.
@@ -328,9 +324,6 @@
   EXPECT_DEATH_IF_SUPPORTED(statement, regex)
 
 namespace pw {
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
-
 namespace string {
 
 // This function is used to print unknown types that are used in EXPECT or
@@ -390,8 +383,6 @@ StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
 }
 
 }  // namespace string
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 namespace unit_test {
 namespace internal {
@@ -474,14 +465,12 @@ class Framework {
   // are sent to the registered event handler, if any.
   int RunAllTests();
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   // Only run test suites whose names are included in the provided list during
   // the next test run. This is C++17 only; older versions of C++ will run all
   // non-disabled tests.
   void SetTestSuitesToRun(span<std::string_view> test_suites) {
     test_suites_to_run_ = test_suites;
   }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   bool ShouldRunTest(const TestInfo& test_info) const;
 
@@ -551,16 +540,12 @@ class Framework {
     const bool success = expectation(lhs, rhs, epsilon);
     CurrentTestExpectSimple(
         expression,
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
         MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
                                                 " within ",
                                                 ConvertForPrint(epsilon),
                                                 " of ",
                                                 ConvertForPrint(rhs))
             .c_str(),
-#else
-        "(evaluation requires C++17)",
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
         line,
         success);
     return success;
@@ -583,16 +568,12 @@ class Framework {
     const bool success = expectation(lhs, rhs);
     CurrentTestExpectSimple(
         expression,
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
         MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
                                                 ' ',
                                                 expectation_string,
                                                 ' ',
                                                 ConvertForPrint(rhs))
             .c_str(),
-#else
-        "(evaluation requires C++17)",
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
         line,
         success);
     return success;
@@ -659,11 +640,7 @@ class Framework {
   // Handler to which to dispatch test events.
   EventHandler* event_handler_;
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   span<std::string_view> test_suites_to_run_;
-#else
-  span<const char*> test_suites_to_run_;  // Always empty in C++14.
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   alignas(std::max_align_t) std::byte memory_pool_[config::kMemoryPoolSize];
 };
@@ -782,11 +759,9 @@ constexpr bool HasNoUnderscores(const char* suite) {
 
 }  // namespace internal
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
   internal::Framework::Get().SetTestSuitesToRun(test_suites);
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 }  // namespace unit_test
 }  // namespace pw

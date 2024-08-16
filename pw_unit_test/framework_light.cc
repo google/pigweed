@@ -18,8 +18,7 @@
 #include "light_public_overrides/pw_unit_test/framework_backend.h"
 #include "pw_assert/check.h"
 
-namespace pw {
-namespace unit_test {
+namespace pw::unit_test {
 
 void RegisterEventHandler(EventHandler* event_handler) {
   internal::Framework::Get().RegisterEventHandler(event_handler);
@@ -185,8 +184,6 @@ FailureMessageAdapter Framework::CurrentTestExpectSimple(
 }
 
 bool Framework::ShouldRunTest(const TestInfo& test_info) const {
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
-  // Test suite filtering is only supported if using C++17.
   if (!test_suites_to_run_.empty()) {
     std::string_view test_suite(test_info.test_case().suite_name);
 
@@ -199,7 +196,6 @@ bool Framework::ShouldRunTest(const TestInfo& test_info) const {
       return false;
     }
   }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   return test_info.enabled();
 }
@@ -211,5 +207,4 @@ bool TestInfo::enabled() const {
 }
 
 }  // namespace internal
-}  // namespace unit_test
-}  // namespace pw
+}  // namespace pw::unit_test
