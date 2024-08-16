@@ -14,6 +14,7 @@
 """Test helpers for glob_dirs()."""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 def return_error(err):
     """Testing helper to return an error string rather than fail().
@@ -70,7 +71,6 @@ PW_LOAD_PHASE_TEST_TYPES = struct(
 def _load_phase_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)
-
     asserts.equals(
         env,
         target_under_test[_TestExpectationInfo].expected,
@@ -89,6 +89,7 @@ def pw_load_phase_test(comparison_type):
             expected = expected,
             actual = actual,
             tags = tags + ["manual"],
+            target_compatible_with = incompatible_with_mcu(),
             testonly = True,
             **rule_kwargs
         )
@@ -97,6 +98,7 @@ def pw_load_phase_test(comparison_type):
             name = name,
             target_under_test = name + ".case",
             tags = tags,
+            target_compatible_with = incompatible_with_mcu(),
             **rule_kwargs
         )
 
