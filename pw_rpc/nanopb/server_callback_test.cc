@@ -33,7 +33,7 @@ class TestServiceImpl final
 
   Status TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
                              pw_rpc_test_TestResponse& response) {
-    typedef std::array<uint32_t, 3> ArgType;
+    using ArgType = std::array<uint32_t, 3>;
     // The values array needs to be kept in memory until after this method call
     // returns since the response is not encoded until after returning from this
     // method.

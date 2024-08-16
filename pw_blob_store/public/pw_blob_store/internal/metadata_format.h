@@ -29,7 +29,7 @@ enum MetadataVersion : uint32_t {
 
 // Technically the original BlobMetadataV1 was not packed.
 PW_PACKED(struct) BlobMetadataV1 {
-  typedef uint32_t ChecksumValue;
+  using ChecksumValue = uint32_t;
 
   // The checksum of the blob data stored in flash.
   ChecksumValue checksum;

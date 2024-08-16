@@ -22,7 +22,7 @@ namespace pw::chre {
 
 /// This is a token representing a message that CHRE allocated.
 /// It must be passed to `FreeMessageToAp` when the message is finished.
-typedef const void* MessageToApContext;
+using MessageToApContext = const void*;
 
 /// This is a message that should be sent to the AP.
 /// It was allocated by CHRE, so pw::chre::FreeMessageToAp should be called

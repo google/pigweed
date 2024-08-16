@@ -25,6 +25,6 @@
 
 namespace pw::crypto::sha256::backend {
 
-typedef mbedtls_sha256_context NativeSha256Context;
+using NativeSha256Context = mbedtls_sha256_context;
 
 }  // namespace pw::crypto::sha256::backend

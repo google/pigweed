@@ -24,7 +24,7 @@ class AtomicBase {
   std::atomic<AtomicType> atomic_;
 };
 
-typedef AtomicBase<bool> AtomicBoolBase;
-typedef AtomicBase<uint32_t> AtomicUint32Base;
+using AtomicBoolBase = AtomicBase<bool>;
+using AtomicUint32Base = AtomicBase<uint32_t>;
 
 }  // namespace chre

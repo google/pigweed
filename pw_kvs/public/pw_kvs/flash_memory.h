@@ -38,7 +38,7 @@ enum class PartitionPermission : bool {
 class FlashMemory {
  public:
   // The flash address is in the range of: 0 to FlashSize.
-  typedef uint32_t Address;
+  using Address = uint32_t;
 
   // TODO: b/235149326 - This can be constexpr when tokenized asserts are fixed.
   FlashMemory(size_t sector_size,
