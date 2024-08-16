@@ -277,7 +277,7 @@ void WriteOutput(const std::string& path,
   }
 }
 
-PW_EXTERN_C int main(int argc, char* argv[]) {
+int MainInNamespace(int argc, char* argv[]) {
   auto maybe_args = ParseArgs(argc, argv);
   if (!maybe_args.ok()) {
     return 1;
@@ -326,3 +326,7 @@ PW_EXTERN_C int main(int argc, char* argv[]) {
 
 }  // namespace
 }  // namespace pw::spi
+
+int main(int argc, char* argv[]) {
+  return pw::spi::MainInNamespace(argc, argv);
+}
