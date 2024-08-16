@@ -63,7 +63,7 @@ void EntryMetadata::Reset(const KeyDescriptor& descriptor, Address address) {
 StatusWithSize EntryCache::Find(FlashPartition& partition,
                                 const Sectors& sectors,
                                 const EntryFormats& formats,
-                                Key key,
+                                std::string_view key,
                                 EntryMetadata* metadata) const {
   const uint32_t hash = internal::Hash(key);
   Entry::KeyBuffer key_buffer;
@@ -72,13 +72,13 @@ StatusWithSize EntryCache::Find(FlashPartition& partition,
   for (size_t i = 0; i < descriptors_.size(); ++i) {
     if (descriptors_[i].key_hash == hash) {
       bool key_found = false;
-      Key read_key;
+      std::string_view read_key;
 
       for (Address address : addresses(i)) {
         Status read_result =
             Entry::ReadKey(partition, address, key.size(), key_buffer.data());
 
-        read_key = Key(key_buffer.data(), key.size());
+        read_key = std::string_view(key_buffer.data(), key.size());
 
         if (read_result.ok() && hash == internal::Hash(read_key)) {
           key_found = true;

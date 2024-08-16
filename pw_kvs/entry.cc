@@ -76,7 +76,7 @@ Status Entry::ReadKey(FlashPartition& partition,
 Entry::Entry(FlashPartition& partition,
              Address address,
              const EntryFormat& format,
-             Key key,
+             std::string_view key,
              span<const byte> value,
              uint16_t value_size_bytes,
              uint32_t transaction_id)
@@ -98,7 +98,8 @@ Entry::Entry(FlashPartition& partition,
   }
 }
 
-StatusWithSize Entry::Write(Key key, span<const byte> value) const {
+StatusWithSize Entry::Write(std::string_view key,
+                            span<const byte> value) const {
   FlashPartition::Output flash(partition(), address_);
   return AlignedWrite<kWriteBufferSize>(
       flash,
@@ -184,7 +185,8 @@ Status Entry::ValueMatches(span<const std::byte> value) const {
   return OkStatus();
 }
 
-Status Entry::VerifyChecksum(Key key, span<const byte> value) const {
+Status Entry::VerifyChecksum(std::string_view key,
+                             span<const byte> value) const {
   if (checksum_algo_ == nullptr) {
     return header_.checksum == 0 ? OkStatus() : Status::DataLoss();
   }
@@ -255,7 +257,7 @@ void Entry::DebugLog() const {
   PW_LOG_DEBUG("   Alignment    = 0x%x", unsigned(alignment_bytes()));
 }
 
-span<const byte> Entry::CalculateChecksum(const Key key,
+span<const byte> Entry::CalculateChecksum(const std::string_view key,
                                           span<const byte> value) const {
   checksum_algo_->Reset();
 

@@ -16,6 +16,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 
 #include "pw_containers/vector.h"
@@ -27,7 +28,6 @@
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sectors.h"
 #include "pw_kvs/internal/span_traits.h"
-#include "pw_kvs/key.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -158,7 +158,7 @@ class KeyValueStore {
   ///    is too large.
   ///
   /// @endrst
-  StatusWithSize Get(Key key,
+  StatusWithSize Get(std::string_view key,
                      span<std::byte> value,
                      size_t offset_bytes = 0) const;
 
@@ -170,7 +170,7 @@ class KeyValueStore {
   /// instead of the array itself.
   template <typename Pointer,
             typename = std::enable_if_t<std::is_pointer<Pointer>::value>>
-  Status Get(const Key& key, const Pointer& pointer) const {
+  Status Get(const std::string_view& key, const Pointer& pointer) const {
     using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
     CheckThatObjectCanBePutOrGet<T>();
     return FixedSizeGet(key, pointer, sizeof(T));
@@ -208,13 +208,13 @@ class KeyValueStore {
   /// @endrst
   template <typename T,
             typename std::enable_if_t<ConvertsToSpan<T>::value>* = nullptr>
-  Status Put(const Key& key, const T& value) {
+  Status Put(const std::string_view& key, const T& value) {
     return PutBytes(key, as_bytes(internal::make_span(value)));
   }
 
   template <typename T,
             typename std::enable_if_t<!ConvertsToSpan<T>::value>* = nullptr>
-  Status Put(const Key& key, const T& value) {
+  Status Put(const std::string_view& key, const T& value) {
     CheckThatObjectCanBePutOrGet<T>();
     return PutBytes(key, as_bytes(span<const T>(&value, 1)));
   }
@@ -242,7 +242,7 @@ class KeyValueStore {
   ///    INVALID_ARGUMENT: ``key`` is empty or too long.
   ///
   /// @endrst
-  Status Delete(Key key);
+  Status Delete(std::string_view key);
 
   /// Returns the size of the value corresponding to the key.
   ///
@@ -264,7 +264,7 @@ class KeyValueStore {
   ///    INVALID_ARGUMENT: ``key`` is empty or too long.
   ///
   /// @endrst
-  StatusWithSize ValueSize(Key key) const;
+  StatusWithSize ValueSize(std::string_view key) const;
 
   /// Performs all maintenance possible, including all needed repairing of
   /// corruption and garbage collection of reclaimable space in the KVS. When
@@ -505,7 +505,7 @@ class KeyValueStore {
   // interruption.
   Status RemoveDeletedKeyEntries();
 
-  Status PutBytes(Key key, span<const std::byte> value);
+  Status PutBytes(std::string_view key, span<const std::byte> value);
 
   StatusWithSize ValueSize(const EntryMetadata& metadata) const;
 
@@ -523,7 +523,7 @@ class KeyValueStore {
   //                 key's hash collides with the hash for an existing
   //                 descriptor
   //
-  Status FindEntry(Key key, EntryMetadata* metadata_out) const;
+  Status FindEntry(std::string_view key, EntryMetadata* metadata_out) const;
 
   // Searches for a KeyDescriptor that matches this key and sets *metadata_out
   // to point to it if one is found.
@@ -531,38 +531,40 @@ class KeyValueStore {
   //          OK: there is a matching descriptor and *metadata_out is set
   //   NOT_FOUND: there is no descriptor that matches this key
   //
-  Status FindExisting(Key key, EntryMetadata* metadata_out) const;
+  Status FindExisting(std::string_view key, EntryMetadata* metadata_out) const;
 
-  StatusWithSize Get(Key key,
+  StatusWithSize Get(std::string_view key,
                      const EntryMetadata& metadata,
                      span<std::byte> value_buffer,
                      size_t offset_bytes) const;
 
-  Status FixedSizeGet(Key key, void* value, size_t size_bytes) const;
+  Status FixedSizeGet(std::string_view key,
+                      void* value,
+                      size_t size_bytes) const;
 
-  Status FixedSizeGet(Key key,
+  Status FixedSizeGet(std::string_view key,
                       const EntryMetadata& metadata,
                       void* value,
                       size_t size_bytes) const;
 
-  Status CheckWriteOperation(Key key) const;
-  Status CheckReadOperation(Key key) const;
+  Status CheckWriteOperation(std::string_view key) const;
+  Status CheckReadOperation(std::string_view key) const;
 
   Status WriteEntryForExistingKey(EntryMetadata& metadata,
                                   EntryState new_state,
-                                  Key key,
+                                  std::string_view key,
                                   span<const std::byte> value);
 
-  Status WriteEntryForNewKey(Key key, span<const std::byte> value);
+  Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
-  Status WriteEntry(Key key,
+  Status WriteEntry(std::string_view key,
                     span<const std::byte> value,
                     EntryState new_state,
                     EntryMetadata* prior_metadata = nullptr,
                     const internal::Entry* prior_entry = nullptr);
 
   EntryMetadata CreateOrUpdateKeyDescriptor(const Entry& new_entry,
-                                            Key key,
+                                            std::string_view key,
                                             EntryMetadata* prior_metadata,
                                             size_t prior_size);
 
@@ -579,7 +581,9 @@ class KeyValueStore {
 
   Status MarkSectorCorruptIfNotOk(Status status, SectorDescriptor* sector);
 
-  Status AppendEntry(const Entry& entry, Key key, span<const std::byte> value);
+  Status AppendEntry(const Entry& entry,
+                     std::string_view key,
+                     span<const std::byte> value);
 
   StatusWithSize CopyEntryToSector(Entry& entry,
                                    SectorDescriptor* new_sector,
@@ -634,7 +638,7 @@ class KeyValueStore {
   Status Repair();
 
   internal::Entry CreateEntry(Address address,
-                              Key key,
+                              std::string_view key,
                               span<const std::byte> value,
                               EntryState state);
 

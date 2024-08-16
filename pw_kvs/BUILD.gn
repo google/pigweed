@@ -42,7 +42,6 @@ pw_source_set("pw_kvs") {
     "public/pw_kvs/flash_test_partition.h",
     "public/pw_kvs/format.h",
     "public/pw_kvs/io.h",
-    "public/pw_kvs/key.h",
     "public/pw_kvs/key_value_store.h",
   ]
   sources = [
@@ -379,7 +378,6 @@ pw_test_group("tests") {
     ":alignment_test",
     ":checksum_test",
     ":converts_to_span_test",
-    ":key_test",
   ]
 
   if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
@@ -649,11 +647,6 @@ pw_test("sectors_test") {
     ":pw_kvs",
   ]
   sources = [ "sectors_test.cc" ]
-}
-
-pw_test("key_test") {
-  deps = [ ":pw_kvs" ]
-  sources = [ "key_test.cc" ]
 }
 
 pw_test("key_value_store_wear_test") {

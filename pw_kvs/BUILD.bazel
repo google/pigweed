@@ -48,7 +48,6 @@ cc_library(
         "public/pw_kvs/flash_memory.h",
         "public/pw_kvs/format.h",
         "public/pw_kvs/io.h",
-        "public/pw_kvs/key.h",
         "public/pw_kvs/key_value_store.h",
     ],
     includes = ["public"],
@@ -559,18 +558,6 @@ pw_cc_test(
         ":flash_partition_test_2_iterations_256_write",
         ":pw_kvs",
         "//pw_log",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
-    name = "key_test",
-    srcs = [
-        "key_test.cc",
-    ],
-    deps = [
-        ":pw_kvs",
-        "//pw_status",
         "//pw_unit_test",
     ],
 )

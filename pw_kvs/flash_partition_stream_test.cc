@@ -26,8 +26,6 @@
 #include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
-
 #ifndef PW_FLASH_TEST_ALIGNMENT
 #define PW_FLASH_TEST_ALIGNMENT 1
 #endif
@@ -505,5 +503,3 @@ TEST_F(FlashStreamTest, Invald_Ops) {
 
 }  // namespace
 }  // namespace pw::kvs
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)

@@ -31,7 +31,6 @@ pw_add_library(pw_kvs STATIC
     public/pw_kvs/flash_test_partition.h
     public/pw_kvs/format.h
     public/pw_kvs/io.h
-    public/pw_kvs/key.h
     public/pw_kvs/key_value_store.h
     public/pw_kvs/internal/entry.h
     public/pw_kvs/internal/entry_cache.h
@@ -657,16 +656,6 @@ pw_add_test(pw_kvs.sectors_test
     sectors_test.cc
   PRIVATE_DEPS
     pw_kvs.fake_flash
-    pw_kvs
-  GROUPS
-    modules
-    pw_kvs
-)
-
-pw_add_test(pw_kvs.key_test
-  SOURCES
-    key_test.cc
-  PRIVATE_DEPS
     pw_kvs
   GROUPS
     modules
