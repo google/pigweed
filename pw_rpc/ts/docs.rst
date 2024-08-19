@@ -63,13 +63,21 @@ Invoke an RPC with callbacks
    invoke(request?: Message,
        onNext: Callback = () => {},
        onCompleted: Callback = () => {},
-       onError: Callback = () => {}): Call
+       onError: Callback = () => {},
+       maxResponses: number = DEFAULT_MAX_STREAM_RESPONSES): Call
 
 All RPC methods can be invoked with a set of callbacks that are triggered when
 either a response is received, the RPC is completed, or an error occurs. The
 example below demonstrates registering these callbacks on a Bidirectional RPC.
 Other RPC types can be invoked in a similar fashion. The request parameter may
 differ slightly between RPC types.
+
+Server streaming and bidirectional streaming methods can receive many responses
+from the server. The client limits the maximum number of responses it stores for
+a single RPC call to avoid unbounded memory usage in long-running streams. Once
+the limit is reached, the oldest responses will be replaced as new ones arrives.
+By default, the limit is set to ``DEFAULT_MAX_STREAM_RESPONSES (=16384)``, but
+this can be configured on a per-call basis.
 
 .. code-block:: typescript
 
@@ -136,7 +144,7 @@ Server Streaming RPC
    for await (const response of call.getResponses(2, timeout)) {
     console.log(response);
    }
-   const responses = call.getResponse() // All responses until stream end.
+   const responses = call.getResponses() // All responses until stream end.
    while (!responses.done) {
      console.log(await responses.value());
    }

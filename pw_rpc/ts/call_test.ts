@@ -15,8 +15,9 @@
 /* eslint-env browser */
 
 import { SomeMessage } from 'pigweedjs/protos/pw_rpc/ts/test2_pb';
+import { Status } from 'pigweedjs/pw_status';
 
-import { Call } from './call';
+import { Call, ServerStreamingCall } from './call';
 import { Channel, Method, Service } from './descriptors';
 import { PendingCalls, Rpc } from './rpc_classes';
 
@@ -43,7 +44,7 @@ describe('Call', () => {
     };
     const pendingCalls = new PendingCalls();
     const rpc = new FakeRpc();
-    call = new Call(pendingCalls, rpc, noop, noop, noop);
+    call = new Call(pendingCalls, rpc, noop, noop, noop, 4);
   });
 
   function newMessage(magicNumber = 1): SomeMessage {
@@ -138,5 +139,52 @@ describe('Call', () => {
     expect(call.completed).toEqual(false);
     expect((await responses.next()).value).toEqual(message2);
     expect((await responses.next()).done).toEqual(true);
+  });
+
+  it('getResponses limits to maximum number of responses', async () => {
+    const allResponses = [];
+    const noop = () => {
+      // Do nothing.
+    };
+    const pendingCalls = new PendingCalls();
+    const rpc = new FakeRpc();
+    const streamCall = new ServerStreamingCall(
+      pendingCalls,
+      rpc,
+      (res) => allResponses.push(res),
+      noop,
+      noop,
+      4,
+    );
+
+    const message1 = newMessage(1);
+    const message2 = newMessage(2);
+    const message3 = newMessage(3);
+    const message4 = newMessage(4);
+    const message5 = newMessage(5);
+    const message6 = newMessage(6);
+
+    setTimeout(() => {
+      streamCall.handleResponse(message1);
+      streamCall.handleResponse(message2);
+      streamCall.handleResponse(message3);
+      streamCall.handleResponse(message4);
+      streamCall.handleResponse(message5);
+      streamCall.handleResponse(message6);
+      streamCall.handleCompletion(Status.OK);
+    }, 200);
+
+    // All 5 responses are received, but only the most recent 4 are stored.
+    const [status, responses] = await streamCall.complete();
+    expect(status).toEqual(Status.OK);
+    expect(allResponses).toEqual([
+      message1,
+      message2,
+      message3,
+      message4,
+      message5,
+      message6,
+    ]);
+    expect(responses).toEqual([message3, message4, message5, message6]);
   });
 });

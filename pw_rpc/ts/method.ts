@@ -17,14 +17,15 @@ import { Message } from 'google-protobuf';
 
 import {
   BidirectionalStreamingCall,
-  Call,
   Callback,
   ClientStreamingCall,
   ServerStreamingCall,
   UnaryCall,
 } from './call';
-import { Channel, Method, MethodType, Service } from './descriptors';
+import { Channel, Method, MethodType } from './descriptors';
 import { PendingCalls, Rpc } from './rpc_classes';
+
+const DEFAULT_MAX_STREAM_RESPONSES = 16_384;
 
 export function methodStubFactory(
   rpcs: PendingCalls,
@@ -80,6 +81,7 @@ export class UnaryMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      /*maxResponses=*/ 1,
     );
     call.invoke(request);
     return call;
@@ -103,6 +105,7 @@ export class UnaryMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      /*maxResponses=*/ 1,
     );
     call.invoke(request, true);
     return call;
@@ -125,6 +128,7 @@ export class ServerStreamingMethodStub extends MethodStub {
     onError: Callback = () => {
       // Do nothing.
     },
+    maxResponses: number = DEFAULT_MAX_STREAM_RESPONSES,
   ): ServerStreamingCall {
     const call = new ServerStreamingCall(
       this.rpcs,
@@ -132,6 +136,7 @@ export class ServerStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      maxResponses,
     );
     call.invoke(request);
     return call;
@@ -148,6 +153,7 @@ export class ServerStreamingMethodStub extends MethodStub {
     onError: Callback = () => {
       // Do nothing.
     },
+    maxResponses: number = DEFAULT_MAX_STREAM_RESPONSES,
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
@@ -155,6 +161,7 @@ export class ServerStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      maxResponses,
     );
     call.invoke(request, true);
     return call;
@@ -183,6 +190,7 @@ export class ClientStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      /*maxResponses=*/ 1,
     );
     call.invoke();
     return call;
@@ -205,6 +213,7 @@ export class ClientStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      /*maxResponses=*/ 1,
     );
     call.invoke(undefined, true);
     return call;
@@ -226,6 +235,7 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
     onError: Callback = () => {
       // Do nothing.
     },
+    maxResponses: number = DEFAULT_MAX_STREAM_RESPONSES,
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,
@@ -233,6 +243,7 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      maxResponses,
     );
     call.invoke();
     return call;
@@ -248,6 +259,7 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
     onError: Callback = () => {
       // Do nothing.
     },
+    maxResponses: number = DEFAULT_MAX_STREAM_RESPONSES,
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,
@@ -255,6 +267,7 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
       onNext,
       onCompleted,
       onError,
+      maxResponses,
     );
     call.invoke(undefined, true);
     return call;

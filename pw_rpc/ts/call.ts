@@ -48,11 +48,50 @@ class RpcTimeout extends Error {
   }
 }
 
+class Responses {
+  private responses: Message[] = [];
+  private totalResponses: number = 0;
+  private readonly maxResponses: number;
+
+  constructor(maxResponses: number) {
+    this.maxResponses = maxResponses;
+  }
+
+  get length(): number {
+    return Math.min(this.totalResponses, this.maxResponses);
+  }
+
+  push(response: Message): void {
+    this.responses[this.totalResponses % this.maxResponses] = response;
+    this.totalResponses += 1;
+  }
+
+  last(): Message | undefined {
+    if (this.totalResponses === 0) {
+      return undefined;
+    }
+
+    const lastIndex = (this.totalResponses - 1) % this.maxResponses;
+    return this.responses[lastIndex];
+  }
+
+  getAll(): Message[] {
+    if (this.totalResponses < this.maxResponses) {
+      return this.responses.slice(0, this.totalResponses);
+    }
+
+    const splitIndex = this.totalResponses % this.maxResponses;
+    return this.responses
+      .slice(splitIndex)
+      .concat(this.responses.slice(0, splitIndex));
+  }
+}
+
 /** Represent an in-progress or completed RPC call. */
 export class Call {
   // Responses ordered by arrival time. Undefined signifies stream completion.
   private responseQueue = new WaitQueue<Message | undefined>();
-  protected responses: Message[] = [];
+  protected responses: Responses;
 
   private rpcs: PendingCalls;
   rpc: Rpc;
@@ -72,9 +111,11 @@ export class Call {
     onNext: Callback,
     onCompleted: Callback,
     onError: Callback,
+    maxResponses: number,
   ) {
     this.rpcs = rpcs;
     this.rpc = rpc;
+    this.responses = new Responses(maxResponses);
 
     this.onNext = onNext;
     this.onCompleted = onCompleted;
@@ -225,7 +266,7 @@ export class Call {
     if (this.responses.length !== 1) {
       throw Error(`Unexpected number of responses: ${this.responses.length}`);
     }
-    return [this.status!, this.responses[0]];
+    return [this.status!, this.responses.last()];
   }
 
   protected async streamWait(timeoutMs?: number): Promise<[Status, Message[]]> {
@@ -235,7 +276,7 @@ export class Call {
     if (this.status === undefined) {
       throw Error('Unexpected undefined status at end of stream');
     }
-    return [this.status!, this.responses];
+    return [this.status!, this.responses.getAll()];
   }
 
   protected sendClientStream(request: Message) {
@@ -269,9 +310,7 @@ export class UnaryCall extends Call {
 export class ClientStreamingCall extends Call {
   /** Gets the last server message, if it exists */
   get response(): Message | undefined {
-    return this.responses.length > 0
-      ? this.responses[this.responses.length - 1]
-      : undefined;
+    return this.responses.last();
   }
 
   /** Sends a message from the client. */
