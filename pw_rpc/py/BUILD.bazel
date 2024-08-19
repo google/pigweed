@@ -185,3 +185,42 @@ pw_py_test(
         "//pw_status/py:pw_status",
     ],
 )
+
+pw_py_test(
+    name = "console_tools_test",
+    size = "small",
+    srcs = [
+        "tests/console_tools/console_tools_test.py",
+    ],
+    data = [
+        "@com_google_protobuf//:protoc",
+    ],
+    env = {
+        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+    },
+    deps = [
+        ":pw_rpc",
+    ],
+)
+
+pw_py_test(
+    name = "functions_test",
+    size = "small",
+    srcs = [
+        "tests/console_tools/functions_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+    ],
+)
+
+pw_py_test(
+    name = "watchdog_test",
+    size = "small",
+    srcs = [
+        "tests/console_tools/watchdog_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+    ],
+)
