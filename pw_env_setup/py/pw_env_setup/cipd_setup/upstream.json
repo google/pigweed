@@ -1,6 +1,6 @@
 {
   "included_files": [
-    "bazel.json",
+    "bazelisk.json",
     "cmake.json",
     "coverage.json",
     "default.json",

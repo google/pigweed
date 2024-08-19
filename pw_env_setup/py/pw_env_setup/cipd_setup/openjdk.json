@@ -1,0 +1,16 @@
+{
+  "packages": [
+    {
+      "path": "flutter/java/openjdk/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:17"
+      ]
+    }
+  ]
+}

@@ -149,8 +149,9 @@ class TestCipdSetupUpdate(unittest.TestCase):
 
         upstream_load_order = [
             Path('upstream.json'),
-            Path('bazel.json'),
+            Path('bazelisk.json'),
             Path('buildifier.json'),
+            Path('openjdk.json'),
             Path('cmake.json'),
             Path('coverage.json'),
             Path('default.json'),
