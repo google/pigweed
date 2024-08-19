@@ -29,8 +29,10 @@ Callbacks& GetCallbacks() {
   return callbacks;
 }
 
-TokenizedTracer tokenized_tracer(GetCallbacks());
-TokenizedTracer& GetTokenizedTracer() { return tokenized_tracer; }
+TokenizedTracer& GetTokenizedTracer() {
+  static TokenizedTracer tokenized_tracer(GetCallbacks());
+  return tokenized_tracer;
+}
 
 using TraceEvent = pw_trace_tokenized_TraceEvent;
 
