@@ -3,6 +3,26 @@
 ==========================
 Pigweed Eng Blog #1: Kudzu
 ==========================
+.. raw:: html
+
+   <script type="application/ld+json">
+     {
+       "@context": "https://schema.org",
+       "@type": "NewsArticle",
+       "headline": "Kudzu: Pigweed's whimsical take on a development board",
+       "image": [
+         "https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg"
+       ],
+       "datePublished": "2023-10-12T19:27:00+08:00",
+       "dateModified": "2023-10-12T19:27:00+08:00",
+       "author": [{
+         "@type": "Person",
+         "name": "Erik Gilling",
+         "url": "https://github.com/konkers"
+       }]
+     }
+   </script>
+
 .. admonition:: A note from the Pigweed Eng Blog editors
 
    Welcome to the Pigweed Eng Blog! This is an informal blog where Pigweed
