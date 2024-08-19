@@ -69,6 +69,15 @@ class Watchdog:
         self._watchdog.daemon = True
         self._watchdog.start()
 
+    def stop(self) -> None:
+        """Stops the watchdog.
+
+        This will not trigger the execution of any callbacks and will prevent
+        further execution of any callbacks (including `while_expired`) until
+        `start` is called again.
+        """
+        self._watchdog.cancel()
+
     def reset(self) -> bool:
         """Resets the timeout; calls the on_reset callback if expired.
 
