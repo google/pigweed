@@ -152,7 +152,7 @@ Talk to us
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`device-camera-video` Monthly community meeting
-      :link: https://discord.com/channels/691686718377558037/951228399119126548
+      :link: https://groups.google.com/g/pigweed
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 
