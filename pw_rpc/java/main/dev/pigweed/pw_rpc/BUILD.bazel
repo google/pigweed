@@ -31,6 +31,7 @@ RPC_CLIENT_SOURCES = [
     "InvalidRpcStateException.java",
     "Method.java",
     "MethodClient.java",
+    "PacketByteFactory.java",
     "Packets.java",
     "PendingRpc.java",
     "RpcError.java",
