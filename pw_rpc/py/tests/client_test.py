@@ -23,7 +23,7 @@ from pw_status import Status
 from pw_rpc import callback_client, client, packets
 import pw_rpc.ids
 from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
-from pw_rpc.descriptors import fake_pending_rpc
+from pw_rpc.descriptors import RpcIds
 
 TEST_PROTO_1 = """\
 syntax = "proto3";
@@ -289,7 +289,7 @@ class ClientTest(unittest.TestCase):
         self.assertIs(
             self._client.process_packet(
                 packets.encode_response(
-                    fake_pending_rpc(
+                    RpcIds(
                         SOME_CHANNEL_ID,
                         SOME_SERVICE_ID,
                         SOME_METHOD_ID,
@@ -305,7 +305,7 @@ class ClientTest(unittest.TestCase):
         self.assertIs(
             self._client.process_packet(
                 packets.encode_response(
-                    fake_pending_rpc(
+                    RpcIds(
                         CLIENT_FIRST_CHANNEL_ID,
                         SOME_SERVICE_ID,
                         SOME_METHOD_ID,
@@ -335,7 +335,7 @@ class ClientTest(unittest.TestCase):
         self.assertIs(
             self._client.process_packet(
                 packets.encode_response(
-                    fake_pending_rpc(
+                    RpcIds(
                         CLIENT_FIRST_CHANNEL_ID,
                         service.id,
                         SOME_METHOD_ID,
@@ -366,7 +366,7 @@ class ClientTest(unittest.TestCase):
         self.assertIs(
             self._client.process_packet(
                 packets.encode_response(
-                    fake_pending_rpc(
+                    RpcIds(
                         CLIENT_FIRST_CHANNEL_ID,
                         service.id,
                         method.id,
@@ -416,7 +416,7 @@ class ClientTest(unittest.TestCase):
         self.assertIs(
             self._client.process_packet(
                 packets.encode_response(
-                    fake_pending_rpc(
+                    RpcIds(
                         CLIENT_FIRST_CHANNEL_ID,
                         method.service.id,
                         method.id,

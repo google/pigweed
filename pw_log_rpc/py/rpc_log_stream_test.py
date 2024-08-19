@@ -15,66 +15,16 @@
 """RPC log stream handler tests."""
 
 from dataclasses import dataclass
-import logging
 from typing import Any, Callable
 from unittest import TestCase, main, mock
 
-from google.protobuf import message
 from pw_log.log_decoder import Log, LogStreamDecoder
 from pw_log.proto import log_pb2
 from pw_log_rpc.rpc_log_stream import LogStreamHandler
 from pw_rpc import callback_client, client
-from pw_rpc.descriptors import fake_pending_rpc, PendingRpc
-from pw_rpc.internal import packet_pb2
+from pw_rpc.descriptors import RpcIds
+from pw_rpc import packets
 from pw_status import Status
-
-_LOG = logging.getLogger(__name__)
-
-
-def _encode_server_stream_packet(
-    rpc: PendingRpc, payload: message.Message
-) -> bytes:
-    return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.SERVER_STREAM,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
-        call_id=rpc.call_id,
-        payload=payload.SerializeToString(),
-    ).SerializeToString()
-
-
-def _encode_cancel(rpc: PendingRpc) -> bytes:
-    return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.SERVER_ERROR,
-        status=Status.CANCELLED.value,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
-        call_id=rpc.call_id,
-    ).SerializeToString()
-
-
-def _encode_error(rpc: PendingRpc) -> bytes:
-    return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.SERVER_ERROR,
-        status=Status.UNKNOWN.value,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
-        call_id=rpc.call_id,
-    ).SerializeToString()
-
-
-def _encode_completed(rpc: PendingRpc, status: Status) -> bytes:
-    return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.RESPONSE,
-        status=status.value,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
-        call_id=rpc.call_id,
-    ).SerializeToString()
 
 
 class _CallableWithCounter:
@@ -122,13 +72,13 @@ class TestRpcLogStreamHandler(TestCase):
             self.client.channel(self._channel_id).rpcs, log_decoder
         )
 
-    def _get_rpc_ids(self) -> PendingRpc:
+    def _get_rpc_ids(self) -> RpcIds:
         service = next(iter(self.client.services))
         method = next(iter(service.methods))
 
         # To handle unrequested log streams, packets' call Ids are set to
         # kOpenCallId.
-        return fake_pending_rpc(
+        return RpcIds(
             self._channel_id, service.id, method.id, client.OPEN_CALL_ID
         )
 
@@ -140,7 +90,7 @@ class TestRpcLogStreamHandler(TestCase):
 
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=0,
@@ -162,7 +112,7 @@ class TestRpcLogStreamHandler(TestCase):
         # A subsequent RPC packet should be handled successfully.
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=2,
@@ -195,7 +145,7 @@ class TestRpcLogStreamHandler(TestCase):
         # Send logs prior to cancellation.
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=0,
@@ -209,7 +159,11 @@ class TestRpcLogStreamHandler(TestCase):
             Status.OK,
         )
         self.assertIs(
-            self.client.process_packet(_encode_cancel(self._get_rpc_ids())),
+            self.client.process_packet(
+                packets.encode_server_error(
+                    self._get_rpc_ids(), Status.CANCELLED
+                )
+            ),
             Status.OK,
         )
         self.log_stream_handler.handle_log_stream_error.assert_called_once_with(
@@ -239,7 +193,7 @@ class TestRpcLogStreamHandler(TestCase):
         # Send logs prior to cancellation.
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=0,
@@ -253,7 +207,9 @@ class TestRpcLogStreamHandler(TestCase):
             Status.OK,
         )
         self.assertIs(
-            self.client.process_packet(_encode_error(self._get_rpc_ids())),
+            self.client.process_packet(
+                packets.encode_server_error(self._get_rpc_ids(), Status.UNKNOWN)
+            ),
             Status.OK,
         )
 
@@ -283,7 +239,7 @@ class TestRpcLogStreamHandler(TestCase):
         # Send logs prior to cancellation.
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=0,
@@ -298,7 +254,7 @@ class TestRpcLogStreamHandler(TestCase):
         )
         self.assertIs(
             self.client.process_packet(
-                _encode_completed(self._get_rpc_ids(), Status.OK)
+                packets.encode_response(self._get_rpc_ids(), status=Status.OK)
             ),
             Status.OK,
         )
@@ -327,7 +283,7 @@ class TestRpcLogStreamHandler(TestCase):
         # Send logs prior to cancellation.
         self.assertIs(
             self.client.process_packet(
-                _encode_server_stream_packet(
+                packets.encode_server_stream(
                     self._get_rpc_ids(),
                     log_pb2.LogEntries(
                         first_entry_sequence_id=0,
@@ -342,7 +298,9 @@ class TestRpcLogStreamHandler(TestCase):
         )
         self.assertIs(
             self.client.process_packet(
-                _encode_completed(self._get_rpc_ids(), Status.UNKNOWN)
+                packets.encode_response(
+                    self._get_rpc_ids(), status=Status.UNKNOWN
+                )
             ),
             Status.OK,
         )

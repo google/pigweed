@@ -20,24 +20,24 @@ from pw_status import Status
 
 from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 from pw_rpc import packets
-from pw_rpc.descriptors import fake_pending_rpc
+from pw_rpc.descriptors import RpcIds
 
-_TEST_IDS = fake_pending_rpc(1, 2, 3, 4)
+_TEST_IDS = RpcIds(1, 2, 3, 4)
 
 _TEST_STATUS = 321
 _TEST_REQUEST = RpcPacket(
     type=PacketType.REQUEST,
-    channel_id=_TEST_IDS.channel.id,
-    service_id=_TEST_IDS.service.id,
-    method_id=_TEST_IDS.method.id,
+    channel_id=_TEST_IDS.channel_id,
+    service_id=_TEST_IDS.service_id,
+    method_id=_TEST_IDS.method_id,
     call_id=_TEST_IDS.call_id,
     payload=RpcPacket(status=_TEST_STATUS).SerializeToString(),
 )
 _TEST_RESPONSE = RpcPacket(
     type=PacketType.RESPONSE,
-    channel_id=_TEST_IDS.channel.id,
-    service_id=_TEST_IDS.service.id,
-    method_id=_TEST_IDS.method.id,
+    channel_id=_TEST_IDS.channel_id,
+    service_id=_TEST_IDS.service_id,
+    method_id=_TEST_IDS.method_id,
     call_id=_TEST_IDS.call_id,
     payload=RpcPacket(status=_TEST_STATUS).SerializeToString(),
 )
@@ -55,7 +55,7 @@ class PacketsTest(unittest.TestCase):
 
     def test_encode_response(self):
         data = packets.encode_response(
-            _TEST_IDS, RpcPacket(status=_TEST_STATUS)
+            _TEST_IDS, RpcPacket(status=_TEST_STATUS), Status.OK
         )
         packet = RpcPacket()
         packet.ParseFromString(data)
@@ -63,7 +63,7 @@ class PacketsTest(unittest.TestCase):
         self.assertEqual(_TEST_RESPONSE, packet)
 
     def test_encode_cancel(self):
-        data = packets.encode_cancel(fake_pending_rpc(9, 8, 7, 6))
+        data = packets.encode_cancel(RpcIds(9, 8, 7, 6))
 
         packet = RpcPacket()
         packet.ParseFromString(data)
@@ -90,11 +90,49 @@ class PacketsTest(unittest.TestCase):
             packet,
             RpcPacket(
                 type=PacketType.CLIENT_ERROR,
-                channel_id=_TEST_IDS.channel.id,
-                service_id=_TEST_IDS.service.id,
-                method_id=_TEST_IDS.method.id,
+                channel_id=_TEST_IDS.channel_id,
+                service_id=_TEST_IDS.service_id,
+                method_id=_TEST_IDS.method_id,
                 call_id=_TEST_IDS.call_id,
                 status=Status.NOT_FOUND.value,
+            ),
+        )
+
+    def test_encode_server_error(self):
+        data = packets.encode_server_error(_TEST_REQUEST, Status.UNKNOWN)
+
+        packet = RpcPacket()
+        packet.ParseFromString(data)
+
+        self.assertEqual(
+            packet,
+            RpcPacket(
+                type=PacketType.SERVER_ERROR,
+                channel_id=_TEST_IDS.channel_id,
+                service_id=_TEST_IDS.service_id,
+                method_id=_TEST_IDS.method_id,
+                call_id=_TEST_IDS.call_id,
+                status=Status.UNKNOWN.value,
+            ),
+        )
+
+    def test_encode_server_stream(self):
+        data = packets.encode_server_stream(
+            _TEST_REQUEST, RpcPacket(status=_TEST_STATUS)
+        )
+
+        packet = RpcPacket()
+        packet.ParseFromString(data)
+
+        self.assertEqual(
+            packet,
+            RpcPacket(
+                type=PacketType.SERVER_STREAM,
+                channel_id=_TEST_IDS.channel_id,
+                service_id=_TEST_IDS.service_id,
+                method_id=_TEST_IDS.method_id,
+                call_id=_TEST_IDS.call_id,
+                payload=RpcPacket(status=_TEST_STATUS).SerializeToString(),
             ),
         )
 

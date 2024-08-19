@@ -459,25 +459,49 @@ def get_method(service_accessor: ServiceAccessor, name: str):
 
 
 @dataclass(frozen=True)
+class RpcIds:
+    """Integer IDs that uniquely identify a remote procedure call."""
+
+    channel_id: int
+    service_id: int
+    method_id: int
+    call_id: int
+
+
+@dataclass(frozen=True)
 class PendingRpc:
-    """Uniquely identifies an RPC call."""
+    """Tracks an active RPC call."""
 
     channel: Channel
     service: Service
     method: Method
     call_id: int
 
+    @property
+    def channel_id(self) -> int:
+        return self.channel.id
+
+    @property
+    def service_id(self) -> int:
+        return self.service.id
+
+    @property
+    def method_id(self) -> int:
+        return self.method.id
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PendingRpc):
-            return self._ids() == other._ids()
+            return self.ids() == other.ids()
 
         return NotImplemented
 
     def __hash__(self) -> int:
-        return hash(self._ids())
+        return hash(self.ids())
 
-    def _ids(self) -> tuple[int, int, int, int]:
-        return self.channel.id, self.service.id, self.method.id, self.call_id
+    def ids(self) -> RpcIds:
+        return RpcIds(
+            self.channel.id, self.service.id, self.method.id, self.call_id
+        )
 
     def __str__(self) -> str:
         return (
@@ -491,16 +515,3 @@ class PendingRpc:
             and self.service.id == other.service.id
             and self.method.id == other.method.id
         )
-
-
-def fake_pending_rpc(
-    channel_id: int, service_id: int, method_id: int, call_id: int
-) -> PendingRpc:
-    """Creates a fake PendingRpc for testing: ONLY the *_id properties work!"""
-    service = Service(None, service_id, None)  # type: ignore[arg-type]
-    return PendingRpc(
-        Channel(channel_id, lambda _: None),
-        service,
-        Method(None, service, method_id, False, False, None, None),  # type: ignore[arg-type] # pylint: disable=line-too-long
-        call_id,
-    )

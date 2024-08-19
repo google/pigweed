@@ -16,7 +16,7 @@
 from google.protobuf import message
 from pw_status import Status
 
-from pw_rpc.descriptors import PendingRpc
+from pw_rpc.descriptors import RpcIds, PendingRpc
 from pw_rpc.internal import packet_pb2
 
 
@@ -32,36 +32,45 @@ def decode_payload(packet, payload_type):
     return payload
 
 
-def encode_request(rpc: PendingRpc, request: message.Message | None) -> bytes:
+def encode_request(
+    rpc: PendingRpc | RpcIds, request: message.Message | None
+) -> bytes:
     payload = request.SerializeToString() if request is not None else bytes()
 
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.REQUEST,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
         call_id=rpc.call_id,
         payload=payload,
     ).SerializeToString()
 
 
-def encode_response(rpc: PendingRpc, response: message.Message) -> bytes:
+def encode_response(
+    rpc: PendingRpc | RpcIds,
+    response: message.Message | None = None,
+    status: Status = Status.OK,
+) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.RESPONSE,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
         call_id=rpc.call_id,
-        payload=response.SerializeToString(),
+        payload=b'' if response is None else response.SerializeToString(),
+        status=status.value,
     ).SerializeToString()
 
 
-def encode_client_stream(rpc: PendingRpc, request: message.Message) -> bytes:
+def encode_client_stream(
+    rpc: PendingRpc | RpcIds, request: message.Message
+) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_STREAM,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
         call_id=rpc.call_id,
         payload=request.SerializeToString(),
     ).SerializeToString()
@@ -78,23 +87,46 @@ def encode_client_error(packet: packet_pb2.RpcPacket, status: Status) -> bytes:
     ).SerializeToString()
 
 
-def encode_cancel(rpc: PendingRpc) -> bytes:
+def encode_cancel(rpc: PendingRpc | RpcIds) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_ERROR,
         status=Status.CANCELLED.value,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
 
-def encode_client_stream_end(rpc: PendingRpc) -> bytes:
+def encode_client_stream_end(rpc: PendingRpc | RpcIds) -> bytes:
     return packet_pb2.RpcPacket(
         type=packet_pb2.PacketType.CLIENT_REQUEST_COMPLETION,
-        channel_id=rpc.channel.id,
-        service_id=rpc.service.id,
-        method_id=rpc.method.id,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
+        call_id=rpc.call_id,
+    ).SerializeToString()
+
+
+def encode_server_stream(rpc: RpcIds, payload: message.Message) -> bytes:
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.SERVER_STREAM,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
+        call_id=rpc.call_id,
+        payload=payload.SerializeToString(),
+    ).SerializeToString()
+
+
+def encode_server_error(rpc: RpcIds, status: Status) -> bytes:
+    assert not status.ok()
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.SERVER_ERROR,
+        status=status.value,
+        channel_id=rpc.channel_id,
+        service_id=rpc.service_id,
+        method_id=rpc.method_id,
         call_id=rpc.call_id,
     ).SerializeToString()
 
