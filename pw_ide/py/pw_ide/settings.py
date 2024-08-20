@@ -66,9 +66,9 @@ _DEFAULT_CONFIG: dict[str, Any] = {
     'working_dir': _DEFAULT_WORKSPACE_ROOT / PW_IDE_DIR_NAME,
 }
 
-_DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.yaml')
-_DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.user.yaml')
-_DEFAULT_USER_FILE = Path('$HOME/.pw_ide.yaml')
+_DEFAULT_PROJECT_FILE = PW_PROJECT_ROOT / '.pw_ide.yaml'
+_DEFAULT_PROJECT_USER_FILE = PW_PROJECT_ROOT / '.pw_ide.user.yaml'
+_DEFAULT_USER_FILE = Path.home() / '.pw_ide.yaml'
 
 
 def _expand_any_vars(input_path: Path) -> Path:
