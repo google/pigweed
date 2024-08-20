@@ -21,7 +21,7 @@
 
 namespace pw::multibuf {
 
-void MultiBuf::Release() noexcept {
+void MultiBufChunks::Release() noexcept {
   while (first_ != nullptr) {
     Chunk* removed = first_;
     first_ = first_->next_in_buf_;
@@ -29,9 +29,9 @@ void MultiBuf::Release() noexcept {
   }
 }
 
-size_t MultiBuf::size() const {
+size_t MultiBufChunks::size_bytes() const {
   size_t len = 0;
-  for (const auto& chunk : Chunks()) {
+  for (const auto& chunk : *this) {
     len += chunk.size();
   }
   return len;
@@ -62,14 +62,14 @@ std::optional<ConstByteSpan> MultiBuf::ContiguousSpan() const {
 }
 
 bool MultiBuf::ClaimPrefix(size_t bytes_to_claim) {
-  if (first_ == nullptr) {
+  if (Chunks().empty()) {
     return false;
   }
-  return first_->ClaimPrefix(bytes_to_claim);
+  return Chunks().front().ClaimPrefix(bytes_to_claim);
 }
 
 bool MultiBuf::ClaimSuffix(size_t bytes_to_claim) {
-  if (first_ == nullptr) {
+  if (Chunks().empty()) {
     return false;
   }
   return Chunks().back().ClaimSuffix(bytes_to_claim);
@@ -106,8 +106,7 @@ void MultiBuf::TruncateAfter(iterator pos) {
   pos.chunk()->Truncate(pos.byte_index() + 1);
   Chunk* remainder = pos.chunk()->next_in_buf_;
   pos.chunk()->next_in_buf_ = nullptr;
-  MultiBuf discard;
-  discard.first_ = remainder;
+  MultiBuf discard(remainder);
 }
 
 void MultiBuf::PushPrefix(MultiBuf&& front) {
@@ -115,13 +114,13 @@ void MultiBuf::PushPrefix(MultiBuf&& front) {
   *this = std::move(front);
 }
 
-void MultiBuf::PushSuffix(MultiBuf&& tail) {
+void MultiBufChunks::PushSuffix(MultiBufChunks&& tail) {
   if (first_ == nullptr) {
     first_ = tail.first_;
     tail.first_ = nullptr;
     return;
   }
-  Chunks().back().next_in_buf_ = tail.first_;
+  back().next_in_buf_ = tail.first_;
   tail.first_ = nullptr;
 }
 
@@ -211,7 +210,8 @@ std::optional<MultiBuf> MultiBuf::TakePrefix(size_t bytes_to_take) {
   if (bytes_to_take == 0) {
     return front;
   }
-  std::optional<OwnedChunk> last_front_bit = first_->TakePrefix(bytes_to_take);
+  std::optional<OwnedChunk> last_front_bit =
+      Chunks().front().TakePrefix(bytes_to_take);
   if (last_front_bit.has_value()) {
     if (last_front_chunk != nullptr) {
       Chunk* last_front_bit_ptr = std::move(*last_front_bit).Take();
@@ -237,7 +237,7 @@ std::optional<MultiBuf> MultiBuf::TakeSuffix(size_t bytes_to_take) {
   return front_then_back;
 }
 
-void MultiBuf::PushFrontChunk(OwnedChunk&& chunk) {
+void MultiBufChunks::push_front(OwnedChunk&& chunk) {
   PW_DCHECK(chunk->next_in_buf_ == nullptr);
   Chunk* new_chunk = std::move(chunk).Take();
   Chunk* old_first = first_;
@@ -245,7 +245,7 @@ void MultiBuf::PushFrontChunk(OwnedChunk&& chunk) {
   first_ = new_chunk;
 }
 
-void MultiBuf::PushBackChunk(OwnedChunk&& chunk) {
+void MultiBufChunks::push_back(OwnedChunk&& chunk) {
   PW_DCHECK(chunk->next_in_buf_ == nullptr);
   Chunk* new_chunk = std::move(chunk).Take();
   if (first_ == nullptr) {
@@ -259,44 +259,44 @@ void MultiBuf::PushBackChunk(OwnedChunk&& chunk) {
   cur->next_in_buf_ = new_chunk;
 }
 
-MultiBuf::ChunkIterator MultiBuf::InsertChunk(ChunkIterator position,
-                                              OwnedChunk&& chunk) {
+MultiBufChunks::iterator MultiBufChunks::insert(iterator position,
+                                                OwnedChunk&& chunk) {
   // Note: this also catches the cases where ``first_ == nullptr``
   PW_DCHECK(chunk->next_in_buf_ == nullptr);
-  if (position == ChunkBegin()) {
-    PushFrontChunk(std::move(chunk));
-    return ChunkIterator(first_);
+  if (position == begin()) {
+    push_front(std::move(chunk));
+    return iterator(first_);
   }
   Chunk* previous = Previous(position.chunk_);
   Chunk* old_next = previous->next_in_buf_;
   Chunk* new_chunk = std::move(chunk).Take();
   new_chunk->next_in_buf_ = old_next;
   previous->next_in_buf_ = new_chunk;
-  return ChunkIterator(new_chunk);
+  return iterator(new_chunk);
 }
 
-OwnedChunk MultiBuf::TakeFrontChunk() {
+OwnedChunk MultiBufChunks::take_front() {
+  PW_CHECK(!empty());
   Chunk* old_first = first_;
   first_ = old_first->next_in_buf_;
   old_first->next_in_buf_ = nullptr;
   return OwnedChunk(old_first);
 }
 
-std::tuple<MultiBuf::ChunkIterator, OwnedChunk> MultiBuf::TakeChunk(
-    ChunkIterator position) {
+std::tuple<MultiBufChunks::iterator, OwnedChunk> MultiBufChunks::take(
+    iterator position) {
   Chunk* chunk = position.chunk_;
-  if (position == ChunkBegin()) {
-    OwnedChunk old_first = TakeFrontChunk();
-    return std::make_tuple(ChunkIterator(first_), std::move(old_first));
+  if (position == begin()) {
+    OwnedChunk old_first = take_front();
+    return std::make_tuple(iterator(first_), std::move(old_first));
   }
   Chunk* previous = Previous(chunk);
   previous->next_in_buf_ = chunk->next_in_buf_;
   chunk->next_in_buf_ = nullptr;
-  return std::make_tuple(ChunkIterator(previous->next_in_buf_),
-                         OwnedChunk(chunk));
+  return std::make_tuple(iterator(previous->next_in_buf_), OwnedChunk(chunk));
 }
 
-Chunk* MultiBuf::Previous(Chunk* chunk) const {
+Chunk* MultiBufChunks::Previous(Chunk* chunk) const {
   Chunk* previous = first_;
   while (previous != nullptr && previous->next_in_buf_ != chunk) {
     previous = previous->next_in_buf_;
@@ -332,26 +332,12 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
   return *this;
 }
 
-Chunk& MultiBuf::ChunkIterable::back() {
-  return const_cast<Chunk&>(std::as_const(*this).back());
-}
-
-const Chunk& MultiBuf::ChunkIterable::back() const {
+const Chunk& MultiBufChunks::back() const {
   Chunk* current = first_;
   while (current->next_in_buf_ != nullptr) {
     current = current->next_in_buf_;
   }
   return *current;
-}
-
-size_t MultiBuf::ChunkIterable::size() const {
-  Chunk* current = first_;
-  size_t i = 0;
-  while (current != nullptr) {
-    ++i;
-    current = current->next_in_buf_;
-  }
-  return i;
 }
 
 }  // namespace pw::multibuf

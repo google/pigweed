@@ -242,7 +242,8 @@ class Chunk {
 
   friend class ChunkRegionTracker;  // For the constructor
   friend class OwnedChunk;          // for `Free`.
-  friend class MultiBuf;            // for `Free` and `next_in_buf_`.
+  friend class MultiBuf;            // for `next_in_buf_`.
+  friend class MultiBufChunks;      // for `Free` and `next_in_buf_`.
 };
 
 /// An object that manages a single allocated region which is referenced by one
@@ -402,6 +403,7 @@ class OwnedChunk {
   friend class Chunk;
   friend class ChunkRegionTracker;
   friend class MultiBuf;
+  friend class MultiBufChunks;
 };
 
 }  // namespace pw::multibuf

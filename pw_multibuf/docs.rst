@@ -68,6 +68,9 @@ iterator available through the ``Chunks()`` method. It allows extracting a
 .. doxygenclass:: pw::multibuf::MultiBuf
    :members:
 
+.. doxygenclass:: pw::multibuf::MultiBufChunks
+   :members:
+
 .. doxygenclass:: pw::multibuf::MultiBufAllocator
    :members:
 

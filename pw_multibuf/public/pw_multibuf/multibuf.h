@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <iterator>
 #include <tuple>
 
 #include "pw_multibuf/chunk.h"
@@ -21,40 +22,244 @@
 
 namespace pw::multibuf {
 
-/// A buffer optimized for zero-copy data transfer.
-///
-/// A `MultiBuf` consists of multiple `Chunk` s of data.
-class MultiBuf {
- public:
-  class iterator;
-  class const_iterator;
-  class ChunkIterator;
-  class ConstChunkIterator;
-  class ChunkIterable;
+class MultiBuf;
 
-  constexpr MultiBuf() : first_(nullptr) {}
-  static MultiBuf FromChunk(OwnedChunk&& chunk) {
-    MultiBuf buf;
-    buf.first_ = std::move(chunk).Take();
-    return buf;
-  }
-  MultiBuf(const MultiBuf&) = delete;
-  MultiBuf& operator=(const MultiBuf&) = delete;
+/// A `Chunk`-oriented view of a `MultiBuf`.
+class MultiBufChunks {
+ public:
+  using element_type = Chunk;
+  using value_type = Chunk;
+  using pointer = Chunk*;
+  using reference = Chunk&;
+  using const_pointer = const Chunk*;
+  using difference_type = std::ptrdiff_t;
+  using const_reference = const Chunk&;
+  using size_type = std::size_t;
+
+  /// A `std::forward_iterator` over the `Chunk`s of a `MultiBuf`.
+  class iterator {
+   public:
+    using value_type = Chunk;
+    using difference_type = std::ptrdiff_t;
+    using reference = Chunk&;
+    using pointer = Chunk*;
+    using iterator_category = std::forward_iterator_tag;
+
+    constexpr iterator() = default;
+
+    constexpr reference operator*() const { return *chunk_; }
+    constexpr pointer operator->() const { return chunk_; }
+
+    constexpr iterator& operator++() {
+      chunk_ = chunk_->next_in_buf_;
+      return *this;
+    }
+
+    constexpr iterator operator++(int) {
+      iterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    constexpr bool operator==(const iterator& other) const {
+      return chunk_ == other.chunk_;
+    }
+
+    constexpr bool operator!=(const iterator& other) const {
+      return chunk_ != other.chunk_;
+    }
+
+   private:
+    friend class MultiBufChunks;
+    friend class MultiBuf;
+
+    constexpr iterator(Chunk* chunk) : chunk_(chunk) {}
+    static constexpr iterator end() { return iterator(nullptr); }
+    Chunk* chunk_ = nullptr;
+  };
+
+  /// A const `std::forward_iterator` over the `Chunk`s of a `MultiBuf`.
+  class const_iterator {
+   public:
+    using value_type = const Chunk;
+    using difference_type = std::ptrdiff_t;
+    using reference = const Chunk&;
+    using pointer = const Chunk*;
+    using iterator_category = std::forward_iterator_tag;
+
+    constexpr const_iterator() = default;
+
+    constexpr reference operator*() const { return *chunk_; }
+    constexpr pointer operator->() const { return chunk_; }
+
+    constexpr const_iterator& operator++() {
+      chunk_ = chunk_->next_in_buf_;
+      return *this;
+    }
+
+    constexpr const_iterator operator++(int) {
+      const_iterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    constexpr bool operator==(const const_iterator& other) const {
+      return chunk_ == other.chunk_;
+    }
+
+    constexpr bool operator!=(const const_iterator& other) const {
+      return chunk_ != other.chunk_;
+    }
+
+   private:
+    friend class MultiBufChunks;
+    friend class MultiBuf;
+
+    constexpr const_iterator(const Chunk* chunk) : chunk_(chunk) {}
+    static constexpr const_iterator end() { return const_iterator(nullptr); }
+    const Chunk* chunk_ = nullptr;
+  };
+
+  MultiBufChunks(const MultiBufChunks&) = delete;
+  MultiBufChunks& operator=(const MultiBufChunks&) = delete;
+
+  /// Returns a reference to the first chunk.
+  ///
+  /// The behavior of this method is undefined when `size() == 0`.
+  constexpr Chunk& front() { return *first_; }
+  constexpr const Chunk& front() const { return *first_; }
+
+  /// Returns a reference to the final chunk.
+  ///
+  /// The behavior of this method is undefined when `size() == 0`.
+  ///
+  /// NOTE: this method is `O(size())`.
+  Chunk& back() { return const_cast<Chunk&>(std::as_const(*this).back()); }
+  const Chunk& back() const;
+
+  constexpr iterator begin() { return iterator(first_); }
+  constexpr const_iterator begin() const { return cbegin(); }
+  constexpr const_iterator cbegin() const { return const_iterator(first_); }
+
+  constexpr iterator end() { return iterator::end(); }
+  constexpr const_iterator end() const { return cend(); }
+  constexpr const_iterator cend() const { return const_iterator::end(); }
+
+  /// Returns the number of `Chunk`s in this `MultiBuf`, including empty chunks.
+  size_t size() const { return std::distance(begin(), end()); }
+
+  /// Returns the total number of bytes in all `Chunk`s.
+  size_t size_bytes() const;
+
+  /// Returns whether the `MultiBuf` contains any chunks (`size() == 0`).
+  [[nodiscard]] bool empty() const { return first_ == nullptr; }
+
+  /// Pushes `Chunk` onto the front of the `MultiBuf`.
+  ///
+  /// This operation does not move any data and is `O(1)`.
+  void push_front(OwnedChunk&& chunk);
+
+  /// Pushes `Chunk` onto the end of the `MultiBuf`.
+  ///
+  /// This operation does not move any data and is `O(Chunks().size())`.
+  void push_back(OwnedChunk&& chunk);
+
+  /// Removes the first `Chunk`.
+  ///
+  /// This operation does not move any data and is `O(1)`.
+  OwnedChunk take_front();
+
+  /// Inserts `chunk` into the specified position in the `MultiBuf`. The `Chunk`
+  /// at `position` will be after the new chunk.
+  ///
+  /// This operation does not move any data and is `O(Chunks().size())`.
+  ///
+  /// Returns an iterator pointing to the newly-inserted `Chunk`.
+  //
+  // Implementation note: `Chunks().size()` should be remain relatively small,
+  // but this could be made `O(1)` in the future by adding a `prev` pointer to
+  // the `ChunkIterator`.
+  iterator insert(iterator position, OwnedChunk&& chunk);
+
+  /// Removes and returns `Chunk` from the specified position.
+  ///
+  /// This operation does not move any data and is `O(Chunks().size())`.
+  ///
+  /// Returns an iterator pointing to the `Chunk` after the removed `Chunk`, or
+  /// `Chunks().end()` if this was the last `Chunk` in the `MultiBuf`.
+  //
+  // Implementation note: `Chunks().size()` should be remain relatively small,
+  // but this could be made `O(1)` in the future by adding a `prev` pointer to
+  // the `ChunkIterator`.
+  std::tuple<iterator, OwnedChunk> take(iterator position);
+
+ protected:
+  explicit constexpr MultiBufChunks(Chunk* first_chunk) : first_(first_chunk) {}
+
+  /// This destructor will acquire a mutex and is not IRQ safe.
+  ~MultiBufChunks() { Release(); }
 
   // Disable maybe-uninitialized: this check fails erroneously on Windows GCC.
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
-  constexpr MultiBuf(MultiBuf&& other) noexcept : first_(other.first_) {
+  constexpr MultiBufChunks(MultiBufChunks&& other) noexcept
+      : first_(other.first_) {
     other.first_ = nullptr;
   }
   PW_MODIFY_DIAGNOSTICS_POP();
 
-  MultiBuf& operator=(MultiBuf&& other) noexcept {
+  MultiBufChunks& operator=(MultiBufChunks&& other) noexcept {
     Release();
     first_ = other.first_;
     other.first_ = nullptr;
     return *this;
   }
+
+  // Releases all chunks in the `MultiBuf`.
+  void Release() noexcept;
+
+  void PushSuffix(MultiBufChunks&& tail);
+
+  /// Returns the `Chunk` preceding `chunk` in this `MultiBuf`.
+  ///
+  /// Requires that this `MultiBuf` is not empty, and that `chunk` is either in
+  /// `MultiBuf` or is `nullptr`, in which case the last `Chunk` in `MultiBuf`
+  /// will be returned.
+  ///
+  /// This operation is `O(Chunks().size())`.
+  Chunk* Previous(Chunk* chunk) const;
+
+ private:
+  Chunk* first_;
+};
+
+/// A byte buffer optimized for zero-copy data transfer.
+///
+/// A `MultiBuf` consists of multiple `Chunk`s of data.
+///
+/// `MultiBuf` inherits privately from `MultiBufChunks`. This allows one class
+/// to provide either a byte-oriented or a `Chunk`-oriented interface, and keeps
+/// those interfaces separate.
+class MultiBuf : private MultiBufChunks {
+ public:
+  class iterator;
+  class const_iterator;
+
+  using ChunkIterator = MultiBufChunks::iterator;
+  using ConstChunkIterator = MultiBufChunks::const_iterator;
+
+  constexpr MultiBuf() : MultiBufChunks(nullptr) {}
+
+  static MultiBuf FromChunk(OwnedChunk&& chunk) {
+    return MultiBuf(std::move(chunk).Take());
+  }
+
+  MultiBuf(const MultiBuf&) = delete;
+  MultiBuf& operator=(const MultiBuf&) = delete;
+
+  constexpr MultiBuf(MultiBuf&& other) noexcept = default;
+
+  MultiBuf& operator=(MultiBuf&& other) noexcept = default;
 
   /// Decrements the reference count on the underlying chunks of data and
   /// empties this `MultiBuf` so that `size() == 0`.
@@ -64,17 +269,17 @@ class MultiBuf {
   /// This method is equivalent to `{ MultiBuf _unused = std::move(multibuf); }`
   ///
   /// This method will acquire a mutex and is not IRQ safe.
-  void Release() noexcept;
+  void Release() noexcept { MultiBufChunks::Release(); }
 
   /// This destructor will acquire a mutex and is not IRQ safe.
-  ~MultiBuf() { Release(); }
+  ~MultiBuf() = default;
 
   /// Returns the number of bytes in this container.
   ///
   /// This method's complexity is `O(Chunks().size())`.
-  [[nodiscard]] size_t size() const;
+  [[nodiscard]] size_t size() const { return MultiBufChunks::size_bytes(); }
 
-  /// Returns whether the container is empty (`size() == 0`).
+  /// Returns whether the `MultiBuf` contains any bytes (`size() == 0`).
   ///
   /// This method's complexity is `O(Chunks().size())`, but will be more
   /// efficient than `size() == 0` in most cases.
@@ -108,11 +313,15 @@ class MultiBuf {
   std::optional<ConstByteSpan> ContiguousSpan() const;
 
   /// Returns an iterator pointing to the first byte of this `MultiBuf`.
-  iterator begin() { return iterator(first_); }
+  iterator begin() { return iterator(Chunks().begin().chunk_); }
   /// Returns a const iterator pointing to the first byte of this `MultiBuf`.
-  const_iterator begin() const { return const_iterator(first_); }
+  const_iterator begin() const {
+    return const_iterator(Chunks().begin().chunk_);
+  }
   /// Returns a const iterator pointing to the first byte of this `MultiBuf`.
-  const_iterator cbegin() const { return const_iterator(first_); }
+  const_iterator cbegin() const {
+    return const_iterator(Chunks().begin().chunk_);
+  }
 
   /// Returns an iterator pointing to the end of this `MultiBuf`.
   iterator end() { return iterator::end(); }
@@ -125,7 +334,7 @@ class MultiBuf {
   /// its range backwards in memory. Returns `true` if the operation succeeded.
   ///
   /// This will only succeed if the first `Chunk` in this buffer points to a
-  /// section of a region that has unreferenced bytes preceeding it. See also
+  /// section of a region that has unreferenced bytes preceding it. See also
   /// `Chunk::ClaimPrefix`.
   ///
   /// This method will acquire a mutex and is not IRQ safe.
@@ -206,7 +415,9 @@ class MultiBuf {
   /// Pushes `tail` onto the end of this `MultiBuf`.
   ///
   /// This operation does not move any data and is `O(Chunks().size())`.
-  void PushSuffix(MultiBuf&& tail);
+  void PushSuffix(MultiBuf&& tail) {
+    return MultiBufChunks::PushSuffix(std::move(tail.Chunks()));
+  }
 
   /// Copies bytes from the multibuf into the provided buffer.
   ///
@@ -285,66 +496,50 @@ class MultiBuf {
   //--------------------- Chunk manipulation ----------------------//
   ///////////////////////////////////////////////////////////////////
 
-  /// Pushes `Chunk` onto the front of the `MultiBuf`.
-  ///
-  /// This operation does not move any data and is `O(1)`.
-  void PushFrontChunk(OwnedChunk&& chunk);
+  /// @copydoc MultiBufChunks::push_front
+  void PushFrontChunk(OwnedChunk&& chunk) {
+    MultiBufChunks::push_front(std::move(chunk));
+  }
 
-  /// Pushes `Chunk` onto the end of the `MultiBuf`.
-  ///
-  /// This operation does not move any data and is `O(Chunks().size())`.
-  void PushBackChunk(OwnedChunk&& chunk);
+  /// @copydoc MultiBufChunks::push_back
+  void PushBackChunk(OwnedChunk&& chunk) {
+    MultiBufChunks::push_back(std::move(chunk));
+  }
 
-  /// Removes the first `Chunk`.
-  ///
-  /// This operation does not move any data and is `O(1)`.
-  OwnedChunk TakeFrontChunk();
+  /// @copydoc MultiBufChunks::take_front
+  OwnedChunk TakeFrontChunk() { return MultiBufChunks::take_front(); }
 
-  /// Inserts `chunk` into the specified position in the `MultiBuf`.
-  ///
-  /// This operation does not move any data and is `O(Chunks().size())`.
-  ///
-  /// Returns an iterator pointing to the newly-inserted `Chunk`.
-  //
-  // Implementation note: `Chunks().size()` should be remain relatively
-  // small, but this could be made `O(1)` in the future by adding a `prev`
-  // pointer to the `ChunkIterator`.
-  ChunkIterator InsertChunk(ChunkIterator position, OwnedChunk&& chunk);
+  /// @copydoc MultiBufChunks::insert
+  MultiBufChunks::iterator InsertChunk(MultiBufChunks::iterator position,
+                                       OwnedChunk&& chunk) {
+    return MultiBufChunks::insert(position, std::move(chunk));
+  }
 
-  /// Removes a `Chunk` from the specified position.
-  ///
-  /// This operation does not move any data and is `O(Chunks().size())`.
-  ///
-  /// Returns an iterator pointing to the `Chunk` after the removed `Chunk`, or
-  /// `Chunks().end()` if this was the last `Chunk` in the `MultiBuf`.
-  //
-  // Implementation note: `Chunks().size()` should be remain relatively small,
-  // but this could be made `O(1)` in the future by adding a `prev` pointer to
-  // the `ChunkIterator`.
-  std::tuple<ChunkIterator, OwnedChunk> TakeChunk(ChunkIterator position);
+  /// @copydoc MultiBufChunks::take
+  std::tuple<MultiBufChunks::iterator, OwnedChunk> TakeChunk(
+      MultiBufChunks::iterator position) {
+    return MultiBufChunks::take(position);
+  }
 
-  /// Returns an iterable container which yields the `Chunk`s in this
-  /// `MultiBuf`.
-  constexpr ChunkIterable Chunks() { return ChunkIterable(first_); }
+  /// Returns a `Chunk`-oriented view of this `MultiBuf`.
+  constexpr MultiBufChunks& Chunks() { return *this; }
 
-  /// Returns an iterable container which yields the `const Chunk`s in this
-  /// `MultiBuf`.
-  constexpr const ChunkIterable Chunks() const { return ChunkIterable(first_); }
+  /// Returns a `const Chunk`-oriented view of this `MultiBuf`.
+  constexpr const MultiBufChunks& Chunks() const { return *this; }
 
   /// Returns an iterator pointing to the first `Chunk` in this `MultiBuf`.
-  constexpr ChunkIterator ChunkBegin() { return ChunkIterator(first_); }
+  constexpr ChunkIterator ChunkBegin() { return Chunks().begin(); }
   /// Returns an iterator pointing to the end of the `Chunk`s in this
   /// `MultiBuf`.
-  constexpr ChunkIterator ChunkEnd() { return ChunkIterator::end(); }
-  /// Returns a const iterator pointing to the first `Chunk` in this `MultiBuf`.
-  constexpr ConstChunkIterator ConstChunkBegin() {
-    return ConstChunkIterator(first_);
+  constexpr ChunkIterator ChunkEnd() { return Chunks().end(); }
+  /// Returns a const iterator pointing to the first `Chunk` in this
+  /// `MultiBuf`.
+  constexpr ConstChunkIterator ConstChunkBegin() const {
+    return Chunks().begin();
   }
   /// Returns a const iterator pointing to the end of the `Chunk`s in this
   /// `MultiBuf`.
-  constexpr ConstChunkIterator ConstChunkEnd() {
-    return ConstChunkIterator::end();
-  }
+  constexpr ConstChunkIterator ConstChunkEnd() const { return Chunks().end(); }
 
   ///////////////////////////////////////////////////////////////////
   //--------------------- Iterator details ------------------------//
@@ -480,160 +675,13 @@ class MultiBuf {
     const_iterator const_iter_;
   };
 
-  /// An iterable containing the `Chunk` s of a `MultiBuf`.
-  class ChunkIterable {
-   public:
-    using element_type = Chunk;
-    using value_type = Chunk;
-    using pointer = Chunk*;
-    using reference = Chunk&;
-    using const_pointer = const Chunk*;
-    using difference_type = std::ptrdiff_t;
-    using const_reference = const Chunk&;
-    using size_type = std::size_t;
-
-    /// Returns a reference to the first chunk.
-    ///
-    /// The behavior of this method is undefined when `size() == 0`.
-    Chunk& front() { return *first_; }
-    const Chunk& front() const { return *first_; }
-
-    /// Returns a reference to the final chunk.
-    ///
-    /// The behavior of this method is undefined when `size() == 0`.
-    ///
-    /// NOTE: this method is `O(size())`.
-    Chunk& back();
-    const Chunk& back() const;
-
-    constexpr ChunkIterator begin() { return ChunkIterator(first_); }
-    constexpr ConstChunkIterator begin() const { return cbegin(); }
-    constexpr ConstChunkIterator cbegin() const {
-      return ConstChunkIterator(first_);
-    }
-    constexpr ChunkIterator end() { return ChunkIterator::end(); }
-    constexpr ConstChunkIterator end() const { return cend(); }
-    constexpr ConstChunkIterator cend() const {
-      return ConstChunkIterator::end();
-    }
-
-    /// Returns the number of `Chunk`s in this iterable.
-    size_t size() const;
-
-   private:
-    Chunk* first_ = nullptr;
-    constexpr ChunkIterable(Chunk* chunk) : first_(chunk) {}
-    friend class MultiBuf;
-  };
-
-  /// A `std::forward_iterator` over the `Chunk`s of a `MultiBuf`.
-  class ChunkIterator {
-   public:
-    using value_type = Chunk;
-    using difference_type = std::ptrdiff_t;
-    using reference = Chunk&;
-    using pointer = Chunk*;
-    using iterator_category = std::forward_iterator_tag;
-
-    constexpr ChunkIterator() = default;
-
-    constexpr reference operator*() const { return *chunk_; }
-    constexpr pointer operator->() const { return chunk_; }
-
-    constexpr ChunkIterator& operator++() {
-      chunk_ = chunk_->next_in_buf_;
-      return *this;
-    }
-
-    constexpr ChunkIterator operator++(int) {
-      ChunkIterator tmp = *this;
-      ++(*this);
-      return tmp;
-    }
-
-    constexpr bool operator==(const ChunkIterator& other) const {
-      return chunk_ == other.chunk_;
-    }
-
-    constexpr bool operator!=(const ChunkIterator& other) const {
-      return chunk_ != other.chunk_;
-    }
-
-    constexpr Chunk* chunk() const { return chunk_; }
-
-    constexpr operator ConstChunkIterator() const {
-      return ConstChunkIterator(chunk_);
-    }
-
-   private:
-    constexpr ChunkIterator(Chunk* chunk) : chunk_(chunk) {}
-    static constexpr ChunkIterator end() { return ChunkIterator(nullptr); }
-    Chunk* chunk_ = nullptr;
-    friend class MultiBuf;
-    friend class ChunkIterable;
-  };
-
-  /// A const `std::forward_iterator` over the `Chunk`s of a `MultiBuf`.
-  class ConstChunkIterator {
-   public:
-    using value_type = const Chunk;
-    using difference_type = std::ptrdiff_t;
-    using reference = const Chunk&;
-    using pointer = const Chunk*;
-    using iterator_category = std::forward_iterator_tag;
-
-    constexpr ConstChunkIterator() = default;
-
-    constexpr reference operator*() const { return *chunk_; }
-    constexpr pointer operator->() const { return chunk_; }
-
-    constexpr ConstChunkIterator& operator++() {
-      chunk_ = chunk_->next_in_buf_;
-      return *this;
-    }
-
-    constexpr ConstChunkIterator operator++(int) {
-      ConstChunkIterator tmp = *this;
-      ++(*this);
-      return tmp;
-    }
-
-    constexpr bool operator==(const ConstChunkIterator& other) const {
-      return chunk_ == other.chunk_;
-    }
-
-    constexpr bool operator!=(const ConstChunkIterator& other) const {
-      return chunk_ != other.chunk_;
-    }
-
-    constexpr const Chunk* chunk() const { return chunk_; }
-
-   private:
-    constexpr ConstChunkIterator(const Chunk* chunk) : chunk_(chunk) {}
-    static constexpr ConstChunkIterator end() {
-      return ConstChunkIterator(nullptr);
-    }
-    const Chunk* chunk_ = nullptr;
-    friend class MultiBuf;
-    friend class ChunkIterable;
-    friend class ChunkIterator;
-  };
-
  private:
-  /// Returns the `Chunk` preceding `chunk` in this `MultiBuf`.
-  ///
-  /// Requires that this `MultiBuf` is not empty, and that `chunk` is either in
-  /// `MultiBuf` or is `nullptr`, in which case the last `Chunk` in `MultiBuf`
-  /// will be returned.
-  ///
-  /// This operation is `O(Chunks().size())`.
-  Chunk* Previous(Chunk* chunk) const;
+  explicit constexpr MultiBuf(Chunk* first_chunk)
+      : MultiBufChunks(first_chunk) {}
 
   StatusWithSize CopyFromAndOptionallyTruncate(ConstByteSpan source,
                                                size_t position,
                                                bool truncate);
-
-  Chunk* first_;
 };
 
 }  // namespace pw::multibuf

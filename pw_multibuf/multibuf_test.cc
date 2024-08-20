@@ -33,6 +33,10 @@ static_assert(std::forward_iterator<MultiBuf::ChunkIterator>);
 static_assert(std::forward_iterator<MultiBuf::ConstChunkIterator>);
 #endif  // __cplusplus >= 202002L
 
+static_assert(
+    sizeof(MultiBufChunks) == sizeof(MultiBuf),
+    "MultiBuf is a byte view of MultiBufChunks and does not add members");
+
 TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
 
 TEST(MultiBuf, WithOneChunkReleases) {
