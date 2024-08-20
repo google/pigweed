@@ -27,7 +27,7 @@ namespace pw::i2c {
 class Rp2040Initiator final : public Initiator {
  public:
   struct Config {
-    uint32_t clock_frequency;
+    uint32_t clock_frequency_hz;
     uint8_t sda_pin;
     uint8_t scl_pin;
   };

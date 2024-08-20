@@ -44,7 +44,7 @@ Status PicoStatusToPwStatus(int status) {
 void Rp2040Initiator::Enable() {
   std::lock_guard lock(mutex_);
 
-  i2c_init(instance_, config_.clock_frequency);
+  i2c_init(instance_, config_.clock_frequency_hz);
   gpio_set_function(config_.sda_pin, GPIO_FUNC_I2C);
   gpio_set_function(config_.scl_pin, GPIO_FUNC_I2C);
 

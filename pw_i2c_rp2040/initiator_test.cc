@@ -21,7 +21,7 @@ namespace pw::i2c {
 namespace {
 
 constexpr pw::i2c::Rp2040Initiator::Config ki2cConfig{
-    .clock_frequency = 400'000,
+    .clock_frequency_hz = 400'000,
     .sda_pin = 8,
     .scl_pin = 9,
 };

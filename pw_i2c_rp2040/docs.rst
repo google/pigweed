@@ -15,7 +15,7 @@ pw_i2c_rp2040
    #include "hardware/i2c.h"
 
    constexpr pw::i2c::Rp2040Initiator::Config ki2cConfig{
-     .clock_frequency = 400'000,
+     .clock_frequency_hz = 400'000,
      .sda_pin = 8,
      .scl_pin = 9,
    };
