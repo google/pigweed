@@ -82,12 +82,12 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   void GetResourceStatus(ConstByteSpan request,
                          rpc::RawUnaryResponder& responder);
 
-  void RegisterHandler(Handler& handler) {
-    thread_.AddTransferHandler(handler);
+  bool RegisterHandler(Handler& handler) {
+    return thread_.AddTransferHandler(handler);
   }
 
-  void UnregisterHandler(Handler& handler) {
-    thread_.RemoveTransferHandler(handler);
+  bool UnregisterHandler(Handler& handler) {
+    return thread_.RemoveTransferHandler(handler);
   }
 
   [[deprecated("Use set_max_window_size_bytes instead")]]

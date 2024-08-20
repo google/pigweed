@@ -223,15 +223,18 @@ class TransferThread : public thread::ThreadCore {
     SetStream(TransferStream::kServerWrite);
   }
 
-  void AddTransferHandler(Handler& handler) {
-    TransferHandlerEvent(EventType::kAddTransferHandler, handler);
+  bool AddTransferHandler(Handler& handler) {
+    return TransferHandlerEvent(EventType::kAddTransferHandler, handler);
   }
 
-  void RemoveTransferHandler(Handler& handler) {
-    TransferHandlerEvent(EventType::kRemoveTransferHandler, handler);
+  bool RemoveTransferHandler(Handler& handler) {
+    if (!TransferHandlerEvent(EventType::kRemoveTransferHandler, handler)) {
+      return false;
+    }
     // Ensure this function blocks until the transfer handler is fully cleaned
     // up.
     WaitUntilEventIsProcessed();
+    return true;
   }
 
   size_t max_chunk_size() const { return chunk_buffer_.size(); }
@@ -391,7 +394,7 @@ class TransferThread : public thread::ThreadCore {
   void SetStream(TransferStream stream);
   void HandleSetStreamEvent(TransferStream stream);
 
-  void TransferHandlerEvent(EventType type, Handler& handler);
+  bool TransferHandlerEvent(EventType type, Handler& handler);
 
   void HandleEvent(const Event& event);
   Context* FindContextForEvent(const Event& event) const;

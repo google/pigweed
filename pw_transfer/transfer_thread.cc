@@ -288,9 +288,9 @@ void TransferThread::UpdateClientTransfer(uint32_t handle_id,
   event_notification_.release();
 }
 
-void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
+bool TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
   if (!TryWaitForEventToProcess()) {
-    return;
+    return false;
   }
 
   next_event_.type = type;
@@ -301,6 +301,7 @@ void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
   }
 
   event_notification_.release();
+  return true;
 }
 
 void TransferThread::HandleEvent(const internal::Event& event) {

@@ -109,7 +109,8 @@ must have a globally-unique integer ID used to identify the resource.
 
 Handlers are registered with the transfer service. This may be done during
 system initialization (for static resources), or dynamically at runtime to
-support ephemeral transfer resources.
+support ephemeral transfer resources. A boolean is returned with registration/
+unregistration to indicate success or failure.
 
 **Example transfer handler implementation**
 
@@ -185,7 +186,7 @@ thread and registered with the system's RPC server.
    void InitTransferService() {
      // Register the handler with the transfer service, then the transfer service
      // with an RPC server.
-     transfer_service.RegisterHandler(magic_buffer_handler);
+     bool success = transfer_service.RegisterHandler(magic_buffer_handler);
      GetSystemRpcServer().RegisterService(transfer_service);
    }
 
