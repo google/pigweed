@@ -266,7 +266,7 @@ export class Call {
     if (this.responses.length !== 1) {
       throw Error(`Unexpected number of responses: ${this.responses.length}`);
     }
-    return [this.status!, this.responses.last()];
+    return [this.status!, this.responses.last()!];
   }
 
   protected async streamWait(timeoutMs?: number): Promise<[Status, Message[]]> {
