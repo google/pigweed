@@ -611,6 +611,7 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     if (!stream.ok()) {
       PW_LOG_DEBUG("Ignoring DATA on closed stream id=%" PRIu32,
                    frame.stream_id);
+      PW_TRY(ProcessIgnoredFrame(frame));
       // Stream has been fully closed: silently ignore.
       return OkStatus();
     }
@@ -618,6 +619,7 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     if (stream->get().half_closed) {
       PW_LOG_ERROR("Recv DATA on half-closed stream id=%" PRIu32,
                    frame.stream_id);
+      PW_TRY(ProcessIgnoredFrame(frame));
       // RFC 9113 §6.1: "If a DATA frame is received whose stream is not in the
       // "open" or "half-closed (local)" state, the recipient MUST respond with
       // a stream error of type STREAM_CLOSED."
@@ -797,6 +799,7 @@ Status Connection::Reader::ProcessHeadersFrame(const FrameHeader& frame) {
     auto state = connection_.LockState();
     if (auto stream = state->LookupStream(frame.stream_id); stream.ok()) {
       PW_LOG_DEBUG("Client sent HEADERS after the first stream message");
+      PW_TRY(ProcessIgnoredFrame(frame));
       // grpc requests cannot contain trailers.
       // See: https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md.
       PW_TRY(SendRstStreamAndClose(stream->get(), Http2Error::PROTOCOL_ERROR));
@@ -806,6 +809,7 @@ Status Connection::Reader::ProcessHeadersFrame(const FrameHeader& frame) {
 
   if ((frame.flags & FLAGS_END_STREAM) != 0) {
     PW_LOG_DEBUG("Client sent HEADERS with END_STREAM");
+    PW_TRY(ProcessIgnoredFrame(frame));
     // grpc requests must send END_STREAM in an empty DATA frame.
     // See: https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md.
     PW_TRY(SendRstStream(
