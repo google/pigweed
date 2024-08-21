@@ -182,6 +182,12 @@ pw_cc_test(
 pw_cc_test(
     name = "mpsc_stream_test",
     srcs = ["mpsc_stream_test.cc"],
+    # TODO: b/361369435 - This test crashes on rp2.
+    target_compatible_with = select({
+        "@pico-sdk//bazel/constraint:rp2040": ["@platforms//:incompatible"],
+        "@pico-sdk//bazel/constraint:rp2350": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":mpsc_stream",
         "//pw_containers:vector",
