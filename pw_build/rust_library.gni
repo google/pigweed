@@ -61,7 +61,6 @@ template("pw_rust_library") {
     }
 
     crate_name = string_replace(crate_name, "-", "_")
-    output_name = crate_name
     output_dir = "${target_out_dir}/lib"
     add_global_link_deps = true
   }
