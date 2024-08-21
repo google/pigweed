@@ -151,6 +151,12 @@ pw_cc_binary(
 pw_cc_test(
     name = "spin_lock",
     srcs = ["spin_lock.cc"],
+    # TODO: b/358411629 - This test times out on rp2.
+    target_compatible_with = select({
+        "@pico-sdk//bazel/constraint:rp2040": ["@platforms//:incompatible"],
+        "@pico-sdk//bazel/constraint:rp2350": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":named_u32",
         "//pw_allocator:synchronized_allocator",
