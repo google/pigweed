@@ -17,6 +17,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::tls_client {
+namespace {
 
 TEST(TLSClientMbedTLS, CreateSucceed) {
   auto options = SessionOptions().set_transport(stream::NullStream::Instance());
@@ -38,4 +39,5 @@ TEST(TLSClientMbedTLS, EntropySourceFail) {
   ASSERT_NE(res.status(), OkStatus());
 }
 
+}  // namespace
 }  // namespace pw::tls_client

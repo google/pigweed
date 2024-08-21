@@ -17,6 +17,8 @@
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
+namespace {
+
 // PW_ASSERT() should always be enabled, and always evaluate the expression.
 TEST(Assert, AssertTrue) {
   int evaluated = 1;
@@ -60,3 +62,5 @@ TEST(Assert, DebugAssertFalse) {
     PW_DASSERT(false);
   }
 }
+
+}  // namespace

@@ -18,6 +18,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::sync::test {
+namespace {
 
 struct NotALock {};
 
@@ -59,4 +60,5 @@ TEST(LockTraitsTest, IsTimedLockable) {
   EXPECT_TRUE((is_timed_lockable_v<FakeTimedLockable, FakeClock>));
 }
 
+}  // namespace
 }  // namespace pw::sync::test

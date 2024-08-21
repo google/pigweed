@@ -15,6 +15,7 @@
 #include "pw_build_private/file_prefix_map_test.h"
 
 namespace pw::build::test {
+namespace {
 
 static_assert(StringsAreEqual("", ""));
 static_assert(StringsAreEqual("test", "test"));
@@ -27,4 +28,5 @@ static_assert(StringsAreEqual(PW_BUILD_EXPECTED_SOURCE_PATH, __FILE__),
               "The __FILE__ macro should be " PW_BUILD_EXPECTED_SOURCE_PATH
               ", but it is " __FILE__);
 
+}  // namespace
 }  // namespace pw::build::test

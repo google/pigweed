@@ -26,6 +26,8 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::multisink {
+namespace {
+
 using Drain = MultiSink::Drain;
 using Listener = MultiSink::Listener;
 
@@ -662,4 +664,5 @@ TEST(UnsafeIteration, Subset) {
   EXPECT_EQ(kExpectedEntriesMaxEntries, entry_count);
 }
 
+}  // namespace
 }  // namespace pw::multisink

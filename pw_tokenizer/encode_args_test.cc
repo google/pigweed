@@ -17,6 +17,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::tokenizer {
+namespace {
 
 static_assert(MinEncodingBufferSizeBytes<>() == 4);
 static_assert(MinEncodingBufferSizeBytes<bool>() == 4 + 2);
@@ -49,4 +50,5 @@ TEST(TokenizerCEncodingFunctions, EncodeInt64) {
   EXPECT_EQ(buffer[0], 2);  // 1 encodes to 2 with ZigZag
 }
 
+}  // namespace
 }  // namespace pw::tokenizer

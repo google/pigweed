@@ -15,9 +15,13 @@
 #include "pw_protobuf_compiler/nanopb_test_protos/nanopb_test.pb.h"
 #include "pw_unit_test/framework.h"
 
+namespace {
+
 TEST(Nanopb, CompilesProtobufs) {
   pw_protobuf_compiler_nanopb_test_protos_Point point = {4, 8, "point"};
   EXPECT_EQ(point.x, 4u);
   EXPECT_EQ(point.y, 8u);
   EXPECT_EQ(sizeof(point.name), 16u);
 }
+
+}  // namespace

@@ -18,6 +18,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::metric {
+namespace {
 
 TEST(Metric, FloatFromObject) {
   // Note leading bit is 1; it is stripped from the name to store the type.
@@ -95,6 +96,11 @@ PW_METRIC(global_y, "global_y", 6.0f);
 PW_METRIC_GROUP(global_group, "a_global_group");
 PW_METRIC(global_group, global_z, "global_x", 5555u);
 PW_METRIC(global_group, global_w, "global_y", 6.0f);
+
+TEST(Metric, GlobalScope) {
+  EXPECT_EQ(global_x.value(), 5555u);
+  EXPECT_EQ(global_y.value(), 6.0f);
+}
 
 // A fake object to illustrate the API and show nesting metrics.
 // This also tests creating metrics as members inside a class.
@@ -237,4 +243,5 @@ TEST(Metric, StaticWithinAFunction) {
   EXPECT_EQ(metric->as_int(), 2u);
 }
 
+}  // namespace
 }  // namespace pw::metric

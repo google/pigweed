@@ -24,6 +24,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
+namespace {
 
 class TestServiceImpl final
     : public test::pw_rpc::raw::TestService::Service<TestServiceImpl> {
@@ -558,4 +559,5 @@ TEST(RawServerReaderWriter, UsableAsWriter) {
       kWriterData);
 }
 
+}  // namespace
 }  // namespace pw::rpc

@@ -20,6 +20,7 @@
 
 namespace pw {
 namespace metric {
+namespace {
 
 // Create two global metrics; make sure they show up.
 PW_METRIC_GLOBAL(stat_x, "stat_x", 123u);
@@ -53,9 +54,14 @@ TEST(Global, Groups) {
   EXPECT_EQ(power_metrics.metrics().size(), 3u);
 }
 
+}  // namespace
 }  // namespace metric
 }  // namespace pw
+
+namespace {
 
 // this is a compilation test to make sure metrics can be defined outside of
 // ::pw::metric
 PW_METRIC_GROUP_GLOBAL(global_group, "global group");
+
+}  // namespace

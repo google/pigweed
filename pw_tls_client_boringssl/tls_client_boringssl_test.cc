@@ -21,6 +21,7 @@
 #include "test_certs_and_keys.h"
 
 namespace pw::tls_client {
+namespace {
 
 TEST(TLSClientBoringSSL, SessionCreationSucceeds) {
   SessionOptions options;
@@ -28,4 +29,5 @@ TEST(TLSClientBoringSSL, SessionCreationSucceeds) {
   ASSERT_EQ(res.status(), PW_STATUS_UNIMPLEMENTED);
 }
 
+}  // namespace
 }  // namespace pw::tls_client

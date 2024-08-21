@@ -19,6 +19,8 @@
 #include "pw_trace/trace.h"
 #include "pw_unit_test/framework.h"
 
+namespace {
+
 TEST(TokenizedTrace, Simple) {
   PW_TRACE_SET_ENABLED(true);
   pw::trace::ClearBuffer();
@@ -163,3 +165,5 @@ TEST(TokenizedTrace, DeringAndViewRawBuffer) {
   buf = pw::trace::DeringAndViewRawBuffer();
   EXPECT_GT(buf.size(), size_start);
 }
+
+}  // namespace

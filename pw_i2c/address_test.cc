@@ -17,6 +17,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::i2c {
+namespace {
 
 TEST(Address, SevenBitConstexpr) {
   constexpr Address kSevenBit =
@@ -45,4 +46,5 @@ TEST(Address, TenBitRuntimeChecked) {
 // TODO: b/234882063 - Add tests to ensure the constexpr constructors fail to
 // compile with invalid addresses once no-copmile tests are set up in Pigweed.
 
+}  // namespace
 }  // namespace pw::i2c

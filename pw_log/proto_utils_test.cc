@@ -23,6 +23,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::log {
+namespace {
 
 void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
                              pw::log_tokenized::Metadata expected_metadata,
@@ -504,4 +505,5 @@ TEST(UtilsTest, EncodeLog_InsufficientSpace) {
   EXPECT_TRUE(result.status().IsResourceExhausted());
 }
 
+}  // namespace
 }  // namespace pw::log

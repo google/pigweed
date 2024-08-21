@@ -618,7 +618,9 @@ C++ code
 * All Pigweed C++ code must be in the ``pw`` namespace. Namespaces for modules
   should be nested under ``pw``. For example, ``pw::string::Format()``.
 * Whenever possible, private code should be in a source (.cc) file and placed in
-  anonymous namespace nested under ``pw``.
+  anonymous namespace nested under ``pw``. Unit tests must be declared in an
+  anonymous namespace to avoid potential linking issues when building multiple
+  tests in one binary.
 * If private code must be exposed in a header file, it must be in a namespace
   nested under ``pw``. The namespace may be named for its subsystem or use a
   name that designates it as private, such as ``internal``.

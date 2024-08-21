@@ -23,6 +23,7 @@
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 
 namespace pw::protobuf {
+namespace {
 
 TEST(ProtoHelper, WriteProtoStringToBytesMapEntry) {
   // The following defines an instance of the message below:
@@ -153,4 +154,5 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntryInvalidArgument) {
       Status::InvalidArgument());
 }
 
+}  // namespace
 }  // namespace pw::protobuf

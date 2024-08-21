@@ -28,6 +28,7 @@
 using namespace std::chrono_literals;
 
 namespace pw::async {
+namespace {
 
 // Lambdas can only capture one ptr worth of memory without allocating, so we
 // group the data we want to share between tasks and their containing tests
@@ -228,4 +229,5 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   ASSERT_EQ(count, 3);
 }
 
+}  // namespace
 }  // namespace pw::async

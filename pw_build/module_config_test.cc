@@ -15,7 +15,9 @@
 #include "pw_thread_freertos/config.h"
 
 namespace pw::build::test {
+namespace {
 
 static_assert(PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED == 1);
 
+}
 }  // namespace pw::build::test

@@ -23,6 +23,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
+namespace {
 
 class TestServiceImpl final
     : public test::pw_rpc::nanopb::TestService::Service<TestServiceImpl> {
@@ -423,4 +424,5 @@ TEST(NanopbServerReader, CallbacksMoveCorrectly) {
   EXPECT_EQ(request.status_code, received_request.status_code);
 }
 
+}  // namespace
 }  // namespace pw::rpc

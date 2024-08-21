@@ -17,6 +17,7 @@
 
 namespace pw::rpc {
 namespace test {
+namespace {
 
 #if PW_NC_TEST(NoMethods)
 PW_NC_EXPECT("TestUnaryRpc");
@@ -32,7 +33,8 @@ class TestService {};
 
 #endif  // PW_NC_TEST
 
-TestService test_service;
+[[maybe_unused]] TestService test_service;
 
+}  // namespace
 }  // namespace test
 }  // namespace pw::rpc

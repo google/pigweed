@@ -20,6 +20,7 @@
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 
 namespace pw::protobuf {
+namespace {
 
 TEST(ProtoHelper, IterateMessage) {
   // clang-format off
@@ -769,4 +770,5 @@ TEST(ProtoHelper, AsStringToBytesMapMalformed) {
   ASSERT_EQ(count, 2ULL);
 }
 
+}  // namespace
 }  // namespace pw::protobuf

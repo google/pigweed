@@ -22,6 +22,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw {
+namespace {
 
 using namespace std::string_view_literals;
 
@@ -538,14 +539,14 @@ TEST(InlineString, Construct_StringView) {
   PW_NC_EXPECT_CLANG("no matching function for call to 'TakesInlineString'");
   PW_NC_EXPECT_GCC(
       "invalid initialization of reference of type .* from expression of type "
-      "'const pw::StringViewLike<char>'");
+      "'const pw::.*StringViewLike<char>'");
   TakesInlineString(kStringViewLike10);
 #elif PW_NC_TEST(Construct_StringView_NoImplicitConvFromStringViewLikeInInit1)
-  PW_NC_EXPECT_GCC("could not convert 'pw::kStringViewLike10'");
+  PW_NC_EXPECT_GCC("could not convert 'pw::.*kStringViewLike10'");
   PW_NC_EXPECT_CLANG("no viable conversion from 'const StringViewLike<char>'");
   (void)HoldsString{.value = kStringViewLike10};
 #elif PW_NC_TEST(Construct_StringView_NoImplicitConvFromStringViewLikeInInit2)
-  PW_NC_EXPECT_GCC("could not convert 'pw::kStringViewLike10'");
+  PW_NC_EXPECT_GCC("could not convert 'pw::.*kStringViewLike10'");
   PW_NC_EXPECT_CLANG("no viable conversion from 'const StringViewLike<char>'");
   (void)HoldsString{kStringViewLike10};
 #endif  // PW_NC_TEST
@@ -2128,4 +2129,5 @@ TEST(BasicStrings, ByteString) {
   EXPECT_LT(bytes, higher_bytes);
 }
 
+}  // namespace
 }  // namespace pw

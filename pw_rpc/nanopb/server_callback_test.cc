@@ -22,6 +22,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
+namespace {
 
 class TestServiceImpl final
     : public test::pw_rpc::nanopb::TestService::Service<TestServiceImpl> {
@@ -110,4 +111,5 @@ TEST(NanopbTestMethodContext, ResponseWithCallbacks) {
   EXPECT_EQ(9u, decoder_context.values[2]);
 }
 
+}  // namespace
 }  // namespace pw::rpc

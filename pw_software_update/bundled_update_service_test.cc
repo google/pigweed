@@ -16,4 +16,8 @@
 
 #include "pw_unit_test/framework.h"
 
+namespace {
+
 TEST(BundledUpdateService, Compiles) {}
+
+}  // namespace

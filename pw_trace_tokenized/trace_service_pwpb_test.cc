@@ -22,6 +22,7 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::trace {
+namespace {
 
 class TraceServiceTest : public ::testing::Test {
  public:
@@ -128,4 +129,5 @@ TEST_F(TraceServiceTest, GetClockParameters) {
       static_cast<int32_t>(*context.response().clock_parameters.epoch_type));
 }
 
+}  // namespace
 }  // namespace pw::trace

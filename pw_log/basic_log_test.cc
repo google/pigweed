@@ -28,6 +28,8 @@
 
 #include "pw_unit_test/framework.h"
 
+namespace {
+
 // TODO: b/235291136 - Test unsigned integer logging (32 and 64 bit); test
 // pointer logging.
 
@@ -245,3 +247,5 @@ TEST(CustomFormatString, ErrorLevel) {
 TEST(CustomFormatString, CriticalLevel) {
   PW_LOG_CRITICAL("Critical, emergency log. Device should not reboot");
 }
+
+}  // namespace
