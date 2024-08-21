@@ -37,6 +37,15 @@ template("pw_rust_proc_macro") {
       pw_toolchain_SCOPE.is_host_toolchain) {
     pw_rust_library(target_name) {
       forward_variables_from(invoker, "*")
+
+      if (!defined(rustflags)) {
+        rustflags = []
+      }
+
+      rustflags += [
+        "--extern",
+        "proc_macro",
+      ]
       underlying_target_type = "rust_proc_macro"
     }
   } else {
