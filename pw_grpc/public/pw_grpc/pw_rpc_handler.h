@@ -52,6 +52,7 @@ class PwRpcHandler : public Connection::RequestCallbacks,
     StreamId id;
     uint32_t service_id;
     uint32_t method_id;
+    pw::rpc::MethodType method_type;
     // Used for client streaming to determine whether initial request packet has
     // been sent on yet.
     bool sent_request = false;
@@ -62,7 +63,10 @@ class PwRpcHandler : public Connection::RequestCallbacks,
   void ResetAllStreams();
   void ResetStream(StreamId id);
   void MarkSentRequest(StreamId id);
-  Status CreateStream(StreamId id, uint32_t service_id, uint32_t method_id);
+  Status CreateStream(StreamId id,
+                      uint32_t service_id,
+                      uint32_t method_id,
+                      pw::rpc::MethodType method_type);
 
   sync::InlineBorrowable<std::array<Stream, internal::kMaxConcurrentStreams>>
       streams_;
