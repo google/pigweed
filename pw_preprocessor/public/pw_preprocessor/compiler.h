@@ -209,6 +209,15 @@
   PW_MODIFY_DIAGNOSTIC(kind, option)
 #endif  // __clang__
 
+/// Applies ``PW_MODIFY_DIAGNOSTIC`` only for Clang. This is useful for warnings
+/// that aren't supported by or don't need to be changed in other compilers.
+#ifdef __clang__
+#define PW_MODIFY_DIAGNOSTIC_CLANG(kind, option) \
+  PW_MODIFY_DIAGNOSTIC(kind, option)
+#else
+#define PW_MODIFY_DIAGNOSTIC_CLANG(kind, option) _PW_REQUIRE_SEMICOLON
+#endif  // __clang__
+
 /// Expands to a `_Pragma` with the contents as a string. `_Pragma` must take a
 /// single string literal; this can be used to construct a `_Pragma` argument.
 #define PW_PRAGMA(contents) _Pragma(#contents)
