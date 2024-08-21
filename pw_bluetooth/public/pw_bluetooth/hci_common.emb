@@ -1102,6 +1102,35 @@ enum PinType:
   FIXED    = 0x01
 
 
+enum InquiryScanType:
+  [maximum_bits: 8]
+  STANDARD   = 0x00
+    -- Standard scan (Default) (Mandatory)
+
+  INTERLACED = 0x01
+
+
+enum InquiryMode:
+  [maximum_bits: 8]
+  STANDARD = 0x00
+    -- Standard Inquiry Result format (default)
+
+  RSSI     = 0x01
+    -- Inquiry Result format with RSSI
+
+  EXTENDED = 0x02
+    -- Inquiry Result format with RSSI or EIR format
+
+
+enum PageScanType:
+  [maximum_bits: 8]
+  STANDARD_SCAN   = 0x00
+    -- Standard scan (default) (mandatory)
+
+  INTERLACED_SCAN = 0x01
+    -- Interlaced scan (optional)
+
+
 struct LinkKey:
   0 [+16]  UInt:8[16]  value
 

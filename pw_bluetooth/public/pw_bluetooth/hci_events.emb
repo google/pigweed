@@ -501,6 +501,15 @@ struct WritePinTypeCommandCompleteEvent:
   $next [+1]         hci.StatusCode            status
 
 
+struct ReadLocalNameCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.12 Read Local Name command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+248]       UInt:8[248]               local_name
+    -- A UTF-8 encoded User Friendly Descriptive Name for the device with type utf8{248}
+
+
 struct ReadScanEnableCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.3.17 Read Scan Enable command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
@@ -508,6 +517,54 @@ struct ReadScanEnableCommandCompleteEvent:
   $next [+1]                                   hci.StatusCode            status
   $next [+1]  bits:
     0     [+hci.ScanEnableBits.$size_in_bits]  hci.ScanEnableBits        scan_enable
+
+
+struct ReadPageScanActivityCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.19 Read Page Scan Activity command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      page_scan_interval
+    -- Time = N * 0.625 ms
+    -- Range: 11.25 ms to 2560 ms; only even values are valid
+    [requires: 0x0012 <= this <= 0x1000]
+
+  $next [+2]         UInt                      page_scan_window
+    -- Time = N * 0.625 ms
+    -- Range: 10.625 ms to 2560 ms
+    [requires: 0x0011 <= this <= 0x1000]
+
+
+struct ReadInquiryScanTypeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.47 Read Inquiry Scan Type command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         hci.InquiryScanType       inquiry_scan_type
+
+
+struct ReadInquiryModeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.49 Read Inquiry Mode command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         hci.InquiryMode           inquiry_mode
+
+
+struct ReadPageScanTypeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.51 Read Page Scan Type command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         hci.PageScanType          page_scan_type
+
+
+struct ReadSimplePairingModeCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.3.58 Read Simple Pairing Mode command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         hci.GenericEnableParam    simple_pairing_mode
 
 
 struct ReadLocalVersionInfoCommandCompleteEvent:

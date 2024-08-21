@@ -122,14 +122,6 @@ enum OobDataPresent:
   P192_AND_P256 = 0x03
 
 
-enum InquiryScanType:
-  [maximum_bits: 8]
-  STANDARD   = 0x00
-    -- Standard scan (Default) (Mandatory)
-
-  INTERLACED = 0x01
-
-
 struct LocalName:
   0 [+248]  UInt:8[248]  local_name
 
@@ -246,27 +238,6 @@ enum LEPrivacyMode:
 
   DEVICE  = 0x01
     -- Use Device Privacy Mode for this peer device.
-
-
-enum InquiryMode:
-  [maximum_bits: 8]
-  STANDARD = 0x00
-    -- Standard Inquiry Result format (default)
-
-  RSSI     = 0x01
-    -- Inquiry Result format with RSSI
-
-  EXTENDED = 0x02
-    -- Inquiry Result format with RSSI or EIR format
-
-
-enum PageScanType:
-  [maximum_bits: 8]
-  STANDARD_SCAN   = 0x00
-    -- Standard scan (default) (mandatory)
-
-  INTERLACED_SCAN = 0x01
-    -- Interlaced scan (optional)
 
 
 bits LEEventMask:
@@ -1414,9 +1385,8 @@ struct WriteInquiryScanTypeCommand:
   -- 7.3.48 Write Inquiry Scan Type (v1.2) (BR/EDR)
   -- HCI_Write_Inquiry_Scan_Type
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]  hci.CommandHeader  header
-  $next [+1]         InquiryScanType    inquiry_scan_type
-    -- See enum class InquiryScanType in this file for possible values
+  0     [+hdr_size]  hci.CommandHeader    header
+  $next [+1]         hci.InquiryScanType  inquiry_scan_type
 
 
 struct ReadInquiryModeCommand:
@@ -1431,7 +1401,7 @@ struct WriteInquiryModeCommand:
   -- HCI_Write_Inquiry_Mode
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0     [+hdr_size]  hci.CommandHeader  header
-  $next [+1]         InquiryMode        inquiry_mode
+  $next [+1]         hci.InquiryMode    inquiry_mode
 
 
 struct ReadPageScanTypeCommand:
@@ -1446,7 +1416,7 @@ struct WritePageScanTypeCommand:
   -- HCI_Write_Page_Scan_Type
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0     [+hdr_size]  hci.CommandHeader  header
-  $next [+1]         PageScanType       page_scan_type
+  $next [+1]         hci.PageScanType   page_scan_type
 
 # 7.3.53 Read AFH Channel Assessment Mode command
 # HCI_Read_AFH_Channel_Assessment_Mode
