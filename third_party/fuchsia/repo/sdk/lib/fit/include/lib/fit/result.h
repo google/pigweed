@@ -56,6 +56,10 @@
 //                               // fit::result<E>).
 
 #include "pw_assert/assert.h"
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wshadow-field-in-constructor");
 
 namespace fit {
 
@@ -802,5 +806,7 @@ constexpr bool operator>=(const T& lhs, const result<F, U>& rhs) {
 }
 
 }  // namespace fit
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 #endif  // LIB_FIT_RESULT_H_

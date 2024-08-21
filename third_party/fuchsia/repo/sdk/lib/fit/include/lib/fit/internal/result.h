@@ -14,6 +14,11 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wshadow-field-in-constructor");
+
 namespace fit {
 
 // Forward declarations.
@@ -60,7 +65,7 @@ struct template_matcher {
 };
 
 template <typename T, template <typename...> class U, typename = bool>
-struct is_match : decltype(template_matcher<U>::match(std::declval<T>())) {};
+struct is_match : decltype(template_matcher<U>::match(std::declval<T>())){};
 
 template <typename T, template <typename...> class U>
 struct is_match<T, U, requires_conditions<std::is_void<T>>> : std::false_type {};
@@ -440,5 +445,7 @@ using storage = storage_type<storage_class_trait<E, Ts...>, E, Ts...>;
 
 }  // namespace internal
 }  // namespace fit
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 #endif  // LIB_FIT_INTERNAL_RESULT_H_
