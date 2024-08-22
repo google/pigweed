@@ -46,5 +46,15 @@ TEST(CompilerMacros, ModifyDiagnostics) {
   PW_MODIFY_DIAGNOSTICS_POP();
 }
 
+TEST(CompilerMacros, ModifyDiagnosticsClangGcc) {
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wunused-variable");
+  PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wunused-variable");
+
+  int this_variable_also_is_unused;
+
+  PW_MODIFY_DIAGNOSTICS_POP();
+}
+
 }  // namespace
 }  // namespace pw::preprocessor
