@@ -144,7 +144,7 @@ PW_USED void pw_PackageAndHandleCpuException(
 // Captures faulting CPU state on the main stack (MSP), then calls the exception
 // handlers.
 // This function should be called immediately after an exception.
-PW_USED void pw_cpu_exception_Entry() {
+PW_USED PW_NO_PROLOGUE void pw_cpu_exception_Entry() {
   asm volatile(
       // clang-format off
 

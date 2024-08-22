@@ -260,11 +260,6 @@ pw_cc_test(
         "@platforms//cpu:armv6-m": ["exception_entry_test_armv6m.cc"],
         "//conditions:default": ["exception_entry_test.cc"],
     }),
-    # TODO: https://pwbug.dev/323215726 - Broken on Cortex-M33.
-    target_compatible_with = select({
-        "@platforms//cpu:armv8-m": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":config",
         ":cpu_exception",

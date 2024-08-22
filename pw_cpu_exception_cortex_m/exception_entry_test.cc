@@ -45,8 +45,6 @@ constexpr uint32_t kUsageFaultEnableMask = 0x1 << 18;
 constexpr uint32_t kFpuEnableMask = (0xFu << 20);
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-volatile uint32_t& cortex_m_vtor =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED08u);
 volatile uint32_t& cortex_m_ccr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED14u);
 volatile uint32_t& cortex_m_cpacr =
@@ -137,7 +135,11 @@ void BeginBaseFaultTest() {
   );
 
   // Check that the stack align bit was not set.
-  EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit, 0u);
+  // When testing nested exceptions, the nested exception is at index 0, with
+  // this first exception stored at index 1 as it's handled second.
+  EXPECT_EQ(
+      captured_states[exceptions_handled - 1].base.psr & kPsrExtraStackAlignBit,
+      0u);
 }
 
 // Populate the device's registers with testable values, then trigger exception.
