@@ -64,7 +64,7 @@ def run_test_on_board(
 
     Returns whether it succeeded.
     """
-    if not flash(board, baud_rate, binary):
+    if not flash(board, binary):
         return False
     serial_device = serial.Serial(board.serial_port, baud_rate, timeout=0.1)
     reader = rpc.SerialReader(serial_device, 8192)

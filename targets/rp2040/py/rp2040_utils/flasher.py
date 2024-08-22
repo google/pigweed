@@ -22,8 +22,6 @@ import subprocess
 import sys
 import time
 
-import serial  # type: ignore
-
 import pw_cli.log
 from pw_cli.interactive_prompts import interactive_index_select
 
@@ -45,7 +43,7 @@ except ImportError:
     _PICOTOOL_COMMAND = 'picotool'
 
 
-def flash(board_info: PicoBoardInfo, baud_rate: int, binary: Path) -> bool:
+def flash(board_info: PicoBoardInfo, binary: Path) -> bool:
     """Load `binary` onto `board_info` and wait for the device to become
     available.
 
@@ -54,7 +52,7 @@ def flash(board_info: PicoBoardInfo, baud_rate: int, binary: Path) -> bool:
         return _load_debugprobe_binary(board_info, binary)
     if not _load_picotool_binary(board_info, binary):
         return False
-    if not _wait_for_serial_port(board_info, baud_rate):
+    if not _wait_for_serial_port(board_info):
         _LOG.error(
             'Binary flashed but unable to connect to the serial port: %s',
             board_info.serial_port,
@@ -144,7 +142,7 @@ def _load_picotool_binary(board_info: PicoBoardInfo, binary: Path) -> bool:
     return True
 
 
-def _wait_for_serial_port(board_info: PicoBoardInfo, baud_rate: int) -> bool:
+def _wait_for_serial_port(board_info: PicoBoardInfo) -> bool:
     """Waits for a serial port to enumerate."""
     start_time = time.monotonic()
     timeout_seconds = 10.0
@@ -168,15 +166,13 @@ def _wait_for_serial_port(board_info: PicoBoardInfo, baud_rate: int) -> bool:
         if board_info.serial_port is not None:
             # Connect to the serial port.
             try:
-                serial.Serial(baudrate=baud_rate, port=board_info.serial_port)
-                return True
-            except serial.serialutil.SerialException:
-                # Unable to connect, try again.
+                with open(board_info.serial_port, 'r+b', buffering=0):
+                    return True
+            except (OSError, IOError):
                 _LOG.debug(
                     'Unable to connect to %s, retrying', board_info.serial_port
                 )
                 time.sleep(0.1)
-
     _LOG.error(
         'Binary flashed but unable to connect to the serial port: %s',
         board_info.serial_port,
@@ -366,7 +362,7 @@ def main():
     pw_cli.log.install(level=log_level)
     board = device_from_args(args, interactive=True)
     _LOG.info('Flashing bus %s port %s', board.bus, board.port)
-    flashed = flash(board, args.baud, args.binary)
+    flashed = flash(board, args.binary)
     sys.exit(0 if flashed else 1)
 
 
