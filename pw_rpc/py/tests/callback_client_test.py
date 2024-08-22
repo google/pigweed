@@ -52,6 +52,7 @@ service PublicService {
 }
 """
 
+PROTOS = python_protos.Library.from_strings(TEST_PROTO_1)
 CLIENT_CHANNEL_ID: int = 489
 
 
@@ -63,13 +64,12 @@ class _CallbackClientImplTestBase(unittest.TestCase):
     """Supports writing tests that require responses from an RPC server."""
 
     def setUp(self) -> None:
-        self._protos = python_protos.Library.from_strings(TEST_PROTO_1)
-        self._request = self._protos.packages.pw.test1.SomeMessage
+        self._request = PROTOS.packages.pw.test1.SomeMessage
 
         self._client = client.Client.from_modules(
             callback_client.Impl(),
             [client.Channel(CLIENT_CHANNEL_ID, self._handle_packet)],
-            self._protos.modules(),
+            PROTOS.modules(),
         )
         self._service = self._client.channel(
             CLIENT_CHANNEL_ID
@@ -311,7 +311,7 @@ class CallbackClientImplTest(_CallbackClientImplTestBase):
         rpc_client = client.Client.from_modules(
             callback_client.Impl(99, 100),
             [client.Channel(CLIENT_CHANNEL_ID, lambda *a, **b: None)],
-            self._protos.modules(),
+            PROTOS.modules(),
         )
         rpcs = rpc_client.channel(CLIENT_CHANNEL_ID).rpcs
 
@@ -540,7 +540,7 @@ class UnaryTest(_CallbackClientImplTestBase):
         self.assertEqual(context.exception.__cause__, exception)
 
     def test_unary_response(self) -> None:
-        proto = self._protos.packages.pw.test1.SomeMessage(magic_number=123)
+        proto = PROTOS.packages.pw.test1.SomeMessage(magic_number=123)
         self.assertEqual(
             repr(callback_client.UnaryResponse(Status.ABORTED, proto)),
             '(Status.ABORTED, pw.test1.SomeMessage(magic_number=123))',
@@ -556,7 +556,7 @@ class UnaryTest(_CallbackClientImplTestBase):
         self._client = client.Client.from_modules(
             callback_client.Impl(on_call_hook=hook_function),
             [client.Channel(CLIENT_CHANNEL_ID, self._handle_packet)],
-            self._protos.modules(),
+            PROTOS.modules(),
         )
 
         self._service = self._client.channel(
@@ -1263,7 +1263,7 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
         self.assertEqual(result.responses, list(call.responses))
 
     def test_stream_response(self) -> None:
-        proto = self._protos.packages.pw.test1.SomeMessage(magic_number=123)
+        proto = PROTOS.packages.pw.test1.SomeMessage(magic_number=123)
         self.assertEqual(
             repr(callback_client.StreamResponse(Status.ABORTED, [proto] * 2)),
             '(Status.ABORTED, [pw.test1.SomeMessage(magic_number=123), '
