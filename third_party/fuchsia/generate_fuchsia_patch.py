@@ -142,11 +142,36 @@ def _patch_invoke(file: Path, text: str) -> str:
     )
 
 
+def _ignore_errors(file: Path, text: str) -> str:
+    # Only patch result.h for now
+    if file.name != 'result.h':
+        return text
+
+    text = _add_include_before_namespace(text, 'pw_preprocessor/compiler.h')
+
+    # Push the diagnostics before the namespace.
+    new_lines = ['', 'PW_MODIFY_DIAGNOSTICS_PUSH();']
+    for clang_diag in ['-Wshadow-field-in-constructor']:
+        new_lines.append(
+            f'PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "{clang_diag}");'
+        )
+    new_lines.append('')
+    new_lines.append('')
+
+    text = text.replace('\nnamespace ', '\n'.join(new_lines) + 'namespace ', 1)
+
+    # Pop the diagnostics before the include guard's #endif
+    split_text = text.rsplit('\n#endif', 1)
+    text = '\nPW_MODIFY_DIAGNOSTICS_POP();\n\n#endif'.join(split_text)
+    return text
+
+
 def _patch(file: Path) -> str | None:
     text = file.read_text()
     updated = _patch_assert(text)
     updated = _patch_constinit(updated)
     updated = _patch_invoke(file, updated)
+    updated = _ignore_errors(file, updated)
     return None if text == updated else updated
 
 
