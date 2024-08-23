@@ -941,14 +941,6 @@ struct SimplePairingCompleteEventParams {
 // User Passkey Notification Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;
 
-struct UserPasskeyNotificationEventParams {
-  // Address of the device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-
-  // Numeric value (passkey) entered by user. Valid values are 0 - 999999.
-  uint32_t numeric_value;
-} __attribute__((packed));
-
 // =========================
 // LE Meta Event (v4.0) (LE)
 constexpr EventCode kLEMetaEventCode = 0x3E;

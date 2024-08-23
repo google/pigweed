@@ -288,7 +288,7 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(
       const hci::EmbossEventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(
-      const hci::EventPacket& event);
+      const hci::EmbossEventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnRoleChange(
       const hci::EmbossEventPacket& event);
 

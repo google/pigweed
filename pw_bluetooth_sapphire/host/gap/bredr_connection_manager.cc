@@ -1588,23 +1588,23 @@ BrEdrConnectionManager::OnUserPasskeyRequest(
 
 hci::CommandChannel::EventCallbackResult
 BrEdrConnectionManager::OnUserPasskeyNotification(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() ==
-                  hci_spec::kUserPasskeyNotificationEventCode);
-  const auto& params =
-      event.params<hci_spec::UserPasskeyNotificationEventParams>();
+    const hci::EmbossEventPacket& event_packet) {
+  auto params =
+      event_packet
+          .view<pw::bluetooth::emboss::UserPasskeyNotificationEventView>();
+  DeviceAddressBytes bd_addr = DeviceAddressBytes(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(bd_addr);
   if (!conn_pair) {
     bt_log(WARN,
            "gap-bredr",
            "got %s for unconnected addr %s",
            __func__,
-           bt_str(params.bd_addr));
+           bt_str(bd_addr));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   conn_pair->second->pairing_state_manager().OnUserPasskeyNotification(
-      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.numeric_value));
+      params.passkey().Read());
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
