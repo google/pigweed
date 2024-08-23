@@ -694,16 +694,6 @@ struct ReadLocalExtendedFeaturesReturnParams {
 // Read Buffer Size Command (v1.1)
 constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
 
-struct ReadBufferSizeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  uint16_t hc_acl_data_packet_length;
-  uint8_t hc_synchronous_data_packet_length;
-  uint16_t hc_total_num_acl_data_packets;
-  uint16_t hc_total_num_synchronous_data_packets;
-} __attribute__((packed));
-
 // ========================================
 // Read BD_ADDR Command (v1.1) (BR/EDR, LE)
 constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);

@@ -77,7 +77,8 @@ void FakeController::Settings::ApplyDualModeDefaults() {
   total_num_acl_data_packets = 1;
   le_acl_data_packet_length = 512;
   le_total_num_acl_data_packets = 1;
-  synchronous_data_packet_length = 0;
+  // Must be 0x01-0xFF, even if not supported
+  synchronous_data_packet_length = 1;
   total_num_synchronous_data_packets = 0;
   iso_data_packet_length = 512;
   total_num_iso_data_packets = 1;
@@ -1934,17 +1935,17 @@ void FakeController::OnCreateConnectionCancel() {
 }
 
 void FakeController::OnReadBufferSize() {
-  hci_spec::ReadBufferSizeReturnParams params;
-  std::memset(&params, 0, sizeof(params));
-  params.hc_acl_data_packet_length = pw::bytes::ConvertOrderTo(
-      cpp20::endian::little, settings_.acl_data_packet_length);
-  params.hc_total_num_acl_data_packets = settings_.total_num_acl_data_packets;
-  params.hc_synchronous_data_packet_length =
-      settings_.synchronous_data_packet_length;
-  params.hc_total_num_synchronous_data_packets =
-      settings_.total_num_synchronous_data_packets;
-  RespondWithCommandComplete(hci_spec::kReadBufferSize,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::ReadBufferSizeCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.acl_data_packet_length().Write(settings_.acl_data_packet_length);
+  view.total_num_acl_data_packets().Write(settings_.total_num_acl_data_packets);
+  view.synchronous_data_packet_length().Write(
+      settings_.synchronous_data_packet_length);
+  view.total_num_synchronous_data_packets().Write(
+      settings_.total_num_synchronous_data_packets);
+  RespondWithCommandComplete(hci_spec::kReadBufferSize, &packet);
 }
 
 void FakeController::OnReadBRADDR() {

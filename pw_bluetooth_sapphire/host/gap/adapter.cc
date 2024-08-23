@@ -1065,27 +1065,26 @@ void AdapterImpl::InitializeStep2() {
         hci::EmbossCommandPacket::New<
             pw::bluetooth::emboss::ReadBufferSizeCommandView>(
             hci_spec::kReadBufferSize),
-        [this](const hci::EventPacket& cmd_complete) {
+        [this](const hci::EmbossEventPacket& cmd_complete) {
           if (hci_is_error(
                   cmd_complete, WARN, "gap", "read buffer size failed")) {
             return;
           }
-          auto params =
-              cmd_complete
-                  .return_params<hci_spec::ReadBufferSizeReturnParams>();
-          uint16_t acl_mtu = pw::bytes::ConvertOrderFrom(
-              cpp20::endian::little, params->hc_acl_data_packet_length);
-          uint16_t acl_max_count = pw::bytes::ConvertOrderFrom(
-              cpp20::endian::little, params->hc_total_num_acl_data_packets);
+          auto packet = cmd_complete.view<
+              pw::bluetooth::emboss::ReadBufferSizeCommandCompleteEventView>();
+          uint16_t acl_mtu = packet.acl_data_packet_length().Read();
+          uint16_t acl_max_count = packet.total_num_acl_data_packets().Read();
           if (acl_mtu && acl_max_count) {
             state_.bredr_data_buffer_info =
                 hci::DataBufferInfo(acl_mtu, acl_max_count);
           }
-          uint16_t sco_mtu = pw::bytes::ConvertOrderFrom(
-              cpp20::endian::little, params->hc_synchronous_data_packet_length);
-          uint16_t sco_max_count = pw::bytes::ConvertOrderFrom(
-              cpp20::endian::little,
-              params->hc_total_num_synchronous_data_packets);
+          // Use UncheckedRead because this field is supposed to
+          // be 0x01-0xFF, but it is possible and harmless for controllers to
+          // set to 0x00 if not supported.
+          uint16_t sco_mtu =
+              packet.synchronous_data_packet_length().UncheckedRead();
+          uint16_t sco_max_count =
+              packet.total_num_synchronous_data_packets().Read();
           if (sco_mtu && sco_max_count) {
             state_.sco_buffer_info =
                 hci::DataBufferInfo(sco_mtu, sco_max_count);

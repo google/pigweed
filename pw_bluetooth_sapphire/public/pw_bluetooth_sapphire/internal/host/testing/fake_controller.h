@@ -87,11 +87,11 @@ class FakeController final : public ControllerTestDoubleBase,
     uint8_t supported_commands[64] = {0};
 
     // Buffer Size.
-    uint16_t acl_data_packet_length = 0;
-    uint8_t total_num_acl_data_packets = 0;
+    uint16_t acl_data_packet_length = 1;
+    uint8_t total_num_acl_data_packets = 1;
     uint16_t le_acl_data_packet_length = 0;
     uint8_t le_total_num_acl_data_packets = 0;
-    uint8_t synchronous_data_packet_length = 0;
+    uint8_t synchronous_data_packet_length = 1;
     uint8_t total_num_synchronous_data_packets = 0;
     uint16_t iso_data_packet_length = 0;
     uint8_t total_num_iso_data_packets = 0;

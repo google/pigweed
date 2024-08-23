@@ -1548,7 +1548,7 @@ TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseBufferInfoNotAvailable) {
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   // Ensure SCO buffers are not available.
-  settings.synchronous_data_packet_length = 0;
+  settings.synchronous_data_packet_length = 1;
   settings.total_num_synchronous_data_packets = 0;
   // Enable SCO flow control command.
   constexpr size_t flow_control_enable_octet = 10;
