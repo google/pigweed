@@ -383,6 +383,8 @@ C++ API
 .. doxygendefine:: PW_CO_TRY
 .. doxygendefine:: PW_CO_TRY_ASSIGN
 
+.. _module-pw_status-reference-unused:
+
 Unused result warnings
 ----------------------
 If the ``PW_STATUS_CFG_CHECK_IF_USED`` option is enabled, ``pw::Status`` objects

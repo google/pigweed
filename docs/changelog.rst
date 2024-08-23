@@ -13,12 +13,489 @@ Talk to the team at Pigweed Live
 
 .. _docs-changelog-latest:
 
+-----------
+Aug 7, 2024
+-----------
+.. changelog_highlights_start
+
+Highlights (Jul 26, 2024 to Aug 7, 2024):
+
+* **Tour of Pigweed**: The new :ref:`Tour of Pigweed <showcase-sense>`
+  is a hands-on, guided walkthrough of many key Pigweed features working
+  together in a medium-complexity application.
+* **Easier pw_digital_io testing**: The new
+  ``pw::digital_io::DigitalInOutMock`` class is a mock implementation of
+  ``pw:digital_io::DigitalInOut`` that can be used for testing.
+* **Code intelligence in VS Code**: The new
+  :ref:`module-pw_ide-guide-vscode-code-intelligence` document provides
+  guides on using the code intelligence features of the ``pw_ide``
+  extension for VS Code.
+
+.. changelog_highlights_end
+
+Build systems
+=============
+
+Bazel
+-----
+* `Get picotool from the BCR
+  <https://pwrev.dev/227838>`__
+  (issue `#354270165 <https://pwbug.dev/354270165>`__)
+* `Manage pw_ide deps via bzlmod
+  <https://pwrev.dev/226733>`__
+  (issue `#258836641 <https://pwbug.dev/258836641>`__)
+* `Manage Java deps through bzlmod
+  <https://pwrev.dev/226481>`__
+  (issue `#258836641 <https://pwbug.dev/258836641>`__)
+* `Provide symlink to clangd at root
+  <https://pwrev.dev/226451>`__
+  (issue `#355655415 <https://pwbug.dev/355655415>`__)
+* `Partial revert of http://pwrev.dev/226007
+  <https://pwrev.dev/226271>`__
+  (issue `#352389854 <https://pwbug.dev/352389854>`__)
+
+Modules
+=======
+
+pw_allocator
+------------
+* `Fix bucketed block corruption
+  <https://pwrev.dev/227604>`__
+  (issue `#345526413 <https://pwbug.dev/345526413>`__)
+* `Add missing include
+  <https://pwrev.dev/227174>`__
+  (issue `#356667663 <https://pwbug.dev/356667663>`__)
+
+pw_bluetooth
+------------
+``ReadLocalSupportedCommandsCommandCompleteEvent`` now provides both a raw bytes
+field (``supported_commands_bytes``) and a sub-struct (``supported_commands``)
+for easier access to command bits. You can use either ``SupportedCommandsOctet``
+or ``SupportedCommands`` to parse a saved ``uint8_t[64]``.
+
+* `Improve ergonomics of emboss SupportedCommands
+  <https://pwrev.dev/227931>`__
+* `Add more emboss definitions
+  <https://pwrev.dev/227951>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+
+pw_bluetooth_proxy
+------------------
+* `Release active connections once zero
+  <https://pwrev.dev/226400>`__
+* `Only log disconnect events for active connections
+  <https://pwrev.dev/226393>`__
+
+pw_bluetooth_sapphire
+---------------------
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227044>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227043>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227025>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Write Variable PIN Type for Legacy Pairing
+  <https://pwrev.dev/227042>`__
+  (issues `#42173830 <https://pwbug.dev/42173830>`__,
+  `# b/342151162 <https://pwbug.dev/ b/342151162>`__)
+* `Add LegacyPairingState to BrEdrConnectionRequest
+  <https://pwrev.dev/227041>`__
+  (issue `#42173830 <https://pwbug.dev/42173830>`__)
+* `Create and implement LegacyPairingState class
+  <https://pwrev.dev/227023>`__
+  (issues `#342150626 <https://pwbug.dev/342150626>`__,
+  `#42173830 <https://pwbug.dev/42173830>`__)
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227040>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227039>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Translate information & additional attributes
+  <https://pwrev.dev/227038>`__
+  (issue `#327758656 <https://pwbug.dev/327758656>`__)
+* `Return registered services after bredr.Advertise
+  <https://pwrev.dev/227022>`__
+  (issue `#327758656 <https://pwbug.dev/327758656>`__)
+* `Handle switch enum warning with pigweed
+  <https://pwrev.dev/227037>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Handle switch warning with pigweed
+  <https://pwrev.dev/227021>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Fix shadow variable warnings
+  <https://pwrev.dev/227036>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Add panic to EventTypeToString
+  <https://pwrev.dev/227035>`__
+  (issue `#356388419 <https://pwbug.dev/356388419>`__)
+* `Switch over to pw::utf8
+  <https://pwrev.dev/227020>`__
+  (issue `#337305285 <https://pwbug.dev/337305285>`__)
+* `Remove unnecessary cast qual pragma
+  <https://pwrev.dev/227034>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Fix statement expression extension warnings
+  <https://pwrev.dev/227033>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Fix variadic macro warnings
+  <https://pwrev.dev/227019>`__
+  (issue `#355511476 <https://pwbug.dev/355511476>`__)
+* `Add SetupDataPath FIDL handler
+  <https://pwrev.dev/227018>`__
+  (issue `#311639690 <https://pwbug.dev/311639690>`__)
+* `Create abstract base for IsoStream
+  <https://pwrev.dev/227017>`__
+* `Remove CommandPacketVariant
+  <https://pwrev.dev/227032>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Use emboss for setting ACL priority
+  <https://pwrev.dev/227031>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Add test for A2DP offloading
+  <https://pwrev.dev/227014>`__
+  (issue `#330921787 <https://pwbug.dev/330921787>`__)
+* `Explicitly move WeakRef in GetWeakPtr
+  <https://pwrev.dev/227013>`__
+  (issue `#354026910 <https://pwbug.dev/354026910>`__)
+* `Clean up some type sizes
+  <https://pwrev.dev/227012>`__
+  (issue `#354057871 <https://pwbug.dev/354057871>`__)
+* `Use emboss for LELongTermKeyRequestReply
+  <https://pwrev.dev/227011>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Remove manufacturer list
+  <https://pwrev.dev/226472>`__
+
+pw_build
+--------
+* `Fix configs in pw_rust_executable
+  <https://pwrev.dev/212171>`__
+  (issue `#343111481 <https://pwbug.dev/343111481>`__)
+* `Auto disable project builder progress bars
+  <https://pwrev.dev/226379>`__
+
+pw_chrono_stl
+-------------
+System clock and timer interfaces have been moved to separate directories so
+that you can pick up the backend of one of these without bringing in the other.
+This makes it possible to use a custom system timer with the STL system clock,
+for example.
+
+* `Move system clock and timer into separate directories
+  <https://pwrev.dev/225992>`__
+
+pw_clock_tree_mcuxpresso
+------------------------
+The new ``pw::clock_tree::ClockMcuxpressoClockIp`` class lets you manage
+``clock_ip_name_t`` clocks with the clock tree to save power when
+``FSL_SDK_DISABLE_DRIVE_CLOCK_CONTROL`` is set.
+
+* `Introduce ClockMcuxpressoClockIp
+  <https://pwrev.dev/226069>`__
+  (issue `#355486338 <https://pwbug.dev/355486338>`__)
+
+pw_console
+----------
+* `Additional UI and code themes
+  <https://pwrev.dev/226720>`__
+* `Bump version of console js, add titles to log panes
+  <https://pwrev.dev/226831>`__
+
+pw_digital_io
+-------------
+The new ``pw::digital_io::DigitalInOutMock`` class is a mock implementation
+of ``pw:digital_io::DigitalInOut`` that can be used for testing.
+
+* `Add Mock
+  <https://pwrev.dev/227836>`__
+
+pw_digital_io_linux
+-------------------
+The default ``pw_log`` logging level changed from ``DEBUG`` to ``INFO``.
+
+* `Set log level to INFO
+  <https://pwrev.dev/225912>`__
+
+pw_digital_io_rp2040
+--------------------
+* `Don't discard status returns
+  <https://pwrev.dev/227712>`__
+  (issue `#357090965 <https://pwbug.dev/357090965>`__)
+
+pw_env_setup
+------------
+* `Update rust thumbv7m target
+  <https://pwrev.dev/226951>`__
+* `Add rustc thumbv7m target
+  <https://pwrev.dev/211991>`__
+  (issue `#343111481 <https://pwbug.dev/343111481>`__)
+
+pw_hex_dump
+-----------
+* `Add rule for pw_hex_dump/log_bytes.h
+  <https://pwrev.dev/227651>`__
+  (issue `#357595992 <https://pwbug.dev/357595992>`__)
+
+pw_ide
+------
+The Pigweed extension for VS Code will now immediately update the code analysis
+target if the ``pigweed.codeAnalysisTarget`` setting in ``settings.json`` is
+changed. The new ``pigweed.activateBazeliskInNewTerminals`` setting lets you
+specify whether the path to Bazelisk should be added when a VS Code terminal is
+launched. The new :ref:`module-pw_ide-guide-vscode-code-intelligence` document
+provides guides on using the VS Code extension's code intelligence features.
+
+* `VSC extension 1.3.2 release
+  <https://pwrev.dev/225391>`__
+* `Show progress bar on manual refreshes
+  <https://pwrev.dev/227731>`__
+* `Detect manual target change in settings
+  <https://pwrev.dev/227606>`__
+* `Much faster VSC config parsing
+  <https://pwrev.dev/227605>`__
+* `Automatically activate Bazelisk in new terminals
+  <https://pwrev.dev/226382>`__
+* `Use stable clangd path
+  <https://pwrev.dev/226431>`__
+  (issue `#355655415 <https://pwbug.dev/355655415>`__)
+* `Add inactive source file decoration
+  <https://pwrev.dev/225733>`__
+* `VSC extension refactoring
+  <https://pwrev.dev/226059>`__
+
+pw_multibuf
+-----------
+* `Add missing includes
+  <https://pwrev.dev/227331>`__
+  (issue `#356667663 <https://pwbug.dev/356667663>`__)
+
+pw_multisink
+------------
+The new ``pw::multisink::Drain::GetUnreadEntriesCount()`` method is a
+thread-safe way to return the number of unread entries in a drain's sink.
+
+* `Interface to read entries count
+  <https://pwrev.dev/226351>`__
+  (issue `#355104976 <https://pwbug.dev/355104976>`__)
+
+pw_presubmit
+------------
+* `Fix incl-lang when not at repo root
+  <https://pwrev.dev/227185>`__
+* `Remove misc program
+  <https://pwrev.dev/226995>`__
+  (issue `#356888002 <https://pwbug.dev/356888002>`__)
+* `Rename "misc" program to "sapphire"
+  <https://pwrev.dev/226993>`__
+  (issue `#356888002 <https://pwbug.dev/356888002>`__)
+* `Add new presubmit steps
+  <https://pwrev.dev/226712>`__
+  (issue `#356619766 <https://pwbug.dev/356619766>`__)
+* `Allow fxbug.dev and crbug.com TODOs
+  <https://pwrev.dev/226474>`__
+* `Expose name of Bazel executable
+  <https://pwrev.dev/226378>`__
+  (issue `#355438774 <https://pwbug.dev/355438774>`__)
+
+pw_router
+---------
+* `Add missing includes
+  <https://pwrev.dev/227331>`__
+  (issue `#356667663 <https://pwbug.dev/356667663>`__)
+
+pw_rpc
+------
+* `Fix TypeScript client streaming return type
+  <https://pwrev.dev/226717>`__
+* `Add yield mode constraint_setting
+  <https://pwrev.dev/226551>`__
+  (issue `#345199579 <https://pwbug.dev/345199579>`__)
+
+pw_rust
+-------
+The new ``pw_rust_USE_STD`` toolchain configuration option lets you control
+whether the "std" feature should be used when building executables.
+
+* `Add no_std build to basic_executable
+  <https://pwrev.dev/211993>`__
+  (issue `#343111481 <https://pwbug.dev/343111481>`__)
+* `Rename host_executable
+  <https://pwrev.dev/211992>`__
+  (issue `#343111481 <https://pwbug.dev/343111481>`__)
+
+pw_spi_mcuxpresso
+-----------------
+* `Add SPI_RxError() and SPI_TxError()
+  <https://pwrev.dev/226992>`__
+
+pw_status
+---------
+``PW_STATUS_CFG_CHECK_IF_USED`` now defaults to ``true`` in Bazel projects,
+meaning that ``pw::Status`` objects returned from function calls must be used or
+else a compilation error is raised. See :ref:`module-pw_status-reference-unused`.
+
+* `In Bazel, make Status nodiscard
+  <https://pwrev.dev/227411>`__
+  (issue `#357090965 <https://pwbug.dev/357090965>`__)
+* `Don't silently discard status returns
+  <https://pwrev.dev/227277>`__
+  (issue `#357090965 <https://pwbug.dev/357090965>`__)
+
+pw_symbolizer
+-------------
+* `Add missing runfiles dep
+  <https://pwrev.dev/226719>`__
+  (issue `#355527449 <https://pwbug.dev/355527449>`__)
+* `Get llvm-symbolizer path from Bazel
+  <https://pwrev.dev/226254>`__
+  (issue `#355527449 <https://pwbug.dev/355527449>`__)
+
+pw_system
+---------
+The ``pw_system`` console now lets you control host log and device log levels
+separately via the new ``--host-log-level`` and ``--device-log-level``
+arguments. The new ``echo()``, ``reboot()``, and ``crash()`` methods of
+``pw_system.device.Device`` make it easier to access these common
+operations. Crash snapshots are now saved to ``/tmp`` (``C:\\TEMP`` on Windows)
+by default. Crash detection logs are now printed across multiple lines to make
+them easier to spot.
+
+* `Separate host and device console log levels
+  <https://pwrev.dev/227599>`__
+* `Don't use implementation_deps
+  <https://pwrev.dev/226977>`__
+  (issues `#304374970 <https://pwbug.dev/304374970>`__,
+  `#356667663 <https://pwbug.dev/356667663>`__)
+* `Add console device aliases for common RPCs
+  <https://pwrev.dev/226476>`__
+* `Save snapshots to /tmp
+  <https://pwrev.dev/226392>`__
+* `Make crash detection logs louder
+  <https://pwrev.dev/226373>`__
+
+pw_tokenizer
+------------
+* `decode_optionally_tokenized without a Detokenizer
+  <https://pwrev.dev/226727>`__
+
+pw_toolchain
+------------
+* `Clang support for Arm Cortex-M33
+  <https://pwrev.dev/228391>`__
+  (issue `#358108912 <https://pwbug.dev/358108912>`__)
+* `Register Cortex-M7 toolchain
+  <https://pwrev.dev/227598>`__
+* `Use \`crate_name\` for GN rust targets
+  <https://pwrev.dev/223391>`__
+* `proc_macro GN cross compile
+  <https://pwrev.dev/215011>`__
+* `Rustc cross compile to qemu-clang
+  <https://pwrev.dev/211994>`__
+  (issue `#343111481 <https://pwbug.dev/343111481>`__)
+* `Expose a symlink to clangd
+  <https://pwrev.dev/226262>`__
+  (issue `#355655415 <https://pwbug.dev/355655415>`__)
+
+pw_transfer
+-----------
+* `Add a delay after opening a stream to delay transfer start
+  <https://pwrev.dev/225734>`__
+  (issue `#355249134 <https://pwbug.dev/355249134>`__)
+* `Use initial timeout when resending start chunks
+  <https://pwrev.dev/226452>`__
+
+pw_web
+------
+The log viewer now defaults to using line wrapping in table cells. The new
+``logViews`` property makes it easier to customize each individual log view.
+The ``severity`` field for controlling what types of logs to display has
+been renamed to ``level``.
+
+* `Add resize handler to message col
+  <https://pwrev.dev/221433>`__
+  (issue `#351901512 <https://pwbug.dev/351901512>`__)
+* `Change word-wrap to default true and save to state
+  <https://pwrev.dev/226730>`__
+  (issue `#354283022 <https://pwbug.dev/354283022>`__)
+* `NPM version bump to 0.0.22
+  <https://pwrev.dev/226726>`__
+* `Show REPL message at every run
+  <https://pwrev.dev/226872>`__
+* `NPM version bump to 0.0.21
+  <https://pwrev.dev/226713>`__
+* `Enable custom titles, log-view access
+  <https://pwrev.dev/226771>`__
+  (issue `#355272099 <https://pwbug.dev/355272099>`__)
+* `Change severity to level
+  <https://pwrev.dev/225573>`__
+  (issue `#354282161 <https://pwbug.dev/354282161>`__)
+* `Replace column menu with MWC components
+  <https://pwrev.dev/226151>`__
+  (issues `#354712931 <https://pwbug.dev/354712931>`__,
+  `#342452087 <https://pwbug.dev/342452087>`__)
+
+Docs
+====
+The new :ref:`Tour of Pigweed <showcase-sense>` is a hands-on, guided
+walkthrough of many key Pigweed features working together in a medium-complexity
+application.
+
+* `Start Sense tutorial
+  <https://pwrev.dev/220311>`__
+* `Fix some bad links in the changelog
+  <https://pwrev.dev/226811>`__
+* `Update changelog
+  <https://pwrev.dev/226251>`__
+
+Rolls
+=====
+* `gn
+  <https://pwrev.dev/227612>`__
+* `fuchsia_infra 119 commits
+  <https://pwrev.dev/227476>`__
+* `cmake
+  <https://pwrev.dev/227289>`__
+* `rust
+  <https://pwrev.dev/227287>`__
+* `Clang
+  <https://pwrev.dev/226725>`__
+  (issue `#356689444 <https://pwbug.dev/356689444>`__)
+* `bazel_skylib
+  <https://pwrev.dev/226979>`__
+* `rust
+  <https://pwrev.dev/226257>`__
+
+Third-party software
+====================
+
+Emboss
+------
+* `Append public_deps in GN template
+  <https://pwrev.dev/227062>`__
+
+ICU
+---
+* `Remove ICU
+  <https://pwrev.dev/228234>`__
+
+STM32Cube
+---------
+* `bzlmod-friendly changes
+  <https://pwrev.dev/226479>`__
+  (issue `#258836641 <https://pwbug.dev/258836641>`__)
+
+Miscellaneous
+-------------
+* `Run 'pw format --fix'
+  <https://pwrev.dev/227186>`__
+
 ------------
 Jul 25, 2024
 ------------
-
-.. changelog_highlights_start
-
 Highlights (Jul 12, 2024 to Jul 25, 2024):
 
 * **Extensive Bazel support in the Pigweed extension for VS Code**:
@@ -31,8 +508,6 @@ Highlights (Jul 12, 2024 to Jul 25, 2024):
 * **Crash handling in async pw_system**: Crash snapshots can be downloaded
   from ``pw_console`` by calling ``device.get_crash_snapshots()`` in the
   REPL.
-
-.. changelog_highlights_end
 
 Build systems
 =============
@@ -6167,7 +6642,7 @@ pw_presubmit
   (issue `#315389119 <https://issues.pigweed.dev/issues/315389119>`__)
 * `Log format --fix output
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/192394>`__
-* `Fix formatting of typescript code
+* `Fix formatting of TypeScript code
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/192393>`__
 * `Disallow FIXME and recommend TODO
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/188367>`__
