@@ -22,7 +22,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
-#pragma clang diagnostic ignored "-Wc99-extensions"
 #pragma clang diagnostic ignored "-Wflexible-array-extensions"
 
 namespace bt::att {
@@ -130,6 +129,8 @@ enum class ExecuteWriteFlag : uint8_t {
   kWritePending = 0x01,
 };
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct AttributeData {
   AttributeData() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeData);
@@ -137,6 +138,7 @@ struct AttributeData {
   Handle handle;
   uint8_t value[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
 // ============== ATT PDUs ==============
 constexpr OpCode kInvalidOpCode = 0x00;
@@ -198,6 +200,8 @@ using InformationData128 = InformationData<UUIDType::k128Bit>;
 constexpr OpCode kFindByTypeValueRequest = 0x06;
 constexpr OpCode kFindByTypeValueResponse = 0x07;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct FindByTypeValueRequestParams {
   FindByTypeValueRequestParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(FindByTypeValueRequestParams);
@@ -207,6 +211,7 @@ struct FindByTypeValueRequestParams {
   AttributeType16 type;
   uint8_t value[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
 struct HandlesInformationList {
   Handle handle;
@@ -236,6 +241,8 @@ struct ReadByTypeRequestParams {
 using ReadByTypeRequestParams16 = ReadByTypeRequestParams<UUIDType::k16Bit>;
 using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct ReadByTypeResponseParams {
   ReadByTypeResponseParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
@@ -243,6 +250,7 @@ struct ReadByTypeResponseParams {
   uint8_t length;
   AttributeData attribute_data_list[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
 // ====
 // Read
@@ -288,6 +296,8 @@ constexpr uint8_t kMaxReadByGroupTypeValueLength = 251;
 using ReadByGroupTypeRequestParams16 = ReadByTypeRequestParams16;
 using ReadByGroupTypeRequestParams128 = ReadByTypeRequestParams128;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct AttributeGroupDataEntry {
   AttributeGroupDataEntry() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeGroupDataEntry);
@@ -296,7 +306,10 @@ struct AttributeGroupDataEntry {
   Handle group_end_handle;
   uint8_t value[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct ReadByGroupTypeResponseParams {
   ReadByGroupTypeResponseParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
@@ -304,6 +317,7 @@ struct ReadByGroupTypeResponseParams {
   uint8_t length;
   AttributeGroupDataEntry attribute_data_list[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
 // =====
 // Write
@@ -319,6 +333,8 @@ using WriteRequestParams = AttributeData;
 constexpr OpCode kPrepareWriteRequest = 0x16;
 constexpr OpCode kPrepareWriteResponse = 0x17;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
 struct PrepareWriteRequestParams {
   PrepareWriteRequestParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(PrepareWriteRequestParams);
@@ -327,6 +343,7 @@ struct PrepareWriteRequestParams {
   uint16_t offset;
   uint8_t part_value[];
 } __attribute__((packed));
+PW_MODIFY_DIAGNOSTICS_POP();
 
 using PrepareWriteResponseParams = PrepareWriteRequestParams;
 
