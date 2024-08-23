@@ -12,13 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_cc_test",
-    "fuchsia_unittest_package",
-)
-
 package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**/*"]))
 
 cc_library(
     name = "definitions",
@@ -28,9 +24,6 @@ cc_library(
         "types.cc",
     ],
     copts = ["-Wswitch-enum"],
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
@@ -54,9 +47,6 @@ cc_library(
         "security_request_phase.cc",
         "util.cc",
     ],
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
@@ -83,8 +73,8 @@ cc_library(
     ],
 )
 
-fuchsia_cc_test(
-    name = "sm_test",
+cc_library(
+    name = "_test.lib",
     testonly = True,
     srcs = [
         "ecdh_key_test.cc",
@@ -103,7 +93,7 @@ fuchsia_cc_test(
         "types_test.cc",
         "util_test.cc",
     ],
-    death_unittest = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":sm",
@@ -113,15 +103,4 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-)
-
-fuchsia_unittest_package(
-    name = "test_pkg",
-    package_name = "sm_tests",
-    testonly = True,
-    fuchsia_api_level = "HEAD",
-    unit_tests = [
-        ":sm_test",
-    ],
-    visibility = ["//visibility:public"],
 )

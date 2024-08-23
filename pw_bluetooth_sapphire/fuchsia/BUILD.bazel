@@ -19,12 +19,11 @@ load(
     "fuchsia_test_group",
 )
 load("@rules_license//rules:license.bzl", "license")
-load("//pw_bluetooth_sapphire/fuchsia:host_x64.bzl", "MANUAL_IF_NOT_LINUX_X64")
 
 license(
     name = "license_fuchsia",
     package_name = "pw_bluetooth_sapphire (Fuchsia)",
-    license_text = "//:LICENSE",
+    license_text = "@pigweed//:LICENSE",
 )
 
 qemu_tests = [
@@ -44,6 +43,22 @@ fuchsia_test_group(
 fuchsia_builder_group(
     name = "infra",
     build_only = [
+        # TODO: https://pwbug.dev/360411906 - Reenable once we can specify the
+        # correct build configuration for these tests.
+        # Then, move to `qemu_tests`.
+        # "//pw_bluetooth_sapphire/fuchsia/host/att:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/common:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/gap:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/gatt:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/hci:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/hci-spec:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/iso:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/l2cap:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/sco:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/sdp:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/sm:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/testing:test_pkg",
+        # "//pw_bluetooth_sapphire/fuchsia/host/transport:test_pkg",
     ],
     test_groups = [
         ":tests_qemu",
@@ -52,5 +67,5 @@ fuchsia_builder_group(
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_x64_cipd",
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_arm64_cipd",
     ],
-    tags = MANUAL_IF_NOT_LINUX_X64,
+    tags = ["integration"],
 )

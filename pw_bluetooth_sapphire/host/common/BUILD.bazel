@@ -14,12 +14,12 @@
 
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_cc_test",
     "fuchsia_select",
-    "fuchsia_unittest_package",
 )
 
 package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**/*"]))
 
 cc_library(
     name = "common",
@@ -41,9 +41,13 @@ cc_library(
         "uuid.cc",
     ],
     copts = ["-Wswitch-enum"],
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
+    # This library is not compatible with --config=rp2040.
+    target_compatible_with = select({
+        "@platforms//os:fuchsia": [],
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_bluetooth_sapphire:config",
         "//pw_bluetooth_sapphire:public",
@@ -75,8 +79,8 @@ cc_library(
     deps = [":common"],
 )
 
-fuchsia_cc_test(
-    name = "common_test",
+cc_library(
+    name = "common_test.lib",
     testonly = True,
     srcs = [
         "advertising_data_test.cc",
@@ -99,7 +103,7 @@ fuchsia_cc_test(
         "weak_self_test.cc",
         "windowed_inspect_numeric_property_test.cc",
     ],
-    death_unittest = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":common",
@@ -108,15 +112,4 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "@pigweed//pw_async:fake_dispatcher_fixture",
     ],
-)
-
-fuchsia_unittest_package(
-    name = "test_pkg",
-    package_name = "common_tests",
-    testonly = True,
-    fuchsia_api_level = "HEAD",
-    unit_tests = [
-        ":common_test",
-    ],
-    visibility = ["//visibility:public"],
 )

@@ -59,19 +59,12 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_LINUX_SDK_VERSION = "version:22.20240717.3.1"
-
-# The Fuchsia SDK is no longer released for MacOS, so we need to pin an older
-# version, from the halcyon days when this OS was still supported.
-FUCHSIA_MAC_SDK_VERSION = "version:20.20240408.3.1"
+FUCHSIA_SDK_VERSION = "version:22.20240717.3.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
-    path = "fuchsia/sdk/core/fuchsia-bazel-rules/${os}-amd64",
-    tag_by_os = {
-        "linux": FUCHSIA_LINUX_SDK_VERSION,
-        "mac": FUCHSIA_MAC_SDK_VERSION,
-    },
+    path = "fuchsia/sdk/core/fuchsia-bazel-rules/linux-amd64",
+    tag = FUCHSIA_SDK_VERSION,
 )
 
 load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
@@ -83,10 +76,7 @@ register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
 cipd_repository(
     name = "fuchsia_products_metadata",
     path = "fuchsia/development/product_bundles/v2",
-    tag_by_os = {
-        "linux": FUCHSIA_LINUX_SDK_VERSION,
-        "mac": FUCHSIA_MAC_SDK_VERSION,
-    },
+    tag = FUCHSIA_SDK_VERSION,
 )
 
 load("@fuchsia_sdk//fuchsia:products.bzl", "fuchsia_products_repository")
@@ -110,13 +100,6 @@ fuchsia_clang_repository(
 load("@fuchsia_clang//:defs.bzl", "register_clang_toolchains")
 
 register_clang_toolchains()
-
-# Since Fuchsia doesn't release arm64 SDKs, use this to gate Fuchsia targets.
-load("//pw_env_setup:bazel/host_metadata_repository.bzl", "host_metadata_repository")
-
-host_metadata_repository(
-    name = "host_metadata",
-)
 
 # TODO: b/354268150 - googletest is in the BCR, but its MODULE.bazel doesn't
 # express its dependency on the Fuchsia SDK correctly.

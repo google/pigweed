@@ -12,39 +12,34 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
-
-exports_files(glob(["**/*"]))
-
-cc_library(
-    name = "sco",
-    srcs = [
-        "sco_connection.cc",
-        "sco_connection_manager.cc",
-    ],
-    deps = [
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/hci",
-        "//pw_bluetooth_sapphire/host/transport",
-        "@pigweed//third_party/fuchsia:fit",
-    ],
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
 )
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
-cc_library(
-    name = "sco_test.lib",
-    testonly = True,
-    srcs = [
-        "sco_connection_manager_test.cc",
-        "sco_connection_test.cc",
-    ],
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+fuchsia_cc_test(
+    name = "sco_test",
+    # TODO: b/310957361 - gtest not supported on device
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":sco",
         "//pw_bluetooth_sapphire/host/hci:testing",
+        "//pw_bluetooth_sapphire/host/sco",
+        "//pw_bluetooth_sapphire/host/sco:sco_test.lib",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "//pw_bluetooth_sapphire/host/transport:testing",
     ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "sco_tests",
+    fuchsia_api_level = "22",
+    tags = ["manual"],
+    unit_tests = [
+        ":sco_test",
+    ],
+    visibility = ["//visibility:public"],
 )

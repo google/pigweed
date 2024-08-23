@@ -36,6 +36,11 @@ Fuchsia support
 demonstrate building, running, and testing Fuchsia components and packages with
 the Fuchsia SDK.
 
+.. note::
+   Please do not add any fuchsia-specific dependencies (targets that load from
+   ``@fuchsia_sdk``) outside of ``//pw_bluetooth_sapphire/fuchsia`` since that
+   will break the global pigweed build (``//...``) for macos hosts.
+
 It will eventually be filled with the real `bt-host component`_ once that's
 migrated. See https://fxbug.dev/321267390.
 

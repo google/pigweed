@@ -12,19 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_cc_test",
-    "fuchsia_unittest_package",
-)
-
 package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**/*"]))
 
 cc_library(
     name = "definitions",
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/hci-spec",
@@ -67,7 +60,11 @@ cc_library(
         "-Wno-unused-parameter",
         "-Wswitch-enum",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = select({
+        "@platforms//os:fuchsia": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":definitions",
         "//pw_bluetooth:emboss_l2cap_frames",
@@ -119,8 +116,8 @@ cc_library(
     ],
 )
 
-fuchsia_cc_test(
-    name = "l2cap_test",
+cc_library(
+    name = "l2cap_test.lib",
     testonly = True,
     srcs = [
         "a2dp_offload_manager_test.cc",
@@ -151,7 +148,7 @@ fuchsia_cc_test(
         "signaling_channel_test.cc",
         "types_test.cc",
     ],
-    death_unittest = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":channel_manager_mock_controller_test_fixture",
@@ -164,15 +161,4 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/transport:testing",
         "@pigweed//pw_async:fake_dispatcher_fixture",
     ],
-)
-
-fuchsia_unittest_package(
-    name = "test_pkg",
-    package_name = "l2cap_tests",
-    testonly = True,
-    fuchsia_api_level = "HEAD",
-    unit_tests = [
-        ":l2cap_test",
-    ],
-    visibility = ["//visibility:public"],
 )

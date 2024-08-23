@@ -12,22 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_cc_test",
-    "fuchsia_unittest_package",
-)
-
 package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**/*"]))
 
 cc_library(
     name = "definitions",
     srcs = [
         "gatt_defs.cc",
     ],
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/att:definitions",
@@ -51,9 +44,6 @@ cc_library(
     copts = [
         "-Wno-unused-parameter",
     ],
-    # TODO: https://pwbug.dev/313665184 - Re-enable for all platforms once Mac
-    # builder issue is resolved.
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
@@ -97,25 +87,14 @@ cc_library(
     ],
 )
 
-fuchsia_cc_test(
-    name = "gatt_test",
+cc_library(
+    name = "gatt_test.lib",
     testonly = True,
     srcs = [
     ],
-    death_unittest = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-)
-
-fuchsia_unittest_package(
-    name = "test_pkg",
-    package_name = "gatt_tests",
-    testonly = True,
-    fuchsia_api_level = "HEAD",
-    unit_tests = [
-        ":gatt_test",
-    ],
-    visibility = ["//visibility:public"],
 )

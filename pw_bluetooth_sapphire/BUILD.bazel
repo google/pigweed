@@ -266,4 +266,5 @@ cc_library(
     includes = [
         "public",
     ],
+    tags = ["manual"],
 )
