@@ -6,6 +6,7 @@ pw_android_toolchain
 pw_arduino_build
 pw_assert
 pw_assert_basic
+pw_assert_fuchsia
 pw_assert_log
 pw_assert_tokenized
 pw_assert_trap

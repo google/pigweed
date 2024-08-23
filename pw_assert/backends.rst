@@ -35,6 +35,7 @@ to logs, then the logs are removed due to the null backend.
 
    Basic <../pw_assert_basic/docs>
    Pigweed logging <../pw_assert_log/docs>
+   Fuchsia <../pw_assert_fuchsia/docs>
    Tokenized <../pw_assert_tokenized/docs>
    Trap <../pw_assert_trap/docs>
    Zephyr <../pw_assert_zephyr/docs>

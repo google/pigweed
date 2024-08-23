@@ -44,6 +44,14 @@
       "C++"
     ]
   },
+  "pw_assert_fuchsia": {
+    "tagline": "pw_assert backend for Fuchsia",
+    "status": "experimental",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_async": {
     "tagline": "Portable APIs for asynchronous code",
     "status": "deprecated",
