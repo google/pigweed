@@ -1494,7 +1494,7 @@ void AdapterImpl::InitializeStep4() {
       fit::bind_member<&AdapterImpl::OnLeAutoConnectRequest>(this));
 
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_->command_channel()->AsWeakPtr(),
+      hci_->GetWeakPtr(),
       le_address_manager_.get(),
       hci_le_connector_.get(),
       &peer_cache_,

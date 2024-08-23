@@ -129,7 +129,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
         scanner_.get(), peer_cache_.get(), dispatcher());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        cmd_weak,
+        transport()->GetWeakPtr(),
         &addr_delegate_,
         connector_.get(),
         peer_cache_.get(),

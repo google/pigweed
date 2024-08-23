@@ -20,10 +20,11 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::iso {
 
-class IsoStream {
+class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
  public:
   virtual ~IsoStream() = default;
 
@@ -35,15 +36,19 @@ class IsoStream {
     kSuccess,
     kStreamAlreadyExists,
     kCisNotEstablished,
+    kStreamRejectedByController,
     kInvalidArgs,
+    kStreamClosed,
   };
 
   virtual void SetupDataPath(
       pw::bluetooth::emboss::DataPathDirection direction,
       const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
-      std::optional<std::vector<uint8_t>> codec_configuration,
+      const std::optional<std::vector<uint8_t>>& codec_configuration,
       uint32_t controller_delay_usecs,
       fit::function<void(SetupDataPathError)> cb) = 0;
+
+  virtual hci_spec::ConnectionHandle cis_handle() const = 0;
 
   // Terminate this stream.
   virtual void Close() = 0;
@@ -53,7 +58,7 @@ class IsoStream {
       uint8_t cis_id,
       hci_spec::ConnectionHandle cis_handle,
       CisEstablishedCallback on_established_cb,
-      hci::CommandChannel::WeakPtr cmd_channel,
+      hci::CommandChannel::WeakPtr cmd,
       pw::Callback<void()> on_closed_cb);
 
   using WeakPtr = WeakSelf<IsoStream>::WeakPtr;

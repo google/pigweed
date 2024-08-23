@@ -58,9 +58,9 @@ class LowEnergyConnection final : public sm::Delegate {
   // fatal connection error occurs and the connection should be closed (e.g.
   // when L2CAP reports an error). It will not be called before this method
   // returns. |conn_mgr| is the LowEnergyConnectionManager that owns this
-  // connection. |l2cap|, |gatt|, and |cmd_channel| are pointers to the
-  // interfaces of the corresponding layers. Returns nullptr if connection
-  // initialization fails.
+  // connection. |l2cap|, |gatt|, and |hci| are pointers to the interfaces of
+  // the corresponding layers. Returns nullptr if connection initialization
+  // fails.
   using PeerDisconnectCallback =
       fit::callback<void(pw::bluetooth::emboss::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
@@ -73,7 +73,7 @@ class LowEnergyConnection final : public sm::Delegate {
       WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
       l2cap::ChannelManager* l2cap,
       gatt::GATT::WeakPtr gatt,
-      hci::CommandChannel::WeakPtr cmd_channel,
+      hci::Transport::WeakPtr hci,
       pw::async::Dispatcher& dispatcher);
 
   // Notifies request callbacks and connection refs of the disconnection.
@@ -162,7 +162,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       std::unique_ptr<iso::IsoStreamManager> iso_mgr,
                       l2cap::ChannelManager* l2cap,
                       gatt::GATT::WeakPtr gatt,
-                      hci::CommandChannel::WeakPtr cmd_channel,
+                      hci::Transport::WeakPtr hci,
                       pw::async::Dispatcher& dispatcher);
 
   // Registers this connection with L2CAP and initializes the fixed channel
@@ -349,6 +349,8 @@ class LowEnergyConnection final : public sm::Delegate {
   std::unique_ptr<sm::SecurityManager> sm_;
 
   hci::CommandChannel::WeakPtr cmd_;
+
+  hci::Transport::WeakPtr hci_;
 
   // Called when the peer disconnects.
   PeerDisconnectCallback peer_disconnect_callback_;

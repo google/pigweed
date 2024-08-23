@@ -32,6 +32,7 @@ pw_source_set("iso") {
 
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/transport",
   ]
 }

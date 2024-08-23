@@ -40,9 +40,13 @@ class IsoStreamManagerTest : public MockControllerTestBase {
   IsoStreamManager* iso_stream_manager() { return iso_stream_manager_.get(); }
 
   void SetUp() override {
-    MockControllerTestBase::SetUp();
+    MockControllerTestBase::SetUp(
+        pw::bluetooth::Controller::FeaturesBits::kHciIso);
+    hci::DataBufferInfo iso_buffer_info(/*max_data_length=*/100,
+                                        /*max_num_packets=*/5);
+    transport()->InitializeIsoDataChannel(iso_buffer_info);
     iso_stream_manager_ = std::make_unique<IsoStreamManager>(
-        kAclConnectionHandleId1, cmd_channel()->AsWeakPtr());
+        kAclConnectionHandleId1, transport()->GetWeakPtr());
   }
 
   AcceptCisStatus CallAcceptCis(CigCisIdentifier id,

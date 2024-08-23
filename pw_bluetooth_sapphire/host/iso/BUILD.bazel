@@ -35,6 +35,7 @@ cc_library(
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/transport",
     ],
 )

@@ -33,7 +33,11 @@ class IsoStreamTest : public MockControllerTestBase {
   ~IsoStreamTest() override = default;
 
   void SetUp() override {
-    MockControllerTestBase::SetUp();
+    MockControllerTestBase::SetUp(
+        pw::bluetooth::Controller::FeaturesBits::kHciIso);
+    hci::DataBufferInfo iso_buffer_info(/*max_data_length=*/100,
+                                        /*max_num_packets=*/5);
+    transport()->InitializeIsoDataChannel(iso_buffer_info);
     iso_stream_ = IsoStream::Create(
         kCigId,
         kCisId,
@@ -46,7 +50,7 @@ class IsoStreamTest : public MockControllerTestBase {
           establishment_status_ = status;
           established_parameters_ = parameters;
         },
-        cmd_channel()->AsWeakPtr(),
+        transport()->command_channel()->AsWeakPtr(),
         /*on_closed_cb=*/
         [this]() {
           ASSERT_FALSE(closed_);
@@ -55,6 +59,22 @@ class IsoStreamTest : public MockControllerTestBase {
   }
 
  protected:
+  // Send an HCI_LE_CIS_Established event with the provided status
+  void EstablishCis(pw::bluetooth::emboss::StatusCode status);
+
+  // Call IsoStream::SetupDataPath().
+  // |cmd_complete_status| is nullopt if we do not expect an
+  // LE_Setup_ISO_Data_Path command to be generated, otherwise it should be set
+  // to the status code we want to generate in the response frame.
+  // |expected_cb_result| should be set to the expected result of the callback
+  // from IsoStream::SetupDataPath.
+  void SetupDataPath(pw::bluetooth::emboss::DataPathDirection direction,
+                     const std::optional<std::vector<uint8_t>>& codec_config,
+                     const std::optional<pw::bluetooth::emboss::StatusCode>&
+                         cmd_complete_status,
+                     iso::IsoStream::SetupDataPathError expected_cb_result,
+                     bool generate_mismatched_cid = false);
+
   IsoStream* iso_stream() { return iso_stream_.get(); }
 
   std::optional<pw::bluetooth::emboss::StatusCode> establishment_status() {
@@ -98,34 +118,174 @@ static DynamicByteBuffer LECisEstablishedPacketWithDefaultValues(
   );
 }
 
-TEST_F(IsoStreamTest, CisEstablishedSuccessfully) {
+void IsoStreamTest::EstablishCis(pw::bluetooth::emboss::StatusCode status) {
   DynamicByteBuffer le_cis_established_packet =
-      LECisEstablishedPacketWithDefaultValues(
-          pw::bluetooth::emboss::StatusCode::SUCCESS);
+      LECisEstablishedPacketWithDefaultValues(status);
   test_device()->SendCommandChannelPacket(le_cis_established_packet);
   RunUntilIdle();
   ASSERT_TRUE(establishment_status().has_value());
-  EXPECT_EQ(*(establishment_status()),
-            pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_TRUE(established_parameters().has_value());
+  EXPECT_EQ(*(establishment_status()), status);
+  if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
+    EXPECT_TRUE(established_parameters().has_value());
+  } else {
+    EXPECT_FALSE(established_parameters().has_value());
+  }
+}
+
+bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter> GenerateCodecId() {
+  const uint16_t kCompanyId = 0x1234;
+  bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter> codec_id;
+  auto codec_id_view = codec_id.view();
+  codec_id_view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::LC3);
+  codec_id_view.company_id().Write(kCompanyId);
+  return codec_id;
+}
+
+void IsoStreamTest::SetupDataPath(
+    pw::bluetooth::emboss::DataPathDirection direction,
+    const std::optional<std::vector<uint8_t>>& codec_configuration,
+    const std::optional<pw::bluetooth::emboss::StatusCode>& cmd_complete_status,
+    iso::IsoStream::SetupDataPathError expected_cb_result,
+    bool generate_mismatched_cid) {
+  const uint32_t kControllerDelay = 1234;  // Must be < 4000000
+  std::optional<iso::IsoStream::SetupDataPathError> actual_cb_result;
+
+  if (cmd_complete_status.has_value()) {
+    auto setup_data_path_packet =
+        testing::LESetupIsoDataPathPacket(kCisHandleId,
+                                          direction,
+                                          /*HCI*/ 0,
+                                          GenerateCodecId(),
+                                          kControllerDelay,
+                                          codec_configuration);
+    hci_spec::ConnectionHandle cis_handle =
+        kCisHandleId + (generate_mismatched_cid ? 1 : 0);
+    auto setup_data_path_complete_packet =
+        testing::LESetupIsoDataPathResponse(*cmd_complete_status, cis_handle);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          setup_data_path_packet,
+                          &setup_data_path_complete_packet);
+  }
+
+  iso_stream()->SetupDataPath(
+      direction,
+      GenerateCodecId(),
+      codec_configuration,
+      kControllerDelay,
+      [&actual_cb_result](iso::IsoStream::SetupDataPathError result) {
+        actual_cb_result = result;
+      });
+  RunUntilIdle();
+  ASSERT_TRUE(actual_cb_result.has_value());
+  EXPECT_EQ(expected_cb_result, *actual_cb_result);
+}
+
+TEST_F(IsoStreamTest, CisEstablishedSuccessfully) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 TEST_F(IsoStreamTest, CisEstablishmentFailed) {
-  DynamicByteBuffer le_cis_established_packet =
-      LECisEstablishedPacketWithDefaultValues(
-          pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED);
-  test_device()->SendCommandChannelPacket(le_cis_established_packet);
-  RunUntilIdle();
-  ASSERT_TRUE(establishment_status().has_value());
-  EXPECT_EQ(*(establishment_status()),
-            pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED);
-  EXPECT_FALSE(established_parameters().has_value());
+  EstablishCis(pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED);
 }
 
 TEST_F(IsoStreamTest, ClosedCallsCloseCallback) {
   EXPECT_FALSE(closed());
   iso_stream()->Close();
   EXPECT_TRUE(closed());
+}
+
+TEST_F(IsoStreamTest, SetupDataPathSuccessfully) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+                /*codec_configuration=*/std::nullopt,
+                pw::bluetooth::emboss::StatusCode::SUCCESS,
+                iso::IsoStream::SetupDataPathError::kSuccess);
+}
+
+TEST_F(IsoStreamTest, SetupDataPathBeforeCisEstablished) {
+  SetupDataPath(pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+                /*codec_configuration=*/std::nullopt,
+                /*cmd_complete_status=*/std::nullopt,
+                iso::IsoStream::SetupDataPathError::kCisNotEstablished);
+}
+
+TEST_F(IsoStreamTest, SetupInputDataPathTwice) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::INPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  SetupDataPath(pw::bluetooth::emboss::DataPathDirection::INPUT,
+                /*codec_configuration=*/std::nullopt,
+                /*cmd_complete_status=*/std::nullopt,
+                iso::IsoStream::SetupDataPathError::kStreamAlreadyExists);
+}
+
+TEST_F(IsoStreamTest, SetupOutputDataPathTwice) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  SetupDataPath(pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+                /*codec_configuration=*/std::nullopt,
+                /*cmd_complete_status=*/std::nullopt,
+                iso::IsoStream::SetupDataPathError::kStreamAlreadyExists);
+}
+
+TEST_F(IsoStreamTest, SetupBothInputAndOutputDataPaths) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::INPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+}
+
+TEST_F(IsoStreamTest, SetupDataPathInvalidArgs) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(static_cast<pw::bluetooth::emboss::DataPathDirection>(250),
+                /*codec_configuration=*/std::nullopt,
+                /*cmd_complete_status=*/std::nullopt,
+                iso::IsoStream::SetupDataPathError::kInvalidArgs);
+}
+
+TEST_F(IsoStreamTest, SetupDataPathWithCodecConfig) {
+  std::vector<uint8_t> codec_config{5, 6, 7, 8};
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      codec_config,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+}
+
+// If the connection ID doesn't match in the command complete packet, fail
+TEST_F(IsoStreamTest, SetupDataPathHandleMismatch) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::INPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kStreamRejectedByController,
+      /*generate_mismatched_cid=*/true);
+}
+
+TEST_F(IsoStreamTest, SetupDataPathControllerError) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::INPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/
+      pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS,
+      iso::IsoStream::SetupDataPathError::kStreamRejectedByController);
 }
 
 }  // namespace bt::iso

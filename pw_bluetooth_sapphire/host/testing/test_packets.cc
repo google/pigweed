@@ -505,6 +505,53 @@ DynamicByteBuffer LECisEstablishedEventPacket(
   return DynamicByteBuffer(packet.data());
 }
 
+DynamicByteBuffer LESetupIsoDataPathPacket(
+    hci_spec::ConnectionHandle connection_handle,
+    pw::bluetooth::emboss::DataPathDirection direction,
+    uint8_t data_path_id,
+    bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter> codec_id,
+    uint32_t controller_delay,
+    const std::optional<std::vector<uint8_t>>& codec_configuration) {
+  size_t packet_size =
+      pw::bluetooth::emboss::LESetupISODataPathCommand::MinSizeInBytes() +
+      (codec_configuration.has_value() ? codec_configuration->size() : 0);
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetupISODataPathCommandWriter>(
+      hci_spec::kLESetupISODataPath, packet_size);
+  auto view = packet.view_t();
+  view.connection_handle().Write(connection_handle);
+  view.data_path_direction().Write(direction);
+  view.data_path_id().Write(data_path_id);
+  view.codec_id().CopyFrom(
+      const_cast<bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>&>(
+          codec_id)
+          .view());
+  view.controller_delay().Write(controller_delay);
+  if (codec_configuration.has_value()) {
+    view.codec_configuration_length().Write(codec_configuration->size());
+    std::memcpy(view.codec_configuration().BackingStorage().data(),
+                codec_configuration->data(),
+                codec_configuration->size());
+  } else {
+    view.codec_configuration_length().Write(0);
+  }
+  return DynamicByteBuffer(packet.data());
+}
+
+DynamicByteBuffer LESetupIsoDataPathResponse(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::ConnectionHandle connection_handle) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x06,  // parameter_total_size (6 bytes)
+      0xF0,  // Num_HCI_CommandPackets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kLESetupISODataPath),
+      UpperBits(hci_spec::kLESetupISODataPath),
+      status,
+      LowerBits(connection_handle),
+      UpperBits(connection_handle)));
+}
+
 DynamicByteBuffer LERequestPeerScaPacket(hci_spec::ConnectionHandle conn) {
   auto packet = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::LERequestPeerSCACommandWriter>(

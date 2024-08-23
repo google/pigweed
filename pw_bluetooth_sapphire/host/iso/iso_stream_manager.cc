@@ -17,11 +17,12 @@
 namespace bt::iso {
 
 IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
-                                   hci::CommandChannel::WeakPtr cmd_channel)
-    : acl_handle_(handle), cmd_(cmd_channel), weak_self_(this) {
-  if (!cmd_.is_alive()) {
-    return;
-  }
+                                   hci::Transport::WeakPtr hci)
+    : acl_handle_(handle), hci_(std::move(hci)), weak_self_(this) {
+  BT_ASSERT(hci_.is_alive());
+  cmd_ = hci_->command_channel()->AsWeakPtr();
+  BT_ASSERT(cmd_.is_alive());
+
   auto self = GetWeakPtr();
   cis_request_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISRequestSubeventCode,
@@ -37,6 +38,19 @@ IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
 IsoStreamManager::~IsoStreamManager() {
   if (cmd_.is_alive()) {
     cmd_->RemoveEventHandler(cis_request_handler_);
+  }
+  if (hci_.is_alive()) {
+    hci::IsoDataChannel* iso_data_channel = hci_->iso_data_channel();
+    if (iso_data_channel) {
+      for (const auto& stream : streams_) {
+        hci_spec::ConnectionHandle cis_handle = stream.second->cis_handle();
+        bt_log(INFO,
+               "iso",
+               "unregistering ISO connection for handle %#x",
+               cis_handle);
+        iso_data_channel->UnregisterConnection(cis_handle);
+      }
+    }
   }
 }
 
@@ -122,15 +136,26 @@ void IsoStreamManager::AcceptCisRequest(
 
   BT_ASSERT(streams_.count(id) == 0);
 
-  auto self = GetWeakPtr();
-  auto on_closed_cb = [self, id]() {
-    if (self.is_alive()) {
-      self->streams_.erase(id);
+  auto on_closed_cb = [this, id, cis_handle]() {
+    if (hci_.is_alive()) {
+      hci::IsoDataChannel* iso_data_channel = hci_->iso_data_channel();
+      if (iso_data_channel) {
+        bt_log(INFO,
+               "iso",
+               "unregistering ISO connection for handle %#x",
+               cis_handle);
+        iso_data_channel->UnregisterConnection(cis_handle);
+      }
     }
+    streams_.erase(id);
   };
 
-  streams_[id] = IsoStream::Create(
-      cig_id, cis_id, cis_handle, std::move(cb), cmd_, on_closed_cb);
+  streams_[id] = IsoStream::Create(cig_id,
+                                   cis_id,
+                                   cis_handle,
+                                   std::move(cb),
+                                   cmd_->AsWeakPtr(),
+                                   on_closed_cb);
 
   auto command = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(
@@ -138,18 +163,24 @@ void IsoStreamManager::AcceptCisRequest(
   auto cmd_view = command.view_t();
   cmd_view.connection_handle().Write(cis_handle);
 
+  auto self = GetWeakPtr();
   auto cmd_complete_cb = [cis_handle, id, self](auto cmd_id,
                                                 const hci::EventPacket& event) {
     bt_log(INFO, "iso", "LE_Accept_CIS_Request command response received");
+    if (!self.is_alive()) {
+      return;
+    }
     if (hci_is_error(event,
                      WARN,
                      "bt-iso",
                      "accept CIS request failed for handle %#x",
                      cis_handle)) {
-      if (self.is_alive()) {
-        self->streams_.erase(id);
-      }
+      self->streams_.erase(id);
+      return;
     }
+    hci::IsoDataChannel* iso_data_channel = self->hci_->iso_data_channel();
+    iso_data_channel->RegisterConnection(cis_handle,
+                                         self->streams_[id]->GetWeakPtr());
   };
 
   cmd_->SendCommand(std::move(command), cmd_complete_cb);

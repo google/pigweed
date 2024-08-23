@@ -107,7 +107,7 @@ const char* kInspectDisconnectRemoteDisconnectionNodeName =
 }  // namespace
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
-    hci::CommandChannel::WeakPtr cmd_channel,
+    hci::Transport::WeakPtr hci,
     hci::LocalAddressDelegate* addr_delegate,
     hci::LowEnergyConnector* connector,
     PeerCache* peer_cache,
@@ -118,7 +118,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
     const AdapterState& adapter_state,
     pw::async::Dispatcher& dispatcher)
     : dispatcher_(dispatcher),
-      cmd_(std::move(cmd_channel)),
+      hci_(std::move(hci)),
       security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
@@ -133,7 +133,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(l2cap_);
   BT_DEBUG_ASSERT(gatt_.is_alive());
-  BT_DEBUG_ASSERT(cmd_.is_alive());
+  BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(hci_connector_);
   BT_DEBUG_ASSERT(local_address_delegate_);
 }
@@ -429,7 +429,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
   std::unique_ptr<internal::LowEnergyConnector> connector =
       std::make_unique<internal::LowEnergyConnector>(peer_id,
                                                      connection_options,
-                                                     cmd_,
+                                                     hci_,
                                                      peer_cache_,
                                                      weak_self_.GetWeakPtr(),
                                                      l2cap_,
@@ -516,7 +516,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
           std::make_unique<internal::LowEnergyConnector>(
               peer_id,
               request.connection_options(),
-              cmd_,
+              hci_,
               peer_cache_,
               weak_self_.GetWeakPtr(),
               l2cap_,

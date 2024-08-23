@@ -2365,6 +2365,10 @@ constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
 // LE Request Peer SCA Command (v5.2) (LE)
 constexpr OpCode kLERequestPeerSCA = LEControllerCommandOpCode(0x006D);
 
+// ==========================================
+// LE Setup ISO Data Path Command (v5.2) (LE)
+constexpr OpCode kLESetupISODataPath = LEControllerCommandOpCode(0x006E);
+
 // =======================================
 // LE Set Host Feature Command (v5.2) (LE)
 constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);

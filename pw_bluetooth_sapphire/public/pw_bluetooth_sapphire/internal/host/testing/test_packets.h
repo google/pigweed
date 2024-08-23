@@ -141,6 +141,17 @@ DynamicByteBuffer LECisEstablishedEventPacket(
     uint16_t max_pdu_p_to_c,
     uint16_t iso_interval);
 
+DynamicByteBuffer LESetupIsoDataPathPacket(
+    hci_spec::ConnectionHandle connection_handle,
+    pw::bluetooth::emboss::DataPathDirection direction,
+    uint8_t data_path_id,
+    bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter> codec_id,
+    uint32_t controller_delay,
+    const std::optional<std::vector<uint8_t>>& codec_configuration);
+DynamicByteBuffer LESetupIsoDataPathResponse(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::ConnectionHandle connection_handle);
+
 DynamicByteBuffer LERequestPeerScaCompletePacket(
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca);
