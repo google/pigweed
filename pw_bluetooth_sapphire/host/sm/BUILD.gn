@@ -18,6 +18,10 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_sm = "../../public/pw_bluetooth_sapphire/internal/host/sm"
 
+config("warnings") {
+  cflags_cc = [ "-Wswitch-enum" ]
+}
+
 pw_source_set("definitions") {
   public = [
     "$dir_public_sm/error.h",
@@ -36,6 +40,9 @@ pw_source_set("definitions") {
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",  # hci_spec::LinkKey
   ]
+
+  configs = [ ":warnings" ]
+  deps = [ "$dir_pw_preprocessor" ]
 }
 
 pw_source_set("sm") {
