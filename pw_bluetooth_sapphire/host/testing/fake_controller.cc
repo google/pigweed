@@ -2196,11 +2196,11 @@ void FakeController::OnReadLocalSupportedCommands() {
 }
 
 void FakeController::OnReadLocalVersionInfo() {
-  hci_spec::ReadLocalVersionInfoReturnParams params;
-  std::memset(&params, 0, sizeof(params));
-  params.hci_version = settings_.hci_version;
-  RespondWithCommandComplete(hci_spec::kReadLocalVersionInfo,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::ReadLocalVersionInfoCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  packet.view_t().hci_version().Write(settings_.hci_version);
+  RespondWithCommandComplete(hci_spec::kReadLocalVersionInfo, &packet);
 }
 
 void FakeController::OnReadRemoteNameRequestCommandReceived(

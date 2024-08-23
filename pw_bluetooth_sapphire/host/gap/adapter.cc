@@ -950,15 +950,16 @@ void AdapterImpl::InitializeStep1() {
       hci::EmbossCommandPacket::New<
           pw::bluetooth::emboss::ReadLocalVersionInformationCommandView>(
           hci_spec::kReadLocalVersionInfo),
-      [this](const hci::EventPacket& cmd_complete) {
+      [this](const hci::EmbossEventPacket& cmd_complete) {
         if (hci_is_error(
                 cmd_complete, WARN, "gap", "read local version info failed")) {
           return;
         }
         auto params =
             cmd_complete
-                .return_params<hci_spec::ReadLocalVersionInfoReturnParams>();
-        state_.hci_version = params->hci_version;
+                .view<pw::bluetooth::emboss::
+                          ReadLocalVersionInfoCommandCompleteEventView>();
+        state_.hci_version = params.hci_version().Read();
       });
 
   // HCI_Read_Local_Supported_Commands

@@ -650,18 +650,6 @@ constexpr OpCode InformationalParamsOpCode(const uint16_t ocf) {
 // Read Local Version Information Command (v1.1)
 constexpr OpCode kReadLocalVersionInfo = InformationalParamsOpCode(0x0001);
 
-struct ReadLocalVersionInfoReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  pw::bluetooth::emboss::CoreSpecificationVersion hci_version;
-
-  uint16_t hci_revision;
-  uint8_t lmp_pal_version;
-  uint16_t manufacturer_name;
-  uint16_t lmp_pal_subversion;
-} __attribute__((packed));
-
 // ============================================
 // Read Local Supported Commands Command (v1.2)
 constexpr OpCode kReadLocalSupportedCommands =
