@@ -930,14 +930,6 @@ constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
 // Simple Pairing Complete Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kSimplePairingCompleteEventCode = 0x36;
 
-struct SimplePairingCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Address of the device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // =====================================================
 // User Passkey Notification Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;

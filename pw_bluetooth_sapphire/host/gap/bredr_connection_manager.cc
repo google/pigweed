@@ -1496,23 +1496,24 @@ BrEdrConnectionManager::OnLinkKeyNotification(
 }
 
 hci::CommandChannel::EventCallbackResult
-BrEdrConnectionManager::OnSimplePairingComplete(const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() ==
-                  hci_spec::kSimplePairingCompleteEventCode);
-  const auto& params =
-      event.params<hci_spec::SimplePairingCompleteEventParams>();
+BrEdrConnectionManager::OnSimplePairingComplete(
+    const hci::EmbossEventPacket& event_packet) {
+  auto params =
+      event_packet
+          .view<pw::bluetooth::emboss::SimplePairingCompleteEventView>();
+  DeviceAddressBytes bd_addr = DeviceAddressBytes(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(bd_addr);
   if (!conn_pair) {
     bt_log(WARN,
            "gap-bredr",
            "got Simple Pairing Complete (status: %s) for unconnected addr %s",
-           bt_str(ToResult(params.status)),
-           bt_str(params.bd_addr));
+           bt_str(ToResult(params.status().Read())),
+           bt_str(bd_addr));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   conn_pair->second->pairing_state_manager().OnSimplePairingComplete(
-      params.status);
+      params.status().Read());
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 

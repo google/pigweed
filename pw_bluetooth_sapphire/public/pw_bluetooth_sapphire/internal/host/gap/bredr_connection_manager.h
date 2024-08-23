@@ -282,7 +282,7 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnLinkKeyNotification(
       const hci::EmbossEventPacket& event);
   hci::CommandChannel::EventCallbackResult OnSimplePairingComplete(
-      const hci::EventPacket& event);
+      const hci::EmbossEventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(
       const hci::EmbossEventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(

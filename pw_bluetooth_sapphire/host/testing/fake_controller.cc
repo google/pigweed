@@ -2403,11 +2403,12 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   RespondWithCommandStatus(hci_spec::kUserConfirmationRequestReply,
                            pwemb::StatusCode::SUCCESS);
 
-  hci_spec::SimplePairingCompleteEventParams pairing_event;
-  pairing_event.bd_addr = DeviceAddressBytes(params.bd_addr());
-  pairing_event.status = pwemb::StatusCode::SUCCESS;
-  SendEvent(hci_spec::kSimplePairingCompleteEventCode,
-            BufferView(&pairing_event, sizeof(pairing_event)));
+  auto pairing_event =
+      hci::EmbossEventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
+          hci_spec::kSimplePairingCompleteEventCode);
+  pairing_event.view_t().bd_addr().CopyFrom(params.bd_addr());
+  pairing_event.view_t().status().Write(pwemb::StatusCode::SUCCESS);
+  SendCommandChannelPacket(pairing_event.data());
 
   auto link_key_event =
       hci::EmbossEventPacket::New<pwemb::LinkKeyNotificationEventWriter>(
@@ -2463,11 +2464,13 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
   RespondWithCommandComplete(hci_spec::kUserConfirmationRequestNegativeReply,
                              pwemb::StatusCode::SUCCESS);
 
-  hci_spec::SimplePairingCompleteEventParams pairing_event;
-  pairing_event.bd_addr = DeviceAddressBytes(params.bd_addr());
-  pairing_event.status = pwemb::StatusCode::AUTHENTICATION_FAILURE;
-  SendEvent(hci_spec::kSimplePairingCompleteEventCode,
-            BufferView(&pairing_event, sizeof(pairing_event)));
+  auto pairing_event =
+      hci::EmbossEventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
+          hci_spec::kSimplePairingCompleteEventCode);
+  pairing_event.view_t().bd_addr().CopyFrom(params.bd_addr());
+  pairing_event.view_t().status().Write(
+      pwemb::StatusCode::AUTHENTICATION_FAILURE);
+  SendCommandChannelPacket(pairing_event.data());
 }
 
 void FakeController::OnSetConnectionEncryptionCommand(

@@ -170,7 +170,6 @@ bool EventPacket::ToStatusCode(
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
-    CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EMBOSS_EVENT_STATUS(InquiryComplete);
     case hci_spec::kEncryptionChangeEventCode:
       return StatusCodeFromEmbossEvent<
