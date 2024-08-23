@@ -1695,12 +1695,13 @@ void FakeController::OnLEReadSupportedStates() {
 }
 
 void FakeController::OnLEReadLocalSupportedFeatures() {
-  hci_spec::LEReadLocalSupportedFeaturesReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.le_features =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, settings_.le_features);
-  RespondWithCommandComplete(hci_spec::kLEReadLocalSupportedFeatures,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LEReadLocalSupportedFeaturesCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.le_features().BackingStorage().WriteUInt(settings_.le_features);
+  RespondWithCommandComplete(hci_spec::kLEReadLocalSupportedFeatures, &packet);
 }
 
 void FakeController::OnLECreateConnectionCancel() {

@@ -1098,18 +1098,18 @@ void AdapterImpl::InitializeStep2() {
       hci::EmbossCommandPacket::New<
           pw::bluetooth::emboss::LEReadLocalSupportedFeaturesCommandView>(
           hci_spec::kLEReadLocalSupportedFeatures),
-      [this](const hci::EventPacket& cmd_complete) {
+      [this](const hci::EmbossEventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete,
                          WARN,
                          "gap",
                          "LE read local supported features failed")) {
           return;
         }
-        auto params = cmd_complete.return_params<
-            hci_spec::LEReadLocalSupportedFeaturesReturnParams>();
+        auto packet = cmd_complete.view<
+            pw::bluetooth::emboss::
+                LEReadLocalSupportedFeaturesCommandCompleteEventView>();
         state_.low_energy_state.supported_features_ =
-            pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                        params->le_features);
+            packet.le_features().BackingStorage().ReadUInt();
       });
 
   // HCI_LE_Read_Supported_States

@@ -1386,15 +1386,6 @@ struct LEReadBufferSizeV1ReturnParams {
 constexpr OpCode kLEReadLocalSupportedFeatures =
     LEControllerCommandOpCode(0x0003);
 
-struct LEReadLocalSupportedFeaturesReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Bit Mask List of supported LE features. See enum class LESupportedFeature
-  // in hci_constants.h.
-  uint64_t le_features;
-} __attribute__((packed));
-
 // =========================================
 // LE Set Random Address Command (v4.0) (LE)
 constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
