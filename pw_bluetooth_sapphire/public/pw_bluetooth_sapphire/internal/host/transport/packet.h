@@ -87,8 +87,7 @@ namespace bt::hci {
 //         std::make_unique<FixedBufferPacket<MagicHeader, 255>>();
 //     packet->InitPancakes();
 //
-//   This pattern is used by CommandPacket, EventPacket, ACLDataPacket, and
-//   ScoDataPacket
+//   This pattern is used by EventPacket, ACLDataPacket, and ScoDataPacket
 //
 // THREAD-SAFETY:
 //

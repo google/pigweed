@@ -27,7 +27,6 @@ pw_source_set("hci") {
     "$dir_public_hci/android_extended_low_energy_advertiser.h",
     "$dir_public_hci/bredr_connection.h",
     "$dir_public_hci/bredr_connection_request.h",
-    "$dir_public_hci/command_handler.h",
     "$dir_public_hci/connection.h",
     "$dir_public_hci/extended_low_energy_advertiser.h",
     "$dir_public_hci/extended_low_energy_scanner.h",
@@ -97,7 +96,6 @@ pw_source_set("testing") {
 pw_test("tests") {
   sources = [
     "advertising_handle_map_test.cc",
-    "command_handler_test.cc",
     "connection_test.cc",
     "extended_low_energy_advertiser_test.cc",
     "extended_low_energy_scanner_test.cc",

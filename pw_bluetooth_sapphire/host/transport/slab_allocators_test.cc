@@ -24,37 +24,27 @@
 namespace bt::hci::allocators {
 namespace {
 
-constexpr hci_spec::OpCode kTestOpCode = 0xFFFF;
-
-TEST(SlabAllocatorsTest, CommandPacket) {
-  auto packet = CommandPacket::New(kTestOpCode, 5);
+TEST(SlabAllocatorsTest, EventPacket) {
+  auto packet = EventPacket::New(5);
   EXPECT_TRUE(packet);
-  EXPECT_EQ(5u + sizeof(hci_spec::CommandHeader), packet->view().size());
+  EXPECT_EQ(5u + sizeof(hci_spec::EventHeader), packet->view().size());
 
-  packet = CommandPacket::New(kTestOpCode, kSmallControlPayloadSize);
+  packet = EventPacket::New(kMaxEventPayloadSize);
   EXPECT_TRUE(packet);
-  EXPECT_GE(packet->view().size(), kSmallControlPacketSize);
-
-  packet = CommandPacket::New(kTestOpCode, kSmallControlPayloadSize + 1);
-  EXPECT_TRUE(packet);
-  EXPECT_EQ(kSmallControlPacketSize + 1, packet->view().size());
+  EXPECT_GE(packet->view().size(), kMaxEventPacketSize);
 }
 
-TEST(SlabAllocatorsTest, CommandPacketFallBack) {
-  // Maximum number of packets we can expect to obtain from all the slab
-  // allocators.
-  const size_t kMaxSlabPackets = kMaxNumSlabs * kNumSmallControlPackets +
-                                 kMaxNumSlabs * kNumLargeControlPackets;
-
-  std::list<std::unique_ptr<hci::CommandPacket>> packets;
-  for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
-    auto packet = CommandPacket::New(kTestOpCode, 5);
+TEST(SlabAllocatorsTest, EventPacketFallBack) {
+  std::list<std::unique_ptr<hci::EventPacket>> packets;
+  for (size_t num_packets = 0; num_packets < kMaxNumEventPackets;
+       num_packets++) {
+    auto packet = EventPacket::New(5);
     packets.push_front(std::move(packet));
   }
 
-  // Command allocator can fall back on system allocator after slabs are
+  // Control allocator can fall back on system allocator after slabs are
   // exhausted.
-  auto packet = CommandPacket::New(kTestOpCode, 5);
+  auto packet = EventPacket::New(5);
   ASSERT_TRUE(packet);
 }
 

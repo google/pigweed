@@ -138,7 +138,6 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h",
-        "public/pw_bluetooth_sapphire/internal/host/hci/command_handler.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/connection.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h",

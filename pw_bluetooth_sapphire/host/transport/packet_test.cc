@@ -26,35 +26,11 @@ using bt::StaticByteBuffer;
 namespace bt::hci::test {
 namespace {
 
-constexpr hci_spec::OpCode kTestOpCode = 0x07FF;
 constexpr hci_spec::EventCode kTestEventCode = 0xFF;
 
 struct TestPayload {
   uint8_t foo;
 } __attribute__((packed));
-
-TEST(PacketTest, CommandPacket) {
-  constexpr size_t kPayloadSize = sizeof(TestPayload);
-  auto packet = CommandPacket::New(kTestOpCode, kPayloadSize);
-
-  EXPECT_EQ(kTestOpCode, packet->opcode());
-  EXPECT_EQ(kPayloadSize, packet->view().payload_size());
-
-  uint8_t foo = 0x7F;
-  packet->mutable_payload<TestPayload>()->foo = foo;
-
-  // clang-format off
-
-  StaticByteBuffer kExpected(
-      0xFF, 0x07,  // opcode
-      0x01,        // parameter_total_size
-      foo
-  );
-
-  // clang-format on
-
-  EXPECT_TRUE(ContainersEqual(kExpected, packet->view().data()));
-}
 
 TEST(PacketTest, EventPacket) {
   constexpr size_t kPayloadSize = sizeof(TestPayload);

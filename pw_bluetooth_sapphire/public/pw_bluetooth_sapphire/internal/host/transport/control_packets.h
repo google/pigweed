@@ -27,39 +27,8 @@
 
 namespace bt::hci {
 
-using CommandPacket = Packet<hci_spec::CommandHeader>;
 using EventPacket = Packet<hci_spec::EventHeader>;
 using EventPacketPtr = std::unique_ptr<EventPacket>;
-
-// Packet template specialization for HCI command packets.
-template <>
-class Packet<hci_spec::CommandHeader>
-    : public PacketBase<hci_spec::CommandHeader, CommandPacket> {
- public:
-  // Slab-allocates a new CommandPacket with the given payload size and
-  // initializes the packet's header field.
-  static std::unique_ptr<CommandPacket> New(hci_spec::OpCode opcode,
-                                            size_t payload_size = 0u);
-
-  // Returns the HCI command opcode currently in this packet.
-  hci_spec::OpCode opcode() const {
-    return pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                       view().header().opcode);
-  }
-
-  // Convenience function to get a mutable payload of a packet.
-  template <typename PayloadType>
-  PayloadType* mutable_payload() {
-    return mutable_view()->mutable_payload<PayloadType>();
-  }
-
- protected:
-  using PacketBase<hci_spec::CommandHeader, CommandPacket>::PacketBase;
-
- private:
-  // Writes the given header fields into the underlying buffer.
-  void WriteHeader(hci_spec::OpCode opcode);
-};
 
 // Packet template specialization for HCI event packets.
 template <>

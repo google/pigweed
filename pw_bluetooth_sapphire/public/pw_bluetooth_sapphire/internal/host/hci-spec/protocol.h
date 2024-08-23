@@ -31,9 +31,9 @@
 // the Bluetooth Core Specification version 5.0
 //
 // NOTE: Avoid casting raw buffer pointers to the packet payload structure types
-// below; use as template parameter to PacketView::payload(),
-// MutableBufferView::mutable_payload(), or CommandPacket::mutable_payload()
-// instead. Take extra care when accessing flexible array members.
+// below; use as template parameter to PacketView::payload(), or
+// MutableBufferView::mutable_payload() instead. Take extra care when accessing
+// flexible array members.
 
 namespace bt::hci_spec {
 

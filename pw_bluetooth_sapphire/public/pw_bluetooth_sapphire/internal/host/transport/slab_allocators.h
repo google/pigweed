@@ -23,8 +23,7 @@
 namespace bt::hci::allocators {
 
 // Slab sizes for control (command/event) and ACL data packets used by the slab
-// allocators. These are used by the CommandPacket, EventPacket, and
-// ACLDataPacket classes.
+// allocators. These are used by the EventPacket, and ACLDataPacket classes.
 
 // TODO(armansito): The slab sizes below are arbitrary; fine tune them based on
 // usage.
@@ -34,19 +33,11 @@ constexpr size_t kMaxScoSlabSize = 33024;  // exactly 128 max size SCO packets
 constexpr size_t kMaxNumSlabs = 100;
 
 // The largest possible control packet size.
-constexpr size_t kLargeControlPayloadSize =
-    hci_spec::kMaxCommandPacketPayloadSize;
-constexpr size_t kLargeControlPacketSize =
-    sizeof(hci_spec::CommandHeader) + kLargeControlPayloadSize;
-constexpr size_t kNumLargeControlPackets =
-    kMaxControlSlabSize / kLargeControlPacketSize;
-
-// The average HCI control packet payload size. Most packets are under 16 bytes.
-constexpr size_t kSmallControlPayloadSize = 16;
-constexpr size_t kSmallControlPacketSize =
-    sizeof(hci_spec::CommandHeader) + kSmallControlPayloadSize;
-constexpr size_t kNumSmallControlPackets =
-    kMaxControlSlabSize / kSmallControlPacketSize;
+constexpr size_t kMaxEventPayloadSize = hci_spec::kMaxEventPacketPayloadSize;
+constexpr size_t kMaxEventPacketSize =
+    sizeof(hci_spec::EventHeader) + kMaxEventPayloadSize;
+constexpr size_t kMaxNumEventPackets =
+    kMaxControlSlabSize / kMaxEventPacketSize;
 
 // Large, medium, and small buffer sizes for ACL data packets.
 constexpr size_t kLargeACLDataPayloadSize = hci_spec::kMaxACLPayloadSize;
