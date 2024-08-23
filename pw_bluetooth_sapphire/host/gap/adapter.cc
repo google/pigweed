@@ -988,13 +988,13 @@ void AdapterImpl::InitializeStep1() {
   init_seq_runner_->QueueCommand(
       hci::EmbossCommandPacket::New<
           pw::bluetooth::emboss::ReadBdAddrCommandView>(hci_spec::kReadBDADDR),
-      [this](const hci::EventPacket& cmd_complete) {
+      [this](const hci::EmbossEventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "read BR_ADDR failed")) {
           return;
         }
-        auto params =
-            cmd_complete.return_params<hci_spec::ReadBDADDRReturnParams>();
-        state_.controller_address = params->bd_addr;
+        auto packet = cmd_complete.view<
+            pw::bluetooth::emboss::ReadBdAddrCommandCompleteEventView>();
+        state_.controller_address = DeviceAddressBytes(packet.bd_addr());
       });
 
   if (state().IsControllerFeatureSupported(

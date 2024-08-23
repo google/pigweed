@@ -1949,11 +1949,13 @@ void FakeController::OnReadBufferSize() {
 }
 
 void FakeController::OnReadBRADDR() {
-  hci_spec::ReadBDADDRReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.bd_addr = settings_.bd_addr.value();
-  RespondWithCommandComplete(hci_spec::kReadBDADDR,
-                             BufferView(&params, sizeof(params)));
+  auto packet =
+      hci::EmbossEventPacket::New<pwemb::ReadBdAddrCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.bd_addr().CopyFrom(settings_.bd_addr.value().view());
+  RespondWithCommandComplete(hci_spec::kReadBDADDR, &packet);
 }
 
 void FakeController::OnLESetAdvertisingEnable(

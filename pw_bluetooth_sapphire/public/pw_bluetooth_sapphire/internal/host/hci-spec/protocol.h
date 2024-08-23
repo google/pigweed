@@ -698,13 +698,6 @@ constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
 // Read BD_ADDR Command (v1.1) (BR/EDR, LE)
 constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);
 
-struct ReadBDADDRReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // =======================================================
 // Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
 constexpr OpCode kReadDataBlockSize = InformationalParamsOpCode(0x000A);
