@@ -13,6 +13,9 @@
 // the License.
 
 #pragma once
+
+#include <pw_preprocessor/compiler.h>
+
 // Macro used to simplify the task of deleting all of the default copy
 // constructors and assignment operators.
 #define BT_DISALLOW_COPY_ASSIGN_AND_MOVE(_class_name)  \
@@ -26,3 +29,14 @@
 #define BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(_class_name) \
   _class_name(const _class_name&) = delete;                 \
   _class_name& operator=(const _class_name&) = delete
+
+#ifndef PW_MODIFY_DIAGNOSTIC_CLANG
+/// Applies ``PW_MODIFY_DIAGNOSTIC`` only for clang. This is useful for warnings
+/// that aren't supported by or don't need to be changed in other compilers.
+#ifdef __clang__
+#define PW_MODIFY_DIAGNOSTIC_CLANG(kind, option) \
+  PW_MODIFY_DIAGNOSTIC(kind, option)
+#else
+#define PW_MODIFY_DIAGNOSTIC_CLANG(kind, option) _PW_REQUIRE_SEMICOLON
+#endif  // __clang__
+#endif  // PW_MODIFY_DIAGNOSTIC_CLANG
