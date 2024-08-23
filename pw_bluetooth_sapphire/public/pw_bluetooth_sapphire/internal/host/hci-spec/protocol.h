@@ -925,11 +925,6 @@ constexpr EventCode kUserConfirmationRequestEventCode = 0x33;
 // User Passkey Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
 
-struct UserPasskeyRequestEventParams {
-  // Address of the device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // ===================================================
 // Simple Pairing Complete Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kSimplePairingCompleteEventCode = 0x36;

@@ -1552,23 +1552,25 @@ BrEdrConnectionManager::OnUserConfirmationRequest(
 }
 
 hci::CommandChannel::EventCallbackResult
-BrEdrConnectionManager::OnUserPasskeyRequest(const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kUserPasskeyRequestEventCode);
-  const auto& params = event.params<hci_spec::UserPasskeyRequestEventParams>();
+BrEdrConnectionManager::OnUserPasskeyRequest(
+    const hci::EmbossEventPacket& event_packet) {
+  auto params =
+      event_packet.view<pw::bluetooth::emboss::UserPasskeyRequestEventView>();
+  DeviceAddressBytes bd_addr = DeviceAddressBytes(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(bd_addr);
   if (!conn_pair) {
     bt_log(WARN,
            "gap-bredr",
            "got %s for unconnected addr %s",
            __func__,
-           bt_str(params.bd_addr));
-    SendUserPasskeyRequestNegativeReply(params.bd_addr);
+           bt_str(bd_addr));
+    SendUserPasskeyRequestNegativeReply(bd_addr);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto passkey_cb = [self = weak_self_.GetWeakPtr(), bd_addr = params.bd_addr](
-                        std::optional<uint32_t> passkey) {
+  auto passkey_cb = [self = weak_self_.GetWeakPtr(),
+                     bd_addr](std::optional<uint32_t> passkey) {
     if (!self.is_alive()) {
       return;
     }
