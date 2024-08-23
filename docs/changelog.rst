@@ -13,11 +13,433 @@ Talk to the team at Pigweed Live
 
 .. _docs-changelog-latest:
 
+------------
+Aug 23, 2024
+------------
+.. changelog_highlights_start
+
+.. _Google Pigweed comes to our new RP2350: https://www.raspberrypi.com/news/google-pigweed-comes-to-our-new-rp2350/
+
+Highlights (Aug 8, 2024 to Aug 23, 2024):
+
+* **RP2350 Support**: Pigweed now supports the new Raspberry Pi RP2350 MCU.
+  Check out `Google Pigweed comes to our new RP2350`_ on the Raspberry Pi
+  blog for the full story and :ref:`showcase-sense` to try it out.
+
+.. changelog_highlights_end
+
+Build systems
+=============
+
+Bazel
+-----
+* `Add missing counting_semaphore and thread_yield backends
+  <https://pwrev.dev/228392>`__
+
+Modules
+=======
+
+pw_allocator
+------------
+* `Disable example spin_lock test on RP2
+  <https://pwrev.dev/231251>`__
+  (issues `#358411629 <https://pwbug.dev/358411629>`__,
+  `#361354335 <https://pwbug.dev/361354335>`__)
+
+pw_async2
+---------
+The new ``pw::async2::MakeOnceSenderAndReceiver()`` function template makes it
+easier to simultaneously create a sender and receiver for asynchronously
+sending values. The new ``pw::async2::MakeOnceSenderAndReceiver()`` function
+template works similarly but is used for references.
+
+* `Create OnceSender & OnceReceiver
+  <https://pwrev.dev/226231>`__
+  (issue `#350994818 <https://pwbug.dev/350994818>`__)
+* `Remove accidental macro #undef
+  <https://pwrev.dev/229275>`__
+
+pw_bloat
+--------
+The ``pw bloat`` CLI command now supports a ``--custom-config`` option to
+specify a custom Bloaty config file so that non-memory regions can be
+analyzed.
+
+* `Support custom bloaty configs in CLI command
+  <https://pwrev.dev/216133>`__
+
+pw_bluetooth
+------------
+* `Create more emboss event definitions
+  <https://pwrev.dev/231091>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Add create connection cancel return
+  <https://pwrev.dev/230251>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Add LEReadSupportedStates emboss event
+  <https://pwrev.dev/228961>`__
+* `Add HCI Command OpCode definitions
+  <https://pwrev.dev/228672>`__
+* `Add more emboss definitions
+  <https://pwrev.dev/228671>`__
+  (issue `#42167863 <https://pwbug.dev/42167863>`__)
+* `Make SupportedCommands emboss struct more ergonomic
+  <https://pwrev.dev/228155>`__
+
+pw_bluetooth_proxy
+------------------
+* `Release H4 buff on error
+  <https://pwrev.dev/229011>`__
+
+pw_bluetooth_sapphire
+---------------------
+* `Add common bt-host clang warnings
+  <https://pwrev.dev/228651>`__
+  (issue `#345799180 <https://pwbug.dev/345799180>`__)
+* `Add new emboss compiler file ir_data_fields.py
+  <https://pwrev.dev/228655>`__
+  (issue `#358665524 <https://pwbug.dev/358665524>`__,
+  `#335724776 <https://pwbug.dev/335724776>`__)
+
+pw_build
+--------
+The new ``glob_dirs()`` Starlark helper returns a list of directories matching
+the provided glob pattern. The new ``match_dir()`` Starlark helper returns a
+single directory that matches the provided glob pattern and fails if there's
+more than one match.
+
+* `Add mod proc_macro to rust macro targets
+  <https://pwrev.dev/230013>`__
+* `Remove output_name attr in rust_library
+  <https://pwrev.dev/230012>`__
+* `Make pw_load_phase_test host only
+  <https://pwrev.dev/230072>`__
+* `Add glob_dirs() Starlark helper
+  <https://pwrev.dev/228956>`__
+
+pw_channel
+----------
+* `Ensure that stream_channel_test resources live forever
+  <https://pwrev.dev/228154>`__
+  (issue `#358078118 <https://pwbug.dev/358078118>`__)
+
+pw_cpu_exception_cortex_m
+-------------------------
+* `Fix cpu exception handler on armv8m
+  <https://pwrev.dev/231372>`__
+  (issue `#323215726 <https://pwbug.dev/323215726>`__)
+
+pw_display
+----------
+The new :ref:`module-pw_display` experimental module provides graphic display
+support and framebuffer management.
+
+* `Color library
+  <https://pwrev.dev/229606>`__
+  (issue `#359953386 <https://pwbug.dev/359953386>`__)
+* `Create module directory
+  <https://pwrev.dev/229712>`__
+
+pw_env_setup
+------------
+* `Get bazelisk instead of bazel
+  <https://pwrev.dev/226376>`__
+  (issue `#355438774 <https://pwbug.dev/355438774>`__)
+
+pw_grpc
+-------
+When a frame with a payload has a stream-reset error, the payload is now skipped.
+
+* `Improve logging when receiving unknown RPC
+  <https://pwrev.dev/231011>`__
+* `Skip HTTP2 frame payload for frames that result in stream reset
+  <https://pwrev.dev/230951>`__
+
+pw_i2c_rp2040
+-------------
+The ``clock_frequency`` field in ``pw::i2c::Rp2040Initiator::Config`` has been
+renamed to ``clock_frequency_hz``.
+
+* `Include label in clock_frequency
+  <https://pwrev.dev/221412>`__
+
+pw_ide
+------
+``pw_ide`` now searches all parent directories for the presence of a
+``pigweed.json`` file to determine the root directory. The workspace
+root can be programmatically configured via the new
+``pw_ide.settings.PigweedIdeSettings.workspace_root`` property. The
+``pigweed.activateBazeliskInNewTerminals`` option in VS Code now defaults
+to ``false``.
+
+* `Fix .pw_ide.yaml paths
+  <https://pwrev.dev/230991>`__
+* `Support different workspace root
+  <https://pwrev.dev/217220>`__
+* `Disable Bazelisk auto-activation by default
+  <https://pwrev.dev/228493>`__
+  (issue `#358384211 <https://pwbug.dev/358384211>`__)
+
+pw_kvs
+------
+References to ``pw::kvs::Key`` must be replaced with ``std::string_view``.
+
+* `Remove unnecessary Key alias and test
+  <https://pwrev.dev/229976>`__
+* `Pass EntryHeader by const reference
+  <https://pwrev.dev/229727>`__
+  (issue `#254601862 <https://pwbug.dev/254601862>`__)
+* `Move inline variable definition to .cc file
+  <https://pwrev.dev/228514>`__
+  (issue `#357162923 <https://pwbug.dev/357162923>`__)
+
+pw_module
+---------
+* `Fix OWNERS file parsing
+  <https://pwrev.dev/226177>`__
+
+pw_multibuf
+-----------
+The ``pw::multibuf::MultiBuf::Chunks()`` method and
+``pw::multibuf::MultiBuf::ChunkIterable`` class have been removed; use the
+new ``pw::multibuf::MultiBufChunks`` class instead.
+
+* `Restructure ChunkIterable
+  <https://pwrev.dev/230892>`__
+* `Comment updates for consistency
+  <https://pwrev.dev/230891>`__
+
+pw_package
+----------
+* `Use bazel to build picotool package
+  <https://pwrev.dev/229431>`__
+
+pw_preprocessor
+---------------
+The new ``PW_MODIFY_DIAGNOSTIC_CLANG`` define lets you handle Clang-only
+warnings separately from other compilers.
+
+* `Test GCC/Clang diagnostic modification macros
+  <https://pwrev.dev/231336>`__
+* `Introduce PW_MODIFY_DIAGNOSTIC_CLANG
+  <https://pwrev.dev/231332>`__
+  (issue `#356935569 <https://pwbug.dev/356935569>`__)
+* `Expand comment for PW_PACKED
+  <https://pwrev.dev/226994>`__
+
+pw_rpc
+------
+Java client: The new ``PacketByteFactory`` Java class is a helper for creating
+request and response packets during testing.
+
+Python client: The ``pw_rpc.console_tools.watchdog.Watchdog`` Python class has a
+new ``stop()`` method to stop the watchdog.  The
+``pw_rpc.callback_client.call.Call`` Python class now accepts a
+``max_responses`` argument that lets you limit how many responses should be
+received after a streaming RPC call.  The ``ignore_errors``,
+``cancel_duplicate_calls``, and ``override_pending_options`` arguments
+previously available in some Python client methods have been removed.
+
+TypeScript client: The ``invoke()`` method in the TypeScript client now accepts
+a ``maxResponses`` argument which lets you limit how many responses to a
+streaming RPC call should be stored.
+
+* `Avoid recompiling protos for every test
+  <https://pwrev.dev/230135>`__
+  (issue `#360184800 <https://pwbug.dev/360184800>`__)
+* `Fix typing in unaryWait return value in TS client
+  <https://pwrev.dev/231071>`__
+* `Create PacketByteFactory
+  <https://pwrev.dev/230011>`__
+  (issue `#360174359 <https://pwbug.dev/360174359>`__)
+* `Add stop method to Watchdog
+  <https://pwrev.dev/230692>`__
+  (issue `#350822543 <https://pwbug.dev/350822543>`__)
+* `Limit maximum stored responses in TypeScript client
+  <https://pwrev.dev/229975>`__
+* `Add missing Bazel test rules
+  <https://pwrev.dev/230691>`__
+* `Restore RpcIds for testing; move packet encoding to packets.py
+  <https://pwrev.dev/230471>`__
+* `Limit maximum stored responses in Python client
+  <https://pwrev.dev/229974>`__
+  (issue `#262749163 <https://pwbug.dev/262749163>`__)
+* `Remove deprecated / obsolete features
+  <https://pwrev.dev/229908>`__
+* `Fix open in callback_client
+  <https://pwrev.dev/169174>`__
+  (issue `#309159260 <https://pwbug.dev/309159260>`__)
+* `Merge PendingRpc and RpcIds
+  <https://pwrev.dev/228952>`__
+* `Require an output function for channels
+  <https://pwrev.dev/227855>`__
+
+pw_spi_linux
+------------
+* `Remove linkage specification from cli main
+  <https://pwrev.dev/230291>`__
+
+pw_status
+---------
+The ``StatusWithSize::size_or()`` method has been removed.
+
+* `Convert StatusWithSize to Doxygen
+  <https://pwrev.dev/229980>`__
+* `Remove StatusWithSize::size_or()
+  <https://pwrev.dev/229979>`__
+
+pw_stream
+---------
+* `Disable mpsc_stream_test for Pi Pico
+  <https://pwrev.dev/231212>`__
+  (issue `#361369435 <https://pwbug.dev/361369435>`__)
+
+pw_system
+---------
+The ``pw_system.device.Device`` class constructor now accepts an ``Iterable``
+of proto libraries rather than a ``list``.
+
+* `Add type annotation to pw_system.device.Device() write arg
+  <https://pwrev.dev/229653>`__
+* `Update Device ctor to take Iterable of proto libraries
+  <https://pwrev.dev/229811>`__
+
+pw_thread
+---------
+* `Disable test_thread_context_facade_test on Pi Pico
+  <https://pwrev.dev/231291>`__
+  (issue `#361369192 <https://pwbug.dev/361369192>`__)
+
+pw_tokenizer
+------------
+* `Remove unsupported C++11 and C++14 code
+  <https://pwrev.dev/222432>`__
+
+pw_trace_tokenized
+------------------
+* `Fix TokenizedTracer initialization
+  <https://pwrev.dev/230314>`__
+  (issue `#357835484 <https://pwbug.dev/357835484>`__)
+
+pw_transfer
+-----------
+Transfer handler registration and unregistration functions now return a boolean
+indicating success or failure. The C++ client now always includes a protocol
+version in the final chunk.
+
+* `Add return values to handler registrations
+  <https://pwrev.dev/230912>`__
+* `Always set protocol version in final chunk
+  <https://pwrev.dev/229289>`__
+
+pw_unit_test
+------------
+* `Delete unsupported C++14 compatibility code
+  <https://pwrev.dev/229972>`__
+* `Fix multi-line test macros
+  <https://pwrev.dev/229314>`__
+
+Docs
+====
+* `Require unit tests to be in unnamed namespace
+  <https://pwrev.dev/231211>`__
+* `Add structured data to Kudzu blog post
+  <https://pwrev.dev/230647>`__
+  (issue `#360924425 <https://pwbug.dev/360924425>`__)
+* `Fix Pigweed Live CTA link
+  <https://pwrev.dev/230693>`__
+  (issue `#357957451 <https://pwbug.dev/357957451>`__)
+* `Replace 'bazel' with 'bazelisk'
+  <https://pwrev.dev/226377>`__
+* `Update Sense flashing instructions
+  <https://pwrev.dev/229608>`__
+* `Update RP2 family udev rules
+  <https://pwrev.dev/228513>`__
+  (issue `#355291899 <https://pwbug.dev/355291899>`__)
+* `Update "Who's using Pigweed" section
+  <https://pwrev.dev/228494>`__
+* `Update Bazel quickstart mentions
+  <https://pwrev.dev/228531>`__
+* `Launch Sense
+  <https://pwrev.dev/228431>`__
+
+Targets
+=======
+
+rp2350
+------
+Pigweed now supports the new Raspberry Pi RP2350 MCU.
+
+* `Add support for RP2350
+  <https://pwrev.dev/228326>`__
+  (issue `#354942782 <https://pwbug.dev/354942782>`__)
+
+rp2040
+------
+* `Reset tty flags after successful flash on posix
+  <https://pwrev.dev/229721>`__
+* `Remove references to b/261603269
+  <https://pwrev.dev/229397>`__
+* `Add -fexceptions for the rp2040 PIO assembler
+  <https://pwrev.dev/229531>`__
+* `Get Pico SDK and Picotool from BCR
+  <https://pwrev.dev/228327>`__
+
+Third-party software
+====================
+
+Emboss
+------
+* `Remove -Wdeprecated-copy from public_config
+  <https://pwrev.dev/228563>`__
+  (issue `#345526399 <https://pwbug.dev/345526399>`__)
+* `Update emboss to v2024.0809.170004
+  <https://pwrev.dev/228562>`__
+  (issue `#345526399 <https://pwbug.dev/345526399>`__)
+
+Fuchsia
+-------
+* `Update patch to ignore warnings in result.h
+  <https://pwrev.dev/231253>`__
+* `Copybara import
+  <https://pwrev.dev/231293>`__
+
+Rolls
+-----
+* `fuchsia_infra: [roll] Roll fuchsia-infra-bazel-rules-bazel_sdk-ci
+  <https://pwrev.dev/230635>`__
+* `fuchsia_infra 54 commits
+  <https://pwrev.dev/230634>`__
+* `go
+  <https://pwrev.dev/230631>`__
+* `rust
+  <https://pwrev.dev/230472>`__
+* `go
+  <https://pwrev.dev/228811>`__
+* `gn
+  <https://pwrev.dev/228731>`__
+* `fuchsia_infra 27 commits
+  <https://pwrev.dev/228712>`__
+* `rust
+  <https://pwrev.dev/228566>`__
+
+Miscellaneous
+=============
+* `Change typedef to using
+  <https://pwrev.dev/230351>`__
+* `Handle ignored status comments
+  <https://pwrev.dev/229652>`__
+  (issues `#357136096 <https://pwbug.dev/357136096>`__,
+  `#357139112 <https://pwbug.dev/357139112>`__)
+
+Owners
+------
+* `Add davidroth@
+  <https://pwrev.dev/230071>`__
+
 -----------
 Aug 7, 2024
 -----------
-.. changelog_highlights_start
-
 Highlights (Jul 26, 2024 to Aug 7, 2024):
 
 * **Tour of Pigweed**: The new :ref:`Tour of Pigweed <showcase-sense>`
@@ -30,8 +452,6 @@ Highlights (Jul 26, 2024 to Aug 7, 2024):
   :ref:`module-pw_ide-guide-vscode-code-intelligence` document provides
   guides on using the code intelligence features of the ``pw_ide``
   extension for VS Code.
-
-.. changelog_highlights_end
 
 Build systems
 =============
