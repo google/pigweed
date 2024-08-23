@@ -244,7 +244,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   // If advertising was canceled during the TX power level read (either
   // |starting_| was reset or the |result_callback| was moved), return early.
   if (options.include_tx_power_level) {
-    auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
+    auto power_cb = [this](auto, const hci::EmbossEventPacket& event) mutable {
       BT_ASSERT(staged_params_.has_value());
       if (!starting_ || !staged_params_.value().result_callback) {
         bt_log(
@@ -264,11 +264,12 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       staged_params_ = {};
 
       // Update the advertising and scan response data with the TX power level.
-      const auto& params = event.return_params<
-          hci_spec::LEReadAdvertisingChannelTxPowerReturnParams>();
-      staged_params.data.SetTxPower(params->tx_power);
+      auto view = event.view<
+          pw::bluetooth::emboss::
+              LEReadAdvertisingChannelTxPowerCommandCompleteEventView>();
+      staged_params.data.SetTxPower(view.tx_power_level().Read());
       if (staged_params.scan_rsp.CalculateBlockSize()) {
-        staged_params.scan_rsp.SetTxPower(params->tx_power);
+        staged_params.scan_rsp.SetTxPower(view.tx_power_level().Read());
       }
 
       StartAdvertisingInternal(

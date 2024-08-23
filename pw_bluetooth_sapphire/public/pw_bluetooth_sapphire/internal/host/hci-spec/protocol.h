@@ -1387,18 +1387,6 @@ constexpr OpCode kLESetAdvertisingParameters =
 constexpr OpCode kLEReadAdvertisingChannelTxPower =
     LEControllerCommandOpCode(0x0007);
 
-struct LEReadAdvertisingChannelTxPowerReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // The transmit power level used for LE advertising channel packets.
-  //
-  //   Range: -20 <= N <= +10
-  //   Units: dBm
-  //   Accuracy: +/- 4 dB
-  int8_t tx_power;
-} __attribute__((packed));
-
 // ===========================================
 // LE Set Advertising Data Command (v4.0) (LE)
 constexpr OpCode kLESetAdvertisingData = LEControllerCommandOpCode(0x0008);
@@ -2079,12 +2067,6 @@ constexpr OpCode kLESetAdvertisingSetRandomAddress =
 // LE Set Extended Advertising Parameters Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedAdvertisingParameters =
     LEControllerCommandOpCode(0x0036);
-
-struct LESetExtendedAdvertisingParametersReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-  int8_t selected_tx_power;
-} __attribute__((packed));
 
 // ====================================================
 // LE Set Extended Advertising Data Command (v5.0) (LE)

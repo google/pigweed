@@ -131,7 +131,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
           fragment_preference);
 
-  void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
+  void OnSetAdvertisingParamsComplete(const EmbossEventPacket& event) override;
 
   void OnCurrentOperationComplete() override;
 

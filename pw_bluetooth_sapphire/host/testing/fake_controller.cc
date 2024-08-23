@@ -2903,11 +2903,14 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   // only want to write if there are no errors)
   extended_advertising_states_[handle] = state;
 
-  hci_spec::LESetExtendedAdvertisingParametersReturnParams return_params;
-  return_params.status = pwemb::StatusCode::SUCCESS;
-  return_params.selected_tx_power = hci_spec::kLEAdvertisingTxPowerMax;
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LESetExtendedAdvertisingParametersCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.selected_tx_power().Write(hci_spec::kLEAdvertisingTxPowerMax);
   RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
-                             BufferView(&return_params, sizeof(return_params)));
+                             &packet);
   NotifyAdvertisingState();
 }
 
@@ -3389,12 +3392,15 @@ void FakeController::OnLEReadAdvertisingChannelTxPower() {
     return;
   }
 
-  hci_spec::LEReadAdvertisingChannelTxPowerReturnParams params;
   // Send back arbitrary tx power.
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.tx_power = 9;
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LEReadAdvertisingChannelTxPowerCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.tx_power_level().Write(9);
   RespondWithCommandComplete(hci_spec::kLEReadAdvertisingChannelTxPower,
-                             BufferView(&params, sizeof(params)));
+                             &packet);
 }
 
 void FakeController::SendLEAdvertisingSetTerminatedEvent(
