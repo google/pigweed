@@ -22,8 +22,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
-#pragma clang diagnostic ignored "-Wflexible-array-extensions"
-
 namespace bt::att {
 
 // v5.0, Vol 3, Part G, 5.1.2
@@ -243,6 +241,7 @@ using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wflexible-array-extensions");
 struct ReadByTypeResponseParams {
   ReadByTypeResponseParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
@@ -310,6 +309,7 @@ PW_MODIFY_DIAGNOSTICS_POP();
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wflexible-array-extensions");
 struct ReadByGroupTypeResponseParams {
   ReadByGroupTypeResponseParams() = default;
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
