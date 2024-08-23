@@ -921,14 +921,6 @@ constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
 // User Confirmation Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserConfirmationRequestEventCode = 0x33;
 
-struct UserConfirmationRequestEventParams {
-  // Address of the device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-
-  // Numeric value to be displayed. Valid values are 0 - 999999.
-  uint32_t numeric_value;
-} __attribute__((packed));
-
 // ================================================
 // User Passkey Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserPasskeyRequestEventCode = 0x34;

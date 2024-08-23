@@ -1518,25 +1518,24 @@ BrEdrConnectionManager::OnSimplePairingComplete(const hci::EventPacket& event) {
 
 hci::CommandChannel::EventCallbackResult
 BrEdrConnectionManager::OnUserConfirmationRequest(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() ==
-                  hci_spec::kUserConfirmationRequestEventCode);
-  const auto& params =
-      event.params<hci_spec::UserConfirmationRequestEventParams>();
+    const hci::EmbossEventPacket& event_packet) {
+  auto params =
+      event_packet
+          .view<pw::bluetooth::emboss::UserConfirmationRequestEventView>();
+  DeviceAddressBytes bd_addr = DeviceAddressBytes(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(bd_addr);
   if (!conn_pair) {
     bt_log(WARN,
            "gap-bredr",
            "got %s for unconnected addr %s",
            __func__,
-           bt_str(params.bd_addr));
-    SendUserConfirmationRequestNegativeReply(params.bd_addr);
+           bt_str(bd_addr));
+    SendUserConfirmationRequestNegativeReply(bd_addr);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto confirm_cb = [self = weak_self_.GetWeakPtr(),
-                     bd_addr = params.bd_addr](bool confirm) {
+  auto confirm_cb = [self = weak_self_.GetWeakPtr(), bd_addr](bool confirm) {
     if (!self.is_alive()) {
       return;
     }
@@ -1548,8 +1547,7 @@ BrEdrConnectionManager::OnUserConfirmationRequest(
     }
   };
   conn_pair->second->pairing_state_manager().OnUserConfirmationRequest(
-      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params.numeric_value),
-      std::move(confirm_cb));
+      params.numeric_value().Read(), std::move(confirm_cb));
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 

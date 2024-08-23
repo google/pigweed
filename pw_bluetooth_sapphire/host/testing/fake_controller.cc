@@ -2382,11 +2382,12 @@ void FakeController::OnIOCapabilityRequestReplyCommand(
   SendCommandChannelPacket(io_response.data());
 
   // Event type based on |params.io_capability| and |io_response.io_capability|.
-  hci_spec::UserConfirmationRequestEventParams request = {};
-  request.bd_addr = DeviceAddressBytes(params.bd_addr());
-  request.numeric_value = 0;
-  SendEvent(hci_spec::kUserConfirmationRequestEventCode,
-            BufferView(&request, sizeof(request)));
+  auto event =
+      hci::EmbossEventPacket::New<pwemb::UserConfirmationRequestEventWriter>(
+          hci_spec::kUserConfirmationRequestEventCode);
+  event.view_t().bd_addr().CopyFrom(params.bd_addr());
+  event.view_t().numeric_value().Write(0);
+  SendCommandChannelPacket(event.data());
 }
 
 void FakeController::OnUserConfirmationRequestReplyCommand(
