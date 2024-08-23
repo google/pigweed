@@ -438,20 +438,19 @@ void FakeController::SendL2CAPCFrame(hci_spec::ConnectionHandle handle,
 
 void FakeController::SendNumberOfCompletedPacketsEvent(
     hci_spec::ConnectionHandle handle, uint16_t num) {
-  StaticByteBuffer<sizeof(hci_spec::NumberOfCompletedPacketsEventParams) +
-                   sizeof(hci_spec::NumberOfCompletedPacketsEventData)>
-      buffer;
+  constexpr size_t buffer_size =
+      pwemb::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
+      pwemb::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes();
+  auto event =
+      hci::EmbossEventPacket::New<pwemb::NumberOfCompletedPacketsEventWriter>(
+          hci_spec::kNumberOfCompletedPacketsEventCode, buffer_size);
+  auto view = event.view_t();
 
-  auto* params =
-      reinterpret_cast<hci_spec::NumberOfCompletedPacketsEventParams*>(
-          buffer.mutable_data());
-  params->number_of_handles = 1;
-  params->data->connection_handle =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, handle);
-  params->data->hc_num_of_completed_packets =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, num);
+  view.num_handles().Write(1);
+  view.nocp_data()[0].connection_handle().Write(handle);
+  view.nocp_data()[0].num_completed_packets().Write(num);
 
-  SendEvent(hci_spec::kNumberOfCompletedPacketsEventCode, buffer);
+  SendEvent(hci_spec::kNumberOfCompletedPacketsEventCode, &event);
 }
 
 void FakeController::ConnectLowEnergy(const DeviceAddress& addr,

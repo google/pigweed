@@ -64,7 +64,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
   CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(
-      const EventPacket& event);
+      const EmbossEventPacket& event);
 
   // Sends next queued packets over the ACL data channel while the controller
   // has free buffer slots. If controller buffers are free and some links have
@@ -461,31 +461,40 @@ void AclDataChannelImpl::RequestAclPriority(
 }
 
 CommandChannel::EventCallbackResult
-AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() ==
-                  hci_spec::kNumberOfCompletedPacketsEventCode);
-  const auto& payload =
-      event.params<hci_spec::NumberOfCompletedPacketsEventParams>();
+AclDataChannelImpl::NumberOfCompletedPacketsCallback(
+    const EmbossEventPacket& event) {
+  if (event.size() <
+      pw::bluetooth::emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes()) {
+    bt_log(ERROR,
+           "hci",
+           "Invalid HCI_Number_Of_Completed_Packets event received, ignoring");
+    return CommandChannel::EventCallbackResult::kContinue;
+  }
+  auto view = event.unchecked_view<
+      pw::bluetooth::emboss::NumberOfCompletedPacketsEventView>();
+  BT_ASSERT(view.header().event_code_enum().Read() ==
+            pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
   size_t handles_in_packet =
-      (event.view().payload_size() -
-       sizeof(hci_spec::NumberOfCompletedPacketsEventParams)) /
-      sizeof(hci_spec::NumberOfCompletedPacketsEventData);
-
-  if (payload.number_of_handles != handles_in_packet) {
+      (event.size() -
+       pw::bluetooth::emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes()) /
+      pw::bluetooth::emboss::NumberOfCompletedPacketsEventData::
+          IntrinsicSizeInBytes();
+  uint8_t expected_number_of_handles = view.num_handles().Read();
+  if (expected_number_of_handles != handles_in_packet) {
     bt_log(WARN,
            "hci",
            "packets handle count (%d) doesn't match params size (%zu)",
-           payload.number_of_handles,
+           expected_number_of_handles,
            handles_in_packet);
   }
 
-  for (uint8_t i = 0; i < payload.number_of_handles && i < handles_in_packet;
+  for (uint8_t i = 0; i < expected_number_of_handles && i < handles_in_packet;
        ++i) {
-    const hci_spec::NumberOfCompletedPacketsEventData* data = payload.data + i;
-
-    auto iter = pending_links_.find(pw::bytes::ConvertOrderFrom(
-        cpp20::endian::little, data->connection_handle));
+    uint16_t connection_handle = view.nocp_data()[i].connection_handle().Read();
+    uint16_t num_completed_packets =
+        view.nocp_data()[i].num_completed_packets().Read();
+    auto iter = pending_links_.find(connection_handle);
     if (iter == pending_links_.end()) {
       // This is expected if the completed packet is a SCO packet.
       bt_log(TRACE,
@@ -493,38 +502,36 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
              "controller reported completed packets for connection handle "
              "without pending packets: "
              "%#.4x",
-             data->connection_handle);
+             connection_handle);
       continue;
     }
 
-    uint16_t comp_packets = pw::bytes::ConvertOrderFrom(
-        cpp20::endian::little, data->hc_num_of_completed_packets);
-
-    if (iter->second.count < comp_packets) {
-      // TODO(fxbug.dev/42102535): This can be caused by the controller reusing
-      // the connection handle of a connection that just disconnected. We should
-      // somehow avoid sending the controller packets for a connection that has
-      // disconnected. AclDataChannel already dequeues such packets, but this is
-      // insufficient: packets can be queued in the channel to the transport
-      // driver, and possibly in the transport driver or USB/UART drivers.
+    if (iter->second.count < num_completed_packets) {
+      // TODO(fxbug.dev/42102535): This can be caused by the controller
+      // reusing the connection handle of a connection that just disconnected.
+      // We should somehow avoid sending the controller packets for a connection
+      // that has disconnected. AclDataChannel already dequeues such packets,
+      // but this is insufficient: packets can be queued in the channel to the
+      // transport driver, and possibly in the transport driver or USB/UART
+      // drivers.
       bt_log(ERROR,
              "hci",
              "ACL packet tx count mismatch! (handle: %#.4x, expected: %zu, "
              "actual : %u)",
-             pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                         data->connection_handle),
+             connection_handle,
              iter->second.count,
-             comp_packets);
+             num_completed_packets);
       // This should eventually result in convergence with the correct pending
       // packet count. If it undercounts the true number of pending packets,
       // this branch will be reached again when the controller sends an updated
       // Number of Completed Packets event. However, AclDataChannel may overflow
       // the controller's buffer in the meantime!
-      comp_packets = static_cast<uint16_t>(iter->second.count);
+      num_completed_packets = static_cast<uint16_t>(iter->second.count);
     }
 
-    iter->second.count -= comp_packets;
-    DecrementPendingPacketsForLinkType(iter->second.ll_type, comp_packets);
+    iter->second.count -= num_completed_packets;
+    DecrementPendingPacketsForLinkType(iter->second.ll_type,
+                                       num_completed_packets);
     if (!iter->second.count) {
       pending_links_.erase(iter);
     }

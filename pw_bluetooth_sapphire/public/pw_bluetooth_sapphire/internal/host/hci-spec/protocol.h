@@ -877,19 +877,6 @@ constexpr EventCode kRoleChangeEventCode = 0x12;
 // Number Of Completed Packets Event (v1.1)
 constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
 
-struct NumberOfCompletedPacketsEventData {
-  uint16_t connection_handle;
-  uint16_t hc_num_of_completed_packets;
-} __attribute__((packed));
-
-struct NumberOfCompletedPacketsEventParams {
-  NumberOfCompletedPacketsEventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedPacketsEventParams);
-
-  uint8_t number_of_handles;
-  NumberOfCompletedPacketsEventData data[];
-} __attribute__((packed));
-
 // ======================================
 // Link Key Request Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyRequestEventCode = 0x17;
