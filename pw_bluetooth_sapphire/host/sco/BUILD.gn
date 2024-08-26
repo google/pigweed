@@ -37,6 +37,9 @@ pw_source_set("sco") {
   ]
 
   public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_test("tests") {

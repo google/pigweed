@@ -108,7 +108,11 @@ pw_source_set("l2cap") {
     "$dir_pw_third_party/fuchsia:fit",
   ]
 
-  configs = [ ":warnings" ]
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [
+    "$dir_pw_build:internal_strict_warnings_core",
+    ":warnings",
+  ]
 
   deps = [
     "$dir_pw_bluetooth:emboss_l2cap_frames",
@@ -162,6 +166,9 @@ pw_source_set("testing") {
     "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_unit_test",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_test("l2cap_tests") {
@@ -205,6 +212,9 @@ pw_test("l2cap_tests") {
     "$dir_pw_bluetooth_sapphire/host/testing",
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

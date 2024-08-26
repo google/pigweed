@@ -26,6 +26,9 @@ pw_source_set("definitions") {
   sources = [ "gatt_defs.cc" ]
 
   public_deps = [ "$dir_pw_bluetooth_sapphire/host/att:definitions" ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_source_set("gatt") {
@@ -61,6 +64,9 @@ pw_source_set("gatt") {
     "$dir_pw_bluetooth_sapphire/host/att",
     "$dir_pw_third_party/fuchsia:fit",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_source_set("testing") {
@@ -85,6 +91,9 @@ pw_source_set("testing") {
     "$dir_pw_bluetooth_sapphire/host/common:uuid_string_util",
     "$dir_pw_unit_test",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_test("tests") {

@@ -49,6 +49,9 @@ pw_source_set("testing") {
   }
 
   public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 # test_helpers is separate from :testing to fix dependency cycles.
@@ -100,6 +103,9 @@ pw_source_set("controller_test_double_base") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_third_party/fuchsia:fit",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_source_set("mock_controller") {
@@ -117,6 +123,9 @@ pw_source_set("mock_controller") {
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
     "$dir_pw_unit_test",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 # Target that includes Fake HCI emulation support. This should NOT depend on
@@ -158,6 +167,9 @@ pw_source_set("fake_controller") {
     "$dir_pw_bluetooth_sapphire/host/sdp",
     "$dir_pw_third_party/fuchsia:fit",
   ]
+
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 # Main entry point for host library unittests.

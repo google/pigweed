@@ -101,7 +101,11 @@ pw_source_set("common") {
   }
 
   deps = [ "$dir_pw_preprocessor" ]
-  configs = [ ":warnings" ]
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [
+    "$dir_pw_build:internal_strict_warnings_core",
+    ":warnings",
+  ]
 }
 
 pw_source_set("uuid_string_util") {

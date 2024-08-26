@@ -93,7 +93,11 @@ pw_source_set("gap") {
     "types.cc",
   ]
 
-  configs = [ ":warnings" ]
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  configs = [
+    "$dir_pw_build:internal_strict_warnings_core",
+    ":warnings",
+  ]
 
   deps = [
     "$dir_pw_bluetooth_sapphire/host/sm",
