@@ -29,6 +29,7 @@ from typing import (
 )
 
 import pw_cli
+from pw_cli.diff import colorize_diff
 from pw_cli.plural import plural
 from . import cli, git_repo, presubmit, presubmit_context, tools
 
@@ -385,7 +386,7 @@ def _process_files(
             )
 
             outs.write(diff)
-            print(tools.colorize_diff(diff))
+            print(colorize_diff(diff))
 
     return errors
 

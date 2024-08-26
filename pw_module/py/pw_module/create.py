@@ -35,8 +35,8 @@ from prompt_toolkit import prompt
 from pw_build import generate_modules_lists
 import pw_cli.color
 import pw_cli.env
+from pw_cli.diff import colorize_diff
 from pw_cli.status_reporter import StatusReporter
-from pw_presubmit.tools import colorize_diff
 
 from pw_module.templates import get_template
 

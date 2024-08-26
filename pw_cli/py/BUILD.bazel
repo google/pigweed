@@ -30,6 +30,7 @@ py_library(
         "pw_cli/branding.py",
         "pw_cli/color.py",
         "pw_cli/decorators.py",
+        "pw_cli/diff.py",
         "pw_cli/env.py",
         "pw_cli/envparse.py",
         "pw_cli/file_filter.py",

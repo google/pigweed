@@ -324,6 +324,9 @@ class EditorSettingsDefinition:
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: (in memory)>'
 
+    def __str__(self) -> str:
+        return json.dumps(self.get(), indent=2)
+
     def get(self) -> EditorSettingsDict:
         """Return the settings as an ordered dict."""
         return self._data

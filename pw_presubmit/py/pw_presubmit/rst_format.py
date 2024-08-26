@@ -23,7 +23,7 @@ from pathlib import Path
 import textwrap
 from typing import Iterable
 
-from pw_presubmit.tools import colorize_diff
+from pw_cli.diff import colorize_diff
 
 TAB_WIDTH = 8  # Number of spaces to use for \t replacement
 CODE_BLOCK_INDENTATION = 3

@@ -25,6 +25,7 @@ import shutil
 import sys
 from tempfile import TemporaryDirectory
 
+from pw_cli.diff import colorize_diff_line
 from pw_env_setup import python_packages
 
 from pw_presubmit.presubmit import (
@@ -37,7 +38,7 @@ from pw_presubmit.presubmit_context import (
     PresubmitFailure,
 )
 from pw_presubmit import build
-from pw_presubmit.tools import log_run, colorize_diff_line
+from pw_presubmit.tools import log_run
 
 _LOG = logging.getLogger(__name__)
 

@@ -42,6 +42,7 @@ from typing import (
 )
 
 import pw_cli.color
+from pw_cli.diff import colorize_diff
 import pw_cli.env
 from pw_cli.file_filter import FileFilter
 from pw_cli.plural import plural
@@ -69,7 +70,6 @@ from pw_presubmit.tools import (
     file_summary,
     log_run,
     PresubmitToolRunner,
-    colorize_diff,
 )
 from pw_presubmit.rst_format import reformat_rst
 
