@@ -249,6 +249,17 @@ pw_cc_flag_set(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+pw_cc_flag_set(
+    name = "silence_cgo_warnings",
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = ["-Wno-unused-parameter"],
+    requires_any_of = [":rules_go_constraint"],
+)
+
 pw_cc_feature(
     name = "supports_pic",
     enabled = True,
@@ -322,6 +333,8 @@ pw_cc_toolchain(
         "@pw_toolchain//flag_sets:wnon_virtual_dtor",
         "//pw_toolchain/cc:common_warnings",
         "//pw_toolchain/cc:color_diagnostics",
+        # Must go after the general warnings that are enabled.
+        ":silence_cgo_warnings",
     ] + select({
         "//pw_build:kythe": [":no_unknown_warning_option"],
         "//conditions:default": [],
