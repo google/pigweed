@@ -137,9 +137,6 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         "files.insertFinalNewline": True,
         "files.trimTrailingWhitespace": True,
         "search.useGlobalIgnoreFiles": True,
-        "grunt.autoDetect": "off",
-        "gulp.autoDetect": "off",
-        "jake.autoDetect": "off",
         "npm.autoDetect": "off",
         "C_Cpp.intelliSenseEngine": "disabled",
         "[cpp]": OrderedDict(
