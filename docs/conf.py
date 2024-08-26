@@ -274,6 +274,7 @@ redirects = {
     'docs/release_notes/2022_jan': '../../changelog.html',
     # Can be deleted after pw_enviro stuff gets published.
     'drafts/pw_enviro/index': 'https://storage.googleapis.com/pigweed-docs-try/220311/docs/showcases/pw_enviro/tutorial.html',
+    'live/index': 'https://docs.google.com/document/d/1zcXQoMX6NDSe4cdxzt8afLbDcs8GSmI_Bsy5hTF_RVM/edit',
     'module_guides': './modules.html',
     'pw_sys_io_pico/docs': '../pw_sys_io_rp2040/docs.html',
     'pw_tokenizer/cli': './docs.html',
