@@ -63,6 +63,10 @@ pw::Status McuxpressoDigitalOut::DoEnable(bool enable) {
         .pinDirection = kGPIO_DigitalInput,
         .outputLogic = 0,
     };
+
+    // Must enable the clock, since GPIO can get disabled without ever
+    // being enabled.
+    CLOCK_EnableClock(kGpioClocks[port_]);
     GPIO_PinInit(base_, port_, pin_, &config);
 
     // Can't disable clock as other users on same port may be active.
