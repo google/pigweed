@@ -235,6 +235,7 @@ pw_add_test(pw_containers.inline_var_len_entry_queue_test
     pw_containers_private/inline_var_len_entry_queue_test_oracle.h
     inline_var_len_entry_queue_test.cc
   PRIVATE_DEPS
+    pw_assert
     pw_bytes
     pw_containers.inline_var_len_entry_queue
 )

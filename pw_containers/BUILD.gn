@@ -240,6 +240,7 @@ pw_test("inline_var_len_entry_queue_test") {
   ]
   deps = [
     ":inline_var_len_entry_queue",
+    dir_pw_assert,
     dir_pw_bytes,
   ]
 

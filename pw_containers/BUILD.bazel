@@ -201,6 +201,7 @@ pw_cc_test(
     ],
     deps = [
         ":inline_var_len_entry_queue",
+        "//pw_assert",
         "//pw_bytes",
     ],
 )
