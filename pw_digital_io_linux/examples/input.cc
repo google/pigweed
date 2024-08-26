@@ -28,8 +28,8 @@ pw::Status InputExample() {
 
   // Configure input line.
   LinuxInputConfig config(
-      /* index= */ 5,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 5,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
   PW_TRY_ASSIGN(auto input, chip.GetInputLine(config));
   PW_TRY(input.Enable());
 

@@ -39,7 +39,10 @@ pw_test("function_tests") {
   defines = [ "EXPECT_NULL(arg)=EXPECT_EQ((arg), nullptr)" ]
 
   # This test does not build with strict warnings, so disable them.
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
+  remove_configs = [
+    "$dir_pw_build:internal_strict_warnings",
+    "$dir_pw_build:strict_warnings",
+  ]
 }
 
 group("stdcompat") {

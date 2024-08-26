@@ -189,7 +189,10 @@ config("extra_strict_warnings") {
 # This config MUST NOT be used downstream to allow for warnings to be
 # added in the future without breaking downstream.
 config("internal_strict_warnings") {
-  configs = [ ":internal_strict_warnings_core" ]
+  configs = [
+    ":internal_strict_warnings_core",
+    ":shadow_all",
+  ]
 }
 
 # Core flags from ":internal_strict_warnings" that are enabled throughout

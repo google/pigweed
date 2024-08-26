@@ -374,8 +374,8 @@ void Fuzzer::Run(const pw::Vector<uint32_t>& actions) {
       callback_iterator_ = callback_actions_.begin();
     } else {
       threads_.emplace_back(
-          [this, thread_id, actions = std::move(thread_actions)]() {
-            for (const auto& encoded : actions) {
+          [this, thread_id, actions_to_perform = std::move(thread_actions)]() {
+            for (const auto& encoded : actions_to_perform) {
               Action action(encoded);
               action.set_thread_id(thread_id);
               Perform(action);

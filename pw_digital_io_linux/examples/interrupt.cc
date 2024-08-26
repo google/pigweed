@@ -41,8 +41,8 @@ pw::Status InterruptExample() {
 
   // Configure input line.
   LinuxInputConfig config(
-      /* index= */ 5,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 5,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
   PW_TRY_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
 
   // Configure the interrupt handler.

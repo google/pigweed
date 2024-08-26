@@ -281,19 +281,19 @@ int main(int argc, char* argv[]) {
   pw::Status status;
   if (command == "get") {
     LinuxInputConfig config(
-        /* index= */ index,
-        /* polarity= */ polarity);
+        /* gpio_index= */ index,
+        /* gpio_polarity= */ polarity);
     status = GetInput(chip, config);
   } else if (command == "set") {
     LinuxOutputConfig config(
-        /* index= */ index,
-        /* polarity= */ polarity,
-        /* default_state= */ *set_value);
+        /* gpio_index= */ index,
+        /* gpio_polarity= */ polarity,
+        /* gpio_default_state= */ *set_value);
     status = SetOutput(chip, config);
   } else if (command == "watch") {
     LinuxInputConfig config(
-        /* index= */ index,
-        /* polarity= */ polarity);
+        /* gpio_index= */ index,
+        /* gpio_polarity= */ polarity);
     status = WatchInput(chip, config, trigger);
   }
 

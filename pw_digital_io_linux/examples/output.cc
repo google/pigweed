@@ -28,9 +28,9 @@ pw::Status OutputExample() {
   // Configure output line.
   // Set the polarity to active-low and default state to active.
   LinuxOutputConfig config(
-      /* index= */ 4,
-      /* polarity= */ Polarity::kActiveLow,
-      /* default_state= */ State::kActive);
+      /* gpio_index= */ 4,
+      /* gpio_polarity= */ Polarity::kActiveLow,
+      /* gpio_default_state== */ State::kActive);
   PW_TRY_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output pin. This pulls the pin to ground since the

@@ -31,22 +31,25 @@ struct LinuxConfig {
   uint32_t index;
   Polarity polarity;
 
-  LinuxConfig(uint32_t index, Polarity polarity)
-      : index(index), polarity(polarity) {}
+  LinuxConfig(uint32_t gpio_index, Polarity gpio_polarity)
+      : index(gpio_index), polarity(gpio_polarity) {}
   uint32_t GetFlags() const;
 };
 
 struct LinuxInputConfig final : LinuxConfig {
-  LinuxInputConfig(uint32_t index, Polarity polarity)
-      : LinuxConfig(index, polarity) {}
+  LinuxInputConfig(uint32_t gpio_index, Polarity gpio_polarity)
+      : LinuxConfig(gpio_index, gpio_polarity) {}
   uint32_t GetFlags() const;
 };
 
 struct LinuxOutputConfig final : LinuxConfig {
   State default_state;
 
-  LinuxOutputConfig(uint32_t index, Polarity polarity, State default_state)
-      : LinuxConfig(index, polarity), default_state(default_state) {}
+  LinuxOutputConfig(uint32_t gpio_index,
+                    Polarity gpio_polarity,
+                    State gpio_default_state)
+      : LinuxConfig(gpio_index, gpio_polarity),
+        default_state(gpio_default_state) {}
   uint32_t GetFlags() const;
 };
 

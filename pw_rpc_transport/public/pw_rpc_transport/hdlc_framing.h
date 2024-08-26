@@ -90,9 +90,9 @@ class HdlcRpcPacketDecoder
   Status Decode(ConstByteSpan buffer, OnRpcPacketDecodedCallback&& callback) {
     decoder_.Process(
         buffer,
-        [callback = std::move(callback)](Result<hdlc::Frame> hdlc_frame) {
+        [function = std::move(callback)](Result<hdlc::Frame> hdlc_frame) {
           if (hdlc_frame.ok()) {
-            callback(hdlc_frame->data());
+            function(hdlc_frame->data());
           }
         });
     return OkStatus();

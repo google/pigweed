@@ -49,8 +49,8 @@ class TestService final
 
 template <size_t kMaxPacketSize, size_t kLocalEgressQueueSize>
 struct SocketRpcEndpoint {
-  explicit SocketRpcEndpoint(SocketRpcTransport<kMaxPacketSize>& transport)
-      : transport(transport),
+  explicit SocketRpcEndpoint(SocketRpcTransport<kMaxPacketSize>& rpc_transport)
+      : transport(rpc_transport),
         rpc_egress("tx", transport),
         tx_channels({rpc::Channel::Create<kTestChannelId>(&rpc_egress)}),
         rx_channels({ChannelEgress{kTestChannelId, local_egress}}),

@@ -24,6 +24,7 @@ config("fuzztest_public_config") {
     "-Wno-shorten-64-to-32",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
+    "-Wno-shadow-all",
   ]
   cflags_cc = [ "-Wno-extra-semi" ]
   if (dir_pw_third_party_fuzztest != "") {

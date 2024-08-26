@@ -70,6 +70,9 @@ pw_cc_flag_set(
     flags = [
         "-Wswitch-enum",
         "-Wextra-semi",
+        # TODO: b/361229275 - Add -Wshadow-all, but for Clang only, since GCC
+        # does not support it.
+        # "-Wshadow-all",
     ] + select({
         "@platforms//os:windows": [],
         # TODO: b/243069432 - Enable pedantic warnings on Windows once passing.

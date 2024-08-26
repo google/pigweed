@@ -380,8 +380,7 @@ TEST(Function, CallbackDestroysTargetAfterBeingCalled) {
 
   int destroyed_count = 0;
   MoveOnlyDestructionCounter destruction_counter(&destroyed_count);
-  Callback<void()> cb = [destruction_counter =
-                             std::move(destruction_counter)]() {};
+  Callback<void()> cb = [counter = std::move(destruction_counter)]() {};
   EXPECT_EQ(destroyed_count, 0);
   cb();
   EXPECT_EQ(destroyed_count, 1);

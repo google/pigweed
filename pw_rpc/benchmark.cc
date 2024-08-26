@@ -54,9 +54,9 @@ void BenchmarkService::BidirectionalEcho(
 
   auto captures = std::make_unique<Captures>(Captures{.self = this, .id = id});
   new_reader_writer.set_on_next(
-      [captures = std::move(captures)](ConstByteSpan request) {
-        auto& reader_writers = captures->self->reader_writers_;
-        auto rw_id = captures->id;
+      [context = std::move(captures)](ConstByteSpan request) {
+        auto& reader_writers = context->self->reader_writers_;
+        auto rw_id = context->id;
         auto reader_writer = reader_writers.find(rw_id);
         if (reader_writer == reader_writers.end()) {
           return;

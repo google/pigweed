@@ -430,8 +430,8 @@ TEST_F(DigitalIoTest, DoInput) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
@@ -464,8 +464,8 @@ TEST_F(DigitalIoTest, DoInputInvert) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveLow);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveLow);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
@@ -498,9 +498,9 @@ TEST_F(DigitalIoTest, DoOutput) {
 
   auto& line = line1();
   LinuxOutputConfig config(
-      /* index= */ 1,
-      /* polarity= */ Polarity::kActiveHigh,
-      /* default_state= */ State::kActive);
+      /* gpio_index= */ 1,
+      /* gpio_polarity= */ Polarity::kActiveHigh,
+      /* gpio_default_state== */ State::kActive);
 
   ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
@@ -532,9 +532,9 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
 
   auto& line = line1();
   LinuxOutputConfig config(
-      /* index= */ 1,
-      /* polarity= */ Polarity::kActiveLow,
-      /* default_state= */ State::kActive);
+      /* gpio_index= */ 1,
+      /* gpio_polarity= */ Polarity::kActiveLow,
+      /* gpio_default_state== */ State::kActive);
 
   ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
@@ -567,9 +567,9 @@ TEST_F(DigitalIoTest, OutputGetState) {
 
   auto& line = line1();
   LinuxOutputConfig config(
-      /* index= */ 1,
-      /* polarity= */ Polarity::kActiveHigh,
-      /* default_state= */ State::kInactive);
+      /* gpio_index= */ 1,
+      /* gpio_polarity= */ Polarity::kActiveHigh,
+      /* gpio_default_state== */ State::kInactive);
 
   ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
@@ -603,8 +603,8 @@ TEST_F(DigitalIoTest, DoInputInterruptsEnabledBefore) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
 
@@ -634,8 +634,8 @@ TEST_F(DigitalIoTest, DoInputInterruptsEnabledAfter) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
 
@@ -668,8 +668,8 @@ TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
 
@@ -715,8 +715,8 @@ TEST_F(DigitalIoTest, DoInputInterruptsThread) {
 
   auto& line = line0();
   LinuxInputConfig config(
-      /* index= */ 0,
-      /* polarity= */ Polarity::kActiveHigh);
+      /* gpio_index= */ 0,
+      /* gpio_polarity= */ Polarity::kActiveHigh);
 
   ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
 
