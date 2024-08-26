@@ -284,6 +284,9 @@ common:stm32f429i_freertos --deleted_packages=//pw_bluetooth_sapphire/fuchsia/..
 common:lm3s6965evb --deleted_packages=//pw_bluetooth_sapphire/fuchsia/...
 common:microbit --deleted_packages=//pw_bluetooth_sapphire/fuchsia/...
 
+# Import `--config=fuchsia` scoped pigweed backends.
+import %workspace%/pw_bluetooth_sapphire/fuchsia/backends.bazelrc
+
 # User bazelrc file; see
 # https://bazel.build/configure/best-practices#bazelrc-file
 #

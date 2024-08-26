@@ -41,6 +41,11 @@ the Fuchsia SDK.
    ``@fuchsia_sdk``) outside of ``//pw_bluetooth_sapphire/fuchsia`` since that
    will break the global pigweed build (``//...``) for macos hosts.
 
+.. note::
+   Every ``bazel`` invocation needs ``--config=fuchsia`` whenever the target or
+   dependency needs to specify ``@fuchsia_sdk`` backends for pigweed and the
+   target platform is fuchsia.
+
 It will eventually be filled with the real `bt-host component`_ once that's
 migrated. See https://fxbug.dev/321267390.
 
@@ -50,9 +55,9 @@ To build the bt-host package, use one of the following commands:
 
 .. code-block::
 
-   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64
+   bazel build --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64
    # OR
-   bazel build //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64
+   bazel build --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64
 
 Start an emulator
 =================
@@ -79,9 +84,9 @@ of the following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64.component
+   bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64.component
    # OR
-   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64.component
+   bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64.component
 
 Run unit tests
 ==============
@@ -90,7 +95,7 @@ following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia/bt_host:test_pkg
+   bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:test_pkg
 
 Stop the emulator
 =================
@@ -124,7 +129,7 @@ These presubmits can be replicated with the following command:
 
 .. code-block::
 
-   bazel run //pw_bluetooth_sapphire/fuchsia:infra.test_all
+   bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia:infra.test_all
 
 .. note::
    You do not need to start an emulator beforehand to to run all tests this way.
@@ -138,10 +143,10 @@ Pigweed infrastructure uploads bt-host's artifacts to
 .. code-block::
 
    # Ensure all dependencies are built.
-   bazel build //pw_bluetooth_sapphire/fuchsia:infra
+   bazel build --config=fuchsia //pw_bluetooth_sapphire/fuchsia:infra
 
    # Get builder manifest file.
-   bazel build --output_groups=builder_manifest //pw_bluetooth_sapphire/fuchsia:infra
+   bazel build --config=fuchsia --output_groups=builder_manifest //pw_bluetooth_sapphire/fuchsia:infra
 
 The resulting file contains a ``cipd_manifests`` json field which references a
 sequence of json files specifying the CIPD package path and package file
