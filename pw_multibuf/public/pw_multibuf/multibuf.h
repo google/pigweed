@@ -146,7 +146,9 @@ class MultiBufChunks {
   constexpr const_iterator cend() const { return const_iterator::end(); }
 
   /// Returns the number of `Chunk`s in this `MultiBuf`, including empty chunks.
-  size_t size() const { return std::distance(begin(), end()); }
+  size_t size() const {
+    return static_cast<size_t>(std::distance(begin(), end()));
+  }
 
   /// Returns the total number of bytes in all `Chunk`s.
   size_t size_bytes() const;
