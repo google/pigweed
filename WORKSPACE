@@ -59,7 +59,7 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_SDK_VERSION = "version:22.20240717.3.1"
+FUCHSIA_SDK_VERSION = "version:23.20240826.3.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
