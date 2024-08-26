@@ -113,3 +113,11 @@ pw_clang_arm_config("cortex_m33f") {
   asmflags = cflags
   ldflags = cflags
 }
+
+pw_clang_arm_config("cortex_m55") {
+  cflags = [ "-mcpu=cortex-m55" ]
+  cflags += cortex_m_common_flags
+  cflags += cortex_m_software_fpu_flags
+  asmflags = cflags
+  ldflags = cflags
+}
