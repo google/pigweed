@@ -189,6 +189,12 @@ config("extra_strict_warnings") {
 # This config MUST NOT be used downstream to allow for warnings to be
 # added in the future without breaking downstream.
 config("internal_strict_warnings") {
+  configs = [ ":internal_strict_warnings_core" ]
+}
+
+# Core flags from ":internal_strict_warnings" that are enabled throughout
+# Pigweed. These are split out so ":shadow_all" can be disabled where needed.
+config("internal_strict_warnings_core") {
   cflags = [ "-Wswitch-enum" ]
 
   if (is_clang) {
@@ -201,6 +207,13 @@ config("internal_strict_warnings") {
   # TODO: b/243069432 - Enable pedantic warnings on Windows when they pass.
   if (host_os != "win") {
     configs = [ ":pedantic_warnings" ]
+  }
+}
+
+# Keep "-Wshadow-all" separate so it can be disabled individually.
+config("shadow_all") {
+  if (is_clang) {
+    cflags = [ "-Wshadow-all" ]
   }
 }
 
