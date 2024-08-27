@@ -110,6 +110,7 @@ pw_presubmit
 pw_protobuf
 pw_protobuf_compiler
 pw_random
+pw_random_fuchsia
 pw_result
 pw_ring_buffer
 pw_router

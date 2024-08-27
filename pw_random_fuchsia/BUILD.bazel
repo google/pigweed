@@ -1,0 +1,60 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_library(
+    name = "zircon_random_generator",
+    hdrs = [
+        "public/pw_random_fuchsia/zircon_random_generator.h",
+    ],
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    deps = [
+        "//pw_random",
+        "//pw_span",
+    ],
+)
+
+fuchsia_cc_test(
+    name = "zircon_random_generator_test",
+    srcs = ["zircon_random_generator_test.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":zircon_random_generator",
+        "//pw_unit_test",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "zircon_random_generator_tests",
+    fuchsia_api_level = "22",
+    tags = ["manual"],
+    unit_tests = [":zircon_random_generator_test"],
+)
+
+# Bazel does not yet support building docs.
+filegroup(
+    name = "docs",
+    srcs = ["docs.rst"],
+)

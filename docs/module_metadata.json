@@ -445,6 +445,11 @@
       "C++"
     ]
   },
+  "pw_random_fuchsia": {
+    "tagline": "Fuchsia implementation of pw_random",
+    "status": "experimental",
+    "languages": []
+  },
   "pw_result": {
     "tagline": "Error propagation primitives: value-or-error",
     "status": "stable",

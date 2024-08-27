@@ -73,5 +73,8 @@ pw_fuzzer("get_int_bounded_fuzzer") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }

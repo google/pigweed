@@ -49,3 +49,10 @@ instead of requiring an application to directly poll the hardware RNG peripheral
 when the random data is needed. This would let a device collect entropy when
 idling, improving the latency of potentially performance-sensitive areas where
 random numbers are needed.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>
