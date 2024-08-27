@@ -19,7 +19,9 @@ cc_library(
     srcs = ["inspect.cc"],
     hdrs = ["public/lib/inspect/testing/cpp/inspect.h"],
     includes = ["public"],
-    deps = select({
+    deps = [
+        "//pw_bluetooth_sapphire:config",
+    ] + select({
         "@platforms//os:fuchsia": [
             "@com_google_googletest//:gtest",
             "@fuchsia_sdk//pkg/inspect",

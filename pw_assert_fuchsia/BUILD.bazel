@@ -28,7 +28,9 @@ cc_library(
         "public/pw_assert_fuchsia/check_backend.h",
     ],
     includes = [
-        "public_overrides",
+        "assert_public_overrides",
+        "check_public_overrides",
+        "public",
     ],
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [

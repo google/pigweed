@@ -95,6 +95,7 @@ alias(
         (
             "@platforms//os:android",
             "@platforms//os:chromiumos",
+            "@platforms//os:fuchsia",
             "@platforms//os:linux",
             "@platforms//os:macos",
             "@platforms//os:windows",

@@ -15,11 +15,7 @@
 common:fuchsia --@pigweed//pw_assert:backend=@pigweed//pw_assert_fuchsia
 common:fuchsia --@pigweed//pw_assert:check_backend=@pigweed//pw_assert_fuchsia
 common:fuchsia --@pigweed//pw_assert:check_backend_impl=@pigweed//pw_build:empty_cc_library
-
-# TODO: https://pwbug.dev/360411906 - Port these remaining fuchsia backend
-# configurations from fuchsia.git into @pigweed.
-# common:fuchsia --@pigweed//pw_log:backend=@pigweed//pw_log_fuchsia
-# common:fuchsia --@pigweed//pw_function:config_override=//third_party/pigweed/backends/pw_function:config
-# common:fuchsia --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
-# common:fuchsia --@pigweed//pw_async:task_backend=//third_party/pigweed/backends/pw_async_fuchsia:task
-# common:fuchsia --@pigweed//pw_async:fake_dispatcher_backend=//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher
+common:fuchsia --@pigweed//pw_log:backend=@pigweed//pw_log_fuchsia
+common:fuchsia --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+common:fuchsia --@pigweed//pw_async:task_backend=@pigweed//pw_async_fuchsia:task
+common:fuchsia --@pigweed//pw_async:fake_dispatcher_backend=@pigweed//pw_async_fuchsia:fake_dispatcher
