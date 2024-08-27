@@ -124,6 +124,7 @@ declare_args() {
   dir_pw_log = get_path_info("../pw_log", "abspath")
   dir_pw_log_android = get_path_info("../pw_log_android", "abspath")
   dir_pw_log_basic = get_path_info("../pw_log_basic", "abspath")
+  dir_pw_log_fuchsia = get_path_info("../pw_log_fuchsia", "abspath")
   dir_pw_log_null = get_path_info("../pw_log_null", "abspath")
   dir_pw_log_rpc = get_path_info("../pw_log_rpc", "abspath")
   dir_pw_log_string = get_path_info("../pw_log_string", "abspath")
@@ -314,6 +315,7 @@ declare_args() {
     dir_pw_log,
     dir_pw_log_android,
     dir_pw_log_basic,
+    dir_pw_log_fuchsia,
     dir_pw_log_null,
     dir_pw_log_rpc,
     dir_pw_log_string,
@@ -493,6 +495,7 @@ declare_args() {
     "$dir_pw_log:tests",
     "$dir_pw_log_android:tests",
     "$dir_pw_log_basic:tests",
+    "$dir_pw_log_fuchsia:tests",
     "$dir_pw_log_null:tests",
     "$dir_pw_log_rpc:tests",
     "$dir_pw_log_string:tests",
@@ -672,6 +675,7 @@ declare_args() {
     "$dir_pw_log:docs",
     "$dir_pw_log_android:docs",
     "$dir_pw_log_basic:docs",
+    "$dir_pw_log_fuchsia:docs",
     "$dir_pw_log_null:docs",
     "$dir_pw_log_rpc:docs",
     "$dir_pw_log_string:docs",

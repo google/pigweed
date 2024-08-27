@@ -307,13 +307,6 @@
       "C++20"
     ]
   },
-  "pw_hex_dump": {
-    "tagline": "Handy hexdump utilities",
-    "status": "stable",
-    "languages": [
-      "C++17"
-    ]
-  },
   "pw_hdlc": {
     "tagline": "Simple, robust, and efficient serial communication",
     "status": "stable",
@@ -322,6 +315,13 @@
       "Python",
       "C++17",
       "TypeScript"
+    ]
+  },
+  "pw_hex_dump": {
+    "tagline": "Handy hexdump utilities",
+    "status": "stable",
+    "languages": [
+      "C++17"
     ]
   },
   "pw_i2c": {
@@ -393,6 +393,14 @@
       "C++"
     ]
   },
+  "pw_log_fuchsia": {
+    "tagline": "Fuchsia logging backend",
+    "status": "experimental",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_malloc": {
     "tagline": "Replacement interface for standard libc dynamic memory operations",
     "status": "stable",
@@ -437,18 +445,18 @@
       "C++"
     ]
   },
-  "pw_router": {
-    "tagline": "Transport-agnostic packet routing",
-    "status": "experimental",
-    "languages": [
-      "C++"
-    ]
-  },
   "pw_result": {
     "tagline": "Error propagation primitives: value-or-error",
     "status": "stable",
     "languages": [
       "C++17"
+    ]
+  },
+  "pw_router": {
+    "tagline": "Transport-agnostic packet routing",
+    "status": "experimental",
+    "languages": [
+      "C++"
     ]
   },
   "pw_rpc": {

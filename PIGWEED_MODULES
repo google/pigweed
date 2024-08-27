@@ -87,6 +87,7 @@ pw_libcxx
 pw_log
 pw_log_android
 pw_log_basic
+pw_log_fuchsia
 pw_log_null
 pw_log_rpc
 pw_log_string
