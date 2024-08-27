@@ -66,6 +66,14 @@
       "C++17"
     ]
   },
+  "pw_async_fuchsia": {
+    "tagline": "Fuchsia backend for pw_async",
+    "status": "experimental",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_base64": {
     "tagline": "Base64 encoding, decoding, and validating",
     "status": "stable",

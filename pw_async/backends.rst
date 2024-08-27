@@ -12,3 +12,4 @@ pw_async backends
    :maxdepth: 1
 
    Basic <../pw_async_basic/docs>
+   Fuchsia <../pw_async_fuchsia/docs>
