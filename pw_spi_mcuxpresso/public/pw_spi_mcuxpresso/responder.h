@@ -27,6 +27,12 @@
 
 namespace pw::spi {
 
+enum class FifoErrorCheck {
+  kNone,     // Don't check for FIFO error.
+  kLogOnly,  // Only log on FIFO error.
+  kError,    // Log and return DATA_LOSS.
+};
+
 class McuxpressoResponder : public Responder {
  public:
   struct Config {
@@ -37,7 +43,15 @@ class McuxpressoResponder : public Responder {
     uint32_t base_address;  // Flexcomm peripheral base address.
     // True if the driver should handle Chip Select (CS) assertion and
     // deassertion. When set, transfers will complete on CS deassertion.
-    bool handle_cs;
+    bool handle_cs = true;
+
+    // If enabled, the FIFO status registers are checked for error
+    // (underflow/overflow) upon transfer completion, returning DATA_LOSS if
+    // detected.
+    //
+    // NOTE: A false positive could be triggered if this is enabled and the
+    // initiator clocks more bytes than the transfer is set up to send+receive.
+    FifoErrorCheck check_fifo_error = FifoErrorCheck::kNone;
   };
 
   McuxpressoResponder(const Config config,

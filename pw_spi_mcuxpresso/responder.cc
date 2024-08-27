@@ -170,7 +170,6 @@ bool SPI_RxFifoIsEmpty(SPI_Type* base) {
   return !(base->FIFOSTAT & SPI_FIFOSTAT_RXNOTEMPTY_MASK);
 }
 
-#if 0
 bool SPI_RxError(SPI_Type* base) {
   return (base->FIFOSTAT & SPI_FIFOSTAT_RXERR_MASK);
 }
@@ -178,7 +177,6 @@ bool SPI_RxError(SPI_Type* base) {
 bool SPI_TxError(SPI_Type* base) {
   return (base->FIFOSTAT & SPI_FIFOSTAT_TXERR_MASK);
 }
-#endif
 
 // Non-FIFO interrupt sources
 enum _spi_interrupt_sources {
@@ -279,24 +277,29 @@ void McuxpressoResponder::TransferComplete(Status status,
   SPI_SlaveTransferAbortDMA(base_, &handle_);
 
   // Check for TX underflow / RX overflow
-  // TODO(jrreinhart): Unfortunately we can't do this. We want to check for
-  // FIFO under/overflow *while* the transfer is running, but if the initiator
-  // sent more bytes than the DMA was set up to receive, both of these errors
-  // will happen (after the DMA is complete). We would need to find a way to
-  // capture this status immediate when the DMA is complete, or otherwise
-  // monitor it during the transfer.
-#if 0
-  if (status.ok()) {
+  //
+  // Ideally we want to check for FIFO under/overflow only *while* the transfer
+  // is running. But if the initiator sent more bytes than the DMA was set up
+  // to tx/rx, both of these errors will happen (after the DMA is complete).
+  //
+  // To do this without risk of false positives, we would need to find a way to
+  // capture this status immediately when the DMA is complete, or otherwise
+  // monitor it during the transfer. Perhaps with a custom DMA chain, we could
+  // capture the status registers via DMA, but that might still be too late.
+  if (status.ok() && config_.check_fifo_error != FifoErrorCheck::kNone) {
     if (SPI_RxError(base_)) {
       PW_LOG_ERROR("RX FIFO overflow detected!");
-      status = Status::DataLoss();
+      if (config_.check_fifo_error == FifoErrorCheck::kError) {
+        status = Status::DataLoss();
+      }
     }
     if (SPI_TxError(base_)) {
       PW_LOG_ERROR("TX FIFO underflow detected!");
-      status = Status::DataLoss();
+      if (config_.check_fifo_error == FifoErrorCheck::kError) {
+        status = Status::DataLoss();
+      }
     }
   }
-#endif
 
   // TODO(jrreinhart) Remove these safety checks.
   if (rx_dma_.IsBusy()) {
