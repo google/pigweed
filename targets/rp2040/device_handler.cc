@@ -23,9 +23,19 @@ void RebootSystem() { watchdog_reboot(0, 0, 0); }
 
 void CapturePlatformMetadata(
     snapshot::pwpb::Metadata::StreamEncoder& metadata_encoder) {
+// The device_handler is shared between rp2040 and 2350, so handle differences
+// with the preprocessor.
+#if _PW_ARCH_ARM_V6M
   // TODO: https://pwbug.dev/357132837 - Review if IgnoreError is correct here.
   metadata_encoder.WriteCpuArch(snapshot::pwpb::CpuArchitecture::Enum::ARMV6M)
       .IgnoreError();
+#elif _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
+  // TODO: https://pwbug.dev/357132837 - Review if IgnoreError is correct here.
+  metadata_encoder.WriteCpuArch(snapshot::pwpb::CpuArchitecture::Enum::ARMV8M)
+      .IgnoreError();
+#else
+#error "Unknown CPU architecture."
+#endif  // _PW_ARCH_ARM_V6M
 }
 
 Status CaptureCpuState(

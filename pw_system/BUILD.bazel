@@ -696,3 +696,10 @@ device_console(
     binary = ":rp2040_system_example",
     script = "//pw_system/py:pw_system_console",
 )
+
+device_console(
+    name = "rp2350_system_example_console",
+    testonly = True,
+    binary = ":rp2350_system_example",
+    script = "//pw_system/py:pw_system_console",
+)
