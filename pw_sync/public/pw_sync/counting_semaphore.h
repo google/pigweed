@@ -72,7 +72,7 @@ class CountingSemaphore {
   /// Returns true if the internal counter was decremented successfully.
   ///
   /// This is IRQ safe.
-  bool try_acquire() noexcept;
+  [[nodiscard]] bool try_acquire() noexcept;
 
   /// Tries to decrement the internal counter by 1. Blocks until the specified
   /// timeout has elapsed or the counter was decremented by 1, whichever comes
@@ -80,7 +80,7 @@ class CountingSemaphore {
   ///
   /// Returns true if the internal counter was decremented successfully.
   /// This is thread safe, but not IRQ safe.
-  bool try_acquire_for(chrono::SystemClock::duration timeout);
+  [[nodiscard]] bool try_acquire_for(chrono::SystemClock::duration timeout);
 
   /// Tries to decrement the internal counter by 1. Blocks until the specified
   /// deadline has been reached or the counter was decremented by 1, whichever
@@ -89,10 +89,11 @@ class CountingSemaphore {
   /// Returns true if the internal counter was decremented successfully.
   ///
   /// This is thread safe, but not IRQ safe.
-  bool try_acquire_until(chrono::SystemClock::time_point deadline);
+  [[nodiscard]] bool try_acquire_until(
+      chrono::SystemClock::time_point deadline);
 
   /// Returns the internal counter's maximum possible value.
-  static constexpr ptrdiff_t max() noexcept {
+  [[nodiscard]] static constexpr ptrdiff_t max() noexcept {
     return backend::kCountingSemaphoreMaxValue;
   }
 

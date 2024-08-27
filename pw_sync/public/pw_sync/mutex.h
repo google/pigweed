@@ -63,7 +63,7 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
   /// @b PRECONDITION:
   ///   The lock isn't already held by this thread. Recursive locking is
   ///   undefined behavior.
-  bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
+  [[nodiscard]] bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   /// Unlocks the mutex. Failures are fatal.
   ///
@@ -71,7 +71,7 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
   ///   The mutex is held by this thread.
   void unlock() PW_UNLOCK_FUNCTION();
 
-  native_handle_type native_handle();
+  [[nodiscard]] native_handle_type native_handle();
 
  protected:
   /// Expose the NativeMutex directly to derived classes (TimedMutex) in case

@@ -14,6 +14,7 @@
 #include "pw_async_basic/dispatcher.h"
 
 #include <mutex>
+#include <utility>
 
 #include "pw_chrono/system_clock.h"
 
@@ -74,7 +75,7 @@ void BasicDispatcher::MaybeSleep() {
     }
     lock_.unlock();
     if (wake_time.has_value()) {
-      timed_notification_.try_acquire_until(*wake_time);
+      std::ignore = timed_notification_.try_acquire_until(*wake_time);
     } else {
       timed_notification_.acquire();
     }

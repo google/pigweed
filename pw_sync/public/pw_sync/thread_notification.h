@@ -61,7 +61,7 @@ class ThreadNotification {
   /// was reset successfully.
   ///
   /// @b IMPORTANT: This should only be used by a single consumer thread.
-  bool try_acquire();
+  [[nodiscard]] bool try_acquire();
 
   /// Notifies the thread in a saturating manner, setting the notification
   /// latch.
@@ -74,7 +74,7 @@ class ThreadNotification {
   /// This is IRQ and thread safe.
   void release();
 
-  native_handle_type native_handle();
+  [[nodiscard]] native_handle_type native_handle();
 
  private:
   /// This may be a wrapper around a native type with additional members.

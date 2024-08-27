@@ -54,7 +54,7 @@ class TimedThreadNotification : public ThreadNotification {
   /// was reset successfully.
   ///
   /// @b IMPORTANT: This should only be used by a single consumer thread.
-  bool try_acquire_for(chrono::SystemClock::duration timeout);
+  [[nodiscard]] bool try_acquire_for(chrono::SystemClock::duration timeout);
 
   /// Blocks until the specified deadline time has been reached the thread has
   /// been notified (i.e. notification latch can be cleared because it was set),
@@ -66,7 +66,8 @@ class TimedThreadNotification : public ThreadNotification {
   /// was reset successfully.
   ///
   /// @b IMPORTANT: This should only be used by a single consumer thread.
-  bool try_acquire_until(chrono::SystemClock::time_point deadline);
+  [[nodiscard]] bool try_acquire_until(
+      chrono::SystemClock::time_point deadline);
 };
 
 }  // namespace pw::sync

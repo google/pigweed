@@ -71,7 +71,7 @@ class BinarySemaphore {
   /// @retval true if the internal counter was reset successfully.
   ///
   /// This is thread and IRQ safe.
-  bool try_acquire() noexcept;
+  [[nodiscard]] bool try_acquire() noexcept;
 
   /// Tries to decrement the internal counter to 0. Blocks until the specified
   /// timeout has elapsed or the counter was decremented to 0, whichever comes
@@ -80,7 +80,7 @@ class BinarySemaphore {
   /// @retval true if the internal counter was decremented successfully.
   ///
   /// This is thread safe, but not IRQ safe.
-  bool try_acquire_for(chrono::SystemClock::duration timeout);
+  [[nodiscard]] bool try_acquire_for(chrono::SystemClock::duration timeout);
 
   /// Tries to decrement the internal counter to 0. Blocks until the specified
   /// deadline has been reached or the counter was decremented to 0, whichever
@@ -89,15 +89,16 @@ class BinarySemaphore {
   /// @retval true if the internal counter was decremented successfully.
   ///
   /// This is thread safe, but not IRQ safe.
-  bool try_acquire_until(chrono::SystemClock::time_point deadline);
+  [[nodiscard]] bool try_acquire_until(
+      chrono::SystemClock::time_point deadline);
 
   /// @retval backend::kBinarySemaphoreMaxValue the internal counter's maximum
   ///                                           possible value.
-  static constexpr ptrdiff_t max() noexcept {
+  [[nodiscard]] static constexpr ptrdiff_t max() noexcept {
     return backend::kBinarySemaphoreMaxValue;
   }
 
-  native_handle_type native_handle();
+  [[nodiscard]] native_handle_type native_handle();
 
  private:
   /// This may be a wrapper around a native type with additional members.

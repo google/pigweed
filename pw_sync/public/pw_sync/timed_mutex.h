@@ -56,7 +56,7 @@ class TimedMutex : public Mutex {
   /// @b PRECONDITION:
   ///   The lock isn't already held by this thread. Recursive locking is
   ///   undefined behavior.
-  bool try_lock_for(chrono::SystemClock::duration timeout)
+  [[nodiscard]] bool try_lock_for(chrono::SystemClock::duration timeout)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   /// Tries to lock the mutex. Blocks until specified deadline has been reached
@@ -66,7 +66,7 @@ class TimedMutex : public Mutex {
   /// @b PRECONDITION:
   ///   The lock isn't already held by this thread. Recursive locking is
   ///   undefined behavior.
-  bool try_lock_until(chrono::SystemClock::time_point deadline)
+  [[nodiscard]] bool try_lock_until(chrono::SystemClock::time_point deadline)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 };
 

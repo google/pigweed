@@ -65,7 +65,7 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
   /// Returns true if the spinlock was successfully acquired.
   ///
   /// @b Precondition: Recursive locking is undefined behavior.
-  bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
+  [[nodiscard]] bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   /// Unlocks the spinlock. Failures are fatal.
   ///
@@ -73,7 +73,7 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
   ///   The spinlock is held by the caller.
   void unlock() PW_UNLOCK_FUNCTION();
 
-  native_handle_type native_handle();
+  [[nodiscard]] native_handle_type native_handle();
 
  private:
   /// This may be a wrapper around a native type with additional members.

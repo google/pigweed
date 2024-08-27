@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <utility>
 
 #include "pw_chrono/system_clock.h"
 #include "pw_log_rpc/log_service.h"
@@ -63,7 +64,8 @@ class RpcLogDrainThread : public thread::ThreadCore,
         chrono::SystemClock::duration::zero();
     while (true) {
       if (drains_pending && min_delay.has_value()) {
-        ready_to_flush_notification_.try_acquire_for(min_delay.value());
+        std::ignore =
+            ready_to_flush_notification_.try_acquire_for(min_delay.value());
       } else {
         ready_to_flush_notification_.acquire();
       }

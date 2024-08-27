@@ -59,12 +59,12 @@ class PW_LOCKABLE("pw::sync::RecursiveMutex") RecursiveMutex {
 
   // Attempts to lock the mutex in a non-blocking manner.
   // Returns true if the mutex was successfully acquired.
-  bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
+  [[nodiscard]] bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   // Unlocks the mutex. Failures are fatal.
   void unlock() PW_UNLOCK_FUNCTION();
 
-  native_handle_type native_handle();
+  [[nodiscard]] native_handle_type native_handle();
 
  private:
   // This may be a wrapper around a native type with additional members.
