@@ -67,10 +67,16 @@ pw_facade("thread") {
   ]
   public_deps = [
     ":id",
+    ":options",
     ":thread_core",
     dir_pw_function,
   ]
   sources = [ "thread.cc" ]
+}
+
+pw_source_set("options") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/options.h" ]
 }
 
 pw_source_set("deprecated_or_new_thread_function") {

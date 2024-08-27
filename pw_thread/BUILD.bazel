@@ -130,9 +130,16 @@ pw_facade(
     includes = ["public"],
     deps = [
         ":id",
+        ":options",
         ":thread_core",
         "//pw_function",
     ],
+)
+
+cc_library(
+    name = "options",
+    hdrs = ["public/pw_thread/options.h"],
+    includes = ["public"],
 )
 
 label_flag(

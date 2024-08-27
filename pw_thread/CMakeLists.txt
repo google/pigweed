@@ -61,8 +61,16 @@ pw_add_facade(pw_thread.thread STATIC
     pw_function
     pw_thread.thread_core
     pw_thread.id
+    pw_thread.options
   SOURCES
     thread.cc
+)
+
+pw_add_library(pw_thread.options INTERFACE
+  HEADERS
+    public/pw_thread/options.h
+  PUBLIC_INCLUDES
+    public
 )
 
 pw_add_library(pw_thread.thread_core INTERFACE

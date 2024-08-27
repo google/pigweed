@@ -13,7 +13,8 @@
 // the License.
 #pragma once
 
-#include "pw_thread/thread.h"
+#include "pw_thread/options.h"
+#include "pw_thread/thread.h"  // TODO: b/362356045 - Remove unnecessary include
 
 namespace pw::thread::stl {
 
