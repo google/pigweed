@@ -178,6 +178,7 @@ pw_test_group("tests") {
     ":yield_facade_test",
     ":test_thread_context_facade_test",
     ":thread_snapshot_service_test",
+    ":options_test",
   ]
 }
 
@@ -251,6 +252,12 @@ pw_source_set("thread_facade_test") {
     "$dir_pw_sync:binary_semaphore",
     dir_pw_unit_test,
   ]
+}
+
+pw_test("options_test") {
+  sources = [ "options_test.cc" ]
+  deps = [ ":options" ]
+  negative_compilation_tests = true
 }
 
 pw_test("thread_info_test") {

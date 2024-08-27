@@ -338,6 +338,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "options_test",
+    srcs = ["options_test.cc"],
+    deps = [
+        ":options",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
+)
+
+pw_cc_test(
     name = "sleep_facade_test",
     srcs = [
         "sleep_facade_test.cc",

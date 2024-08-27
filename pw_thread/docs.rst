@@ -252,13 +252,6 @@ Options must not contain any memory needed for a thread to run (TCB,
 stack, etc.). The Options may be deleted or re-used immediately after
 starting a thread.
 
-Options subclass must contain non-default explicit constructor (parametrized or
-not), e.g. ``constexpr Options() {}``. It is not enough to have them as
-``= default`` ones, because C++17 considers subclasses like ``stl::Options`` as
-aggregate classes if they have a default constructor and requires base class
-constructor to be public (which is not the case for the ``thread::Options``) for
-``Options{}`` syntax.
-
 Please see the thread creation backend documentation for how their Options work.
 
 Portable Thread Creation

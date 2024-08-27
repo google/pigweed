@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,20 +11,19 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
 
 #include "pw_thread/options.h"
-#include "pw_thread/thread.h"  // TODO: b/362356045 - Remove unnecessary include
 
-namespace pw::thread::stl {
+#include "pw_compilation_testing/negative_compilation.h"
 
-// Unfortunately std::thread:attributes was not accepted into the C++ standard.
-// Instead, users are expected to start the thread and after dynamically adjust
-// the thread's attributes using std::thread::native_handle based on the native
-// threading APIs.
-class Options : public thread::Options {
- public:
-  constexpr Options() = default;
-};
+namespace {
 
-}  // namespace pw::thread::stl
+#if PW_NC_TEST(ThreadOptions_CannotConstruct)
+PW_NC_EXPECT("protected");
+[[maybe_unused]] pw::thread::Options options;
+#elif PW_NC_TEST(ThreadOptions_CannotConstructAsAggregate)
+PW_NC_EXPECT("protected");
+[[maybe_unused]] pw::thread::Options options{};
+#endif  // PW_NC_TEST
+
+}  // namespace

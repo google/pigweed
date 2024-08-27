@@ -39,9 +39,9 @@ namespace pw::thread {
 /// starting a thread.
 class Options {
  protected:
-  // We can't use `= default` here, because it allows to create an Options
-  // instance in C++17 with `pw::thread::Options{}` syntax.
-  constexpr Options() {}
+  // Must be explicit to prevent direct instantiation in C++17 with
+  // `pw::thread::Options{}` syntax.
+  explicit constexpr Options() = default;
 };
 
 }  // namespace pw::thread

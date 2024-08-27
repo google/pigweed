@@ -50,7 +50,7 @@ class Context;
 //
 class Options : public thread::Options {
  public:
-  constexpr Options() {}
+  constexpr Options() = default;
   constexpr Options(const Options&) = default;
   constexpr Options(Options&&) = default;
 
