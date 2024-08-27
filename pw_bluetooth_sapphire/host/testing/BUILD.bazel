@@ -34,6 +34,7 @@ cc_library(
         ":test_helpers",
         "//pw_bluetooth_sapphire:config",
         "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/fuchsia/inspect_testing",
         "//pw_bluetooth_sapphire/host/transport",
         "//pw_bluetooth_sapphire/host/transport:testing",
         "//pw_unit_test",
