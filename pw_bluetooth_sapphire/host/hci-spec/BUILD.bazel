@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -22,7 +23,7 @@ cc_library(
         "le_connection_parameters.cc",
         "util.cc",
     ],
-    copts = ["-Wswitch-enum"],
+    copts = ["-Wswitch-enum"] + COPTS,
     deps = [
         "//pw_bluetooth_sapphire:config",
         "//pw_bluetooth_sapphire:public",

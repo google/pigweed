@@ -18,10 +18,6 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_sm = "../../public/pw_bluetooth_sapphire/internal/host/sm"
 
-config("warnings") {
-  cflags_cc = [ "-Wswitch-enum" ]
-}
-
 pw_source_set("definitions") {
   public = [
     "$dir_public_sm/error.h",
@@ -45,7 +41,7 @@ pw_source_set("definitions") {
 
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [
-    ":warnings",
+    "$dir_pw_bluetooth_sapphire/host:copts",
     "$dir_pw_build:internal_strict_warnings_core",
   ]
 }

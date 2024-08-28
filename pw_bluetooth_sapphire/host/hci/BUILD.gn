@@ -17,10 +17,6 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_hci = "../../public/pw_bluetooth_sapphire/internal/host/hci"
 
-config("warnings") {
-  cflags_cc = [ "-Wswitch-enum" ]
-}
-
 pw_source_set("hci") {
   public = [
     "$dir_public_hci/acl_connection.h",
@@ -72,8 +68,9 @@ pw_source_set("hci") {
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [
     "$dir_pw_build:internal_strict_warnings_core",
-    ":warnings",
+    "$dir_pw_bluetooth_sapphire/host:copts",
   ]
+
   deps = [ "$dir_pw_preprocessor" ]
 }
 

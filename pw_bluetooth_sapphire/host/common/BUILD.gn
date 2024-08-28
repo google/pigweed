@@ -18,10 +18,6 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_common = "../../public/pw_bluetooth_sapphire/internal/host/common"
 
-config("warnings") {
-  cflags_cc = [ "-Wswitch-enum" ]
-}
-
 pw_source_set("common") {
   public = [
     "$dir_public_common/advertising_data.h",
@@ -101,10 +97,11 @@ pw_source_set("common") {
   }
 
   deps = [ "$dir_pw_preprocessor" ]
+
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [
     "$dir_pw_build:internal_strict_warnings_core",
-    ":warnings",
+    "$dir_pw_bluetooth_sapphire/host:copts",
   ]
 }
 

@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -59,7 +60,7 @@ cc_library(
     copts = [
         "-Wno-unused-parameter",
         "-Wswitch-enum",
-    ],
+    ] + COPTS,
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],
         "@platforms//os:linux": [],
