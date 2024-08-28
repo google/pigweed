@@ -80,7 +80,7 @@ filegroup(
 )
 
 cc_library(
-    name = "_test.lib",
+    name = "transport_test.lib",
     testonly = True,
     srcs = [
         "acl_data_channel_test.cc",
@@ -101,4 +101,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

@@ -136,4 +136,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

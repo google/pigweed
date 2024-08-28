@@ -46,7 +46,7 @@ cc_library(
 )
 
 cc_library(
-    name = "_test.lib",
+    name = "sdp_test.lib",
     testonly = True,
     srcs = [
         "client_test.cc",
@@ -65,4 +65,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

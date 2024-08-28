@@ -46,4 +46,5 @@ cc_library(
         ":hci-spec",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

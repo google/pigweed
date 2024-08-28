@@ -161,4 +161,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/transport:testing",
         "@pigweed//pw_async:fake_dispatcher_fixture",
     ],
+    alwayslink = 1,
 )

@@ -194,4 +194,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/l2cap:testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

@@ -55,7 +55,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/gap:definitions",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/l2cap",
-        "@boringssl//:bssl",
+        "@boringssl//:crypto",
         "@pigweed//pw_string",
         "@pigweed//third_party/fuchsia:fit",
     ],
@@ -74,7 +74,7 @@ cc_library(
 )
 
 cc_library(
-    name = "_test.lib",
+    name = "sm_test.lib",
     testonly = True,
     srcs = [
         "ecdh_key_test.cc",
@@ -104,4 +104,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )

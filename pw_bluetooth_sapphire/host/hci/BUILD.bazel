@@ -94,4 +94,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "@pigweed//pw_bluetooth:emboss_hci_test",
     ],
+    alwayslink = 1,
 )

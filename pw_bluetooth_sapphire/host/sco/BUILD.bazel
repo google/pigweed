@@ -47,4 +47,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "//pw_bluetooth_sapphire/host/transport:testing",
     ],
+    alwayslink = 1,
 )

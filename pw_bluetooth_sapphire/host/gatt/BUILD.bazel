@@ -52,20 +52,6 @@ cc_library(
     ],
 )
 
-# Bazel support for pw_bluetooth_sapphire has not been configured for all
-# files yet, but must be enumerated to satisfy presubmit.
-filegroup(
-    name = "_files",
-    srcs = [
-        "client_test.cc",
-        "gatt_test.cc",
-        "generic_attribute_service_test.cc",
-        "local_service_manager_test.cc",
-        "remote_service_manager_test.cc",
-        "server_test.cc",
-    ],
-)
-
 cc_library(
     name = "testing",
     testonly = True,
@@ -91,10 +77,22 @@ cc_library(
     name = "gatt_test.lib",
     testonly = True,
     srcs = [
+        "client_test.cc",
+        "gatt_test.cc",
+        "generic_attribute_service_test.cc",
+        "local_service_manager_test.cc",
+        "remote_service_manager_test.cc",
+        "server_test.cc",
     ],
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
+        ":gatt",
+        ":testing",
+        "//pw_bluetooth_sapphire/host/att",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
+    alwayslink = 1,
 )
