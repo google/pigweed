@@ -219,6 +219,14 @@ struct LinkKeyRequestNegativeReplyReturnParams {
   DeviceAddressBytes bd_addr;
 } __attribute__((packed));
 
+// =======================================================
+// PIN Code Request Reply Command (v1.1) (BR/EDR)
+constexpr OpCode kPinCodeRequestReply = LinkControlOpCode(0x000D);
+
+// =======================================================
+// PIN Code Request Negative Reply Command (v1.1) (BR/EDR)
+constexpr OpCode kPinCodeRequestNegativeReply = LinkControlOpCode(0x000E);
+
 // ================================================
 // Authentication Requested Command (v1.1) (BR/EDR)
 constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
@@ -848,6 +856,10 @@ constexpr EventCode kRoleChangeEventCode = 0x12;
 // ========================================
 // Number Of Completed Packets Event (v1.1)
 constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
+
+// ======================================
+// PIN Code Request Event (v1.1) (BR/EDR)
+constexpr EventCode kPinCodeRequestEventCode = 0x16;
 
 // ======================================
 // Link Key Request Event (v1.1) (BR/EDR)

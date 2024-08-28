@@ -16,8 +16,10 @@
 
 #include <gmock/gmock.h>
 
+#include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
@@ -40,6 +42,8 @@ const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
 const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR,
                                  {0x99, 0x88, 0x77, 0xFF, 0xEE, 0xDD});
 const sm::IOCapability kTestLocalIoCap = sm::IOCapability::kDisplayYesNo;
+const uint16_t kTestDefaultPinCode = 0000;
+const uint16_t kTestRandomPinCode = 9876;
 const auto kTestLinkKeyValue = UInt128{0x00,
                                        0x00,
                                        0x00,
@@ -59,6 +63,8 @@ const auto kTestLinkKeyValue = UInt128{0x00,
 const hci_spec::LinkKey kTestLinkKey(kTestLinkKeyValue, 0, 0);
 const hci_spec::LinkKeyType kTestLegacyLinkKeyType =
     hci_spec::LinkKeyType::kCombination;
+const auto kTestUnauthenticatedLinkKeyType192 =
+    hci_spec::LinkKeyType::kUnauthenticatedCombination192;
 
 void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Result<>) {}
 
@@ -171,6 +177,27 @@ class TestStatusHandler final {
   std::optional<hci::Result<>> status_;
 };
 
+TEST_F(LegacyPairingStateTest,
+       TestStatusHandlerCorrectlyTracksStatusCallbackInvocations) {
+  TestStatusHandler handler;
+  EXPECT_EQ(0, handler.call_count());
+  EXPECT_FALSE(handler.status());
+
+  LegacyPairingState::StatusCallback status_cb = handler.MakeStatusCallback();
+  EXPECT_EQ(0, handler.call_count());
+  EXPECT_FALSE(handler.status());
+
+  status_cb(kTestHandle,
+            ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED));
+
+  EXPECT_EQ(1, handler.call_count());
+  ASSERT_TRUE(handler.handle());
+  EXPECT_EQ(kTestHandle, *handler.handle());
+  ASSERT_TRUE(handler.status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED),
+            *handler.status());
+}
+
 TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
   LegacyPairingState pairing_state(peer()->GetWeakPtr(),
                                    /*outgoing_connection=*/false);
@@ -191,8 +218,8 @@ TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
   EXPECT_TRUE(pairing_state.link_key().has_value());
   EXPECT_EQ(kTestLinkKey, pairing_state.link_key().value());
 
-  // Authentication is done and connection has been made so we can set the link
-  // info using |connection()|
+  // Authentication is done and connection gets made by BrEdrConnectionManager.
+  // For testing, we manually set the link info using |connection()|
   pairing_state.BuildEstablishedLink(connection()->GetWeakPtr(),
                                      MakeAuthRequestCallback(),
                                      NoOpStatusCallback);
@@ -328,7 +355,7 @@ TEST_F(
   ASSERT_TRUE(reply_key.has_value());
   EXPECT_EQ(kTestLinkKey, reply_key.value());
 
-  // Connection was complete so link key was stored in connection
+  // Connection was complete so link key was stored in the connection
   EXPECT_TRUE(connection()->ltk().has_value());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
   EXPECT_FALSE(pairing_state.link_key().has_value());
@@ -440,6 +467,315 @@ TEST_F(LegacyPairingStateTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
       ".*peer.*");
 }
 
+TEST_F(LegacyPairingStateTest,
+       NeverInitiateLegacyPairingWithNoNumericOutputCapability) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(0, auth_request_count());
+  EXPECT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kFailed), *status_handler.status());
+}
+
+TEST_F(LegacyPairingStateTest, PairingInitiatorWithNoInputGeneratesRandomPin) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(1, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_TRUE(pin_code.value() >= 0);
+  ASSERT_TRUE(pin_code.value() <= 9999);
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingInitiatorWithYesNoInputGeneratesRandomPin) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(1, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_TRUE(pin_code.value() >= 0);
+  ASSERT_TRUE(pin_code.value() <= 9999);
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingInitiatorWithKeyboardInputGeneratesRandomPin) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardDisplay);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(1, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_TRUE(pin_code.value() >= 0);
+  ASSERT_TRUE(pin_code.value() <= 9999);
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest, PairingResponderWithNoInputTriesCommonPins) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestDefaultPinCode);
+  });
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_EQ(0, pin_code.value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest, PairingResponderWithYesNoInputTriesCommonPins) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestDefaultPinCode);
+  });
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_EQ(0, pin_code.value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingResponderWithKeyboardInputNoOutputRequestsUserPasskey) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestRandomPinCode);
+  });
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_EQ(kTestRandomPinCode, pin_code.value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingResponderWithKeyboardInputDisplayOutputRequestsUserPasskey) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardDisplay);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestRandomPinCode);
+  });
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+  ASSERT_EQ(kTestRandomPinCode, pin_code.value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
 TEST_F(
     LegacyPairingStateTest,
     PairingInitiatorFailsPairingWhenAuthenticationCompleteWithErrorCodeReceivedEarly) {
@@ -489,11 +825,395 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_TRUE(pairing_state.initiator());
 }
 
+TEST_F(LegacyPairingStateTest,
+       PairingResponderSetsConnectionLinkKeyBeforeAclConnectionComplete) {
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false);
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestRandomPinCode);
+  });
+
+  // Peer has invalid link key so we receive a PIN code request
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+
+  EXPECT_FALSE(connection()->ltk().has_value());
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  // Connection not complete yet so link key is stored in LegacyPairingState and
+  // not the connection
+  EXPECT_FALSE(connection()->ltk().has_value());
+  EXPECT_TRUE(pairing_state.link_key().has_value());
+  EXPECT_EQ(kTestLinkKey, pairing_state.link_key().value());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingResponderSetsConnectionLinkKeyAfterAclConnectionComplete) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestRandomPinCode);
+  });
+
+  // Peer has invalid link key so we receive a PIN code request
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+
+  EXPECT_FALSE(connection()->ltk().has_value());
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+  ASSERT_TRUE(connection()->ltk());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(LegacyPairingStateTest,
+       PairingInitiatorSetsConnectionLinkKeyAfterAclConnectionComplete) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  EXPECT_FALSE(connection()->ltk().has_value());
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(1, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  std::optional<uint16_t> pin_code;
+  auto pin_code_cb = [&pin_code](std::optional<uint16_t> pin) {
+    pin_code = pin;
+  };
+  pairing_state.OnPinCodeRequest(std::move(pin_code_cb));
+  ASSERT_TRUE(pin_code.has_value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(connection()->ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+  EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+}
+
+void NoOpUserPinCodeCallback(std::optional<uint16_t>) {}
+
+TEST_F(LegacyPairingStateTest, UnexpectedLinkKeyTypeRaisesError) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+
+  // Provide an SSP link key when a combination link key was expected
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestUnauthenticatedLinkKeyType192);
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kFailed), *status_handler.status());
+}
+
+TEST_F(LegacyPairingStateTest,
+       UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
+  TestStatusHandler status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   status_handler.MakeStatusCallback());
+
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
+  pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+
+  ASSERT_EQ(0, connection()->start_encryption_count());
+  ASSERT_EQ(0, status_handler.call_count());
+
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(LegacyPairingStateTest,
+       InitiatingPairingOnPairingResponderWaitsForPairingToFinish) {
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   NoOpStatusCallback);
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestDefaultPinCode);
+  });
+
+  // Advance state machine as pairing responder.
+  pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+
+  // Try to initiate pairing while pairing is in progress.
+  TestStatusHandler status_handler;
+  pairing_state.InitiatePairing(status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  // Keep advancing state machine.
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  // Connection was complete so link key was stored in the connection
+  EXPECT_TRUE(connection()->ltk().has_value());
+
+  EXPECT_FALSE(pairing_state.initiator());
+  ASSERT_EQ(0, status_handler.call_count());
+
+  // The attempt to initiate pairing should have its status callback notified.
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(fit::ok(), *status_handler.status());
+
+  // Errors for a new pairing shouldn't invoke the attempted initiator's
+  // callback.
+  EXPECT_EQ(1, status_handler.call_count());
+}
+
+TEST_F(
+    LegacyPairingStateTest,
+    PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   NoOpStatusCallback);
+  EXPECT_FALSE(pairing_state.initiator());
+
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestDefaultPinCode);
+  });
+
+  pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+
+  pairing_state.InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(0, auth_request_count());
+  EXPECT_FALSE(pairing_state.initiator());
+}
+
+TEST_F(LegacyPairingStateTest,
+       InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
+  TestStatusHandler link_status_handler;
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   link_status_handler.MakeStatusCallback());
+
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Unexpected event should make status callback get called with an error
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+
+  EXPECT_EQ(1, link_status_handler.call_count());
+  ASSERT_TRUE(link_status_handler.handle());
+  EXPECT_EQ(kTestHandle, *link_status_handler.handle());
+  ASSERT_TRUE(link_status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kFailed), *link_status_handler.status());
+
+  // Try to initiate pairing again.
+  TestStatusHandler pairing_status_handler;
+  pairing_state.InitiatePairing(pairing_status_handler.MakeStatusCallback());
+
+  // The status callback for pairing attempts made after a pairing failure
+  // should be rejected as canceled.
+  EXPECT_EQ(1, pairing_status_handler.call_count());
+  ASSERT_TRUE(pairing_status_handler.handle());
+  EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
+  ASSERT_TRUE(pairing_status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kCanceled), *pairing_status_handler.status());
+}
+
+TEST_F(LegacyPairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
+  TestStatusHandler overall_status, request_status;
+  {
+    LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                     connection()->GetWeakPtr(),
+                                     /*outgoing_connection=*/false,
+                                     MakeAuthRequestCallback(),
+                                     overall_status.MakeStatusCallback());
+    EXPECT_FALSE(pairing_state.initiator());
+
+    FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+    pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+    pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+      EXPECT_EQ(peer()->identifier(), peer_id);
+      ASSERT_TRUE(cb);
+      cb(kTestRandomPinCode);
+    });
+
+    // Advance state machine as pairing responder.
+    pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+
+    // Try to initiate pairing while pairing is in progress.
+    pairing_state.InitiatePairing(request_status.MakeStatusCallback());
+    EXPECT_FALSE(pairing_state.initiator());
+
+    // Keep advancing state machine.
+    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestLegacyLinkKeyType);
+
+    // as pairing_state falls out of scope, we expect additional pairing
+    // callbacks to be called
+    ASSERT_EQ(0, overall_status.call_count());
+    ASSERT_EQ(0, request_status.call_count());
+  }
+
+  ASSERT_EQ(0, overall_status.call_count());
+
+  ASSERT_EQ(1, request_status.call_count());
+  ASSERT_TRUE(request_status.handle());
+  EXPECT_EQ(kTestHandle, *request_status.handle());
+  EXPECT_EQ(ToResult(HostError::kLinkDisconnected), *request_status.status());
+}
+
+TEST_F(LegacyPairingStateTest, StatusCallbackMayDestroyPairingState) {
+  std::unique_ptr<LegacyPairingState> pairing_state;
+  bool cb_called = false;
+  auto status_cb = [&pairing_state, &cb_called](
+                       hci_spec::ConnectionHandle handle,
+                       hci::Result<> status) {
+    EXPECT_TRUE(status.is_error());
+    cb_called = true;
+
+    // Note that this lambda is owned by the LegacyPairingState so its
+    // captures are invalid after this.
+    pairing_state = nullptr;
+  };
+
+  pairing_state =
+      std::make_unique<LegacyPairingState>(peer()->GetWeakPtr(),
+                                           connection()->GetWeakPtr(),
+                                           /*outgoing_connection=*/false,
+                                           MakeAuthRequestCallback(),
+                                           status_cb);
+
+  // Unexpected event should make status callback get called with an error
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue,
+                                       kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(LegacyPairingStateTest, PairingInitiatorCallbackMayDestroyPairingState) {
+  std::unique_ptr<LegacyPairingState> pairing_state =
+      std::make_unique<LegacyPairingState>(peer()->GetWeakPtr(),
+                                           connection()->GetWeakPtr(),
+                                           /*outgoing_connection=*/false,
+                                           MakeAuthRequestCallback(),
+                                           NoOpStatusCallback);
+  bool cb_called = false;
+  auto status_cb = [&pairing_state, &cb_called](
+                       hci_spec::ConnectionHandle handle,
+                       hci::Result<> status) {
+    EXPECT_TRUE(status.is_error());
+    cb_called = true;
+
+    // Note that this lambda is owned by the LegacyPairingState so its
+    // captures are invalid after this.
+    pairing_state = nullptr;
+  };
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+  pairing_state->InitiatePairing(status_cb);
+
+  // Unexpected event should make status callback get called with an error
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue,
+                                       kTestLegacyLinkKeyType);
+
+  EXPECT_TRUE(cb_called);
+}
+
 // Event injectors. Return values are necessarily ignored in order to make types
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
 void LinkKeyRequest(LegacyPairingState* pairing_state) {
   static_cast<void>(pairing_state->OnLinkKeyRequest());
+}
+void PinCodeRequest(LegacyPairingState* pairing_state) {
+  pairing_state->OnPinCodeRequest(NoOpUserPinCodeCallback);
 }
 void LinkKeyNotification(LegacyPairingState* pairing_state) {
   pairing_state->OnLinkKeyNotification(kTestLinkKeyValue,
@@ -557,12 +1277,13 @@ class HandlesLegacyEvent
 INSTANTIATE_TEST_SUITE_P(LegacyPairingStateTest,
                          HandlesLegacyEvent,
                          ::testing::Values(LinkKeyRequest,
+                                           PinCodeRequest,
                                            LinkKeyNotification,
                                            AuthenticationComplete));
 
 TEST_P(HandlesLegacyEvent, InIdleState) {
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == LinkKeyRequest) {
+  if (event() == LinkKeyRequest || event() == PinCodeRequest) {
     EXPECT_EQ(0, status_handler().call_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
@@ -580,6 +1301,47 @@ TEST_P(HandlesLegacyEvent, InInitiatorWaitLinkKeyRequestState) {
   RETURN_IF_FATAL(InjectEvent());
   if (event() == LinkKeyRequest) {
     EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kFailed), status_handler().status());
+  }
+}
+
+TEST_P(HandlesLegacyEvent, InWaitPinCodeRequestState) {
+  // Advance state machine.
+  pairing_state().InitiatePairing(NoOpStatusCallback);
+  EXPECT_EQ(std::nullopt, pairing_state().OnLinkKeyRequest());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == PinCodeRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kFailed), status_handler().status());
+  }
+}
+
+TEST_P(HandlesLegacyEvent, InWaitLinkKeyState) {
+  auto pairing_delegate =
+      std::make_unique<FakePairingDelegate>(kTestLocalIoCap);
+  pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
+
+  pairing_delegate->SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestDefaultPinCode);
+  });
+
+  // Advance state machine.
+  pairing_state().OnPinCodeRequest(NoOpUserPinCodeCallback);
+  EXPECT_EQ(0, connection()->start_encryption_count());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == LinkKeyNotification) {
+    EXPECT_EQ(0, status_handler().call_count());
+    EXPECT_EQ(1, connection()->start_encryption_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
@@ -606,24 +1368,112 @@ TEST_P(HandlesLegacyEvent, InInitiatorWaitAuthCompleteSkippingLegacyPairing) {
   }
 }
 
-TEST_F(LegacyPairingStateTest,
-       TestStatusHandlerTracksStatusCallbackInvocations) {
-  TestStatusHandler handler;
-  EXPECT_EQ(0, handler.call_count());
-  EXPECT_FALSE(handler.status());
+TEST_P(HandlesLegacyEvent, InInitiatorWaitAuthCompleteAfterLegacyPairing) {
+  auto pairing_delegate =
+      std::make_unique<FakePairingDelegate>(kTestLocalIoCap);
+  pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
-  LegacyPairingState::StatusCallback status_cb = handler.MakeStatusCallback();
-  EXPECT_EQ(0, handler.call_count());
-  EXPECT_FALSE(handler.status());
+  pairing_delegate->SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
 
-  status_cb(kTestHandle,
-            ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED));
-  EXPECT_EQ(1, handler.call_count());
-  ASSERT_TRUE(handler.handle());
-  EXPECT_EQ(kTestHandle, *handler.handle());
-  ASSERT_TRUE(handler.status());
-  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED),
-            *handler.status());
+  // Advance state machine.
+  pairing_state().InitiatePairing(NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
+  pairing_state().OnPinCodeRequest(NoOpUserPinCodeCallback);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestLegacyLinkKeyType);
+  EXPECT_TRUE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == AuthenticationComplete) {
+    EXPECT_EQ(0, status_handler().call_count());
+    EXPECT_EQ(1, connection()->start_encryption_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kFailed), status_handler().status());
+  }
+}
+
+TEST_P(HandlesLegacyEvent, InIdleStateAfterOnePairing) {
+  auto pairing_delegate =
+      std::make_unique<FakePairingDelegate>(kTestLocalIoCap);
+  pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
+
+  pairing_delegate->SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  if (event() == PinCodeRequest) {
+    pairing_delegate->SetRequestPasskeyCallback(
+        [this](PeerId peer_id, auto cb) {
+          EXPECT_EQ(peer()->identifier(), peer_id);
+          ASSERT_TRUE(cb);
+          cb(kTestDefaultPinCode);
+        });
+  }
+
+  // Advance state machine.
+  pairing_state().InitiatePairing(NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
+  pairing_state().OnPinCodeRequest(NoOpUserPinCodeCallback);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestLegacyLinkKeyType);
+  pairing_state().OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_TRUE(pairing_state().initiator());
+
+  // Successfully enabling encryption should allow pairing to start again.
+  pairing_state().OnEncryptionChange(fit::ok(true));
+  EXPECT_EQ(1, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_EQ(fit::ok(), *status_handler().status());
+  EXPECT_FALSE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == LinkKeyRequest || event() == PinCodeRequest) {
+    EXPECT_EQ(1, status_handler().call_count());
+  } else {
+    EXPECT_EQ(2, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kFailed), status_handler().status());
+  }
+}
+
+TEST_P(HandlesLegacyEvent, InFailedStateAfterAuthenticationFailed) {
+  auto pairing_delegate =
+      std::make_unique<FakePairingDelegate>(kTestLocalIoCap);
+  pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
+
+  pairing_delegate->SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(/*confirm=*/true); });
+
+  // Advance state machine.
+  pairing_state().InitiatePairing(NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
+  pairing_state().OnPinCodeRequest(NoOpUserPinCodeCallback);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestLegacyLinkKeyType);
+
+  // Inject failure status.
+  pairing_state().OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
+  EXPECT_EQ(1, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_FALSE(status_handler().status()->is_ok());
+
+  RETURN_IF_FATAL(InjectEvent());
+  EXPECT_EQ(2, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_EQ(ToResult(HostError::kFailed), status_handler().status());
 }
 
 #ifndef NINSPECT

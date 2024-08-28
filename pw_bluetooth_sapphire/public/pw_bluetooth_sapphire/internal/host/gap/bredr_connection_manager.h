@@ -14,9 +14,6 @@
 
 #pragma once
 
-#include <pw_async/dispatcher.h>
-
-#include <functional>
 #include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h"
@@ -291,6 +288,8 @@ class BrEdrConnectionManager final {
       const hci::EmbossEventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnRoleChange(
       const hci::EmbossEventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnPinCodeRequest(
+      const hci::EmbossEventPacket& event);
 
   void HandleNonAclConnectionRequest(const DeviceAddress& addr,
                                      pw::bluetooth::emboss::LinkType link_type);
@@ -348,6 +347,11 @@ class BrEdrConnectionManager final {
   void SendRejectSynchronousRequest(DeviceAddress addr,
                                     pw::bluetooth::emboss::StatusCode reason,
                                     hci::ResultFunction<> cb = nullptr);
+  void SendPinCodeRequestReply(DeviceAddressBytes bd_addr,
+                               uint16_t pin_code,
+                               hci::ResultFunction<> cb = nullptr);
+  void SendPinCodeRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                       hci::ResultFunction<> cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr,
   // the event returned will be decoded for its status, which is passed to |cb|.

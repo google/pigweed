@@ -121,6 +121,14 @@ std::optional<hci_spec::LinkKey> PairingStateManager::OnLinkKeyRequest() {
   return std::nullopt;
 }
 
+void PairingStateManager::OnPinCodeRequest(UserPinCodeCallback cb) {
+  if (legacy_pairing_state_) {
+    legacy_pairing_state_->OnPinCodeRequest(std::move(cb));
+    return;
+  }
+  cb(std::nullopt);
+}
+
 void PairingStateManager::OnLinkKeyNotification(
     const UInt128& link_key,
     hci_spec::LinkKeyType key_type,

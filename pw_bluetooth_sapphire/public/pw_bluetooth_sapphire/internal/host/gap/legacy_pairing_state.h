@@ -50,6 +50,12 @@ class LegacyPairingState final {
   using StatusCallback =
       fit::function<void(hci_spec::ConnectionHandle, hci::Result<>)>;
 
+  // Constructs a LegacyPairingState to handle pairing protocols, commands, and
+  // events to the |peer|, prior to the ACL connection being established. We
+  // cannot populate |link_|, |send_auth_request_callback_|, and
+  // |status_callback_| until the ACL connection is complete.
+  LegacyPairingState(Peer::WeakPtr peer, bool outgoing_connection);
+
   // Constructs a LegacyPairingState for the ACL connection |link| to |peer| to
   // handle pairing protocols, commands, and events. |link| must be valid for
   // the lifetime of this object.
@@ -73,11 +79,6 @@ class LegacyPairingState final {
                      bool outgoing_connection,
                      fit::closure auth_cb,
                      StatusCallback status_cb);
-  // Constructs a LegacyPairingState to handle pairing protocols, commands, and
-  // events to the |peer|, prior to the ACL connection being established. We
-  // cannot populate |link_|, |send_auth_request_callback_|, and
-  // |status_callback_| until the ACL connection is complete.
-  LegacyPairingState(Peer::WeakPtr peer, bool outgoing_connection);
   ~LegacyPairingState();
 
   // Sets the |link|'s callbacks fields when the ACL connection is complete
@@ -117,6 +118,12 @@ class LegacyPairingState final {
   // Caller should send the returned link key in a HCI_Link_Key_Request_Reply
   // (or HCI_Link_Key_Request_Negative_Reply if the returned value is null).
   [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest();
+
+  // |cb| is called with the pin code value to send HCI_PIN_Code_Request_Reply
+  // or std::nullopt to send HCI_PIN_Code_Request_Negative_Reply.
+  using UserPinCodeCallback =
+      fit::callback<void(std::optional<uint16_t> passkey)>;
+  void OnPinCodeRequest(UserPinCodeCallback cb);
 
   // If the connection is complete, store |link_key| in the connection.
   // Otherwise store temporarily in |link_key_|.
@@ -193,8 +200,9 @@ class LegacyPairingState final {
         BrEdrSecurityRequirements security_requirements,
         bool outgoing_connection);
     static std::unique_ptr<Pairing> MakeResponder(
-        pw::bluetooth::emboss::IoCapability peer_iocap,
-        bool outgoing_connection);
+        bool outgoing_connection,
+        std::optional<pw::bluetooth::emboss::IoCapability> peer_iocap =
+            std::nullopt);
     // Make a responder for a peer that has initiated pairing.
     static std::unique_ptr<Pairing> MakeResponderForBonded();
 

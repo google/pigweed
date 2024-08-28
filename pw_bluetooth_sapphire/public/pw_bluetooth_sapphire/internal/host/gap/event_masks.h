@@ -46,6 +46,7 @@ constexpr uint64_t BuildEventMask() {
   ENABLE_EVT(kLEMetaEvent);
   ENABLE_EVT(kLinkKeyRequestEvent);
   ENABLE_EVT(kLinkKeyNotificationEvent);
+  ENABLE_EVT(kPINCodeRequestEvent);
   ENABLE_EVT(kRemoteOOBDataRequestEvent);
   ENABLE_EVT(kRemoteNameRequestCompleteEvent);
   ENABLE_EVT(kReadRemoteSupportedFeaturesCompleteEvent);

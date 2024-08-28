@@ -144,9 +144,15 @@ class PairingStateManager final {
   // Caller is not expected to send a response.
   void OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode status_code);
 
-  // Caller should send the returned link key in a Link Key Request Reply (or
-  // Link Key Request Negative Reply if the returned value is null).
+  // Caller should send the returned link key in a HCI_Link_Key_Request_Reply
+  // (or HCI_Link_Key_Request_Negative_Reply if the returned value is null).
   [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest();
+
+  // |cb| is called with the pin code value to send HCI_PIN_Code_Request_Reply
+  // or std::nullopt to send HCI_PIN_Code_Request_Negative_Reply.
+  using UserPinCodeCallback =
+      fit::callback<void(std::optional<uint16_t> passkey)>;
+  void OnPinCodeRequest(UserPinCodeCallback cb);
 
   // Caller is not expected to send a response.
   void OnLinkKeyNotification(const UInt128& link_key,
@@ -168,6 +174,10 @@ class PairingStateManager final {
   // effect on the next security upgrade.
   void set_security_mode(gap::BrEdrSecurityMode mode) {
     secure_simple_pairing_state_->set_security_mode(mode);
+  }
+
+  LegacyPairingState* legacy_pairing_state() {
+    return legacy_pairing_state_.get();
   }
 
   // Attach pairing state inspect node named |name| as a child of |parent|.

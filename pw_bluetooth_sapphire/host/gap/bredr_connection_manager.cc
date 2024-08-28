@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 
 #include <pw_bytes/endian.h>
+#include <pw_string/string_builder.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/expiring_set.h"
@@ -33,6 +34,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
 namespace bt::gap {
@@ -234,6 +236,9 @@ BrEdrConnectionManager::BrEdrConnectionManager(
   AddEventHandler(
       hci_spec::kRoleChangeEventCode,
       fit::bind_member<&BrEdrConnectionManager::OnRoleChange>(this));
+  AddEventHandler(
+      hci_spec::kPinCodeRequestEventCode,
+      fit::bind_member<&BrEdrConnectionManager::OnPinCodeRequest>(this));
 
   // Set the timeout for outbound connections explicitly to the spec default.
   WritePageTimeout(
@@ -1666,6 +1671,87 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
+hci::CommandChannel::EventCallbackResult
+BrEdrConnectionManager::OnPinCodeRequest(const hci::EmbossEventPacket& event) {
+  const auto params =
+      event.view<pw::bluetooth::emboss::PinCodeRequestEventView>();
+  const DeviceAddress addr(DeviceAddress::Type::kBREDR,
+                           DeviceAddressBytes(params.bd_addr()));
+  Peer* peer = cache_->FindByAddress(addr);
+  if (!peer) {
+    bt_log(WARN, "gap-bredr", "no peer with address %s found", bt_str(addr));
+    SendPinCodeRequestNegativeReply(addr.value());
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  PeerId peer_id = peer->identifier();
+
+  auto pin_code_cb = [this,
+                      self = weak_self_.GetWeakPtr(),
+                      addr = addr.value()](std::optional<uint16_t> pin) {
+    if (!self.is_alive()) {
+      return;
+    }
+
+    if (pin) {
+      // TODO(fxbug.dev/348700005): Support exponential backoff
+      SendPinCodeRequestReply(addr, pin.value());
+    } else {
+      SendPinCodeRequestNegativeReply(addr);
+    }
+  };
+
+  std::optional<BrEdrConnectionRequest*> connection_req =
+      FindConnectionRequestById(peer_id);
+  if (!connection_req.has_value()) {
+    // The ACL connection is complete so get the PIN code
+    auto conn_pair = FindConnectionByAddress(addr.value());
+    if (!conn_pair.has_value()) {
+      bt_log(ERROR,
+             "gap-bredr",
+             "Got %s for unconnected addr: %s",
+             __func__,
+             bt_str(addr));
+      SendPinCodeRequestNegativeReply(addr.value());
+      return hci::CommandChannel::EventCallbackResult::kContinue;
+    }
+    auto [handle, conn_ptr] = *conn_pair;
+
+    conn_ptr->pairing_state_manager().OnPinCodeRequest(std::move(pin_code_cb));
+  } else {
+    // Legacy Pairing may occur before the ACL connection between two devices is
+    // complete. If a PIN code is requested during connection setup, a
+    // HCI_PIN_Code_Request event may be received prior to the
+    // HCI_Connection_Complete event (so no connection object will exist yet)
+    // (Core Spec v5.4, Vol 2, Part F, Sec 3.1).
+
+    // If we already created a LegacyPairingState object in |OnLinkKeyRequest|,
+    // don't recreate another one.
+    if (!connection_req.value()->legacy_pairing_state()) {
+      bool outgoing_connection = connection_req.value()->AwaitingOutgoing();
+
+      // The HCI link is not yet established, so |link|, |auth_cb|, and
+      // |status_cb| are not created yet. After the connection is complete, they
+      // are initialized in |PairingStateManager|'s constructor.
+      std::unique_ptr<LegacyPairingState> legacy_pairing_state =
+          std::make_unique<LegacyPairingState>(
+              peer->GetWeakPtr(),
+              /*link=*/hci::BrEdrConnection::WeakPtr(),
+              outgoing_connection,
+              /*auth_cb=*/nullptr,
+              /*status_cb=*/nullptr);
+
+      connection_req.value()->set_legacy_pairing_state(
+          std::move(legacy_pairing_state));
+    }
+
+    connection_req.value()->legacy_pairing_state()->OnPinCodeRequest(
+        std::move(pin_code_cb));
+  }
+
+  return hci::CommandChannel::EventCallbackResult::kContinue;
+}
+
 void BrEdrConnectionManager::HandleNonAclConnectionRequest(
     const DeviceAddress& addr, pw::bluetooth::emboss::LinkType link_type) {
   BT_DEBUG_ASSERT(link_type != pw::bluetooth::emboss::LinkType::ACL);
@@ -2037,6 +2123,40 @@ void BrEdrConnectionManager::SendRejectSynchronousRequest(
   hci_->command_channel()->SendCommand(std::move(reject),
                                        std::move(command_cb),
                                        hci_spec::kCommandStatusEventCode);
+}
+
+void BrEdrConnectionManager::SendPinCodeRequestReply(DeviceAddressBytes bd_addr,
+                                                     uint16_t pin_code,
+                                                     hci::ResultFunction<> cb) {
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::PinCodeRequestReplyCommandWriter>(
+      hci_spec::kPinCodeRequestReply);
+  auto params = packet.view_t();
+  params.bd_addr().CopyFrom(bd_addr.view());
+
+  // 4-digit PIN codes are generated
+  params.pin_code_length().Write(4);
+
+  MutableBufferView data_view(params.pin_code().BackingStorage().data(),
+                              params.pin_code().SizeInBytes());
+  data_view.SetToZeros();
+
+  // Convert pin code int to string (4 digits + 1 digit for null character)
+  pw::StringBuffer<5> builder;
+  builder << pin_code;
+  data_view.Write(BufferView(builder));
+
+  SendCommandWithStatusCallback(std::move(packet), std::move(cb));
+}
+
+void BrEdrConnectionManager::SendPinCodeRequestNegativeReply(
+    DeviceAddressBytes bd_addr, hci::ResultFunction<> cb) {
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::PinCodeRequestNegativeReplyCommandWriter>(
+      hci_spec::kPinCodeRequestNegativeReply);
+  auto params = packet.view_t();
+  params.bd_addr().CopyFrom(bd_addr.view());
+  SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
 void BrEdrConnectionManager::RecordDisconnectInspect(

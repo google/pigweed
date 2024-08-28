@@ -34,6 +34,8 @@ void FakeBrEdrConnection::Disconnect(pw::bluetooth::emboss::StatusCode reason) {
 }
 
 bool FakeBrEdrConnection::StartEncryption() {
+  set_encryption_status(pw::bluetooth::emboss::EncryptionStatus::
+                            ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE);
   start_encryption_count_++;
   return true;
 }
