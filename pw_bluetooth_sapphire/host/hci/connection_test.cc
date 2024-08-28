@@ -122,7 +122,8 @@ class LinkTypeConnectionTest
         return NewACLConnection(role, handle);
       case bt::LinkType::kLE:
         return NewLEConnection(role, handle);
-      default:
+      case bt::LinkType::kSCO:
+      case bt::LinkType::kESCO:
         break;
     }
     BT_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));

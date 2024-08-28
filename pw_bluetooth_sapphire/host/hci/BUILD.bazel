@@ -59,9 +59,7 @@ cc_library(
         "fake_low_energy_connection.cc",
         "fake_sco_connection.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
+    copts = COPTS,
     deps = [
         ":hci",
         "//pw_bluetooth_sapphire:public",
@@ -86,6 +84,7 @@ cc_library(
         "low_energy_scanner_test.cc",
         "sequential_command_runner_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

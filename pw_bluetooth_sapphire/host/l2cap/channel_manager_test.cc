@@ -454,7 +454,8 @@ A2dpOffloadManager::Configuration BuildConfiguration(
           android_emb::LdacBitrateIndex::LOW);
       config.ldac_configuration.view().ldac_channel_mode().stereo().Write(true);
       break;
-    default:
+    case android_emb::A2dpCodecType::APTX:
+    case android_emb::A2dpCodecType::APTX_HD:
       break;
   }
 

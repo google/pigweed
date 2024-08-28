@@ -20,8 +20,8 @@ dir_public_gap = "../../public/pw_bluetooth_sapphire/internal/host/gap"
 
 pw_source_set("definitions") {
   public = [ "$dir_public_gap/gap.h" ]
-
   sources = [ "gap.cc" ]
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
 }
 
@@ -132,6 +132,8 @@ pw_source_set("testing") {
     "fake_pairing_delegate.cc",
   ]
 
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
+
   public_deps = [
     ":gap",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
@@ -162,6 +164,8 @@ pw_test("gap_tests") {
     "types_test.cc",
   ]
 
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
+
   deps = [
     ":gap",
     ":testing",
@@ -179,6 +183,7 @@ pw_test("gap_tests") {
 
 pw_fuzzer("peer_cache_fuzzer") {
   sources = [ "peer_cache_fuzztest.cc" ]
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":gap",
     "$dir_pw_async:fake_dispatcher",

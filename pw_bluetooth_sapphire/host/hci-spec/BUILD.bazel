@@ -39,6 +39,7 @@ cc_library(
     srcs = [
         "util_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

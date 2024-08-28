@@ -25,6 +25,8 @@ pw_source_set("definitions") {
     "$dir_public_att/packet.h",
   ]
 
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
+
   sources = [ "packet.cc" ]
 
   public_deps = [
@@ -82,6 +84,8 @@ pw_test("tests") {
     "error_test.cc",
     "permissions_test.cc",
   ]
+
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
 
   deps = [
     ":att",

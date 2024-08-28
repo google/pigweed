@@ -101,9 +101,7 @@ cc_library(
         "mock_channel_test.cc",
         "test_packets.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
+    copts = COPTS,
     deps = [
         ":l2cap",
         "//pw_bluetooth_sapphire:public",
@@ -149,6 +147,7 @@ cc_library(
         "signaling_channel_test.cc",
         "types_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

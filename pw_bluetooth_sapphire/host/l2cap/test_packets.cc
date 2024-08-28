@@ -275,7 +275,9 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id,
           0x00,
           LowerBits(l2cap::kMaxInboundPduPayloadSize),
           UpperBits(l2cap::kMaxInboundPduPayloadSize)));
-    default:
+    case l2cap::RetransmissionAndFlowControlMode::kRetransmission:
+    case l2cap::RetransmissionAndFlowControlMode::kFlowControl:
+    case l2cap::RetransmissionAndFlowControlMode::kStreaming:
       BT_ASSERT_MSG(false, "unsupported mode");
   }
 }
@@ -369,7 +371,9 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id,
           LowerBits(l2cap::kMaxInboundPduPayloadSize),
           UpperBits(l2cap::kMaxInboundPduPayloadSize)));
     }
-    default:
+    case l2cap::RetransmissionAndFlowControlMode::kRetransmission:
+    case l2cap::RetransmissionAndFlowControlMode::kFlowControl:
+    case l2cap::RetransmissionAndFlowControlMode::kStreaming:
       BT_ASSERT_MSG(false, "unsupported mode");
   }
 }

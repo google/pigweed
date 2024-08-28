@@ -94,7 +94,10 @@ pw_source_set("testing") {
   public_deps = [ ":hci" ]
 
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
+  configs = [
+    "$dir_pw_build:internal_strict_warnings_core",
+    "$dir_pw_bluetooth_sapphire/host:copts",
+  ]
 }
 
 pw_test("tests") {
@@ -111,6 +114,8 @@ pw_test("tests") {
     "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
   ]
+
+  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
 
   deps = [
     ":testing",

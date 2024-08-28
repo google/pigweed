@@ -210,7 +210,9 @@ PairingMethod SelectPairingMethod(
         case IOCapability::kKeyboardOnly:
         case IOCapability::kKeyboardDisplay:
           return PairingMethod::kPasskeyEntryDisplay;
-        default:
+        case IOCapability::kDisplayOnly:
+        case IOCapability::kDisplayYesNo:
+        case IOCapability::kNoInputNoOutput:
           break;
       }
       PW_MODIFY_DIAGNOSTICS_POP();
@@ -228,7 +230,8 @@ PairingMethod SelectPairingMethod(
                           : PairingMethod::kPasskeyEntryDisplay;
         case IOCapability::kKeyboardOnly:
           return PairingMethod::kPasskeyEntryDisplay;
-        default:
+        case IOCapability::kDisplayOnly:
+        case IOCapability::kNoInputNoOutput:
           break;
       }
       PW_MODIFY_DIAGNOSTICS_POP();
@@ -248,7 +251,8 @@ PairingMethod SelectPairingMethod(
         case IOCapability::kDisplayYesNo:
           return sec_conn ? PairingMethod::kNumericComparison
                           : PairingMethod::kPasskeyEntryInput;
-        default:
+        case IOCapability::kKeyboardDisplay:
+        case IOCapability::kNoInputNoOutput:
           break;
       }
       PW_MODIFY_DIAGNOSTICS_POP();

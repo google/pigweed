@@ -77,6 +77,7 @@ cc_library(
 cc_library(
     name = "uuid_string_util",
     srcs = ["uuid_string_util.cc"],
+    copts = COPTS,
     deps = [":common"],
 )
 
@@ -104,6 +105,7 @@ cc_library(
         "weak_self_test.cc",
         "windowed_inspect_numeric_property_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

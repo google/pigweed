@@ -48,6 +48,7 @@ cc_library(
         "security_request_phase.cc",
         "util.cc",
     ],
+    copts = COPTS,
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
@@ -65,9 +66,7 @@ cc_library(
     srcs = [
         "test_security_manager.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
+    copts = COPTS,
     deps = [
         ":sm",
         "//pw_bluetooth_sapphire:public",
@@ -94,6 +93,7 @@ cc_library(
         "types_test.cc",
         "util_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

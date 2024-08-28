@@ -22,6 +22,7 @@ cc_library(
     srcs = [
         "gap.cc",
     ],
+    copts = COPTS,
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
@@ -87,9 +88,7 @@ cc_library(
         "fake_adapter.cc",
         "fake_pairing_delegate.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
+    copts = COPTS,
     deps = [
         ":gap",
         "//pw_bluetooth_sapphire:public",
@@ -122,6 +121,7 @@ cc_library(
         "secure_simple_pairing_state_test.cc",
         "types_test.cc",
     ],
+    copts = COPTS,
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
