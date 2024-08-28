@@ -36,7 +36,7 @@ try:
     from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
-    _PROBE_RS_COMMAND = r.Rlocation('pigweed/third_party/probe-rs/probe-rs')
+    _PROBE_RS_COMMAND = r.Rlocation('probe_rs/probe-rs')
     _PICOTOOL_COMMAND = r.Rlocation('picotool/picotool')
 except ImportError:
     _PROBE_RS_COMMAND = 'probe-rs'

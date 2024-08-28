@@ -41,9 +41,9 @@ py_library(
         "rp2040_utils/unit_test_server.py",
     ],
     data = [
-        "//third_party/probe-rs",
         "@libusb//:libusb_dynamic",
         "@picotool",
+        "@probe_rs//:probe-rs",
     ],
     imports = ["."],
     tags = ["manual"],
