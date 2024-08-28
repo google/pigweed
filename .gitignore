@@ -23,9 +23,6 @@ outbazel/
 docs/_build
 twister-out*/
 
-# Ignore until https://github.com/bazelbuild/bazel/issues/20369 is fixed.
-MODULE.bazel.lock
-
 # Editors
 .pw_ide/
 .vscode/*
