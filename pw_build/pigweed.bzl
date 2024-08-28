@@ -50,6 +50,7 @@ def pw_facade(name, srcs = None, backend = None, **kwargs):
         )
 
     facade_kwargs = dict(**kwargs)
+    facade_kwargs["textual_hdrs"] = facade_kwargs.pop("hdrs", [])
 
     # A facade has no srcs, so it can only have public deps. Don't specify any
     # implementation_deps on the facade target.
