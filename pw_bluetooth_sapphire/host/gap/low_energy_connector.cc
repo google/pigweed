@@ -406,8 +406,8 @@ void LowEnergyConnector::StartInterrogation() {
   state_.Set(State::kInterrogating);
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
-  bool sca_supported = adapter_state_.IsCommandSupported(
-      /*octet=*/43, hci_spec::SupportedCommand::kLERequestPeerSCA);
+  bool sca_supported =
+      adapter_state_.SupportedCommands().le_request_peer_sca().Read();
   interrogator_.emplace(
       peer->GetWeakPtr(), connection_->handle(), cmd_, sca_supported);
   interrogator_->Start(

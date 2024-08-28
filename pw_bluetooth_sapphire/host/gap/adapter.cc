@@ -775,9 +775,9 @@ void AdapterImpl::GetSupportedDelayRange(
     pw::bluetooth::emboss::DataPathDirection direction,
     const std::optional<std::vector<uint8_t>>& codec_configuration,
     GetSupportedDelayRangeCallback cb) {
-  if (!state_.IsCommandSupported(
-          /*octet=*/45,
-          hci_spec::SupportedCommand::kReadLocalSupportedControllerDelay)) {
+  if (!state_.SupportedCommands()
+           .read_local_supported_controller_delay()
+           .Read()) {
     bt_log(WARN,
            "gap",
            "read local supported controller delay command not supported");
@@ -967,18 +967,20 @@ void AdapterImpl::InitializeStep1() {
       hci::EmbossCommandPacket::New<
           pw::bluetooth::emboss::ReadLocalSupportedCommandsCommandView>(
           hci_spec::kReadLocalSupportedCommands),
-      [this](const hci::EventPacket& cmd_complete) {
+      [this](const hci::EmbossEventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete,
                          WARN,
                          "gap",
                          "read local supported commands failed")) {
           return;
         }
-        auto params = cmd_complete.return_params<
-            hci_spec::ReadLocalSupportedCommandsReturnParams>();
-        std::memcpy(state_.supported_commands,
-                    params->supported_commands,
-                    sizeof(params->supported_commands));
+        auto view =
+            cmd_complete
+                .view<pw::bluetooth::emboss::
+                          ReadLocalSupportedCommandsCommandCompleteEventView>();
+        std::copy(view.supported_commands().BackingStorage().begin(),
+                  view.supported_commands().BackingStorage().end(),
+                  state_.supported_commands);
       });
 
   // HCI_Read_Local_Supported_Features
@@ -1058,8 +1060,7 @@ void AdapterImpl::InitializeStep2() {
 
   // If the controller supports the Read Buffer Size command then send it.
   // Otherwise we'll default to 0 when initializing the ACLDataChannel.
-  if (state_.IsCommandSupported(/*octet=*/14,
-                                hci_spec::SupportedCommand::kReadBufferSize)) {
+  if (state_.SupportedCommands().read_buffer_size().Read()) {
     // HCI_Read_Buffer_Size
     init_seq_runner_->QueueCommand(
         hci::EmbossCommandPacket::New<
@@ -1130,9 +1131,9 @@ void AdapterImpl::InitializeStep2() {
             cpp20::endian::little, params->le_states);
       });
 
-  if (state_.IsCommandSupported(
-          /*octet=*/36,
-          hci_spec::SupportedCommand::kLEReadMaximumAdvertisingDataLength)) {
+  if (state_.SupportedCommands()
+          .le_read_maximum_advertising_data_length()
+          .Read()) {
     // HCI_LE_Read_Maximum_Advertising_Data_Length
     init_seq_runner_->QueueCommand(
         hci::EmbossCommandPacket::New<
@@ -1166,8 +1167,7 @@ void AdapterImpl::InitializeStep2() {
         hci_spec::kMaxLEAdvertisingDataLength;
   }
 
-  if (state_.IsCommandSupported(
-          /*octet=*/41, hci_spec::SupportedCommand::kLEReadBufferSizeV2)) {
+  if (state_.SupportedCommands().le_read_buffer_size_v2().Read()) {
     // HCI_LE_Read_Buffer_Size [v2]
     init_seq_runner_->QueueCommand(
         hci::EmbossCommandPacket::New<
@@ -1243,8 +1243,7 @@ void AdapterImpl::InitializeStep2() {
   if (state_.features.HasBit(/*page=*/0u,
                              hci_spec::LMPFeature::kExtendedFeatures)) {
     // HCI_Write_LE_Host_Support
-    if (!state_.IsCommandSupported(
-            /*octet=*/24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
+    if (!state_.SupportedCommands().write_le_host_support().Read()) {
       bt_log(INFO, "gap", "LE Host is not supported");
     } else {
       bt_log(INFO, "gap", "LE Host is supported. Enabling LE Host mode");
@@ -1261,9 +1260,9 @@ void AdapterImpl::InitializeStep2() {
     }
 
     // HCI_Write_Secure_Connections_Host_Support
-    if (!state_.IsCommandSupported(
-            /*octet=*/32,
-            hci_spec::SupportedCommand::kWriteSecureConnectionsHostSupport)) {
+    if (!state_.SupportedCommands()
+             .write_secure_connections_host_support()
+             .Read()) {
       bt_log(INFO, "gap", "Secure Connections (Host Support) is not supported");
     } else {
       bt_log(INFO,
@@ -1328,11 +1327,10 @@ void AdapterImpl::InitializeStep3() {
   // The controller may not support SCO flow control (as implied by not
   // supporting HCI_Write_Synchronous_Flow_Control_Enable), in which case we
   // don't support HCI SCO on this controller yet.
-  // TODO(fxbug.dev/42171056): Support controllers that don't support SCO flow
-  // control.
-  bool sco_flow_control_supported = state_.IsCommandSupported(
-      /*octet=*/10,
-      hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  // TODO(fxbug.dev/42171056): Support controllers that don't support
+  // SCO flow control.
+  bool sco_flow_control_supported =
+      state_.SupportedCommands().write_synchronous_flow_control_enable().Read();
   if (state_.sco_buffer_info.IsAvailable() && sco_flow_control_supported) {
     // Enable SCO flow control.
     auto sync_flow_control = hci::EmbossCommandPacket::New<

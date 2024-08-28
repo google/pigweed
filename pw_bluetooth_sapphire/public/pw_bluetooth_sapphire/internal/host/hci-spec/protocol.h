@@ -663,15 +663,6 @@ constexpr OpCode kReadLocalVersionInfo = InformationalParamsOpCode(0x0001);
 constexpr OpCode kReadLocalSupportedCommands =
     InformationalParamsOpCode(0x0002);
 
-struct ReadLocalSupportedCommandsReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // See enum class SupportedCommand in hci_constants.h for how to interpret
-  // this bitfield.
-  uint8_t supported_commands[64];
-} __attribute__((packed));
-
 // ============================================
 // Read Local Supported Features Command (v1.1)
 constexpr OpCode kReadLocalSupportedFeatures =

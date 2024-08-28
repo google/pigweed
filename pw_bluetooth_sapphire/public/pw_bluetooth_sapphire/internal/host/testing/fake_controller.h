@@ -59,6 +59,11 @@ class FakeController final : public ControllerTestDoubleBase,
 
     bool is_event_unmasked(hci_spec::LEEventMask event) const;
 
+    auto SupportedCommandsView() {
+      return pw::bluetooth::emboss::MakeSupportedCommandsView(
+          supported_commands, sizeof(supported_commands));
+    }
+
     // The time elapsed from the receipt of a LE Create Connection command until
     // the resulting LE Connection Complete event.
     pw::chrono::SystemClock::duration le_connection_delay =

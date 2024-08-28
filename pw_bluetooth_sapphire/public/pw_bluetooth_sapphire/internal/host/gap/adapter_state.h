@@ -69,12 +69,9 @@ struct AdapterState final {
                            hci_spec::LMPFeature::kSecureConnectionsHostSupport);
   }
 
-  // Returns true if |command_bit| in the given |octet| is set in the supported
-  // command list.
-  inline bool IsCommandSupported(size_t octet,
-                                 hci_spec::SupportedCommand command_bit) const {
-    BT_DEBUG_ASSERT(octet < sizeof(supported_commands));
-    return supported_commands[octet] & static_cast<uint8_t>(command_bit);
+  inline auto SupportedCommands() const {
+    return pw::bluetooth::emboss::MakeSupportedCommandsView(
+        supported_commands, sizeof(supported_commands));
   }
 
   // HCI version supported by the controller.
