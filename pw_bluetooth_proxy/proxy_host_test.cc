@@ -589,14 +589,14 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
 
   uint8_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
-      [&sends_called](H4PacketWithHci&& h4_packet) {
+      [&sends_called](H4PacketWithHci&& received_packet) {
         sends_called++;
-        emboss::LEReadBufferSizeV1CommandCompleteEventWriter view =
+        emboss::LEReadBufferSizeV1CommandCompleteEventWriter event_view =
             MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-                h4_packet.GetHciSpan());
+                received_packet.GetHciSpan());
         // Should reserve 2 credits from original total of 10 (so 8 left for
         // host).
-        EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 8);
+        EXPECT_EQ(event_view.total_num_le_acl_data_packets().Read(), 8);
       });
 
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
@@ -633,14 +633,14 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV2) {
 
   uint8_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
-      [&sends_called](H4PacketWithHci&& h4_packet) {
+      [&sends_called](H4PacketWithHci&& received_packet) {
         sends_called++;
-        emboss::LEReadBufferSizeV2CommandCompleteEventWriter view =
+        emboss::LEReadBufferSizeV2CommandCompleteEventWriter event_view =
             MakeEmboss<emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
-                h4_packet.GetHciSpan());
+                received_packet.GetHciSpan());
         // Should reserve 2 credits from original total of 10 (so 8 left for
         // host).
-        EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 8);
+        EXPECT_EQ(event_view.total_num_le_acl_data_packets().Read(), 8);
       });
 
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
@@ -677,14 +677,14 @@ TEST(ReserveLeAclCredits, ProxyCreditsCappedByControllerCredits) {
 
   uint8_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
-      [&sends_called](H4PacketWithHci&& h4_packet) {
+      [&sends_called](H4PacketWithHci&& received_packet) {
         sends_called++;
         // We want 7, but can reserve only 5 from original 5 (so 0 left for
         // host).
-        emboss::LEReadBufferSizeV1CommandCompleteEventWriter view =
+        emboss::LEReadBufferSizeV1CommandCompleteEventWriter event_view =
             MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-                h4_packet.GetHciSpan());
-        EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 0);
+                received_packet.GetHciSpan());
+        EXPECT_EQ(event_view.total_num_le_acl_data_packets().Read(), 0);
       });
 
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
@@ -718,14 +718,14 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveZeroCredits) {
 
   uint8_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
-      [&sends_called](H4PacketWithHci&& h4_packet) {
+      [&sends_called](H4PacketWithHci&& received_packet) {
         sends_called++;
-        emboss::LEReadBufferSizeV1CommandCompleteEventWriter view =
+        emboss::LEReadBufferSizeV1CommandCompleteEventWriter event_view =
             MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-                h4_packet.GetHciSpan());
+                received_packet.GetHciSpan());
         // Should reserve 0 credits from original total of 10 (so 10 left for
         // host).
-        EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 10);
+        EXPECT_EQ(event_view.total_num_le_acl_data_packets().Read(), 10);
       });
 
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
@@ -761,14 +761,14 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenHostCreditsZero) {
 
   uint8_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
-      [&sends_called](H4PacketWithHci&& h4_packet) {
+      [&sends_called](H4PacketWithHci&& received_packet) {
         sends_called++;
-        emboss::LEReadBufferSizeV1CommandCompleteEventWriter view =
+        emboss::LEReadBufferSizeV1CommandCompleteEventWriter event_view =
             MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-                h4_packet.GetHciSpan());
+                received_packet.GetHciSpan());
         // Should reserve 0 credit from original total of 0 (so 0 left for
         // host).
-        EXPECT_EQ(view.total_num_le_acl_data_packets().Read(), 0);
+        EXPECT_EQ(event_view.total_num_le_acl_data_packets().Read(), 0);
       });
 
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
