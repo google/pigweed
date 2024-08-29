@@ -12,17 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_select",
-)
-
 package(default_visibility = ["//pw_bluetooth_sapphire:__subpackages__"])
 
 cc_library(
     name = "config",
     srcs = [],
-    defines = fuchsia_select({
+    defines = select({
         "@platforms//os:fuchsia": [
             "PW_BLUETOOTH_SAPPHIRE_INSPECT_ENABLED",
             "PW_BLUETOOTH_SAPPHIRE_TRACE_ENABLED",

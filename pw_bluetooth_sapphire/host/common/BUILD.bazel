@@ -12,10 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
-    "fuchsia_select",
-)
 load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
@@ -65,7 +61,7 @@ cc_library(
         "@pigweed//pw_string",
         "@pigweed//pw_string:utf_codecs",
         "@pigweed//third_party/fuchsia:fit",
-    ] + fuchsia_select({
+    ] + select({
         "@platforms//os:fuchsia": [
             "@fuchsia_sdk//pkg/inspect_component_cpp",
             "@fuchsia_sdk//pkg/trace",
