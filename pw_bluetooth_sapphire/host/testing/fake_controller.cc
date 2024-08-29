@@ -294,10 +294,15 @@ void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
 
 void FakeController::RespondWithCommandComplete(
     hci_spec::OpCode opcode, hci::EmbossEventPacket* packet) {
+  RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode), packet);
+}
+
+void FakeController::RespondWithCommandComplete(
+    pwemb::OpCode opcode, hci::EmbossEventPacket* packet) {
   auto header = packet->template view<pwemb::CommandCompleteEventWriter>();
 
   header.num_hci_command_packets().Write(settings_.num_hci_command_packets);
-  header.command_opcode_bits().BackingStorage().WriteUInt(opcode);
+  header.command_opcode_enum().Write(opcode);
 
   SendEvent(hci_spec::kCommandCompleteEventCode, packet);
 }
@@ -1834,11 +1839,13 @@ void FakeController::OnWriteScanEnable(
 }
 
 void FakeController::OnReadScanEnable() {
-  hci_spec::ReadScanEnableReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.scan_enable = bredr_scan_state_;
-  RespondWithCommandComplete(hci_spec::kReadScanEnable,
-                             BufferView(&params, sizeof(params)));
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadScanEnableCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.scan_enable().BackingStorage().WriteUInt(bredr_scan_state_);
+  RespondWithCommandComplete(pwemb::OpCode::READ_SCAN_ENABLE, &event_packet);
 }
 
 void FakeController::OnReadLocalName() {
@@ -2457,12 +2464,14 @@ void FakeController::OnSetConnectionEncryptionCommand(
 
 void FakeController::OnReadEncryptionKeySizeCommand(
     const pwemb::ReadEncryptionKeySizeCommandView& params) {
-  hci_spec::ReadEncryptionKeySizeReturnParams response;
-  response.status = pwemb::StatusCode::SUCCESS;
-  response.connection_handle = params.connection_handle().Read();
-  response.key_size = 16;
-  RespondWithCommandComplete(hci_spec::kReadEncryptionKeySize,
-                             BufferView(&response, sizeof(response)));
+  auto response = hci::EmbossEventPacket::New<
+      pwemb::ReadEncryptionKeySizeCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.connection_handle().Write(params.connection_handle().Read());
+  view.key_size().Write(16);
+  RespondWithCommandComplete(hci_spec::kReadEncryptionKeySize, &response);
 }
 
 void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(

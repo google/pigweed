@@ -577,6 +577,12 @@ class FakeController final : public ControllerTestDoubleBase,
   void RespondWithCommandComplete(hci_spec::OpCode opcode,
                                   hci::EmbossEventPacket* packet);
 
+  // Sends an HCI_Command_Complete event in response to the command with
+  // |opcode| and using the provided event packet, filling in the event header
+  // fields.
+  void RespondWithCommandComplete(pw::bluetooth::emboss::OpCode opcode,
+                                  hci::EmbossEventPacket* packet);
+
   // Sends a HCI_Command_Status event in response to the command with |opcode|
   // and using the given data as the parameter payload.
   void RespondWithCommandStatus(hci_spec::OpCode opcode,

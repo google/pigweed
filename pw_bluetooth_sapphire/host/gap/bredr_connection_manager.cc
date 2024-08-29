@@ -100,14 +100,16 @@ void SetPageScanEnabled(bool enabled,
       pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
       hci_spec::kReadScanEnable);
   auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
-                              auto, const hci::EventPacket& event) mutable {
+                              auto,
+                              const hci::EmbossEventPacket& event) mutable {
     if (hci_is_error(event, WARN, "gap-bredr", "read scan enable failed")) {
       finish_cb(event.ToResult());
       return;
     }
 
-    auto params = event.return_params<hci_spec::ReadScanEnableReturnParams>();
-    uint8_t scan_type = params->scan_enable;
+    const auto params = event.view<
+        pw::bluetooth::emboss::ReadScanEnableCommandCompleteEventView>();
+    uint8_t scan_type = params.scan_enable().BackingStorage().ReadUInt();
     if (enabled) {
       scan_type |= static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage);
     } else {

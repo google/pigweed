@@ -363,15 +363,6 @@ struct WritePageTimeoutReturnParams {
 // Read Scan Enable Command (v1.1) (BR/EDR)
 constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);
 
-struct ReadScanEnableReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Bit Mask of enabled scans. See enum class ScanEnableBit in hci_constants.h
-  // for how to interpret this bitfield.
-  ScanEnableType scan_enable;
-} __attribute__((packed));
-
 // =========================================
 // Write Scan Enable Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
@@ -1327,17 +1318,6 @@ struct ReadRSSIReturnParams {
 // ========================================
 // Read Encryption Key Size (v1.1) (BR/EDR)
 constexpr OpCode kReadEncryptionKeySize = StatusParamsOpCode(0x0008);
-
-struct ReadEncryptionKeySizeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Handle of the ACL connection whose encryption key size was read.
-  ConnectionHandle connection_handle;
-
-  // Encryption key size. See v5.0 Vol 2 Part C, Section 5.2.
-  uint8_t key_size;
-} __attribute__((packed));
 
 // ======= LE Controller Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.8

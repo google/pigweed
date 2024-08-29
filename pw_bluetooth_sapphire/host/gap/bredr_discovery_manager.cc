@@ -561,7 +561,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
          pending_discoverable_.size());
 
   auto self = weak_self_.GetWeakPtr();
-  auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
+  auto scan_enable_cb = [self](auto, const hci::EmbossEventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -581,8 +581,9 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
 
     bool enable =
         !self->discoverable_.empty() || !self->pending_discoverable_.empty();
-    auto params = event.return_params<hci_spec::ReadScanEnableReturnParams>();
-    uint8_t scan_type = params->scan_enable;
+    const auto params = event.view<
+        pw::bluetooth::emboss::ReadScanEnableCommandCompleteEventView>();
+    uint8_t scan_type = params.scan_enable().BackingStorage().ReadUInt();
     bool enabled =
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
 

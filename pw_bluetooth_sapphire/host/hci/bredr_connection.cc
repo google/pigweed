@@ -127,7 +127,7 @@ void BrEdrConnection::ValidateEncryptionKeySize(
 
   auto event_cb = [self = GetWeakPtr(),
                    valid_cb = std::move(key_size_validity_cb)](
-                      auto, const EventPacket& event) {
+                      auto, const EmbossEventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -138,9 +138,10 @@ void BrEdrConnection::ValidateEncryptionKeySize(
                      "hci",
                      "Could not read ACL encryption key size on %#.4x",
                      self->handle())) {
-      const auto& return_params =
-          *event.return_params<hci_spec::ReadEncryptionKeySizeReturnParams>();
-      const auto key_size = return_params.key_size;
+      const auto return_params =
+          event.view<pw::bluetooth::emboss::
+                         ReadEncryptionKeySizeCommandCompleteEventView>();
+      uint8_t key_size = return_params.key_size().Read();
       bt_log(TRACE,
              "hci",
              "%#.4x: encryption key size %hhu",
