@@ -36,6 +36,7 @@ const char* const kInspectSecurityPropertiesPropertyName =
 
 SecureSimplePairingState::SecureSimplePairingState(
     Peer::WeakPtr peer,
+    PairingDelegate::WeakPtr pairing_delegate,
     WeakPtr<hci::BrEdrConnection> link,
     bool outgoing_connection,
     fit::closure auth_cb,
@@ -45,6 +46,7 @@ SecureSimplePairingState::SecureSimplePairingState(
       link_(std::move(link)),
       outgoing_connection_(outgoing_connection),
       peer_missing_key_(false),
+      pairing_delegate_(std::move(pairing_delegate)),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {

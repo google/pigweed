@@ -189,6 +189,7 @@ class SecureSimplePairingState final {
   //
   // |link| must be valid for the lifetime of this object.
   SecureSimplePairingState(Peer::WeakPtr peer,
+                           PairingDelegate::WeakPtr pairing_delegate,
                            WeakPtr<hci::BrEdrConnection> link,
                            bool outgoing_connection,
                            fit::closure auth_cb,

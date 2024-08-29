@@ -56,8 +56,11 @@ PairingStateManager::PairingStateManager(
     return;
   }
 
+  // Pairing delegate is set by SetPairingDelegate call in
+  // BrEdrConnectionManager
   secure_simple_pairing_state_ =
       std::make_unique<SecureSimplePairingState>(peer_,
+                                                 PairingDelegate::WeakPtr(),
                                                  link_,
                                                  outgoing_connection,
                                                  std::move(auth_cb),

@@ -54,7 +54,9 @@ class LegacyPairingState final {
   // events to the |peer|, prior to the ACL connection being established. We
   // cannot populate |link_|, |send_auth_request_callback_|, and
   // |status_callback_| until the ACL connection is complete.
-  LegacyPairingState(Peer::WeakPtr peer, bool outgoing_connection);
+  LegacyPairingState(Peer::WeakPtr peer,
+                     PairingDelegate::WeakPtr pairing_delegate,
+                     bool outgoing_connection);
 
   // Constructs a LegacyPairingState for the ACL connection |link| to |peer| to
   // handle pairing protocols, commands, and events. |link| must be valid for
@@ -75,6 +77,7 @@ class LegacyPairingState final {
   // destroyed, status callbacks for any queued pairing requests are called.
   // |status_cb| is not called on destruction.
   LegacyPairingState(Peer::WeakPtr peer,
+                     PairingDelegate::WeakPtr pairing_delegate,
                      WeakPtr<hci::BrEdrConnection> link,
                      bool outgoing_connection,
                      fit::closure auth_cb,

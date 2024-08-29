@@ -33,18 +33,36 @@ const char* const kInspectSecurityPropertiesPropertyName =
     "security_properties";
 }  // namespace
 
-LegacyPairingState::LegacyPairingState(Peer::WeakPtr peer,
-                                       bool outgoing_connection)
+LegacyPairingState::LegacyPairingState(
+    Peer::WeakPtr peer,
+    PairingDelegate::WeakPtr pairing_delegate,
+    bool outgoing_connection)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
-      outgoing_connection_(outgoing_connection) {}
+      outgoing_connection_(outgoing_connection) {
+  if (!pairing_delegate.is_alive()) {
+    bt_log(WARN,
+           "gap-bredr",
+           "No pairing delegate set for peer id %s",
+           bt_str(peer_id_));
+    // We set the state_ to Idle instead of Failed because it is possible that a
+    // PairingDelegate will be set before the next pairing attempt, allowing it
+    // to succeed.
+    state_ = State::kIdle;
+    return;
+  }
+  pairing_delegate_ = std::move(pairing_delegate);
+}
 
-LegacyPairingState::LegacyPairingState(Peer::WeakPtr peer,
-                                       WeakPtr<hci::BrEdrConnection> link,
-                                       bool outgoing_connection,
-                                       fit::closure auth_cb,
-                                       StatusCallback status_cb)
-    : LegacyPairingState(std::move(peer), outgoing_connection) {
+LegacyPairingState::LegacyPairingState(
+    Peer::WeakPtr peer,
+    PairingDelegate::WeakPtr pairing_delegate,
+    WeakPtr<hci::BrEdrConnection> link,
+    bool outgoing_connection,
+    fit::closure auth_cb,
+    StatusCallback status_cb)
+    : LegacyPairingState(
+          std::move(peer), std::move(pairing_delegate), outgoing_connection) {
   // We can only populate |link_|, |send_auth_request_callback_|, and
   // |status_callback_| if the ACL connection is complete.
   BT_ASSERT(link.is_alive());
