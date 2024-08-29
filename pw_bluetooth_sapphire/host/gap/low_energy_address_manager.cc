@@ -114,7 +114,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
 
   auto self = weak_self_.GetWeakPtr();
   auto cmd_complete_cb = [self, this, random_addr](
-                             auto id, const hci::EventPacket& event) {
+                             auto id, const hci::EmbossEventPacket& event) {
     if (!self.is_alive()) {
       return;
     }

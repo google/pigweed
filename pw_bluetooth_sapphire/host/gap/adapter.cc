@@ -763,7 +763,7 @@ void AdapterImpl::SetDeviceClass(DeviceClass dev_class,
       dev_class.to_int());
   hci_->command_channel()->SendCommand(
       std::move(write_dev_class),
-      [cb = std::move(callback)](auto, const hci::EventPacket& event) {
+      [cb = std::move(callback)](auto, const hci::EmbossEventPacket& event) {
         hci_is_error(event, WARN, "gap", "set device class failed");
         cb(event.ToResult());
       });
@@ -1232,7 +1232,7 @@ void AdapterImpl::InitializeStep2() {
     write_ssp_params.simple_pairing_mode().Write(
         pw::bluetooth::emboss::GenericEnableParam::ENABLE);
     init_seq_runner_->QueueCommand(
-        std::move(write_spm), [](const hci::EventPacket& event) {
+        std::move(write_spm), [](const hci::EmbossEventPacket& event) {
           // Warn if the command failed
           hci_is_error(event, WARN, "gap", "write simple pairing mode failed");
         });
@@ -1254,7 +1254,7 @@ void AdapterImpl::InitializeStep2() {
       params.le_supported_host().Write(
           pw::bluetooth::emboss::GenericEnableParam::ENABLE);
       init_seq_runner_->QueueCommand(
-          std::move(cmd_packet), [](const hci::EventPacket& event) {
+          std::move(cmd_packet), [](const hci::EmbossEventPacket& event) {
             hci_is_error(event, WARN, "gap", "Write LE Host support failed");
           });
     }
@@ -1277,7 +1277,7 @@ void AdapterImpl::InitializeStep2() {
       params.secure_connections_host_support().Write(
           pw::bluetooth::emboss::GenericEnableParam::ENABLE);
       init_seq_runner_->QueueCommand(
-          std::move(cmd_packet), [](const hci::EventPacket& event) {
+          std::move(cmd_packet), [](const hci::EmbossEventPacket& event) {
             hci_is_error(event,
                          WARN,
                          "gap",
@@ -1340,7 +1340,8 @@ void AdapterImpl::InitializeStep3() {
     flow_control_params.synchronous_flow_control_enable().Write(
         pw::bluetooth::emboss::GenericEnableParam::ENABLE);
     init_seq_runner_->QueueCommand(
-        std::move(sync_flow_control), [this](const hci::EventPacket& event) {
+        std::move(sync_flow_control),
+        [this](const hci::EmbossEventPacket& event) {
           if (hci_is_error(event,
                            ERROR,
                            "gap",
@@ -1417,7 +1418,7 @@ void AdapterImpl::InitializeStep3() {
     auto set_event_params = set_event.view_t();
     set_event_params.event_mask().Write(event_mask);
     init_seq_runner_->QueueCommand(
-        std::move(set_event), [](const hci::EventPacket& event) {
+        std::move(set_event), [](const hci::EmbossEventPacket& event) {
           hci_is_error(event, WARN, "gap", "set event mask failed");
         });
   }
@@ -1430,7 +1431,7 @@ void AdapterImpl::InitializeStep3() {
         hci_spec::kLESetEventMask);
     cmd_packet.view_t().le_event_mask().BackingStorage().WriteUInt(event_mask);
     init_seq_runner_->QueueCommand(
-        std::move(cmd_packet), [](const hci::EventPacket& event) {
+        std::move(cmd_packet), [](const hci::EmbossEventPacket& event) {
           hci_is_error(event, WARN, "gap", "LE set event mask failed");
         });
   }

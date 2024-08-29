@@ -164,8 +164,8 @@ void IsoStreamManager::AcceptCisRequest(
   cmd_view.connection_handle().Write(cis_handle);
 
   auto self = GetWeakPtr();
-  auto cmd_complete_cb = [cis_handle, id, self](auto cmd_id,
-                                                const hci::EventPacket& event) {
+  auto cmd_complete_cb = [cis_handle, id, self](
+                             auto cmd_id, const hci::EmbossEventPacket& event) {
     bt_log(INFO, "iso", "LE_Accept_CIS_Request command response received");
     if (!self.is_alive()) {
       return;
@@ -199,7 +199,7 @@ void IsoStreamManager::RejectCisRequest(
   cmd_view.reason().Write(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
 
   cmd_->SendCommand(std::move(command),
-                    [cis_handle](auto id, const hci::EventPacket& event) {
+                    [cis_handle](auto id, const hci::EmbossEventPacket& event) {
                       bt_log(INFO, "iso", "LE_Reject_CIS_Request command sent");
                       hci_is_error(event,
                                    ERROR,

@@ -133,7 +133,8 @@ void A2dpOffloadManager::StartA2dpOffload(
        id = local_id,
        handle = link_handle,
        self = weak_self_.GetWeakPtr(),
-       this](auto /*transaction_id*/, const hci::EventPacket& event) mutable {
+       this](auto /*transaction_id*/,
+             const hci::EmbossEventPacket& event) mutable {
         if (!self.is_alive()) {
           return;
         }
@@ -223,7 +224,8 @@ void A2dpOffloadManager::RequestStopA2dpOffload(
        self = weak_self_.GetWeakPtr(),
        id = local_id,
        handle = link_handle,
-       this](auto /*transaction_id*/, const hci::EventPacket& event) mutable {
+       this](auto /*transaction_id*/,
+             const hci::EmbossEventPacket& event) mutable {
         if (!self.is_alive()) {
           return;
         }

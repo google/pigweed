@@ -655,7 +655,9 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
   auto transaction_id = cmd_channel()->SendCommand(
-      std::move(reset), [](auto, const hci::EventPacket&) {}, kTestEventCode0);
+      std::move(reset),
+      [](auto, const hci::EmbossEventPacket&) {},
+      kTestEventCode0);
 
   EXPECT_EQ(0u, transaction_id);
 
@@ -804,7 +806,7 @@ TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
   int cmd_cb_count = 0;
-  auto cmd_cb = [&cmd_cb_count](auto, const hci::EventPacket&) {
+  auto cmd_cb = [&cmd_cb_count](auto, const hci::EmbossEventPacket&) {
     cmd_cb_count++;
   };
   auto cmd_id = cmd_channel()->SendCommand(std::move(cmd), std::move(cmd_cb));
@@ -1399,7 +1401,7 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
   cmd_channel()->set_channel_timeout_cb(timeout_cb);
 
   size_t cmd_cb_count = 0;
-  auto cb = [&](auto, const hci::EventPacket&) { cmd_cb_count++; };
+  auto cb = [&](auto, const hci::EmbossEventPacket&) { cmd_cb_count++; };
 
   auto packet =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
@@ -1448,7 +1450,7 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
   cmd_channel()->set_channel_timeout_cb(timeout_cb);
 
   size_t cmd_cb_count = 0;
-  auto cb = [&](auto, const hci::EventPacket&) { cmd_cb_count++; };
+  auto cb = [&](auto, const hci::EmbossEventPacket&) { cmd_cb_count++; };
 
   auto packet =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
@@ -1474,7 +1476,7 @@ TEST_F(CommandChannelTest, CommandsAndEventsIgnoredAfterCommandTimeout) {
   cmd_channel()->set_channel_timeout_cb(timeout_cb);
 
   size_t cmd_cb_count = 0;
-  auto cb = [&](auto, const hci::EventPacket&) { cmd_cb_count++; };
+  auto cb = [&](auto, const hci::EmbossEventPacket&) { cmd_cb_count++; };
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
   // time out.
@@ -1843,7 +1845,9 @@ TEST_F(CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
   auto transaction_id = cmd_channel()->SendCommand(
-      std::move(reset), [](auto, const hci::EventPacket&) {}, kTestEventCode0);
+      std::move(reset),
+      [](auto, const hci::EmbossEventPacket&) {},
+      kTestEventCode0);
   EXPECT_EQ(0u, transaction_id);
 }
 

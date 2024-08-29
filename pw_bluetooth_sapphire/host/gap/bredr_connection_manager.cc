@@ -126,7 +126,7 @@ void SetPageScanEnabled(bool enabled,
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage));
     hci->command_channel()->SendCommand(
         std::move(write_enable),
-        [cb = std::move(finish_cb)](auto, const hci::EventPacket& event) {
+        [cb = std::move(finish_cb)](auto, const hci::EmbossEventPacket& event) {
           cb(event.ToResult());
         });
   };
@@ -639,7 +639,7 @@ void BrEdrConnectionManager::WritePageTimeout(
 
   hci_->command_channel()->SendCommand(
       std::move(write_page_timeout_cmd),
-      [cb = std::move(cb)](auto id, const hci::EventPacket& event) {
+      [cb = std::move(cb)](auto id, const hci::EmbossEventPacket& event) {
         cb(event.ToResult());
       });
 }
@@ -665,7 +665,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
 
   hci_cmd_runner_->QueueCommand(
       std::move(write_activity),
-      [self, interval, window](const hci::EventPacket& event) {
+      [self, interval, window](const hci::EmbossEventPacket& event) {
         if (!self.is_alive() ||
             hci_is_error(
                 event, WARN, "gap-bredr", "write page scan activity failed")) {
@@ -689,7 +689,8 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
   type_params.page_scan_type().Write(scan_type);
 
   hci_cmd_runner_->QueueCommand(
-      std::move(write_type), [self, scan_type](const hci::EventPacket& event) {
+      std::move(write_type),
+      [self, scan_type](const hci::EmbossEventPacket& event) {
         if (!self.is_alive() ||
             hci_is_error(
                 event, WARN, "gap-bredr", "write page scan type failed")) {
@@ -713,7 +714,7 @@ void BrEdrConnectionManager::WritePinType(
 
   hci_->command_channel()->SendCommand(
       std::move(write_pin_type_cmd),
-      [](auto id, const hci::EventPacket& event) {
+      [](auto id, const hci::EmbossEventPacket& event) {
         [[maybe_unused]] bool _ = bt_is_error(
             event.ToResult(), WARN, "gap-bredr", "Write PIN Type failed");
       });
@@ -1923,7 +1924,7 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(
   auto params = cancel.view_t();
   params.bd_addr().CopyFrom(addr.value().view());
   hci_->command_channel()->SendCommand(
-      std::move(cancel), [](auto, const hci::EventPacket& event) {
+      std::move(cancel), [](auto, const hci::EmbossEventPacket& event) {
         hci_is_error(
             event, WARN, "hci-bredr", "failed to cancel connection request");
       });
@@ -1938,9 +1939,10 @@ void BrEdrConnectionManager::SendAuthenticationRequested(
 
   // Complete on command status because Authentication Complete Event is already
   // registered.
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+    command_cb = [cb = std::move(cb)](auto,
+                                      const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }
@@ -2047,9 +2049,10 @@ void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
 template <typename T>
 void BrEdrConnectionManager::SendCommandWithStatusCallback(
     T command_packet, hci::ResultFunction<> cb) {
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+    command_cb = [cb = std::move(cb)](auto,
+                                      const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }
@@ -2069,9 +2072,10 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(
   // Sec 3.1).
   accept_params.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+    command_cb = [cb = std::move(cb)](auto,
+                                      const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }
@@ -2092,9 +2096,10 @@ void BrEdrConnectionManager::SendRejectConnectionRequest(
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
 
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+    command_cb = [cb = std::move(cb)](auto,
+                                      const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }
@@ -2115,9 +2120,10 @@ void BrEdrConnectionManager::SendRejectSynchronousRequest(
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
 
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+    command_cb = [cb = std::move(cb)](auto,
+                                      const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }

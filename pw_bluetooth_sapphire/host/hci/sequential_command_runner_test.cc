@@ -474,7 +474,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
       test_device(), command_bytes, &command_cmpl_success_bytes);
 
   int cb_called = 0;
-  auto cb = [&](const hci::EventPacket&) { cb_called++; };
+  auto cb = [&](const hci::EmbossEventPacket&) { cb_called++; };
 
   int status_cb_called = 0;
   Result<> status = ToResult(HostError::kFailed);
@@ -498,7 +498,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   cmd_runner.QueueCommand(
       EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode),
-      [&](const hci::EventPacket&) {
+      [&](const hci::EmbossEventPacket&) {
         EXPECT_EQ(2, cb_called);
         cb_called++;
       },
@@ -539,11 +539,11 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
   int cb_0_called = 0;
-  auto cb_0 = [&](const hci::EventPacket&) { cb_0_called++; };
+  auto cb_0 = [&](const hci::EmbossEventPacket&) { cb_0_called++; };
   int cb_1_called = 0;
-  auto cb_1 = [&](const hci::EventPacket&) { cb_1_called++; };
+  auto cb_1 = [&](const hci::EmbossEventPacket&) { cb_1_called++; };
   int cb_2_called = 0;
-  auto cb_2 = [&](const hci::EventPacket&) { cb_2_called++; };
+  auto cb_2 = [&](const hci::EmbossEventPacket&) { cb_2_called++; };
   cmd_runner.QueueCommand(
       EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode),

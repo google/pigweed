@@ -778,7 +778,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(
   cmd_channel_->SendCommand(
       std::move(write_timeout),
       [cb = std::move(callback_wrapper), handle = handle_, flush_timeout](
-          auto, const hci::EventPacket& event) mutable {
+          auto, const hci::EmbossEventPacket& event) mutable {
         if (event.ToResult().is_error()) {
           bt_log(WARN,
                  "hci",
