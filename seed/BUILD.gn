@@ -260,6 +260,13 @@ pw_seed("0129") {
   changelist = 207130
 }
 
+pw_seed("0130") {
+  title = "Update Sphinx theme"
+  author = "Kayce Basques"
+  status = "Draft"
+  changelist = 232591
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -296,5 +303,6 @@ pw_seed_index("seeds") {
     ":0127",
     ":0128",
     ":0129",
+    ":0130",
   ]
 }
