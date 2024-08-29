@@ -255,9 +255,6 @@ class LegacyPairingState final {
 
   hci_spec::ConnectionHandle handle() const { return link_->handle(); }
 
-  // True when peer's Host and Controller support SSP.
-  bool IsPeerSecureSimplePairingSupported() const;
-
   // Called to enable encryption on the link for this peer. Sets |state_| to
   // |kWaitEncryption|.
   void EnableEncryption();

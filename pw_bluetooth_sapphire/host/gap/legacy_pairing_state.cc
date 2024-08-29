@@ -117,7 +117,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
-  if (IsPeerSecureSimplePairingSupported()) {
+  if (peer_->IsSecureSimplePairingSupported()) {
     bt_log(WARN,
            "gap-bredr",
            "Do not use Legacy Pairing when peer actually supports SSP");
@@ -205,7 +205,7 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
-  if (link_.is_alive() && IsPeerSecureSimplePairingSupported()) {
+  if (link_.is_alive() && peer_->IsSecureSimplePairingSupported()) {
     bt_log(WARN,
            "gap-bredr",
            "Do not use Legacy Pairing when peer actually supports SSP");
@@ -419,7 +419,7 @@ void LegacyPairingState::OnLinkKeyNotification(const UInt128& link_key,
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
-  if (IsPeerSecureSimplePairingSupported()) {
+  if (peer_->IsSecureSimplePairingSupported()) {
     bt_log(WARN,
            "gap-bredr",
            "Do not use Legacy Pairing when peer actually supports SSP");
@@ -570,14 +570,6 @@ LegacyPairingState::Pairing::MakeResponderForBonded() {
   return pairing;
 }
 
-bool LegacyPairingState::IsPeerSecureSimplePairingSupported() const {
-  return peer_->features().HasBit(
-             /*page=*/0,
-             hci_spec::LMPFeature::kSecureSimplePairingControllerSupport) &&
-         peer_->features().HasBit(
-             /*page=*/1, hci_spec::LMPFeature::kSecureSimplePairingHostSupport);
-}
-
 void LegacyPairingState::EnableEncryption() {
   BT_ASSERT(link_.is_alive());
 
@@ -638,7 +630,7 @@ void LegacyPairingState::InitiateNextPairingRequest() {
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
-  if (IsPeerSecureSimplePairingSupported()) {
+  if (peer_->IsSecureSimplePairingSupported()) {
     bt_log(WARN,
            "gap-bredr",
            "Do not use Legacy Pairing when peer actually supports SSP");

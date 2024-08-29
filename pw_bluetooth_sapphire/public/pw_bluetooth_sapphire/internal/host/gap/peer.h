@@ -73,6 +73,15 @@ class Peer final {
        PeerMetrics* peer_metrics,
        pw::async::Dispatcher& dispatcher);
 
+  bool IsSecureSimplePairingSupported() {
+    return lmp_features_->HasBit(
+               /*page=*/0,
+               hci_spec::LMPFeature::kSecureSimplePairingControllerSupport) &&
+           lmp_features_->HasBit(
+               /*page=*/1,
+               hci_spec::LMPFeature::kSecureSimplePairingHostSupport);
+  }
+
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
   // example, GAP may consider a peer disconnected whilst the link disconnection

@@ -55,6 +55,7 @@ const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kTestDevAddr2(DeviceAddress::Type::kBREDR, {3});
 constexpr uint32_t kPasskey = 123456;
+constexpr uint16_t kDefaultPinCode = 0000;
 const hci_spec::LinkKey kRawKey({0xc0,
                                  0xde,
                                  0xfa,
@@ -266,11 +267,12 @@ const auto kReadRemoteSupportedFeaturesComplete =
                      0x00,
                      0x40,
                      0x00,
-                     0x00,
+                     0x08,
                      0x80
                      // lmp_features_page0: 3 slot packets, 5 slot packets,
                      // Encryption, Slot Offset, Timing Accuracy, Role Switch,
-                     // Hold Mode, Sniff Mode, LE Supported, Extended Features
+                     // Hold Mode, Sniff Mode, Secure Simple Pairing (Controller
+                     // Support), LE Supported, Extended Features
     );
 
 const auto kReadRemoteExtended1 =
@@ -286,25 +288,11 @@ const auto kReadRemoteExtendedFeaturesRsp =
     COMMAND_STATUS_RSP(hci_spec::kReadRemoteExtendedFeatures,
                        pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kReadRemoteExtended1Complete = StaticByteBuffer(
-    hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-    0x0D,  // parameter_total_size (13 bytes)
-    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-    0xAA,
-    0x0B,  // connection_handle,
-    0x01,  // page_number
-    0x02,  // max_page_number
-    0x0F,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00
-    // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
-    // (Host), Previously Used, Secure Connections (Host Support)
-);
+const auto kReadRemoteExtended1Complete =
+    testing::ReadRemoteExtended1CompletePacket(kConnectionHandle);
+
+const auto kReadRemoteExtended1CompleteNoSsp =
+    testing::ReadRemoteExtended1CompletePacketNoSsp(kConnectionHandle);
 
 const auto kReadRemoteExtended2 =
     StaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
@@ -420,10 +408,23 @@ const auto kSimplePairingCompleteSuccess = testing::SimplePairingCompletePacket(
 const auto kSimplePairingCompleteError = testing::SimplePairingCompletePacket(
     TEST_DEV_ADDR, pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
+const auto kPinCodeRequest = testing::PinCodeRequestPacket(TEST_DEV_ADDR);
+const auto kPinCodeRequestReply = testing::PinCodeRequestReplyPacket(
+    TEST_DEV_ADDR, /*pin_length=*/4, std::to_string(kDefaultPinCode));
+const auto kPinCodeRequestReplyRsp =
+    testing::PinCodeRequestReplyResponse(TEST_DEV_ADDR);
+const auto kPinCodeRequestNegativeReply =
+    testing::PinCodeRequestNegativeReplyPacket(TEST_DEV_ADDR);
+const auto kPinCodeRequestNegativeReplyRsp =
+    testing::PinCodeRequestNegativeReplyResponse(TEST_DEV_ADDR);
+
 DynamicByteBuffer MakeLinkKeyNotification(hci_spec::LinkKeyType key_type) {
   return testing::LinkKeyNotificationPacket(
       TEST_DEV_ADDR, kRawKey.value(), key_type);
 }
+
+const auto kLinkKeyNotificationLegacy = testing::LinkKeyNotificationPacket(
+    TEST_DEV_ADDR, kLegacyKey.value(), hci_spec::LinkKeyType::kCombination);
 
 const auto kLinkKeyNotification = MakeLinkKeyNotification(
     hci_spec::LinkKeyType::kAuthenticatedCombination192);
@@ -735,6 +736,40 @@ class BrEdrConnectionManagerTest : public TestingBase {
     QueueShortInterrogation(conn);
   }
 
+  void QueueSuccessfulInterrogationNoSsp(
+      DeviceAddress addr, hci_spec::ConnectionHandle conn) const {
+    const DynamicByteBuffer remote_name_complete_packet =
+        testing::RemoteNameRequestCompletePacket(addr);
+    const DynamicByteBuffer remote_version_complete_packet =
+        testing::ReadRemoteVersionInfoCompletePacket(conn);
+    const DynamicByteBuffer remote_supported_complete_packet =
+        testing::ReadRemoteSupportedFeaturesCompletePacket(
+            conn, /*extended_features=*/true);
+    const DynamicByteBuffer remote_extended1_complete_packet =
+        testing::ReadRemoteExtended1CompletePacketNoSsp(conn);
+
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::RemoteNameRequestPacket(addr),
+                          &kRemoteNameRequestRsp,
+                          &remote_name_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp,
+                          &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteSupportedFeaturesPacket(conn),
+                          &kReadRemoteSupportedFeaturesRsp,
+                          &remote_supported_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp,
+                          &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp,
+                          &remote_extended1_complete_packet);
+  }
+
   // Queue all interrogation packets except for the remote extended complete
   // packet 2.
   void QueueIncompleteInterrogation(DeviceAddress addr,
@@ -881,7 +916,412 @@ class BrEdrConnectionManagerTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
 };
 
-using GAP_BrEdrConnectionManagerTest = BrEdrConnectionManagerTest;
+using BrEdrConnectionManagerLegacyPairingTest = BrEdrConnectionManagerTest;
+// Legacy pairing requires a PIN code to be displayed for the peer to enter, so
+// this cannot happen when we do not have any display output capabilities.
+TEST_F(BrEdrConnectionManagerLegacyPairingTest,
+       NeverInitiateLegacyPairingWithoutDisplayOutputCapability) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Complete connection and interrogation successfully.
+  QueueSuccessfulAccept();
+  QueueSuccessfulInterrogationNoSsp(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  ASSERT_EQ(kIncomingConnTransactions, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Initiating pairing results in disconnection with peer because we have no
+  // display output capabilities. Because of this, the pairing callback passed
+  // into Pair() should never be called.
+  QueueDisconnection(kConnectionHandle);
+  connmgr()->Pair(peer->identifier(),
+                  kNoSecurityRequirements,
+                  [](hci::Result<> status) { FAIL(); });
+
+  RunUntilIdle();
+
+  ASSERT_TRUE(IsNotConnected(peer));
+}
+
+// Responding to a legacy pairing request (HCI_Link_Key_Request event) after
+// connection and after interrogation completes should succeed.
+TEST_F(
+    BrEdrConnectionManagerLegacyPairingTest,
+    RespondToLegacyPairingLinkKeyRequestAfterAclConnectionAndInterrogationCompletesSucceeds) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
+    ASSERT_TRUE(response_cb);
+    response_cb(kDefaultPinCode);
+  });
+
+  // Complete connection and interrogation successfully.
+  QueueSuccessfulAccept();
+  QueueSuccessfulInterrogationNoSsp(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  ASSERT_EQ(kIncomingConnTransactions, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  // Initiate pairing from the peer with an HCI_Link_Key_Request event
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp,
+                        &kPinCodeRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kPinCodeRequestReply,
+                        &kPinCodeRequestReplyRsp,
+                        &kLinkKeyNotificationLegacy);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kSetConnectionEncryption,
+                        &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
+  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  ASSERT_TRUE(peer->bredr()->bonded());
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Responding to a legacy pairing request (HCI_PIN_Code_Request event) before
+// the ACL connection is complete should succeed.
+TEST_F(
+    BrEdrConnectionManagerLegacyPairingTest,
+    RespondToLegacyPairingPinCodeRequestBeforeAclConnectionCompletesSucceeds) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
+    ASSERT_TRUE(response_cb);
+    response_cb(kDefaultPinCode);
+  });
+
+  // Trigger inbound connection but don't complete the connection
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  EXPECT_EQ(1, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Initiate pairing from the peer with an HCI_PIN_Code_Request event before
+  // the connection completes
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kPinCodeRequestReply,
+                        &kPinCodeRequestReplyRsp,
+                        &kLinkKeyNotificationLegacy);
+  test_device()->SendCommandChannelPacket(kPinCodeRequest);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  // At this point the peer is still not bonded so the host-side L2CAP should
+  // still be inactive on this link (though it may be buffering packets).
+  EXPECT_FALSE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  // Complete connection and interrogation successfully.
+  QueueSuccessfulInterrogationNoSsp(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Responding to a legacy pairing request (HCI_PIN_Code_Request event) after
+// connection but before interrogation completes should succeed.
+TEST_F(
+    BrEdrConnectionManagerLegacyPairingTest,
+    RespondToLegacyPairingPinCodeRequestAfterAclConnectionButBeforeInterrogationSucceeds) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
+    ASSERT_TRUE(response_cb);
+    response_cb(kDefaultPinCode);
+  });
+
+  // Trigger inbound connection and respond to some (but not all) of
+  // interrogation.
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kAcceptConnectionRequest,
+                        &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest,
+                        &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteVersionInfo,
+                        &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        hci_spec::kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(4, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Initiate pairing from the peer with an HCI_PIN_Code_Request event before
+  // interrogation completes
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kPinCodeRequestReply,
+                        &kPinCodeRequestReplyRsp,
+                        &kLinkKeyNotificationLegacy);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kSetConnectionEncryption,
+                        &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
+  test_device()->SendCommandChannelPacket(kPinCodeRequest);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  // At this point the peer is bonded and the link is encrypted but
+  // interrogation has not completed so host-side L2CAP should still be inactive
+  // on this link (though it may be buffering packets).
+  EXPECT_FALSE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  bool socket_cb_called = false;
+  auto socket_fails_cb = [&socket_cb_called](const auto& chan_sock) {
+    EXPECT_FALSE(chan_sock.is_alive());
+    socket_cb_called = true;
+  };
+  connmgr()->OpenL2capChannel(peer->identifier(),
+                              l2cap::kAVDTP,
+                              kNoSecurityRequirements,
+                              kChannelParams,
+                              socket_fails_cb);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+  EXPECT_TRUE(socket_cb_called);
+
+  // Complete interrogation successfully.
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteExtended1,
+                        &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1CompleteNoSsp);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteExtended2,
+                        &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1CompleteNoSsp);
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Responding to a legacy pairing request (HCI_Link_Key_Request event) after
+// the ACL connection is complete but before interrogation completes stops
+// pairing because we assume SSP.
+TEST_F(
+    BrEdrConnectionManagerLegacyPairingTest,
+    RespondToLegacyPairingLinkKeyRequestAfterAclConnectionButBeforeInterrogationFails) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Trigger inbound connection and respond to some (but not all) of
+  // interrogation.
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kAcceptConnectionRequest,
+                        &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest,
+                        &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteVersionInfo,
+                        &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        hci_spec::kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(4, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Initiate pairing from the peer with an HCI_Link_Key_Request event before
+  // interrogation completes
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp,
+                        &kPinCodeRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kPinCodeRequestNegativeReply,
+                        &kPinCodeRequestNegativeReplyRsp);
+  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  // At this point the peer is bonded and the link is encrypted but
+  // interrogation has not completed so host-side L2CAP should still be inactive
+  // on this link (though it may be buffering packets).
+  EXPECT_FALSE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Responding to an SSP request (HCI_Link_Key_Request event) after the ACL
+// connection is complete but before interrogation completes should succeed.
+TEST_F(
+    BrEdrConnectionManagerLegacyPairingTest,
+    RespondToSspLinkKeyRequestAfterAclConnectionButBeforeInterrogationSucceeds) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+
+  // Trigger inbound connection and respond to some (but not all) of
+  // interrogation.
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kAcceptConnectionRequest,
+                        &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest,
+                        &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteVersionInfo,
+                        &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        hci_spec::kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(4, transaction_count());
+  Peer* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Initiate pairing from the peer with an HCI_Link_Key_Request event before
+  // interrogation completes
+  const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO,
+      AuthenticationRequirements::MITM_GENERAL_BONDING);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp,
+                        &kIoCapabilityResponse,
+                        &kIoCapabilityRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(
+                            IoCapability::DISPLAY_YES_NO,
+                            AuthenticationRequirements::MITM_GENERAL_BONDING),
+                        &kIoCapabilityRequestReplyRsp,
+                        &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp,
+                        &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kSetConnectionEncryption,
+                        &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
+  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  // At this point the peer is bonded and the link is encrypted but
+  // interrogation has not completed so host-side L2CAP should still be inactive
+  // on this link (though it may be buffering packets).
+  EXPECT_FALSE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  bool socket_cb_called = false;
+  auto socket_fails_cb = [&socket_cb_called](const auto& chan_sock) {
+    EXPECT_FALSE(chan_sock.is_alive());
+    socket_cb_called = true;
+  };
+  connmgr()->OpenL2capChannel(peer->identifier(),
+                              l2cap::kAVDTP,
+                              kNoSecurityRequirements,
+                              kChannelParams,
+                              socket_fails_cb);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+  EXPECT_TRUE(socket_cb_called);
+
+  // Complete interrogation successfully.
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteExtended1,
+                        &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1CompleteNoSsp);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kReadRemoteExtended2,
+                        &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1CompleteNoSsp);
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
 
 TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   size_t cb_count = 0;
@@ -1567,44 +2007,6 @@ TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
 
   RunUntilIdle();
   ASSERT_FALSE(IsConnected(peer));
-  EXPECT_FALSE(peer->bonded());
-
-  EXPECT_CMD_PACKET_OUT(
-      test_device(), kLinkKeyRequestNegativeReply, &kLinkKeyRequestReplyRsp);
-
-  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
-
-  RunUntilIdle();
-
-  ASSERT_FALSE(IsConnected(peer));
-  EXPECT_FALSE(peer->bonded());
-  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-
-  QueueDisconnection(kConnectionHandle);
-}
-
-const auto kLinkKeyNotificationLegacy = testing::LinkKeyNotificationPacket(
-    TEST_DEV_ADDR, kLegacyKey.value(), hci_spec::LinkKeyType::kCombination);
-
-// Test: don't bond or mark successfully connected if the link key resulted from
-// legacy pairing
-TEST_F(BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
-  QueueSuccessfulIncomingConn();
-
-  test_device()->SendCommandChannelPacket(kConnectionRequest);
-
-  RunUntilIdle();
-
-  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-
-  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
-  ASSERT_TRUE(peer);
-  ASSERT_TRUE(IsInitializing(peer));
-  ASSERT_FALSE(peer->bonded());
-
-  test_device()->SendCommandChannelPacket(kLinkKeyNotificationLegacy);
-
-  RunUntilIdle();
   EXPECT_FALSE(peer->bonded());
 
   EXPECT_CMD_PACKET_OUT(
@@ -3430,7 +3832,7 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
                                      DisconnectReason::kApiRequest));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   // Peer successfully connects to us.
@@ -3528,7 +3930,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownCancelOnOutgoing) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectCooldownCancelOnOutgoing) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   // Peer successfully connects to us.

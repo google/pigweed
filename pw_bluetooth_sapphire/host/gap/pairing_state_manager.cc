@@ -18,10 +18,19 @@
 #include <utility>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 
 namespace bt::gap {
+
+namespace {
+
+const char* const kInspectSecureSimplePairingStateNodeName =
+    "secure_simple_pairing_state";
+const char* const kInspectLegacyPairingStateNodeName = "legacy_pairing_state";
+
+}  // namespace
 
 PairingStateManager::PairingStateManager(
     Peer::WeakPtr peer,
@@ -30,11 +39,17 @@ PairingStateManager::PairingStateManager(
     bool outgoing_connection,
     fit::closure auth_cb,
     StatusCallback status_cb)
-    : peer_(std::move(peer)), link_(std::move(link)) {
+    : peer_(std::move(peer)),
+      link_(std::move(link)),
+      outgoing_connection_(outgoing_connection),
+      auth_cb_(std::move(auth_cb)),
+      status_cb_(std::move(status_cb)) {
   // If |legacy_pairing_state| is non-null, this means we were responding to
   // Legacy Pairing before the ACL connection between the two devices was
   // complete
   if (legacy_pairing_state) {
+    pairing_state_type_ = PairingStateType::kLegacyPairing;
+
     // Use |legacy_pairing_state| because it already contains information and
     // state we want to keep
     legacy_pairing_state_ = std::move(legacy_pairing_state);
@@ -44,7 +59,7 @@ PairingStateManager::PairingStateManager(
     // didn't have until after the connection was complete (e.g. link, auth_cb,
     // status_cb)
     legacy_pairing_state_->BuildEstablishedLink(
-        link_, std::move(auth_cb), std::move(status_cb));
+        link_, std::move(auth_cb_), std::move(status_cb_));
     legacy_pairing_state_->set_link_ltk();
 
     // We should also check that |peer| and |outgoing_connection| are unchanged
@@ -53,112 +68,162 @@ PairingStateManager::PairingStateManager(
               peer_->identifier());
     BT_ASSERT(legacy_pairing_state_->outgoing_connection() ==
               outgoing_connection);
-    return;
   }
-
-  // Pairing delegate is set by SetPairingDelegate call in
-  // BrEdrConnectionManager
-  secure_simple_pairing_state_ =
-      std::make_unique<SecureSimplePairingState>(peer_,
-                                                 PairingDelegate::WeakPtr(),
-                                                 link_,
-                                                 outgoing_connection,
-                                                 std::move(auth_cb),
-                                                 std::move(status_cb));
 }
 
 void PairingStateManager::InitiatePairing(
     BrEdrSecurityRequirements security_requirements, StatusCallback status_cb) {
-  if (secure_simple_pairing_state_) {
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
     secure_simple_pairing_state_->InitiatePairing(security_requirements,
                                                   std::move(status_cb));
+    return;
   }
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    legacy_pairing_state_->InitiatePairing(std::move(status_cb));
+    return;
+  }
+  bt_log(WARN,
+         "gap",
+         "Trying to initiate pairing without knowing SSP or Legacy. Will not "
+         "initiate.");
 }
 
 std::optional<pw::bluetooth::emboss::IoCapability>
 PairingStateManager::OnIoCapabilityRequest() {
-  if (secure_simple_pairing_state_) {
-    return secure_simple_pairing_state_->OnIoCapabilityRequest();
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return std::nullopt;
   }
-  return std::nullopt;
+  return secure_simple_pairing_state_->OnIoCapabilityRequest();
 }
 
 void PairingStateManager::OnIoCapabilityResponse(
     pw::bluetooth::emboss::IoCapability peer_iocap) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->OnIoCapabilityResponse(peer_iocap);
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return;
   }
+  secure_simple_pairing_state_->OnIoCapabilityResponse(peer_iocap);
 }
 
 void PairingStateManager::OnUserConfirmationRequest(
     uint32_t numeric_value, UserConfirmationCallback cb) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->OnUserConfirmationRequest(numeric_value,
-                                                            std::move(cb));
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return;
   }
+  secure_simple_pairing_state_->OnUserConfirmationRequest(numeric_value,
+                                                          std::move(cb));
 }
 
 void PairingStateManager::OnUserPasskeyRequest(UserPasskeyCallback cb) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->OnUserPasskeyRequest(std::move(cb));
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return;
   }
+  secure_simple_pairing_state_->OnUserPasskeyRequest(std::move(cb));
 }
 
 void PairingStateManager::OnUserPasskeyNotification(uint32_t numeric_value) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->OnUserPasskeyNotification(numeric_value);
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return;
   }
+  secure_simple_pairing_state_->OnUserPasskeyNotification(numeric_value);
 }
 
 void PairingStateManager::OnSimplePairingComplete(
     pw::bluetooth::emboss::StatusCode status_code) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->OnSimplePairingComplete(status_code);
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    LogSspEventInLegacyPairing(__func__);
+    return;
   }
+  secure_simple_pairing_state_->OnSimplePairingComplete(status_code);
 }
 
 std::optional<hci_spec::LinkKey> PairingStateManager::OnLinkKeyRequest() {
-  if (secure_simple_pairing_state_) {
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
     return secure_simple_pairing_state_->OnLinkKeyRequest();
+  }
+  if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    return legacy_pairing_state_->OnLinkKeyRequest();
   }
   return std::nullopt;
 }
 
 void PairingStateManager::OnPinCodeRequest(UserPinCodeCallback cb) {
-  if (legacy_pairing_state_) {
-    legacy_pairing_state_->OnPinCodeRequest(std::move(cb));
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
+    bt_log(WARN,
+           "gap",
+           "Received a Legacy Pairing event for a %u pairing type",
+           static_cast<uint8_t>(pairing_state_type_));
+    cb(std::nullopt);
     return;
   }
-  cb(std::nullopt);
+  legacy_pairing_state_->OnPinCodeRequest(std::move(cb));
 }
 
 void PairingStateManager::OnLinkKeyNotification(
     const UInt128& link_key,
     hci_spec::LinkKeyType key_type,
     bool local_secure_connections_supported) {
-  if (secure_simple_pairing_state_) {
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
     secure_simple_pairing_state_->OnLinkKeyNotification(
         link_key, key_type, local_secure_connections_supported);
+  } else if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    legacy_pairing_state_->OnLinkKeyNotification(link_key, key_type);
   }
 }
 
 void PairingStateManager::OnAuthenticationComplete(
     pw::bluetooth::emboss::StatusCode status_code) {
-  if (secure_simple_pairing_state_) {
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
     secure_simple_pairing_state_->OnAuthenticationComplete(status_code);
+  } else if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    legacy_pairing_state_->OnAuthenticationComplete(status_code);
   }
 }
 
 void PairingStateManager::OnEncryptionChange(hci::Result<bool> result) {
-  if (secure_simple_pairing_state_) {
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
     secure_simple_pairing_state_->OnEncryptionChange(result);
+  } else if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    legacy_pairing_state_->OnEncryptionChange(result);
   }
+}
+
+void PairingStateManager::CreateOrUpdatePairingState(
+    PairingStateType type, PairingDelegate::WeakPtr pairing_delegate) {
+  if (type == PairingStateType::kSecureSimplePairing &&
+      !secure_simple_pairing_state_) {
+    secure_simple_pairing_state_ =
+        std::make_unique<SecureSimplePairingState>(peer_,
+                                                   std::move(pairing_delegate),
+                                                   link_,
+                                                   outgoing_connection_,
+                                                   std::move(auth_cb_),
+                                                   std::move(status_cb_));
+  } else if (type == PairingStateType::kLegacyPairing &&
+             !legacy_pairing_state_) {
+    legacy_pairing_state_ =
+        std::make_unique<LegacyPairingState>(peer_,
+                                             std::move(pairing_delegate),
+                                             link_,
+                                             outgoing_connection_,
+                                             std::move(auth_cb_),
+                                             std::move(status_cb_));
+  }
+  pairing_state_type_ = type;
 }
 
 void PairingStateManager::AttachInspect(inspect::Node& parent,
                                         std::string name) {
-  if (secure_simple_pairing_state_) {
-    secure_simple_pairing_state_->AttachInspect(parent, std::move(name));
+  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
+    secure_simple_pairing_state_->AttachInspect(
+        parent, kInspectSecureSimplePairingStateNodeName);
+  } else if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
+    legacy_pairing_state_->AttachInspect(parent,
+                                         kInspectLegacyPairingStateNodeName);
   }
 }
 

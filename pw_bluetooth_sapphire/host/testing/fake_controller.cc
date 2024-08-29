@@ -66,7 +66,11 @@ void FakeController::Settings::ApplyDualModeDefaults() {
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kExtendedFeatures);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kRSSIwithInquiryResults);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kExtendedInquiryResponse);
+  SetBit(&lmp_features_page0,
+         hci_spec::LMPFeature::kSecureSimplePairingControllerSupport);
   lmp_features_page1 = 0;
+  SetBit(&lmp_features_page1,
+         hci_spec::LMPFeature::kSecureSimplePairingHostSupport);
   lmp_features_page2 = 0;
   le_features = 0;
   le_supported_states = 0;

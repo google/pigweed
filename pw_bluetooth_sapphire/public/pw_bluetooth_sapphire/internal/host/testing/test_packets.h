@@ -176,10 +176,20 @@ DynamicByteBuffer LinkKeyRequestReplyResponse(DeviceAddress address);
 DynamicByteBuffer NumberOfCompletedPacketsPacket(
     hci_spec::ConnectionHandle conn, uint16_t num_packets);
 
+DynamicByteBuffer PinCodeRequestPacket(DeviceAddress address);
+DynamicByteBuffer PinCodeRequestNegativeReplyPacket(DeviceAddress address);
+DynamicByteBuffer PinCodeRequestNegativeReplyResponse(DeviceAddress address);
+DynamicByteBuffer PinCodeRequestReplyPacket(DeviceAddress address,
+                                            uint8_t pin_length,
+                                            std::string pin_code);
+DynamicByteBuffer PinCodeRequestReplyResponse(DeviceAddress address);
+
 // The ReadRemoteExtended*CompletePacket packets report a max page number of 3,
 // even though there are only 2 pages, in order to test this behavior seen in
 // real devices.
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(
+    hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended1CompletePacketNoSsp(
     hci_spec::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1Packet(hci_spec::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(

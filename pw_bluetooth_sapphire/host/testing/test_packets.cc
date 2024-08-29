@@ -20,6 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_string/string_builder.h"
 
 namespace bt::testing {
 
@@ -748,6 +749,110 @@ DynamicByteBuffer NumberOfCompletedPacketsPacket(
       ));
 }
 
+DynamicByteBuffer PinCodeRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(hci_spec::kPinCodeRequestEventCode,
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer PinCodeRequestNegativeReplyPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kPinCodeRequestNegativeReply),
+                       UpperBits(hci_spec::kPinCodeRequestNegativeReply),
+                       0x06,  // parameter_total_size (6 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5]));
+}
+
+DynamicByteBuffer PinCodeRequestNegativeReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kPinCodeRequestNegativeReply),  // Command_Opcode
+      UpperBits(hci_spec::kPinCodeRequestNegativeReply),  // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,         // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
+DynamicByteBuffer PinCodeRequestReplyPacket(DeviceAddress address,
+                                            uint8_t pin_length,
+                                            std::string pin_code) {
+  const auto addr = address.value().bytes();
+
+  StaticByteBuffer<16> pin;
+  pin.Write(BufferView(pin_code));
+
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci_spec::kPinCodeRequestReply),
+                       UpperBits(hci_spec::kPinCodeRequestReply),
+                       0x17,  // parameter_total_size (23 bytes)
+                       // peer BD_ADDR (6 bytes)
+                       addr[0],
+                       addr[1],
+                       addr[2],
+                       addr[3],
+                       addr[4],
+                       addr[5],
+                       pin_length,  // PIN_Code_Length
+                       // PIN_Code
+                       pin[0],
+                       pin[1],
+                       pin[2],
+                       pin[3],
+                       pin[4],
+                       pin[5],
+                       pin[6],
+                       pin[7],
+                       pin[8],
+                       pin[9],
+                       pin[10],
+                       pin[11],
+                       pin[12],
+                       pin[13],
+                       pin[14],
+                       pin[15]));
+}
+
+DynamicByteBuffer PinCodeRequestReplyResponse(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kCommandCompleteEventCode,
+      0x0A,  // parameter_total_size (10 bytes)
+      0xF0,  // Num_HCI_Command_Packets allowed to be sent to controller (240)
+      LowerBits(hci_spec::kPinCodeRequestReply),   // Command_Opcode
+      UpperBits(hci_spec::kPinCodeRequestReply),   // Command_Opcode
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // Status
+      // peer BD_ADDR (6 bytes)
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
+      addr[5]));
+}
+
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(
     hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -763,12 +868,36 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(
       0x00,
       0x00,
       0x00,
-      0x02,
+      0x00,
       0x00,
       0x00,
       0x00
-      // lmp_features_page_1: Secure Simple Pairing (Host Support), LE Supported
-      // (Host), SimultaneousLEAndBREDR, Secure Connections (Host Support)
+      // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
+      // (Host), Previously used, Secure Connections (Host Support)
+      ));
+}
+
+DynamicByteBuffer ReadRemoteExtended1CompletePacketNoSsp(
+    hci_spec::ConnectionHandle conn) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+      0x0D,  // parameter_total_size (13 bytes)
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // Status
+      LowerBits(conn),                             // Connection_Handle
+      UpperBits(conn),                             // Connection_Handle
+      0x01,                                        // Page_Number
+      0x03,                                        // Max_Page_Number (3 pages)
+      // Extended_LMP_Features (8 bytes)
+      0x0E,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00
+      // lmp_features_page1: LE Supported (Host), Previously used, Secure
+      // Connections (Host Support)
       ));
 }
 
@@ -856,12 +985,13 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
       0x00,
       0x00,
       0x00,
-      0x02,
+      0x04,
       0x00,
-      0x00,
+      0x08,
       (extended_features ? 0x80 : 0x00)
-      // lmp_features_page0: 3 slot packets, 5 slot packets, Encryption,
-      // Timing Accuracy, Role Switch, Hold Mode, Sniff Mode, LE Supported,
+      // lmp_features_page0: 3 slot packets, 5 slot packets, Encryption, Slot
+      // Offset, Timing Accuracy, Role Switch, Hold Mode, Sniff Mode, LE
+      // Supported (Controller), Secure Simple Pairing (Controller Support),
       // Extended Features if enabled
       ));
 }

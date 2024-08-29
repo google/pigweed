@@ -190,6 +190,9 @@ class BrEdrConnectionManager final {
   void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
+  using ConnectionMap =
+      std::unordered_map<hci_spec::ConnectionHandle, BrEdrConnection>;
+
   // Callback for hci::Connection. Called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);
 
@@ -362,9 +365,6 @@ class BrEdrConnectionManager final {
   // Record a disconnection in Inspect's list of disconnections.
   void RecordDisconnectInspect(const BrEdrConnection& conn,
                                DisconnectReason reason);
-
-  using ConnectionMap =
-      std::unordered_map<hci_spec::ConnectionHandle, BrEdrConnection>;
 
   hci::Transport::WeakPtr hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;

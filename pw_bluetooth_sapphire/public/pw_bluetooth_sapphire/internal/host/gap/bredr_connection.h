@@ -69,6 +69,14 @@ class BrEdrConnection final {
   // called).
   void AddRequestCallback(BrEdrConnectionRequest::OnComplete cb);
 
+  // Create a SecureSimplePairingState or LegacyPairingState object based on
+  // |type|. If the object for corresponding |type| has already been created,
+  // this method does nothing.
+  void CreateOrUpdatePairingState(
+      PairingStateManager::PairingStateType type,
+      const PairingDelegate::WeakPtr& pairing_delegate,
+      BrEdrSecurityMode security_mode);
+
   // If |OnInterrogationComplete| has been called, opens an L2CAP channel using
   // the preferred parameters |params| on the L2cap provided. Otherwise, calls
   // |cb| with a nullptr.
@@ -101,6 +109,8 @@ class BrEdrConnection final {
   // Returns the duration that this connection has been alive.
   pw::chrono::SystemClock::duration duration() const;
 
+  bool interrogation_complete() const { return !request_.has_value(); }
+
   sm::SecurityProperties security_properties() const {
     BT_ASSERT(pairing_state_manager_);
     return pairing_state_manager_->security_properties();
@@ -118,8 +128,6 @@ class BrEdrConnection final {
   // Called by |pairing_state_manager_| when pairing completes with |status|.
   void OnPairingStateStatus(hci_spec::ConnectionHandle handle,
                             hci::Result<> status);
-
-  bool interrogation_complete() const { return !request_.has_value(); }
 
   PeerId peer_id_;
   Peer::WeakPtr peer_;
