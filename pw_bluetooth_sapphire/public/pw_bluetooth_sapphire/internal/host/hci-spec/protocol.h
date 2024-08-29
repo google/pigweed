@@ -199,25 +199,9 @@ constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
 constexpr size_t kBrEdrLinkKeySize = 16;
 
-struct LinkKeyRequestReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // BD_ADDR of the device whose Link Key Request was fulfilled.
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // =======================================================
 // Link Key Request Negative Reply Command (v1.1) (BR/EDR)
 constexpr OpCode kLinkKeyRequestNegativeReply = LinkControlOpCode(0x000C);
-
-struct LinkKeyRequestNegativeReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // BD_ADDR of the device whose Link Key Request was denied.
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
 
 // =======================================================
 // PIN Code Request Reply Command (v1.1) (BR/EDR)
@@ -260,14 +244,6 @@ constexpr OpCode kRejectSynchronousConnectionRequest =
 // IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
 
-struct IOCapabilityRequestReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // BD_ADDR of the remote device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // =============================================================
 // User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserConfirmationRequestReply = LinkControlOpCode(0x002C);
@@ -288,14 +264,6 @@ constexpr OpCode kUserPasskeyRequestNegativeReply = LinkControlOpCode(0x002F);
 // ==================================================================
 // IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestNegativeReply = LinkControlOpCode(0x0034);
-
-struct IOCapabilityRequestNegativeReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // BD_ADDR of the remote device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
 
 // ======================================================
 // Enhanced Setup Synchronous Connection Command (BR/EDR)
@@ -354,11 +322,6 @@ struct ReadLocalNameReturnParams {
 // Write Page Timeout Command (v1.1) (BR/EDR)
 constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);
 
-struct WritePageTimeoutReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-} __attribute__((packed));
-
 // ========================================
 // Read Scan Enable Command (v1.1) (BR/EDR)
 constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);
@@ -392,19 +355,6 @@ constexpr OpCode kWritePageScanActivity = ControllerAndBasebandOpCode(0x001C);
 // Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kReadInquiryScanActivity = ControllerAndBasebandOpCode(0x001D);
 
-struct ReadInquiryScanActivityReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Inquiry_Scan_Interval, in time slices (0.625ms)
-  // Range: kInquiryScanIntervalMin - kInquiryScanIntervalMax in hci_constants.h
-  uint16_t inquiry_scan_interval;
-
-  // Inquiry_Scan_Window, in time slices
-  // Range: kInquiryScanWindowMin - kInquiryScanWindowMax in hci_constants.h
-  uint16_t inquiry_scan_window;
-} __attribute__((packed));
-
 // ================================================
 // Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteInquiryScanActivity =
@@ -413,13 +363,6 @@ constexpr OpCode kWriteInquiryScanActivity =
 // ============================================
 // Read Class of Device Command (v1.1) (BR/EDR)
 constexpr OpCode kReadClassOfDevice = ControllerAndBasebandOpCode(0x0023);
-
-struct ReadClassOfDeviceReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  DeviceClass class_of_device;
-} __attribute__((packed));
 
 // =============================================
 // Write Class Of Device Command (v1.1) (BR/EDR)
@@ -433,30 +376,6 @@ constexpr OpCode kWriteAutomaticFlushTimeout =
 // ===============================================================
 // Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kReadTransmitPowerLevel = ControllerAndBasebandOpCode(0x002D);
-
-struct ReadTransmitPowerLevelCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // The type of transmit power level to read.
-  ReadTransmitPowerType type;
-} __attribute__((packed));
-
-struct ReadTransmitPowerLevelReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Transmit power level.
-  //
-  //   Range: -30 ≤ N ≤ 20
-  //   Units: dBm
-  int8_t tx_power_level;
-} __attribute__((packed));
 
 // ===============================================================
 // Write Synchonous Flow Control Enable Command (BR/EDR)
@@ -535,47 +454,17 @@ constexpr OpCode kWriteSimplePairingMode = ControllerAndBasebandOpCode(0x0056);
 // Set Event Mask Page 2 Command (v3.0 + HS)
 constexpr OpCode kSetEventMaskPage2 = ControllerAndBasebandOpCode(0x0063);
 
-struct SetEventMaskPage2CommandParams {
-  // Bit mask used to control which HCI events are generated by the HCI for the
-  // Host. See enum class EventMaskPage2 in hci_constants.h
-  uint64_t event_mask;
-} __attribute__((packed));
-
 // =========================================================
 // Read Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
 constexpr OpCode kReadFlowControlMode = ControllerAndBasebandOpCode(0x0066);
-
-struct ReadFlowControlModeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // See enum class FlowControlMode in hci_constants.h for possible values.
-  FlowControlMode flow_control_mode;
-} __attribute__((packed));
 
 // ==========================================================
 // Write Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
 constexpr OpCode kWriteFlowControlMode = ControllerAndBasebandOpCode(0x0067);
 
-struct WriteFlowControlModeCommandParams {
-  // See enum class FlowControlMode in hci_constants.h for possible values.
-  FlowControlMode flow_control_mode;
-} __attribute__((packed));
-
 // ============================================
 // Read LE Host Support Command (v4.0) (BR/EDR)
 constexpr OpCode kReadLEHostSupport = ControllerAndBasebandOpCode(0x006C);
-
-struct ReadLEHostSupportReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  GenericEnableParam le_supported_host;
-
-  // Core Spec v5.0, Vol 2, Part E, Section 6.35: This value is set to "disabled
-  // (0x00)" by default and "shall be ignored".
-  uint8_t simultaneous_le_host;
-} __attribute__((packed));
 
 // =============================================
 // Write LE Host Support Command (v4.0) (BR/EDR)
@@ -591,52 +480,10 @@ constexpr OpCode kWriteSecureConnectionsHostSupport =
 constexpr OpCode kReadAuthenticatedPayloadTimeout =
     ControllerAndBasebandOpCode(0x007B);
 
-struct ReadAuthenticatedPayloadTimeoutCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
-struct ReadAuthenticatedPayloadTimeoutReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Default = 0x0BB8 (30 s)
-  // Range: 0x0001 to 0xFFFF
-  // Time = N * 10 ms
-  // Time Range: 10 ms to 655,350 ms
-  uint16_t authenticated_payload_timeout;
-} __attribute__((packed));
-
 // ================================================================
 // Write Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
 constexpr OpCode kWriteAuthenticatedPayloadTimeout =
     ControllerAndBasebandOpCode(0x007C);
-
-struct WriteAuthenticatedPayloadTimeoutCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Default = 0x0BB8 (30 s)
-  // Range: 0x0001 to 0xFFFF
-  // Time = N * 10 ms
-  // Time Range: 10 ms to 655,350 ms
-  uint16_t authenticated_payload_timeout;
-} __attribute__((packed));
-
-struct WriteAuthenticatedPayloadTimeoutReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
 
 // ======= Informational Parameters =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.4
@@ -691,15 +538,6 @@ constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);
 // =======================================================
 // Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
 constexpr OpCode kReadDataBlockSize = InformationalParamsOpCode(0x000A);
-
-struct ReadDataBlockSizeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  uint16_t max_acl_data_packet_length;
-  uint16_t data_block_length;
-  uint16_t total_num_data_blocks;
-} __attribute__((packed));
 
 // ====================================================
 // Read Local Supported Controller Delay Command (v5.2)
@@ -825,12 +663,6 @@ struct CommandStatusEventParams {
 // Hardware Error Event (v1.1)
 constexpr EventCode kHardwareErrorEventCode = 0x10;
 
-struct HardwareErrorEventParams {
-  // These Hardware_Codes will be implementation-specific, and can be assigned
-  // to indicate various hardware problems.
-  uint8_t hardware_code;
-} __attribute__((packed));
-
 // ========================================
 // Role Change Event (BR/EDR) (v1.1)
 constexpr EventCode kRoleChangeEventCode = 0x12;
@@ -947,166 +779,23 @@ struct LELongTermKeyRequestSubeventParams {
 // LE Remote Connection Parameter Request Event (v4.1) (LE)
 constexpr EventCode kLERemoteConnectionParameterRequestSubeventCode = 0x06;
 
-struct LERemoteConnectionParameterRequestSubeventParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t interval_min;
-  uint16_t interval_max;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t timeout;
-} __attribute__((packed));
-
 // LE Data Length Change Event (v4.2) (LE)
 constexpr EventCode kLEDataLengthChangeSubeventCode = 0x07;
-
-struct LEDataLengthChangeSubeventParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t max_tx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t max_tx_time;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t max_rx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t max_rx_time;
-} __attribute__((packed));
 
 // LE Read Local P-256 Public Key Complete Event (v4.2) (LE)
 constexpr EventCode kLEReadLocalP256PublicKeyCompleteSubeventCode = 0x08;
 
-struct LEReadLOcalP256PublicKeyCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Local P-256 public key.
-  uint8_t local_p256_public_key[64];
-} __attribute__((packed));
-
 // LE Generate DHKey Complete Event (v4.2) (LE)
 constexpr EventCode kLEGenerateDHKeyCompleteSubeventCode = 0x09;
-
-struct LEGenerateDHKeyCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Diffie Hellman Key.
-  uint8_t dh_key[32];
-} __attribute__((packed));
 
 // LE Enhanced Connection Complete Event (v4.2) (LE)
 constexpr EventCode kLEEnhancedConnectionCompleteSubeventCode = 0x0A;
 
-struct LEEnhancedConnectionCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  ConnectionRole role;
-  LEAddressType peer_address_type;
-
-  // Public Device Address, or Random Device Address, Public Identity Address or
-  // Random (static) Identity Address of the device to be connected.
-  DeviceAddressBytes peer_address;
-
-  DeviceAddressBytes local_resolvable_private_address;
-  DeviceAddressBytes peer_resolvable_private_address;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-
-  // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a
-  // central, this parameter shall be set to 0x00.
-  pw::bluetooth::emboss::LEClockAccuracy central_clock_accuracy;
-} __attribute__((packed));
-
 // LE Directed Advertising Report Event (v4.2) (LE)
 constexpr EventCode kLEDirectedAdvertisingReportSubeventCode = 0x0B;
 
-struct LEDirectedAdvertisingReportData {
-  // The event type. This is always equal to
-  // LEAdvertisingEventType::kAdvDirectInd.
-  LEAdvertisingEventType event_type;
-
-  // Type of |address| for the advertising device.
-  LEAddressType address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address or
-  // Random (static) Identity Address of the advertising device.
-  DeviceAddressBytes address;
-
-  // By default this is set to LEAddressType::kRandom and |direct_address| will
-  // contain a random device address.
-  LEAddressType direct_address_type;
-  DeviceAddressBytes direct_address;
-
-  // Range: -127 <= N <= +20
-  // Units: dBm
-  // If N == 127: RSSI is not available.
-  int8_t rssi;
-} __attribute__((packed));
-
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct LEDirectedAdvertisingReportSubeventParams {
-  LEDirectedAdvertisingReportSubeventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEDirectedAdvertisingReportSubeventParams);
-
-  // Number of LEAdvertisingReportData instances contained in the array
-  // |reports|.
-  uint8_t num_reports;
-
-  // The report array parameters.
-  LEDirectedAdvertisingReportData reports[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
-
 // LE PHY Update Complete Event (v5.0) (LE)
 constexpr EventCode kLEPHYUpdateCompleteSubeventCode = 0x0C;
-
-struct LEPHYUpdateCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // The transmitter PHY.
-  LEPHY tx_phy;
-
-  // The receiver PHY.
-  LEPHY rx_phy;
-} __attribute__((packed));
 
 // LE Extended Advertising Report Event (v5.0) (LE)
 constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
@@ -1114,81 +803,11 @@ constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
 // LE Periodic Advertising Sync Established Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode = 0x0E;
 
-struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Handle used to identify the periodic advertiser (only the lower 12 bits are
-  // meaningful).
-  PeriodicAdvertiserHandle sync_handle;
-
-  // Value of the Advertising SID subfield in the ADI field of the PDU.
-  uint8_t advertising_sid;
-
-  // Address type of the advertiser.
-  LEAddressType advertiser_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the advertiser.
-  DeviceAddressBytes advertiser_address;
-
-  // Advertiser_PHY.
-  LEPHY advertiser_phy;
-
-  // Range: See kLEPeriodicAdvertisingInterval[Min|Max] in hci_constants.h
-  // Time = N * 1.25 ms
-  // Time Range: 7.5ms to 81.91875 s
-  uint16_t periodic_adv_interval;
-
-  // Advertiser_Clock_Accuracy.
-  pw::bluetooth::emboss::LEClockAccuracy advertiser_clock_accuracy;
-} __attribute__((packed));
-
 // LE Periodic Advertising Report Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
 
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct LEPeriodicAdvertisingReportSubeventParams {
-  LEPeriodicAdvertisingReportSubeventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEPeriodicAdvertisingReportSubeventParams);
-
-  // (only the lower 12 bits are meaningful).
-  PeriodicAdvertiserHandle sync_handle;
-
-  // Range: -127 <= N <= +126
-  // Units: dBm
-  int8_t tx_power;
-
-  // Range: -127 <= N <= +20
-  // Units: dBm
-  // If N == 127: RSSI is not available.
-  int8_t rssi;
-
-  // As of Core Spec v5.0 this parameter is intended to be used in a future
-  // feature.
-  uint8_t unused;
-
-  // Data status of the periodic advertisement. Indicates whether or not the
-  // controller has split the data into multiple reports.
-  LEAdvertisingDataStatus data_status;
-
-  // Length of the Data field.
-  uint8_t data_length;
-
-  // |data_length| octets of data received from a Periodic Advertising packet.
-  uint8_t data[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
-
 // LE Periodic Advertising Sync Lost Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingSyncLostSubeventCode = 0x10;
-
-struct LEPeriodicAdvertisingSyncLostSubeventParams {
-  // Used to identify the periodic advertiser (only the lower 12 bits are
-  // meaningful).
-  PeriodicAdvertiserHandle sync_handle;
-} __attribute__((packed));
 
 // LE Scan Timeout Event (v5.0) (LE)
 constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
@@ -1214,18 +833,6 @@ struct LEAdvertisingSetTerminatedSubeventParams {
 // LE Scan Request Received Event (v5.0) (LE)
 constexpr EventCode kLEScanRequestReceivedSubeventCode = 0x13;
 
-struct LEScanRequestReceivedSubeventParams {
-  // Used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // Address type of the scanner address.
-  LEAddressType scanner_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address or
-  // Random (static) Identity Address of the scanning device.
-  DeviceAddressBytes scanner_address;
-} __attribute__((packed));
-
 // LE Channel Selection Algorithm Event (v5.0) (LE)
 constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
 
@@ -1242,35 +849,9 @@ constexpr EventCode kLECISRequestSubeventCode = 0x01A;
 // Number Of Completed Data Blocks Event (v3.0 + HS) (BR/EDR & AMP)
 constexpr EventCode kNumberOfCompletedDataBlocksEventCode = 0x48;
 
-struct NumberOfCompletedDataBlocksEventData {
-  // Handle (Connection Handle for a BR/EDR Controller or a Logical_Link Handle
-  // for an AMP Controller).
-  uint16_t handle;
-  uint16_t num_of_completed_packets;
-  uint16_t num_of_completed_blocks;
-} __attribute__((packed));
-
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct NumberOfCompletedDataBlocksEventParams {
-  NumberOfCompletedDataBlocksEventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedDataBlocksEventParams);
-
-  uint16_t total_num_data_blocks;
-  uint8_t number_of_handles;
-  NumberOfCompletedDataBlocksEventData data[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
-
 // ================================================================
 // Authenticated Payload Timeout Expired Event (v4.1) (BR/EDR & LE)
 constexpr EventCode kAuthenticatedPayloadTimeoutExpiredEventCode = 0x57;
-
-struct AuthenticatedPayloadTimeoutExpiredEventParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
 
 // ======= Status Parameters =======
 // Core Spec v5.0, Vol 2, Part E, Section 7.5
@@ -1282,38 +863,6 @@ constexpr OpCode StatusParamsOpCode(const uint16_t ocf) {
 // ========================
 // Read RSSI Command (v1.1)
 constexpr OpCode kReadRSSI = StatusParamsOpCode(0x0005);
-
-struct ReadRSSICommandParams {
-  // The Handle for the connection for which the RSSI is to be read (only the
-  // lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle handle;
-} __attribute__((packed));
-
-struct ReadRSSIReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // The Handle for the connection for which the RSSI has been read (only the
-  // lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle handle;
-
-  // The Received Signal Strength Value.
-  //
-  // - BR/EDR:
-  //     Range: -128 ≤ N ≤ 127 (signed integer)
-  //     Units: dB
-  //
-  // - AMP:
-  //     Range: AMP type specific (signed integer)
-  //     Units: dBm
-  //
-  // - LE:
-  //     Range: -127 to 20, 127 (signed integer)
-  //     Units: dBm
-  int8_t rssi;
-} __attribute__((packed));
 
 // ========================================
 // Read Encryption Key Size (v1.1) (BR/EDR)
@@ -1356,10 +905,6 @@ constexpr OpCode kLEReadLocalSupportedFeatures =
 // LE Set Random Address Command (v4.0) (LE)
 constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
 
-struct LESetRandomAddressCommandParams {
-  DeviceAddressBytes random_address;
-} __attribute__((packed));
-
 // =================================================
 // LE Set Advertising Parameters Command (v4.0) (LE)
 constexpr OpCode kLESetAdvertisingParameters =
@@ -1394,11 +939,6 @@ constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
 // LE Create Connection Command (v4.0) (LE)
 constexpr OpCode kLECreateConnection = LEControllerCommandOpCode(0x000D);
 
-// NOTE on ReturnParams: No Command Complete event is sent by the Controller to
-// indicate that this command has been completed. Instead, the LE Connection
-// Complete or LE Enhanced Connection Complete event indicates that this command
-// has been completed.
-
 // ===============================================
 // LE Create Connection Cancel Command (v4.0) (LE)
 constexpr OpCode kLECreateConnectionCancel = LEControllerCommandOpCode(0x000E);
@@ -1407,12 +947,6 @@ constexpr OpCode kLECreateConnectionCancel = LEControllerCommandOpCode(0x000E);
 // LE Read Filter Accept List Size Command (v4.0) (LE)
 constexpr OpCode kLEReadFilterAcceptListSize =
     LEControllerCommandOpCode(0x000F);
-
-struct LEReadFilterAcceptListSizeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-  uint8_t filter_accept_list_size;
-} __attribute__((packed));
 
 // =======================================
 // LE Clear Filter Accept List Command (v4.0) (LE)
@@ -1423,92 +957,23 @@ constexpr OpCode kLEClearFilterAcceptList = LEControllerCommandOpCode(0x0010);
 constexpr OpCode kLEAddDeviceToFilterAcceptList =
     LEControllerCommandOpCode(0x0011);
 
-struct LEAddDeviceToFilterAcceptListCommandParams {
-  // The address type of the peer. The |address| parameter will be ignored if
-  // |address_type| is set to LEPeerAddressType::kAnonymous.
-  LEPeerAddressType address_type;
-
-  // Public Device Address or Random Device Address of the device to be added to
-  // the Filter Accept List
-  DeviceAddressBytes address;
-} __attribute__((packed));
-
 // ====================================================
 // LE Remove Device From Filter Accept List Command (v4.0) (LE)
 constexpr OpCode kLERemoveDeviceFromFilterAcceptList =
     LEControllerCommandOpCode(0x0012);
 
-struct LERemoveDeviceFromFilterAcceptListCommandParams {
-  // The address type of the peer. The |address| parameter will be ignored if
-  // |address_type| is set to LEPeerAddressType::kAnonymous.
-  LEPeerAddressType address_type;
-
-  // Public Device Address or Random Device Address of the device to be removed
-  // from the Filter Accept List
-  DeviceAddressBytes address;
-} __attribute__((packed));
-
 // ========================================
 // LE Connection Update Command (v4.0) (LE)
 constexpr OpCode kLEConnectionUpdate = LEControllerCommandOpCode(0x0013);
-
-// NOTE on Return Params: A Command Complete event is not sent by the Controller
-// to indicate that this command has been completed. Instead, the LE Connection
-// Update Complete event indicates that this command has been completed.
 
 // ======================================================
 // LE Set Host Channel Classification Command (v4.0) (LE)
 constexpr OpCode kLESetHostChannelClassification =
     LEControllerCommandOpCode(0x0014);
 
-struct LESetHostChannelClassificationCommandParams {
-  // This parameter contains 37 1-bit fields (only the lower 37-bits of the
-  // 5-octet value are meaningful).
-  //
-  // The nth such field (in the range 0 to 36) contains the value for the link
-  // layer channel index n.
-  //
-  // Channel n is bad = 0. Channel n is unknown = 1.
-  //
-  // The most significant bits are reserved and shall be set to 0 for future
-  // use.
-  //
-  // At least one channel shall be marked as unknown.
-  uint8_t channel_map[5];
-} __attribute__((packed));
-
 // =======================================
 // LE Read Channel Map Command (v4.0) (LE)
 constexpr OpCode kLEReadChannelMap = LEControllerCommandOpCode(0x0015);
-
-struct LEReadChannelMapCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
-struct LEReadChannelMapReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // This parameter contains 37 1-bit fields (only the lower 37-bits of the
-  // 5-octet value are meaningful).
-  //
-  // The nth such field (in the range 0 to 36) contains the value for the link
-  // layer channel index n.
-  //
-  // Channel n is bad = 0. Channel n is unknown = 1.
-  //
-  // The most significant bits are reserved and shall be set to 0 for future
-  // use.
-  //
-  // At least one channel shall be marked as unknown.
-  uint8_t channel_map[5];
-} __attribute__((packed));
 
 // ===========================================
 // LE Read Remote Features Command (v4.0) (LE)
@@ -1520,86 +985,26 @@ struct LEReadRemoteFeaturesCommandParams {
   ConnectionHandle connection_handle;
 } __attribute__((packed));
 
-// Note on ReturnParams: A Command Complete event is not sent by the Controller
-// to indicate that this command has been completed. Instead, the LE Read Remote
-// Features Complete event indicates that this command has been completed.
-
 // ==============================
 // LE Encrypt Command (v4.0) (LE)
 constexpr OpCode kLEEncrypt = LEControllerCommandOpCode(0x0017);
-
-struct LEEncryptCommandParams {
-  // 128 bit key for the encryption of the data given in the command.
-  UInt128 key;
-
-  // 128 bit data block that is requested to be encrypted.
-  uint8_t plaintext_data[16];
-} __attribute__((packed));
-
-struct LEEncryptReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // 128 bit encrypted data block.
-  uint8_t encrypted_data[16];
-} __attribute__((packed));
 
 // ===========================
 // LE Rand Command (v4.0) (LE)
 constexpr OpCode kLERand = LEControllerCommandOpCode(0x0018);
 
-struct LERandReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Random Number
-  uint64_t random_number;
-} __attribute__((packed));
-
 // =======================================
 // LE Start Encryption Command (v4.0) (LE)
 constexpr OpCode kLEStartEncryption = LEControllerCommandOpCode(0x0019);
-
-// NOTE on Return Params: A Command Complete event is not sent by the Controller
-// to indicate that this command has been completed. Instead, the Encryption
-// Change or Encryption Key Refresh Complete events indicate that this command
-// has been completed.
 
 // ==================================================
 // LE Long Term Key Request Reply Command (v4.0) (LE)
 constexpr OpCode kLELongTermKeyRequestReply = LEControllerCommandOpCode(0x001A);
 
-struct LELongTermKeyRequestReplyCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // 128-bit long term key for the current connection.
-  UInt128 long_term_key;
-} __attribute__((packed));
-
-struct LELongTermKeyRequestReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // ===========================================================
 // LE Long Term Key Request Negative Reply Command (v4.0) (LE)
 constexpr OpCode kLELongTermKeyRequestNegativeReply =
     LEControllerCommandOpCode(0x001B);
-
-struct LELongTermKeyRequestNegativeReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
 
 // ============================================
 // LE Read Supported States Command (v4.0) (LE)
@@ -1618,221 +1023,55 @@ struct LEReadSupportedStatesReturnParams {
 // LE Receiver Test Command (v4.0) (LE)
 constexpr OpCode kLEReceiverTest = LEControllerCommandOpCode(0x001D);
 
-struct LEReceiverTestCommandParams {
-  // N = (F - 2402) / 2
-  // Range: 0x00 - 0x27. Frequency Range : 2402 MHz to 2480 MHz.
-  uint8_t rx_channel;
-} __attribute__((packed));
-
 // ======================================
 // LE Transmitter Test Command (v4.0) (LE)
 constexpr OpCode kLETransmitterTest = LEControllerCommandOpCode(0x001E);
 
-struct LETransmitterTestCommandParams {
-  // N = (F - 2402) / 2
-  // Range: 0x00 - 0x27. Frequency Range : 2402 MHz to 2480 MHz.
-  uint8_t tx_channel;
-
-  // Length in bytes of payload data in each packet
-  uint8_t length_of_test_data;
-
-  // The packet payload sequence. See Core Spec 5.0, Vol 2, Part E,
-  // Section 7.8.29 for a description of possible values.
-  uint8_t packet_payload;
-} __attribute__((packed));
-
 // ===============================
 // LE Test End Command (v4.0) (LE)
 constexpr OpCode kLETestEnd = LEControllerCommandOpCode(0x001F);
-
-struct LETestEndReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Number of packets received
-  uint16_t number_of_packets;
-} __attribute__((packed));
 
 // ================================================================
 // LE Remote Connection Parameter Request Reply Command (v4.1) (LE)
 constexpr OpCode kLERemoteConnectionParameterRequestReply =
     LEControllerCommandOpCode(0x0020);
 
-struct LERemoteConnectionParameterRequestReplyCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval_min;
-  uint16_t conn_interval_max;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-
-  // Range: 0x0000 - 0xFFFF
-  // Time: N * 0x625 ms
-  uint16_t minimum_ce_length;
-  uint16_t maximum_ce_length;
-} __attribute__((packed));
-
-struct LERemoteConnectionParameterRequestReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // =========================================================================
 // LE Remote Connection Parameter Request Negative Reply Command (v4.1) (LE)
 constexpr OpCode kLERemoteConnectionParameterRequestNegativeReply =
     LEControllerCommandOpCode(0x0021);
 
-struct LERemoteConnectionParamReqNegativeReplyCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Reason that the connection parameter request was rejected.
-  StatusCode reason;
-} __attribute__((packed));
-
-struct LERemoteConnectionParamReqNegativeReplyReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // ======================================
 // LE Set Data Length Command (v4.2) (LE)
 constexpr OpCode kLESetDataLength = LEControllerCommandOpCode(0x0022);
-
-struct LESetDataLengthCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t tx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t tx_time;
-} __attribute__((packed));
-
-struct LESetDataLengthReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
 
 // =========================================================
 // LE Read Suggested Default Data Length Command (v4.2) (LE)
 constexpr OpCode kLEReadSuggestedDefaultDataLength =
     LEControllerCommandOpCode(0x0023);
 
-struct LEReadSuggestedDefaultDataLengthReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t suggested_max_tx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t suggested_max_tx_time;
-} __attribute__((packed));
-
 // ==========================================================
 // LE Write Suggested Default Data Length Command (v4.2) (LE)
 constexpr OpCode kLEWriteSuggestedDefaultDataLength =
     LEControllerCommandOpCode(0x0024);
 
-struct LEWriteSuggestedDefaultDataLengthCommandParams {
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t suggested_max_tx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t suggested_max_tx_time;
-} __attribute__((packed));
-
 // ==================================================
 // LE Read Local P-256 Public Key Command (v4.2) (LE)
 constexpr OpCode kLEReadLocalP256PublicKey = LEControllerCommandOpCode(0x0025);
 
-// NOTE on ReturnParams: When the Controller receives the
-// LE_Read_Local_P-256_Public_Key command, the Controller shall send the Command
-// Status event to the Host. When the local P-256 public key generation
-// finishes, an LE Read Local P-256 Public Key Complete event shall be
-// generated.
-//
-// No Command Complete event is sent by the Controller to indicate that this
-// command has been completed.
-
 // ======================================
 // LE Generate DH Key Command (v4.2) (LE)
 constexpr OpCode kLEGenerateDHKey = LEControllerCommandOpCode(0x0026);
-
-struct LEGenerateDHKeyCommandParams {
-  // The remote P-256 public key:
-  //   X, Y format
-  //   Octets 31-0: X co-ordinate
-  //   Octets 63-32: Y co-ordinate Little Endian Format
-  uint8_t remote_p256_public_key[64];
-} __attribute__((packed));
-
-// NOTE on ReturnParams: When the Controller receives the LE_Generate_DHKey
-// command, the Controller shall send the Command Status event to the Host. When
-// the DHKey generation finishes, an LE DHKey Generation Complete event shall be
-// generated.
-//
-// No Command Complete event is sent by the Controller to indicate that this
-// command has been completed.
 
 // ===================================================
 // LE Add Device To Resolving List Command (v4.2) (LE)
 constexpr OpCode kLEAddDeviceToResolvingList =
     LEControllerCommandOpCode(0x0027);
 
-struct LEAddDeviceToResolvingListCommandParams {
-  // The peer device's identity address type.
-  LEPeerAddressType peer_identity_address_type;
-
-  // Public or Random (static) Identity address of the peer device
-  DeviceAddressBytes peer_identity_address;
-
-  // IRK (Identity Resolving Key) of the peer device
-  UInt128 peer_irk;
-
-  // IRK (Identity Resolving Key) of the local device
-  UInt128 local_irk;
-} __attribute__((packed));
-
 // ========================================================
 // LE Remove Device From Resolving List Command (v4.2) (LE)
 constexpr OpCode kLERemoveDeviceFromResolvingList =
     LEControllerCommandOpCode(0x0028);
-
-struct LERemoveDeviceFromResolvingListCommandParams {
-  // The peer device's identity address type.
-  LEPeerAddressType peer_identity_address_type;
-
-  // Public or Random (static) Identity address of the peer device
-  DeviceAddressBytes peer_identity_address;
-} __attribute__((packed));
 
 // ===========================================
 // LE Clear Resolving List Command (v4.2) (LE)
@@ -1842,204 +1081,49 @@ constexpr OpCode kLEClearResolvingList = LEControllerCommandOpCode(0x0029);
 // LE Read Resolving List Size Command (v4.2) (LE)
 constexpr OpCode kLEReadResolvingListSize = LEControllerCommandOpCode(0x002A);
 
-struct LEReadResolvingListReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Number of address translation entries in the resolving list.
-  uint8_t resolving_list_size;
-} __attribute__((packed));
-
 // ===================================================
 // LE Read Peer Resolvable Address Command (v4.2) (LE)
 constexpr OpCode kLEReadPeerResolvableAddress =
     LEControllerCommandOpCode(0x002B);
-
-struct LEReadPeerResolvableAddressCommandParams {
-  // The peer device's identity address type.
-  LEPeerAddressType peer_identity_address_type;
-
-  // Public or Random (static) Identity address of the peer device.
-  DeviceAddressBytes peer_identity_address;
-} __attribute__((packed));
-
-struct LEReadPeerResolvableAddressReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Resolvable Private Address being used by the peer device.
-  DeviceAddressBytes peer_resolvable_address;
-} __attribute__((packed));
 
 // ====================================================
 // LE Read Local Resolvable Address Command (v4.2) (LE)
 constexpr OpCode kLEReadLocalResolvableAddress =
     LEControllerCommandOpCode(0x002C);
 
-struct LEReadLocalResolvableAddressCommandParams {
-  // The peer device's identity address type.
-  LEPeerAddressType peer_identity_address_type;
-
-  // Public or Random (static) Identity address of the peer device
-  DeviceAddressBytes peer_identity_address;
-} __attribute__((packed));
-
-struct LEReadLocalResolvableAddressReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Resolvable Private Address being used by the local device.
-  DeviceAddressBytes local_resolvable_address;
-} __attribute__((packed));
-
 // ====================================================
 // LE Set Address Resolution Enable Command (v4.2) (LE)
 constexpr OpCode kLESetAddressResolutionEnable =
     LEControllerCommandOpCode(0x002D);
-
-struct LESetAddressResolutionEnableCommandParams {
-  GenericEnableParam address_resolution_enable;
-} __attribute__((packed));
 
 // =============================================================
 // LE Set Resolvable Private Address Timeout Command (v4.2) (LE)
 constexpr OpCode kLESetResolvablePrivateAddressTimeout =
     LEControllerCommandOpCode(0x002E);
 
-struct LESetResolvablePrivateAddressTimeoutCommandParams {
-  // Range: See kLERPATimeout[Min|Max] in hci_constants.h
-  // Default: See kLERPATimeoutDefault in hci_constants.h
-  uint16_t rpa_timeout;
-} __attribute__((packed));
-
 // ===============================================
 // LE Read Maximum Data Length Command (v4.2) (LE)
 constexpr OpCode kLEReadMaximumDataLength = LEControllerCommandOpCode(0x002F);
-
-struct LEReadMaximumDataLengthReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t supported_max_tx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t supported_max_tx_time;
-
-  // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
-  uint16_t supported_max_rx_octets;
-
-  // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
-  uint16_t supported_max_rx_time;
-} __attribute__((packed));
 
 // ===============================
 // LE Read PHY Command (v5.0) (LE)
 constexpr OpCode kLEReadPHY = LEControllerCommandOpCode(0x0030);
 
-struct LEReadPHYCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
-struct LEReadPHYReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // The transmitter PHY.
-  LEPHY tx_phy;
-
-  // The receiver PHY.
-  LEPHY rx_phy;
-} __attribute__((packed));
-
 // ======================================
 // LE Set Default PHY Command (v5.0) (LE)
 constexpr OpCode kLESetDefaultPHY = LEControllerCommandOpCode(0x0031);
-
-struct LESetDefaultPHYCommandParams {
-  // See the kLEAllPHYSBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t all_phys;
-
-  // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t tx_phys;
-
-  // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t rx_phys;
-} __attribute__((packed));
 
 // ==============================
 // LE Set PHY Command (v5.0) (LE)
 constexpr OpCode kLESetPHY = LEControllerCommandOpCode(0x0032);
 
-struct LESetPHYCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // See the kLEAllPHYSBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t all_phys;
-
-  // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t tx_phys;
-
-  // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t rx_phys;
-
-  LEPHYOptions phy_options;
-} __attribute__((packed));
-
-// NOTE on ReturnParams: A Command Complete event is not sent by the Controller
-// to indicate that this command has been completed. Instead, the LE PHY Update
-// Complete event indicates that this command has been completed. The LE PHY
-// Update Complete event may also be issued autonomously by the Link Layer.
-
 // =============================================
 // LE Enhanced Receiver Test Command (v5.0) (LE)
 constexpr OpCode kLEEnhancedReceiverText = LEControllerCommandOpCode(0x0033);
 
-struct LEEnhancedReceiverTestCommandParams {
-  // N = (F - 2402) / 2
-  // Range: 0x00 - 0x27. Frequency Range : 2402 MHz to 2480 MHz.
-  uint8_t rx_channel;
-
-  // Receiver PHY.
-  LEPHY phy;
-
-  // Transmitter modulation index that should be assumed.
-  LETestModulationIndex modulation_index;
-} __attribute__((packed));
-
 // ================================================
 // LE Enhanced Transmitter Test Command (v5.0) (LE)
 constexpr OpCode kLEEnhancedTransmitterTest = LEControllerCommandOpCode(0x0034);
-
-struct LEEnhancedTransmitterTestCommandParams {
-  // N = (F - 2402) / 2
-  // Range: 0x00 - 0x27. Frequency Range : 2402 MHz to 2480 MHz.
-  uint8_t tx_channel;
-
-  // Length in bytes of payload data in each packet
-  uint8_t length_of_test_data;
-
-  // The packet payload sequence. See Core Spec 5.0, Vol 2, Part E,
-  // Section 7.8.51 for a description of possible values.
-  uint8_t packet_payload;
-
-  // Transmitter PHY.
-  LEPHY phy;
-} __attribute__((packed));
 
 // =========================================================
 // LE Set Advertising Set Random Address Command (v5.0) (LE)
@@ -2101,61 +1185,15 @@ constexpr OpCode kLEClearAdvertisingSets = LEControllerCommandOpCode(0x003D);
 constexpr OpCode kLESetPeriodicAdvertisingParameters =
     LEControllerCommandOpCode(0x003E);
 
-struct LESetPeriodicAdvertisingParametersCommandParams {
-  // Identifies the advertising set whose periodic advertising parameters are
-  // being configured.
-  AdvertisingHandle adv_handle;
-
-  // Range: See kLEPeriodicAdvertisingInterval[Min|Max] in hci_constants.h
-  // Time = N * 1.25 ms
-  // Time Range: 7.5ms to 81.91875 s
-  uint16_t periodic_adv_interval_min;
-  uint16_t periodic_adv_interval_max;
-
-  // See the kLEPeriodicAdvPropBit* constants in hci_constants.h for possible
-  // bit values.
-  uint16_t periodic_adv_properties;
-} __attribute__((packed));
-
 // ====================================================
 // LE Set Periodic Advertising Data Command (v5.0) (LE)
 constexpr OpCode kLESetPeriodicAdvertisingData =
     LEControllerCommandOpCode(0x003F);
 
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct LESetPeriodicAdvertisingDataCommandParams {
-  LESetPeriodicAdvertisingDataCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetPeriodicAdvertisingDataCommandParams);
-
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // See hci_constants.h for possible values.
-  // LESetExtendedAdvDataOp::kUnchangedData is excluded for this command.
-  LESetExtendedAdvDataOp operation;
-
-  // Length of the advertising data included in this command packet, up to
-  // kMaxPduLEExtendedAdvertisingDataLength bytes.
-  uint8_t adv_data_length;
-
-  // Variable length advertising data.
-  uint8_t adv_data[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
-
 // ======================================================
 // LE Set Periodic Advertising Enable Command (v5.0) (LE)
 constexpr OpCode kLESetPeriodicAdvertisingEnable =
     LEControllerCommandOpCode(0x0040);
-
-struct LESetPeriodicAdvertisingEnableCommandParams {
-  // Enable or Disable periodic advertising.
-  GenericEnableParam enable;
-
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-} __attribute__((packed));
 
 // ===================================================
 // LE Set Extended Scan Parameters Command (v5.0) (LE)
@@ -2175,11 +1213,6 @@ constexpr OpCode kLEExtendedCreateConnection =
 // LE Periodic Advertising Create Sync Command (v5.0) (LE)
 constexpr OpCode kLEPeriodicAdvertisingCreateSync =
     LEControllerCommandOpCode(0x0044);
-
-// NOTE on ReturnParams: No Command Complete event is sent by the Controller to
-// indicate that this command has been completed. Instead, the LE Periodic
-// Advertising Sync Established event indicates that this command has been
-// completed.
 
 // ==============================================================
 // LE Periodic Advertising Create Sync Cancel Command (v5.0) (LE)
@@ -2211,44 +1244,13 @@ constexpr OpCode kLEClearPeriodicAdvertiserList =
 constexpr OpCode kLEReadPeriodicAdvertiserListSize =
     LEControllerCommandOpCode(0x004A);
 
-struct LEReadPeriodicAdvertiserListSizeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Total number of Periodic Advertiser list entries that can be stored in the
-  // Controller.
-  uint8_t periodic_advertiser_list_size;
-} __attribute__((packed));
-
 // ==========================================
 // LE Read Transmit Power Command (v5.0) (LE)
 constexpr OpCode kLEReadTransmitPower = LEControllerCommandOpCode(0x004B);
 
-struct LEReadTransmitPowerReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Range: -127 <= N <= +126
-  // Units: dBm
-  int8_t min_tx_power;
-  int8_t max_tx_power;
-} __attribute__((packed));
-
 // ================================================
 // LE Read RF Path Compensation Command (v5.0) (LE)
 constexpr OpCode kLEReadRFPathCompensation = LEControllerCommandOpCode(0x004C);
-
-struct LEReadRFPathCompensationReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // The RF Path Compensation Values parameters used in the Tx Power Level and
-  // RSSI calculation.
-  //   Range: -128.0 dB (0xFB00) ≤ N ≤ 128.0 dB (0x0500)
-  //   Units: 0.1 dB
-  int16_t rf_tx_path_comp_value;
-  int16_t rf_rx_path_comp_value;
-} __attribute__((packed));
 
 // =================================================
 // LE Write RF Path Compensation Command (v5.0) (LE)
