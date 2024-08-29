@@ -1878,15 +1878,17 @@ void FakeController::OnWriteLocalName(
 }
 
 void FakeController::OnCreateConnectionCancel() {
-  hci_spec::CreateConnectionCancelReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.bd_addr = pending_bredr_connect_addr_.value();
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::CreateConnectionCancelCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.bd_addr().CopyFrom(pending_bredr_connect_addr_.value().view());
 
   if (!bredr_connect_pending_) {
     // No request is currently pending.
-    params.status = pwemb::StatusCode::UNKNOWN_CONNECTION_ID;
-    RespondWithCommandComplete(hci_spec::kCreateConnectionCancel,
-                               BufferView(&params, sizeof(params)));
+    view.status().Write(pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
+    RespondWithCommandComplete(hci_spec::kCreateConnectionCancel, &packet);
     return;
   }
 
@@ -1896,8 +1898,7 @@ void FakeController::OnCreateConnectionCancel() {
   NotifyConnectionState(
       pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
 
-  RespondWithCommandComplete(hci_spec::kCreateConnectionCancel,
-                             BufferView(&params, sizeof(params)));
+  RespondWithCommandComplete(hci_spec::kCreateConnectionCancel, &packet);
 
   auto response =
       hci::EmbossEventPacket::New<pwemb::ConnectionCompleteEventWriter>(

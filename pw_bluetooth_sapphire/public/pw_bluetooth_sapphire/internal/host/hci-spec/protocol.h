@@ -177,14 +177,6 @@ constexpr OpCode kDisconnect = LinkControlOpCode(0x0006);
 // Create Connection Cancel (v1.1) (BR/EDR)
 constexpr OpCode kCreateConnectionCancel = LinkControlOpCode(0x0008);
 
-struct CreateConnectionCancelReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // BD_ADDR of the Create Connection Command Request
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // =========================================
 // Accept Connection Request (v1.1) (BR/EDR)
 constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
