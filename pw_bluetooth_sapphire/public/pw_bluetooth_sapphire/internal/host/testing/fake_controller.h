@@ -921,7 +921,7 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(
-      const hci_spec::LEReadRemoteFeaturesCommandParams& params);
+      const pw::bluetooth::emboss::LEReadRemoteFeaturesCommandView& params);
 
   // Called when a HCI_LE_Enable_Encryption command is received, responds with
   // a successful encryption change event.

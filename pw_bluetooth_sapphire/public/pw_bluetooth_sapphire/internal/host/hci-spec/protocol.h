@@ -979,12 +979,6 @@ constexpr OpCode kLEReadChannelMap = LEControllerCommandOpCode(0x0015);
 // LE Read Remote Features Command (v4.0) (LE)
 constexpr OpCode kLEReadRemoteFeatures = LEControllerCommandOpCode(0x0016);
 
-struct LEReadRemoteFeaturesCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // ==============================
 // LE Encrypt Command (v4.0) (LE)
 constexpr OpCode kLEEncrypt = LEControllerCommandOpCode(0x0017);

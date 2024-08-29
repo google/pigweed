@@ -2552,13 +2552,12 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
 }
 
 void FakeController::OnLEReadRemoteFeaturesCommand(
-    const hci_spec::LEReadRemoteFeaturesCommandParams& params) {
+    const pwemb::LEReadRemoteFeaturesCommandView& params) {
   if (le_read_remote_features_cb_) {
     le_read_remote_features_cb_();
   }
 
-  const hci_spec::ConnectionHandle handle = pw::bytes::ConvertOrderFrom(
-      cpp20::endian::little, params.connection_handle);
+  const hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
@@ -2575,7 +2574,7 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
   auto view = response.view_t();
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
-  view.connection_handle().Write(params.connection_handle);
+  view.connection_handle().Write(handle);
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.le_features().BackingStorage().WriteUInt(
       peer->le_features().le_features);
@@ -4250,12 +4249,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLinkKeyRequestReplyCommandReceived(params);
       break;
     }
-    case hci_spec::kLEReadRemoteFeatures: {
-      const auto& params =
-          command_packet.payload<hci_spec::LEReadRemoteFeaturesCommandParams>();
-      OnLEReadRemoteFeaturesCommand(params);
-      break;
-    }
     case hci_spec::kLEReadAdvertisingChannelTxPower: {
       OnLEReadAdvertisingChannelTxPower();
       break;
@@ -4273,6 +4266,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEExtendedCreateConnection:
     case hci_spec::kLEReadMaximumAdvertisingDataLength:
     case hci_spec::kLEReadNumSupportedAdvertisingSets:
+    case hci_spec::kLEReadRemoteFeatures:
     case hci_spec::kLESetAdvertisingData:
     case hci_spec::kLESetAdvertisingEnable:
     case hci_spec::kLESetAdvertisingParameters:
@@ -4540,6 +4534,12 @@ void FakeController::HandleReceivedCommandPacket(
       const auto& params =
           command_packet.view<pwemb::ReadEncryptionKeySizeCommandView>();
       OnReadEncryptionKeySizeCommand(params);
+      break;
+    }
+    case hci_spec::kLEReadRemoteFeatures: {
+      const auto& params =
+          command_packet.view<pwemb::LEReadRemoteFeaturesCommandView>();
+      OnLEReadRemoteFeaturesCommand(params);
       break;
     }
     case hci_spec::kLESetEventMask: {
