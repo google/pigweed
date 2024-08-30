@@ -332,6 +332,97 @@ most things and fallback to raw only when needed.
    encounter if you try to include Nanopb and ``pw_protobuf`` headers in the
    same source file.
 
+Falling back to raw methods
+===========================
+When implementing an RPC service using Nanopb or ``pw_protobuf``, you may
+sometimes run into limitations of the protobuf library when used in conjunction
+with ``pw_rpc``. For example, fields which use callbacks require those callbacks
+to be set prior to the decode operation, but ``pw_rpc`` internally decodes every
+message passed into a method implementation without any opportunity to set
+these. Alternatively, you may simply want finer control over how your messages
+are encoded.
+
+To assist with these cases, ``pw_rpc`` allows any method within a Nanopb or
+``pw_protobuf`` service to use its raw APIs without having to define the entire
+service as raw. Implementors may choose on a method-by-method basis where they
+desire to have access to the raw protobuf messages.
+
+To implement a method using the raw APIs, all you have to do is change the
+signature of the function --- ``pw_rpc`` will automatically handle the rest.
+Examples are provided below, each showing a Nanopb method and its equivalent
+raw signature.
+
+Unary method
+------------
+When defining a unary method using the raw APIs, it is important to note that
+there is no synchronous raw unary API, as ``pw_rpc`` cannot internally provide
+a response buffer to the method. Instead, define the raw method as asynchronous
+unary and encode the response to a buffer managed by the service.
+
+**Nanopb**
+
+.. code-block:: c++
+
+   // Synchronous unary method.
+   pw::Status DoFoo(const FooRequest& request, FooResponse response);
+
+   // Asynchronous unary method.
+   void DoFoo(const FooRequest& request,
+              pw::rpc::NanopbUnaryResponder<FooResponse>& responder);
+
+**Raw**
+
+.. code-block:: c++
+
+   // Only asynchronous unary methods are supported.
+   void DoFoo(pw::ConstByteSpan request, pw::rpc::RawUnaryResponder& responder);
+
+Server streaming method
+-----------------------
+
+**Nanopb**
+
+.. code-block:: c++
+
+   void DoFoo(const FooRequest& request,
+              pw::rpc::NanopbServerWriter<FooResponse>& writer);
+
+**Raw**
+
+.. code-block:: c++
+
+   void DoFoo(pw::ConstByteSpan request, pw::rpc::RawServerWriter& writer);
+
+Client streaming method
+-----------------------
+
+**Nanopb**
+
+.. code-block:: c++
+
+   void DoFoo(pw::rpc::NanopbServerReader<FooRequest, FooResponse>&);
+
+**Raw**
+
+.. code-block:: c++
+
+   void DoFoo(RawServerReader&);
+
+Bidirectional streaming method
+------------------------------
+
+**Nanopb**
+
+.. code-block:: c++
+
+   void DoFoo(pw::rpc::NanopbServerReaderWriter<Request, Response>&);
+
+**Raw**
+
+.. code-block:: c++
+
+   void DoFoo(RawServerReaderWriter&);
+
 ----------------------------
 Testing a pw_rpc integration
 ----------------------------
