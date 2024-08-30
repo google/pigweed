@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "zircon_random_generator.h"
+#include "pw_random_fuchsia/zircon_random_generator.h"
 
 #include "pw_unit_test/framework.h"
 
-namespace pw_random_zircon {
+namespace pw::random_fuchsia {
 
 TEST(ZirconRandomGeneratorTest, Get) {
   // Getting a random number should not crash.
@@ -36,4 +36,4 @@ TEST(ZirconRandomGeneratorTest, InjectEntropyBits) {
   rng.InjectEntropyBits(/*data=*/1, /*num_bits=*/31);
 }
 
-}  // namespace pw_random_zircon
+}  // namespace pw::random_fuchsia

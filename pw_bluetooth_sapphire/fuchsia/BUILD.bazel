@@ -42,6 +42,8 @@ qemu_tests = [
     "//pw_bluetooth_sapphire/fuchsia/host/testing:test_pkg",
     "//pw_bluetooth_sapphire/fuchsia/host/transport:test_pkg",
     "//pw_bluetooth_sapphire/fuchsia/lib/fidl:test_pkg",
+    "//pw_async_fuchsia:test_pkg",
+    "//pw_random_fuchsia:test_pkg",
 ]
 
 fuchsia_test_group(

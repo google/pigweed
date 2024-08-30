@@ -146,7 +146,7 @@ TEST_F(DispatcherFuchsiaTest, ChainedTasks) {
     Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
       ASSERT_OK(status);
       c++;
-      (ctx.dispatcher, [&c](async::Context& ctx, Status status) {
+      Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
         ASSERT_OK(status);
         c++;
       });

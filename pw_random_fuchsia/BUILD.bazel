@@ -28,6 +28,7 @@ cc_library(
     hdrs = [
         "public/pw_random_fuchsia/zircon_random_generator.h",
     ],
+    includes = ["public"],
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
         "//pw_random",
@@ -42,6 +43,7 @@ fuchsia_cc_test(
     deps = [
         ":zircon_random_generator",
         "//pw_unit_test",
+        "//pw_unit_test:printf_main",
     ],
 )
 
