@@ -211,6 +211,62 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
   }
 }
 
+pw_source_set("time_provider") {
+  public = [ "public/pw_async2/time_provider.h" ]
+  sources = [ "time_provider.cc" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":dispatcher",
+    "$dir_pw_containers:intrusive_list",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_toolchain:no_destructor",
+  ]
+}
+
+pw_source_set("system_time_provider") {
+  public = [ "public/pw_async2/system_time_provider.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":time_provider",
+    "$dir_pw_chrono:system_clock",
+  ]
+  sources = [ "system_time_provider.cc" ]
+  deps = [
+    "$dir_pw_chrono:system_timer",
+    "$dir_pw_toolchain:no_destructor",
+  ]
+}
+
+pw_test("system_time_provider_test") {
+  enable_if =
+      pw_async2_DISPATCHER_BACKEND != "" &&
+      pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" && pw_thread_YIELD_BACKEND != ""
+  sources = [ "system_time_provider_test.cc" ]
+  deps = [ ":system_time_provider" ]
+}
+
+pw_source_set("simulated_time_provider") {
+  public = [ "public/pw_async2/simulated_time_provider.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":time_provider",
+    "$dir_pw_sync:interrupt_spin_lock",
+  ]
+}
+
+pw_test("simulated_time_provider_test") {
+  enable_if =
+      pw_async2_DISPATCHER_BACKEND != "" &&
+      pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" && pw_thread_YIELD_BACKEND != ""
+  sources = [ "simulated_time_provider_test.cc" ]
+  deps = [
+    ":simulated_time_provider",
+    "$dir_pw_chrono:system_clock",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocate_task_test",
@@ -220,6 +276,8 @@ pw_test_group("tests") {
     ":pend_func_task_test",
     ":pendable_as_task_test",
     ":once_sender_test",
+    ":simulated_time_provider_test",
+    ":system_time_provider_test",
   ]
   if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     tests += [

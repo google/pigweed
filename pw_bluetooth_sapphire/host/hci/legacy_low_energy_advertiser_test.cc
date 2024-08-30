@@ -311,7 +311,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
 }
 
 // Test that the second StartAdvertising call (with no TX Power requested)
-// successfully supercedes the first ongoing StartAdvertising call (with TX
+// successfully supersedes the first ongoing StartAdvertising call (with TX
 // Power requested). Validates the advertised data does not include the TX
 // power.
 TEST_F(LegacyLowEnergyAdvertiserTest,
@@ -358,7 +358,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
 }
 
 // Test that the second StartAdvertising call (with TX Power requested)
-// successfully supercedes the first ongoing StartAdvertising call (no TX Power
+// successfully supersedes the first ongoing StartAdvertising call (no TX Power
 // requested). Validates the advertised data includes the TX power.
 TEST_F(LegacyLowEnergyAdvertiserTest,
        StartingWhileStartingTxPowerNotRequestedThenRequested) {

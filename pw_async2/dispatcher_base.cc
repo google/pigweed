@@ -209,20 +209,20 @@ void DispatcherBase::RemoveTaskFromList(Task& task) {
 }
 
 void DispatcherBase::RemoveWokenTaskLocked(Task& task) {
-  RemoveTaskFromList(task);
   if (first_woken_ == &task) {
     first_woken_ = task.next_;
   }
   if (last_woken_ == &task) {
     last_woken_ = task.prev_;
   }
+  RemoveTaskFromList(task);
 }
 
 void DispatcherBase::RemoveSleepingTaskLocked(Task& task) {
-  RemoveTaskFromList(task);
   if (sleeping_ == &task) {
     sleeping_ = task.next_;
   }
+  RemoveTaskFromList(task);
 }
 
 void DispatcherBase::AddTaskToWokenList(Task& task) {

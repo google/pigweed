@@ -270,8 +270,11 @@ class Task {
 /// This identifier may be stored for debugging purposes.
 class WaitReason {
  public:
-  /// Indicates that the wait is happen for an unspecified reason.
+  /// Indicates that the wait is happening for an unspecified reason.
   static WaitReason Unspecified() { return WaitReason(); }
+
+  /// Indicates that the wait is happening until a timeout expires.
+  static WaitReason Timeout() { return WaitReason(); }
 
  private:
   WaitReason() {}

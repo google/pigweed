@@ -169,6 +169,7 @@ cc_library(
         "yield_public_overrides",
     ],
     deps = [
+        "//pw_thread:id",
         "//pw_thread:yield.facade",
         "@freertos",
     ],

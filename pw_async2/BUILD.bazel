@@ -259,3 +259,74 @@ pw_cc_test(
         "//pw_allocator:testing",
     ],
 )
+
+cc_library(
+    name = "time_provider",
+    srcs = [
+        "time_provider.cc",
+    ],
+    hdrs = [
+        "public/pw_async2/time_provider.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":dispatcher",
+        "//pw_containers:intrusive_list",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_toolchain:no_destructor",
+    ],
+)
+
+cc_library(
+    name = "system_time_provider",
+    srcs = [
+        "system_time_provider.cc",
+    ],
+    hdrs = [
+        "public/pw_async2/system_time_provider.h",
+    ],
+    implementation_deps = [
+        "//pw_chrono:system_timer",
+        "//pw_toolchain:no_destructor",
+    ],
+    includes = ["public"],
+    deps = [
+        ":time_provider",
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_test(
+    name = "system_time_provider_test",
+    srcs = [
+        "system_time_provider_test.cc",
+    ],
+    deps = [
+        ":system_time_provider",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "simulated_time_provider",
+    hdrs = [
+        "public/pw_async2/simulated_time_provider.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":time_provider",
+        "//pw_sync:interrupt_spin_lock",
+    ],
+)
+
+pw_cc_test(
+    name = "simulated_time_provider_test",
+    srcs = [
+        "simulated_time_provider_test.cc",
+    ],
+    deps = [
+        ":simulated_time_provider",
+        "//pw_chrono:system_clock",
+        "//pw_unit_test",
+    ],
+)

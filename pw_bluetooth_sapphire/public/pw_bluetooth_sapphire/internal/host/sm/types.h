@@ -138,7 +138,7 @@ class SecurityProperties final {
   // same type as before it was changed, which this has no knowledge of.
   //
   // Legacy pairing keys will be considered to have security level kNoSecurity
-  // because legacy pairing is superceded by Secure Simple Pairing in Core Spec
+  // because legacy pairing is superseded by Secure Simple Pairing in Core Spec
   // v2.1 + EDR in 2007. Backwards compatiblity is optional per v5.0, Vol 3,
   // Part C, Section 5. Furthermore, the last Core Spec with only legacy pairing
   // (v2.0 + EDR) was withdrawn by Bluetooth SIG on 2019-01-28.

@@ -83,6 +83,11 @@ TEST(Dispatcher, RunUntilStalledDoesNotPendSleepingTask) {
   EXPECT_EQ(task.destroyed, 1);
 }
 
+TEST(Dispatcher, RunUntilStalledWithNoTasksReturnsReady) {
+  Dispatcher dispatcher;
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+}
+
 TEST(Dispatcher, RunUntilCompletePendsMultipleTasks) {
   class CounterTask : public Task {
    public:

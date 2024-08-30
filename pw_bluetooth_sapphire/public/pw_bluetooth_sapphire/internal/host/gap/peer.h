@@ -352,7 +352,7 @@ class Peer final {
     // Buffer containing advertising and scan response data appended to each
     // other. NOTE: Repeated fields in advertising and scan response data are
     // not deduplicated, so duplicate entries are possible. It is OK to assume
-    // that fields repeated in scan response data supercede those in the
+    // that fields repeated in scan response data supersede those in the
     // original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
     // Time when advertising data was last updated and successfully parsed.

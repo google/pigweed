@@ -50,7 +50,7 @@ pw_facade("system_timer") {
   public = [ "public/pw_chrono/system_timer.h" ]
   public_deps = [
     ":system_clock",
-    "$dir_pw_function",
+    dir_pw_function,
   ]
 }
 
@@ -86,7 +86,7 @@ pw_test("system_clock_facade_test") {
   ]
   deps = [
     ":system_clock",
-    "$dir_pw_preprocessor",
+    dir_pw_preprocessor,
     pw_chrono_SYSTEM_CLOCK_BACKEND,
   ]
 }

@@ -191,4 +191,70 @@ if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
   )
 endif()
 
+
+pw_add_library(pw_async2.time_provider STATIC
+  HEADERS
+    public/pw_async2/time_provider.h
+  SOURCES
+    time_provider.cc
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_containers.intrusive_list
+    pw_sync.interrupt_spin_lock
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_library(pw_async2.system_time_provider STATIC
+  HEADERS
+    public/pw_async2/system_time_provider.h
+  SOURCES
+    system_time_provider.cc
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_async2.time_provider
+  PRIVATE_DEPS
+    pw_chrono.system_timer
+    pw_toolchain.no_destructor
+  PUBLIC_INCLUDES
+    public
+)
+
+if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
+  pw_add_test(pw_async2.system_time_provider_test
+    SOURCES
+      system_time_provider_test.cc
+    PRIVATE_DEPS
+      pw_async2.system_time_provider
+      pw_chrono.system_clock
+    GROUPS
+      modules
+      pw_async2
+  )
+endif()
+
+pw_add_library(pw_async2.simulated_time_provider INTERFACE
+  HEADERS
+    public/pw_async2/simulated_time_provider.h
+  PUBLIC_DEPS
+    pw_async2.time_provider
+    pw_sync.interrupt_spin_lock
+)
+
+if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
+  pw_add_test(pw_async2.simulated_time_provider_test
+    SOURCES
+      simulated_time_provider_test.cc
+    PRIVATE_DEPS
+      pw_async2.simulated_time_provider
+      pw_chrono.system_clock
+    GROUPS
+      modules
+      pw_async2
+  )
+endif()
+
+
 add_subdirectory(examples)
