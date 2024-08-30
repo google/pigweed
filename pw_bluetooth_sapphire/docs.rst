@@ -123,13 +123,32 @@ Example:
 
 Run Fuchsia presubmit tests
 ===========================
-Presubmits for bt-host are captured in a dedicated separate builder, rather than
-existing ones such as ``pigweed-linux-bazel-noenv``.
-These presubmits can be replicated with the following command:
+Presubmits for bt-host are captured in a dedicated separate builder,
+``pigweed-linux-bazel-bthost``, rather than existing ones such as
+``pigweed-linux-bazel-noenv``.
+
+On the builder invocation console, there are a number of useful artifacts for
+examining the environment during test failures. Here are some notable examples:
+
+* ``bt_host_package`` stdout: Combined stdout/stderr of the entire test orchestration and execution.
+* ``subrunner.log``: Combined test stdout/stderr of test execution only.
+* ``target.log``: The ffx target device's logs.
+* ``ffx_config.txt``: The ffx configuration used for provisioning and testing.
+* ``ffx.log``: The ffx host logs.
+* ``ffx_daemon.log``: The ffx daemon's logs.
+* ``env.dump.txt``: The environment variables when test execution started.
+* ``ssh.log``: The ssh logs when communicating with the target device.
+
+These presubmits can be also be replicated locally with the following command:
 
 .. code-block::
 
    bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia:infra.test_all
+
+.. note::
+   Existing package servers must be stopped before running this command. To
+   check for any existing package servers run ``lsof -i :8083`` and make sure
+   each of those processes are killed.
 
 .. note::
    You do not need to start an emulator beforehand to to run all tests this way.
