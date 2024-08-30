@@ -20,3 +20,5 @@ deps:
 compatible:
   org: "Google"
   part: "pigweed"
+supported-buses:
+  - "i2c"

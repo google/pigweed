@@ -36,9 +36,10 @@ class ValidatorTest(unittest.TestCase):
     def test_invalid_compatible_type(self) -> None:
         """Check that incorrect type of 'compatible' throws exception"""
         self._check_with_exception(
-            metadata={"compatible": {}},
+            metadata={"compatible": {}, "supported-buses": ["i2c"]},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML:\ncompatible: {}"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: {}\n"
+                + "supported-buses:\n- i2c"
             ),
             cause_substrings=[
                 "'org' is a required property",
@@ -46,27 +47,68 @@ class ValidatorTest(unittest.TestCase):
         )
 
         self._check_with_exception(
-            metadata={"compatible": []},
+            metadata={"compatible": [], "supported-buses": ["i2c"]},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML:\ncompatible: []"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: []\n"
+                + "supported-buses:\n- i2c"
             ),
             cause_substrings=["[] is not of type 'object'"],
         )
 
         self._check_with_exception(
-            metadata={"compatible": 1},
+            metadata={"compatible": 1, "supported-buses": ["i2c"]},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML:\ncompatible: 1"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: 1\n"
+                + "supported-buses:\n- i2c"
             ),
             cause_substrings=["1 is not of type 'object'"],
         )
 
         self._check_with_exception(
-            metadata={"compatible": ""},
+            metadata={"compatible": "", "supported-buses": ["i2c"]},
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML:\ncompatible: ''"
+                "ERROR: Malformed sensor metadata YAML:\ncompatible: ''\n"
+                + "supported-buses:\n- i2c"
             ),
             cause_substrings=[" is not of type 'object'"],
+        )
+
+    def test_invalid_supported_buses(self) -> None:
+        """
+        Check that invalid or missing supported-buses cause an error
+        """
+        self._check_with_exception(
+            metadata={"compatible": {"org": "Google", "part": "Pigweed"}},
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML:\ncompatible:\n"
+                + "  org: Google\n  part: Pigweed"
+            ),
+            cause_substrings=[],
+        )
+
+        self._check_with_exception(
+            metadata={
+                "compatible": {"org": "Google", "part": "Pigweed"},
+                "supported-buses": [],
+            },
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML:\ncompatible:\n"
+                + "  org: Google\n  part: Pigweed\nsupported-buses: []"
+            ),
+            cause_substrings=[],
+        )
+
+        self._check_with_exception(
+            metadata={
+                "compatible": {"org": "Google", "part": "Pigweed"},
+                "supported-buses": ["not-a-bus"],
+            },
+            exception_string=(
+                "ERROR: Malformed sensor metadata YAML:\ncompatible:\n"
+                + "  org: Google\n  part: Pigweed\nsupported-buses:\n"
+                + "- not-a-bus"
+            ),
+            cause_substrings=[],
         )
 
     def test_empty_dependency_list(self) -> None:
@@ -78,6 +120,7 @@ class ValidatorTest(unittest.TestCase):
             "sensors": {
                 "google,foo": {
                     "compatible": {"org": "google", "part": "foo"},
+                    "supported-buses": ["i2c"],
                     "description": "",
                     "channels": {},
                     "attributes": [],
@@ -91,12 +134,16 @@ class ValidatorTest(unittest.TestCase):
         }
         metadata = {
             "compatible": {"org": "google", "part": "foo"},
+            "supported-buses": ["i2c"],
             "deps": [],
         }
         result = Validator().validate(metadata=metadata)
         self.assertEqual(result, expected)
 
-        metadata = {"compatible": {"org": "google", "part": "foo"}}
+        metadata = {
+            "compatible": {"org": "google", "part": "foo"},
+            "supported-buses": ["i2c"],
+        }
         result = Validator().validate(metadata=metadata)
         self.assertEqual(result, expected)
 
@@ -109,6 +156,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
+                "supported-buses": ["i2c"],
                 "deps": ["test.yaml"],
             },
             exception_string="Failed to find test.yaml using search paths:",
@@ -123,6 +171,7 @@ class ValidatorTest(unittest.TestCase):
         self._check_with_exception(
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
+                "supported-buses": ["i2c"],
                 "channels": {"bar": []},
             },
             exception_string="Failed to find a definition for 'bar', did"
@@ -185,6 +234,7 @@ class ValidatorTest(unittest.TestCase):
         metadata = Validator(include_paths=[dep_filename.parent]).validate(
             metadata={
                 "compatible": {"org": "google", "part": "foo"},
+                "supported-buses": ["i2c"],
                 "deps": [dep_filename.name],
                 "attributes": [
                     {
@@ -269,6 +319,7 @@ class ValidatorTest(unittest.TestCase):
                             "org": "google",
                             "part": "foo",
                         },
+                        "supported-buses": ["i2c"],
                         "attributes": [
                             {
                                 "attribute": "sample_rate",

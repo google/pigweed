@@ -78,6 +78,8 @@ class Validator:
           compatible:
             org: "Bosch"
             part: "BMA4xx
+          supported-buses:
+            - i2c
           channels:
             acceleration: []
             die_temperature: []
@@ -130,11 +132,13 @@ class Validator:
         self._resolve_triggers(metadata=metadata, out=result)
 
         compatible = metadata.pop("compatible")
+        supported_buses = metadata.pop("supported-buses")
         channels = metadata.pop("channels")
         attributes = metadata.pop("attributes")
         triggers = metadata.pop("triggers")
         result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
             "compatible": compatible,
+            "supported-buses": supported_buses,
             "channels": channels,
             "attributes": attributes,
             "triggers": triggers,

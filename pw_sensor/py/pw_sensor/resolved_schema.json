@@ -148,6 +148,17 @@
               "type": "string",
               "description": "A description of the sensor"
             },
+            "supported-buses": {
+              "type": "array",
+              "description": "One or more buses which this sensor driver supports",
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "i2c",
+                  "spi"
+                ]
+              }
+            },
             "channels": {
               "type": "object",
               "description": "A map of channels supported by this sensor",

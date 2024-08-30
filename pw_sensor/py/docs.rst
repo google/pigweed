@@ -33,6 +33,9 @@ sensor using the `metadata_schema.json`_ format, e.g.:
    compatible:
       org: "Bosch"
       part: "BMA4xx"
+   supported-buses:
+      - i2c
+      - spi
    channels:
       acceleration: []
       die_temperature: []
@@ -54,6 +57,7 @@ When describing a sensor from the user's perspective, there are 3 primary points
 of interaction:
 
 #. compatible descriptor
+#. supported buses
 #. channels
 #. attributes
 #. triggers
@@ -72,6 +76,12 @@ Both *channels* and *attributes* covered in :ref:`seed-0120`, while the
 *compatible* descriptor allows us to have a unique identifier for each sensor.
 Next, we need a way to describe a sensor in a platform and language agnostic
 way.
+
+What are supported buses?
+=========================
+Currently, pw_sensor supports 2 types of sensor buses: i2c and spi. Each sensor
+must list at least 1 supported bus. Additional buses may be added as well as
+support for custom bus descriptors in downstream projects.
 
 What are channels?
 ==================
@@ -214,6 +224,9 @@ implementing this channel would provide a definition file:
    compatible:
       org: "myorg"
       part: "cakevision"
+   supported-buses:
+      - i2c
+      - spi
    channels:
       cakes: []
       cakes_small: []

@@ -356,6 +356,7 @@ class SensorSpec:
 
     description: str
     compatible: CompatibleSpec
+    supported_buses: List[str]
     attributes: List[SensorAttributeSpec]
     channels: dict[str, List[ChannelSpec]]
     triggers: List[Any]
@@ -731,6 +732,18 @@ def is_list_type(t) -> bool:
     return origin is list or (origin is list and typing.get_args(t) == ())
 
 
+def is_primitive(value):
+    """Checks if the given value is of a primitive type.
+
+    Args:
+        value: The value to check.
+
+    Returns:
+        True if the value is of a primitive type, False otherwise.
+    """
+    return isinstance(value, (int, float, complex, str, bool))
+
+
 def create_dataclass_from_dict(cls, data, indent: int = 0):
     """Recursively creates a dataclass instance from a nested dictionary."""
 
@@ -746,13 +759,21 @@ def create_dataclass_from_dict(cls, data, indent: int = 0):
             )
         return result
 
+    if is_primitive(data):
+        return data
+
     for field in fields(cls):
-        field_value = data[field.name]
+        field_value = data.get(field.name)
+        if field_value is None:
+            field_value = data.get(field.name.replace('_', '-'))
+
+        assert field_value is not None
 
         # We need to check if the field is a List, dictionary, or another
         # dataclass. If it is, recurse.
         if is_list_type(field.type):
             item_type = typing.get_args(field.type)[0]
+            print((" " * indent) + str(item_type), file=sys.stderr)
             field_value = [
                 create_dataclass_from_dict(item_type, item, indent + 2)
                 for item in field_value
