@@ -33,7 +33,7 @@ fuchsia_cc_test(
 fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "gatt_tests",
-    fuchsia_api_level = "22",
+    fuchsia_api_level = "23",
     tags = ["manual"],
     unit_tests = [
         ":gatt_test",

@@ -37,7 +37,7 @@ fuchsia_cc_test(
 fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "sdp_tests",
-    fuchsia_api_level = "22",
+    fuchsia_api_level = "23",
     tags = ["manual"],
     unit_tests = [
         ":sdp_test",

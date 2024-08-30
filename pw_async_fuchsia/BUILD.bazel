@@ -112,7 +112,7 @@ fuchsia_cc_test(
 fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "pw_async_fuchsia_tests",
-    fuchsia_api_level = "22",
+    fuchsia_api_level = "23",
     unit_tests = [":pw_async_fuchsia_test"],
 )
 

@@ -48,7 +48,7 @@ fuchsia_cc_test(
 fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "zircon_random_generator_tests",
-    fuchsia_api_level = "22",
+    fuchsia_api_level = "23",
     tags = ["manual"],
     unit_tests = [":zircon_random_generator_test"],
 )
