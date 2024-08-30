@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -20,42 +20,24 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 py_library(
-    name = "pw_hdlc",
+    name = "pw_stream",
     srcs = [
-        "pw_hdlc/__init__.py",
-        "pw_hdlc/decode.py",
-        "pw_hdlc/encode.py",
-        "pw_hdlc/protocol.py",
-        "pw_hdlc/rpc.py",
+        "pw_stream/__init__.py",
+        "pw_stream/stream_readers.py",
     ],
     imports = ["."],
     deps = [
-        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
-        "//pw_rpc/py:pw_rpc",
-        "//pw_status/py:pw_status",
-        "//pw_stream/py:pw_stream",
+        "@python_packages//pyserial",
     ],
 )
 
 pw_py_test(
-    name = "encode_test",
+    name = "stream_readers_test",
     size = "small",
     srcs = [
-        "encode_test.py",
+        "stream_readers_test.py",
     ],
     deps = [
-        ":pw_hdlc",
-    ],
-)
-
-pw_py_test(
-    name = "decode_test",
-    size = "small",
-    srcs = [
-        "decode_test.py",
-    ],
-    deps = [
-        ":pw_hdlc",
-        "//pw_build/py:pw_build",
+        ":pw_stream",
     ],
 )

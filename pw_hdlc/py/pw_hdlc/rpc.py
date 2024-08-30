@@ -15,19 +15,12 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
-import os
-import platform
 import queue
-import select
 import sys
 import threading
 import time
-import socket
-import subprocess
 from typing import (
     Any,
     BinaryIO,
@@ -36,25 +29,40 @@ from typing import (
     Sequence,
     TypeVar,
 )
-import warnings
 
-import serial
-
-from pw_protobuf_compiler import python_protos
 import pw_rpc
-from pw_rpc import callback_client
-
+from pw_rpc import client_utils
 from pw_hdlc.decode import Frame, FrameDecoder
 from pw_hdlc import encode
+from pw_stream import stream_readers
 
 _LOG = logging.getLogger('pw_hdlc.rpc')
-
-STDOUT_ADDRESS = 1
-DEFAULT_ADDRESS = ord('R')
-DEFAULT_CHANNEL_ID = 1
 _VERBOSE = logging.DEBUG - 1
 
 
+# Aliases for objects moved to their proper place in pw_rpc formerly defined
+# here. This is for backwards compatibility.
+CancellableReader = stream_readers.CancellableReader
+SelectableReader = stream_readers.SelectableReader
+SocketReader = stream_readers.SocketReader
+SerialReader = stream_readers.SerialReader
+DataReaderAndExecutor = stream_readers.DataReaderAndExecutor
+PathsModulesOrProtoLibrary = client_utils.PathsModulesOrProtoLibrary
+RpcClient = client_utils.RpcClient
+NoEncodingSingleChannelRpcClient = client_utils.NoEncodingSingleChannelRpcClient
+SocketSubprocess = stream_readers.SocketSubprocess
+FrameTypeT = TypeVar('FrameTypeT')
+
+
+# Default values for channel using HDLC encoding.
+DEFAULT_CHANNEL_ID = 1
+DEFAULT_ADDRESS = ord('R')
+STDOUT_ADDRESS = 1
+
+FrameHandlers = dict[int, Callable[[Frame], Any]]
+
+
+# Default channel output for using HDLC encoding.
 def channel_output(
     writer: Callable[[bytes], Any],
     address: int = DEFAULT_ADDRESS,
@@ -82,228 +90,9 @@ def channel_output(
     return write_hdlc
 
 
-FrameHandlers = dict[int, Callable[[Frame], Any]]
-FrameTypeT = TypeVar('FrameTypeT')
-
-
-class CancellableReader(ABC):
-    """Wraps communication interfaces used for reading incoming data with the
-    guarantee that the read request can be cancelled. Derived classes must
-    implement the :py:func:`cancel_read()` method.
-
-    Cancelling a read invalidates ongoing and future reads. The
-    :py:func:`cancel_read()` method can only be called once.
-    """
-
-    def __init__(self, base_obj: Any, *read_args, **read_kwargs):
-        """
-        Args:
-            base_obj: Object that offers a ``read()`` method with optional args
-                and kwargs.
-            read_args: Arguments for ``base_obj.read()`` function.
-            read_kwargs: Keyword arguments for ``base_obj.read()`` function.
-        """
-        self._base_obj = base_obj
-        self._read_args = read_args
-        self._read_kwargs = read_kwargs
-
-    def __enter__(self) -> CancellableReader:
-        return self
-
-    def __exit__(self, *exc_info) -> None:
-        self.cancel_read()
-
-    def read(self) -> bytes:
-        """Reads bytes that contain parts of or full RPC packets."""
-        return self._base_obj.read(*self._read_args, **self._read_kwargs)
-
-    @abstractmethod
-    def cancel_read(self) -> None:
-        """Cancels a blocking read request and all future reads.
-
-        Can only be called once.
-        """
-
-
-class SelectableReader(CancellableReader):
-    """
-    Wraps interfaces that work with ``select()`` to signal when data is
-    received.
-
-    These interfaces must provide a ``fileno()`` method.
-    WINDOWS ONLY: Only sockets that originate from WinSock can be wrapped. File
-    objects are not acceptable.
-    """
-
-    _STOP_CMD = b'STOP'
-
-    def __init__(self, base_obj: Any, *read_args, **read_kwargs):
-        assert hasattr(base_obj, 'fileno')
-        if platform.system() == 'Windows' and not isinstance(
-            base_obj, socket.socket
-        ):
-            raise ValueError('Only socket objects are selectable on Windows')
-        super().__init__(base_obj, *read_args, **read_kwargs)
-        self._cancel_signal_pipe_r_fd, self._cancel_signal_pipe_w_fd = os.pipe()
-        self._waiting_for_read_or_cancel_lock = threading.Lock()
-
-    def __exit__(self, *exc_info) -> None:
-        self.cancel_read()
-        with self._waiting_for_read_or_cancel_lock:
-            if self._cancel_signal_pipe_r_fd > 0:
-                os.close(self._cancel_signal_pipe_r_fd)
-                self._cancel_signal_pipe_r_fd = -1
-
-    def read(self) -> bytes:
-        if self._wait_for_read_or_cancel():
-            return super().read()
-        return b''
-
-    def _wait_for_read_or_cancel(self) -> bool:
-        """Returns ``True`` when ready to read."""
-        with self._waiting_for_read_or_cancel_lock:
-            if self._base_obj.fileno() < 0 or self._cancel_signal_pipe_r_fd < 0:
-                # The interface might've been closed already.
-                return False
-            ready_to_read, _, exception_list = select.select(
-                [self._cancel_signal_pipe_r_fd, self._base_obj],
-                [],
-                [self._base_obj],
-            )
-            if self._cancel_signal_pipe_r_fd in ready_to_read:
-                # A signal to stop the reading process was received.
-                os.read(self._cancel_signal_pipe_r_fd, len(self._STOP_CMD))
-                os.close(self._cancel_signal_pipe_r_fd)
-                self._cancel_signal_pipe_r_fd = -1
-                return False
-
-            if exception_list:
-                _LOG.error('Error reading interface')
-                return False
-        return True
-
-    def cancel_read(self) -> None:
-        if self._cancel_signal_pipe_w_fd > 0:
-            os.write(self._cancel_signal_pipe_w_fd, self._STOP_CMD)
-            os.close(self._cancel_signal_pipe_w_fd)
-            self._cancel_signal_pipe_w_fd = -1
-
-
-class SocketReader(SelectableReader):
-    """Wraps a socket ``recv()`` function."""
-
-    def __init__(self, base_obj: socket.socket, *read_args, **read_kwargs):
-        super().__init__(base_obj, *read_args, **read_kwargs)
-
-    def read(self) -> bytes:
-        if self._wait_for_read_or_cancel():
-            return self._base_obj.recv(*self._read_args, **self._read_kwargs)
-        return b''
-
-    def __exit__(self, *exc_info) -> None:
-        self.cancel_read()
-        self._base_obj.close()
-
-
-class SerialReader(CancellableReader):
-    """Wraps a :py:class:`serial.Serial` object."""
-
-    def __init__(self, base_obj: serial.Serial, *read_args, **read_kwargs):
-        super().__init__(base_obj, *read_args, **read_kwargs)
-
-    def cancel_read(self) -> None:
-        self._base_obj.cancel_read()
-
-    def __exit__(self, *exc_info) -> None:
-        self.cancel_read()
-        self._base_obj.close()
-
-
-class DataReaderAndExecutor:
-    """Reads incoming bytes, data processor that delegates frame handling.
-
-    Executing callbacks in a ``ThreadPoolExecutor`` decouples reading the input
-    stream from handling the data. That way, if a handler function takes a
-    long time or crashes, this reading thread is not interrupted.
-    """
-
-    def __init__(
-        self,
-        reader: CancellableReader,
-        on_read_error: Callable[[Exception], None],
-        data_processor: Callable[[bytes], Iterable[FrameTypeT]],
-        frame_handler: Callable[[FrameTypeT], None],
-        handler_threads: int | None = 1,
-    ):
-        """Creates the data reader and frame delegator.
-
-        Args:
-            reader: Reads incoming bytes from the given transport, blocks until
-              data is available or an exception is raised. Otherwise the reader
-              will exit.
-            on_read_error: Called when there is an error reading incoming bytes.
-            data_processor: Processes read bytes and returns a frame-like object
-              that the frame_handler can process.
-            frame_handler: Handles a received frame.
-            handler_threads: The number of threads in the executor pool.
-        """
-
-        self._reader = reader
-        self._on_read_error = on_read_error
-        self._data_processor = data_processor
-        self._frame_handler = frame_handler
-        self._handler_threads = handler_threads
-
-        self._reader_thread = threading.Thread(target=self._run)
-        self._reader_thread_stop = threading.Event()
-
-    def start(self) -> None:
-        """Starts the reading process."""
-        _LOG.debug('Starting read process')
-        self._reader_thread_stop.clear()
-        self._reader_thread.start()
-
-    def stop(self) -> None:
-        """Stops the reading process.
-
-        This requests that the reading process stop and waits
-        for the background thread to exit.
-        """
-        _LOG.debug('Stopping read process')
-        self._reader_thread_stop.set()
-        self._reader.cancel_read()
-        self._reader_thread.join(30)
-        if self._reader_thread.is_alive():
-            warnings.warn(
-                'Timed out waiting for read thread to terminate.\n'
-                'Tip: Use a `CancellableReader` to cancel reads.'
-            )
-
-    def _run(self) -> None:
-        """Reads raw data in a background thread."""
-        with ThreadPoolExecutor(max_workers=self._handler_threads) as executor:
-            while not self._reader_thread_stop.is_set():
-                try:
-                    data = self._reader.read()
-                except Exception as exc:  # pylint: disable=broad-except
-                    # Don't report the read error if the thread is stopping.
-                    # The stream or device backing _read was likely closed,
-                    # so errors are expected.
-                    if not self._reader_thread_stop.is_set():
-                        self._on_read_error(exc)
-                    _LOG.debug(
-                        'DataReaderAndExecutor thread exiting due to exception',
-                        exc_info=exc,
-                    )
-                    return
-
-                if not data:
-                    continue
-
-                _LOG.log(_VERBOSE, 'Read %2d B: %s', len(data), data)
-
-                for frame in self._data_processor(data):
-                    executor.submit(self._frame_handler, frame)
+def default_channels(write: Callable[[bytes], Any]) -> list[pw_rpc.Channel]:
+    """Default Channel with HDLC encoding."""
+    return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
 
 
 # Writes to stdout by default, but sys.stdout.buffer is not guaranteed to exist
@@ -318,77 +107,7 @@ def write_to_file(
     output.flush()
 
 
-def default_channels(write: Callable[[bytes], Any]) -> list[pw_rpc.Channel]:
-    return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
-
-
-PathsModulesOrProtoLibrary = (
-    Iterable[python_protos.PathOrModule] | python_protos.Library
-)
-
-
-class RpcClient:
-    """An RPC client with configurable incoming data processing."""
-
-    def __init__(
-        self,
-        reader_and_executor: DataReaderAndExecutor,
-        paths_or_modules: PathsModulesOrProtoLibrary,
-        channels: Iterable[pw_rpc.Channel],
-        client_impl: pw_rpc.client.ClientImpl | None = None,
-    ):
-        """Creates an RPC client.
-
-        Args:
-          reader_and_executor: ``DataReaderAndExecutor`` instance.
-          paths_or_modules: paths to .proto files or proto modules.
-          channels: RPC channels to use for output.
-          client_impl: The RPC client implementation. Defaults to the callback
-            client implementation if not provided.
-        """
-        if isinstance(paths_or_modules, python_protos.Library):
-            self.protos = paths_or_modules
-        else:
-            self.protos = python_protos.Library.from_paths(paths_or_modules)
-
-        if client_impl is None:
-            client_impl = callback_client.Impl()
-
-        self.client = pw_rpc.Client.from_modules(
-            client_impl, channels, self.protos.modules()
-        )
-
-        # Start background thread that reads and processes RPC packets.
-        self._reader_and_executor = reader_and_executor
-        self._reader_and_executor.start()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc_info):
-        self.close()
-
-    def close(self) -> None:
-        self._reader_and_executor.stop()
-
-    def rpcs(self, channel_id: int | None = None) -> Any:
-        """Returns object for accessing services on the specified channel.
-
-        This skips some intermediate layers to make it simpler to invoke RPCs
-        from an ``HdlcRpcClient``. If only one channel is in use, the channel ID
-        is not necessary.
-        """
-        if channel_id is None:
-            return next(iter(self.client.channels())).rpcs
-
-        return self.client.channel(channel_id).rpcs
-
-    def handle_rpc_packet(self, packet: bytes) -> None:
-        if not self.client.process_packet(packet):
-            _LOG.error('Packet not handled by RPC client: %s', packet)
-
-
-class HdlcRpcClient(RpcClient):
+class HdlcRpcClient(client_utils.RpcClient):
     """An RPC client configured to run over HDLC.
 
     Expects HDLC frames to have addresses that dictate how to parse the HDLC
@@ -397,8 +116,8 @@ class HdlcRpcClient(RpcClient):
 
     def __init__(
         self,
-        reader: CancellableReader,
-        paths_or_modules: PathsModulesOrProtoLibrary,
+        reader: stream_readers.CancellableReader,
+        paths_or_modules: client_utils.PathsModulesOrProtoLibrary,
         channels: Iterable[pw_rpc.Channel],
         output: Callable[[bytes], Any] = write_to_file,
         client_impl: pw_rpc.client.ClientImpl | None = None,
@@ -464,102 +183,12 @@ class HdlcRpcClient(RpcClient):
         def on_read_error(exc: Exception) -> None:
             _LOG.error('data reader encountered an error', exc_info=exc)
 
-        reader_and_executor = DataReaderAndExecutor(
+        reader_and_executor = stream_readers.DataReaderAndExecutor(
             reader, on_read_error, decoder.process_valid_frames, handle_frame
         )
         super().__init__(
             reader_and_executor, paths_or_modules, channels, client_impl
         )
-
-
-class NoEncodingSingleChannelRpcClient(RpcClient):
-    """An RPC client without any frame encoding with a single channel output.
-
-    The caveat is that the provided read function must read entire frames.
-    """
-
-    def __init__(
-        self,
-        reader: CancellableReader,
-        paths_or_modules: PathsModulesOrProtoLibrary,
-        channel: pw_rpc.Channel,
-        client_impl: pw_rpc.client.ClientImpl | None = None,
-    ):
-        """Creates an RPC client over a single channel with no frame encoding.
-
-        Args:
-          reader: Readable object used to receive RPC packets.
-          paths_or_modules: paths to .proto files or proto modules.
-          channel: RPC channel to use for output.
-          client_impl: The RPC Client implementation. Defaults to the callback
-            client implementation if not provided.
-        """
-
-        def process_data(data: bytes):
-            yield data
-
-        def on_read_error(exc: Exception) -> None:
-            _LOG.error('data reader encountered an error', exc_info=exc)
-
-        reader_and_executor = DataReaderAndExecutor(
-            reader, on_read_error, process_data, self.handle_rpc_packet
-        )
-        super().__init__(
-            reader_and_executor, paths_or_modules, [channel], client_impl
-        )
-
-
-def _try_connect(port: int, attempts: int = 10) -> socket.socket:
-    """Tries to connect to the specified port up to the given number of times.
-
-    This is helpful when connecting to a process that was started by this
-    script. The process may need time to start listening for connections, and
-    that length of time can vary. This retries with a short delay rather than
-    having to wait for the worst case delay every time.
-    """
-    timeout_s = 0.001
-    while True:
-        time.sleep(timeout_s)
-
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(('localhost', port))
-            return sock
-        except ConnectionRefusedError:
-            sock.close()
-            attempts -= 1
-            if attempts <= 0:
-                raise
-
-            timeout_s *= 2
-
-
-class SocketSubprocess:
-    """Executes a subprocess and connects to it with a socket."""
-
-    def __init__(self, command: Sequence, port: int) -> None:
-        self._server_process = subprocess.Popen(command, stdin=subprocess.PIPE)
-        self.stdin = self._server_process.stdin
-
-        try:
-            self.socket: socket.socket = _try_connect(port)  # 🧦
-        except:
-            self._server_process.terminate()
-            self._server_process.communicate()
-            raise
-
-    def close(self) -> None:
-        try:
-            self.socket.close()
-        finally:
-            self._server_process.terminate()
-            self._server_process.communicate()
-
-    def __enter__(self) -> SocketSubprocess:
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.close()
 
 
 class HdlcRpcLocalServerAndClient:
@@ -572,14 +201,14 @@ class HdlcRpcLocalServerAndClient:
         self,
         server_command: Sequence,
         port: int,
-        protos: PathsModulesOrProtoLibrary,
+        protos: client_utils.PathsModulesOrProtoLibrary,
         *,
         incoming_processor: pw_rpc.ChannelManipulator | None = None,
         outgoing_processor: pw_rpc.ChannelManipulator | None = None,
     ) -> None:
         """Creates a new ``HdlcRpcLocalServerAndClient``."""
 
-        self.server = SocketSubprocess(server_command, port)
+        self.server = stream_readers.SocketSubprocess(server_command, port)
 
         self._bytes_queue: queue.SimpleQueue[bytes] = queue.SimpleQueue()
         self._read_thread = threading.Thread(target=self._read_from_socket)
@@ -594,7 +223,7 @@ class HdlcRpcLocalServerAndClient:
             outgoing_processor.send_packet = self.channel_output
             self.channel_output = outgoing_processor
 
-        class QueueReader(CancellableReader):
+        class QueueReader(stream_readers.CancellableReader):
             def read(self) -> bytes:
                 try:
                     return self._base_obj.get(timeout=3)

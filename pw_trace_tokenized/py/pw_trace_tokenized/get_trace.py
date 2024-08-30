@@ -36,12 +36,8 @@ from typing import Collection, Iterable, Iterator
 import serial
 from pw_tokenizer import database
 from pw_trace import trace
-from pw_hdlc.rpc import (
-    HdlcRpcClient,
-    default_channels,
-    SerialReader,
-    SocketReader,
-)
+from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_stream import stream_readers
 from pw_trace_tokenized import trace_tokenized
 
 _LOG = logging.getLogger('pw_trace_tokenizer')
@@ -110,12 +106,14 @@ def get_hdlc_rpc_client(
     # use it so it isn't specific to HDLC
     if socket_addr is None:
         serial_device = serial.Serial(device, baudrate, timeout=1)
-        reader = SerialReader(serial_device)
+        reader = stream_readers.SerialReader(serial_device)
         write_function = serial_device.write
     else:
         try:
             socket_device = SocketClientImpl(socket_addr)
-            reader = SocketReader(socket_device.socket, PW_RPC_MAX_PACKET_SIZE)
+            reader = stream_readers.SocketReader(
+                socket_device.socket, PW_RPC_MAX_PACKET_SIZE
+            )
             write_function = socket_device.write
         except ValueError:
             _LOG.exception('Failed to initialize socket at %s', socket_addr)

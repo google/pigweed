@@ -91,6 +91,7 @@ py_library(
     srcs = [
         "pw_rpc/__init__.py",
         "pw_rpc/client.py",
+        "pw_rpc/client_utils.py",
         ":pw_rpc_common_sources",
     ],
     imports = ["."],
@@ -99,6 +100,7 @@ py_library(
         "//pw_protobuf_compiler/py:pw_protobuf_compiler",
         "//pw_rpc:internal_packet_proto_pb2",
         "//pw_status/py:pw_status",
+        "//pw_stream/py:pw_stream",
     ],
 )
 

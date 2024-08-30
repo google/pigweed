@@ -39,6 +39,7 @@ from pw_file import file_pb2
 from pw_log.proto import log_pb2
 from pw_metric_proto import metric_service_pb2
 from pw_rpc import echo_pb2
+from pw_stream import stream_readers
 from pw_thread_protos import thread_snapshot_service_pb2
 from pw_trace_protos import trace_service_pb2
 
@@ -60,7 +61,7 @@ class DeviceConnection:
     """Stores a Device client along with the reader and writer."""
 
     client: pw_device_tracing.DeviceWithTracing | pw_device.Device
-    reader: rpc.SelectableReader | rpc.SerialReader
+    reader: stream_readers.SelectableReader | stream_readers.SerialReader
     writer: Callable[[bytes], int | None]
 
     def __enter__(self):
@@ -190,7 +191,7 @@ def create_device_serial_or_socket_connection(
     protos.append(device_service_pb2)
 
     timestamp_decoder = None
-    reader: rpc.SelectableReader | rpc.SerialReader
+    reader: stream_readers.SelectableReader | stream_readers.SerialReader
 
     if socket_addr is None:
         serial_impl = (
@@ -211,7 +212,7 @@ def create_device_serial_or_socket_connection(
             # https://pythonhosted.org/pyserial/pyserial_api.html#serial.Serial
             timeout=0.1,
         )
-        reader = rpc.SerialReader(serial_device, 8192)
+        reader = stream_readers.SerialReader(serial_device, 8192)
         write = serial_device.write
 
         # Overwrite decoder for serial device.
@@ -241,7 +242,7 @@ def create_device_serial_or_socket_connection(
             socket_device = socket_impl(
                 socket_addr, on_disconnect=disconnect_handler
             )
-            reader = rpc.SelectableReader(socket_device)
+            reader = stream_readers.SelectableReader(socket_device)
             write = socket_device.write
         except ValueError as error:
             raise ValueError(

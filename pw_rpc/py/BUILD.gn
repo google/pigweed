@@ -40,6 +40,7 @@ pw_python_package("py") {
     "pw_rpc/callback_client/errors.py",
     "pw_rpc/callback_client/impl.py",
     "pw_rpc/client.py",
+    "pw_rpc/client_utils.py",
     "pw_rpc/codegen.py",
     "pw_rpc/codegen_nanopb.py",
     "pw_rpc/codegen_pwpb.py",
@@ -72,6 +73,7 @@ pw_python_package("py") {
     "$dir_pw_protobuf/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_status/py",
+    "$dir_pw_stream/py",
   ]
   python_test_deps = [
     "$dir_pw_build/py",

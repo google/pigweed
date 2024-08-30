@@ -21,7 +21,7 @@ import threading
 import time
 import unittest
 
-from pw_hdlc.rpc import RpcClient, HdlcRpcClient, CancellableReader
+from pw_stream import stream_readers
 
 
 class QueueFile:
@@ -201,25 +201,41 @@ class Sentinel:
         return 'Sentinel'
 
 
-class _QueueReader(CancellableReader):
+class _QueueReader(stream_readers.CancellableReader):
     def cancel_read(self) -> None:
         self._base_obj.close()
 
 
-def _get_client(file) -> RpcClient:
-    return HdlcRpcClient(
-        _QueueReader(file),
-        paths_or_modules=[],
-        channels=[],
-    )
+def on_read_error(exc: Exception) -> None:
+    logger = logging.getLogger('pw_stream.stream_readers')
+    logger.error('data reader encountered an error', exc_info=exc)
+
+
+def _null_data_processor(data):
+    del data
+
+
+def _null_frame_handler(frame):
+    del frame
+
+
+class _ScopedReaderAndExecutor(stream_readers.DataReaderAndExecutor):
+    """"""
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *exc_info):
+        self.stop()
 
 
 # This should take <10ms but we'll wait up to 1000x longer.
 _QUEUE_DRAIN_TIMEOUT = 10.0
 
 
-class HdlcRpcClientTest(unittest.TestCase):
-    """Tests the pw_hdlc.rpc.HdlcRpcClient class."""
+class DataReaderAndExecutorTest(unittest.TestCase):
+    """Tests the DataReaderAndExecutor class."""
 
     # NOTE: There is no test here for stream EOF because Serial.read()
     # can return an empty result if configured with timeout != None.
@@ -230,9 +246,14 @@ class HdlcRpcClientTest(unittest.TestCase):
         # See b/293595266.
         file = QueueFile()
 
-        with self.assert_no_hdlc_rpc_error_logs():
+        with self.assert_no_stream_stream_readers_error_logs():
             with file:
-                with _get_client(file):
+                with _ScopedReaderAndExecutor(
+                    reader=_QueueReader(file),
+                    on_read_error=on_read_error,
+                    data_processor=_null_data_processor,
+                    frame_handler=_null_frame_handler,
+                ):
                     # We want to make sure the reader thread is blocked on
                     # read() and doesn't exit immediately.
                     file.put_read_data(b'')
@@ -252,10 +273,15 @@ class HdlcRpcClientTest(unittest.TestCase):
         # See b/293595266.
         file = QueueFile()
 
-        logger = logging.getLogger('pw_hdlc.rpc')
+        logger = logging.getLogger('pw_stream.stream_readers')
         test_exc = Exception('boom')
         with self.assertLogs(logger, level=logging.ERROR) as ctx:
-            with _get_client(file):
+            with _ScopedReaderAndExecutor(
+                reader=_QueueReader(file),
+                on_read_error=on_read_error,
+                data_processor=_null_data_processor,
+                frame_handler=_null_frame_handler,
+            ):
                 # Cause read() to raise an exception. The reader should
                 # handle it by logging it and exiting immediately.
                 file.cause_read_exc(test_exc)
@@ -271,8 +297,8 @@ class HdlcRpcClientTest(unittest.TestCase):
         self.assert_no_background_threads_running()
 
     @contextmanager
-    def assert_no_hdlc_rpc_error_logs(self):
-        logger = logging.getLogger('pw_hdlc.rpc')
+    def assert_no_stream_stream_readers_error_logs(self):
+        logger = logging.getLogger('pw_stream.stream_readers')
         sentinel = Sentinel()
         with self.assertLogs(logger, level=logging.ERROR) as ctx:
             # TODO: b/294861320 - use assertNoLogs() in Python 3.10+

@@ -441,3 +441,14 @@ as well as a basic ``Cursor`` implementation are provided by the
    :maxdepth: 1
 
    Backends <backends>
+
+------
+Python
+------
+There are legacy Python utilities used for reading and writing a serial device
+for RPC purposes.
+
+.. toctree::
+   :hidden:
+
+   Python <py/docs>

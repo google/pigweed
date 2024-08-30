@@ -116,6 +116,7 @@ pw_doc_group("docs") {
     "backends.rst",
     "docs.rst",
   ]
+  group_deps = [ "py:docs" ]
 }
 
 pw_test_group("tests") {

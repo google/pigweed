@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,22 +12,28 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library")
+import("//build_overrides/pigweed.gni")
 
-package(default_visibility = ["//visibility:public"])
+import("$dir_pw_build/python.gni")
+import("$dir_pw_docgen/docs.gni")
 
-py_library(
-    name = "pw_trace_tokenized",
-    srcs = [
-        "pw_trace_tokenized/get_trace.py",
-        "pw_trace_tokenized/trace_tokenized.py",
-    ],
-    imports = ["."],
-    deps = [
-        "//pw_hdlc/py:pw_hdlc",
-        "//pw_stream/py:pw_stream",
-        "//pw_tokenizer/py:pw_tokenizer",
-        "//pw_trace/py:pw_trace",
-        "@python_packages//pyserial",
-    ],
-)
+pw_python_package("py") {
+  generate_setup = {
+    metadata = {
+      name = "pw_stream"
+      version = "0.0.1"
+    }
+  }
+  sources = [
+    "pw_stream/__init__.py",
+    "pw_stream/stream_readers.py",
+  ]
+  tests = [ "stream_readers_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+  other_deps = [ ":py" ]
+}

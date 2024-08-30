@@ -31,6 +31,7 @@ pw_python_package("py") {
   python_deps = [
     "$dir_pw_hdlc/py",
     "$dir_pw_log:protos.python",
+    "$dir_pw_stream/py",
     "$dir_pw_tokenizer/py",
     "$dir_pw_trace/py",
   ]

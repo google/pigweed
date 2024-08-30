@@ -15,6 +15,13 @@ pw_rpc.client
 .. automodule:: pw_rpc.client
   :members: Client, ClientImpl
 
+pw_rpc.client_utils
+===================
+.. automodule:: pw_rpc.client_utils
+  :members:
+    NoEncodingSingleChannelRpcClient,
+    RpcClient,
+
 pw_rpc.callback_client
 ======================
 .. automodule:: pw_rpc.callback_client

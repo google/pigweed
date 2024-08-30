@@ -44,6 +44,7 @@ py_library(
         "//pw_rpc:echo_py_pb2",
         "//pw_rpc/py:pw_rpc",
         "//pw_snapshot/py:pw_snapshot",
+        "//pw_stream/py:pw_stream",
         "//pw_system:device_service_py_pb2",
         "//pw_thread:thread_proto_py_pb2",
         "//pw_thread:thread_snapshot_service_py_pb2",
