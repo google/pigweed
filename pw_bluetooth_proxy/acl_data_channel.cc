@@ -183,6 +183,7 @@ uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
 bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   credit_allocation_mutex_.lock();
   if (proxy_pending_le_acl_packets_ == proxy_max_le_acl_packets_) {
+    PW_LOG_WARN("No ACL send credits available. So will not send.");
     credit_allocation_mutex_.unlock();
     return false;
   }

@@ -175,6 +175,7 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
     acl_send_mutex_.lock();
     std::optional<span<uint8_t>> h4_buff = ReserveH4Buff();
     if (!h4_buff) {
+      PW_LOG_WARN("No H4 buffers available. So will not send.");
       acl_send_mutex_.unlock();
       return pw::Status::Unavailable();
     }
@@ -222,6 +223,7 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
   // destructed, so its release function will clear the corresponding flag in
   // `h4_buff_occupied_`.
   if (!acl_data_channel_.SendAcl(std::move(h4_att_notify))) {
+    // SendAcl function will have logged reason for failure to send..
     return pw::Status::Unavailable();
   }
   return OkStatus();
