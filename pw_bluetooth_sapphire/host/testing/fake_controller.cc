@@ -1786,11 +1786,13 @@ void FakeController::OnWritePageScanType(
 }
 
 void FakeController::OnReadPageScanType() {
-  hci_spec::ReadPageScanTypeReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.page_scan_type = page_scan_type_;
-  RespondWithCommandComplete(hci_spec::kReadPageScanType,
-                             BufferView(&params, sizeof(params)));
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadPageScanTypeCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.page_scan_type().Write(page_scan_type_);
+  RespondWithCommandComplete(pwemb::OpCode::READ_PAGE_SCAN_TYPE, &event_packet);
 }
 
 void FakeController::OnWriteInquiryMode(

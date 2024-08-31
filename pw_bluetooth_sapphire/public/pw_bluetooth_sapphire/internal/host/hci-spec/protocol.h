@@ -389,14 +389,6 @@ constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);
 // Read Page Scan Type (v1.2) (BR/EDR)
 constexpr OpCode kReadPageScanType = ControllerAndBasebandOpCode(0x0046);
 
-struct ReadPageScanTypeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // See enum class PageScanType in hci_constants.h for possible values.
-  pw::bluetooth::emboss::PageScanType page_scan_type;
-} __attribute__((packed));
-
 // ====================================
 // Write Page Scan Type (v1.2) (BR/EDR)
 constexpr OpCode kWritePageScanType = ControllerAndBasebandOpCode(0x0047);
