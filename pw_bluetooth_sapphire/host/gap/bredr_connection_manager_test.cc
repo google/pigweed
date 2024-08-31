@@ -581,6 +581,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
         l2cap_.get(),
         /*use_interlaced_scan=*/true,
         /*local_secure_connections_supported=*/true,
+        /*legacy_pairing_enabled=*/false,
         dispatcher());
 
     RunUntilIdle();
@@ -916,7 +917,78 @@ class BrEdrConnectionManagerTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
 };
 
-using BrEdrConnectionManagerLegacyPairingTest = BrEdrConnectionManagerTest;
+class BrEdrConnectionManagerLegacyPairingTest
+    : public BrEdrConnectionManagerTest {
+ public:
+  void SetUp() override {
+    TestingBase::SetUp();
+    InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
+
+    peer_cache_ = std::make_unique<PeerCache>(dispatcher());
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(dispatcher());
+
+    // Respond to BrEdrConnectionManager controller setup with success.
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::WritePageTimeoutPacket(static_cast<uint16_t>(
+                              pw::bluetooth::emboss::PageTimeout::DEFAULT)),
+                          &kWritePageTimeoutRsp);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::WritePinTypePacket(static_cast<uint8_t>(
+                              pw::bluetooth::emboss::PinType::VARIABLE)),
+                          &kWritePinTypeRsp);
+
+    connection_manager_ = std::make_unique<BrEdrConnectionManager>(
+        transport()->GetWeakPtr(),
+        peer_cache_.get(),
+        kLocalDevAddr,
+        l2cap_.get(),
+        /*use_interlaced_scan=*/true,
+        /*local_secure_connections_supported=*/true,
+        /*legacy_pairing_enabled=*/true,
+        dispatcher());
+
+    RunUntilIdle();
+
+    test_device()->SetTransactionCallback([this] { transaction_count_++; });
+  }
+
+  void TearDown() override {
+    int expected_transaction_count = transaction_count();
+    if (connection_manager_ != nullptr) {
+      expected_transaction_count += 2;
+      // deallocating the connection manager disables connectivity.
+      EXPECT_CMD_PACKET_OUT(
+          test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+      EXPECT_CMD_PACKET_OUT(
+          test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
+      connection_manager_ = nullptr;
+    }
+    RunUntilIdle();
+    // A disconnection may also occur for a queued disconnection, allow up to 1
+    // extra transaction.
+    EXPECT_LE(expected_transaction_count, transaction_count());
+    EXPECT_GE(expected_transaction_count + 1, transaction_count());
+    // Don't trigger the transaction callback for the rest.
+    test_device()->ClearTransactionCallback();
+    test_device()->Stop();
+    l2cap_ = nullptr;
+    peer_cache_ = nullptr;
+    TestingBase::TearDown();
+  }
+
+ protected:
+  BrEdrConnectionManager* connmgr() const { return connection_manager_.get(); }
+  PeerCache* peer_cache() const { return peer_cache_.get(); }
+  l2cap::testing::FakeL2cap* l2cap() const { return l2cap_.get(); }
+  int transaction_count() const { return transaction_count_; }
+
+ private:
+  std::unique_ptr<BrEdrConnectionManager> connection_manager_;
+  std::unique_ptr<PeerCache> peer_cache_;
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
+  int transaction_count_ = 0;
+};
+
 // Legacy pairing requires a PIN code to be displayed for the peer to enter, so
 // this cannot happen when we do not have any display output capabilities.
 TEST_F(BrEdrConnectionManagerLegacyPairingTest,
@@ -2408,7 +2480,7 @@ TEST_F(BrEdrConnectionManagerTest, SearchAfterConnected) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
+TEST_F(BrEdrConnectionManagerLegacyPairingTest, SearchOnReconnect) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
     auto* peer = peer_cache()->FindByAddress(kTestDevAddr);

@@ -179,6 +179,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(
     l2cap::ChannelManager* l2cap,
     bool use_interlaced_scan,
     bool local_secure_connections_supported,
+    bool legacy_pairing_enabled,
     pw::async::Dispatcher& dispatcher)
     : hci_(std::move(hci)),
       cache_(peer_cache),
@@ -189,6 +190,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
       local_secure_connections_supported_(local_secure_connections_supported),
+      legacy_pairing_enabled_(legacy_pairing_enabled),
       dispatcher_(dispatcher),
       weak_self_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
@@ -891,12 +893,20 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
   }
 
   // Now that interrogation has successfully completed, check if the peer's
-  // feature bits indicate SSP support. If yes, use SecurePairingState to
-  // perform pairing otherwise, use LegacyPairingState.
+  // feature bits indicate SSP support. If not, use LegacyPairingState to
+  // perform pairing if legacy pairing is enabled.
   PairingStateManager::PairingStateType pairing_type =
-      PairingStateManager::PairingStateType::kLegacyPairing;
-  if (peer->IsSecureSimplePairingSupported()) {
-    pairing_type = PairingStateManager::PairingStateType::kSecureSimplePairing;
+      PairingStateManager::PairingStateType::kSecureSimplePairing;
+  if (!peer->IsSecureSimplePairingSupported()) {
+    if (!legacy_pairing_enabled_) {
+      bt_log(WARN,
+             "gap-bredr",
+             "Peer %s does not support SSP but legacy pairing is not enabled "
+             "so pairing cannot occur",
+             bt_str(peer_id));
+      return;
+    }
+    pairing_type = PairingStateManager::PairingStateType::kLegacyPairing;
   }
   conn_state.CreateOrUpdatePairingState(
       pairing_type, pairing_delegate_, security_mode());
@@ -1467,6 +1477,18 @@ BrEdrConnectionManager::OnLinkKeyNotification(
            "type: %u)",
            bt_str(addr),
            static_cast<uint8_t>(key_type));
+    cache_->LogBrEdrBondingEvent(false);
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  if (!legacy_pairing_enabled_ &&
+      key_type == pw::bluetooth::emboss::KeyType::COMBINATION) {
+    bt_log(WARN,
+           "gap-bredr",
+           "Got %u key type in link key notification for peer %s but legacy "
+           "pairing is not enabled",
+           static_cast<uint8_t>(key_type),
+           bt_str(peer->identifier()));
     cache_->LogBrEdrBondingEvent(false);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }

@@ -65,9 +65,13 @@ class AdapterTest : public TestingBase {
 
     auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>(dispatcher());
     gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
+    Adapter::Config config = {
+        .legacy_pairing_enabled = false,
+    };
     adapter_ = Adapter::Create(dispatcher(),
                                transport()->GetWeakPtr(),
                                gatt_->GetWeakPtr(),
+                               config,
                                std::move(l2cap));
   }
 
@@ -1344,9 +1348,13 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
   EXPECT_EQ(set_persist_cb_count, 0);
   EXPECT_EQ(set_retrieve_cb_count, 0);
 
+  Adapter::Config config = {
+      .legacy_pairing_enabled = false,
+  };
   auto adapter = Adapter::Create(dispatcher(),
                                  transport()->GetWeakPtr(),
                                  gatt_->GetWeakPtr(),
+                                 config,
                                  std::move(l2cap_));
 
   EXPECT_EQ(set_persist_cb_count, 1);

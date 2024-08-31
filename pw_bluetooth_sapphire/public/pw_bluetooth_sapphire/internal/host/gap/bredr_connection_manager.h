@@ -80,6 +80,7 @@ class BrEdrConnectionManager final {
                          l2cap::ChannelManager* l2cap,
                          bool use_interlaced_scan,
                          bool local_secure_connections_supported,
+                         bool legacy_pairing_enabled,
                          pw::async::Dispatcher& dispatcher);
   ~BrEdrConnectionManager();
 
@@ -408,6 +409,10 @@ class BrEdrConnectionManager final {
 
   // True when local Host and Controller support BR/EDR Secure Connections
   bool local_secure_connections_supported_;
+
+  // When True, BR/EDR pairing may attempt to use legacy pairing if the peer
+  // does not support SSP.
+  bool legacy_pairing_enabled_;
 
   // Outstanding incoming and outgoing connection requests from remote peer with
   // |PeerId|.
