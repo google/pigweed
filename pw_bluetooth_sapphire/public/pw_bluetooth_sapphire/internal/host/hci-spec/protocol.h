@@ -298,18 +298,6 @@ constexpr OpCode kWriteLocalName = ControllerAndBasebandOpCode(0x0013);
 // Read Local Name Command (v1.1) (BR/EDR)
 constexpr OpCode kReadLocalName = ControllerAndBasebandOpCode(0x0014);
 
-struct ReadLocalNameReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // A UTF-8 encoded User Friendly Descriptive Name for the device.
-  // If the name contained in the parameter is shorter than 248 octets, the end
-  // of the name is indicated by a NULL octet (0x00), and the following octets
-  // (to fill up 248 octets, which is the length of the parameter) do not have
-  // valid values.
-  uint8_t local_name[kMaxNameLength];
-} __attribute__((packed));
-
 // ==========================================
 // Write Page Timeout Command (v1.1) (BR/EDR)
 constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);

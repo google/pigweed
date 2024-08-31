@@ -1854,14 +1854,15 @@ void FakeController::OnReadScanEnable() {
 }
 
 void FakeController::OnReadLocalName() {
-  hci_spec::ReadLocalNameReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  auto mut_view =
-      MutableBufferView(params.local_name, hci_spec::kMaxNameLength);
-  mut_view.Write((const uint8_t*)(local_name_.c_str()),
-                 std::min(local_name_.length() + 1, hci_spec::kMaxNameLength));
-  RespondWithCommandComplete(hci_spec::kReadLocalName,
-                             BufferView(&params, sizeof(params)));
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadLocalNameCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  unsigned char* name_from_event = view.local_name().BackingStorage().data();
+  char* name_as_cstr = reinterpret_cast<char*>(name_from_event);
+  std::strncpy(name_as_cstr, local_name_.c_str(), hci_spec::kMaxNameLength);
+  RespondWithCommandComplete(pwemb::OpCode::READ_LOCAL_NAME, &event_packet);
 }
 
 void FakeController::OnWriteLocalName(
