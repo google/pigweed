@@ -51,11 +51,21 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
   // fxbug.dev/42138706 for details.
   QueueReadRemoteVersionInformation();
 
-  if (!peer_->le()->features().has_value()) {
+  if (!peer_->le()->feature_interrogation_complete()) {
     QueueReadLERemoteFeatures();
   }
 
   cmd_runner_.RunCommands([this](hci::Result<> result) {
+    // Accommodate unsupported remote feature interrogation (see
+    // http://b/361651988). In this case we know the peer doesn't support SCA,
+    // so we can return immediately.
+    if (peer_->le()->feature_interrogation_complete() &&
+        result == ToResult(pw::bluetooth::emboss::StatusCode::
+                               UNSUPPORTED_REMOTE_FEATURE)) {
+      Complete(fit::ok());
+      return;
+    }
+
     if (result.is_error() || !peer_->le()->features().has_value() ||
         !controller_supports_sca_) {
       Complete(result);
@@ -149,6 +159,7 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+    peer_->MutLe().SetFeatureInterrogationComplete();
     if (hci_is_error(event, WARN, "gap-le", "LE read remote features failed")) {
       return;
     }

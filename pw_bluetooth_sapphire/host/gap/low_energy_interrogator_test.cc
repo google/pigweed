@@ -64,6 +64,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     ASSERT_TRUE(peer_->le());
     EXPECT_FALSE(peer_->version());
+    EXPECT_FALSE(peer_->le()->feature_interrogation_complete());
     EXPECT_FALSE(peer_->le()->features());
     EXPECT_FALSE(peer_->le()->sleep_clock_accuracy());
 
@@ -153,6 +154,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_EQ(fit::ok(), *status);
 
   EXPECT_TRUE(peer()->version());
+  ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
@@ -182,6 +184,7 @@ TEST_F(LowEnergyInterrogatorTest,
                         &le_request_peer_sca_complete_packet);
 
   peer()->MutLe().SetFeatures(kFeatures);
+  peer()->MutLe().SetFeatureInterrogationComplete();
 
   std::optional<hci::Result<>> status;
   interrogator()->Start(
@@ -189,6 +192,7 @@ TEST_F(LowEnergyInterrogatorTest,
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
+  ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
@@ -257,6 +261,36 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
+  EXPECT_TRUE(peer()->le()->feature_interrogation_complete());
+  EXPECT_FALSE(peer()->le()->features().has_value());
+
+  // When previous operations fail, we shouldn't try to read SCA.
+  EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
+}
+
+// Test proper operation when a peer doesn't support reading LE remote features
+TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesUnsupported) {
+  const auto remote_version_complete_packet =
+      testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
+  const auto le_read_remote_features_unsupported_status_packet =
+      testing::CommandStatusPacket(
+          hci_spec::kLEReadRemoteFeatures,
+          pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp,
+                        &remote_version_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
+                        &le_read_remote_features_unsupported_status_packet);
+
+  std::optional<hci::Result<>> status;
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
+  RunUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_ok());
+  EXPECT_TRUE(peer()->le()->feature_interrogation_complete());
   EXPECT_FALSE(peer()->le()->features().has_value());
 
   // When previous operations fail, we shouldn't try to read SCA.
@@ -324,6 +358,7 @@ TEST_F(LowEnergyInterrogatorTest,
   EXPECT_FALSE(result.has_value());
   // The read remote features handler should not update the features of a
   // canceled interrogation.
+  ASSERT_FALSE(peer()->le()->feature_interrogation_complete());
   EXPECT_FALSE(peer()->le()->features().has_value());
   EXPECT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
@@ -381,6 +416,7 @@ TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnController) {
   EXPECT_EQ(fit::ok(), *status);
 
   EXPECT_TRUE(peer()->version());
+  ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
   ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
@@ -400,6 +436,7 @@ TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnPeer) {
   EXPECT_EQ(fit::ok(), *status);
 
   EXPECT_TRUE(peer()->version());
+  ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
   ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
@@ -418,6 +455,7 @@ TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_ok());
+  ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());

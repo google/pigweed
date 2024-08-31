@@ -461,15 +461,16 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
 
   BT_ASSERT(peer_.is_alive());
   // Ensure interrogation has completed.
-  BT_ASSERT(peer_->le()->features().has_value());
+  BT_ASSERT(peer_->le()->feature_interrogation_complete());
 
   // TODO(fxbug.dev/42126713): check local controller support for LL Connection
   // Parameters Request procedure (mask is currently in Adapter le state,
   // consider propagating down)
   bool ll_connection_parameters_req_supported =
-      peer_->le()->features()->le_features &
-      static_cast<uint64_t>(
-          hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure);
+      peer_->le()->features().has_value() &&
+      (peer_->le()->features()->le_features &
+       static_cast<uint64_t>(hci_spec::LESupportedFeature::
+                                 kConnectionParametersRequestProcedure));
 
   bt_log(TRACE,
          "gap-le",
