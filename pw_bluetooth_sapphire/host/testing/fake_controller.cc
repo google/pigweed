@@ -1765,17 +1765,20 @@ void FakeController::OnWriteSimplePairingMode(
 }
 
 void FakeController::OnReadSimplePairingMode() {
-  hci_spec::ReadSimplePairingModeReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadSimplePairingModeCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
   if (CheckBit(settings_.lmp_features_page1,
                hci_spec::LMPFeature::kSecureSimplePairingHostSupport)) {
-    params.simple_pairing_mode = pwemb::GenericEnableParam::ENABLE;
+    view.simple_pairing_mode().Write(pwemb::GenericEnableParam::ENABLE);
   } else {
-    params.simple_pairing_mode = pwemb::GenericEnableParam::DISABLE;
+    view.simple_pairing_mode().Write(pwemb::GenericEnableParam::DISABLE);
   }
 
-  RespondWithCommandComplete(hci_spec::kReadSimplePairingMode,
-                             BufferView(&params, sizeof(params)));
+  RespondWithCommandComplete(pwemb::OpCode::READ_SIMPLE_PAIRING_MODE,
+                             &event_packet);
 }
 
 void FakeController::OnWritePageScanType(

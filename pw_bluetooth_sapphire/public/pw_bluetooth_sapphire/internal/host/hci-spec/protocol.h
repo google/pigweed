@@ -402,14 +402,6 @@ constexpr OpCode kWriteExtendedInquiryResponse =
 // Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kReadSimplePairingMode = ControllerAndBasebandOpCode(0x0055);
 
-struct ReadSimplePairingModeReturnParams {
-  // See enum StatusCode in hci_constants.h
-  StatusCode status;
-
-  // Simple pairing Mode.
-  GenericEnableParam simple_pairing_mode;
-} __attribute__((packed));
-
 // ===============================================
 // Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kWriteSimplePairingMode = ControllerAndBasebandOpCode(0x0056);
