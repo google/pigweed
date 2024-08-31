@@ -1662,12 +1662,14 @@ void FakeController::OnLEReadBufferSizeV2() {
 }
 
 void FakeController::OnLEReadSupportedStates() {
-  hci_spec::LEReadSupportedStatesReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.le_states = pw::bytes::ConvertOrderTo(cpp20::endian::little,
-                                               settings_.le_supported_states);
-  RespondWithCommandComplete(hci_spec::kLEReadSupportedStates,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LEReadSupportedStatesCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.le_states().BackingStorage().WriteLittleEndianUInt<64>(
+      settings_.le_supported_states);
+  RespondWithCommandComplete(pwemb::OpCode::LE_READ_SUPPORTED_STATES, &packet);
 }
 
 void FakeController::OnLEReadLocalSupportedFeatures() {

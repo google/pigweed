@@ -947,15 +947,6 @@ constexpr OpCode kLELongTermKeyRequestNegativeReply =
 // LE Read Supported States Command (v4.0) (LE)
 constexpr OpCode kLEReadSupportedStates = LEControllerCommandOpCode(0x001C);
 
-struct LEReadSupportedStatesReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Bit-mask of supported state or state combinations. See Core Spec v4.2,
-  // Volume 2, Part E, Section 7.8.27 "LE Read Supported States Command".
-  uint64_t le_states;
-} __attribute__((packed));
-
 // ====================================
 // LE Receiver Test Command (v4.0) (LE)
 constexpr OpCode kLEReceiverTest = LEControllerCommandOpCode(0x001D);

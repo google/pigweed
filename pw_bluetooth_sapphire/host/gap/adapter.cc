@@ -1123,18 +1123,19 @@ void AdapterImpl::InitializeStep2() {
       hci::EmbossCommandPacket::New<
           pw::bluetooth::emboss::LEReadSupportedStatesCommandView>(
           hci_spec::kLEReadSupportedStates),
-      [this](const hci::EventPacket& cmd_complete) {
+      [this](const hci::EmbossEventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete,
                          WARN,
                          "gap",
                          "LE read local supported states failed")) {
           return;
         }
-        auto params =
+        auto packet =
             cmd_complete
-                .return_params<hci_spec::LEReadSupportedStatesReturnParams>();
-        state_.low_energy_state.supported_states_ = pw::bytes::ConvertOrderFrom(
-            cpp20::endian::little, params->le_states);
+                .view<pw::bluetooth::emboss::
+                          LEReadSupportedStatesCommandCompleteEventView>();
+        state_.low_energy_state.supported_states_ =
+            packet.le_states().BackingStorage().ReadLittleEndianUInt<64>();
       });
 
   if (state_.SupportedCommands()
