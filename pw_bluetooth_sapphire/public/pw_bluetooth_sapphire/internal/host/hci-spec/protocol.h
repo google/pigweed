@@ -314,19 +314,6 @@ constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
 // Read Page Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kReadPageScanActivity = ControllerAndBasebandOpCode(0x001B);
 
-struct ReadPageScanActivityReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Page_Scan_Interval, in time slices (0.625ms)
-  // Range: kPageScanIntervalMin - kPageScanIntervalMax in hci_constants.h
-  uint16_t page_scan_interval;
-
-  // Page_Scan_Window, in time slices
-  // Range: kPageScanWindowMin - kPageScanWindowMax in hci_constants.h
-  uint16_t page_scan_window;
-} __attribute__((packed));
-
 // ================================================
 // Write Page Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kWritePageScanActivity = ControllerAndBasebandOpCode(0x001C);

@@ -1831,14 +1831,15 @@ void FakeController::OnWritePageScanActivity(
 }
 
 void FakeController::OnReadPageScanActivity() {
-  hci_spec::ReadPageScanActivityReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.page_scan_interval =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, page_scan_interval_);
-  params.page_scan_window =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, page_scan_window_);
-  RespondWithCommandComplete(hci_spec::kReadPageScanActivity,
-                             BufferView(&params, sizeof(params)));
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadPageScanActivityCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.page_scan_interval().Write(page_scan_interval_);
+  view.page_scan_window().Write(page_scan_window_);
+  RespondWithCommandComplete(pwemb::OpCode::READ_PAGE_SCAN_ACTIVITY,
+                             &event_packet);
 }
 
 void FakeController::OnWriteScanEnable(
