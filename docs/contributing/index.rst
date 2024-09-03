@@ -10,6 +10,13 @@ Before participating in our community, please take a moment to review our
 :ref:`docs-code-of-conduct`. We expect everyone who interacts with the project
 to respect these guidelines.
 
+Good first issue
+----------------
+We maintain a list of `good first issues for first-time contributors
+<https://pwbug.dev/issues/256050233/dependencies>`__. If you would like to
+contribute to Pigweed but are not sure where to start, take a look at one of
+these!
+
 Get started
 -----------
 See :ref:`docs-get-started-upstream`.
