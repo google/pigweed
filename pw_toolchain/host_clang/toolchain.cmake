@@ -96,6 +96,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CMAKE_SYSROOT "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/clang_sysroot")
 endif()
 
+# Explicitly use lld to link.
+foreach(TYPE IN ITEMS EXE SHARED MODULE)
+    set(CMAKE_${TYPE}_LINKER_FLAGS_INIT "${CMAKE_${TYPE}_LINKER_FLAGS_INIT} -fuse-ld=lld")
+endforeach()
+
 set(pw_build_WARNINGS
     pw_build.strict_warnings
     pw_build.extra_strict_warnings

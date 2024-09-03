@@ -33,6 +33,12 @@ licenses(["notice"])
 filegroup(name = "empty")
 
 pw_cc_flag_set(
+    name = "link_with_lld",
+    actions = ["@pw_toolchain//actions:all_link_actions"],
+    flags = ["-fuse-ld=lld"],
+)
+
+pw_cc_flag_set(
     name = "macos_link_libs",
     actions = ["@pw_toolchain//actions:all_link_actions"],
     flags = [
@@ -325,6 +331,7 @@ pw_cc_toolchain(
         "//conditions:default": [],
     }) + [
         ":thread_safety_warnings",
+        ":link_with_lld",
         "@pw_toolchain//flag_sets:debugging",
         "@pw_toolchain//flag_sets:reduced_size",
         "@pw_toolchain//flag_sets:no_canonical_prefixes",

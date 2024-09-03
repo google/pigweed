@@ -384,6 +384,10 @@ config("relative_paths") {
   write_file(pw_build_RELATIVE_PATH_TRANSFORM_JSON, _transformations, "json")
 }
 
+config("link_with_lld") {
+  ldflags = [ "-fuse-ld=lld" ]
+}
+
 # This group is linked into all pw_executable, pw_static_library, and
 # pw_shared_library targets. This makes it possible to ensure symbols are
 # defined without a dependency on them.

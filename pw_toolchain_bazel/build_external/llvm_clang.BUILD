@@ -78,11 +78,13 @@ pw_cc_tool(
         "@platforms//os:windows": "//:bin/llvm-ar.exe",
         "//conditions:default": "//:bin/llvm-ar",
     }),
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_tool(
     name = "llvm_libtool_darwin_tool",
     tool = "//:bin/llvm-libtool-darwin",
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_action_config(
@@ -109,6 +111,7 @@ pw_cc_tool(
         "//conditions:default": "//:bin/clang++",
     }),
     additional_files = glob([
+        "bin/llvm",
         "include/**",
         "lib/clang/**/include/**",
     ]),
@@ -127,6 +130,7 @@ pw_cc_tool(
         "//conditions:default": "//:bin/clang",
     }),
     additional_files = glob([
+        "bin/llvm",
         "include/**",
         "lib/clang/**/include/**",
     ]),
@@ -150,8 +154,12 @@ pw_cc_tool(
         "//conditions:default": "//:bin/clang++",
     }),
     additional_files = glob([
+        "bin/llvm",
+        "bin/lld*",
+        "bin/ld*",
         "lib/**/*.a",
         "lib/**/*.so*",
+        "lib/**/*.o",
     ]),
 )
 
@@ -167,6 +175,7 @@ pw_cc_tool(
         "@platforms//os:windows": "//:bin/llvm-cov.exe",
         "//conditions:default": "//:bin/llvm-cov",
     }),
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_action_config(
@@ -181,6 +190,7 @@ pw_cc_tool(
         "@platforms//os:windows": "//:bin/llvm-objcopy.exe",
         "//conditions:default": "//:bin/llvm-objcopy",
     }),
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_action_config(
@@ -195,6 +205,7 @@ pw_cc_tool(
         "@platforms//os:windows": "//:bin/llvm-objdump.exe",
         "//conditions:default": "//:bin/llvm-objdump",
     }),
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_action_config(
@@ -209,6 +220,7 @@ pw_cc_tool(
         "@platforms//os:windows": "//:bin/llvm-strip.exe",
         "//conditions:default": "//:bin/llvm-strip",
     }),
+    additional_files = glob(["bin/llvm"]),
 )
 
 pw_cc_action_config(
