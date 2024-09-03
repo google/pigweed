@@ -1202,12 +1202,17 @@ class ClangdSettings:
             compile_commands_dir = str(state.stable_target_link)
 
         host_cc_path = find_cipd_installed_exe_path("clang++")
+
         self.arguments: list[str] = [
             f'--compile-commands-dir={compile_commands_dir}',
-            f'--query-driver={settings.clangd_query_driver_str(host_cc_path)}',
             '--background-index',
             '--clang-tidy',
         ]
+
+        query_driver = settings.clangd_query_driver_str(host_cc_path)
+
+        if query_driver is not None:
+            self.arguments.append(f'--query-driver={query_driver}')
 
     def command(self, system: str = platform.system()) -> str:
         """Return the command that runs clangd with Pigweed paths."""

@@ -332,17 +332,25 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('clangd_alternate_path', None)
 
     @property
-    def clangd_additional_query_drivers(self) -> list[str]:
+    def clangd_additional_query_drivers(self) -> list[str] | None:
         """Additional query driver paths that clangd should use.
 
         By default, ``pw_ide`` supplies driver paths for the toolchains included
         in Pigweed. If you are using toolchains that are not supplied by
         Pigweed, you should include path globs to your toolchains here. These
         paths will be given higher priority than the Pigweed toolchain paths.
+
+        If you want to omit the query drivers argument altogether, set this to
+        ``null``.
         """
         return self._config.get('clangd_additional_query_drivers', list())
 
-    def clangd_query_drivers(self, host_clang_cc_path: Path) -> list[str]:
+    def clangd_query_drivers(
+        self, host_clang_cc_path: Path
+    ) -> list[str] | None:
+        if self.clangd_additional_query_drivers is None:
+            return None
+
         drivers = [
             *[
                 _expand_any_vars_str(p)
@@ -357,8 +365,13 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
 
         return drivers
 
-    def clangd_query_driver_str(self, host_clang_cc_path: Path) -> str:
-        return ','.join(self.clangd_query_drivers(host_clang_cc_path))
+    def clangd_query_driver_str(self, host_clang_cc_path: Path) -> str | None:
+        clangd_query_drivers = self.clangd_query_drivers(host_clang_cc_path)
+
+        if clangd_query_drivers is None:
+            return None
+
+        return ','.join(clangd_query_drivers)
 
     @property
     def workspace_root(self) -> Path:
