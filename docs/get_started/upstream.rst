@@ -1,7 +1,7 @@
 .. _docs-get-started-upstream:
 
 =============================================
-Get started With upstream Pigweed development
+Get started with upstream Pigweed development
 =============================================
 This guide will walk you through the typical upstream development workflow.
 "Upstream development" means that you're contributing to the main Pigweed
