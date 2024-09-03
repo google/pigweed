@@ -110,12 +110,12 @@ def generate_pw_tokenizer_65599_fixed_length_hash_macro(hash_length):
     lines.append('  ' + first_hash_term)  # add indendation and the macro line
 
     indent = ' ' * len('  (uint32_t)(')
-    coefficient_format = '0x{coefficient:0>8x}u'
+    coefficient_format = '0x{coefficient:0>8x}ull'
 
     # The string will have at least a null terminator
     lines.append(
         line_format.format(
-            '{}0x{:0>8x}u * (uint8_t)str[0] +'.format(indent, HASH_CONSTANT)
+            '{}0x{:0>8x}ull * (uint8_t)str[0] +'.format(indent, HASH_CONSTANT)
         )
     )
 
