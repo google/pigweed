@@ -33,6 +33,14 @@ cc_library(
     includes = ["public"],
 )
 
+cc_library(
+    name = "virtual_clock",
+    hdrs = [
+        "public/pw_chrono/virtual_clock.h",
+    ],
+    includes = ["public"],
+)
+
 pw_facade(
     name = "system_clock",
     srcs = [
@@ -46,6 +54,7 @@ pw_facade(
     includes = ["public"],
     deps = [
         ":epoch",
+        ":virtual_clock",
         "//pw_preprocessor",
     ],
 )

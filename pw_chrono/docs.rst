@@ -446,6 +446,27 @@ Example in C++
      }
    }
 
+VirtualClock
+============
+Pigweed also includes a virtual base class for timers,
+:cpp:class:`pw::chrono::VirtualClock`. This class allows for writing
+timing-sensitive code that can be tested using simulated clocks such as
+:cpp:class:`pw::chrono::SimulatedSystemClock`.
+
+Using simulated clocks in tests allow tests to avoid sleeping or timeouts,
+resulting in faster and more reliable tests.
+
+See also :cpp:class:`pw::async2::TimeProvider` for creating testable
+time-sensitive code using asynchronous timers.
+
+.. doxygenclass:: pw::chrono::VirtualClock
+  :members:
+
+.. doxygenclass:: pw::chrono::SimulatedSystemClock
+  :members:
+
+
+
 Protobuf
 ========
 Sometimes it's desirable to communicate high resolution time points and

@@ -61,7 +61,7 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
   /// one of `AdvanceTime`, `SetTime`, or `RunExpiredTimers` has been called.
   void RunExpiredTimers() { RunExpired(now()); }
 
-  typename Clock::time_point now() const final {
+  typename Clock::time_point now() final {
     std::lock_guard lock(lock_);
     return now_;
   }

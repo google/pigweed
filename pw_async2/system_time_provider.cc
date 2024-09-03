@@ -29,7 +29,7 @@ class SystemTimeProvider final : public TimeProvider<SystemClock> {
             [this](SystemClock::time_point expired) { RunExpired(expired); }) {}
 
  private:
-  SystemClock::time_point now() const final { return SystemClock::now(); }
+  SystemClock::time_point now() final { return SystemClock::now(); }
 
   void DoInvokeAt(SystemClock::time_point time_point) final {
     timer_.InvokeAt(time_point);

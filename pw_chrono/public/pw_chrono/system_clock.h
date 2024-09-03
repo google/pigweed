@@ -33,6 +33,8 @@
 #include <chrono>
 #include <ratio>
 
+#include "pw_chrono/virtual_clock.h"
+
 namespace pw::chrono {
 namespace backend {
 
@@ -133,6 +135,13 @@ struct SystemClock {
   }
 };
 
+// NOTE: VirtualClock here is specialized on SystemClock in order to provide
+// the `RealClock` function.
+//
+// SystemClock is defined in this file, so there's no risk of an ODR violation
+// as other libraries are unable to spell VirtualClock<SystemClock> unless
+// they have first included this file.
+
 /// An abstract interface representing a SystemClock.
 ///
 /// This interface allows decoupling code that uses time from the code that
@@ -140,7 +149,7 @@ struct SystemClock {
 /// Clocks into interfaces rather than having implementations call
 /// `SystemClock::now()` directly. However, this comes at a cost of a vtable per
 /// implementation and more importantly passing and maintaining references to
-/// the VirtualSystemCLock for all of the users.
+/// the VirtualClock for all of the users.
 ///
 /// The `VirtualSystemClock::RealClock()` function returns a reference to the
 /// real global SystemClock.
@@ -162,16 +171,19 @@ struct SystemClock {
 /// @endcode
 ///
 /// This interface is thread and IRQ safe.
-class VirtualSystemClock {
+template <>
+class VirtualClock<SystemClock> {
  public:
   /// Returns a reference to the real system clock to aid instantiation.
-  static VirtualSystemClock& RealClock();
+  static VirtualClock<SystemClock>& RealClock();
 
-  virtual ~VirtualSystemClock() = default;
+  virtual ~VirtualClock() = default;
 
   /// Returns the current time.
   virtual SystemClock::time_point now() = 0;
 };
+
+using VirtualSystemClock = VirtualClock<SystemClock>;
 
 }  // namespace pw::chrono
 
