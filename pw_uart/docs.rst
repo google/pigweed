@@ -76,3 +76,10 @@ API reference
 .. doxygengroup:: pw_uart
    :content-only:
    :members:
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

@@ -1,0 +1,69 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+if (pw_third_party_mcuxpresso_SDK != "") {
+  pw_source_set("pw_uart_mcuxpresso") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_uart_mcuxpresso/dma_uart.h" ]
+    public_deps = [
+      "$dir_pw_clock_tree",
+      "$dir_pw_sync:timed_thread_notification",
+      "$dir_pw_uart:uart",
+    ]
+    deps = [
+      "$dir_pw_preprocessor",
+      "$dir_pw_sync:interrupt_spin_lock",
+      pw_third_party_mcuxpresso_SDK,
+    ]
+    sources = [ "dma_uart.cc" ]
+  }
+
+  pw_test("dma_uart_example") {
+    enable_if =
+        pw_third_party_mcuxpresso_SDK ==
+        "//targets/mimxrt595_evk_freertos:sdk" &&
+        (pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_debug" ||
+         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_size_optimized" ||
+         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_speed_optimized")
+    sources = [ "dma_uart_example.cc" ]
+    deps = [
+      ":pw_uart_mcuxpresso",
+      "//targets/mimxrt595_evk_freertos:sdk",
+    ]
+  }
+
+  pw_test_group("tests") {
+    tests = [ ":dma_uart_example" ]
+  }
+} else {
+  pw_test_group("tests") {
+    tests = []
+  }
+}
+
+pw_doc_group("docs") {
+  inputs = [ "dma_uart_example.cc" ]
+  sources = [ "docs.rst" ]
+}

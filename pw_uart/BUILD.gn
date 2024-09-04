@@ -46,5 +46,8 @@ pw_test("uart_test") {
 
 pw_doc_group("docs") {
   inputs = [ "public/pw_uart/uart.h" ]
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }
