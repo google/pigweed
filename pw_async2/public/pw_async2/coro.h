@@ -305,8 +305,14 @@ class CoroPromiseType final {
   // `Poll<U> Pend(Context&)` method, returning an `Awaitable` which will
   // yield a `U` once complete.
   template <typename Pendable>
+    requires(!std::is_reference_v<Pendable>)
   Awaitable<Pendable, CoroPromiseType> await_transform(Pendable&& pendable) {
     return pendable;
+  }
+
+  template <typename Pendable>
+  Awaitable<Pendable*, CoroPromiseType> await_transform(Pendable& pendable) {
+    return &pendable;
   }
 
   // Returns a reference to the `Context` passed in.
@@ -325,13 +331,12 @@ template <typename Pendable, typename PromiseType>
 class Awaitable final : AwaitableBase {
  public:
   // The `OutputType` in `Poll<OutputType> Pendable::Pend(Context&)`.
-  using OutputType =
-      std::remove_cvref_t<decltype(std::declval<Pendable>()
-                                       .Pend(std::declval<Context&>())
-                                       .value())>;
+  using OutputType = std::remove_cvref_t<
+      decltype(std::declval<std::remove_pointer_t<Pendable>>()
+                   .Pend(std::declval<Context&>())
+                   .value())>;
 
-  Awaitable(Pendable&& pendable)
-      : pendable_(std::forward<Pendable>(pendable)) {}
+  Awaitable(Pendable&& pendable) : state_(std::forward<Pendable>(pendable)) {}
 
   // Confirms that `await_suspend` must be invoked.
   bool await_ready() { return false; }
@@ -357,7 +362,17 @@ class Awaitable final : AwaitableBase {
   //
   // This is automatically invoked by the language runtime when the promise's
   // `resume()` method is called.
-  OutputType&& await_resume() { return std::move(*return_value_); }
+  OutputType&& await_resume() {
+    return std::move(std::get<OutputType>(state_));
+  }
+
+  auto& PendableNoPtr() {
+    if constexpr (std::is_pointer_v<Pendable>) {
+      return *std::get<Pendable>(state_);
+    } else {
+      return std::get<Pendable>(state_);
+    }
+  }
 
   // Attempts to complete the `Pendable` value, storing its return value
   // upon completion.
@@ -366,17 +381,16 @@ class Awaitable final : AwaitableBase {
   // resumed, as otherwise the return value will not be available when
   // `await_resume` is called to produce the result of `co_await`.
   Poll<> PendFillReturnValue(Context& cx) final {
-    Poll<OutputType> poll_res = pendable_.Pend(cx);
+    Poll<OutputType> poll_res(PendableNoPtr().Pend(cx));
     if (poll_res.IsPending()) {
       return Pending();
     }
-    return_value_ = std::move(*poll_res);
+    state_ = std::move(*poll_res);
     return Ready();
   }
 
  private:
-  Pendable pendable_;
-  OptionalOrDefault<OutputType> return_value_;
+  std::variant<Pendable, OutputType> state_;
 };
 
 }  // namespace internal
