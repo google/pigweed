@@ -55,8 +55,9 @@ TEST(EmbossTest, MakeView) {
 // conditional bitfields. Let's add this to verify that the structure itself
 // doesn't get changed incorrectly and that emboss' size calculation matches
 // ours.
-TEST(EmbossTest, CheckIsoHeaderSize) {
-  EXPECT_EQ(emboss::IsoDataFrameHeader::MaxSizeInBytes(), 12);
+TEST(EmbossTest, CheckIsoPacketSize) {
+  int max_size = 12 /* max header */ + 4095 /* max payload */;
+  EXPECT_EQ(emboss::IsoDataFramePacket::MaxSizeInBytes(), max_size);
 }
 
 // Test and demonstrate various ways of reading opcodes.

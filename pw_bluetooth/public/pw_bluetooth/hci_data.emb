@@ -64,6 +64,16 @@ struct AclDataFrameHeader:
     -- Length of data measured in octets.
 
 
+enum TsFlag:
+  -- Options for the ts_flag field in an Isochronous Data packet header.
+  [maximum_bits: 1]
+
+  TIMESTAMP_NOT_PRESENT = 0b0
+    -- The Time_Stamp field is not present in the packet.
+  TIMESTAMP_PRESENT     = 0b1
+    -- The Time_Stamp field is present in the packet.
+
+
 enum IsoDataPbFlag:
   -- Options for the pb_flag field in an Isochronous Data packet header.
 
@@ -103,7 +113,7 @@ enum IsoDataPacketStatus:
 
 
 struct IsoDataFrameHeader:
-  -- HCI Iso Data Packets
+  -- HCI Iso Data Packet Header
   -- Core Spec v5.4, Vol 4, Part E, Section 5.4.5
   -- Bits 15, 30, and 31 are reserved for future use (RFU)
 
@@ -116,35 +126,37 @@ struct IsoDataFrameHeader:
     12    [+2]         IsoDataPbFlag        pb_flag
       -- Describes packet fragmentation
 
-    14    [+1]         enum                 ts_flag:
-      TIMESTAMP_NOT_PRESENT = 0
-      TIMESTAMP_PRESENT     = 1
-
-    15    [+1]         UInt                 reserved_15
-      -- Reserved for future use.
+    14    [+1]         TsFlag               ts_flag
+      -- Describes whether or not a timestamp is present
 
     16    [+14]        UInt                 data_total_length
       -- Length of the packet, excluding the packet header, in octets.
 
-    30    [+2]         UInt                 reserved_30_31
-      -- Reserved for future use.
 
-  if ts_flag == TsFlag.TIMESTAMP_PRESENT:
+struct IsoDataFramePacket:
+  -- HCI Iso Data Packet
+  -- Core Spec v5.4, Vol 4, Part E, Section 5.4.5
+  -- Bits 28, and 29 are reserved for future use (RFU)
+
+  let hdr_size = IsoDataFrameHeader.$size_in_bytes
+  0     [+hdr_size]  IsoDataFrameHeader  header
+
+  if header.ts_flag == TsFlag.TIMESTAMP_PRESENT:
     $next [+4]         UInt                 time_stamp
       -- A time in microseconds.
 
-  if pb_flag == IsoDataPbFlag.FIRST_FRAGMENT || pb_flag == IsoDataPbFlag.COMPLETE_SDU:
+  if header.pb_flag == IsoDataPbFlag.FIRST_FRAGMENT || header.pb_flag == IsoDataPbFlag.COMPLETE_SDU:
     $next [+4]  bits:
 
-      0     [+16]      UInt                 packet_sequence_number
+      0     [+16]      UInt                         packet_sequence_number
         -- The sequence number of the SDU.
 
-      16    [+12]      UInt                 iso_sdu_length
+      16    [+12]      UInt                         iso_sdu_length
         -- The total length of the SDU (and not of any individual fragments),
         -- in octets.
 
-      28    [+2]       UInt                 reserved_28_29
-        -- Reserved for future use.
-
-      30    [+2]       IsoDataPacketStatus  packet_status_flag
+      30    [+2]       IsoDataPacketStatus          packet_status_flag
         -- Packet status, only for frames sent by the controller.
+
+    $next [+iso_sdu_length] UInt:8[iso_sdu_length]  iso_sdu_fragment
+      -- Isochronous data (the SDU or fragment of the SDU)
