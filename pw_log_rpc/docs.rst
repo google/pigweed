@@ -489,7 +489,7 @@ pw_log_rpc in Python
 --------------------
 ``pw_log_rpc`` provides client utilities for dealing with RPC logging.
 
-The ``LogStreamHandler`` offers APIs to start a log stream:``listen_to_logs``,
+The ``LogStreamHandler`` offers APIs to start a log stream: ``start_logs``,
 to handle RPC stream errors: ``handle_log_stream_error``, and RPC stream
 completed events: ``handle_log_stream_completed``. It uses a provided
 ``LogStreamDecoder`` to delegate log parsing to.

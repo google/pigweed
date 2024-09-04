@@ -145,7 +145,7 @@ class Device:
             self.log_stream_handler = rpc_log_stream.LogStreamHandler(
                 self.rpcs, self._log_decoder
             )
-            self.log_stream_handler.listen_to_logs()
+            self.log_stream_handler.start_logging()
 
         # Create the transfer manager
         self.transfer_service = self.rpcs.pw.transfer.Transfer

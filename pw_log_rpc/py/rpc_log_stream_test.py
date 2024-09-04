@@ -82,11 +82,11 @@ class TestRpcLogStreamHandler(TestCase):
             self._channel_id, service.id, method.id, client.OPEN_CALL_ID
         )
 
-    def test_listen_to_logs_subsequent_calls(self):
+    def test_start_logging_subsequent_calls(self):
         """Test a stream of RPC Logs."""
         self.log_stream_handler.handle_log_stream_error = mock.Mock()
         self.log_stream_handler.handle_log_stream_completed = mock.Mock()
-        self.log_stream_handler.listen_to_logs()
+        self.log_stream_handler.start_logging()
 
         self.assertIs(
             self.client.process_packet(
@@ -136,11 +136,11 @@ class TestRpcLogStreamHandler(TestCase):
         self.log_stream_handler.handle_log_stream_error = mock.Mock()
         self.log_stream_handler.handle_log_stream_completed = mock.Mock()
 
-        listen_function = _CallableWithCounter(
-            self.log_stream_handler.listen_to_logs
+        start_function = _CallableWithCounter(
+            self.log_stream_handler.start_logging
         )
-        self.log_stream_handler.listen_to_logs = listen_function
-        self.log_stream_handler.listen_to_logs()
+        self.log_stream_handler.start_logging = start_function
+        self.log_stream_handler.start_logging()
 
         # Send logs prior to cancellation.
         self.assertIs(
@@ -173,7 +173,7 @@ class TestRpcLogStreamHandler(TestCase):
             self.log_stream_handler.handle_log_stream_completed.called
         )
         self.assertEqual(len(self.captured_logs), 2)
-        self.assertEqual(listen_function.call_count(), 1)
+        self.assertEqual(start_function.call_count(), 1)
 
     def test_log_stream_error_stream_restarted(self):
         """Tests that an error on the log stream restarts the stream."""
@@ -184,11 +184,11 @@ class TestRpcLogStreamHandler(TestCase):
         )
         self.log_stream_handler.handle_log_stream_error = error_handler
 
-        listen_function = _CallableWithCounter(
-            self.log_stream_handler.listen_to_logs
+        start_function = _CallableWithCounter(
+            self.log_stream_handler.start_logging
         )
-        self.log_stream_handler.listen_to_logs = listen_function
-        self.log_stream_handler.listen_to_logs()
+        self.log_stream_handler.start_logging = start_function
+        self.log_stream_handler.start_logging()
 
         # Send logs prior to cancellation.
         self.assertIs(
@@ -217,7 +217,7 @@ class TestRpcLogStreamHandler(TestCase):
             self.log_stream_handler.handle_log_stream_completed.called
         )
         self.assertEqual(len(self.captured_logs), 2)
-        self.assertEqual(listen_function.call_count(), 2)
+        self.assertEqual(start_function.call_count(), 2)
         self.assertEqual(error_handler.call_count(), 1)
         self.assertEqual(error_handler.calls[0].args, (Status.UNKNOWN,))
 
@@ -230,11 +230,11 @@ class TestRpcLogStreamHandler(TestCase):
         )
         self.log_stream_handler.handle_log_stream_completed = completion_handler
 
-        listen_function = _CallableWithCounter(
-            self.log_stream_handler.listen_to_logs
+        start_function = _CallableWithCounter(
+            self.log_stream_handler.start_logging
         )
-        self.log_stream_handler.listen_to_logs = listen_function
-        self.log_stream_handler.listen_to_logs()
+        self.log_stream_handler.start_logging = start_function
+        self.log_stream_handler.start_logging()
 
         # Send logs prior to cancellation.
         self.assertIs(
@@ -261,7 +261,7 @@ class TestRpcLogStreamHandler(TestCase):
 
         self.assertFalse(self.log_stream_handler.handle_log_stream_error.called)
         self.assertEqual(len(self.captured_logs), 2)
-        self.assertEqual(listen_function.call_count(), 2)
+        self.assertEqual(start_function.call_count(), 2)
         self.assertEqual(completion_handler.call_count(), 1)
         self.assertEqual(completion_handler.calls[0].args, (Status.OK,))
 
@@ -274,11 +274,11 @@ class TestRpcLogStreamHandler(TestCase):
         )
         self.log_stream_handler.handle_log_stream_completed = completion_handler
 
-        listen_function = _CallableWithCounter(
-            self.log_stream_handler.listen_to_logs
+        start_function = _CallableWithCounter(
+            self.log_stream_handler.start_logging
         )
-        self.log_stream_handler.listen_to_logs = listen_function
-        self.log_stream_handler.listen_to_logs()
+        self.log_stream_handler.start_logging = start_function
+        self.log_stream_handler.start_logging()
 
         # Send logs prior to cancellation.
         self.assertIs(
@@ -307,7 +307,7 @@ class TestRpcLogStreamHandler(TestCase):
 
         self.assertFalse(self.log_stream_handler.handle_log_stream_error.called)
         self.assertEqual(len(self.captured_logs), 2)
-        self.assertEqual(listen_function.call_count(), 2)
+        self.assertEqual(start_function.call_count(), 2)
         self.assertEqual(completion_handler.call_count(), 1)
         self.assertEqual(completion_handler.calls[0].args, (Status.UNKNOWN,))
 
