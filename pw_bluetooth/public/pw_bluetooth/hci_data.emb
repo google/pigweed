@@ -160,3 +160,47 @@ struct IsoDataFramePacket:
 
     $next [+iso_sdu_length] UInt:8[iso_sdu_length]  iso_sdu_fragment
       -- Isochronous data (the SDU or fragment of the SDU)
+
+enum ScoDataPacketStatus:
+  -- Options for the packet_status_flag field in an Synchronous Data packet
+  -- header.
+
+  [maximum_bits: 2]
+
+  CORRECTLY_RECEIVED_DATA     = 0b00
+    -- The payload data belongs to received eSCO or SCO packets that the
+    -- Baseband marked as “good data”.
+
+  POSSIBLY_INVALID_DATA       = 0b01
+    -- At least one eSCO packet has been marked by the Baseband as “data with
+    -- possible errors” and all others have been marked as “good data” in the
+    -- eSCO interval(s) corresponding to the HCI Synchronous Data packet.
+
+  NO_DATA_RECEIVE             = 0b10
+    -- All data from the Baseband received during the (e)SCO interval(s)
+    -- corresponding to the HCI Synchronous Data packet have been marked as
+    -- "lost data" by the Baseband. The Payload data octets shall be set to 0.
+
+  DATA_PARTIALLY_LOST         = 0b11
+    -- Not all, but at least one (e)SCO packet has been marked as “lost data”
+    -- by the Baseband in the (e)SCO intervals corresponding to the HCI
+    -- Synchronous Data packet. The payload data octets corresponding to the
+    -- missing (e)SCO packets shall be set to 0.
+
+
+struct ScoDataHeader:
+  -- HCI Synchronous Data packets
+  -- Core Spec v5.4, Vol 4, Part E, Section 5.4.3
+  -- Bits 14, and 15 are reserved for future use (RFU)
+
+  0     [+3]  bits:
+
+    0     [+12]        UInt                 connection_handle
+      -- Connection handle to be used for transmitting an ISO SUD or fragment.
+      [requires: 0x0000 <= this <= 0x0EFF]
+
+    12    [+2]         ScoDataPacketStatus  packet_status_flag
+      -- Packet status, only for frames sent by the controller.
+
+    16    [+8]         UInt                 data_total_length
+      -- Length of the packet, excluding the packet header, in octets.
