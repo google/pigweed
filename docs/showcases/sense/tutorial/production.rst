@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-prod:
 
 ===================================
-13. Run the air quality monitor app
+14. Run the air quality monitor app
 ===================================
 .. caution::
 

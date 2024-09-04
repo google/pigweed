@@ -105,8 +105,8 @@ scripts can also help development teams quickly prototype and iterate
 on the basic workflows that will be expanded upon during the real
 high-volume manufacturing process.
 
-Next, head over to :ref:`showcase-sense-tutorial-prod` to try
-out the air quality monitoring application.
+Next, head over to :ref:`showcase-sense-tutorial-bazel_cloud` to learn about
+Bazel's cloud features.
 
 .. _showcase-sense-tutorial-factory-appendix:
 
