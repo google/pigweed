@@ -175,5 +175,54 @@ TEST(EmbossTest, ReadAndWriteEventCodesInEventHeader) {
             cpp23::to_underlying(emboss::EventCode::CONNECTION_REQUEST));
 }
 
+TEST(EmbossTest, ReadCommandPayloadLength) {
+  std::array<uint8_t, 8> hci_buffer = {
+      0x4c, 0xfc, 0x05, 0x73, 0x86, 0x30, 0x00, 0x00};
+  emboss::CommandHeaderView command = emboss::MakeCommandHeaderView(
+      hci_buffer.data(), emboss::CommandHeaderView::SizeInBytes());
+  EXPECT_TRUE(command.IsComplete());
+  EXPECT_EQ(command.parameter_total_size().Read(), 5);
+}
+
+TEST(EmbossTest, ReadEventPayloadLength) {
+  std::array<uint8_t, 8> hci_buffer = {0x0e, 0x04, 0x01, 0x2e, 0xfc, 0x00};
+  emboss::EventHeaderView event = emboss::MakeEventHeaderView(
+      hci_buffer.data(), emboss::EventHeaderView::SizeInBytes());
+  EXPECT_TRUE(event.IsComplete());
+  EXPECT_EQ(event.parameter_total_size().Read(), 4);
+}
+
+TEST(EmbossTest, ReadAclPayloadLength) {
+  std::array<uint8_t, 16> hci_buffer = {0x0c,
+                                        0x00,
+                                        0x0c,
+                                        0x00,
+                                        0x08,
+                                        0x00,
+                                        0x01,
+                                        0x00,
+                                        0x06,
+                                        0x06,
+                                        0x04,
+                                        0x00,
+                                        0x5b,
+                                        0x00,
+                                        0x41,
+                                        0x00};
+  emboss::AclDataFrameHeaderView acl = emboss::MakeAclDataFrameHeaderView(
+      hci_buffer.data(), emboss::AclDataFrameHeaderView::SizeInBytes());
+  EXPECT_TRUE(acl.IsComplete());
+  EXPECT_EQ(acl.data_total_length().Read(), 12);
+}
+
+TEST(EmbossTest, ReadScoPayloadLength) {
+  std::array<uint8_t, 9> hci_buffer = {
+      0x02, 0x00, 0x06, 0xFF, 0xD3, 0x4A, 0x1B, 0x2C, 0x3D};
+  emboss::ScoDataHeaderView sco = emboss::ScoDataHeaderView(
+      hci_buffer.data(), emboss::ScoDataHeaderView::SizeInBytes());
+  EXPECT_TRUE(sco.IsComplete());
+  EXPECT_EQ(sco.data_total_length().Read(), 6);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth
