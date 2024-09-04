@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
 load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
@@ -52,9 +53,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "att_test.lib",
-    testonly = True,
+pw_cc_test(
+    name = "att_test",
     srcs = [
         "attribute_test.cc",
         "bearer_test.cc",
@@ -63,12 +63,9 @@ cc_library(
         "permissions_test.cc",
     ],
     copts = COPTS,
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":att",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
-        "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-    alwayslink = 1,
 )
