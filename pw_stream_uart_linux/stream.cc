@@ -68,13 +68,16 @@ Result<speed_t> BaudRateToSpeed(uint32_t baud_rate) {
   }
 }
 
-Status UartStreamLinux::Open(const char* path, uint32_t baud_rate) {
-  const auto speed_result = BaudRateToSpeed(baud_rate);
-  if (!speed_result.ok()) {
-    PW_LOG_ERROR("Unsupported baud rate: %" PRIu32, baud_rate);
-    return speed_result.status();
+Status UartStreamLinux::Open(const char* path, Config config) {
+  std::optional<speed_t> speed;
+  if (config.baud_rate.has_value()) {
+    const auto speed_result = BaudRateToSpeed(*config.baud_rate);
+    if (!speed_result.ok()) {
+      PW_LOG_ERROR("Unsupported baud rate: %" PRIu32, *config.baud_rate);
+      return speed_result.status();
+    }
+    speed = speed_result.value();
   }
-  speed_t speed = speed_result.value();
 
   if (fd_ != kInvalidFd) {
     PW_LOG_ERROR("UART device already open");
@@ -98,11 +101,24 @@ Status UartStreamLinux::Open(const char* path, uint32_t baud_rate) {
   }
 
   cfmakeraw(&tty);
-  result = cfsetspeed(&tty, speed);
-  if (result < 0) {
-    PW_LOG_ERROR(
-        "Failed to set TTY speed for '%s', %s", path, std::strerror(errno));
-    return Status::Unknown();
+
+  if (speed.has_value()) {
+    result = cfsetspeed(&tty, *speed);
+    if (result < 0) {
+      PW_LOG_ERROR(
+          "Failed to set TTY speed for '%s', %s", path, std::strerror(errno));
+      return Status::Unknown();
+    }
+  }
+
+  if (config.flow_control.has_value()) {
+    if (*config.flow_control) {
+      // Enable hardware flow control.
+      tty.c_cflag |= (CRTSCTS);
+    } else {
+      // Disable hardware flow control.
+      tty.c_cflag &= ~(CRTSCTS);
+    }
   }
 
   result = tcsetattr(fd_, TCSANOW, &tty);

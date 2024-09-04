@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "pw_result/result.h"
 #include "pw_span/span.h"
@@ -24,6 +25,15 @@ namespace pw::stream {
 /// `pw::stream::NonSeekableReaderWriter` implementation for UARTs on Linux.
 class UartStreamLinux : public NonSeekableReaderWriter {
  public:
+  // Linux UART configuration structure.
+  //
+  // Properties are listed as optional - we can allow the user to leave the
+  // default properties un-changed.
+  struct Config {
+    std::optional<uint32_t> baud_rate;
+    std::optional<bool> flow_control;
+  };
+
   constexpr UartStreamLinux() = default;
 
   // UartStream objects are moveable but not copyable.
@@ -45,7 +55,7 @@ class UartStreamLinux : public NonSeekableReaderWriter {
   /// @param[in] path Path to the TTY device.
   /// @param[in] baud_rate Baud rate to use for the device.
   ///
-  /// @returns @rst
+  /// @return @rst
   ///
   /// .. pw-status-codes::
   ///
@@ -58,7 +68,30 @@ class UartStreamLinux : public NonSeekableReaderWriter {
   ///    UNKNOWN: An error was returned by the operating system.
   ///
   /// @endrst
-  Status Open(const char* path, uint32_t baud_rate);
+  Status Open(const char* path, uint32_t baud_rate) {
+    return Open(path, {.baud_rate = baud_rate, .flow_control = std::nullopt});
+  }
+
+  /// Open a UART device using the specified Config struct.
+  ///
+  /// @param[in] path Path to the TTY device.
+  /// @param[in] config UartStreamLinux configuration structure.
+  ///
+  /// @return @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The device was successfully opened and configured.
+  ///
+  ///    INVALID_ARGUMENT: Invalid config, for e.g. unsupported baud rate.
+  ///
+  ///    FAILED_PRECONDITION: A device was already open.
+  ///
+  ///    UNKNOWN: An error was returned by the operating system.
+  ///
+  /// @endrst
+  Status Open(const char* path, Config config);
+
   void Close();
 
  private:

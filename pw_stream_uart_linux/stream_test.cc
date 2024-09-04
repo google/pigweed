@@ -29,6 +29,24 @@ TEST(UartStreamLinuxTest, TestOpenNonUartDevice) {
   EXPECT_EQ(status, Status::Unknown());
 }
 
+TEST(UartStreamLinuxTest, TestOpenNonUartDeviceWithDefaultConfigStruct) {
+  UartStreamLinux uart;
+  // Leave config struct default initialized.
+  UartStreamLinux::Config uart_config = {};
+  Status status = uart.Open(kPathNonUart, uart_config);
+  EXPECT_EQ(status, Status::Unknown());
+}
+
+TEST(UartStreamLinuxTest, TestOpenNonUartDeviceWithPopulatedConfigStruct) {
+  UartStreamLinux uart;
+  UartStreamLinux::Config uart_config = {
+      .baud_rate = 115200,
+      .flow_control = true,
+  };
+  Status status = uart.Open(kPathNonUart, uart_config);
+  EXPECT_EQ(status, Status::Unknown());
+}
+
 TEST(UartStreamLinuxTest, TestOpenInvalidBaudRate) {
   UartStreamLinux uart;
   Status status = uart.Open(kPathNonUart, 123456);
