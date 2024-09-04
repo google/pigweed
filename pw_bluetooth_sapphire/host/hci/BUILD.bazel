@@ -11,6 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
 load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
@@ -95,4 +97,29 @@ cc_library(
         "@pigweed//pw_bluetooth:emboss_hci_test",
     ],
     alwayslink = 1,
+)
+
+pw_cc_test(
+    name = "hci-spec_test",
+    srcs = [
+        "advertising_handle_map_test.cc",
+        "connection_test.cc",
+        "extended_low_energy_advertiser_test.cc",
+        "extended_low_energy_scanner_test.cc",
+        "legacy_low_energy_advertiser_test.cc",
+        "legacy_low_energy_scanner_test.cc",
+        "low_energy_advertiser_test.cc",
+        "low_energy_connector_test.cc",
+        "low_energy_multiple_advertising_test.cc",
+        "low_energy_scanner_test.cc",
+        "sequential_command_runner_test.cc",
+    ],
+    copts = COPTS,
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
+    deps = [
+        ":hci",
+        ":testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "@pigweed//pw_bluetooth:emboss_hci_test",
+    ],
 )
