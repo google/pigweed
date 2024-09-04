@@ -11,6 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
 load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
@@ -97,9 +99,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "gap_test.lib",
-    testonly = True,
+pw_cc_test(
+    name = "gap_test",
     srcs = [
         "adapter_test.cc",
         "android_vendor_capabilities_test.cc",
@@ -122,8 +123,7 @@ cc_library(
         "types_test.cc",
     ],
     copts = COPTS,
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":gap",
         ":testing",
@@ -134,7 +134,5 @@ cc_library(
         "//pw_bluetooth_sapphire/host/sm",
         "//pw_bluetooth_sapphire/host/sm:testing",
         "//pw_bluetooth_sapphire/host/testing",
-        "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-    alwayslink = 1,
 )
