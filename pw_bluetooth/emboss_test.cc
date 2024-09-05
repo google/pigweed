@@ -224,5 +224,73 @@ TEST(EmbossTest, ReadScoPayloadLength) {
   EXPECT_EQ(sco.data_total_length().Read(), 6);
 }
 
+TEST(EmbossTest, WriteSniffMode) {
+  std::array<uint8_t, emboss::SniffModeCommandWriter::SizeInBytes()> buffer{};
+  emboss::SniffModeCommandWriter writer =
+      emboss::MakeSniffModeCommandView(&buffer);
+  writer.header().opcode_enum().Write(emboss::OpCode::SNIFF_MODE);
+  writer.header().parameter_total_size().Write(
+      emboss::SniffModeCommandWriter::SizeInBytes() -
+      emboss::CommandHeaderWriter::SizeInBytes());
+  writer.connection_handle().Write(0x0004);
+  writer.sniff_max_interval().Write(0x0330);
+  writer.sniff_min_interval().Write(0x0190);
+  writer.sniff_attempt().Write(0x0004);
+  writer.sniff_timeout().Write(0x0001);
+  std::array<uint8_t, emboss::SniffModeCommandView::SizeInBytes()> expected{
+      // Opcode (LSB, MSB)
+      0x03,
+      0x08,
+      // Parameter Total Size
+      0x0A,
+      // Connection Handle (LSB, MSB)
+      0x04,
+      0x00,
+      // Sniff Max Interval (LSB, MSB)
+      0x30,
+      0x03,
+      // Sniff Min Interval (LSB, MSB)
+      0x90,
+      0x01,
+      // Sniff Attempt (LSB, MSB)
+      0x04,
+      0x00,
+      // Sniff Timeout (LSB, MSB)
+      0x01,
+      0x00};
+  EXPECT_EQ(buffer, expected);
+}
+
+TEST(EmbossTest, ReadSniffMode) {
+  std::array<uint8_t, emboss::SniffModeCommandView::SizeInBytes()> buffer{
+      // Opcode (LSB, MSB)
+      0x03,
+      0x08,
+      // Parameter Total Size
+      0x0A,
+      // Connection Handle (LSB, MSB)
+      0x04,
+      0x00,
+      // Sniff Max Interval (LSB, MSB)
+      0x30,
+      0x03,
+      // Sniff Min Interval (LSB, MSB)
+      0x90,
+      0x01,
+      // Sniff Attempt (LSB, MSB)
+      0x04,
+      0x00,
+      // Sniff Timeout (LSB, MSB)
+      0x01,
+      0x00};
+  emboss::SniffModeCommandView view = emboss::MakeSniffModeCommandView(&buffer);
+  EXPECT_EQ(view.header().opcode_enum().Read(), emboss::OpCode::SNIFF_MODE);
+  EXPECT_TRUE(view.header().IsComplete());
+  EXPECT_EQ(view.connection_handle().Read(), 0x0004);
+  EXPECT_EQ(view.sniff_max_interval().Read(), 0x0330);
+  EXPECT_EQ(view.sniff_min_interval().Read(), 0x0190);
+  EXPECT_EQ(view.sniff_attempt().Read(), 0x0004);
+  EXPECT_EQ(view.sniff_timeout().Read(), 0x0001);
+}
 }  // namespace
 }  // namespace pw::bluetooth

@@ -171,6 +171,11 @@ enum OpCode:
   IO_CAPABILITY_REQUEST_NEGATIVE_REPLY                         = 0x0434
     -- IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 
+  ### Link Policy Commands - Core Spec v5.4, Part E, Section 7.32 (OGF 0x02)
+
+  SNIFF_MODE                                                   = 0x0803
+    -- Sniff Mode Command
+
   ### Controller & Baseband Commands - Core Spec v5.0 Vol 2, Part E, Section 7.3 (OGF 0x03)
 
   SET_EVENT_MASK                                               = 0x0C01
