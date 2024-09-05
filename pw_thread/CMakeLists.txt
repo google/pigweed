@@ -134,6 +134,7 @@ pw_add_library(pw_thread.thread_snapshot_service STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_log
     pw_protobuf
     pw_rpc.raw.server_api
     pw_span

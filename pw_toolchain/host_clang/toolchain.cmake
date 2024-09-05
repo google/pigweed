@@ -24,8 +24,10 @@ include($ENV{PW_ROOT}/pw_perf_test/backend.cmake)
 include($ENV{PW_ROOT}/pw_rpc/system_server/backend.cmake)
 include($ENV{PW_ROOT}/pw_sync/backend.cmake)
 include($ENV{PW_ROOT}/pw_sys_io/backend.cmake)
+include($ENV{PW_ROOT}/pw_system/backend.cmake)
 include($ENV{PW_ROOT}/pw_thread/backend.cmake)
 include($ENV{PW_ROOT}/pw_trace/backend.cmake)
+include($ENV{PW_ROOT}/pw_trace_tokenized/backend.cmake)
 
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
@@ -37,7 +39,7 @@ pw_set_backend(pw_assert.check pw_assert.print_and_abort_check_backend)
 pw_set_backend(pw_assert.assert pw_assert.print_and_abort_assert_backend)
 
 # Configure backend for async dispatcher facade
-pw_set_backend(pw_async2.dispatcher pw_async2_basic.dispatcher_backend)
+pw_set_backend(pw_async2.dispatcher pw_async2_epoll.dispatcher_backend)
 
 # Configure backend for logging facade.
 pw_set_backend(pw_log pw_log_basic)
@@ -74,9 +76,17 @@ pw_set_backend(pw_thread.yield pw_thread_stl.yield)
 pw_set_backend(pw_thread.sleep pw_thread_stl.sleep)
 pw_set_backend(pw_thread.thread pw_thread_stl.thread)
 pw_set_backend(pw_thread.test_thread_context pw_thread_stl.test_thread_context)
+pw_set_backend(pw_thread.thread_iteration pw_thread_stl.thread_iteration)
 
-# TODO(ewout): Migrate this to match GN's tokenized trace setup.
-pw_set_backend(pw_trace pw_trace.null)
+# Configure backends for pw_system
+pw_set_backend(pw_system.target_hooks pw_system.stl_target_hooks)
+pw_set_backend(pw_system.rpc_server pw_system.hdlc_rpc_server)
+pw_set_backend(pw_system.io pw_system.sys_io_target_io)
+
+# Configure backends for pw_trace
+pw_set_backend(pw_trace pw_trace_tokenized)
+# Maybe this should just be a facade?
+set(pw_trace_tokenizer_time pw_trace_tokenized.host_trace_time CACHE STRING "Tokenizer trace time implementation" FORCE)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # The CIPD provided Clang/LLVM toolchain must link against the matched

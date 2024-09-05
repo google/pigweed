@@ -14,17 +14,29 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_system/backend.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 # WARNING: Many of the dependencies in this file are missing and need to be
 # added/updated. This is provided as a starting point, but currently does not
 # work.
 
-pw_add_library(pw_system.config INTERFACE
-  HEADERS
-    public/pw_system/config.h
-  PUBLIC_INCLUDES
-    public
-)
+if("${pw_cpu_exception.entry_BACKEND}" STREQUAL "")
+  pw_add_library(pw_system.config INTERFACE
+    HEADERS
+      public/pw_system/config.h
+    PUBLIC_INCLUDES
+      public
+    PUBLIC_DEFINES
+      PW_SYSTEM_ENABLE_CRASH_HANDLER=0
+  )
+else()
+  pw_add_library(pw_system.config INTERFACE
+    HEADERS
+      public/pw_system/config.h
+    PUBLIC_INCLUDES
+      public
+  )
+endif()
 
 pw_add_library(pw_system.log STATIC
   PUBLIC_DEPS
@@ -71,6 +83,7 @@ pw_add_facade(pw_system.rpc_server INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_rpc.server
     pw_system.config
     pw_thread.thread_core
 )
@@ -87,6 +100,7 @@ pw_add_library(pw_system.hdlc_rpc_server STATIC
     pw_system.sys_io_target_io
     pw_thread.thread_core
     pw_trace
+    pw_log
   SOURCES
     hdlc_rpc_server.cc
 )
@@ -169,13 +183,64 @@ pw_add_library(pw_system.trace_service STATIC
     trace_service.cc
 )
 
-pw_add_library(pw_system.io INTERFACE
+pw_add_facade(pw_system.io INTERFACE
+  BACKEND
+    pw_system.io_BACKEND
   HEADERS
     public/pw_system/io.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_stream
+)
+
+pw_add_facade(pw_system.device_handler INTERFACE
+  BACKEND
+    pw_system.device_handler_BACKEND
+  HEADERS
+    public/pw_system/device_handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_snapshot.snapshot_proto.pwpb
+)
+
+pw_add_library(pw_system.unknown_device_handler STATIC
+  SOURCES
+    unknown_device_handler.cc
+  PRIVATE_DEPS
+    pw_system.device_handler.facade
+)
+
+pw_proto_library(pw_system.device_service_proto
+  SOURCES
+    pw_system_protos/device_service.proto
+  INPUTS
+    pw_system_protos/device_service.options
+)
+
+pw_add_library(pw_system.device_service_pwpb STATIC
+  HEADERS
+    public/pw_system/device_service_pwpb.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    device_service_pwpb.cc
+  PUBLIC_DEPS
+    pw_system.device_service_proto.pwpb_rpc
+  PRIVATE_DEPS
+    pw_system.device_handler
+)
+
+pw_add_library(pw_system.device_service STATIC
+  HEADERS
+    public/pw_system/device_service.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    device_service.cc
+  PRIVATE_DEPS
+    pw_system.device_service_pwpb
 )
 
 pw_add_library(pw_system.init STATIC
@@ -186,17 +251,19 @@ pw_add_library(pw_system.init STATIC
   SOURCES
     init.cc
   PRIVATE_DEPS
+    pw_system.device_service
+    pw_system.file_manager
     pw_system.file_service
     pw_system.log
     pw_system.rpc_server
-    pw_system.target_hooks
+    pw_system.target_hooks.facade
     pw_system.thread_snapshot_service
     pw_system.trace_service
     pw_system.transfer_service
-    pw_system.file_manager
     pw_system.work_queue
-    pw_rpc.pwpb.echo_service
+    pw_metric.global
     pw_metric.metric_service_pwpb
+    pw_rpc.pwpb.echo_service
     pw_thread.thread
     pw_trace
 )
@@ -216,11 +283,22 @@ pw_add_library(pw_system.work_queue STATIC
 
 pw_add_library(pw_system.sys_io_target_io STATIC
   PRIVATE_DEPS
-    pw_system.io
+    pw_system.io.facade
     pw_stream
     pw_stream.sys_io_stream
   SOURCES
     sys_io_target_io.cc
+)
+
+pw_add_library(pw_system.socket_target_io STATIC
+  SOURCES
+    socket_target_io.cc
+  PRIVATE_DEPS
+    pw_assert
+    pw_stream
+    pw_stream.socket_stream
+    pw_system.config
+    pw_system.io.facade
 )
 
 pw_add_facade(pw_system.target_hooks INTERFACE
@@ -264,13 +342,125 @@ pw_add_library(pw_system.zephyr_target_hooks STATIC
     pw_thread_zephyr.thread
 )
 
-pw_add_library(pw_system.system_example STATIC
-  PRIVATE_DEPS
+add_executable(pw_system.system_example EXCLUDE_FROM_ALL
+  example_user_app_init.cc
+)
+target_link_libraries(pw_system.system_example
+  PRIVATE
     pw_system.init
     pw_system.io
+    pw_system.log
+    pw_system.rpc_server
+    pw_system.work_queue
+    pw_log
+    pw_thread.sleep
+    pw_trace
+    pw_unit_test.rpc_service
     pw_system.target_hooks
-    pw_stream
-    pw_stream.sys_io_stream
+    targets.host_device_simulator.boot
+)
+
+pw_add_library(pw_system.async STATIC
+  HEADERS
+    public/pw_system/system.h
+  PUBLIC_INCLUDES
+    public
   SOURCES
-    example_user_app_init.cc
+    pw_system_private/threads.h
+    system.cc
+    threads.cc
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_async2.dispatcher
+    pw_channel
+    pw_rpc.server
+  PRIVATE_DEPS
+    pw_system.async_packet_io
+    pw_system.file_manager
+    pw_system.file_service
+    pw_system.log
+    pw_system.thread_snapshot_service
+    pw_system.transfer_service
+    pw_system.work_queue
+    pw_allocator.best_fit_block_allocator
+    pw_allocator.synchronized_allocator
+    pw_async2.allocate_task
+    pw_async2.pend_func_task
+    pw_hdlc.router
+    pw_multibuf.simple_allocator
+    pw_rpc.pwpb.echo_service
+    pw_sync.interrupt_spin_lock
+    pw_thread.thread
+)
+
+pw_add_library(pw_system.async_packet_io STATIC
+  HEADERS
+    public/pw_system/internal/async_packet_io.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    async_packet_io.cc
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_channel.forwarding_channel
+    pw_containers.inline_var_len_entry_queue
+    pw_hdlc.router
+    pw_multibuf.simple_allocator
+    pw_rpc.server
+    pw_sync.lock_annotations
+    pw_sync.mutex
+    pw_sync.thread_notification
+    pw_thread.thread
+    pw_thread.thread_core
+    pw_allocator.allocator
+    pw_channel
+    pw_multibuf
+  PRIVATE_DEPS
+    pw_system.config
+    pw_assert
+    pw_log
+)
+
+if((NOT "${pw_async2.dispatcher_BACKEND}" STREQUAL "") AND
+   (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows"))
+  # TODO: b/317922402 - Run on Windows when thread detaching is supported.
+  pw_add_test(pw_system.async_packet_io_test
+    SOURCES
+      async_packet_io_test.cc
+    PRIVATE_DEPS
+      pw_system.async_packet_io
+      pw_allocator.testing
+      pw_channel.loopback_channel
+      pw_multibuf.testing
+    GROUPS
+      modules
+      pw_system
+  )
+
+  pw_add_test(pw_system.system_async_test
+    SOURCES
+      system_async_test.cc
+    PRIVATE_DEPS
+      pw_system.async
+      pw_allocator.testing
+      pw_channel.loopback_channel
+      pw_multibuf.testing
+    GROUPS
+      modules
+      pw_system
+  )
+endif()
+
+
+add_executable(pw_system.system_async_host_example EXCLUDE_FROM_ALL
+  example_user_app_init.cc
+)
+target_link_libraries(pw_system.system_async_host_example
+  PRIVATE
+    pw_system.async
+    pw_channel.epoll_channel
+    pw_multibuf.testing
+    pw_trace
+    pw_unit_test.rpc_service
+    targets.host_device_simulator.boot
 )

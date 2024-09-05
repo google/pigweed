@@ -11,21 +11,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_async2_epoll.dispatcher_backend STATIC
-  HEADERS
-    public_overrides/pw_async2/dispatcher_native.h
-  SOURCES
-    dispatcher.cc
-  PUBLIC_INCLUDES
-    public
-    public_overrides
-  PUBLIC_DEPS
-    pw_assert.check
-    pw_async2.dispatcher_base
-    pw_async2.poll
-  PRIVATE_DEPS
-    pw_log
-)
+set(pw_trace_tokenizer_time ""
+  CACHE STRING
+  "Tokenizer trace time, gets included if provided")
+
+set(pw_trace_tokenized_BUFFER_SIZE "256"
+  CACHE STRING
+  "Trace buffer size in bytes. Set to 0 to disable.")

@@ -20,3 +20,9 @@ pw_add_backend_variable(pw_system.rpc_server_BACKEND)
 
 # The pw_system backend that provides the system target hooks.
 pw_add_backend_variable(pw_system.target_hooks_BACKEND)
+
+pw_add_backend_variable(pw_system.device_handler_BACKEND
+  DEFAULT_BACKEND
+    pw_system.unknown_device_handler
+)
+pw_add_backend_variable(pw_system.io_BACKEND)

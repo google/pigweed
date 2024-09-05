@@ -51,6 +51,7 @@ pw_add_library(pw_sensor INTERFACE
     pw_tokenizer
 )
 
+# This test does not run on CMake due to missing pw_sensor_library function.
 pw_add_test(pw_sensor.constants_test
   SOURCES
     attributes_test.cc

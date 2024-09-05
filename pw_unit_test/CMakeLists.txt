@@ -13,6 +13,9 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+
+include($ENV{PW_ROOT}/pw_unit_test/backend.cmake)
 
 pw_add_module_config(pw_unit_test_CONFIG)
 
@@ -58,8 +61,10 @@ pw_add_library(pw_unit_test.light STATIC
     pw_bytes.alignment
     pw_polyfill
     pw_preprocessor
-    pw_string
+    pw_string.builder
     pw_unit_test.config
+  PRIVATE_DEPS
+    pw_assert
   PUBLIC_INCLUDES
     light_public_overrides
     public
@@ -227,3 +232,53 @@ pw_add_test(pw_unit_test.test_record_event_handler_test
   GROUPS
     pw_unit_test
 )
+
+pw_proto_library(pw_unit_test.unit_test_proto
+  SOURCES
+    pw_unit_test_proto/unit_test.proto
+)
+
+if("${pw_unit_test_BACKEND}" STREQUAL "pw_unit_test.light")
+  pw_add_library(pw_unit_test.rpc_service STATIC
+    PUBLIC_DEPS
+      pw_unit_test.config
+      pw_unit_test.event_handler
+      pw_unit_test
+      pw_unit_test.unit_test_proto.pwpb
+      pw_unit_test.unit_test_proto.raw_rpc
+      pw_containers.vector
+    PRIVATE_DEPS
+      pw_log
+    PUBLIC_INCLUDES
+      public
+      rpc_light_public
+    HEADERS
+      public/pw_unit_test/unit_test_service.h
+      rpc_light_public/pw_unit_test/internal/rpc_event_handler.h
+    SOURCES
+      unit_test_service.cc
+      rpc_light_event_handler.cc
+  )
+else()
+  pw_add_library(pw_unit_test.rpc_service STATIC
+    PUBLIC_DEPS
+      pw_unit_test.config
+      pw_unit_test.event_handler
+      pw_unit_test
+      pw_unit_test.unit_test_proto.pwpb
+      pw_unit_test.unit_test_proto.raw_rpc
+      pw_containers.vector
+    PRIVATE_DEPS
+      pw_log
+    PUBLIC_INCLUDES
+      public
+      rpc_gtest_public
+    HEADERS
+      public/pw_unit_test/unit_test_service.h
+      rpc_light_public/pw_unit_test/internal/rpc_event_handler.h
+      rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h
+    SOURCES
+      unit_test_service.cc
+      rpc_gtest_event_handler.cc
+  )
+endif()

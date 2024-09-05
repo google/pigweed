@@ -11,21 +11,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_async2_epoll.dispatcher_backend STATIC
-  HEADERS
-    public_overrides/pw_async2/dispatcher_native.h
-  SOURCES
-    dispatcher.cc
-  PUBLIC_INCLUDES
-    public
-    public_overrides
-  PUBLIC_DEPS
-    pw_assert.check
-    pw_async2.dispatcher_base
-    pw_async2.poll
-  PRIVATE_DEPS
-    pw_log
-)
+set(pw_unit_test_BACKEND ="pw_unit_test.light"
+  CACHE STRING
+  "The unit test framework implementation. Defaults to pw_unit_test.light, which implements a subset of GoogleTest safe to run on device.")
+
+set(pw_unit_test_MAIN "pw_unit_test.simple_printing_main"
+  CACHE STRING
+  "Implementation of a main function for ``pw_test`` unit test binaries. Must be set to an appropriate target for the pw_unit_test backend.")

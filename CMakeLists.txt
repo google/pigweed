@@ -79,6 +79,7 @@ add_subdirectory(pw_async EXCLUDE_FROM_ALL)
 add_subdirectory(pw_async_basic EXCLUDE_FROM_ALL)
 add_subdirectory(pw_async2 EXCLUDE_FROM_ALL)
 add_subdirectory(pw_async2_basic EXCLUDE_FROM_ALL)
+add_subdirectory(pw_async2_epoll EXCLUDE_FROM_ALL)
 add_subdirectory(pw_async_fuchsia EXCLUDE_FROM_ALL)
 add_subdirectory(pw_base64 EXCLUDE_FROM_ALL)
 add_subdirectory(pw_blob_store EXCLUDE_FROM_ALL)
@@ -175,6 +176,13 @@ add_subdirectory(third_party/fuzztest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/boringssl EXCLUDE_FROM_ALL)
 
+add_custom_target(pw_apps)
+
+# pw_system example apps
+add_subdirectory(targets/host_device_simulator EXCLUDE_FROM_ALL)
+add_dependencies(pw_apps pw_system.system_example)
+add_dependencies(pw_apps pw_system.system_async_host_example)
+
 if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   add_subdirectory(zephyr)
   if(CONFIG_PIGWEED_MINIMAL_CPP_STDLIB)
@@ -184,6 +192,5 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
 else()
   add_subdirectory(targets/host EXCLUDE_FROM_ALL)
 
-  add_custom_target(pw_apps)
   add_dependencies(pw_apps pw_hdlc.rpc_example)
 endif()

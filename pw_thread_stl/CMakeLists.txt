@@ -92,6 +92,15 @@ pw_add_library(pw_thread_stl.test_threads STATIC
     pw_thread.thread
 )
 
+pw_add_library(pw_thread_stl.thread_iteration STATIC
+  PRIVATE_DEPS
+    pw_status
+  SOURCES
+    thread_iteration.cc
+  PUBLIC_DEPS
+    pw_thread.thread_iteration.facade
+)
+
 if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
    (NOT "${pw_thread.sleep_BACKEND}" STREQUAL ""))
   pw_add_test(pw_thread_stl.thread_backend_test
