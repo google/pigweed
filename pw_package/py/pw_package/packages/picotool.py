@@ -28,6 +28,11 @@ _LOG = logging.getLogger(__package__)
 
 def force_copy(source: Path, destination: Path):
     _LOG.info('Copy %s -> %s', source, destination)
+    # ensure the destination directory exists
+    # otherwise the copy will fail on mac.
+    dirname = os.path.dirname(destination)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
     destination.unlink(missing_ok=True)
     shutil.copy(source, destination)
 
