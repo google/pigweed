@@ -22,7 +22,7 @@ import sys
 from typing import BinaryIO, Iterable
 
 import serial
-from pw_tokenizer import database, detokenize, tokens
+from pw_tokenizer import database, detokenize, encode, tokens
 
 
 def _parse_args():
@@ -59,7 +59,7 @@ def _parse_args():
     parser.add_argument(
         '-p',
         '--prefix',
-        default=detokenize.NESTED_TOKEN_PREFIX,
+        default=encode.NESTED_TOKEN_PREFIX,
         help=(
             'The one-character prefix that signals the start of a '
             'Base64-encoded message. (default: $)'
@@ -90,12 +90,14 @@ def _detokenize_serial(
         output = sys.stdout.buffer
 
     detokenizer = detokenize.Detokenizer(
-        tokens.Database.merged(*databases), show_errors=show_errors
+        tokens.Database.merged(*databases),
+        prefix=prefix,
+        show_errors=show_errors,
     )
     serial_device = serial.Serial(port=device, baudrate=baudrate)
 
     try:
-        detokenizer.detokenize_base64_live(serial_device, output, prefix)
+        detokenizer.detokenize_base64_live(serial_device, output)
     except KeyboardInterrupt:
         output.flush()
 

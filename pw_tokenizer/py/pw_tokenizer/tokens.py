@@ -29,6 +29,7 @@ import subprocess
 from typing import (
     BinaryIO,
     Callable,
+    IO,
     Iterable,
     Iterator,
     NamedTuple,
@@ -373,13 +374,13 @@ def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
     return entries
 
 
-def write_csv(database: Database, fd: BinaryIO) -> None:
+def write_csv(database: Database, fd: IO[bytes]) -> None:
     """Writes the database as CSV to the provided binary file."""
     for entry in sorted(database.entries()):
         _write_csv_line(fd, entry)
 
 
-def _write_csv_line(fd: BinaryIO, entry: TokenizedStringEntry):
+def _write_csv_line(fd: IO[bytes], entry: TokenizedStringEntry):
     """Write a line in CSV format to the provided binary file."""
     # Align the CSV output to 10-character columns for improved readability.
     # Use \n instead of RFC 4180's \r\n.

@@ -102,8 +102,9 @@ def encode_token_and_args(
     return struct.pack('<I', token) + encode_args(*args)
 
 
-def prefixed_base64(data: bytes, prefix: str = '$') -> str:
+def prefixed_base64(data: bytes, prefix: str | bytes = '$') -> str:
     """Encodes a tokenized message as prefixed Base64."""
+    prefix = prefix if isinstance(prefix, str) else prefix.decode()
     return prefix + base64.b64encode(data).decode()
 
 

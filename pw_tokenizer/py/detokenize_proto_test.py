@@ -113,16 +113,16 @@ class TestDecodeOptionallyTokenized(unittest.TestCase):
     """Tests optional detokenization directly."""
 
     def setUp(self) -> None:
-        self.detok = detokenize.Detokenizer(
-            tokens.Database(
-                [
-                    tokens.TokenizedStringEntry(0, 'cheese'),
-                    tokens.TokenizedStringEntry(1, 'on pizza'),
-                    tokens.TokenizedStringEntry(2, 'is quite good'),
-                    tokens.TokenizedStringEntry(3, 'they say'),
-                ]
-            )
+        db = tokens.Database(
+            [
+                tokens.TokenizedStringEntry(0, 'cheese'),
+                tokens.TokenizedStringEntry(1, 'on pizza'),
+                tokens.TokenizedStringEntry(2, 'is quite good'),
+                tokens.TokenizedStringEntry(3, 'they say'),
+            ]
         )
+        self.detok = detokenize.Detokenizer(db)
+        self.detok_tilde_prefix = detokenize.Detokenizer(db, prefix='~')
 
     def test_found_binary_token(self) -> None:
         self.assertEqual(
@@ -152,14 +152,15 @@ class TestDecodeOptionallyTokenized(unittest.TestCase):
     def test_found_alternate_prefix(self) -> None:
         b64_bytes = b'~' + base64.b64encode(b'\x00\x00\x00\x00')
         self.assertEqual(
-            'cheese', decode_optionally_tokenized(self.detok, b64_bytes, '~')
+            'cheese',
+            decode_optionally_tokenized(self.detok_tilde_prefix, b64_bytes),
         )
 
     def test_missing_alternate_prefix(self) -> None:
         b64_bytes = b'~' + base64.b64encode(b'\x02\x00\x00\x00')
         self.assertEqual(
             b64_bytes.decode(),
-            decode_optionally_tokenized(self.detok, b64_bytes, '^'),
+            decode_optionally_tokenized(self.detok, b64_bytes),
         )
 
     def test_no_detokenizer_binary(self) -> None:
