@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(glob(["**/*"]))
@@ -45,9 +47,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "sdp_test.lib",
-    testonly = True,
+pw_cc_test(
+    name = "sdp_test",
     srcs = [
         "client_test.cc",
         "data_element_test.cc",
@@ -56,14 +57,11 @@ cc_library(
         "service_discoverer_test.cc",
         "service_record_test.cc",
     ],
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":sdp",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
         "//pw_bluetooth_sapphire/host/testing",
-        "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-    alwayslink = 1,
 )
