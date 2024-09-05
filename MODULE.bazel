@@ -33,9 +33,9 @@ bazel_dep(name = "rules_jvm_external", version = "6.2")
 bazel_dep(name = "rules_libusb", version = "0.1.0-rc1")
 bazel_dep(name = "rules_platform", version = "0.1.0")
 bazel_dep(name = "rules_probe_rs", version = "0.0.2")
-bazel_dep(name = "rules_proto", version = "6.0.0")
+bazel_dep(name = "rules_proto", version = "6.0.2")
 bazel_dep(name = "rules_python", version = "0.34.0")
-bazel_dep(name = "rules_rust", version = "0.45.1")
+bazel_dep(name = "rules_rust", version = "0.49.3")
 
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 
@@ -69,9 +69,8 @@ git_override(
     remote = "https://github.com/nanopb/nanopb.git",
 )
 
-archive_override(
+single_version_override(
     module_name = "rules_rust",
-    integrity = "sha256-+bWb47wg0VchIADaHt6L5Dma2Gn+Q589nz/MKcTi+lo=",
     patch_strip = 1,
     patches = [
         # Fix rustdoc test w/ proc macros
@@ -85,8 +84,12 @@ archive_override(
         # we will migrate to that solution.
         # https://github.com/konkers/rules_rust/tree/wip/rustdoc
         "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
+        # When used through bzlmod, there is no way to disable the registration
+        # rules_rust's default toolchains.   We force disable them here while
+        # TODO: https://github.com/bazelbuild/rules_rust/issues/2818 - Remove
+        #       when mechanism to disable toolchains is added upstream.
+        "//pw_rust/bazel_patches:0003-WIP-disable-default-toolchain-registration.patch",
     ],
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.45.1/rules_rust-v0.45.1.tar.gz"],
 )
 
 # Transitive deps not in BCR
@@ -164,6 +167,16 @@ register_toolchains(
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33+nofp",
     "//pw_toolchain/host_clang:host_cc_toolchain_linux",
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
+)
+
+# Rust toolchains
+pw_rust = use_extension("//pw_toolchain/rust:extensions.bzl", "pw_rust")
+pw_rust.toolchain(cipd_tag = "rust_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72")
+use_repo(pw_rust, "pw_rust_toolchains")
+
+register_toolchains(
+    "@pw_rust_toolchains//:all",
+    dev_dependency = True,
 )
 
 # Get probe-rs

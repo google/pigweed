@@ -109,23 +109,6 @@ git_repository(
     remote = "https://pigweed.googlesource.com/third_party/github/google/googletest",
 )
 
-load(
-    "//pw_toolchain/rust:defs.bzl",
-    "pw_rust_register_toolchain_and_target_repos",
-    "pw_rust_register_toolchains",
-)
-
-pw_rust_register_toolchain_and_target_repos(
-    cipd_tag = "rust_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72",
-)
-
-# Allows creation of a `rust-project.json` file to allow rust analyzer to work.
-load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
-
-rust_analyzer_dependencies()
-
-pw_rust_register_toolchains()
-
 # Vendored third party rust crates.
 git_repository(
     name = "rust_crates",
