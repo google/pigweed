@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(glob(["**/*"]))
@@ -175,9 +177,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "testing_test.lib",
-    testonly = True,
+pw_cc_test(
+    name = "testing_test",
     srcs = [
         "fake_controller_test.cc",
         "fake_dynamic_channel_test.cc",
@@ -187,12 +188,9 @@ cc_library(
         "inspect_util_test.cc",
         "parse_args_test.cc",
     ],
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":testing",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
-        "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-    alwayslink = 1,
 )
