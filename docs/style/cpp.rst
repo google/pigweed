@@ -567,6 +567,75 @@ and standardize loop/function structure.
         return OkStatus();
       }
 
+Error handling
+==============
+Historically, exceptions have been avoided in embedded C++ as well as in general
+C++ code written at Google. Instead, assertions and error codes are used to
+communicate errors with less overhead.
+
+Signal and propagate non-fatal errors with ``pw::Status`` and ``pw::Result``,
+and assert/check for fatal errors.
+
+Add log statements to help with error tracking. See
+:ref:`guidance below <docs-pw-style-cpp-logging>` on how to craft high-value,
+low-noise logs.
+
+.. note:
+
+Like Google's C++ style guide, Pigweed does not use exceptions. The case for
+avoiding exceptions on embedded is primarily due to reducing code size.
+
+Recoverable errors
+------------------
+Use the following to report non-fatal failures from subroutines:
+
+- :cpp:type:`pw::Status`: Zero-overhead type that wraps a
+  :ref:`status code <module-pw_status-quickref>`.
+- :ref:`pw::Result <module-pw_result>`: Union of a status code and a value.
+- :ref:`pw::StatusWithSize <module-pw_status-guide-status-with-size>`: A status
+  combined with a size. Especially useful for operations which may partially
+  succeed, such as a write that sent some bytes before failing.
+
+Fatal errors
+------------
+Use :c:macro:`PW_ASSERT` and the :c:macro:`PW_CHECK` family of macros to halt
+execution on a fatal error.
+
+- These are appropriate when the security of the device is compromised.
+
+  - Example: memory corruption is detected.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      PW_CHECK_NOTNULL(item->next);
+      PW_CHECK_PTR_EQ(item, item->next->prev);
+
+- These may be appropriate for instances of unambiguous programmer error.
+
+  - Example: a caller passed a null pointer to a routine that explicitly
+    requires non-null pointers.
+
+.. warning::
+
+   Be very careful about introducing new assertions into existing code, or in
+   code paths that are not exhaustively tested, or any other scenario that may
+   result in crashes in fielded devices.
+
+.. admonition:: **No**: May cause a runtime crash.
+   :class: error
+
+   .. code-block:: cpp
+
+      StatusWithSize sws = kvs.Get("some-key", &out);
+      PW_CHECK_OK(sws.status());
+
+   The key may be missing from the :ref:`KVS <module-pw_kvs>` for a number of
+   reasons. It is likely better to surface this error to a higher level that can
+   decide how to handle a missing value.
+
 Include guards
 ==============
 The first non-comment line of every header file must be ``#pragma once``. Do
@@ -592,6 +661,249 @@ blank, like this:
    #pragma once
 
    // Header file-level comment goes here...
+
+.. _docs-pw-style-cpp-logging:
+
+Logging
+=======
+Good logging can be incredibly useful in detecting and debugging errors. Log
+quality is determined by the amount of useful information relative to overall
+amount of logs.
+
+Log in the right spot
+---------------------
+Limiting logs to only the most relevant sections of code can guide developers to
+areas that require debugging.
+
+- **Log errors as soon as they can be umabiguously determined to be errors.** An
+  unambiguous error is one that will be reported to the caller of the module or
+  component. Avoid logging errors that are handled internally by the module or
+  component.
+
+  - Example: A task manager would not log a failure to schedule a specific
+    worker from a pool, but may log the failure to find *any* worker in the
+    pool.
+
+    .. admonition:: **No**: May log errors even if the call eventually succeeds.
+       :class: error
+
+       .. code-block:: cpp
+
+          Status TaskManager::AssignToWorker(Task& task) {
+            for (auto& worker : pool_) {
+              if (worker.AssignTask(task).ok()) {
+                return OkStatus();
+              }
+            }
+            return Status::ResourceExhausted();
+          }
+
+          Status Worker::Assign(Task& task) {
+            if (busy_) {
+              PW_LOG_DEBUG("failed to assign task to worker %zu", id_);
+              return Status::FailedPrecondition();
+            }
+            // ...
+          }
+
+    .. admonition:: **Yes**: Only logs when an actual failure has occurred.
+       :class: checkmark
+
+       .. code-block:: cpp
+
+          Status TaskManager::AssignToWorker(Task& task) {
+            for (auto& worker : pool_) {
+              if (worker.AssignTask(task).ok()) {
+                return OkStatus();
+              }
+            }
+            PW_LOG_DEBUG("failed to find a worker to handle the task");
+            return Status::ResourceExhausted();
+          }
+
+          Status Worker::Assign(Task& task) {
+            if (busy_) {
+              return Status::FailedPrecondition();
+            }
+            // ...
+          }
+
+
+- **Log failures of an overall workflow at the level that it was initiated** to
+  provide context in which an error occurred.
+
+  - Example: A widget may log that it could not perform a user-scheduled task
+    because the task manager returned an error.
+
+- **Limit the use of informational logs of non-failure conditions.** These
+  "heartbeat" logs can quickly accrue and become noise. If needed, keep the
+  frequency of these logs low, e.g. not more than once per second.
+  :c:macro:`PW_LOG_EVERY_N` and :c:macro:`PW_LOG_EVERY_N_DURATION` can be used
+  to rate-limit such logs.
+
+  .. admonition:: **No**: May spew a large number of logs.
+     :class: error
+
+     .. code-block:: cpp
+
+        void OnChunk(const Chunk& chunk) {
+          ++count_;
+          total_ += chunk.size();
+          PW_LOG_DEBUG("Processed %zu chunks totaling %zu bytes", count_, total_);
+          // ...
+        }
+
+  .. admonition:: **Yes**: Only logs once every 10 seconds.
+     :class: checkmark
+
+     .. code-block:: cpp
+
+        void OnChunk(const Packet& packet) {
+          static constexpr auto kLogInterval =
+            chrono::SystemClock::for_at_least(std::chrono::seconds(10));
+          ++count_;
+          total_ += packet.size();
+          PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_DEBUG,
+                                  kLogInterval,
+                                  "Processed %zu chunks totaling %zu bytes",
+                                  count_,
+                                  total_);
+        }
+
+Log at the correct level
+------------------------
+:ref:`Log levels <module-pw_log-levels>` indicate the seriousness of a message
+and provide a simple mechanism for conditional logging and for log filtering.
+
+- **Downstream projects should use less filtered log levels**, as
+  project-specific errors more likely indicate an actionable failure.
+
+  - Use :c:macro:`PW_LOG_CRITICAL` for failures that compromise the entire
+    device and will imminently halt or crash the device.
+  - Use :c:macro:`PW_LOG_ERROR` for failures that are more serious or harder to
+    recover from.
+  - Use :c:macro:`PW_LOG_WARN` for failures that are less serious or easier to
+    recover from.
+  - Use :c:macro:`PW_LOG_INFO` for informational logs of non-failure conditions.
+
+- **Libraries and upstream code should allow configurable logging.** Downstream
+  projects may want to disable library and module logging to save on code size,
+  or enable it to aid in debugging.
+
+  - Use :c:macro:`PW_LOG_DEBUG` to log specific errors that the caller is
+    expected to handle.
+
+    .. admonition:: **Yes**
+       :class: checkmark
+
+       .. code-block:: cpp
+
+          if (stream.IsClosed()) {
+            PW_LOG_DEBUG("Stream closed unexpectedly");
+            return Status::OutOfRange();
+          }
+
+  - Use :c:macro:`PW_LOG_INFO` and :c:macro:`PW_LOG_WARN` to communicate error
+    conditions that may not have a caller that can handle them.
+
+    .. admonition:: **Yes**
+       :class: checkmark
+
+       .. code-block:: cpp
+
+          while(!task_queue_.empty()) {
+            Task task = std::move(task_queue_.back());
+            task_queue_.pop_back();
+            if (task.HasExpired()) {
+              PW_LOG_INFO("Task %zu expired before being scheduled", task.id());
+              continue;
+            }
+            Schedule(std::move(task));
+            // ...
+          }
+
+  - Set a :c:macro:`PW_LOG_LEVEL`. If logging in a module with a
+    :ref:`module configuration <module-structure-compile-time-configuration>`,
+    include a logging option and set :c:macro:`PW_LOG_LEVEL` to it.
+
+    .. admonition:: **Yes**
+       :class: checkmark
+
+       .. code-block:: cpp
+
+          // In my_module's config.h. Can be overridden at compile time.
+          #ifndef MY_MODULE_LOG_LEVEL
+          #define MY_MODULE_LOG_LEVEL PW_LOG_LEVEL_WARN
+          #endif MY_MODULE_LOG_LEVEL
+
+          // In my_module's source files.
+          #include "my_module/config.h"
+          #define PW_LOG_LEVEL MY_MODULE_LOG_LEVEL
+
+Log the right information
+-------------------------
+Logging the most useful information requires considering what may be relevant to
+an error and cannot be obtained another way.
+
+- **Include relevant context**, such as function parameters.
+- **Capitalize your log message, but do not end with puncuation.** Log backends
+  typically combine your log message with additional information and format
+  them.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: cpp
+
+      PW_LOG_DEBUG("the operation did not complete normally.");
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      PW_LOG_DEBUG("The operation completed normally");
+
+- **Set** :c:macro:`PW_LOG_MODULE_NAME` to include a
+  module name that you can filter on.
+
+.. admonition:: **Yes**
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      #define PW_LOG_MODULE_NAME "my_module"
+
+- **Do not include source location details.** The log backend can be configured
+  to add various :ref:`module-pw_log-logging_attributes` automatically.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: cpp
+
+      PW_LOG_DEBUG("%s:%d: %s called", __FILE__, __LINE__, __PRETTY_FUNCTION__);
+
+- **Do not log** :cpp:type:`pw::Status` **details.** If you are logging and
+  returning an error as a result of a subroutine that returned an error, it is
+  likely that a log statement can be added closer to where that error was
+  detected.
+
+.. admonition:: **No**
+   :class: error
+
+   .. code-block:: cpp
+
+      Result<Message> ReadAndDecode(Stream& stream) {
+        Result<EncodedMessage> result = ReadEncodedMessage(stream);
+        if (!result.ok()) {
+          Status status = result.status();
+          PW_LOG_DEBUG("Failed to read message: %s",
+                       pw_StatusString(status.code));
+          return status;
+        }
+        // ...
+      }
 
 Memory allocation
 =================

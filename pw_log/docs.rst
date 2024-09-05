@@ -127,6 +127,7 @@ system, intended to be used directly.
       ``PW_LOG_DEBUG`` style macros, which are often implemented more efficiently
       in the backend.
 
+.. _module-pw_log-levels:
 
 .. c:macro:: PW_LOG_DEBUG(fmt, ...)
 .. c:macro:: PW_LOG_INFO(fmt, ...)
@@ -321,6 +322,8 @@ source files, not headers. For example:
 
    At this time, only compile time filtering is supported. In the future, we
    plan to add support for runtime filtering.
+
+.. _module-pw_log-logging_attributes:
 
 ------------------
 Logging attributes
