@@ -76,6 +76,7 @@ def bazel(
     ctx: PresubmitContext,
     cmd: str,
     *args: str,
+    strict_module_lockfile: bool = False,
     use_remote_cache: bool = False,
     stdout: TextIO | None = None,
     **kwargs,
@@ -92,6 +93,10 @@ def bazel(
     keep_going: list[str] = []
     if ctx.continue_after_build_error:
         keep_going.append('--keep_going')
+
+    strict_lockfile: list[str] = []
+    if strict_module_lockfile:
+        strict_lockfile.append('--lockfile_mode=error')
 
     remote_cache: list[str] = []
     if use_remote_cache and ctx.luci:
@@ -128,6 +133,7 @@ def bazel(
                 f'--symlink_prefix={ctx.output_dir / "bazel-"}',
                 *num_jobs,
                 *keep_going,
+                *strict_lockfile,
                 *remote_cache,
                 *args,
                 cwd=ctx.root,

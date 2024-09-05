@@ -95,7 +95,9 @@ class PigweedGnGenNinja(build.GnGenNinja):
 
 
 def build_bazel(*args, **kwargs) -> None:
-    build.bazel(*args, use_remote_cache=True, **kwargs)
+    build.bazel(
+        *args, use_remote_cache=True, strict_module_lockfile=True, **kwargs
+    )
 
 
 #
