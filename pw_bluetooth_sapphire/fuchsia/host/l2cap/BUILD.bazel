@@ -25,16 +25,8 @@ fuchsia_cc_test(
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        "//pw_async:fake_dispatcher_fixture",
-        "//pw_bluetooth_sapphire/host/hci",
-        "//pw_bluetooth_sapphire/host/hci:testing",
-        "//pw_bluetooth_sapphire/host/l2cap",
-        "//pw_bluetooth_sapphire/host/l2cap:channel_manager_mock_controller_test_fixture",
         "//pw_bluetooth_sapphire/host/l2cap:l2cap_test.lib",
-        "//pw_bluetooth_sapphire/host/l2cap:testing",
-        "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
-        "//pw_bluetooth_sapphire/host/transport:testing",
     ],
 )
 
