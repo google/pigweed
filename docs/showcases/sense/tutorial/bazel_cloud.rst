@@ -38,7 +38,7 @@ To use cloud features, you need to get set up with some cloud provider.
 
    .. caution::
 
-      :bug:`363070027`: Sense does not support remote execution yet, so don't
+      :bug:`364781685`: Sense does not support remote execution yet, so don't
       enable that option.
 
 #. Copy the provided snippet to your ``.bazelrc``.
