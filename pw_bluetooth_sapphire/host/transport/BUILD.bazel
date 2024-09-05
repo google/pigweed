@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(glob(["**/*"]))
@@ -79,9 +81,8 @@ filegroup(
     ],
 )
 
-cc_library(
-    name = "transport_test.lib",
-    testonly = True,
+pw_cc_test(
+    name = "transport_test",
     srcs = [
         "acl_data_channel_test.cc",
         "command_channel_test.cc",
@@ -94,12 +95,9 @@ cc_library(
         "slab_allocators_test.cc",
         "transport_test.cc",
     ],
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":transport",
         "//pw_bluetooth_sapphire/host/testing",
-        "//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
-    alwayslink = 1,
 )
