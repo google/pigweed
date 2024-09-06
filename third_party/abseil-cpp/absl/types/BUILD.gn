@@ -24,6 +24,24 @@ abseil_cpp_source_set("bad_optional_access") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/types/bad_optional_access.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/types/bad_optional_access.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:raw_logging_internal",
@@ -35,9 +53,55 @@ abseil_cpp_source_set("bad_variant_access") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/types/bad_variant_access.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/types/bad_variant_access.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:raw_logging_internal",
+  ]
+}
+
+# Generated from @com_google_absl//absl/types:compare
+abseil_cpp_source_set("compare") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/types/compare.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    "../base:config",
+    "../base:core_headers",
+    "../meta:type_traits",
   ]
 }
 
@@ -45,6 +109,24 @@ abseil_cpp_source_set("bad_variant_access") {
 abseil_cpp_source_set("optional") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/types/optional.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/types/internal/optional.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":bad_optional_access",
     "../base:base_internal",
@@ -61,6 +143,24 @@ abseil_cpp_source_set("optional") {
 abseil_cpp_source_set("span") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/types/span.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/types/internal/span.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../algorithm",
     "../base:core_headers",
@@ -74,6 +174,24 @@ abseil_cpp_source_set("span") {
 abseil_cpp_source_set("variant") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/types/variant.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/types/internal/variant.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":bad_variant_access",
     "../base:base_internal",

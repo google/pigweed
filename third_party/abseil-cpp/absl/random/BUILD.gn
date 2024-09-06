@@ -22,6 +22,24 @@ import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 # Generated from @com_google_absl//absl/random:bit_gen_ref
 abseil_cpp_source_set("bit_gen_ref") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/bit_gen_ref.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":random",
     "../base:core_headers",
@@ -51,6 +69,24 @@ abseil_cpp_source_set("distributions") {
     "$dir_pw_third_party_abseil_cpp/absl/random/discrete_distribution.cc",
     "$dir_pw_third_party_abseil_cpp/absl/random/gaussian_distribution.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:base_internal",
     "../base:config",
@@ -72,6 +108,24 @@ abseil_cpp_source_set("distributions") {
 # Generated from @com_google_absl//absl/random:random
 abseil_cpp_source_set("random") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/random.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":distributions",
     ":seed_sequences",
@@ -87,6 +141,24 @@ abseil_cpp_source_set("seed_gen_exception") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/seed_gen_exception.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/seed_gen_exception.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../base:config" ]
 }
 
@@ -94,9 +166,29 @@ abseil_cpp_source_set("seed_gen_exception") {
 abseil_cpp_source_set("seed_sequences") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/seed_sequences.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/random/seed_sequences.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":seed_gen_exception",
     "../base:config",
+    "../base:nullability",
+    "../strings:string_view",
     "../types:span",
     "internal:pool_urbg",
     "internal:salted_seed_seq",

@@ -27,6 +27,7 @@ config("fuzztest_public_config") {
     "-Wno-shadow-all",
   ]
   cflags_cc = [ "-Wno-extra-semi" ]
+  defines = [ "CENTIPEDE_DISABLE_RIEGELI" ]
   if (dir_pw_third_party_fuzztest != "") {
     include_dirs = [ "$dir_pw_third_party_fuzztest" ]
   }

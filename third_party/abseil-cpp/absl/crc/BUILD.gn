@@ -23,6 +23,24 @@ import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 abseil_cpp_source_set("cpu_detect") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/cpu_detect.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/cpu_detect.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base",
     "../base:config",
@@ -43,6 +61,24 @@ abseil_cpp_source_set("crc32c") {
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_memcpy_x86_arm_combined.cc",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_non_temporal_memcpy.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":cpu_detect",
     ":crc_internal",
@@ -62,11 +98,29 @@ abseil_cpp_source_set("crc_cord_state") {
       [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_cord_state.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_cord_state.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":crc32c",
     "../base:config",
+    "../base:no_destructor",
     "../numeric:bits",
-    "../strings",
   ]
 }
 
@@ -80,6 +134,24 @@ abseil_cpp_source_set("crc_internal") {
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc.cc",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_internal.h",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_x86_arm_combined.cc",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":cpu_detect",
@@ -96,6 +168,24 @@ abseil_cpp_source_set("crc_internal") {
 # Generated from @com_google_absl//absl/crc:non_temporal_arm_intrinsics
 abseil_cpp_source_set("non_temporal_arm_intrinsics") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/non_temporal_arm_intrinsics.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../base:config" ]
 }
 
@@ -103,6 +193,24 @@ abseil_cpp_source_set("non_temporal_arm_intrinsics") {
 abseil_cpp_source_set("non_temporal_memcpy") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/non_temporal_memcpy.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":non_temporal_arm_intrinsics",

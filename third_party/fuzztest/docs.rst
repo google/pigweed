@@ -108,6 +108,6 @@ directory, run:
 
 Version
 =======
-The update script was last run for revision `6eb010c7`_.
+The update script was last run for revision `b7257a64`_.
 
-.. _6eb010c7: https://github.com/google/fuzztes/tree/6eb010c7223a6aa609b94d49bfc06ac88f922961
+.. _b7257a64: https://github.com/google/fuzztes/tree/b7257a64c701fc30265eb91179bf9310549bf440

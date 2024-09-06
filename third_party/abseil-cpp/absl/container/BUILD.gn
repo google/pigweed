@@ -22,6 +22,24 @@ import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 # Generated from @com_google_absl//absl/container:common
 abseil_cpp_source_set("common") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/common.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../meta:type_traits",
     "../types:optional",
@@ -31,6 +49,24 @@ abseil_cpp_source_set("common") {
 # Generated from @com_google_absl//absl/container:common_policy_traits
 abseil_cpp_source_set("common_policy_traits") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/common_policy_traits.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../meta:type_traits" ]
 }
 
@@ -39,6 +75,24 @@ abseil_cpp_source_set("compressed_tuple") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/compressed_tuple.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../utility" ]
 }
 
@@ -46,6 +100,24 @@ abseil_cpp_source_set("compressed_tuple") {
 abseil_cpp_source_set("container_memory") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/container_memory.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     "../base:config",
@@ -58,6 +130,24 @@ abseil_cpp_source_set("container_memory") {
 # Generated from @com_google_absl//absl/container:fixed_array
 abseil_cpp_source_set("fixed_array") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/fixed_array.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":compressed_tuple",
     "../algorithm",
@@ -72,35 +162,121 @@ abseil_cpp_source_set("fixed_array") {
 # Generated from @com_google_absl//absl/container:flat_hash_map
 abseil_cpp_source_set("flat_hash_map") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/flat_hash_map.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":container_memory",
-    ":hash_function_defaults",
+    ":hash_container_defaults",
     ":raw_hash_map",
     "../algorithm:container",
     "../base:core_headers",
-    "../memory",
+    "../meta:type_traits",
   ]
 }
 
 # Generated from @com_google_absl//absl/container:flat_hash_set
 abseil_cpp_source_set("flat_hash_set") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/flat_hash_set.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":container_memory",
-    ":hash_function_defaults",
+    ":hash_container_defaults",
     ":raw_hash_set",
     "../algorithm:container",
     "../base:core_headers",
     "../memory",
+    "../meta:type_traits",
+  ]
+}
+
+# Generated from @com_google_absl//absl/container:hash_container_defaults
+abseil_cpp_source_set("hash_container_defaults") {
+  public = [
+    "$dir_pw_third_party_abseil_cpp/absl/container/hash_container_defaults.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    ":hash_function_defaults",
+    "../base:config",
   ]
 }
 
 # Generated from @com_google_absl//absl/container:hash_function_defaults
 abseil_cpp_source_set("hash_function_defaults") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/hash_function_defaults.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
+    ":common",
     "../base:config",
     "../hash",
+    "../meta:type_traits",
     "../strings",
     "../strings:cord",
   ]
@@ -109,6 +285,24 @@ abseil_cpp_source_set("hash_function_defaults") {
 # Generated from @com_google_absl//absl/container:hash_policy_traits
 abseil_cpp_source_set("hash_policy_traits") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/hash_policy_traits.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":common_policy_traits",
     "../meta:type_traits",
@@ -118,6 +312,24 @@ abseil_cpp_source_set("hash_policy_traits") {
 # Generated from @com_google_absl//absl/container:hashtable_debug_hooks
 abseil_cpp_source_set("hashtable_debug_hooks") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/hashtable_debug_hooks.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../base:config" ]
 }
 
@@ -128,10 +340,29 @@ abseil_cpp_source_set("hashtablez_sampler") {
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/hashtablez_sampler.cc",
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/hashtablez_sampler_force_weak_definition.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base",
     "../base:config",
     "../base:core_headers",
+    "../base:no_destructor",
     "../base:raw_logging_internal",
     "../debugging:stacktrace",
     "../memory",
@@ -146,6 +377,24 @@ abseil_cpp_source_set("hashtablez_sampler") {
 # Generated from @com_google_absl//absl/container:inlined_vector
 abseil_cpp_source_set("inlined_vector") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/inlined_vector.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":inlined_vector_internal",
     "../algorithm",
@@ -161,8 +410,27 @@ abseil_cpp_source_set("inlined_vector_internal") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/inlined_vector.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":compressed_tuple",
+    "../base:base_internal",
     "../base:config",
     "../base:core_headers",
     "../memory",
@@ -174,6 +442,24 @@ abseil_cpp_source_set("inlined_vector_internal") {
 # Generated from @com_google_absl//absl/container:layout
 abseil_cpp_source_set("layout") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/container/internal/layout.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -189,6 +475,24 @@ abseil_cpp_source_set("layout") {
 abseil_cpp_source_set("raw_hash_map") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/raw_hash_map.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":container_memory",
@@ -207,10 +511,29 @@ abseil_cpp_source_set("raw_hash_set") {
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/container/internal/raw_hash_set.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":common",
     ":compressed_tuple",
     ":container_memory",
+    ":hash_function_defaults",
     ":hash_policy_traits",
     ":hashtable_debug_hooks",
     ":hashtablez_sampler",

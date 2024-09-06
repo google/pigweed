@@ -47,6 +47,6 @@ modules are updated. See those modules for instructions on updating.
 
 Version
 =======
-The update script was last run for revision `3ab97e72`_.
+The update script was last run for revision `e9ca8d1c`_.
 
-.. _3ab97e72: https://github.com/abseil/abseil-cpp/tree/3ab97e7212bff931a201c794fa1331960158bbfa
+.. _e9ca8d1c: https://github.com/abseil/abseil-cpp/tree/e9ca8d1ca225ef94fd20890b5440b22f490a410a

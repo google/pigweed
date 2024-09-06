@@ -25,10 +25,60 @@ abseil_cpp_source_set("any_invocable") {
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/functional/internal/any_invocable.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:base_internal",
     "../base:config",
     "../base:core_headers",
+    "../meta:type_traits",
+    "../utility",
+  ]
+}
+
+# Generated from @com_google_absl//absl/functional:bind_front
+abseil_cpp_source_set("bind_front") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/functional/bind_front.h" ]
+  sources = [
+    "$dir_pw_third_party_abseil_cpp/absl/functional/internal/front_binder.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    "../base:base_internal",
+    "../container:compressed_tuple",
     "../meta:type_traits",
     "../utility",
   ]
@@ -39,6 +89,24 @@ abseil_cpp_source_set("function_ref") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/functional/function_ref.h" ]
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/functional/internal/function_ref.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":any_invocable",

@@ -19,6 +19,33 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
+# Generated from @com_google_absl//absl/debugging:bounded_utf8_length_sequence
+abseil_cpp_source_set("bounded_utf8_length_sequence") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/bounded_utf8_length_sequence.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    "../base:config",
+    "../numeric:bits",
+  ]
+}
+
 # Generated from @com_google_absl//absl/debugging:debugging_internal
 abseil_cpp_source_set("debugging_internal") {
   public = [
@@ -31,6 +58,24 @@ abseil_cpp_source_set("debugging_internal") {
     "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/elf_mem_image.cc",
     "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/vdso_support.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -40,16 +85,135 @@ abseil_cpp_source_set("debugging_internal") {
   ]
 }
 
+# Generated from @com_google_absl//absl/debugging:decode_rust_punycode
+abseil_cpp_source_set("decode_rust_punycode") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/decode_rust_punycode.h" ]
+  sources = [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/decode_rust_punycode.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    ":bounded_utf8_length_sequence",
+    ":utf8_for_code_point",
+    "../base:config",
+    "../base:nullability",
+  ]
+}
+
 # Generated from @com_google_absl//absl/debugging:demangle_internal
 abseil_cpp_source_set("demangle_internal") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/demangle.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/demangle.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
+    ":demangle_rust",
     "../base",
     "../base:config",
     "../base:core_headers",
+    "../base:nullability",
+    "../numeric:bits",
+  ]
+}
+
+# Generated from @com_google_absl//absl/debugging:demangle_rust
+abseil_cpp_source_set("demangle_rust") {
+  public = [
+    "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/demangle_rust.h",
+  ]
+  sources = [
+    "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/demangle_rust.cc",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    ":decode_rust_punycode",
+    "../base:config",
+    "../base:core_headers",
+  ]
+}
+
+# Generated from @com_google_absl//absl/debugging:examine_stack
+abseil_cpp_source_set("examine_stack") {
+  public = [
+    "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/examine_stack.h",
+  ]
+  sources = [
+    "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/examine_stack.cc",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    ":stacktrace",
+    ":symbolize",
+    "../base:config",
+    "../base:core_headers",
+    "../base:raw_logging_internal",
   ]
 }
 
@@ -68,6 +232,24 @@ abseil_cpp_source_set("stacktrace") {
     "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/stacktrace_win32-inl.inc",
     "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/stacktrace_x86-inl.inc",
     "$dir_pw_third_party_abseil_cpp/absl/debugging/stacktrace.cc",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":debugging_internal",
@@ -92,6 +274,24 @@ abseil_cpp_source_set("symbolize") {
     "$dir_pw_third_party_abseil_cpp/absl/debugging/symbolize_unimplemented.inc",
     "$dir_pw_third_party_abseil_cpp/absl/debugging/symbolize_win32.inc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":debugging_internal",
     ":demangle_internal",
@@ -103,4 +303,29 @@ abseil_cpp_source_set("symbolize") {
     "../base:raw_logging_internal",
     "../strings",
   ]
+}
+
+# Generated from @com_google_absl//absl/debugging:utf8_for_code_point
+abseil_cpp_source_set("utf8_for_code_point") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/utf8_for_code_point.h" ]
+  sources = [ "$dir_pw_third_party_abseil_cpp/absl/debugging/internal/utf8_for_code_point.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [ "../base:config" ]
 }

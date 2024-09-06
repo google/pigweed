@@ -23,6 +23,24 @@ import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 abseil_cpp_source_set("commandlineflag") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/commandlineflag.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/commandlineflag.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag_internal",
     "../base:config",
@@ -39,6 +57,24 @@ abseil_cpp_source_set("commandlineflag_internal") {
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/flags/internal/commandlineflag.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:fast_type_id",
@@ -52,6 +88,24 @@ abseil_cpp_source_set("config") {
     "$dir_pw_third_party_abseil_cpp/absl/flags/usage_config.h",
   ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/usage_config.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":path_util",
     ":program_name",
@@ -68,11 +122,29 @@ abseil_cpp_source_set("flag") {
     "$dir_pw_third_party_abseil_cpp/absl/flags/declare.h",
     "$dir_pw_third_party_abseil_cpp/absl/flags/flag.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
+    ":commandlineflag",
     ":config",
     ":flag_internal",
     ":reflection",
-    "../base",
     "../base:config",
     "../base:core_headers",
     "../strings",
@@ -86,6 +158,24 @@ abseil_cpp_source_set("flag_internal") {
     "$dir_pw_third_party_abseil_cpp/absl/flags/internal/sequence_lock.h",
   ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/flag.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag",
     ":commandlineflag_internal",
@@ -108,6 +198,24 @@ abseil_cpp_source_set("flag_internal") {
 abseil_cpp_source_set("marshalling") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/marshalling.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/marshalling.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -126,6 +234,24 @@ abseil_cpp_source_set("parse") {
     "$dir_pw_third_party_abseil_cpp/absl/flags/parse.h",
   ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/parse.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag",
     ":commandlineflag_internal",
@@ -148,6 +274,24 @@ abseil_cpp_source_set("parse") {
 # Generated from @com_google_absl//absl/flags:path_util
 abseil_cpp_source_set("path_util") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/path_util.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../strings",
@@ -158,6 +302,24 @@ abseil_cpp_source_set("path_util") {
 abseil_cpp_source_set("private_handle_accessor") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/private_handle_accessor.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/private_handle_accessor.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag",
     ":commandlineflag_internal",
@@ -172,6 +334,24 @@ abseil_cpp_source_set("program_name") {
       [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/program_name.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/program_name.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":path_util",
     "../base:config",
@@ -188,6 +368,24 @@ abseil_cpp_source_set("reflection") {
     "$dir_pw_third_party_abseil_cpp/absl/flags/reflection.h",
   ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/reflection.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag",
     ":commandlineflag_internal",
@@ -206,6 +404,24 @@ abseil_cpp_source_set("reflection") {
 abseil_cpp_source_set("usage") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/usage.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/usage.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":usage_internal",
     "../base:config",
@@ -220,6 +436,24 @@ abseil_cpp_source_set("usage") {
 abseil_cpp_source_set("usage_internal") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/usage.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/flags/internal/usage.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":commandlineflag",
     ":config",

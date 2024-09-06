@@ -31,6 +31,24 @@ abseil_cpp_source_set("status") {
     "$dir_pw_third_party_abseil_cpp/absl/status/status.cc",
     "$dir_pw_third_party_abseil_cpp/absl/status/status_payload_printer.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:atomic_hook",
     "../base:config",
@@ -49,5 +67,46 @@ abseil_cpp_source_set("status") {
     "../strings:str_format",
     "../types:optional",
     "../types:span",
+  ]
+}
+
+# Generated from @com_google_absl//absl/status:statusor
+abseil_cpp_source_set("statusor") {
+  public = [ "$dir_pw_third_party_abseil_cpp/absl/status/statusor.h" ]
+  sources = [
+    "$dir_pw_third_party_abseil_cpp/absl/status/internal/statusor_internal.h",
+    "$dir_pw_third_party_abseil_cpp/absl/status/statusor.cc",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
+  public_deps = [
+    ":status",
+    "../base",
+    "../base:config",
+    "../base:core_headers",
+    "../base:nullability",
+    "../base:raw_logging_internal",
+    "../meta:type_traits",
+    "../strings",
+    "../strings:has_ostream_operator",
+    "../strings:str_format",
+    "../types:variant",
+    "../utility",
   ]
 }

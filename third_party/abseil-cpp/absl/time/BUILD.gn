@@ -35,6 +35,24 @@ abseil_cpp_source_set("time") {
     "$dir_pw_third_party_abseil_cpp/absl/time/internal/get_current_time_posix.inc",
     "$dir_pw_third_party_abseil_cpp/absl/time/time.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base",
     "../base:config",

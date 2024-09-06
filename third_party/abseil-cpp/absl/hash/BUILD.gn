@@ -23,6 +23,24 @@ import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 abseil_cpp_source_set("city") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/hash/internal/city.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/hash/internal/city.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -36,6 +54,24 @@ abseil_cpp_source_set("hash") {
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/hash/internal/hash.cc",
     "$dir_pw_third_party_abseil_cpp/absl/hash/internal/hash.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":city",
@@ -61,6 +97,24 @@ abseil_cpp_source_set("low_level_hash") {
       [ "$dir_pw_third_party_abseil_cpp/absl/hash/internal/low_level_hash.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/hash/internal/low_level_hash.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:endian",

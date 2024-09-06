@@ -24,6 +24,24 @@ abseil_cpp_source_set("distribution_caller") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/random/internal/distribution_caller.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../../base:config",
     "../../base:fast_type_id",
@@ -36,6 +54,24 @@ abseil_cpp_source_set("fast_uniform_bits") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/random/internal/fast_uniform_bits.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":traits",
     "../../base:config",
@@ -46,6 +82,24 @@ abseil_cpp_source_set("fast_uniform_bits") {
 # Generated from @com_google_absl//absl/random/internal:fastmath
 abseil_cpp_source_set("fastmath") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/fastmath.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../../numeric:bits" ]
 }
 
@@ -53,6 +107,24 @@ abseil_cpp_source_set("fastmath") {
 abseil_cpp_source_set("generate_real") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/generate_real.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":fastmath",
     ":traits",
@@ -64,6 +136,24 @@ abseil_cpp_source_set("generate_real") {
 # Generated from @com_google_absl//absl/random/internal:iostream_state_saver
 abseil_cpp_source_set("iostream_state_saver") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/iostream_state_saver.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../../meta:type_traits",
     "../../numeric:int128",
@@ -74,6 +164,24 @@ abseil_cpp_source_set("iostream_state_saver") {
 abseil_cpp_source_set("nonsecure_base") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/nonsecure_base.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":pool_urbg",
     ":salted_seed_seq",
@@ -89,6 +197,24 @@ abseil_cpp_source_set("nonsecure_base") {
 abseil_cpp_source_set("pcg_engine") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/pcg_engine.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":fastmath",
     ":iostream_state_saver",
@@ -106,6 +232,24 @@ abseil_cpp_source_set("platform") {
   sources = [
     "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_round_keys.cc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [ "../../base:config" ]
 }
 
@@ -114,6 +258,24 @@ abseil_cpp_source_set("pool_urbg") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/pool_urbg.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/pool_urbg.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":randen",
     ":seed_material",
@@ -132,6 +294,24 @@ abseil_cpp_source_set("pool_urbg") {
 abseil_cpp_source_set("randen") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":platform",
     ":randen_hwaes",
@@ -144,6 +324,24 @@ abseil_cpp_source_set("randen") {
 abseil_cpp_source_set("randen_engine") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_engine.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":iostream_state_saver",
     ":randen",
@@ -160,6 +358,24 @@ abseil_cpp_source_set("randen_hwaes") {
   ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_detect.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":platform",
     ":randen_hwaes_impl",
@@ -174,7 +390,23 @@ abseil_cpp_source_set("randen_hwaes_impl") {
     "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_hwaes.h",
   ]
   cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
     "-Wno-pass-failed",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
     "-maes",
     "-msse4.1",
   ]
@@ -192,6 +424,24 @@ abseil_cpp_source_set("randen_slow") {
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_slow.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/randen_slow.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":platform",
     "../../base:config",
@@ -205,6 +455,24 @@ abseil_cpp_source_set("randen_slow") {
 abseil_cpp_source_set("salted_seed_seq") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/random/internal/salted_seed_seq.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [
     ":seed_material",
@@ -221,6 +489,24 @@ abseil_cpp_source_set("seed_material") {
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/seed_material.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/seed_material.cc" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":fast_uniform_bits",
     "../../base:core_headers",
@@ -235,6 +521,24 @@ abseil_cpp_source_set("seed_material") {
 # Generated from @com_google_absl//absl/random/internal:traits
 abseil_cpp_source_set("traits") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/traits.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../../base:config",
     "../../numeric:bits",
@@ -246,11 +550,28 @@ abseil_cpp_source_set("traits") {
 abseil_cpp_source_set("uniform_helper") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/uniform_helper.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":traits",
     "../../base:config",
     "../../meta:type_traits",
-    "../../numeric:int128",
   ]
 }
 
@@ -258,6 +579,24 @@ abseil_cpp_source_set("uniform_helper") {
 abseil_cpp_source_set("wide_multiply") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/random/internal/wide_multiply.h" ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":traits",
     "../../base:config",

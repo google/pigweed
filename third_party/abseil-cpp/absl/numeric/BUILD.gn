@@ -25,6 +25,24 @@ abseil_cpp_source_set("bits") {
     "$dir_pw_third_party_abseil_cpp/absl/numeric/bits.h",
     "$dir_pw_third_party_abseil_cpp/absl/numeric/internal/bits.h",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -39,10 +57,29 @@ abseil_cpp_source_set("int128") {
     "$dir_pw_third_party_abseil_cpp/absl/numeric/int128_have_intrinsic.inc",
     "$dir_pw_third_party_abseil_cpp/absl/numeric/int128_no_intrinsic.inc",
   ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
+  ]
   public_deps = [
     ":bits",
     "../base:config",
     "../base:core_headers",
+    "../types:compare",
   ]
 }
 
@@ -50,6 +87,24 @@ abseil_cpp_source_set("int128") {
 abseil_cpp_source_set("representation") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/numeric/internal/representation.h",
+  ]
+  cflags = [
+    "-DNOMINMAX",
+    "-Wall",
+    "-Wcast-qual",
+    "-Wconversion-null",
+    "-Wextra",
+    "-Wformat-security",
+    "-Wmissing-declarations",
+    "-Wnon-virtual-dtor",
+    "-Woverlength-strings",
+    "-Wpointer-arith",
+    "-Wundef",
+    "-Wunused-local-typedefs",
+    "-Wunused-result",
+    "-Wvarargs",
+    "-Wvla",
+    "-Wwrite-strings",
   ]
   public_deps = [ "../base:config" ]
 }
