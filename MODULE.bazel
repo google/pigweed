@@ -212,9 +212,9 @@ http_archive(
 http_archive(
     name = "cmsis_core",
     build_file = "//third_party/stm32cube:cmsis_core.BUILD.bazel",
-    sha256 = "f711074a546bce04426c35e681446d69bc177435cd8f2f1395a52db64f52d100",
-    strip_prefix = "cmsis_core-5.4.0_cm4",
-    urls = ["https://github.com/STMicroelectronics/cmsis_core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
+    sha256 = "32f226c31d7d1ff4a504404400603e047b99f405cd0c9a8f417f1f250251b829",
+    strip_prefix = "cmsis-core-5.4.0_cm4",
+    urls = ["https://github.com/STMicroelectronics/cmsis-core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
 )
 
 # Configure Python toolchains and pip dependencies.
