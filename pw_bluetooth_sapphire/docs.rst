@@ -29,6 +29,53 @@ Why use Sapphire?
   all conformance tests.
 * **A great API**. Coming 2024. See :ref:`module-pw_bluetooth`.
 
+------------
+Contributing
+------------
+
+Running tests
+=============
+.. tab-set::
+
+   .. tab-item:: Bazel (host)
+
+      Run all tests:
+
+      .. code-block:: console
+
+         bazel test //pw_bluetooth_sapphire/host/... \
+           --platforms=//pw_unit_test:googletest_platform \
+           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+
+      Run l2cap tests with a test filter, logs, and log level filter:
+
+      .. code-block:: console
+
+         bazel test //pw_bluetooth_sapphire/host/l2cap:l2cap_test \
+           --platforms=//pw_unit_test:googletest_platform \
+           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest \
+           --test_arg=--gtest_filter="*InboundChannelFailure" \
+           --test_output=all \
+           --copt=-DPW_LOG_LEVEL_DEFAULT=PW_LOG_LEVEL_ERROR
+
+   .. tab-item:: Bazel (Fuchsia emulator)
+
+      .. code-block:: console
+
+         bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia:infra.test_all
+
+   .. tab-item:: GN (host)
+
+      The easiest way to run GN tests is with ``pw presubmit``, which will install
+      dependencies and set GN args correctly.
+
+      .. code-block:: console
+
+         $ pw presubmit --step gn_chre_googletest_nanopb_sapphire_build
+
+      You can also use ``pw watch`` if you install all the packages and set
+      your GN args to match the `GN presubmit step`_.
+
 ---------------
 Fuchsia support
 ---------------
@@ -185,3 +232,4 @@ Roadmap
 
 .. _bt-host component: https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
 .. _fuchsia/prebuilt/bt-host: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-host
+.. _GN presubmit step: https://cs.opensource.google/pigweed/pigweed/+/main:pw_presubmit/py/pw_presubmit/pigweed_presubmit.py?q=gn_chre_googletest_nanopb_sapphire_build
