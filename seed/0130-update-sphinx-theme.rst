@@ -1,0 +1,553 @@
+.. _seed-0130:
+
+=========================
+0130: Update Sphinx theme
+=========================
+.. seed::
+   :number: 130
+   :name: Update Sphinx theme
+   :status: Accepted
+   :proposal_date: 2024-08-28
+   :cl: 232591
+   :authors: Kayce Basques
+   :facilitator: Anthony DiGirolamo
+
+.. _seed-0130-summary:
+
+-------
+Summary
+-------
+.. _pydata-sphinx-theme: https://pydata-sphinx-theme.readthedocs.io/en/stable/
+
+Our current ``pigweed.dev`` theme (``furo``) has served us well over the
+last few years but we are starting to outgrow it. This SEED proposes adopting
+`pydata-sphinx-theme`_ (``pydata`` for short) as the new theme for
+``pigweed.dev``.
+
+The primary purpose of this seed is to document the thought process behind
+choosing one theme over another. Switching themes is a fairly reversible
+decision; switching from the current theme to ``pydata`` was 2-4 days of
+work for example.
+
+.. _seed-0130-motivation:
+
+----------
+Motivation
+----------
+.. inclusive-language: disable
+.. _Sphinx: https://www.sphinx-doc.org/en/master/
+.. _theme API: https://www.sphinx-doc.org/en/master/usage/theming.html
+.. inclusive-language: enable
+.. _PyPI: https://pypi.org/search/?q=&o=&c=Framework+%3A%3A+Sphinx+%3A%3A+Theme
+
+``pigweed.dev`` is powered by `Sphinx`_. Sphinx does not enforce a single
+UI. Rather, it provides a `theme API`_ and lets the Sphinx community
+develop and share customized UIs. There are now hundreds of themes we can
+choose from on `PyPI`_. Our choice of theme has a big effect on the usability
+and maintenance workload of ``pigweed.dev``.
+
+.. _seed-0130-motivation-usability:
+
+Usability
+=========
+The user interface of ``pigweed.dev`` needs to be easy to use and intuitive
+so that people can find the information they need as quickly and efficiently
+as possible. The main criteria are UI elements and layout.
+
+.. _seed-0130-motivation-ui:
+
+User interface elements
+-----------------------
+If the theme does not provide critical UI elements like search modals or
+breadcrumbs, then we must implement and maintain these UI elements
+ourselves.
+
+.. _seed-0130-motivation-layout:
+
+Layout
+------
+By "layout" we mean the positioning of key UI elements like the search box,
+the top-level nav, the page nav, breadcrumbs, etc. We should align the
+layout of ``pigweed.dev`` with the layouts of docs sites that are widely
+regarded as being easy to use.
+
+.. _seed-0130-motivation-maintenance:
+
+Maintenance workload
+====================
+Some themes are a lot more work to maintain than others. Time
+spent hacking on our theme is time *not* spent writing docs, creating code
+samples, or improving upstream Pigweed. The two main criteria are
+internationalization and community.
+
+.. _seed-0130-motivation-internationalization:
+
+Internationalization
+--------------------
+.. _UI string localization: https://lingoport.com/i18n-term/ui-strings/
+
+Soon we may want to start delivering ``pigweed.dev`` content in different
+languages. Our theme needs to support basic internationalization features
+like `UI string localization`_ so that we can begin figuring out an
+internationalization pipeline that works for us.
+
+.. _seed-0130-motivation-community:
+
+Community
+---------
+If a theme is used by lots of big projects, then there's a better chance
+that the theme will keep improving over time. I.e. it's more likely that
+bugs will get fixed quickly and new features will be continuously added.
+Likewise, as we inevitably fix bugs and implement new features ourselves,
+it would be great to be able to let other projects benefit from our work.
+
+.. _seed-0130-proposal:
+
+--------
+Proposal
+--------
+.. _change #226172: https://pwrev.dev/226172
+
+Adopt ``pydata`` as the new ``pigweed.dev`` theme by merging
+`change #226172`_.
+
+.. _seed-0130-problem:
+
+---------------------
+Problem investigation
+---------------------
+
+.. _seed-0130-problem-ui:
+
+UI elements
+===========
+The most important UI element missing from the current ``pigweed.dev`` theme
+is a search modal. By "search modal" we mean the ability to see search results
+immediately after typing something into the search box. ``pigweed.dev`` has
+this feature now but we had to implement it ourselves:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/current_search_modal.png
+
+   The current search modal on ``pigweed.dev``
+
+Implementing a search modal from scratch is a lot of work to maintain:
+
+* The current search box (i.e. the input that you click to open the search
+  modal) is hidden on narrow viewports. I.e. when you visit
+  ``pigweed.dev`` on a smartphone you can't access the search box unless you
+  open the site nav menu. This will require significant theme customization
+  to fix.
+* Search modal UIs can have tricky bugs. See :bug:`349475063`.
+
+.. note::
+
+   Search is a critical part of the ``pigweed.dev`` user experience. Our website
+   analytics data shows that ``/search.html`` is our second-most-visited page,
+   meaning that people use in-site search a lot.
+
+.. _a5038af: https://cs.opensource.google/pigweed/pigweed/+/a5038affded6feab2522a7dcc781c21c4f16cc1e
+
+A breadcrumbs component is another key UI element missing from the current
+theme. We implemented our own custom breadcrumbs element in `a5038af`_.
+Admittedly, this was not much work to create, but we really shouldn't need
+to implement core navigational elements like this ourselves.
+
+.. _seed-0130-problem-layout:
+
+Layout
+======
+.. _MDN: https://developer.mozilla.org/
+.. _Stripe: https://docs.stripe.com/
+
+The current ``pigweed.dev`` layout differs noticeably from two documentation
+sites that are widely renowned for being helpful and easy to use: `MDN`_ and
+`Stripe`_.
+
+.. admonition:: How to choose what websites to index against?
+
+   There is no annual survey of "best documentation websites" that we can rely
+   on. Maybe we should make that survey! Until then, we have to make an educated
+   guess. When discussions about great documentation sites come up, Stripe and
+   MDN are frequently mentioned. Other docs sites are sometimes mentioned, but not
+   as consistently as Stripe and MDN.
+
+   Another factor is scope. Stripe has ~20 products. MDN documents the entire
+   web platform. These sites have spent a lot of time figuring out how to
+   keep thousands of docs pages usable and discoverable. As Pigweed's
+   offerings continue to grow in size and variety, ``pigweed.dev`` will
+   face similar challenges. In other words, Stripe and MDN have already thought
+   through the scaling challenges that we'll face in the coming years.
+
+   One of our critical assumptions (which could be wrong!) is that the layouts
+   of MDN and Stripe *contribute* to their reputations of being helpful and
+   easy-to-use. It's possible that people only consider the *content* of these
+   sites to be high-quality, not necessarily the layouts (and UIs more
+   generally).
+
+To unpack the layout problem we need to look at color-coded diagrams of where
+Stripe, MDN, and Pigweed place key UI elements:
+
+.. _typical Stripe doc: https://storage.googleapis.com/pigweed-media/seeds/theme/stripe2.png
+
+.. _typical MDN doc: https://storage.googleapis.com/pigweed-media/seeds/theme/mdn2.png
+
+.. _typical Pigweed doc: https://storage.googleapis.com/pigweed-media/seeds/theme/pigweed.png
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/stripe-layout.png
+
+   Layout of a `typical Stripe doc`_
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/mdn-layout.png
+
+   Layout of a `typical MDN doc`_
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/pigweed_layout_2.png
+
+   Layout of a `typical Pigweed doc`_
+
+Both Stripe and MDN have the same key UI elements. The location of some
+key UI elements like the search box varies a little, but not much.
+
+.. _previous research on searchboxes: https://web.archive.org/web/20240823151546/https://technicalwriting.dev/ux/searchboxes.html
+
+Pigweed's layout, on the other hand, differs significantly from the layouts
+of Stripe and MDN:
+
+* The concepts of "top-level nav" and "section nav" don't exist on
+  ``pigweed.dev``. Instead, there's only a global nav that's basically a
+  combination of top-level nav and section nav. This is discussed more in
+  :ref:`seed-0130-problem-globalnav`.
+* The search box is positioned far to the left, below the logo, whereas
+  Stripe and MDN put the search box in the header. My `previous research on
+  searchboxes`_ suggests that most docs sites put the search box in the header.
+  ``pigweed.dev`` is therefore probably not meeting readers expectations of
+  where to find the search box.
+* The logo element is much taller.
+
+.. _seed-0130-problem-globalnav:
+
+Global nav
+----------
+``pigweed.dev`` does not have a concept of a top-level nav and section nav
+like what you see on Stripe and MDN. Instead, it combines the top-level nav
+and section nav into a global nav.
+
+Over time, this global nav gradually builds up and becomes an overwhelmingly
+long list of links:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/old_global_nav_2.png
+
+   Global nav circa Q1 2024
+
+That screenshot is from Q1 2024. The current global nav (next screenshot) is a
+little more tidy, but will probably grow and become messy again.
+
+Accessing some links requires navigating through 5 or more layers of nesting:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/global_nav_2.png
+
+   The ``pw_assert`` docs are an example of 5 levels of nesting in the
+   current global nav
+
+.. _seed-0130-problem-internationalization:
+
+Internationalization
+====================
+.. _documentation: https://pradyunsg.me/furo/quickstart/
+.. _template: https://github.com/pradyunsg/furo/blob/696ceb13f060dc505053f91ac4d46f0915c261be/src/furo/theme/furo/page.html
+
+The `documentation`_ for our current theme does not mention any support
+for internationalization. The core ``page.html`` `template`_ does not have
+any logic suggesting that `UI string localization`_ is supported.
+
+.. _seed-0130-problem-community:
+
+Community
+=========
+.. _Pulse: https://github.com/pradyunsg/furo/pulse/monthly
+
+Our current theme's repository is not very active. Summary of
+1-month activity from the repo's `Pulse`_ page:
+
+  Excluding merges, 3 authors have pushed 7 commits to main and 10 commits
+  to all branches. On main, 5 files have changed and there have been 24
+  additions and 14 deletions.
+
+The repo has had 49 contributors in total.
+
+.. _1.383M downloads: https://pypistats.org/packages/furo
+
+PyPI Stats says that the theme got `1.383M downloads`_ last month.
+
+.. _seed-0130-design:
+
+---------------
+Detailed design
+---------------
+
+.. _seed-0130-design-ui:
+
+User interface elements
+=======================
+``pydata`` provides a built-in search modal:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/pydata-sphinx-theme/search_modal.png
+
+.. _Change #226172: https://pwrev.dev/226172
+
+``pydata`` does **not** currently provide an inline search experience.
+I.e. after typing text in the search modal, you do not immediately see
+search results. You have to press :kbd:`Enter` to view the search
+results page. `Change #226172`_ introduces custom logic
+in ``//docs/_static/js/pigweed.js`` and ``//docs/_static/css/pigweed.css``
+to enable an inline search experience. We will attempt to contribute this
+inline search feature to the upstream ``pydata`` repo. The existing custom
+search features at ``//pw_docgen/py/pw_docgen/sphinx/inlinesearch`` will be
+deleted as part of `change #226172`_.
+
+.. _seed-0130-design-layout:
+
+Layout
+======
+The layout of the ``pydata`` theme is much closer to the MDN and Stripe
+layouts than the current Pigweed theme:
+
+.. _typical Pigweed doc when using pydata: https://storage.googleapis.com/pigweed-media/seeds/theme/pigweed_pydata.png
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/pydata-layout.png
+
+   Layout of a `typical Pigweed doc when using pydata`_
+
+Here are the Stripe and MDN layouts again for comparison:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/stripe-layout.png
+
+   Layout of a `typical Stripe doc`_
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/mdn-layout.png
+
+   Layout of a `typical MDN doc`_
+
+.. _seed-0130-design-globalnav:
+
+Global nav
+----------
+By adopting ``pydata`` we will get rid of the global nav and switch to a
+top-level nav and section nav, very similar to the layouts of MDN and Stripe.
+First-level links in the current global nav move to the top-level nav in
+the header:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/nav_changes.png
+
+   The box on the left is the old global nav. The box on the right is the new
+   top-level nav. The first-level links in the global nav become the links in
+   the new top-level nav. (The ordering and names of the links have changed
+   slightly.)
+
+After clicking a top-level link like ``Modules`` the section nav shows
+all the links related to that section:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/modules.png
+
+   After clicking the ``Modules`` link in the header, the list of modules
+   appear as first-level links in the section nav
+
+In other words, second-level links in the global nav (next screenshot) get
+promoted to top-level links in the new section nav:
+
+.. figure:: https://storage.googleapis.com/pigweed-media/seeds/theme/modules_old.png
+
+   Second-level links like ``Module Structure``, ``pw_alignment``, etc. become
+   first-level links in the new section nav
+
+Therefore, top-down navigation is still possible in the new theme.
+There's just a little more friction. This new friction will probably be the
+most noticeable change for long-time ``pigweed.dev`` readers.
+
+The main reason to try the top-level nav and section nav approach is that
+we will probably need to get rid of the global nav soon anyways:
+
+.. _Every Page Is Page One: https://everypageispageone.com/the-book/
+
+* :ref:`Problem investigation: Global nav <seed-0130-problem-globalnav>`
+  demonstrated how our global nav has already become overwhelming and
+  deeply nested.
+* Global navs are not common on big docs sites. E.g. Stripe, MDN, Firebase,
+  Android, and AWS do not use global navs. `Every Page Is Page One`_
+  explains why most sites give up on global navs after exceeding a certain
+  size:
+
+    Sites like Amazon and Wikipedia make little use of top-down navigation... Both
+    sites are far too big to cover effectively, and most of what they contain is not
+    of immediate interest to the person viewing the page. Instead, they link to
+    things related to the current situation of the reader, the current subject of
+    interest, and immediately related subjects. In other words, the navigation that
+    these pages provide is local.
+
+.. get some data on global nav usage
+
+.. _seed-0130-design-internationalization:
+
+Internationalization
+====================
+.. _Internationalization: https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/i18n.html
+
+``pydata`` supports `UI string localization`_ and has documentation detailing
+the theme's `Internationalization`_ support. This is sufficient for unblocking
+our work to start figuring out an internationalization strategy.
+
+.. _seed-0130-design-community:
+
+Community
+=========
+The ``pydata`` repo has been more active than the current theme over the last
+month. From `Pulse <https://github.com/pydata/pydata-sphinx-theme/pulse>`__:
+
+  Excluding merges, 8 authors have pushed 8 commits to main and 18 commits to
+  all branches. On main, 20 files have changed and there have been 148
+  additions and 132 deletions.
+
+Here is the current theme's pulse data again for comparison:
+
+  Excluding merges, 3 authors have pushed 7 commits to main and 10 commits
+  to all branches. On main, 5 files have changed and there have been 24
+  additions and 14 deletions.
+
+``pydata`` has had 126 contributors in total whereas the current theme has
+had 49.
+
+.. _1.316M downloads: https://pypistats.org/packages/pydata-sphinx-theme
+
+PyPI Stats says that ``pydata`` got `1.316M downloads`_ last month, slightly
+less than the current theme (1.383M downloads) but definitely in the same
+ballpark.
+
+.. _gallery: https://pydata-sphinx-theme.readthedocs.io/en/stable/examples/gallery.html
+
+`Gallery`_ shows that ``pydata`` is used by many extremely popular and
+important projects:
+
+* Jupyter
+* Matplotlib
+* NumPy
+* Pandas
+* SciPy
+
+.. _seed-0130-alternatives:
+
+------------
+Alternatives
+------------
+
+.. _seed-0130-alternatives-create:
+
+Create our own Sphinx theme
+===========================
+Creating our own Sphinx theme that aligns with a Google design
+system like Material Design could be worthwhile one day but would be
+months of work. We would have to fix all the problems described in
+:ref:`seed-0130-problem` ourselves and build up our own theme community.
+We should first find 5-10 other Google projects using Sphinx that will
+adopt the theme and maybe share the workload with us.
+
+.. _seed-0130-alternatives-adopt:
+
+Adopt a different Sphinx theme
+==============================
+We did a fairly comprehensive review of other Sphinx themes, but
+it's worth mentioning again that switching Sphinx themes is not
+usually that much work. I.e. if we find another theme that's even
+better suited than ``pydata``, then it should only be a few days
+of work to switch to the new theme.
+
+.. inclusive-language: disable
+.. _official theme documentation: https://www.sphinx-doc.org/en/master/usage/theming.html
+.. inclusive-language: enable
+.. _sphinx-themes: https://sphinx-themes.org/
+.. _Framework\:\:Sphinx\:\:Theme: https://pypi.org/search/?q=&o=&c=Framework+%3A%3A+Sphinx+%3A%3A+Theme
+.. _PyPI Stats: https://pypistats.org/
+
+Notes about the methodology for finding other themes:
+
+* The `official theme documentation`_ mentions `sphinx-themes`_ as a place for
+  discovering new themes.
+* The `Framework::Sphinx::Theme`_ tag on PyPI provides a comprehensive
+  list of themes, but you can only sort by "relevance" and last update.
+* `PyPI Stats`_ provides statistics on monthly downloads.
+* When a theme is hosted on GitHub, the Insights page on the theme's
+  repository provides more granular information about how active or
+  inactive the repository is.
+
+Summary of other notable themes:
+
+.. _python-docs-theme: https://github.com/python/python-docs-theme
+.. _sphinx-rtd-theme: https://github.com/readthedocs/sphinx_rtd_theme
+.. _sphinx-book-theme: https://github.com/executablebooks/sphinx-book-theme
+.. _piccolo-theme: https://github.com/piccolo-orm/piccolo_theme
+.. _sphinx-material: https://github.com/bashtage/sphinx-material
+.. _shibuya: https://github.com/lepture/shibuya
+
+.. csv-table::
+   :header: "Name", "Monthly Downloads", "UI elements", "Layout", "i18n"
+
+   "`python-docs-theme`_", "80K", "❌", "✅", "✅"
+   "`sphinx-rtd-theme`_", "6.6M", "❌", "❌", "✅"
+   "`sphinx-book-theme`_", "560K", "❌", "❌", "❌"
+   "`piccolo-theme`_", "11K", "❌", "❌", "❌"
+   "`sphinx-material`_", "33K", "❌", "❌", "❌"
+   "`shibuya`_", "7K", "❌", "❌", "❌"
+
+`shibuya <https://shibuya.lepture.com/>`__ has a pleasant UI. If
+its community grows and support for breadcrumbs and internationalization
+is added then we might want to consider switching to that one
+in the future.
+
+.. _seed-0130-alternatives-fork:
+
+Fork the current theme
+======================
+Forking the current theme would give us the freedom to customize
+the theme to meet our needs, but we would have to fix all the problems
+described in :ref:`seed-0130-problem` ourselves. We would also have to
+build up our own theme community.
+
+.. _seed-0130-alternatives-ssg:
+
+Use a different static site generator
+=====================================
+Sphinx at large is working well for Pigweed. We have simply outgrown our
+current theme. Migrating to a different static site generator would be
+weeks or months of work for highly uncertain ROI. Docs site migrations
+are often extremely disruptive to both authors and readers.
+
+.. _seed-0130-alternatives-continue:
+
+Continue with the current theme
+===============================
+The maintainers of the current theme might be receptive to the
+features we need, but we would have to wait weeks or months for
+them to implement the changes or implement them ourselves. ``pydata``
+already provides everything we need now.
+
+.. _seed-0130-questions:
+
+--------------
+Open questions
+--------------
+
+.. _seed-0130-questions-community:
+
+Community
+=========
+It's unknown whether ``pydata`` will accept our inline search feature.
+If they don't, we'll have to continue maintaining that custom logic.
+In general, we don't know how receptive the ``pydata`` maintainers will
+be to our feature requests, bug reports, etc.
+
+.. _seed-0130-questions-themes:
+
+Themes
+======
+We did not meticulously study every Sphinx theme in existence. It's
+possible (but unlikely) that there's an even better theme for us
+out there somewhere.

@@ -263,8 +263,8 @@ pw_seed("0129") {
 pw_seed("0130") {
   title = "Update Sphinx theme"
   author = "Kayce Basques"
-  status = "Draft"
-  changelist = 232591
+  status = "Accepted"
+  sources = [ "0130-update-sphinx-theme.rst" ]
 }
 
 # This must be defined after all `pw_seed` targets, as it relies on information
