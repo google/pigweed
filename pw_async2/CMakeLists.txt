@@ -155,6 +155,7 @@ if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     PUBLIC_DEPS
       pw_allocator.allocator
       pw_async2.dispatcher
+      pw_function
     PUBLIC_INCLUDES
       public
   )
