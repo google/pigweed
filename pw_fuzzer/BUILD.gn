@@ -71,6 +71,10 @@ pw_test_group("tests") {
   ]
 }
 
+pw_source_set("asan_default_options") {
+  sources = [ "asan_default_options.c" ]
+}
+
 ################################################################################
 # FuzzTest support
 #
@@ -182,7 +186,10 @@ if (dir_pw_third_party_fuzztest == "") {
     if (pw_toolchain_OSS_FUZZ_ENABLED) {
       deps = [ "$dir_pw_unit_test:simple_printing_main" ]
     } else {
-      deps = [ "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main" ]
+      deps = [
+        ":asan_default_options",
+        "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main",
+      ]
     }
   }
 }
