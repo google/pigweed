@@ -22,6 +22,10 @@
 #include "pw_thread/thread_core.h"
 #include "pw_unit_test/framework.h"
 
+// TODO: https://pwbug.dev/365161669 - Express joinability as a build-system
+// constraint.
+#if PW_THREAD_JOINING_ENABLED
+
 namespace examples {
 
 /// Threaded task that performs several allocations.
@@ -90,3 +94,5 @@ TEST(SpinLockExample, RunTasks) {
 }
 
 }  // namespace
+
+#endif  // PW_THREAD_JOINING_ENABLED

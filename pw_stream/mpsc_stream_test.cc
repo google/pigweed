@@ -21,6 +21,10 @@
 #include "pw_thread/thread.h"
 #include "pw_unit_test/framework.h"
 
+// TODO: https://pwbug.dev/365161669 - Express joinability as a build-system
+// constraint.
+#if PW_THREAD_JOINING_ENABLED
+
 namespace pw::stream {
 namespace {
 
@@ -593,3 +597,5 @@ TEST(MpscStreamTest, BufferedMpscReader) {
 
 }  // namespace
 }  // namespace pw::stream
+
+#endif  // PW_THREAD_JOINING_ENABLED

@@ -12,10 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load(
     "//pw_build:pigweed.bzl",
     "pw_linker_script",
 )
+load("//third_party/freertos:flags.bzl", "FREERTOS_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,8 +45,6 @@ constraint_value(
     constraint_setting = "@freertos//:freertos_config_setting",
 )
 
-# TODO: b/301334234 - Set the flags currently in the stm32f429i config in
-# .bazelrc using this platform, once that's supported.
 platform(
     name = "platform",
     constraint_values = [
@@ -59,6 +59,27 @@ platform(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
         "@rust_crates//:no_std",
     ],
+    flags = flags_from_dict(FREERTOS_FLAGS | {
+        "@pigweed//pw_assert:check_backend": "//pw_assert_basic",
+        "@pigweed//pw_assert:check_backend_impl": "//pw_assert_basic:impl",
+        "@pigweed//pw_boot:backend": "//pw_boot_cortex_m",
+        "@pigweed//pw_log:backend": "//pw_log_tokenized",
+        "@pigweed//pw_log:backend_impl": "//pw_log_tokenized:impl",
+        "@pigweed//pw_log_tokenized:handler_backend": "//pw_system:log_backend",
+        "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+        "@pigweed//pw_sys_io:backend": "//pw_sys_io_stm32cube",
+        "@pigweed//pw_system:extra_platform_libs": "//targets/stm32f429i_disc1_stm32cube:extra_platform_libs",
+        "@pigweed//pw_unit_test:main": "//targets/stm32f429i_disc1_stm32cube:unit_test_app",
+        "@stm32f4xx_hal_driver//:hal_config": "//targets/stm32f429i_disc1_stm32cube:hal_config",
+    }),
+    # These flags should be added once
+    # https://github.com/bazelbuild/bazel/issues/22453
+    # is fixed.
+    #
+    # + [
+    #   "--copt=\"-DSTM32CUBE_HEADER=\\\"stm32f4xx.h\\\"\"",
+    #   "--copt=\"-DSTM32F429xx\"",
+    # ],
 )
 
 cc_library(

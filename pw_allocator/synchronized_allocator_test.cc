@@ -32,6 +32,10 @@
 #include "pw_thread/yield.h"
 #include "pw_unit_test/framework.h"
 
+// TODO: https://pwbug.dev/365161669 - Express joinability as a build-system
+// constraint.
+#if PW_THREAD_JOINING_ENABLED
+
 namespace {
 
 // Test fixtures.
@@ -305,3 +309,5 @@ TEST(SynchronizedAllocatorTest, GenerateRequestsMutex) {
 }
 
 }  // namespace
+
+#endif  // PW_THREAD_JOINING_ENABLED

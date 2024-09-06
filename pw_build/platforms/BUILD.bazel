@@ -11,6 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
+
 package(default_visibility = ["//visibility:public"])
 
 # --------------------
@@ -53,6 +56,10 @@ platform(
         "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
+    flags = flags_from_dict({
+        "@pigweed//pw_log/rust:pw_log_backend": "//pw_rust/examples/tokenized_logging:pw_log_backend",
+        "@pigweed//pw_sys_io:backend": "//pw_sys_io_baremetal_lm3s6965evb",
+    }),
 )
 
 platform(

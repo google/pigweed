@@ -142,108 +142,30 @@ common --//pw_env_setup/py:pigweed_json=//:pigweed.json
 build --//pw_function:config_override=//pw_function:upstream_default_config
 
 # Config for all RP2xxx platforms.
-#
-# TODO: b/301334234 - Make the platform set the flags below.
-# LINT.IfChange
 build:rp2040 --platforms=@pigweed//targets/rp2040
-build:rp2040 --//pw_assert:assert_backend=@pigweed//pw_assert_trap
-build:rp2040 --//pw_assert:assert_backend_impl=@pigweed//pw_assert_trap:impl
-build:rp2040 --//pw_assert:check_backend=@pigweed//pw_assert_trap
-build:rp2040 --//pw_assert:check_backend_impl=@pigweed//pw_assert_trap:impl
-build:rp2040 --//pw_cpu_exception:entry_backend=@pigweed//pw_cpu_exception_cortex_m:cpu_exception
-build:rp2040 --//pw_cpu_exception:entry_backend_impl=@pigweed//pw_cpu_exception_cortex_m:cpu_exception_impl
-build:rp2040 --//pw_cpu_exception:handler_backend=@pigweed//pw_cpu_exception:basic_handler
-build:rp2040 --//pw_cpu_exception:support_backend=@pigweed//pw_cpu_exception_cortex_m:support
-build:rp2040 --//pw_interrupt:backend=@pigweed//pw_interrupt_cortex_m:context
-build:rp2040 --//pw_log:backend=@pigweed//pw_log_tokenized
-build:rp2040 --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
-build:rp2040 --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
-build:rp2040 --//pw_sync:binary_semaphore_backend=//pw_sync_freertos:binary_semaphore
-build:rp2040 --//pw_sync:counting_semaphore_backend=@pigweed//pw_sync_freertos:counting_semaphore
-build:rp2040 --//pw_sync:interrupt_spin_lock_backend=//pw_sync_freertos:interrupt_spin_lock
-build:rp2040 --//pw_sync:mutex_backend=//pw_sync_freertos:mutex
-build:rp2040 --//pw_sync:thread_notification_backend=//pw_sync_freertos:thread_notification
-build:rp2040 --//pw_sync:timed_thread_notification_backend=//pw_sync_freertos:timed_thread_notification
-build:rp2040 --//pw_sys_io:backend=//pw_sys_io_rp2040
-build:rp2040 --//pw_system:extra_platform_libs=@pigweed//targets/rp2040:extra_platform_libs
-build:rp2040 --//pw_system:device_handler_backend=@pigweed//targets/rp2040:device_handler
-build:rp2040 --//pw_thread:id_backend=@pigweed//pw_thread_freertos:id
-build:rp2040 --//pw_thread:iteration_backend=@pigweed//pw_thread_freertos:thread_iteration
-build:rp2040 --//pw_thread:sleep_backend=@pigweed//pw_thread_freertos:sleep
-build:rp2040 --//pw_thread:test_thread_context_backend=@pigweed//pw_thread_freertos:test_thread_context
-build:rp2040 --//pw_thread:thread_backend=@pigweed//pw_thread_freertos:thread
-build:rp2040 --//pw_thread:yield_backend=@pigweed//pw_thread_freertos:yield
-build:rp2040 --//pw_toolchain:cortex-m_toolchain_kind=clang
-build:rp2040 --//pw_trace:backend=@pigweed//pw_trace_tokenized:pw_trace_tokenized
-build:rp2040 --//pw_unit_test:backend=//pw_unit_test:light
-build:rp2040 --//pw_unit_test:main=//targets/rp2040:unit_test_app
-build:rp2040 --//pw_build:default_module_config=//targets/rp2040:pigweed_module_config
-build:rp2040 --@freertos//:freertos_config=@pigweed//targets/rp2040:freertos_config
-build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_USB=True
-build:rp2040 --@pico-sdk//bazel/config:PICO_STDIO_UART=True
-build:rp2040 --@pico-sdk//bazel/config:PICO_CLIB=llvm_libc
-build:rp2040 --@pico-sdk//bazel/config:PICO_TOOLCHAIN="clang"
 test:rp2040 --run_under=//targets/rp2040/py:unit_test_client
-# LINT.ThenChange(//targets/rp2040/transition.bzl)
 
-# RP2350 is the same but with a different --platforms setting.
-build:rp2350 --config=rp2040
 build:rp2350 --platforms=@pigweed//targets/rp2040:rp2350
+test:rp2350 --run_under=//targets/rp2040/py:unit_test_client
 
 # Config for the stm32f429i_disc1 baremetal platform.
-#
-# TODO: b/301334234 - Make the platform set the flags below.
 build:stm32f429i_baremetal --platforms=//targets/stm32f429i_disc1:platform
-build:stm32f429i_baremetal --//pw_assert:check_backend=@pigweed//pw_assert_basic
-build:stm32f429i_baremetal --//pw_assert:check_backend_impl=@pigweed//pw_assert_basic:impl
-build:stm32f429i_baremetal --//pw_boot:backend=@pigweed//pw_boot_cortex_m
-build:stm32f429i_baremetal --//pw_log:backend=@pigweed//pw_log_basic
-build:stm32f429i_baremetal --//pw_log:backend_impl=@pigweed//pw_log_basic:impl
-build:stm32f429i_baremetal --//pw_malloc:backend=@pigweed//pw_malloc:bucket_block_allocator
-build:stm32f429i_baremetal --//pw_system:extra_platform_libs=@pigweed//targets/stm32f429i_disc1:extra_platform_libs
-build:stm32f429i_baremetal --//pw_sys_io:backend=//pw_sys_io_baremetal_stm32f429
-
 
 # Config for the stm32f429i_disc1_stm32cube freertos platform.
 #
-# TODO: b/301334234 - Make the platform set the flags below.
 build:stm32f429i_freertos --platforms=//targets/stm32f429i_disc1_stm32cube:platform
+# This should be moved to platform-based flags once 
+# https://github.com/bazelbuild/bazel/issues/22453
+# is fixed.
 build:stm32f429i_freertos --copt="-DSTM32CUBE_HEADER=\"stm32f4xx.h\""
 build:stm32f429i_freertos --copt="-DSTM32F429xx"
-build:stm32f429i_freertos --@stm32f4xx_hal_driver//:hal_config=//targets/stm32f429i_disc1_stm32cube:hal_config
-build:stm32f429i_freertos --//pw_assert:check_backend=@pigweed//pw_assert_basic
-build:stm32f429i_freertos --//pw_assert:check_backend_impl=@pigweed//pw_assert_basic:impl
-build:stm32f429i_freertos --//pw_boot:backend=@pigweed//pw_boot_cortex_m
-build:stm32f429i_freertos --//pw_log:backend=@pigweed//pw_log_tokenized
-build:stm32f429i_freertos --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
-build:stm32f429i_freertos --//pw_log_tokenized:handler_backend=@pigweed//pw_system:log_backend
-build:stm32f429i_freertos --//pw_malloc:backend=@pigweed//pw_malloc:bucket_block_allocator
-build:stm32f429i_freertos --//pw_sync:binary_semaphore_backend=//pw_sync_freertos:binary_semaphore
-build:stm32f429i_freertos --//pw_sync:interrupt_spin_lock_backend=//pw_sync_freertos:interrupt_spin_lock
-build:stm32f429i_freertos --//pw_sync:mutex_backend=//pw_sync_freertos:mutex
-build:stm32f429i_freertos --//pw_sync:thread_notification_backend=//pw_sync_freertos:thread_notification
-build:stm32f429i_freertos --//pw_sync:timed_thread_notification_backend=//pw_sync_freertos:timed_thread_notification
-build:stm32f429i_freertos --//pw_thread:id_backend=@pigweed//pw_thread_freertos:id
-build:stm32f429i_freertos --//pw_thread:iteration_backend=@pigweed//pw_thread_freertos:thread_iteration
-build:stm32f429i_freertos --//pw_thread:sleep_backend=@pigweed//pw_thread_freertos:sleep
-build:stm32f429i_freertos --//pw_thread:thread_backend=@pigweed//pw_thread_freertos:thread
-build:stm32f429i_freertos --//pw_unit_test:main=//targets/stm32f429i_disc1_stm32cube:unit_test_app
-build:stm32f429i_freertos --//pw_system:extra_platform_libs=@pigweed//targets/stm32f429i_disc1_stm32cube:extra_platform_libs
-build:stm32f429i_freertos --//pw_sys_io:backend=//pw_sys_io_stm32cube
+
 
 # Config for the lm3s6965evb platform, used to build pw_rust/examples.
-#
-# TODO: b/301334234 - Make the platform set the flags below.
 build:lm3s6965evb --platforms=//pw_build/platforms:lm3s6965evb
-build:lm3s6965evb --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
-build:lm3s6965evb --//pw_sys_io:backend=//pw_sys_io_baremetal_lm3s6965evb
 
 # Config for the microbit platform, used to build pw_rust/examples.
-#
-# TODO: b/301334234 - Make the platform set the flags below.
 build:microbit --platforms=//pw_build/platforms:lm3s6965evb
-build:microbit --//pw_log/rust:pw_log_backend=//pw_rust/examples/tokenized_logging:pw_log_backend
-build:microbit --//pw_sys_io:backend=//pw_sys_io_baremetal_lm3s6965evb
 
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the

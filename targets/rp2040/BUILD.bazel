@@ -12,9 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pigweed.bzl", "pw_cc_binary")
 load("//targets/rp2040:flash.bzl", "flash_rp2040")
-load("//targets/rp2040:transition.bzl", "rp2040_binary")
+load("//targets/rp2040:transition.bzl", "RP2_SYSTEM_FLAGS", "rp2040_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,6 +45,7 @@ platform(
         "@rust_crates//:no_std",
         "@platforms//os:none",
     ],
+    flags = flags_from_dict(RP2_SYSTEM_FLAGS),
     visibility = ["//visibility:private"],
 )
 
