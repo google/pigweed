@@ -35,25 +35,14 @@ GN
 
 Updating
 ========
-The GN build files are generated from the third-party Bazel build files using
-$dir_pw_build/py/pw_build/generate_3p_gn.py.
+Currently, all dependencies on Abseil-C++ are indirect and via other third-party
+modules:
 
-The script uses data taken from ``$dir_pw_third_party/abseil-cpp/repo.json``.
+* FuzzTest
 
-The script should be re-run whenever the submodule is updated or the JSON file
-is modified. Specify the location of the Bazel repository can be specified using
-the ``-w`` option, e.g.
+The GN build files for Abseil-C++ will be updated when the build files for those
+modules are updated. See those modules for instructions on updating.
 
-.. code-block:: sh
-
-   python pw_build/py/pw_build/generate_3p_gn.py \
-     -w third_party/abseil-cpp/src
-
-Version
-=======
-The update script was last run for revision `67f9650`_.
-
-.. _67f9650: https://github.com/abseil/abseil-cpp/tree/67f9650c93a4fa04728a5b754ae8297d2c55d898
 .. DO NOT EDIT BELOW THIS LINE. Generated section.
 
 Version

@@ -16,58 +16,142 @@
 import json
 import unittest
 
+from collections import deque
+from typing import Any, Deque
 from unittest import mock
-from tempfile import TemporaryDirectory
-from pw_build.bazel_query import ParseError, BazelRule, BazelWorkspace
+
+from pw_build.bazel_query import (
+    ParseError,
+    BazelLabel,
+    BazelRule,
+    BazelWorkspace,
+)
+
+# Test fixtures.
+
+
+class MockWorkspace:
+    """Helper class for mocking subprocesses run by BazelWorkspace."""
+
+    def __init__(self, source_dir: str) -> None:
+        """Creates a workspace mock helper."""
+        self._args_list: Deque[list[Any]] = deque()
+        self._kwargs_list: Deque[dict[str, Any]] = deque()
+        self._results: list[dict[str, str]] = []
+        self._source_dir = source_dir
+
+    def source_dir(self) -> str:
+        """Returns the source directory commands would be run in."""
+        return self._source_dir
+
+    def add_call(self, *args: str, result=None) -> None:
+        """Registers an expected subprocess call."""
+        self._args_list.append(list(args))
+        self._results.append({'stdout.decode.return_value': result})
+
+    def finalize(self, mock_run) -> None:
+        """Add the registered call results to a subprocess mock."""
+        mock_run.side_effect = [
+            mock.MagicMock(**attr) for attr in self._results
+        ]
+
+    def pop_args(self) -> list[Any]:
+        """Returns the next set of saved args."""
+        return self._args_list.popleft()
+
+    def num_args(self) -> int:
+        """Returns the number of remaining saved args."""
+        return len(self._args_list)
+
+
+# Unit tests
+
+
+class TestBazelLabel(unittest.TestCase):
+    """Tests for bazel_query.BazelLabel."""
+
+    def test_label_with_repo_package_target(self):
+        """Tests a label with a repo, package, and target."""
+        label = BazelLabel('@repo1//foo/bar:baz', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo1')
+        self.assertEqual(label.package(), 'foo/bar')
+        self.assertEqual(label.target(), 'baz')
+        self.assertEqual(str(label), '@repo1//foo/bar:baz')
+
+    def test_label_with_repo_package(self):
+        """Tests a label with a repo and package."""
+        label = BazelLabel('@repo1//foo/bar', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo1')
+        self.assertEqual(label.package(), 'foo/bar')
+        self.assertEqual(label.target(), 'bar')
+        self.assertEqual(str(label), '@repo1//foo/bar:bar')
+
+    def test_label_with_repo_target(self):
+        """Tests a label with a repo and target."""
+        label = BazelLabel('@repo1//:baz', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo1')
+        self.assertEqual(label.package(), '')
+        self.assertEqual(label.target(), 'baz')
+        self.assertEqual(str(label), '@repo1//:baz')
+
+    def test_label_with_repo_only(self):
+        """Tests a label with a repo only."""
+        with self.assertRaises(ParseError):
+            BazelLabel('@repo1', repo='repo2', package='qux')
+
+    def test_label_with_package_target(self):
+        """Tests a label with a package and target."""
+        label = BazelLabel('//foo/bar:baz', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo2')
+        self.assertEqual(label.package(), 'foo/bar')
+        self.assertEqual(label.target(), 'baz')
+        self.assertEqual(str(label), '@repo2//foo/bar:baz')
+
+    def test_label_with_package_only(self):
+        """Tests a label with a package only."""
+        label = BazelLabel('//foo/bar', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo2')
+        self.assertEqual(label.package(), 'foo/bar')
+        self.assertEqual(label.target(), 'bar')
+        self.assertEqual(str(label), '@repo2//foo/bar:bar')
+
+    def test_label_with_target_only(self):
+        """Tests a label with a target only."""
+        label = BazelLabel(':baz', repo='repo2', package='qux')
+        self.assertEqual(label.repo(), 'repo2')
+        self.assertEqual(label.package(), 'qux')
+        self.assertEqual(label.target(), 'baz')
+        self.assertEqual(str(label), '@repo2//qux:baz')
+
+    def test_label_with_none(self):
+        """Tests an empty label."""
+        with self.assertRaises(ParseError):
+            BazelLabel('', repo='repo2', package='qux')
+
+    def test_label_invalid_no_repo(self):
+        """Tests a label with an invalid (non-absolute) package name."""
+        with self.assertRaises(AssertionError):
+            BazelLabel('//foo/bar:baz')
+
+    def test_label_invalid_relative(self):
+        """Tests a label with an invalid (non-absolute) package name."""
+        with self.assertRaises(ParseError):
+            BazelLabel('../foo/bar:baz')
+
+    def test_label_invalid_double_colon(self):
+        """Tests a label with an invalid (non-absolute) package name."""
+        with self.assertRaises(ParseError):
+            BazelLabel('//foo:bar:baz')
 
 
 class TestBazelRule(unittest.TestCase):
-    """Tests for bazel_query.Rule."""
-
-    def test_rule_top_level(self):
-        """Tests a top-level rule with no package name."""
-        rule = BazelRule('//:no-package', 'custom-type')
-        self.assertEqual(rule.package(), '')
-
-    def test_rule_with_label(self):
-        """Tests a rule with a package and target name."""
-        rule = BazelRule('//foo:target', 'custom-type')
-        self.assertEqual(rule.package(), 'foo')
-        self.assertEqual(rule.label(), '//foo:target')
-
-    def test_rule_in_subdirectory(self):
-        """Tests a rule in a subdirectory."""
-        rule = BazelRule('//foo:bar/target', 'custom-type')
-        self.assertEqual(rule.package(), 'foo')
-        self.assertEqual(rule.label(), '//foo:bar/target')
-
-    def test_rule_in_subpackage(self):
-        """Tests a rule in a subpackage."""
-        rule = BazelRule('//foo/bar:target', 'custom-type')
-        self.assertEqual(rule.package(), 'foo/bar')
-        self.assertEqual(rule.label(), '//foo/bar:target')
-
-    def test_rule_no_target(self):
-        """Tests a rule with only a package name."""
-        rule = BazelRule('//foo/bar', 'custom-type')
-        self.assertEqual(rule.package(), 'foo/bar')
-        self.assertEqual(rule.label(), '//foo/bar:bar')
-
-    def test_rule_invalid_relative(self):
-        """Tests a rule with an invalid (non-absolute) package name."""
-        with self.assertRaises(ParseError):
-            BazelRule('../foo/bar:target', 'custom-type')
-
-    def test_rule_invalid_double_colon(self):
-        """Tests a rule with an invalid (non-absolute) package name."""
-        with self.assertRaises(ParseError):
-            BazelRule('//foo:bar:target', 'custom-type')
+    """Tests for bazel_query.BazelRule."""
 
     def test_rule_parse_invalid(self):
         """Test for parsing invalid rule attributes."""
-        rule = BazelRule('//package:target', 'kind')
+        rule = BazelRule('kind', '@repo//package:target')
         with self.assertRaises(ParseError):
-            rule.parse(
+            rule.parse_attrs(
                 json.loads(
                     '''[{
                         "name": "invalid_attr",
@@ -82,8 +166,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_boolean_unspecified(self):
         """Test parsing an unset boolean rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "bool_attr",
@@ -99,8 +183,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_boolean_false(self):
         """Tests parsing boolean rule attribute set to false."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "bool_attr",
@@ -117,8 +201,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_boolean_true(self):
         """Tests parsing a boolean rule attribute set to true."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "bool_attr",
@@ -135,8 +219,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_integer_unspecified(self):
         """Tests parsing an unset integer rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "int_attr",
@@ -150,8 +234,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_integer(self):
         """Tests parsing an integer rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "int_attr",
@@ -166,8 +250,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string_unspecified(self):
         """Tests parsing an unset string rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_attr",
@@ -181,8 +265,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string(self):
         """Tests parsing a string rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_attr",
@@ -197,8 +281,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string_list_unspecified(self):
         """Tests parsing an unset string list rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_list_attr",
@@ -212,8 +296,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string_list(self):
         """Tests parsing a string list rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_list_attr",
@@ -228,8 +312,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_label_list_unspecified(self):
         """Tests parsing an unset label list rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "label_list_attr",
@@ -243,8 +327,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_label_list(self):
         """Tests parsing a label list rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "label_list_attr",
@@ -259,8 +343,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string_dict_unspecified(self):
         """Tests parsing an unset string dict rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_dict_attr",
@@ -274,8 +358,8 @@ class TestBazelRule(unittest.TestCase):
 
     def test_rule_parse_string_dict(self):
         """Tests parsing a string dict rule attribute."""
-        rule = BazelRule('//package:target', 'kind')
-        rule.parse(
+        rule = BazelRule('kind', '@repo//package:target')
+        rule.parse_attrs(
             json.loads(
                 '''[{
                     "name": "string_dict_attr",
@@ -303,106 +387,250 @@ class TestBazelRule(unittest.TestCase):
 class TestWorkspace(unittest.TestCase):
     """Test for bazel_query.Workspace."""
 
+    def setUp(self) -> None:
+        self.mock = MockWorkspace('path/to/repo')
+
+    def verify_mock(self, mock_run) -> None:
+        """Asserts that the calls to the mock object match those registered."""
+        for mocked_call in mock_run.call_args_list:
+            self.assertEqual(mocked_call.args[0], self.mock.pop_args())
+            self.assertEqual(mocked_call.kwargs['cwd'], 'path/to/repo')
+            self.assertTrue(mocked_call.kwargs['capture_output'])
+        self.assertEqual(self.mock.num_args(), 0)
+
+    @mock.patch('subprocess.run')
+    def test_workspace_get_http_archives_no_generate(self, mock_run):
+        """Tests querying a workspace for its external dependencies."""
+        self.mock.add_call('git', 'fetch')
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        workspace.generate = False
+        deps = list(workspace.get_http_archives())
+        self.assertEqual(deps, [])
+        self.verify_mock(mock_run)
+
+    @mock.patch('subprocess.run')
+    def test_workspace_get_http_archives(self, mock_run):
+        """Tests querying a workspace for its external dependencies."""
+        self.mock.add_call('git', 'fetch')
+        rules = [
+            {
+                'type': 'RULE',
+                'rule': {
+                    'name': '//external:foo',
+                    'ruleClass': 'http_archive',
+                    'attribute': [
+                        {
+                            'name': 'url',
+                            'type': 'STRING',
+                            'explicitlySpecified': True,
+                            'stringValue': 'http://src/deadbeef.tgz',
+                        }
+                    ],
+                },
+            },
+            {
+                'type': 'RULE',
+                'rule': {
+                    'name': '//external:bar',
+                    'ruleClass': 'http_archive',
+                    'attribute': [
+                        {
+                            'name': 'urls',
+                            'type': 'STRING_LIST',
+                            'explicitlySpecified': True,
+                            'stringListValue': ['http://src/feedface.zip'],
+                        }
+                    ],
+                },
+            },
+        ]
+        results = [json.dumps(rule) for rule in rules]
+        self.mock.add_call(
+            'bazel',
+            'query',
+            'kind(http_archive, //external:*)',
+            '--output=streamed_jsonproto',
+            '--noshow_progress',
+            result='\n'.join(results),
+        )
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        (foo_rule, bar_rule) = list(workspace.get_http_archives())
+        self.assertEqual(foo_rule.get_str('url'), 'http://src/deadbeef.tgz')
+        self.assertEqual(
+            bar_rule.get_list('urls'),
+            [
+                'http://src/feedface.zip',
+            ],
+        )
+        self.verify_mock(mock_run)
+
     @mock.patch('subprocess.run')
     def test_workspace_get_rules(self, mock_run):
-        """Tests querying a workspace for Bazel rules."""
-        attrs = []
-
-        # `bazel query //... --output=package
-        attrs.append(
-            {
-                'stdout.decode.return_value': '''
-foo/pkg1
-bar/pkg2'''
-            }
-        )
-
-        # bazel query buildfiles(//foo:*) --output=xml
-        attrs.append(
-            {
-                'stdout.decode.return_value': '''
-<query version="2">
-    <source-file name="//foo/pkg1:BUILD.bazel">
-        <visibility-label name="//visibility:public"/>
-    </source-file>
-</query>'''
-            }
-        )
-
-        # bazel query buildfiles(//bar:*) --output=xml
-        attrs.append(
-            {
-                'stdout.decode.return_value': '''
-<query version="2">
-    <source-file name="//bar/pkg2:BUILD.bazel">
-        <visibility-label name="//visibility:private"/>
-    </source-file>
-</query>'''
-            }
-        )
-
-        # bazel cquery kind(some_kind, //...) --output=jsonproto
-        attrs.append(
-            {
-                'stdout.decode.return_value': '''
-{
-  "results": [
-    {
-      "target": {
-        "type": "RULE",
-        "rule": {
-          "name": "//foo/pkg1:rule1",
-          "ruleClass": "some_kind",
-          "attribute": []
+        """Tests querying a workspace for a rule."""
+        self.mock.add_call('git', 'fetch')
+        rule_data = {
+            'results': [
+                {
+                    'target': {
+                        'rule': {
+                            'name': '//pkg:target',
+                            'ruleClass': 'cc_library',
+                            'attribute': [
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'hdrs',
+                                    'type': 'string_list',
+                                    'stringListValue': ['foo/include/bar.h'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'srcs',
+                                    'type': 'string_list',
+                                    'stringListValue': ['foo/bar.cc'],
+                                },
+                                {
+                                    'name': 'additional_linker_inputs',
+                                    'type': 'string_list',
+                                    'stringListValue': ['implicit'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'include_dirs',
+                                    'type': 'string_list',
+                                    'stringListValue': ['foo/include'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'copts',
+                                    'type': 'string_list',
+                                    'stringListValue': ['-Wall', '-Werror'],
+                                },
+                                {
+                                    'explicitlySpecified': False,
+                                    'name': 'linkopts',
+                                    'type': 'string_list',
+                                    'stringListValue': ['implicit'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'defines',
+                                    'type': 'string_list',
+                                    'stringListValue': ['-DFILTERED', '-DKEPT'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'local_defines',
+                                    'type': 'string_list',
+                                    'stringListValue': ['-DALSO_FILTERED'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'deps',
+                                    'type': 'string_list',
+                                    'stringListValue': [':baz'],
+                                },
+                                {
+                                    'explicitlySpecified': True,
+                                    'name': 'implementation_deps',
+                                    'type': 'string_list',
+                                    'stringListValue': [],
+                                },
+                            ],
+                        }
+                    }
+                }
+            ]
         }
-      }
-    },
-    {
-      "target": {
-        "type": "RULE",
-        "rule": {
-          "name": "//bar/pkg2:rule2",
-          "ruleClass": "some_kind",
-          "attribute": []
-        }
-      }
-    }
-  ]
-}'''
-            }
+        self.mock.add_call(
+            'bazel',
+            'cquery',
+            '//pkg:target',
+            '--@repo//pkg:use_optional=True',
+            '--output=jsonproto',
+            '--noshow_progress',
+            result=json.dumps(rule_data),
         )
-        mock_run.side_effect = [mock.MagicMock(**attr) for attr in attrs]
-        with TemporaryDirectory() as tmp:
-            workspace = BazelWorkspace(tmp)
-            rules = list(workspace.get_rules('some_kind'))
-            actual = [r.label() for r in rules]
-            self.assertEqual(actual, ['//foo/pkg1:rule1', '//bar/pkg2:rule2'])
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        workspace.defaults = {
+            'defines': ['-DFILTERED'],
+            'local_defines': ['-DALSO_FILTERED'],
+        }
+        workspace.options = {'@repo//pkg:use_optional': True}
+        labels = [BazelLabel('@repo//pkg:target')]
+        rules = list(workspace.get_rules(labels))
+        rule = rules[0]
+        self.assertEqual(rule.get_list('hdrs'), ['foo/include/bar.h'])
+        self.assertEqual(rule.get_list('srcs'), ['foo/bar.cc'])
+        self.assertEqual(rule.get_list('additional_linker_inputs'), [])
+        self.assertEqual(rule.get_list('include_dirs'), ['foo/include'])
+        self.assertEqual(rule.get_list('copts'), ['-Wall', '-Werror'])
+        self.assertEqual(rule.get_list('linkopts'), [])
+        self.assertEqual(rule.get_list('defines'), ['-DKEPT'])
+        self.assertEqual(rule.get_list('local_defines'), [])
+        self.assertEqual(rule.get_list('deps'), [':baz'])
+        self.assertEqual(rule.get_list('implementation_deps'), [])
+
+        # Rules are cached, so a second call doesn't invoke Bazel again.
+        rule = workspace.get_rules(labels)
+        self.verify_mock(mock_run)
 
     @mock.patch('subprocess.run')
-    def test_revision(self, mock_run):
-        """Tests writing an OWNERS file."""
-        attrs = {'stdout.decode.return_value': 'fake-hash'}
-        mock_run.return_value = mock.MagicMock(**attrs)
-
-        with TemporaryDirectory() as tmp:
-            workspace = BazelWorkspace(tmp)
-            self.assertEqual(workspace.revision(), 'fake-hash')
-            args, kwargs = mock_run.call_args
-            self.assertEqual(*args, ['git', 'rev-parse', 'HEAD'])
-            self.assertEqual(kwargs['cwd'], tmp)
+    def test_workspace_get_rule_no_generate(self, mock_run):
+        """Tests querying a workspace for a rule."""
+        self.mock.add_call('git', 'fetch')
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        workspace.generate = False
+        labels = [BazelLabel('@repo//pkg:target')]
+        rules = list(workspace.get_rules(labels))
+        self.assertEqual(rules, [])
+        self.verify_mock(mock_run)
 
     @mock.patch('subprocess.run')
-    def test_url(self, mock_run):
-        """Tests writing an OWNERS file."""
-        attrs = {'stdout.decode.return_value': 'https://repohub.com/repo.git'}
-        mock_run.return_value = mock.MagicMock(**attrs)
+    def test_workspace_revision(self, mock_run):
+        """Tests querying a workspace for its git revision."""
+        self.mock.add_call('git', 'fetch')
+        self.mock.add_call('git', 'rev-parse', 'HEAD', result='deadbeef')
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        self.assertEqual(workspace.revision(), 'deadbeef')
+        self.verify_mock(mock_run)
 
-        with TemporaryDirectory() as tmp:
-            workspace = BazelWorkspace(tmp)
-            self.assertEqual(workspace.url(), 'https://repohub.com/repo.git')
-            args, kwargs = mock_run.call_args
-            self.assertEqual(*args, ['git', 'remote', 'get-url', 'origin'])
-            self.assertEqual(kwargs['cwd'], tmp)
+    @mock.patch('subprocess.run')
+    def test_workspace_timestamp(self, mock_run):
+        """Tests querying a workspace for its commit timestamp."""
+        self.mock.add_call('git', 'fetch')
+        self.mock.add_call(
+            'git', 'show', '--no-patch', '--format=%ci', 'HEAD', result='0123'
+        )
+        self.mock.add_call(
+            'git',
+            'show',
+            '--no-patch',
+            '--format=%ci',
+            'deadbeef',
+            result='4567',
+        )
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        self.assertEqual(workspace.timestamp('HEAD'), '0123')
+        self.assertEqual(workspace.timestamp('deadbeef'), '4567')
+        self.verify_mock(mock_run)
+
+    @mock.patch('subprocess.run')
+    def test_workspace_url(self, mock_run):
+        """Tests querying a workspace for its git URL."""
+        self.mock.add_call('git', 'fetch')
+        self.mock.add_call(
+            'git', 'remote', 'get-url', 'origin', result='http://foo/bar.git'
+        )
+        self.mock.finalize(mock_run)
+        workspace = BazelWorkspace('@repo', self.mock.source_dir())
+        self.assertEqual(workspace.url(), 'http://foo/bar.git')
+        self.verify_mock(mock_run)
 
 
 if __name__ == '__main__':

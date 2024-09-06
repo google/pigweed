@@ -83,18 +83,19 @@ Add FuzzTest to your workspace with the following command.
 Updating
 ========
 The GN build files are generated from the third-party Bazel build files using
-$dir_pw_build/py/pw_build/generate_3p_gn.py.
+$dir_pw_build/py/pw_build/bazel_to_gn.py.
 
-The script uses data taken from ``$dir_pw_third_party/fuzztest/repo.json``.
+The script uses data taken from a ``bazel_to_gn.json`` file for this module and
+for each third party module that this module depends on, e.g.
+``$PW_ROOT/third_party/fuzztest/bazel_to_gn.json``.
 
 The script should be re-run whenever the submodule is updated or the JSON file
-is modified. Specify the location of the Bazel repository can be specified using
-the ``-w`` option, e.g.
+is modified. Specify the location of the Bazel repository using ``gn args``,
+then run:
 
 .. code-block:: sh
 
-   python pw_build/py/pw_build/generate_3p_gn.py \
-     -w third_party/fuzztest/src
+   python pw_build/py/pw_build/bazel_to_gn.py fuzztest
 
 Additionally, the ``fuzztest.bazelrc`` file should regenerated. From this
 directory, run:

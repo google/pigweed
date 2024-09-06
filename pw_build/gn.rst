@@ -199,78 +199,66 @@ given library, these include:
   relative to ``dir_pw_third_party_<library>``.
 
 To add or update GN build files for libraries that only offer Bazel build files,
-the Python script at ``pw_build/py/pw_build/generate_3p_gn.py`` may be used.
+the Python script at ``pw_build/py/pw_build/bazel_to_gn.py`` may be used.
 
 .. note::
-   The ``generate_3p_gn.py`` script is experimental, and may not work on an
+   The ``bazel_to_gn.py`` script is experimental, and may not work on an
    arbitrary Bazel library.
 
 To generate or update the GN offered by Pigweed from an Bazel upstream project,
-first create a ``third_party/<library>/repo.json`` file. This file should
+first create a ``third_party/<library>/bazel_to_gn.json`` file. This file should
 describe a single JSON object, with the following fields:
 
-* ``name``: String containg the project name.
+* ``repo``: Required string containing the Bazel repository name.
 
   .. code-block::
 
-     "name": "FuzzTest"
+     "repo": "com_google_absl"
 
-* ``repos``: Object mapping Bazel repositories to library names.
-
-  .. code-block::
-
-     "repos": { "com_google_absl": "abseil-cpp" }
-
-* ``aliases``: Object mapping GN labels to other GN labels. In some cases, a
-  third party library may have a dependency on another library already supported
-  by Pigweed, but with a label that differs from what the script would generate.
-  This field allows those labels to be rewritten.
+* ``targets``: Optional list of Bazel targets to convert, relative to the repo.
 
   .. code-block::
 
-     "aliases": {
-       "$dir_pw_third_party/googletest:gtest": "$dir_pw_third_party/googletest"
+     "targets": [ "//pkg1:target1", "//pkg2:target2" ]
+
+* ``defaults``: Optional object mapping attribute names to lists of strings.
+  These values are treated as implied for the attribute, and will be skipped
+  when converting a Bazel rule into a GN target.
+
+  .. code-block::
+
+     "defaults": {
+       "copts": [ "-Wconversion" ]
      }
 
-* ``add``: List of labels to existing GN configs. These will be added to every
-  target in the library.
+* ``generate``: Optional boolean indicating whether to generate GN build files a
+  third party library. Default is true. This flag may be useful for a third
+  party library whose GN build files are manually maintained, but which is
+  referenced by another library whose GN build files are generated.
 
   .. code-block::
 
-     "add": [ "$dir_pw_third_party/re2/configs:disabled_warnings" ]
+     "generate": true
 
-* ``remove``: List of labels to default GN configs. These will be removed from
-  every target.
+GN build files may be generated using the following command:
 
-  .. code-block::
+.. code-block::
 
-     "remove" = [ "$dir_pw_fuzzer:instrumentation" ]
+   python3 pw_build/py/pw_build/bazel_to_gn.py <library>
 
-* ``allow_testonly``: Boolean indicating whether to generate GN for Bazel
-  targets marked test-only. Defaults to false.
+For Bazel, ``http_archive`` rules should be added or updated in the project
+WORKSPACE file.
 
-  .. code-block::
+.. code-block::
 
-     "allow_testonly": true
+   http_archive(
+       name = "com_google_absl",
+       sha256 = "0ddd37f347c58d89f449dd189a645bfd97bcd85c5284404a3af27a3ca3476f39",
+       strip_prefix = "abseil-cpp-fad946221cec37175e762c399760f54b9de9a9fa",
+       url = "https://github.com/abseil/abseil-cpp/archive/fad946221cec37175e762c399760f54b9de9a9fa.tar.gz",
+   )
 
-* ``no_gn_check``: List of Bazel targets that violate ``gn check``'s
-  `rules`__. Third-party targets that do not conform can be excluded.
-
-  .. code-block::
-
-     "no_gn_check": [ "//fuzztest:regexp_dfa" ]
-
-* ``extra_files``: Object mapping additional files to create to Bazel targets
-  that create them. These targets will be passed to ``bazel run`` and their
-  output saved to the named file within ``third_party/<library>``. For example:
-
-  .. code-block::
-
-     "extra_files": {
-       "fuzztest.bazelrc": "@com_google_fuzztest//bazel:setup_configs"
-     }
-
-.. __: https://gn.googlesource.com/gn/+/main/docs/reference.md#cmd_check
+.. _module-pw_build-python-packages:
 
 Python packages
 ---------------
@@ -281,7 +269,6 @@ described in :ref:`module-pw_build-python`.
   :hidden:
 
   python
-
 
 .. _module-pw_build-cc_blob_library:
 
