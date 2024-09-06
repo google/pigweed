@@ -284,5 +284,6 @@ or browse the `Sense source code`_.
    :maxdepth: 1
    :hidden:
 
+   self
    Tutorial <tutorial/index>
    Source code <https://pigweed.googlesource.com/pigweed/showcase/sense/>

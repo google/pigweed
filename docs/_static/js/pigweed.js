@@ -12,55 +12,74 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-window.pigweed = {};
+window.pw = {};
 
-// Scroll the site nav so that the current page is visible.
-// Context: https://pigweed.dev/docs/style_guide.html#site-nav-scrolling
-window.pigweed.scrollSiteNav = () => {
-  const siteNav = document.querySelector('.sidebar-scroll');
-  // The node within the site nav that represents the page that the user is
-  // currently looking at.
-  const currentPage = document.querySelector('.current-page');
-  // Determine which site nav node to scroll to. Scroll directly to top-level
-  // (L1) and second-level (L2) nodes. For L3 nodes and deeper, scroll to the
-  // node's L2 ancestor so that the user sees all the docs in the set.
-  let targetNode;
-  if (
-    currentPage.classList.contains('toctree-l1') ||
-    currentPage.classList.contains('toctree-l2')
-  ) {
-    targetNode = currentPage;
-  } else {
-    targetNode = document.querySelector('li.toctree-l2.current');
+// Display inline search results under the search modal. After the user types
+// text in the search box, results are shown underneath the text input box.
+// The search is restarted anew after each keypress.
+//
+// TODO: b/363034219 - Try to upstream this code into pydata-sphinx-theme.
+window.pw.initSearch = () => {
+  // The search page has its own UI for running searches and displaying
+  // results. This logic isn't needed on /search.html.
+  if (window.location.pathname.endsWith('/search.html')) {
+    return;
   }
-  // Scroll to the node. Note that we also tried scrollIntoView() but
-  // it wasn't reliable enough.
-  const scrollDistance =
-    targetNode.getBoundingClientRect().top -
-    siteNav.getBoundingClientRect().top;
-  siteNav.scrollTop = scrollDistance;
+  // Search class is provided by Sphinx's built-in search tools.
+  // The template //docs/layout/page.html ensures that Sphinx's
+  // search scripts are always loaded before pigweed.js.
+  // eslint-disable-next-line no-undef
+  if (!Search) {
+    return;
+  }
+  window.pw.resetSearchResults();
+  let timeoutId = null;
+  let lastQuery = '';
+  const searchInput = document.querySelector('#search-input');
+  // Kick off the search after the user types something.
+  searchInput.addEventListener('keyup', () => {
+    const query = searchInput.value;
+    // Don't search when there's nothing in the query text box.
+    if (query === '') {
+      return;
+    }
+    // Don't search if there is no detectable change between
+    // the last query and the current query. This prevents the
+    // search from re-running if the user presses Tab to start
+    // navigating the search results.
+    if (query === lastQuery) {
+      return;
+    }
+    // Debounce so that the search only starts only when the
+    // user stops typing.
+    const delay_ms = 500;
+    lastQuery = query;
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+    timeoutId = window.setTimeout(() => {
+      // The user has changed the search query. Delete the old results.
+      window.pw.resetSearchResults();
+      // eslint-disable-next-line no-undef
+      Search.performSearch(query);
+      timeoutId = null;
+    }, delay_ms);
+  });
 };
 
-// If the URL has a deep link, make sure the page scrolls to that section.
-// Context: https://pigweed.dev/docs/style_guide.html#site-nav-scrolling
-window.pigweed.scrollMainContent = () => {
-  // Only run this logic if there's a deep link in the URL.
-  if (!window.location.hash) {
-    return;
+// Resets the custom search results container to an empty state.
+//
+// TODO: b/363034219 - Try to upstream this code into pydata-sphinx-theme.
+window.pw.resetSearchResults = () => {
+  let results = document.querySelector('#search-results');
+  if (results) {
+    results.remove();
   }
-  // Make sure that there's actually a node that matches the deep link before
-  // attempting to jump to it.
-  const targetNode = document.querySelector(window.location.hash);
-  if (!targetNode) {
-    return;
-  }
-  // Scroll to the node. Note that we also tried scrollIntoView() but
-  // it wasn't reliable enough.
-  const mainContent = document.querySelector('div.main');
-  const scrollDistance =
-    targetNode.getBoundingClientRect().top -
-    mainContent.getBoundingClientRect().top;
-  mainContent.scrollTop = scrollDistance;
+  results = document.createElement('section');
+  results.classList.add('pw-search-results');
+  results.id = 'search-results';
+  let container = document.querySelector('.search-button__search-container');
+  container.appendChild(results);
 };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -70,6 +89,5 @@ window.addEventListener('DOMContentLoaded', () => {
     // https://mermaid.js.org/config/usage.html#using-mermaid-run
     window.mermaid.run();
   }
-  window.pigweed.scrollSiteNav();
-  window.pigweed.scrollMainContent();
+  window.pw.initSearch();
 });

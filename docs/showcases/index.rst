@@ -31,4 +31,5 @@ Showcase projects
    :maxdepth: 1
    :hidden:
 
+   self
    ../../kudzu/docs

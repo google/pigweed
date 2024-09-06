@@ -12,13 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Pigweed upstream specific depenencies:
+# Pigweed upstream specific dependencies:
 # pigweed.dev Sphinx themes
 beautifulsoup4==4.12.2
-furo==2023.8.19
 sphinx-copybutton==0.5.1
 breathe==4.35.0
 kconfiglib==14.1.0
+pydata-sphinx-theme==0.15.4
 pytz==2023.3
 sphinx-reredirects==0.1.3
 sphinx-sitemap==2.5.1

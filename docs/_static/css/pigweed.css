@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Pigweed Authors
+ * Copyright 2024 The Pigweed Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,206 +14,296 @@
  * the License.
  */
 
-/********** Top left logo & search bar ***********/
+/********** General document and node styles ***********/
+/* Note: The final value of color variables like --pw-color-background-code
+ * is resolved when dark theme or light theme is chosen. */
 
-/* Make the "Pigweed" logo text. One day, this will be an image. */
-.sidebar-brand {
-  font-size: 2em;
-  font-family: "Lato", sans-serif;
-  font-weight: bold;
-  font-style: italic;
-}
-
-.sidebar-brand-text {
-  font-size: 2.5rem;
-  text-align: center;
-}
-
-/********** Scrolling behavior ***********/
-
-/*
- * All nodes across the site should scroll instantly. This rule is intentionally
- * broad and agressive. Context:
- * https://pigweed.dev/docs/style_guide.html#site-nav-scrolling
- */
-* {
+:root {
+  /* PyData Sphinx Theme variables. */
+  /* When you move your mouse over a table, pydata highlights the row that
+   * you're currently hovering over. Make this highlight color more muted. */
+  --pst-color-table-row-hover-bg: var(--sd-color-primary-bg) !important;
+  /* Pigweed variables. */
+  --pw-font-body: "Noto Sans", sans-serif;
+  --pw-font-code: "Roboto Mono", monospace;
+  --pw-font-headings: "Lato", sans-serif;
+  /* All nodes should always scroll instantly. */
   scroll-behavior: auto !important;
+  --font-stack-monospace: var(--pw-font-code);
 }
-
-/********** Focus behavior ***********/
-
-/* (a11y) Provide clear visual indication that an element is focused:
- * https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html
- *
- * This rule should be applied to all focusable HTML elements:
- * https://stackoverflow.com/a/1600194 */
-a:focus, area:focus, button:focus, input:focus, select:focus, textarea:focus {
-  outline: 3px solid var(--color-text-selection-background);
-}
-
-/********** General document coloring ***********/
 
 code, pre {
-  font-family: "Roboto Mono", monospace;
+  background-color: var(--pw-color-background-code);
+  color: var(--pw-color-foreground-primary);
+  font-family: var(--pw-font-code);
 }
 
 div, li, p {
-  font-family: "Noto Sans", sans-serif;
+  font-family: var(--pw-font-body);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Lato", sans-serif;
+  font-family: var(--pw-font-headings);
   font-weight: bold;
 }
 
-/* Code blocks inside block quotes end up getting italicized. */
-blockquote {
-  font-style: normal;
+/* Highlighted lines in code blocks. */
+.highlight .hll {
+  /* Make highlighted code easier to read. */
+  background-color: var(--color-code-hll-background) !important;
 }
 
-.breadcrumbs {
-  margin: 1.5rem 0 0 0;
-  padding: 0;
+/********** Dark mode styles ***********/
+/* https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#color-variables */
+
+html[data-theme="dark"] {
+  /* PyData Sphinx Theme variables. */
+  --pst-color-primary: #fb71fe;
+  --pst-color-secondary: #8be9fd;
+  /* Pigweed variables. */
+  --pw-color-link: #2b8cee;
+  --pw-color-link-inactive: #9ca0a5;
+  --pw-color-background-primary: #1c2128;
+  --pw-color-background-secondary: #22272e;
+  --pw-color-background-code: #2d333b;
+  --pw-color-foreground-primary: #ffffffcc;
+  /* Doxygen/Breathe API reference customizations. */
+  --color-api-function-border: #575757;
+  --color-api-function-background: #2b2b2b;
+  --color-api-class-background: #222c35;
+  --color-api-class-foreground: #87c1e5;
+  --color-api-class-border: #5288be;
+  --color-code-hll-background: #ffc55140;
 }
 
-.breadcrumb {
-  display: inline-block;
-  margin: 0;
-  padding: 0;
+/********** Light mode styles ***********/
+/* https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#color-variables */
+
+html[data-theme="light"] {
+  /* PyData Sphinx Theme variables. */
+  --pst-color-primary: #b529aa;
+  --pst-color-secondary: #016074;
+  /* Pigweed variables. */
+  --pw-color-link: #2a5adf;
+  --pw-color-link-inactive: #9ca0a5;
+  --pw-color-background-primary: #ffffff;
+  --pw-color-background-secondary: #f8f9fb;
+  --pw-color-background-code: #f8f8f8;
+  --pw-color-foreground-primary: ;
+  /* Doxygen/Breathe API reference customizations. */
+  --color-api-function-border: #cccccc;
+  --color-api-function-background: #f0f0f0;
+  --color-api-class-background: #e7f2fa;
+  --color-api-class-foreground: #2980b9;
+  --color-api-class-border: #6ab0de;
+  --color-code-hll-background: #ffffcc;
 }
 
-/* Tweak the spacing of the page's H1 if it's preceded by breadcrumbs. */
-.breadcrumbs ~ section h1 {
-  margin-top: 1rem;
+/********** pydata customizations ***********/
+/* These classes either come from our theme (pydata-sphinx-theme)
+ * or Sphinx extensions that pydata relies on. */
+
+/* Announcement banner. Only visible when an announcement is set in conf.py.
+ * Is displayed at the very top of the page when enabled.
+ * https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/announcements.html */
+.bd-header-announcement {
+  background-color: #00a100;
+  font-family: var(--pw-font-body);
+  font-style: italic;
+  a {
+    color: var(--pst-color-light);
+    font-weight: bold;
+  }
 }
 
-/* Update description list (dl) > description titles (dt) styles for autodoc */
-
-/* Function signatures are gray */
-dl.c>dt, dl.cpp>dt, dl.js>dt, dl.py>dt {
-  border: none;
-  border-left: 3px solid var(--color-api-function-border);
-  background: var(--color-api-function-background);
-  padding-top: 6px;
-  padding-bottom: 6px;
-  padding-left: 0.5em;
-  font-family: var(--font-stack--monospace);
+/* Header container at the top of every page that contains the logo,
+ * top-level nav, search box, theme switcher, and social links. */
+.bd-header {
+  background-color: var(--pw-color-background-secondary) !important;
+  font-family: var(--pw-font-headings);
+  .logo__title {
+    font-size: 1.25em;
+    font-family: "Lato", sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: var(--pst-color-primary);
+  }
+  /* Top-level nav links. */
+  .nav-item {
+    color: var(--pw-color-link-inactive);
+    /* On medium-width screens keep the text on a single row. */
+    white-space: nowrap;
+    /* The currently visible top-level section. */
+    .active {
+      color: var(--pst-color-primary);
+    }
+    :hover {
+      color: var(--pst-color-secondary);
+    }
+  }
+  .search-button__default-text {
+    font-family: var(--pw-font-body);
+  }
+  /* Theme toggle button. */
+  .theme-switch-button:hover {
+    color: var(--pst-color-secondary);
+  }
 }
 
-/* Adjust indentation for all list types */
-dl.class>dt, dl.enum-class>dt, dl.enum-struct>dt, dl.enum>dt, dl.exception>dt, dl.function>dt, dl.method>dt, dl.type>dt {
-  padding-left: 3em;
-  text-indent: -2.5em;
-}
-
-/* Class and describe signatures are blue */
-dl.class>dt, dl.describe>dt {
-  background: var(--color-api-class-background);
-  color: var(--color-api-class-foreground);
-  border: none;
-  border-top: 3px solid var(--color-api-class-border);
-  font-family: var(--font-stack--monospace);
-}
-
-/* Adjust .. describe:: block padding */
-dl.describe>dt {
-  display: table;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-}
-
-/* Function signature unindent */
-.sig {
-    text-indent: 0em;
-}
-
-/* Remove blank space before/after function signature open/close parens. */
-.sig > dl {
-    margin-block-start: 0;
-    margin-block-end: 0;
-}
-
-/* Make inline code standout more */
-code.literal {
-  border: 1px solid var(--color-inline-code-border);
-}
-
-/* Make sure text selection colors are readable */
-::selection {
-  color: var(--color-text-selection-foreground);
-  background: var(--color-text-selection-background);
-}
-
-
-/* Make dark mode 'code-block:: :emphasize-lines:' background color readable. */
-body[data-theme="dark"] .highlight .hll {
-  background-color: var(--color-code-hll-background);
-}
-
-body[data-theme="light"] .highlight .hll {
-  background-color: var(--color-code-hll-background);
-}
-
-/* Override pygments.css code block background color */
-body[data-theme="dark"] .highlight {
-  background-color: var(--color-code-background) !important;
-}
-
-/* Use normal mixed-case for h4, h5, and h6 */
-h4, h5, h6 {
-    text-transform: none;
-}
-
-:root {
-  /* SVGs from: https://octicons-git-v2-primer.vercel.app/octicons/ */
-  --icon--check-circle: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM0 8a8 8 0 1116 0A8 8 0 010 8zm11.78-1.72a.75.75 0 00-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 00-1.06 1.06l2 2a.75.75 0 001.06 0l4.5-4.5z"></path></svg>');
-  --icon--check-circle-fill: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 00-1.06 1.06l2 2a.75.75 0 001.06 0l4.5-4.5z"></path></svg>');
-}
-
-.admonition.checkmark {
-  border-color: var(--color-admonition-title--tip);
-}
-.admonition.checkmark > .admonition-title {
-  background-color: var(--color-admonition-title-background--tip);
-}
-.admonition.checkmark > .admonition-title::before {
-  background-color: var(--color-admonition-title--tip);
-  -webkit-mask-image: var(--icon--check-circle-fill);
-          mask-image: var(--icon--check-circle-fill);
-}
-
-/* Sub sections in breathe doxygen output.
-   E.g 'Public Functions' or 'Public Static Functions' in a class. */
-.breathe-sectiondef > p.breathe-sectiondef-title {
-  font-weight: bold;
-  font-size: var(--font-size--normal);
-}
-
-/* Indicate in-progress SEEDs */
-a[href="seed/0000-index.html"] ~ ul > li > a.reference.external[href*="pigweed-review.googlesource.com"]::before {
-  content: "🚧 ";
-}
-
-div.pw-main {
-  display: flex;
+/* Search modal wrapper. The search modal is displayed after
+ * focusing the search box in the header or pressing Ctrl+K. */
+.search-button__search-container {
+  /* Most of these tweaks are related to making our custom inline search
+   * results container (.pw-search-results) display correctly. */
+  background-color: var(--pst-color-background);
   flex-direction: column;
+  height: 50vh;
+  .bd-search {
+    flex-grow: 0 !important;
+  }
+  /* Pigweed-custom search results container that we append
+   * after the search modal input. Search results are populated
+   * into this container. This enables you to see search results
+   * immediately after typing rather than needing to press Enter
+   * and go to the search results page.
+   *
+   * TODO: b/363034219 - Remove this custom code. */
+  .pw-search-results {
+    overflow-y: scroll;
+    padding: 1em;
+    a {
+      color: var(--pw-color-link);
+    }
+  }
 }
 
-div.pw-topnav {
+/* Container for the primary sidebar, main content,
+ * and secondary sidebar. */
+.bd-container {
+  background-color: var(--pw-color-background-primary);
+}
+
+/* Breadcrumbs that appear above the main content. */
+.bd-breadcrumbs {
+  font-family: var(--pw-font-headings);
+}
+
+/* "Section Navigation" container that appears to the left of
+ * the main content. */
+.bd-sidebar-primary {
+  background-color: var(--pw-color-background-primary);
+  font-family: var(--pw-font-body);
+  /* Hide the "Section Navigation" scrollbar. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  /* Indicate in-progress SEEDs. */
+  a.reference.external[href*="pigweed-review.googlesource.com"]::before {
+    content: "🚧 ";
+  }
+}
+
+/* Main content of the page. */
+.bd-article {
+  color: var(--pw-color-foreground-primary);
+  /* Links */
+  a.reference {
+    color: var(--pw-color-link);
+  }
+  dd.field-odd {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+  }
+}
+
+/* Container with "Previous" and "Next" links that appears at the
+ * end of the main content. */
+.prev-next-footer {
+  .prev-next-title {
+    color: var(--pw-color-link);
+  }
+}
+
+/* "On this page" container that appears to the right of the main
+ * content. */
+.bd-sidebar-secondary {
+  background-color: var(--pw-color-background-primary);
+  font-family: var(--pw-font-body);
+  /* Links to jump to sections on this page. */
+  .nav-item {
+    color: var(--pw-color-link-inactive);
+    /* The currently visible section. */
+    .active {
+      color: var(--pst-color-primary);
+    }
+  }
+}
+
+/* Footer container at the very bottom of every page. */
+.bd-footer {
+  background-color: var(--pw-color-background-secondary);
+  font-family: var(--pw-font-body);
+  a {
+    color: var(--pw-color-link);
+  }
+}
+
+/********** sphinx-design component customizations ***********/
+/* Sphinx Design provides common UI components like cards, tabs, etc.
+ * https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/web-components.html */
+
+/* Tab customizations.*/
+
+.sd-tab-content {
+  /* Tones down the border (the default is distracting). */
+  border: 2px solid var(--pst-color-border) !important;
+}
+
+.sd-tab-label {
+  /* Tones down the border (the default is distracting). */
+  border-bottom: none !important;
+  border-color: var(--pst-color-border) !important;
+  border-width: 2px !important;
+}
+
+/* Card customizations. */
+
+.sales-pitch-cta-primary {
+  .sd-card-title {
+    border-bottom: 3px solid var(--pst-color-primary);
+    padding-bottom: 0.5rem;
+  }
+}
+
+.sales-pitch-cta-secondary {
+  .sd-card-title {
+    border-bottom: 3px solid var(--pst-color-secondary);
+    padding-bottom: 0.5rem;
+  }
+}
+
+/********** Pigweed component customizations ***********/
+
+/* Pigweed module cards styles. At the top of Pigweed module docs
+ * we often display a card that displays metadata about the module,
+ * e.g. tagline, supported languages, status of the module, etc.
+ * See also: //pw_docgen/py/pw_docgen/sphinx/module_metadata.py */
+
+.pw-topnav {
   background-color: var(--color-background-primary);
-  padding: 0 3em;
+  padding: 0;
   width: 100%;
 }
 
-div.pw-topnav-inline {
+.pw-topnav-inline {
   display: flex;
   flex-direction: row;
   padding: 1em 0 0 0;
 }
 
-div.pw-topnav-inline h1 {
+.pw-topnav-inline h1 {
   padding: 0;
   margin: 0;
 }
@@ -238,77 +328,27 @@ div.pw-topnav-inline h1 {
     text-align: center
 }
 
-ul.pw-module-section-nav-group {
+.pw-module-section-nav-group {
   display: flex;
   margin: 0 1em;
   padding: 0;
 }
 
-li.pw-module-section-nav-link {
+.pw-module-section-nav-link {
   display: inline;
   list-style-type: none;
   margin: auto;
   padding: 0 1em;
 }
 
-li.pw-module-section-nav-link p {
+.pw-module-section-nav-link p {
   display: inline;
   font-size: large;
 }
 
-li.pw-module-section-nav-link p a {
-  color: var(--color-section-button) !important;
-}
+/********** Doxygen/Breathe customizations ***********/
+/* We use Doxygen and Breathe to auto-generate our C/C++
+ * API references. The next styles tweak the auto-generated
+ * HTML and CSS. */
 
-li.pw-module-section-nav-link p a:hover {
-  color: var(--color-section-button-hover) !important;
-}
-
-div.font-monospace {
-  font-family: var(--font-stack--monospace);
-}
-
-/* Sales pitch pages like //pw_tokenizer/docs.rst use the feature grid as a
- * call-to-action to check out other docs in the set. The following CSS makes
- * the feature grid items stand out a bit more. */
-
-.sales-pitch-cta-primary .sd-card-title {
-  border-bottom: 3px solid var(--color-sidebar-brand-text);
-  padding-bottom: 0.5rem;
-}
-
-.sales-pitch-cta-secondary .sd-card-title {
-  border-bottom: 3px solid var(--color-sidebar-link-text);
-  padding-bottom: 0.5rem;
-}
-
-/* Position the "skip to main content" anchor offscreen by default.
- * https://pwbug.dev/344643289 */
-#skip {
-  position: absolute;
-  left: -1000%;
-  top: -1000%;
-  background-color: var(--color-background-primary);
-}
-
-/* Show the "skip to main content" anchor at the top-left of the viewport when
- * it's focused. */
-#skip:focus {
-  left: 10px;
-  top: 10px;
-  z-index: 1000;
-}
-
-.announcement {
-  background-color: #00a100;
-  color: var(--sd-color-light);
-  font-style: italic;
-  font-weight: bold;
-  a {
-    text-decoration: none;
-  }
-  a:hover {
-    color: var(--sd-color-light);
-    text-decoration: underline;
-  }
-}
+/* TODO: b/364322974 - Re-tweak Doxygen/Breathe-related styles. */

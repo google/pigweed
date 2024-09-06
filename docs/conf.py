@@ -14,7 +14,12 @@
 """Pigweed's Sphinx configuration."""
 
 from datetime import date
+
+import pygments
 import sphinx
+
+from pw_console.pigweed_code_style import PigweedCodeStyle
+from pw_console.pigweed_code_style import PigweedCodeLightStyle
 
 # The suffix of source filenames.
 source_suffix = ['.rst']
@@ -35,9 +40,26 @@ version = '0.1'
 # The full version, including alpha/beta/rc tags.
 release = '0.1.0'
 
-# The class of the Pygments (syntax highlighting) style to use.
-pygments_style = 'pw_console.pigweed_code_style.PigweedCodeLightStyle'
-pygments_dark_style = 'pw_console.pigweed_code_style.PigweedCodeStyle'
+
+# Pygments plugin approach (https://pygments.org/docs/plugins/) for getting
+# Sphinx to use our custom styles doesn't work. Use this approach instead:
+# https://stackoverflow.com/q/48615629/1669860
+def pygments_monkeypatch_style(mod_name, cls):
+    import sys
+    import pygments.styles
+
+    cls_name = cls.__name__
+    mod = type(__import__('os'))(mod_name)
+    setattr(mod, cls_name, cls)
+    setattr(pygments.styles, mod_name, mod)
+    sys.modules['pygments.styles.' + mod_name] = mod
+    from pygments.styles import STYLE_MAP
+
+    STYLE_MAP[mod_name] = mod_name + '::' + cls_name
+
+
+pygments_monkeypatch_style('pigweed_code_style', PigweedCodeStyle)
+pygments_monkeypatch_style('pigweed_code_light_style', PigweedCodeLightStyle)
 
 extensions = [
     "pw_docgen.sphinx.bug",
@@ -47,7 +69,6 @@ extensions = [
     "pw_docgen.sphinx.modules_index",
     "pw_docgen.sphinx.pigweed_live",
     "pw_docgen.sphinx.pw_status_codes",
-    "pw_docgen.sphinx.inlinesearch",
     "pw_docgen.sphinx.seed_metadata",
     "sphinx.ext.autodoc",  # Automatic documentation for Python code
     "sphinx.ext.napoleon",  # Parses Google-style docstrings
@@ -77,7 +98,7 @@ m2r_parse_relative_links = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'furo'
+html_theme = 'pydata_sphinx_theme'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -113,7 +134,7 @@ html_static_path = ['docs/_static']
 html_css_files = [
     "css/pigweed.css",
     # We could potentially merge the Google Fonts stylesheets into a single network
-    # request but we already preconnect with the service in //docs/layout/page.html
+    # request but we already preconnect with the service in //docs/layout/layout.html
     # so the performance impact of keeping these as 3 separate calls should be
     # negligible.
     "https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap",
@@ -133,112 +154,51 @@ announcement_url = 'https://pigweed.dev/docs/blog/03-pigweed-sdk.html'
 announcement_text = 'Pigweed SDK launches with Raspberry Pi RP2350'
 announcement = f'🚀🚀🚀 <a href="{announcement_url}">{announcement_text}</a> 🚀🚀🚀'
 
-# Furo color theme variables based on:
-# https://github.com/pradyunsg/furo/blob/main/src/furo/assets/styles/variables/_colors.scss
-# Colors with unchanged defaults are left commented out for easy updating.
 html_theme_options = {
     'announcement': announcement,
-    'light_css_variables': {
-        # Make the logo text more amaranth-like
-        'color-sidebar-brand-text': '#b529aa',
-        'color-sidebar-search-border': '#b529aa',
-        'color-sidebar-link-text--top-level': '#85004d',
-        'color-sidebar-link-text': '#016074',
-        'color-sidebar-item-background--current': '#f0f0f0',
-        'color-sidebar-item-background--hover': '#ffe2f3',
-        'color-sidebar-item-expander-background--hover': '#ffe2f3',
-        # Function signature colors
-        'color-api-function-border': '#cccccc',
-        'color-api-function-background': '#f0f0f0',
-        'color-api-class-background': '#e7f2fa',
-        'color-api-class-foreground': '#2980b9',
-        'color-api-class-border': '#6ab0de',
-        # Namespace::
-        'color-api-pre-name': '#2980b9',
-        # Function name
-        'color-api-name': '#2980b9',
-        'color-inline-code-background': '#fafafa',
-        'color-inline-code-border': '#cccccc',
-        'color-text-selection-background': '#1d5fad',
-        'color-text-selection-foreground': '#ffffff',
-        # Background color for focused headings.
-        'color-highlight-on-target': '#ffffcc',
-        # Background color emphasized code lines.
-        'color-code-hll-background': '#ffffcc',
-        'color-section-button': '#b529aa',
-        'color-section-button-hover': '#fb71fe',
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#navigation-bar-dropdown-links
+    'header_links_before_dropdown': 5,
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#icon-links
+    'icon_links': [
+        {
+            'name': 'Source code',
+            'url': 'https://cs.opensource.google/pigweed/pigweed/',
+            'icon': 'fa-solid fa-code',
+        },
+        {
+            'name': 'Issue tracker',
+            'url': 'https://pwbug.dev',
+            'icon': 'fa-solid fa-bug',
+        },
+        {
+            'name': 'Discord',
+            'url': 'https://discord.com/channels/691686718377558037/691686718377558040',
+            'icon': 'fa-brands fa-discord',
+        },
+    ],
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/branding.html
+    'logo': {
+        'text': 'Pigweed',
+        'image_light': '_static/pw_logo.svg',
+        'image_dark': '_static/pw_logo.svg',
     },
-    'dark_css_variables': {
-        'color-sidebar-brand-text': '#fb71fe',
-        'color-sidebar-search-border': '#e815a5',
-        'color-sidebar-link-text--top-level': '#ff79c6',
-        'color-sidebar-link-text': '#8be9fd',
-        'color-sidebar-item-background--current': '#2a3037',
-        'color-sidebar-item-background--hover': '#30353d',
-        'color-sidebar-item-expander-background--hover': '#4c333f',
-        # Function signature colors
-        'color-api-function-border': '#575757',
-        'color-api-function-background': '#2b2b2b',
-        'color-api-class-background': '#222c35',
-        'color-api-class-foreground': '#87c1e5',
-        'color-api-class-border': '#5288be',
-        # Namespace::
-        'color-api-pre-name': '#87c1e5',
-        # Function name
-        'color-api-name': '#87c1e5',
-        'color-code-background': '#2d333b',
-        'color-inline-code-background': '#2d333b',
-        'color-inline-code-border': '#575757',
-        'color-text-selection-background': '#2674bf',
-        'color-text-selection-foreground': '#ffffff',
-        # Background color for focused headings.
-        'color-highlight-on-target': '#ffc55140',
-        # Background color emphasized code lines.
-        'color-code-hll-background': '#ffc55140',
-        'color-section-button': '#fb71fe',
-        'color-section-button-hover': '#b529aa',
-        # The following color changes modify Furo's default dark mode colors for
-        # slightly less high-contrast.
-        # Base Colors
-        # 'color-foreground-primary': '#ffffffcc', # Main text and headings
-        # 'color-foreground-secondary': '#9ca0a5', # Secondary text
-        # 'color-foreground-muted': '#81868d', # Muted text
-        # 'color-foreground-border': '#666666', # Content borders
-        'color-background-primary': '#1c2128',  # Content
-        'color-background-secondary': '#22272e',  # Navigation and TOC
-        'color-background-hover': '#30353dff',  # Navigation-item hover
-        'color-background-hover--transparent': '#30353d00',
-        'color-background-border': '#444c56',  # UI borders
-        'color-background-item': '#373e47',  # "background" items (eg: copybutton)
-        # Announcements
-        # 'color-announcement-background': '#000000dd',
-        # 'color-announcement-text': '#eeebee',
-        # Brand colors
-        # 'color-brand-primary': '#2b8cee',
-        # 'color-brand-content': '#368ce2',
-        # Highlighted text (search)
-        # 'color-highlighted-background': '#083563',
-        # GUI Labels
-        # 'color-guilabel-background': '#08356380',
-        # 'color-guilabel-border': '#13395f80',
-        # API documentation
-        # 'color-api-keyword': 'var(--color-foreground-secondary)',
-        # 'color-highlight-on-target': '#333300',
-        # Admonitions
-        'color-admonition-background': 'var(--color-background-secondary)',
-        # Cards
-        'color-card-border': 'var(--color-background-border)',
-        'color-card-background': 'var(--color-background-secondary)',
-        # 'color-card-marginals-background': 'var(--color-background-hover)',
-        # Sphinx Design cards
-        'sd-color-card-background': 'var(--color-background-secondary)',
-        'sd-color-card-border': 'var(--color-background-border)',
-    },
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#configure-the-navbar-center-alignment
+    'navbar_align': 'right',
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#configure-pygments-theme
+    'pygments_light_style': 'pigweed_code_light_style',
+    'pygments_dark_style': 'pigweed_code_style',
 }
 
 # sphinx-sitemap needs this:
 # https://sphinx-sitemap.readthedocs.io/en/latest/getting-started.html#usage
 html_baseurl = 'https://pigweed.dev/'
+
+# Hide "Section Navigation" on homepage and changelog.
+html_sidebars = {'index': [], 'changelog': []}
+
+html_context = {
+    'default_mode': 'dark',
+}
 
 # https://sphinx-sitemap.readthedocs.io/en/latest/advanced-configuration.html
 sitemap_url_scheme = '{link}'

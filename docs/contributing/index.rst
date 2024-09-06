@@ -427,6 +427,7 @@ See the warning about caching Python packages for multiple platforms in
    :maxdepth: 1
    :hidden:
 
+   self
    Code reviews (Gerrit) <https://pigweed-review.googlesource.com>
    ../code_reviews
    Issue tracker <https://issues.pigweed.dev/issues?q=status:open>

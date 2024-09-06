@@ -6,6 +6,7 @@ Third-party hardware & software support
 .. toctree::
    :maxdepth: 1
 
+   self
    ../../build_system
    ../../targets
    ../os/index

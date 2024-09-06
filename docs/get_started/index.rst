@@ -129,6 +129,7 @@ Pigweed is modular: you can use as much or as little of it as you need.
    :maxdepth: 1
    :hidden:
 
+   self
    First-time setup <first_time_setup>
    Install Bazel <install_bazel>
    Bazel quickstart <bazel>

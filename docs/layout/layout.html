@@ -1,0 +1,33 @@
+<!--
+Copyright 2024 The Pigweed Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+-->
+
+{% extends "pydata_sphinx_theme/layout.html" %}
+
+{% block extrahead %}
+  <!-- Preconnect with Google Fonts to speed up font loading. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {{ super() }}
+  {% if pagename == 'search' %}
+    {# Search tools are already loaded on search page. Don't load them twice. #}
+  {% else %}
+    {# Load Sphinx's built-in search tools so that our custom inline search
+       experience can work on any page. See //docs/_static/js/pigweed.js #}
+    <script src="{{ pathto('_static/searchtools.js', 1) | e }}"></script>
+    <script src="{{ pathto('_static/language_data.js', 1) | e }}"></script>
+    <script src="{{ pathto('searchindex.js', 1) | e }}"></script>
+  {% endif %}
+{% endblock extrahead %}

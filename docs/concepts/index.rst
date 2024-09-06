@@ -34,6 +34,7 @@ Overviews & concepts
    :maxdepth: 1
    :hidden:
 
+   self
    ../overview
    ../mission
    ../facades

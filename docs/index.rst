@@ -1,3 +1,5 @@
+:html_theme.sidebar_secondary.remove:
+
 .. _docs-root:
 
 =======
@@ -172,13 +174,13 @@ Talk to us
 
    Home <self>
    Tour of Pigweed <docs/showcases/sense/index>
-   What's new <changelog>
    docs/get_started/index
+   What's new <changelog>
+   modules
    Source code <https://cs.pigweed.dev/pigweed>
    docs/showcases/index
    docs/concepts/index
    docs/3p/index
-   modules
    docs/community/index
    Developing & contributing <docs/contributing/index>
    Blog <docs/blog/index>
