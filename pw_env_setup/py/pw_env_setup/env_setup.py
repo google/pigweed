@@ -422,8 +422,9 @@ class EnvSetup(object):
     def _check_submodule_presence(self):
         uninitialized = set()
 
-        # Don't check submodule presence if using the Android Repo Tool.
-        if os.path.isdir(os.path.join(self._project_root, '.repo')):
+        # If there's no `.git` file or directory, then we are not in
+        # a git repo and must skip the git-submodule check.
+        if not os.path.exists(os.path.join(self._project_root, '.git')):
             return
 
         if not self._check_submodules:
