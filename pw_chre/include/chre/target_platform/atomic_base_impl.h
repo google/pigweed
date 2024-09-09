@@ -18,9 +18,7 @@
 
 namespace chre {
 
-inline AtomicBool::AtomicBool(bool starting_value) {
-  std::atomic_init(&atomic_, starting_value);
-}
+inline AtomicBool::AtomicBool(bool starting_value) { atomic_ = starting_value; }
 
 inline bool AtomicBool::operator=(bool desired) { return atomic_ = desired; }
 
@@ -33,7 +31,7 @@ inline bool AtomicBool::exchange(bool desired) {
 }
 
 inline AtomicUint32::AtomicUint32(uint32_t startingValue) {
-  std::atomic_init(&atomic_, startingValue);
+  atomic_ = startingValue;
 }
 
 inline uint32_t AtomicUint32::operator=(uint32_t desired) {
