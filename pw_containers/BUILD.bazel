@@ -21,6 +21,22 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Module configuration
+
+cc_library(
+    name = "config",
+    hdrs = ["public/pw_containers/config.h"],
+    includes = ["public"],
+    deps = [":config_override"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
+)
+
+# Libraries
+
 cc_library(
     name = "pw_containers",
     deps = [
@@ -28,6 +44,7 @@ cc_library(
         ":flat_map",
         ":inline_deque",
         ":inline_queue",
+        ":intrusive_forward_list",
         ":intrusive_list",
         ":vector",
     ],
@@ -43,18 +60,55 @@ cc_library(
 )
 
 cc_library(
-    name = "intrusive_list",
-    srcs = [
-        "intrusive_list.cc",
-        "public/pw_containers/internal/intrusive_list_impl.h",
+    name = "intrusive_forward_list",
+    hdrs = [
+        "public/pw_containers/intrusive_forward_list.h",
     ],
+    includes = ["public"],
+    deps = [
+        ":config",
+        ":intrusive_list_common",
+    ],
+)
+
+cc_library(
+    name = "intrusive_list",
     hdrs = [
         "public/pw_containers/intrusive_list.h",
     ],
     includes = ["public"],
     deps = [
+        ":config",
+        ":intrusive_list_common",
+        ":legacy_intrusive_list",
+    ],
+)
+
+cc_library(
+    name = "intrusive_list_common",
+    srcs = [
+        "intrusive_list.cc",
+    ],
+    hdrs = [
+        "public/pw_containers/internal/intrusive_list.h",
+        "public/pw_containers/internal/intrusive_list_item.h",
+        "public/pw_containers/internal/intrusive_list_iterator.h",
+    ],
+    includes = ["public"],
+    deps = [
         "//pw_assert",
-        "//pw_compilation_testing:negative_compilation_testing",
+    ],
+)
+
+cc_library(
+    name = "legacy_intrusive_list",
+    hdrs = [
+        "public/pw_containers/internal/legacy_intrusive_list.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":intrusive_forward_list",
     ],
 )
 
@@ -157,6 +211,8 @@ cc_library(
     hdrs = ["public/pw_containers/wrapped_iterator.h"],
     includes = ["public"],
 )
+
+# Unit tests
 
 pw_cc_test(
     name = "algorithm_test",
@@ -272,6 +328,19 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "intrusive_forward_list_test",
+    srcs = [
+        "intrusive_forward_list_test.cc",
+    ],
+    deps = [
+        ":intrusive_forward_list",
+        ":vector",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "intrusive_list_test",
     srcs = [
         "intrusive_list_test.cc",
@@ -279,6 +348,7 @@ pw_cc_test(
     deps = [
         ":intrusive_list",
         ":vector",
+        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
 )

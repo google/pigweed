@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/intrusive_list.h"
+#include "pw_containers/intrusive_forward_list.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_containers/vector.h"
@@ -27,14 +28,14 @@ namespace {
 
 // Test fixtures
 
-using ::pw::containers::future::IntrusiveList;
+using ::pw::IntrusiveForwardList;
 
-class Item : public IntrusiveList<Item>::Item {
+class Item : public IntrusiveForwardList<Item>::Item {
  public:
   constexpr Item() = default;
   constexpr Item(int number) : number_(number) {}
 
-  Item(Item&& other) { *this = std::move(other); }
+  Item(Item&& other) : Item() { *this = std::move(other); }
   Item& operator=(Item&& other) {
     number_ = other.number_;
     return *this;
@@ -55,7 +56,7 @@ class Item : public IntrusiveList<Item>::Item {
   int number_ = 0;
 };
 
-using List = IntrusiveList<Item>;
+using List = IntrusiveForwardList<Item>;
 
 // Test that a list of items derived from a different Item class can be created.
 class DerivedItem : public Item {};
@@ -68,12 +69,12 @@ class DerivedItem : public Item {};
 
 // Unit tests.
 
-TEST(IntrusiveListTest, Construct_InitializerList_Empty) {
+TEST(IntrusiveForwardListTest, Construct_InitializerList_Empty) {
   List list({});
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Construct_InitializerList_One) {
+TEST(IntrusiveForwardListTest, Construct_InitializerList_One) {
   Item one(1);
   List list({&one});
 
@@ -81,7 +82,7 @@ TEST(IntrusiveListTest, Construct_InitializerList_One) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_InitializerList_Multiple) {
+TEST(IntrusiveForwardListTest, Construct_InitializerList_Multiple) {
   Item one(1);
   Item two(2);
   Item thr(3);
@@ -95,14 +96,14 @@ TEST(IntrusiveListTest, Construct_InitializerList_Multiple) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_ObjectIterator_Empty) {
+TEST(IntrusiveForwardListTest, Construct_ObjectIterator_Empty) {
   std::array<Item, 0> array;
   List list(array.begin(), array.end());
 
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Construct_ObjectIterator_One) {
+TEST(IntrusiveForwardListTest, Construct_ObjectIterator_One) {
   std::array<Item, 1> array{{{1}}};
   List list(array.begin(), array.end());
 
@@ -110,7 +111,7 @@ TEST(IntrusiveListTest, Construct_ObjectIterator_One) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_ObjectIterator_Multiple) {
+TEST(IntrusiveForwardListTest, Construct_ObjectIterator_Multiple) {
   std::array<Item, 3> array{{{1}, {2}, {3}}};
 
   List list(array.begin(), array.end());
@@ -122,7 +123,7 @@ TEST(IntrusiveListTest, Construct_ObjectIterator_Multiple) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_PointerIterator_Empty) {
+TEST(IntrusiveForwardListTest, Construct_PointerIterator_Empty) {
   std::array<Item*, 0> array;
   List list(array.begin(), array.end());
 
@@ -130,7 +131,7 @@ TEST(IntrusiveListTest, Construct_PointerIterator_Empty) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_PointerIterator_One) {
+TEST(IntrusiveForwardListTest, Construct_PointerIterator_One) {
   std::array<Item, 1> array{{{1}}};
   std::array<Item*, 1> ptrs{{&array[0]}};
 
@@ -140,7 +141,7 @@ TEST(IntrusiveListTest, Construct_PointerIterator_One) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Construct_PointerIterator_Multiple) {
+TEST(IntrusiveForwardListTest, Construct_PointerIterator_Multiple) {
   std::array<Item, 3> array{{{1}, {2}, {3}}};
   std::array<Item*, 3> ptrs{{&array[0], &array[1], &array[2]}};
 
@@ -154,13 +155,13 @@ TEST(IntrusiveListTest, Construct_PointerIterator_Multiple) {
 }
 
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
-TEST(IntrusiveListTest, Construct_DuplicateItems) {
+TEST(IntrusiveForwardListTest, Construct_DuplicateItems) {
   Item item(1);
   List list({&item, &item});
 }
 #endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
-TEST(IntrusiveListTest, Assign_ReplacesPriorContents) {
+TEST(IntrusiveForwardListTest, Assign_ReplacesPriorContents) {
   std::array<Item, 3> array{{{0}, {100}, {200}}};
   List list(array.begin(), array.end());
 
@@ -172,7 +173,7 @@ TEST(IntrusiveListTest, Assign_ReplacesPriorContents) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Assign_EmptyRange) {
+TEST(IntrusiveForwardListTest, Assign_EmptyRange) {
   std::array<Item, 3> array{{{0}, {100}, {200}}};
   List list(array.begin(), array.end());
 
@@ -183,46 +184,29 @@ TEST(IntrusiveListTest, Assign_EmptyRange) {
 
 // Element access unit tests
 
-TEST(IntrusiveListTest, ListFront) {
+TEST(IntrusiveForwardListTest, ListFront) {
   Item item1(1);
   Item item2(0);
   Item item3(0xffff);
 
   List list;
-  list.push_back(item1);
-  list.push_back(item2);
-  list.push_back(item3);
+  list.push_front(item3);
+  list.push_front(item2);
+  list.push_front(item1);
 
   EXPECT_EQ(&item1, &list.front());
   EXPECT_EQ(&item1, &(*list.begin()));
   list.clear();
 }
 
-TEST(IntrusiveListTest, ListBack) {
-  Item item1(1);
-  Item item2(0);
-  Item item3(0xffff);
-
-  List list;
-  list.push_back(item1);
-  list.push_back(item2);
-  list.push_back(item3);
-
-  EXPECT_EQ(&item3, &list.back());
-  auto it = list.end();
-  --it;
-  EXPECT_EQ(&item3, &(*it));
-  list.clear();
-}
-
 // Iterator unit tests
 
-TEST(IntrusiveListTest, IteratorIncrement) {
+TEST(IntrusiveForwardListTest, IteratorIncrement) {
   Item item_array[20];
   List list;
-  for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
-    item_array[i].SetNumber(static_cast<int>(i));
-    list.push_back(item_array[i]);
+  for (size_t i = PW_ARRAY_SIZE(item_array); i != 0; --i) {
+    item_array[i - 1].SetNumber(static_cast<int>(i - 1));
+    list.push_front(item_array[i - 1]);
   }
 
   auto it = list.begin();
@@ -238,28 +222,7 @@ TEST(IntrusiveListTest, IteratorIncrement) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, IteratorDecrement) {
-  Item item_array[20];
-  List list;
-  for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
-    item_array[i].SetNumber(static_cast<int>(i));
-    list.push_back(item_array[i]);
-  }
-
-  auto it = list.end();
-  int i = PW_ARRAY_SIZE(item_array);
-  do {
-    if (i == PW_ARRAY_SIZE(item_array)) {
-      // Test pre-incrementing on the last element.
-      EXPECT_EQ((--it)->GetNumber(), item_array[--i].GetNumber());
-    } else {
-      EXPECT_EQ((it--)->GetNumber(), item_array[i--].GetNumber());
-    }
-  } while (it != list.begin());
-  list.clear();
-}
-
-TEST(IntrusiveListTest, ConstIteratorRead) {
+TEST(IntrusiveForwardListTest, ConstIteratorRead) {
   // For this test, items are checked to be non-zero.
   Item item1(1);
   Item item2(99);
@@ -267,8 +230,8 @@ TEST(IntrusiveListTest, ConstIteratorRead) {
 
   const List* const_list = &list;
 
-  list.push_back(item1);
-  list.push_back(item2);
+  list.push_front(item1);
+  list.push_front(item2);
 
   auto it = const_list->begin();
   while (it != const_list->end()) {
@@ -278,7 +241,7 @@ TEST(IntrusiveListTest, ConstIteratorRead) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, CompareConstAndNonConstIterator) {
+TEST(IntrusiveForwardListTest, CompareConstAndNonConstIterator) {
   List list;
   EXPECT_EQ(list.end(), list.cend());
 }
@@ -286,11 +249,12 @@ TEST(IntrusiveListTest, CompareConstAndNonConstIterator) {
 #if PW_NC_TEST(IncompatibleIterators)
 PW_NC_EXPECT("comparison (of|between) distinct pointer types");
 
-class OtherListItem : public IntrusiveList<OtherListItem>::Item {};
+class OtherListItem : public IntrusiveForwardList<OtherListItem>::Item {};
 
-using OtherList = IntrusiveList<OtherListItem>;
+using OtherList = IntrusiveForwardList<OtherListItem>;
 
-TEST(IntrusiveListTest, CompareConstAndNonConstIterator_CompilationFails) {
+TEST(IntrusiveForwardListTest,
+     CompareConstAndNonConstIterator_CompilationFails) {
   List list;
   OtherList list2;
   static_cast<void>(list.end() == list2.end());
@@ -301,15 +265,15 @@ TEST(IntrusiveListTest, CompareConstAndNonConstIterator_CompilationFails) {
 #if PW_NC_TEST(CannotModifyThroughConstIterator)
 PW_NC_EXPECT("function is not marked const|discards qualifiers");
 
-TEST(IntrusiveListTest, ConstIteratorModify) {
+TEST(IntrusiveForwardListTest, ConstIteratorModify) {
   Item item1(1);
   Item item2(99);
   List list;
 
   const List* const_list = &list;
 
-  list.push_back(item1);
-  list.push_back(item2);
+  list.push_front(item1);
+  list.push_front(item2);
 
   auto it = const_list->begin();
   while (it != const_list->end()) {
@@ -322,70 +286,52 @@ TEST(IntrusiveListTest, ConstIteratorModify) {
 
 // Capacity unit tests
 
-TEST(IntrusiveListTest, IsEmpty) {
+TEST(IntrusiveForwardListTest, IsEmpty) {
   Item item1(1);
 
   List list;
   EXPECT_TRUE(list.empty());
 
-  list.push_back(item1);
+  list.push_front(item1);
   EXPECT_FALSE(list.empty());
   list.clear();
 }
 
-TEST(IntrusiveListTest, SizeBasic) {
-  List list;
-  EXPECT_EQ(list.size(), 0u);
-
-  Item one(55);
-  list.push_front(one);
-  EXPECT_EQ(list.size(), static_cast<size_t>(1));
-
-  Item two(66);
-  list.push_back(two);
-  EXPECT_EQ(list.size(), static_cast<size_t>(2));
-
-  Item thr(77);
-  list.push_back(thr);
-  EXPECT_EQ(list.size(), static_cast<size_t>(3));
-  list.clear();
-}
-
-TEST(IntrusiveListTest, MaxSize) {
+TEST(IntrusiveForwardListTest, MaxSize) {
   List list;
   EXPECT_EQ(list.max_size(), size_t(std::numeric_limits<ptrdiff_t>::max()));
 }
 
 // Modifier unit tests
 
-TEST(IntrusiveListTest, Clear_Empty) {
+TEST(IntrusiveForwardListTest, Clear_Empty) {
   List list;
   EXPECT_TRUE(list.empty());
   list.clear();
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Clear_OneItem) {
+TEST(IntrusiveForwardListTest, Clear_OneItem) {
   Item item(42);
   List list;
-  list.push_back(item);
+  list.push_front(item);
   EXPECT_FALSE(list.empty());
   list.clear();
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Clear_TwoItems) {
+TEST(IntrusiveForwardListTest, Clear_TwoItems) {
   Item item1(42);
   Item item2(42);
   List list;
-  list.push_back(item1);
-  list.push_back(item2);
+  list.push_front(item1);
+  list.push_front(item2);
   EXPECT_FALSE(list.empty());
   list.clear();
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Clear_ReinsertClearedItems) {
+TEST(IntrusiveForwardListTest, Clear_ReinsertClearedItems) {
   std::array<Item, 20> item_array;
   List list;
   EXPECT_TRUE(list.empty());
@@ -395,7 +341,7 @@ TEST(IntrusiveListTest, Clear_ReinsertClearedItems) {
   // Fill the list with Item objects.
   for (size_t i = 0; i < item_array.size(); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
   // Remove everything.
@@ -405,12 +351,12 @@ TEST(IntrusiveListTest, Clear_ReinsertClearedItems) {
   // Ensure all the removed elements can still be added back to a list.
   for (size_t i = 0; i < item_array.size(); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert) {
+TEST(IntrusiveForwardListTest, InsertAfter) {
   // Create a test item to insert midway through the list.
   constexpr int kMagicValue = 42;
   Item inserted_item(kMagicValue);
@@ -422,19 +368,19 @@ TEST(IntrusiveListTest, Insert) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
   // Move an iterator to the middle of the list, and then insert the magic item.
   auto it = list.begin();
-  size_t expected_index = 0;  // Expected index is iterator index.
+  size_t expected_index = 1;  // Expected index is iterator index + 1.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array) / 2; ++i) {
     it++;
     expected_index++;
   }
-  it = list.insert(it, inserted_item);
+  it = list.insert_after(it, inserted_item);
 
-  // Ensure the returned iterator from insert is the newly inserted
+  // Ensure the returned iterator from insert_after is the newly inserted
   // element.
   EXPECT_EQ(it->GetNumber(), kMagicValue);
 
@@ -454,7 +400,7 @@ TEST(IntrusiveListTest, Insert) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert_Range) {
+TEST(IntrusiveForwardListTest, InsertAfter_Range) {
   // Create an array of test items to insert into the middle of the list.
   constexpr int kMagicValue = 42;
   constexpr int kNumItems = 3;
@@ -471,17 +417,17 @@ TEST(IntrusiveListTest, Insert_Range) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
   // Move an iterator to the middle of the list, and then insert the magic item.
   auto it = list.begin();
-  size_t expected_index = 0;  // Expected index is iterator index.
+  size_t expected_index = 1;  // Expected index is iterator index + 1.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array) / 2; ++i) {
     it++;
     expected_index++;
   }
-  it = list.insert(it, inserted_items.begin(), inserted_items.end());
+  it = list.insert_after(it, inserted_items.begin(), inserted_items.end());
 
   // Ensure the returned iterator from insert is the last newly inserted
   // element.
@@ -506,7 +452,7 @@ TEST(IntrusiveListTest, Insert_Range) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert_InitializerList) {
+TEST(IntrusiveForwardListTest, InsertAfter_InitializerList) {
   // Create an array of test items to insert into the middle of the list.
   constexpr int kMagicValue = 42;
   constexpr int kNumItems = 3;
@@ -523,22 +469,22 @@ TEST(IntrusiveListTest, Insert_InitializerList) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
   // Move an iterator to the middle of the list, and then insert the magic item.
   auto it = list.begin();
-  size_t expected_index = 0;  // Expected index is iterator index.
+  size_t expected_index = 1;  // Expected index is iterator index + 1.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array) / 2; ++i) {
     it++;
     expected_index++;
   }
-  it = list.insert(it,
-                   {
-                       &inserted_items[0],
-                       &inserted_items[1],
-                       &inserted_items[2],
-                   });
+  it = list.insert_after(it,
+                         {
+                             &inserted_items[0],
+                             &inserted_items[1],
+                             &inserted_items[2],
+                         });
 
   // Ensure the returned iterator from insert is the last newly inserted
   // element.
@@ -563,7 +509,7 @@ TEST(IntrusiveListTest, Insert_InitializerList) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert_BeforeBegin) {
+TEST(IntrusiveForwardListTest, InsertAfter_BeforeBegin) {
   // Create a test item to insert at the beginning of the list.
   constexpr int kMagicValue = 42;
   Item inserted_item(kMagicValue);
@@ -575,12 +521,12 @@ TEST(IntrusiveListTest, Insert_BeforeBegin) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
-  auto it = list.insert(list.begin(), inserted_item);
+  auto it = list.insert_after(list.before_begin(), inserted_item);
 
-  // Ensure the returned iterator from insert is the newly inserted
+  // Ensure the returned iterator from insert_after is the newly inserted
   // element.
   EXPECT_EQ(it->GetNumber(), kMagicValue);
 
@@ -597,7 +543,7 @@ TEST(IntrusiveListTest, Insert_BeforeBegin) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert_BeforeBegin_Range) {
+TEST(IntrusiveForwardListTest, InsertAfter_BeforeBegin_Range) {
   // Create an array of test items to insert into the middle of the list.
   constexpr int kMagicValue = 42;
   constexpr int kNumItems = 3;
@@ -614,11 +560,11 @@ TEST(IntrusiveListTest, Insert_BeforeBegin_Range) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
-  auto it =
-      list.insert(list.begin(), inserted_items.begin(), inserted_items.end());
+  auto it = list.insert_after(
+      list.before_begin(), inserted_items.begin(), inserted_items.end());
 
   // Ensure the returned iterator from insert is the last newly inserted
   // element.
@@ -637,7 +583,7 @@ TEST(IntrusiveListTest, Insert_BeforeBegin_Range) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Insert_BeforeBegin_InitializerList) {
+TEST(IntrusiveForwardListTest, InsertAfter_BeforeBegin_InitializerList) {
   // Create an array of test items to insert into the middle of the list.
   constexpr int kMagicValue = 42;
   constexpr int kNumItems = 3;
@@ -654,15 +600,15 @@ TEST(IntrusiveListTest, Insert_BeforeBegin_InitializerList) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
-  auto it = list.insert(list.begin(),
-                        {
-                            &inserted_items[0],
-                            &inserted_items[1],
-                            &inserted_items[2],
-                        });
+  auto it = list.insert_after(list.before_begin(),
+                              {
+                                  &inserted_items[0],
+                                  &inserted_items[1],
+                                  &inserted_items[2],
+                              });
 
   // Ensure the returned iterator from insert is the last newly inserted
   // element.
@@ -682,39 +628,39 @@ TEST(IntrusiveListTest, Insert_BeforeBegin_InitializerList) {
 }
 
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
-TEST(IntrusiveListTest, Insert_SameItem) {
+TEST(IntrusiveForwardListTest, InsertAfter_SameItem) {
   Item item(1);
   List list({&item});
 
-  list.insert(list.begin(), item);
+  list.insert_after(list.begin(), item);
 }
 
-TEST(IntrusiveListTest, Insert_SameItemAfterEnd) {
+TEST(IntrusiveForwardListTest, InsertAfter_SameItemAfterEnd) {
   Item item(1);
   List list({&item});
 
-  list.insert(list.end(), item);
+  list.insert_after(list.end(), item);
 }
 #endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
-TEST(IntrusiveListTest, Erase_FirstItem) {
+TEST(IntrusiveForwardListTest, EraseAfter_FirstItem) {
   std::array<Item, 3> items{{{0}, {1}, {2}}};
   List list(items.begin(), items.end());
 
-  auto it = list.erase(list.begin());
+  auto it = list.erase_after(list.before_begin());
   EXPECT_EQ(list.begin(), it);
   EXPECT_EQ(&items[1], &list.front());
   list.clear();
 }
 
-TEST(IntrusiveListTest, Erase_LastItem) {
+TEST(IntrusiveForwardListTest, EraseAfter_LastItem) {
   std::array<Item, 3> items{{{0}, {1}, {2}}};
   List list(items.begin(), items.end());
 
-  auto it = list.end();
-  --it;
+  auto it = list.begin();
+  ++it;
 
-  it = list.erase(it);
+  it = list.erase_after(it);
   EXPECT_EQ(list.end(), it);
 
   it = list.begin();
@@ -724,24 +670,24 @@ TEST(IntrusiveListTest, Erase_LastItem) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Erase_AllItems) {
+TEST(IntrusiveForwardListTest, EraseAfter_AllItems) {
   std::array<Item, 3> items{{{0}, {1}, {2}}};
   List list(items.begin(), items.end());
 
-  list.erase(list.begin());
-  list.erase(list.begin());
-  auto it = list.erase(list.begin());
+  list.erase_after(list.begin());
+  list.erase_after(list.begin());
+  auto it = list.erase_after(list.before_begin());
 
   EXPECT_EQ(list.end(), it);
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Erase_LeadingRange) {
+TEST(IntrusiveForwardListTest, EraseAfter_LeadingRange) {
   std::array<Item, 4> items{{{0}, {1}, {2}, {3}}};
   List list(items.begin(), items.end());
 
-  auto it = list.begin();
-  it = list.erase(it, std::next(std::next(it)));
+  auto it =
+      list.erase_after(list.before_begin(), std::next(std::next(list.begin())));
   EXPECT_EQ(list.begin(), it);
   EXPECT_EQ(&items[2], &(*it++));
   EXPECT_EQ(&items[3], &(*it++));
@@ -749,12 +695,11 @@ TEST(IntrusiveListTest, Erase_LeadingRange) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Erase_TrailingRange) {
+TEST(IntrusiveForwardListTest, EraseAfter_TrailingRange) {
   std::array<Item, 4> items{{{0}, {1}, {2}, {3}}};
   List list(items.begin(), items.end());
 
-  auto it = list.end();
-  it = list.erase(std::prev(std::prev(it)), it);
+  auto it = list.erase_after(std::next(list.begin()), list.end());
   EXPECT_EQ(list.end(), it);
 
   it = list.begin();
@@ -764,101 +709,26 @@ TEST(IntrusiveListTest, Erase_TrailingRange) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Erase_FullRange) {
+TEST(IntrusiveForwardListTest, EraseAfter_FullRange) {
   std::array<Item, 4> items{{{0}, {1}, {2}, {3}}};
   List list(items.begin(), items.end());
 
-  auto it = list.erase(list.begin(), list.end());
+  auto it = list.erase_after(list.before_begin(), list.end());
   EXPECT_EQ(list.end(), it);
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Erase_EmptyRange) {
+TEST(IntrusiveForwardListTest, EraseAfter_EmptyRange) {
   std::array<Item, 4> items{{{0}, {1}, {2}, {3}}};
   List list(items.begin(), items.end());
 
-  auto it = list.erase(list.begin(), list.begin());
+  auto it = list.erase_after(list.before_begin(), list.begin());
   EXPECT_EQ(list.begin(), it);
   EXPECT_EQ(&items[0], &list.front());
   list.clear();
 }
 
-TEST(IntrusiveListTest, PushBackOne) {
-  constexpr int kMagicValue = 31;
-  Item item1(kMagicValue);
-  List list;
-  list.push_back(item1);
-  EXPECT_FALSE(list.empty());
-  EXPECT_EQ(list.front().GetNumber(), kMagicValue);
-  list.clear();
-}
-
-TEST(IntrusiveListTest, PushBackThree) {
-  Item item1(1);
-  Item item2(2);
-  Item item3(3);
-
-  List list;
-  list.push_back(item1);
-  list.push_back(item2);
-  list.push_back(item3);
-
-  int loop_count = 0;
-  for (auto& test_item : list) {
-    loop_count++;
-    EXPECT_EQ(loop_count, test_item.GetNumber());
-  }
-  EXPECT_EQ(loop_count, 3);
-  list.clear();
-}
-
-#if TESTING_CHECK_FAILURES_IS_SUPPORTED
-TEST(IntrusiveListTest, PushBack_SameItem) {
-  Item item(1);
-  List list({&item});
-
-  list.push_back(item);
-}
-#endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
-
-TEST(IntrusiveListTest, PopBack) {
-  constexpr int kValue1 = 32;
-  constexpr int kValue2 = 4083;
-
-  Item item1(kValue1);
-  Item item2(kValue2);
-
-  List list;
-  EXPECT_TRUE(list.empty());
-
-  list.push_back(item1);
-  list.push_back(item2);
-  list.pop_back();
-  EXPECT_EQ(list.back().GetNumber(), kValue1);
-  EXPECT_FALSE(list.empty());
-  list.pop_back();
-  EXPECT_TRUE(list.empty());
-}
-
-TEST(IntrusiveListTest, PopBackAndReinsert) {
-  constexpr int kValue1 = 32;
-  constexpr int kValue2 = 4083;
-
-  Item item1(kValue1);
-  Item item2(kValue2);
-
-  List list;
-  EXPECT_TRUE(list.empty());
-
-  list.push_back(item1);
-  list.push_back(item2);
-  list.pop_back();
-  list.push_back(item2);
-  EXPECT_EQ(list.back().GetNumber(), kValue2);
-  list.clear();
-}
-
-TEST(IntrusiveListTest, PushFront) {
+TEST(IntrusiveForwardListTest, PushFront) {
   constexpr int kMagicValue = 42;
   Item pushed_item(kMagicValue);
 
@@ -867,7 +737,7 @@ TEST(IntrusiveListTest, PushFront) {
   // Fill the list with Item objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    list.push_back(item_array[i]);
+    list.push_front(item_array[i]);
   }
 
   // Create a test item to push to the front of the list.
@@ -876,7 +746,7 @@ TEST(IntrusiveListTest, PushFront) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, PushFrontOne) {
+TEST(IntrusiveForwardListTest, PushFrontOne) {
   constexpr int kMagicValue = 31;
   Item item1(kMagicValue);
   List list;
@@ -886,7 +756,7 @@ TEST(IntrusiveListTest, PushFrontOne) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, PushFrontThree) {
+TEST(IntrusiveForwardListTest, PushFrontThree) {
   Item item1(1);
   Item item2(2);
   Item item3(3);
@@ -906,7 +776,7 @@ TEST(IntrusiveListTest, PushFrontThree) {
 }
 
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
-TEST(IntrusiveListTest, PushFront_SameItem) {
+TEST(IntrusiveForwardListTest, PushFront_SameItem) {
   Item item(1);
   List list({&item});
 
@@ -914,7 +784,7 @@ TEST(IntrusiveListTest, PushFront_SameItem) {
 }
 #endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
-TEST(IntrusiveListTest, PopFront) {
+TEST(IntrusiveForwardListTest, PopFront) {
   constexpr int kValue1 = 32;
   constexpr int kValue2 = 4083;
 
@@ -933,7 +803,7 @@ TEST(IntrusiveListTest, PopFront) {
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, PopFrontAndReinsert) {
+TEST(IntrusiveForwardListTest, PopFrontAndReinsert) {
   constexpr int kValue1 = 32;
   constexpr int kValue2 = 4083;
 
@@ -951,7 +821,7 @@ TEST(IntrusiveListTest, PopFrontAndReinsert) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Swap) {
+TEST(IntrusiveForwardListTest, Swap) {
   std::array<Item, 4> items1{{{0}, {1}, {2}, {3}}};
   std::array<Item, 2> items2{{{4}, {5}}};
   List list1(items1.begin(), items1.end());
@@ -975,7 +845,7 @@ TEST(IntrusiveListTest, Swap) {
   list2.clear();
 }
 
-TEST(IntrusiveListTest, Swap_Empty) {
+TEST(IntrusiveForwardListTest, Swap_Empty) {
   std::array<Item, 3> items1{{{0}, {1}, {2}}};
   List list1(items1.begin(), items1.end());
   List list2;
@@ -1003,7 +873,7 @@ TEST(IntrusiveListTest, Swap_Empty) {
 
 // Operation unit tests
 
-TEST(IntrusiveListTest, Merge) {
+TEST(IntrusiveForwardListTest, Merge) {
   std::array<Item, 3> evens{{{0}, {2}, {4}}};
   std::array<Item, 3> odds{{{1}, {3}, {5}}};
 
@@ -1020,7 +890,7 @@ TEST(IntrusiveListTest, Merge) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Merge_Compare) {
+TEST(IntrusiveForwardListTest, Merge_Compare) {
   std::array<Item, 3> evens{{{4}, {2}, {0}}};
   std::array<Item, 3> odds{{{5}, {3}, {1}}};
   auto greater_than = [](const Item& a, const Item& b) {
@@ -1040,7 +910,7 @@ TEST(IntrusiveListTest, Merge_Compare) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Merge_Empty) {
+TEST(IntrusiveForwardListTest, Merge_Empty) {
   std::array<Item, 3> items{{{1}, {2}, {3}}};
 
   List list;
@@ -1058,7 +928,7 @@ TEST(IntrusiveListTest, Merge_Empty) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Merge_IsStable) {
+TEST(IntrusiveForwardListTest, Merge_IsStable) {
   std::array<Item, 2> ends{{{0}, {2}}};
   std::array<Item, 3> mids{{{1}, {1}, {1}}};
 
@@ -1077,13 +947,13 @@ TEST(IntrusiveListTest, Merge_IsStable) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice) {
+TEST(IntrusiveForwardListTest, SpliceAfter) {
   std::array<Item, 2> items{{{1}, {5}}};
   std::array<Item, 3> other_items{{{2}, {3}, {4}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(std::next(list.begin()), other);
+  list.splice_after(list.begin(), other);
   EXPECT_TRUE(other.empty());
 
   int i = 1;
@@ -1094,13 +964,13 @@ TEST(IntrusiveListTest, Splice) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice_BeforeBegin) {
+TEST(IntrusiveForwardListTest, SpliceAfter_BeforeBegin) {
   std::array<Item, 2> items{{{4}, {5}}};
   std::array<Item, 3> other_items{{{1}, {2}, {3}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(list.begin(), other);
+  list.splice_after(list.before_begin(), other);
   EXPECT_TRUE(other.empty());
 
   int i = 1;
@@ -1111,13 +981,17 @@ TEST(IntrusiveListTest, Splice_BeforeBegin) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice_BeforeEnd) {
+TEST(IntrusiveForwardListTest, SpliceAfter_BeforeEnd) {
   std::array<Item, 2> items{{{1}, {2}}};
   std::array<Item, 3> other_items{{{3}, {4}, {5}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(list.end(), other);
+  auto it = list.begin();
+  while (std::next(it) != list.end()) {
+    ++it;
+  }
+  list.splice_after(it, other);
   EXPECT_TRUE(other.empty());
 
   int i = 1;
@@ -1128,13 +1002,13 @@ TEST(IntrusiveListTest, Splice_BeforeEnd) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice_OneItem) {
+TEST(IntrusiveForwardListTest, SpliceAfter_OneItem) {
   std::array<Item, 2> items{{{1}, {3}}};
   std::array<Item, 3> other_items{{{1}, {2}, {3}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(std::next(list.begin()), other, std::next(other.begin()));
+  list.splice_after(list.begin(), other, other.begin());
   EXPECT_FALSE(other.empty());
 
   int i = 1;
@@ -1146,16 +1020,17 @@ TEST(IntrusiveListTest, Splice_OneItem) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice_Range) {
+TEST(IntrusiveForwardListTest, SpliceAfter_Range) {
   std::array<Item, 2> items{{{1}, {5}}};
   std::array<Item, 5> other_items{{{1}, {2}, {3}, {4}, {5}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(std::next(list.begin()),
-              other,
-              std::next(other.begin()),
-              std::prev(other.end()));
+  auto it = other.begin();
+  while (std::next(it) != other.end()) {
+    ++it;
+  }
+  list.splice_after(list.begin(), other, other.begin(), it);
   EXPECT_FALSE(other.empty());
 
   int i = 1;
@@ -1167,13 +1042,14 @@ TEST(IntrusiveListTest, Splice_Range) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Splice_EmptyRange) {
+TEST(IntrusiveForwardListTest, SpliceAfter_EmptyRange) {
   std::array<Item, 3> items{{{1}, {2}, {3}}};
   std::array<Item, 3> other_items{{{4}, {4}, {4}}};
 
   List list(items.begin(), items.end());
   List other(other_items.begin(), other_items.end());
-  list.splice(list.begin(), other, other.begin(), other.begin());
+  list.splice_after(
+      list.before_begin(), other, other.before_begin(), other.begin());
   EXPECT_FALSE(other.empty());
 
   int i = 1;
@@ -1185,7 +1061,7 @@ TEST(IntrusiveListTest, Splice_EmptyRange) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Remove_EmptyList) {
+TEST(IntrusiveForwardListTest, Remove_EmptyList) {
   std::array<Item, 1> items{{{3}}};
   List list(items.begin(), items.begin());  // Add nothing!
 
@@ -1193,7 +1069,7 @@ TEST(IntrusiveListTest, Remove_EmptyList) {
   EXPECT_FALSE(list.remove(items[0]));
 }
 
-TEST(IntrusiveListTest, Remove_SingleItem_NotPresent) {
+TEST(IntrusiveForwardListTest, Remove_SingleItem_NotPresent) {
   std::array<Item, 1> items{{{1}}};
   List list(items.begin(), items.end());
 
@@ -1202,7 +1078,7 @@ TEST(IntrusiveListTest, Remove_SingleItem_NotPresent) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Remove_SingleItem_Removed) {
+TEST(IntrusiveForwardListTest, Remove_SingleItem_Removed) {
   std::array<Item, 1> items{{{1}}};
   List list(items.begin(), items.end());
 
@@ -1210,7 +1086,7 @@ TEST(IntrusiveListTest, Remove_SingleItem_Removed) {
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Remove_MultipleItems_NotPresent) {
+TEST(IntrusiveForwardListTest, Remove_MultipleItems_NotPresent) {
   std::array<Item, 5> items{{{1}, {1}, {2}, {3}, {4}}};
   List list(items.begin(), items.end());
 
@@ -1218,24 +1094,24 @@ TEST(IntrusiveListTest, Remove_MultipleItems_NotPresent) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Remove_MultipleItems_RemoveAndPushBack) {
+TEST(IntrusiveForwardListTest, Remove_MultipleItems_RemoveAndPushBack) {
   std::array<Item, 5> items{{{1}, {1}, {2}, {3}, {4}}};
   List list(items.begin(), items.end());
 
   EXPECT_TRUE(list.remove(items[0]));
   EXPECT_TRUE(list.remove(items[3]));
-  list.push_back(items[0]);  // Make sure can add the item after removing it.
+  list.push_front(items[0]);  // Make sure can add the item after removing it.
 
   auto it = list.begin();
+  EXPECT_EQ(&items[0], &(*it++));
   EXPECT_EQ(&items[1], &(*it++));
   EXPECT_EQ(&items[2], &(*it++));
   EXPECT_EQ(&items[4], &(*it++));
-  EXPECT_EQ(&items[0], &(*it++));
   EXPECT_EQ(list.end(), it);
   list.clear();
 }
 
-TEST(IntrusiveListTest, RemoveIf_MatchNone) {
+TEST(IntrusiveForwardListTest, RemoveIf_MatchNone) {
   std::array<Item, 5> items{{{1}, {3}, {5}, {7}, {9}}};
   List list(items.begin(), items.end());
   auto equal_two = [](const Item& a) { return a.GetNumber() == 2; };
@@ -1252,7 +1128,7 @@ TEST(IntrusiveListTest, RemoveIf_MatchNone) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, RemoveIf_MatchSome) {
+TEST(IntrusiveForwardListTest, RemoveIf_MatchSome) {
   std::array<Item, 5> items{{{1}, {2}, {2}, {2}, {3}}};
   List list(items.begin(), items.end());
   auto equal_two = [](const Item& a) { return a.GetNumber() == 2; };
@@ -1266,7 +1142,7 @@ TEST(IntrusiveListTest, RemoveIf_MatchSome) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, RemoveIf_MatchAll) {
+TEST(IntrusiveForwardListTest, RemoveIf_MatchAll) {
   std::array<Item, 5> items{{{2}, {2}, {2}, {2}, {2}}};
   List list(items.begin(), items.end());
   auto equal_two = [](const Item& a) { return a.GetNumber() == 2; };
@@ -1275,7 +1151,7 @@ TEST(IntrusiveListTest, RemoveIf_MatchAll) {
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, RemoveIf_Empty) {
+TEST(IntrusiveForwardListTest, RemoveIf_Empty) {
   List list;
   auto equal_two = [](const Item& a) { return a.GetNumber() == 2; };
 
@@ -1283,7 +1159,7 @@ TEST(IntrusiveListTest, RemoveIf_Empty) {
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Reverse) {
+TEST(IntrusiveForwardListTest, Reverse) {
   std::array<Item, 5> items{{{0}, {1}, {2}, {3}, {4}}};
   List list(items.begin(), items.end());
 
@@ -1297,13 +1173,13 @@ TEST(IntrusiveListTest, Reverse) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Reverse_Empty) {
+TEST(IntrusiveForwardListTest, Reverse_Empty) {
   List list;
   list.reverse();
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Unique) {
+TEST(IntrusiveForwardListTest, Unique) {
   std::array<Item, 10> items{
       {{0}, {0}, {0}, {1}, {2}, {2}, {3}, {3}, {3}, {3}}};
   List list(items.begin(), items.end());
@@ -1318,7 +1194,7 @@ TEST(IntrusiveListTest, Unique) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Unique_Compare) {
+TEST(IntrusiveForwardListTest, Unique_Compare) {
   std::array<Item, 10> items{
       {{0}, {2}, {1}, {3}, {1}, {0}, {1}, {0}, {2}, {4}}};
   List list(items.begin(), items.end());
@@ -1336,7 +1212,7 @@ TEST(IntrusiveListTest, Unique_Compare) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Unique_Empty) {
+TEST(IntrusiveForwardListTest, Unique_Empty) {
   List list;
 
   EXPECT_EQ(list.unique(), 0U);
@@ -1344,7 +1220,7 @@ TEST(IntrusiveListTest, Unique_Empty) {
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Unique_NoDuplicates) {
+TEST(IntrusiveForwardListTest, Unique_NoDuplicates) {
   std::array<Item, 5> items{{{0}, {1}, {2}, {3}, {4}}};
   List list(items.begin(), items.end());
 
@@ -1358,7 +1234,7 @@ TEST(IntrusiveListTest, Unique_NoDuplicates) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Sort) {
+TEST(IntrusiveForwardListTest, Sort) {
   std::array<Item, 5> items{{{5}, {1}, {3}, {2}, {4}}};
   List list(items.begin(), items.end());
   list.sort();
@@ -1371,7 +1247,7 @@ TEST(IntrusiveListTest, Sort) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Sort_Compare) {
+TEST(IntrusiveForwardListTest, Sort_Compare) {
   std::array<Item, 5> items{{{5}, {1}, {3}, {2}, {4}}};
   List list(items.begin(), items.end());
   auto greater_than = [](const Item& a, const Item& b) {
@@ -1387,13 +1263,13 @@ TEST(IntrusiveListTest, Sort_Compare) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Sort_Empty) {
+TEST(IntrusiveForwardListTest, Sort_Empty) {
   List list;
   list.sort();
   EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveListTest, Sort_Stable) {
+TEST(IntrusiveForwardListTest, Sort_Stable) {
   std::array<Item, 5> items{{{0}, {1}, {1}, {1}, {2}}};
   List list(items.begin(), items.end());
   list.sort();
@@ -1410,7 +1286,7 @@ TEST(IntrusiveListTest, Sort_Stable) {
 
 // Other type-related unit tests
 
-TEST(IntrusiveListTest, AddItemsOfDerivedClassToList) {
+TEST(IntrusiveForwardListTest, AddItemsOfDerivedClassToList) {
   List list;
 
   DerivedItem item1;
@@ -1419,17 +1295,19 @@ TEST(IntrusiveListTest, AddItemsOfDerivedClassToList) {
   Item item2;
   list.push_front(item2);
 
-  EXPECT_EQ(2u, list.size());
+  EXPECT_EQ(2, std::distance(list.begin(), list.end()));
   list.clear();
 }
 
-TEST(IntrusiveListTest, ListOfDerivedClassItems) {
-  IntrusiveList<DerivedItem> derived_from_compatible_item_type;
+TEST(IntrusiveForwardListTest, ListOfDerivedClassItems) {
+  IntrusiveForwardList<DerivedItem> derived_from_compatible_item_type;
 
   DerivedItem item1;
   derived_from_compatible_item_type.push_front(item1);
 
-  EXPECT_EQ(1u, derived_from_compatible_item_type.size());
+  EXPECT_EQ(1,
+            std::distance(derived_from_compatible_item_type.begin(),
+                          derived_from_compatible_item_type.end()));
 
 #if PW_NC_TEST(CannotAddBaseClassToDerivedClassList)
   PW_NC_EXPECT_CLANG("cannot bind to a value of unrelated type");
@@ -1442,36 +1320,29 @@ TEST(IntrusiveListTest, ListOfDerivedClassItems) {
 }
 
 #if PW_NC_TEST(IncompatibleItem)
-PW_NC_EXPECT("IntrusiveList items must be derived from IntrusiveList<T>::Item");
+PW_NC_EXPECT(
+    "IntrusiveForwardList items must be derived from "
+    "IntrusiveForwardList<T>::Item");
 
 struct Foo {};
 
-class BadItem : public IntrusiveList<Foo>::Item {};
+class BadItem : public IntrusiveForwardList<Foo>::Item {};
 
-[[maybe_unused]] IntrusiveList<BadItem> derived_from_incompatible_item_type;
+[[maybe_unused]] IntrusiveForwardList<BadItem>
+    derived_from_incompatible_item_type;
 
 #elif PW_NC_TEST(DoesNotInheritFromItem)
-PW_NC_EXPECT("IntrusiveList items must be derived from IntrusiveList<T>::Item");
+PW_NC_EXPECT(
+    "IntrusiveForwardList items must be derived from "
+    "IntrusiveForwardList<T>::Item");
 
 struct NotAnItem {};
 
-[[maybe_unused]] IntrusiveList<NotAnItem> list;
+[[maybe_unused]] IntrusiveForwardList<NotAnItem> list;
 
 #endif  // PW_NC_TEST
 
-TEST(IntrusiveListTest, MoveUnlistedItems) {
-  Item item1(3);
-  EXPECT_EQ(item1.GetNumber(), 3);
-
-  Item item2(std::move(item1));
-  EXPECT_EQ(item2.GetNumber(), 3);
-
-  Item item3;
-  item3 = std::move(item2);
-  EXPECT_EQ(item3.GetNumber(), 3);
-}
-
-TEST(IntrusiveListTest, MoveItemsToVector) {
+TEST(IntrusiveForwardListTest, MoveItemsToVector) {
   pw::Vector<Item, 3> vec;
   vec.emplace_back(Item(1));
   vec.emplace_back(Item(2));

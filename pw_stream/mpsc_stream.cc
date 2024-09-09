@@ -49,7 +49,9 @@ void CreateMpscStream(MpscReader& reader, MpscWriter& writer) {
 ////////////////////////////////////////////////////////////////////////////////
 // MpscWriter methods.
 
-MpscWriter::MpscWriter(const MpscWriter& other) { *this = other; }
+MpscWriter::MpscWriter(const MpscWriter& other) : MpscWriter() {
+  *this = other;
+}
 
 MpscWriter& MpscWriter::operator=(const MpscWriter& other) {
   Close();

@@ -12,84 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/intrusive_list.h"
-
-#include <utility>
+#include "pw_containers/internal/intrusive_list.h"
 
 #include "pw_assert/check.h"
+#include "pw_containers/internal/intrusive_list_item.h"
 
-namespace pw::intrusive_list_impl {
+namespace pw::containers::internal {
 
-List::Item& List::Item::operator=(List::Item&& other) {
-  // Remove `this` object from its current list.
-  if (!unlisted()) {
-    unlist();
-  }
-  // If `other` is listed, remove it from its list and put `this` in its place.
-  if (!other.unlisted()) {
-    List::Item* prev = other.previous();
-    other.unlist(prev);
-    List::insert_after(prev, *this);
-  }
-  return *this;
+void CheckUnlisted(bool unlisted) {
+  PW_CHECK(unlisted,
+           "Item is in an intrusive list and cannot be added or destroyed");
 }
 
-void List::Item::unlist(Item* prev) {
-  if (prev == nullptr) {
-    prev = previous();
-  }
-  // Skip over this.
-  prev->next_ = next_;
-
-  // Retain the invariant that unlisted items are self-cycles.
-  next_ = this;
+void CheckEmpty(bool empty) {
+  PW_CHECK(empty, "List is not empty and cannot be destroyed");
 }
 
-List::Item* List::Item::previous() {
-  // Follow the cycle around to find the previous element; O(N).
-  Item* prev = next_;
-  while (prev->next_ != this) {
-    prev = prev->next_;
-  }
-  return prev;
-}
-
-void List::insert_after(Item* pos, Item& item) {
-  PW_CHECK(
-      item.unlisted(),
-      "Cannot add an item to a pw::IntrusiveList that is already in a list");
-  item.next_ = pos->next_;
-  pos->next_ = &item;
-}
-
-void List::erase_after(Item* pos) { pos->next_->unlist(pos); }
-
-List::Item* List::before_end() noexcept { return before_begin()->previous(); }
-
-void List::clear() {
-  while (!empty()) {
-    erase_after(before_begin());
-  }
-}
-
-bool List::remove(const Item& item_to_remove) {
-  for (Item* pos = before_begin(); pos->next_ != end(); pos = pos->next_) {
-    if (pos->next_ == &item_to_remove) {
-      erase_after(pos);
-      return true;
-    }
-  }
-  return false;
-}
-
-size_t List::size() const {
-  size_t total = 0;
-  Item* item = head_.next_;
-  while (item != &head_) {
-    item = item->next_;
-    total++;
-  }
-  return total;
-}
-
-}  // namespace pw::intrusive_list_impl
+}  // namespace pw::containers::internal

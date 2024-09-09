@@ -14,6 +14,21 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+# Module configuration
+
+pw_add_module_config(pw_containers_CONFIG)
+
+pw_add_library(pw_containers.config INTERFACE
+  HEADERS
+    public/pw_containers/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_containers_CONFIG}
+)
+
+# Libraries
+
 pw_add_library(pw_containers INTERFACE
   PUBLIC_DEPS
     pw_containers.algorithm
@@ -131,16 +146,47 @@ pw_add_library(pw_containers.wrapped_iterator INTERFACE
     public
 )
 
-pw_add_library(pw_containers.intrusive_list STATIC
+pw_add_library(pw_containers.intrusive_forward_list INTERFACE
   HEADERS
-    public/pw_containers/internal/intrusive_list_impl.h
+    public/pw_containers/intrusive_forward_list.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.config
+    pw_containers.intrusive_list_common
+)
+
+pw_add_library(pw_containers.intrusive_list INTERFACE
+  HEADERS
     public/pw_containers/intrusive_list.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.config
+    pw_containers.intrusive_list_common
+    pw_containers.legacy_intrusive_list
+)
+
+pw_add_library(pw_containers.intrusive_list_common STATIC
+  HEADERS
+    public/pw_containers/internal/intrusive_list.h
+    public/pw_containers/internal/intrusive_list_item.h
+    public/pw_containers/internal/intrusive_list_iterator.h
   PUBLIC_INCLUDES
     public
   SOURCES
     intrusive_list.cc
   PRIVATE_DEPS
     pw_assert
+)
+
+pw_add_library(pw_containers.legacy_intrusive_list INTERFACE
+  HEADERS
+    public/pw_containers/internal/legacy_intrusive_list.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.intrusive_forward_list
 )
 
 pw_add_test(pw_containers.algorithm_test

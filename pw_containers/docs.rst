@@ -130,7 +130,7 @@ be inefficient and unlikely to be used, they are not implemented, and only a
 queue class is provided.
 
 API Reference
-===============
+=============
 C++
 ---
 .. doxygengroup:: inline_var_len_entry_queue_cpp_api
@@ -150,39 +150,48 @@ Python
 -----------------
 pw::IntrusiveList
 -----------------
-IntrusiveList provides an embedded-friendly singly-linked intrusive list
-implementation. An intrusive list is a type of linked list that embeds the
-"next" pointer into the list object itself. This allows the construction of a
+``pw::IntrusiveForwardList`` and ``pw::IntrusiveList`` provide embedded-friendly
+singly- and doubly-linked intrusive list implementations, respectively. An
+intrusive list is a type of linked list that embeds list metadata, such as a
+"next" pointer, into the list object itself. This allows the construction of a
 linked list without the need to dynamically allocate list entries.
 
 In C, an intrusive list can be made by manually including the "next" pointer as
-a member of the object's struct. ``pw::IntrusiveList`` uses C++ features to
-simplify the process of creating an intrusive list. ``pw::IntrusiveList``
-provides a class that list elements can inherit from. This protects the "next"
-pointer from being accessed by the item class, so only the ``pw::IntrusiveList``
-class can modify the list.
+a member of the object's struct. ``pw::IntrusiveForwardList`` and
+``pw::IntrusiveList`` uses C++ features to simplify the process of creating an
+intrusive list. They provide classes that list elements can inherit from,
+protecting the list metadata from being accessed by the item class.
 
-Usage
-=====
-While the API of ``pw::IntrusiveList`` is similar to a ``std::forward_list``,
-there are extra steps to creating objects that can be stored in this data
-structure. Objects that will be added to a ``IntrusiveList<T>`` must inherit
-from ``IntrusiveList<T>::Item``. They can inherit directly from it or inherit
-from it through another base class. When an item is instantiated and added to a
-linked list, the pointer to the object is added to the "next" pointer of
-whichever object is the current tail.
+API Reference
+=============
+IntrusiveForwardList
+--------------------
+This class is similar to ``std::forward_list<T>``, except that the type of items
+to be added must derive from ``pw::IntrusiveForwardList<T>::Item``.
 
-That means two key things:
+.. doxygenclass:: pw::IntrusiveForwardList
+   :members:
 
-- An instantiated ``IntrusiveList<T>::Item`` will be removed from its
-  corresponding ``IntrusiveList`` when it goes out of scope.
-- A linked list item CANNOT be included in two lists. Attempting to do so
-  results in an assert failure.
+IntrusiveList
+-------------
+This class is similar to ``std::list<T>``, except that the type of items to be
+added must derive from ``pw::IntrusiveList<T>::Item``.
 
+.. doxygenclass:: pw::containers::future::IntrusiveList
+   :members:
+
+.. note::
+   Originally, ``pw::IntrusiveList<T>`` was implemented as a singly-linked list.
+   To facilitate migration to ``pw::IntrusiveForwardList<T>::Item``, this
+   original implementation can still be temporarily used by enabling the
+   ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST`` module configuration option.
+
+Example
+=======
 .. code-block:: cpp
 
    class Square
-      : public pw::IntrusiveList<Square>::Item {
+      : public pw::IntrusiveForwardList<Square>::Item {
     public:
      Square(unsigned int side_length) : side_length(side_length) {}
      unsigned long Area() { return side_length * side_length; }
@@ -191,13 +200,13 @@ That means two key things:
      unsigned int side_length;
    };
 
-   pw::IntrusiveList<Square> squares;
+   pw::IntrusiveForwardList<Square> squares;
 
    Square small(1);
    Square large(4000);
    // These elements are not copied into the linked list, the original objects
    // are just chained together and can be accessed via
-   // `IntrusiveList<Square> squares`.
+   // `IntrusiveForwardList<Square> squares`.
    squares.push_back(small);
    squares.push_back(large);
 

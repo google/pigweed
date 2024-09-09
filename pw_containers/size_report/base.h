@@ -48,7 +48,11 @@ struct BaseContainer {
   // should ensure that the return value has some external effect (e.g.,
   // returning the value from the "main" function).
   //
-  long LoadData() { return reinterpret_cast<long>(this) ^ GetList().size(); }
+  long LoadData() {
+    const auto& list = GetList();
+    long size = std::distance(list.begin(), list.end());
+    return reinterpret_cast<long>(this) ^ size;
+  }
 
   static pw::IntrusiveList<BaseItem>& GetList() {
     static pw::IntrusiveList<BaseItem> list;

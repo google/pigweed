@@ -431,9 +431,16 @@ FUZZ_TEST(ArbitraryTest, TakeBasicQueue)
 
 // Test item that can be added to an intrusive list.
 class TestItem : public IntrusiveList<TestItem>::Item {
+ private:
  public:
   constexpr explicit TestItem(long value) : value_(value) {}
   long value() const { return value_; }
+
+  TestItem(TestItem&& other) { *this = std::move(other); }
+  TestItem& operator=(TestItem&& other) {
+    value_ = other.value_;
+    return *this;
+  }
 
  private:
   long value_;
