@@ -240,6 +240,13 @@ constexpr bool operator!=(const Status& lhs, const Status& rhs) {
   return lhs.code() != rhs.code();
 }
 
+namespace internal {
+
+// This function and its various overloads are for use by internal macros
+// like PW_TRY.
+constexpr Status ConvertToStatus(Status status) { return status; }
+
+}  // namespace internal
 }  // namespace pw
 
 // Create a C++ overload of pw_StatusString so that it supports pw::Status in

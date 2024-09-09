@@ -86,26 +86,3 @@
     co_return ::pw::internal::ConvertToStatus(result); \
   }                                                    \
   lhs = ::pw::internal::ConvertToValue(result);
-
-namespace pw::internal {
-
-constexpr Status ConvertToStatus(Status status) { return status; }
-
-constexpr Status ConvertToStatus(StatusWithSize status_with_size) {
-  return status_with_size.status();
-}
-
-constexpr size_t ConvertToValue(StatusWithSize status_with_size) {
-  return status_with_size.size();
-}
-
-constexpr StatusWithSize ConvertToStatusWithSize(Status status) {
-  return StatusWithSize(status, 0);
-}
-
-constexpr StatusWithSize ConvertToStatusWithSize(
-    StatusWithSize status_with_size) {
-  return status_with_size;
-}
-
-}  // namespace pw::internal

@@ -221,4 +221,24 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   size_t size_;
 };
 
+namespace internal {
+
+constexpr Status ConvertToStatus(StatusWithSize status_with_size) {
+  return status_with_size.status();
+}
+
+constexpr size_t ConvertToValue(StatusWithSize status_with_size) {
+  return status_with_size.size();
+}
+
+constexpr StatusWithSize ConvertToStatusWithSize(Status status) {
+  return StatusWithSize(status, 0);
+}
+
+constexpr StatusWithSize ConvertToStatusWithSize(
+    StatusWithSize status_with_size) {
+  return status_with_size;
+}
+
+}  // namespace internal
 }  // namespace pw
