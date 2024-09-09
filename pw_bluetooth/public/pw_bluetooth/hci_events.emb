@@ -2181,3 +2181,13 @@ struct LERequestPeerSCACompleteSubevent:
 # 7.7.76 SAM Status Change event
 # HCI_SAM_Status_Change
 # TODO: b/265052417 - Definition needs to be added
+
+
+struct LEReadNumberOfSupportedAdvertisingSetsCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.58 LE Read Number of Supported Advertising Sets command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         UInt                      num_supported_advertising_sets
+    [requires: 1 <= this <= 0xF0]
