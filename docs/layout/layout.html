@@ -26,6 +26,7 @@ the License.
   {% else %}
     {# Load Sphinx's built-in search tools so that our custom inline search
        experience can work on any page. See //docs/_static/js/pigweed.js #}
+    <script src="{{ pathto('_static/documentation_options.js', 1) | e }}"></script>
     <script src="{{ pathto('_static/searchtools.js', 1) | e }}"></script>
     <script src="{{ pathto('_static/language_data.js', 1) | e }}"></script>
     <script src="{{ pathto('searchindex.js', 1) | e }}"></script>
