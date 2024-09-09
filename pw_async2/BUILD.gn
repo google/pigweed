@@ -176,6 +176,8 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
       "$dir_pw_allocator:allocator",
       dir_pw_function,
     ]
+    deps = [ dir_pw_log ]
+    sources = [ "coro.cc" ]
   }
 
   pw_test("coro_test") {

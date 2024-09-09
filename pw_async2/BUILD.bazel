@@ -209,8 +209,14 @@ pw_cc_test(
 
 cc_library(
     name = "coro",
+    srcs = [
+        "coro.cc",
+    ],
     hdrs = [
         "public/pw_async2/coro.h",
+    ],
+    implementation_deps = [
+        "//pw_log",
     ],
     includes = [
         "public",

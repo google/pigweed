@@ -48,6 +48,8 @@ class CoroContext {
 // they think it sounds like fun ;)
 namespace internal {
 
+void LogCoroAllocationFailure(size_t requested_size);
+
 // A container for a to-be-produced value of type `T`.
 //
 // This is designed to allow avoiding the overhead of `std::optional` when
@@ -274,7 +276,11 @@ class CoroPromiseType final {
   static void* operator new(std::size_t n,
                             CoroContext& coro_cx,
                             const Args&...) noexcept {
-    return coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+    auto ptr = coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+    if (ptr == nullptr) {
+      internal::LogCoroAllocationFailure(n);
+    }
+    return ptr;
   }
 
   // Method-receiver form.
@@ -283,7 +289,11 @@ class CoroPromiseType final {
                             const MethodReceiver&,
                             CoroContext& coro_cx,
                             const Args&...) noexcept {
-    return coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+    auto ptr = coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+    if (ptr == nullptr) {
+      internal::LogCoroAllocationFailure(n);
+    }
+    return ptr;
   }
 
   // Deallocate the space for both this `CoroPromiseType<T>` and the

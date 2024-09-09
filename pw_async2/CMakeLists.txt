@@ -149,9 +149,13 @@ pw_add_test(pw_async2.once_sender_test
 )
 
 if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-  pw_add_library(pw_async2.coro INTERFACE
+  pw_add_library(pw_async2.coro STATIC
     HEADERS
       public/pw_async2/coro.h
+    SOURCES
+      coro.cc
+    PRIVATE_DEPS
+      pw_log
     PUBLIC_DEPS
       pw_allocator.allocator
       pw_async2.dispatcher
