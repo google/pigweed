@@ -122,7 +122,9 @@ pw_cc_test(
         "secure_simple_pairing_state_test.cc",
         "types_test.cc",
     ],
-    copts = COPTS,
+    copts = [
+        "-Wno-deprecated-this-capture",
+    ] + COPTS,
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":gap",

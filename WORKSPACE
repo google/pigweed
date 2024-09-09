@@ -59,17 +59,13 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_SDK_VERSION = "version:23.20240829.4.1"
+FUCHSIA_SDK_VERSION = "version:24.20240905.3.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
     path = "fuchsia/sdk/core/fuchsia-bazel-rules/linux-amd64",
     tag = FUCHSIA_SDK_VERSION,
 )
-
-load("@fuchsia_sdk//fuchsia:deps.bzl", "rules_fuchsia_deps")
-
-rules_fuchsia_deps()
 
 register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
 
