@@ -1,0 +1,227 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "public",
+    hdrs = [
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/bredr_connection_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/fake_adapter_test_fixture.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/fake_gatt_fixture.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/fake_hci_transport_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/fake_vendor_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_client_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_remote_service_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_server_ids.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_server_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_client_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_remote_service_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_server_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/host_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/iso_stream_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_central_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_peripheral_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/profile_server.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/fidl/server_base.h",
+    ],
+    includes = [
+        "public",
+    ],
+    tags = ["manual"],
+    deps = [
+        "//pw_bluetooth_sapphire/fuchsia/host/socket:public",
+    ],
+)
+
+cc_library(
+    name = "fidl",
+    srcs = [
+        "bredr_connection_server.cc",
+        "gatt2_client_server.cc",
+        "gatt2_remote_service_server.cc",
+        "gatt2_server_server.cc",
+        "gatt_client_server.cc",
+        "gatt_remote_service_server.cc",
+        "gatt_server_server.cc",
+        "host_server.cc",
+        "iso_stream_server.cc",
+        "low_energy_central_server.cc",
+        "low_energy_connection_server.cc",
+        "low_energy_peripheral_server.cc",
+        "profile_server.cc",
+    ],
+    copts = ["-Wno-format"],
+    deps = [
+        ":helpers",
+        ":public",
+        "//pw_bluetooth_sapphire/fuchsia/host/fidl/measure_tape:peer_hlcpp",
+        "//pw_bluetooth_sapphire/fuchsia/host/fidl/measure_tape:read_by_type_result_hlcpp",
+        "//pw_bluetooth_sapphire/fuchsia/lib/fidl",
+        "//pw_bluetooth_sapphire/host:stack",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth:fuchsia.bluetooth_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt:fuchsia.bluetooth.gatt_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt2:fuchsia.bluetooth.gatt2_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.host:fuchsia.bluetooth.host_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.le:fuchsia.bluetooth.le_hlcpp",
+        "@fuchsia_sdk//pkg/fit-promise",
+        "@fuchsia_sdk//pkg/zx",
+        "@pigweed//pw_intrusive_ptr",
+    ],
+)
+
+cc_library(
+    name = "helpers",
+    srcs = [
+        "helpers.cc",
+    ],
+    copts = ["-Wno-format"],
+    deps = [
+        ":public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/common:uuid_string_util",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_bluetooth_sapphire/host/gatt",
+        "//pw_bluetooth_sapphire/host/sdp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.bredr:fuchsia.bluetooth.bredr_cpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth:fuchsia.bluetooth_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt:fuchsia.bluetooth.gatt_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt2:fuchsia.bluetooth.gatt2_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.host:fuchsia.bluetooth.host_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
+    ],
+)
+
+cc_library(
+    name = "adapter_test_fixture",
+    testonly = True,
+    srcs = [
+        "adapter_test_fixture.cc",
+    ],
+    deps = [
+        ":public",
+        "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_bluetooth_sapphire/host/gatt:testing",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:fake_controller",
+        "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+        "@fuchsia_sdk//fidl/fuchsia.io:fuchsia.io_hlcpp",
+    ],
+)
+
+cc_library(
+    name = "fake_adapter_test_fixture",
+    testonly = True,
+    deps = [
+        ":public",
+        "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gatt",
+        "//pw_bluetooth_sapphire/host/gatt:testing",
+        "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+    ],
+)
+
+cc_library(
+    name = "fake_gatt_test_fixture",
+    testonly = True,
+    srcs = [
+        "fake_gatt_fixture.cc",
+    ],
+    deps = [
+        ":public",
+        "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gatt",
+        "//pw_bluetooth_sapphire/host/gatt:testing",
+        "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+    ],
+)
+
+cc_library(
+    name = "fake_vendor_server",
+    testonly = True,
+    srcs = [
+        "fake_hci_transport_server.cc",
+    ],
+    deps = [
+        ":public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/iso",
+        "//pw_bluetooth_sapphire/host/transport",
+        "//pw_unit_test",
+        "@com_google_googletest//:gtest",
+        "@fuchsia_sdk//fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
+        "@fuchsia_sdk//pkg/async-cpp",
+        "@fuchsia_sdk//pkg/fidl_cpp",
+        "@fuchsia_sdk//pkg/zx",
+    ],
+)
+
+fuchsia_cc_test(
+    name = "fidl_test",
+    testonly = True,
+    srcs = [
+        "bredr_connection_server_test.cc",
+        "gatt2_client_server_test.cc",
+        "gatt2_remote_service_server_test.cc",
+        "gatt2_server_server_test.cc",
+        "gatt_client_server_test.cc",
+        "gatt_remote_service_server_test.cc",
+        "helpers_test.cc",
+        "host_server_test.cc",
+        "iso_stream_server_test.cc",
+        "low_energy_central_server_test.cc",
+        "low_energy_connection_server_test.cc",
+        "low_energy_peripheral_server_test.cc",
+        "profile_server_test.cc",
+    ],
+    death_unittest = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":adapter_test_fixture",
+        ":fake_adapter_test_fixture",
+        ":fake_gatt_test_fixture",
+        ":fidl",
+        "//pw_bluetooth_sapphire/host/gap:testing",
+        "//pw_bluetooth_sapphire/host/gatt:testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:fake_controller",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "bt_host_fidl_tests_bazel",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    tags = ["manual"],
+    unit_tests = [
+        ":fidl_test",
+    ],
+    visibility = ["//visibility:public"],
+)

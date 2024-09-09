@@ -1,0 +1,80 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_test",
+    "fuchsia_unittest_package",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "public",
+    hdrs = [
+        "public/pw_bluetooth_sapphire/fuchsia/host/socket/socket_channel_relay.h",
+        "public/pw_bluetooth_sapphire/fuchsia/host/socket/socket_factory.h",
+    ],
+    includes = [
+        "public",
+    ],
+    tags = ["manual"],
+)
+
+cc_library(
+    name = "socket",
+    deps = [
+        ":public",
+        "//pw_bluetooth_sapphire/host/common",
+        "@fuchsia_sdk//pkg/async-default",
+        "@fuchsia_sdk//pkg/fit",
+        "@fuchsia_sdk//pkg/trace",
+        "@fuchsia_sdk//pkg/zx",
+    ],
+)
+
+fuchsia_cc_test(
+    name = "socket_test",
+    testonly = True,
+    srcs = [
+        "socket_channel_relay_test.cc",
+        "socket_factory_l2cap_integration_test.cc",
+        "socket_factory_test.cc",
+    ],
+    death_unittest = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":socket",
+        "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_bluetooth_sapphire/host/l2cap:channel_manager_mock_controller_test_fixture",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+        "//pw_bluetooth_sapphire/host/transport:testing",
+        "@fuchsia_sdk//pkg/async-loop-cpp",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "socket_tests",
+    testonly = True,
+    fuchsia_api_level = "23",
+    unit_tests = [
+        ":socket_test",
+    ],
+    visibility = ["//visibility:public"],
+)
