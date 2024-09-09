@@ -26,7 +26,9 @@
 // clang-format on
 
 #include "pw_compilation_testing/negative_compilation.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -528,6 +530,28 @@ TEST_F(AssertFailTest, StatusNotOKMessageArguments) {
   pw::Status status = pw::Status::Unknown();
   PW_CHECK_OK(status, "msg: %d", 5);
   EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == OkStatus() (=OK). msg: 5");
+}
+
+TEST_F(AssertPassTest, StatusWithSizeOK) {
+  pw::StatusWithSize status_size = pw::StatusWithSize(123);
+  PW_CHECK_OK(status_size);
+}
+
+TEST_F(AssertFailTest, StatusWithSizeNotOK) {
+  pw::StatusWithSize status_size = pw::StatusWithSize::Unknown();
+  PW_CHECK_OK(status_size);
+  EXPECT_MESSAGE("Check failed: status_size (=UNKNOWN) == OkStatus() (=OK). ");
+}
+
+TEST_F(AssertPassTest, ResultOK) {
+  pw::Result<int> result = 123;
+  PW_CHECK_OK(result);
+}
+
+TEST_F(AssertFailTest, ResultNotOK) {
+  pw::Result<int> result = pw::Status::Unknown();
+  PW_CHECK_OK(result);
+  EXPECT_MESSAGE("Check failed: result (=UNKNOWN) == OkStatus() (=OK). ");
 }
 
 // Example expression for the test below.

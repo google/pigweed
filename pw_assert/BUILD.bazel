@@ -226,6 +226,7 @@ pw_cc_test(
         "//pw_assert",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
+        "//pw_result",
         "//pw_span",
         "//pw_status",
         "//pw_string",

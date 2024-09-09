@@ -144,27 +144,35 @@
 
 // clang-format on
 
-// PW_CHECK_OK - If condition does not evaluate to PW_STATUS_OK, crash. Message
-// optional.
-#define PW_CHECK_OK(expression, ...)                                     \
-  do {                                                                   \
-    const _PW_CHECK_OK_STATUS _pw_assert_check_ok_status = (expression); \
-    if (_pw_assert_check_ok_status != PW_STATUS_OK) {                    \
-      _PW_CHECK_BINARY_ARG_HANDLER(                                      \
-          #expression,                                                   \
-          pw_StatusString(_pw_assert_check_ok_status),                   \
-          "==",                                                          \
-          "OkStatus()",                                                  \
-          "OK",                                                          \
-          "%s",                                                          \
-          "" __VA_ARGS__);                                               \
-    }                                                                    \
+// PW_CHECK_OK - If expression does not evaluate to PW_STATUS_OK, crash.
+// Message optional.
+//
+// In C++, expression must evaluate to a value convertible to Status via
+// pw::internal::ConvertToStatus().
+//
+// In C, expression must evaluate to a pw_Status value.
+#define PW_CHECK_OK(expression, ...)                       \
+  do {                                                     \
+    const _PW_CHECK_OK_STATUS _pw_assert_check_ok_status = \
+        _PW_CHECK_OK_TO_STATUS(expression);                \
+    if (_pw_assert_check_ok_status != PW_STATUS_OK) {      \
+      _PW_CHECK_BINARY_ARG_HANDLER(                        \
+          #expression,                                     \
+          pw_StatusString(_pw_assert_check_ok_status),     \
+          "==",                                            \
+          "OkStatus()",                                    \
+          "OK",                                            \
+          "%s",                                            \
+          "" __VA_ARGS__);                                 \
+    }                                                      \
   } while (0)
 
 #ifdef __cplusplus
 #define _PW_CHECK_OK_STATUS ::pw::Status
+#define _PW_CHECK_OK_TO_STATUS(expr) ::pw::internal::ConvertToStatus(expr)
 #else
 #define _PW_CHECK_OK_STATUS pw_Status
+#define _PW_CHECK_OK_TO_STATUS(expr) (expr)
 #endif  // __cplusplus
 
 #define PW_DCHECK_OK(...)          \

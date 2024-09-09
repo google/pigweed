@@ -152,6 +152,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
     Additionally, use ``PW_CHECK_OK(status)`` when checking for an OK status,
     since it enables showing a human-readable status string rather than an
     integer (e.g. ``status == RESOURCE_EXHAUSTED`` instead of ``status == 5``.
+    This works with any expression convertible to ``pw::Status``, including
+    ``pw::StatusWithString`` and ``pw::Result<T>``.
 
     +------------------------------------+-------------------------------------+
     | **Do NOT do this**                 | **Do this instead**                 |
@@ -371,6 +373,10 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   ``PW_STATUS_OK`` (in C). Optionally include a message with arguments to
   report.
 
+  ``status`` can be a ``pw::Status``, or (in C++ only) any expression
+  convertible to ``pw::Status``, including ``pw::StatusWithString`` and
+  ``pw::Result<T>``.
+
   The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is defined;
   otherwise, the entire statement is removed (and the expression not evaluated).
 
@@ -381,6 +387,10 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
 
      // Any expression that evaluates to a pw::Status or pw_Status works.
      PW_CHECK_OK(DoTheThing(), "System state: %s", SystemState());
+
+     // pw::Result<T> works.
+     pw::Result<int> result = GetSomething();
+     PW_CHECK_OK(result);
 
      // C works too.
      pw_Status c_status = DoMoreThings();
