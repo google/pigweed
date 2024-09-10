@@ -265,6 +265,10 @@ preferrable to create items that together with their storage outlive the list.
 Notably, ``pw::IntrusiveList<T>::end()`` is constant complexity (i.e. "O(1)").
 As a result iterating over a list does not incur an additional penalty.
 
+Size report
+===========
+.. include:: intrusive_list_size_report
+
 -----------------------
 pw::containers::FlatMap
 -----------------------

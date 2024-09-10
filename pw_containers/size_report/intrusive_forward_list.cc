@@ -18,10 +18,10 @@
 #define ITEM_COUNT 1
 #endif
 
-struct ExampleItem : public pw::IntrusiveList<ExampleItem>::Item {};
+struct ExampleItem : public pw::IntrusiveForwardList<ExampleItem>::Item {};
 
 struct ExampleContainer {
-  pw::IntrusiveList<ExampleItem> item_list;
+  pw::IntrusiveForwardList<ExampleItem> item_list;
 };
 
 static struct IntrusiveListContainer : BaseContainer {

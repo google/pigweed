@@ -342,10 +342,10 @@ pw_test("intrusive_list_test") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  report_deps = [ ":containers_size_report" ]
+  report_deps = [ ":intrusive_list_size_report" ]
 }
 
-pw_size_diff("containers_size_report") {
+pw_size_diff("intrusive_list_size_report") {
   title = "Pigweed containers size report"
   binaries = [
     {
@@ -364,17 +364,17 @@ pw_size_diff("containers_size_report") {
       label = "linked list four item"
     },
     {
-      target = "size_report:intrusive_list_one_item"
+      target = "size_report:intrusive_forward_list_one_item"
       base = "size_report:base"
       label = "intrusive list one item"
     },
     {
-      target = "size_report:intrusive_list_two_item"
+      target = "size_report:intrusive_forward_list_two_item"
       base = "size_report:base"
       label = "intrusive list two item"
     },
     {
-      target = "size_report:intrusive_list_four_item"
+      target = "size_report:intrusive_forward_list_four_item"
       base = "size_report:base"
       label = "intrusive list four item"
     },
