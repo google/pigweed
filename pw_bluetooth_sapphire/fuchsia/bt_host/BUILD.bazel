@@ -40,7 +40,11 @@ package(
     default_visibility = ["//pw_bluetooth_sapphire/fuchsia:__pkg__"],
 )
 
-exports_files(["README.fuchsia.md"])
+exports_files([
+    "README.fuchsia.md",
+    "licenses/bt_host_x64_licenses.spdx.json",
+    "licenses/bt_host_arm64_licenses.spdx.json",
+])
 
 fuchsia_cc_binary(
     name = "hello_world",
@@ -70,6 +74,7 @@ fuchsia_cc_test(
     srcs = ["hello_gtest.cc"],
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_googletest//:gtest_main",
         "@fuchsia_sdk//pkg/fdio",
@@ -147,7 +152,7 @@ fuchsia_cipd_releases(
     cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
         ":README.fuchsia.md": "README.fuchsia",
-        ":bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
+        ":licenses/bt_host_x64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.x64",
     # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
@@ -160,7 +165,7 @@ fuchsia_cipd_releases(
     cipd_prefix = "fuchsia/prebuilt/bt-host",
     extra_content = {
         ":README.fuchsia.md": "README.fuchsia",
-        ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
+        ":licenses/bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.arm64",
     # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
