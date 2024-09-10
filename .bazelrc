@@ -181,9 +181,8 @@ common:remote_cache --google_default_credentials=true
 common:remote_cache --remote_instance_name=projects/pigweed-rbe-open/instances/default-instance
 common:remote_cache --remote_upload_local_results=false
 common:remote_cache --bes_backend="buildeventservice.googleapis.com"
-common:remote_cache --bes_timeout=60s
+common:remote_cache --bes_timeout=600s
 common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
-common:remote_cache --remote_instance_name=projects/pigweed-rbe-open/instances/default-instance
 common:remote_cache --bes_instance_name=pigweed-rbe-open
 
 # Specifies desired output mode for running tests.
