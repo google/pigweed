@@ -13,11 +13,222 @@ Talk to the team at Pigweed Live
 
 .. _docs-changelog-latest:
 
+-----------
+Sep 5, 2024
+-----------
+.. note::
+
+   This changelog update is shorter than previous ones because we're
+   experimenting with only showing user-facing new features, changes,
+   and bug fixes. I.e. we're omitting commits that don't affect
+   downstream Pigweed projects.
+
+.. changelog_highlights_start
+
+Highlights (Aug 24, 2024 to Sep 5, 2024):
+
+* **New backends**: :ref:`module-pw_async_fuchsia` (a ``pw_async``
+  backend for Fuchsia that implements ``Task`` and ``FakeDispatcher``),
+  :ref:`module-pw_log_fuchsia` (a ``pw_log`` backend for Fuchsia
+  that uses the ``fuchsia.logger.LogSink`` FIDL API to send logs),
+  :ref:`module-pw_random_fuchsia` (a ``pw_random`` backend for Fuchsia
+  that implements :cpp:class:`pw::random::RandomGenerator`)
+  and :ref:`module-pw_uart_mcuxpresso` (a ``pw_uart`` backend for
+  NXP MCUXpresso devices).
+* **New theme**: The underlying Sphinx theme powering ``pigweed.dev`` is now
+  `PyData <https://pydata-sphinx-theme.readthedocs.io/en/stable/>`_. In
+  addition to improving website usability, this theme should also reduce
+  the ``pigweed.dev`` maintenance workload over time. See
+  :ref:`seed-0130` for more information.
+* **Arm Cortex-M55 support**: ``pw_toolchain`` and ``pw_system`` now
+  support Arm Cortex-M55 cores.
+* **Bazel cloud demo**: The new :ref:`Bazel cloud features
+  <showcase-sense-tutorial-bazel_cloud>`
+  page in the Sense tutorial shows you how to use BuildBuddy
+  to share logs and speed up builds with remote caching.
+
+.. changelog_highlights_end
+
+Modules
+=======
+
+pw_async2
+---------
+* The new :cpp:class:`pw::async2::TimeProvider` class can be used to
+  create timers in a dependency-injection-friendly way.
+  Commit: `Add TimeProvider
+  <https://pwrev.dev/232411>`__
+
+pw_async_fuchsia
+----------------
+* :ref:`module-pw_async_fuchsia` is a new ``pw_async`` backend for Fuchsia
+  that implements ``Task`` and ``FakeDispatcher``.
+  Commit: `Create pw_async Fuchsia backend
+  <https://pwrev.dev/230896>`__
+
+pw_chrono
+---------
+* :cpp:class:`pw::chrono::VirtualClock` is a new virtual base class for
+  timers that enables writing
+  timing-sensitive code that can be tested using simulated clocks such as
+  :cpp:class:`pw::chrono::SimulatedSystemClock`.
+  Commit: `Add VirtualClock
+  <https://pwrev.dev/233031>`__
+
+pw_cli
+------
+* The new :py:meth:`pw_cli.git_repo.GitRepo.commit_date()` method returns
+  the datetime of a specified commit.
+  Commit: `Add in option to retrieve commit date
+  <https://pwrev.dev/216275>`__
+
+pw_digital_io_mcuxpresso
+------------------------
+* The GPIO clock is now enabled even when GPIO is disabled.
+  Commit: `Enable gpio clock even when disabling gpio
+  <https://pwrev.dev/232131>`__
+  (issue `#356689514 <https://pwbug.dev/356689514>`__)
+
+pw_log_fuchsia
+--------------
+* :ref:`module-pw_log_fuchsia` is a new ``pw_log`` backend that uses the
+  ``fuchsia.logger.LogSink`` FIDL API to send logs.
+  Commit: `Create pw_log Fuchsia backend
+  <https://pwrev.dev/231052>`__
+
+pw_log_rpc
+----------
+* ``pw_log_rpc.LogStreamHandler.listen_to_logs()`` was renamed to
+  :py:meth:`pw_log_rpc.LogStreamHandler.start_logging()`.
+  Commit: `Invoke pw.log.Logs.Listen() to restore prior behavior
+  <https://pwrev.dev/233991>`__
+  (issue `#364421706 <https://pwbug.dev/364421706>`__)
+
+pw_log_zephyr
+-------------
+* Use of shell ``printf`` macros within ``if`` blocks that don't use
+  braces no longer causes compile errors.
+  Commit: `Make shell printf macros safe for use in if/else blocks
+  <https://pwrev.dev/232031>`__
+
+pw_package
+----------
+* ``picotool`` installation on macOS was fixed.
+  Commit: `Fix pictotool install on mac
+  <https://pwrev.dev/234238>`__
+
+pw_random_fuchsia
+-----------------
+* :ref:`module-pw_random_fuchsia` provides an implementation of
+  :cpp:class:`pw::random::RandomGenerator` that uses Zircon.
+  Commit: `Create Fuchsia backend for pw_random
+  <https://pwrev.dev/230895>`__
+
+pw_rpc
+------
+* New documentation (:ref:`module-pw_rpc-guides-raw-fallback`) was added that
+  explains how to define a raw method within a non-raw service.
+  Commit: `Provide examples of raw methods in docs
+  <https://pwrev.dev/232877>`__
+* Many RPC-related classes were moved out of ``pw_hdlc`` and into
+  ``pw_rpc`` or ``pw_stream``.
+  Commit: `Relocate RPC classes from pw_hdlc
+  <https://pwrev.dev/230172>`__
+  (issues `#330177657 <https://pwbug.dev/330177657>`__,
+  `#360178854 <https://pwbug.dev/360178854>`__)
+
+pw_spi_mcuxpresso
+-----------------
+* The new ``pw::spi::FifoErrorCheck`` enum lets you configure whether
+  ``pw::spi::McuxpressoResponder`` instances should log FIFO errors.
+  Commit: `Add check_fifo_error to responder config
+  <https://pwrev.dev/232215>`__
+
+pw_stream_uart_linux
+--------------------
+* The new :cpp:struct:`pw::stream::UartStreamLinux::Config` struct lets
+  you configure baud rate and control flow.
+  Commit: `Add Config struct
+  <https://pwrev.dev/233591>`__
+  (issue `#331871421 <https://pwbug.dev/331871421>`__)
+
+pw_sync
+-------
+* :cpp:func:`pw::sync::InterruptSpinLock::try_lock` and similar functions
+  have been annotated with ``[[nodiscard]]`` which means that ignoring
+  their return values will result in compiler warnings.
+  Commit: `[[nodiscard]] for try_lock() and similar functions
+  <https://pwrev.dev/229311>`__
+
+pw_system
+---------
+* :ref:`module-pw_system` now supports Arm Cortex-M55 systems.
+  Commit: `Support ARM Cortex M55 system
+  <https://pwrev.dev/231632>`__
+  (issue `#361691368 <https://pwbug.dev/361691368>`__)
+
+pw_thread
+---------
+* :cpp:class:`pw::thread::Options` has moved to its own header
+  (``pw_thread/options.h``) to make it possible to work with the class
+  without relying on the thread facade.
+  Commit: `Move pw::thread::Options to its own header
+  <https://pwrev.dev/232151>`__
+
+pw_tokenizer
+------------
+* In Python the detokenizer prefix is now set in the
+  :py:class:`pw_tokenizer.detokenize.Detokenizer` constructor.
+  Commit: `Set prefix in Detokenizer; fix typing issues
+  <https://pwrev.dev/234311>`__
+
+pw_toolchain
+------------
+* Arm Cortex-M55 toolchain support was added.
+  Commit: `Add ARM Cortex-M55 toolchain
+  <https://pwrev.dev/231631>`__
+  (issue `#361691368 <https://pwbug.dev/361691368>`__)
+
+pw_uart_mcuxpresso
+------------------
+* The new :ref:`module-pw_uart_mcuxpresso` module is a
+  :ref:`module-pw_uart` backend for NXP MCUXpresso devices.
+  Commit: `Introduce DMA UART backend for NXP devices
+  <https://pwrev.dev/232831>`__
+
+Docs
+====
+* New documentation (:ref:`docs-pw-style-cpp-logging`) about logging best
+  practices was added.
+  Commit: `Add logging recommendations
+  <https://pwrev.dev/210204>`__
+* The new :ref:`Bazel cloud features <showcase-sense-tutorial-bazel_cloud>`
+  page in the Sense tutorial shows you how to use BuildBuddy
+  to share logs and speed up builds with remote caching.
+  Commit: `Add cloud build section to Sense tutorial
+  <https://pwrev.dev/233751>`__
+  (issue `#363070027 <https://pwbug.dev/363070027>`__)
+* :ref:`docs-contributing` now links to good first issues for people who
+  want to contribute to upstream Pigweed.
+  Commit: `Add link to good first issue list
+  <https://pwrev.dev/233652>`__
+* ``pigweed.dev/live`` now links to the Pigweed Live meeting notes.
+  Commit: `Add shortlink for Pigweed Live notes
+  <https://pwrev.dev/232032>`__
+
+Targets
+=======
+
+RP2350
+------
+* RP2350 crash snapshots now show the correct architecture.
+  Commit: `Fix architecture in crash snapshot
+  <https://pwrev.dev/232231>`__
+  (issue `#362506213 <https://pwbug.dev/362506213>`__)
+
 ------------
 Aug 23, 2024
 ------------
-.. changelog_highlights_start
-
 .. _Google Pigweed comes to our new RP2350: https://www.raspberrypi.com/news/google-pigweed-comes-to-our-new-rp2350/
 
 Highlights (Aug 8, 2024 to Aug 23, 2024):
@@ -25,8 +236,6 @@ Highlights (Aug 8, 2024 to Aug 23, 2024):
 * **RP2350 Support**: Pigweed now supports the new Raspberry Pi RP2350 MCU.
   Check out `Google Pigweed comes to our new RP2350`_ on the Raspberry Pi
   blog for the full story and :ref:`showcase-sense` to try it out.
-
-.. changelog_highlights_end
 
 Build systems
 =============

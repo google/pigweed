@@ -332,6 +332,8 @@ most things and fallback to raw only when needed.
    encounter if you try to include Nanopb and ``pw_protobuf`` headers in the
    same source file.
 
+.. _module-pw_rpc-guides-raw-fallback:
+
 Falling back to raw methods
 ===========================
 When implementing an RPC service using Nanopb or ``pw_protobuf``, you may
