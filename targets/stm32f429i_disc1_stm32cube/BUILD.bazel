@@ -60,6 +60,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict(FREERTOS_FLAGS | {
+        "@cmsis_core//:cc_defines": ":cc_defines",
         "@pigweed//pw_assert:check_backend": "//pw_assert_basic",
         "@pigweed//pw_assert:check_backend_impl": "//pw_assert_basic:impl",
         "@pigweed//pw_boot:backend": "//pw_boot_cortex_m",
@@ -72,14 +73,14 @@ platform(
         "@pigweed//pw_unit_test:main": "//targets/stm32f429i_disc1_stm32cube:unit_test_app",
         "@stm32f4xx_hal_driver//:hal_config": "//targets/stm32f429i_disc1_stm32cube:hal_config",
     }),
-    # These flags should be added once
-    # https://github.com/bazelbuild/bazel/issues/22453
-    # is fixed.
-    #
-    # + [
-    #   "--copt=\"-DSTM32CUBE_HEADER=\\\"stm32f4xx.h\\\"\"",
-    #   "--copt=\"-DSTM32F429xx\"",
-    # ],
+)
+
+cc_library(
+    name = "cc_defines",
+    defines = [
+        "STM32CUBE_HEADER=\\\"stm32f4xx.h\\\"",
+        "STM32F429xx",
+    ],
 )
 
 cc_library(

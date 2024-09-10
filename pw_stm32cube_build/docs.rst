@@ -267,23 +267,23 @@ family. To do so,
 1.  Add the appropriate repositories to your WORKSPACE under different names,
     eg. ``@stm32f4xx_hal_driver`` and ``@stm32h7xx_hal_driver``.
 2.  Set the corresponding :ref:`module-pw_stm32cube_build-bazel-label-flags` as
-    part of the platform configuration for your embedded target platforms.
-    Currently, the best way to do this is via a `bazelrc config
-    <https://bazel.build/run/bazelrc#config>`_, which would look like this:
+    part of the platform definition for your embedded target platforms.
 
-    .. code-block::
+.. code-block:: text
 
-       build:stm32f429i --platforms=//targets/stm32f429i_disc1_stm32cube:platform
-       build:stm32f429i --@pigweed//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
-       build:stm32f429i --@stm32f4xx_hal_driver//:hal_config=//your/repo:hal_config
-       build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
-       build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_core=@cmsis_core_f4
-       build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
-
-    However, once `platform-based flags
-    <https://github.com/bazelbuild/proposals/blob/main/designs/2023-06-08-platform-based-flags.md>`_
-    are implemented in Bazel, it will be possible to set these flags directly
-    in the platform definition.
+   platform(
+     name = "...",
+     ...
+     flags = flags_from_dict({
+       ...
+       "@cmsis_core//:cc_defines": ":<your cc_defines target>",
+       "@stm32f4xx_hal_driver//:hal_config": "//targets/stm32f429i_disc1_stm32cube:hal_config",
+       "@pigweed//third_party/stm32cube:hal_driver": "@stm32f4xx_hal_driver//:hal_driver",
+       "@stm32f4xx_hal_driver//:cmsis_device": "@cmsis_device_f4//:cmsis_device",
+       "@stm32f4xx_hal_driver//:cmsis_init": "@cmsis_device_f4//:default_cmsis_init",
+       "@cmsis_device_f4//:cmsis_core": "@cmsis_core",
+     }),
+   )
 
 .. [#] Although CMSIS core is shared by all MCU families, different CMSIS
    device repositories may not be compatible with the same version of CMSIS
@@ -300,8 +300,9 @@ Upstream Pigweed modules that depend on the STM32Cube HAL, like
 header ``stm32cube/stm32cube.h``. This header expects the family to be set
 through a define of ``STM32CUBE_HEADER``. So, to use these Pigweed modules, you
 need to set that define to the correct value (e.g., ``\"stm32f4xx.h\"``; note
-the backslashes) as part of your build. This is most conveniently done through
-``copts`` associated with the target platform.
+the backslashes) as part of your build. This is most conveniently done via the
+``defines`` attribute of a ``cc_library`` target which is then set as the
+value of the ``@cmsis_core//:cc_defines`` label flag.
 
 .. _module-pw_stm32cube_build-bazel-label-flags:
 
@@ -319,6 +320,11 @@ We'll refer to this repository as ``@hal_driver`` below.
 Points to the ``cc_library`` target providing a header with the HAL
 configuration. Note that this header needs an appropriate, family-specific name
 (e.g., ``stm32f4xx_hal_conf.h`` for the F4 family).
+
+``@cmsis_core//:cc_defines``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label flag should point to a `cc_library` target which adds `define`
+entries for `STM32CUBE_HEADER` and the `STM32....` family (e.g. `STM32F429xx`).
 
 ``@cmsis_device//:cmsis_core``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
