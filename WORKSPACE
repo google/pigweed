@@ -59,7 +59,7 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_SDK_VERSION = "version:24.20240909.5.1"
+FUCHSIA_SDK_VERSION = "version:24.20240911.4.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
@@ -82,20 +82,17 @@ fuchsia_products_repository(
     metadata_file = "@fuchsia_products_metadata//:product_bundles.json",
 )
 
-load("@fuchsia_sdk//fuchsia:clang.bzl", "fuchsia_clang_repository")
-
-fuchsia_clang_repository(
+cipd_repository(
     name = "fuchsia_clang",
-    # TODO: https://pwbug.dev/346354914 - Reuse @llvm_toolchain. This currently
-    # leads to flaky loading phase errors!
-    # from_workspace = "@llvm_toolchain//:BUILD",
-    cipd_tag = "git_revision:c58bc24fcf678c55b0bf522be89eff070507a005",
-    sdk_root_label = "@fuchsia_sdk",
+    path = "fuchsia/development/fuchsia_clang/linux-amd64",
+    tag = "git_revision:0856f12bb0a9829a282bef7c26ad536ff3b1e0a5",
 )
 
-load("@fuchsia_clang//:defs.bzl", "register_clang_toolchains")
-
-register_clang_toolchains()
+register_toolchains(
+    "@fuchsia_clang//:cc-x86_64",
+    "@fuchsia_clang//:cc-aarch64",
+    "@fuchsia_clang//:cc-riscv64",
+)
 
 # TODO: b/354268150 - googletest is in the BCR, but its MODULE.bazel doesn't
 # express its dependency on the Fuchsia SDK correctly.
