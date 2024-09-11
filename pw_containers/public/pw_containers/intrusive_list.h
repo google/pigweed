@@ -121,9 +121,9 @@ class IntrusiveList {
   };
 
   using iterator =
-      typename ::pw::containers::internal::BidirectionalIterator<T, Item>;
+      typename ::pw::containers::internal::BidirectionalIterator<T, ItemBase>;
   using const_iterator = typename ::pw::containers::internal::
-      BidirectionalIterator<std::add_const_t<T>, const Item>;
+      BidirectionalIterator<std::add_const_t<T>, const ItemBase>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -211,14 +211,14 @@ class IntrusiveList {
 
   /// Inserts the given `item` before the given position, `pos`.
   iterator insert(iterator pos, T& item) {
-    return MakeIterator(list_.insert_after((--pos).item_, item));
+    return iterator(list_.insert_after((--pos).item_, item));
   }
 
   /// Inserts the range of items from `first` (inclusive) to `last` (exclusive)
   /// before the given position, `pos`.
   template <typename Iterator>
   iterator insert(iterator pos, Iterator first, Iterator last) {
-    return MakeIterator(list_.insert_after((--pos).item_, first, last));
+    return iterator(list_.insert_after((--pos).item_, first, last));
   }
 
   /// Inserts the range of items from `first` (inclusive) to `last` (exclusive)
@@ -229,12 +229,12 @@ class IntrusiveList {
 
   /// Removes the item following pos from the list. The item is not destructed.
   iterator erase(iterator pos) {
-    return MakeIterator(list_.erase_after((--pos).item_));
+    return iterator(list_.erase_after((--pos).item_));
   }
 
   /// Removes the range of items from `first` (inclusive) to `last` (exclusive).
   iterator erase(iterator first, iterator last) {
-    return MakeIterator(list_.erase_after((--first).item_, last.item_));
+    return iterator(list_.erase_after((--first).item_, last.item_));
   }
 
   /// Inserts an element at the end of the list.
@@ -349,13 +349,6 @@ class IntrusiveList {
         std::is_base_of<Base, T>(),
         "IntrusiveList items must be derived from IntrusiveList<T>::Item, "
         "where T is the item or one of its bases.");
-  }
-
-  iterator MakeIterator(ItemBase* item) {
-    return iterator(static_cast<Item*>(item));
-  }
-  const_iterator MakeIterator(const ItemBase* item) const {
-    return const_iterator(static_cast<const Item*>(item));
   }
 
   ::pw::containers::internal::GenericIntrusiveList<ItemBase> list_;

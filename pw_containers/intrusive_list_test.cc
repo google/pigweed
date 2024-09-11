@@ -283,9 +283,6 @@ TEST(IntrusiveListTest, CompareConstAndNonConstIterator) {
   EXPECT_EQ(list.end(), list.cend());
 }
 
-#if PW_NC_TEST(IncompatibleIterators)
-PW_NC_EXPECT("comparison (of|between) distinct pointer types");
-
 class OtherListItem : public IntrusiveList<OtherListItem>::Item {};
 
 using OtherList = IntrusiveList<OtherListItem>;
@@ -293,10 +290,14 @@ using OtherList = IntrusiveList<OtherListItem>;
 TEST(IntrusiveListTest, CompareConstAndNonConstIterator_CompilationFails) {
   List list;
   OtherList list2;
+#if PW_NC_TEST(CannotCompareIncompatibleIteratorsEqual)
+  PW_NC_EXPECT("list\.end\(\) == list2\.end\(\)");
   static_cast<void>(list.end() == list2.end());
-}
-
+#elif PW_NC_TEST(CannotCompareIncompatibleIteratorsInequal)
+  PW_NC_EXPECT("list\.end\(\) != list2\.end\(\)");
+  static_cast<void>(list.end() != list2.end());
 #endif  // PW_NC_TEST
+}
 
 #if PW_NC_TEST(CannotModifyThroughConstIterator)
 PW_NC_EXPECT("function is not marked const|discards qualifiers");

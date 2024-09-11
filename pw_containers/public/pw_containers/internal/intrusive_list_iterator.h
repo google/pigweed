@@ -14,6 +14,7 @@
 #pragma once
 
 #include <iterator>
+#include <type_traits>
 
 namespace pw {
 
@@ -41,13 +42,21 @@ class IteratorBase {
   constexpr const T* operator->() const { return downcast(); }
   constexpr T* operator->() { return downcast(); }
 
-  template <typename D2, typename T2, typename I2>
+  template <typename D2,
+            typename T2,
+            typename I2,
+            typename = std::enable_if_t<
+                std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<T2>>>>
   constexpr bool operator==(const IteratorBase<D2, T2, I2>& rhs) const {
     return static_cast<const I*>(derived().item_) ==
            static_cast<const I2*>(rhs.derived().item_);
   }
 
-  template <typename D2, typename T2, typename I2>
+  template <typename D2,
+            typename T2,
+            typename I2,
+            typename = std::enable_if_t<
+                std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<T2>>>>
   constexpr bool operator!=(const IteratorBase<D2, T2, I2>& rhs) const {
     return !operator==(rhs);
   }

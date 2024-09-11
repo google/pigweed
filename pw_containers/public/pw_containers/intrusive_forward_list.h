@@ -127,10 +127,10 @@ class IntrusiveForwardList {
   };
 
   using iterator =
-      typename ::pw::containers::internal::ForwardIterator<T, Item>;
+      typename ::pw::containers::internal::ForwardIterator<T, ItemBase>;
   using const_iterator =
       typename ::pw::containers::internal::ForwardIterator<std::add_const_t<T>,
-                                                           const Item>;
+                                                           const ItemBase>;
 
   constexpr IntrusiveForwardList() { CheckItemType(); }
 
@@ -165,20 +165,20 @@ class IntrusiveForwardList {
 
   // Iterators
 
-  iterator before_begin() noexcept {
-    return MakeIterator(list_.before_begin());
-  }
+  iterator before_begin() noexcept { return iterator(list_.before_begin()); }
   const_iterator before_begin() const noexcept {
-    return MakeIterator(list_.before_begin());
+    return const_iterator(list_.before_begin());
   }
   const_iterator cbefore_begin() const noexcept { return before_begin(); }
 
-  iterator begin() noexcept { return MakeIterator(list_.begin()); }
-  const_iterator begin() const noexcept { return MakeIterator(list_.begin()); }
+  iterator begin() noexcept { return iterator(list_.begin()); }
+  const_iterator begin() const noexcept {
+    return const_iterator(list_.begin());
+  }
   const_iterator cbegin() const noexcept { return begin(); }
 
-  iterator end() noexcept { return MakeIterator(list_.end()); }
-  const_iterator end() const noexcept { return MakeIterator(list_.end()); }
+  iterator end() noexcept { return iterator(list_.end()); }
+  const_iterator end() const noexcept { return const_iterator(list_.end()); }
   const_iterator cend() const noexcept { return end(); }
 
   // Capacity
@@ -197,16 +197,15 @@ class IntrusiveForwardList {
   void clear() { list_.clear(); }
 
   /// Inserts the given `item` after the given position, `pos`.
-  template <typename Iterator>
-  Iterator insert_after(Iterator pos, T& item) {
-    return MakeIterator(list_.insert_after(pos.item_, item));
+  iterator insert_after(iterator pos, T& item) {
+    return iterator(list_.insert_after(pos.item_, item));
   }
 
   /// Inserts the range of items from `first` (inclusive) to `last` (exclusive)
   /// after the given position, `pos`.
   template <typename Iterator>
   iterator insert_after(iterator pos, Iterator first, Iterator last) {
-    return MakeIterator(list_.insert_after(pos.item_, first, last));
+    return iterator(list_.insert_after(pos.item_, first, last));
   }
 
   /// Inserts the range of items from `first` (inclusive) to `last` (exclusive)
@@ -217,12 +216,12 @@ class IntrusiveForwardList {
 
   /// Removes the item following pos from the list. The item is not destructed.
   iterator erase_after(iterator pos) {
-    return MakeIterator(list_.erase_after(pos.item_));
+    return iterator(list_.erase_after(pos.item_));
   }
 
   /// Removes the range of items from `first` (inclusive) to `last` (exclusive).
   iterator erase_after(iterator first, iterator last) {
-    return MakeIterator(list_.erase_after(first.item_, last.item_));
+    return iterator(list_.erase_after(first.item_, last.item_));
   }
 
   /// Inserts the item at the start of the list.
@@ -334,14 +333,6 @@ class IntrusiveForwardList {
         "IntrusiveForwardList items must be derived from "
         "IntrusiveForwardList<T>::Item, where T is the item or one of its "
         "bases.");
-  }
-
-  iterator MakeIterator(ItemBase* item) {
-    return iterator(static_cast<Item*>(item));
-  }
-
-  const_iterator MakeIterator(const ItemBase* item) const {
-    return const_iterator(static_cast<const Item*>(item));
   }
 
   template <typename>
