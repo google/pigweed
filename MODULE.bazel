@@ -70,6 +70,13 @@ git_override(
     remote = "https://github.com/nanopb/nanopb.git",
 )
 
+# TODO: https://pwbug.dev/365993144 - Use bazel_dep once this commit is in the BCR.
+git_override(
+    module_name = "boringssl",
+    commit = "40ec347196a939bd4fd1f801df896b2f4e2205dc",
+    remote = "https://boringssl.googlesource.com/boringssl",
+)
+
 single_version_override(
     module_name = "rules_rust",
     patch_strip = 1,
