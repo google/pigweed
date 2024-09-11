@@ -95,6 +95,7 @@ def create_device_serial_or_socket_connection(
     device_class: type[pw_device.Device] | None = pw_device.Device,
     device_tracing_class: type[pw_device_tracing.DeviceWithTracing]
     | None = (pw_device_tracing.DeviceWithTracing),
+    timestamp_decoder: Callable[[int], str] | None = None,
 ) -> DeviceConnection:
     """Setup a pw_system.Device client connection.
 
@@ -135,6 +136,7 @@ def create_device_serial_or_socket_connection(
            device_tracing=args.device_tracing,
            device_class=Device,
            device_tracing_class=DeviceWithTracing,
+           timestamp_decoder=timestamp_parser_ms_since_boot,
        )
 
 
@@ -190,7 +192,6 @@ def create_device_serial_or_socket_connection(
     protos.append(trace_service_pb2)
     protos.append(device_service_pb2)
 
-    timestamp_decoder = None
     reader: stream_readers.SelectableReader | stream_readers.SerialReader
 
     if socket_addr is None:
@@ -216,7 +217,8 @@ def create_device_serial_or_socket_connection(
         write = serial_device.write
 
         # Overwrite decoder for serial device.
-        timestamp_decoder = timestamp_parser_ms_since_boot
+        if timestamp_decoder is None:
+            timestamp_decoder = timestamp_parser_ms_since_boot
     else:
         socket_impl = (
             socket_client.SocketClientWithLogging

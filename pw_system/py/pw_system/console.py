@@ -38,6 +38,7 @@ from pathlib import Path
 import sys
 from types import ModuleType
 from typing import (
+    Callable,
     Collection,
     TYPE_CHECKING,
 )
@@ -299,6 +300,7 @@ def console(
     hdlc_encoding: bool = True,
     device_tracing: bool = True,
     browser: bool = False,
+    timestamp_decoder: Callable[[int], str] | None = None,
     device_connection: DeviceConnection | None = None,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
@@ -382,6 +384,7 @@ def console(
             channel_id=channel_id,
             hdlc_encoding=hdlc_encoding,
             device_tracing=device_tracing,
+            timestamp_decoder=timestamp_decoder,
         )
 
     with device_connection as device_client:
@@ -404,6 +407,7 @@ def console(
 def main(
     args: argparse.Namespace | None = None,
     compiled_protos: list[ModuleType] | None = None,
+    timestamp_decoder: Callable[[int], str] | None = None,
     device_connection: DeviceConnection | None = None,
 ) -> int:
     """Startup the pw console UI for a pw_system device.
@@ -414,6 +418,7 @@ def main(
 
        from pw_protobuf_protos import common_pb2
        from pw_rpc import echo_pb2
+       from pw_log.log_decoder.timestamp_parser_ms_since_boot
        import pw_system.console
 
        def main() -> int:
@@ -421,7 +426,8 @@ def main(
                compiled_protos=[
                    common_pb2,
                    echo_pb2,
-               ]
+               ],
+               timestamp_decoder=timestamp_parser_ms_since_boot,
                device_connection=None,
            )
 
@@ -431,6 +437,7 @@ def main(
     return console(
         **vars(_parse_args(args)),
         compiled_protos=compiled_protos,
+        timestamp_decoder=timestamp_decoder,
         device_connection=device_connection,
     )
 
