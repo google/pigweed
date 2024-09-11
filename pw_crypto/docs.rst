@@ -165,6 +165,11 @@ a code size of ~12KiB.
 Micro ECC
 =========
 
+.. Warning::
+  Micro ECC's upstream hasn't received any updates since April 2023.
+  Please investigate to make sure that it meets your product's security
+  requirements before use.
+
 To select Micro ECC, the library needs to be installed and configured.
 
 .. code-block:: sh
