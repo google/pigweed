@@ -22,8 +22,10 @@ package(
 license(
     name = "license_fuchsia",
     package_name = "Fuchsia (third_party)",
-    license_text = ":repo/LICENSE",
+    license_text = "repo/LICENSE",
 )
+
+exports_files(["repo/LICENSE"])
 
 # Allows downstream projects to provide an alternative implementation of fit.
 #
