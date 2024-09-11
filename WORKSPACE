@@ -75,7 +75,7 @@ cipd_repository(
     tag = FUCHSIA_SDK_VERSION,
 )
 
-load("@fuchsia_sdk//fuchsia:products.bzl", "fuchsia_products_repository")
+load("//pw_build/bazel_internal/fuchsia_sdk_workspace:products.bzl", "fuchsia_products_repository")
 
 fuchsia_products_repository(
     name = "fuchsia_products",
