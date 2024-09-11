@@ -19,7 +19,10 @@ load(
 )
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
-package(default_visibility = ["//pw_bluetooth_sapphire/fuchsia/host/fidl:__pkg__"])
+package(default_visibility = [
+    "//pw_bluetooth_sapphire/fuchsia/bt_host:__pkg__",
+    "//pw_bluetooth_sapphire/fuchsia/host/fidl:__pkg__",
+])
 
 cc_library(
     name = "fidl",

@@ -11,9 +11,22 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include <iostream>
 
-int main() {
-  std::cout << "Hello pigweed.git Fuchsia component!" << std::endl;
-  return 0;
-}
+#pragma once
+
+#include <fidl/fuchsia.hardware.bluetooth/cpp/fidl.h>
+#include <lib/async/dispatcher.h>
+#include <pw_async_fuchsia/dispatcher.h>
+
+#include <string>
+
+namespace bthost {
+
+// Creates a FIDL channel connecting to the service directory at |device_path|
+// relative to component's namespace. Creates and returns a VendorHandle using
+// the client end of the channel if successful, otherwise returns nullptr on
+// failure.
+zx::result<fidl::ClientEnd<fuchsia_hardware_bluetooth::Vendor>>
+CreateVendorHandle(const std::string& device_path);
+
+}  // namespace bthost

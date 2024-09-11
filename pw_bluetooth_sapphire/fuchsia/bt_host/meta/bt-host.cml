@@ -12,11 +12,48 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 {
-    include: [ "syslog/client.shard.cml" ],
+    include: [
+        "inspect/client.shard.cml",
+        "syslog/client.shard.cml",
+    ],
     program: {
+        // Use the built-in ELF runner.
         runner: "elf",
-        binary: "bin/hello_world",
+
+        // The binary to run for this component.
+        binary: "bin/bt_host",
+
+        // Subscribe to component lifecycle events
+        lifecycle: { stop_event: "notify" },
+
+        // Enable stdout logging
         forward_stderr_to: "log",
         forward_stdout_to: "log",
+    },
+    use: [
+        {
+            // If the flag is true, then we have the option of using legacy pairing. This will only
+            // occur if the peer does NOT support SSP. If the flag is false and the peer does not
+            // support SSP, pairing will fail. If the peer supports SSP, then SSP will be used
+            // regardless of what value this flag is set to.
+            config: "fuchsia.bluetooth.LegacyPairing",
+            key: "legacy_pairing_enabled",
+            type: "bool",
+        },
+        {
+            directory: "dev-bt-hci",
+            rights: [ "r*" ],
+            path: "/dev/class/bt-hci",
+        },
+        {
+            protocol: [ "fuchsia.bluetooth.host.Receiver" ],
+        },
+    ],
+    config: {
+        device_path: {
+            type: "string",
+            max_size: 512,
+            mutability: [ "parent" ],
+        },
     },
 }
