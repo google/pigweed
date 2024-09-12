@@ -308,6 +308,19 @@ pw_add_test(pw_containers.wrapped_iterator_test
     pw_containers
 )
 
+pw_add_test(pw_containers.intrusive_forward_list_test
+  SOURCES
+    intrusive_forward_list_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.intrusive_forward_list
+    pw_containers.vector
+    pw_preprocessor
+  GROUPS
+    modules
+    pw_containers
+)
+
 pw_add_test(pw_containers.intrusive_list_test
   SOURCES
     intrusive_list_test.cc
