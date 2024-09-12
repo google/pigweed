@@ -178,6 +178,10 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
           return StatusCodeFromView<
               pw::bluetooth::emboss::LERequestPeerSCACompleteSubeventView>();
         }
+        case hci_spec::kLEAdvertisingSetTerminatedSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEAdvertisingSetTerminatedSubeventView>();
+        }
         default: {
           BT_PANIC("Emboss LE meta subevent (%#.2x) not implemented",
                    subevent_code);

@@ -3421,12 +3421,16 @@ void FakeController::OnLEReadAdvertisingChannelTxPower() {
 void FakeController::SendLEAdvertisingSetTerminatedEvent(
     hci_spec::ConnectionHandle conn_handle,
     hci_spec::AdvertisingHandle adv_handle) {
-  hci_spec::LEAdvertisingSetTerminatedSubeventParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.connection_handle = conn_handle;
-  params.adv_handle = adv_handle;
-  SendLEMetaEvent(hci_spec::kLEAdvertisingSetTerminatedSubeventCode,
-                  BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LEAdvertisingSetTerminatedSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(
+      hci_spec::kLEAdvertisingSetTerminatedSubeventCode);
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.connection_handle().Write(conn_handle);
+  view.advertising_handle().Write(adv_handle);
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(

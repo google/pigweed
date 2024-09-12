@@ -136,7 +136,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void OnCurrentOperationComplete() override;
 
   // Event handler for the HCI LE Advertising Set Terminated event
-  void OnAdvertisingSetTerminatedEvent(const EventPacket& event);
+  void OnAdvertisingSetTerminatedEvent(const EmbossEventPacket& event);
   CommandChannel::EventHandlerId event_handler_id_;
 
   AdvertisingHandleMap advertising_handle_map_;

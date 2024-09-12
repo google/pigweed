@@ -739,21 +739,6 @@ constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
 // LE Advertising Set Terminated Event (v5.0) (LE)
 constexpr EventCode kLEAdvertisingSetTerminatedSubeventCode = 0x012;
 
-struct LEAdvertisingSetTerminatedSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Advertising Handle in which advertising has ended.
-  AdvertisingHandle adv_handle;
-
-  // Connection Handle of the connection whose creation ended the advertising.
-  ConnectionHandle connection_handle;
-
-  // Number of completed extended advertising events transmitted by the
-  // Controller.
-  uint8_t num_completed_extended_adv_events;
-} __attribute__((packed));
-
 // LE Scan Request Received Event (v5.0) (LE)
 constexpr EventCode kLEScanRequestReceivedSubeventCode = 0x13;
 

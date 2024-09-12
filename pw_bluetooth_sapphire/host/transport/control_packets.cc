@@ -140,7 +140,6 @@ bool EventPacket::ToStatusCode(
     case hci_spec::kLEMetaEventCode: {
       auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {
-        CASE_SUBEVENT_STATUS(LEAdvertisingSetTerminated);
         default:
           BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
           break;
