@@ -18,7 +18,6 @@
 
 #include <unordered_map>
 
-#include "pw_bluetooth_sapphire/internal/host/att/bearer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
@@ -26,7 +25,6 @@
 #include "pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_service.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/server.h"
-#include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 
 namespace bt::gatt {
 

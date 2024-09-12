@@ -62,19 +62,6 @@ void GenericAttributeService::Register() {
                                              bool indicate) {
     BT_DEBUG_ASSERT(chrc_id == 0u);
 
-    // Discover the handle assigned to this characteristic if necessary.
-    if (svc_changed_handle_ == att::kInvalidHandle) {
-      LocalServiceManager::ClientCharacteristicConfig config;
-      if (!local_service_manager_->GetCharacteristicConfig(
-              service_id, chrc_id, peer_id, &config)) {
-        bt_log(DEBUG,
-               "gatt",
-               "service: Peer has not configured characteristic: %s",
-               bt_str(peer_id));
-        return;
-      }
-      svc_changed_handle_ = config.handle;
-    }
     SetServiceChangedIndicationSubscription(peer_id, indicate);
     if (persist_service_changed_ccc_callback_) {
       ServiceChangedCCCPersistedData persisted = {.notify = notify,
@@ -144,11 +131,6 @@ void GenericAttributeService::SetServiceChangedIndicationSubscription(
 void GenericAttributeService::OnServiceChanged(IdType service_id,
                                                att::Handle start,
                                                att::Handle end) {
-  // Service Changed not yet configured for indication.
-  if (svc_changed_handle_ == att::kInvalidHandle) {
-    return;
-  }
-
   // Don't send indications for this service's removal.
   if (service_id_ == service_id) {
     return;

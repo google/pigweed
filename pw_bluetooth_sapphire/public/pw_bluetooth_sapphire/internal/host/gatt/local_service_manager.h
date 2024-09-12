@@ -15,7 +15,6 @@
 #pragma once
 #include <unordered_map>
 
-#include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
 #include "pw_bluetooth_sapphire/internal/host/att/database.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"

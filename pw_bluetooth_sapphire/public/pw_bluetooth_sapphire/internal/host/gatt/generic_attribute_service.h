@@ -79,10 +79,6 @@ class GenericAttributeService final {
   // Peers that have subscribed to indications.
   std::unordered_set<PeerId> subscribed_peers_;
 
-  // Handle for the Service Changed characteristic that is read when it is first
-  // configured for indications.
-  att::Handle svc_changed_handle_ = att::kInvalidHandle;
-
   // Local service ID; hidden because registration is tied to instance lifetime.
   IdType service_id_ = kInvalidId;
 
