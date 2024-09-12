@@ -153,6 +153,7 @@ fuchsia_package(
     ],
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.x64,
+    resources = [":default_config_values"],
     tags = ["manual"],
 )
 
@@ -164,6 +165,7 @@ fuchsia_package(
     ],
     fuchsia_api_level = "HEAD",
     platform = fuchsia_platforms.arm64,
+    resources = [":default_config_values"],
     tags = ["manual"],
 )
 
