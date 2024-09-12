@@ -700,18 +700,6 @@ constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
 // LE Long Term Key Request Event (v4.0) (LE)
 constexpr EventCode kLELongTermKeyRequestSubeventCode = 0x05;
 
-struct LELongTermKeyRequestSubeventParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // 64-bit random number.
-  uint64_t random_number;
-
-  // 16-bit encrypted diversifier.
-  uint16_t encrypted_diversifier;
-} __attribute__((packed));
-
 // LE Remote Connection Parameter Request Event (v4.1) (LE)
 constexpr EventCode kLERemoteConnectionParameterRequestSubeventCode = 0x06;
 

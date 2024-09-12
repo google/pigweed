@@ -58,7 +58,7 @@ class LowEnergyConnection : public AclConnection,
 
   // HCI event handlers.
   CommandChannel::EventCallbackResult OnLELongTermKeyRequestEvent(
-      const EventPacket& event);
+      const EmbossEventPacket& event);
 
   // IDs for encryption related HCI event handlers.
   CommandChannel::EventHandlerId le_ltk_request_id_;

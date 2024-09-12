@@ -43,6 +43,7 @@ cc_library(
         "-Wno-unused-parameter",
         "-Wno-deprecated-this-capture",
         "-Wswitch-enum",
+        "-Wno-shadow",
     ] + COPTS,
     deps = [
         "//pw_bluetooth_sapphire:public",

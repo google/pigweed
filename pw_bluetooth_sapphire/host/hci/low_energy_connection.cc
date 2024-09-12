@@ -119,30 +119,24 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result,
 }
 
 CommandChannel::EventCallbackResult
-LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
-            hci_spec::kLELongTermKeyRequestSubeventCode);
-
-  auto* params =
-      event.subevent_params<hci_spec::LELongTermKeyRequestSubeventParams>();
-  if (!params) {
+LowEnergyConnection::OnLELongTermKeyRequestEvent(
+    const EmbossEventPacket& event) {
+  auto view = event.unchecked_view<
+      pw::bluetooth::emboss::LELongTermKeyRequestSubeventView>();
+  if (!view.IsComplete()) {
     bt_log(WARN, "hci", "malformed LE LTK request event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci_spec::ConnectionHandle handle = pw::bytes::ConvertOrderFrom(
-      cpp20::endian::little, params->connection_handle);
+  hci_spec::ConnectionHandle handle = view.connection_handle().Read();
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  uint64_t rand =
-      pw::bytes::ConvertOrderFrom(cpp20::endian::little, params->random_number);
-  uint16_t ediv = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                              params->encrypted_diversifier);
+  uint64_t rand = view.random_number().Read();
+  uint16_t ediv = view.encrypted_diversifier().Read();
 
   bt_log(DEBUG,
          "hci",
