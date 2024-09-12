@@ -361,13 +361,6 @@ constexpr OpCode kWriteInquiryScanType = ControllerAndBasebandOpCode(0x0043);
 // Read Inquiry Mode (v1.2) (BR/EDR)
 constexpr OpCode kReadInquiryMode = ControllerAndBasebandOpCode(0x0044);
 
-struct ReadInquiryModeReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  pw::bluetooth::emboss::InquiryMode inquiry_mode;
-} __attribute__((packed));
-
 // ==================================
 // Write Inquiry Mode (v1.2) (BR/EDR)
 constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);

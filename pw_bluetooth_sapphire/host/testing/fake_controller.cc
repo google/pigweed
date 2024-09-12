@@ -1808,11 +1808,13 @@ void FakeController::OnWriteInquiryMode(
 }
 
 void FakeController::OnReadInquiryMode() {
-  hci_spec::ReadInquiryModeReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.inquiry_mode = inquiry_mode_;
-  RespondWithCommandComplete(hci_spec::kReadInquiryMode,
-                             BufferView(&params, sizeof(params)));
+  auto event_packet = hci::EmbossEventPacket::New<
+      pwemb::ReadInquiryModeCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event_packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.inquiry_mode().Write(inquiry_mode_);
+  RespondWithCommandComplete(pwemb::OpCode::READ_INQUIRY_MODE, &event_packet);
 }
 
 void FakeController::OnWriteClassOfDevice(
