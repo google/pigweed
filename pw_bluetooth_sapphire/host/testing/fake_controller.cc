@@ -3319,8 +3319,8 @@ void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
 }
 
 void FakeController::OnLERemoveAdvertisingSet(
-    const hci_spec::LERemoveAdvertisingSetCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const pwemb::LERemoveAdvertisingSetCommandView& params) {
+  hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -4193,13 +4193,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalSupportedFeatures();
       break;
     }
-    case hci_spec::kLERemoveAdvertisingSet: {
-      const auto& params =
-          command_packet
-              .payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
-      OnLERemoveAdvertisingSet(params);
-      break;
-    }
     case hci_spec::kReadBDADDR: {
       OnReadBRADDR();
       break;
@@ -4284,6 +4277,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEReadMaximumAdvertisingDataLength:
     case hci_spec::kLEReadNumSupportedAdvertisingSets:
     case hci_spec::kLEReadRemoteFeatures:
+    case hci_spec::kLERemoveAdvertisingSet:
     case hci_spec::kLESetAdvertisingData:
     case hci_spec::kLESetAdvertisingEnable:
     case hci_spec::kLESetAdvertisingParameters:
@@ -4411,6 +4405,12 @@ void FakeController::HandleReceivedCommandPacket(
           command_packet
               .view<pwemb::LESetExtendedAdvertisingEnableCommandView>();
       OnLESetExtendedAdvertisingEnable(params);
+      break;
+    }
+    case hci_spec::kLERemoveAdvertisingSet: {
+      const auto params =
+          command_packet.view<pwemb::LERemoveAdvertisingSetCommandView>();
+      OnLERemoveAdvertisingSet(params);
       break;
     }
     case hci_spec::kLinkKeyRequestNegativeReply: {

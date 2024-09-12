@@ -1072,11 +1072,6 @@ struct LEReadNumSupportedAdvertisingSetsReturnParams {
 // LE Remove Advertising Set Command (v5.0) (LE)
 constexpr OpCode kLERemoveAdvertisingSet = LEControllerCommandOpCode(0x003C);
 
-struct LERemoveAdvertisingSetCommandParams {
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-} __attribute__((packed));
-
 // =============================================
 // LE Clear Advertising Sets Command (v5.0) (LE)
 constexpr OpCode kLEClearAdvertisingSets = LEControllerCommandOpCode(0x003D);

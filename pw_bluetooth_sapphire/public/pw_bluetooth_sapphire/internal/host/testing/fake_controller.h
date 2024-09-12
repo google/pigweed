@@ -835,7 +835,7 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Called when a HCI_LE_Remove_Advertising_Set command is received.
   void OnLERemoveAdvertisingSet(
-      const hci_spec::LERemoveAdvertisingSetCommandParams& params);
+      const pw::bluetooth::emboss::LERemoveAdvertisingSetCommandView& params);
 
   // Called when a HCI_LE_Clear_Advertising_Sets command is received.
   void OnLEClearAdvertisingSets();
