@@ -73,7 +73,7 @@ class BrEdrConnection final {
   // |type|. If the object for corresponding |type| has already been created,
   // this method does nothing.
   void CreateOrUpdatePairingState(
-      PairingStateManager::PairingStateType type,
+      PairingStateType type,
       const PairingDelegate::WeakPtr& pairing_delegate,
       BrEdrSecurityMode security_mode);
 

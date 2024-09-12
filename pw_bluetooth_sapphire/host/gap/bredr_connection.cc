@@ -116,7 +116,7 @@ void BrEdrConnection::AddRequestCallback(
 }
 
 void BrEdrConnection::CreateOrUpdatePairingState(
-    PairingStateManager::PairingStateType type,
+    PairingStateType type,
     const PairingDelegate::WeakPtr& pairing_delegate,
     BrEdrSecurityMode security_mode) {
   BT_ASSERT(pairing_state_manager_);

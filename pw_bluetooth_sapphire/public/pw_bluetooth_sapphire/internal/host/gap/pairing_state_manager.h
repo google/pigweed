@@ -51,12 +51,6 @@ namespace bt::gap {
 // Only one of the two pairing states will ever be instantiated at a time.
 class PairingStateManager final {
  public:
-  enum class PairingStateType : uint8_t {
-    kSecureSimplePairing,
-    kLegacyPairing,
-    kUnknown,
-  };
-
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
   // proceed in the order of events expected.
@@ -236,6 +230,12 @@ class PairingStateManager final {
   // via interrogation or encountering a pairing event specific to SSP or LP.
   fit::closure auth_cb_;
   StatusCallback status_cb_;
+
+  struct InspectProperties {
+    inspect::StringProperty pairing_state_type;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingStateManager);
 };

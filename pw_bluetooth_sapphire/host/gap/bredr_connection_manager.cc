@@ -895,8 +895,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
   // Now that interrogation has successfully completed, check if the peer's
   // feature bits indicate SSP support. If not, use LegacyPairingState to
   // perform pairing if legacy pairing is enabled.
-  PairingStateManager::PairingStateType pairing_type =
-      PairingStateManager::PairingStateType::kSecureSimplePairing;
+  PairingStateType pairing_type = PairingStateType::kSecureSimplePairing;
   if (!peer->IsSecureSimplePairingSupported()) {
     if (!legacy_pairing_enabled_) {
       bt_log(WARN,
@@ -906,7 +905,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
              bt_str(peer_id));
       return;
     }
-    pairing_type = PairingStateManager::PairingStateType::kLegacyPairing;
+    pairing_type = PairingStateType::kLegacyPairing;
   }
   conn_state.CreateOrUpdatePairingState(
       pairing_type, pairing_delegate_, security_mode());
@@ -1319,10 +1318,9 @@ BrEdrConnectionManager::OnIoCapabilityRequest(
 
   // If we receive an HCI_IO_Capability_Request event before interrogation is
   // complete, there will be no pairing state object so we need to create it now
-  conn_ptr->CreateOrUpdatePairingState(
-      PairingStateManager::PairingStateType::kSecureSimplePairing,
-      pairing_delegate_,
-      security_mode());
+  conn_ptr->CreateOrUpdatePairingState(PairingStateType::kSecureSimplePairing,
+                                       pairing_delegate_,
+                                       security_mode());
 
   auto reply = conn_ptr->pairing_state_manager().OnIoCapabilityRequest();
 
@@ -1372,7 +1370,7 @@ BrEdrConnectionManager::OnIoCapabilityResponse(
   // now. If we previously created a pairing state object because there was
   // already an HCI_IO_Capability_Request event, then this method will no-op.
   conn_pair->second->CreateOrUpdatePairingState(
-      PairingStateManager::PairingStateType::kSecureSimplePairing,
+      PairingStateType::kSecureSimplePairing,
       pairing_delegate_,
       security_mode());
 
@@ -1418,10 +1416,9 @@ BrEdrConnectionManager::OnLinkKeyRequest(const hci::EmbossEventPacket& event) {
     // link key request is received after ACL connection is complete but before
     // interrogation is complete. Default to using SSP for now.
     if (!conn->interrogation_complete()) {
-      conn->CreateOrUpdatePairingState(
-          PairingStateManager::PairingStateType::kSecureSimplePairing,
-          pairing_delegate_,
-          security_mode());
+      conn->CreateOrUpdatePairingState(PairingStateType::kSecureSimplePairing,
+                                       pairing_delegate_,
+                                       security_mode());
     }
 
     link_key = conn->pairing_state_manager().OnLinkKeyRequest();
@@ -1797,9 +1794,7 @@ BrEdrConnectionManager::OnPinCodeRequest(const hci::EmbossEventPacket& event) {
     // complete, there will be no pairing state object so we need to create it
     // now
     conn_ptr->CreateOrUpdatePairingState(
-        PairingStateManager::PairingStateType::kLegacyPairing,
-        pairing_delegate_,
-        security_mode());
+        PairingStateType::kLegacyPairing, pairing_delegate_, security_mode());
 
     conn_ptr->pairing_state_manager().OnPinCodeRequest(std::move(pin_code_cb));
   } else {

@@ -26,6 +26,7 @@ namespace bt::gap {
 
 namespace {
 
+const char* const kInspectPairingStateTypePropertyName = "pairing_state_type";
 const char* const kInspectSecureSimplePairingStateNodeName =
     "secure_simple_pairing_state";
 const char* const kInspectLegacyPairingStateNodeName = "legacy_pairing_state";
@@ -203,6 +204,9 @@ void PairingStateManager::CreateOrUpdatePairingState(
                                                    outgoing_connection_,
                                                    std::move(auth_cb_),
                                                    std::move(status_cb_));
+
+    secure_simple_pairing_state_->AttachInspect(
+        inspect_node_, kInspectSecureSimplePairingStateNodeName);
   } else if (type == PairingStateType::kLegacyPairing &&
              !legacy_pairing_state_) {
     legacy_pairing_state_ =
@@ -212,19 +216,20 @@ void PairingStateManager::CreateOrUpdatePairingState(
                                              outgoing_connection_,
                                              std::move(auth_cb_),
                                              std::move(status_cb_));
+
+    legacy_pairing_state_->AttachInspect(inspect_node_,
+                                         kInspectLegacyPairingStateNodeName);
   }
   pairing_state_type_ = type;
+  inspect_properties_.pairing_state_type.Set(PairingStateTypeToString(type));
 }
 
 void PairingStateManager::AttachInspect(inspect::Node& parent,
                                         std::string name) {
-  if (pairing_state_type_ == PairingStateType::kSecureSimplePairing) {
-    secure_simple_pairing_state_->AttachInspect(
-        parent, kInspectSecureSimplePairingStateNodeName);
-  } else if (pairing_state_type_ == PairingStateType::kLegacyPairing) {
-    legacy_pairing_state_->AttachInspect(parent,
-                                         kInspectLegacyPairingStateNodeName);
-  }
+  inspect_node_ = parent.CreateChild(name);
+  inspect_properties_.pairing_state_type =
+      inspect_node_.CreateString(kInspectPairingStateTypePropertyName,
+                                 PairingStateTypeToString(pairing_state_type_));
 }
 
 }  // namespace bt::gap

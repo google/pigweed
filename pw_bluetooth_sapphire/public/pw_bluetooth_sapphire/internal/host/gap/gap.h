@@ -69,6 +69,13 @@ const char* LeSecurityModeToString(LESecurityMode mode);
 const char* EncryptionStatusToString(
     pw::bluetooth::emboss::EncryptionStatus status);
 
+enum class PairingStateType : uint8_t {
+  kSecureSimplePairing,
+  kLegacyPairing,
+  kUnknown,
+};
+const char* PairingStateTypeToString(PairingStateType type);
+
 // Placeholder assigned as the local name when gap::Adapter is initialized.
 constexpr char kDefaultLocalName[] = "fuchsia";
 
