@@ -551,7 +551,7 @@ class TransferManagerTest(unittest.TestCase):
                     transfer_pb2.Chunk(
                         transfer_id=_ARBITRARY_TRANSFER_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
-                        offset=2 * test_max_chunk_size,
+                        offset=5 * test_max_chunk_size,
                         data=b'#' * test_max_chunk_size,
                     ),
                 ),
@@ -819,7 +819,7 @@ class TransferManagerTest(unittest.TestCase):
                     transfer_pb2.Chunk(
                         session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
-                        offset=2 * test_max_chunk_size,
+                        offset=5 * test_max_chunk_size,
                         data=b'#' * test_max_chunk_size,
                     ),
                 ),
@@ -1412,6 +1412,98 @@ class TransferManagerTest(unittest.TestCase):
         )
 
         self.assertEqual(data, b'sorry, legacy only')
+
+    def test_v2_read_transfer_re_sent_data(self) -> None:
+        """Tests a simple protocol version 2 read transfer."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (
+                    transfer_pb2.Chunk(
+                        resource_id=39,
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.START_ACK,
+                        protocol_version=ProtocolVersion.VERSION_TWO.value,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.DATA,
+                        offset=0,
+                        data=b'01234567',
+                    ),
+                    # Re-send already transmitted data.
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.DATA,
+                        offset=4,
+                        data=b'4567',
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.DATA,
+                        offset=8,
+                        data=b'89abcdef',
+                        remaining_bytes=0,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
+                    ),
+                ),
+            ),
+        )
+
+        data = manager.read(39)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=39,
+                    resource_id=39,
+                    desired_session_id=_FIRST_SESSION_ID,
+                    pending_bytes=1024,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=1024,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value,
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=1024,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value,
+                ),
+                # Should send a continue chunk in response to retransmission.
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.PARAMETERS_CONTINUE,
+                    offset=8,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=1024,
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.COMPLETION,
+                    status=Status.OK.value,
+                ),
+            ],
+        )
+
+        self.assertEqual(data, b'0123456789abcdef')
 
     def test_v2_write_transfer_basic(self) -> None:
         """Tests a simple protocol version 2 write transfer."""

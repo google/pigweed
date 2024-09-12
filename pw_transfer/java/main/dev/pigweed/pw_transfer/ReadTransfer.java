@@ -137,16 +137,26 @@ class ReadTransfer extends Transfer<byte[]> {
       lastReceivedOffset = chunk.offset();
 
       if (chunk.offset() != getOffset()) {
-        logger.atFine().log("%s expected offset %d, received %d; resending transfer parameters",
-            ReadTransfer.this,
-            getOffset(),
-            chunk.offset());
+        // If the chunk's data has already been received, don't go through a full
+        // recovery cycle to avoid shrinking the window size and potentially
+        // thrashing. The expected data may already be in-flight, so just allow
+        // the transmitter to keep going with a CONTINUE parameters chunk.
+        if (chunk.offset() + chunk.data().size() <= getOffset()) {
+          logger.atFine().log("%s received duplicate chunk with offset offset %d",
+              ReadTransfer.this,
+              chunk.offset());
+          sendChunk(prepareTransferParameters(TransmitAction.EXTEND, false));
+        } else {
+          logger.atFine().log("%s expected offset %d, received %d; resending transfer parameters",
+              ReadTransfer.this,
+              getOffset(),
+              chunk.offset());
 
-        // For now, only in-order transfers are supported. If data is received out of
-        // order,
-        // discard this data and retransmit from the last received offset.
-        sendChunk(prepareTransferParameters(TransmitAction.RETRANSMIT));
-        changeState(new DropRecovery());
+          // For now, only in-order transfers are supported. If data is received out of
+          // order, discard this data and retransmit from the last received offset.
+          sendChunk(prepareTransferParameters(TransmitAction.RETRANSMIT));
+          changeState(new DropRecovery());
+        }
         setNextChunkTimeout();
         return;
       }
@@ -230,6 +240,10 @@ class ReadTransfer extends Transfer<byte[]> {
   }
 
   private VersionedChunk prepareTransferParameters(TransmitAction action) {
+    return prepareTransferParameters(action, true);
+  }
+
+  private VersionedChunk prepareTransferParameters(TransmitAction action, boolean update) {
     Chunk.Type type;
 
     switch (action) {
@@ -250,16 +264,18 @@ class ReadTransfer extends Transfer<byte[]> {
         // avoidance.
         type = Chunk.Type.PARAMETERS_CONTINUE;
 
-        if (transmitPhase == TransmitPhase.SLOW_START) {
-          windowSizeMultiplier *= 2;
-        } else {
-          windowSizeMultiplier += 1;
-        }
+        if (update) {
+          if (transmitPhase == TransmitPhase.SLOW_START) {
+            windowSizeMultiplier *= 2;
+          } else {
+            windowSizeMultiplier += 1;
+          }
 
-        // The window size can never exceed the user-specified maximum bytes. If it
-        // does, reduce
-        // the multiplier to the largest size that fits.
-        windowSizeMultiplier = min(windowSizeMultiplier, parameters.maxChunksInWindow());
+          // The window size can never exceed the user-specified maximum bytes. If it
+          // does, reduce
+          // the multiplier to the largest size that fits.
+          windowSizeMultiplier = min(windowSizeMultiplier, parameters.maxChunksInWindow());
+        }
         break;
 
       case RETRANSMIT:
@@ -268,9 +284,11 @@ class ReadTransfer extends Transfer<byte[]> {
         // transition from the slow start to the congestion avoidance phase of the
         // transfer.
         type = Chunk.Type.PARAMETERS_RETRANSMIT;
-        windowSizeMultiplier = max(windowSizeMultiplier / 2, 1);
-        if (transmitPhase == TransmitPhase.SLOW_START) {
-          transmitPhase = TransmitPhase.CONGESTION_AVOIDANCE;
+        if (update) {
+          windowSizeMultiplier = max(windowSizeMultiplier / 2, 1);
+          if (transmitPhase == TransmitPhase.SLOW_START) {
+            transmitPhase = TransmitPhase.CONGESTION_AVOIDANCE;
+          }
         }
         break;
 
@@ -278,8 +296,10 @@ class ReadTransfer extends Transfer<byte[]> {
         throw new AssertionError("Invalid transmit action");
     }
 
-    windowSize = windowSizeMultiplier * parameters.maxChunkSizeBytes();
-    windowEndOffset = getOffset() + windowSize;
+    if (update) {
+      windowSize = windowSizeMultiplier * parameters.maxChunkSizeBytes();
+      windowEndOffset = getOffset() + windowSize;
+    }
 
     return setTransferParameters(newChunk(type)).build();
   }

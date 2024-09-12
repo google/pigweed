@@ -1425,12 +1425,12 @@ public final class TransferClientTest {
                 .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated paket
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id) // Sent due to repeated packet
                 .setOffset(100)
                 .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)
                 .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, id) // Sent due to repeated paket
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, id) // Sent due to repeated packet
                 .setOffset(100)
                 .setWindowEndOffset(110)
                 .setMaxChunkSizeBytes(10)

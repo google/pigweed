@@ -196,6 +196,27 @@ describe('Transfer client', () => {
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
+  it('read transfer retry re-sent offset', async () => {
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    const chunk1 = buildChunk(3, 0, '01234567', 8);
+    const chunk2 = buildChunk(3, 4, '4567', 8);
+    const chunk3 = buildChunk(3, 8, '89abcdef', 0);
+
+    enqueueServerResponses(service.method('Read')!, [
+      [chunk1, chunk2],
+      [chunk3],
+    ]);
+
+    const data = await manager.read(3);
+    expect(data).toEqual(textEncoder.encode('0123456789abcdef'));
+    expect(sentChunks).toHaveLength(3);
+    expect(sentChunks[1].getType()).toEqual(Chunk.Type.PARAMETERS_CONTINUE);
+    expect(sentChunks[1].getOffset()).toEqual(8);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
+  });
+
   it('read transfer retry timeout', async () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 

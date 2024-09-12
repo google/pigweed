@@ -878,18 +878,29 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
 
 void Context::HandleReceivedData(const Chunk& chunk) {
   if (chunk.offset() != offset_) {
-    // Bad offset; reset window size to send another parameters chunk.
-    PW_LOG_DEBUG(
-        "Transfer %u expected offset %u, received %u; entering recovery "
-        "state",
-        static_cast<unsigned>(session_id_),
-        static_cast<unsigned>(offset_),
-        static_cast<unsigned>(chunk.offset()));
+    if (chunk.offset() + chunk.payload().size() <= offset_) {
+      // If the chunk's data has already been received, don't go through a full
+      // recovery cycle to avoid shrinking the window size and potentially
+      // thrashing. The expected data may already be in-flight, so just allow
+      // the transmitter to keep going with a CONTINUE parameters chunk.
+      PW_LOG_DEBUG("Transfer %u received duplicate chunk with offset %u",
+                   id_for_log(),
+                   static_cast<unsigned>(chunk.offset()));
+      SendTransferParameters(TransmitAction::kExtend);
+    } else {
+      // Bad offset; reset window size to send another parameters chunk.
+      PW_LOG_WARN(
+          "Transfer %u expected offset %u, received %u; entering recovery "
+          "state",
+          static_cast<unsigned>(session_id_),
+          static_cast<unsigned>(offset_),
+          static_cast<unsigned>(chunk.offset()));
 
-    set_transfer_state(TransferState::kRecovery);
+      set_transfer_state(TransferState::kRecovery);
+      UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
+    }
+
     SetTimeout(chunk_timeout_);
-
-    UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
     return;
   }
 

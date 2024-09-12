@@ -255,9 +255,11 @@ export class ReadTransfer extends Transfer {
   }
 
   /** Builds an updated transfer parameters chunk to send the server. */
-  private transferParameters(type: any): Chunk {
-    this.pendingBytes = this.maxBytesToReceive;
-    this.windowEndOffset = this.offset + this.maxBytesToReceive;
+  private transferParameters(type: any, update: boolean = true): Chunk {
+    if (update) {
+      this.pendingBytes = this.maxBytesToReceive;
+      this.windowEndOffset = this.offset + this.maxBytesToReceive;
+    }
 
     const chunk = new Chunk();
     chunk.setTransferId(this.id);
@@ -280,16 +282,32 @@ export class ReadTransfer extends Transfer {
    * Once all pending data is received, the transfer parameters are updated.
    */
   protected handleDataChunk(chunk: Chunk): void {
+    const chunkData = chunk.getData() as Uint8Array;
+
     if (chunk.getOffset() != this.offset) {
-      // Initially, the transfer service only supports in-order transfers.
-      // If data is received out of order, request that the server
-      // retransmit from the previous offset.
-      this.sendChunk(this.transferParameters(Chunk.Type.PARAMETERS_RETRANSMIT));
+      if (chunk.getOffset() + chunkData.length <= this.offset) {
+        // If the chunk's data has already been received, don't go through a full
+        // recovery cycle to avoid shrinking the window size and potentially
+        // thrashing. The expected data may already be in-flight, so just allow
+        // the transmitter to keep going with a CONTINUE parameters chunk.
+        this.sendChunk(
+          this.transferParameters(
+            Chunk.Type.PARAMETERS_CONTINUE,
+            /*update=*/ false,
+          ),
+        );
+      } else {
+        // Initially, the transfer service only supports in-order transfers.
+        // If data is received out of order, request that the server
+        // retransmit from the previous offset.
+        this.sendChunk(
+          this.transferParameters(Chunk.Type.PARAMETERS_RETRANSMIT),
+        );
+      }
       return;
     }
 
     const oldData = this.data;
-    const chunkData = chunk.getData() as Uint8Array;
     this.data = new Uint8Array(chunkData.length + oldData.length);
     this.data.set(oldData);
     this.data.set(chunkData, oldData.length);

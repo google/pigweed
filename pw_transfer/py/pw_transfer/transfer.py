@@ -778,23 +778,41 @@ class ReadTransfer(Transfer):
         assert self._state is Transfer._State.WAITING
 
         if chunk.offset != self._offset:
-            # Initially, the transfer service only supports in-order transfers.
-            # If data is received out of order, request that the server
-            # retransmit from the previous offset.
-            _LOG.debug(
-                'Transfer %d expected offset %d, received %d: '
-                'entering recovery state',
-                self.id,
-                self._offset,
-                chunk.offset,
-            )
-            self._state = Transfer._State.RECOVERY
-
-            self._send_chunk(
-                self._transfer_parameters(
-                    ReadTransfer._TransmitAction.RETRANSMIT
+            if chunk.offset + len(chunk.data) <= self._offset:
+                # If the chunk's data has already been received, don't go
+                # through a full recovery cycle to avoid shrinking the window
+                # size and potentially thrashing. The expected data may already
+                # be in-flight, so just allow the transmitter to keep going with
+                # a CONTINUE parameters chunk.
+                _LOG.debug(
+                    'Transfer %d received duplicate chunk with offset %d',
+                    self.id,
+                    chunk.offset,
                 )
-            )
+                self._send_chunk(
+                    self._transfer_parameters(
+                        ReadTransfer._TransmitAction.EXTEND,
+                        update=False,
+                    )
+                )
+            else:
+                # Initially, the transfer service only supports in-order
+                # transfers. If data is received out of order, request that the
+                # server retransmit from the previous offset.
+                _LOG.debug(
+                    'Transfer %d expected offset %d, received %d: '
+                    'entering recovery state',
+                    self.id,
+                    self._offset,
+                    chunk.offset,
+                )
+                self._state = Transfer._State.RECOVERY
+
+                self._send_chunk(
+                    self._transfer_parameters(
+                        ReadTransfer._TransmitAction.RETRANSMIT
+                    )
+                )
             return
 
         self._data += chunk.data
@@ -881,6 +899,17 @@ class ReadTransfer(Transfer):
                 )
             )
 
+    def _set_transfer_parameters(
+        self,
+        chunk: Chunk,
+    ) -> None:
+        chunk.offset = self._offset
+        chunk.window_end_offset = self._window_end_offset
+        chunk.max_chunk_size_bytes = self._max_chunk_size
+
+        if self._chunk_delay_us:
+            chunk.min_delay_microseconds = self._chunk_delay_us
+
     def _update_and_set_transfer_parameters(
         self, chunk: Chunk, action: 'ReadTransfer._TransmitAction'
     ) -> None:
@@ -921,16 +950,12 @@ class ReadTransfer(Transfer):
         )
 
         self._window_end_offset = self._offset + self._window_size
-
-        chunk.offset = self._offset
-        chunk.window_end_offset = self._window_end_offset
-        chunk.max_chunk_size_bytes = self._max_chunk_size
-
-        if self._chunk_delay_us:
-            chunk.min_delay_microseconds = self._chunk_delay_us
+        self._set_transfer_parameters(chunk)
 
     def _transfer_parameters(
-        self, action: 'ReadTransfer._TransmitAction'
+        self,
+        action: 'ReadTransfer._TransmitAction',
+        update: bool = True,
     ) -> Chunk:
         """Returns an updated transfer parameters chunk."""
 
@@ -944,6 +969,10 @@ class ReadTransfer(Transfer):
         chunk = Chunk(
             self._configured_protocol_version, chunk_type, session_id=self.id
         )
-        self._update_and_set_transfer_parameters(chunk, action)
+
+        if update:
+            self._update_and_set_transfer_parameters(chunk, action)
+        else:
+            self._set_transfer_parameters(chunk)
 
         return chunk
