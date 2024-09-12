@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_discovery_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
@@ -1494,6 +1495,30 @@ TEST_F(AdapterTest, LEReadMaximumAdvertisingDataLengthSupported) {
   EXPECT_TRUE(success);
   EXPECT_EQ(hci_spec::kMaxLEExtendedAdvertisingDataLength,
             low_energy_state.max_advertising_data_length());
+}
+
+TEST_F(AdapterTest, LEConnectedIsochronousStreamSupported) {
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.AddLESupportedCommands();
+  settings.lmp_features_page0 |=
+      static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
+  settings.le_features |= static_cast<uint64_t>(
+      hci_spec::LESupportedFeature::kConnectedIsochronousStreamPeripheral);
+  settings.le_acl_data_packet_length = 0x1B;
+  settings.le_total_num_acl_data_packets = 2;
+
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  const auto& le_features = test_device()->le_features();
+  EXPECT_TRUE(
+      (le_features.le_features &
+       static_cast<uint64_t>(hci_spec::LESupportedFeature::
+                                 kConnectedIsochronousStreamHostSupport)) != 0);
 }
 
 TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {

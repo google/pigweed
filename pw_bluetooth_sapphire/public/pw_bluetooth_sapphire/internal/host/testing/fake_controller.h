@@ -538,6 +538,11 @@ class FakeController final : public ControllerTestDoubleBase,
   // support advertising.
   void SendScanResponseReport(const FakePeer& peer);
 
+  // Gets a reference to the set of LE Host Features that were set
+  hci_spec::LESupportedFeatures le_features() {
+    return hci_spec::LESupportedFeatures{.le_features = settings_.le_features};
+  }
+
  private:
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
     return handle <= hci_spec::kAdvertisingHandleMax;
@@ -824,6 +829,10 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnLESetExtendedAdvertisingEnable(
       const pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandView&
           params);
+
+  // Called when a HCI_LE_Set_Host_Feature command is received.
+  void OnLESetHostFeature(
+      const pw::bluetooth::emboss::LESetHostFeatureCommandView& params);
 
   // Called when a HCI_LE_Read_Maximum_Advertising_Data_Length command is
   // received.

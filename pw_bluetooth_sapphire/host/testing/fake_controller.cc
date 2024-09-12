@@ -1591,6 +1591,32 @@ void FakeController::OnLESetExtendedScanParameters(
                              pwemb::StatusCode::SUCCESS);
 }
 
+void FakeController::OnLESetHostFeature(
+    const pwemb::LESetHostFeatureCommandView& params) {
+  // We only support setting the CIS Host Support Bit
+  if (params.bit_number().Read() !=
+      static_cast<uint8_t>(hci_spec::LESupportedFeatureBitPos::
+                               kConnectedIsochronousStreamHostSupport)) {
+    RespondWithCommandComplete(
+        hci_spec::kLESetHostFeature,
+        pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    return;
+  }
+  if (params.bit_value().Read() ==
+      pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
+    SetBit(
+        &settings_.le_features,
+        hci_spec::LESupportedFeature::kConnectedIsochronousStreamHostSupport);
+  } else {
+    UnsetBit(
+        &settings_.le_features,
+        hci_spec::LESupportedFeature::kConnectedIsochronousStreamHostSupport);
+  }
+
+  RespondWithCommandComplete(hci_spec::kLESetHostFeature,
+                             pwemb::StatusCode::SUCCESS);
+}
+
 void FakeController::OnReadLocalExtendedFeatures(
     const pwemb::ReadLocalExtendedFeaturesCommandView& params) {
   hci_spec::ReadLocalExtendedFeaturesReturnParams out_params;
@@ -4289,6 +4315,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetExtendedScanEnable:
     case hci_spec::kLESetExtendedScanParameters:
     case hci_spec::kLESetExtendedScanResponseData:
+    case hci_spec::kLESetHostFeature:
     case hci_spec::kLESetRandomAddress:
     case hci_spec::kLESetScanEnable:
     case hci_spec::kLESetScanParameters:
@@ -4654,6 +4681,12 @@ void FakeController::HandleReceivedCommandPacket(
           command_packet
               .view<pwemb::LESetExtendedScanResponseDataCommandView>();
       OnLESetExtendedScanResponseData(params);
+      break;
+    }
+    case hci_spec::kLESetHostFeature: {
+      const auto& params =
+          command_packet.view<pwemb::LESetHostFeatureCommandView>();
+      OnLESetHostFeature(params);
       break;
     }
     case hci_spec::kLEReadMaximumAdvertisingDataLength: {

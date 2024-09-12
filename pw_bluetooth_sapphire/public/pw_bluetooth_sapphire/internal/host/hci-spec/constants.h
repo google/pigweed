@@ -188,6 +188,12 @@ enum class LESupportedFeature : uint64_t {
   // The rest is reserved for future use.
 };
 
+// Bit positions for constants LE Supported Features that are controlled by the host
+// for use in the LE Set Host Feature command
+enum class LESupportedFeatureBitPos : uint8_t {
+  kConnectedIsochronousStreamHostSupport = 32,
+};
+
 // Bitmask values for the 8-octet HCI_Set_Event_Mask command parameter.
 enum class EventMask : uint64_t {
   kInquiryCompleteEvent                         = (1 << 0),
