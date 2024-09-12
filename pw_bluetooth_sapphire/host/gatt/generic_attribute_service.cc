@@ -87,9 +87,35 @@ void GenericAttributeService::Register() {
     }
   };
 
+  // Server Supported Features (Vol 3, Part G, Section 7.4)
+  CharacteristicPtr server_features_chr = std::make_unique<Characteristic>(
+      kServerSupportedFeaturesChrcId,                 // id
+      types::kServerSupportedFeaturesCharacteristic,  // type
+      Property::kRead,                                // properties
+      0u,                                             // extended_properties
+      kAllowedNoSecurity,                             // read
+      kDisallowed,                                    // write
+      kDisallowed);                                   // update
+  service->AddCharacteristic(std::move(server_features_chr));
+
+  ReadHandler read_handler = [](PeerId,
+                                IdType service_id,
+                                IdType chrc_id,
+                                uint16_t offset,
+                                ReadResponder responder) {
+    // The stack shouldn't send us any read requests other than this id, none of
+    // the other characteristics or descriptors support it.
+    BT_DEBUG_ASSERT(chrc_id == kServerSupportedFeaturesChrcId);
+
+    // The only octet is the first octet.  The only bit is the EATT supported
+    // bit.
+    // TODO(fxbug.dev/364660604): Support EATT, then flip this bit to 1.
+    responder(fit::ok(), StaticByteBuffer(0x00));
+  };
+
   service_id_ =
       local_service_manager_->RegisterService(std::move(service),
-                                              NopReadHandler,
+                                              std::move(read_handler),
                                               NopWriteHandler,
                                               std::move(ccc_callback));
   BT_DEBUG_ASSERT(service_id_ != kInvalidId);

@@ -36,6 +36,7 @@ constexpr uint16_t kCharacteristicFormat16 = 0x2904;
 constexpr uint16_t kCharacteristicAggregateFormat16 = 0x2905;
 constexpr uint16_t kGenericAttributeService16 = 0x1801;
 constexpr uint16_t kServiceChangedCharacteristic16 = 0x2a05;
+constexpr uint16_t kServerSupportedFeaturesCharacteristic16 = 0x2b3a;
 
 constexpr UUID kPrimaryService(kPrimaryService16);
 constexpr UUID kSecondaryService(kSecondaryService16);
@@ -52,6 +53,8 @@ constexpr UUID kCharacteristicAggregateFormat(kCharacteristicAggregateFormat16);
 constexpr bt::UUID kGenericAttributeService(kGenericAttributeService16);
 constexpr bt::UUID kServiceChangedCharacteristic(
     kServiceChangedCharacteristic16);
+constexpr UUID kServerSupportedFeaturesCharacteristic(
+    kServerSupportedFeaturesCharacteristic16);
 
 }  // namespace types
 

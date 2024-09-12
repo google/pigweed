@@ -24,6 +24,7 @@
 
 namespace bt::gatt {
 constexpr IdType kServiceChangedChrcId = 0u;
+constexpr IdType kServerSupportedFeaturesChrcId = 1u;
 
 // Callback to send an indication. Used to inject the GATT object's
 // update-sending ability without requiring this service to carry a reference to
