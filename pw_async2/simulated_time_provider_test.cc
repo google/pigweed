@@ -84,4 +84,37 @@ TEST(SimulatedTimeProvider, AdvanceTimeRunsPastTimers) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
+TEST(SimulatedTimeProvider, AdvanceUntilNextExpirationRunsPastTimers) {
+  SimulatedTimeProvider<SystemClock> tp;
+  WaitTask task(tp.WaitFor(1h));
+  Dispatcher dispatcher;
+  dispatcher.Post(task);
+  EXPECT_TRUE(tp.AdvanceUntilNextExpiration());
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  EXPECT_FALSE(tp.AdvanceUntilNextExpiration());
+}
+
+TEST(SimulatedTimeProvider, TimeUntilNextExpirationGetsTimerDelay) {
+  SimulatedTimeProvider<SystemClock> tp;
+  auto timer = tp.WaitFor(1h);
+  ASSERT_TRUE(tp.TimeUntilNextExpiration().has_value());
+  EXPECT_GE(*tp.TimeUntilNextExpiration(), 1h);
+}
+
+TEST(SimulatedTimeProvider,
+     TimeUntilNextExpirationAfterCompletionReturnsNullopt) {
+  SimulatedTimeProvider<SystemClock> tp;
+  auto timer = tp.WaitFor(1h);
+  tp.AdvanceTime(90min);
+  EXPECT_FALSE(tp.TimeUntilNextExpiration().has_value());
+}
+
+TEST(SimulatedTimeProvider, TimeUntilNextExpirationAfterDestroyReturnsNullopt) {
+  SimulatedTimeProvider<SystemClock> tp;
+  {
+    auto timer = tp.WaitFor(1h);
+  }
+  EXPECT_FALSE(tp.TimeUntilNextExpiration().has_value());
+}
+
 }  // namespace

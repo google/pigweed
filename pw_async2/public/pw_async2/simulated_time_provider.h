@@ -30,13 +30,22 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
 
   /// Advances the simulated time and runs any newly-expired timers.
   void AdvanceTime(typename Clock::duration duration) {
-    typename Clock::time_point new_now;
-    {
-      std::lock_guard lock(lock_);
-      now_ += duration;
-      new_now = now_;
+    lock_.lock();
+    SetTimeUnlockAndRun(now_ + duration);
+  }
+
+  /// Advances the simulated time until the next point at which a timer
+  /// would fire.
+  ///
+  /// Returns whether any timers were waiting to be run.
+  bool AdvanceUntilNextExpiration() {
+    lock_.lock();
+    if (next_wake_time_ == std::nullopt) {
+      lock_.unlock();
+      return false;
     }
-    TimeProvider<Clock>::RunExpired(new_now);
+    SetTimeUnlockAndRun(*next_wake_time_);
+    return true;
   }
 
   /// Modifies the simulated time and runs any newly-expired timers.
@@ -44,12 +53,9 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
   /// WARNING: Use of this function with a timestamp older than the current
   /// `now()` will violate the is_monotonic clock attribute. We don't like it
   /// when time goes backwards!
-  void SetTime(typename Clock::time_point timestamp) {
-    {
-      std::lock_guard lock(lock_);
-      now_ = timestamp;
-    }
-    TimeProvider<Clock>::RunExpired(timestamp);
+  void SetTime(typename Clock::time_point new_now) {
+    lock_.lock();
+    SetTimeUnlockAndRun(new_now);
   }
 
   /// Explicitly run expired timers.
@@ -66,13 +72,39 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
     return now_;
   }
 
- private:
-  mutable sync::InterruptSpinLock lock_;
-  typename Clock::time_point now_ PW_GUARDED_BY(lock_);
+  std::optional<typename Clock::time_point> NextExpiration() {
+    std::lock_guard lock(lock_);
+    return next_wake_time_;
+  }
 
-  void DoInvokeAt(typename Clock::time_point) final {
-    // We don't need to do anything here since calls to `RunExpired` are
-    // triggered directly by user calls to `AdvanceTime`/`SetTime`.
+  std::optional<typename Clock::duration> TimeUntilNextExpiration() {
+    std::lock_guard lock(lock_);
+    if (next_wake_time_ == std::nullopt) {
+      return std::nullopt;
+    }
+    return *next_wake_time_ - now_;
+  }
+
+ private:
+  void SetTimeUnlockAndRun(typename Clock::time_point new_now)
+      PW_UNLOCK_FUNCTION(lock_) {
+    now_ = new_now;
+    if (new_now >= next_wake_time_) {
+      next_wake_time_ = std::nullopt;
+      lock_.unlock();
+      TimeProvider<Clock>::RunExpired(new_now);
+    } else {
+      lock_.unlock();
+    }
+  }
+
+  void DoInvokeAt(typename Clock::time_point wake_time) final {
+    std::lock_guard lock(lock_);
+    next_wake_time_ = wake_time;
+
+    // We don't need to actually schedule anything here since calls to
+    // `RunExpired` are triggered directly by user calls to
+    // `AdvanceTime`/`SetTime`.
     //
     // Note: we cannot run the timer here even if it was in the past because
     // `DoInvokeAt` is called under `TimeProvider`'s lock. Furthermore, we
@@ -81,9 +113,17 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
   }
 
   void DoCancel() final {
+    std::lock_guard lock(lock_);
+    next_wake_time_ = std::nullopt;
+
     // We don't need to do anything here since `RunExpired` itself is safe to
     // call redundantly-- it will filter out extra invocations.
   }
+
+  mutable sync::InterruptSpinLock lock_;
+  typename Clock::time_point now_ PW_GUARDED_BY(lock_);
+  std::optional<typename Clock::time_point> next_wake_time_
+      PW_GUARDED_BY(lock_);
 };
 
 }  // namespace pw::async2
