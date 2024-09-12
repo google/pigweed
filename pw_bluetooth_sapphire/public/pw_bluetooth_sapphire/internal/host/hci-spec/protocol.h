@@ -824,14 +824,6 @@ constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
 // LE Read Buffer Size [v1] Command (v4.0) (LE)
 constexpr OpCode kLEReadBufferSizeV1 = LEControllerCommandOpCode(0x0002);
 
-struct LEReadBufferSizeV1ReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  uint16_t hc_le_acl_data_packet_length;
-  uint8_t hc_total_num_le_acl_data_packets;
-} __attribute__((packed));
-
 // ====================================================
 // LE Read Local Supported Features Command (v4.0) (LE)
 constexpr OpCode kLEReadLocalSupportedFeatures =

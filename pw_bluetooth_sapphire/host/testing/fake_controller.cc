@@ -1635,14 +1635,15 @@ void FakeController::OnLESetEventMask(
 }
 
 void FakeController::OnLEReadBufferSizeV1() {
-  hci_spec::LEReadBufferSizeV1ReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.hc_le_acl_data_packet_length = pw::bytes::ConvertOrderTo(
-      cpp20::endian::little, settings_.le_acl_data_packet_length);
-  params.hc_total_num_le_acl_data_packets =
-      settings_.le_total_num_acl_data_packets;
-  RespondWithCommandComplete(hci_spec::kLEReadBufferSizeV1,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::LEReadBufferSizeV1CommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.le_acl_data_packet_length().Write(settings_.le_acl_data_packet_length);
+  view.total_num_le_acl_data_packets().Write(
+      settings_.le_total_num_acl_data_packets);
+  RespondWithCommandComplete(pwemb::OpCode::LE_READ_BUFFER_SIZE_V1, &packet);
 }
 
 void FakeController::OnLEReadBufferSizeV2() {

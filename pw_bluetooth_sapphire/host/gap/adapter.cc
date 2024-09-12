@@ -1210,17 +1210,17 @@ void AdapterImpl::InitializeStep2() {
         hci::EmbossCommandPacket::New<
             pw::bluetooth::emboss::LEReadBufferSizeCommandV1View>(
             hci_spec::kLEReadBufferSizeV1),
-        [this](const hci::EventPacket& cmd_complete) {
+        [this](const hci::EmbossEventPacket& cmd_complete) {
           if (hci_is_error(
                   cmd_complete, WARN, "gap", "LE read buffer size failed")) {
             return;
           }
           auto params =
               cmd_complete
-                  .return_params<hci_spec::LEReadBufferSizeV1ReturnParams>();
-          uint16_t mtu = pw::bytes::ConvertOrderFrom(
-              cpp20::endian::little, params->hc_le_acl_data_packet_length);
-          uint8_t max_count = params->hc_total_num_le_acl_data_packets;
+                  .view<pw::bluetooth::emboss::
+                            LEReadBufferSizeV1CommandCompleteEventView>();
+          uint16_t mtu = params.le_acl_data_packet_length().Read();
+          uint8_t max_count = params.total_num_le_acl_data_packets().Read();
           if (mtu && max_count) {
             state_.low_energy_state.acl_data_buffer_info_ =
                 hci::DataBufferInfo(mtu, max_count);
