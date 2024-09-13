@@ -30,6 +30,7 @@ import re
 import struct
 import sys
 from typing import (
+    cast,
     Any,
     Callable,
     Iterable,
@@ -440,7 +441,7 @@ class LoadTokenDatabases(argparse.Action):
     other than the default.
     """
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, parser, namespace, values, option_string=None) -> None:
         databases: list[tokens.Database] = []
         paths: Set[Path] = set()
 
@@ -496,10 +497,10 @@ def token_databases_parser(nargs: str = '+') -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_args():
+def _parse_args() -> tuple[Callable[..., None], argparse.Namespace]:
     """Parse and return command line arguments."""
 
-    def year_month_day(value) -> datetime:
+    def year_month_day(value: str) -> datetime:
         if value == 'today':
             return datetime.now()
 
@@ -565,7 +566,7 @@ def _parse_args():
     subparser.add_argument(
         '-i',
         '--include',
-        type=re.compile,
+        type=cast(Callable[[str], Pattern[str]], re.compile),
         default=[],
         action='append',
         help=(
@@ -576,7 +577,7 @@ def _parse_args():
     subparser.add_argument(
         '-e',
         '--exclude',
-        type=re.compile,
+        type=cast(Callable[[str], Pattern[str]], re.compile),
         default=[],
         action='append',
         help=(
@@ -721,7 +722,7 @@ def _init_logging(level: int) -> None:
     _LOG.addHandler(log_to_stderr)
 
 
-def _main(handler: Callable, args: argparse.Namespace) -> int:
+def _main(handler: Callable[..., None], args: argparse.Namespace) -> int:
     _init_logging(logging.INFO)
     handler(**vars(args))
     return 0

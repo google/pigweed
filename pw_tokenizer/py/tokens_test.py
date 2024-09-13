@@ -201,14 +201,19 @@ class TokenDatabaseTest(unittest.TestCase):
 
         self.assertEqual(db.token_to_entries[1][0].string, 'Whoa there!')
         self.assertFalse(db.token_to_entries[2])
+        self.assertNotIn(2, db.token_to_entries)
         self.assertEqual(db.token_to_entries[3][0].string, "This one's OK")
         self.assertFalse(db.token_to_entries[4])
+        self.assertNotIn(4, db.token_to_entries)
         self.assertEqual(db.token_to_entries[5][0].string, "I'm %s fine")
         self.assertFalse(db.token_to_entries[6])
+        self.assertNotIn(6, db.token_to_entries)
 
     def test_lookup(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
-        self.assertEqual(db.token_to_entries[0x9999], [])
+        self.assertSequenceEqual(db.token_to_entries[0x9999], [])
+        self.assertNotIn(0x9999, db.token_to_entries)
+        self.assertIsNone(db.token_to_entries.get(0x9999))
 
         matches = db.token_to_entries[0x2E668CD6]
         self.assertEqual(len(matches), 1)
@@ -227,6 +232,49 @@ class TokenDatabaseTest(unittest.TestCase):
 
         (answer,) = db.token_to_entries[0x141C35D5]
         self.assertEqual(answer.string, 'The answer: "%s"')
+
+    def test_domains(self) -> None:
+        """Tests the domains mapping."""
+        db = tokens.Database(
+            [
+                tokens.TokenizedStringEntry(1, 'one', 'D1'),
+                tokens.TokenizedStringEntry(2, 'two', 'D1'),
+                tokens.TokenizedStringEntry(1, 'one', 'D2'),
+                tokens.TokenizedStringEntry(1, 'one!', 'D3', datetime.min),
+                tokens.TokenizedStringEntry(3, 'zzz', 'D1'),
+                tokens.TokenizedStringEntry(3, 'three', 'D1', datetime.min),
+                tokens.TokenizedStringEntry(3, 'three', 'D1'),
+                tokens.TokenizedStringEntry(3, 'zzzz', 'D1'),
+            ]
+        )
+        self.assertEqual(db.domains.keys(), {'D1', 'D2', 'D3'})
+        self.assertEqual(
+            db.domains['D1'],
+            {
+                1: [tokens.TokenizedStringEntry(1, 'one', 'D1')],
+                2: [tokens.TokenizedStringEntry(2, 'two', 'D1')],
+                3: [
+                    tokens.TokenizedStringEntry(3, 'three', 'D1'),
+                    tokens.TokenizedStringEntry(3, 'zzz', 'D1'),
+                    tokens.TokenizedStringEntry(3, 'zzzz', 'D1'),
+                ],
+            },
+        )
+        self.assertEqual(
+            db.domains['D2'],
+            {
+                1: [tokens.TokenizedStringEntry(1, 'one', 'D2')],
+            },
+        )
+        self.assertEqual(
+            db.domains['D3'],
+            {
+                1: [tokens.TokenizedStringEntry(1, 'one!', 'D3', datetime.min)],
+            },
+        )
+        self.assertEqual(db.domains['not a domain!'], {})
+        self.assertNotIn('not a domain!', db.domains)
+        self.assertIsNone(db.domains.get('not a domain'))
 
     def test_collisions(self) -> None:
         hash_1 = tokens.c_hash('o000', 96)
@@ -260,11 +308,15 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertLess(len(db.token_to_entries), original_length)
 
         self.assertFalse(db.token_to_entries[0])
+        self.assertNotIn(0, db.token_to_entries)
+        self.assertSequenceEqual(db.token_to_entries[0], [])
         self.assertEqual(db.token_to_entries[0x31631781][0].string, '%d')
         self.assertFalse(db.token_to_entries[0x2E668CD6])
+        self.assertNotIn(0x2E668CD6, db.token_to_entries)
         self.assertEqual(db.token_to_entries[0xB3653E13][0].string, 'Jello!')
         self.assertEqual(db.token_to_entries[0xCC6D3131][0].string, 'Jello?')
         self.assertFalse(db.token_to_entries[0xE65AEFEF])
+        self.assertNotIn(0xE65AEFEF, db.token_to_entries)
 
     def test_merge(self) -> None:
         """Tests the tokens.Database merge method."""
@@ -279,7 +331,7 @@ class TokenDatabaseTest(unittest.TestCase):
                         1, 'one', date_removed=datetime.min
                     ),
                     tokens.TokenizedStringEntry(
-                        2, 'two', date_removed=datetime.min
+                        2, 'two', 'domain', date_removed=datetime.min
                     ),
                 ]
             )
@@ -417,6 +469,34 @@ class TokenDatabaseTest(unittest.TestCase):
         )
         self.assertEqual(
             {str(e) for e in db.entries()}, {'one', 'two', 'three', 'four'}
+        )
+
+    def test_merge_same_tokens_different_domains(self) -> None:
+        db = tokens.Database.merged(
+            tokens.Database([tokens.TokenizedStringEntry(2, 'two', 'D1')]),
+            tokens.Database([tokens.TokenizedStringEntry(1, 'one', 'D2')]),
+            tokens.Database([tokens.TokenizedStringEntry(1, 'one', 'D2')]),
+            tokens.Database([tokens.TokenizedStringEntry(1, 'one!', 'D3')]),
+            tokens.Database([tokens.TokenizedStringEntry(1, 'one', 'D1')]),
+        )
+        self.assertEqual(
+            sorted(db.entries()),
+            sorted(
+                [
+                    tokens.TokenizedStringEntry(1, 'one', 'D1'),
+                    tokens.TokenizedStringEntry(2, 'two', 'D1'),
+                    tokens.TokenizedStringEntry(1, 'one', 'D2'),
+                    tokens.TokenizedStringEntry(1, 'one!', 'D3'),
+                ]
+            ),
+        )
+        self.assertEqual(
+            db.token_to_entries[1],
+            [
+                tokens.TokenizedStringEntry(1, 'one', 'D1'),
+                tokens.TokenizedStringEntry(1, 'one', 'D2'),
+                tokens.TokenizedStringEntry(1, 'one!', 'D3'),
+            ],
         )
 
     def test_entry_counts(self) -> None:

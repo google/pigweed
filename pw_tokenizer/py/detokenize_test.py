@@ -98,8 +98,10 @@ ELF_WITH_TOKENIZER_SECTIONS_PATH = Path(__file__).parent.joinpath(
 )
 ELF_WITH_TOKENIZER_SECTIONS = ELF_WITH_TOKENIZER_SECTIONS_PATH.read_bytes()
 
-TOKENS_IN_ELF = 22
-TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS = 26
+DEFAULT_DOMAIN_TOKENS = 22
+
+# 27 total since token 881436a0="The answer is: %s" is in two domains.
+ALL_DOMAIN_TOKENS = 26 + 1
 
 # 0x2e668cd6 is 'Jello, world!' (which is also used in database_test.py).
 JELLO_WORLD_TOKEN = b'\xd6\x8c\x66\x2e'
@@ -335,7 +337,7 @@ class DetokenizeTest(unittest.TestCase):
         expected_tokens = frozenset(detok.database.token_to_entries.keys())
 
         csv_database = str(detok.database)
-        self.assertEqual(len(csv_database.splitlines()), TOKENS_IN_ELF)
+        self.assertEqual(len(csv_database.splitlines()), DEFAULT_DOMAIN_TOKENS)
 
         with tempfile.NamedTemporaryFile('w', delete=False) as csv_file:
             try:
@@ -501,7 +503,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
         db = database.load_token_database(
             io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
         )
-        self.assertEqual(len(db), TOKENS_IN_ELF)
+        self.assertEqual(len(db), DEFAULT_DOMAIN_TOKENS)
 
         the_time = [100]
 
@@ -542,7 +544,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
         db = database.load_token_database(
             io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
         )
-        self.assertEqual(len(db), TOKENS_IN_ELF)
+        self.assertEqual(len(db), DEFAULT_DOMAIN_TOKENS)
 
         the_time = [100]
 
@@ -632,9 +634,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             min_poll_period_s=0,
             pool=InlinePoolExecutor(),
         )
-        self.assertEqual(
-            len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
-        )
+        self.assertEqual(len(detok.database), ALL_DOMAIN_TOKENS)
 
     def test_token_domain_in_path(self, _) -> None:
         """Tests a Path() containing a domain"""
@@ -643,9 +643,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             min_poll_period_s=0,
             pool=InlinePoolExecutor(),
         )
-        self.assertEqual(
-            len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
-        )
+        self.assertEqual(len(detok.database), ALL_DOMAIN_TOKENS)
 
     def test_token_no_domain_in_str(self, _) -> None:
         """Tests a str without a domain"""
@@ -654,7 +652,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             min_poll_period_s=0,
             pool=InlinePoolExecutor(),
         )
-        self.assertEqual(len(detok.database), TOKENS_IN_ELF)
+        self.assertEqual(len(detok.database), DEFAULT_DOMAIN_TOKENS)
 
     def test_token_no_domain_in_path(self, _) -> None:
         """Tests a Path() without a domain"""
@@ -663,7 +661,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             min_poll_period_s=0,
             pool=InlinePoolExecutor(),
         )
-        self.assertEqual(len(detok.database), TOKENS_IN_ELF)
+        self.assertEqual(len(detok.database), DEFAULT_DOMAIN_TOKENS)
 
 
 def _next_char(message: bytes) -> bytes:

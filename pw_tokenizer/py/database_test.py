@@ -180,8 +180,6 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self._csv = self._dir / 'db.csv'
         self._elf = TOKENIZED_ENTRIES_ELF
 
-        self._csv_test_domain = CSV_TEST_DOMAIN
-
     def tearDown(self) -> None:
         shutil.rmtree(self._dir)
 
@@ -196,7 +194,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         run_cli('create', '--database', self._csv, f'{self._elf}#TEST_DOMAIN')
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             self._csv.read_text().splitlines(),
         )
 
@@ -273,18 +271,23 @@ class DatabaseCommandLineTest(unittest.TestCase):
         )
 
     def test_purge(self) -> None:
-        self._csv.write_text(CSV_ALL_DOMAINS)
+        self._csv.write_text(CSV_DEFAULT_DOMAIN)
 
-        # Mark everything not in TEST_DOMAIN as removed.
-        run_cli(
-            'mark_removed', '--database', self._csv, f'{self._elf}#TEST_DOMAIN'
+        first_5_csv = self._dir / 'first_5.csv'
+        first_5_csv.write_text(
+            ''.join(CSV_DEFAULT_DOMAIN.splitlines(keepends=True)[:5])
         )
+
+        self._csv.write_text(CSV_DEFAULT_DOMAIN)
+
+        # Mark everything except for the first 5 entries as removed.
+        run_cli('mark_removed', '--database', self._csv, first_5_csv)
 
         # Delete all entries except those in TEST_DOMAIN.
         run_cli('purge', '--database', self._csv)
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            first_5_csv.read_text().splitlines(),
             self._csv.read_text().splitlines(),
         )
 
@@ -323,7 +326,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         )
 
 
-class TestDirectoryDatabaseCommandLine(unittest.TestCase):
+class DirectoryDatabaseCommandLineTest(unittest.TestCase):
     """Tests the directory database command line interface."""
 
     def setUp(self) -> None:
@@ -332,7 +335,6 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._db_dir.mkdir(exist_ok=True)
         self._db_csv = self._db_dir / '8123913.pw_tokenizer.csv'
         self._elf = TOKENIZED_ENTRIES_ELF
-        self._csv_test_domain = CSV_TEST_DOMAIN
 
     def _git(self, *command: str) -> None:
         """Runs git in self._dir with forced user name and email values.
@@ -366,7 +368,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._db_csv = directory.pop()
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             self._db_csv.read_text().splitlines(),
         )
 
@@ -385,8 +387,8 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
     def test_not_adding_existing_tokens(self) -> None:
         """Tests duplicate tokens are not added to the database."""
-        run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
-        run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
+        run_cli('add', '--database', self._db_dir, self._elf)
+        run_cli('add', '--database', self._db_dir, self._elf)
         directory = list(self._db_dir.iterdir())
 
         self.assertEqual(1, len(directory))
@@ -394,14 +396,17 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._db_csv = directory.pop()
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_DEFAULT_DOMAIN.splitlines(),
             self._db_csv.read_text().splitlines(),
         )
 
     def test_adding_tokens_without_git_repo(self):
         """Tests creating new files with new entries when no repo exists."""
-        # Add CSV_TEST_DOMAIN to a new CSV in the directory database.
-        run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
+        # Add a subset of entries to a new CSV in the directory database.
+        entry_subset = self._dir / 'entry_subset.csv'
+        entry_subset.write_text(CSV_TEST_DOMAIN)
+
+        run_cli('add', '--database', self._db_dir, entry_subset)
         directory = list(self._db_dir.iterdir())
 
         self.assertEqual(1, len(directory))
@@ -409,11 +414,14 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         first_csv_in_db = directory.pop()
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             first_csv_in_db.read_text().splitlines(),
         )
-        # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
-        run_cli('add', '--database', self._db_dir, f'{self._elf}#.*')
+        # Add a superset of entries to a new CSV in the directory database.
+        entry_superset = self._dir / 'entry_superset.csv'
+        entry_superset.write_text(CSV_ALL_DOMAINS)
+
+        run_cli('add', '--database', self._db_dir, entry_superset)
         directory = list(self._db_dir.iterdir())
         # Assert two different CSVs were created to store new tokens.
         self.assertEqual(2, len(directory))
@@ -424,19 +432,18 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
         self.assertNotEqual(first_csv_in_db, second_csv_in_db)
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             first_csv_in_db.read_text().splitlines(),
         )
 
-        # Retrieve entries that exclusively exist in CSV_ALL_DOMAINS
-        # as CSV_ALL_DOMAINS contains all entries in TEST_DOMAIN.
-        entries_exclusively_in_all_domain = set(
+        # Retrieve entries exclusively in the superset, not the subset.
+        entries_exclusively_in_superset = set(
             CSV_ALL_DOMAINS.splitlines()
-        ) - set(self._csv_test_domain.splitlines())
-        # Ensure only new tokens not in CSV_TEST_DOMAIN were added to
-        # the second CSV added to the directory database.
+        ) - set(CSV_TEST_DOMAIN.splitlines())
+        # Ensure only new tokens not in the subset were added to the second CSV
+        # added to the directory database.
         self.assertEqual(
-            entries_exclusively_in_all_domain,
+            entries_exclusively_in_superset,
             set(second_csv_in_db.read_text().splitlines()),
         )
 
@@ -459,7 +466,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         first_path_in_db = directory.pop()
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             first_path_in_db.read_text().splitlines(),
         )
         # Retrieve the untracked CSV in the Git repository and discard
@@ -502,7 +509,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         # of token entries.
         entries_from_default_and_test_domain = set(
             CSV_DEFAULT_DOMAIN.splitlines()
-        ).union(set(self._csv_test_domain.splitlines()))
+        ).union(set(CSV_TEST_DOMAIN.splitlines()))
         # Multiple ELF files were added at once to a single CSV.
         self.assertEqual(
             entries_from_default_and_test_domain,
@@ -551,7 +558,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         # Combines CSV_DEFAULT_DOMAIN and TEST_DOMAIN.
         entries_from_default_and_test_domain = set(
             CSV_DEFAULT_DOMAIN.splitlines()
-        ).union(set(self._csv_test_domain.splitlines()))
+        ).union(set(CSV_TEST_DOMAIN.splitlines()))
 
         self.assertEqual(untracked_path_in_db, reused_path_in_db)
         self.assertEqual(
@@ -596,7 +603,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         reused_path_in_db = directory.pop()
 
         self.assertEqual(
-            self._csv_test_domain.splitlines(),
+            CSV_TEST_DOMAIN.splitlines(),
             reused_path_in_db.read_text().splitlines(),
         )
 
