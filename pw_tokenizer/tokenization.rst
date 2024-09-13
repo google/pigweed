@@ -226,11 +226,14 @@ Nested tokens have the following format within strings:
 
 .. code-block::
 
-   $[BASE#]TOKEN
+   $[{DOMAIN}][BASE#]TOKEN
 
 The ``$`` is a common prefix required for all nested tokens. It is possible to
 configure a different common prefix if necessary, but using the default ``$``
 character is strongly recommended.
+
+The optional ``DOMAIN`` specifies the token domain. If this option is omitted,
+the default (empty) domain is assumed.
 
 The optional ``BASE`` defines the numeric base encoding of the token. Accepted
 values are 8, 10, 16, and 64. If the hash symbol ``#`` is used without

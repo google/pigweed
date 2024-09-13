@@ -71,6 +71,8 @@ ENCODED_TOKEN = struct.Struct('<I')
 _BASE64_CHARS = string.ascii_letters + string.digits + '+/-_='
 DEFAULT_RECURSION = 9
 NESTED_TOKEN_BASE_PREFIX = encode.NESTED_TOKEN_BASE_PREFIX.encode()
+NESTED_DOMAIN_START_PREFIX = encode.NESTED_DOMAIN_START_PREFIX.encode()
+NESTED_DOMAIN_END_PREFIX = encode.NESTED_DOMAIN_END_PREFIX.encode()
 
 _BASE8_TOKEN_REGEX = rb'(?P<base8>[0-7]{11})'
 _BASE10_TOKEN_REGEX = rb'(?P<base10>[0-9]{10})'
@@ -96,6 +98,13 @@ def _token_regex(prefix: str) -> Pattern[bytes]:
     return re.compile(
         # Tokenized strings start with the prefix character ($).
         re.escape(prefix.encode())
+        # Optional; no domain specifier defaults to (empty) domain.
+        # Brackets ({}) specifies domain string
+        + rb'(?P<domainspec>('
+        + NESTED_DOMAIN_START_PREFIX
+        + rb'(?P<domain>.*)'
+        + NESTED_DOMAIN_END_PREFIX
+        + rb'))?'
         # Optional; no base specifier defaults to BASE64.
         # Hash (#) with no number specified defaults to Base-16.
         + rb'(?P<basespec>(?P<base>[0-9]*)?'
@@ -232,7 +241,6 @@ class Detokenizer:
         self.show_errors = show_errors
         self._prefix = prefix if isinstance(prefix, str) else prefix.decode()
         self._token_regex = _token_regex(self._prefix)
-
         self._database_lock = threading.Lock()
 
         # Cache FormatStrings for faster lookup & formatting.
@@ -411,19 +419,22 @@ class Detokenizer:
         """Decodes prefixed tokens for one of multiple formats."""
         basespec = match.group('basespec')
         base = match.group('base')
+        domain = match.group('domain')
 
+        if domain is None:
+            domain = tokens.DEFAULT_DOMAIN
+        else:
+            domain = domain.decode()
         if not basespec or (base == b'64'):
             return self._detokenize_once_base64(match)
 
         if not base:
             base = b'16'
 
-        return self._detokenize_once(match, base)
+        return self._detokenize_once(match, base, domain)
 
     def _detokenize_once(
-        self,
-        match: Match[bytes],
-        base: bytes,
+        self, match: Match[bytes], base: bytes, domain: str
     ) -> bytes:
         """Performs lookup on a plain token"""
         original = match.group(0)
@@ -432,7 +443,7 @@ class Detokenizer:
             return original
 
         token = int(token, int(base))
-        entries = self.database.token_to_entries[token]
+        entries = self.database.domains[domain][token]
 
         if len(entries) == 1:
             return str(entries[0]).encode()

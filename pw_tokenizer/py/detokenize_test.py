@@ -1005,5 +1005,75 @@ class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
         )
 
 
+class DetokenizeNestedDomains(unittest.TestCase):
+    """Tests detokenizing nested tokens with specified domains"""
+
+    def test_nested_hashed_arg_with_one_domain_match(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'domain1', 'D1'),
+                    tokens.TokenizedStringEntry(
+                        2, 'This is all in ' + '${D1}#%08x', 'D1'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),
+            'This is all in domain1',
+        )
+
+    def test_nested_hashed_arg_with_two_domain_match(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        0xA, 'and this is domain1', 'D1'
+                    ),
+                    tokens.TokenizedStringEntry(
+                        2, 'This is domain2 ' + '${D1}#%08x', 'D2'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),
+            'This is domain2 and this is domain1',
+        )
+
+    def test_nested_hashed_arg_with_different_domains(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'domain1', 'D1'),
+                    tokens.TokenizedStringEntry(
+                        2, 'This is all in ' + '${D2}#%08x', 'D1'
+                    ),
+                ]
+            )
+        )
+        result = detok.detokenize(b'\x02\0\0\0\x14')
+        self.assertFalse(result == 'This is all in domain1')
+
+    def test_nested_base64_arg_multiple_domains(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(1, '${D5}#00000004', 'D1'),
+                    tokens.TokenizedStringEntry(2, 'This is a %s', 'D1'),
+                    tokens.TokenizedStringEntry(3, 'base64 argument', 'D2'),
+                    tokens.TokenizedStringEntry(
+                        4, 'nested ' + '${D2}#00000003', 'D5'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x09$AQAAAA==')),  # token for 1
+            'This is a nested base64 argument',
+        )
+
+
 if __name__ == '__main__':
     unittest.main()

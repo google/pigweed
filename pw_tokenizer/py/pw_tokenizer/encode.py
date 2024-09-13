@@ -25,6 +25,8 @@ _INT32_MAX = 2**31 - 1
 _UINT32_MAX = 2**32 - 1
 NESTED_TOKEN_PREFIX = '$'
 NESTED_TOKEN_BASE_PREFIX = '#'
+NESTED_DOMAIN_START_PREFIX = '{'
+NESTED_DOMAIN_END_PREFIX = '}'
 
 
 def _zig_zag_encode(value: int) -> int:
