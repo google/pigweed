@@ -80,14 +80,30 @@ See the following:
    .. tab-item:: Bazel
       :sync: bazel
 
-      FuzzTest provides a build configuration that can be imported into your
-      ``.bazelrc`` file. Add the following:
+      Include Abseil-C++ and GoogleTest in your ``WORKSPACE`` file. For example:
+
+      .. code-block::
+
+         http_archive(
+            name = "com_google_absl",
+            sha256 = "338420448b140f0dfd1a1ea3c3ce71b3bc172071f24f4d9a57d59b45037da440",
+            strip_prefix = "abseil-cpp-20240116.0",
+            url = "https://github.com/abseil/abseil-cpp/releases/download/20240116.0/abseil-cpp-20240116.0.tar.gz",
+         )
+
+         git_repository(
+            name = "com_google_googletest",
+            commit = "3b6d48e8d5c1d9b3f9f10ac030a94008bfaf032b",
+            remote = "https://pigweed.googlesource.com/third_party/github/google/googletest",
+         )
+
+      Then, import the FuzzTest build configurations in your ``.bazelrc`` file
+      by adding and adapting the following:
 
       .. code-block::
 
          # Include FuzzTest build configurations.
-         try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
-         build:fuzztest --@pigweed//targets:fuzztest_config=//pw_fuzzer:fuzztest
+         try-import %workspace%/path/to/pigweed/pw_fuzzer/fuzztest.bazelrc
 
 ----------------------------------------
 Step 1: Write a unit test for the target

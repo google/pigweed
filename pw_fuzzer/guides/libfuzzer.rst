@@ -52,18 +52,9 @@ installation. In order to use it, you only need to define a suitable toolchain.
    .. tab-item:: Bazel
       :sync: bazel
 
-      Include ``rules_fuzzing`` and its Abseil C++ dependency in your
-      ``WORKSPACE`` file. For example:
+      Include ``rules_fuzzing`` in your ``WORKSPACE`` file. For example:
 
       .. code-block::
-
-         # Required by: rules_fuzzing.
-         http_archive(
-             name = "com_google_absl",
-             sha256 = "3ea49a7d97421b88a8c48a0de16c16048e17725c7ec0f1d3ea2683a2a75adc21",
-             strip_prefix = "abseil-cpp-20230125.0",
-             urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20230125.0.tar.gz"],
-         )
 
          # Set up rules for fuzz testing.
          http_archive(
@@ -81,15 +72,13 @@ installation. In order to use it, you only need to define a suitable toolchain.
 
          rules_fuzzing_init()
 
-      Then, define the following build configuration in your ``.bazelrc`` file:
+      Then, import the libFuzzer build configurations in your ``.bazelrc`` file
+      by adding and adapting the following:
 
       .. code-block::
 
-         build:asan-libfuzzer \
-             --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer
-         build:asan-libfuzzer \
-             --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
-         build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
+         # Include FuzzTest build configurations.
+         try-import %workspace%/path/to/pigweed/pw_fuzzer/libfuzzer.bazelrc
 
 ------------------------------------
 Step 1: Write a fuzz target function

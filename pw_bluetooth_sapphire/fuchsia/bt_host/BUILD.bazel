@@ -54,6 +54,15 @@ cc_library(
         "host.h",
         "util.h",
     ],
+    # `fuchsia_cc_binary` does not understand Pigweed's sanitizer features, e.g.
+    # //pw_toolchain/host_clang:asan_feature. This leads to link errors if the
+    # binary is linked against FuzzTest, as the latter expects the sanitizer to
+    # provide the SanitizerCoverage implementation. Since the binary is not
+    # intended to be a fuzzer, it can just be excluded from fuzzing builds.
+    target_compatible_with = select({
+        "//pw_toolchain/host_clang:fuzztest_enabled": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":bt_host_config",
         "//pw_async_fuchsia:dispatcher",

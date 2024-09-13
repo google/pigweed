@@ -1,0 +1,32 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Adapted from @com_google_fuzztest//bazel:setup_configs
+
+build:fuzztest --@pigweed//pw_toolchain/host_clang:fuzztest
+build:fuzztest --dynamic_mode=off
+build:fuzztest \
+    --per_file_copt=+//,-fuzztest/.*,-googletest/.*,-googlemock/.*@-fsanitize-coverage=inline-8bit-counters,-fsanitize-coverage=trace-cmp
+build:fuzztest \
+    --@pigweed//pw_fuzzer:fuzztest_backend=@com_google_fuzztest//fuzztest:fuzztest_core
+build:fuzztest \
+    --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+build:fuzztest \
+    --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
+
+# For fuzzing, we want to disregard any test strategy options and execute each
+# test locally and one at a time. We also want to display as much information as
+# soon as it is available, including PRNG seeds and corpus statistics.
+# Both of these are achieved by streaming the test output.
+test:fuzztest --test_output=streamed

@@ -189,6 +189,11 @@ pw_cc_binary(
     name = "system_async_example",
     testonly = True,
     srcs = ["system_async_example.cc"],
+    # TODO(b/365184562): This target does not build with asan and fuzztest.
+    target_compatible_with = select({
+        "//pw_fuzzer:use_fuzztest": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         "//pw_channel:rp2_stdio_channel",
         "//pw_libcxx",

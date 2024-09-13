@@ -100,20 +100,6 @@ common:asan --//pw_toolchain/host_clang:asan
 # accumulate.
 test:asan --test_tag_filters=-integration,-noasan
 
-# Define the --config=asan-libfuzzer configuration.
-build:asan-libfuzzer \
-    --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer
-build:asan-libfuzzer \
-    --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
-build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
-
-# Include FuzzTest build configurations.
-try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
-build:fuzztest \
-    --//pw_fuzzer:fuzztest_backend=@com_google_fuzztest//fuzztest:fuzztest_core
-build:fuzztest \
-    --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
-
 common:ubsan --//pw_toolchain/host_clang:ubsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not accumulate.
@@ -123,6 +109,12 @@ common:tsan --//pw_toolchain/host_clang:tsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not accumulate.
 test:tsan --test_tag_filters=-integration,-notsan
+
+# Include libFuzzer build configurations.
+import %workspace%/pw_fuzzer/libfuzzer.bazelrc
+
+# Include FuzzTest build configurations.
+import %workspace%/pw_fuzzer/fuzztest.bazelrc
 
 # Configure workspace status command to test pw_build_info git_build_info
 # https://bazel.build/docs/user-manual#workspace-status-command

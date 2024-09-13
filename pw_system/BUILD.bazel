@@ -542,6 +542,11 @@ pw_cc_binary(
     # testonly dependencies.
     testonly = True,
     srcs = ["example_user_app_init.cc"],
+    # TODO(b/365184562): This target does not build with asan and fuzztest.
+    target_compatible_with = select({
+        "//pw_fuzzer:use_fuzztest": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":pw_system",
         "//pw_unit_test:rpc_service",

@@ -156,3 +156,17 @@ pw_cc_flag_set(
         "-DTHREAD_SANITIZER",
     ],
 )
+
+pw_cc_flag_set(
+    name = "fuzztest",
+    actions = [
+        "@pw_toolchain//actions:all_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
+    flags = [
+        "-mcrc32",
+        "-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION",
+        "-UNDEBUG",
+        "-D_LIBCPP_ENABLE_ASSERTIONS=1",
+    ],
+)
