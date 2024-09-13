@@ -573,6 +573,7 @@ pw_add_test(pw_allocator.freelist_heap_test
   SOURCES
     freelist_heap_test.cc
   PRIVATE_DEPS
+    pw_allocator.block_testing
     pw_allocator.freelist_heap
     pw_bytes.alignment
   GROUPS

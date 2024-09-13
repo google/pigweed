@@ -24,6 +24,31 @@
 
 namespace pw::allocator::test {
 
+/// Utility function that returns the offset from an addres a given number of
+/// bytes `after` a given `ptr` to the next address that has a given
+/// `alignment`.
+///
+/// In other words, if offset is `GetAlignedOffsetAfter(ptr, alignment, after)`,
+/// then `((uintptr_t)ptr + after + offset) % alignment` is 0.
+///
+/// This is useful when dealing with blocks that need their usable space to be
+/// aligned, e.g.
+///   GetAlignedOffsetAfter(bytes_.data(), layout.alignment(), kBlockOverhead);
+inline size_t GetAlignedOffsetAfter(const void* ptr,
+                                    size_t alignment,
+                                    size_t after) {
+  auto addr = reinterpret_cast<uintptr_t>(ptr) + after;
+  return pw::AlignUp(addr, alignment) - addr;
+}
+
+/// Returns the minimum outer size for a block allocated from a layout with the
+/// given `min_inner_size`.
+template <typename BlockType>
+size_t GetOuterSize(size_t min_inner_size) {
+  return BlockType::kBlockOverhead +
+         pw::AlignUp(min_inner_size, BlockType::kAlignment);
+}
+
 /// Represents an initial state for a memory block.
 ///
 /// Unit tests can specify an initial block layout by passing a list of these

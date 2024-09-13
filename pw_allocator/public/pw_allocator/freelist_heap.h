@@ -51,7 +51,7 @@ class FreeListHeapBuffer {
   }
 
  private:
-  using OffsetType = Block<>::offset_type;
+  using OffsetType = Block<>::OffsetType;
   static constexpr size_t kMinChunkSize = 16;
   BucketBlockAllocator<OffsetType, kMinChunkSize, kNumBuckets> allocator_;
 };

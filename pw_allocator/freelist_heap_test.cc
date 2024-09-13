@@ -14,6 +14,7 @@
 
 #include "pw_allocator/freelist_heap.h"
 
+#include "pw_allocator/block_testing.h"
 #include "pw_bytes/alignment.h"
 #include "pw_unit_test/framework.h"
 
@@ -22,6 +23,7 @@ namespace {
 // Test fixtures.
 
 using ::pw::allocator::FreeListHeapBuffer;
+using ::pw::allocator::test::GetAlignedOffsetAfter;
 
 class FreeListHeapBufferTest : public ::testing::Test {
  protected:
@@ -29,7 +31,7 @@ class FreeListHeapBufferTest : public ::testing::Test {
 
   static constexpr size_t kN = 2048;
 
-  alignas(BlockType) std::array<std::byte, kN> buffer_;
+  alignas(BlockType::kAlignment) std::array<std::byte, kN> buffer_;
 };
 
 // Unit tests.
@@ -98,13 +100,13 @@ TEST_F(FreeListHeapBufferTest, ReturnsNullWhenAllocationTooLarge) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReturnsNullWhenFull) {
-  FreeListHeapBuffer allocator(buffer_);
+  size_t offset = GetAlignedOffsetAfter(
+      buffer_.data(), alignof(std::max_align_t), BlockType::kBlockOverhead);
+  auto buffer = pw::ByteSpan(buffer_).subspan(offset);
+  size_t inner_size = buffer.size() - BlockType::kBlockOverhead;
 
-  auto start = reinterpret_cast<uintptr_t>(buffer_.data());
-  uintptr_t usable =
-      pw::AlignUp(start + BlockType::kBlockOverhead, alignof(std::max_align_t));
-
-  void* ptr1 = allocator.Allocate(kN - (usable - start));
+  FreeListHeapBuffer allocator(buffer);
+  void* ptr1 = allocator.Allocate(inner_size);
   ASSERT_NE(ptr1, nullptr);
 
   void* ptr2 = allocator.Allocate(1);
@@ -161,7 +163,8 @@ TEST_F(FreeListHeapBufferTest, ReallocHasSameContent) {
   ASSERT_NE(ptr2, nullptr);
   std::memcpy(&val2, ptr2, sizeof(size_t));
 
-  // Verify that data inside the allocated and reallocated chunks are the same.
+  // Verify that data inside the allocated and reallocated chunks are the
+  // same.
   EXPECT_EQ(val1, val2);
 
   // All pointers must be freed before the allocator goes out of scope.

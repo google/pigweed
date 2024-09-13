@@ -625,6 +625,7 @@ pw_cc_test(
         "freelist_heap_test.cc",
     ],
     deps = [
+        ":block_testing",
         ":freelist_heap",
         "//pw_bytes:alignment",
     ],

@@ -486,6 +486,7 @@ pw_test("fragmentation_test") {
 
 pw_test("freelist_heap_test") {
   deps = [
+    ":block_testing",
     ":freelist_heap",
     "$dir_pw_bytes:alignment",
   ]
