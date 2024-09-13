@@ -169,6 +169,18 @@ fuchsia_package(
     tags = ["manual"],
 )
 
+fuchsia_package(
+    name = "pkg.riscv64",
+    package_name = "bt-host",
+    components = [
+        ":component",
+    ],
+    fuchsia_api_level = "HEAD",
+    platform = fuchsia_platforms.riscv64,
+    resources = [":default_config_values"],
+    tags = ["manual"],
+)
+
 fuchsia_licenses_collection(
     name = "bt_host_x64_pkg_licenses_collection",
     root_target = ":pkg.x64",
@@ -178,6 +190,12 @@ fuchsia_licenses_collection(
 fuchsia_licenses_collection(
     name = "bt_host_arm64_pkg_licenses_collection",
     root_target = ":pkg.arm64",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt_host_riscv64_pkg_licenses_collection",
+    root_target = ":pkg.riscv64",
     tags = ["manual"],
 )
 
@@ -195,6 +213,16 @@ fuchsia_licenses_spdx(
     name = "bt_host_arm64_licenses.spdx.json",
     document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
     licenses = ":bt_host_arm64_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "bt-host",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_spdx(
+    name = "bt_host_riscv64_licenses.spdx.json",
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt_host_riscv64_pkg_licenses_collection",
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "bt-host",
@@ -222,6 +250,19 @@ fuchsia_cipd_releases(
         ":bt_host_arm64_licenses.spdx.json": "licenses.spdx.json",
     },
     pkg = ":pkg.arm64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+fuchsia_cipd_releases(
+    name = "bt_host_riscv64_cipd",
+    cipd_prefix = "fuchsia/prebuilt/bt-host",
+    extra_content = {
+        ":README.fuchsia.md": "README.fuchsia",
+        ":bt_host_riscv64_licenses.spdx.json": "licenses.spdx.json",
+    },
+    pkg = ":pkg.riscv64",
     # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
     # when cross-compiling,
     target_compatible_with = incompatible_with_mcu(),

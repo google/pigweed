@@ -67,6 +67,7 @@ fuchsia_builder_group(
     cipd_uploads = [
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_x64_cipd",
         "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_arm64_cipd",
+        "//pw_bluetooth_sapphire/fuchsia/bt_host:bt_host_riscv64_cipd",
     ],
     tags = ["integration"],
 )
