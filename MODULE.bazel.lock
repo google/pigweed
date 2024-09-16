@@ -41,6 +41,8 @@
     "https://bcr.bazel.build/modules/bazel_skylib/1.6.1/MODULE.bazel": "8fdee2dbaace6c252131c00e1de4b165dc65af02ea278476187765e1a617b917",
     "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/MODULE.bazel": "3120d80c5861aa616222ec015332e5f8d3171e062e3e804a2a0253e1be26e59b",
     "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/source.json": "f121b43eeefc7c29efbd51b83d08631e2347297c95aac9764a701f2a6a2bb953",
+    "https://bcr.bazel.build/modules/boringssl/0.20240913.0/MODULE.bazel": "fcaa7503a5213290831a91ed1eb538551cf11ac0bc3a6ad92d0fef92c5bd25fb",
+    "https://bcr.bazel.build/modules/boringssl/0.20240913.0/source.json": "540753d29c271a302442a3d3c6ccd4faace597e7bcf0f77049fe59535782ce9f",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/MODULE.bazel": "2e8dd40ede9c454042645fd8d8d0cd1527966aa5c919de86661e62953cd73d84",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/freertos/10.5.1.bcr.2/MODULE.bazel": "dcc13aef86495f5418f4cdd532eefe9a4319c44771ef57b8abda0c3560d8e6ed",

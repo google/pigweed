@@ -18,7 +18,7 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "boringssl", version = "0.0.0-20240530-2db0eb3")
+bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "nanopb", repo_name = "com_github_nanopb_nanopb")
@@ -56,13 +56,6 @@ git_override(
     module_name = "nanopb",
     commit = "f9191cd0be4177abd0d04546d61d59a9b6c32de3",
     remote = "https://github.com/nanopb/nanopb.git",
-)
-
-# TODO: https://pwbug.dev/365993144 - Use bazel_dep once this commit is in the BCR.
-git_override(
-    module_name = "boringssl",
-    commit = "40ec347196a939bd4fd1f801df896b2f4e2205dc",
-    remote = "https://boringssl.googlesource.com/boringssl",
 )
 
 single_version_override(
