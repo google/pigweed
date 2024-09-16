@@ -140,7 +140,7 @@ package. These build files can be attached to an external repository in your
    # Declare a toolchain tool suite for Linux.
    http_archive(
        name = "linux_clang_toolchain",
-       build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
+       build_file = "@pw_toolchain//build_external:llvm_clang_legacy.BUILD",
        sha256 = "884ee67d647d77e58740c1e645649e29ae9e8a6fe87c1376be0f3a30f3cc9ab3",
        strip_prefix = "clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04",
        url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz",
