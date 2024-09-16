@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "pw_bytes/span.h"
 #include "pw_spi/chip_selector.h"
@@ -39,6 +40,7 @@ class LinuxInitiator : public Initiator {
  private:
   uint32_t max_speed_hz_;
   int fd_;
+  std::optional<Config> current_config_;
 };
 
 // Linux userspace implementation of SPI ChipSelector
