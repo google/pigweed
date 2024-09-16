@@ -647,6 +647,16 @@ use the following additional tags:
 
    will run all tests *except* for these integration tests.
 
+*  ``do_not_build``: targets which should not be built in wildcard builds. Any
+   use of this tag should be associated with a TODO pointing to a bug. Prefer
+   ``do_not_build`` to ``manual`` if the target's build graph is correct, and
+   it just fails at the compilation stage.
+
+*  ``do_not_run_test``: test targets which should be built but not executed.
+   Prefer this to ``manual`` or ``do_not_build`` if the code compiles, but the
+   test fails at runtime. Any use of this tag should be associated with a TODO
+   pointing to a bug.
+
 .. _docs-build_system-bazel_coverage:
 
 Code Coverage

@@ -55,11 +55,14 @@ common --experimental_exclude_starlark_flags_from_exec_config
 common --//pw_toolchain/cc:cxx_standard=17
 common:cxx20 --//pw_toolchain/cc:cxx_standard=20
 
-# Also exclude integration tests from the default build. The test_tag_filters
-# flag doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we
-# have to specify it only once, setting all the exclusions in a comma-separated
+# Skip building any targets tagged do_not_build.
+build --build_tag_filters=-do_not_build
+
+# Exclude integration tests from the default build. The test_tag_filters flag
+# doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we have
+# to specify it only once, setting all the exclusions in a comma-separated
 # list.
-test --test_tag_filters=-integration
+test --test_tag_filters=-integration,-do_not_build,-do_not_run_test
 
 # Required for combined code coverage reports.
 coverage --experimental_generate_llvm_lcov
@@ -98,17 +101,17 @@ common:asan --//pw_toolchain/host_clang:asan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not
 # accumulate.
-test:asan --test_tag_filters=-integration,-noasan
+test:asan --test_tag_filters=-integration,-noasan,-do_not_build,-do_not_run_test
 
 common:ubsan --//pw_toolchain/host_clang:ubsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not accumulate.
-test:ubsan --test_tag_filters=-integration,-noubsan
+test:ubsan --test_tag_filters=-integration,-noubsan,-do_not_build,-do_not_run_test
 
 common:tsan --//pw_toolchain/host_clang:tsan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not accumulate.
-test:tsan --test_tag_filters=-integration,-notsan
+test:tsan --test_tag_filters=-integration,-notsan,-do_not_build,-do_not_run_test
 
 # Include libFuzzer build configurations.
 import %workspace%/pw_fuzzer/libfuzzer.bazelrc
