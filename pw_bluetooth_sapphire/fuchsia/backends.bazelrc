@@ -21,3 +21,10 @@ common:fuchsia --@pigweed//pw_log:backend_impl=@pigweed//pw_build:empty_cc_libra
 common:fuchsia --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
 common:fuchsia --@pigweed//pw_async:task_backend=@pigweed//pw_async_fuchsia:task
 common:fuchsia --@pigweed//pw_async:fake_dispatcher_backend=@pigweed//pw_async_fuchsia:fake_dispatcher
+
+# The following flags are needed to build boringssl with the correct size
+build:fuchsia --copt=-DBORINGSSL_ALLOW_CXX_RUNTIME
+build:fuchsia --copt=-DOPENSSL_SMALL
+build:fuchsia --copt=-DOPENSSL_NO_ASM
+build:fuchsia --copt=-DOPENSSL_NO_SOCK
+build:fuchsia --copt=-DNDEBUG
