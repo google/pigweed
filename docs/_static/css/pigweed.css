@@ -199,10 +199,6 @@ html[data-theme="light"] {
   ::-webkit-scrollbar {
     display: none;
   }
-  /* Indicate in-progress SEEDs. */
-  a.reference.external[href*="pigweed-review.googlesource.com"]::before {
-    content: "🚧 ";
-  }
 }
 
 /* Main content of the page. */
