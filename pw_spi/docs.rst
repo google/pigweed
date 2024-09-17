@@ -27,7 +27,12 @@ SPI hardware implementation.  The interface consists of these main classes:
 injected into ``pw::spi::Device`` objects which are used to communicate with a
 given responder attached to a target's SPI bus.
 
-Example - Constructing a SPI Device:
+--------
+Examples
+--------
+
+Constructing a SPI Device
+=========================
 
 .. code-block:: cpp
 
@@ -47,18 +52,19 @@ Example - Constructing a SPI Device:
 
 This example demonstrates the construction of a ``pw::spi::Device`` from its
 object dependencies and configuration data; where ``MyDevice`` and
-`MyChipSelector`` are concrete implementations of the ``pw::spi::Initiator``
+``MyChipSelector`` are concrete implementations of the ``pw::spi::Initiator``
 and ``pw::spi::ChipSelector`` interfaces, respectively.
 
 The use of ``pw::sync::Borrowable`` in the interface provides a
-mutual-exclusion wrapper for the the injected ``pw::spi::Initiator``, ensuring
+mutual-exclusion wrapper for the injected ``pw::spi::Initiator``, ensuring
 that transactions cannot be interrupted or corrupted by other concurrent
 workloads making use of the same SPI bus.
 
 Once constructed, the ``device`` object can then be passed to functions used to
 perform SPI transfers with a target responder.
 
-Example - Performing a Transfer:
+Performing a Transfer
+=====================
 
 .. code-block:: cpp
 
@@ -80,7 +86,8 @@ As this function relies on the ``device`` object that abstracts the details
 of bus-access and chip-selection, the function is portable to any target
 that implements its underlying interfaces.
 
-Example - Performing a Multi-part Transaction:
+Performing a Multi-part Transaction
+===================================
 
 .. code-block:: cpp
 
@@ -105,7 +112,7 @@ Example - Performing a Multi-part Transaction:
 The code above is similar to the previous example, but makes use of the
 ``Transaction`` API in ``pw::spi::Device`` to perform separate, half-duplex
 ``Write()`` and ``Read()`` transfers, as is required by the sensor in this
-examplre.
+example.
 
 The use of the RAII ``transaction`` object in this example guarantees that
 no other thread can perform transfers on the same SPI bus
@@ -123,9 +130,7 @@ The SPI API consists of the following components:
 - The ``pw::spi::Responder`` interface.
 
 pw::spi::Initiator
-------------------
-.. inclusive-language: disable
-
+==================
 The common interface for configuring a SPI bus, and initiating transfers using
 it.
 
@@ -142,6 +147,8 @@ defined set of common bus parameters that include:
 These bus configuration parameters are aggregated in the ``pw::spi::Config``
 structure, and passed to the ``pw::spi::Initiator`` via its ``Configure()``
 method.
+
+.. inclusive-language: disable
 
 .. Note:
 
@@ -177,22 +184,22 @@ method.
       failure.
 
 pw::spi::ChipSelector
----------------------
+=====================
 .. doxygenclass:: pw::spi::ChipSelector
    :members:
 
 pw::spi::DigitalOutChipSelector
--------------------------------
+===============================
 .. doxygenclass:: pw::spi::DigitalOutChipSelector
    :members:
 
 pw::spi::Device
----------------
+===============
 This is primary object used by a client to interact with a target SPI device.
 It provides a wrapper for an injected ``pw::spi::Initiator`` object, using
 its methods to configure the bus and perform individual SPI transfers.  The
 injected ``pw::spi::ChipSelector`` object is used internally to activate and
-de-actviate the device on-demand from within the data transfer methods.
+de-activate the device on-demand from within the data transfer methods.
 
 The ``Read()``/``Write()``/``WriteRead()`` methods provide support for
 performing individual transfers:  ``Read()`` and ``Write()`` perform
@@ -299,11 +306,11 @@ the ``pw::sync::Borrowable`` object, where the ``pw::spi::Initiator`` object is
       failure.
 
 pw::spi::MockInitiator
-----------------------
-A generic mocked backend for for pw::spi::Initiator. This is specifically
-intended for use when developing drivers for spi devices. This is structured
+======================
+A generic mocked backend for ``pw::spi::Initiator``. This is specifically
+intended for use when developing drivers for SPI devices. This is structured
 around a set of 'transactions' where each transaction contains a write, read and
-a status. A transaction list can then be passed to the MockInitiator, where
+a status. A transaction list can then be passed to the ``MockInitiator``, where
 each consecutive call to read/write will iterate to the next transaction in the
 list. An example of this is shown below:
 
@@ -337,7 +344,7 @@ list. An example of this is shown below:
    EXPECT_EQ(spi_mock.Finalize(), OkStatus());
 
 pw::spi::Responder
-------------------
+==================
 The common interface for implementing a SPI responder. It provides a way to
 respond to SPI transactions coming from a SPI initiator in a non-target specific
 way. A concrete implementation of the ``Responder`` class should be provided for
