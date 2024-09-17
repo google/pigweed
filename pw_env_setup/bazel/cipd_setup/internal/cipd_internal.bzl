@@ -13,6 +13,7 @@
 # the License.
 """Internal Bazel helpers for downloading CIPD packages."""
 
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load(
     ":cipd_repository_list_templates.bzl",
     "CIPD_INIT_BZL_TEMPLATE",
@@ -160,6 +161,7 @@ def cipd_repository_impl(rctx):
         rctx: Repository context.
     """
     cipd_repository_base(rctx)
+    patch(rctx)
 
     # Allow the BUILD file to be overriden in the generated repository.
     # If unspecified, default to a BUILD file that exposes all of its files.

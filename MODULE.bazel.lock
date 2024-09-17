@@ -175,7 +175,7 @@
   "moduleExtensions": {
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "XoSW0yjPXb5KpIYsdw9Zw6KDLckRqlhYPY4d4ACv1zI=",
+        "bzlTransitiveDigest": "Zqosl4Adcs3tmnzpLUSfqORMpEFcrX4GsxZTbuoG/Ps=",
         "usagesDigest": "ymC1/6KRKlKLP1x8jSfGJXhFJU+xSlLIf98cr0qYoi0=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -295,7 +295,13 @@
             }
           }
         },
-        "recordedRepoMappingEntries": []
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
       }
     },
     "@@apple_support+//crosstool:setup.bzl%apple_cc_configure_extension": {

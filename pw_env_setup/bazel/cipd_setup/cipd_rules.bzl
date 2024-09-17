@@ -52,6 +52,14 @@ cipd_repository = repository_rule(
             allow_single_file = True,
             doc = "Override the BUILD file in the new CIPD repository.",
         ),
+        "patch_args": attr.string_list(
+            doc = "Arguments to pass to the patch tool. List of strings.",
+            default = [],
+        ),
+        "patches": attr.label_list(
+            doc = "A list of patches to apply to the CIPD package after downloading it",
+            default = [],
+        ),
         "path": attr.string(
             doc = "Path within CIPD where this repository lives.",
         ),
