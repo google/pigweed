@@ -55,8 +55,8 @@ class McuxpressoInitiator : public Initiator {
                           status_t status,
                           void* context);
 
-  Status DoConfigure(const Config& config,
-                     const std::lock_guard<sync::Mutex>& lock);
+  Status DoConfigureLocked(const Config& config,
+                           const std::lock_guard<sync::Mutex>& lock);
 
   bool is_initialized() { return !!current_config_; }
 

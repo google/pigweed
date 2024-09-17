@@ -77,11 +77,11 @@ Status McuxpressoInitiator::Configure(const Config& config) {
   if (current_config_ && config == *current_config_) {
     return OkStatus();
   }
-  return DoConfigure(config, lock);
+  return DoConfigureLocked(config, lock);
 }
 
-Status McuxpressoInitiator::DoConfigure(const Config& config,
-                                        const std::lock_guard<sync::Mutex>&) {
+Status McuxpressoInitiator::DoConfigureLocked(
+    const Config& config, const std::lock_guard<sync::Mutex>&) {
   spi_master_config_t master_config = {};
   SPI_MasterGetDefaultConfig(&master_config);
 
@@ -177,7 +177,7 @@ Status McuxpressoInitiator::SetChipSelect(uint32_t pin) {
   if (!current_config_) {
     return OkStatus();
   }
-  return DoConfigure(*current_config_, lock);
+  return DoConfigureLocked(*current_config_, lock);
 }
 
 }  // namespace pw::spi
