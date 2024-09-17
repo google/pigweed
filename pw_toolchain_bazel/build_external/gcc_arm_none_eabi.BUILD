@@ -127,7 +127,9 @@ pw_cc_tool(
         "**/*.specs",
         "**/*.so",
         "libexec/**",
-    ]),
+    ]) + [
+        "//:arm-none-eabi/bin/ld",
+    ],
 )
 
 pw_cc_action_config(
