@@ -92,6 +92,8 @@ fuchsia_cc_binary(
     name = "bt_host_bin",
     srcs = ["main.cc"],
     bin_name = "bt_host",
+    # TODO: b/367805596 - Remove when dynamic linking size budget issues are resolved.
+    copts = ["-static"],
     deps = [
         ":sources",
         "//pw_log_fuchsia",
