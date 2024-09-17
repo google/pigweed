@@ -117,6 +117,7 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":codegen_decoder_test",
+    ":codegen_editions_test",
     ":codegen_encoder_test",
     ":codegen_message_test",
     ":decoder_test",
@@ -190,6 +191,14 @@ pw_test("codegen_message_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("codegen_editions_test") {
+  deps = [
+    ":codegen_test_protos.pwpb",
+    dir_pw_string,
+  ]
+  sources = [ "codegen_editions_test.cc" ]
 }
 
 pw_test("serialized_size_test") {
@@ -284,6 +293,7 @@ pw_proto_library("codegen_test_deps_protos_prefix") {
 
 pw_proto_library("codegen_test_protos") {
   sources = [
+    "pw_protobuf_test_protos/edition.proto",
     "pw_protobuf_test_protos/full_test.proto",
     "pw_protobuf_test_protos/imported.proto",
     "pw_protobuf_test_protos/importer.proto",
@@ -294,6 +304,7 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_test_protos/size_report.proto",
   ]
   inputs = [
+    "pw_protobuf_test_protos/edition.options",
     "pw_protobuf_test_protos/full_test.options",
     "pw_protobuf_test_protos/optional.options",
     "pw_protobuf_test_protos/imported.options",

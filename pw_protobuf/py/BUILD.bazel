@@ -24,6 +24,7 @@ filegroup(
     srcs = [
         "pw_protobuf/__init__.py",
         "pw_protobuf/codegen_pwpb.py",
+        "pw_protobuf/edition_constants.py",
         "pw_protobuf/options.py",
         "pw_protobuf/output_file.py",
         "pw_protobuf/plugin.py",

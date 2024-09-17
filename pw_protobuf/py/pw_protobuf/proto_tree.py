@@ -29,7 +29,7 @@ from typing import (
 
 from google.protobuf import descriptor_pb2
 
-from pw_protobuf import options, symbol_name_mapping
+from pw_protobuf import edition_constants, options, symbol_name_mapping
 from pw_protobuf_codegen_protos.codegen_options_pb2 import CodegenOptions
 from pw_protobuf_protos.field_options_pb2 import pwpb as pwpb_field_options
 
@@ -485,7 +485,7 @@ class ProtoMessageField:
         field_number: int,
         field_type: int,
         type_node: ProtoNode | None = None,
-        optional: bool = False,
+        has_presence: bool = False,
         repeated: bool = False,
         codegen_options: CodegenOptions | None = None,
     ):
@@ -493,7 +493,7 @@ class ProtoMessageField:
         self._number: int = field_number
         self._type: int = field_type
         self._type_node: ProtoNode | None = type_node
-        self._optional: bool = optional
+        self._has_presence: bool = has_presence
         self._repeated: bool = repeated
         self._options: CodegenOptions | None = codegen_options
 
@@ -520,8 +520,8 @@ class ProtoMessageField:
     def type_node(self) -> ProtoNode | None:
         return self._type_node
 
-    def is_optional(self) -> bool:
-        return self._optional
+    def has_presence(self) -> bool:
+        return self._has_presence
 
     def is_repeated(self) -> bool:
         return self._repeated
@@ -643,6 +643,7 @@ def _find_or_create_node(
 
 
 def _add_message_fields(
+    proto_file: descriptor_pb2.FileDescriptorProto,
     global_root: ProtoNode,
     package_root: ProtoNode,
     message: ProtoNode,
@@ -666,10 +667,25 @@ def _add_message_fields(
         else:
             type_node = None
 
-        optional = field.proto3_optional
         repeated = (
             field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED
         )
+
+        has_presence = False
+
+        # TODO: pwbug.dev/366316523 - The generated protobuf types do not
+        # include the "edition" property, so getattr is used. Fix this when
+        # we upgrade protobuf and mypy-protobuf.
+        if getattr(proto_file, 'edition', None) == '2023':
+            has_presence = not repeated and (
+                field.type is ProtoNode.Type.MESSAGE
+                or field.options.features.field_presence
+                != edition_constants.FieldPresence.IMPLICIT.value
+            )
+        else:
+            # If the file does not use editions, only consider explicit
+            # proto3 optionality.
+            has_presence = field.proto3_optional
 
         codegen_options = (
             options.match_options(
@@ -704,7 +720,7 @@ def _add_message_fields(
                 field.number,
                 field.type,
                 type_node,
-                optional,
+                has_presence,
                 repeated,
                 merged_options,
             )
@@ -755,7 +771,7 @@ def _populate_fields(
     def populate_message(node, message):
         """Recursively populates nested messages and enums."""
         _add_message_fields(
-            global_root, package_root, node, message, proto_options
+            proto_file, global_root, package_root, node, message, proto_options
         )
 
         for proto_enum in message.enum_type:

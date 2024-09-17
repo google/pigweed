@@ -367,6 +367,16 @@ pw_cc_test(
     ],
 )
 
+# TODO: https://pwbug.dev/366316523 - Bazel's protoc version does not support
+# editions, and extra compiler options cannot be passed to a proto_library
+# target, so `editions.proto` cannot be compiled until we upgrade Protobuf.
+filegroup(
+    name = "codegen_editions_test",
+    srcs = [
+        "codegen_editions_test.cc",
+    ],
+)
+
 # TODO(frolv): Figure out how to add facade tests to Bazel.
 filegroup(
     name = "varint_size_test",

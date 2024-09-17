@@ -25,7 +25,7 @@ from shlex import shlex
 
 from google.protobuf.compiler import plugin_pb2
 
-from pw_protobuf import codegen_pwpb, options
+from pw_protobuf import codegen_pwpb, edition_constants, options
 
 
 def parse_parameter_options(parameter: str) -> Namespace:
@@ -91,6 +91,7 @@ def process_proto_request(
       req: A CodeGeneratorRequest for a proto compilation.
       res: A CodeGeneratorResponse to populate with the plugin's output.
     """
+
     args = parse_parameter_options(req.parameter)
     for proto_file in req.proto_file:
         proto_options = options.load_options(
@@ -125,6 +126,8 @@ def main() -> int:
     response.supported_features |= (  # type: ignore[attr-defined]
         response.FEATURE_PROTO3_OPTIONAL
     )  # type: ignore[attr-defined]
+
+    response.supported_features |= edition_constants.FEATURE_SUPPORTS_EDITIONS
 
     sys.stdout.buffer.write(response.SerializeToString())
     return 0

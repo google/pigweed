@@ -435,7 +435,7 @@ class MessageProperty(ProtoMember):
     def is_optional(self) -> bool:
         """Returns whether the decoder should use std::optional."""
         return (
-            self._field.is_optional()
+            self._field.has_presence()
             and self.max_size() == 0
             and self.wire_type() != 'kDelimited'
         )

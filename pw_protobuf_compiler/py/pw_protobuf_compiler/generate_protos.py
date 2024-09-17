@@ -82,6 +82,12 @@ def _argument_parser() -> argparse.ArgumentParser:
         help='Do not invoke protoc with --experimental_allow_proto3_optional',
     )
     parser.add_argument(
+        '--no-experimental-editions',
+        dest='experimental_editions',
+        action='store_false',
+        help='Do not invoke protoc with --experimental_editions',
+    )
+    parser.add_argument(
         '--no-generate-type-hints',
         dest='generate_type_hints',
         action='store_false',
@@ -104,6 +110,8 @@ def protoc_common_args(args: argparse.Namespace) -> tuple[str, ...]:
     flags: tuple[str, ...] = ()
     if args.experimental_proto3_optional:
         flags += ('--experimental_allow_proto3_optional',)
+    if args.experimental_editions:
+        flags += ('--experimental_editions',)
     return flags
 
 

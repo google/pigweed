@@ -651,6 +651,17 @@ Codegen
 -------
 pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
 
+``pw_protobuf`` only supports targeting ``proto3`` syntax and its semantics.
+Files which specify ``syntax = "proto2"`` will be treated as proto3, and any
+proto2-specific options will be ignored.
+
+.. admonition:: Protobuf edition support
+
+   `Protobuf editions <https://protobuf.dev/editions/overview>`_ are the future
+   of Protobuf versioning, replacing proto2 and proto3 with more granular code
+   generation options. ``pw_protobuf`` has some basic support for editions, but
+   it is still a work in progress.
+
 This module's codegen is available through the ``*.pwpb`` sub-target of a
 ``pw_proto_library`` in GN, CMake, and Bazel. See :ref:`pw_protobuf_compiler's
 documentation <module-pw_protobuf_compiler>` for more information on build
