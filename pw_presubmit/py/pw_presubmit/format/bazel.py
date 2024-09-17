@@ -29,10 +29,7 @@ class BuildifierFormatter(FileFormatter):
     # These warnings are safe to enable because they can always be auto-fixed.
     DEFAULT_WARNINGS_TO_FIX: Final[Sequence[str]] = (
         'load',
-        'load-on-top',
         'native-build',
-        'same-origin-load',
-        'out-of-order-load',
         'unsorted-dict-items',
     )
 
