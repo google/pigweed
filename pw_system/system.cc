@@ -30,10 +30,10 @@
 #include "pw_system/device_service.h"
 #include "pw_system/file_service.h"
 #include "pw_system/internal/async_packet_io.h"
+#include "pw_system/log.h"
 #include "pw_system/thread_snapshot_service.h"
 #include "pw_system/transfer_service.h"
 #include "pw_system/work_queue.h"
-#include "pw_system_private/log.h"
 #include "pw_system_private/threads.h"
 #include "pw_thread/detached_thread.h"
 

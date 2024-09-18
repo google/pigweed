@@ -50,7 +50,9 @@ pw_add_library(pw_system.log STATIC
     pw_sync.lock_annotations
     pw_sync.mutex
   HEADERS
-    pw_system_private/log.h
+    public/pw_system/log.h
+  PUBLIC_INCLUDES
+    public
   SOURCES
     log.cc
 )

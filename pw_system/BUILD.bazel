@@ -96,8 +96,9 @@ cc_library(
         "log.cc",
     ],
     hdrs = [
-        "pw_system_private/log.h",
+        "public/pw_system/log.h",
     ],
+    includes = ["public"],
     deps = [
         ":config",
         ":rpc_server",

@@ -88,11 +88,9 @@ pw_source_set("config") {
 }
 
 pw_source_set("log") {
+  public = [ "public/pw_system/log.h" ]
   public_configs = [ ":public_include_path" ]
-  sources = [
-    "log.cc",
-    "pw_system_private/log.h",
-  ]
+  sources = [ "log.cc" ]
   public_deps = [
     "$dir_pw_log_rpc:log_service",
     "$dir_pw_log_rpc:rpc_log_drain_thread",

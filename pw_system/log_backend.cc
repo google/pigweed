@@ -29,7 +29,7 @@
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_system/config.h"
-#include "pw_system_private/log.h"
+#include "pw_system/log.h"
 
 namespace pw::system {
 namespace {

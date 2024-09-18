@@ -21,10 +21,10 @@
 #include "pw_rpc/echo_service_pwpb.h"
 #include "pw_system/config.h"
 #include "pw_system/device_service.h"
+#include "pw_system/log.h"
 #include "pw_system/rpc_server.h"
 #include "pw_system/target_hooks.h"
 #include "pw_system/work_queue.h"
-#include "pw_system_private/log.h"
 #include "pw_thread/detached_thread.h"
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE

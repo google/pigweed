@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_system_private/log.h"
+#include "pw_system/log.h"
 
 #include <array>
 #include <cstddef>

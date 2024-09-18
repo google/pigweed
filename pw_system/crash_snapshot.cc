@@ -20,7 +20,7 @@
 #include "pw_snapshot/uuid.h"
 #include "pw_status/status.h"
 #include "pw_system/device_handler.h"
-#include "pw_system_private/log.h"
+#include "pw_system/log.h"
 
 namespace pw::system {
 
