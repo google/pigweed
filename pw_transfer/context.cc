@@ -500,6 +500,9 @@ void Context::PerformInitialHandshake(const Chunk& chunk) {
 
       set_transfer_state(TransferState::kWaiting);
       EncodeAndSendChunk(start_ack_confirmation);
+      // we received a response, so we can re-up the timeout while waiting for
+      // parameters.
+      SetTimeout(chunk_timeout_);
       break;
     }
 
@@ -746,10 +749,12 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
       return;  // No data was requested, so there is nothing else to do.
     }
 
-    PW_LOG_DEBUG("Transfer %u sending chunk offset=%u size=%u",
-                 static_cast<unsigned>(session_id_),
-                 static_cast<unsigned>(offset_),
-                 static_cast<unsigned>(data.value().size()));
+    PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_DEBUG,
+                            std::chrono::seconds(3),
+                            "Transfer %u sending chunk offset=%u size=%u",
+                            static_cast<unsigned>(session_id_),
+                            static_cast<unsigned>(offset_),
+                            static_cast<unsigned>(data.value().size()));
 
     chunk.set_payload(data.value());
     last_chunk_offset_ = offset_;
