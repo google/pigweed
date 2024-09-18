@@ -18,17 +18,10 @@ namespace pw::thread {
 // An optional virtual interface which can be implemented by objects which are
 // a thread as a helper to use pw::thread::Thread.
 //
-// This wrapper means that the user is not required to provide the indirection
-// callback to call run based on the passed context. For example instead of:
-//
-//   static auto invoke_foo_start = [](void *void_foo_ptr) {
-//     static_cast<Foo*>(void_foo_ptr)->Start();
-//   };
-//   Thread thread(options, invoke_foo_start, &foo).detach();
-//
-// You can instead use the helper constructor in Thread:
-//
-//   Thread thread(options, foo).detach();
+// ThreadCore was originally intended to avoid indirection when threads were
+// constructed from a function pointer and void* argument. Since Thread now uses
+// pw::Function<void()>, ThreadCore is no longer necessary. Its use is
+// discouraged in new code.
 //
 // WARNING: Because the thread may start after the pw::Thread creation, an
 // object which implements the ThreadCore MUST meet or exceed the lifetime of
