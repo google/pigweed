@@ -19,6 +19,14 @@ Dependencies
 Features
 --------
 
+pw_bytes/packed_ptr.h
+======================
+Wrapper type that allows storing data in the least significant bits of a
+pointer that would otherwise be unused.
+
+.. doxygenclass:: pw::PackedPtr
+   :members:
+
 pw_bytes/alignment.h
 ====================
 Functions for aligning sizes and addresses to memory alignment boundaries.

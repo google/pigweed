@@ -66,6 +66,16 @@ cc_library(
     deps = ["//third_party/fuchsia:stdcompat"],
 )
 
+cc_library(
+    name = "packed_ptr",
+    hdrs = ["public/pw_bytes/packed_ptr.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
 pw_cc_test(
     name = "alignment_test",
     srcs = ["alignment_test.cc"],
@@ -107,6 +117,16 @@ pw_cc_test(
     srcs = ["endian_test.cc"],
     deps = [
         ":pw_bytes",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "packed_ptr_test",
+    srcs = ["packed_ptr_test.cc"],
+    deps = [
+        ":packed_ptr",
+        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
 )

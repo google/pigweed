@@ -57,6 +57,16 @@ pw_add_library(pw_bytes.bit INTERFACE
     pw_third_party.fuchsia.stdcompat
 )
 
+pw_add_library(pw_bytes.packed_ptr INTERFACE
+  HEADERS
+    public/pw_bytes/packed_ptr.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_third_party.fuchsia.stdcompat
+)
+
 pw_add_test(pw_bytes.alignment_test
   SOURCES
     alignment_test.cc
@@ -102,6 +112,17 @@ pw_add_test(pw_bytes.endian_test
     endian_test.cc
   PRIVATE_DEPS
     pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.packed_ptr_test
+  SOURCES
+    packed_ptr_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_bytes.packed_ptr
   GROUPS
     modules
     pw_bytes

@@ -61,6 +61,15 @@ pw_source_set("bit") {
   public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 }
 
+pw_source_set("packed_ptr") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bytes/packed_ptr.h" ]
+  public_deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":alignment_test",
@@ -68,6 +77,7 @@ pw_test_group("tests") {
     ":bit_test",
     ":byte_builder_test",
     ":endian_test",
+    ":packed_ptr_test",
     ":suffix_test",
     ":units_test",
   ]
@@ -100,6 +110,12 @@ pw_test("byte_builder_test") {
 pw_test("endian_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "endian_test.cc" ]
+}
+
+pw_test("packed_ptr_test") {
+  deps = [ ":packed_ptr" ]
+  sources = [ "packed_ptr_test.cc" ]
+  negative_compilation_tests = true
 }
 
 pw_test("suffix_test") {
