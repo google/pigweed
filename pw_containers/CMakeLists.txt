@@ -146,6 +146,28 @@ pw_add_library(pw_containers.wrapped_iterator INTERFACE
     public
 )
 
+pw_add_library(pw_containers.intrusive STATIC
+  HEADERS
+    public/pw_containers/internal/intrusive.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    intrusive.cc
+  PRIVATE_DEPS
+    pw_assert
+)
+
+pw_add_library(pw_containers.intrusive_list_common INTERFACE
+  HEADERS
+    public/pw_containers/internal/intrusive_list.h
+    public/pw_containers/internal/intrusive_list_item.h
+    public/pw_containers/internal/intrusive_list_iterator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.intrusive
+)
+
 pw_add_library(pw_containers.intrusive_forward_list INTERFACE
   HEADERS
     public/pw_containers/intrusive_forward_list.h
@@ -165,19 +187,6 @@ pw_add_library(pw_containers.intrusive_list INTERFACE
     pw_containers.config
     pw_containers.intrusive_list_common
     pw_containers.legacy_intrusive_list
-)
-
-pw_add_library(pw_containers.intrusive_list_common STATIC
-  HEADERS
-    public/pw_containers/internal/intrusive_list.h
-    public/pw_containers/internal/intrusive_list_item.h
-    public/pw_containers/internal/intrusive_list_iterator.h
-  PUBLIC_INCLUDES
-    public
-  SOURCES
-    intrusive_list.cc
-  PRIVATE_DEPS
-    pw_assert
 )
 
 pw_add_library(pw_containers.legacy_intrusive_list INTERFACE

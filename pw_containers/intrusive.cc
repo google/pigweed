@@ -12,20 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/internal/intrusive_list.h"
+#include "pw_containers/internal/intrusive.h"
 
 #include "pw_assert/check.h"
-#include "pw_containers/internal/intrusive_list_item.h"
 
 namespace pw::containers::internal {
 
-void CheckUnlisted(bool unlisted) {
-  PW_CHECK(unlisted,
-           "Item is in an intrusive list and cannot be added or destroyed");
+void CheckIntrusiveContainerIsEmpty(bool empty) {
+  PW_CHECK(empty, "Intrusive container is not empty and cannot be destroyed");
 }
 
-void CheckEmpty(bool empty) {
-  PW_CHECK(empty, "List is not empty and cannot be destroyed");
+void CheckIntrusiveItemIsUncontained(bool uncontained) {
+  PW_CHECK(
+      uncontained,
+      "Item is in an intrusive container and cannot be added or destroyed");
 }
 
 }  // namespace pw::containers::internal

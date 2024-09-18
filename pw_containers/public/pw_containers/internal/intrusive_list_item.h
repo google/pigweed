@@ -17,13 +17,6 @@
 
 namespace pw::containers::internal {
 
-/// Crashes with a diagnostic message that items must be unlisted before
-/// addition to a list or destruction if the given `unlisted` parameter is not
-/// set.
-///
-/// This function is standalone to avoid using PW_CHECK in a header file.
-void CheckUnlisted(bool unlisted);
-
 // Forward declaration for friending.
 template <typename>
 class GenericIntrusiveList;
@@ -41,7 +34,7 @@ class IntrusiveListItemBase {
   ///
   /// Subclasses MUST call `unlist` in their destructors, since unlisting may
   /// require calling derived class methods.
-  ~IntrusiveListItemBase() { CheckUnlisted(unlisted()); }
+  ~IntrusiveListItemBase() { CheckIntrusiveItemIsUncontained(unlisted()); }
 
   /// Items are not copyable.
   IntrusiveListItemBase(const IntrusiveListItemBase&) = delete;

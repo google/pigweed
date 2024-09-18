@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "pw_containers/config.h"
+#include "pw_containers/internal/intrusive.h"
 #include "pw_containers/internal/intrusive_list.h"
 #include "pw_containers/internal/intrusive_list_item.h"
 #include "pw_containers/internal/intrusive_list_iterator.h"
@@ -118,12 +119,12 @@ class IntrusiveForwardList {
     constexpr explicit Item() = default;
 
    private:
-    // GetListElementTypeFromItem is used to find the element type from an item.
+    // GetElementTypeFromItem is used to find the element type from an item.
     // It is used to ensure list items inherit from the correct Item type.
     template <typename, typename, bool>
-    friend struct ::pw::containers::internal::GetListElementTypeFromItem;
+    friend struct ::pw::containers::internal::GetElementTypeFromItem;
 
-    using PwIntrusiveListElementType = T;
+    using ElementType = T;
   };
 
   using iterator =

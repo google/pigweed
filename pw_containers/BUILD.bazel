@@ -60,10 +60,27 @@ cc_library(
 )
 
 cc_library(
-    name = "intrusive_forward_list",
+    name = "intrusive",
+    srcs = ["intrusive.cc"],
+    hdrs = ["public/pw_containers/internal/intrusive.h"],
+    implementation_deps = ["//pw_assert"],
+    includes = ["public"],
+)
+
+cc_library(
+    name = "intrusive_list_common",
     hdrs = [
-        "public/pw_containers/intrusive_forward_list.h",
+        "public/pw_containers/internal/intrusive_list.h",
+        "public/pw_containers/internal/intrusive_list_item.h",
+        "public/pw_containers/internal/intrusive_list_iterator.h",
     ],
+    includes = ["public"],
+    deps = [":intrusive"],
+)
+
+cc_library(
+    name = "intrusive_forward_list",
+    hdrs = ["public/pw_containers/intrusive_forward_list.h"],
     includes = ["public"],
     deps = [
         ":config",
@@ -73,9 +90,7 @@ cc_library(
 
 cc_library(
     name = "intrusive_list",
-    hdrs = [
-        "public/pw_containers/intrusive_list.h",
-    ],
+    hdrs = ["public/pw_containers/intrusive_list.h"],
     includes = ["public"],
     deps = [
         ":config",
@@ -85,31 +100,11 @@ cc_library(
 )
 
 cc_library(
-    name = "intrusive_list_common",
-    srcs = [
-        "intrusive_list.cc",
-    ],
-    hdrs = [
-        "public/pw_containers/internal/intrusive_list.h",
-        "public/pw_containers/internal/intrusive_list_item.h",
-        "public/pw_containers/internal/intrusive_list_iterator.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_assert",
-    ],
-)
-
-cc_library(
     name = "legacy_intrusive_list",
-    hdrs = [
-        "public/pw_containers/internal/legacy_intrusive_list.h",
-    ],
+    hdrs = ["public/pw_containers/internal/legacy_intrusive_list.h"],
     includes = ["public"],
     visibility = ["//visibility:private"],
-    deps = [
-        ":intrusive_forward_list",
-    ],
+    deps = [":intrusive_forward_list"],
 )
 
 cc_library(

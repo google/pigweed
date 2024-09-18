@@ -143,6 +143,23 @@ pw_source_set("wrapped_iterator") {
   public = [ "public/pw_containers/wrapped_iterator.h" ]
 }
 
+pw_source_set("intrusive") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/internal/intrusive.h" ]
+  sources = [ "intrusive.cc" ]
+  deps = [ dir_pw_assert ]
+}
+
+pw_source_set("intrusive_list_common") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_containers/internal/intrusive_list.h",
+    "public/pw_containers/internal/intrusive_list_item.h",
+    "public/pw_containers/internal/intrusive_list_iterator.h",
+  ]
+  public_deps = [ ":intrusive" ]
+}
+
 pw_source_set("intrusive_forward_list") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/intrusive_forward_list.h" ]
@@ -160,17 +177,6 @@ pw_source_set("intrusive_list") {
     ":intrusive_list_common",
     ":legacy_intrusive_list",
   ]
-}
-
-pw_source_set("intrusive_list_common") {
-  public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_containers/internal/intrusive_list.h",
-    "public/pw_containers/internal/intrusive_list_item.h",
-    "public/pw_containers/internal/intrusive_list_iterator.h",
-  ]
-  sources = [ "intrusive_list.cc" ]
-  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("legacy_intrusive_list") {
