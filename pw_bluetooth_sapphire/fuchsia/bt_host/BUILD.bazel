@@ -93,7 +93,7 @@ fuchsia_cc_binary(
     srcs = ["main.cc"],
     bin_name = "bt_host",
     # TODO: b/367805596 - Remove when dynamic linking size budget issues are resolved.
-    copts = ["-static"],
+    features = ["static_cpp_standard_library"],
     deps = [
         ":sources",
         "//pw_log_fuchsia",
