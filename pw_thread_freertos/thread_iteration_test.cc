@@ -90,7 +90,7 @@ TEST(ThreadIteration, ForkOneThread) {
     return false;
   };
 
-  thread::ForEachThread(cb);
+  ASSERT_EQ(OkStatus(), thread::ForEachThread(cb));
 
   // Signal to forked thread that execution is complete.
   notify.end.release();
