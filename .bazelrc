@@ -33,24 +33,6 @@ common --host_per_file_copt=external.*picotool.*@-fexceptions,-frtti
 # RP2xxx PIO assembler also needs exceptions.
 common --host_per_file_copt=external.*pioasm.*@-fexceptions,-frtti
 
-# Don't automatically create __init__.py files.
-#
-# This prevents spurious package name collisions at import time, and should be
-# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
-# particularly helpful for Pigweed, because we have many potential package name
-# collisions due to a profusion of stuttering paths like
-# pw_transfer/py/pw_transfer.
-common --incompatible_default_to_explicit_init_py
-
-# Required for new toolchain resolution API.
-build --incompatible_enable_cc_toolchain_resolution
-
-# Don't propagate flags or defines to the exec config. This will become the
-# default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
-# improve cache hit rates between builds targeting different platforms.
-common --experimental_exclude_defines_from_exec_config
-common --experimental_exclude_starlark_flags_from_exec_config
-
 # Default to C++17 to ensure compatibility.
 common --//pw_toolchain/cc:cxx_standard=17
 common:cxx20 --//pw_toolchain/cc:cxx_standard=20
