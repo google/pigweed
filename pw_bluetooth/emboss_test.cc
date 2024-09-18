@@ -51,13 +51,100 @@ TEST(EmbossTest, MakeView) {
   EXPECT_EQ(view.payload().Read(), 0x03);
 }
 
+static void InitializeIsoPacket(const emboss::IsoDataFramePacketWriter& view,
+                                emboss::TsFlag ts_flag,
+                                emboss::IsoDataPbFlag pb_flag,
+                                size_t sdu_fragment_size) {
+  view.header().connection_handle().Write(0x123);
+  view.header().ts_flag().Write(ts_flag);
+  view.header().pb_flag().Write(pb_flag);
+
+  size_t optional_fields_total_size = 0;
+  if (ts_flag == emboss::TsFlag::TIMESTAMP_PRESENT) {
+    optional_fields_total_size += 4;
+  }
+
+  if ((pb_flag == emboss::IsoDataPbFlag::FIRST_FRAGMENT) ||
+      (pb_flag == emboss::IsoDataPbFlag::COMPLETE_SDU)) {
+    optional_fields_total_size += 4;
+  }
+
+  view.header().data_total_length().Write(sdu_fragment_size +
+                                          optional_fields_total_size);
+}
+
 // This definition has a mix of full-width values and bitfields and includes
 // conditional bitfields. Let's add this to verify that the structure itself
 // doesn't get changed incorrectly and that emboss' size calculation matches
 // ours.
 TEST(EmbossTest, CheckIsoPacketSize) {
-  int max_size = 12 /* max header */ + 4095 /* max payload */;
-  EXPECT_EQ(emboss::IsoDataFramePacket::MaxSizeInBytes(), max_size);
+  std::array<uint8_t, 2048> buffer;
+  const size_t kSduFragmentSize = 100;
+  auto view = emboss::MakeIsoDataFramePacketView(&buffer);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_NOT_PRESENT,
+                      emboss::IsoDataPbFlag::FIRST_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 4);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_NOT_PRESENT,
+                      emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_NOT_PRESENT,
+                      emboss::IsoDataPbFlag::COMPLETE_SDU,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 4);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_NOT_PRESENT,
+                      emboss::IsoDataPbFlag::LAST_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_PRESENT,
+                      emboss::IsoDataPbFlag::FIRST_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 8);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_PRESENT,
+                      emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 4);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_PRESENT,
+                      emboss::IsoDataPbFlag::COMPLETE_SDU,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 8);
+
+  InitializeIsoPacket(view,
+                      emboss::TsFlag::TIMESTAMP_PRESENT,
+                      emboss::IsoDataPbFlag::LAST_FRAGMENT,
+                      kSduFragmentSize);
+  ASSERT_TRUE(view.IntrinsicSizeInBytes().Ok());
+  EXPECT_EQ(static_cast<size_t>(view.IntrinsicSizeInBytes().Read()),
+            view.hdr_size().Read() + kSduFragmentSize + 4);
 }
 
 // Test and demonstrate various ways of reading opcodes.

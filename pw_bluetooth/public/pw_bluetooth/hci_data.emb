@@ -136,25 +136,30 @@ struct IsoDataFramePacket:
   -- Core Spec v5.4, Vol 4, Part E, Section 5.4.5
   -- Bits 28, and 29 are reserved for future use (RFU)
   let hdr_size = IsoDataFrameHeader.$size_in_bytes
-  0     [+hdr_size]          IsoDataFrameHeader      header
+  0                   [+hdr_size]           IsoDataFrameHeader         header
   if header.ts_flag == TsFlag.TIMESTAMP_PRESENT:
-    $next [+4]               UInt                    time_stamp
+    hdr_size            [+4]                UInt                       time_stamp
       -- A time in microseconds.
 
+  let ts_size = (header.ts_flag == TsFlag.TIMESTAMP_PRESENT) ? 4 : 0
+  let sdu_hdr_offset = hdr_size+ts_size
   if header.pb_flag == IsoDataPbFlag.FIRST_FRAGMENT || header.pb_flag == IsoDataPbFlag.COMPLETE_SDU:
-    $next [+4]  bits:
-      0     [+16]            UInt                    packet_sequence_number
+    sdu_hdr_offset      [+4]  bits:
+      0                   [+16]             UInt                       packet_sequence_number
         -- The sequence number of the SDU.
 
-      16    [+12]            UInt                    iso_sdu_length
+      16                  [+12]             UInt                       iso_sdu_length
         -- The total length of the SDU (and not of any individual fragments),
         -- in octets.
 
-      30    [+2]             IsoDataPacketStatus     packet_status_flag
+      30                  [+2]              IsoDataPacketStatus        packet_status_flag
         -- Packet status, only for frames sent by the controller.
 
-    $next [+iso_sdu_length]  UInt:8[iso_sdu_length]  iso_sdu_fragment
-      -- Isochronous data (the SDU or fragment of the SDU)
+  let sdu_hdr_size = (header.pb_flag == IsoDataPbFlag.FIRST_FRAGMENT || header.pb_flag == IsoDataPbFlag.COMPLETE_SDU) ? 4 : 0
+  let sdu_fragment_offset = hdr_size+ts_size+sdu_hdr_size
+  let sdu_fragment_size = header.data_total_length-(ts_size+sdu_hdr_size)
+  sdu_fragment_offset [+sdu_fragment_size]  UInt:8[sdu_fragment_size]  iso_sdu_fragment
+    -- Isochronous data (the SDU or fragment of the SDU)
 
 
 enum ScoDataPacketStatus:
