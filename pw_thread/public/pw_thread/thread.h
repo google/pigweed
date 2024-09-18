@@ -132,6 +132,10 @@ class Thread {
   /// allocated by default, meaning default options cannot work on backends
   /// which require static thread allocations. In addition on some schedulers
   /// default options may not work for other reasons.
+  [[deprecated(
+      "The Thread constructor now takes a pw::Function<void()>. Pass a "
+      "function, lambda, or other functor that converts to a "
+      "pw::Function<void()>, instead of a void(void*) function.")]]
   Thread(const Options& options, ThreadRoutine entry, void* arg = nullptr);
 
   /// Postcondition: The other thread no longer represents a thread of
