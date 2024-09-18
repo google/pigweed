@@ -87,11 +87,16 @@ env = pigweed_environment()
 
 def _local_clangd_settings(ide_settings: PigweedIdeSettings) -> dict[str, Any]:
     """VSC settings for running clangd with Pigweed paths."""
-    clangd_settings = ClangdSettings(ide_settings)
-    return {
-        'clangd.path': str(clangd_settings.clangd_path),
-        'clangd.arguments': clangd_settings.arguments,
-    }
+
+    try:
+        clangd_settings = ClangdSettings(ide_settings)
+
+        return {
+            'clangd.path': str(clangd_settings.clangd_path),
+            'clangd.arguments': clangd_settings.arguments,
+        }
+    except FileNotFoundError:
+        return {}
 
 
 def _local_python_settings() -> dict[str, Any]:
