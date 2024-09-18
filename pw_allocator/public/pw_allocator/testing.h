@@ -18,6 +18,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
+#include "pw_allocator/config.h"
 #include "pw_allocator/first_fit_block_allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
@@ -30,6 +31,9 @@
 
 namespace pw::allocator {
 namespace test {
+
+static_assert(PW_ALLOCATOR_STRICT_VALIDATION,
+              "Tests must use a config that enables strict validation");
 
 // A token that can be used in tests.
 constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");

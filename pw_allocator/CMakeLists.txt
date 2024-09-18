@@ -12,7 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+# Module configuration
+
+pw_add_module_config(pw_allocator_CONFIG)
+
+pw_add_library(pw_allocator.config INTERFACE
+  HEADERS
+    public/pw_allocator/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_allocator_CONFIG}
+)
+
+pw_add_library(pw_allocator.test_config INTERFACE
+  PUBLIC_DEFINES
+    PW_ALLOCATOR_STRICT_VALIDATION=1
+)
 
 # Libraries
 
@@ -51,6 +69,7 @@ pw_add_library(pw_allocator.best_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.config
 )
 
 pw_add_library(pw_allocator.block STATIC
@@ -61,6 +80,7 @@ pw_add_library(pw_allocator.block STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.buffer
+    pw_allocator.config
     pw_assert
     pw_bytes
     pw_bytes.alignment
@@ -201,6 +221,7 @@ pw_add_library(pw_allocator.dual_first_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.config
 )
 
 pw_add_library(pw_allocator.fallback_allocator STATIC
@@ -226,6 +247,7 @@ pw_add_library(pw_allocator.first_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.config
 )
 
 pw_add_library(pw_allocator.fragmentation STATIC
@@ -257,6 +279,7 @@ pw_add_library(pw_allocator.last_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.config
 )
 
 pw_add_library(pw_allocator.libc_allocator STATIC
@@ -333,6 +356,7 @@ pw_add_library(pw_allocator.worst_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.config
 )
 
 # Test support
@@ -347,6 +371,7 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_allocator.block
     pw_allocator.buffer
     pw_allocator.first_fit_block_allocator
+    pw_allocator.test_config
     pw_allocator.tracking_allocator
     pw_bytes
     pw_result
@@ -364,6 +389,7 @@ pw_add_library(pw_allocator.block_testing INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block
+    pw_allocator.testing
     pw_assert
     pw_bytes.alignment
     pw_bytes
@@ -418,11 +444,11 @@ pw_add_library(pw_allocator.fuzzing STATIC
 # Tests
 
 pw_add_test(pw_allocator.allocator_as_pool_test
+  SOURCES
+    allocator_as_pool_test.cc
   PRIVATE_DEPS
     pw_allocator.allocator_as_pool
     pw_allocator.testing
-  SOURCES
-    allocator_as_pool_test.cc
   GROUPS
     modules
     pw_allocator
@@ -474,21 +500,22 @@ pw_add_test(pw_allocator.block_test
 )
 
 pw_add_test(pw_allocator.bucket_block_allocator_test
+  SOURCES
+    bucket_block_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.block_allocator_testing
     pw_allocator.bucket_block_allocator
-  SOURCES
-    bucket_block_allocator_test.cc
   GROUPS
     modules
     pw_allocator
 )
 
 pw_add_test(pw_allocator.buddy_allocator_test
-  PRIVATE_DEPS
-    pw_allocator.buddy_allocator
   SOURCES
     buddy_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.buddy_allocator
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
@@ -499,6 +526,7 @@ pw_add_test(pw_allocator.buffer_test
     buffer_test.cc
   PRIVATE_DEPS
     pw_allocator.buffer
+    pw_allocator.testing
     pw_bytes
     pw_result
   GROUPS
@@ -507,21 +535,25 @@ pw_add_test(pw_allocator.buffer_test
 )
 
 pw_add_test(pw_allocator.bump_allocator_test
-  PRIVATE_DEPS
-    pw_allocator.bump_allocator
   SOURCES
     bump_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.bump_allocator
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
 )
 
 pw_add_test(pw_allocator.chunk_pool_test
+  SOURCES
+    chunk_pool_test.cc
   PRIVATE_DEPS
     pw_allocator.chunk_pool
     pw_allocator.testing
-  SOURCES
-    chunk_pool_test.cc
+  GROUPS
+    modules
+    pw_allocator
 )
 
 pw_add_test(pw_allocator.dual_first_fit_block_allocator_test
@@ -564,6 +596,7 @@ pw_add_test(pw_allocator.fragmentation_test
     fragmentation_test.cc
   PRIVATE_DEPS
     pw_allocator.fragmentation
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
@@ -575,6 +608,7 @@ pw_add_test(pw_allocator.freelist_heap_test
   PRIVATE_DEPS
     pw_allocator.block_testing
     pw_allocator.freelist_heap
+    pw_allocator.testing
     pw_bytes.alignment
   GROUPS
     modules
@@ -586,6 +620,7 @@ pw_add_test(pw_allocator.layout_test
     layout_test.cc
   PRIVATE_DEPS
     pw_allocator.deallocator
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
@@ -607,6 +642,7 @@ pw_add_test(pw_allocator.libc_allocator_test
     libc_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.libc_allocator
+    pw_allocator.testing
     pw_unit_test
   GROUPS
     modules
@@ -618,6 +654,7 @@ pw_add_test(pw_allocator.null_allocator_test
     null_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.null_allocator
+    pw_allocator.testing
     pw_unit_test
   GROUPS
     modules
@@ -659,6 +696,7 @@ pw_add_test(pw_allocator.typed_pool_test
   SOURCES
     typed_pool_test.cc
   PRIVATE_DEPS
+    pw_allocator.testing
     pw_allocator.typed_pool
     pw_bytes.alignment
     pw_unit_test

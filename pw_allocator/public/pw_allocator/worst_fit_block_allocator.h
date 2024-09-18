@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_allocator/block_allocator.h"
+#include "pw_allocator/config.h"
 
 namespace pw::allocator {
 
@@ -26,7 +27,7 @@ namespace pw::allocator {
 /// This algorithm may lead to less fragmentation as any unused fragments are
 /// more likely to be large enough to be useful to other requests.
 template <typename OffsetType = uintptr_t,
-          size_t kPoisonInterval = 0,
+          size_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL,
           size_t kAlign = alignof(OffsetType)>
 class WorstFitBlockAllocator
     : public BlockAllocator<OffsetType, kPoisonInterval, kAlign> {

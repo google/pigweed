@@ -81,6 +81,19 @@ Get started
       allocators in its public interface, e.g. its header file, use
       ``PUBLIC_DEPS`` instead of ``PRIVATE_DEPS``.
 
+.. _module-pw_allocator-module-configuration:
+
+--------------------
+Module configuration
+--------------------
+This module has configuration options that globally affect the behavior of
+``pw_allocator`` via compile-time configuration of this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. doxygendefine:: PW_ALLOCATOR_STRICT_VALIDATION
+.. doxygendefine:: PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+
 -----------------
 Inject allocators
 -----------------
@@ -431,13 +444,14 @@ deallocation it will check the integrity of the block header and assert if it
 has been modified.
 
 Additionally, you can enable poisoning to detect additional memory corruptions
-such as use-after-frees. The ``Block`` type has a template parameter that
-enables the ``Poison`` and ``CheckPoison`` methods. Allocators can use these
-methods to "poison" blocks on deallocation with a set pattern, and later check
-on allocation that the pattern is intact. If it's not, some routine has
-modified unallocated memory.
+such as use-after-frees. The :ref:`module-pw_allocator-module-configuration` for
+``pw_allocator`` includes the ``PW_ALLOCATOR_BLOCK_POISON_INTERVAL`` option,
+which will "poison" every N-th ``Block``. Allocators "poison" blocks on
+deallocation by writing a set pattern to the usable memory, and later check on
+allocation that the pattern is intact. If it's not, some routine has modified
+unallocated memory.
 
-The :ref:`module-pw_allocator-api-block_allocator` class has a
+The :ref:`module-pw_allocator-api-block_allocator` has a
 ``kPoisonInterval`` template parameter to control how frequently blocks are
 poisoned on deallocation. This allows projects to stochiastically sample
 allocations for memory corruptions while mitigating the performance impact.

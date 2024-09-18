@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_allocator/block_allocator.h"
+#include "pw_allocator/config.h"
 
 namespace pw::allocator {
 
@@ -27,7 +28,7 @@ namespace pw::allocator {
 /// corresponding "first-fit" strategy, since even with alignment it will result
 /// in at most one unused fragment before the allocated block.
 template <typename OffsetType = uintptr_t,
-          size_t kPoisonInterval = 0,
+          size_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL,
           size_t kAlign = alignof(OffsetType)>
 class LastFitBlockAllocator
     : public BlockAllocator<OffsetType, kPoisonInterval, kAlign> {
