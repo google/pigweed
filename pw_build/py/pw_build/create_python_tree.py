@@ -373,7 +373,7 @@ def build_python_tree(
     destination_path = tree_destination_dir.resolve()
     # Delete any existing files
     shutil.rmtree(destination_path, ignore_errors=True)
-    destination_path.mkdir(exist_ok=True)
+    destination_path.mkdir(parents=True, exist_ok=True)
 
     for pkg in python_packages:
         # Define a temporary location to run setup.py build in.
