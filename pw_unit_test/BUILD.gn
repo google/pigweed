@@ -360,11 +360,14 @@ pw_test_group("metadata_only_group") {
 }
 
 pw_python_action_test("test_group_metadata_test") {
+  _metadata_path =
+      rebase_path(get_label_info(":metadata_only_group", "target_out_dir")) +
+      "/metadata_only_group.testinfo.json"
   testonly = pw_unit_test_TESTONLY
   sources = [ "py/test_group_metadata_test.py" ]
   args = [
-    "--stamp-path",
-    "<TARGET_FILE(:metadata_only_group)>",
+    "--metadata-path",
+    "$_metadata_path",
   ]
   deps = [ ":metadata_only_group" ]
 }

@@ -64,10 +64,10 @@ def main() -> None:
     """Tests that pw_test_group outputs expected metadata."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '--stamp-path',
+        '--metadata-path',
         type=pathlib.Path,
         required=True,
-        help='Path to the stamp file output of pw_test_group',
+        help='Path to the metadata.',
     )
     parser.add_argument(
         'unittest_args',
@@ -75,12 +75,7 @@ def main() -> None:
         help='Arguments after "--" are passed to unittest.',
     )
     args = parser.parse_args()
-    # Use the stamp file location to find the location of the metadata file.
-    # Unfortunately, there's no reliable toolchain-agnostic way to grab the path
-    # to the metadata file itself within GN.
-    TestGroupMetadataTest.metadata_path = (
-        args.stamp_path.parent / 'metadata_only_group.testinfo.json'
-    )
+    TestGroupMetadataTest.metadata_path = args.metadata_path
     unittest_args = sys.argv[:1] + args.unittest_args[1:]
     unittest.main(argv=unittest_args)
 
