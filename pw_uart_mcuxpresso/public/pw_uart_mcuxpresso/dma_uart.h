@@ -32,13 +32,15 @@ class DmaUartMcuxpresso final : public Uart {
  public:
   // Configuration structure
   struct Config {
-    USART_Type* usart_base;            // Base of USART control struct
-    uint32_t baud_rate;                // Desired communication speed
-    usart_parity_mode_t parity;        // Parity setting
-    usart_stop_bit_count_t stop_bits;  // Number of stop bits to use
-    DMA_Type* dma_base;                // Base of DMA control struct
-    uint32_t rx_dma_ch;                // Receive DMA channel
-    uint32_t tx_dma_ch;                // Transmit DMA channel
+    USART_Type* usart_base;     // Base of USART control struct
+    uint32_t baud_rate;         // Desired communication speed
+    bool flow_control = false;  // Hardware flow control setting
+    usart_parity_mode_t parity = kUSART_ParityDisabled;  // Parity setting
+    usart_stop_bit_count_t stop_bits =
+        kUSART_OneStopBit;  // Number of stop bits to use
+    DMA_Type* dma_base;     // Base of DMA control struct
+    uint32_t rx_dma_ch;     // Receive DMA channel
+    uint32_t tx_dma_ch;     // Transmit DMA channel
     inputmux_signal_t rx_input_mux_dmac_ch_request_en;  // Rx input mux signal
     inputmux_signal_t tx_input_mux_dmac_ch_request_en;  // Tx input mux signal
     ByteSpan buffer;                                    // Receive ring buffer

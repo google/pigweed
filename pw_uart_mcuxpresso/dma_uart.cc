@@ -64,6 +64,7 @@ Status DmaUartMcuxpresso::Init() {
   USART_GetDefaultConfig(&defconfig_);
 
   defconfig_.baudRate_Bps = config_.baud_rate;
+  defconfig_.enableHardwareFlowControl = config_.flow_control;
   defconfig_.parityMode = config_.parity;
   defconfig_.enableTx = true;
   defconfig_.enableRx = true;

@@ -23,6 +23,7 @@ pw::Status DmaUartExample() {
   constexpr uint32_t kFlexcomm = 0;
   const auto kUartBase = USART0;
   constexpr uint32_t kBaudRate = 115200;
+  constexpr bool kFlowControl = true;
   constexpr uint32_t kUartInstance = 5;
   std::array<std::byte, 65536> ring_buffer = {};
   constexpr uint32_t kUartRxDmaCh = 0;
@@ -33,6 +34,7 @@ pw::Status DmaUartExample() {
   const pw::uart::DmaUartMcuxpresso::Config kConfig = {
       .usart_base = kUartBase,
       .baud_rate = kBaudRate,
+      .flow_control = kFlowControl,
       .parity = kUSART_ParityDisabled,
       .stop_bits = kUSART_OneStopBit,
       .dma_base = DMA0,
