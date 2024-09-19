@@ -308,6 +308,18 @@ a ``FlatMap`` with two items.
        Pair<int, char>{-3, 'b'},
    };
 
+----------------
+pw::IntrusiveMap
+----------------
+.. doxygenclass:: pw::IntrusiveMap
+   :members:
+
+---------------------
+pw::IntrusiveMultiMap
+---------------------
+.. doxygenclass:: pw::IntrusiveMultiMap
+   :members:
+
 ----------------------------
 pw::containers::FilteredView
 ----------------------------

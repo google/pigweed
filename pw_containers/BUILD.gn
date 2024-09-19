@@ -49,7 +49,6 @@ group("pw_containers") {
     ":flat_map",
     ":inline_deque",
     ":inline_queue",
-    ":intrusive_forward_list",
     ":intrusive_list",
     ":vector",
   ]
@@ -185,6 +184,36 @@ pw_source_set("legacy_intrusive_list") {
   public_deps = [ ":intrusive_forward_list" ]
 }
 
+pw_source_set("intrusive_map_common") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_containers/internal/aa_tree.h",
+    "public/pw_containers/internal/aa_tree_item.h",
+    "public/pw_containers/internal/aa_tree_iterator.h",
+  ]
+  public_deps = [
+    ":intrusive",
+    "$dir_pw_bytes:packed_ptr",
+    dir_pw_assert,
+  ]
+  sources = [
+    "aa_tree.cc",
+    "aa_tree_item.cc",
+  ]
+}
+
+pw_source_set("intrusive_map") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/intrusive_map.h" ]
+  public_deps = [ ":intrusive_map_common" ]
+}
+
+pw_source_set("intrusive_multimap") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/intrusive_multimap.h" ]
+  public_deps = [ ":intrusive_map_common" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":algorithm_test",
@@ -194,6 +223,8 @@ pw_test_group("tests") {
     ":inline_queue_test",
     ":intrusive_forward_list_test",
     ":intrusive_list_test",
+    ":intrusive_map_test",
+    ":intrusive_multimap_test",
     ":raw_storage_test",
     ":to_array_test",
     ":inline_var_len_entry_queue_test",
@@ -344,6 +375,26 @@ pw_test("intrusive_list_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("intrusive_map_test") {
+  sources = [ "intrusive_map_test.cc" ]
+  deps = [
+    ":intrusive_map",
+    ":intrusive_multimap",
+    dir_pw_span,
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("intrusive_multimap_test") {
+  sources = [ "intrusive_multimap_test.cc" ]
+  deps = [
+    ":intrusive_map",
+    ":intrusive_multimap",
+    dir_pw_span,
+  ]
+  negative_compilation_tests = true
 }
 
 pw_doc_group("docs") {

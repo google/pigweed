@@ -17,6 +17,7 @@
 #include <limits>
 #include <type_traits>
 
+#include "pw_containers/internal/intrusive.h"
 #include "pw_containers/internal/intrusive_list_item.h"
 
 namespace pw::containers::internal {
@@ -76,8 +77,7 @@ class GenericIntrusiveList {
 
   /// Returns how many items can be added.
   ///
-  /// As an intrusive list, this is effectively unbounded, but is provided to
-  /// match std::list<T>.
+  /// As an intrusive container, this is effectively unbounded.
   constexpr size_t max_size() const noexcept {
     return std::numeric_limits<ptrdiff_t>::max();
   }
