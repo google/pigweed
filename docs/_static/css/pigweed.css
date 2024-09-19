@@ -32,6 +32,13 @@
   --font-stack-monospace: var(--pw-font-code);
 }
 
+code {
+  /* Remove borders from inline code (i.e. code that appears within
+   * paragraphs. Note that code blocks should have borders; those are
+   * applied to the code block's pre element. */
+  border: none !important;
+}
+
 code, pre {
   background-color: var(--pw-color-background-code);
   color: var(--pw-color-foreground-primary);
