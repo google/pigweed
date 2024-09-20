@@ -102,6 +102,9 @@ class unexpected {
   E unex_;
 };
 
+template <class E>
+unexpected(E) -> unexpected<E>;
+
 // Polyfill implementation of std::unexpect_t and std::unexpect.
 struct unexpect_t {
   explicit unexpect_t() = default;

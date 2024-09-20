@@ -151,35 +151,35 @@ static_assert(
 
 expected<int, const char*> FailableFunction1(bool fail, int num) {
   if (fail) {
-    return unexpected<const char*>("FailableFunction1");
+    return unexpected("FailableFunction1");
   }
   return num;
 }
 
 expected<std::string, const char*> FailableFunction2(bool fail, int num) {
   if (fail) {
-    return unexpected<const char*>("FailableFunction2");
+    return unexpected("FailableFunction2");
   }
   return std::to_string(num);
 }
 
 expected<int, const char*> FailOnOdd(int x) {
   if (x % 2) {
-    return unexpected<const char*>("odd");
+    return unexpected("odd");
   }
   return x;
 }
 
 expected<std::string, const char*> ItoaFailOnNegative(int x) {
   if (x < 0) {
-    return unexpected<const char*>("negative");
+    return unexpected("negative");
   }
   return std::to_string(x);
 }
 
 expected<char, const char*> GetSecondChar(const std::string& s) {
   if (s.size() < 2) {
-    return unexpected<const char*>("string too small");
+    return unexpected("string too small");
   }
   return s[1];
 }
