@@ -27,6 +27,7 @@ license(
 )
 
 qemu_tests = [
+    "//pw_bluetooth_sapphire/fuchsia/bt_hci_virtual:test_pkg",
     "//pw_bluetooth_sapphire/fuchsia/bt_host:test_pkg",
     "//pw_bluetooth_sapphire/fuchsia/host/att:test_pkg",
     "//pw_bluetooth_sapphire/fuchsia/host/common:test_pkg",

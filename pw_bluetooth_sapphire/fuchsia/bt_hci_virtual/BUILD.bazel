@@ -1,0 +1,132 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_driver",
+    "fuchsia_cc_test",
+    "fuchsia_component_manifest",
+    "fuchsia_driver_bind_bytecode",
+    "fuchsia_driver_component",
+    "fuchsia_platforms",
+    "fuchsia_test_package",
+    "fuchsia_unittest_package",
+)
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
+package(default_visibility = ["//visibility:public"])
+
+fuchsia_driver_bind_bytecode(
+    name = "bt-hci-virtual-bind",
+    output = "bt-hci-virtual.bindbc",
+    rules = "meta/bt-hci-virtual.bind",
+    deps = [
+        "@fuchsia_sdk//bind/fuchsia.platform",
+    ],
+)
+
+cc_library(
+    name = "common",
+    testonly = True,
+    srcs = [
+        "emulated_peer.cc",
+        "emulated_peer.h",
+        "emulator.cc",
+        "emulator.h",
+        "loopback.cc",
+        "loopback.h",
+    ],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    deps = [
+        "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire/fuchsia/host/fidl:helpers",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/testing:fake_controller",
+        "//pw_log_fuchsia",
+        "//pw_random_fuchsia:zircon_random_generator",
+        "@fuchsia_sdk//fidl/fuchsia.driver.framework:fuchsia.driver.framework_cpp",
+        "@fuchsia_sdk//fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
+        "@fuchsia_sdk//pkg/async-loop-cpp",
+        "@fuchsia_sdk//pkg/driver_component_cpp",
+        "@fuchsia_sdk//pkg/driver_devfs_cpp",
+        "@fuchsia_sdk//pkg/driver_runtime",
+    ],
+)
+
+fuchsia_cc_driver(
+    name = "bt-hci-virtual",
+    testonly = True,
+    srcs = [
+        "controller.cc",
+        "controller.h",
+    ],
+    output_name = "bt-hci-virtual",
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    deps = [
+        ":common",
+    ],
+)
+
+fuchsia_component_manifest(
+    name = "manifest",
+    src = "meta/driver.cml",
+)
+
+fuchsia_driver_component(
+    name = "component",
+    testonly = True,
+    bind_bytecode = ":bt-hci-virtual-bind",
+    driver_lib = ":bt-hci-virtual",
+    manifest = ":manifest",
+    tags = ["manual"],
+)
+
+fuchsia_test_package(
+    name = "pkg",
+    package_name = "virtual",
+    testonly = True,
+    components = [":component"],
+    fuchsia_api_level = "HEAD",
+    package_repository_name = "fuchsia.com",
+    platform = fuchsia_platforms.x64,
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+fuchsia_cc_test(
+    name = "loopback_test",
+    testonly = True,
+    srcs = ["loopback_test.cc"],
+    # TODO: b/310957361 - gtest not supported on device
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common",
+        "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "@fuchsia_sdk//pkg/driver_testing_cpp",
+    ],
+)
+
+fuchsia_unittest_package(
+    name = "test_pkg",
+    package_name = "bt-hci-virtual-unittests",
+    testonly = True,
+    fuchsia_api_level = "HEAD",
+    platform = fuchsia_platforms.x64,
+    tags = ["manual"],
+    unit_tests = [":loopback_test"],
+    visibility = ["//visibility:public"],
+)

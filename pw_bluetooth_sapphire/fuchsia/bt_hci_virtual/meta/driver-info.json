@@ -1,0 +1,15 @@
+{
+  "short_description": "Bluetooth HCI virtual controller driver for integration tests",
+  "manufacturer": "",
+  "families": [
+    "generic"
+  ],
+  "models": [
+    "generic"
+  ],
+  "areas": [
+    "Bluetooth",
+    "Connectivity",
+    "Test"
+  ]
+}
