@@ -33,9 +33,6 @@ class IntrusiveMultiMap;
 /// This map requires unique keys. Attempting to add an item with same key as an
 /// item already in the map will fail.
 ///
-/// Do not use this base class directly. Use one of the specialization of
-/// `pw::IntrsuiveMap` instead.
-///
 /// * Since items are not allocated by this class, the following methods have
 ///   no analogue:
 ///     std::map<T>::operator=
