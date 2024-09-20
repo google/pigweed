@@ -164,6 +164,15 @@ def _gn_main_build_check_targets() -> Sequence[str]:
         'pigweed_pypi_distribution',
     ]
 
+    # Since there is no mac-arm64 bloaty binary in CIPD, Arm Macs use the x86_64
+    # binary. However, Arm Macs in Pigweed CI disable Rosetta 2, so skip the
+    # 'default' build on those machines for now.
+    #
+    # TODO: b/368387791 - Add 'default' for all platforms when Arm Mac bloaty is
+    # available.
+    if platform.machine() != 'arm64' or sys.platform != 'darwin':
+        build_targets.append('default')
+
     return build_targets
 
 
@@ -240,6 +249,7 @@ gn_combined_build_check = PigweedGnGenNinja(
     name='gn_combined_build_check',
     doc='Run most host and device (QEMU) tests.',
     path_filter=_BUILD_FILE_FILTER,
+    packages=('emboss',),
     gn_args=dict(
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
         pw_BUILD_BROKEN_GROUPS=True,  # Enable to fully test the GN build
@@ -361,8 +371,11 @@ gn_teensy_build = PigweedGnGenNinja(
 gn_pico_build = PigweedGnGenNinja(
     name='gn_pico_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('pico_sdk', 'freertos'),
+    packages=('pico_sdk', 'freertos', 'emboss'),
     gn_args={
+        'dir_pw_third_party_emboss': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'emboss')
+        ),
         'dir_pw_third_party_freertos': lambda ctx: '"{}"'.format(
             str(ctx.package_root / 'freertos')
         ),
