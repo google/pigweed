@@ -13,6 +13,377 @@ Talk to the team at Pigweed Live
 
 .. _docs-changelog-latest:
 
+------------
+Sep 19, 2024
+------------
+
+.. changelog_highlights_start
+
+Highlights (Sep 06, 2024 to Sep 19, 2024):
+
+* **New container classes**: The new :cpp:class:`pw::IntrusiveMap` and
+  :cpp:class:`pw::IntrusiveMultiMap` classes can be used for associative
+  dictionaries, sorted lists, and more.
+* **Protobuf Editions**: Initial support for `Protobuf Editions
+  <https://protobuf.dev/editions/overview>`__ was added for GN-based and
+  CMake-based projects.
+* **Token domains**: The :ref:`Detokenizer
+  <module-pw_tokenizer-detokenization>` now supports
+  :ref:`token domains <seed-0105>`.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2024-09-19-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2024-09-19-Modules-pw_allocator:
+
+pw_allocator
+------------
+New features:
+
+.. d5fcc90b39ee7568855390535fa854cea8f33c95
+
+* The new :c:macro:`PW_ALLOCATOR_STRICT_VALIDATION` option lets you
+  enable more expensive checks to aggressively enforce invariants when
+  testing. The new :c:macro:`PW_ALLOCATOR_BLOCK_POISON_INTERVAL` option
+  allows setting the poisoning rate more easily from the build rather than
+  in code via template parameters. See
+  :ref:`module-pw_allocator-module-configuration`. Commit: `Add module config
+  <https://pwrev.dev/232211>`__.
+
+Bug fixes:
+
+.. 82759ccb711c3f34320ae9ae37bf70a029baec57
+
+* A bug was fixed where ``pw_allocator`` always split the first block
+  even if there was not enough room for the first block to be split into
+  two, which could cause heap corruption and crashes. Commit: `Check for
+  room to split the first block <https://pwrev.dev/235312>`__. Bug:
+  :bug:`366175024`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_assert:
+
+pw_assert
+---------
+Changes:
+
+.. cfcf0059926589e26f318e29df8733e5a09c2928
+
+* :c:macro:`PW_CHECK_OK` now accepts any expression that's convertible
+  to :cpp:class:`pw::Status`. Commit: `Update PW_CHECK_OK() to handle any
+  expr convertible to Status <https://pwrev.dev/234820>`__. Bugs:
+  :bug:`357682413`, :bug:`365592494`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_async2:
+
+pw_async2
+---------
+New features:
+
+.. cfcbaf5bbc67288b5e8954f22528c4de9312effe
+
+* The new
+  :cpp:func:`pw::async2::SimulatedTimeProvider::AdvanceUntilNextExpiration`
+  utility method is useful for advancing test time without
+  random periods or endless iterations. Commit: `Add more
+  SimulatedTimeProvider utilities <https://pwrev.dev/234929>`__.
+
+Changes:
+
+.. ed0fd1f45a3a137965dbb2075227b8ef0e91f935
+
+* Coroutines now log the requested size when an allocation fails.
+  Commit: `Log size of failed coroutine allocations
+  <https://pwrev.dev/234801>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_build:
+
+pw_build
+--------
+Bug fixes:
+
+.. 3919d9638b6454512595c8ad39fb8806d4ac9629
+
+* An issue was fixed where bootstrap failed when
+  ``pw_rust_static_library`` was used. Commit: `Fix Undefined identifier
+  <https://pwrev.dev/232371>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_bytes:
+
+pw_bytes
+--------
+New features:
+
+.. cda5ba673366d189e0ea326a0fa808df181730a7
+
+* The new :cpp:class:`pw::PackedPtr` template class provides a way to
+  store extra data in the otherwise unused least significant bits of a
+  pointer. Commit: `Add PackedPtr <https://pwrev.dev/235104>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_containers:
+
+pw_containers
+-------------
+New features:
+
+.. df3b7ba1f94902e81e375ce9935749163c411515
+
+* ``pw::IntrusiveList`` now has a :ref:`size report
+  <module-pw_containers-intrusivelist-size-report>`. Commit:
+  `Add IntrusiveForwardList size report to the docs
+  <https://pwrev.dev/233651>`__.
+
+.. 8a3250d2f4287c2f66c4afd7679f9b10f789e764
+
+* The new :cpp:class:`pw::IntrusiveMap` and
+  :cpp:class:`pw::IntrusiveMultiMap` classes can be used for associative
+  dictionaries, sorted lists, and more. Commit: `Add IntrusiveMap and
+  IntrusiveMultiMap <https://pwrev.dev/216828>`__.
+
+Changes:
+
+.. 314e457eaf3a801115542d777e2157e6df85fb31
+
+* ``pw::IntrusiveList<T>`` was renamed to
+  ``pw::IntrusiveForwardList<T>`` and a new doubly-linked intrusive list
+  was added as ``pw::containers::future::IntrusiveList<T>``. An alias,
+  ``pw::IntrusiveList<T>``, was added to maintain compatibility with
+  existing code and will be removed in the future. The original
+  implementation can still be temporarily enabled by setting
+  ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST``. Commit: `Add doubly linked
+  list <https://pwrev.dev/230811>`__. Bug: :bug:`362348318`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_env_setup:
+
+pw_env_setup
+------------
+Changes:
+
+.. 16f0f6387505dc27e7c1a76387b05524752b4602
+
+* The Git submodule check is now skipped when no ``.git`` file or
+  directory is detected. Commit: `Add check for git in
+  _check_submodule_presence <https://pwrev.dev/234212>`__. Bug:
+  :bug:`365557573`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_ide:
+
+pw_ide
+------
+Bug fixes:
+
+.. 145b45747105fb95e5625c00a7533e5375d124ea
+
+* When ``clangd`` is not found, ``pw ide sync`` now cleanly handles the
+  lack of ``clangd`` and successfully completes the rest of the sync.
+  Commit: `Don't fail sync on missing clangd
+  <https://pwrev.dev/236475>`__. Bug: :bug:`349189723`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+New features:
+
+.. b299522cffb0a18e07528e923f376ceee3e9c188
+
+* Initial support for `Protobuf Editions
+  <https://protobuf.dev/editions/overview>`__ was added for GN-based and
+  CMake-based projects. Commit: `Basic edition support
+  <https://pwrev.dev/235873>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_spi_linux:
+
+pw_spi_linux
+------------
+Bug fixes:
+
+.. eefd313bdb13098552cd713598b937debe80d3d4
+
+* A performance issue was fixed where ``Configure()`` was being called
+  on each ``pw::spi::Device::WriteRead()`` call. Commit: `Avoid
+  unnecessary ioctl()s in Configure() <https://pwrev.dev/235877>`__. Bug:
+  :bug:`366541694`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_spi_mcuxpresso:
+
+pw_spi_mcuxpresso
+-----------------
+Changes:
+
+.. 9d175062d56972f082ce99753092b75419a228ce
+
+* ``pw::spi::McuxpressoInitiator::DoConfigure()`` was renamed to
+  ``pw::spi::McuxpressoInitiator::DoConfigureLocked()``. Commit: `Rename
+  DoConfigure() to DoConfigureLocked() <https://pwrev.dev/236232>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_sys_io_stm32cube:
+
+pw_sys_io_stm32cube
+-------------------
+Bug fixes:
+
+.. b0f73feb04effde3b7751c53c21b7a163f234eb8
+
+* A bug was fixed where the GPIO mode of the UART RX GPIO pin on
+  STM32F1XX devices was not being correctly set. Commit: `Fix UART RX GPIO
+  mode for f1xx family <https://pwrev.dev/235332>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_system:
+
+pw_system
+---------
+New features:
+
+.. 5e148c19477521afbbedcc8a91a2c5b2a07bc334
+
+* The console's new ``timestamp_decoder`` constructor parameter lets
+  applications provide custom timestamp parsers. Commit: `Support
+  timestamp parser as an argument <https://pwrev.dev/234931>`__. Bug:
+  :bug:`344606797`.
+
+Changes:
+
+.. faac61757b5428be3787729d328f6f2f3ebfa9f1
+
+* The log library header (``pw_system/log.h``) of ``pw_system`` is now
+  public and can be used outside of ``pw_system``. Commit: `Make log
+  library header public <https://pwrev.dev/233411>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_thread:
+
+pw_thread
+---------
+Changes:
+
+.. 8a67d6b57b526757ffa010be2be402c42cd13ac4
+
+* ``pw::thread::Thread`` now takes ``pw::Function<void()>``, which
+  should be used in place of the ``void(void*)`` function pointer and
+  ``void*`` argument. Commit: `Mark legacy function* / void* constructor
+  as deprecated <https://pwrev.dev/236454>`__. Bug: :bug:`367786892`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_tokenizer:
+
+pw_tokenizer
+------------
+New features:
+
+.. 9fb87e78e4c41778fc950714d58e6602f63d27e6
+
+* The :ref:`Detokenizer <module-pw_tokenizer-detokenization>` now
+  supports :ref:`token domains <seed-0105>`. Commit:
+  `Add token domain support to Detokenizer <https://pwrev.dev/234968>`__.
+  Bug: :bug:`362752722`.
+
+.. 08ff555993b8ab250ea03a9f12aaf5c2d1c9c705
+
+* :py:class:`pw_tokenizer.tokens.Database` now supports :ref:`token
+  domains <seed-0105>`. Commit: `Use domains in the Python tokens.Database
+  class <https://pwrev.dev/234412>`__.
+
+.. _docs-changelog-2024-09-19-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+New features:
+
+.. 40f756e2d3c40eeb32832309dbcae989fb750268
+
+* ``WORKSPACE`` toolchain registration is now configurable so that
+  downstream projects can manually control which toolchains get
+  registered. Commit: `Make toolchain registration configurable
+  <https://pwrev.dev/235712>`__. Bug: :bug:`346388161`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_transfer:
+
+pw_transfer
+-----------
+Bug fixes:
+
+.. f1f654a15a3adce476c2d68643eee56f3c225dd4
+
+* A bug was fixed where a handshake timeout was not set after
+  ``START_ACK`` is processed. Commit: `Bugfix for start handshake, and
+  rate limit logs <https://pwrev.dev/236572>`__. Bug: :bug:`361281209`.
+
+Changes:
+
+.. 2496aee1a4ab3d98526a7357943b69347a39903a
+
+* When a receiver receives a chunk of data it already has the receiver
+  now sends a ``PARAMETERS_CONTINUE`` chunk instead of requesting
+  retransmission. Commit: `Send continue parameters for already received
+  chunks <https://pwrev.dev/235100>`__.
+
+.. f1f654a15a3adce476c2d68643eee56f3c225dd4
+
+* TX data chunk logs have been rate-limited to only send once every 3
+  seconds. Commit: `Bugfix for start handshake, and rate limit logs
+  <https://pwrev.dev/236572>`__. Bug: :bug:`361281209`.
+
+.. _docs-changelog-2024-09-19-Modules-pw_uart_mcuxpresso:
+
+pw_uart_mcuxpresso
+------------------
+New features:
+
+.. e8ab2b0ac31c0dde6febd0d384c0ea7d688f6803
+
+* Flow control can now be configured. Commit: `Add support for
+  configuring flow control <https://pwrev.dev/236896>`__. Bug:
+  :bug:`368150004`.
+
+Changes:
+
+.. e8ab2b0ac31c0dde6febd0d384c0ea7d688f6803
+
+* Flow control, parity mode, and stop bits now have default values.
+  Commit: `Add support for configuring flow control
+  <https://pwrev.dev/236896>`__. Bug: :bug:`368150004`.
+
+.. _docs-changelog-2024-09-19-Build-systems:
+
+Build systems
+=============
+
+.. _docs-changelog-2024-09-19-Build-systems-Bazel:
+
+Bazel
+-----
+New features:
+
+.. 4ceb5b8bf0faf75c0b051114abf85a2ea73ca39c
+
+* The new ``do_not_build`` tag specifies targets that should be excluded
+  from wildcard builds. The new ``do_not_run_test`` tag specifies test
+  targets that should be built but not executed. Commit: `Introduce
+  do_not_build, do_no_run_test tags <https://pwrev.dev/223492>`__. Bug:
+  :bug:`353531487`.
+
+.. 54679d205e4888302ab24882e6fb64bf8ba964c6
+
+* `Platform-based flags <https://github.com/bazelbuild/proposals/blob/ma
+  in/designs/2023-06-08-platform-based-flags.md>`__ have been re-enabled.
+  Commit: `Re-enable platform-based flags <https://pwrev.dev/234135>`__.
+  Bug: :bug:`301334234`.
+
+.. _docs-changelog-2024-09-19-Miscellaneous:
+
+Miscellaneous
+=============
+Bug fixes:
+
+.. 982c7f42878871e7f85dbc5420ff17f0b8ede237
+
+* An issue was fixed where the Fuchsia SDK was always fetched during
+  Bazel workspace initialization and caused unnecessary downloads. Commit:
+  `Use @fuchsia_clang as a cipd repository <https://pwrev.dev/233531>`__.
+  Bug: :bug:`346416385`.
+
 -----------
 Sep 5, 2024
 -----------
@@ -22,8 +393,6 @@ Sep 5, 2024
    experimenting with only showing user-facing new features, changes,
    and bug fixes. I.e. we're omitting commits that don't affect
    downstream Pigweed projects.
-
-.. changelog_highlights_start
 
 Highlights (Aug 24, 2024 to Sep 5, 2024):
 
@@ -46,8 +415,6 @@ Highlights (Aug 24, 2024 to Sep 5, 2024):
   <showcase-sense-tutorial-bazel_cloud>`
   page in the Sense tutorial shows you how to use BuildBuddy
   to share logs and speed up builds with remote caching.
-
-.. changelog_highlights_end
 
 Modules
 =======
