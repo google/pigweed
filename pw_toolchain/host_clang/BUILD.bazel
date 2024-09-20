@@ -14,17 +14,12 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load(
-    "@pw_toolchain//cc_toolchain:defs.bzl",
-    "pw_cc_action_files",
-    "pw_cc_feature",
-    "pw_cc_feature_constraint",
-    "pw_cc_feature_set",
-    "pw_cc_flag_set",
-    "pw_cc_toolchain",
-)
-load("@pw_xcode_command_line_tools//:defs.bzl", "XCODE_SDK_PATH")
-load("//pw_toolchain/host_clang:paths.bzl", "LINUX_SYSROOT", "LLVM_TOOLCHAIN")
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains:feature_constraint.bzl", "cc_feature_constraint")
+load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("//pw_toolchain/host_clang:paths.bzl", "LLVM_TOOLCHAIN")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,16 +27,16 @@ licenses(["notice"])
 
 filegroup(name = "empty")
 
-pw_cc_flag_set(
+cc_args(
     name = "link_with_lld",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = ["-fuse-ld=lld"],
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = ["-fuse-ld=lld"],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "macos_link_libs",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
         # Force dropping the system libc++.
         "-nostdlib++",
         # Use libc++ provided by the toolchain.
@@ -50,10 +45,10 @@ pw_cc_flag_set(
     target_compatible_with = ["@platforms//os:macos"],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "linux_link_libs",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
         "-pthread",
         "-stdlib=libc++",
         "--rtlib=compiler-rt",
@@ -62,34 +57,32 @@ pw_cc_flag_set(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "libtool_darwin_flags",
-    actions = ["@pw_toolchain//actions:cpp_link_static_library"],
-    flags = ["-no_warning_for_no_symbols"],
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_link_static_library"],
+    args = ["-no_warning_for_no_symbols"],
 )
 
 # Thread safety warnings are only supported by Clang.
-pw_cc_flag_set(
+cc_args(
     name = "thread_safety_warnings",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
     ],
-    flags = [
+    args = [
         "-Wthread-safety",
         "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "verbose_compiler_flags",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = ["-v"],
+    args = ["-v"],
 )
 
 # A feature that can be easily toggled to include extra compiler output to help
@@ -97,35 +90,20 @@ pw_cc_flag_set(
 # passed to the compiler.
 #
 # Add `--features=verbose_compiler_output` to your Bazel invocation to enable.
-pw_cc_feature(
+cc_feature(
     name = "verbose_compiler_output",
-    enabled = False,
+    args = [":verbose_compiler_flags"],
     feature_name = "verbose_compiler_output",
-    flag_sets = [":verbose_compiler_flags"],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "no_unknown_warning_option",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
     ],
-    flags = [
+    args = [
         "-Wno-unknown-warning-option",
-    ],
-)
-
-pw_cc_action_files(
-    name = "sysroot_files",
-    srcs = select({
-        "@platforms//os:linux": [
-            "@linux_sysroot//:all",
-        ],
-        "//conditions:default": [],
-    }),
-    actions = [
-        "@pw_toolchain//actions:all_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
     ],
 )
 
@@ -141,18 +119,14 @@ config_setting(
     },
 )
 
-pw_cc_feature(
+cc_feature(
     name = "asan_feature",
-    enabled = select({
-        ":asan_enabled": True,
-        "//conditions:default": False,
-    }),
+    args = ["//pw_toolchain/args:asan"],
     feature_name = "asan",
-    flag_sets = ["@pw_toolchain//flag_sets:asan"],
     requires_any_of = [":asan_constraint"],
 )
 
-pw_cc_feature_set(
+cc_feature_set(
     name = "asan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=address is not be specified during Rust linking.
@@ -171,18 +145,14 @@ config_setting(
     },
 )
 
-pw_cc_feature(
+cc_feature(
     name = "ubsan_feature",
-    enabled = select({
-        ":ubsan_enabled": True,
-        "//conditions:default": False,
-    }),
+    args = ["//pw_toolchain/args:ubsan"],
     feature_name = "ubsan",
-    flag_sets = ["@pw_toolchain//flag_sets:ubsan"],
     requires_any_of = [":ubsan_constraint"],
 )
 
-pw_cc_feature_set(
+cc_feature_set(
     name = "ubsan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=undefined is not be specified during Rust linking.
@@ -201,18 +171,14 @@ config_setting(
     },
 )
 
-pw_cc_feature(
+cc_feature(
     name = "tsan_feature",
-    enabled = select({
-        ":tsan_enabled": True,
-        "//conditions:default": False,
-    }),
+    args = ["//pw_toolchain/args:tsan"],
     feature_name = "tsan",
-    flag_sets = ["@pw_toolchain//flag_sets:tsan"],
     requires_any_of = [":tsan_constraint"],
 )
 
-pw_cc_feature_set(
+cc_feature_set(
     name = "tsan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=undefined is not be specified during Rust linking.
@@ -231,33 +197,27 @@ config_setting(
     },
 )
 
-pw_cc_feature(
+cc_feature(
     name = "fuzztest_feature",
-    enabled = select({
-        ":fuzztest_enabled": True,
-        "//conditions:default": False,
-    }),
+    args = ["//pw_toolchain/args:fuzztest"],
     feature_name = "fuzztest",
-    flag_sets = ["@pw_toolchain//flag_sets:fuzztest"],
 )
 
 # This is a sentinel feature defined by rules_rust. It is by definition
 # unsupported: rules_rust will disable this feature when linking Rust code.
-pw_cc_feature(
+cc_feature(
     name = "rules_rust_unsupported_feature",
-    enabled = True,
     feature_name = "rules_rust_unsupported_feature",
 )
 
 # This is a sentinel feature defined by rules_go. It is by definition
 # unsupported: rules_go will disable this feature when linking Go code.
-pw_cc_feature(
+cc_feature(
     name = "rules_go_unsupported_feature",
-    enabled = True,
     feature_name = "rules_go_unsupported_feature",
 )
 
-pw_cc_feature_constraint(
+cc_feature_constraint(
     name = "rules_go_constraint",
 
     # This constraint is saying "not not Golang" (yes Golang / only Golang).
@@ -267,32 +227,29 @@ pw_cc_feature_constraint(
 # Golang doesn't link with PIE enabled. See pwbug.dev/347708308.
 #
 # We want to disable PIE only when we're *not* compiling Golang code.
-pw_cc_flag_set(
+cc_args(
     name = "no_pie_for_go_flags",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
         "-no-pie",
     ],
     requires_any_of = [":rules_go_constraint"],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "silence_cgo_warnings",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = ["-Wno-unused-parameter"],
+    args = ["-Wno-unused-parameter"],
     requires_any_of = [":rules_go_constraint"],
 )
 
-pw_cc_feature(
+cc_feature(
     name = "supports_pic",
-    enabled = True,
-    feature_name = "supports_pic",
-    overrides = "@pw_toolchain//features/well_known:supports_pic",
+    overrides = "@rules_cc//cc/toolchains/features:supports_pic",
 )
 
 # Symlink to clangd, for user convenience.
@@ -303,92 +260,73 @@ copy_file(
     allow_symlink = True,
 )
 
-pw_cc_toolchain(
+cc_toolchain(
     name = "host_toolchain",
-    action_configs = [
-        "@llvm_toolchain//:ar",
-        "@llvm_toolchain//:clang",
-        "@llvm_toolchain//:clang++",
-        "@llvm_toolchain//:lld",
-        "@llvm_toolchain//:llvm-cov",
-        "@llvm_toolchain//:llvm-objcopy",
-        "@llvm_toolchain//:llvm-objdump",
-        "@llvm_toolchain//:llvm-strip",
-    ],
-    builtin_sysroot = select({
-        "@platforms//os:linux": LINUX_SYSROOT,
-        "@platforms//os:macos": XCODE_SDK_PATH,
-        "//conditions:default": "",
-    }),
-    compiler = "clang",
-    cxx_builtin_include_directories = select({
-        "@platforms//os:linux": [
-            "%package(@@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
-            "%package(@@llvm_toolchain//)%/include/c++/v1",
-            "%package(@@llvm_toolchain//)%/lib/clang/18/include",
-            "%sysroot%/usr/local/include",
-            "%sysroot%/usr/include/x86_64-linux-gnu",
-            "%sysroot%/usr/include",
-        ],
-        "@platforms//os:macos": [
-            "%sysroot%/usr/include",
-            "%sysroot%/System/Library/Frameworks/CoreFoundation.framework/Headers",
-            "%sysroot%/System/Library/Frameworks/IOKit.framework/Headers",
-            "%sysroot%/System/Library/Frameworks/Security.framework/Headers",
-            "%package(@@llvm_toolchain//)%/include/c++/v1",
-            "%package(@@llvm_toolchain//)%/lib/clang/18/include",
-        ],
-        "//conditions:default": [],
-    }),
-    extra_action_files = [":sysroot_files"],
-    flag_sets = select({
+    args = select({
         "@platforms//os:linux": [
             ":linux_link_libs",
             ":no_pie_for_go_flags",
+            "@linux_sysroot//:sysroot",
         ],
         "@platforms//os:macos": [
             ":macos_link_libs",
             ":libtool_darwin_flags",
+            "@macos_sysroot//:sysroot",
         ],
         "//conditions:default": [],
     }) + [
         ":thread_safety_warnings",
         ":link_with_lld",
-        "@pw_toolchain//flag_sets:debugging",
-        "@pw_toolchain//flag_sets:reduced_size",
-        "@pw_toolchain//flag_sets:no_canonical_prefixes",
-        "@pw_toolchain//flag_sets:no_rtti",
-        "@pw_toolchain//flag_sets:wno_register",
-        "@pw_toolchain//flag_sets:wnon_virtual_dtor",
-        "//pw_toolchain/cc:common_warnings",
-        "//pw_toolchain/cc:color_diagnostics",
+        "//pw_toolchain/args:debugging",
+        "//pw_toolchain/args:reduced_size",
+        "//pw_toolchain/args:no_canonical_prefixes",
+        "//pw_toolchain/args:no_rtti",
+        "//pw_toolchain/args:wno_register",
+        "//pw_toolchain/args:wnon_virtual_dtor",
+        "//pw_toolchain/args:common_warnings",
+        "//pw_toolchain/args:color_diagnostics",
         # Must go after the general warnings that are enabled.
         ":silence_cgo_warnings",
     ] + select({
         "//pw_build:kythe": [":no_unknown_warning_option"],
         "//conditions:default": [],
     }),
-    # The implementations of some "legacy features" built into Bazel use
-    # `target_libc` to determine if a toolchain targets MacOS,
-    # https://github.com/bazelbuild/bazel/blob/release-7.0.0-pre.20230816.3rc1/src/main/java/com/google/devtools/build/lib/rules/cpp/CcModule.java#L1301-L1304
-    #
-    # `target_cpu` appears to only potentially do magic things for the Android
-    # NDK, so it's omitted here.
-    target_libc = select({
-        "@platforms//os:macos": "macosx",
-        "//conditions:default": None,
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        ":supports_pic",
+        ":rules_go_unsupported_feature",
+        ":rules_rust_unsupported_feature",
+    ] + select({
+        ":asan_enabled": [":asan_feature"],
+        "//conditions:default": [],
+    }) + select({
+        ":ubsan_enabled": [":ubsan_feature"],
+        "//conditions:default": [],
+    }) + select({
+        ":tsan_enabled": [":tsan_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/args:c++20_feature"],
+        "//conditions:default": [],
+    }) + select({
+        ":fuzztest_enabled": [":fuzztest_feature"],
+        "//conditions:default": [],
     }),
-    toolchain_features = [
+    known_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
         ":asan_feature",
         ":ubsan_feature",
         ":tsan_feature",
         ":verbose_compiler_output",
         ":rules_rust_unsupported_feature",
         ":supports_pic",
-        "//pw_toolchain/cc:c++17_feature",
-        "//pw_toolchain/cc:c++20_feature",
+        "//pw_toolchain/args:c++17_feature",
+        "//pw_toolchain/args:c++20_feature",
     ],
-    toolchain_identifier = "host-toolchain",
+    tool_map = "@llvm_toolchain//:all_tools",
 )
 
 toolchain(

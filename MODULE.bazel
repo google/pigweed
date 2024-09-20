@@ -106,9 +106,12 @@ local_path_override(
     path = "pw_toolchain_bazel",
 )
 
-xcode = use_repo_rule("@pw_toolchain//features/macos/private:xcode_command_line_tools.bzl", "pw_xcode_repository")
+xcode_sdk_repository = use_repo_rule("//pw_toolchain:xcode.bzl", "xcode_sdk_repository")
 
-xcode(name = "pw_xcode_command_line_tools")
+xcode_sdk_repository(
+    name = "macos_sysroot",
+    build_file = "//pw_toolchain/host_clang:macos_sysroot.BUILD",
+)
 
 cipd_client_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "_cipd_client_repository")
 
@@ -119,7 +122,7 @@ cipd_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl"
 # Fetch llvm toolchain.
 cipd_repository(
     name = "llvm_toolchain",
-    build_file = "@pw_toolchain//build_external:llvm_clang_legacy.BUILD",
+    build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
     tag = "git_revision:c58bc24fcf678c55b0bf522be89eff070507a005",
 )
@@ -134,6 +137,7 @@ cipd_repository(
 # Fetch linux sysroot for host builds.
 cipd_repository(
     name = "linux_sysroot",
+    build_file = "//pw_toolchain/host_clang:linux_sysroot.BUILD",
     path = "fuchsia/third_party/sysroot/bionic",
     tag = "git_revision:702eb9654703a7cec1cadf93a7e3aa269d053943",
 )

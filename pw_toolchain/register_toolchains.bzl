@@ -21,14 +21,8 @@ Before loading this bzl file, you must first:
 * Initialize the CIPD client repository.
 """
 
-load(
-    "@pw_toolchain//features/macos:generate_xcode_repository.bzl",
-    "pw_xcode_command_line_tools_repository",
-)
-load(
-    "//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
-    "cipd_repository",
-)
+load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
+load("//pw_toolchain:xcode.bzl", "xcode_sdk_repository")
 
 _ALL_TOOLCHAINS = [
     "//pw_toolchain:cc_toolchain_cortex-m0",
@@ -65,7 +59,10 @@ def register_pigweed_cxx_toolchains(
     """
 
     # Generate xcode repository on macOS.
-    pw_xcode_command_line_tools_repository()
+    xcode_sdk_repository(
+        name = "macos_sysroot",
+        build_file = "@pigweed//pw_toolchain/host_clang:macos_sysroot.BUILD",
+    )
 
     # Fetch llvm toolchain for device.
     cipd_repository(
@@ -78,7 +75,7 @@ def register_pigweed_cxx_toolchains(
     # Fetch llvm toolchain for host.
     cipd_repository(
         name = "llvm_toolchain",
-        build_file = "@pw_toolchain//build_external:llvm_clang_legacy.BUILD",
+        build_file = "@pigweed//pw_toolchain/build_external:llvm_clang.BUILD",
         path = "fuchsia/third_party/clang/${os}-${arch}",
         tag = "git_revision:e894df6392beea3723627329009f3e6d51d16f47" if not clang_tag else clang_tag,
     )
@@ -86,6 +83,7 @@ def register_pigweed_cxx_toolchains(
     # Fetch linux sysroot for host builds.
     cipd_repository(
         name = "linux_sysroot",
+        build_file = "@pigweed//pw_toolchain/host_clang:linux_sysroot.BUILD",
         path = "fuchsia/third_party/sysroot/bionic",
         tag = "git_revision:702eb9654703a7cec1cadf93a7e3aa269d053943",
     )

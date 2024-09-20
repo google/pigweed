@@ -26,6 +26,11 @@ import %workspace%/pw_build/pigweed.bazelrc
 common --per_file_copt=external/.*@-w
 common --host_per_file_copt=external/.*@-w
 
+# TODO: https://pwbug.dev/324107025 - Temporary workaround until Sapphire
+# migration is done or warnings are fixed.
+common --per_file_copt=pw_bluetooth_sapphire/.*@-Wno-unused-parameter
+common --host_per_file_copt=pw_bluetooth_sapphire/.*@-Wno-unused-parameter
+
 # Picotool needs to build with exceptions and RTTI enabled.
 common --per_file_copt=external.*picotool.*@-fexceptions,-frtti
 common --host_per_file_copt=external.*picotool.*@-fexceptions,-frtti
