@@ -212,7 +212,7 @@ pw_seed("0122") {
 pw_seed("0123") {
   changelist = 188141
   title = "Sprout Bazel C++ toolchain API into a separate repository"
-  status = "Draft"
+  status = "Rejected"
   author = "Ted Pudlik"
   facilitator = "Armando Montanez"
 }
