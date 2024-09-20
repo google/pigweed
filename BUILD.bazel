@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 licenses(["notice"])
 
@@ -35,4 +36,24 @@ copy_file(
     src = "@llvm_toolchain//:bin/clangd",
     out = "clangd",
     allow_symlink = True,
+)
+
+# The Fuchsia SDK is only supported on Linux hosts, so the target that
+# generates compile commands for targets built for Fuchsia is separate from
+# the more general-purpose `refresh_compile_commands` target.
+refresh_compile_commands(
+    name = "refresh_compile_commands_for_fuchsia_sdk",
+    out_dir = ".compile_commands",
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    target_groups = {
+        "fuchsia": [
+            [
+                "//pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64",
+                "--config=fuchsia",
+            ],
+        ],
+    },
 )
