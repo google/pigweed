@@ -13,12 +13,41 @@
 # the License.
 #
 
-# Improve debugability by printing all arguments for failing commands.
-common --verbose_failures
-
 # Standard flags required for all Pigweed projects.
 import %workspace%/pw_build/pigweed.bazelrc
 
+# UX flags
+# ========
+# Improve debugability by printing all arguments for failing commands.
+common --verbose_failures
+
+# Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
+# messages from our third-party dependencies.
+build --ui_event_filters=-debug
+
+# Specifies desired output mode for running tests.
+# Valid values are
+#   'summary' to output only test status summary
+#   'errors' to also print test logs for failed tests
+#   'all' to print logs for all tests
+#   'streamed' to output logs for all tests in real time
+#     (this will force tests to be executed locally one at a time regardless
+#     of --test_strategy value).
+test --test_output=errors
+
+# Default build_tag_filters and test_tag_filters
+# ==============================================
+# Skip building any targets tagged do_not_build.
+build --build_tag_filters=-do_not_build
+
+# Exclude integration tests from the default build. The test_tag_filters flag
+# doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we have
+# to specify it only once, setting all the exclusions in a comma-separated
+# list.
+test --test_tag_filters=-integration,-do_not_build,-do_not_run_test
+
+# C++ related flags
+# =================
 # Silence all C/C++ warnings in external code.
 #
 # Note that this will not silence warnings from external headers #include'd in
@@ -42,29 +71,6 @@ common --host_per_file_copt=external.*pioasm.*@-fexceptions,-frtti
 common --//pw_toolchain/cc:cxx_standard=17
 common:cxx20 --//pw_toolchain/cc:cxx_standard=20
 
-# Skip building any targets tagged do_not_build.
-build --build_tag_filters=-do_not_build
-
-# Exclude integration tests from the default build. The test_tag_filters flag
-# doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we have
-# to specify it only once, setting all the exclusions in a comma-separated
-# list.
-test --test_tag_filters=-integration,-do_not_build,-do_not_run_test
-
-# Required for combined code coverage reports.
-coverage --experimental_generate_llvm_lcov
-coverage --combined_report=lcov
-
-# Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
-# messages from our third-party dependencies.
-build --ui_event_filters=-debug
-
-# Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
-build --java_language_version=11
-build --tool_java_language_version=11
-build --java_runtime_version=remotejdk_11
-build --repo_env=JAVA_HOME=../bazel_tools/jdk
-
 # Silence compiler warnings from external repositories.
 #
 # TODO: https://pwbug.dev/347317581 - This is supported by Bazel's default C++
@@ -81,9 +87,37 @@ build --features=internal_strict_warnings
 # compiler-rt. See https://reviews.llvm.org/D53608.
 # build --features=fully_static_link
 
+# Required for combined code coverage reports.
+coverage --experimental_generate_llvm_lcov
+coverage --combined_report=lcov
+
+# Java related flags
+# ==================
+# Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
+build --java_language_version=11
+build --tool_java_language_version=11
+build --java_runtime_version=remotejdk_11
+build --repo_env=JAVA_HOME=../bazel_tools/jdk
+
+# Default label flags values
+# ==========================
 build --@freertos//:freertos_config=//third_party/freertos:freertos_config
 build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
+# We use non-default labels for the STM32Cube repositories upstream (to reserve
+# the option of building for more than one MCU family down the road), so need to
+# override the three labels below.
+common --//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
+common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
+common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
+common --@cmsis_device_f4//:cmsis_core=@cmsis_core
+
+common --//pw_env_setup/py:pigweed_json=//:pigweed.json
+
+build --//pw_function:config_override=//pw_function:upstream_default_config
+
+# Sanitizer config definitions
+# ============================
 common:asan --//pw_toolchain/host_clang:asan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not
@@ -106,24 +140,29 @@ import %workspace%/pw_fuzzer/libfuzzer.bazelrc
 # Include FuzzTest build configurations.
 import %workspace%/pw_fuzzer/fuzztest.bazelrc
 
+# For some platforms i.e. google/oss-fuzz we need to use the system provided
+# rather than the hermetic toolchains. This allows oss-fuzz to override the
+# build with specialised compilers that are tightly coupled to the fuzzing
+# runtimes.
+# Detect toolchains
+common:non_hermetic --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=0
+common:non_hermetic --extra_toolchains=@local_config_cc_toolchains//...
+
 # Configure workspace status command to test pw_build_info git_build_info
 # https://bazel.build/docs/user-manual#workspace-status-command
 # TODO: b/348046338 - Add a Windows version of this command
 build --workspace_status_command=pw_build_info/git_workspace_status_command.sh
 
-# We use non-default labels for the STM32Cube repositories upstream (to reserve
-# the option of building for more than one MCU family down the road), so need to
-# override the three labels below.
-common --//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
-common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
-common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
-common --@cmsis_device_f4//:cmsis_core=@cmsis_core
+# Target platform config definitions
+# ==================================
+# Exclude //pw_bluetooth_sapphire/fuchsia when the host platform is not
+# linux-amd64. This is the only platform that the Fuchsia SDK supports.
+common --enable_platform_specific_config
 
-common --//pw_env_setup/py:pigweed_json=//:pigweed.json
+# Import `--config=fuchsia` scoped pigweed backends.
+import %workspace%/pw_bluetooth_sapphire/fuchsia/backends.bazelrc
 
-build --//pw_function:config_override=//pw_function:upstream_default_config
-
-# Config for all RP2xxx platforms.
+# Configs for RP2xxx platforms.
 build:rp2040 --platforms=@pigweed//targets/rp2040
 test:rp2040 --run_under=//targets/rp2040/py:unit_test_client
 
@@ -134,7 +173,6 @@ test:rp2350 --run_under=//targets/rp2040/py:unit_test_client
 build:stm32f429i_baremetal --platforms=//targets/stm32f429i_disc1:platform
 
 # Config for the stm32f429i_disc1_stm32cube freertos platform.
-#
 build:stm32f429i_freertos --platforms=//targets/stm32f429i_disc1_stm32cube:platform
 
 # Config for the lm3s6965evb platform, used to build pw_rust/examples.
@@ -143,14 +181,8 @@ build:lm3s6965evb --platforms=//pw_build/platforms:lm3s6965evb
 # Config for the microbit platform, used to build pw_rust/examples.
 build:microbit --platforms=//pw_build/platforms:lm3s6965evb
 
-# For some platforms i.e. google/oss-fuzz we need to use the system provided
-# rather than the hermetic toolchains. This allows oss-fuzz to override the
-# build with specialised compilers that are tightly coupled to the fuzzing
-# runtimes.
-# Detect toolchains
-common:non_hermetic --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=0
-common:non_hermetic --extra_toolchains=@local_config_cc_toolchains//...
-
+# Remote execution config definitions
+# ===================================
 # Use the remote cache. This will only work for users who have permission to access it.
 common:remote_cache --remote_cache=grpcs://remotebuildexecution.googleapis.com
 common:remote_cache --google_default_credentials=true
@@ -164,25 +196,9 @@ common:remote_cache --bes_timeout=600s
 common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
 common:remote_cache --bes_instance_name=pigweed-rbe-open
 
-# Specifies desired output mode for running tests.
-# Valid values are
-#   'summary' to output only test status summary
-#   'errors' to also print test logs for failed tests
-#   'all' to print logs for all tests
-#   'streamed' to output logs for all tests in real time
-#     (this will force tests to be executed locally one at a time regardless
-#     of --test_strategy value).
-test --test_output=errors
-
-# Exclude //pw_bluetooth_sapphire/fuchsia when the host platform is not
-# linux-amd64. This is the only platform that the Fuchsia SDK supports.
-common --enable_platform_specific_config
-
-# Import `--config=fuchsia` scoped pigweed backends.
-import %workspace%/pw_bluetooth_sapphire/fuchsia/backends.bazelrc
-
-# User bazelrc file; see
-# https://bazel.build/configure/best-practices#bazelrc-file
+# User bazelrc file
+# =================
+# See https://bazel.build/configure/best-practices#bazelrc-file
 #
 # Note: this should be at the bottom of the file, so that user-specified
 # options override anything in this file
