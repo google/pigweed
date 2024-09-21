@@ -29,8 +29,8 @@ using namespace pw::multibuf::test_utils;
 #if __cplusplus >= 202002L
 static_assert(std::forward_iterator<MultiBuf::iterator>);
 static_assert(std::forward_iterator<MultiBuf::const_iterator>);
-static_assert(std::forward_iterator<MultiBuf::ChunkIterator>);
-static_assert(std::forward_iterator<MultiBuf::ConstChunkIterator>);
+static_assert(std::forward_iterator<MultiBufChunks::iterator>);
+static_assert(std::forward_iterator<MultiBufChunks::const_iterator>);
 #endif  // __cplusplus >= 202002L
 
 static_assert(

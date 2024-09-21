@@ -180,7 +180,7 @@ class MultiBufChunks {
   //
   // Implementation note: `Chunks().size()` should be remain relatively small,
   // but this could be made `O(1)` in the future by adding a `prev` pointer to
-  // the `ChunkIterator`.
+  // the `iterator`.
   iterator insert(iterator position, OwnedChunk&& chunk);
 
   /// Removes and returns `Chunk` from the specified position.
@@ -192,7 +192,7 @@ class MultiBufChunks {
   //
   // Implementation note: `Chunks().size()` should be remain relatively small,
   // but this could be made `O(1)` in the future by adding a `prev` pointer to
-  // the `ChunkIterator`.
+  // the `iterator`.
   std::tuple<iterator, OwnedChunk> take(iterator position);
 
  protected:
@@ -246,9 +246,6 @@ class MultiBuf : private MultiBufChunks {
  public:
   class iterator;
   class const_iterator;
-
-  using ChunkIterator = MultiBufChunks::iterator;
-  using ConstChunkIterator = MultiBufChunks::const_iterator;
 
   constexpr MultiBuf() : MultiBufChunks(nullptr) {}
 
@@ -529,19 +526,8 @@ class MultiBuf : private MultiBufChunks {
   /// Returns a `const Chunk`-oriented view of this `MultiBuf`.
   constexpr const MultiBufChunks& Chunks() const { return *this; }
 
-  /// Returns an iterator pointing to the first `Chunk` in this `MultiBuf`.
-  constexpr ChunkIterator ChunkBegin() { return Chunks().begin(); }
-  /// Returns an iterator pointing to the end of the `Chunk`s in this
-  /// `MultiBuf`.
-  constexpr ChunkIterator ChunkEnd() { return Chunks().end(); }
-  /// Returns a const iterator pointing to the first `Chunk` in this
-  /// `MultiBuf`.
-  constexpr ConstChunkIterator ConstChunkBegin() const {
-    return Chunks().begin();
-  }
-  /// Returns a const iterator pointing to the end of the `Chunk`s in this
-  /// `MultiBuf`.
-  constexpr ConstChunkIterator ConstChunkEnd() const { return Chunks().end(); }
+  /// Returns a `const Chunk`-oriented view of this `MultiBuf`.
+  constexpr const MultiBufChunks& ConstChunks() const { return *this; }
 
   ///////////////////////////////////////////////////////////////////
   //--------------------- Iterator details ------------------------//

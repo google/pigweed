@@ -78,8 +78,8 @@ bool MultiBuf::ClaimSuffix(size_t bytes_to_claim) {
 void MultiBuf::DiscardPrefix(size_t bytes_to_discard) {
   PW_DCHECK(bytes_to_discard <= size());
   while (bytes_to_discard != 0) {
-    if (ChunkBegin()->size() > bytes_to_discard) {
-      ChunkBegin()->DiscardPrefix(bytes_to_discard);
+    if (Chunks().begin()->size() > bytes_to_discard) {
+      Chunks().begin()->DiscardPrefix(bytes_to_discard);
       return;
     }
     OwnedChunk front_chunk = TakeFrontChunk();
@@ -127,7 +127,7 @@ void MultiBufChunks::PushSuffix(MultiBufChunks&& tail) {
 StatusWithSize MultiBuf::CopyTo(ByteSpan dest, const size_t position) const {
   const_iterator byte_in_chunk = begin() + position;
 
-  ConstChunkIterator chunk(byte_in_chunk.chunk());
+  MultiBufChunks::const_iterator chunk(byte_in_chunk.chunk());
   size_t chunk_offset = byte_in_chunk.byte_index();
 
   size_t bytes_copied = 0;
@@ -163,7 +163,8 @@ StatusWithSize MultiBuf::CopyFromAndOptionallyTruncate(ConstByteSpan source,
   size_t chunk_offset = byte_in_chunk.byte_index();
 
   size_t bytes_copied = 0;
-  for (ChunkIterator chunk(byte_in_chunk.chunk()); chunk != Chunks().end();
+  for (MultiBufChunks::iterator chunk(byte_in_chunk.chunk());
+       chunk != Chunks().end();
        ++chunk) {
     if (chunk->empty()) {
       continue;
@@ -196,7 +197,7 @@ std::optional<MultiBuf> MultiBuf::TakePrefix(size_t bytes_to_take) {
   }
   // Pointer to the last element of `front`, allowing constant-time appending.
   Chunk* last_front_chunk = nullptr;
-  while (bytes_to_take > ChunkBegin()->size()) {
+  while (bytes_to_take > Chunks().begin()->size()) {
     OwnedChunk new_chunk = TakeFrontChunk().Take();
     Chunk* new_chunk_ptr = &*new_chunk;
     bytes_to_take -= new_chunk.size();

@@ -61,7 +61,7 @@ async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
   }
 
   multibuf::MultiBuf buf = std::move(**maybe_multibuf);
-  multibuf::Chunk& chunk = *buf.ChunkBegin();
+  multibuf::Chunk& chunk = *buf.Chunks().begin();
 
   int bytes_read = read(channel_fd_, chunk.data(), chunk.size());
   if (bytes_read >= 0) {
