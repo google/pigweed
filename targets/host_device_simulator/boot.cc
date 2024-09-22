@@ -21,7 +21,7 @@
 #include "pw_thread/sleep.h"
 
 // Longer term, should this move into a pw_boot_stl module?
-extern "C" int main() {
+int main() {
   pw::system::Init();
   // Sleep loop rather than return on this thread so the process isn't closed.
   while (true) {

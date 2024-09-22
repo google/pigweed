@@ -154,7 +154,7 @@ extern "C" void sf2_SocInit() {
 
 // This `main()` stub prevents another main function from being linked since
 // this target deliberately doesn't run `main()`.
-extern "C" int main() {}
+int main() {}
 
 extern "C" PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
