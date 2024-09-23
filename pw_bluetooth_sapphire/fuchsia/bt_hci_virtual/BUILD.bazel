@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
     "fuchsia_cc_driver",
@@ -22,6 +23,11 @@ load(
     "fuchsia_platforms",
     "fuchsia_test_package",
     "fuchsia_unittest_package",
+)
+load(
+    "@fuchsia_sdk//fuchsia:licenses.bzl",
+    "fuchsia_licenses_collection",
+    "fuchsia_licenses_spdx",
 )
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
@@ -94,14 +100,44 @@ fuchsia_driver_component(
     tags = ["manual"],
 )
 
+# TODO: https://pwbug.dev/328444071 - Switch to `fuchsia_package` after
+# https://fxrev.dev/1122912 rolls.
 fuchsia_test_package(
-    name = "pkg",
+    name = "pkg.x64",
     package_name = "virtual",
     testonly = True,
     components = [":component"],
     fuchsia_api_level = "HEAD",
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.x64,
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+# TODO: https://pwbug.dev/328444071 - Switch to `fuchsia_package` after
+# https://fxrev.dev/1122912 rolls.
+fuchsia_test_package(
+    name = "pkg.arm64",
+    package_name = "virtual",
+    testonly = True,
+    components = [":component"],
+    fuchsia_api_level = "HEAD",
+    package_repository_name = "fuchsia.com",
+    platform = fuchsia_platforms.arm64,
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+# TODO: https://pwbug.dev/328444071 - Switch to `fuchsia_package` after
+# https://fxrev.dev/1122912 rolls.
+fuchsia_test_package(
+    name = "pkg.riscv64",
+    package_name = "virtual",
+    testonly = True,
+    components = [":component"],
+    fuchsia_api_level = "HEAD",
+    package_repository_name = "fuchsia.com",
+    platform = fuchsia_platforms.riscv64,
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )
@@ -129,4 +165,106 @@ fuchsia_unittest_package(
     tags = ["manual"],
     unit_tests = [":loopback_test"],
     visibility = ["//visibility:public"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt_hci_virtual_x64_pkg_licenses_collection",
+    testonly = True,
+    # TODO: https://pwbug.dev/368652834 - Reenable license collection.
+    # root_target = ":pkg.x64",
+    root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt_hci_virtual_arm64_pkg_licenses_collection",
+    testonly = True,
+    # TODO: https://pwbug.dev/368652834 - Reenable license collection.
+    # root_target = ":pkg.arm64",
+    root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_collection(
+    name = "bt_hci_virtual_riscv64_pkg_licenses_collection",
+    testonly = True,
+    # TODO: https://pwbug.dev/368652834 - Reenable license collection.
+    # root_target = ":pkg.riscv64",
+    root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_spdx(
+    name = "bt_hci_virtual_x64_licenses.spdx.json",
+    testonly = True,
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt_hci_virtual_x64_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "virtual",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_spdx(
+    name = "bt_hci_virtual_arm64_licenses.spdx.json",
+    testonly = True,
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt_hci_virtual_arm64_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "virtual",
+    tags = ["manual"],
+)
+
+fuchsia_licenses_spdx(
+    name = "bt_hci_virtual_riscv64_licenses.spdx.json",
+    testonly = True,
+    document_namespace = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    licenses = ":bt_hci_virtual_riscv64_pkg_licenses_collection",
+    licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
+    root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
+    root_package_name = "virtual",
+    tags = ["manual"],
+)
+
+fuchsia_cipd_releases(
+    name = "bt_hci_virtual_x64_cipd",
+    testonly = True,
+    cipd_prefix = "fuchsia/prebuilt/bt-hci-virtual",
+    extra_content = {
+        ":README.fuchsia.md": "README.fuchsia",
+        ":bt_hci_virtual_x64_licenses.spdx.json": "licenses.spdx.json",
+    },
+    pkg = ":pkg.x64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+fuchsia_cipd_releases(
+    name = "bt_hci_virtual_arm64_cipd",
+    testonly = True,
+    cipd_prefix = "fuchsia/prebuilt/bt-hci-virtual",
+    extra_content = {
+        ":README.fuchsia.md": "README.fuchsia",
+        ":bt_hci_virtual_arm64_licenses.spdx.json": "licenses.spdx.json",
+    },
+    pkg = ":pkg.arm64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+fuchsia_cipd_releases(
+    name = "bt_hci_virtual_riscv64_cipd",
+    testonly = True,
+    cipd_prefix = "fuchsia/prebuilt/bt-hci-virtual",
+    extra_content = {
+        ":README.fuchsia.md": "README.fuchsia",
+        ":bt_hci_virtual_riscv64_licenses.spdx.json": "licenses.spdx.json",
+    },
+    pkg = ":pkg.riscv64",
+    # TODO: b/354711360 - fuchsia_cipd_releases appears to be misconfigured
+    # when cross-compiling,
+    target_compatible_with = incompatible_with_mcu(),
 )

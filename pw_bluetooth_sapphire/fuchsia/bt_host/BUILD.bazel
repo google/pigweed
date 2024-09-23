@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Contains a stub Fuchsia bt-host component.
-# Eventually the real bt-host component will be migrated here:
-# https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
-# See https://fxbug.dev/321267390.
-
 load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
