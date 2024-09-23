@@ -14,17 +14,12 @@
 
 # Pigweed upstream specific dependencies:
 # pigweed.dev Sphinx themes
-beautifulsoup4==4.12.2
 sphinx-copybutton==0.5.1
 breathe==4.35.0
-kconfiglib==14.1.0
 pydata-sphinx-theme==0.15.4
-pytz==2023.3
 sphinx-reredirects==0.1.3
 sphinx-sitemap==2.5.1
-jsonschema==4.21.1
 # Renode requirements
-psutil==5.9.4
 robotframework==6.0.2
 # RP2040 utils.
 pyusb==1.2.1

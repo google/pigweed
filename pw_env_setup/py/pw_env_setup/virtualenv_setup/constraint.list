@@ -7,6 +7,7 @@ astroid==3.0.1
 asttokens==2.4.0
 babel==2.12.1
 backcall==0.2.0
+beautifulsoup4==4.12.2
 black==23.1.0
 cachetools==5.0.0
 certifi==2021.10.8
@@ -37,6 +38,7 @@ isort==5.10.1
 jedi==0.19.1
 Jinja2==3.1.2
 json5==0.9.11
+jsonschema==4.23.0
 lockfile==0.12.2
 kconfiglib==14.1.0
 markupsafe==2.1.3
@@ -67,7 +69,6 @@ pyperclip==1.8.2
 pyserial==3.5
 python-daemon==3.0.1
 pytz==2023.3
-pyusb==1.2.1
 pyyaml==6.0.1
 requests==2.31.0
 rsa==4.8

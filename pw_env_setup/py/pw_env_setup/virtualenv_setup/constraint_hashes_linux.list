@@ -138,6 +138,10 @@ backcall==0.2.0 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   ipython
+beautifulsoup4==4.12.2 \
+    --hash=sha256:492bbc69dca35d12daac71c4db1bfff0c876c00ef4a2ffacce226d4638eb72da \
+    --hash=sha256:bd2520ca0d9d7d12694a53d44ac482d181b4ec1888909b035a3dbf40d0f57d4a
+    # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 black==23.1.0 \
     --hash=sha256:0052dba51dec07ed029ed61b18183942043e00008ec65d5028814afaab9a22fd \
     --hash=sha256:0680d4380db3719ebcfb2613f34e86c8e6d15ffeabcf8ec59355c5e7b85bb555 \
@@ -694,6 +698,10 @@ jsonschema-specifications==2023.12.1 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   jsonschema
+kconfiglib==14.1.0 \
+    --hash=sha256:bed2cc2216f538eca4255a83a4588d8823563cdd50114f86cf1a2674e602c93c \
+    --hash=sha256:edcd35a20e7e138a9a9e96149027f805f785e818d2eae400b6fa8b0c8845114a
+    # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 lockfile==0.12.2 \
     --hash=sha256:6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799 \
     --hash=sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa
@@ -1080,6 +1088,10 @@ python-dateutil==2.9.0.post0 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pykwalify
+pytz==2023.3 \
+    --hash=sha256:1d8ce29db189191fb55338ee6d0387d82ab59f3d00eac103412d64e0ebd0c588 \
+    --hash=sha256:a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb
+    # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 pyyaml==6.0.1 \
     --hash=sha256:04ac92ad1925b2cff1db0cfebffb6ffc43457495c9b3c39d3fcae417d7125dc5 \
     --hash=sha256:062582fca9fabdd2c8b54a3ef1c978d786e0f6b3a1510e0ac93ef59e0ddae2bc \
@@ -1335,6 +1347,12 @@ snowballstemmer==2.2.0 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   sphinx
+soupsieve==2.6 \
+    --hash=sha256:e2e68417777af359ec65daac1057404a3c8a5455bb8abc36f1a9866ab1a51abb \
+    --hash=sha256:e72c4ff06e4fb6e4b5a9f0f55fe6e81514581fca1515028625d0f299c602ccc9
+    # via
+    #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   beautifulsoup4
 sphinx==7.1.2 \
     --hash=sha256:780f4d32f1d7d1126576e0e5ecc19dc32ab76cd24e950228dcf7b1f6d3d9e22f \
     --hash=sha256:d170a81825b2fcacb6dfd5a0d7f578a053e45d3f2b153fecc948c37344eb4cbe
