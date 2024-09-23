@@ -170,6 +170,8 @@ AATreeItem* AATreeItem::Rebalance() {
         node->right_->SetLevel(new_level);
       }
     }
+    AATreeItem* parent = node->parent_.get();
+    AATreeItem* orig = node;
     node = node->Skew();
     if (node->right_.get() != nullptr) {
       node->SetRight(node->right_->Skew());
@@ -181,10 +183,11 @@ AATreeItem* AATreeItem::Rebalance() {
     if (node->right_.get() != nullptr) {
       node->SetRight(node->right_->Split());
     }
-    if (node->parent_.get() == nullptr) {
+    if (parent == nullptr) {
       return node;
     }
-    node = node->parent_.get();
+    parent->Replace(orig, node);
+    node = parent;
   }
 }
 

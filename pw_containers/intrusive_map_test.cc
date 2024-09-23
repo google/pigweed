@@ -45,7 +45,7 @@ struct TestItem : public ::pw::IntrusiveMap<size_t, TestItem>::Item,
 class IntrusiveMapTest : public ::testing::Test {
  protected:
   using IntrusiveMap = ::pw::IntrusiveMap<size_t, TestItem>;
-  static constexpr size_t kNumItems = 5;
+  static constexpr size_t kNumItems = 10;
 
   void SetUp() override { map_.insert(items_.begin(), items_.end()); }
 
@@ -57,6 +57,11 @@ class IntrusiveMapTest : public ::testing::Test {
       {20, "c"},
       {40, "d"},
       {10, "e"},
+      {35, "A"},
+      {55, "B"},
+      {25, "C"},
+      {45, "D"},
+      {15, "E"},
   }};
 
   IntrusiveMap map_;
@@ -128,10 +133,15 @@ TEST_F(IntrusiveMapTest, Construct_CustomCompare) {
   EXPECT_EQ(map.size(), items_.size());
 
   auto iter = map.begin();
+  EXPECT_EQ((iter++)->key(), 55U);
   EXPECT_EQ((iter++)->key(), 50U);
+  EXPECT_EQ((iter++)->key(), 45U);
   EXPECT_EQ((iter++)->key(), 40U);
+  EXPECT_EQ((iter++)->key(), 35U);
   EXPECT_EQ((iter++)->key(), 30U);
+  EXPECT_EQ((iter++)->key(), 25U);
   EXPECT_EQ((iter++)->key(), 20U);
+  EXPECT_EQ((iter++)->key(), 15U);
   EXPECT_EQ((iter++)->key(), 10U);
   map.clear();
 }
@@ -158,6 +168,11 @@ TEST_F(IntrusiveMapTest, Construct_CustomGetKey) {
       pw::IntrusiveMap<const char*, TestItem, StrCmp, GetName>;
   CustomMapType map(items_.begin(), items_.end());
   auto iter = map.begin();
+  EXPECT_STREQ((iter++)->name(), "A");
+  EXPECT_STREQ((iter++)->name(), "B");
+  EXPECT_STREQ((iter++)->name(), "C");
+  EXPECT_STREQ((iter++)->name(), "D");
+  EXPECT_STREQ((iter++)->name(), "E");
   EXPECT_STREQ((iter++)->name(), "a");
   EXPECT_STREQ((iter++)->name(), "b");
   EXPECT_STREQ((iter++)->name(), "c");
@@ -206,13 +221,13 @@ TEST_F(IntrusiveMapTest, Iterator) {
   for (size_t i = 0; i < kNumItems; ++i) {
     auto& item = *iter++;
     EXPECT_EQ(item.key(), key);
-    key += 10;
+    key += 5;
   }
   EXPECT_EQ(key, 60U);
   EXPECT_EQ(iter, map.end());
   EXPECT_EQ(iter, map.cend());
   for (size_t i = 0; i < kNumItems; ++i) {
-    key -= 10;
+    key -= 5;
     EXPECT_EQ((--iter)->key(), key);
   }
   EXPECT_EQ(key, 10U);
@@ -223,20 +238,20 @@ TEST_F(IntrusiveMapTest, Iterator) {
 TEST_F(IntrusiveMapTest, ReverseIterator) {
   const IntrusiveMap& map = map_;
   auto iter = map.rbegin();
-  size_t key = 50;
+  size_t key = 55;
   for (size_t i = 0; i < kNumItems; ++i) {
     auto& item = *iter++;
     EXPECT_EQ(item.key(), key);
-    key -= 10;
+    key -= 5;
   }
-  EXPECT_EQ(key, 0U);
+  EXPECT_EQ(key, 5U);
   EXPECT_EQ(iter, map.rend());
   EXPECT_EQ(iter, map.crend());
   for (size_t i = 0; i < kNumItems; ++i) {
-    key += 10;
+    key += 5;
     EXPECT_EQ((--iter)->key(), key);
   }
-  EXPECT_EQ(key, 50U);
+  EXPECT_EQ(key, 55U);
   EXPECT_EQ(iter, map.rbegin());
   EXPECT_EQ(iter, map.crbegin());
 }
@@ -471,12 +486,14 @@ TEST_F(IntrusiveMapTest, Insert_DerivedItems_CompilationFails) {
 }
 
 TEST_F(IntrusiveMapTest, Erase_OneItem) {
-  EXPECT_EQ(map_.size(), kNumItems);
-  EXPECT_EQ(map_.erase(items_[2].key()), 1U);
-  EXPECT_EQ(map_.size(), kNumItems - 1);
-
-  auto iter = map_.find(items_[2].key());
-  EXPECT_EQ(iter, map_.end());
+  for (size_t i = 0; i < kNumItems; ++i) {
+    EXPECT_EQ(map_.size(), kNumItems);
+    EXPECT_EQ(map_.erase(items_[i].key()), 1U);
+    EXPECT_EQ(map_.size(), kNumItems - 1);
+    auto iter = map_.find(items_[i].key());
+    EXPECT_EQ(iter, map_.end());
+    map_.insert(items_[i]);
+  }
 }
 
 TEST_F(IntrusiveMapTest, Erase_OnlyItem) {
@@ -506,7 +523,7 @@ TEST_F(IntrusiveMapTest, Erase_Range) {
   auto iter = map_.erase(first, last);
   EXPECT_EQ(map_.size(), 2U);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
-  EXPECT_EQ(iter->key(), 50U);
+  EXPECT_EQ(iter->key(), 55U);
 }
 
 TEST_F(IntrusiveMapTest, Erase_MissingItem) { EXPECT_EQ(map_.erase(100), 0U); }
@@ -586,9 +603,9 @@ TEST_F(IntrusiveMapTest, Swap_Empty) {
 
 TEST_F(IntrusiveMapTest, Merge) {
   std::array<TestItem, 3> items = {{
-      {15, "f"},
-      {45, "g"},
-      {65, "h"},
+      {5, "f"},
+      {75, "g"},
+      {85, "h"},
   }};
   IntrusiveMap map(items.begin(), items.end());
 
@@ -597,13 +614,18 @@ TEST_F(IntrusiveMapTest, Merge) {
   EXPECT_EQ(map_.size(), kNumItems + 3);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(30).name(), "a");
+  EXPECT_STREQ(map_.at(35).name(), "A");
   EXPECT_STREQ(map_.at(50).name(), "b");
+  EXPECT_STREQ(map_.at(55).name(), "B");
   EXPECT_STREQ(map_.at(20).name(), "c");
+  EXPECT_STREQ(map_.at(25).name(), "C");
   EXPECT_STREQ(map_.at(40).name(), "d");
+  EXPECT_STREQ(map_.at(45).name(), "D");
   EXPECT_STREQ(map_.at(10).name(), "e");
-  EXPECT_STREQ(map_.at(15).name(), "f");
-  EXPECT_STREQ(map_.at(45).name(), "g");
-  EXPECT_STREQ(map_.at(65).name(), "h");
+  EXPECT_STREQ(map_.at(15).name(), "E");
+  EXPECT_STREQ(map_.at(5).name(), "f");
+  EXPECT_STREQ(map_.at(75).name(), "g");
+  EXPECT_STREQ(map_.at(85).name(), "h");
 
   // Explicitly clear the map before items goes out of scope.
   map_.clear();
@@ -694,18 +716,18 @@ TEST_F(IntrusiveMapTest, Count_NoSuchKey) {
 
 TEST_F(IntrusiveMapTest, Find) {
   const IntrusiveMap& map = map_;
-  size_t key = 0;
+  size_t key = 10;
   for (size_t i = 0; i < kNumItems; ++i) {
-    key += 10;
     auto iter = map.find(key);
     ASSERT_NE(iter, map.end());
     EXPECT_EQ(iter->key(), key);
+    key += 5;
   }
 }
 
 TEST_F(IntrusiveMapTest, Find_NoSuchKey) {
   const IntrusiveMap& map = map_;
-  auto iter = map.find(45);
+  auto iter = map.find(60);
   EXPECT_EQ(iter, map.end());
 }
 
@@ -734,51 +756,51 @@ TEST_F(IntrusiveMapTest, LowerBound) {
 
 TEST_F(IntrusiveMapTest, LowerBound_NoExactKey) {
   const IntrusiveMap& map = map_;
-  auto iter = map.lower_bound(5);
+  auto iter = map.lower_bound(6);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "e");
 
-  iter = map.lower_bound(15);
+  iter = map.lower_bound(16);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "c");
 
-  iter = map.lower_bound(25);
+  iter = map.lower_bound(26);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "a");
 
-  iter = map.lower_bound(35);
+  iter = map.lower_bound(36);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "d");
 
-  iter = map.lower_bound(45);
+  iter = map.lower_bound(46);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "b");
 }
 
 TEST_F(IntrusiveMapTest, LowerBound_OutOfRange) {
   const IntrusiveMap& map = map_;
-  EXPECT_EQ(map.lower_bound(55), map.end());
+  EXPECT_EQ(map.lower_bound(56), map.end());
 }
 
 TEST_F(IntrusiveMapTest, UpperBound) {
   const IntrusiveMap& map = map_;
-  auto iter = map.upper_bound(10);
+  auto iter = map.upper_bound(15);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "c");
 
-  iter = map.upper_bound(20);
+  iter = map.upper_bound(25);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "a");
 
-  iter = map.upper_bound(30);
+  iter = map.upper_bound(35);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "d");
 
-  iter = map.upper_bound(40);
+  iter = map.upper_bound(45);
   ASSERT_NE(iter, map.end());
   EXPECT_STREQ(iter->name(), "b");
 
-  EXPECT_EQ(map.upper_bound(50), map.end());
+  EXPECT_EQ(map.upper_bound(55), map.end());
 }
 
 TEST_F(IntrusiveMapTest, UpperBound_NoExactKey) {
@@ -818,36 +840,37 @@ TEST_F(IntrusiveMapTest, EqualRange) {
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "e");
   ASSERT_NE(upper, map.end());
-  EXPECT_STREQ(upper->name(), "c");
+  EXPECT_STREQ(upper->name(), "E");
 
   std::tie(lower, upper) = map.equal_range(20);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "c");
   ASSERT_NE(upper, map.end());
-  EXPECT_STREQ(upper->name(), "a");
+  EXPECT_STREQ(upper->name(), "C");
 
   std::tie(lower, upper) = map.equal_range(30);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "a");
   ASSERT_NE(upper, map.end());
-  EXPECT_STREQ(upper->name(), "d");
+  EXPECT_STREQ(upper->name(), "A");
 
   std::tie(lower, upper) = map.equal_range(40);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "d");
   ASSERT_NE(upper, map.end());
-  EXPECT_STREQ(upper->name(), "b");
+  EXPECT_STREQ(upper->name(), "D");
 
   std::tie(lower, upper) = map.equal_range(50);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "b");
-  EXPECT_EQ(upper, map.end());
+  ASSERT_NE(upper, map.end());
+  EXPECT_STREQ(upper->name(), "B");
 }
 
 TEST_F(IntrusiveMapTest, EqualRange_NoExactKey) {
   const IntrusiveMap& map = map_;
 
-  auto pair = map.equal_range(5);
+  auto pair = map.equal_range(6);
   IntrusiveMap::const_iterator lower = pair.first;
   IntrusiveMap::const_iterator upper = pair.second;
   ASSERT_NE(lower, map.end());
@@ -855,25 +878,25 @@ TEST_F(IntrusiveMapTest, EqualRange_NoExactKey) {
   ASSERT_NE(upper, map.end());
   EXPECT_STREQ(upper->name(), "e");
 
-  std::tie(lower, upper) = map.equal_range(15);
+  std::tie(lower, upper) = map.equal_range(16);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "c");
   ASSERT_NE(upper, map.end());
   EXPECT_STREQ(upper->name(), "c");
 
-  std::tie(lower, upper) = map.equal_range(25);
+  std::tie(lower, upper) = map.equal_range(26);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "a");
   ASSERT_NE(upper, map.end());
   EXPECT_STREQ(upper->name(), "a");
 
-  std::tie(lower, upper) = map.equal_range(35);
+  std::tie(lower, upper) = map.equal_range(36);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "d");
   ASSERT_NE(upper, map.end());
   EXPECT_STREQ(upper->name(), "d");
 
-  std::tie(lower, upper) = map.equal_range(45);
+  std::tie(lower, upper) = map.equal_range(46);
   ASSERT_NE(lower, map.end());
   EXPECT_STREQ(lower->name(), "b");
   ASSERT_NE(upper, map.end());
@@ -883,7 +906,7 @@ TEST_F(IntrusiveMapTest, EqualRange_NoExactKey) {
 TEST_F(IntrusiveMapTest, EqualRange_OutOfRange) {
   const IntrusiveMap& map = map_;
 
-  auto pair = map.equal_range(55);
+  auto pair = map.equal_range(56);
   IntrusiveMap::const_iterator lower = pair.first;
   IntrusiveMap::const_iterator upper = pair.second;
   EXPECT_EQ(lower, map.end());
