@@ -21,9 +21,11 @@ import json
 import logging
 from pathlib import Path
 import platform
+import re
 import shutil
 import sys
 from tempfile import TemporaryDirectory
+import venv
 
 from pw_cli.diff import colorize_diff_line
 from pw_env_setup import python_packages
@@ -33,6 +35,7 @@ from pw_presubmit.presubmit import (
     Check,
     filter_paths,
 )
+from pw_presubmit.git_repo import LoggingGitRepo
 from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
@@ -184,6 +187,227 @@ def vendor_python_wheels(ctx: PresubmitContext) -> None:
     shutil.copytree(wheel_output, wheel_destination, dirs_exist_ok=True)
 
     _LOG.info('Python packages downloaded to: %s', wheel_destination)
+
+
+SETUP_CFG_VERSION_REGEX = re.compile(
+    r'^version = (?P<version>'
+    r'(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)'
+    r')$',
+    re.MULTILINE,
+)
+
+
+def _find_existing_setup_cfg_version(setup_cfg: Path) -> re.Match:
+    version_match = SETUP_CFG_VERSION_REGEX.search(setup_cfg.read_text())
+    if not version_match:
+        raise PresubmitFailure(
+            f'Unable to find "version = x.x.x" line in {setup_cfg}'
+        )
+    return version_match
+
+
+def _version_bump_setup_cfg(
+    repo_root: Path,
+    setup_cfg: Path,
+) -> str:
+    """Increment the version patch number of a setup.cfg
+
+    Skips modifying if there are modifications since origin/main.
+
+    Returns:
+       The version number as a string
+    """
+    repo = LoggingGitRepo(repo_root)
+    setup_cfg = repo_root / setup_cfg
+
+    # Grab the current version string.
+    _LOG.info('Checking the version patch number in: %s', setup_cfg)
+    setup_cfg_text = setup_cfg.read_text()
+    version_match = _find_existing_setup_cfg_version(setup_cfg)
+    _LOG.info('Found: %s', version_match[0])
+    version_number = version_match['version']
+
+    # Skip modifying the version if it is different compared to origin/main.
+    modified_files = repo.list_files(commit='origin/main')
+    modify_setup_cfg = True
+    if setup_cfg in modified_files:
+        # Don't update the file
+        modify_setup_cfg = False
+        _LOG.warning(
+            '%s is already modified, skipping version update.', setup_cfg
+        )
+
+    if modify_setup_cfg:
+        # Increment the patch number.
+        try:
+            patch_number = int(version_match['patch']) + 1
+        except ValueError as err:
+            raise PresubmitFailure(
+                f"Unable to increment patch number: '{version_match['patch']}' "
+                f"for version line: '{version_match[0]}'"
+            ) from err
+
+        version_number = (
+            f"{version_match['major']}.{version_match['minor']}.{patch_number}"
+        )
+        new_line = f'version = {version_number}'
+        new_text = SETUP_CFG_VERSION_REGEX.sub(
+            new_line,
+            setup_cfg_text,
+            count=1,
+        )
+
+        # Print the diff
+        setup_cfg_diff = list(
+            difflib.unified_diff(
+                setup_cfg_text.splitlines(),
+                new_text.splitlines(),
+                fromfile=str(setup_cfg) + ' (original)',
+                tofile=str(setup_cfg) + ' (updated)',
+                lineterm='',
+                n=1,
+            )
+        )
+        if setup_cfg_diff:
+            for line in setup_cfg_diff:
+                print(colorize_diff_line(line))
+
+        # Update the file.
+        setup_cfg.write_text(new_text, encoding='utf-8')
+
+    return version_number
+
+
+def version_bump_pigweed_pypi_distribution(ctx: PresubmitContext) -> None:
+    """Update the version patch number in //pw_env_setup/pypi_common_setup.cfg
+
+    This presubmit creates a new git branch, updates the version and makes a new
+    commit with the standard version bump subject line.
+    """
+    repo = LoggingGitRepo(ctx.root)
+
+    # Check there are no uncommitted changes.
+    modified_files = repo.list_files(commit='HEAD')
+    if modified_files:
+        raise PresubmitFailure('There must be no modified files to proceed.')
+
+    # Checkout a new branch for the version bump. Resets an existing branch if
+    # it already exists.
+    log_run(
+        [
+            'git',
+            'checkout',
+            '-B',
+            'pypi-version-bump',
+            '--no-track',
+            'origin/main',
+        ],
+        check=True,
+        cwd=ctx.root,
+    )
+
+    # Update the version number.
+    setup_cfg = 'pw_env_setup/pypi_common_setup.cfg'
+    version_number = _version_bump_setup_cfg(
+        repo_root=ctx.root,
+        setup_cfg=ctx.root / 'pw_env_setup/pypi_common_setup.cfg',
+    )
+
+    # Add and commit changes.
+    log_run(['git', 'add', setup_cfg], check=True, cwd=ctx.root)
+    git_commit_args = [
+        'git',
+        'commit',
+        '-m',
+        f'pw_env_setup: PyPI version bump to {version_number}',
+    ]
+    log_run(git_commit_args, check=True, cwd=ctx.root)
+    _LOG.info('Version bump commit created in branch "pypi-version-bump"')
+    _LOG.info('Upload with:\n  git push origin HEAD:refs/for/main')
+
+
+def upload_pigweed_pypi_distribution(
+    ctx: PresubmitContext,
+) -> None:
+    """Upload the pigweed pypi distribution to pypi.org.
+
+    This requires an API token to be setup for the current user. See also:
+    https://pypi.org/help/#apitoken
+    https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account
+    """
+    version_match = _find_existing_setup_cfg_version(
+        Path(ctx.root / 'pw_env_setup/pypi_common_setup.cfg'),
+    )
+    version_number = version_match['version']
+
+    _LOG.info('Cleaning any existing build artifacts.')
+    build.gn_gen(ctx)
+
+    dist_output_path = (
+        ctx.output_dir
+        / 'python/obj/pw_env_setup/pypi_pigweed_python_source_tree'
+    )
+
+    # Always remove any existing build artifacts before generating a
+    # new distribution. 'python -m build' leaves a 'dist' directory without
+    # cleaning up.
+    shutil.rmtree(dist_output_path, ignore_errors=True)
+    build.ninja(ctx, 'pigweed_pypi_distribution', '-t', 'clean')
+
+    # Generate the distribution
+    _LOG.info('Running the ninja build.')
+    build.ninja(ctx, 'pigweed_pypi_distribution')
+
+    # Check the output is in the right place.
+    if any(
+        not (dist_output_path / f).is_file() for f in ['README.md', 'LICENSE']
+    ):
+        raise PresubmitFailure(
+            f'Missing pypi distribution files in: {dist_output_path}'
+        )
+
+    # Create a new venv for building and uploading.
+    venv_path = ctx.output_dir / 'pypi_upload_venv'
+    _LOG.info('Creating venv for uploading in: %s', venv_path)
+    shutil.rmtree(venv_path, ignore_errors=True)
+    venv.create(venv_path, symlinks=True, with_pip=True)
+    py_bin = venv_path / 'bin/python'
+
+    # Install upload tools.
+    _LOG.info('Running: pip install --upgrade pip %s', venv_path)
+    log_run(
+        [py_bin, '-m', 'pip', 'install', '--upgrade', 'pip'],
+        check=True,
+        cwd=ctx.output_dir,
+    )
+    _LOG.info('Running: pip install --upgrade build twine %s', venv_path)
+    log_run(
+        [py_bin, '-m', 'pip', 'install', '--upgrade', 'build', 'twine'],
+        check=True,
+        cwd=ctx.output_dir,
+    )
+
+    # Create upload artifacts
+    _LOG.info('Running: python -m build')
+    log_run([py_bin, '-m', 'build'], check=True, cwd=dist_output_path)
+
+    dist_path = dist_output_path / 'dist'
+    upload_files = list(dist_path.glob('*'))
+    expected_files = [
+        dist_path / f'pigweed-{version_number}.tar.gz',
+        dist_path / f'pigweed-{version_number}-py3-none-any.whl',
+    ]
+    if upload_files != expected_files:
+        raise PresubmitFailure(
+            'Unexpected dist files found for upload. Skipping upload.\n'
+            f'Found:\n {upload_files}\n'
+            f'Expected:\n {expected_files}\n'
+        )
+
+    # Upload to pypi.org
+    upload_args = [py_bin, '-m', 'twine', 'upload']
+    upload_args.extend(expected_files)
+    log_run(upload_args, check=True, cwd=dist_output_path)
 
 
 def _generate_constraint_with_hashes(

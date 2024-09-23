@@ -1495,7 +1495,9 @@ OTHER_CHECKS = (
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
     python_checks.update_upstream_python_constraints,
+    python_checks.upload_pigweed_pypi_distribution,
     python_checks.vendor_python_wheels,
+    python_checks.version_bump_pigweed_pypi_distribution,
     shell_checks.shellcheck,
     # TODO(hepler): Many files are missing from the CMake build. Add this check
     # to lintformat when the missing files are fixed.
