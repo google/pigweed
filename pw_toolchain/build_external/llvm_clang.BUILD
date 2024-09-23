@@ -17,7 +17,7 @@ load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
-load("@pigweed//pw_build/constraint/cortex-m:lists.bzl", "ALL_CORTEX_M_CPUS")
+load("@pigweed//pw_build/constraints/cortex_m:lists.bzl", "ALL_CORTEX_M_CPUS")
 load("@pigweed//pw_build:glob_dirs.bzl", "match_dir")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
