@@ -279,14 +279,6 @@ template("pw_static_analysis_toolchain") {
       forward_variables_from(_copy, "*")
     }
 
-    tool("rust_bin") {
-      _output = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-      command = pw_universal_stamp.command
-      description = "rustc {{output}}"
-      outputs = [ _output ]
-      default_output_dir = "{{target_out_dir}}/bin"
-    }
-
     # Build arguments to be overridden when compiling cross-toolchain:
     #
     #   pw_toolchain_defaults: A scope setting defaults to apply to GN targets
@@ -311,6 +303,92 @@ template("pw_static_analysis_toolchain") {
       # Always disable coverage generation since we will not actually run the
       # instrumented binaries to produce a profraw file.
       pw_toolchain_COVERAGE_ENABLED = false
+    }
+
+    _generate_rust_tools = defined(invoker.rustc)
+    if (_generate_rust_tools) {
+      if (defined(invoker.ld)) {
+        _rustc_linker = "-Clinker=${invoker.ld}"
+      } else {
+        _rustc_linker = ""
+      }
+
+      _rustc_command = string_join(
+              " ",
+              [
+                # TODO: b/234872510 - Ensure this works with Windows.
+                "RUST_BACKTRACE=1",
+                "{{rustenv}}",
+                invoker.rustc,
+                "{{source}}",
+                "--crate-name {{crate_name}}",
+                "--crate-type {{crate_type}}",
+                _rustc_linker,
+                "{{externs}}",
+                "{{rustdeps}}",
+                "{{rustflags}}",
+                "-D warnings",
+                "--color always",
+                "--emit=dep-info={{output}}.d,link",
+                "-o {{output_dir}}/{{target_output_name}}{{output_extension}}",
+              ])
+
+      _output = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+
+      tool("rust_bin") {
+        description = "rustc {{output}}"
+        default_output_dir = "{{target_out_dir}}/bin"
+        depfile = "{{output}}.d"
+        command = _rustc_command
+        outputs = [ _output ]
+      }
+
+      tool("rust_rlib") {
+        description = "rustc {{output}}"
+        default_output_dir = "{{target_out_dir}}/lib"
+        depfile = "{{output}}.d"
+        output_prefix = "lib"
+        default_output_extension = ".rlib"
+        command = _rustc_command
+        outputs = [ _output ]
+      }
+
+      tool("rust_staticlib") {
+        description = "rustc {{output}}"
+        default_output_dir = "{{target_out_dir}}/lib"
+        depfile = "{{output}}.d"
+        output_prefix = "lib"
+        default_output_extension = ".a"
+        command = _rustc_command
+        outputs = [ _output ]
+      }
+
+      if (defined(invoker.is_host_toolchain) && invoker.is_host_toolchain) {
+        if (!defined(invoker_toolchain_args.current_os)) {
+          toolchain_os = ""
+        } else {
+          # Determine OS of toolchain, which is the builtin argument "current_os".
+          toolchain_os = invoker_toolchain_args.current_os
+        }
+
+        if (toolchain_os == "mac") {
+          _dylib_extension = ".dylib"
+        } else if (toolchain_os == "win") {
+          _dylib_extension = ".dll"
+        } else {
+          _dylib_extension = ".so"
+        }
+
+        tool("rust_macro") {
+          description = "rustc {{output}}"
+          default_output_dir = "{{target_out_dir}}/lib"
+          depfile = "{{output}}.d"
+          output_prefix = "lib"
+          default_output_extension = _dylib_extension
+          command = _rustc_command
+          outputs = [ _output ]
+        }
+      }
     }
   }
 }
