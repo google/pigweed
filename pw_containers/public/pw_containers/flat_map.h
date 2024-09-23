@@ -42,25 +42,19 @@ struct Pair {
 template <typename T1, typename T2>
 Pair(T1, T2) -> Pair<T1, T2>;
 
-// A simple, fixed-size associative array with lookup by key or value.
-//
-// FlatMaps can be initialized by:
-// 1. A std::array of Pair<K, V> objects.
-//    FlatMap<char, int, 3> map({{{'A', 1}, {'B', 2}, {'C', 3}}});
-//    FlatMap map(std::array{
-//        Pair<char, int>{'A', 1},
-//        Pair<char, int>{'B', 2},
-//        Pair<char, int>{'C', 3},
-//    });
-// 2. Pair<K, V> objects.
-//    FlatMap map = {
-//        Pair<char, int>{'A', 1},
-//        Pair<char, int>{'B', 2},
-//        Pair<char, int>{'C', 3},
-//    };
-//
-// The keys do not need to be sorted as the constructor will sort the items
-// if need be.
+/// A simple, fixed-size associative array with lookup by key or value.
+///
+/// FlatMaps can be initialized by:
+/// @rst
+/// .. literalinclude:: examples/flat_map.cc
+///    :language: cpp
+///    :linenos:
+///    :start-after: [pw_containers-flat_map]
+///    :end-before: [pw_containers-flat_map]
+/// @endrst
+///
+/// The keys do not need to be sorted as the constructor will sort the items
+/// if need be.
 template <typename Key, typename Value, size_t kArraySize>
 class FlatMap {
  public:

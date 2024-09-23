@@ -74,20 +74,7 @@ namespace containers::future {
 ///
 /// * C++23 methods are not (yet) supported.
 ///
-/// Example:
-/// @code{.cpp}
-///   class TestItem
-///      : public IntrusiveList<TestItem>::Item {}
-///
-///   IntrusiveList<TestItem> test_items;
-///
-///   auto item = TestItem();
-///   test_items.push_back(item);
-///
-///   for (auto& test_item : test_items) {
-///     // Do a thing.
-///   }
-/// @endcode
+/// @tparam   T           Type of intrusive items stored in the list.
 template <typename T>
 class IntrusiveList {
  private:

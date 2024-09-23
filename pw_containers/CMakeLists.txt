@@ -403,3 +403,5 @@ pw_add_test(pw_containers.intrusive_multimap_test
     modules
     pw_containers
 )
+
+add_subdirectory(examples)
