@@ -1062,7 +1062,7 @@ pycparser==2.21 \
 pydata-sphinx-theme==0.15.4 \
     --hash=sha256:2136ad0e9500d0949f96167e63f3e298620040aea8f9c74621959eda5d4cf8e6 \
     --hash=sha256:7762ec0ac59df3acecf49fd2f889e1b4565dbce8b88b2e29ee06fdd90645a06d
-    # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
 pyelftools==0.27 \
     --hash=sha256:5609aa6da1123fccfae2e8431a67b4146aa7fad5b3889f808df12b110f230937 \
     --hash=sha256:cde854e662774c5457d688ca41615f6594187ba7067af101232df889a6b7a66b
@@ -1094,9 +1094,9 @@ pyproject-hooks==1.0.0 \
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   build
-pyreadline3==3.4.1 \
-    --hash=sha256:6f3d1f7b8a31ba32b73917cefc1f28cc660562f39aea8646d30bd6eff21f7bae \
-    --hash=sha256:b0efb6516fd4fb07b45949053826a62fa4cb353db5be2bbb4a7aa1fdd1e345fb
+pyreadline3==3.5.4 \
+    --hash=sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7 \
+    --hash=sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   humanfriendly
