@@ -21,12 +21,14 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
-PW_EXTERN_C_START
-
 // Forward declaration of main. Pigweed applications are expected to implement
 // this function. An implementation of main() should NOT be provided by a
 // backend.
+// Ensure that this forward declaration is not inside the extern "C" block,
+// to avoid a clang pedantic warning.
 int main(void);
+
+PW_EXTERN_C_START
 
 // Reset handler or boot entry point.
 //
