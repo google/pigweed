@@ -76,6 +76,18 @@ Running tests
       You can also use ``pw watch`` if you install all the packages and set
       your GN args to match the `GN presubmit step`_.
 
+Clangd configuration
+====================
+Currently some manual steps are required to get clangd working with Fuchsia
+code (for example, for FIDL server files).
+
+1. Execute ``bazel run //:refresh_compile_commands_for_fuchsia_sdk`` to
+   generate ``compile_commands.json``. This needs to be done whenever the build
+   graph changes.
+2. Add this flag to your clangd configuration, fixing the full path to your
+   Pigweed checkout:
+   ``--compile-commands-dir=/path/to/pigweed/.compile_commands/fuchsia``
+
 ---------------
 Fuchsia support
 ---------------
