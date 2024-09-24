@@ -439,11 +439,11 @@ class Awaitable final {
 ///
 /// # Example
 /// @rst
-/// .. literalinclude:: examples/coro.cc
+/// .. literalinclude:: examples/basic.cc
 ///    :language: cpp
 ///    :linenos:
-///    :start-after: [pw_async2-examples-coro-injection]
-///    :end-before: [pw_async2-examples-coro-injection]
+///    :start-after: [pw_async2-examples-basic-coro]
+///    :end-before: [pw_async2-examples-basic-coro]
 /// @endrst
 template <std::constructible_from<pw::Status> T>
 class Coro final {

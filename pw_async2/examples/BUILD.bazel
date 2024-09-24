@@ -22,11 +22,22 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_test(
-    name = "coro",
-    srcs = ["coro.cc"],
+    name = "basic",
+    srcs = ["basic.cc"],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
         "//pw_async2:dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "once_send_recv",
+    srcs = ["once_send_recv.cc"],
+    deps = [
+        "//pw_allocator:testing",
+        "//pw_async2:coro",
+        "//pw_async2:dispatcher",
+        "//pw_async2:once_sender",
     ],
 )

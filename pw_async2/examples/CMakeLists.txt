@@ -15,11 +15,20 @@
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-  pw_add_test(pw_async2.examples.coro
+  pw_add_test(pw_async2.examples.basic
     SOURCES
-      coro.cc
+      basic.cc
     PRIVATE_DEPS
       pw_allocator.testing
       pw_async2.coro
+  )
+
+  pw_add_test(pw_async2.examples.once_send_recv
+    SOURCES
+      once_send_recv.cc
+    PRIVATE_DEPS
+      pw_allocator.testing
+      pw_async2.coro
+      pw_async2.once_sender
   )
 endif()

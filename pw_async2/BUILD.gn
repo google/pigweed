@@ -292,7 +292,10 @@ pw_test_group("tests") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "examples/coro.cc" ]
+  inputs = [
+    "examples/basic.cc",
+    "examples/once_send_recv.cc",
+  ]
   sources = [
     "backends.rst",
     "docs.rst",

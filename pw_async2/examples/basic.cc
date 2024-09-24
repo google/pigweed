@@ -37,6 +37,7 @@ class ReceiveFuture {
 class MyReceiver {
  public:
   ReceiveFuture Receive() { return ReceiveFuture(); }
+  Poll<Result<MyData>> PendReceive(Context&) { return MyData(); }
 };
 
 class SendFuture {
@@ -54,9 +55,79 @@ class MySender {
 // NOTE: we double-include so that the example shows the `#includes`, but we
 // can still define types beforehand.
 
-// DOCSTAG: [pw_async2-examples-coro-injection]
+// DOCSTAG: [pw_async2-examples-basic-manual]
+#include "pw_async2/dispatcher.h"
+#include "pw_async2/poll.h"
+#include "pw_log/log.h"
+#include "pw_result/result.h"
+
+namespace {
+
+using ::pw::async2::Context;
+using ::pw::async2::Pending;
+using ::pw::async2::Poll;
+using ::pw::async2::Ready;
+using ::pw::async2::Task;
+
+class MyReceiver;
+class MySender;
+
+class ReceiveAndSend final : public Task {
+ public:
+  ReceiveAndSend(MyReceiver receiver, MySender sender)
+      : receiver_(receiver), sender_(sender) {}
+
+  Poll<> DoPend(Context& cx) final {
+    if (!send_future_) {
+      // ``PendReceive`` checks for available data or errors.
+      //
+      // If no data is available, it will grab a ``Waker`` from
+      // ``cx.Waker()`` and return ``Pending``. When data arrives,
+      // it will call ``waker.Wake()`` which tells the ``Dispatcher`` to
+      // ``Pend`` this ``Task`` again.
+      Poll<pw::Result<MyData>> new_data = receiver_.PendReceive(cx);
+      if (new_data.IsPending()) {
+        // The ``Task`` is still waiting on data. Return ``Pending``,
+        // yielding to the dispatcher. ``Pend`` will be called again when
+        // data becomes available.
+        return Pending();
+      }
+      if (!new_data->ok()) {
+        PW_LOG_ERROR("Receiving failed: %s", new_data->status().str());
+        // The ``Task`` completed;
+        return Ready();
+      }
+      MyData& data = **new_data;
+      send_future_ = sender_.Send(std::move(data));
+    }
+    // ``Pend`` attempts to send ``data_``, returning ``Pending`` if
+    // ``sender_`` was not yet able to accept ``data_``.
+    Poll<pw::Status> sent = send_future_->Pend(cx);
+    if (sent.IsPending()) {
+      return Pending();
+    }
+    if (!sent->ok()) {
+      PW_LOG_ERROR("Sending failed: %s", sent->str());
+    }
+    return Ready();
+  }
+
+ private:
+  MyReceiver receiver_;
+  MySender sender_;
+
+  // ``SendFuture`` is some type returned by `Sender::Send` that offers a
+  // ``Pend`` method similar to the one on ``Task``.
+  std::optional<SendFuture> send_future_ = std::nullopt;
+};
+
+}  // namespace
+// DOCSTAG: [pw_async2-examples-basic-manual]
+
+// DOCSTAG: [pw_async2-examples-basic-coro]
 #include "pw_allocator/allocator.h"
 #include "pw_async2/coro.h"
+#include "pw_log/log.h"
 #include "pw_result/result.h"
 
 namespace {
@@ -77,9 +148,9 @@ class MySender;
 /// Note: the ``Allocator`` argument is used by the ``Coro<T>`` internals to
 /// allocate the coroutine state. If this allocation fails, ``Coro<Status>``
 /// will return ``Status::Internal()``.
-Coro<Status> ReceiveAndSend(CoroContext&,
-                            MyReceiver receiver,
-                            MySender sender) {
+Coro<Status> ReceiveAndSendCoro(CoroContext&,
+                                MyReceiver receiver,
+                                MySender sender) {
   pw::Result<MyData> data = co_await receiver.Receive();
   if (!data.ok()) {
     PW_LOG_ERROR("Receiving failed: %s", data.status().str());
@@ -94,7 +165,7 @@ Coro<Status> ReceiveAndSend(CoroContext&,
 }
 
 }  // namespace
-// DOCSTAG: [pw_async2-examples-coro-injection]
+// DOCSTAG: [pw_async2-examples-basic-coro]
 
 #include "pw_allocator/testing.h"
 
@@ -110,6 +181,26 @@ using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
+
+TEST(ManualExample, ReturnsOk) {
+  auto task = ReceiveAndSend(MyReceiver(), MySender());
+  Dispatcher dispatcher;
+  dispatcher.Post(task);
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+}
+
+TEST(ManualExample, Runs) {
+  auto receiver = MyReceiver();
+  auto sender = MySender();
+  // DOCSTAG: [pw_async2-examples-basic-dispatcher]
+  auto task = ReceiveAndSend(std::move(receiver), std::move(sender));
+  Dispatcher dispatcher;
+  // Registers `task` to run on the dispatcher.
+  dispatcher.Post(task);
+  // Sets the dispatcher to run until all `Post`ed tasks have completed.
+  dispatcher.RunToCompletion();
+  // DOCSTAG: [pw_async2-examples-basic-dispatcher]
+}
 
 class ExpectCoroTask final : public Task {
  public:
@@ -130,7 +221,7 @@ class ExpectCoroTask final : public Task {
 TEST(CoroExample, ReturnsOk) {
   AllocatorForTest<256> alloc;
   CoroContext coro_cx(alloc);
-  ExpectCoroTask task = ReceiveAndSend(coro_cx, MyReceiver(), MySender());
+  ExpectCoroTask task = ReceiveAndSendCoro(coro_cx, MyReceiver(), MySender());
   Dispatcher dispatcher;
   dispatcher.Post(task);
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());

@@ -19,20 +19,34 @@ import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
-  pw_test("coro") {
+  pw_test("basic") {
     enable_if = pw_async2_DISPATCHER_BACKEND != ""
     deps = [
       "$dir_pw_allocator:testing",
       "//pw_async2:coro",
       "//pw_async2:dispatcher",
     ]
-    sources = [ "coro.cc" ]
+    sources = [ "basic.cc" ]
+  }
+
+  pw_test("once_send_recv") {
+    enable_if = pw_async2_DISPATCHER_BACKEND != ""
+    deps = [
+      "$dir_pw_allocator:testing",
+      "//pw_async2:coro",
+      "//pw_async2:dispatcher",
+      "//pw_async2:once_sender",
+    ]
+    sources = [ "once_send_recv.cc" ]
   }
 }
 
 pw_test_group("examples") {
   tests = []
   if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
-    tests += [ ":coro" ]
+    tests += [
+      ":basic",
+      ":once_send_recv",
+    ]
   }
 }
