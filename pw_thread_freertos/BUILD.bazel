@@ -126,7 +126,7 @@ cc_library(
 pw_cc_test(
     name = "dynamic_thread_backend_test",
     # TODO: https://pwbug.dev/271465588 - This test fails on-device.
-    tags = ["no_not_run_test"],
+    tags = ["do_not_run_test"],
     deps = [
         ":dynamic_test_threads",
         "//pw_thread:thread_facade_test",
@@ -202,7 +202,7 @@ pw_cc_test(
         "thread_iteration_test.cc",
     ],
     # TODO: https://pwbug.dev/271465588 - This test fails on-device.
-    tags = ["no_not_run_test"],
+    tags = ["do_not_run_test"],
     deps = [
         ":freertos_tasktcb",
         ":static_test_threads",
