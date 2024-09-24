@@ -33,7 +33,8 @@ class DoubleIterator : public WrappedIterator<DoubleIterator, const int*, int> {
 template <size_t kArraySize>
 int DoubleSum(const std::array<int, kArraySize>& c) {
   int sum = 0;
-  for (DoubleIterator it(&c[0]); it != DoubleIterator(&c[kArraySize]); ++it) {
+  for (DoubleIterator it(c.data()); it != DoubleIterator(c.data() + c.size());
+       ++it) {
     // The iterator yields doubles instead of the original values.
     sum += *it;
   }
