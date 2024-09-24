@@ -33,6 +33,7 @@ void DmaUartMcuxpresso::Deinit() {
 
   USART_Deinit(config_.usart_base);
   clock_tree_element_controller_.Release().IgnoreError();
+  initialized_ = false;
 }
 
 DmaUartMcuxpresso::~DmaUartMcuxpresso() { Deinit(); }
@@ -88,6 +89,9 @@ Status DmaUartMcuxpresso::Init() {
   config_.tx_dma_ch.Enable();
   config_.rx_dma_ch.Enable();
 
+  // Initialized enough for Deinit code to handle any errors from here.
+  initialized_ = true;
+
   status = USART_TransferCreateHandleDMA(config_.usart_base,
                                          &uart_dma_handle_,
                                          TxRxCompletionCallback,
@@ -105,7 +109,6 @@ Status DmaUartMcuxpresso::Init() {
   TriggerReadDma();
   interrupt_lock_.unlock();
 
-  initialized_ = true;
   return OkStatus();
 }
 
