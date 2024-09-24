@@ -31,6 +31,7 @@ cc_library(
     ],
     deps = [
         "//pw_clock_tree",
+        "//pw_dma_mcuxpresso",
         "//pw_preprocessor",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:timed_thread_notification",

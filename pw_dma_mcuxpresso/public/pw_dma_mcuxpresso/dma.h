@@ -97,7 +97,7 @@ class McuxpressoDmaChannel {
                                 uint32_t channel)
       : controller_(controller), channel_(channel) {}
 
-  DMA_Type* const controller_base();
+  DMA_Type* controller_base() const;
 
   McuxpressoDmaController& controller_;
   uint32_t const channel_;
@@ -134,7 +134,7 @@ class McuxpressoDmaController {
   uintptr_t const base_address_;
 };
 
-inline DMA_Type* const McuxpressoDmaChannel::controller_base() {
+inline DMA_Type* McuxpressoDmaChannel::controller_base() const {
   return controller_.base();
 }
 

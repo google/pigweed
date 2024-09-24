@@ -21,6 +21,7 @@
 #include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
 #include "pw_clock_tree/clock_tree.h"
+#include "pw_dma_mcuxpresso/dma.h"
 #include "pw_status/status.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/timed_thread_notification.h"
@@ -37,17 +38,15 @@ class DmaUartMcuxpresso final : public Uart {
     bool flow_control = false;  // Hardware flow control setting
     usart_parity_mode_t parity = kUSART_ParityDisabled;  // Parity setting
     usart_stop_bit_count_t stop_bits =
-        kUSART_OneStopBit;  // Number of stop bits to use
-    DMA_Type* dma_base;     // Base of DMA control struct
-    uint32_t rx_dma_ch;     // Receive DMA channel
-    uint32_t tx_dma_ch;     // Transmit DMA channel
+        kUSART_OneStopBit;                 // Number of stop bits to use
+    dma::McuxpressoDmaChannel& rx_dma_ch;  // Receive DMA channel
+    dma::McuxpressoDmaChannel& tx_dma_ch;  // Transmit DMA channel
     inputmux_signal_t rx_input_mux_dmac_ch_request_en;  // Rx input mux signal
     inputmux_signal_t tx_input_mux_dmac_ch_request_en;  // Tx input mux signal
     ByteSpan buffer;                                    // Receive ring buffer
     pw::clock_tree::ClockTree* clock_tree{};            // Optional clock Tree
     pw::clock_tree::Element*
         clock_tree_element{};  // Optional clock tree element
-    uint32_t srcclk;           // USART clock source frequency in Hz
   };
 
   DmaUartMcuxpresso(const Config& config)
@@ -67,7 +66,6 @@ class DmaUartMcuxpresso final : public Uart {
   struct UsartDmaTxData {
     ConstByteSpan buffer;       // TX transaction buffer
     size_t tx_idx;              // Position within TX transaction
-    dma_handle_t dma_handle;    // DMA handle
     usart_transfer_t transfer;  // USART TX transfer structure
     std::atomic_uint8_t busy;   // Flag to prevent concurrent access to TX queue
     pw::sync::TimedThreadNotification
@@ -86,7 +84,6 @@ class DmaUartMcuxpresso final : public Uart {
     // bytes
     size_t completion_size{};
     usart_transfer_t transfer{};  // USART RX transfer structure
-    dma_handle_t dma_handle{};    // DMA handle
     std::atomic_uint8_t
         busy{};  // Flag to prevent concurrent access to RX ring buffer
     pw::sync::TimedThreadNotification
@@ -148,6 +145,7 @@ class DmaUartMcuxpresso final : public Uart {
                                        // optional clock tree information
   bool
       initialized_;  // Whether the USART and DMA channels have been initialized
+  uint32_t flexcomm_clock_freq_{};
 };
 
 }  // namespace pw::uart

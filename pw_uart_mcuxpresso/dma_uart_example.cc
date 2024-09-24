@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_dma_mcuxpresso/dma.h"
 #include "pw_status/try.h"
 #include "pw_uart_mcuxpresso/dma_uart.h"
 #include "pw_unit_test/framework.h"
@@ -20,16 +21,15 @@ namespace examples {
 
 pw::Status DmaUartExample() {
   // DOCSTAG: [pw_uart_mcuxpresso-DmaUartExample]
-  constexpr uint32_t kFlexcomm = 0;
   const auto kUartBase = USART0;
   constexpr uint32_t kBaudRate = 115200;
   constexpr bool kFlowControl = true;
-  constexpr uint32_t kUartInstance = 5;
   std::array<std::byte, 65536> ring_buffer = {};
   constexpr uint32_t kUartRxDmaCh = 0;
   constexpr uint32_t kUartTxDmaCh = 1;
-
-  uint32_t flexcomm_clock_freq = CLOCK_GetFlexcommClkFreq(kUartInstance);
+  static pw::dma::McuxpressoDmaController dma(DMA0_BASE);
+  static pw::dma::McuxpressoDmaChannel rx_dma_ch = dma.GetChannel(kUartRxDmaCh);
+  static pw::dma::McuxpressoDmaChannel tx_dma_ch = dma.GetChannel(kUartTxDmaCh);
 
   const pw::uart::DmaUartMcuxpresso::Config kConfig = {
       .usart_base = kUartBase,
@@ -37,15 +37,13 @@ pw::Status DmaUartExample() {
       .flow_control = kFlowControl,
       .parity = kUSART_ParityDisabled,
       .stop_bits = kUSART_OneStopBit,
-      .dma_base = DMA0,
-      .rx_dma_ch = kUartRxDmaCh,
-      .tx_dma_ch = kUartTxDmaCh,
+      .rx_dma_ch = rx_dma_ch,
+      .tx_dma_ch = tx_dma_ch,
       .rx_input_mux_dmac_ch_request_en =
           kINPUTMUX_Flexcomm0RxToDmac0Ch0RequestEna,
       .tx_input_mux_dmac_ch_request_en =
           kINPUTMUX_Flexcomm0TxToDmac0Ch1RequestEna,
       .buffer = pw::ByteSpan(ring_buffer),
-      .srcclk = flexcomm_clock_freq,
   };
 
   auto uart = pw::uart::DmaUartMcuxpresso{kConfig};

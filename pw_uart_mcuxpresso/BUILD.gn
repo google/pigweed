@@ -29,6 +29,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public = [ "public/pw_uart_mcuxpresso/dma_uart.h" ]
     public_deps = [
       "$dir_pw_clock_tree",
+      "$dir_pw_dma_mcuxpresso",
       "$dir_pw_sync:timed_thread_notification",
       "$dir_pw_uart:uart",
     ]

@@ -16,6 +16,7 @@
 
 #include <optional>
 
+#include "fsl_flexcomm.h"
 #include "pw_assert/check.h"
 #include "pw_preprocessor/util.h"
 
@@ -27,16 +28,8 @@ void DmaUartMcuxpresso::Deinit() {
     return;
   }
 
-  // We need to touch register space that can be shared
-  // among several DMA peripherals, hence we need to access
-  // it exclusively. We achieve exclusive access on non-SMP systems as
-  // a side effect of acquiring the interrupt_lock_, since acquiring the
-  // interrupt_lock_ disables interrupts on the current CPU, which means
-  // we cannot get descheduled until we release the interrupt_lock_.
-  interrupt_lock_.lock();
-  DMA_DisableChannel(config_.dma_base, config_.tx_dma_ch);
-  DMA_DisableChannel(config_.dma_base, config_.rx_dma_ch);
-  interrupt_lock_.unlock();
+  config_.tx_dma_ch.Disable();
+  config_.rx_dma_ch.Disable();
 
   USART_Deinit(config_.usart_base);
   clock_tree_element_controller_.Release().IgnoreError();
@@ -47,30 +40,27 @@ DmaUartMcuxpresso::~DmaUartMcuxpresso() { Deinit(); }
 // Initialize the USART and DMA channels based on the configuration
 // specified during object creation.
 Status DmaUartMcuxpresso::Init() {
-  if (config_.srcclk == 0) {
-    return Status::InvalidArgument();
-  }
   if (config_.usart_base == nullptr) {
     return Status::InvalidArgument();
   }
   if (config_.baud_rate == 0) {
     return Status::InvalidArgument();
   }
-  if (config_.dma_base == nullptr) {
-    return Status::InvalidArgument();
-  }
 
-  usart_config_t defconfig_;
-  USART_GetDefaultConfig(&defconfig_);
+  usart_config_t defconfig;
+  USART_GetDefaultConfig(&defconfig);
 
-  defconfig_.baudRate_Bps = config_.baud_rate;
-  defconfig_.enableHardwareFlowControl = config_.flow_control;
-  defconfig_.parityMode = config_.parity;
-  defconfig_.enableTx = true;
-  defconfig_.enableRx = true;
+  defconfig.baudRate_Bps = config_.baud_rate;
+  defconfig.enableHardwareFlowControl = config_.flow_control;
+  defconfig.parityMode = config_.parity;
+  defconfig.enableTx = true;
+  defconfig.enableRx = true;
 
   PW_TRY(clock_tree_element_controller_.Acquire());
-  status_t status = USART_Init(config_.usart_base, &defconfig_, config_.srcclk);
+  flexcomm_clock_freq_ =
+      CLOCK_GetFlexcommClkFreq(FLEXCOMM_GetInstance(config_.usart_base));
+  status_t status =
+      USART_Init(config_.usart_base, &defconfig, flexcomm_clock_freq_);
   if (status != kStatus_Success) {
     clock_tree_element_controller_.Release().IgnoreError();
     return Status::Internal();
@@ -93,20 +83,17 @@ Status DmaUartMcuxpresso::Init() {
       INPUTMUX, config_.tx_input_mux_dmac_ch_request_en, true);
   INPUTMUX_Deinit(INPUTMUX);
 
-  DMA_EnableChannel(config_.dma_base, config_.tx_dma_ch);
-  DMA_EnableChannel(config_.dma_base, config_.rx_dma_ch);
-
-  DMA_CreateHandle(&tx_data_.dma_handle, config_.dma_base, config_.tx_dma_ch);
-  DMA_CreateHandle(&rx_data_.dma_handle, config_.dma_base, config_.rx_dma_ch);
-
   interrupt_lock_.unlock();
+
+  config_.tx_dma_ch.Enable();
+  config_.rx_dma_ch.Enable();
 
   status = USART_TransferCreateHandleDMA(config_.usart_base,
                                          &uart_dma_handle_,
                                          TxRxCompletionCallback,
                                          this,
-                                         &tx_data_.dma_handle,
-                                         &rx_data_.dma_handle);
+                                         config_.tx_dma_ch.handle(),
+                                         config_.rx_dma_ch.handle());
 
   if (status != kStatus_Success) {
     Deinit();
@@ -385,7 +372,6 @@ Status DmaUartMcuxpresso::WaitForReceiveBytes(
 // Copy the data from the receive ring buffer into the destination data buffer
 void DmaUartMcuxpresso::CopyReceiveData(ByteBuilder& bb, size_t copy_size) {
   ByteSpan ring_buffer = rx_data_.ring_buffer;
-  reinterpret_cast<uint8_t*>(rx_data_.ring_buffer.data());
   // Check whether we need to perform a wrap around copy operation or end
   // right at the end of the buffer.
   if (rx_data_.ring_buffer_read_idx + copy_size >=
@@ -432,8 +418,8 @@ Status DmaUartMcuxpresso::DoSetBaudRate(uint32_t baud_rate) {
     return OkStatus();
   }
 
-  status_t status =
-      USART_SetBaudRate(config_.usart_base, config_.baud_rate, config_.srcclk);
+  status_t status = USART_SetBaudRate(
+      config_.usart_base, config_.baud_rate, flexcomm_clock_freq_);
   switch (status) {
     default:
       return Status::Unknown();
