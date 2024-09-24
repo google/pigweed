@@ -105,8 +105,7 @@ class Background final {
   }
 
  private:
-  struct TestHarness
-      : public pw::allocator::test::TestHarness<kBackgroundRequests> {
+  struct TestHarness : public pw::allocator::test::TestHarness {
     pw::Allocator* allocator = nullptr;
     pw::Allocator* Init() override { return allocator; }
   };

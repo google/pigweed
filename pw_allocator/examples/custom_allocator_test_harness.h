@@ -22,13 +22,12 @@
 
 namespace examples {
 
-class CustomAllocatorTestHarness : public pw::allocator::test::TestHarness<64> {
+class CustomAllocatorTestHarness : public pw::allocator::test::TestHarness {
  public:
   static constexpr size_t kCapacity = 0x1000;
   static constexpr size_t kThreshold = 0x800;
 
   CustomAllocatorTestHarness() : custom_(allocator_, kThreshold) {}
-  ~CustomAllocatorTestHarness() override = default;
 
   pw::Allocator* Init() override { return &custom_; }
 

@@ -17,6 +17,7 @@
 #include <variant>
 
 #include "pw_allocator/allocator.h"
+#include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
 #include "pw_random/random.h"
 
@@ -46,22 +47,47 @@ using Request =
 /// arbitrary left shift amount.
 size_t AlignmentFromLShift(size_t lshift, size_t size);
 
-/// Associates an `Allocator` with a vector to store allocated pointers.
+/// Associates an `Allocator` with a list to store allocated pointers.
 ///
 /// This class facilitates performing allocations from generated
 /// `Request`s, enabling the creation of performance, stress, and fuzz
 /// tests for various allocators.
 ///
-/// This class lacks a public constructor, and so cannot be used directly.
-/// Instead callers should use `WithAllocations`, which is templated on the
-/// size of the vector used to store allocated pointers.
-class TestHarnessGeneric {
+/// This class does NOT implement `TestHarness::Init`. It must be extended
+/// further with a method that provides an initialized allocator.
+///
+/// For example, one can create a fuzzer for `MyAllocator` that verifies it
+/// never crashes by adding the following class, function, and macro:
+/// @code{.cpp}
+///   constexpr size_t kMaxRequests = 256;
+///   constexpr size_t kMaxAllocations = 128;
+///   constexpr size_t kMaxSize = 2048;
+///
+///   class MyAllocatorFuzzer : public TestHarness {
+///    private:
+///     Allocator* Init() override { return &allocator_; }
+///     MyAllocator allocator_;
+///   };
+///
+///   void MyAllocatorNeverCrashes(const Vector<Request>& requests) {
+///     static MyAllocatorFuzzer fuzzer;
+///     fuzzer.HandleRequests(requests);
+///   }
+///
+///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
+///     .WithDomains(ArbitraryRequests<kMaxRequests, kMaxSize>());
+/// @endcode
+class TestHarness {
  public:
-  /// Since this object has references passed to it that are typically owned by
-  /// an object of a derived type, the destructor MUST NOT touch those
-  /// references. Instead, it is the callers and/or the derived classes
-  /// responsibility to call `Reset` before the object is destroyed, if desired.
-  virtual ~TestHarnessGeneric() = default;
+  /// Associates a pointer to memory with the `Layout` used to allocate it.
+  struct Allocation : public IntrusiveList<Allocation>::Item {
+    size_t index;
+    Layout layout;
+
+    Allocation(size_t index_, Layout layout_);
+  };
+
+  virtual ~TestHarness() = default;
 
   /// Generates and handles a sequence of allocation requests.
   ///
@@ -106,16 +132,6 @@ class TestHarnessGeneric {
   /// Deallocates any pointers stored in the vector of allocated pointers.
   void Reset();
 
- protected:
-  /// Associates a pointer to memory with the `Layout` used to allocate it.
-  struct Allocation {
-    void* ptr;
-    Layout layout;
-  };
-
-  constexpr TestHarnessGeneric(Vector<Allocation>& allocations)
-      : allocations_(allocations) {}
-
  private:
   virtual Allocator* Init() = 0;
 
@@ -133,54 +149,19 @@ class TestHarnessGeneric {
   /// Removes and returns a previously allocated pointer.
   ///
   /// The vector of allocated pointers must not be empty.
-  Allocation RemoveAllocation(size_t index);
+  Allocation* RemoveAllocation(size_t index);
 
   /// An allocator used to manage memory.
   Allocator* allocator_ = nullptr;
 
-  /// A vector of allocated pointers.
-  Vector<Allocation>& allocations_;
+  /// A list of allocated pointers.
+  IntrusiveList<Allocation> allocations_;
 
   /// The number of requests this object has handled.
   size_t num_requests_ = 0;
-};
 
-/// Associates an `Allocator` with a vector to store allocated pointers.
-///
-/// This class differes from its base class only in that it uses its template
-/// parameter to explicitly size the vector used to store allocated pointers.
-///
-/// This class does NOT implement `WithAllocationsGeneric::Init`. It must be
-/// extended further with a method that provides an initialized allocator.
-///
-/// For example, one create a fuzzer for `MyAllocator` that verifies it never
-/// crashes by adding the following class, function, and macro:
-/// @code{.cpp}
-///   constexpr size_t kMaxRequests = 256;
-///   constexpr size_t kMaxAllocations = 128;
-///   constexpr size_t kMaxSize = 2048;
-///
-///   class MyAllocatorFuzzer : public TestHarness<kMaxAllocations> {
-///    private:
-///     Allocator* Init() override { return &allocator_; }
-///     MyAllocator allocator_;
-///   };
-///
-///   void MyAllocatorNeverCrashes(const Vector<Request>& requests) {
-///     static MyAllocatorFuzzer fuzzer;
-///     fuzzer.HandleRequests(requests);
-///   }
-///
-///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
-///     .WithDomains(ArbitraryRequests<kMaxRequests, kMaxSize>());
-/// @endcode
-template <size_t kMaxConcurrentAllocations>
-class TestHarness : public TestHarnessGeneric {
- public:
-  constexpr TestHarness() : TestHarnessGeneric(allocations_) {}
-
- private:
-  Vector<Allocation, kMaxConcurrentAllocations> allocations_;
+  /// The number of outstanding active allocation by this object.
+  size_t num_allocations_ = 0;
 };
 
 }  // namespace pw::allocator::test
