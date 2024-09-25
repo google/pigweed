@@ -91,9 +91,9 @@ code (for example, for FIDL server files).
 ---------------
 Fuchsia support
 ---------------
-``//pw_bluetooth_sapphire/fuchsia`` currently contains a stub bt-host to
-demonstrate building, running, and testing Fuchsia components and packages with
-the Fuchsia SDK.
+``//pw_bluetooth_sapphire/fuchsia`` currently contains the fuchsia-
+build targets for building, running, and testing the ``bt-host`` and
+``bt-hci-virtual`` packages.
 
 .. note::
    Please do not add any fuchsia-specific dependencies (targets that load from
@@ -104,9 +104,6 @@ the Fuchsia SDK.
    Every ``bazel`` invocation needs ``--config=fuchsia`` whenever the target or
    dependency needs to specify ``@fuchsia_sdk`` backends for pigweed and the
    target platform is fuchsia.
-
-It will eventually be filled with the real `bt-host component`_ once that's
-migrated. See https://fxbug.dev/321267390.
 
 Build the package
 =================
@@ -216,7 +213,8 @@ These presubmits can be also be replicated locally with the following command:
 Uploading to CIPD
 =================
 Pigweed infrastructure uploads bt-host's artifacts to
-`fuchsia/prebuilt/bt-host`_ by building bt-host's top level infra target:
+`fuchsia/prebuilt/bt-host`_ and `fuchsia/prebuilt/bt-hci-virtual`_ via the
+`pigweed-linux-bazel-bthost`_ builder by building the top level infra target:
 
 .. code-block::
 
@@ -242,6 +240,7 @@ Roadmap
 * Add configuration options (LE only, Classic only, etc.)
 * Add CLI for controlling stack over RPC
 
-.. _bt-host component: https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/src/connectivity/bluetooth/core/bt-host/
 .. _fuchsia/prebuilt/bt-host: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-host
+.. _fuchsia/prebuilt/bt-hci-virtual: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-hci-virtual
+.. _pigweed-linux-bazel-bthost: https://ci.chromium.org/ui/p/pigweed/builders/pigweed.ci/pigweed-linux-bazel-bthost
 .. _GN presubmit step: https://cs.opensource.google/pigweed/pigweed/+/main:pw_presubmit/py/pw_presubmit/pigweed_presubmit.py?q=gn_chre_googletest_nanopb_sapphire_build
