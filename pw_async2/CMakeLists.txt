@@ -148,7 +148,7 @@ pw_add_test(pw_async2.once_sender_test
     pw_containers.vector
 )
 
-if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
   pw_add_library(pw_async2.coro STATIC
     HEADERS
       public/pw_async2/coro.h

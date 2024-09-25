@@ -15,6 +15,7 @@
 
 #include <concepts>
 #include <coroutine>
+#include <variant>
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/layout.h"
@@ -118,7 +119,7 @@ template <typename PromiseType>
 class OwningCoroutineHandle final {
  public:
   // Construct a null (`!IsValid()`) handle.
-  OwningCoroutineHandle(nullptr_t) : promise_handle_(nullptr) {}
+  OwningCoroutineHandle(std::nullptr_t) : promise_handle_(nullptr) {}
 
   /// Take ownership of `promise_handle`.
   OwningCoroutineHandle(std::coroutine_handle<PromiseType>&& promise_handle)
