@@ -282,7 +282,32 @@ Example
    :language: cpp
    :linenos:
    :start-after: [pw_containers-intrusive_multimap]
-   :end-before: [pw_containers-intrusive_multimap
+   :end-before: [pw_containers-intrusive_multimap]
+
+------------------------------------
+Using items with multiple containers
+------------------------------------
+Intrusive items may be used with multiple containers, provided each of those
+containers is templated on a type that is not derived from any of the others.
+This can be achieved by multiply inheriting from distinct type:
+
+.. literalinclude:: examples/listed_and_mapped.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_containers-listed_and_mapped]
+   :end-before: [pw_containers-listed_and_mapped]
+
+If one or more types is derived from another, the compiler will fail to build
+with an error that ``ItemType`` is ambiguous or found in multiple base classes.
+
+Creating per-list types is fairly trivial, but per-map types are slightly more
+involved. To facilitate this, the module provides a helper class
+``pw::IntrusiveMapItemWithKey``, as seen in the example above.. This class
+handles defining a unique type for a map or multimap of items that include their
+keys.
+
+.. doxygenclass:: pw::IntrusiveMapItemWithKey
+   :members:
 
 -----------------------
 pw::containers::FlatMap

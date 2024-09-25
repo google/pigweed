@@ -15,13 +15,9 @@
 
 #include "pw_containers/internal/aa_tree.h"
 #include "pw_containers/internal/aa_tree_item.h"
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/intrusive_map.h"
 
 namespace pw {
-
-// Forward declaration for friending.
-template <typename, typename, typename, typename>
-class IntrusiveMap;
 
 /// A `std::multimap<Key, T, Compare>`-like class that uses intrusive items.
 ///
@@ -68,23 +64,11 @@ template <typename Key,
           typename GetKey = containers::internal::GetKey<Key, T>>
 class IntrusiveMultiMap {
  private:
-  using ItemBase = containers::internal::AATreeItem;
   using GenericIterator = containers::internal::GenericAATree::iterator;
   using Tree = containers::internal::AATree<GetKey, Compare>;
 
  public:
-  class Item : public ItemBase {
-   public:
-    constexpr explicit Item() = default;
-
-   private:
-    // GetElementTypeFromItem is used to find the element type from an item.
-    // It is used to ensure list items inherit from the correct Item type.
-    template <typename, typename, bool>
-    friend struct containers::internal::GetElementTypeFromItem;
-    using ElementType = T;
-  };
-
+  using Item = containers::internal::IntrusiveMapItem<T>;
   using key_type = typename Tree::Key;
   using mapped_type = std::remove_cv_t<T>;
   using value_type = Item;
@@ -254,9 +238,11 @@ class IntrusiveMultiMap {
   // Check that T is an Item in a function, since the class T will not be fully
   // defined when the IntrusiveList<T> class is instantiated.
   static constexpr void CheckItemType() {
-    using Base = ::pw::containers::internal::ElementTypeFromItem<ItemBase, T>;
+    using ItemBase = containers::internal::AATreeItem;
+    using IntrusiveItemType =
+        typename containers::internal::IntrusiveItem<ItemBase, T>::Type;
     static_assert(
-        std::is_base_of<Base, T>(),
+        std::is_base_of<IntrusiveItemType, T>(),
         "IntrusiveMultiMap items must be derived from "
         "IntrusiveMultiMap<Key, T>::Item, where T is the item or one of its "
         "bases.");

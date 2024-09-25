@@ -17,7 +17,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/internal/intrusive_item.h"
 #include "pw_containers/internal/intrusive_list_item.h"
 
 namespace pw::containers::internal {

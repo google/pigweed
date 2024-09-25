@@ -21,7 +21,7 @@
 #include "pw_assert/assert.h"
 #include "pw_containers/internal/aa_tree_item.h"
 #include "pw_containers/internal/aa_tree_iterator.h"
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/internal/intrusive_item.h"
 
 namespace pw::containers::internal {
 

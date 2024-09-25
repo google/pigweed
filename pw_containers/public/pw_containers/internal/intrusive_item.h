@@ -30,20 +30,19 @@ void CheckIntrusiveContainerIsEmpty(bool empty);
 /// This function is standalone to avoid using PW_CHECK in a header file.
 void CheckIntrusiveItemIsUncontained(bool uncontained);
 
-// Gets the element type from an Item. This is used to check that an
-// IntrusiveList element class inherits from Item, either directly or through
-// another class.
+// Gets the container's `value_type` from an item. This is used to check that an
+// the `value_type` inherits from the container's nested `Item` type, either
+// directly or through another class.
 template <typename Item, typename T, bool kIsItem = std::is_base_of<Item, T>()>
-struct GetElementTypeFromItem {
+struct IntrusiveItem {
   using Type = void;
 };
 
+// Items may be added to multiple containers, provided that they inherit from
+// multiple base types, and that those types are disjoint.
 template <typename Item, typename T>
-struct GetElementTypeFromItem<Item, T, true> {
-  using Type = typename T::ElementType;
+struct IntrusiveItem<Item, T, true> {
+  using Type = typename T::ItemType;
 };
-
-template <typename Item, typename T>
-using ElementTypeFromItem = typename GetElementTypeFromItem<Item, T>::Type;
 
 }  // namespace pw::containers::internal

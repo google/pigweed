@@ -22,7 +22,7 @@
 #include <type_traits>
 
 #include "pw_containers/config.h"
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/internal/intrusive_item.h"
 #include "pw_containers/internal/intrusive_list.h"
 #include "pw_containers/internal/intrusive_list_item.h"
 #include "pw_containers/internal/intrusive_list_iterator.h"
@@ -100,12 +100,11 @@ class IntrusiveList {
     constexpr explicit Item() = default;
 
    private:
-    // GetElementTypeFromItem is used to find the element type from an item.
-    // It is used to ensure list items inherit from the correct Item type.
+    // IntrusiveItem is used to ensure T inherits from this container's Item
+    // type. See also `CheckItemType`.
     template <typename, typename, bool>
-    friend struct ::pw::containers::internal::GetElementTypeFromItem;
-
-    using ElementType = T;
+    friend struct containers::internal::IntrusiveItem;
+    using ItemType = T;
   };
 
   using iterator =
@@ -332,9 +331,10 @@ class IntrusiveList {
   // Check that T is an Item in a function, since the class T will not be fully
   // defined when the IntrusiveList<T> class is instantiated.
   static constexpr void CheckItemType() {
-    using Base = ::pw::containers::internal::ElementTypeFromItem<ItemBase, T>;
+    using IntrusiveItemType =
+        typename containers::internal::IntrusiveItem<ItemBase, T>::Type;
     static_assert(
-        std::is_base_of<Base, T>(),
+        std::is_base_of<IntrusiveItemType, T>(),
         "IntrusiveList items must be derived from IntrusiveList<T>::Item, "
         "where T is the item or one of its bases.");
   }

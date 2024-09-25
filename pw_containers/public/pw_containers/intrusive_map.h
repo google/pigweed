@@ -17,13 +17,56 @@
 
 #include "pw_containers/internal/aa_tree.h"
 #include "pw_containers/internal/aa_tree_item.h"
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/internal/intrusive_item.h"
 
 namespace pw {
 
 // Forward declaration for friending.
 template <typename, typename, typename, typename>
 class IntrusiveMultiMap;
+
+namespace containers::internal {
+
+/// Base item type for intrusive maps.
+///
+/// Unlike `IntrusiveForwardList` and `IntrusiveList`, which define distinct
+/// nested types for their items, `IntrusiveMap` and `IntrusiveMultiMap` share
+/// the same base item types, and items can be moved between containers.
+template <typename T>
+class IntrusiveMapItem : public AATreeItem {
+ public:
+  constexpr explicit IntrusiveMapItem() = default;
+
+ private:
+  // IntrusiveItem is used to ensure T inherits from this container's Item
+  // type. See also `CheckItemType`.
+  template <typename, typename, bool>
+  friend struct IntrusiveItem;
+  using ItemType = T;
+};
+
+}  // namespace containers::internal
+
+/// Helper class for defining per-map types.
+///
+/// Intrusive items may be used with multiple containers, provided each of those
+/// containers is templated on a type that is not derived from any of the
+/// others. For maps, this requires defining a ctor and a method or functor to
+/// get the key from an item. This class provides this boilerplate, as well as
+/// tag that can be used to create multiple unique types when needed for items
+/// to be included multiple maps simultaneously using the same key.
+///
+/// @tparam   kTag    Tag to distinguish this type.
+template <typename Key, uint32_t kTag = 0>
+class IntrusiveMapItemWithKey : public containers::internal::IntrusiveMapItem<
+                                    IntrusiveMapItemWithKey<Key, kTag>> {
+ public:
+  constexpr IntrusiveMapItemWithKey(const Key& key) : key_(key) {}
+  const Key& key() const { return key_; }
+
+ private:
+  const Key& key_;
+};
 
 /// A `std::map<Key, T, Compare>`-like class that uses intrusive items.
 ///
@@ -73,23 +116,11 @@ template <typename Key,
           typename GetKey = containers::internal::GetKey<Key, T>>
 class IntrusiveMap {
  private:
-  using ItemBase = containers::internal::AATreeItem;
   using GenericIterator = containers::internal::GenericAATree::iterator;
   using Tree = containers::internal::AATree<GetKey, Compare>;
 
  public:
-  class Item : public ItemBase {
-   public:
-    constexpr explicit Item() = default;
-
-   private:
-    // GetElementTypeFromItem is used to find the element type from an item.
-    // It is used to ensure list items inherit from the correct Item type.
-    template <typename, typename, bool>
-    friend struct containers::internal::GetElementTypeFromItem;
-    using ElementType = T;
-  };
-
+  using Item = containers::internal::IntrusiveMapItem<T>;
   using key_type = typename Tree::Key;
   using mapped_type = std::remove_cv_t<T>;
   using value_type = Item;
@@ -106,9 +137,9 @@ class IntrusiveMap {
     constexpr iterator() = default;
 
    private:
-    using Base = containers::internal::AATreeIterator<T>;
     friend IntrusiveMap;
-    constexpr explicit iterator(GenericIterator iter) : Base(iter) {}
+    constexpr explicit iterator(GenericIterator iter)
+        : containers::internal::AATreeIterator<T>(iter) {}
   };
 
   class const_iterator
@@ -117,9 +148,9 @@ class IntrusiveMap {
     constexpr const_iterator() = default;
 
    private:
-    using Base = containers::internal::AATreeIterator<std::add_const_t<T>>;
     friend IntrusiveMap;
-    constexpr explicit const_iterator(GenericIterator iter) : Base(iter) {}
+    constexpr explicit const_iterator(GenericIterator iter)
+        : containers::internal::AATreeIterator<std::add_const_t<T>>(iter) {}
   };
 
   using reverse_iterator = std::reverse_iterator<iterator>;
@@ -281,9 +312,11 @@ class IntrusiveMap {
   // Check that T is an Item in a function, since the class T will not be fully
   // defined when the IntrusiveList<T> class is instantiated.
   static constexpr void CheckItemType() {
-    using Base = ::pw::containers::internal::ElementTypeFromItem<ItemBase, T>;
+    using ItemBase = containers::internal::AATreeItem;
+    using IntrusiveItemType =
+        typename containers::internal::IntrusiveItem<ItemBase, T>::Type;
     static_assert(
-        std::is_base_of<Base, T>(),
+        std::is_base_of<IntrusiveItemType, T>(),
         "IntrusiveMap items must be derived from IntrusiveMap<Key, T>::Item, "
         "where T is the item or one of its bases.");
   }

@@ -69,7 +69,7 @@ void VisitLibrary(pw::IntrusiveMap<uint32_t, Book>& book_bag) {
 
 namespace {
 
-TEST(IntrusiveMapExampleTest, TBD) {
+TEST(IntrusiveMapExampleTest, VisitLibrary) {
   examples::Book book = {"One Hundred Years of Solitude", 17522865u};
   pw::IntrusiveMap<uint32_t, examples::Book> book_bag;
   book_bag.insert(book);

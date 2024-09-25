@@ -51,6 +51,17 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "listed_and_mapped",
+    srcs = ["listed_and_mapped.cc"],
+    deps = [
+        "//pw_containers:intrusive_list",
+        "//pw_containers:intrusive_map",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
     name = "wrapped_iterator",
     srcs = ["wrapped_iterator.cc"],
     deps = ["//pw_containers:wrapped_iterator"],

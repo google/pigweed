@@ -69,7 +69,7 @@ void VisitLibrary(pw::IntrusiveMultiMap<uint32_t, Book>& book_bag) {
 
 namespace {
 
-TEST(IntrusiveMultiMapExampleTest, TBD) {
+TEST(IntrusiveMultiMapExampleTest, VisitLibrary) {
   pw::IntrusiveMultiMap<uint32_t, examples::Book> book_bag1;
   examples::VisitLibrary(book_bag1);
 

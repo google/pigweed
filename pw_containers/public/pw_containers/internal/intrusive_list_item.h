@@ -129,14 +129,11 @@ class IntrusiveListItemBase {
 /// Base class for items in singly-linked lists.
 class IntrusiveForwardListItem
     : public IntrusiveListItemBase<IntrusiveForwardListItem> {
- private:
-  using Base = IntrusiveListItemBase<IntrusiveForwardListItem>;
-
  protected:
   constexpr IntrusiveForwardListItem() = default;
 
  private:
-  friend Base;
+  friend IntrusiveListItemBase<IntrusiveForwardListItem>;
 
   template <typename>
   friend class GenericIntrusiveList;
@@ -154,14 +151,11 @@ class IntrusiveForwardListItem
 
 /// Base class for items in doubly-linked lists.
 class IntrusiveListItem : public IntrusiveListItemBase<IntrusiveListItem> {
- private:
-  using Base = IntrusiveListItemBase<IntrusiveListItem>;
-
  protected:
   constexpr IntrusiveListItem() = default;
 
  private:
-  friend Base;
+  friend IntrusiveListItemBase<IntrusiveListItem>;
 
   template <typename>
   friend class GenericIntrusiveList;

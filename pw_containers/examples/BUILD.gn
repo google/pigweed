@@ -43,6 +43,16 @@ pw_test("intrusive_multimap") {
   sources = [ "intrusive_multimap.cc" ]
 }
 
+pw_test("listed_and_mapped") {
+  deps = [
+    "$dir_pw_containers:intrusive_list",
+    "$dir_pw_containers:intrusive_map",
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  sources = [ "listed_and_mapped.cc" ]
+}
+
 pw_test("wrapped_iterator") {
   deps = [ "$dir_pw_containers:wrapped_iterator" ]
   sources = [ "wrapped_iterator.cc" ]
@@ -55,6 +65,7 @@ pw_test_group("examples") {
     ":intrusive_list",
     ":intrusive_map",
     ":intrusive_multimap",
+    ":listed_and_mapped",
     ":wrapped_iterator",
   ]
 }

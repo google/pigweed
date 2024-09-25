@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/internal/intrusive.h"
+#include "pw_containers/internal/intrusive_item.h"
 
 #include "pw_assert/check.h"
 
