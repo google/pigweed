@@ -201,7 +201,7 @@ native_binary(
         "include/**",
         "lib/clang/**/include/**",
     ]) + select({
-        "@platforms//os:linux": ["@linux_sysroot//:all"],
+        "@platforms//os:linux": ["@linux_sysroot//:sysroot"],
         "//conditions:default": [],
     }),
     out = select({
