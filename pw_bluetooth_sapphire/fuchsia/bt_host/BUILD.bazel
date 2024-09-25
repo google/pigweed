@@ -30,6 +30,7 @@ load(
     "fuchsia_licenses_collection",
     "fuchsia_licenses_spdx",
 )
+load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
@@ -144,7 +145,7 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "bt-host-unittests",
     testonly = True,
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     tags = ["manual"],
     unit_tests = [
@@ -158,7 +159,7 @@ fuchsia_package(
     components = [
         ":component",
     ],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     resources = [":default_config_values"],
     tags = ["manual"],
@@ -170,7 +171,7 @@ fuchsia_package(
     components = [
         ":component",
     ],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.arm64,
     resources = [":default_config_values"],
     tags = ["manual"],
@@ -182,7 +183,7 @@ fuchsia_package(
     components = [
         ":component",
     ],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.riscv64,
     resources = [":default_config_values"],
     tags = ["manual"],

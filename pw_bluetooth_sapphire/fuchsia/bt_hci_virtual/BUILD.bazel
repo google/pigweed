@@ -29,6 +29,7 @@ load(
     "fuchsia_licenses_collection",
     "fuchsia_licenses_spdx",
 )
+load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
@@ -107,7 +108,7 @@ fuchsia_test_package(
     package_name = "virtual",
     testonly = True,
     components = [":component"],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.x64,
     tags = ["manual"],
@@ -121,7 +122,7 @@ fuchsia_test_package(
     package_name = "virtual",
     testonly = True,
     components = [":component"],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.arm64,
     tags = ["manual"],
@@ -135,7 +136,7 @@ fuchsia_test_package(
     package_name = "virtual",
     testonly = True,
     components = [":component"],
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.riscv64,
     tags = ["manual"],
@@ -160,7 +161,7 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "bt-hci-virtual-unittests",
     testonly = True,
-    fuchsia_api_level = "HEAD",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     tags = ["manual"],
     unit_tests = [":loopback_test"],

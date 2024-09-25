@@ -17,6 +17,7 @@ load(
     "fuchsia_cc_test",
     "fuchsia_unittest_package",
 )
+load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = [
@@ -56,7 +57,7 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "bt_lib_fidl_tests",
     testonly = True,
-    fuchsia_api_level = "23",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     tags = ["manual"],
     unit_tests = [
         ":bt_lib_fidl_test",

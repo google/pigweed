@@ -17,6 +17,7 @@ load(
     "fuchsia_cc_test",
     "fuchsia_unittest_package",
 )
+load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -91,7 +92,7 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "controllers_tests",
     testonly = True,
-    fuchsia_api_level = "23",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     unit_tests = [
         ":controllers_test",
     ],
