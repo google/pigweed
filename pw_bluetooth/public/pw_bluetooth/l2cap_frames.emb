@@ -19,10 +19,29 @@
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss"]
 # ========================= Data Packet Format =================================
-# Core Spec v5.4 Vol 3, Part A, Section 3
+# Core Spec v6.0 Vol 3, Part A, Section 3
+
+
+struct BasicL2capHeader:
+  0     [+2]  UInt  pdu_length
+    -- For B-frames, the PDU Length equals the payload size.
+
+  $next [+2]  UInt  channel_id
+    -- The channel ID (CID) identifies the destination channel endpoint of the
+    -- packet.
+    [requires: this != 0]
+
+
+struct BFrame:
+  -- Defined in Core Spec v6.0 Vol 3, Part A, Section 3.1.
+  0     [+BasicL2capHeader.$size_in_bytes]  BasicL2capHeader    header
+  let pdu_length = header.pdu_length
+  let channel_id = header.channel_id
+  $next [+pdu_length]                       UInt:8[pdu_length]  payload
 
 
 struct BFrameHeader:
+  # TODO: b/364711772 - Migrate clients to `BFrame` & delete.
   -- 3.1
   -- A frame header for a B-Frame.
   -- In basic L2CAP mode, the L2CAP PDU on a connection-oriented channel is also
@@ -34,16 +53,41 @@ struct BFrameHeader:
     -- The channel ID (CID) identifies the destination channel endpoint of the
     -- packet.
 
-# ========== 3.4 Credit-Based Flow Control Frames ==========
+
+struct FirstKFrame:
+  -- Defined in Core Spec v6.0 Vol 3, Part A, Section 3.4.
+  [requires: 0 <= payload_size <= 65533]
+  0     [+BasicL2capHeader.$size_in_bytes]  BasicL2capHeader      header
+  let pdu_length = header.pdu_length
+  let channel_id = header.channel_id
+  let payload_size = pdu_length-2
+  $next [+2]                                UInt                  sdu_length
+    -- The first K-Frame of an SDU contains an SDU length field following the
+    -- L2CAP header. Subsequent frames that are part of the same SDU do not
+    -- contain the SDU length field.
+
+  $next [+payload_size]                     UInt:8[payload_size]  payload
+
+
+struct SubsequentKFrame:
+  -- Defined in Core Spec v6.0 Vol 3, Part A, Section 3.4.
+  [requires: 0 <= payload_size <= 65533]
+  0     [+BasicL2capHeader.$size_in_bytes]  BasicL2capHeader      header
+  let pdu_length = header.pdu_length
+  let channel_id = header.channel_id
+  let payload_size = pdu_length
+  $next [+payload_size]                     UInt:8[payload_size]  payload
 
 
 struct KFrameSduHeader:
+  #  TODO: b/364711772 - Migrate clients to `FirstKFrame` & delete.
   -- 3.4.2
   -- A frame header for a K-Frame (credit based flow control) SDU.
   0 [+2]  UInt  sdu_length
 
 
 struct KFramePduHeader:
+  # TODO: b/364711772 - Migrate clients to `SubsequentKFrame` & delete.
   -- 3.4.1
   -- A frame header for a K-Frame (credit based flow control) PDU.
   0     [+2]  UInt  pdu_length
