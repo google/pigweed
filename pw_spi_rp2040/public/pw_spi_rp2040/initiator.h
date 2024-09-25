@@ -21,21 +21,17 @@
 
 namespace pw::spi {
 
-// Pico SDK userspace implementation of the SPI Initiator
-class Rp2040Initiator : public Initiator {
+// Pico SDK implementation of the SPI Initiator
+class Rp2040Initiator final : public Initiator {
  public:
-  Rp2040Initiator(spi_inst_t* spi);
+  Rp2040Initiator(spi_inst_t* spi) : spi_(spi) {}
 
   // Implements pw::spi::Initiator:
   Status Configure(const Config& config) override;
   Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
 
  private:
-  Status LazyInit();
-
   spi_inst_t* spi_;
-  Status init_status_;         // The saved LazyInit() status.
-  BitsPerWord bits_per_word_;  // Last Configure() bits_per_word.
 };
 
 }  // namespace pw::spi

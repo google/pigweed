@@ -12,6 +12,9 @@
 The implementation is based on the SPI driver from the Pico SDK. SPI transfers
 use the blocking driver API which uses busy waiting under the hood.
 
+The PicoSDK's ``spi_init()`` must be called before using the initiator in order
+to enable the SPI peripheral and set its bus speed.
+
 .. note::
    There is currently no support for RP2040 hardware CSn
    pins. :cpp:class:`pw::spi::DigitalOutChipSelector` is
