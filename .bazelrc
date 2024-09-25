@@ -196,6 +196,12 @@ common:remote_cache --bes_timeout=600s
 common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
 common:remote_cache --bes_instance_name=pigweed-rbe-open
 
+# cache-silo-key: this is essentially a "salt" added to the remote cache key.
+# Change it to a new value when we want to create a new cache from scratch
+# (e.g. to recover from cache poisoning). We've used the current date in
+# YYYYMMDD format in the past.
+common --remote_default_platform_properties='properties:{name:"cache-silo-key" value:"20240918"}'
+
 # User bazelrc file
 # =================
 # See https://bazel.build/configure/best-practices#bazelrc-file
