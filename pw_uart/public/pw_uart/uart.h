@@ -96,6 +96,28 @@ class Uart {
   /// @endrst
   Status SetBaudRate(uint32_t baud_rate) { return DoSetBaudRate(baud_rate); }
 
+  /// Configures the UART hardware flow control enable.
+  ///
+  /// This function sets the hardware flow control enable for the UART.
+  /// Whether the flow control setting rate can be changed while the UART is
+  /// enabled depends on the specific implementation.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The UART has been successfully initialized.
+  ///
+  ///    FAILED_PRECONDITION: The device is enabled and does not support
+  ///    changing settings on the fly.
+  ///
+  ///    UNIMPLEMENTED: The device does not support flow control.
+  ///
+  ///    INTERNAL: Internal errors within the hardware abstraction layer.
+  ///
+  /// @endrst
+  Status SetFlowControl(bool enable) { return DoSetFlowControl(enable); }
+
   /// Reads data from the UART into a provided buffer.
   ///
   /// This function blocks until the entirety of `rx_buffer` is filled with
@@ -236,6 +258,9 @@ class Uart {
  private:
   virtual Status DoEnable(bool enable) = 0;
   virtual Status DoSetBaudRate(uint32_t baud_rate) = 0;
+  virtual Status DoSetFlowControl(bool /*enable*/) {
+    return pw::Status::Unimplemented();
+  }
 
   /// Reads data from the UART into a provided buffer with an optional timeout
   /// provided.

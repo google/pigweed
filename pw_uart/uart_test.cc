@@ -38,7 +38,7 @@ class UartStub : public Uart {
   }
 
   Status DoSetBaudRate(uint32_t) override { return OkStatus(); }
-
+  Status DoSetFlowControl(bool) override { return OkStatus(); }
   size_t DoConservativeReadAvailable() override { return 0; }
   Status DoFlushOutput() override { return OkStatus(); }
   Status DoClearPendingReceiveBytes() override { return OkStatus(); }

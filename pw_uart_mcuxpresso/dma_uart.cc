@@ -434,6 +434,17 @@ Status DmaUartMcuxpresso::DoSetBaudRate(uint32_t baud_rate) {
   }
 }
 
+Status DmaUartMcuxpresso::DoSetFlowControl(bool enable) {
+  config_.flow_control = enable;
+
+  if (!initialized_) {
+    return OkStatus();
+  }
+
+  USART_EnableCTS(config_.usart_base, enable);
+  return OkStatus();
+}
+
 // Copy data from the RX ring buffer into the caller provided buffer
 //
 // If the ring buffer can already satisfy the read request, the
