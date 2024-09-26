@@ -97,6 +97,7 @@ genrule {
         "--sources $(in) " +
         "--language nanopb " +
         "--no-experimental-proto3-optional " +
+        "--no-experimental-editions " +
         "--protoc=$(location aprotoc) ",
     out: [
         "pw_protobuf_protos/common.pb.h",
@@ -147,6 +148,7 @@ genrule {
         "--sources $(in) " +
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
+        "--no-experimental-editions " +
         "--protoc=$(location aprotoc) ",
     out: [
         "pw_protobuf_protos/common.pwpb.h",
@@ -177,6 +179,7 @@ genrule {
         "--sources $${proto_files} " +
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
+        "--no-experimental-editions " +
         "--protoc=$(location aprotoc) ",
     out: [
         "google/protobuf/descriptor.pwpb.h",
