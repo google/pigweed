@@ -58,11 +58,29 @@ Running tests
            --test_output=all \
            --copt=-DPW_LOG_LEVEL_DEFAULT=PW_LOG_LEVEL_ERROR
 
-   .. tab-item:: Bazel (Fuchsia emulator)
+   .. tab-item:: Bazel (Fuchsia)
+
+      First, ensure the emulator is running or hardware running Fuchsia is
+      connected. Then run a test package with:
 
       .. code-block:: console
 
-         bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia:infra.test_all
+         bazel run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/host/l2cap:test_pkg
+
+      .. note::
+         If the test is unable to connect to the emulator, run ``pw ffx target
+         remove --all`` first to clean your machine's target list.
+
+      .. note::
+         Passing flags like `--gtest_filter` is not yet supported. See
+         `fxbug.dev/369662168 <https://fxbug.dev/369662168>`_.
+
+      You can also run the presubmit step that will start an emulator and run
+      all tests, but this is slow:
+
+      .. code-block:: console
+
+         pw presubmit --step bthost_package
 
    .. tab-item:: GN (host)
 
