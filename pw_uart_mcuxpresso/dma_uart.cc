@@ -461,13 +461,15 @@ Status DmaUartMcuxpresso::DoSetFlowControl(bool enable) {
 // otherwise DoRead calls might fail due to contention for
 // the USART RX channel.
 StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
-    ByteSpan rx_buffer, std::optional<chrono::SystemClock::duration> timeout) {
+    ByteSpan rx_buffer,
+    size_t min_bytes,
+    std::optional<chrono::SystemClock::duration> timeout) {
   if (timeout.has_value() && *timeout < chrono::SystemClock::duration::zero()) {
     return StatusWithSize(Status::InvalidArgument(), 0);
   }
 
   size_t length = rx_buffer.size();
-  if (length == 0) {
+  if (length == 0 || min_bytes > length) {
     return StatusWithSize(Status::InvalidArgument(), 0);
   }
 
@@ -485,8 +487,8 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
   Status status = OkStatus();
 
   ByteBuilder bb(rx_buffer);
-  size_t bytes_needed = length;
-  while (bytes_needed > 0) {
+  size_t bytes_copied = 0;
+  while (bytes_copied < min_bytes) {
     // Get the number of bytes available to read.
     StatusWithSize rx_count_status = TransferGetReceiveDMACount();
     if (!rx_count_status.ok()) {
@@ -497,14 +499,15 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
 
     // Copy available bytes out of the ring buffer.
     if (rx_count > 0) {
-      size_t copy_size = MIN(bytes_needed, rx_count);
+      // Allow copying more than min_bytes if they are available.
+      size_t copy_size = std::min(length - bytes_copied, rx_count);
       CopyReceiveData(bb, copy_size);
-      bytes_needed -= copy_size;
+      bytes_copied += copy_size;
     }
 
     // Do we still need more bytes?
     // We need to wait for more DMA bytes if so.
-    if (bytes_needed > 0) {
+    if (bytes_copied < min_bytes) {
       // Check if the timeout has expired, if applicable.
       if (deadline.has_value() && chrono::SystemClock::now() >= *deadline) {
         status.Update(Status::DeadlineExceeded());
@@ -512,7 +515,8 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
       }
 
       // Wait up to the timeout duration to receive more bytes.
-      Status wait_status = WaitForReceiveBytes(bytes_needed, deadline);
+      Status wait_status =
+          WaitForReceiveBytes(min_bytes - bytes_copied, deadline);
       // Even if we exceeded the deadline, stay in the loop for one more
       // iteration to copy out any final bytes.
       if (!wait_status.ok() && !wait_status.IsDeadlineExceeded()) {
@@ -526,7 +530,7 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
   }
 
   rx_data_.busy.store(false);
-  return StatusWithSize(status, length - bytes_needed);
+  return StatusWithSize(status, bytes_copied);
 }
 
 // Write data to USART using DMA transactions

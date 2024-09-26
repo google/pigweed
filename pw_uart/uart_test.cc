@@ -29,7 +29,7 @@ class UartStub : public Uart {
  private:
   Status DoEnable(bool) override { return OkStatus(); }
   StatusWithSize DoTryReadFor(
-      ByteSpan, std::optional<chrono::SystemClock::duration>) override {
+      ByteSpan, size_t, std::optional<chrono::SystemClock::duration>) override {
     return StatusWithSize(0);
   }
   StatusWithSize DoTryWriteFor(

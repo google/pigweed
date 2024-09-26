@@ -104,6 +104,7 @@ class DmaUartMcuxpresso final : public Uart {
   Status DoSetFlowControl(bool enable) override;
   StatusWithSize DoTryReadFor(
       ByteSpan rx_buffer,
+      size_t min_bytes,
       std::optional<chrono::SystemClock::duration> timeout) override;
   StatusWithSize DoTryWriteFor(
       ConstByteSpan tx_buffer,
