@@ -34,6 +34,6 @@ cc_library_static {
     ],
     host_supported: true,
     srcs: [
-        "intrusive.cc",
+        "intrusive_item.cc",
     ],
 }
