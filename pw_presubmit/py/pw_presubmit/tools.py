@@ -162,10 +162,12 @@ def log_run(
     """
     ctx = PRESUBMIT_CONTEXT.get()
     if ctx:
+        # Save the subprocess command args for pw build presubmit runner.
         if not ignore_dry_run:
             ctx.append_check_command(*args, **kwargs)
         if ctx.dry_run and not ignore_dry_run:
-            # Return an empty CompletedProcess
+            # Return an empty CompletedProcess without actually running anything
+            # if dry-run mode is on.
             empty_proc: subprocess.CompletedProcess = (
                 subprocess.CompletedProcess('', 0)
             )

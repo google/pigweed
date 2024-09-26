@@ -31,12 +31,17 @@ from pw_presubmit.presubmit import (
     Programs,
     Presubmit,
     PresubmitContext,
+    PresubmitResult,
     Check,
     fetch_file_lists,
 )
 import pw_presubmit.pigweed_presubmit
 from pw_presubmit.build import GnGenNinja, gn_args
-from pw_presubmit.presubmit_context import get_check_traces, PresubmitCheckTrace
+from pw_presubmit.presubmit_context import (
+    PresubmitCheckTrace,
+    PresubmitFailure,
+    get_check_traces,
+)
 from pw_presubmit.tools import file_summary
 
 # pw_watch is not required by pw_build, this is an optional feature.
@@ -114,10 +119,10 @@ def _bazel_command_args_to_build_commands(
     bazel_options = list(
         arg for arg in trace.args if arg.startswith('--') and arg != '--'
     )
-    # Check for `bazel build` or `bazel test`
+    # Check for bazel build, info or test subcommands.
     if not (
         bazel_command[0].endswith('bazel')
-        and bazel_command[1] in ['build', 'test']
+        and bazel_command[1] in ['build', 'info', 'test']
     ):
         raise UnknownBuildSystem(
             f'Unable to parse bazel command:\n  {trace.args}'
@@ -125,22 +130,13 @@ def _bazel_command_args_to_build_commands(
 
     bazel_subcommand = bazel_command[1]
     bazel_targets = bazel_command[2:]
-    if bazel_subcommand == 'build':
-        build_steps.append(
-            BuildCommand(
-                build_system_command='bazel',
-                build_system_extra_args=['build'] + bazel_options,
-                targets=bazel_targets,
-            )
+    build_steps.append(
+        BuildCommand(
+            build_system_command='bazel',
+            build_system_extra_args=[bazel_subcommand] + bazel_options,
+            targets=bazel_targets,
         )
-    if bazel_subcommand == 'test':
-        build_steps.append(
-            BuildCommand(
-                build_system_command='bazel',
-                build_system_extra_args=['test'] + bazel_options,
-                targets=bazel_targets,
-            )
-        )
+    )
     return build_steps
 
 
@@ -165,7 +161,13 @@ def _presubmit_trace_to_build_commands(
     """
     build_steps: list[BuildCommand] = []
 
-    presubmit_step(ctx)
+    result = presubmit_step(ctx)
+    if result == PresubmitResult.FAIL:
+        raise PresubmitFailure(
+            '\n\nERROR: This presubmit cannot be run with "pw build". '
+            'Please run with:\n\n'
+            f'  pw presubmit --step {presubmit_step}'
+        )
 
     step_traces = get_check_traces(ctx)
 

@@ -1080,10 +1080,12 @@ def call(
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
     ctx = PRESUBMIT_CONTEXT.get()
     if ctx:
+        # Save the subprocess command args for pw build presubmit runner.
         call_annotation = call_annotation if call_annotation else {}
         ctx.append_check_command(
             *args, call_annotation=call_annotation, **kwargs
         )
+        # Return without running if dry-run mode is on.
         if ctx.dry_run:
             return
 

@@ -627,6 +627,11 @@ def zephyr_build(ctx: PresubmitContext) -> None:
 
 def docs_build(ctx: PresubmitContext) -> None:
     """Build Pigweed docs"""
+    if ctx.dry_run:
+        raise PresubmitFailure(
+            'This presubmit cannot be run in dry-run mode. '
+            'Please run with: "pw presubmit --step"'
+        )
 
     build.install_package(ctx, 'emboss')
     build.install_package(ctx, 'freertos')
