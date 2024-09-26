@@ -1,0 +1,65 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+import("//build_overrides/pigweed.gni")
+import("//build_overrides/pigweed_environment.gni")
+import("$dir_pw_build/exec.gni")
+
+_bindgen_exe_path =
+    rebase_path(pw_env_setup_CIPD_PIGWEED + "/rust_bindgen/bindgen")
+
+# Bindgen is not part of GN tools, so use pw_exec to run it.
+template("rust_bindgen_action") {
+  pw_exec(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "visibility",
+                           ])
+    not_needed(invoker, "*")
+
+    output_gen_rs = "$target_gen_dir/${target_name}.rs"
+
+    program = _bindgen_exe_path
+    header = rebase_path(invoker.header, root_build_dir)
+
+    outputs = [ output_gen_rs ]
+    depfile = "$target_out_dir/${target_name}.d"
+    args = [
+      "--depfile",
+      rebase_path(depfile, root_build_dir),
+      "--output",
+      rebase_path(output_gen_rs, root_build_dir),
+    ]
+
+    args += [
+      # Do not search for system default include paths.
+      "--no-include-path-detection",
+    ]
+    if (defined(invoker.flags)) {
+      foreach(flag, invoker.flags) {
+        args += [ flag ]
+      }
+    }
+
+    args += [
+      header,
+      "--",
+      "{{defines}}",
+      "{{include_dirs}}",
+      "{{cflags}}",
+      "{{cflags_c}}",
+    ]
+  }
+}

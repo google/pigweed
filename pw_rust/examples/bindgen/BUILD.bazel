@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,14 +11,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+package(default_visibility = ["//:__subpackages__"])
 
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_build/cc_executable.gni")
-import("$dir_pw_build/cc_library.gni")
-import("$dir_pw_build/rust_bindgen.gni")
-import("$dir_pw_build/rust_executable.gni")
-import("$dir_pw_build/rust_library.gni")
-import("$dir_pw_build/rust_proc_macro.gni")
-import("$dir_pw_build/rust_staticlib.gni")
-import("$dir_pw_build/rust_test.gni")
+# Not used. Defined to workaround "source_is_in_bazel_build" linter.
+filegroup(
+    name = "c_add",
+    srcs = [
+        "add.cc",
+        "add.h",
+    ],
+)
