@@ -644,6 +644,7 @@ def docs_build(ctx: PresubmitContext) -> None:
     build_bazel(
         ctx,
         'build',
+        '--remote_download_outputs=all',
         '--',
         '//pw_rust:docs',
     )
