@@ -20,7 +20,7 @@
     program: {
         runner: "driver",
         binary: "driver/bt-hci-virtual.so",
-        bind: "meta/bind/bt-hci-virtual-bind.bindbc",
+        bind: "meta/bind/bt-hci-virtual.bindbc",
         colocate: "false",
         default_dispatcher_opts: [ "allow_sync_calls" ],
         fallback: "false",
