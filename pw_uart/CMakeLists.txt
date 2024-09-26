@@ -23,6 +23,18 @@ pw_add_library(pw_uart.uart INTERFACE
     pw_assert
     pw_bytes
     pw_chrono.system_clock
+    pw_status
+    pw_span
+)
+
+pw_add_library(pw_uart.uart_non_blocking INTERFACE
+  HEADERS
+    public/pw_uart/uart_non_blocking.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_bytes
     pw_function
     pw_status
     pw_span

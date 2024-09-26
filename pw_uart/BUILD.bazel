@@ -31,6 +31,20 @@ cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_chrono:system_clock",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "uart_non_blocking",
+    hdrs = [
+        "public/pw_uart/uart_non_blocking.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
         "//pw_function",
         "//pw_span",
         "//pw_status",
@@ -44,6 +58,17 @@ pw_cc_test(
     ],
     deps = [
         ":uart",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "uart_non_blocking_test",
+    srcs = [
+        "uart_non_blocking_test.cc",
+    ],
+    deps = [
+        ":uart_non_blocking",
         "//pw_unit_test",
     ],
 )

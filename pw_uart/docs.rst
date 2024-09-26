@@ -11,6 +11,9 @@ as a blueprint for concrete UART implementations. You will need to write the
 backend code tailored to your specific hardware device to interact with the
 UART peripheral.
 
+Note: Drivers should not implement both Uart and UartNonBlocking. Drivers
+implement UartNonBlocking. A future adapter will allow a UartNonBlocking to be used as Uart.
+
 -----------
 Get started
 -----------
@@ -76,7 +79,8 @@ API reference
 .. doxygengroup:: pw_uart
    :content-only:
    :members:
-
+.. doxygenclass:: pw::uart::UartNonBlocking
+  :members:
 
 .. toctree::
    :hidden:

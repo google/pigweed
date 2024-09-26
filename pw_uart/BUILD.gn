@@ -32,6 +32,17 @@ pw_source_set("uart") {
     "$dir_pw_assert",
     "$dir_pw_bytes",
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_span",
+    "$dir_pw_status",
+  ]
+}
+
+pw_source_set("uart_non_blocking") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_uart/uart_non_blocking.h" ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_bytes",
     "$dir_pw_function",
     "$dir_pw_span",
     "$dir_pw_status",
@@ -44,8 +55,17 @@ pw_test("uart_test") {
   deps = [ ":uart" ]
 }
 
+pw_test("uart_non_blocking_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "uart_non_blocking_test.cc" ]
+  deps = [ ":uart_non_blocking" ]
+}
+
 pw_doc_group("docs") {
-  inputs = [ "public/pw_uart/uart.h" ]
+  inputs = [
+    "public/pw_uart/uart.h",
+    "public/pw_uart/uart_non_blocking.h",
+  ]
   sources = [
     "backends.rst",
     "docs.rst",

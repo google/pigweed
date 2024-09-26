@@ -21,7 +21,6 @@
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_function/function.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
