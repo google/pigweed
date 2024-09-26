@@ -153,6 +153,8 @@ multiple functions to execute concurrently.
 
 API reference
 =============
+.. doxygentypedef:: pw::Thread
+
 .. doxygenclass:: pw::thread::Thread
    :members:
 

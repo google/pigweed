@@ -25,7 +25,8 @@
 #include "pw_thread_backend/thread_native.h"
 // clang-format on
 
-namespace pw::thread {
+namespace pw {
+namespace thread {
 
 /// The class `Thread` can represent a single thread of execution. Threads allow
 /// multiple functions to execute concurrently.
@@ -49,6 +50,23 @@ class Thread {
   /// The type of the native handle for the thread. As with `std::thread`, use
   /// is inherently non-portable.
   using native_handle_type = backend::NativeThreadHandle;
+
+  /// The class id is a lightweight, trivially copyable class that serves as a
+  /// unique identifier of Thread objects.
+  ///
+  /// Instances of this class may also hold the special distinct value that does
+  /// not represent any thread. Once a thread has finished, the value of its
+  /// `Thread::id` may be reused by another thread.
+  ///
+  /// This class is designed for use as key in associative containers, both
+  /// ordered and unordered.
+  ///
+  /// The backend must ensure that:
+  ///
+  /// 1. There is a default construct which does not represent a thread.
+  /// 2. Compare operators (`==`, `!=`, `<`, `<=`, `>`, `>=`) are provided to
+  ///    compare and sort IDs.
+  using id = ::pw::thread::backend::NativeId;
 
   /// Creates a new thread object which does not represent a thread of execution
   /// yet.
@@ -123,10 +141,10 @@ class Thread {
   Thread(Thread&&) = delete;
   Thread& operator=(const Thread&) = delete;
 
-  /// Returns a value of Thread::id identifying the thread associated with
-  /// *this. If there is no thread associated, default constructed Thread::id is
-  /// returned.
-  Id get_id() const;
+  /// Returns a value of `Thread::id` identifying the thread associated with
+  /// `*this`. If there is no thread associated, default constructed
+  /// `Thread::id` is returned.
+  id get_id() const;
 
   /// Checks if the `Thread` object identifies an active thread of execution
   /// which has not yet been detached. Specifically, returns true if `get_id()
@@ -136,7 +154,7 @@ class Thread {
   /// A thread that has not started or has finished executing code which was
   /// never detached, but has not yet been joined is still considered an active
   /// thread of execution and is therefore joinable.
-  bool joinable() const { return get_id() != Id(); }
+  bool joinable() const { return get_id() != id(); }
 
 #if PW_THREAD_JOINING_ENABLED
   /// Blocks the current thread until the thread identified by `*this` finishes
@@ -194,6 +212,12 @@ class Thread {
   backend::NativeThread native_type_;
 };
 
-}  // namespace pw::thread
+}  // namespace thread
+
+/// `pw::thread::Thread` will be renamed to `pw::Thread`. New code should refer
+/// to `pw::Thread`.
+using Thread = ::pw::thread::Thread;  // Must use `=` for Doxygen to find this.
+
+}  // namespace pw
 
 #include "pw_thread_backend/thread_inline.h"
