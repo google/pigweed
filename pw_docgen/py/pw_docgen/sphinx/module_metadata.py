@@ -217,6 +217,11 @@ def issues_url(module_name: str) -> str:
     return f'https://issues.pigweed.dev/issues?q={module_name}%20status:open'
 
 
+def rustdoc_url(module_name: str) -> str:
+    """Returns the rustdoc URL for a given module."""
+    return f'https://pigweed.dev/rustdoc/{module_name}'
+
+
 def concat_tags(*tag_lists: list[str]) -> list[str]:
     """Given a list of tag lists, return them concat'ed and ready for render."""
 
@@ -512,6 +517,11 @@ def add_links(module_name: str, toctree: Element) -> None:
     Returns:
         `None`. `toctree` is modified in-place.
     """
+    languages = get_languages(module_name)
+    if languages is not None and 'Rust' in languages:
+        rustdoc = ('Rust API reference', rustdoc_url(module_name))
+        toctree['entries'] += [rustdoc]
+        toctree['rawentries'] += [rustdoc[0]]
     src = ('Source code', cs_url(module_name))
     issues = ('Issues', issues_url(module_name))
     # Maintenance tip: the trick here is to create the `toctree` the same way

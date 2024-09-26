@@ -79,7 +79,8 @@
     "status": "stable",
     "languages": [
       "C",
-      "C++"
+      "C++",
+      "Rust"
     ]
   },
   "pw_bloat": {
@@ -154,7 +155,8 @@
     "languages": [
       "Bazel",
       "CMake",
-      "GN"
+      "GN",
+      "Rust"
     ]
   },
   "pw_build_android": {
@@ -185,7 +187,8 @@
     "tagline": "Utilities for manipulating binary data",
     "status": "stable",
     "languages": [
-      "C++"
+      "C++",
+      "Rust"
     ]
   },
   "pw_channel": {
@@ -391,7 +394,8 @@
     "languages": [
       "C++",
       "Java",
-      "Python"
+      "Python",
+      "Rust"
     ]
   },
   "pw_log_android": {
@@ -531,6 +535,14 @@
       "Python",
       "Java",
       "TypeScript",
+      "Rust"
+    ]
+  },
+  "pw_stream": {
+    "tagline": "A foundational interface for streaming data",
+    "status": "stable",
+    "languages": [
+      "C++",
       "Rust"
     ]
   },
