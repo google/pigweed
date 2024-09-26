@@ -188,6 +188,7 @@ common:remote_cache --bes_backend="buildeventservice.googleapis.com"
 common:remote_cache --bes_instance_name=pigweed-rbe-open
 common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
 common:remote_cache --bes_timeout=600s
+common:remote_cache --experimental_remote_cache_eviction_retries=5
 common:remote_cache --google_default_credentials=true
 # Required to use buildeventservice on Bazel 8+.
 # TODO: b/345556899 -- Remove this flag when no longer required.
