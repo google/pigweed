@@ -147,22 +147,27 @@ class IntrusiveMultiMap {
 
   // Capacity
 
-  /// @copydoc GenericAATree::empty
+  /// Returns whether the multimap has zero items or not.
   [[nodiscard]] bool empty() const noexcept { return tree_.empty(); }
 
-  /// @copydoc GenericAATree::size
+  /// Returns the number of items in the multimap.
   size_t size() const { return tree_.size(); }
 
-  /// @copydoc GenericAATree::max_size
+  /// Returns how many items can be added.
+  ///
+  /// As an intrusive container, this is effectively unbounded.
   constexpr size_t max_size() const noexcept { return tree_.max_size(); }
 
   // Modifiers
 
-  /// @copydoc GenericAATree::clear
+  /// Removes all items from the multimap and leaves it empty.
+  ///
+  /// The items themselves are not destructed.
   void clear() { tree_.clear(); }
 
-  /// @copydoc AATree<GetKey, Compare>::insert
+  /// Adds the given item to the multimap.
   iterator insert(T& item) { return iterator(tree_.insert(item).first); }
+
   iterator insert(iterator, T& item) {
     // Disregard the hint.
     return iterator(insert(item));
@@ -177,7 +182,10 @@ class IntrusiveMultiMap {
     tree_.insert(ilist.begin(), ilist.end());
   }
 
-  /// @copydoc GenericAATree::clear
+  /// Removes an item from the multimap and returns an iterator to the item
+  /// after the removed item.
+  ///
+  /// The items themselves are not destructed.
   iterator erase(iterator pos) { return iterator(tree_.erase(*pos)); }
 
   iterator erase(iterator first, iterator last) {
@@ -186,28 +194,34 @@ class IntrusiveMultiMap {
 
   size_t erase(const Key& key) { return tree_.erase(key); }
 
-  /// @copydoc GenericAATree::swap
+  /// Exchanges this multimap's items with the `other` multimap's items.
   void swap(IntrusiveMultiMap<Key, T, Compare, GetKey>& other) {
     tree_.swap(other.tree_);
   }
 
-  /// @copydoc AATree<GetKey, Compare>::merge
+  /// Splices items from the `other` map into this one.
+  ///
+  /// The receiving map's `GetKey` and `Compare` functions are used when
+  /// inserting items.
   template <typename MapType>
   void merge(MapType& other) {
     tree_.merge(other.tree_);
   }
 
-  /// @copydoc AATree<GetKey, Compare>::count
+  /// Returns the number of items in the multimap with the given key.
   size_t count(const Key& key) const { return tree_.count(key); }
 
-  /// @copydoc AATree<GetKey, Compare>::find
+  /// Returns a pointer to an item with the given key, or null if the multimap
+  /// does not contain such an item.
   iterator find(const Key& key) { return iterator(tree_.find(key)); }
 
   const_iterator find(const Key& key) const {
     return const_iterator(tree_.find(key));
   }
 
-  /// @copydoc AATree<GetKey, Compare>::equal_range
+  /// Returns a pair of iterators where the first points to the item with the
+  /// smallest key that is not less than the given key, and the second points to
+  /// the item with the smallest key that is greater than the given key.
   std::pair<iterator, iterator> equal_range(const Key& key) {
     auto result = tree_.equal_range(key);
     return std::make_pair(iterator(result.first), iterator(result.second));
@@ -218,7 +232,9 @@ class IntrusiveMultiMap {
                           const_iterator(result.second));
   }
 
-  /// @copydoc AATree<GetKey, Compare>::lower_bound
+  /// Returns an iterator to the item in the multimap with the smallest key that
+  /// is greater than or equal to the given key, or `end()` if the multimap is
+  /// empty.
   iterator lower_bound(const Key& key) {
     return iterator(tree_.lower_bound(key));
   }
@@ -226,7 +242,9 @@ class IntrusiveMultiMap {
     return const_iterator(tree_.lower_bound(key));
   }
 
-  /// @copydoc AATree<GetKey, Compare>::upper_bound
+  /// Returns an iterator to the item in the multimap with the smallest key that
+  /// is strictly greater than the given key, or `end()` if the multimap is
+  /// empty.
   iterator upper_bound(const Key& key) {
     return iterator(tree_.upper_bound(key));
   }

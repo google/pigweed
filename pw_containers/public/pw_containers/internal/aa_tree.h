@@ -197,7 +197,7 @@ class AATree final : public GenericAATree {
   size_t count(const Key& key);
 
   /// Returns a pointer to an item with the given key, or null if the tree does
-  /// contain such an item.
+  /// not contain such an item.
   iterator find(const Key& key);
 
   /// Returns a pair of items where the first points to the item with the

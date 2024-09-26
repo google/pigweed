@@ -237,6 +237,8 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_containers/public/pw_containers/inline_deque.h",
   "$dir_pw_containers/public/pw_containers/inline_queue.h",
   "$dir_pw_containers/public/pw_containers/inline_var_len_entry_queue.h",
+  "$dir_pw_containers/public/pw_containers/internal/aa_tree.h",
+  "$dir_pw_containers/public/pw_containers/internal/intrusive_list.h",
   "$dir_pw_containers/public/pw_containers/intrusive_forward_list.h",
   "$dir_pw_containers/public/pw_containers/intrusive_list.h",
   "$dir_pw_containers/public/pw_containers/intrusive_map.h",
