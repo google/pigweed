@@ -23,6 +23,9 @@ namespace fhb = fuchsia_hardware_bluetooth;
 
 namespace bt_hci_virtual {
 
+// TODO: https://pwbug.dev/369120118 - Use ScopedGlobalLogger when it is
+// available in the SDK. See fxr/1110057.
+
 class LoopbackTest : public ::testing::Test,
                      public fidl::AsyncEventHandler<fhb::HciTransport>,
                      public fidl::AsyncEventHandler<fhb::Snoop> {
