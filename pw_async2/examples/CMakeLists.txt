@@ -14,7 +14,7 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-if(NOT "cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
   pw_add_test(pw_async2.examples.basic
     SOURCES
       basic.cc
