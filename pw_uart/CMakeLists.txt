@@ -14,6 +14,15 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_library(pw_uart.uart_base INTERFACE
+  HEADERS
+    public/pw_uart/uart_base.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_status
+)
+
 pw_add_library(pw_uart.uart INTERFACE
   HEADERS
     public/pw_uart/uart.h
@@ -25,6 +34,7 @@ pw_add_library(pw_uart.uart INTERFACE
     pw_chrono.system_clock
     pw_status
     pw_span
+    pw_uart.uart_base
 )
 
 pw_add_library(pw_uart.uart_non_blocking INTERFACE
@@ -38,4 +48,5 @@ pw_add_library(pw_uart.uart_non_blocking INTERFACE
     pw_function
     pw_status
     pw_span
+    pw_uart.uart_base
 )

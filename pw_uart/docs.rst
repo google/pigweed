@@ -6,13 +6,26 @@ pw_uart
 .. pigweed-module::
    :name: pw_uart
 
+Pigweed's ``pw_uart`` module provides a set of interfaces for communicating via
+UART.
+
+--------
+Overview
+--------
 ``pw_uart`` defines core methods for UART communication. This serves
 as a blueprint for concrete UART implementations. You will need to write the
 backend code tailored to your specific hardware device to interact with the
 UART peripheral.
 
-Note: Drivers should not implement both Uart and UartNonBlocking. Drivers
-implement UartNonBlocking. A future adapter will allow a UartNonBlocking to be used as Uart.
+The interface consists of these main classes:
+
+- `UartBase`_ - Base class which provides basic enable/disable and
+  configuration control, but no communication.
+- `Uart`_ - Extends ``pw::uart::UartBase`` to provide blocking Read and Write
+  APIs.
+- `UartNonBlocking`_ - Extends ``pw::uart::UartBase`` to provide non-blocking
+  (callback-based) Read and Write APIs.
+
 
 -----------
 Get started
@@ -76,11 +89,31 @@ Get started
 -------------
 API reference
 -------------
-.. doxygengroup:: pw_uart
-   :content-only:
-   :members:
+
+.. warning::
+
+   Drivers should not implement both ``Uart`` and ``UartNonBlocking``
+   interfaces.
+
+   Drivers which support non-blocking (callback) behavior should implement
+   ``UartNonBlocking``. A future adapter will allow a ``UartNonBlocking`` to be
+   used as a blocking ``Uart`` for application code which requires it.
+
+UartBase
+========
+.. doxygenclass:: pw::uart::UartBase
+  :members:
+
+Uart
+====
+.. doxygenclass:: pw::uart::Uart
+  :members:
+
+UartNonBlocking
+===============
 .. doxygenclass:: pw::uart::UartNonBlocking
   :members:
+
 
 .. toctree::
    :hidden:

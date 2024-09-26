@@ -22,12 +22,24 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 cc_library(
+    name = "uart_base",
+    hdrs = [
+        "public/pw_uart/uart_base.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "uart",
     hdrs = [
         "public/pw_uart/uart.h",
     ],
     includes = ["public"],
     deps = [
+        ":uart_base",
         "//pw_assert",
         "//pw_bytes",
         "//pw_chrono:system_clock",
@@ -43,6 +55,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":uart_base",
         "//pw_assert",
         "//pw_bytes",
         "//pw_function",

@@ -20,75 +20,18 @@
 #include "pw_function/function.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_uart/uart_base.h"
 
 namespace pw::uart {
 
 /// Represents an abstract UART interface.
 ///
 /// The `UartNonBlocking` interface provides a basic set of methods for
-/// performing Non-Blocking UART communication. It defines the interface that
-/// concrete UART implementations must adhere to.
+/// performing Non-Blocking UART communication.
 
-class UartNonBlocking {
+class UartNonBlocking : public UartBase {
  public:
-  virtual ~UartNonBlocking() = default;
-
-  /// Initializes the UART module on the microcontroller, sets it into the
-  /// default state as determined by the concrete UART implementation. This
-  /// function should be a no-op if the UART module is in an enabled state.
-  ///
-  /// This may change the power state of the UART module, configure the
-  /// interface parameters, enable the associated pins, setup the internal
-  /// TX and RX buffers, etc...
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status Enable() { return DoEnable(true); }
-
-  /// Disables the UART module on the microcontroller. Disabling the UART
-  /// shuts down communication and prevents the microcontroller from
-  /// sending or receiving data through the UART port.
-  ///
-  /// This is usually done to save power. Interrupt handlers should also be
-  /// disabled.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status Disable() { return DoEnable(false); }
-
-  /// Configures the UART communication baud rate.
-  ///
-  /// This function sets the communication speed (baud rate) for the UART.
-  /// Whether the baud rate can be changed while the UART is enabled depends on
-  /// the specific implementation.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART has been successfully initialized.
-  ///
-  ///    FAILED_PRECONDITION: The device is enabled and does not support
-  ///    changing settings on the fly.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status SetBaudRate(uint32_t baud_rate) { return DoSetBaudRate(baud_rate); }
+  ~UartNonBlocking() override = default;
 
   /// Reads exactly `rx_buffer.size()` bytes from the UART into the provided
   /// buffer.
@@ -130,8 +73,8 @@ class UartNonBlocking {
   /// Reads at least `min_bytes` and at most `rx_buffer.size()` bytes from the
   /// UART into the provided buffer.
   ///
-  /// This function calls `callback` after the entirety of `rx_buffer` is filled
-  /// with data. This may be called from interrupt context.
+  /// This function calls `callback` after `rx_buffer` is filled with at least
+  /// `min_bytes` of data. This may be called from interrupt context.
   /// The callback may be called in ISR context.
   /// It is safe to call `Read`/`Write` from the callback context.
   ///
@@ -229,9 +172,6 @@ class UartNonBlocking {
   bool CancelWrite() { return DoCancelWrite(); }
 
  private:
-  virtual Status DoEnable(bool enable) = 0;
-  virtual Status DoSetBaudRate(uint32_t baud_rate) = 0;
-
   /// Reads at least `min_bytes` and at most `rx_buffer.size()` bytes from the
   /// UART into the provided buffer.
   ///

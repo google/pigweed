@@ -25,10 +25,17 @@ pw_test_group("tests") {
   tests = [ ":uart_test" ]
 }
 
+pw_source_set("uart_base") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_uart/uart_base.h" ]
+  public_deps = [ "$dir_pw_status" ]
+}
+
 pw_source_set("uart") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_uart/uart.h" ]
   public_deps = [
+    ":uart_base",
     "$dir_pw_assert",
     "$dir_pw_bytes",
     "$dir_pw_chrono:system_clock",
@@ -41,6 +48,7 @@ pw_source_set("uart_non_blocking") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_uart/uart_non_blocking.h" ]
   public_deps = [
+    ":uart_base",
     "$dir_pw_assert",
     "$dir_pw_bytes",
     "$dir_pw_function",

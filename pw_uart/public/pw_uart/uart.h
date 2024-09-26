@@ -23,99 +23,18 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_uart/uart_base.h"
 
 namespace pw::uart {
 
 /// Represents an abstract UART interface.
 ///
-/// The `Uart` interface provides a basic set of methods for performing UART
-/// communication. It defines the interface that concrete UART implementations
-/// must adhere to.
+/// The `Uart` interface provides a basic set of methods for performing
+/// blocking UART communication.
 
-/// @defgroup pw_uart
-/// @{
-class Uart {
+class Uart : public UartBase {
  public:
-  virtual ~Uart() = default;
-
-  /// Initializes the UART module on the microcontroller, sets it into the
-  /// default state as determined by the concrete UART implementation. This
-  /// function should be a no-op if the UART module is in an enabled state.
-  ///
-  /// This may change the power state of the UART module, configure the
-  /// interface parameters, enable the associated pins, setup the internal
-  /// TX and RX buffers, etc...
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status Enable() { return DoEnable(true); }
-
-  /// Disables the UART module on the microcontroller. Disabling the UART
-  /// shuts down communication and prevents the microcontroller from
-  /// sending or receiving data through the UART port.
-  ///
-  /// This is usually done to save power. Interrupt handlers should also be
-  /// disabled.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status Disable() { return DoEnable(false); }
-
-  /// Configures the UART communication baud rate.
-  ///
-  /// This function sets the communication speed (baud rate) for the UART.
-  /// Whether the baud rate can be changed while the UART is enabled depends on
-  /// the specific implementation.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART has been successfully initialized.
-  ///
-  ///    FAILED_PRECONDITION: The device is enabled and does not support
-  ///    changing settings on the fly.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status SetBaudRate(uint32_t baud_rate) { return DoSetBaudRate(baud_rate); }
-
-  /// Configures the UART hardware flow control enable.
-  ///
-  /// This function sets the hardware flow control enable for the UART.
-  /// Whether the flow control setting rate can be changed while the UART is
-  /// enabled depends on the specific implementation.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART has been successfully initialized.
-  ///
-  ///    FAILED_PRECONDITION: The device is enabled and does not support
-  ///    changing settings on the fly.
-  ///
-  ///    UNIMPLEMENTED: The device does not support flow control.
-  ///
-  ///    INTERNAL: Internal errors within the hardware abstraction layer.
-  ///
-  /// @endrst
-  Status SetFlowControl(bool enable) { return DoSetFlowControl(enable); }
+  ~Uart() override = default;
 
   /// Reads data from the UART into a provided buffer.
   ///
@@ -356,12 +275,6 @@ class Uart {
   Status ClearPendingReceiveBytes() { return DoClearPendingReceiveBytes(); }
 
  private:
-  virtual Status DoEnable(bool enable) = 0;
-  virtual Status DoSetBaudRate(uint32_t baud_rate) = 0;
-  virtual Status DoSetFlowControl(bool /*enable*/) {
-    return pw::Status::Unimplemented();
-  }
-
   /// Reads data from the UART into a provided buffer with an optional timeout
   /// provided.
   ///
@@ -468,7 +381,5 @@ class Uart {
   virtual Status DoFlushOutput() = 0;
   virtual Status DoClearPendingReceiveBytes() = 0;
 };
-
-/// @}
 
 }  // namespace pw::uart
