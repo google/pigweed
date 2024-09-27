@@ -22,7 +22,10 @@ config("public_include_path") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":uart_test" ]
+  tests = [
+    ":uart_non_blocking_test",
+    ":uart_test",
+  ]
 }
 
 pw_source_set("uart_base") {
