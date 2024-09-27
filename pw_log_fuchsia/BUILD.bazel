@@ -34,7 +34,6 @@ cc_library(
         "@fuchsia_sdk//fidl/fuchsia.logger:fuchsia.logger_cpp",
         "@fuchsia_sdk//pkg/async-cpp",
         "@fuchsia_sdk//pkg/component_incoming_cpp",
-        "@fuchsia_sdk//pkg/syslog",
         "@fuchsia_sdk//pkg/syslog_structured_backend",
         "@pigweed//pw_log:facade",
         "@pigweed//pw_preprocessor",
