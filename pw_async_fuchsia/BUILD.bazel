@@ -40,7 +40,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
         ":util",
-        "//pw_async:task_facade",
+        "//pw_async:task.facade",
         "@fuchsia_sdk//pkg/async-loop-default",
         "@fuchsia_sdk//pkg/zx",
     ],
@@ -62,7 +62,7 @@ cc_library(
     ],
     deps = [
         ":task",
-        "//pw_async:fake_dispatcher_facade",
+        "//pw_async:fake_dispatcher.facade",
     ],
 )
 

@@ -116,7 +116,7 @@ cc_library(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_assert",
-        "//pw_sync:recursive_mutex_facade",
+        "//pw_sync:recursive_mutex.facade",
     ],
 )
 
