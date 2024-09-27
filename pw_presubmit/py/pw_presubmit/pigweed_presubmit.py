@@ -625,6 +625,16 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     # Produces reports at (ctx.root / 'twister_out' / 'twister*.xml')
 
 
+def assert_non_empty_directory(directory: Path) -> None:
+    if not directory.is_dir():
+        raise PresubmitFailure(f'no directory {directory}')
+
+    for _ in directory.iterdir():
+        return
+
+    raise PresubmitFailure(f'no files in {directory}')
+
+
 def docs_build(ctx: PresubmitContext) -> None:
     """Build Pigweed docs"""
     if ctx.dry_run:
@@ -729,6 +739,7 @@ def docs_build(ctx: PresubmitContext) -> None:
         copy_function=shutil.copyfile,
         dirs_exist_ok=True,
     )
+    assert_non_empty_directory(rust_docs_output_dir)
 
     # Copy doxygen html outputs.
     shutil.copytree(
@@ -737,6 +748,7 @@ def docs_build(ctx: PresubmitContext) -> None:
         copy_function=shutil.copyfile,
         dirs_exist_ok=True,
     )
+    assert_non_empty_directory(doxygen_html_output_dir)
 
     # mkdir -p the example repo output dir and copy the files over.
     examples_html_output_dir.mkdir(parents=True, exist_ok=True)
@@ -746,6 +758,7 @@ def docs_build(ctx: PresubmitContext) -> None:
         copy_function=shutil.copyfile,
         dirs_exist_ok=True,
     )
+    assert_non_empty_directory(examples_html_output_dir)
 
 
 gn_host_tools = PigweedGnGenNinja(
