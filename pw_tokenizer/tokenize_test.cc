@@ -544,9 +544,9 @@ TEST_F(TokenizeToBuffer, AsArgumentToAnotherMacro) {
 #undef ANOTHER_MACRO
 
 // Hijack an internal macro to capture the tokenizer domain.
-#undef _PW_TOKENIZER_RECORD_ORIGINAL_STRING
-#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
-  tokenizer_domain = domain;                                        \
+#undef PW_TOKENIZER_DEFINE_TOKEN
+#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string) \
+  tokenizer_domain = domain;                             \
   string_literal = string
 
 TEST_F(TokenizeToBuffer, Domain_Default) {
@@ -574,10 +574,10 @@ TEST_F(TokenizeToBuffer, Domain_Specified) {
   EXPECT_STREQ(string_literal, "The answer is: %s");
 }
 
-#undef _PW_TOKENIZER_RECORD_ORIGINAL_STRING
-#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string)        \
+#undef PW_TOKENIZER_DEFINE_TOKEN
+#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string)                   \
   static_assert(false,                                                     \
-                "The internal _PW_TOKENIZER_RECORD_ORIGINAL_STRING was "   \
+                "The internal PW_TOKENIZER_DEFINE_TOKEN was "              \
                 "repurposed earlier in this test! The macro or any macro " \
                 "that calls it cannot be used here!")
 

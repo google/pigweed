@@ -97,7 +97,7 @@ typedef uint32_t pw_tokenizer_Token;
   static_assert(0 < (mask) && (mask) <= UINT32_MAX,                          \
                 "Tokenizer masks must be non-zero uint32_t values.");        \
                                                                              \
-  _PW_TOKENIZER_RECORD_ORIGINAL_STRING(                                      \
+  PW_TOKENIZER_DEFINE_TOKEN(                                                 \
       _PW_TOKENIZER_MASK_TOKEN(mask, string_literal), domain, string_literal)
 
 /// Tokenizes a string literal using the specified @rstref{domain
@@ -276,7 +276,7 @@ PW_EXTERN_C_END
   static _PW_TOKENIZER_CONST pw_tokenizer_Token _pw_tokenizer_token =          \
       _PW_TOKENIZER_MASK_TOKEN(mask, format);                                  \
                                                                                \
-  _PW_TOKENIZER_RECORD_ORIGINAL_STRING(_pw_tokenizer_token, domain, format)
+  PW_TOKENIZER_DEFINE_TOKEN(_pw_tokenizer_token, domain, format)
 
 // Creates unique names to use for tokenized string entries and linker sections.
 #define _PW_TOKENIZER_UNIQUE(prefix) PW_CONCAT(prefix, __LINE__, _, __COUNTER__)
@@ -285,7 +285,13 @@ PW_EXTERN_C_END
 
 #define _PW_TOKENIZER_CONST constexpr
 
-#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string)            \
+/// Records the original token, domain and string directly.
+///
+/// This macro is intended to be used for tokenized enum and domain support. The
+/// values are stored as an entry in the ELF section. As a note for tokenized
+/// enum support, the enum name should be used as the string, and the enum value
+/// as the token.
+#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string)                       \
   alignas(1) static constexpr auto _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE( \
       _pw_tokenizer_string_entry_) =                                           \
       ::pw::tokenizer::internal::MakeEntry(token, domain, string)
@@ -301,7 +307,7 @@ using Token = ::pw_tokenizer_Token;
 #define _PW_TOKENIZER_CONST const
 #define _PW_ALIGNAS(alignment) __attribute__((aligned(alignment)))
 
-#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
+#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string) \
   _PW_ALIGNAS(1) static const _PW_TOKENIZER_STRING_ENTRY(token, domain, string)
 
 #endif  // __cplusplus
