@@ -30,7 +30,6 @@ namespace pw::sync::freertos {
 namespace {
 
 using pw::chrono::SystemClock;
-using pw::thread::Thread;
 
 }  // namespace
 
@@ -68,8 +67,8 @@ class NotificationAcquirer : public thread::ThreadCore {
 TEST(ThreadNotification, AcquireWithoutSuspend) {
   NotificationAcquirer notification_acquirer;
   // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
-  Thread thread =
-      Thread(thread::test::TestOptionsThread0(), notification_acquirer);
+  pw::Thread thread =
+      pw::Thread(thread::test::TestOptionsThread0(), notification_acquirer);
 
   notification_acquirer.WaitUntilRunning();
   // At this point the thread is blocked and waiting on the notification.
@@ -90,8 +89,8 @@ TEST(ThreadNotification, AcquireWithoutSuspend) {
 
 TEST(ThreadNotification, AcquireWithSuspend) {
   NotificationAcquirer notification_acquirer;
-  Thread thread =
-      Thread(thread::test::TestOptionsThread0(), notification_acquirer);
+  pw::Thread thread =
+      pw::Thread(thread::test::TestOptionsThread0(), notification_acquirer);
 
   notification_acquirer.WaitUntilRunning();
 

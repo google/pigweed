@@ -326,7 +326,7 @@ using threads including yielding and sleeping.
 
 Thread Creation
 ===============
-The ``pw::thread::Thread``’s API is C++11 STL ``std::thread`` like. Unlike
+The :cpp:type:`pw::Thread`’s API is C++11 STL ``std::thread`` like. Unlike
 ``std::thread``, the Pigweed's API requires ``pw::thread::Options`` as an
 argument for creating a thread. This is used to give the user full control over
 the native OS's threading options without getting in your way.

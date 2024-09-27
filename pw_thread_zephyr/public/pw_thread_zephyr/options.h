@@ -26,7 +26,7 @@ class Context;
 //
 // Example usage:
 //
-//   pw::thread::Thread example_thread(
+//   pw::Thread example_thread(
 //     pw::thread::zephyr::Options(static_example_thread_context)
 //         .set_priority(kFooPriority),
 //     example_thread_function, example_arg);
@@ -58,7 +58,7 @@ class Options : public thread::Options {
   }
 
  private:
-  friend thread::Thread;
+  friend Thread;
   friend Context;
 
   int priority() const { return priority_; }

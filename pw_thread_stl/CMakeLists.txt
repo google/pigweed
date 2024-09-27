@@ -28,8 +28,7 @@ pw_add_library(pw_thread_stl.id INTERFACE
     pw_thread.id.facade
 )
 
-# This target provides the backend for pw::thread::Thread with joining
-# joining capability.
+# This target provides the backend for pw::Thread with joining capability.
 pw_add_library(pw_thread_stl.thread INTERFACE
   HEADERS
     public/pw_thread_stl/options.h

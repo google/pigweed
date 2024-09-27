@@ -29,13 +29,13 @@ class Context;
 // Example usage:
 //
 //   // Uses the default stack size and priority, but specifies a custom name.
-//   pw::thread::Thread example_thread(
+//   pw::Thread example_thread(
 //     pw::thread::freertos::Options()
 //         .set_name("example_thread"),
 //     example_thread_function);
 //
 //   // Provides the name, priority, and pre-allocated context.
-//   pw::thread::Thread static_example_thread(
+//   pw::Thread static_example_thread(
 //     pw::thread::freertos::Options()
 //         .set_name("static_example_thread")
 //         .set_priority(kFooPriority)

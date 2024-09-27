@@ -306,7 +306,7 @@ class ConnectionThread : public Connection, public thread::ThreadCore {
 
   // Process the connection. Does not return until the connection is closed.
   void Run() override {
-    thread::Thread send_thread(send_queue_thread_options_, send_queue_);
+    Thread send_thread(send_queue_thread_options_, send_queue_);
     Status status = ProcessConnectionPreface();
     while (status.ok()) {
       status = ProcessFrame();

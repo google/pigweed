@@ -49,7 +49,7 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
 
   /// Run the dispatcher until RequestStop() is called. Overrides
   /// ThreadCore::Run() so that BasicDispatcher is compatible with
-  /// pw::thread::Thread.
+  /// pw::Thread.
   void Run() override PW_LOCKS_EXCLUDED(lock_);
 
   // Dispatcher overrides:

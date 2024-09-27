@@ -32,7 +32,7 @@ class Context;
 //   // Uses the default priority and time slice interval (which may be
 //   // disabled), but specifies a custom name and pre-allocated context.
 //   // Note that the preemption threshold is disabled by default.
-//   pw::thread::Thread example_thread(
+//   pw::Thread example_thread(
 //     pw::thread::threadx::Options()
 //         .set_name("example_thread"),
 //         .set_context(example_thread_context),
@@ -40,7 +40,7 @@ class Context;
 //
 //   // Specifies the name, priority, time slice interval, and pre-allocated
 //   // context, but does not use a preemption threshold.
-//   pw::thread::Thread static_example_thread(
+//   pw::Thread static_example_thread(
 //     pw::thread::threadx::Options()
 //         .set_name("static_example_thread")
 //         .set_priority(kFooPriority)
@@ -124,7 +124,7 @@ class Options : public thread::Options {
   }
 
  private:
-  friend thread::Thread;
+  friend Thread;
   friend Context;
   // Note that the default name may end up truncated due to
   // PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN.

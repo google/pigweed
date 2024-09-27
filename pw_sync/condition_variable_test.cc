@@ -103,7 +103,7 @@ class LambdaThread {
 
  private:
   LambdaThreadCore thread_core_;
-  pw::thread::Thread thread_;
+  pw::Thread thread_;
 };
 
 TEST(Wait, PredicateTrueNoWait) {

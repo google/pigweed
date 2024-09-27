@@ -51,8 +51,7 @@ config("thread_public_overrides") {
   visibility = [ ":*" ]
 }
 
-# This target provides the backend for pw::thread::Thread with joining
-# joining capability.
+# This target provides the backend for pw::Thread with joining capability.
 pw_source_set("thread") {
   public_configs = [
     ":public_include_path",

@@ -35,7 +35,7 @@ class MyTask final {
 
   MyTask(pw::Allocator& allocator, const pw::thread::Options& options)
       : thread_core_(allocator) {
-    thread_ = pw::thread::Thread(options, thread_core_);
+    thread_ = pw::Thread(options, thread_core_);
   }
 
   void join() { thread_.join(); }
@@ -64,7 +64,7 @@ class MyTask final {
     pw::Allocator& allocator_;
   } thread_core_;
 
-  pw::thread::Thread thread_;
+  pw::Thread thread_;
 };
 
 // DOCSTAG: [pw_allocator-examples-spin_lock]

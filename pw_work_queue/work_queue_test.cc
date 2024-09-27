@@ -33,7 +33,7 @@ TEST(WorkQueue, PingPongOneRequestType) {
   WorkQueueWithBuffer<10> work_queue;
 
   // Start the worker thread.
-  thread::Thread work_thread(test::WorkQueueThreadOptions(), work_queue);
+  Thread work_thread(test::WorkQueueThreadOptions(), work_queue);
 
   // Pick a number bigger than the circular buffer to ensure we loop around.
   const int kPingPongs = 300;
@@ -71,7 +71,7 @@ TEST(WorkQueue, PingPongTwoRequestTypesWithExtraRequests) {
   WorkQueueWithBuffer<10> work_queue;
 
   // Start the worker thread.
-  thread::Thread work_thread(test::WorkQueueThreadOptions(), work_queue);
+  Thread work_thread(test::WorkQueueThreadOptions(), work_queue);
 
   // Pick a number bigger than the circular buffer to ensure we loop around.
   const int kPingPongs = 300;

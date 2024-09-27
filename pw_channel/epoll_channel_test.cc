@@ -156,7 +156,7 @@ TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
     PW_CHECK_INT_EQ(write(write_fd_, data, 11), 11);
   });
 
-  pw::thread::Thread work_thread(pw::thread::stl::Options(), delayed_write);
+  pw::Thread work_thread(pw::thread::stl::Options(), delayed_write);
   work_thread.join();
 
   dispatcher.RunToCompletion();
@@ -366,7 +366,7 @@ TEST_F(EpollChannelTest, PendReadyToWrite_BlocksWhenUnavailable) {
     }
   });
 
-  pw::thread::Thread work_thread(pw::thread::stl::Options(), delayed_read);
+  pw::Thread work_thread(pw::thread::stl::Options(), delayed_read);
 
   dispatcher.RunToCompletion();
   work_thread.join();

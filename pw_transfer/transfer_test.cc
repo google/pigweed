@@ -146,7 +146,7 @@ class ReadTransfer : public ::testing::Test {
   SimpleReadTransfer handler_;
   Thread<1, 1> transfer_thread_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read, 8) ctx_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, 64> data_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 };
@@ -772,7 +772,7 @@ class WriteTransfer : public ::testing::Test {
   SimpleWriteTransfer handler_;
 
   Thread<1, 1> transfer_thread_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, 64> data_buffer_;
   std::array<std::byte, 64> encode_buffer_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write) ctx_;
@@ -2572,7 +2572,7 @@ class ReadTransferLowMaxRetries : public ::testing::Test {
   SimpleReadTransfer handler_;
   Thread<1, 1> transfer_thread_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read, 10) ctx_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, 64> data_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 };
@@ -2813,7 +2813,7 @@ class WriteTransferLargeData : public ::testing::Test {
   SimpleWriteTransfer handler_;
 
   Thread<1, 1> transfer_thread_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, 48> chunk_buffer_;
   std::array<std::byte, 64> encode_buffer_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write, 10) ctx_;
@@ -3100,7 +3100,7 @@ class WriteTransferMultibyteVarintChunkSize : public ::testing::Test {
   SimpleWriteTransfer handler_;
 
   Thread<1, 1> transfer_thread_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, kData256.size()> chunk_buffer_;
   std::array<std::byte, kData256.size()> encode_buffer_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write, 10) ctx_;
@@ -3203,7 +3203,7 @@ class GetResourceStatus : public ::testing::Test {
   ReadTransferWithStats handler_;
   Thread<1, 1> transfer_thread_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, GetResourceStatus) ctx_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   std::array<std::byte, 64> data_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 };

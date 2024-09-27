@@ -87,7 +87,7 @@ TEST(LocalRpcEgressTest, PacketsGetDeliveredToPacketProcessor) {
   registry.RegisterService(service);
 
   egress.set_packet_processor(registry);
-  auto egress_thread = thread::Thread(thread::stl::Options(), egress);
+  auto egress_thread = Thread(thread::stl::Options(), egress);
 
   auto client =
       registry
@@ -147,7 +147,7 @@ TEST(LocalRpcEgressTest, PacketQueueExhausted) {
   registry.RegisterService(service);
 
   egress.set_packet_processor(registry);
-  auto egress_thread = thread::Thread(thread::stl::Options(), egress);
+  auto egress_thread = Thread(thread::stl::Options(), egress);
 
   auto client =
       registry
@@ -213,7 +213,7 @@ TEST(LocalRpcEgressTest, EgressStopped) {
   ServiceRegistry registry(channels);
   egress.set_packet_processor(registry);
 
-  auto egress_thread = thread::Thread(thread::stl::Options(), egress);
+  auto egress_thread = Thread(thread::stl::Options(), egress);
   EXPECT_EQ(egress.Send({}), OkStatus());
   egress.Stop();
   EXPECT_EQ(egress.Send({}), Status::FailedPrecondition());

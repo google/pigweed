@@ -45,9 +45,9 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
                        proto::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& thread_stack_callback);
 
-// Captures only the provided thread handle as a pw::thread::Thread proto
-// message. After thread info capture, the ProcessThreadStackCallback is called
-// to capture either the raw_stack or raw_backtrace.
+// Captures only the provided thread handle as a pw::Thread proto message. After
+// thread info capture, the ProcessThreadStackCallback is called to capture
+// either the raw_stack or raw_backtrace.
 //
 // An updated running_thread_stack_pointer must be provided in order for the
 // running thread's context to reflect the current state. If the thread being

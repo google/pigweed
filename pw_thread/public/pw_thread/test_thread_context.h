@@ -30,8 +30,7 @@ namespace pw::thread::test {
 ///
 /// @code{.cpp}
 ///    pw::thread::test::TestThreadContext context;
-///    pw::thread::Thread test_thread(context.options(),
-///                                   ExampleThreadFunction);
+///    pw::Thread test_thread(context.options(), ExampleThreadFunction);
 /// @endcode
 ///
 /// Threads created with `TestThreadContext` cannot be configured in any way.

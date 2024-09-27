@@ -28,14 +28,14 @@ class Context;
 // Example usage:
 //
 //   // Uses the default priority, but specifies a custom name and context.
-//   pw::thread::Thread example_thread(
+//   pw::Thread example_thread(
 //     pw::thread::embos::Options()
 //         .set_name("example_thread"),
 //         .set_context(static_example_thread_context),
 //     example_thread_function);
 //
 //   // Provides the name, priority, and pre-allocated context.
-//   pw::thread::Thread static_example_thread(
+//   pw::Thread static_example_thread(
 //     pw::thread::embos::Options()
 //         .set_name("static_example_thread")
 //         .set_priority(kFooPriority)
@@ -86,7 +86,7 @@ class Options : public thread::Options {
   }
 
  private:
-  friend thread::Thread;
+  friend Thread;
   friend Context;
 
   const char* name() const { return name_; }

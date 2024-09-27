@@ -193,8 +193,7 @@ void RunServer(int socket_port, ServerConfig config) {
   rpc::system_server::Server().RegisterService(transfer_service);
 
   // Start transfer thread.
-  thread::Thread transfer_thread_handle =
-      thread::Thread(thread::stl::Options(), transfer_thread);
+  pw::Thread transfer_thread_handle(thread::stl::Options(), transfer_thread);
 
   int retval =
       rpc::system_server::SetServerSockOpt(SOL_SOCKET,

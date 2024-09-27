@@ -231,7 +231,7 @@ int main(int argc, char* argv[]) {
         &message_assembly_allocator);
     rpc_egress.set_connection(conn);
 
-    pw::thread::Thread conn_thread(connection_thread_context.options(), conn);
+    pw::Thread conn_thread(connection_thread_context.options(), conn);
     conn_thread.join();
   }
 

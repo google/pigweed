@@ -73,7 +73,7 @@ class ReadTransfer : public ::testing::Test {
   std::array<std::byte, 64> chunk_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
 };
 
 constexpr auto kData32 = bytes::Initialized<32>([](size_t i) { return i; });
@@ -1077,7 +1077,7 @@ class WriteTransfer : public ::testing::Test {
   std::array<std::byte, 64> chunk_buffer_;
   std::array<std::byte, 64> encode_buffer_;
 
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
 };
 
 TEST_F(WriteTransfer, SingleChunk) {

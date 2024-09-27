@@ -122,7 +122,7 @@ TEST(StreamRpcDispatcherTest, RecvOk) {
   TestStream test_stream;
 
   auto dispatcher = StreamRpcDispatcher<kWriteSize>(test_stream, test_ingress);
-  auto dispatcher_thread = thread::Thread(thread::stl::Options(), dispatcher);
+  auto dispatcher_thread = Thread(thread::stl::Options(), dispatcher);
 
   test_stream.QueueData(kWriteBuffer);
 

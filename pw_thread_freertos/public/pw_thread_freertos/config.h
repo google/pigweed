@@ -22,7 +22,7 @@
 // We suggest only enabling this when thread joining is required to minimize
 // the RAM and ROM cost of threads.
 //
-// Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
+// Enabling this grows the RAM footprint of every pw::Thread as it adds
 // a StaticEventGroup_t to every thread's pw::thread::freertos::Context. In
 // addition, there is a minute ROM cost to construct and destroy this added
 // object.

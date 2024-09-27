@@ -748,7 +748,7 @@ TEST_F(DigitalIoTest, DoInputInterruptsThread) {
   ASSERT_OK(input.Enable());
 
   // Run a notifier thread.
-  pw::thread::Thread notif_thread(pw::thread::stl::Options(), *notifier);
+  pw::Thread notif_thread(pw::thread::stl::Options(), *notifier);
 
   EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
   LineEventFile* evt = line.current_event_handle();

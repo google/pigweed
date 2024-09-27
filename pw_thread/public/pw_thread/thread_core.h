@@ -16,7 +16,7 @@
 namespace pw::thread {
 
 // An optional virtual interface which can be implemented by objects which are
-// a thread as a helper to use pw::thread::Thread.
+// a thread as a helper to use pw::Thread.
 //
 // ThreadCore was originally intended to avoid indirection when threads were
 // constructed from a function pointer and void* argument. Since Thread now uses

@@ -61,8 +61,7 @@ inline Status SnapshotThreads(
   return SnapshotThreads(nullptr, encoder, thread_stack_callback);
 }
 
-// Captures only the provided thread handle as a pw::thread::Thread proto
-// message.
+// Captures only the provided thread handle as a pw::Thread proto message.
 //
 // An updated running_thread_stack_pointer must be provided in order for the
 // running thread's context to reflect the current state. If the thread being

@@ -111,8 +111,8 @@ config("thread_public_overrides") {
   visibility = [ ":*" ]
 }
 
-# This target provides the backend for pw::thread::Thread and the headers needed
-# for thread creation.
+# This target provides the backend for pw::Thread and the headers needed for
+# thread creation.
 pw_source_set("thread") {
   public_configs = [
     ":public_include_path",

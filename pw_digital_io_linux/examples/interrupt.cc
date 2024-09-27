@@ -30,7 +30,6 @@ using pw::digital_io::LinuxGpioNotifier;
 using pw::digital_io::LinuxInputConfig;
 using pw::digital_io::Polarity;
 using pw::digital_io::State;
-using pw::thread::Thread;
 
 pw::Status InterruptExample() {
   // Open handle to chip.
@@ -65,7 +64,7 @@ pw::Status InterruptExample() {
   notifier->Run();
 
   // Option C: Handle events in a separate thread.
-  Thread notifier_thread(pw::thread::stl::Options(), *notifier);
+  pw::Thread notifier_thread(pw::thread::stl::Options(), *notifier);
   pw::this_thread::sleep_for(30s);
   notifier->CancelWait();
   notifier_thread.join();

@@ -11,7 +11,7 @@ This is a set of backends for pw_thread based on FreeRTOS.
 -----------------------
 Thread Creation Backend
 -----------------------
-A backend for ``pw::thread::Thread`` is offered using ``xTaskCreateStatic()``.
+A backend for ``pw::Thread`` is offered using ``xTaskCreateStatic()``.
 Optional dynamic allocation for threads is supported using ``xTaskCreate()``.
 Optional joining support is enabled via an ``StaticEventGroup_t`` in each
 thread's context.
@@ -89,10 +89,10 @@ more details.
   We suggest only enabling this when thread joining is required to minimize
   the RAM and ROM cost of threads.
 
-  Enabling this grows the RAM footprint of every ``pw::thread::Thread`` as it
-  adds a ``StaticEventGroup_t`` to every thread's
-  ``pw::thread::freertos::Context``. In addition, there is a minute ROM cost to
-  construct and destroy this added object.
+  Enabling this grows the RAM footprint of every ``pw::Thread`` as it adds a
+  ``StaticEventGroup_t`` to every thread's ``pw::thread::freertos::Context``. In
+  addition, there is a minute ROM cost to construct and destroy this added
+  object.
 
   ``PW_THREAD_JOINING_ENABLED`` gets set to this value.
 
@@ -165,7 +165,7 @@ FreeRTOS Thread Options
 -----------------------------
 Thread Identification Backend
 -----------------------------
-A backend for ``pw::thread::Id`` and ``pw::thread::get_id()`` is offered using
+A backend for ``pw::Thread::id`` and ``pw::thread::get_id()`` is offered using
 ``xTaskGetCurrentTaskHandle()``. It uses ``DASSERT`` to ensure that it is not
 invoked from interrupt context and if possible that the scheduler has started
 via ``xTaskGetSchedulerState()``.
@@ -183,14 +183,14 @@ Thread Sleep Backend
 --------------------
 A backend for ``pw::thread::sleep_for()`` and ``pw::thread::sleep_until()`` is
 offerred using ``vTaskDelay()`` if the duration is at least one tick, else
-``taskYIELD()`` is used. It uses ``pw::this_thread::get_id() != thread::Id()``
+``taskYIELD()`` is used. It uses ``pw::this_thread::get_id() != Thread::id()``
 to ensure it invoked only from a thread.
 
 --------------------
 Thread Yield Backend
 --------------------
 A backend for ``pw::thread::yield()`` is offered using via ``taskYIELD()``.
-It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
+It uses ``pw::this_thread::get_id() != Thread::id()`` to ensure it invoked only
 from a thread.
 
 ---------------------------
@@ -232,7 +232,7 @@ An ``Aborted`` error status is returned if the provided callback returns
 Snapshot integration
 --------------------
 This ``pw_thread`` backend provides helper functions that capture FreeRTOS
-thread state to a ``pw::thread::Thread`` proto.
+thread state to a ``pw::Thread`` proto.
 
 FreeRTOS tskTCB facade
 ======================
@@ -252,11 +252,11 @@ which is the public opaque TCB type.
 
 ``SnapshotThreads()``
 =====================
-``SnapshotThread()`` captures the thread name, state, and stack information for
-the provided TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
-the most up-to-date information is captured, the stack pointer for the currently
-running thread must be provided for cases where the running thread is being
-captured. For ARM Cortex-M CPUs, you can do something like this:
+``SnapshotThreads()`` captures the thread name, state, and stack information for
+the provided TCB to a ``pw::Thread`` protobuf encoder. To ensure the most
+up-to-date information is captured, the stack pointer for the currently running
+thread must be provided for cases where the running thread is being captured.
+For ARM Cortex-M CPUs, you can do something like this:
 
 .. code-block:: cpp
 

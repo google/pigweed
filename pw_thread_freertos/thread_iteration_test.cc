@@ -47,7 +47,7 @@ TEST(ThreadIteration, ForkOneThread) {
   const auto& options = *static_cast<const pw::thread::freertos::Options*>(
       &thread::test::TestOptionsThread0());
 
-  thread::Thread t(options, [&notify]() {
+  Thread t(options, [&notify]() {
     // Release start lock to allow test thread to continue execution.
     notify.start.release();
     while (true) {

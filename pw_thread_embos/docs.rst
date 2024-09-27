@@ -11,9 +11,8 @@ This is a set of backends for pw_thread based on embOS v4.
 -----------------------
 Thread Creation Backend
 -----------------------
-A backend or ``pw::thread::Thread`` is offered using ``OS_CreateTaskEx()``.
-Optional joining support is enabled via an ``OS_EVENT`` in each thread's
-context.
+A backend or ``pw::Thread`` is offered using ``OS_CreateTaskEx()``. Optional
+joining support is enabled via an ``OS_EVENT`` in each thread's context.
 
 This backend permits users to start threads where contexts must be explicitly
 allocated and passed in as an option. As a quick example, a detached thread
@@ -61,9 +60,9 @@ more details.
   We suggest only enabling this when thread joining is required to minimize
   the RAM and ROM cost of threads.
 
-  Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
-  an OS_EVENT to every thread's pw::thread::embos::Context. In addition, there
-  is a minute ROM cost to construct and destroy this added object.
+  Enabling this grows the RAM footprint of every pw::Thread as it adds an
+  OS_EVENT to every thread's pw::thread::embos::Context. In addition, there is a
+  minute ROM cost to construct and destroy this added object.
 
   PW_THREAD_JOINING_ENABLED gets set to this value.
 
@@ -81,7 +80,7 @@ more details.
 
   The maximum length of a thread's name, not including null termination. By
   default this is arbitrarily set to 15. This results in an array of characters
-  which is this length + 1 bytes in every ``pw::thread::Thread``'s context.
+  which is this length + 1 bytes in every ``pw::Thread``'s context.
 
 .. c:macro:: PW_THREAD_EMBOS_CONFIG_MIN_PRIORITY
 
@@ -138,7 +137,7 @@ embOS Thread Options
 -----------------------------
 Thread Identification Backend
 -----------------------------
-A backend for ``pw::thread::Id`` and ``pw::thread::get_id()`` is offerred using
+A backend for ``pw::Thread::id`` and ``pw::thread::get_id()`` is offerred using
 ``OS_GetTaskID()``. It uses ``DASSERT`` to ensure that the scheduler has started
 via ``OS_IsRunning()``.
 
@@ -147,14 +146,14 @@ Thread Sleep Backend
 --------------------
 A backend for ``pw::thread::sleep_for()`` and ``pw::thread::sleep_until()`` is
 offerred using ``OS_Delay()`` if the duration is at least one tick, else
-``OS_Yield()`` is used. It uses ``pw::this_thread::get_id() != thread::Id()`` to
+``OS_Yield()`` is used. It uses ``pw::this_thread::get_id() != Thread::id()`` to
 ensure it invoked only from a thread.
 
 --------------------
 Thread Yield Backend
 --------------------
 A backend for ``pw::thread::yield()`` is offered using via ``OS_Yield()``.
-It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
+It uses ``pw::this_thread::get_id() != Thread::id()`` to ensure it invoked only
 from a thread.
 
 ---------
@@ -183,15 +182,15 @@ An ``Aborted`` error status is returned if the provided callback returns
 Snapshot Integration
 --------------------
 This ``pw_thread`` backend provides helper functions that capture embOS thread
-info to a ``pw::thread::Thread`` proto.
+info to a ``pw::Thread`` proto.
 
 ``SnapshotThreads()``
 =====================
-``SnapshotThread()`` captures the thread name, state, and stack information for
-the provided embOS TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
-the most up-to-date information is captured, the stack pointer for the currently
-running thread must be provided for cases where the running thread is being
-captured. For ARM Cortex-M CPUs, you can do something like this:
+``SnapshotThreads()`` captures the thread name, state, and stack information for
+the provided embOS TCB to a ``pw::Thread`` protobuf encoder. To ensure the most
+up-to-date information is captured, the stack pointer for the currently running
+thread must be provided for cases where the running thread is being captured.
+For ARM Cortex-M CPUs, you can do something like this:
 
 .. code-block:: cpp
 

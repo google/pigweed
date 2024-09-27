@@ -203,12 +203,10 @@ TEST_F(MultiSinkTest, SingleWriterSingleReader) {
   // Start reader thread.
   LogPopReaderThread reader_thread_core(multisink_,
                                         expected_message_and_drop_count);
-  thread::Thread reader_thread(test::MultiSinkTestThreadOptions(),
-                               reader_thread_core);
+  Thread reader_thread(test::MultiSinkTestThreadOptions(), reader_thread_core);
   // Start writer thread.
   LogWriterThread writer_thread_core(multisink_, message_stack);
-  thread::Thread writer_thread(test::MultiSinkTestThreadOptions(),
-                               writer_thread_core);
+  Thread writer_thread(test::MultiSinkTestThreadOptions(), writer_thread_core);
 
   // Wait for writer thread to end.
   writer_thread.join();
@@ -229,12 +227,10 @@ TEST_F(MultiSinkTest, SingleWriterSinglePeekAndCommitReader) {
   // Start reader thread.
   LogPeekAndCommitReaderThread reader_thread_core(
       multisink_, expected_message_and_drop_count);
-  thread::Thread reader_thread(test::MultiSinkTestThreadOptions(),
-                               reader_thread_core);
+  Thread reader_thread(test::MultiSinkTestThreadOptions(), reader_thread_core);
   // Start writer thread.
   LogWriterThread writer_thread_core(multisink_, message_stack);
-  thread::Thread writer_thread(test::MultiSinkTestThreadOptions(),
-                               writer_thread_core);
+  Thread writer_thread(test::MultiSinkTestThreadOptions(), writer_thread_core);
 
   // Wait for writer thread to end.
   writer_thread.join();
@@ -255,20 +251,19 @@ TEST_F(MultiSinkTest, SingleWriterMultipleReaders) {
   // Start reader threads.
   LogPopReaderThread reader_thread_core1(multisink_,
                                          expected_message_and_drop_count);
-  thread::Thread reader_thread1(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core1);
+  Thread reader_thread1(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core1);
   LogPopReaderThread reader_thread_core2(multisink_,
                                          expected_message_and_drop_count);
-  thread::Thread reader_thread2(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core2);
+  Thread reader_thread2(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core2);
   LogPeekAndCommitReaderThread reader_thread_core3(
       multisink_, expected_message_and_drop_count);
-  thread::Thread reader_thread3(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core3);
+  Thread reader_thread3(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core3);
   // Start writer thread.
   LogWriterThread writer_thread_core(multisink_, message_stack);
-  thread::Thread writer_thread(test::MultiSinkTestThreadOptions(),
-                               writer_thread_core);
+  Thread writer_thread(test::MultiSinkTestThreadOptions(), writer_thread_core);
 
   // Wait for writer thread to end.
   writer_thread.join();
@@ -297,23 +292,23 @@ TEST_F(MultiSinkTest, MultipleWritersMultipleReaders) {
   // Start reader threads.
   LogPopReaderThread reader_thread_core1(multisink_,
                                          expected_message_and_drop_count);
-  thread::Thread reader_thread1(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core1);
+  Thread reader_thread1(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core1);
   LogPopReaderThread reader_thread_core2(multisink_,
                                          expected_message_and_drop_count);
-  thread::Thread reader_thread2(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core2);
+  Thread reader_thread2(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core2);
   LogPeekAndCommitReaderThread reader_thread_core3(
       multisink_, expected_message_and_drop_count);
-  thread::Thread reader_thread3(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core3);
+  Thread reader_thread3(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core3);
   // Start writer threads.
   LogWriterThread writer_thread_core1(multisink_, message_stack);
-  thread::Thread writer_thread1(test::MultiSinkTestThreadOptions(),
-                                writer_thread_core1);
+  Thread writer_thread1(test::MultiSinkTestThreadOptions(),
+                        writer_thread_core1);
   LogWriterThread writer_thread_core2(multisink_, message_stack);
-  thread::Thread writer_thread2(test::MultiSinkTestThreadOptions(),
-                                writer_thread_core2);
+  Thread writer_thread2(test::MultiSinkTestThreadOptions(),
+                        writer_thread_core2);
 
   // Wait for writer thread to end.
   writer_thread1.join();
@@ -347,19 +342,19 @@ TEST_F(MultiSinkTest, OverflowMultisink) {
 
   // Start reader threads.
   LogPeekAndCommitReaderThread reader_thread_core1(small_multisink, log_count);
-  thread::Thread reader_thread1(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core1);
+  Thread reader_thread1(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core1);
   LogPopReaderThread reader_thread_core2(small_multisink, log_count);
-  thread::Thread reader_thread2(test::MultiSinkTestThreadOptions(),
-                                reader_thread_core2);
+  Thread reader_thread2(test::MultiSinkTestThreadOptions(),
+                        reader_thread_core2);
 
   // Start writer threads.
   LogWriterThread writer_thread_core1(small_multisink, message_stack);
-  thread::Thread writer_thread1(test::MultiSinkTestThreadOptions(),
-                                writer_thread_core1);
+  Thread writer_thread1(test::MultiSinkTestThreadOptions(),
+                        writer_thread_core1);
   LogWriterThread writer_thread_core2(small_multisink, message_stack);
-  thread::Thread writer_thread2(test::MultiSinkTestThreadOptions(),
-                                writer_thread_core2);
+  Thread writer_thread2(test::MultiSinkTestThreadOptions(),
+                        writer_thread_core2);
 
   // Wait for writer thread to end.
   writer_thread1.join();

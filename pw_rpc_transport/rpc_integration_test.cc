@@ -78,9 +78,8 @@ TEST(RpcIntegrationTest, SocketTransport) {
       SocketRpcTransport<kMaxPacketSize>::kAsServer, /*port=*/0);
   auto a = SocketRpcEndpoint<kMaxPacketSize, kLocalEgressQueueSize>(
       a_to_b_transport);
-  auto a_local_egress_thread =
-      thread::Thread(thread::stl::Options(), a.local_egress);
-  auto a_transport_thread = thread::Thread(thread::stl::Options(), a.transport);
+  auto a_local_egress_thread = Thread(thread::stl::Options(), a.local_egress);
+  auto a_transport_thread = Thread(thread::stl::Options(), a.transport);
 
   a_to_b_transport.WaitUntilReady();
 
@@ -91,9 +90,8 @@ TEST(RpcIntegrationTest, SocketTransport) {
 
   auto b = SocketRpcEndpoint<kMaxPacketSize, kLocalEgressQueueSize>(
       b_to_a_transport);
-  auto b_local_egress_thread =
-      thread::Thread(thread::stl::Options(), b.local_egress);
-  auto b_transport_thread = thread::Thread(thread::stl::Options(), b.transport);
+  auto b_local_egress_thread = Thread(thread::stl::Options(), b.local_egress);
+  auto b_transport_thread = Thread(thread::stl::Options(), b.transport);
 
   TestService b_test_service;
   b.service_registry.RegisterService(b_test_service);

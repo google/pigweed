@@ -37,7 +37,7 @@ class Options;
 // Still, we separate the context in two parts:
 //
 //   1) Context which just contains the Thread Control Block (k_thread) and
-//      additional context pw::thread::Thread requires.
+//      additional context pw::Thread requires.
 //
 //   2) StaticContextWithStack which contains the stack.
 //

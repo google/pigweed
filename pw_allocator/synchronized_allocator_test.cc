@@ -89,7 +89,7 @@ class Background final {
 
   Background(pw::Allocator& allocator, uint64_t seed, size_t iterations)
       : background_(allocator, seed, iterations) {
-    background_thread_ = pw::thread::Thread(context_.options(), background_);
+    background_thread_ = pw::Thread(context_.options(), background_);
   }
 
   ~Background() {
@@ -144,7 +144,7 @@ class Background final {
   } background_;
 
   pw::thread::test::TestThreadContext context_;
-  pw::thread::Thread background_thread_;
+  pw::Thread background_thread_;
 };
 
 // Unit tests.

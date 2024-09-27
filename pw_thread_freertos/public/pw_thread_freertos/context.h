@@ -38,8 +38,8 @@ class Options;
 // because we need some additional context beyond that the concept of a
 // thread's context is split into two halves:
 //
-//   1) Context which just contains the additional Context pw::thread::Thread
-//      requires. This is used for both static and dynamic thread allocations.
+//   1) Context which just contains the additional Context pw::Thread requires.
+//      This is used for both static and dynamic thread allocations.
 //
 //   2) StaticContext which contains the TCB and a span to the stack which is
 //      used only for static allocations.
@@ -103,7 +103,7 @@ class Context {
 //   std::array<StackType_t, kFooStackSizeWords> example_thread_stack;
 //   pw::thread::freertos::Context example_thread_context(example_thread_stack);
 //   void StartExampleThread() {
-//      pw::thread::Thread(
+//      pw::Thread(
 //        pw::thread::freertos::Options()
 //            .set_name("static_example_thread")
 //            .set_priority(kFooPriority)
@@ -132,7 +132,7 @@ class StaticContext : public Context {
 //   pw::thread::freertos::ContextWithStack<kFooStackSizeWords>
 //       example_thread_context;
 //   void StartExampleThread() {
-//      pw::thread::Thread(
+//      pw::Thread(
 //        pw::thread::freertos::Options()
 //            .set_name("static_example_thread")
 //            .set_priority(kFooPriority)

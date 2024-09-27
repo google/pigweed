@@ -140,7 +140,7 @@ class ClientServerTestContextThreaded
       ctx.ForwardNewPackets();
     }
   }
-  thread::Thread thread_;
+  Thread thread_;
 };
 
 }  // namespace internal

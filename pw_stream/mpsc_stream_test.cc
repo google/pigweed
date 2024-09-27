@@ -129,14 +129,14 @@ struct MpscTestContext {
   using ThreadBody = Function<void(MpscTestContext* ctx)>;
   void Spawn(ThreadBody func) {
     body_ = std::move(func);
-    thread_ = thread::Thread(context_.options(), [this]() { body_(this); });
+    thread_ = Thread(context_.options(), [this]() { body_(this); });
   }
 
   // Waits for the spawned thread to complete.
   void Join() { thread_.join(); }
 
  private:
-  thread::Thread thread_;
+  Thread thread_;
   thread::test::TestThreadContext context_;
   ThreadBody body_;
 };

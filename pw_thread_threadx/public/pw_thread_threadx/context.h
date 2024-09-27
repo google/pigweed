@@ -112,7 +112,7 @@ class Context {
 //   pw::thread::threadx::ContextWithStack<kFooStackSizeWords>
 //       example_thread_context;
 //   void StartExampleThread() {
-//      pw::thread::Thread(
+//      pw::Thread(
 //        pw::thread::threadx::Options()
 //            .set_name("static_example_thread")
 //            .set_priority(kFooPriority)

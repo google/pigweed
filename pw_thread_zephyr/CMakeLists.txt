@@ -57,8 +57,8 @@ pw_add_library(pw_thread_zephyr.sleep STATIC
     pw_assert.check
 )
 
-# This target provides the backend for pw::thread::Thread and the headers needed
-# for thread creation.
+# This target provides the backend for pw::Thread and the headers needed for
+# thread creation.
 pw_add_library(pw_thread_zephyr.thread STATIC
   HEADERS
     public/pw_thread_zephyr/context.h

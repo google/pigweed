@@ -40,7 +40,7 @@ struct TestPrimitives {
 
 TEST(DispatcherBasic, PostTasks) {
   BasicDispatcher dispatcher;
-  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  Thread work_thread(thread::stl::Options(), dispatcher);
 
   TestPrimitives tp;
   auto inc_count = [&tp]([[maybe_unused]] Context& c, Status status) {
@@ -69,7 +69,7 @@ TEST(DispatcherBasic, PostTasks) {
 
 TEST(DispatcherBasic, ChainedTasks) {
   BasicDispatcher dispatcher;
-  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  Thread work_thread(thread::stl::Options(), dispatcher);
 
   sync::ThreadNotification notification;
   Task task1([&notification]([[maybe_unused]] Context& c, Status status) {
@@ -100,7 +100,7 @@ TEST(DispatcherBasic, TaskOrdering) {
   };
 
   BasicDispatcher dispatcher;
-  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  Thread work_thread(thread::stl::Options(), dispatcher);
   TestState state;
 
   Task task1([&state](Context&, Status status) {
@@ -131,7 +131,7 @@ TEST(DispatcherBasic, TaskOrdering) {
 // Test RequestStop() from inside task.
 TEST(DispatcherBasic, RequestStopInsideTask) {
   BasicDispatcher dispatcher;
-  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  Thread work_thread(thread::stl::Options(), dispatcher);
 
   int count = 0;
   auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
@@ -157,7 +157,7 @@ TEST(DispatcherBasic, RequestStopInsideTask) {
 
 TEST(DispatcherBasic, TasksCancelledByRequestStopInDifferentThread) {
   BasicDispatcher dispatcher;
-  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  Thread work_thread(thread::stl::Options(), dispatcher);
 
   int count = 0;
   auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {

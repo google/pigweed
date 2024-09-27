@@ -29,7 +29,7 @@ namespace pw::thread {
 namespace {
 
 #if (INCLUDE_xTaskGetSchedulerState != 1) && (configUSE_TIMERS != 1)
-#error "xTaskGetSchedulerState is required for pw::thread::Thread"
+#error "xTaskGetSchedulerState is required for pw::Thread"
 #endif
 
 #if PW_THREAD_JOINING_ENABLED

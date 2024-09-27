@@ -19,7 +19,7 @@ declare_args() {
   # Backend for the pw_thread module's pw::thread::sleep_{for,until}.
   pw_thread_SLEEP_BACKEND = ""
 
-  # Backend for the pw_thread module's pw::thread::Thread to create threads.
+  # Backend for the pw_thread module's pw::Thread to create threads.
   pw_thread_THREAD_BACKEND = ""
 
   # Backend for the pw_thread module's pw::thread::yield.

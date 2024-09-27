@@ -183,7 +183,7 @@ TEST_F(NotifierTest, TestSendReceiveEventsThread) {
   FakeLine line(notifier());
   ASSERT_OK(line.Register());
 
-  pw::thread::Thread notif_thread(pw::thread::stl::Options(), notifier());
+  pw::Thread notif_thread(pw::thread::stl::Options(), notifier());
 
   constexpr unsigned int num_events = 3;
 
@@ -205,7 +205,7 @@ TEST_F(NotifierTest, TestRegisterLineMultipleLinesThread) {
   FakeLine line1(notifier());
   ASSERT_OK(line1.Register());
 
-  pw::thread::Thread notif_thread(pw::thread::stl::Options(), notifier());
+  pw::Thread notif_thread(pw::thread::stl::Options(), notifier());
 
   line1.SendEvents(1);
   EXPECT_TRUE(line1.TryWaitForData());

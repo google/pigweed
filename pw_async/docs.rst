@@ -143,7 +143,7 @@ Next, instantiate the Dispatcher and post a task:
      BasicDispatcher dispatcher;
 
      // Spawn a thread for the dispatcher to run on.
-     thread::Thread work_thread(thread::stl::Options(), dispatcher);
+     Thread work_thread(thread::stl::Options(), dispatcher);
 
      Task task([](pw::async::Context& ctx){
        printf("hello world\n");

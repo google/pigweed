@@ -68,7 +68,7 @@ TEST(Dispatcher, RunToCompletion_SleepsUntilWoken) {
     std::move(task.last_waker).Wake();
   });
 
-  thread::Thread work_thread(thread::stl::Options(), delayed_wake);
+  Thread work_thread(thread::stl::Options(), delayed_wake);
 
   dispatcher.RunToCompletion(task);
 

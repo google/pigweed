@@ -27,7 +27,7 @@ class TestLoopbackTransport : public RpcFrameSender {
  public:
   explicit TestLoopbackTransport(size_t mtu) : mtu_(mtu) {
     work_thread_ =
-        thread::Thread(work_queue::test::WorkQueueThreadOptions(), work_queue_);
+        Thread(work_queue::test::WorkQueueThreadOptions(), work_queue_);
   }
 
   ~TestLoopbackTransport() override {
@@ -62,7 +62,7 @@ class TestLoopbackTransport : public RpcFrameSender {
   size_t mtu_;
   std::queue<std::vector<std::byte>> buffer_queue_;
   RpcIngressHandler* ingress_ = nullptr;
-  thread::Thread work_thread_;
+  Thread work_thread_;
   work_queue::WorkQueueWithBuffer<1> work_queue_;
 };
 

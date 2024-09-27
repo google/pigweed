@@ -43,7 +43,7 @@ class RawSynchronousCallTest : public ::testing::Test {
 
   void SetUp() override {
     work_thread_ =
-        thread::Thread(work_queue::test::WorkQueueThreadOptions(), work_queue_);
+        Thread(work_queue::test::WorkQueueThreadOptions(), work_queue_);
   }
 
   void TearDown() override {
@@ -101,7 +101,7 @@ class RawSynchronousCallTest : public ::testing::Test {
   RawFakeChannelOutput<2> fake_output_;
   std::array<Channel, 1> channels_;
   Client client_;
-  thread::Thread work_thread_;
+  Thread work_thread_;
   work_queue::WorkQueueWithBuffer<1> work_queue_;
   std::string_view response_;
   Status response_status_ = OkStatus();

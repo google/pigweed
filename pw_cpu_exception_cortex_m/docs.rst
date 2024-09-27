@@ -217,7 +217,7 @@ if active either from a given ``pw_cpu_exception_State`` or from the current
 running context. It captures the thread name depending on the processor mode,
 either ``Main Stack (Handler Mode)`` or ``Main Stack (Thread Mode)``. The stack
 limits must be provided along with a stack processing callback. All of this
-information is captured by a ``pw::thread::Thread`` protobuf encoder.
+information is captured by a ``pw::Thread`` protobuf encoder.
 
 .. note::
    To minimize how much of the snapshot handling callstack is captured in the

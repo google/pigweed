@@ -18,7 +18,7 @@
 namespace pw::system {
 namespace {
 
-pw::thread::Thread chre_thread;
+pw::Thread chre_thread;
 
 }  // namespace
 
@@ -26,7 +26,7 @@ pw::thread::Thread chre_thread;
 // return or it will block the work queue.
 void UserAppInit() {
   // Start the thread that is running CHRE.
-  chre_thread = pw::thread::Thread(
+  chre_thread = pw::Thread(
       pw::system::LogThreadOptions(),
       [](void*) {
         pw::chre::Init();

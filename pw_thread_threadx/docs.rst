@@ -11,9 +11,9 @@ This is a set of backends for pw_thread based on ThreadX.
 -----------------------
 Thread Creation Backend
 -----------------------
-A backend for ``pw::thread::Thread`` is offered using ``tx_thread_create``.
-Optional joining support is enabled via an ``TX_EVENT_FLAGS_GROUP`` in each
-thread's context.
+A backend for ``pw::Thread`` is offered using ``tx_thread_create``.  Optional
+joining support is enabled via an ``TX_EVENT_FLAGS_GROUP`` in each thread's
+context.
 
 This backend permits users to start threads where contexts must be explicitly
 allocated and passed in as an option. As a quick example, a detached thread can
@@ -78,8 +78,8 @@ more details.
    We suggest only enabling this when thread joining is required to minimize
    the RAM and ROM cost of threads.
 
-   Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
-   a TX_EVENT_FLAGS_GROUP to every thread's pw::thread::threadx::Context. In
+   Enabling this grows the RAM footprint of every pw::Thread as it adds a
+   TX_EVENT_FLAGS_GROUP to every thread's pw::thread::threadx::Context. In
    addition, there is a minute ROM cost to construct and destroy this added
    object.
 
@@ -94,7 +94,7 @@ more details.
 
    The maximum length of a thread's name, not including null termination. By
    default this is arbitrarily set to 15. This results in an array of characters
-   which is this length + 1 bytes in every pw::thread::Thread's context.
+   which is this length + 1 bytes in every pw::Thread's context.
 
 .. c:macro:: PW_THREAD_THREADX_CONFIG_DEFAULT_TIME_SLICE_INTERVAL
 
@@ -182,7 +182,7 @@ ThreadX Thread Options
 -----------------------------
 Thread Identification Backend
 -----------------------------
-A backend for ``pw::thread::Id`` and ``pw::thread::get_id()`` is offerred using
+A backend for ``pw::Thread::id`` and ``pw::thread::get_id()`` is offerred using
 ``tx_thread_identify()``. It uses ``DASSERT`` to ensure that a thread is
 executing via ``TX_THREAD_GET_SYSTEM_STATE()``.
 
@@ -192,7 +192,7 @@ Thread Sleep Backend
 A backend for ``pw::thread::sleep_for()`` and ``pw::thread::sleep_until()`` is
 offerred using ``tx_thread_sleep()`` if the duration is at least one tick, else
 ``tx_thread_relinquish()`` is used. It uses
-``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only from a
+``pw::this_thread::get_id() != Thread::id()`` to ensure it invoked only from a
 thread.
 
 --------------------
@@ -200,7 +200,7 @@ Thread Yield Backend
 --------------------
 A backend for ``pw::thread::yield()`` is offered using via
 ``tx_thread_relinquish()``. It uses
-``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only from a
+``pw::this_thread::get_id() != Thread::id()`` to ensure it invoked only from a
 thread.
 
 ---------
@@ -224,13 +224,13 @@ An ``Aborted`` error status is returned if the provided callback returns
 Snapshot integration
 --------------------
 This ``pw_thread`` backend provides helper functions that capture ThreadX thread
-state to a ``pw::thread::Thread`` proto.
+state to a ``pw::Thread`` proto.
 
 ``SnapshotThreads()``
 =====================
-``SnapshotThread()`` captures the thread name, state, and stack information for
-the provided ThreadX TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
-the most up-to-date information is captured, the stack pointer for the currently
+``SnapshotThreads()`` captures the thread name, state, and stack information for
+the provided ThreadX TCB to a ``pw::Thread`` protobuf encoder. To ensure the
+most up-to-date information is captured, the stack pointer for the currently
 running thread must be provided for cases where the running thread is being
 captured. For ARM Cortex-M CPUs, you can do something like this:
 

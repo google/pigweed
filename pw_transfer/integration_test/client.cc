@@ -80,7 +80,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   std::byte chunk_buffer[kMaxPayloadSize];
   std::byte encode_buffer[kMaxPayloadSize];
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
-  thread::Thread system_thread(TransferThreadOptions(), transfer_thread);
+  pw::Thread system_thread(TransferThreadOptions(), transfer_thread);
 
   // As much as we don't want to dynamically allocate an array,
   // variable length arrays (VLA) are nonstandard, and a std::vector could cause

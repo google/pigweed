@@ -144,7 +144,7 @@ TEST(SocketRpcTransportTest, SendAndReceiveFramesOverSocketConnection) {
       SocketRpcTransport<kReadBufferSize>::kAsServer,
       kServerPort,
       server_ingress);
-  auto server_thread = thread::Thread(thread::stl::Options(), server);
+  auto server_thread = Thread(thread::stl::Options(), server);
 
   server.WaitUntilReady();
   auto server_port = server.port();
@@ -154,7 +154,7 @@ TEST(SocketRpcTransportTest, SendAndReceiveFramesOverSocketConnection) {
       "localhost",
       server_port,
       client_ingress);
-  auto client_thread = thread::Thread(thread::stl::Options(), client);
+  auto client_thread = Thread(thread::stl::Options(), client);
 
   client.WaitUntilConnected();
   server.WaitUntilConnected();
@@ -162,10 +162,8 @@ TEST(SocketRpcTransportTest, SendAndReceiveFramesOverSocketConnection) {
   SocketSenderThreadCore client_sender(client, kWriteSize);
   SocketSenderThreadCore server_sender(server, kWriteSize);
 
-  auto client_sender_thread =
-      thread::Thread(thread::stl::Options(), client_sender);
-  auto server_sender_thread =
-      thread::Thread(thread::stl::Options(), server_sender);
+  auto client_sender_thread = Thread(thread::stl::Options(), client_sender);
+  auto server_sender_thread = Thread(thread::stl::Options(), server_sender);
 
   client_sender_thread.join();
   server_sender_thread.join();
@@ -203,7 +201,7 @@ TEST(SocketRpcTransportTest, ServerReconnects) {
       SocketRpcTransport<kReadBufferSize>::kAsServer,
       kServerPort,
       server_ingress);
-  auto server_thread = thread::Thread(thread::stl::Options(), server);
+  auto server_thread = Thread(thread::stl::Options(), server);
 
   server.WaitUntilReady();
   auto server_port = server.port();
@@ -216,7 +214,7 @@ TEST(SocketRpcTransportTest, ServerReconnects) {
         "localhost",
         server_port,
         client_ingress);
-    auto client_thread = thread::Thread(thread::stl::Options(), client);
+    auto client_thread = Thread(thread::stl::Options(), client);
 
     client.WaitUntilConnected();
     server.WaitUntilConnected();
@@ -243,7 +241,7 @@ TEST(SocketRpcTransportTest, ServerReconnects) {
         "localhost",
         server_port,
         client_ingress);
-    auto client_thread = thread::Thread(thread::stl::Options(), client);
+    auto client_thread = Thread(thread::stl::Options(), client);
 
     client.WaitUntilConnected();
     server.WaitUntilConnected();
@@ -283,7 +281,7 @@ TEST(SocketRpcTransportTest, ClientReconnects) {
       SocketRpcTransport<kReadBufferSize>::kAsServer,
       kServerPort,
       server_ingress);
-  auto server_thread = thread::Thread(thread::stl::Options(), *server);
+  auto server_thread = Thread(thread::stl::Options(), *server);
 
   server->WaitUntilReady();
   server_port = server->port();
@@ -293,7 +291,7 @@ TEST(SocketRpcTransportTest, ClientReconnects) {
       "localhost",
       server_port,
       client_ingress);
-  auto client_thread = thread::Thread(thread::stl::Options(), client);
+  auto client_thread = Thread(thread::stl::Options(), client);
 
   client.WaitUntilConnected();
   server->WaitUntilConnected();
@@ -317,7 +315,7 @@ TEST(SocketRpcTransportTest, ClientReconnects) {
       server_port,
       server_ingress);
   SocketSender server2_sender(*server);
-  server_thread = thread::Thread(thread::stl::Options(), *server);
+  server_thread = Thread(thread::stl::Options(), *server);
 
   client.WaitUntilConnected();
   server->WaitUntilConnected();

@@ -64,7 +64,7 @@ class CallbacksTest : public ::testing::Test {
   sync::BinarySemaphore callback_thread_sem_;
   sync::BinarySemaphore main_thread_sem_;
 
-  thread::Thread callback_thread_;
+  Thread callback_thread_;
 
   // Must be incremented exactly once by the RPC callback in each test.
   volatile int callback_executed_ = 0;

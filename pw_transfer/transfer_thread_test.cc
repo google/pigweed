@@ -67,7 +67,7 @@ class TransferThreadTest : public ::testing::Test {
   internal::TransferParameters max_parameters_;
 
   transfer::Thread<1, 1> transfer_thread_;
-  thread::Thread system_thread_;
+  pw::Thread system_thread_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
 };
 

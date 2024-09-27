@@ -12,7 +12,7 @@ This is a set of backends for pw_thread based on the Zephyr RTOS.
 -----------------------
 Thread Creation Backend
 -----------------------
-A backend for ``pw::thread::Thread`` is offered using ``k_thread_create()``.
+A backend for ``pw::Thread`` is offered using ``k_thread_create()``.
 This backend only supports threads with static contexts (which are passed via
 Options).
 All created threads support joining and detaching.
