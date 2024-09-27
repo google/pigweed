@@ -18,7 +18,7 @@ pw_add_library(pw_async2_basic.dispatcher_backend STATIC
   HEADERS
     public_overrides/pw_async2/dispatcher_native.h
   SOURCES
-    dispatcher.cc
+    dispatcher_native.cc
   PUBLIC_INCLUDES
     public
     public_overrides
@@ -26,5 +26,5 @@ pw_add_library(pw_async2_basic.dispatcher_backend STATIC
     pw_assert.check
     pw_async2.dispatcher_base
     pw_async2.poll
-    pw_sync.timed_thread_notification
+    pw_sync.thread_notification
 )

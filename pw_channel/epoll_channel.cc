@@ -30,9 +30,10 @@ void EpollChannel::Register() {
     return;
   }
 
-  if (!dispatcher_
-           ->NativeRegisterFileDescriptor(
-               channel_fd_, async2::Dispatcher::FileDescriptorType::kReadWrite)
+  if (!dispatcher_->native()
+           .NativeRegisterFileDescriptor(channel_fd_,
+                                         async2::backend::NativeDispatcher::
+                                             FileDescriptorType::kReadWrite)
            .ok()) {
     set_closed();
     return;
@@ -74,8 +75,8 @@ async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
     // Put the task to sleep until the dispatcher is notified that the file
     // descriptor is active.
     async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
-    cx.dispatcher().NativeAddReadWakerForFileDescriptor(channel_fd_,
-                                                        std::move(waker));
+    cx.dispatcher().native().NativeAddReadWakerForFileDescriptor(
+        channel_fd_, std::move(waker));
     return async2::Pending();
   }
 
@@ -90,8 +91,8 @@ async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
   // receives a notification for the channel's file descriptor.
   ready_to_write_ = true;
   async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
-  cx.dispatcher().NativeAddWriteWakerForFileDescriptor(channel_fd_,
-                                                       std::move(waker));
+  cx.dispatcher().native().NativeAddWriteWakerForFileDescriptor(
+      channel_fd_, std::move(waker));
   return async2::Pending();
 }
 
@@ -118,7 +119,9 @@ Result<channel::WriteToken> EpollChannel::DoWrite(multibuf::MultiBuf&& data) {
 
 void EpollChannel::Cleanup() {
   if (is_read_or_write_open()) {
-    dispatcher_->NativeUnregisterFileDescriptor(channel_fd_).IgnoreError();
+    dispatcher_->native()
+        .NativeUnregisterFileDescriptor(channel_fd_)
+        .IgnoreError();
     set_closed();
   }
   close(channel_fd_);

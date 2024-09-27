@@ -15,3 +15,61 @@
 
 #include "pw_async2/dispatcher_base.h"
 #include "pw_async2/dispatcher_native.h"
+
+namespace pw::async2 {
+
+/// A single-threaded cooperatively-scheduled runtime for async tasks.
+class Dispatcher {
+ public:
+  /// Constructs a new async Dispatcher.
+  Dispatcher() = default;
+  Dispatcher(Dispatcher&) = delete;
+  Dispatcher(Dispatcher&&) = delete;
+  Dispatcher& operator=(Dispatcher&) = delete;
+  Dispatcher& operator=(Dispatcher&&) = delete;
+  ~Dispatcher() { native_.Deregister(); }
+
+  /// Tells the ``Dispatcher`` to run ``Task`` to completion.
+  /// This method does not block.
+  ///
+  /// After ``Post`` is called, ``Task::Pend`` will be invoked once.
+  /// If ``Task::Pend`` does not complete, the ``Dispatcher`` will wait
+  /// until the ``Task`` is "awoken", at which point it will call ``Pend``
+  /// again until the ``Task`` completes.
+  ///
+  /// This method is thread-safe and interrupt-safe.
+  void Post(Task& task) PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    native_.Post(task);
+  }
+
+  /// Runs tasks until none are able to make immediate progress.
+  Poll<> RunUntilStalled() PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    return native_.DoRunUntilStalled(*this, nullptr);
+  }
+
+  /// Runs tasks until none are able to make immediate progress, or until
+  /// ``task`` completes.
+  ///
+  /// Returns whether ``task`` completed.
+  Poll<> RunUntilStalled(Task& task) PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    return native_.DoRunUntilStalled(*this, &task);
+  }
+
+  /// Runs until all tasks complete.
+  void RunToCompletion() PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    native_.DoRunToCompletion(*this, nullptr);
+  }
+
+  /// Runs until ``task`` completes.
+  void RunToCompletion(Task& task) PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    native_.DoRunToCompletion(*this, &task);
+  }
+
+  /// Returns a reference to the native backend-specific dispatcher type.
+  pw::async2::backend::NativeDispatcher& native() { return native_; }
+
+ private:
+  pw::async2::backend::NativeDispatcher native_;
+};
+
+}  // namespace pw::async2

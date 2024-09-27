@@ -33,7 +33,7 @@ pw_source_set("dispatcher_backend") {
   ]
   deps = [ dir_pw_log ]
   public = [ "public_overrides/pw_async2/dispatcher_native.h" ]
-  sources = [ "dispatcher.cc" ]
+  sources = [ "dispatcher_native.cc" ]
 }
 
 pw_test_group("tests") {

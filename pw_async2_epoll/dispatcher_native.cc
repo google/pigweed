@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_async2/dispatcher_native.h"
+
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -20,19 +22,18 @@
 #include <mutex>
 
 #include "pw_assert/check.h"
-#include "pw_async2/dispatcher_native.h"
 #include "pw_log/log.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 
-namespace pw::async2 {
+namespace pw::async2::backend {
 namespace {
 
 constexpr char kNotificationSignal = 'c';
 
 }  // namespace
 
-Status Dispatcher::NativeInit() {
+Status NativeDispatcher::NativeInit() {
   epoll_fd_ = epoll_create1(0);
   if (epoll_fd_ == -1) {
     PW_LOG_ERROR("Failed to open epoll: %s", std::strerror(errno));
@@ -59,7 +60,7 @@ Status Dispatcher::NativeInit() {
   return OkStatus();
 }
 
-Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
+Poll<> NativeDispatcher::DoRunUntilStalled(Dispatcher& dispatcher, Task* task) {
   {
     std::lock_guard lock(dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
@@ -67,7 +68,7 @@ Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
              "but that task has not been `Post`ed to that `Dispatcher`.");
   }
   while (true) {
-    RunOneTaskResult result = RunOneTask(task);
+    RunOneTaskResult result = RunOneTask(dispatcher, task);
     if (result.completed_main_task() || result.completed_all_tasks()) {
       return Ready();
     }
@@ -77,7 +78,7 @@ Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
   }
 }
 
-void Dispatcher::DoRunToCompletion(Task* task) {
+void NativeDispatcher::DoRunToCompletion(Dispatcher& dispatcher, Task* task) {
   {
     std::lock_guard lock(dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
@@ -85,7 +86,7 @@ void Dispatcher::DoRunToCompletion(Task* task) {
              "but that task has not been `Post`ed to that `Dispatcher`.");
   }
   while (true) {
-    RunOneTaskResult result = RunOneTask(task);
+    RunOneTaskResult result = RunOneTask(dispatcher, task);
     if (result.completed_main_task() || result.completed_all_tasks()) {
       return;
     }
@@ -100,7 +101,7 @@ void Dispatcher::DoRunToCompletion(Task* task) {
   }
 }
 
-Status Dispatcher::NativeWaitForWake() {
+Status NativeDispatcher::NativeWaitForWake() {
   std::array<epoll_event, kMaxEventsToProcessAtOnce> events;
 
   int num_events =
@@ -148,8 +149,8 @@ Status Dispatcher::NativeWaitForWake() {
   return OkStatus();
 }
 
-Status Dispatcher::NativeRegisterFileDescriptor(int fd,
-                                                FileDescriptorType type) {
+Status NativeDispatcher::NativeRegisterFileDescriptor(int fd,
+                                                      FileDescriptorType type) {
   epoll_event event;
   event.events = EPOLLET;
   event.data.fd = fd;
@@ -169,7 +170,7 @@ Status Dispatcher::NativeRegisterFileDescriptor(int fd,
   return OkStatus();
 }
 
-Status Dispatcher::NativeUnregisterFileDescriptor(int fd) {
+Status NativeDispatcher::NativeUnregisterFileDescriptor(int fd) {
   epoll_event event;
   event.data.fd = fd;
   if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, &event) == -1) {
@@ -180,7 +181,7 @@ Status Dispatcher::NativeUnregisterFileDescriptor(int fd) {
   return OkStatus();
 }
 
-void Dispatcher::DoWake() {
+void NativeDispatcher::DoWake() {
   // Perform a write to unblock the waiting dispatcher.
   //
   // We ignore the result of the write, since nonblocking writes can
@@ -190,4 +191,4 @@ void Dispatcher::DoWake() {
   write(notify_fd_, &kNotificationSignal, 1);
 }
 
-}  // namespace pw::async2
+}  // namespace pw::async2::backend

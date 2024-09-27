@@ -14,9 +14,14 @@
 #pragma once
 
 #include "pw_async2/dispatcher_base.h"
-#include "pw_sync/timed_thread_notification.h"
+#include "pw_sync/thread_notification.h"
 
-namespace pw::async2 {
+namespace pw::async2::backend {
+
+// Windows GCC doesn't realize the nonvirtual destructor is protected and that
+// the class is final.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wnon-virtual-dtor");
 
 // Implementor's note:
 //
@@ -31,14 +36,9 @@ namespace pw::async2 {
 // should include a ``Native`` prefix to indicate that they are
 // platform-specific extensions and are not portable to other ``pw::async2``
 // backends.
-class Dispatcher final : public DispatcherImpl<Dispatcher> {
+class NativeDispatcher final : public NativeDispatcherBase {
  public:
-  Dispatcher() = default;
-  Dispatcher(Dispatcher&) = delete;
-  Dispatcher(Dispatcher&&) = delete;
-  Dispatcher& operator=(Dispatcher&) = delete;
-  Dispatcher& operator=(Dispatcher&&) = delete;
-  ~Dispatcher() final { Deregister(); }
+  NativeDispatcher() = default;
 
   // NOTE: there are no public methods here because the public interface of
   // ``Dispatcher`` is defined in ``DispatcherImpl``.
@@ -47,12 +47,15 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   // backend) would be backend-specific and should be clearly marked with a
   // ``...Native`` suffix.
  private:
-  void DoWake() final { notify_.release(); }
-  Poll<> DoRunUntilStalled(Task* task);
-  void DoRunToCompletion(Task* task);
-  friend class DispatcherImpl<Dispatcher>;
+  friend class ::pw::async2::Dispatcher;
 
-  pw::sync::TimedThreadNotification notify_;
+  void DoWake() final { notify_.release(); }
+  Poll<> DoRunUntilStalled(Dispatcher&, Task* task);
+  void DoRunToCompletion(Dispatcher&, Task* task);
+
+  pw::sync::ThreadNotification notify_;
 };
 
-}  // namespace pw::async2
+PW_MODIFY_DIAGNOSTICS_POP();
+
+}  // namespace pw::async2::backend

@@ -18,16 +18,11 @@
 #include "pw_assert/assert.h"
 #include "pw_async2/dispatcher_base.h"
 
-namespace pw::async2 {
+namespace pw::async2::backend {
 
-class Dispatcher final : public DispatcherImpl<Dispatcher> {
+class NativeDispatcher final : public NativeDispatcherBase {
  public:
-  Dispatcher() { PW_ASSERT_OK(NativeInit()); }
-  Dispatcher(Dispatcher&) = delete;
-  Dispatcher(Dispatcher&&) = delete;
-  Dispatcher& operator=(Dispatcher&) = delete;
-  Dispatcher& operator=(Dispatcher&&) = delete;
-  ~Dispatcher() final { Deregister(); }
+  NativeDispatcher() { PW_ASSERT_OK(NativeInit()); }
 
   Status NativeInit();
 
@@ -49,6 +44,8 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   }
 
  private:
+  friend class ::pw::async2::Dispatcher;
+
   static constexpr size_t kMaxEventsToProcessAtOnce = 5;
 
   struct ReadWriteWaker {
@@ -57,9 +54,8 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   };
 
   void DoWake() final;
-  Poll<> DoRunUntilStalled(Task* task);
-  void DoRunToCompletion(Task* task);
-  friend class DispatcherImpl<Dispatcher>;
+  Poll<> DoRunUntilStalled(Dispatcher&, Task* task);
+  void DoRunToCompletion(Dispatcher&, Task* task);
 
   Status NativeWaitForWake();
   void NativeFindAndWakeFileDescriptor(int fd, FileDescriptorType type);
@@ -71,4 +67,4 @@ class Dispatcher final : public DispatcherImpl<Dispatcher> {
   std::unordered_map<int, ReadWriteWaker> wakers_;
 };
 
-}  // namespace pw::async2
+}  // namespace pw::async2::backend

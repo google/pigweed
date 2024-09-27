@@ -18,7 +18,7 @@ pw_add_library(pw_async2_epoll.dispatcher_backend STATIC
   HEADERS
     public_overrides/pw_async2/dispatcher_native.h
   SOURCES
-    dispatcher.cc
+    dispatcher_native.cc
   PUBLIC_INCLUDES
     public
     public_overrides

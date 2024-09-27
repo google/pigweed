@@ -12,16 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_async2/dispatcher_native.h"
+
 #include <mutex>
 #include <optional>
 
 #include "pw_assert/check.h"
-#include "pw_async2/dispatcher_native.h"
 #include "pw_chrono/system_clock.h"
 
-namespace pw::async2 {
+namespace pw::async2::backend {
 
-Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
+Poll<> NativeDispatcher::DoRunUntilStalled(Dispatcher& dispatcher, Task* task) {
   {
     std::lock_guard lock(dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
@@ -29,7 +30,7 @@ Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
              "but that task has not been `Post`ed to that `Dispatcher`.");
   }
   while (true) {
-    RunOneTaskResult result = RunOneTask(task);
+    RunOneTaskResult result = RunOneTask(dispatcher, task);
     if (result.completed_main_task() || result.completed_all_tasks()) {
       return Ready();
     }
@@ -39,7 +40,7 @@ Poll<> Dispatcher::DoRunUntilStalled(Task* task) {
   }
 }
 
-void Dispatcher::DoRunToCompletion(Task* task) {
+void NativeDispatcher::DoRunToCompletion(Dispatcher& dispatcher, Task* task) {
   {
     std::lock_guard lock(dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
@@ -47,7 +48,7 @@ void Dispatcher::DoRunToCompletion(Task* task) {
              "but that task has not been `Post`ed to that `Dispatcher`.");
   }
   while (true) {
-    RunOneTaskResult result = RunOneTask(task);
+    RunOneTaskResult result = RunOneTask(dispatcher, task);
     if (result.completed_main_task() || result.completed_all_tasks()) {
       return;
     }
@@ -60,4 +61,4 @@ void Dispatcher::DoRunToCompletion(Task* task) {
   }
 }
 
-}  // namespace pw::async2
+}  // namespace pw::async2::backend

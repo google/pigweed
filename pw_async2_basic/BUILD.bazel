@@ -18,7 +18,7 @@ licenses(["notice"])
 
 cc_library(
     name = "dispatcher",
-    srcs = ["dispatcher.cc"],
+    srcs = ["dispatcher_native.cc"],
     hdrs = [
         "public_overrides/pw_async2/dispatcher_native.h",
     ],
@@ -27,6 +27,6 @@ cc_library(
         "//pw_assert",
         "//pw_async2:dispatcher_base",
         "//pw_async2:poll",
-        "//pw_sync:timed_thread_notification",
+        "//pw_sync:thread_notification",
     ],
 )
