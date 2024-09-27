@@ -44,9 +44,9 @@ struct Base64EncodedToken {
 };
 
 const char* Indent(int level) {
-  static const char* kWhitespace8 = "        ";
+  static const char* kWhitespace10 = "          ";
   level = std::min(level, 4);
-  return kWhitespace8 + 8 - 2 * level;
+  return kWhitespace10 + 8 - 2 * level;
 }
 
 }  // namespace
@@ -95,27 +95,32 @@ void Metric::SetFloat(float value) {
   float_ = value;
 }
 
-void Metric::Dump(int level) {
+void Metric::Dump(int level, bool last) const {
   Base64EncodedToken encoded_name(name());
   const char* indent = Indent(level);
+  const char* comma = last ? "" : ",";
   if (is_float()) {
     // Variadic macros promote float to double. Explicitly cast here to
     // acknowledge this and allow projects to use -Wdouble-promotion.
-    PW_LOG_INFO("%s \"%s\": %f,",
+    PW_LOG_INFO("%s \"%s\": %f%s",
                 indent,
                 encoded_name.value(),
-                static_cast<double>(as_float()));
+                static_cast<double>(as_float()),
+                comma);
   } else {
-    PW_LOG_INFO("%s \"%s\": %u,",
+    PW_LOG_INFO("%s \"%s\": %u%s",
                 indent,
                 encoded_name.value(),
-                static_cast<unsigned int>(as_int()));
+                static_cast<unsigned int>(as_int()),
+                comma);
   }
 }
 
-void Metric::Dump(IntrusiveList<Metric>& metrics, int level) {
-  for (auto& m : metrics) {
-    m.Dump(level);
+void Metric::Dump(const IntrusiveList<Metric>& metrics, int level) {
+  auto iter = metrics.begin();
+  while (iter != metrics.end()) {
+    const Metric& m = *iter++;
+    m.Dump(level, iter == metrics.end());
   }
 }
 
@@ -123,18 +128,27 @@ Group::Group(Token name, IntrusiveList<Group>& groups) : name_(name) {
   groups.push_front(*this);
 }
 
-void Group::Dump(int level) {
-  Base64EncodedToken encoded_name(name());
-  const char* indent = Indent(level);
-  PW_LOG_INFO("%s \"%s\": {", indent, encoded_name.value());
-  Group::Dump(children(), level + 1);
-  Metric::Dump(metrics(), level + 1);
-  PW_LOG_INFO("%s }", indent);
+void Group::Dump() const {
+  PW_LOG_INFO("{");
+  Dump(0, true);
+  PW_LOG_INFO("}");
 }
 
-void Group::Dump(IntrusiveList<Group>& groups, int level) {
-  for (auto& group : groups) {
-    group.Dump(level);
+void Group::Dump(int level, bool last) const {
+  Base64EncodedToken encoded_name(name());
+  const char* indent = Indent(level);
+  const char* comma = last ? "" : ",";
+  PW_LOG_INFO("%s\"%s\": {", indent, encoded_name.value());
+  Group::Dump(children(), level + 1);
+  Metric::Dump(metrics(), level + 1);
+  PW_LOG_INFO("%s}%s", indent, comma);
+}
+
+void Group::Dump(const IntrusiveList<Group>& groups, int level) {
+  auto iter = groups.begin();
+  while (iter != groups.end()) {
+    const Group& g = *iter++;
+    g.Dump(level, iter == groups.end());
   }
 }
 

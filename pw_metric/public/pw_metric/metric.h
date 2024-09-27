@@ -44,6 +44,10 @@ class Metric : public IntrusiveList<Metric>::Item {
  public:
   Token name() const { return name_and_type_ & kTokenMask; }
 
+  // Disallow copy and assign.
+  Metric(Metric const&) = delete;
+  void operator=(const Metric&) = delete;
+
   bool is_float() const { return (name_and_type_ & kTypeMask) == kTypeFloat; }
   bool is_int() const { return (name_and_type_ & kTypeMask) == kTypeInt; }
 
@@ -53,16 +57,12 @@ class Metric : public IntrusiveList<Metric>::Item {
   // Dump a metric or metrics to logs. Level determines the indentation
   // indent_level up to a maximum of 4. Example output:
   //
-  //   "$FCM4qQ==": 0,
+  //   "$FCM4qQ==": 0
   //
   // Note the base64-encoded token name. Detokenization tools are necessary to
   // convert this to human-readable form.
-  void Dump(int indent_level = 0);
-  static void Dump(IntrusiveList<Metric>& metrics, int indent_level = 0);
-
-  // Disallow copy and assign.
-  Metric(Metric const&) = delete;
-  void operator=(const Metric&) = delete;
+  void Dump(int indent_level, bool last) const;
+  static void Dump(const IntrusiveList<Metric>& metrics, int indent_level = 0);
 
  protected:
   constexpr Metric(Token name, float value)
@@ -159,6 +159,10 @@ class Group : public IntrusiveList<Group>::Item {
 
   Token name() const { return name_; }
 
+  // Disallow copy and assign.
+  Group(Group const&) = delete;
+  void operator=(const Group&) = delete;
+
   void Add(Metric& metric) { metrics_.push_front(metric); }
   void Add(Group& group) { children_.push_front(group); }
 
@@ -175,23 +179,21 @@ class Group : public IntrusiveList<Group>::Item {
   //     "$05OCZw==": {
   //       "$VpPfzg==": 1,
   //       "$LGPMBQ==": 1.000000,
-  //       "$+iJvUg==": 5,
-  //     }
+  //       "$+iJvUg==": 5
+  //     },
   //     "$9hPNxw==": 65,
   //     "$oK7HmA==": 13,
-  //     "$FCM4qQ==": 0,
+  //     "$FCM4qQ==": 0
   //   }
   //
   // Note the base64-encoded token name. Detokenization tools are necessary to
   // convert this to human-readable form.
-  void Dump(int indent_level = 0);
-  static void Dump(IntrusiveList<Group>& groups, int indent_level = 0);
-
-  // Disallow copy and assign.
-  Group(Group const&) = delete;
-  void operator=(const Group&) = delete;
+  void Dump() const;
+  static void Dump(const IntrusiveList<Group>& groups, int indent_level = 0);
 
  private:
+  void Dump(int indent_level, bool last) const;
+
   // The name of this group as a token; from PW_TOKENIZE_STRING("my_group").
   Token name_;
 
