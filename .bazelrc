@@ -201,7 +201,7 @@ common:remote_cache --remote_upload_local_results=false
 # Change it to a new value when we want to create a new cache from scratch
 # (e.g. to recover from cache poisoning). We've used the current date in
 # YYYYMMDD format in the past.
-common --remote_default_platform_properties='properties:{name:"cache-silo-key" value:"20240918"}'
+common --remote_default_exec_properties=cache-silo-key=20240918
 
 # User bazelrc file
 # =================
