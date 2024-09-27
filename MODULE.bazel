@@ -162,6 +162,11 @@ register_toolchains(
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
 
+register_toolchains(
+    "//pw_toolchain/fuchsia:all",
+    dev_dependency = True,
+)
+
 # Rust toolchains
 pw_rust = use_extension("//pw_toolchain/rust:extensions.bzl", "pw_rust")
 pw_rust.toolchain(cipd_tag = "rust_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72")

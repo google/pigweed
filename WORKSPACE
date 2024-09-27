@@ -88,12 +88,6 @@ cipd_repository(
     tag = "git_revision:0856f12bb0a9829a282bef7c26ad536ff3b1e0a5",
 )
 
-register_toolchains(
-    "@fuchsia_clang//:cc-x86_64",
-    "@fuchsia_clang//:cc-aarch64",
-    "@fuchsia_clang//:cc-riscv64",
-)
-
 # TODO: b/354268150 - googletest is in the BCR, but its MODULE.bazel doesn't
 # express its dependency on the Fuchsia SDK correctly.
 git_repository(
