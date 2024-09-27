@@ -109,12 +109,40 @@ class UartBase {
   /// @endrst
   Status SetFlowControl(bool enable) { return DoSetFlowControl(enable); }
 
+  /// Returns the number of bytes currently available for reading.
+  ///
+  /// This function checks the receive buffer to determine how many bytes of
+  /// data are ready to be read.
+  ///
+  /// @returns The number of bytes available for reading. When no data is
+  /// available or in case of an error this function returns 0.
+  size_t ConservativeReadAvailable() { return DoConservativeReadAvailable(); }
+
+  /// Empties the UART's receive buffer and discards any unread data.
+  ///
+  /// This function removes all data from the receive buffer, resetting the
+  /// buffer to an empty state. This is useful for situations where you want to
+  /// disregard any previously received data and resynchronize.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successful.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
+  Status ClearPendingReceiveBytes() { return DoClearPendingReceiveBytes(); }
+
  private:
   virtual Status DoEnable(bool enable) = 0;
   virtual Status DoSetBaudRate(uint32_t baud_rate) = 0;
   virtual Status DoSetFlowControl(bool /*enable*/) {
     return pw::Status::Unimplemented();
   }
+  virtual size_t DoConservativeReadAvailable() = 0;
+  virtual Status DoClearPendingReceiveBytes() = 0;
 };
 
 }  // namespace pw::uart

@@ -44,6 +44,8 @@ class UartNonBlockingStub : public UartNonBlocking {
     return OkStatus();
   }
   bool DoCancelWrite() override { return true; }
+  size_t DoConservativeReadAvailable() override { return 0; }
+  Status DoClearPendingReceiveBytes() override { return OkStatus(); }
 };
 
 class UartNonBlockingTest : public ::testing::Test {
