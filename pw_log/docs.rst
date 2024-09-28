@@ -247,9 +247,7 @@ source files, not headers. For example:
 .. c:macro:: PW_LOG_MODULE_NAME
 
    A string literal module name to use in logs. Log backends may attach this
-   name to log messages or use it for runtime filtering. Defaults to ``""``. The
-   ``PW_LOG_MODULE_NAME_DEFINED`` macro is set to ``1`` or ``0`` to indicate
-   whether ``PW_LOG_MODULE_NAME`` was overridden.
+   name to log messages or use it for runtime filtering. Defaults to ``""``.
 
 .. c:macro:: PW_LOG_FLAGS
 
