@@ -16,10 +16,12 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
 #include "lib/stdcompat/bit.h"
+#include "pw_assert/assert.h"
 #include "pw_assert/check.h"
 
 namespace pw::allocator::test {
@@ -32,40 +34,6 @@ constexpr bool not_reached(T&) {
   return false;
 }
 
-size_t GenerateSize(random::RandomGenerator& prng, size_t max_size) {
-  static constexpr size_t kMinSize = sizeof(TestHarness::Allocation);
-  size_t size = 0;
-  if (kMinSize < max_size) {
-    prng.GetInt(size);
-    size %= max_size - kMinSize;
-  }
-  return kMinSize + size;
-}
-
-AllocationRequest GenerateAllocationRequest(random::RandomGenerator& prng,
-                                            size_t max_size) {
-  AllocationRequest request;
-  request.size = GenerateSize(prng, max_size);
-  uint8_t lshift;
-  prng.GetInt(lshift);
-  request.alignment = AlignmentFromLShift(lshift, request.size);
-  return request;
-}
-
-DeallocationRequest GenerateDeallocationRequest(random::RandomGenerator& prng) {
-  DeallocationRequest request;
-  prng.GetInt(request.index);
-  return request;
-}
-
-ReallocationRequest GenerateReallocationRequest(random::RandomGenerator& prng,
-                                                size_t max_size) {
-  ReallocationRequest request;
-  prng.GetInt(request.index);
-  request.new_size = GenerateSize(prng, max_size);
-  return request;
-}
-
 }  // namespace
 
 size_t AlignmentFromLShift(size_t lshift, size_t size) {
@@ -76,32 +44,71 @@ size_t AlignmentFromLShift(size_t lshift, size_t size) {
   return std::max(alignment, alignof(TestHarness::Allocation));
 }
 
-void TestHarness::GenerateRequests(random::RandomGenerator& prng,
-                                   size_t max_size,
-                                   size_t num_requests) {
+void TestHarness::GenerateRequests(size_t max_size, size_t num_requests) {
   for (size_t i = 0; i < num_requests; ++i) {
-    GenerateRequest(prng, max_size);
+    GenerateRequest(max_size);
   }
   Reset();
 }
 
-void TestHarness::GenerateRequest(random::RandomGenerator& prng,
-                                  size_t max_size) {
+void TestHarness::GenerateRequest(size_t max_size) {
   Request request;
-  size_t request_type;
-  prng.GetInt(request_type);
-  switch (request_type % 3) {
-    case 0:
-      request = GenerateAllocationRequest(prng, max_size);
-      break;
-    case 1:
-      request = GenerateDeallocationRequest(prng);
-      break;
-    case 2:
-      request = GenerateReallocationRequest(prng, max_size);
-      break;
+  size_t dealloc_threshold = 40;
+  if (available_.has_value()) {
+    // This corresponds to a fixed 10% chance to reallocate and a sliding
+    // scale between:
+    // * when empty, an 80% chance to allocate and a 10% chance to deallocate
+    // * when full, a 30% chance to allocate and a 60% chance to deallocate
+    dealloc_threshold = 80 - (allocated_ * 50) / available_.value();
   }
-  HandleRequest(request);
+  do {
+    size_t request_type;
+    prng_->GetInt(request_type);
+    request_type %= 100;
+    if (request_type < dealloc_threshold) {
+      request = GenerateAllocationRequest(max_size);
+    } else if (request_type < 90) {
+      request = GenerateDeallocationRequest();
+    } else {
+      request = GenerateReallocationRequest(max_size);
+    }
+  } while (!HandleRequest(request));
+}
+
+AllocationRequest TestHarness::GenerateAllocationRequest(size_t max_size) {
+  AllocationRequest request;
+  request.size = GenerateSize(max_size);
+  uint8_t lshift;
+  prng_->GetInt(lshift);
+  request.alignment = AlignmentFromLShift(lshift, request.size);
+  return request;
+}
+
+DeallocationRequest TestHarness::GenerateDeallocationRequest() {
+  DeallocationRequest request;
+  prng_->GetInt(request.index);
+  return request;
+}
+
+ReallocationRequest TestHarness::GenerateReallocationRequest(size_t max_size) {
+  ReallocationRequest request;
+  prng_->GetInt(request.index);
+  request.new_size = GenerateSize(max_size);
+  return request;
+}
+
+size_t TestHarness::GenerateSize(size_t max_size) {
+  static constexpr size_t kMinSize = sizeof(TestHarness::Allocation);
+  size_t size = 0;
+  if (max_size_.has_value()) {
+    max_size = std::min(max_size, max_size_.value());
+  }
+  if (max_size <= kMinSize) {
+    return kMinSize;
+  }
+  prng_->GetInt(size);
+  size %= max_size - kMinSize;
+  return kMinSize + size;
 }
 
 void TestHarness::HandleRequests(const Vector<Request>& requests) {
@@ -111,36 +118,47 @@ void TestHarness::HandleRequests(const Vector<Request>& requests) {
   Reset();
 }
 
-void TestHarness::HandleRequest(const Request& request) {
+bool TestHarness::HandleRequest(const Request& request) {
   if (allocator_ == nullptr) {
     allocator_ = Init();
     PW_DCHECK_NOTNULL(allocator_);
   }
-  std::visit(
+  return std::visit(
       [this](auto&& r) {
         using T = std::decay_t<decltype(r)>;
 
         if constexpr (std::is_same_v<T, AllocationRequest>) {
-          Layout layout(std::max(r.size, sizeof(Allocation)), r.alignment);
+          size_t size = std::max(r.size, sizeof(Allocation));
+          Layout layout(size, r.alignment);
+          BeforeAllocate(layout);
           void* ptr = allocator_->Allocate(layout);
+          AfterAllocate(ptr);
           if (ptr != nullptr) {
             AddAllocation(ptr, layout);
+            max_size_.reset();
+          } else {
+            max_size_ = std::max(layout.size() / 2, size_t(1));
           }
 
         } else if constexpr (std::is_same_v<T, DeallocationRequest>) {
           Allocation* old = RemoveAllocation(r.index);
           if (old == nullptr) {
-            return;
+            return false;
           }
+          BeforeDeallocate(old);
           allocator_->Deallocate(old);
+          AfterDeallocate();
 
         } else if constexpr (std::is_same_v<T, ReallocationRequest>) {
           Allocation* old = RemoveAllocation(r.index);
           if (old == nullptr) {
-            return;
+            return false;
           }
-          Layout new_layout = Layout(r.new_size, old->layout.alignment());
+          size_t new_size = std::max(r.new_size, sizeof(Allocation));
+          Layout new_layout = Layout(new_size, old->layout.alignment());
+          BeforeReallocate(new_layout);
           void* new_ptr = allocator_->Reallocate(old, new_layout);
+          AfterReallocate(new_ptr);
           if (new_ptr == nullptr) {
             AddAllocation(old, old->layout);
           } else {
@@ -149,6 +167,7 @@ void TestHarness::HandleRequest(const Request& request) {
         } else {
           static_assert(not_reached(r), "unsupported request type!");
         }
+        return true;
       },
       request);
 }
@@ -162,15 +181,12 @@ void TestHarness::Reset() {
   }
 }
 
-TestHarness::Allocation::Allocation(size_t index_, Layout layout_)
-    : IntrusiveList<Allocation>::Item(), index(index_), layout(layout_) {}
-
 void TestHarness::AddAllocation(void* ptr, Layout layout) {
   PW_ASSERT(layout.size() >= sizeof(Allocation));
   auto* bytes = static_cast<std::byte*>(ptr);
-  ++num_requests_;
-  auto* allocation = ::new (bytes) Allocation(num_requests_, layout);
+  auto* allocation = ::new (bytes) Allocation(layout);
   allocations_.push_back(*allocation);
+  allocated_ += layout.size();
   ++num_allocations_;
 }
 
@@ -180,11 +196,13 @@ TestHarness::Allocation* TestHarness::RemoveAllocation(size_t index) {
     return nullptr;
   }
   index %= num_allocations_;
-  --num_allocations_;
   auto prev = allocations_.before_begin();
   for (auto& allocation : allocations_) {
     if (index == 0) {
+      PW_ASSERT(allocated_ >= allocation.layout.size());
+      allocated_ -= allocation.layout.size();
       allocations_.erase_after(prev);
+      --num_allocations_;
       return &allocation;
     }
     --index;

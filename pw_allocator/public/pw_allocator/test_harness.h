@@ -14,12 +14,13 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <variant>
 
 #include "pw_allocator/allocator.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
-#include "pw_random/random.h"
+#include "pw_random/xor_shift.h"
 
 namespace pw::allocator::test {
 
@@ -81,29 +82,32 @@ class TestHarness {
  public:
   /// Associates a pointer to memory with the `Layout` used to allocate it.
   struct Allocation : public IntrusiveList<Allocation>::Item {
-    size_t index;
     Layout layout;
 
-    Allocation(size_t index_, Layout layout_);
+    explicit Allocation(Layout layout_) : layout(layout_) {}
   };
 
   virtual ~TestHarness() = default;
+
+  size_t num_allocations() const { return num_allocations_; }
+  size_t allocated() const { return allocated_; }
+
+  void set_prng_seed(uint64_t seed) { prng_ = random::XorShiftStarRng64(seed); }
+  void set_available(size_t available) { available_ = available; }
 
   /// Generates and handles a sequence of allocation requests.
   ///
   /// This method will use the given PRNG to generate `num_requests` allocation
   /// requests and pass each in turn to `HandleRequest`. It will call `Reset`
   /// before returning.
-  void GenerateRequests(random::RandomGenerator& prng,
-                        size_t max_size,
-                        size_t num_requests);
+  void GenerateRequests(size_t max_size, size_t num_requests);
 
   /// Generate and handle an allocation requests.
   ///
   /// This method will use the given PRNG to generate an allocation request
   /// and pass it to `HandleRequest`. Callers *MUST* call `Reset` when no more
   /// requests remain to be generated.
-  void GenerateRequest(random::RandomGenerator& prng, size_t max_size);
+  void GenerateRequest(size_t max_size);
 
   /// Handles a sequence of allocation requests.
   ///
@@ -127,7 +131,13 @@ class TestHarness {
   /// If the request is a reallocation request:
   /// * If the vector of previous allocations is empty, reallocates a `nullptr`.
   /// * Otherwise, removes a pointer from the vector and reallocates it.
-  void HandleRequest(const Request& request);
+  ///
+  /// Returns whether the request was handled. This is different from whether
+  /// the request succeeded, e.g. a DeallocationRequest cannot be handled when
+  /// there are no current allocations and will return false. By contrast, an
+  /// AllocationRequest may be handled, but fail due to insufficient memory, and
+  /// will return true.
+  bool HandleRequest(const Request& request);
 
   /// Deallocates any pointers stored in the vector of allocated pointers.
   void Reset();
@@ -135,13 +145,28 @@ class TestHarness {
  private:
   virtual Allocator* Init() = 0;
 
+  /// Generate requests. `set_prng_seed` must have been called first.
+  AllocationRequest GenerateAllocationRequest(size_t max_size);
+  DeallocationRequest GenerateDeallocationRequest();
+  ReallocationRequest GenerateReallocationRequest(size_t max_size);
+  size_t GenerateSize(size_t max_size);
+
+  /// Derived classes may add callbacks that are invoked before and after each
+  /// de/re/allocation to record additional data about the allocator.
+  virtual void BeforeAllocate(const Layout&) {}
+  virtual void AfterAllocate(const void*) {}
+  virtual void BeforeReallocate(const Layout&) {}
+  virtual void AfterReallocate(const void*) {}
+  virtual void BeforeDeallocate(const void*) {}
+  virtual void AfterDeallocate() {}
+
   /// Adds a pointer to the vector of allocated pointers.
   ///
   /// The `ptr` must not be null, and the vector of allocated pointers must not
   /// be full. To aid in detecting memory corruptions and in debugging, the
   /// pointed-at memory will be filled with as much of the following sequence as
   /// will fit:
-  /// * The request number.
+  /// * The request number.random::RandomGenerator& prng
   /// * The request size.
   /// * The byte "0x5a", repeating.
   void AddAllocation(void* ptr, Layout layout);
@@ -157,11 +182,23 @@ class TestHarness {
   /// A list of allocated pointers.
   IntrusiveList<Allocation> allocations_;
 
-  /// The number of requests this object has handled.
-  size_t num_requests_ = 0;
-
   /// The number of outstanding active allocation by this object.
   size_t num_allocations_ = 0;
+
+  /// The total memory allocated.
+  size_t allocated_ = 0;
+
+  /// An optional amount of memory available. If set, this is used to adjust the
+  /// likelihood of what requests are generated based on how much of the
+  /// available memory has been used.
+  std::optional<size_t> available_;
+
+  /// Pseudorandom number generator.
+  std::optional<random::XorShiftStarRng64> prng_;
+
+  /// If an allocation fails, the next generated request is limited to half the
+  /// previous request's size.
+  std::optional<size_t> max_size_;
 };
 
 }  // namespace pw::allocator::test

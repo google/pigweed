@@ -18,15 +18,14 @@
 #include "examples/custom_allocator_test_harness.h"
 #include "pw_perf_test/perf_test.h"
 #include "pw_perf_test/state.h"
-#include "pw_random/xor_shift.h"
 
 namespace examples {
 
 void PerformAllocations(pw::perf_test::State& state, uint64_t seed) {
   static CustomAllocatorTestHarness harness;
-  pw::random::XorShiftStarRng64 prng(seed);
+  harness.set_prng_seed(seed);
   while (state.KeepRunning()) {
-    harness.GenerateRequest(prng, CustomAllocatorTestHarness::kCapacity);
+    harness.GenerateRequest(CustomAllocatorTestHarness::kCapacity);
   }
   harness.Reset();
 }

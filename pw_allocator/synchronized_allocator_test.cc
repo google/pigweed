@@ -21,7 +21,6 @@
 #include "pw_allocator/test_harness.h"
 #include "pw_allocator/testing.h"
 #include "pw_containers/vector.h"
-#include "pw_random/xor_shift.h"
 #include "pw_status/status_with_size.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/interrupt_spin_lock.h"
@@ -117,8 +116,9 @@ class Background final {
     BackgroundThreadCore(pw::Allocator& allocator,
                          uint64_t seed,
                          size_t iterations)
-        : prng_(seed), iterations_(iterations) {
+        : iterations_(iterations) {
       test_harness_.allocator = &allocator;
+      test_harness_.set_prng_seed(seed);
     }
 
     void Stop() { semaphore_.release(); }
@@ -131,14 +131,13 @@ class Background final {
    private:
     void Run() override {
       for (size_t i = 0; i < iterations_ && !semaphore_.try_acquire(); ++i) {
-        test_harness_.GenerateRequests(prng_, kMaxSize, kBackgroundRequests);
+        test_harness_.GenerateRequests(kMaxSize, kBackgroundRequests);
         pw::this_thread::yield();
       }
       semaphore_.release();
     }
 
     TestHarness test_harness_;
-    pw::random::XorShiftStarRng64 prng_;
     pw::sync::BinarySemaphore semaphore_;
     size_t iterations_;
   } background_;
