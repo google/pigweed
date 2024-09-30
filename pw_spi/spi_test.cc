@@ -23,10 +23,12 @@
 namespace pw::spi {
 namespace {
 
-const pw::spi::Config kConfig = {.polarity = ClockPolarity::kActiveHigh,
-                                 .phase = ClockPhase::kFallingEdge,
-                                 .bits_per_word = BitsPerWord(8),
-                                 .bit_order = BitOrder::kMsbFirst};
+constexpr pw::spi::Config kConfig = {
+    .polarity = ClockPolarity::kActiveHigh,
+    .phase = ClockPhase::kFallingEdge,
+    .bits_per_word = BitsPerWord(8),
+    .bit_order = BitOrder::kMsbFirst,
+};
 
 class SpiTestDevice : public ::testing::Test {
  public:
@@ -90,6 +92,31 @@ TEST_F(SpiTestDevice, CompilationSucceeds) {
 
 // Simple test ensuring the SPI Responder HAL compiles
 TEST_F(SpiResponderTestDevice, CompilationSucceeds) { EXPECT_TRUE(true); }
+
+// Config tests
+static_assert(kConfig == kConfig);
+static_assert(!(kConfig != kConfig));
+
+TEST(Config, Equals) {
+  Config lhs = kConfig;
+  Config rhs = kConfig;
+  EXPECT_EQ(lhs, rhs);
+  EXPECT_TRUE(lhs == rhs);
+  EXPECT_FALSE(lhs != rhs);
+}
+
+TEST(Config, NotEquals) {
+  Config lhs = kConfig;
+  Config rhs = {
+      .polarity = ClockPolarity::kActiveLow,  // different
+      .phase = ClockPhase::kFallingEdge,
+      .bits_per_word = BitsPerWord(8),
+      .bit_order = BitOrder::kMsbFirst,
+  };
+  EXPECT_NE(lhs, rhs);
+  EXPECT_FALSE(lhs == rhs);
+  EXPECT_TRUE(lhs != rhs);
+}
 
 }  // namespace
 }  // namespace pw::spi

@@ -54,7 +54,7 @@ class BitsPerWord {
     PW_ASSERT(data_bits_ >= 3 && data_bits_ <= 32);
   }
 
-  uint8_t operator()() const { return data_bits_; }
+  constexpr uint8_t operator()() const { return data_bits_; }
 
  private:
   uint8_t data_bits_;
@@ -68,10 +68,12 @@ struct Config {
   BitsPerWord bits_per_word;
   BitOrder bit_order;
 
-  bool operator==(const Config& rhs) const {
+  constexpr bool operator==(const Config& rhs) const {
     return polarity == rhs.polarity && phase == rhs.phase &&
            bits_per_word() == rhs.bits_per_word() && bit_order == rhs.bit_order;
   }
+
+  constexpr bool operator!=(const Config& rhs) const { return !(*this == rhs); }
 };
 static_assert(sizeof(Config) == sizeof(uint32_t),
               "Ensure that the config struct fits in 32-bits");
