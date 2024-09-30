@@ -50,7 +50,11 @@ group("builtins") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "bazel.rst",
+    "docs.rst",
+    "gn.rst",
+  ]
 }
 
 pw_source_set("no_destructor") {
