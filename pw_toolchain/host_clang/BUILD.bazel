@@ -121,7 +121,7 @@ config_setting(
 
 cc_feature(
     name = "asan_feature",
-    args = ["//pw_toolchain/args:asan"],
+    args = ["//pw_toolchain/cc/args:asan"],
     feature_name = "asan",
     requires_any_of = [":asan_constraint"],
 )
@@ -147,7 +147,7 @@ config_setting(
 
 cc_feature(
     name = "ubsan_feature",
-    args = ["//pw_toolchain/args:ubsan"],
+    args = ["//pw_toolchain/cc/args:ubsan"],
     feature_name = "ubsan",
     requires_any_of = [":ubsan_constraint"],
 )
@@ -173,7 +173,7 @@ config_setting(
 
 cc_feature(
     name = "tsan_feature",
-    args = ["//pw_toolchain/args:tsan"],
+    args = ["//pw_toolchain/cc/args:tsan"],
     feature_name = "tsan",
     requires_any_of = [":tsan_constraint"],
 )
@@ -199,7 +199,7 @@ config_setting(
 
 cc_feature(
     name = "fuzztest_feature",
-    args = ["//pw_toolchain/args:fuzztest"],
+    args = ["//pw_toolchain/cc/args:fuzztest"],
     feature_name = "fuzztest",
 )
 
@@ -277,14 +277,14 @@ cc_toolchain(
     }) + [
         ":thread_safety_warnings",
         ":link_with_lld",
-        "//pw_toolchain/args:debugging",
-        "//pw_toolchain/args:reduced_size",
-        "//pw_toolchain/args:no_canonical_prefixes",
-        "//pw_toolchain/args:no_rtti",
-        "//pw_toolchain/args:wno_register",
-        "//pw_toolchain/args:wnon_virtual_dtor",
-        "//pw_toolchain/args:common_warnings",
-        "//pw_toolchain/args:color_diagnostics",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
         # Must go after the general warnings that are enabled.
         ":silence_cgo_warnings",
     ] + select({
@@ -306,10 +306,10 @@ cc_toolchain(
         ":tsan_enabled": [":tsan_feature"],
         "//conditions:default": [],
     }) + select({
-        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/args:c++17_feature"],
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
         "//conditions:default": [],
     }) + select({
-        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/args:c++20_feature"],
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
         "//conditions:default": [],
     }) + select({
         ":fuzztest_enabled": [":fuzztest_feature"],
@@ -323,8 +323,8 @@ cc_toolchain(
         ":verbose_compiler_output",
         ":rules_rust_unsupported_feature",
         ":supports_pic",
-        "//pw_toolchain/args:c++17_feature",
-        "//pw_toolchain/args:c++20_feature",
+        "//pw_toolchain/cc/args:c++17_feature",
+        "//pw_toolchain/cc/args:c++20_feature",
     ],
     tool_map = "@llvm_toolchain//:all_tools",
 )
