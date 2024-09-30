@@ -22,12 +22,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
-alias(
-    name = "facade",
-    actual = ":pw_sys_io.facade",
-)
-
 pw_facade(
     name = "pw_sys_io",
     hdrs = ["public/pw_sys_io/sys_io.h"],
@@ -53,7 +47,7 @@ cc_library(
     name = "default_putget_bytes",
     srcs = ["sys_io.cc"],
     deps = [
-        ":facade",
+        ":pw_sys_io.facade",
         "//pw_span",
         "//pw_status",
     ],
