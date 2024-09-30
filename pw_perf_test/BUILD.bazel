@@ -113,12 +113,6 @@ cc_library(
     visibility = ["//visibility:private"],
 )
 
-# TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
-alias(
-    name = "timer_interface_facade",
-    actual = "timer.facade",
-)
-
 pw_facade(
     name = "timer",
     hdrs = [
