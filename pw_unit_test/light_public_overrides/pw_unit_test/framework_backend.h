@@ -813,13 +813,13 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
   if (!(expectation))                \
   ::pw::unit_test::internal::FailureMessageAdapter()
 
-#define _PW_TEST_BOOL(expr, value)                               \
-  ::pw::unit_test::internal::Framework::Get().CurrentTestExpect( \
-      [](bool lhs, bool rhs) { return lhs == rhs; },             \
-      static_cast<bool>(expr),                                   \
-      value,                                                     \
-      "is",                                                      \
-      #expr " is " #value,                                       \
+#define _PW_TEST_BOOL(expr, value)                                   \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestExpect(     \
+      [](bool _pw_lhs, bool _pw_rhs) { return _pw_lhs == _pw_rhs; }, \
+      static_cast<bool>(expr),                                       \
+      value,                                                         \
+      "is",                                                          \
+      #expr " is " #value,                                           \
       __LINE__)
 
 #define _PW_TEST_OP(lhs, rhs, op)                                \
