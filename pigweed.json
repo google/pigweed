@@ -134,6 +134,11 @@
       "programs": {
         "default": [
           [
+            "mod",
+            "deps",
+            "--lockfile_mode=error"
+          ],
+          [
             "build",
             "//..."
           ],
