@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pigweed Blog</title>
+    <link>https://pigweed.dev/docs/blog/</link>
+    <description>
+      An informal blog where Pigweed teammates, contributors, and users can
+      share ideas and projects related to Pigweed.
+    </description>
+    <language>en-us</language>
+    <pubDate>Mon, 30 Sep 2024 13:47:00 -0700</pubDate>
+    <atom:link href="https://pigweed.dev/docs/blog/rss.xml" rel="self"
+               type="application/rss+xml"/>
+    <item>
+      <title>Fixed-point arithmetic as a replacement for soft floats</title>
+      <link>https://pigweed.dev/docs/blog/04-fixed-point.html</link>
+      <description>
+        We've observed a ~2x speed improvement in classification algorithms
+        and a small decrease in binary size using fixed-point without
+        sacrificing correctness.
+      </description>
+      <pubDate>Mon, 30 Sep 2024 13:47:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/04-fixed-point.html</guid>
+    </item>
+    <item>
+      <title>Pigweed SDK launch</title>
+      <link>https://pigweed.dev/docs/blog/03-pigweed-sdk.html</link>
+      <description>
+        The Pigweed team is excited to announce the launch of the first
+        preview release of the Pigweed SDK with official hardware support
+        for Raspberry Pi’s newest microprocessor products, the RP2350 and
+        Pico 2!
+      </description>
+      <pubDate>Thu, 8 Aug 2024 08:16:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/03-pigweed-sdk.html</guid>
+    </item>
+    <item>
+      <title>Feature flags in Bazel builds</title>
+      <link>https://pigweed.dev/docs/blog/02-bazel-feature-flags.html</link>
+      <description>
+        Let’s say you’re migrating your build system to Bazel. Your project
+        heavily relies on preprocessor defines to configure its code. In your
+        source files, you use these preprocessor variables to conditionally
+        compile some sections, via #ifdef. When building the same code for
+        different final product configurations, you want to set different
+        defines. How do you model this in Bazel?
+      </description>
+      <pubDate>Fri, 31 May 2024 15:54:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/02-bazel-feature-flags.html</guid>
+    </item>
+    <item>
+      <title>Kudzu</title>
+      <link>https://pigweed.dev/docs/blog/01-kudzu.html</link>
+      <description>
+        Pigweed's whimsical take on a development board.
+      </description>
+      <pubDate>Thu, 12 Oct 2023 15:14:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/01-kudzu.html</guid>
+    </item>
+  </channel>
+</rss>

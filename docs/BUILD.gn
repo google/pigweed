@@ -47,6 +47,7 @@ pw_doc_group("core_docs") {
     "blog/03-pigweed-sdk.rst",
     "blog/04-fixed-point.rst",
     "blog/index.rst",
+    "blog/rss.xml",
     "code_of_conduct.rst",
     "code_reviews.rst",
     "community/index.rst",
