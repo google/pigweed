@@ -308,6 +308,39 @@ useful when debugging embedded firmware.
      dump_out = "main.dump",
    )
 
+pw_copy_and_patch_file
+----------------------
+Provides the ability to patch a file as part of the build.
+
+The source file will not be patched in place, but instead copied before
+patching. The output of this target will be the patched file.
+
+Arguments
+^^^^^^^^^
+- ``name``: The name of the target.
+
+- ``source``: The source file to be patched.
+
+- ``out``: The output file containing the patched contents.
+
+- ``patch_file``: The patch file.
+
+Example
+^^^^^^^
+
+To apply the patch `changes.patch` to the file `data/file.txt` which is located
+in the bazel dependency `@external-sdk//`.
+
+.. code-block::
+
+   pw_copy_and_patch_file(
+       name = "apply_patch",
+       src = "@external-sdk//data/file.txt",
+       out = "data/patched_file.txt",
+       patch_file = "changes.patch",
+   )
+
+
 Platform compatibility rules
 ----------------------------
 Macros and rules related to platform compatibility are provided in

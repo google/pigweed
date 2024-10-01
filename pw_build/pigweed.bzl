@@ -13,6 +13,7 @@
 # the License.
 """Pigweed build environment for bazel."""
 
+load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
 load(
@@ -474,3 +475,42 @@ pw_linker_script = rule(
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
 )
+
+def pw_copy_and_patch_file(*, name, src, out, patch_file, **kwargs):
+    """Applies a patch to a copy of the file.
+
+    The source file will not be patched in place, but instead copied before
+    patching.  The output of this target will be the patched file.
+
+    Args:
+      name: The name of the target.
+      src: The source file to be patched.
+      out: The output file containing the patched contents. This value
+           can not be the same as the src value.
+      patch_file: The patch file.
+      **kwargs: Passed to run_binary.
+    """
+    _args = [
+        "--patch-file",
+        "$(execpath " + patch_file + ")",
+        "--src",
+        "$(execpath " + src + ")",
+        "--dst",
+        "$(execpath " + out + ")",
+    ]
+
+    # If src is an external repo, set the root
+    # of the external repo path.
+    if Label(src).workspace_root:
+        root = Label(src).workspace_root
+        _args.append("--root")
+        _args.append(root)
+
+    run_binary(
+        name = name,
+        srcs = [src, patch_file],
+        outs = [out],
+        args = _args,
+        tool = str(Label("//pw_build/py:copy_and_patch")),
+        **kwargs
+    )

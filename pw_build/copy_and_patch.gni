@@ -1,0 +1,62 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("python_action.gni")
+import("target_types.gni")
+
+# Applies a patch to a copy of file.  The source file will not be patched in place,
+# but instead copied before patching.
+# The output of this target will be the patched file.
+#
+# Args:
+#   source: (required) The source file to be patched.
+#   out: (required) The output file containing the patched contents. This value
+#                   can not be the same as the source value.
+#   patch_file: (required) The patch file.
+#   root: (optional) The root directory for applying the path.
+
+template("pw_copy_and_patch_file") {
+  assert(defined(invoker.source), "'source' must be provided")
+  assert(defined(invoker.out), "'out' must be provided")
+  assert(defined(invoker.patch_file), "'patch_file' must be provided")
+
+  _src_file = rebase_path(invoker.source, root_build_dir)
+  _out_file = "${target_gen_dir}/${invoker.out}"
+  _out_relative = rebase_path(_out_file, root_build_dir)
+  _patch_file = rebase_path(invoker.patch_file, root_build_dir)
+
+  _args = [
+    "--patch-file=${_patch_file}",
+    "--src=${_src_file}",
+    "--dst=${_out_relative}",
+  ]
+
+  if (defined(invoker.root)) {
+    _args += [
+      "--root",
+      rebase_path(invoker.root, root_build_dir),
+    ]
+  }
+
+  pw_python_action("$target_name") {
+    module = "pw_build.copy_and_patch"
+    inputs = [
+      invoker.patch_file,
+      invoker.source,
+    ]
+    args = _args
+    outputs = [ _out_file ]
+    python_deps = [ "$dir_pw_build/py" ]
+  }
+}

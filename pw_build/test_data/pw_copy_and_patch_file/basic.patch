@@ -1,0 +1,8 @@
+diff --git a/pw_build/test_data/pw_copy_and_patch_file/basic.txt b/pw_build/test_data/pw_copy_and_patch_file/basic.txt
+index 9b834f04d..eeac2c56e 100644
+--- a/pw_build/test_data/pw_copy_and_patch_file/basic.txt
++++ b/pw_build/test_data/pw_copy_and_patch_file/basic.txt
+@@ -1,2 +1,3 @@
+ aaa
++bb
+ c
