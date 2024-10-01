@@ -23,17 +23,14 @@
 /// Example:
 ///
 /// @code{.cpp}
-///    void WriteThreadRoutine(void* arg) {
-///      auto *writer = static_cast<MpscWriter *>(arg);
-///      ConstByteSpan data = GenerateSomeData();
-///      Status status = writer->Write(data);
-///      ...
-///    }
 ///    ...
 ///    MpscReader reader;
 ///    MpscWriter writer;
 ///    CreateMpscStream(reader, writer);
-///    Thread t(MakeThreadOptions(), WriteThreadRoutine, &writer);
+///    pw::Thread t(MakeThreadOptions(), [&writer] {
+///        Status status = writer.Write(GenerateSomeData());
+///        ...
+///    });
 ///    std::byte buffer[kBufSize];
 ///    if (auto status = reader.Read(ByteSpan(buffer)); status.ok()) {
 ///      ProcessSomeData(buffer);

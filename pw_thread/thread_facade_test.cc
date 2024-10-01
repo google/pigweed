@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_preprocessor/compiler.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/id.h"
 #include "pw_thread/non_portable_test_thread_options.h"
@@ -49,21 +48,6 @@ TEST(Thread, JoinWaitsForLambdaCompletion) {
   EXPECT_TRUE(thread_ran.try_acquire());
 }
 
-static void ReleaseBinarySemaphore(void* arg) {
-  static_cast<BinarySemaphore*>(arg)->release();
-}
-
-TEST(Thread, JoinWaitsForDeprecatedFunctionPointerCompletion) {
-  BinarySemaphore thread_ran;
-  PW_MODIFY_DIAGNOSTICS_PUSH();
-  PW_MODIFY_DIAGNOSTIC(ignored, "-Wdeprecated-declarations");
-  Thread thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran);
-  PW_MODIFY_DIAGNOSTICS_POP();
-  EXPECT_TRUE(thread.joinable());
-  thread.join();
-  EXPECT_EQ(thread.get_id(), Id());
-  EXPECT_TRUE(thread_ran.try_acquire());
-}
 #endif  // PW_THREAD_JOINING_ENABLED
 
 TEST(Thread, DetachAllowsThreadToRunAfterExitingScope) {
