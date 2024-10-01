@@ -14,6 +14,8 @@
 
 #include "pw_allocator/fragmentation.h"
 
+#include <cmath>
+
 namespace pw::allocator {
 namespace {
 
@@ -38,6 +40,15 @@ void Fragmentation::AddFragment(size_t size) {
   hi += AddTo(sum_of_squares.lo, lo);
   sum_of_squares.hi += hi;
   sum += size;
+}
+
+float CalculateFragmentation(const Fragmentation& fragmentation) {
+  float sum_of_squares = fragmentation.sum_of_squares.hi;
+  if (sum_of_squares != 0) {
+    sum_of_squares *= std::pow(2.f, sizeof(size_t) * 8.f);
+  }
+  sum_of_squares += fragmentation.sum_of_squares.lo;
+  return 1.f - (std::sqrt(sum_of_squares) / fragmentation.sum);
 }
 
 }  // namespace pw::allocator

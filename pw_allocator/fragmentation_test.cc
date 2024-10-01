@@ -14,6 +14,8 @@
 
 #include "pw_allocator/fragmentation.h"
 
+#include <cstddef>
+
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -39,6 +41,18 @@ TEST(FragmentationTest, HandlesOverflow) {
   EXPECT_EQ(fragmentation.sum_of_squares.hi, 4U);
   EXPECT_EQ(fragmentation.sum_of_squares.lo, 0U);
   EXPECT_EQ(fragmentation.sum, 4 * kHalfWord);
+}
+
+TEST(FragmentationTest, CalculateFragmentation) {
+  // Add `n^2` fragments of size `n`, so that the sum of squares is just `n^4`.
+  // Then the root is `n^2`, the sum is `n^3`, and the result is `1 - 1/n`.
+  for (size_t n = 2; n < 20; ++n) {
+    Fragmentation fragmentation;
+    for (size_t i = 0; i < n * n; ++i) {
+      fragmentation.AddFragment(n);
+    }
+    EXPECT_FLOAT_EQ(CalculateFragmentation(fragmentation), 1.f - (1.f / n));
+  }
 }
 
 }  // namespace

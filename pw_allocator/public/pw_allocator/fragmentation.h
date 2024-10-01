@@ -56,4 +56,10 @@ struct Fragmentation {
 
 // inclusive-language: enable
 
+/// Perform the final steps of calculating the fragmentation metric.
+///
+/// This step includes manipulating floating point numbers, and as such it may
+/// be desirable to avoid performing this step on device.
+float CalculateFragmentation(const Fragmentation& fragmentation);
+
 }  // namespace pw::allocator
