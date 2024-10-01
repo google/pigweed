@@ -52,7 +52,7 @@ pw_seed("0102") {
 pw_seed("0103") {
   changelist = 133971
   title = "pw_protobuf: Past, present, and future"
-  status = "Open for Comments"
+  status = "Last Call"
   author = "Alexei Frolov"
   facilitator = "Armando Montanez"
 }
