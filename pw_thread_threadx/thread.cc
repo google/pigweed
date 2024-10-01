@@ -160,18 +160,6 @@ Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
   native_type_->CreateThread(options, std::move(entry));
 }
 
-Thread::Thread(const thread::Options& facade_options,
-               ThreadRoutine entry,
-               void* arg)
-    : native_type_(nullptr) {
-  // Cast the generic facade options to the backend specific option of which
-  // only one type can exist at compile time.
-  auto options = static_cast<const threadx::Options&>(facade_options);
-  PW_DCHECK_NOTNULL(options.context(), "The Context is not optional");
-  native_type_ = options.context();
-  native_type_->CreateThread(options, DeprecatedFnPtrAndArg{entry, arg});
-}
-
 void Thread::detach() {
   PW_CHECK(joinable());
 

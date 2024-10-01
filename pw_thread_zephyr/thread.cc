@@ -86,15 +86,6 @@ Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
   Context::CreateThread(options, std::move(entry), native_type_);
 }
 
-Thread::Thread(const thread::Options& facade_options,
-               ThreadRoutine entry,
-               void* arg)
-    : native_type_(nullptr) {
-  auto options = static_cast<const zephyr::Options&>(facade_options);
-  Context::CreateThread(
-      options, DeprecatedFnPtrAndArg{entry, arg}, native_type_);
-}
-
 void Thread::detach() {
   PW_CHECK(joinable());
 
