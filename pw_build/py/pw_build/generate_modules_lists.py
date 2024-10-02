@@ -175,11 +175,31 @@ def _generate_modules_gni(
     yield '}'
 
 
+def _ignore_module_entry(entry: Path):
+    # If there are only empty directories we ignore the "module".
+    if entry.is_dir():
+        return True
+
+    # Likewise, ignore compiled Python files.
+    if entry.name.endswith('.pyc'):
+        return True
+
+    return False
+
+
 def _missing_modules(root: Path, modules: Sequence[str]) -> Sequence[str]:
+    found_modules = set()
+    for path in root.glob('pw_*'):
+        if not path.is_dir():
+            continue
+
+        for entry in path.rglob('*'):
+            if not _ignore_module_entry(entry):
+                found_modules.add(path)
+                break
+
     return sorted(
-        frozenset(
-            str(p.relative_to(root)) for p in root.glob('pw_*') if p.is_dir()
-        )
+        frozenset(str(p.relative_to(root)) for p in found_modules)
         - frozenset(modules)
     )
 
