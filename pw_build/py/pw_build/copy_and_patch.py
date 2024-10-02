@@ -26,6 +26,7 @@ import tempfile
 
 import patch  # type: ignore
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 _LOG = logging.getLogger(__name__)
 
 
@@ -122,5 +123,4 @@ def copy_and_apply_patch(
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
     sys.exit(copy_and_apply_patch(**vars(_parse_args())))
