@@ -30,6 +30,9 @@ cc_library(
         ],
         exclude = ["include/psa/**"],
     ),
+    copts = [
+        "-Wno-error=implicit-function-declaration",
+    ],
     includes = ["include/"],
     deps = [
         ":mbedtls_config",

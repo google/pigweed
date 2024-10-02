@@ -231,6 +231,7 @@ if (dir_pw_third_party_mbedtls != "") {
     cflags = [
       "-Wno-error=cast-qual",
       "-Wno-error=redundant-decls",
+      "-Wno-error=implicit-function-declaration",
       "-w",
     ]
     config_header_file = rebase_path(pw_third_party_mbedtls_CONFIG_HEADER,
