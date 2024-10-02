@@ -177,7 +177,8 @@ pw_py_binary(
 genrule(
     name = "build_time_header",
     outs = ["build_time.h"],
-    cmd = "$(location :generate_build_time_header) $@",
+    cmd = "$(location :generate_build_time_header) --bazel $@",
+    stamp = True,
     tools = [":generate_build_time_header"],
 )
 

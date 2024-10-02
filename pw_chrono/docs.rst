@@ -578,8 +578,8 @@ Example in C++
 ------------------
 libc time wrappers
 ------------------
-The `gettimeofday <https://pubs.opengroup.org/onlinepubs/9699919799/functions/gettimeofday.html>`
-and `time <https://pubs.opengroup.org/onlinepubs/9699919799/functions/time.html>`
+The `gettimeofday <https://pubs.opengroup.org/onlinepubs/9699919799/functions/gettimeofday.html>`__
+and `time <https://pubs.opengroup.org/onlinepubs/9699919799/functions/time.html>`__
 POSIX functions are defined to return the current time since the Epoch.
 The default ``pw_toolchain/arg_gcc:newlib_os_interface_stubs`` stub for
 ``gettimeofday`` will cause a linker error if any code tried to use this
@@ -598,6 +598,12 @@ general time querying and are only intended to provide compatibility.
 Wrap ``gettimeofday`` and ``time`` with an implementation that returns a static
 time value at which the library was built. Use this option if you need these
 functions to return a known value greater than some point in the past.
+
+.. note::
+   When building with Bazel, use the `--stamp
+   <https://bazel.build/docs/user-manual#stamp>`__ flag when building release
+   binaries to ensure the build time reflects the actual time the build is
+   executed, as opposed to a cached value.
 
 ``pw_chrono:wrap_time_system_clock``
 ====================================
