@@ -27,7 +27,6 @@ pw_python_package("py") {
     "pw_build/bazel_to_gn.py",
     "pw_build/build_recipe.py",
     "pw_build/collect_wheels.py",
-    "pw_build/copy_and_patch.py",
     "pw_build/copy_from_cipd.py",
     "pw_build/create_gn_venv.py",
     "pw_build/create_python_tree.py",
