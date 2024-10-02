@@ -66,9 +66,7 @@ def main() -> int:
         # We're not being invoked from Bazel.
         time_stamp = int(datetime.now().timestamp())
 
-    print(time_stamp)
     with open(args.out, "w") as header:
-        print(args.out)
         header.write(HEADER)
 
         # Add a comment in the generated header to show readable build time
