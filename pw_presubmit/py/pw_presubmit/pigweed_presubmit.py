@@ -1282,12 +1282,16 @@ def _valid_capitalization(word: str) -> bool:
     )  # Matches an executable (clangd)
 
 
-def commit_message_format(_: PresubmitContext):
+def commit_message_format(ctx: PresubmitContext):
     """Checks that the top commit's message is correctly formatted."""
     if git_repo.commit_author().endswith('gserviceaccount.com'):
         return
 
     lines = git_repo.commit_message().splitlines()
+
+    # Ignore fixup/squash commits, but only if running locally.
+    if not ctx.luci and lines[0].startswith(('fixup!', 'squash!')):
+        return
 
     # Show limits and current commit message in log.
     _LOG.debug('%-25s%+25s%+22s', 'Line limits', '72|', '72|')
