@@ -9,8 +9,7 @@
     </description>
     <language>en-us</language>
     <pubDate>Mon, 30 Sep 2024 13:47:00 -0700</pubDate>
-    <atom:link href="https://pigweed.dev/docs/blog/rss.xml" rel="self"
-               type="application/rss+xml"/>
+    <atom:link href="https://pigweed.dev/rss.xml" rel="self" type="application/rss+xml"/>
     <item>
       <title>Fixed-point arithmetic as a replacement for soft floats</title>
       <link>https://pigweed.dev/docs/blog/04-fixed-point.html</link>
