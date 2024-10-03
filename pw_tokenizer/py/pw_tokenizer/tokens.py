@@ -495,26 +495,25 @@ class Database:
 
 def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from a CSV token database file."""
-    entries = []
     for line in csv.reader(fd):
         try:
-            token_str, date_str, string_literal = line
+            try:
+                token_str, date_str, domain, string_literal = line
+            except ValueError:
+                # If there are only three columns, use the default domain.
+                token_str, date_str, string_literal = line
+                domain = DEFAULT_DOMAIN
 
             token = int(token_str, 16)
             date = (
                 datetime.fromisoformat(date_str) if date_str.strip() else None
             )
 
-            entries.append(
-                TokenizedStringEntry(
-                    token, string_literal, DEFAULT_DOMAIN, date
-                )
-            )
+            yield TokenizedStringEntry(token, string_literal, domain, date)
         except (ValueError, UnicodeDecodeError) as err:
             _LOG.error(
                 'Failed to parse tokenized string entry %s: %s', line, err
             )
-    return entries
 
 
 # TODO: b/364955916 - Remove this function when domains are written to
@@ -522,7 +521,7 @@ def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
 def _ignore_domains(
     entries: Iterable[TokenizedStringEntry],
 ) -> list[TokenizedStringEntry]:
-    # Temporarily prevent duplicate lines since domains aren't written yet.
+    """Prevent duplicate lines until domains are included in databases."""
     no_domain = {}
     for entry in entries:
         new_entry = TokenizedStringEntry(

@@ -153,6 +153,13 @@ e13b0f94,          ,"%llu"
 e65aefef,          ,"Won't fit : %s%d"
 '''
 
+CSV_DATABASE_WITH_DOMAIN = """\
+00000001,          ,"Domain","hello"
+00000002,          ,"","yes"
+00000002,          ,"Domain","No!"
+00000004,          ,"?","The answer is: %s"
+"""
+
 
 def read_db_from_csv(csv_str: str) -> tokens.Database:
     with io.StringIO(csv_str) as csv_db:
@@ -173,6 +180,34 @@ class TokenDatabaseTest(unittest.TestCase):
 
         db = read_db_from_csv('')
         self.assertEqual(str(db), '')
+
+    def test_csv_loads_domains(self) -> None:
+        db = read_db_from_csv(CSV_DATABASE_WITH_DOMAIN)
+        self.assertEqual(
+            db.token_to_entries[1],
+            [
+                tokens.TokenizedStringEntry(
+                    token=1, string='hello', domain='Domain', date_removed=None
+                )
+            ],
+        )
+        self.assertEqual(
+            db.token_to_entries[2],
+            [
+                tokens.TokenizedStringEntry(token=2, string='yes', domain=''),
+                tokens.TokenizedStringEntry(
+                    token=2, string='No!', domain='Domain'
+                ),
+            ],
+        )
+        self.assertEqual(
+            db.token_to_entries[4],
+            [
+                tokens.TokenizedStringEntry(
+                    token=4, string='The answer is: %s', domain='?'
+                ),
+            ],
+        )
 
     def test_csv_formatting(self) -> None:
         db = read_db_from_csv('')
@@ -306,6 +341,7 @@ class TokenDatabaseTest(unittest.TestCase):
 
         db.purge(datetime(2019, 6, 11))
         self.assertLess(len(db.token_to_entries), original_length)
+        self.assertEqual(len(db.token_to_entries), len(db.entries()))
 
         self.assertFalse(db.token_to_entries[0])
         self.assertNotIn(0, db.token_to_entries)
@@ -620,6 +656,10 @@ class TokenDatabaseTest(unittest.TestCase):
         )
         difference = first.difference(second)
         self.assertEqual({e.string for e in difference.entries()}, {'two'})
+
+    def test_tokens_by_domain(self) -> None:
+        db = read_db_from_csv(CSV_DATABASE_WITH_DOMAIN)
+        self.assertEqual(db.domains.keys(), {'', '?', 'Domain'})
 
     def test_binary_format_write(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)

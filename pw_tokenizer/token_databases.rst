@@ -23,21 +23,26 @@ these formats.
 
 CSV database format
 ===================
-The CSV database format has three columns: the token in hexadecimal, the removal
-date (if any) in year-month-day format, and the string literal, surrounded by
-quotes. Quote characters within the string are represented as two quote
-characters.
+The CSV database format has four columns: the token in hexadecimal, the removal
+date (if any) in year-month-day format, the token domain, and the string
+literal. The domain and string are quoted, and quote characters within the
+domain or string are represented as two quote characters.
 
 This example database contains six strings, three of which have removal dates.
 
 .. code-block::
 
-   141c35d5,          ,"The answer: ""%s"""
-   2e668cd6,2019-12-25,"Jello, world!"
-   7b940e2a,          ,"Hello %s! %hd %e"
-   851beeb6,          ,"%u %d"
-   881436a0,2020-01-01,"The answer is: %s"
-   e13b0f94,2020-04-01,"%llu"
+   141c35d5,          ,"","The answer: ""%s"""
+   2e668cd6,2019-12-25,"","Jello, world!"
+   7a22c974,          ,"metrics","%f"
+   7b940e2a,          ,"","Hello %s! %hd %e"
+   851beeb6,          ,"","%u %d"
+   881436a0,2020-01-01,"","The answer is: %s"
+   e13b0f94,2020-04-01,"metrics","%llu"
+
+Legacy CSV databases did not include the domain, so only had three columns.
+These databases are still supported, but tokens are always in the default domain
+(``""``).
 
 Binary database format
 ======================
