@@ -153,25 +153,6 @@ host_backend_alias(
 )
 
 cc_library(
-    name = "deprecated_or_new_thread_function",
-    hdrs = ["public/pw_thread/deprecated_or_new_thread_function.h"],
-    includes = ["public"],
-    deps = [
-        "//pw_function",
-    ],
-)
-
-pw_cc_test(
-    name = "deprecated_or_new_thread_function_test",
-    srcs = [
-        "deprecated_or_new_thread_function_test.cc",
-    ],
-    deps = [
-        ":deprecated_or_new_thread_function",
-    ],
-)
-
-cc_library(
     name = "thread_core",
     hdrs = [
         "public/pw_thread/thread_core.h",

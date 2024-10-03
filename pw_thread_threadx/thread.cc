@@ -15,7 +15,6 @@
 
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread/id.h"
 #include "pw_thread_threadx/config.h"
 #include "pw_thread_threadx/context.h"
@@ -113,7 +112,7 @@ void Context::DeleteThread(Context& context) {
 }
 
 void Context::CreateThread(const threadx::Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn) {
+                           Function<void()>&& thread_fn) {
   // Can't use a context more than once.
   PW_DCHECK(!in_use());
 

@@ -50,7 +50,7 @@ void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
 }
 
 void Context::CreateThread(const zephyr::Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Function<void()>&& thread_fn,
                            Context*& native_type_out) {
   PW_CHECK(options.static_context() != nullptr);
 

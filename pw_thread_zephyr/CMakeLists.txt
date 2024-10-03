@@ -72,10 +72,10 @@ pw_add_library(pw_thread_zephyr.thread STATIC
     thread_public_overrides
   PUBLIC_DEPS
     pw_assert
+    pw_function
     pw_span
     pw_string
     pw_thread.id
-    pw_thread.deprecated_or_new_thread_function
     pw_thread.thread.facade
     pw_thread_zephyr.config
   SOURCES

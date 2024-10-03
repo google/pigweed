@@ -16,9 +16,9 @@
 #include <cstdint>
 #include <cstring>
 
+#include "pw_function/function.h"
 #include "pw_span/span.h"
 #include "pw_string/util.h"
-#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread_threadx/config.h"
 #include "tx_api.h"
 #include "tx_thread.h"
@@ -60,7 +60,7 @@ class Context {
  private:
   friend Thread;
   void CreateThread(const threadx::Options& options,
-                    DeprecatedOrNewThreadFn&& thread_fn);
+                    Function<void()>&& thread_fn);
 
   span<ULONG> stack() { return stack_span_; }
 
@@ -70,7 +70,7 @@ class Context {
   const char* name() const { return name_.data(); }
   void set_name(const char* name) { string::Copy(name, name_); }
 
-  void set_thread_routine(DeprecatedOrNewThreadFn&& rvalue) {
+  void set_thread_routine(Function<void()>&& rvalue) {
     fn_ = std::move(rvalue);
   }
 
@@ -90,7 +90,7 @@ class Context {
   TX_THREAD tcb_;
   span<ULONG> stack_span_;
 
-  DeprecatedOrNewThreadFn fn_;
+  Function<void()> fn_;
 #if PW_THREAD_JOINING_ENABLED
   // Note that the ThreadX life cycle of this event group is managed together
   // with the thread life cycle, not this object's life cycle.

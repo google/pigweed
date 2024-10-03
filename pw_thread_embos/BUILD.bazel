@@ -85,8 +85,8 @@ cc_library(
         ":config_override",
         ":id",
         "//pw_assert",
+        "//pw_function",
         "//pw_string",
-        "//pw_thread:deprecated_or_new_thread_function",
         "//pw_thread:thread.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties

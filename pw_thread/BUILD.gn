@@ -79,17 +79,6 @@ pw_source_set("options") {
   public = [ "public/pw_thread/options.h" ]
 }
 
-pw_source_set("deprecated_or_new_thread_function") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_thread/deprecated_or_new_thread_function.h" ]
-  public_deps = [ dir_pw_function ]
-}
-
-pw_test("deprecated_or_new_thread_function_test") {
-  sources = [ "deprecated_or_new_thread_function_test.cc" ]
-  deps = [ ":deprecated_or_new_thread_function" ]
-}
-
 pw_facade("test_thread_context") {
   backend = pw_thread_TEST_THREAD_CONTEXT_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -171,7 +160,6 @@ pw_source_set("thread_snapshot_service") {
 
 pw_test_group("tests") {
   tests = [
-    ":deprecated_or_new_thread_function_test",
     ":id_facade_test",
     ":sleep_facade_test",
     ":thread_info_test",

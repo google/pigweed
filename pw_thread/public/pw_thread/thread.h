@@ -185,13 +185,6 @@ class Thread {
   native_handle_type native_handle();
 
  private:
-  // TODO: b/367786892 - Remove this deprecated alias.
-  using ThreadRoutine = void (*)(void* arg);
-
-  // TODO: b/367786892 - Remove this deprecated constructor. It was made private
-  // instead of being deleted to avoid breaking pw_thread backends.
-  Thread(const Options& options, ThreadRoutine entry, void* arg);
-
   template <typename...>
   static constexpr std::bool_constant<PW_THREAD_JOINING_ENABLED>
       kJoiningEnabled = {};

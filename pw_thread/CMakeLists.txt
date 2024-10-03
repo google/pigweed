@@ -102,25 +102,6 @@ pw_add_facade(pw_thread.thread_iteration INTERFACE
     pw_status
 )
 
-pw_add_library(pw_thread.deprecated_or_new_thread_function INTERFACE
-  HEADERS
-    public/pw_thread/deprecated_or_new_thread_function.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_function
-)
-
-pw_add_test(pw_thread.deprecated_or_new_thread_function_test
-  SOURCES
-    deprecated_or_new_thread_function_test.cc
-  PRIVATE_DEPS
-    pw_thread.deprecated_or_new_thread_function
-  GROUPS
-    modules
-    pw_thread
-)
-
 pw_proto_library(pw_thread.thread_snapshot_service_cc
   SOURCES
     pw_thread_protos/thread_snapshot_service.proto

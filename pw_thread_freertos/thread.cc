@@ -16,7 +16,6 @@
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread/id.h"
 #include "pw_thread_freertos/config.h"
 #include "pw_thread_freertos/context.h"
@@ -130,7 +129,7 @@ void Context::AddToEventGroup() {
 }
 
 void Context::CreateThread(const freertos::Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Function<void()>&& thread_fn,
                            Context*& native_type_out) {
   TaskHandle_t task_handle;
   if (options.static_context() != nullptr) {

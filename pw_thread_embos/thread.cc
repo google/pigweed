@@ -82,7 +82,7 @@ void Context::TerminateThread(Context& context) {
 }
 
 void Context::CreateThread(const embos::Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn) {
+                           Function<void()>&& thread_fn) {
   // Can't use a context more than once.
   PW_DCHECK(!in_use());
 

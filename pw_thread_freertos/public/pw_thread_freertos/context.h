@@ -16,8 +16,8 @@
 #include <cstdint>
 
 #include "FreeRTOS.h"
+#include "pw_function/function.h"
 #include "pw_span/span.h"
-#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread_freertos/config.h"
 #include "task.h"
 #if PW_THREAD_JOINING_ENABLED
@@ -52,7 +52,7 @@ class Context {
  private:
   friend Thread;
   static void CreateThread(const freertos::Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Function<void()>&& thread_fn,
                            Context*& native_type_out);
   void AddToEventGroup();
 
@@ -61,7 +61,7 @@ class Context {
     task_handle_ = task_handle;
   }
 
-  void set_thread_routine(DeprecatedOrNewThreadFn&& rvalue) {
+  void set_thread_routine(Function<void()>&& rvalue) {
     fn_ = std::move(rvalue);
   }
 
@@ -84,7 +84,7 @@ class Context {
   static void TerminateThread(Context& context);
 
   TaskHandle_t task_handle_ = nullptr;
-  DeprecatedOrNewThreadFn fn_;
+  Function<void()> fn_;
 #if PW_THREAD_JOINING_ENABLED
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.

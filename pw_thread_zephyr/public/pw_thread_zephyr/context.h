@@ -18,8 +18,8 @@
 
 #include <cstdint>
 
+#include "pw_function/function.h"
 #include "pw_span/span.h"
-#include "pw_thread/deprecated_or_new_thread_function.h"
 #include "pw_thread_zephyr/config.h"
 
 namespace pw::thread {
@@ -56,7 +56,7 @@ class Context {
   friend Thread;
 
   static void CreateThread(const Options& options,
-                           DeprecatedOrNewThreadFn&& thread_fn,
+                           Function<void()>&& thread_fn,
                            Context*& native_type_out);
 
   k_tid_t task_handle() const { return task_handle_; }
@@ -66,7 +66,7 @@ class Context {
 
   k_thread& thread_info() { return thread_info_; }
 
-  void set_thread_routine(DeprecatedOrNewThreadFn&& rvalue) {
+  void set_thread_routine(Function<void()>&& rvalue) {
     fn_ = std::move(rvalue);
   }
 
@@ -80,7 +80,7 @@ class Context {
 
   k_tid_t task_handle_ = nullptr;
   k_thread thread_info_;
-  DeprecatedOrNewThreadFn fn_;
+  Function<void()> fn_;
   bool detached_ = false;
   bool thread_done_ = false;
 };
