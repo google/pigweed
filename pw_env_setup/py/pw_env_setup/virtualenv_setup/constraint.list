@@ -1,11 +1,11 @@
 -c ./python_base_requirements.txt
 
 aiohttp==3.9.5
-alabaster==0.7.13
+alabaster==0.7.16
 appdirs==1.4.4
 astroid==3.0.1
 asttokens==2.4.0
-babel==2.12.1
+babel==2.16.0
 backcall==0.2.0
 beautifulsoup4==4.12.2
 black==23.1.0
@@ -63,7 +63,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
 pyelftools==0.27
-pygments==2.16.1
+pygments==2.18.0
 pylint==3.0.1
 pyperclip==1.8.2
 pyserial==3.5
@@ -75,7 +75,7 @@ rsa==4.8
 setuptools==68.0.0
 six==1.16.0
 snowballstemmer==2.2.0
-sphinx==7.1.2
+sphinx==7.4.7
 sphinx-argparse==0.4.0
 sphinxcontrib-applehelp==1.0.4
 sphinxcontrib-devhelp==1.0.2
@@ -83,7 +83,7 @@ sphinxcontrib-htmlhelp==2.0.1
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-mermaid==0.9.2
 sphinxcontrib-qthelp==1.0.3
-sphinxcontrib-serializinghtml==1.1.5
+sphinxcontrib-serializinghtml==2.0.0
 sphinx-design==0.5.0
 stack-data==0.6.3
 toml==0.10.2
@@ -92,7 +92,7 @@ tomlkit==0.11.6
 traitlets==5.1.1
 types-docutils==0.20.0.3
 types-protobuf==4.24.0.2
-types-Pygments==2.16.0.0
+types-Pygments==2.18.0.20240506
 types-pyserial==3.5.0.7
 types-PyYAML==6.0.12.11
 types-requests==2.31.0.2
@@ -105,4 +105,5 @@ watchdog==2.3.1
 wcwidth==0.2.6
 websockets==10.4
 yapf==0.31.0
+yarl==1.12.1
 zipp==3.16.2
