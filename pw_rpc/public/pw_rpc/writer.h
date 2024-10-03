@@ -16,8 +16,10 @@
 #include <cstdint>
 
 #include "pw_bytes/span.h"
+#include "pw_function/function.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -39,6 +41,8 @@ class Writer {
   uint32_t channel_id() const;
 
   Status Write(ConstByteSpan payload) PW_LOCKS_EXCLUDED(internal::rpc_lock());
+  Status Write(const Function<StatusWithSize(ByteSpan)>& callback)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
  private:
   // Only allow Call to inherit from Writer. This guarantees that Writers can

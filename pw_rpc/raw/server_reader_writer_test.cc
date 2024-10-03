@@ -16,11 +16,15 @@
 
 #include <optional>
 
+#include "pw_bytes/array.h"
+#include "pw_bytes/span.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc/writer.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
+#include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
@@ -72,7 +76,7 @@ TEST(RawServerWriter, DefaultConstructed) {
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
-  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write(ConstByteSpan()));
   EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
 
   call.set_on_error([](Status) {});
@@ -96,7 +100,7 @@ TEST(RawServerReaderWriter, DefaultConstructed) {
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
-  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write(ConstByteSpan()));
   EXPECT_EQ(Status::FailedPrecondition(), call.Finish(Status::Cancelled()));
 
   call.set_on_next([](ConstByteSpan) {});
@@ -147,6 +151,70 @@ TEST(RawUnaryResponder, TryCloseSuccessful) {
   ASSERT_FALSE(call.active());
 }
 
+TEST(RawUnaryResponder, FinishCallback_Successful) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  constexpr auto kData = bytes::Initialized<8>(0xff);
+  ASSERT_EQ(OkStatus(),
+            call.FinishCallback(
+                [&kData](ByteSpan buffer) {
+                  std::memcpy(buffer.data(), kData.data(), kData.size());
+                  return StatusWithSize(kData.size());
+                },
+                OkStatus()));
+
+  EXPECT_EQ(std::memcmp(
+                ctx.output.payloads<TestService::TestUnaryRpc>().back().data(),
+                kData.data(),
+                kData.size()),
+            0);
+  EXPECT_FALSE(call.active());
+}
+
+TEST(RawUnaryResponder, TryFinishCallback_Successful) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  constexpr auto kData = bytes::Initialized<8>(0xdd);
+  ASSERT_EQ(OkStatus(),
+            call.TryFinishCallback(
+                [&kData](ByteSpan buffer) {
+                  std::memcpy(buffer.data(), kData.data(), kData.size());
+                  return StatusWithSize(kData.size());
+                },
+                OkStatus()));
+
+  EXPECT_EQ(std::memcmp(
+                ctx.output.payloads<TestService::TestUnaryRpc>().back().data(),
+                kData.data(),
+                kData.size()),
+            0);
+  EXPECT_FALSE(call.active());
+}
+
+TEST(RawUnaryResponder, TryFinishCallback_ChannelError) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  ctx.output.set_send_status(Status::Unknown());
+
+  constexpr auto kData = bytes::Initialized<8>(0xdd);
+  ASSERT_EQ(Status::Unknown(),
+            call.TryFinishCallback(
+                [&kData](ByteSpan buffer) {
+                  std::memcpy(buffer.data(), kData.data(), kData.size());
+                  return StatusWithSize(kData.size());
+                },
+                OkStatus()));
+
+  // Call should remain active.
+  EXPECT_TRUE(call.active());
+}
+
 TEST(RawServerWriter, Closed) {
   ReaderWriterTestContext ctx;
   RawServerWriter call =
@@ -157,7 +225,7 @@ TEST(RawServerWriter, Closed) {
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
-  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write(ConstByteSpan()));
   EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
 
   call.set_on_error([](Status) {});
@@ -253,7 +321,7 @@ TEST(RawServerReaderWriter, Closed) {
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
-  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write(ConstByteSpan()));
   EXPECT_EQ(Status::FailedPrecondition(), call.Finish(Status::Cancelled()));
 
   call.set_on_next([](ConstByteSpan) {});
@@ -316,11 +384,11 @@ TEST(RawServerReaderWriter, Open_UnknownChannel) {
 
   EXPECT_TRUE(call.active());
   EXPECT_EQ(call.channel_id(), ctx.kChannelId);
-  EXPECT_EQ(Status::Unavailable(), call.Write({}));
+  EXPECT_EQ(Status::Unavailable(), call.Write(ConstByteSpan()));
 
   ASSERT_EQ(OkStatus(), ctx.server.OpenChannel(ctx.kChannelId, ctx.output));
 
-  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_EQ(OkStatus(), call.Write(ConstByteSpan()));
   EXPECT_TRUE(call.active());
 
   EXPECT_EQ(OkStatus(), call.Finish());

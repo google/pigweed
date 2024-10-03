@@ -15,13 +15,18 @@
 #include "pw_rpc/internal/call.h"
 
 #include "pw_assert/check.h"
+#include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_preprocessor/util.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/encoding_buffer.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/packet.pwpb.h"
 #include "pw_rpc/server.h"
+#include "pw_status/status_with_size.h"
+#include "pw_status/try.h"
 
 // If the callback timeout is enabled, count the number of iterations of the
 // waiting loop and crash if it exceeds PW_RPC_CALLBACK_TIMEOUT_TICKS.
@@ -49,6 +54,20 @@
 namespace pw::rpc::internal {
 
 using pwpb::PacketType;
+
+Result<ConstByteSpan> EncodeCallbackToPayloadBuffer(
+    const Function<StatusWithSize(ByteSpan)>& callback)
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  if (callback == nullptr) {
+    return Status::InvalidArgument();
+  }
+
+  ByteSpan payload_buffer =
+      encoding_buffer.AllocatePayloadBuffer(MaxSafePayloadSize());
+  PW_TRY_ASSIGN(const size_t payload_size, callback(payload_buffer));
+
+  return payload_buffer.first(payload_size);
+}
 
 // Creates an active server-side Call.
 Call::Call(const LockedCallContext& context, CallProperties properties)
@@ -212,6 +231,20 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   return channel->Send(MakePacket(type, payload, status));
 }
 
+Status Call::CloseAndSendResponseCallbackLocked(
+    const Function<StatusWithSize(ByteSpan)>& callback, Status status) {
+  PW_TRY_ASSIGN(ConstByteSpan payload, EncodeCallbackToPayloadBuffer(callback));
+  return CloseAndSendFinalPacketLocked(
+      pwpb::PacketType::RESPONSE, payload, status);
+}
+
+Status Call::TryCloseAndSendResponseCallbackLocked(
+    const Function<StatusWithSize(ByteSpan)>& callback, Status status) {
+  PW_TRY_ASSIGN(ConstByteSpan payload, EncodeCallbackToPayloadBuffer(callback));
+  return TryCloseAndSendFinalPacketLocked(
+      pwpb::PacketType::RESPONSE, payload, status);
+}
+
 Status Call::CloseAndSendFinalPacketLocked(PacketType type,
                                            ConstByteSpan response,
                                            Status status) {
@@ -232,6 +265,15 @@ Status Call::TryCloseAndSendFinalPacketLocked(PacketType type,
 }
 
 Status Call::WriteLocked(ConstByteSpan payload) {
+  return SendPacket(properties_.call_type() == kServerCall
+                        ? PacketType::SERVER_STREAM
+                        : PacketType::CLIENT_STREAM,
+                    payload);
+}
+
+Status Call::WriteCallbackLocked(
+    const Function<StatusWithSize(ByteSpan)>& callback) {
+  PW_TRY_ASSIGN(ConstByteSpan payload, EncodeCallbackToPayloadBuffer(callback));
   return SendPacket(properties_.call_type() == kServerCall
                         ? PacketType::SERVER_STREAM
                         : PacketType::CLIENT_STREAM,

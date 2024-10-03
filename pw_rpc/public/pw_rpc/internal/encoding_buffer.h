@@ -21,6 +21,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
@@ -43,9 +44,10 @@ class StaticEncodingBuffer {
  public:
   constexpr StaticEncodingBuffer() : buffer_{} {}
 
-  ByteSpan AllocatePayloadBuffer() { return ResizeForPayload(buffer_); }
+  ByteSpan AllocatePayloadBuffer(size_t /*payload_size */) {
+    return ResizeForPayload(buffer_);
+  }
   ByteSpan GetPacketBuffer(size_t /* payload_size */) { return buffer_; }
-
   void Release() {}
   void ReleaseIfAllocated() {}
 
@@ -132,7 +134,7 @@ static Result<ByteSpan> EncodeToPayloadBuffer(Proto& payload,
 
   ByteSpan buffer = encoding_buffer.AllocatePayloadBuffer(payload_size.size());
 #else
-  ByteSpan buffer = encoding_buffer.AllocatePayloadBuffer();
+  ByteSpan buffer = encoding_buffer.AllocatePayloadBuffer(MaxSafePayloadSize());
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 
   StatusWithSize result = encoder.Encode(payload, buffer);

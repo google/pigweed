@@ -30,6 +30,7 @@
 #include "pw_rpc/writer.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc {
@@ -187,11 +188,22 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
     return CloseAndSendResponseLocked(response, status);
   }
 
+  Status CloseAndSendResponseCallback(
+      const Function<StatusWithSize(ByteSpan)>& callback, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    return CloseAndSendResponseCallbackLocked(callback, status);
+  }
+
   Status CloseAndSendResponseLocked(ConstByteSpan response, Status status)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return CloseAndSendFinalPacketLocked(
         pwpb::PacketType::RESPONSE, response, status);
   }
+
+  Status CloseAndSendResponseCallbackLocked(
+      const Function<StatusWithSize(ByteSpan)>& callback, Status status)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Status CloseAndSendResponse(Status status) PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendResponse({}, status);
@@ -212,11 +224,22 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
     return TryCloseAndSendResponseLocked(response, status);
   }
 
+  Status TryCloseAndSendResponseCallback(
+      const Function<StatusWithSize(ByteSpan)>& callback, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    return TryCloseAndSendResponseCallbackLocked(callback, status);
+  }
+
   Status TryCloseAndSendResponseLocked(ConstByteSpan response, Status status)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return TryCloseAndSendFinalPacketLocked(
         pwpb::PacketType::RESPONSE, response, status);
   }
+
+  Status TryCloseAndSendResponseCallbackLocked(
+      const Function<StatusWithSize(ByteSpan)>& callback, Status status)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Status TryCloseAndSendResponse(Status status) PW_LOCKS_EXCLUDED(rpc_lock()) {
     return TryCloseAndSendResponse({}, status);
@@ -254,7 +277,23 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
     return WriteLocked(payload);
   }
 
+  /// Provides a buffer into which to encode an RPC server or client stream
+  /// payload, then sends it.
+  ///
+  /// @param callback Callback function invoked with the allocated payload
+  ///   buffer. The callback should return an OK status with the size of the
+  ///   encoded payload if it was successfully written, or an error status
+  ///   otherwise.
+  Status Write(const Function<StatusWithSize(ByteSpan)>& callback)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    return WriteCallbackLocked(callback);
+  }
+
   Status WriteLocked(ConstByteSpan payload)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  Status WriteCallbackLocked(const Function<StatusWithSize(ByteSpan)>& callback)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Sends the initial request for a client call. If the request fails, the call
@@ -619,6 +658,11 @@ inline uint32_t Writer::channel_id() const {
 
 inline Status Writer::Write(ConstByteSpan payload) {
   return static_cast<internal::Call*>(this)->Write(payload);
+}
+
+inline Status Writer::Write(
+    const Function<StatusWithSize(ByteSpan)>& callback) {
+  return static_cast<internal::Call*>(this)->Write(callback);
 }
 
 }  // namespace pw::rpc

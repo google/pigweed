@@ -24,6 +24,7 @@
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/server.h"
 #include "pw_rpc/writer.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -103,6 +104,9 @@ class RawServerReaderWriter : private internal::ServerCall {
 
   using internal::Call::CloseAndSendResponse;
   using internal::Call::TryCloseAndSendResponse;
+
+  using internal::Call::CloseAndSendResponseCallback;
+  using internal::Call::TryCloseAndSendResponseCallback;
 
  private:
   friend class internal::RawMethod;  // Needed to construct
@@ -251,12 +255,25 @@ class RawUnaryResponder : private RawServerReaderWriter {
 
   using RawServerReaderWriter::set_on_error;
 
+  /// Completes the RPC call with the provided response and status.
   Status Finish(ConstByteSpan response, Status status = OkStatus()) {
     return CloseAndSendResponse(response, status);
   }
 
+  /// Completes the RPC call with the provided status, invoking a callback with
+  /// the response payload buffer into which the response can be encoded.
+  Status FinishCallback(const Function<StatusWithSize(ByteSpan)>& callback,
+                        Status status = OkStatus()) {
+    return CloseAndSendResponseCallback(callback, status);
+  }
+
   Status TryFinish(ConstByteSpan response, Status status = OkStatus()) {
     return TryCloseAndSendResponse(response, status);
+  }
+
+  Status TryFinishCallback(const Function<StatusWithSize(ByteSpan)>& callback,
+                           Status status = OkStatus()) {
+    return TryCloseAndSendResponseCallback(callback, status);
   }
 
  private:

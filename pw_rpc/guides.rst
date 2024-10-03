@@ -357,9 +357,8 @@ raw signature.
 Unary method
 ------------
 When defining a unary method using the raw APIs, it is important to note that
-there is no synchronous raw unary API, as ``pw_rpc`` cannot internally provide
-a response buffer to the method. Instead, define the raw method as asynchronous
-unary and encode the response to a buffer managed by the service.
+there is no synchronous raw unary API. The asynchronous unary method signature
+must be used instead.
 
 **Nanopb**
 

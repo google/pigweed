@@ -17,6 +17,7 @@
 #include <array>
 
 #include "pw_bytes/array.h"
+#include "pw_bytes/span.h"
 #include "pw_containers/algorithm.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
@@ -287,7 +288,7 @@ TEST(RawServerWriter, Write_EmptyBuffer) {
   rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
 
-  ASSERT_EQ(context.service().last_writer.Write({}), OkStatus());
+  ASSERT_EQ(context.service().last_writer.Write(ConstByteSpan()), OkStatus());
 
   const internal::Packet& packet = context.output().last_packet();
   EXPECT_EQ(packet.type(), pwpb::PacketType::SERVER_STREAM);
