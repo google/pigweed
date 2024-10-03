@@ -20,15 +20,15 @@
 
 extern "C" void pw_assert_HandleFailure(void) {
 #if PW_ASSERT_ENABLE_DEBUG
-  PW_LOG(PW_LOG_LEVEL_FATAL,
-         "pw_assert_log",
-         PW_LOG_FLAGS,
-         "Crash: PW_ASSERT() or PW_DASSERT() failure");
+  PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,
+                "pw_assert_log",
+                PW_LOG_FLAGS,
+                "Crash: PW_ASSERT() or PW_DASSERT() failure");
 #else
-  PW_LOG(PW_LOG_LEVEL_FATAL,
-         "pw_assert_log",
-         PW_LOG_FLAGS,
-         "Crash: PW_ASSERT() failure. Note: PW_DASSERT disabled");
+  PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,
+                "pw_assert_log",
+                PW_LOG_FLAGS,
+                "Crash: PW_ASSERT() failure. Note: PW_DASSERT disabled");
 #endif  // PW_ASSERT_ENABLE_DEBUG
   PW_UNREACHABLE;
 }
