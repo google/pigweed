@@ -16,6 +16,8 @@
 #include <memory>
 #include <utility>
 
+#include "pw_allocator/capability.h"
+
 namespace pw {
 
 // Forward declaration.
