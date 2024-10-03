@@ -378,12 +378,14 @@ The ``pw_facade`` template bundles a ``pw_source_set`` with a facade build arg.
 This allows the facade to provide header files, compilation options or anything
 else a GN ``source_set`` provides.
 
-The ``pw_facade`` template declares two targets:
+The ``pw_facade`` template declares one or two targets:
 
-* ``$target_name``: the public-facing ``pw_source_set``, with a ``public_dep``
-  on the backend
-* ``$target_name.facade``: target used by the backend to avoid circular
-  dependencies
+* ``$target_name``: The public-facing ``pw_source_set``, with a ``public_dep``
+  on the backend. Always declared.
+* ``$target_name.facade``: Target with ``public`` headers, ``public_deps``, and
+  ``public_configs`` shared between the public-facing ``pw_source_set`` and
+  backend to avoid circular dependencies. Only declared if ``public``,
+  ``public_deps``, or ``public_configs`` are provided.
 
 .. code-block::
 

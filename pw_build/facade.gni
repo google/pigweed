@@ -79,18 +79,21 @@ import("$dir_pw_build/target_types.gni")
 template("pw_facade") {
   assert(defined(invoker.backend),
          "pw_facade requires a reference to a backend variable for the facade")
-  assert(defined(invoker.public),
-         "If your facade does not explicitly expose an API that a backend " +
-             "must depend on, you can just directly depend on the build arg " +
-             "that the `backend` template argument would have been set to.")
 
-  _facade_name = "$target_name.facade"
+  # Only define the .facade subtarget if it has a public attribute to share.
+  if (defined(invoker.public) || defined(invoker.public_deps) ||
+      defined(invoker.public_configs)) {
+    _facade_name = "$target_name.facade"
 
-  if (get_path_info(get_label_info(":$target_name", "dir"), "name") ==
-      get_label_info(":$target_name", "name")) {
-    group("facade") {
-      public_deps = [ ":$_facade_name" ]
+    # Define //foo:facade alias
+    if (get_path_info(get_label_info(":$target_name", "dir"), "name") ==
+        get_label_info(":$target_name", "name")) {
+      group("facade") {
+        public_deps = [ ":$_facade_name" ]
+      }
     }
+  } else {
+    _facade_name = ""
   }
 
   _facade_vars = [
@@ -100,9 +103,12 @@ template("pw_facade") {
     "public_configs",
     "public_deps",
     "public",
+    "visibility",
   ]
-  pw_source_set(_facade_name) {
-    forward_variables_from(invoker, _facade_vars, [ "require_link_deps" ])
+  if (_facade_name != "") {
+    pw_source_set(_facade_name) {
+      forward_variables_from(invoker, _facade_vars, [ "require_link_deps" ])
+    }
   }
 
   if (invoker.backend == "") {
@@ -158,14 +164,16 @@ template("pw_facade") {
                    ]
     forward_variables_from(invoker, "*", _ignore_vars)
 
-    public_deps = [ ":$_facade_name" ]
-
     # If the backend is set, inject it as a dependency.
     if (invoker.backend != "") {
-      public_deps += [ invoker.backend ]
+      public_deps = [ invoker.backend ]
     } else {
       # If the backend is not set, depend on the *.NO_BACKEND_SET target.
-      public_deps += [ ":$target_name.NO_BACKEND_SET" ]
+      public_deps = [ ":$target_name.NO_BACKEND_SET" ]
+    }
+
+    if (_facade_name != "") {
+      public_deps += [ ":$_facade_name" ]
     }
   }
 
@@ -183,11 +191,11 @@ template("pw_facade") {
         }
       }
 
-      _facade_name = get_label_info(":$target_name", "label_no_toolchain")
+      _facade = get_label_info(":$target_name", "label_no_toolchain")
       assert(_dep_is_in_link_dependencies,
              "$_required_dep must be listed in the pw_build_LINK_DEPS build " +
-                 "arg when the $_facade_name facade is in use. Please update " +
-                 "your toolchain configuration.")
+                 "arg when the $_facade facade is in use. Please update your " +
+                 "toolchain configuration.")
     }
   } else {
     not_needed(invoker, [ "require_link_deps" ])

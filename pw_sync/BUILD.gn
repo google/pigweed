@@ -131,7 +131,11 @@ pw_facade("recursive_mutex") {
     "$dir_pw_preprocessor",
   ]
   sources = [ "recursive_mutex.cc" ]
-  visibility = [ ":*" ]
+  visibility = [
+    ":*",
+    "$dir_pw_sync_baremetal/*",
+    "$dir_pw_sync_stl/*",
+  ]
 }
 
 pw_facade("interrupt_spin_lock") {
