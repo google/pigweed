@@ -178,6 +178,8 @@ added must derive from ``pw::IntrusiveList<T>::Item``.
    original implementation can still be temporarily used by enabling the
    ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST`` module configuration option.
 
+.. _module-pw_containers-intrusive_list-example:
+
 Example
 =======
 .. literalinclude:: examples/intrusive_list.cc
