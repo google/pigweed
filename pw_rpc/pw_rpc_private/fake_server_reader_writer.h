@@ -55,6 +55,8 @@ class FakeServerReaderWriter : private ServerCall {
   // `PW_LOCKS_EXCLUDED(rpc_lock())` on their original definitions does not
   // appear to carry through here.
   using Call::active;
+  using Call::method_id;
+  using Call::service_id;
   using Call::set_on_error;
   using Call::set_on_next;
   using ServerCall::set_on_completion_requested;

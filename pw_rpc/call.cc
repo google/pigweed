@@ -144,13 +144,9 @@ void Call::MoveFrom(Call& other) {
   PW_DCHECK(!active_locked());
   PW_DCHECK(!awaiting_cleanup() && !other.awaiting_cleanup());
 
-  if (!other.active_locked()) {
-    return;  // Nothing else to do; this call is already closed.
-  }
-
   // An active call with an executing callback cannot be moved. Derived call
   // classes must wait for callbacks to finish before calling MoveFrom.
-  PW_DCHECK(!other.CallbacksAreRunning());
+  PW_DCHECK(!other.active_locked() || !other.CallbacksAreRunning());
 
   // Copy all members from the other call.
   endpoint_ = other.endpoint_;
@@ -171,11 +167,12 @@ void Call::MoveFrom(Call& other) {
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
 
-  // Mark the other call inactive, unregister it, and register this one.
-  other.MarkClosed();
-
-  endpoint().UnregisterCall(other);
-  endpoint().RegisterUniqueCall(*this);
+  if (other.active_locked()) {
+    // Mark the other call inactive, unregister it, and register this one.
+    other.MarkClosed();
+    endpoint().UnregisterCall(other);
+    endpoint().RegisterUniqueCall(*this);
+  }
 }
 
 void Call::WaitUntilReadyForMove(Call& destination, Call& source) {

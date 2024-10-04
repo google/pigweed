@@ -337,6 +337,14 @@ TEST_F(ServerReaderWriterTest, Move_ClearsCallAndChannelId) {
   EXPECT_EQ(reader_writer_.channel_id_locked(), 0u);
 }
 
+TEST_F(ServerReaderWriterTest, DefaultConstructorAssign_Reset) {
+  reader_writer_ = {};
+
+  RpcLockGuard lock;
+  EXPECT_EQ(reader_writer_.service_id(), 0u);
+  EXPECT_EQ(reader_writer_.method_id(), 0u);
+}
+
 TEST_F(ServerReaderWriterTest, Move_SourceAwaitingCleanup_CleansUpCalls) {
   std::optional<Status> on_error_cb;
   reader_writer_.set_on_error([&on_error_cb](Status error) {
