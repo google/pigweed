@@ -37,7 +37,9 @@ including:
 ---------------
 Getting started
 ---------------
-All you need to do is install the `Pigweed extension <http://localhost/404>`_ from the extension
+.. _Pigweed extension: https://marketplace.visualstudio.com/items?itemName=pigweed.pigweed
+
+All you need to do is install the `Pigweed extension`_ from the extension
 marketplace. If you start your project from one of Pigweed's quickstart or
 showcase example projects, you will be prompted to install the extension as soon
 as you open the project.
