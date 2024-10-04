@@ -8,8 +8,19 @@
       share ideas and projects related to Pigweed.
     </description>
     <language>en-us</language>
-    <pubDate>Mon, 30 Sep 2024 13:47:00 -0700</pubDate>
+    <pubDate>Mon, 7 Oct 2024 08:00:00 -0700</pubDate>
     <atom:link href="https://pigweed.dev/rss.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>C++20 coroutines without heap allocation</title>
+      <link>https://pigweed.dev/docs/blog/05-coroutines.html</link>
+      <description>
+        This blog post describes how you can use C++20 coroutines to create
+        embedded-friendly async code without writing manual state machines or
+        callbacks.
+      </description>
+      <pubDate>Mon, 7 Oct 2024 08:00:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/05-coroutines.html</guid>
+    </item>
     <item>
       <title>Fixed-point arithmetic as a replacement for soft floats</title>
       <link>https://pigweed.dev/docs/blog/04-fixed-point.html</link>

@@ -32,6 +32,8 @@ pw_doc_group("static_assets") {
 # split out from the overall docgen target below.
 pw_doc_group("core_docs") {
   inputs = [
+    "$dir_pw_async2/examples/coro_blinky_loop.cc",
+    "$dir_pw_async2/public/pw_async2/coro.h",
     "$dir_pw_build/pigweed.bazelrc",
     "$dir_pw_build/py/gn_tests/BUILD.gn",
     "$dir_pw_build/py/pw_build/generate_python_wheel_cache.py",
@@ -46,6 +48,7 @@ pw_doc_group("core_docs") {
     "blog/02-bazel-feature-flags.rst",
     "blog/03-pigweed-sdk.rst",
     "blog/04-fixed-point.rst",
+    "blog/05-coroutines.rst",
     "blog/index.rst",
     "blog/rss.xml",
     "code_of_conduct.rst",
