@@ -331,8 +331,15 @@ void Call::HandlePayload(ConstByteSpan payload) {
     on_next_ = std::move(on_next_local);
   }
 
-  // Clean up calls in case decoding failed.
-  endpoint_->CleanUpCalls();
+  // The call could have been reinitialized and cleaned up already by another
+  // thread that acquired the rpc_lock() while on_next_local was executing
+  // without lock held.
+  if (endpoint_ != nullptr) {
+    // Clean up calls in case decoding failed.
+    endpoint_->CleanUpCalls();
+  } else {
+    rpc_lock().unlock();
+  }
 }
 
 void Call::CloseClientCall() {
