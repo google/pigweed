@@ -1,0 +1,50 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("@rules_python//python:defs.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "pw_docgen",
+    srcs = [
+        "pw_docgen/__init__.py",
+        "pw_docgen/sphinx/__init__.py",
+        "pw_docgen/sphinx/bug.py",
+        "pw_docgen/sphinx/google_analytics.py",
+        "pw_docgen/sphinx/kconfig.py",
+        "pw_docgen/sphinx/module_metadata.py",
+        "pw_docgen/sphinx/modules_index.py",
+        "pw_docgen/sphinx/pigweed_live.py",
+        "pw_docgen/sphinx/pw_status_codes.py",
+        "pw_docgen/sphinx/seed_metadata.py",
+    ],
+    # TODO: https://pwbug.dev/371563295 - Remove these data dependencies after
+    # pigweed.dev-specific extensions have been moved out of pw_docgen.
+    data = [
+        "//:PIGWEED_MODULES",
+        "//docs:module_metadata.json",
+        "//docs:module_metadata_schema.json",
+    ],
+    imports = ["."],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "//pw_status/py:pw_status",
+        "@python_packages//kconfiglib",
+        "@python_packages//pytz",
+        "@python_packages//sphinx",
+        "@rules_python//python/runfiles",
+    ],
+)

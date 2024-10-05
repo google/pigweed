@@ -25,6 +25,7 @@ exports_files(
 exports_files(
     [
         "pigweed.json",
+        "PIGWEED_MODULES",
         "tsconfig.json",
     ],
     visibility = [":__subpackages__"],

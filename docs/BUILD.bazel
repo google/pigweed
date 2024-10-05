@@ -12,4 +12,47 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# TODO(mohrr) figure out how to do this in bazel
+load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("@rules_python//sphinxdocs:sphinx.bzl", "sphinx_build_binary", "sphinx_docs")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+exports_files([
+    "module_metadata.json",
+    "module_metadata_schema.json",
+])
+
+sphinx_docs(
+    name = "docs",
+    srcs = [
+        "index.rst",
+        "modules.rst",
+    ],
+    config = "conf.py",
+    formats = [
+        "html",
+    ],
+    sphinx = ":sphinx-build",
+    strip_prefix = "docs/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+sphinx_build_binary(
+    name = "sphinx-build",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "//pw_console/py:pw_console",
+        "//pw_docgen/py:pw_docgen",
+        "@python_packages//breathe",
+        "@python_packages//pydata_sphinx_theme",
+        "@python_packages//sphinx",
+        "@python_packages//sphinx_argparse",
+        "@python_packages//sphinx_copybutton",
+        "@python_packages//sphinx_design",
+        "@python_packages//sphinx_reredirects",
+        "@python_packages//sphinx_sitemap",
+        "@python_packages//sphinxcontrib_mermaid",
+    ],
+)

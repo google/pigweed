@@ -5,12 +5,21 @@ Docs contributors
 =================
 Authoring guidelines and style guides for ``pigweed.dev`` contributors.
 
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`list-ordered` Docs contributor quickstart
+      :link: contrib-docs-quickstart
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      How to contribute updates to ``pigweed.dev`` content.
+
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`checklist` Module docs guidelines
       :link: docs-contrib-docs-modules
       :link-type: ref
-      :class-item: sales-pitch-cta-primary
+      :class-item: sales-pitch-cta-secondary
 
       How to structure and write docs for Pigweed modules.
 
@@ -62,6 +71,7 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
    :maxdepth: 1
    :hidden:
 
+   quickstart
    modules
    Writing <../../style/writing>
    reStructuredText <../../style/rest>

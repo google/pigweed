@@ -58,6 +58,7 @@ pw_doc_group("core_docs") {
     "contributing/docs/changelog.rst",
     "contributing/docs/index.rst",
     "contributing/docs/modules.rst",
+    "contributing/docs/quickstart.rst",
     "contributing/docs/website.rst",
     "contributing/index.rst",
     "embedded_cpp_guide.rst",

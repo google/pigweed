@@ -20,10 +20,20 @@ import sys
 from sphinx.application import Sphinx
 
 
-with open(f'{os.environ["PW_ROOT"]}/PIGWEED_MODULES', 'r') as f:
+try:  # Bazel location for the data
+    from python.runfiles import runfiles  # type: ignore
+
+    r = runfiles.Create()
+    modules_file = r.Rlocation('pigweed/PIGWEED_MODULES')
+    r = runfiles.Create()
+    metadata_file = r.Rlocation('pigweed/docs/module_metadata.json')
+except ImportError:  # GN location for the data
+    modules_file = f'{os.environ["PW_ROOT"]}/PIGWEED_MODULES'
+    metadata_file = f'{os.environ["PW_ROOT"]}/docs/module_metadata.json'
+with open(modules_file, 'r') as f:
     # The complete, authoritative list of modules.
     complete_pigweed_modules_list = f.read().splitlines()
-with open(f'{os.environ["PW_ROOT"]}/docs/module_metadata.json', 'r') as f:
+with open(metadata_file, 'r') as f:
     # Module metadata such as supported languages and status.
     metadata = json.load(f)
 
