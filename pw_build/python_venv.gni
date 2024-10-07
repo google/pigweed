@@ -163,11 +163,10 @@ template("pw_python_venv") {
                             "($pw_build_PYTHON_TOOLCHAIN)" ]
       }
 
-      # pw_build/py is always needed for venv creation and Python lint checks.
-      python_metadata_deps =
-          [ get_label_info("$dir_pw_build/py", "label_no_toolchain") +
-            "($pw_build_PYTHON_TOOLCHAIN)" ]
-      python_metadata_deps += _pkg_gn_labels
+      # Add target packages to the python_metadata_deps. This will let
+      # GN expand the transitive pw_python_package deps which are read
+      # by generate_python_requirements.py
+      python_metadata_deps = _pkg_gn_labels
 
       args = [
         "--gn-root-build-dir",
