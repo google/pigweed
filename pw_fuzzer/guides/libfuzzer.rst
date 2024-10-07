@@ -52,25 +52,11 @@ installation. In order to use it, you only need to define a suitable toolchain.
    .. tab-item:: Bazel
       :sync: bazel
 
-      Include ``rules_fuzzing`` in your ``WORKSPACE`` file. For example:
+      Include ``rules_fuzzing`` in your ``MODULE.bazel`` file. For example:
 
       .. code-block::
 
-         # Set up rules for fuzz testing.
-         http_archive(
-             name = "rules_fuzzing",
-             sha256 = "d9002dd3cd6437017f08593124fdd1b13b3473c7b929ceb0e60d317cb9346118",
-             strip_prefix = "rules_fuzzing-0.3.2",
-             urls = ["https://github.com/bazelbuild/rules_fuzzing/archive/v0.3.2.zip"],
-         )
-
-         load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")
-
-         rules_fuzzing_dependencies()
-
-         load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
-
-         rules_fuzzing_init()
+         bazel_dep(name = "rules_fuzzing", version = "0.5.2")
 
       Then, import the libFuzzer build configurations in your ``.bazelrc`` file
       by adding and adapting the following:
@@ -78,7 +64,7 @@ installation. In order to use it, you only need to define a suitable toolchain.
       .. code-block::
 
          # Include FuzzTest build configurations.
-         try-import %workspace%/path/to/pigweed/pw_fuzzer/libfuzzer.bazelrc
+         import %workspace%/path/to/pigweed/pw_fuzzer/libfuzzer.bazelrc
 
 ------------------------------------
 Step 1: Write a fuzz target function
@@ -218,7 +204,7 @@ build systems.
    .. tab-item:: Bazel
       :sync: bazel
 
-      Fuzzer unit tests are not generated for Pigweed's Bazel build.
+      Fuzzer unit tests are included automatically in Pigweed's Bazel build.
 
 ------------------------
 Step 4: Build the fuzzer
@@ -255,13 +241,11 @@ runtimes when building.
    .. tab-item:: Bazel
       :sync: bazel
 
-      Specify the `AddressSanitizer`_
-      :ref:`fuzzing toolchain<module-pw_fuzzer-guides-using_libfuzzer-toolchain>`
-      via a ``--config`` when building fuzzers.
+      Specify the libFuzzer config and a sanitizer config when building fuzzers.
 
       .. code-block:: sh
 
-         $ bazel build //my_module:my_fuzzer --config=asan-libfuzzer
+         $ bazel build //my_module:my_fuzzer --config=asan --config=libfuzzer
 
 ----------------------------------
 Step 5: Running the fuzzer locally
@@ -290,17 +274,14 @@ Step 5: Running the fuzzer locally
    .. tab-item:: Bazel
       :sync: bazel
 
-      Specify the `AddressSanitizer`_
-      :ref:`fuzzing toolchain<module-pw_fuzzer-guides-using_libfuzzer-toolchain>`
-      via a ``--config`` when building and running fuzzers. For a fuzz test with
-      a ``<name>``, use the generated launcher tool ``<name>_run``. Additional
-      `libFuzzer options`_ and `corpus`_ arguments can be passed on the command
-      line. For example:
+      Specify the libFuzzer config and a sanitizer config when building and
+      running fuzzers. For each fuzzer build rule with a given name,
+      `rules_fuzzing`_ produces a ``<name>_run`` target. For example:
 
       .. code-block:: sh
 
-         $ bazel run //my_module:my_fuzzer_run --config=asan-libfuzzer -- \
-           -seed=1 path/to/corpus -max_total_time=5
+         $ bazel run //my_module:my_fuzzer_run --config=asan --config=libfuzzer\
+             -- --timeout_secs=60
 
 Running the fuzzer should produce output similar to the following:
 
@@ -330,6 +311,7 @@ Running the fuzzer should produce output similar to the following:
 .. * `Run it continuously on a fuzzing infrastructure <continuous_fuzzing>`_.
 .. * `Measure its code coverage and improve it <improve_a_fuzzer>`_.
 
+.. inclusive-language: disable
 
 .. _AddressSanitizer: https://github.com/google/sanitizers/wiki/AddressSanitizer
 .. _continuous_fuzzing: :ref:`module-pw_fuzzer-guides-continuous_fuzzing`
@@ -340,8 +322,11 @@ Running the fuzzer should produce output similar to the following:
 .. _improve_fuzzers: :ref:`module-pw_fuzzer-guides-improve_fuzzers
 .. _libFuzzer: https://llvm.org/docs/LibFuzzer.html
 .. _libFuzzer options: https://llvm.org/docs/LibFuzzer.html#options
+.. _rules_fuzzing: https://github.com/bazel-contrib/rules_fuzzing/blob/master/docs/guide.md#building-and-running
 .. _sanitizer flags: https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
 .. _split a fuzzing input: https://github.com/google/fuzzing/blob/HEAD/docs/split-inputs.md
 .. _startup initialization: https://llvm.org/docs/LibFuzzer.html#startup-initialization
 .. _structure aware fuzzing: https://github.com/google/fuzzing/blob/HEAD/docs/structure-aware-fuzzing.md
 .. _valid options: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
+
+.. inclusive-language: enable
