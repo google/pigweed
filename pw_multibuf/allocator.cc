@@ -14,6 +14,8 @@
 
 #include "pw_multibuf/allocator.h"
 
+#include <mutex>
+
 #include "pw_assert/check.h"
 
 namespace pw::multibuf {
