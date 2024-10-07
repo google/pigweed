@@ -114,23 +114,10 @@ class BucketBlockAllocator
       if (!result.ok()) {
         break;
       }
-      BlockType* prev = block->Prev();
-      switch (*result) {
-        case BlockAllocType::kExact:
-          break;
-        case BlockAllocType::kNewPrev:
-          // The new free block needs to be added to a bucket.
-          RecycleBlock(prev);
-          break;
-        case BlockAllocType::kShiftToPrev:
-          // The previous block is guaranteed to be in use, and so does not need
-          // to be moved between buckets, even if its size changes.
-          break;
-        case BlockAllocType::kNewNext:
-        case BlockAllocType::kNewPrevAndNewNext:
-        case BlockAllocType::kShiftToPrevAndNewNext:
-          // `AllocLast` never creates a trailing block.
-          PW_CRASH("unreachable");
+      if (result.prev() == BlockResult::Prev::kSplitNew) {
+        // The new free block needs to be added to a bucket.
+        BlockType* prev = block->Prev();
+        RecycleBlock(prev);
       }
       return block;
     }
