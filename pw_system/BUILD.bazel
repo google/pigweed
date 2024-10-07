@@ -562,8 +562,7 @@ cc_library(
         "threads.cc",
     ],
     hdrs = ["public/pw_system/system.h"],
-    includes = ["public"],
-    deps = [
+    implementation_deps = [
         ":async_packet_io",
         ":device_service",
         ":file_manager",
@@ -572,16 +571,12 @@ cc_library(
         ":thread_snapshot_service",
         ":transfer_service",
         ":work_queue",
-        "//pw_allocator:allocator",
         "//pw_allocator:best_fit_block_allocator",
         "//pw_allocator:synchronized_allocator",
         "//pw_async2:allocate_task",
-        "//pw_async2:dispatcher",
         "//pw_async2:pend_func_task",
-        "//pw_channel",
         "//pw_hdlc:router",
         "//pw_multibuf:simple_allocator",
-        "//pw_rpc",
         "//pw_rpc/pwpb:echo_service",
         "//pw_sync:interrupt_spin_lock",
         "//pw_thread:thread",
@@ -592,6 +587,13 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_async2:dispatcher",
+        "//pw_channel",
+        "//pw_rpc",
+    ],
 )
 
 cc_library(
