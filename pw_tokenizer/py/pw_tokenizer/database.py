@@ -222,13 +222,12 @@ def _load_token_database(  # pylint: disable=too-many-return-statements
 
 
 def load_token_database(
-    *databases, domain: str | Pattern[str] = tokens.DEFAULT_DOMAIN
+    *databases, domain: Pattern[str] = re.compile('.*')  # Load all by default
 ) -> tokens.Database:
     """Loads a Database from supported database types.
 
     Supports Database objects, JSONs, ELFs, CSVs, and binary databases.
     """
-    domain = re.compile(domain)
     return tokens.Database.merged(
         *(_load_token_database(db, domain) for db in databases)
     )
@@ -270,7 +269,7 @@ def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:
 
         for domain in domains:
             domain_reports[domain] = database_summary(
-                load_token_database(path, domain=domain)
+                load_token_database(path, domain=re.compile(domain))
             )
 
         reports[str(path)] = domain_reports
@@ -421,9 +420,9 @@ class ExpandGlobs(argparse.Action):
 
 
 def _read_elf_with_domain(
-    elf: str, domain: Pattern[str]
+    elf: Path, domain: Pattern[str]
 ) -> Iterable[tokens.Database]:
-    for path in expand_paths_or_globs(elf):
+    for path in expand_paths_or_globs(str(elf)):
         with path.open('rb') as file:
             if not elf_reader.compatible_file(file):
                 raise ValueError(
@@ -434,6 +433,38 @@ def _read_elf_with_domain(
             yield _database_from_elf(file, domain)
 
 
+def parse_domain(path: Path | str) -> tuple[Path, Pattern[str] | None]:
+    """Extracts an optional domain regex pattern suffix from a path"""
+    path = Path(path)
+    delimiters = path.name.count('#')
+
+    if delimiters == 0:
+        return path, None
+
+    if delimiters == 1:
+        name, domain = path.name.split('#')
+        return path.with_name(name), re.compile(domain)
+
+    raise ValueError(f'{path} has {delimiters} "#" delimiters; expected 0 or 1')
+
+
+def _parse_paths(values: Iterable[str]) -> list[tokens.Database]:
+    databases: list[tokens.Database] = []
+    paths: Set[Path] = set()
+
+    for value in values:
+        path, domain = parse_domain(value)
+        if domain is None:
+            paths.update(expand_paths_or_globs(value))
+        else:
+            databases.extend(_read_elf_with_domain(path, domain))
+
+    for path in paths:
+        databases.append(load_token_database(path))
+
+    return databases
+
+
 class LoadTokenDatabases(argparse.Action):
     """Argparse action that reads tokenize databases from paths or globs.
 
@@ -442,36 +473,17 @@ class LoadTokenDatabases(argparse.Action):
     """
 
     def __call__(self, parser, namespace, values, option_string=None) -> None:
-        databases: list[tokens.Database] = []
-        paths: Set[Path] = set()
-
         try:
-            for value in values:
-                if value.count('#') == 1:
-                    path, domain = value.split('#')
-                    domain = re.compile(domain)
-                    databases.extend(_read_elf_with_domain(path, domain))
-                else:
-                    paths.update(expand_paths_or_globs(value))
+            setattr(namespace, self.dest, _parse_paths(values))
+            return
+        except (
+            ValueError,
+            FileNotFoundError,
+            tokens.DatabaseFormatError,
+        ) as err:
+            error = str(err)
 
-            for path in paths:
-                databases.append(load_token_database(path))
-        except tokens.DatabaseFormatError as err:
-            parser.error(
-                f'argument elf_or_token_database: {path} is not a supported '
-                'token database file. Only ELF files or token databases (CSV '
-                f'or binary format) are supported. {err}. '
-            )
-        except FileNotFoundError as err:
-            parser.error(f'argument elf_or_token_database: {err}')
-        except:  # pylint: disable=bare-except
-            _LOG.exception('Failed to load token database %s', path)
-            parser.error(
-                'argument elf_or_token_database: '
-                f'Error occurred while loading token database {path}'
-            )
-
-        setattr(namespace, self.dest, databases)
+        parser.error(f'argument elf_or_token_database: {error}')
 
 
 def token_databases_parser(nargs: str = '+') -> argparse.ArgumentParser:

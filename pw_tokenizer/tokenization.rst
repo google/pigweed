@@ -500,14 +500,15 @@ default domain is sufficient, so no additional configuration is required.
    // Tokenizes this string to the "my_custom_domain" domain.
    PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
 
-The database and detokenization command line tools default to reading from the
-default domain. The domain may be specified for ELF files by appending
-``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
-example, the following reads strings in ``some_domain`` from ``my_image.elf``.
+The database and detokenization command line tools default to loading tokens
+from all domains. The domain may be specified for ELF files by appending
+``#DOMAIN_NAME_REGEX`` to the file path. Use ``#`` to only read from the default
+domain. For example, the following reads strings in ``some_domain`` from
+``my_image.elf``.
 
 .. code-block:: sh
 
-   ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
+   ./database.py create --database my_db.csv "path/to/my_image.elf#some_domain"
 
 See :ref:`module-pw_tokenizer-managing-token-databases` for information about
 the ``database.py`` command line tool.

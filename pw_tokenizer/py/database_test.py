@@ -188,7 +188,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         run_cli('create', '--database', self._csv, self._elf)
 
         self.assertEqual(
-            CSV_DEFAULT_DOMAIN.splitlines(), self._csv.read_text().splitlines()
+            CSV_ALL_DOMAINS.splitlines(), self._csv.read_text().splitlines()
         )
 
     def test_create_csv_from_three_column_csv(self) -> None:
@@ -211,11 +211,26 @@ class DatabaseCommandLineTest(unittest.TestCase):
         )
 
     def test_create_csv_all_domains(self) -> None:
+        run_cli('create', '--database', self._csv, self._elf)
+
+        self.assertEqual(
+            CSV_ALL_DOMAINS.splitlines(), self._csv.read_text().splitlines()
+        )
+
+    def test_create_csv_all_domains_regex(self) -> None:
         run_cli('create', '--database', self._csv, f'{self._elf}#.*')
 
         self.assertEqual(
             CSV_ALL_DOMAINS.splitlines(), self._csv.read_text().splitlines()
         )
+
+    def test_invalid_domain_pattern(self) -> None:
+        with self.assertRaises(SystemExit):
+            run_cli('create', '--database', self._csv, f'{self._elf}#.*#')
+
+    def test_invalid_glob(self) -> None:
+        with self.assertRaises(SystemExit):
+            run_cli('create', '--database', self._csv, 'INVALID PATH')
 
     def test_create_force(self) -> None:
         self._csv.write_text(CSV_ALL_DOMAINS)
@@ -227,7 +242,14 @@ class DatabaseCommandLineTest(unittest.TestCase):
 
     def test_create_binary(self) -> None:
         binary = self._dir / 'db.bin'
-        run_cli('create', '--type', 'binary', '--database', binary, self._elf)
+        run_cli(
+            'create',
+            '--type',
+            'binary',
+            '--database',
+            binary,
+            f'{self._elf}#',  # Only default domain since v1 DB excludes domain.
+        )
 
         # Write the binary database as CSV to verify its contents.
         run_cli('create', '--database', self._csv, binary)
@@ -259,7 +281,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
             self._csv,
             '--date',
             '1998-09-04',
-            self._elf,
+            f'{self._elf}#',  # Only load the default domain for this test.
         )
 
         # Add the removal date to the tokens not in the default domain
@@ -325,7 +347,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
             'create',
             '--database',
             self._csv,
-            self._elf,
+            f'{self._elf}#',  # Only load the default domain for this test.
             '--replace',
             r'(?i)\b[jh]ello\b/' + sub,
         )
@@ -416,7 +438,7 @@ class DirectoryDatabaseCommandLineTest(unittest.TestCase):
         self._db_csv = directory.pop()
 
         self.assertEqual(
-            CSV_DEFAULT_DOMAIN.splitlines(),
+            CSV_ALL_DOMAINS.splitlines(),
             self._db_csv.read_text().splitlines(),
         )
 
@@ -508,7 +530,7 @@ class DirectoryDatabaseCommandLineTest(unittest.TestCase):
         # the CSV content is the same as CSV_DEFAULT_DOMAIN.
         self.assertEqual(first_path_in_db, reused_path_in_db)
         self.assertEqual(
-            CSV_DEFAULT_DOMAIN.splitlines(),
+            CSV_ALL_DOMAINS.splitlines(),
             reused_path_in_db.read_text().splitlines(),
         )
 

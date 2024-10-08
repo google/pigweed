@@ -477,27 +477,6 @@ class Detokenizer:
         return original
 
 
-# TODO: b/265334753 - Reuse this function in database.py:LoadTokenDatabases
-def _parse_domain(path: Path | str) -> tuple[Path, Pattern[str] | None]:
-    """Extracts an optional domain regex pattern suffix from a path"""
-
-    if isinstance(path, Path):
-        path = str(path)
-
-    delimiters = path.count('#')
-
-    if delimiters == 0:
-        return Path(path), None
-
-    if delimiters == 1:
-        path, domain = path.split('#')
-        return Path(path), re.compile(domain)
-
-    raise ValueError(
-        f'Too many # delimiters. Expected 0 or 1, found {delimiters}'
-    )
-
-
 class AutoUpdatingDetokenizer(Detokenizer):
     """Loads and updates a detokenizer from database paths."""
 
@@ -505,7 +484,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
         """Tracks the modified time of a path or file object."""
 
         def __init__(self, path: Path | str) -> None:
-            self.path, self.domain = _parse_domain(path)
+            self.path, self.domain = database.parse_domain(path)
             self._modified_time: float | None = self._last_modified_time()
 
         def updated(self) -> bool:
