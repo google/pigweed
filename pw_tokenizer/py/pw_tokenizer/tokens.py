@@ -516,25 +516,9 @@ def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
             )
 
 
-# TODO: b/364955916 - Remove this function when domains are written to
-#     databases.
-def _ignore_domains(
-    entries: Iterable[TokenizedStringEntry],
-) -> list[TokenizedStringEntry]:
-    """Prevent duplicate lines until domains are included in databases."""
-    no_domain = {}
-    for entry in entries:
-        new_entry = TokenizedStringEntry(
-            entry.token, entry.string, date_removed=entry.date_removed
-        )
-        no_domain[new_entry.key()] = new_entry
-
-    return sorted(no_domain.values())
-
-
 def write_csv(database: Database, fd: IO[bytes]) -> None:
     """Writes the database as CSV to the provided binary file."""
-    for entry in _ignore_domains(sorted(database.entries())):
+    for entry in sorted(database.entries()):
         _write_csv_line(fd, entry)
 
 
@@ -543,12 +527,13 @@ def _write_csv_line(fd: IO[bytes], entry: TokenizedStringEntry):
     # Align the CSV output to 10-character columns for improved readability.
     # Use \n instead of RFC 4180's \r\n.
     fd.write(
-        '{:08x},{:10},"{}"\n'.format(
+        '{:08x},{:10},"{}","{}"\n'.format(
             entry.token,
             entry.date_removed.date().isoformat() if entry.date_removed else '',
+            entry.domain.replace('"', '""'),  # escape " as ""
             entry.string.replace('"', '""'),
         ).encode()
-    )  # escape " as ""
+    )
 
 
 class _BinaryFileFormat(NamedTuple):
@@ -644,7 +629,7 @@ def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
 
 def write_binary(database: Database, fd: BinaryIO) -> None:
     """Writes the database as packed binary to the provided binary file."""
-    entries = _ignore_domains(sorted(database.entries()))
+    entries = sorted(database.entries())
 
     fd.write(BINARY_FORMAT.header.pack(BINARY_FORMAT.magic, len(entries)))
 

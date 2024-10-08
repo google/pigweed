@@ -34,70 +34,71 @@ from pw_tokenizer import database
 #
 #   arm-none-eabi-objcopy -S --only-section ".pw_tokenize*" <ELF> <OUTPUT>
 #
-TOKENIZED_ENTRIES_ELF = (
-    Path(__file__).parent / 'example_binary_with_tokenized_strings.elf'
+TOKENIZED_ENTRIES_ELF = Path(__file__).with_name(
+    'example_binary_with_tokenized_strings.elf'
 )
 
 CSV_DEFAULT_DOMAIN = '''\
-00000000,          ,""
-141c35d5,          ,"The answer: ""%s"""
-29aef586,          ,"1234"
-2b78825f,          ,"[:-)"
-2e668cd6,          ,"Jello, world!"
-31631781,          ,"%d"
-61fd1e26,          ,"%ld"
-68ab92da,          ,"%s there are %x (%.2f) of them%c"
-7b940e2a,          ,"Hello %s! %hd %e"
-7da55d52,          ,">:-[]"
-7f35a9a5,          ,"TestName"
-851beeb6,          ,"%u %d"
-881436a0,          ,"The answer is: %s"
-88808930,          ,"%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
-92723f44,          ,"???"
-a09d6698,          ,"won-won-won-wonderful"
-aa9ffa66,          ,"void pw::tokenizer::{anonymous}::TestName()"
-ad002c97,          ,"%llx"
-b3653e13,          ,"Jello!"
-cc6d3131,          ,"Jello?"
-e13b0f94,          ,"%llu"
-e65aefef,          ,"Won't fit : %s%d"
+00000000,          ,"",""
+141c35d5,          ,"","The answer: ""%s"""
+29aef586,          ,"","1234"
+2b78825f,          ,"","[:-)"
+2e668cd6,          ,"","Jello, world!"
+31631781,          ,"","%d"
+61fd1e26,          ,"","%ld"
+68ab92da,          ,"","%s there are %x (%.2f) of them%c"
+7b940e2a,          ,"","Hello %s! %hd %e"
+7da55d52,          ,"",">:-[]"
+7f35a9a5,          ,"","TestName"
+851beeb6,          ,"","%u %d"
+881436a0,          ,"","The answer is: %s"
+88808930,          ,"","%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
+92723f44,          ,"","???"
+a09d6698,          ,"","won-won-won-wonderful"
+aa9ffa66,          ,"","void pw::tokenizer::{anonymous}::TestName()"
+ad002c97,          ,"","%llx"
+b3653e13,          ,"","Jello!"
+cc6d3131,          ,"","Jello?"
+e13b0f94,          ,"","%llu"
+e65aefef,          ,"","Won't fit : %s%d"
 '''
 
 CSV_TEST_DOMAIN = """\
-17fa86d3,          ,"hello"
-18c5017c,          ,"yes"
-59b2701c,          ,"The answer was: %s"
-881436a0,          ,"The answer is: %s"
-d18ada0f,          ,"something"
+17fa86d3,          ,"TEST_DOMAIN","hello"
+18c5017c,          ,"TEST_DOMAIN","yes"
+59b2701c,          ,"TEST_DOMAIN","The answer was: %s"
+881436a0,          ,"TEST_DOMAIN","The answer is: %s"
+d18ada0f,          ,"TEST_DOMAIN","something"
 """
 
 CSV_ALL_DOMAINS = '''\
-00000000,          ,""
-141c35d5,          ,"The answer: ""%s"""
-17fa86d3,          ,"hello"
-18c5017c,          ,"yes"
-29aef586,          ,"1234"
-2b78825f,          ,"[:-)"
-2e668cd6,          ,"Jello, world!"
-31631781,          ,"%d"
-59b2701c,          ,"The answer was: %s"
-61fd1e26,          ,"%ld"
-68ab92da,          ,"%s there are %x (%.2f) of them%c"
-7b940e2a,          ,"Hello %s! %hd %e"
-7da55d52,          ,">:-[]"
-7f35a9a5,          ,"TestName"
-851beeb6,          ,"%u %d"
-881436a0,          ,"The answer is: %s"
-88808930,          ,"%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
-92723f44,          ,"???"
-a09d6698,          ,"won-won-won-wonderful"
-aa9ffa66,          ,"void pw::tokenizer::{anonymous}::TestName()"
-ad002c97,          ,"%llx"
-b3653e13,          ,"Jello!"
-cc6d3131,          ,"Jello?"
-d18ada0f,          ,"something"
-e13b0f94,          ,"%llu"
-e65aefef,          ,"Won't fit : %s%d"
+00000000,          ,"",""
+141c35d5,          ,"","The answer: ""%s"""
+29aef586,          ,"","1234"
+2b78825f,          ,"","[:-)"
+2e668cd6,          ,"","Jello, world!"
+31631781,          ,"","%d"
+61fd1e26,          ,"","%ld"
+68ab92da,          ,"","%s there are %x (%.2f) of them%c"
+7b940e2a,          ,"","Hello %s! %hd %e"
+7da55d52,          ,"",">:-[]"
+7f35a9a5,          ,"","TestName"
+851beeb6,          ,"","%u %d"
+881436a0,          ,"","The answer is: %s"
+88808930,          ,"","%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
+92723f44,          ,"","???"
+a09d6698,          ,"","won-won-won-wonderful"
+aa9ffa66,          ,"","void pw::tokenizer::{anonymous}::TestName()"
+ad002c97,          ,"","%llx"
+b3653e13,          ,"","Jello!"
+cc6d3131,          ,"","Jello?"
+e13b0f94,          ,"","%llu"
+e65aefef,          ,"","Won't fit : %s%d"
+17fa86d3,          ,"TEST_DOMAIN","hello"
+18c5017c,          ,"TEST_DOMAIN","yes"
+59b2701c,          ,"TEST_DOMAIN","The answer was: %s"
+881436a0,          ,"TEST_DOMAIN","The answer is: %s"
+d18ada0f,          ,"TEST_DOMAIN","something"
 '''
 
 JSON_SOURCE_STRINGS = '''\
@@ -111,12 +112,12 @@ JSON_SOURCE_STRINGS = '''\
 '''
 
 CSV_STRINGS = '''\
-2cbf627a,          ,"pigweed/pw_rpc/client_server.cc"
-666562a1,          ,"protocol_buffer/gen/pigweed/pw_protobuf/common_protos.proto_library/nanopb/pw_protobuf_protos/status.pb.h"
-6c1e6eb3,          ,"pigweed/pw_rpc/public/pw_rpc/client_server.h"
-b25a9932,          ,"This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
-eadf017f,          ,"pigweed/pw_polyfill/standard_library_public/pw_polyfill/standard_library/assert.h"
-f815dc5c,          ,"This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
+2cbf627a,          ,"","pigweed/pw_rpc/client_server.cc"
+666562a1,          ,"","protocol_buffer/gen/pigweed/pw_protobuf/common_protos.proto_library/nanopb/pw_protobuf_protos/status.pb.h"
+6c1e6eb3,          ,"","pigweed/pw_rpc/public/pw_rpc/client_server.h"
+b25a9932,          ,"","This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
+eadf017f,          ,"","pigweed/pw_polyfill/standard_library_public/pw_polyfill/standard_library/assert.h"
+f815dc5c,          ,"","This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
 '''
 
 EXPECTED_REPORT = {
@@ -190,6 +191,17 @@ class DatabaseCommandLineTest(unittest.TestCase):
             CSV_DEFAULT_DOMAIN.splitlines(), self._csv.read_text().splitlines()
         )
 
+    def test_create_csv_from_three_column_csv(self) -> None:
+        three_col_db = self._dir.joinpath('legacy.csv')
+        # Remove the domain column
+        three_col_db.write_text(CSV_TEST_DOMAIN.replace('"TEST_DOMAIN",', ''))
+        run_cli('create', '--database', self._csv, three_col_db)
+
+        tokens_in_default = CSV_TEST_DOMAIN.replace('"TEST_DOMAIN",', '"",')
+        self.assertEqual(
+            tokens_in_default.splitlines(), self._csv.read_text().splitlines()
+        )
+
     def test_create_csv_test_domain(self) -> None:
         run_cli('create', '--database', self._csv, f'{self._elf}#TEST_DOMAIN')
 
@@ -225,7 +237,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         )
 
     def test_add_does_not_recalculate_tokens(self) -> None:
-        db_with_custom_token = '01234567,          ,"hello"'
+        db_with_custom_token = '01234567,          ,"","hello"'
 
         to_add = self._dir / 'add_this.csv'
         to_add.write_text(db_with_custom_token + '\n')
@@ -238,6 +250,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         )
 
     def test_mark_removed(self) -> None:
+        """Tests adding a removal date to tokens in a CSV database."""
         self._csv.write_text(CSV_ALL_DOMAINS)
 
         run_cli(
@@ -249,20 +262,27 @@ class DatabaseCommandLineTest(unittest.TestCase):
             self._elf,
         )
 
-        # Add the removal date to the four tokens not in the default domain
+        # Add the removal date to the tokens not in the default domain
         new_csv = CSV_ALL_DOMAINS
         new_csv = new_csv.replace(
-            '17fa86d3,          ,"hello"', '17fa86d3,1998-09-04,"hello"'
+            '17fa86d3,          ,"TEST_DOMAIN","hello"',
+            '17fa86d3,1998-09-04,"TEST_DOMAIN","hello"',
         )
         new_csv = new_csv.replace(
-            '18c5017c,          ,"yes"', '18c5017c,1998-09-04,"yes"'
+            '18c5017c,          ,"TEST_DOMAIN","yes"',
+            '18c5017c,1998-09-04,"TEST_DOMAIN","yes"',
         )
         new_csv = new_csv.replace(
-            '59b2701c,          ,"The answer was: %s"',
-            '59b2701c,1998-09-04,"The answer was: %s"',
+            '59b2701c,          ,"TEST_DOMAIN","The answer was: %s"',
+            '59b2701c,1998-09-04,"TEST_DOMAIN","The answer was: %s"',
         )
         new_csv = new_csv.replace(
-            'd18ada0f,          ,"something"', 'd18ada0f,1998-09-04,"something"'
+            'd18ada0f,          ,"TEST_DOMAIN","something"',
+            'd18ada0f,1998-09-04,"TEST_DOMAIN","something"',
+        )
+        new_csv = new_csv.replace(
+            '881436a0,          ,"TEST_DOMAIN","The answer is: %s"',
+            '881436a0,1998-09-04,"TEST_DOMAIN","The answer is: %s"',
         )
         self.assertNotEqual(CSV_ALL_DOMAINS, new_csv)
 
