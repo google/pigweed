@@ -18,6 +18,7 @@ application."""
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 import functools
 from typing import (
     Iterable,
@@ -167,5 +168,8 @@ class ProgressBarImpl:
             remove_when_done=remove_when_done,
             total=total,
         )
+        # Ensure the elapsed time for the progress counter isn't ever
+        # zero by making the start time one second in the past.
+        counter.start_time = datetime.now() + timedelta(seconds=-1)
         self.counters.append(counter)
         return counter
