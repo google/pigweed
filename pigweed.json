@@ -166,6 +166,12 @@
             "//..."
           ]
         ],
+        "docs": [
+          [
+            "build",
+            "//docs"
+          ]
+        ],
         "integration": [
           [
             "test",
