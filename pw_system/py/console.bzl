@@ -45,7 +45,7 @@ def device_simulator_console(
       **kwargs: Passed to native_binary.
     """
     data = [host_binary]
-    args = [
+    args = kwargs.get("args", []) + [
         "--sim-binary",
         "$(rootpath " + host_binary + ")",
         "--socket-addr",
@@ -98,7 +98,7 @@ def device_console(
       **kwargs: Passed to native_binary.
     """
     data = [binary]
-    args = [
+    args = kwargs.get("args", []) + [
         "--baudrate",
         baudrate,
         "--token-databases",

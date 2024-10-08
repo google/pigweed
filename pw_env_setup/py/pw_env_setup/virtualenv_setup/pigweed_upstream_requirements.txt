@@ -23,3 +23,5 @@ sphinx-sitemap==2.5.1
 robotframework==6.0.2
 # RP2040 utils.
 pyusb==1.2.1
+# python DAP implementation to ease VS Code python debugging
+debugpy==1.8.5

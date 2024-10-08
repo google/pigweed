@@ -286,6 +286,52 @@ to it from the console, run the following:
 
    bazelisk run //pw_system/py:pw_system_console -- -s 127.0.0.1:33000
 
+Debugging pw_system_console with VSCode
+---------------------------------------
+When running a python script through bazel, python is run inside a bazel sandbox,
+which can make re-creating this environment difficult when running the script
+outside of bazel to attach a debugger.
+
+To simplify debugging setup, Pigweed makes available the `debugpy <https://github.com/microsoft/debugpy>`__
+package to ease attaching ``pw_system_console``.
+
+First configure VSCode to add the following to the configuration section of ``launch.json``.
+This file can be automatically opened by selecting ``Run -> Open Configurations```, or
+``Run -> Add Configuration`` if there is no existing ``launch.json``.
+
+.. TODO: b/372079357 - can this be automated by the VSCode plugin?
+.. code-block:: json
+
+   "configurations": [
+   {
+     "name": "Python Debugger: Remote Attach",
+     "type": "debugpy",
+     "request": "attach",
+     "connect": {
+       "host": "localhost",
+       "port": 5678
+     },
+     "pathMappings": [
+       {
+         "localRoot": "${workspaceFolder}",
+         "remoteRoot": "."
+       }
+     ]
+   }
+
+  ]
+
+Next, run the console through bazel, adding the argument(s) ``--debugger-listen`` and optionally
+``--debugger-wait-for-client`` to pause the console until the debugger attached.  For example:
+
+.. code-block:: sh
+
+   bazelisk run //pw_system/py:pw_system_console -- --debugger-listen
+
+Once the console has been started, simply select ``Run -> Start Debugging`` and the VS code debugger
+will automatically attach to the running python console.
+
+
 API reference
 =============
 .. doxygenfunction:: pw::SystemStart

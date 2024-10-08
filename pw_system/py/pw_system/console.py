@@ -43,6 +43,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import debugpy  # type: ignore
+
 from pw_cli import log as pw_cli_log
 from pw_console import embed
 from pw_console import web
@@ -134,6 +136,19 @@ def add_logfile_args(
         default='pw_console-device-logs.txt',
         help='Device only log file.',
     )
+    parser.add_argument(
+        '--debugger-listen',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Start the debugpy listener.',
+    )
+    parser.add_argument(
+        '--debugger-wait-for-client',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Pause console start until a debugger connects.',
+    )
+
     return parser
 
 
@@ -302,8 +317,17 @@ def console(
     browser: bool = False,
     timestamp_decoder: Callable[[int], str] | None = None,
     device_connection: DeviceConnection | None = None,
+    debugger_listen: bool = False,
+    debugger_wait_for_client: bool = False,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
+
+    if debugger_listen or debugger_wait_for_client:
+        debugpy.listen(("localhost", 5678))
+
+    if debugger_wait_for_client:
+        debugpy.wait_for_client()
+
     # Don't send device logs to the root logger.
     _DEVICE_LOG.propagate = False
     # Create pw_console log_store.LogStore handlers. These are the data source
