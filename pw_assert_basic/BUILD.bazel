@@ -12,10 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_facade",
-)
+load("//pw_build:pw_facade.bzl", "pw_facade")
 
 package(default_visibility = ["//visibility:public"])
 

@@ -13,10 +13,7 @@
 # the License.
 
 load("//pw_build:compatibility.bzl", "host_backend_alias")
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_facade",
-)
+load("//pw_build:pw_facade.bzl", "pw_facade")
 
 package(default_visibility = ["//visibility:public"])
 

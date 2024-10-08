@@ -30,7 +30,7 @@ pw_unit_test
 
       .. code-block:: python
 
-         load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+         load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
          cc_library(
              name = "mylib",
@@ -159,7 +159,7 @@ Set up your build system
 
       .. code-block:: python
 
-         load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+         load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
          cc_library(
              name = "mylib",
@@ -390,7 +390,7 @@ skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
 
 .. code-block::
 
-   load("//pw_build:pigweed.bzl", "pw_cc_test")
+   load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
    pw_cc_test(
        name = "no_upstream_test",

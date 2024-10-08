@@ -12,11 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_perf_test",
-    "pw_cc_test",
-)
+load("//pw_perf_test:pw_cc_perf_test.bzl", "pw_cc_perf_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 

@@ -13,12 +13,9 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_test",
-    "pw_facade",
-)
+load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 

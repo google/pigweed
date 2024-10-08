@@ -13,10 +13,7 @@
 # the License.
 
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_linker_script",
-)
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 package(default_visibility = ["//visibility:public"])
 

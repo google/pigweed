@@ -13,7 +13,7 @@
 # the License.
 
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
-load("//pw_build:pigweed.bzl", "pw_cc_binary")
+load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//targets/rp2040:flash.bzl", "flash_rp2040")
 load("//targets/rp2040:transition.bzl", "RP2_SYSTEM_FLAGS", "rp2040_binary")
 

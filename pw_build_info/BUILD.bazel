@@ -12,15 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_test",
-)
 load("//pw_build:python.bzl", "pw_py_binary")
 load(
     "//pw_build_info:substitute_workspace_status.bzl",
     "pw_substitute_workspace_status",
 )
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 

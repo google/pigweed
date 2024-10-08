@@ -13,18 +13,15 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_binary",
-    "pw_cc_test",
-    "pw_facade",
-)
+load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
     "pw_proto_library",
 )
 load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
 load("//targets/rp2040:flash.bzl", "flash_rp2040")
 load("//targets/rp2040:transition.bzl", "rp2040_binary", "rp2350_binary")

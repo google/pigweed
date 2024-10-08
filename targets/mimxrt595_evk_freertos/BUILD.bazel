@@ -12,10 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_linker_script",
-)
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 package(default_visibility = ["//visibility:public"])
 

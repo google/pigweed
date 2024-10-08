@@ -13,7 +13,7 @@
 # the License.
 
 load("//pw_build:binary_tools.bzl", "pw_elf_to_bin", "pw_elf_to_dump")
-load("//pw_build:pigweed.bzl", "pw_linker_script")
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 cc_library(
     name = "header_test",

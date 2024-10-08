@@ -106,7 +106,7 @@ Build Your Test
       :sync: bazel
 
       Add your performance test to the build using the ``pw_cc_perf_test``
-      rule from ``//pw_build:pigweed.bzl``.
+      rule from ``//pw_perf_test:pw_cc_perf_test.bzl``.
 
       **Arguments**
 
@@ -116,7 +116,7 @@ Build Your Test
 
       .. code-block::
 
-         load("//pw_build:pigweed.bzl", "pw_cc_perf_test")
+         load("//pw_perf_test:pw_cc_perf_test.bzl", "pw_cc_perf_test")
 
          pw_cc_perf_test(
              name = "my_perf_test",
