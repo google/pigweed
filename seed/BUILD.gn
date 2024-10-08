@@ -249,8 +249,9 @@ pw_seed("0127") {
 pw_seed("0128") {
   title = "Abstracting Thread Creation"
   author = "Wyatt Hepler"
-  status = "Draft"
-  changelist = 206670
+  status = "Accepted"
+  sources = [ "0128-abstracting-thread-creation.rst" ]
+  facilitator = "Taylor Cramer"
 }
 
 pw_seed("0129") {

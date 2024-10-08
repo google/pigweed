@@ -1,0 +1,1023 @@
+.. _seed-0128:
+
+=================================
+0128: Abstracting Thread Creation
+=================================
+.. seed::
+   :number: 128
+   :name: Abstracting Thread Creation
+   :status: Accepted
+   :proposal_date: 2024-04-25
+   :cl: 206670
+   :authors: Wyatt Hepler
+   :facilitator: Taylor Cramer
+
+-------
+Summary
+-------
+This SEED proposes supporting cross-platform thread creation with ``pw_thread``.
+It introduces APIs for creating a thread without referring to the specific OS /
+``pw_thread`` backend. This dramatically simplifies thread creation for the
+:ref:`vast majority <seed-0128-thread-config-survey>` of production use cases.
+It does so without sacrificing configurability or limiting users in any way.
+
+Key new features
+================
+- ``pw::ThreadAttrs`` describes cross-platform thread attributes:
+
+  - Thread name.
+  - Stack size.
+  - ``pw::ThreadPriority`` to represent a thread's priority.
+
+- ``pw::ThreadContext`` represents the resources required to run one thread.
+- ``pw::Thread`` can be started from ``ThreadAttrs`` and ``ThreadContext``.
+- Additions to the ``pw_thread`` facade to support the new functionality.
+
+pw_thread API overview
+======================
+With these changes, the key pw_thread features are as follows:
+
+.. topic:: Thread creation API
+
+   Key Types
+
+   - ``pw::Thread`` -- Thread handle. The thread might be unstarted, running, or
+     completed.
+   - ``pw::thread::Options`` -- Base class for platform-specific thread options.
+     priority.
+   - ``pw::ThreadAttrs`` -- Generic thread attributes: name, size, priority.
+     may include stack.
+   - ``pw::ThreadPriority`` -- Generic thread priority, with relative modifiers.
+   - ``pw::ThreadContext`` -- Generic thread resources. Depending on backend,
+   - ``pw::ThreadStack`` -- Optionally specify a thread stack separately from
+     the context.
+
+   Key methods
+
+   - ``pw::Thread`` -- Constructor, ``join()``.
+   - ``pw::ThreadAttrs`` -- ``set_name(name)``, ``set_priority(priority)``,
+     ``set_stack_size_bytes(bytes)``.
+   - ``pw::ThreadPriority`` -- ``Low()``, ``Medium()``, ``High()``,
+     ``NextHigher()``, ``NextLower()``, etc.
+
+Example
+=======
+.. code-block:: c++
+
+   // "example_project/threads.h"
+
+   // Define thread attributes for the main thread.
+   constexpr pw::ThreadAttrs kMainThread = pw::ThreadAttrs()
+         .set_name("app")
+         .set_priority(pw::ThreadPriority::Medium()),
+         .set_stack_size_bytes(MY_PROJECT_MAIN_STACK_SIZE_BYTES);
+
+   // Define attributes for another thread, based on kMainThread.
+   constexpr pw::ThreadAttrs kLogThread = pw::ThreadAttrs(kMainThread)
+         .set_name("logging")
+         .set_priority_next_lower();
+
+.. code-block:: c++
+
+   // "example_project/main.cc"
+
+   #include "example_project/threads.h"
+
+   // Declare a thread context that can be used to start a thread.
+   pw::ThreadContext<MY_PROJECT_APP_STACK_SIZE_BYTES> app_thread_context;
+
+   // Declare thread contexts associated with specific ThreadAttrs.
+   pw::ThreadContext<kMainThread> main_thread_context;
+   pw::ThreadContext<kLogThread> log_thread_context;
+
+   // Thread handle for a non-detached thread.
+   pw::Thread app_thread;
+
+   void StartThreads() {
+     // Start the main and logging threads.
+     pw::Thread(main_thread_context, MainThreadBody).detach();
+     pw::Thread(log_thread_context, LoggingThreadBody).detach();
+
+     // Start an app thread that uses the app_thread_context. Since the stack size
+     // is not specified, the full stack provided by app_thread_context is used.
+     app_thread = pw::Thread(
+         app_thread_context, pw::ThreadAttrs().set_name("app 1"), AppThreadBody1);
+   }
+
+   void MainThreadBody() {
+     // Join the "app 1" thread and reuse the app_thread_context for a new thread.
+     app_thread.join();
+     app_thread = pw::Thread(
+         app_thread_context, pw::ThreadAttrs().set_name("app 2"), AppThreadBody2);
+     ...
+   }
+
+----------
+Motivation
+----------
+Pigweed's ``pw_thread`` module does not support cross-platform thread creation.
+Instead, threads must be created by instantiating a
+:cpp:class:`pw::thread::Options` specific to the thread backend. For example, to
+create a FreeRTOS thread, one must instantiate a
+:cpp:class:`pw::thread::freertos::Options` and configure it with a
+:cpp:class:`pw::thread::freertos::Context`
+
+Cross-platform thread creation was intentionally avoided in the ``pw_thread``
+API. It is not possible to specify thread attributes in a truly generic,
+portable way. Every OS/RTOS exposes a different set of thread parameters, and
+settings for one platform may behave completely differently or not exist on
+another.
+
+Cross-platform thread creation may not be possible to do perfectly, but avoiding
+it has significant downsides.
+
+- The current APIs optimize for control at the expense of usability. Thread
+  creation is complex.
+- Developers always have to deal with the full complexity of thread creation,
+  even for simple cases or when just getting started.
+- Users must learn a slightly different API for each RTOS. The full ``Thread``
+  API cannot be documented in one place.
+- Cross-platform code that creates threads must call functions that return
+  ``pw::thread::Options``. Each platform implements the functions as needed.
+  This requires exposing threads in the public API. Libraries such as
+  :ref:`module-pw_system` cannot add internal threads without breaking their
+  users.
+- Code for creating ``pw::thread::Options`` must be duplicated for each
+  platform.
+- Projects avoid writing cross-platform code and tests due to the complexity of
+  thread creation.
+
+``pw_system`` and threads
+=========================
+Currently, running :ref:`module-pw_system` requires writing custom low-level
+code that is aware of both ``pw_system`` and the RTOS it is running on
+(see e.g. `boot.cc
+<https://cs.opensource.google/pigweed/pigweed/+/4d23123c37a33638b2f1ce611423e74d385623ff:targets/stm32f429i_disc1_stm32cube/boot.cc;l=133>`_
+and `target_hooks.cc
+<https://cs.opensource.google/pigweed/pigweed/+/4d23123c37a33638b2f1ce611423e74d385623ff:pw_system/zephyr_target_hooks.cc>`_).
+Enabling cross-platform thread creation would make it easier to use
+``pw_system``. The code for running ``pw_system`` on any target would be the
+same: a single function call in ``main``. The user would no longer have to
+allocate stacks or create :cpp:class:`pw::thread::Options` for ``pw_system``
+threads; this could be managed by ``pw_system`` itself and configured with
+generic ``pw_system`` options if needed.
+
+Cross-platform thread creation also makes it easier for ``pw_system`` users to
+write their own code. Setting up a thread takes just two lines of code and no
+interactions with RTOS-specific APIs. A ``pw_system`` application created this
+way can run on any platform out of the box.
+
+---------------------
+Problem investigation
+---------------------
+Various cross-platform threading APIs exist today.
+
+C++ Standard Library
+====================
+The C++ Standard Library currently provides a limited cross-platform thread
+creation API in ``<thread>``. No thread attributes are exposed; threads are
+created with platform defaults.
+
+An effort is underway to standardize some thread attributes, giving users more
+control over threads while maintaining portability. See `P2019 -- Thread
+attributes
+<https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p2019r6.pdf>`_ for
+details. The latest proposal exposes the thread name and stack size. Some
+alternatives have also been proposed (`P3072
+<https://open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3072r2.html>`_).
+
+POSIX
+=====
+POSIX is a portable operating system API. The POSIX thread creation function
+``pthread_create`` takes a pointer to a ``pthread_attr_t`` struct. This struct
+may a support a wide variety thread options that are configured with functions
+such as ``pthread_attr_setstacksize``, ``pthread_attr_setschedpolicy``, and
+others. A thread's name can be set with ``pthread_setname_np``. See `man
+pthreads <https://man7.org/linux/man-pages/man7/pthreads.7.html>`_ for details.
+
+CMSIS-RTOS
+==========
+The `CMSIS-RTOS2 API
+<https://www.keil.com/pack/doc/CMSIS/RTOS2/html/index.html>`_ provides a generic
+RTOS interface intended for use with Arm Cortex devices. CMSIS-RTOS2 is
+implemented by several operating systems, including FreeRTOS and Arm's own Keil
+RTX5.
+
+CMSIS-RTOS2 provides a comprehensive set of thread attributes in its
+`osThreadAttr_t
+<https://www.keil.com/pack/doc/CMSIS/RTOS2/html/group__CMSIS__RTOS__ThreadMgmt.html#structosThreadAttr__t>`_
+struct. It also provides functions for initializing and controlling the
+scheduler, such as `osKernelStart
+<https://www.keil.com/pack/doc/CMSIS/RTOS2/html/group__CMSIS__RTOS__KernelCtrl.html#ga9ae2cc00f0d89d7b6a307bba942b5221>`_.
+
+--------
+Proposal
+--------
+The new cross-platform API does not replace the existing backend-specific thread
+creation APIs. The new API supports most production use cases, but does not
+expose the full capabilities and configuration of all supported RTOSes. It is
+intended to be easy to adopt, while providing a frictionless pathway to the
+current, fully configurable APIs if needed.
+
+With this proposal, per-target thread creation is simply a matter of setting
+variables differently for each target. This removes the need for duplicated code
+for creating platform-specific thread contexts and ``pw::thread::Options``.
+
+Generic thread attributes
+=========================
+This SEED introduces a limited set of cross-platform thread attributes. These
+generic attributes map to a platform-specific :cpp:class:`pw::thread::Options`.
+
+There are three thread attributes:
+
+- Name
+- Stack size
+- Priority
+
+Other attributes may be added in the future, such as dynamic or static
+resource allocation.
+
+Thread attributes are provided only as hints to the backend. Backends should
+respect thread attributes, if possible, but may ignore or adapt them depending
+on the OS's capabilities. Backends cannot fail to create thread because of how
+thread attributes are set, but users may check the backend's capabilities, such
+as whether thread priorities are supported, as needed.
+
+Examples of acceptable adaptations to thread attributes.
+
+- Ignore the thread name and stack size because the underlying API does not
+  support specifying them (e.g. C++'s ``<thread>``).
+- Silently truncate a thread name because the underlying RTOS only supports
+  shorter names.
+- Round up to the minimum required stack size from a smaller requested stack
+  size.
+- Add a fixed amount to a requested stack size to account for RTOS overhead.
+- Dynamically allocate the thread stack if it is above a certain size;
+  statically allocate it otherwise.
+
+.. _seed-0128-thread-config-survey:
+
+Why these thread attributes?
+----------------------------
+A survey of thread creation with Pigweed across a few large, production projects
+found that 99% of their thread configurations can be exactly represented with
+thread name, priority, stack size. The only exception was a single RTOS feature
+used in a few threads in one project.
+
+The proof is in the pudding: ``pw_thread`` users almost never need low-level,
+RTOS-specific threading features. Abstracting these three thread attributes
+dramatically simplifies thread creation, resulting in more portable,
+easier-to-test code. In the rare cases when more control is needed, the existing
+non-portable ``pw_thread`` API is ready to use.
+
+OS / RTOS support for thread attributes
+---------------------------------------
+Most OS APIs support the proposed thread attributes.
+
+.. list-table::
+   :header-rows: 1
+
+   * - OS / API
+     - function
+     - name
+     - stack size
+     - priority type
+     - priority levels
+   * - C++ ``<thread>``
+     - `std::thread <https://en.cppreference.com/w/cpp/thread/thread/thread>`_
+     - none
+     - none
+     - none
+     - none
+   * - POSIX
+     - `pthread_create
+       <https://man7.org/linux/man-pages/man3/pthread_create.3.html>`_
+     - `C string
+       <https://man7.org/linux/man-pages/man3/pthread_setname_np.3.html>`_
+     - `bytes
+       <https://man7.org/linux/man-pages/man3/pthread_attr_setstacksize.3.html>`_
+     - `pthread_attr_setschedparam <https://man7.org/linux/man-pages/man3/pthread_attr_setschedparam.3.html>`_
+     - `at least 32
+       <https://man7.org/linux/man-pages/man2/sched_get_priority_max.2.html>`_
+   * - `CMSIS-RTOS2 / Keil RTX5 <https://arm-software.github.io/CMSIS_6/latest/RTOS2/group__CMSIS__RTOS__ThreadMgmt.html>`_
+     - `osThreadNew <https://arm-software.github.io/CMSIS_6/latest/RTOS2/group__CMSIS__RTOS__ThreadMgmt.html#ga48d68b8666d99d28fa646ee1d2182b8f>`_
+     - `C string
+       <https://arm-software.github.io/CMSIS_6/latest/RTOS2/group__CMSIS__RTOS__ThreadMgmt.html#structosThreadAttr__t>`__
+     - bytes
+     - `osPriority_t
+       <https://arm-software.github.io/CMSIS_6/latest/RTOS2/group__CMSIS__RTOS__ThreadMgmt.html#gad4e3e0971b41f2d17584a8c6837342ec>`_
+     - 56
+   * - `embOS <https://www.segger.com/downloads/embos/UM01001>`_
+     - ``OS_TASK_Create()``
+     - | C string
+       | uses pointer
+     - bytes
+     - ``unsigned int``
+     - 2³²-2
+   * - `FreeRTOS <https://www.freertos.org>`_
+     - `xTaskCreateStatic <https://www.freertos.org/xTaskCreateStatic.html>`_
+     - | C string
+       | copies `configMAX_TASK_NAME_LEN <https://www.freertos.org/a00110.html#configMAX_TASK_NAME_LEN>`_
+     - words
+     - `unsigned int <https://www.freertos.org/RTOS-task-priority.html>`_
+     - | `configMAX_PRIORITIES <https://www.freertos.org/a00110.html#configMAX_PRIORITIES>`_
+       | `≤32 in some configs <https://www.freertos.org/a00110.html#configUSE_PORT_OPTIMISED_TASK_SELECTION>`_
+   * - `NuttX <https://nuttx.apache.org/docs/latest/index.html>`_
+     - | `task_create <https://nuttx.apache.org/docs/latest/reference/user/01_task_control.html#c.task_create>`_
+       | (also POSIX APIs)
+     - C string
+     - bytes
+     - ``int``
+     - `256 <https://github.com/apache/nuttx/blob/0ed714bba4280f98f35cb0df1f9d668099604f97/include/sys/types.h#L81>`_
+   * - `ThreadX <https://github.com/eclipse-threadx/rtos-docs>`_
+     - `tx_thread_create
+       <https://github.com/eclipse-threadx/rtos-docs/blob/80bd9fe9a33fa79257c75629be1b4438b84db7bc/rtos-docs/threadx/chapter4.md#tx_thread_create>`_
+     - `C string
+       <https://github.com/eclipse-threadx/rtos-docs/blob/80bd9fe9a33fa79257c75629be1b4438b84db7bc/rtos-docs/threadx/chapter4.md#example-54>`__
+     - bytes
+     - ``unsigned int`` (``TX_MAX_PRIORITIES - 1``)–0 (0 highest)
+     - `multiple of 32
+       <https://github.com/eclipse-threadx/threadx/blob/80bd9fe9a33fa79257c75629be1b4438b84db7bc/common/inc/tx_api.h#L2143>`_
+   * - ``pw::ThreadContext``
+     - :cpp:type:`pw::Thread`
+     - C string
+     - bytes
+     - custom class
+     - same as underying OS
+
+Creating threads
+================
+The APIs proposed in this SEED streamline thread creation for common use cases,
+while allowing for full configuration when necessary.
+
+Generally, projects should start with the minimum complexity required and
+increase the complexity only if more control is needed. Threads defined in
+upstream Pigweed should start with some configurability to avoid friction in
+downstream projects.
+
+Dynamic threads: "just give me a thread"
+----------------------------------------
+For simple cases, Pigweed will offer a new static ``pw::Thread::Start``
+function.
+
+.. code-block:: c++
+
+   #include "pw_thread/thread.h"
+
+   void CreateThreads() {
+     pw::Thread::Start([] { /* thread body */ ).detach();
+   }
+
+.. admonition:: When should I use ``pw::Thread::Start``?
+
+   - Experimenting
+   - Prototyping
+
+Declare a default thread
+------------------------
+Create a thread with ``DefaultThreadContext`` and default attributes. The
+``pw_thread`` backend starts a thread with a default name, stack size, and
+priority.
+
+.. code-block:: c++
+
+   #include "pw_thread/thread.h"
+
+   pw::DefaultThreadContext context;
+
+   void CreateThreads() {
+     pw::Thread(context, pw::ThreadAttrs(), [] { /* thread body */ }).detach();
+   }
+
+.. admonition:: When should I use default thread contexts?
+
+   - Experimenting
+   - Prototyping
+   - Testing
+   - Getting started
+
+Configurable thread attributes
+------------------------------
+Define a ``pw::ThreadAttrs`` and use it to create threads with
+``pw::ThreadContext<>``. Attributes are configured as needed using the project's
+configuration pattern.
+
+.. code-block:: c++
+
+   #include "pw_thread/thread.h"
+   #include "project/config.h"
+
+   constexpr auto kMyThread = pw::ThreadAttrs()
+       .set_name("my thread")
+       .set_priority(MY_THREAD_PRIORITY)
+       .set_stack_size_bytes(kMyThreadStackSizeBytes);
+
+   pw::ThreadContext<kMyThread> my_thread_context;
+
+   pw::Thread other_thread;
+   pw::ThreadContext<kOtherThreadStackSizeBytes> other_thread_context;
+
+   void StartThreads() {
+     pw::Thread(my_thread_context, [] { /* thread body */ }).detach();
+
+     other_thread = pw::Thread(other_thread_context,
+                               pw::ThreadAttrs().set_name("other"),
+                               OtherThreadBody);
+   }
+
+Example configuration header:
+
+.. code-block:: c++
+
+   // "project/config.h"
+
+   // Configurable thread priority. Can be changed by defining
+   // MY_THREAD_PRIORITY in the build system.
+   #ifndef MY_THREAD_PRIORITY
+   #define MY_THREAD_PRIORITY pw::ThreadPriority::High()
+   #endif  // MY_THREAD_PRIORITY
+
+   // Configuration may be based on the target platform.
+   #if BUILDING_FOR_PLATFORM_A
+   inline constexpr size_t kMyThreadStackSizeBytes = 2048;
+   inline constexpr size_t kOtherThreadStackSizeBytes = 1024;
+   #else
+   inline constexpr size_t kMyThreadStackSizeBytes = 1536;
+   inline constexpr size_t kOtherThreadStackSizeBytes = 512;
+   #endif  // BUILDING_FOR_PLATFORM_A
+
+.. admonition:: When should I use configurable thread attributes?
+
+   - Pigweed upstream development
+   - Production project development
+
+Platform-specific thread creation
+---------------------------------
+In the rare case that platform-specific thread configuration is required,
+provide a function that returns ``NativeOptions`` or ``const Options&`` and use
+it to create a thread. The function may be a facade, so each target can
+implement it differently. Projects may provide a default implementation of the
+function that uses ``pw::ThreadAttrs``.
+
+This approach is equivalent to the original non-portable ``pw_thread`` creation
+pattern, optionally with a ``pw::ThreadAttrs``-based default implementation of
+the function. This approach is only necessary for threads that specifically
+require non-portable features. Other threads should continue to use
+``pw::ThreadAttrs``.
+
+.. code-block:: c++
+
+   #include "pw_thread/thread.h"
+   #include "project/config.h"
+
+   // This function returns a `pw::thread::Options` for creating a thread.
+   pw::thread::NativeOptions GetThreadOptions();
+
+   // Optionally, provide a default implementation of `GetThreadOptions()` that
+   // uses `pw::ThreadAttrs`.
+   #if !PROJECT_CFG_THREAD_CUSTOM_OPTIONS
+
+   pw::thread::NativeOptions GetThreadOptions() {
+     static constinit pw::ThreadContext<project::cfg::kThreadStackSizeHintBytes> context;
+     return pw::thread::GetNativeOptions(
+         context, pw::ThreadAttrs().set_name("thread name"));
+   }
+
+   #endif  // !PROJECT_CFG_THREAD_CUSTOM_OPTIONS
+
+   // Call `GetThreadOptions()` to create a thread.
+   void CreateThreads() {
+     pw::Thread(GetThreadOptions(), [] { /* thread body */ }).detach();
+   }
+
+Example configuration header:
+
+.. code-block:: c++
+
+   // project/config.h
+
+   // Set to 1 to implement `GetThreadOptions()` and provide fully custom
+   // `pw::thread::Options` for the platform.
+   #ifndef PROJECT_CFG_THREAD_CUSTOM_OPTIONS
+   #define PROJECT_CFG_THREAD_CUSTOM_OPTIONS 0
+   #endif  // PROJECT_CFG_THREAD_CUSTOM_OPTIONS
+
+   // Stack size setting for the default thread options.
+   #ifndef PROJECT_CFG_THREAD_STACKS_SIZE_HINT
+   #define PROJECT_CFG_THREAD_STACKS_SIZE_HINT 2048
+   #endif  // PROJECT_CFG_THREAD_STACKS_SIZE_HINT
+
+   namespace project::cfg {
+
+   inline constexpr size_t kThreadStackSizeHintBytes = PROJECT_CFG_THREAD_STACKS_SIZE_HINT;
+
+   }  // namespace project::cfg
+
+This approach is not recommended as a starting point. It adds complexity that is
+unlikely to be necessary. Most projects should start with configurable
+``ThreadAttrs`` and add switch to platform-specific thread configuration only
+for threads that need it.
+
+.. admonition:: When should I use platform-specific thread creation?
+
+   - Pigweed upstream development, if a downstream user specifically requires
+     platform-specific thread features for a thread defined by Pigweed.
+   - Production project development that requires platform-specific thread
+     features.
+
+C++ implementation details
+==========================
+
+Facade additions
+-----------------
+This proposal adds a few items to the ``pw_thread`` facade:
+
+- Aliases for the native context types wrapped by ``pw::ThreadContext``.
+- Information about the range of supported thread priorities used by
+  ``pw::ThreadPriority``.
+- Alias for the native ``pw::thread::Options`` type.
+- Function that maps ``pw::ThreadContext`` and ``pw::ThreadAttrs`` to native
+  ``pw::thread::Options``.
+
+These features are used by ``pw_thread`` classes, not end users.
+
+.. code-block:: c++
+
+   // pw_thread_backend/thread_native.h
+
+   namespace pw::thread::backend {
+
+   // Native, non-templated context (resources).
+   using NativeContext = /* implementation-defined */;
+
+   // Thread context with a stack size hint. Must derive from or be the same
+   // type as `NativeContext`. Must be default constructible.
+   template <size_t kStackSizeHintBytes>
+   using NativeContextWithStack = /* implementation-defined */;
+
+   // Stack size to use when unspecified; 0 for platforms that do not support
+   // defining the stack size.
+   inline constexpr size_t kDefaultStackSizeBytes = /* implementation-defined */;
+
+   // Define the range of thread priority values. These values may represent a
+   // subset of priorities supported by the OS. The `kHighestPriority` may be
+   // numerically higher or lower than `kLowestPriority`, depending on the OS.
+   // Backends that do not support priorities must set `kLowestPriority` and
+   // `kHighestPriority` to the same value, and should use `int` for
+   // `NativePriority`.
+   using NativePriority = /* implementation-defined */;
+   inline constexpr NativePriority kLowestPriority = /* implementation-defined */;
+   inline constexpr NativePriority kHighestPriority = /* implementation-defined */;
+
+   // Native options class derived from pw::thread::Options.
+   using NativeOptions = /* implementation-defined */;
+
+   // Converts cross-platform ThreadAttrs to NativeOptions. May be defined
+   // in ``pw_thread_backend/thread_inline.h`` or in a .cc file.
+   NativeOptions GetNativeOptions(NativeContext& context,
+                                  const ThreadAttrs& attributes);
+
+   }  // namespace pw::thread::backend
+
+``pw_thread_stl`` example implementation:
+
+.. code-block:: c++
+
+   namespace pw::thread::backend {
+
+   using NativeContext = pw::thread::stl::Context;
+
+   // Ignore the stack size since it's not supported.
+   template <size_t>
+   using NativeContextWithStack = pw::thread::stl::Context;
+
+   inline constexpr size_t kDefaultStackSizeBytes = 0;
+
+   using NativePriority = int;
+   inline constexpr NativePriority kLowestPriority = 0;
+   inline constexpr NativePriority kHighestPriority = 0;
+
+   using NativeOptions = pw::thread::stl::Options;
+
+   inline NativeOptions GetNativeOptions(NativeContext&, const ThreadAttrs&) {
+     return pw::thread::stl::Options();
+   }
+
+   }  // namespace pw::thread::backend
+
+``pw_thread_freertos`` example implementation:
+
+.. code-block:: c++
+
+   namespace pw::thread::backend {
+
+   using NativeContext = pw::thread::freertos::StaticContext;
+
+   // Convert bytes to words, rounding up.
+   template <size_t kStackSizeBytes>
+   using NativeContextWithStack = pw::thread::stl::StaticContextWithStack<
+       (kStackSizeBytes + sizeof(StackType_t) - 1) / sizeof(StackType_t)>;
+
+   inline constexpr size_t kDefaultStackSizeBytes =
+       pw::thread::freertos::config::kDefaultStackSizeWords;
+
+   using NativePriority = UBaseType_t;
+   inline constexpr NativePriority kLowestPriority = tskIDLE_PRIORITY;
+   inline constexpr NativePriority kHighestPriority = configMAX_PRIORITIES - 1;
+
+   using NativeOptions = pw::thread::freertos::Options;
+
+   inline NativeOptions GetNativeOptions(NativeContext& context,
+                                         const ThreadAttrs& attrs) {
+     return pw::thread::freertos::Options()
+         .set_static_context(context),
+         .set_name(attrs.name())
+         .set_priority(attrs.priority().native())
+   }
+
+   }  // namespace pw::thread::backend
+
+``ThreadPriority``
+------------------
+Different OS APIs define priorities very differently. Some support a few
+priority levels, others support the full range of a ``uint32_t``. For some, 0 is
+the lowest priority and for others it is the highest. And changing the OS's
+scheduling policy might changes how threads are scheduled without changing their
+priorities.
+
+``pw::ThreadPriority`` represents thread priority precisely but abstractly. It
+supports the following:
+
+- Represent the full range of priorities supported by the underlying OS.
+- Set priorities in absolute terms that map to OS priority ranges in a
+  reasonable way.
+- Set priorities relative to one another.
+- Check that priorities are actually higher or lower than one another on a given
+  platform at compile time.
+- Check if the backend supports thread priorities at all.
+
+Many projects will be able to define a single priority set for all platforms.
+The priorities may translate differently to each platforms, but this may not
+matter. If a single set of priorities does not work for all platforms,
+priorities can be configured per platform, like other attributes.
+
+Here is a high-level overview of the class:
+
+.. code-block:: c++
+
+   namespace pw {
+
+   class ThreadPriority {
+    public:
+     // True if the backend supports different priority levels.
+     static constexpr bool IsSupported();
+
+     // Named priorities. These priority levels span the backend's supported
+     // priority range.
+     //
+     // The optional `kPlus` template parameter returns a priority the specified
+     // number of levels higher than the named priority, but never exceeding the
+     // priority of the next named level, if supported by the backend.
+     static constexpr ThreadPriority VeryLow<unsigned kPlus = 0>();
+     static constexpr ThreadPriority Low<unsigned kPlus = 0>();
+     static constexpr ThreadPriority MediumLow<unsigned kPlus = 0>();
+     static constexpr ThreadPriority Medium<unsigned kPlus = 0>();
+     static constexpr ThreadPriority MediumHigh<unsigned kPlus = 0>();
+     static constexpr ThreadPriority High<unsigned kPlus = 0>();
+     static constexpr ThreadPriority VeryHigh<unsigned kPlus = 0>();
+
+     // Refers to the lowest or highest priority supported by the OS.
+     static constexpr ThreadPriority Lowest<unsigned kPlus = 0>();
+     static constexpr ThreadPriority Highest();
+
+     // Returns the ThreadPriority with next distinct higher or lower value. If
+     // the priority is already the highest/lowest, returns the same value.
+     constexpr ThreadPriority NextLower();
+     constexpr ThreadPriority NextHigher();
+
+     // Returns the ThreadPriority with next distinct higher or lower value.
+     // Asserts that the priority is not already the highest/lowest.
+     constexpr ThreadPriority NextLowerChecked();
+     constexpr ThreadPriority NextHigherChecked();
+
+     // ThreadPriority supports comparison. This makes it possible, for example,
+     // to static_assert that one priority is higher than another in the
+     // backend.
+     constexpr bool operator==(const ThreadPriority&);
+     ...
+
+     // Access the native thread priority type. These functions may be helpful
+     // when ThreadPriority is configured separately for each platform.
+     using native_type = backend::NativeThreadPriority;
+
+     static constexpr FromNative(native_type native_priority);
+
+     native_type native() const;
+   };
+
+   }  // namespace pw
+
+Example uses:
+
+.. code-block:: c++
+
+   // Named priorities are spread over the backend's supported priority range.
+   constexpr pw::ThreadPriority kThreadOne = ThreadPriority::Low();
+   constexpr pw::ThreadPriority kThreadTwo = ThreadPriority::Medium();
+
+   // Define a priority one higher than Medium, but never equal to or greater
+   // than the next named priority, MediumHigh, if possible in the given
+   // backend.
+   constexpr pw::ThreadPriority kThreadThree = ThreadPriority::Medium<1>();
+
+   // Set the priority exactly one backend priority level higher than
+   // kThreadThree, if supported by the backend.
+   constexpr pw::ThreadPriority kThreadFour = kThreadThree.NextHigher();
+
+   static_assert(!ThreadPriority::IsSupported() || kThreadThree < kThreadFour);
+
+.. tip::
+
+  It is recommended that projects pick a starting priority level (e.g.
+  ``ThreadPriority::Lowest().NextHigher()``) and define all priorities relative
+  to it.
+
+Mapping OS priorities to named priorities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If thread priorities are not supported, all named priorities are the same level.
+
+If fewer than 7 levels are supported by the backend, some named levels map to
+the same OS priority. For example, if there are only 3 priority levels
+supported, then ``VeryLow == Low``, ``MediumLow == Medium == MediumHigh``, and
+``High == VeryHigh``.
+
+For backends that support 7 or more priority levels, each named priority level
+is guaranteed to map to a unique OS priority.
+
+``ThreadAttrs``
+---------------
+The ``ThreadAttrs`` class represents generic thread attributes. It is a
+cross-platform version of :cpp:class:`pw::thread::Options`.
+
+.. code-block:: c++
+
+   namespace pw {
+
+   // Generic thread attributes.
+   class ThreadAttrs {
+    public:
+     // Initializes ThreadAttrs to their backend-defined defaults.
+     constexpr ThreadAttrs();
+
+     // ThreadAttrs can be copied to share properties between threads.
+     constexpr ThreadAttrs(const ThreadAttrs&) = default;
+     constexpr ThreadAttrs& operator=(const ThreadAttrs&) = default;
+
+     // Name hint as a null-terminated string; never null.
+     constexpr const char* name() const;
+     constexpr ThreadAttrs& set_name(const char* name);
+
+     constexpr Priority priority() const;
+     constexpr ThreadAttrs& set_priority(Priority priority);
+
+     // Increment or decrement the priority to set task priorities relative to
+     // one another.
+     constexpr ThreadAttrs& set_priority_next_higher();
+     constexpr ThreadAttrs& set_priority_next_lower();
+
+     constexpr size_t stack_size_bytes() const;
+     constexpr ThreadAttrs& set_stack_size_bytes(size_t stack_size_bytes);
+   };
+
+   }  // namespace pw
+
+``ThreadAttrs`` may be defined at runtime or as ``constexpr`` constants.
+Projects may find it helpful to define ``ThreadAttrs`` in a centralized
+location.
+
+.. code-block:: c++
+
+   #include "pw_thread/attrs.h"
+   #include "my_project/config.h"
+
+   namespace my_project {
+
+   // Global list of thread attributes.
+
+   inline constexpr auto kThreadOne = pw::ThreadAttrs()
+       .set_name("thread one")
+       .set_stack_size_bytes(1024)
+       .set_priority(pw::ThreadPriority::Medium());
+
+   inline constexpr auto kThreadTwo = pw::ThreadAttrs(kThreadOne)
+       .set_name("thread two");
+
+   inline constexpr auto kImportantThread = pw::ThreadAttrs()
+       .set_name("important!")
+       .set_stack_size_bytes(IMPORTANT_THREAD_STACK_SIZE_BYTES)
+       .set_priority(IMPORTANT_THREAD_PRIORITY);
+
+   inline constexpr auto kLessImportantThread = pw::ThreadAttrs()
+       .set_name("also important!")
+       .set_stack_size_bytes(IMPORTANT_THREAD_STACK_SIZE_BYTES)
+       .set_priority(kImportantThread.priority().NextLower());
+
+   static_assert(
+       !pw::ThreadPriority::IsSupported() ||
+       kImportantThread.priority() > kLessImportantThread.priority(),
+       "If the platform supports priorities, ImportantThread must be higher "
+       "priority than LessImportantThread");
+
+   }  // namespace my_project
+
+``ThreadContext``
+-----------------
+``pw::ThreadContext`` represents the resources required to run one thread.
+This may include platform-specific handles, a statically allocated thread
+control block (TCB), or the thread's stack. If platforms do not require manual
+allocation for threads, ``pw::ThreadContext`` may be empty.
+
+``ThreadContext`` is a generic wrapper around a backend-defined object. It
+prevents unintentional access of backend-specific features on the native object.
+
+``ThreadContext`` objects may be reused if their associated thread has been
+joined.
+
+``ThreadContext`` takes a few forms:
+
+- ``ThreadContext<kStackSizeHintBytes>`` -- Context with internally allocated
+  thread stack.
+- ``ThreadContext<kThreadAttrs>`` -- Context associated with a set of
+  ``ThreadAttrs``. Uses internally or externally allocated stack based on the
+  ``ThreadAttrs``.
+- ``ThreadContext<>`` -- Context with a runtime-provided ``ThreadStack``.
+
+.. code-block:: c++
+
+   namespace pw {
+
+   // Represents the resources required for one thread. May include OS data
+   // structures, the thread stack, or be empty, depending on the platform.
+   //
+   // ThreadContext may be reused or deleted if the associated thread is
+   // joined.
+   template <auto>
+   class ThreadContext;
+
+   // ThreadContext with integrated stack.
+   template <size_t kStackSizeHintBytes,
+             size_t kAlignmentBytes = alignof(std::max_align_t)>
+   class ThreadContext {
+    public:
+     constexpr ThreadContext() = default;
+
+    private:
+     backend::NativeContextWithStack<kStackSizeHintBytes, kAlignmentBytes> native_context_;
+   };
+
+   // Alias for ThreadContext with the backend's default stack size.
+   using DefaultThreadContext = ThreadContext<backend::kDefaultStackSizeBytes>;
+
+   // Declares a ThreadContext that is associated with a specific set of thread
+   // attributes. Internally allocates the stack if the stack size hint is set.
+   // The ThreadContext may be reused if the associated thread is joined, but
+   // all threads use the same ThreadAttrs.
+   template <const ThreadAttrs& kAttributes>
+   class ThreadContext {
+    private:
+     ThreadContext<kAttributes.stack_size_bytes()> context_;
+   };
+
+   }  // namespace pw
+
+   #include "pw_thread_backend/thread_inline.h"
+
+``ThreadStack``
+---------------
+Represents a thread stack of the specified size. The object may be empty if the
+backends dynamically allocate stacks.
+
+.. code-block:: c++
+
+   namespace pw {
+
+   template <size_t kStackSizeBytes>
+   class ThreadStack {
+    private:
+     backend::NativeThreadStack<kStackSizeBytes> native_stack_;
+   };
+
+   }  // namespace pw
+
+``ThreadStack`` may specified separately from the ``ThreadContext`` if users
+have need to declare stacks in different sections or want to keep them separate
+from other items in the ``ThreadContext``. The ``ThreadStack`` is set on the
+``ThreadAttrs`` instead of the stack size:
+
+.. code-block:: c++
+
+   STACK_SECTION alignas(256) constinit ThreadStack<kAppStackSizeBytes> kMainStack;
+
+   constexpr pw::ThreadAttrs kMainThread = pw::ThreadAttrs()
+       .set_name("MainThread")
+       .set_stack(kMainStack)
+       .set_priority(kMainPriority);
+
+   ThreadContext<kMainThread> kMainThreadContext;
+
+   void RunThread() {
+     pw::Thread(kMainThreadContext, [] { /* thread body */ }).detach();
+   }
+
+``ThreadContext`` objects that are not associated with a ``ThreadAttrs`` work
+similarly:
+
+.. code-block:: c++
+
+   STACK_SECTION alignas(256) constinit ThreadStack<kAppStackSizeBytes> kAppStack;
+
+   ThreadContext<> kAppThreadContext;
+
+   void RunThreads() {
+     pw::Thread thread(kAppThreadContext,
+                       pw::ThreadAttrs().set_stack(kAppStack).set_name("T1"),
+                       [] { /* thread body */ });
+     thread.join()
+
+     pw::Thread thread(kAppThreadContext,
+                       pw::ThreadAttrs().set_stack(kAppStack).set_name("T2"),
+                       [] { /* thread body */ });
+     thread.join();
+   }
+
+The ``STACK_SECTION`` macro would be provided by a config header:
+
+.. code-block:: c++
+
+   #if BUILDING_FOR_DEVICE_A
+   #define STACK_SECTION PW_PLACE_IN_SECTION(".thread_stacks")
+   #else  // building for device B
+   #define STACK_SECTION  // section doesn't matter
+   #endif  // BUILDING_FOR_DEVICE_A
+
+``Thread`` additions
+--------------------
+``pw::Thread`` will accept ``ThreadContext`` and ``ThreadAttrs``.
+
+.. code-block:: c++
+
+   class Thread {
+     // Existing constructor.
+     Thread(const Options& options, Function<void()>&& entry)
+
+     // Creates a thread with a ThreadContext associated with a ThreadAttrs.
+     template <const ThreadAttrs& kAttributes>
+     Thread(ThreadContext<kAttributes>& context, Function<void()>&& entry);
+
+     // Creates a thread from attributes passed in a template parameter.
+     template <const ThreadAttrs& kAttributes, size_t kStackSizeHintBytes>
+     Thread(ThreadContext<kStackSizeHintBytes>& context,
+            Function<void()>&& entry);
+
+     // Creates a thread from context and attributes. Performs a runtime check
+     // that the ThreadContext's stack is large enough, which can be avoided by
+     // using one of the other constructors.
+     template <size_t kStackSizeHintBytes>
+     Thread(ThreadContext<kStackSizeHintBytes>& context,
+            const ThreadAttrs& attributes,
+            Function<void()>&& entry);
+
+     // Creates a thread with the provided context and attributes. The
+     // attributes have a ThreadStack set.
+     Thread(ThreadContext<>& context,
+            const ThreadAttrs& attributes,
+            Function<void()>&& entry);
+
+Dynamic thread creation function
+--------------------------------
+The ``pw::Thread::Start`` function starts a thread as simply as possible.  It
+starts returns a ``pw::Thread`` that runs a user-provided function. Users may
+optionally provide ``pw::ThreadAttrs``.
+
+``pw::Thread::Start`` is implemented with a new, separate facade. The backend
+may statically or dynamically allocate resources. A default backend that
+statically allocates resources for a fixed number of threads will be provided in
+upstream Pigweed.
+
+.. code-block:: c++
+
+   namespace pw {
+
+   class Thread {
+     ...
+
+     // Starts running the thread_body in a separate thread. The thread is
+     // allocated and managed by the backend.
+     template <typename Function, typename... Args>
+     static Thread Start(Function&& thread_body, Args&&... args);
+
+     template <typename Function, typename... Args>
+     static Thread Start(const pw::ThreadAttrs& attributes, Function&& thread_body, Args&&... args);
+   };
+
+   }  // namespace pw
