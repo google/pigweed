@@ -1,0 +1,854 @@
+.. _seed-0103:
+
+============================================
+0103: pw_protobuf: Past, present, and future
+============================================
+.. seed::
+   :number: 0103
+   :name: pw_protobuf: Past, present, and future
+   :status: Accepted
+   :proposal_date: 2023-08-16
+   :cl: 133971
+   :authors: Alexei Frolov
+   :facilitator: Armando Montanez
+
+-------
+Summary
+-------
+``pw_protobuf`` is one of Pigweed's oldest modules and has become a foundational
+component of Pigweed and Pigweed-based projects. At its core, ``pw_protobuf``
+provides a compact and efficient `protobuf <https://protobuf.dev>`_ wire format
+encoder and decoder, but as third-party usage has grown, additional higher-level
+APIs have sprung up, many of which were contributed by third-party developers to
+address use cases within their own projects.
+
+The growth of ``pw_protobuf`` was not entirely controlled, which has resulted in
+a lack of cohesion among its components, incomplete implementations, and
+implicit, undocumented limitations. This has made the module difficult to
+approach for new users and put a lasting maintenance burden on the core Pigweed
+team.
+
+This document explores the state of ``pw_protobuf`` and proposes a plan to
+resolve the issues present in the module, both in the immediate short term and
+a longer term vision.
+
+---------------------------
+Summary of Proposed Changes
+---------------------------
+The table below summarizes the states of the different ``pw_protobuf``
+components following acceptance of this SEED. The reasoning behind these changes
+is explained in further detail throughout the rest of the SEED.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Component
+     - Status
+     - Details
+   * - Wire format encoder/decoder
+     - Supported
+     - * ``pw_protobuf``'s primary API.
+       * Codegen helpers for convenient use.
+       * Works with streams and direct buffers.
+       * Recommended for compact and efficient protobuf operations.
+   * - Find API
+     - Supported
+     - * Useful for extracting fields from messages without having to set up a
+         decoder.
+       * Recommended as an alternative for in-memory objects for small, simple
+         messages.
+       * Will be expanded with better support for repeated fields.
+   * - Nanopb integration (build system / RPC)
+     - Supported
+     - * Recommended for newer projects that want a complete object model for
+         their protobuf messages.
+       * Recommended by default for RPC services.
+       * Can easily be used alongside lower-level ``pw_protobuf`` APIs in cases
+         where more control is required.
+   * - Message API (``message.h``)
+     - Deprecated
+     - * Superseded by other APIs.
+       * Only used by one project.
+       * Code will be removed.
+   * - Message structures
+     - **Short-term:** Discouraged
+
+       **Long-term:** Deprecated
+     - * Will remain supported for existing users indefinitely, though no new
+         features will be added.
+       * Docs will be updated to clearly detail its limitations.
+       * Not recommended to new users; Nanopb or the low-level APIs should be
+         preferred.
+       * Will be replaced with a newer ``pw_protobuf`` object model at an
+         unspecified future point.
+       * Code will remain until the new model is fully implemented and existing
+         users have had time to migrate (with Pigweed assistance for internal
+         customers).
+   * - ``pwpb_rpc``
+     - **Short-term:** Discouraged
+
+       **Long-term:** Deprecated
+     - * Will remain supported for existing users indefinitely, though no new
+         features will be added.
+       * Not recommended to new users; ``nanopb_rpc`` and/or raw methods should
+         be preferred.
+       * When the new ``pw_protobuf`` object model is added, it will come with
+         updated RPC integration.
+       * Code will remain until the new model is fully implemented and existing
+         users have had time to migrate (with Pigweed assistance for internal
+         customers).
+   * - New ``pw_protobuf`` object model
+     - **Long-term:** Planned
+     - * Intended to replace existing message structures as the premier
+         in-memory object model, with a more complete implementation of the
+         protobuf spec.
+       * Investigation and design will be examined in a future SEED.
+
+----------------------------
+Background and Current State
+----------------------------
+
+Protobuf Components
+===================
+``pw_protobuf`` today consists of several different layered APIs, which are
+explored below.
+
+Core encoder and decoder
+------------------------
+``pw_protobuf``'s core low-level APIs interact directly with the
+`Protobuf wire format <https://protobuf.dev/programming-guides/encoding/>`_,
+processing each field appearing in a message individually without any notion of
+higher-level message semantics such as repeated or optional fields. These APIs
+are compact and highly-capable; they are able to construct any valid protobuf
+message, albeit by pushing much of the burden onto users to ensure that they do
+not encode fields in violation of their messages' schemas.
+
+Origin
+^^^^^^
+The idea for direct wire encoding originated prior to the inception of Pigweed,
+when the team was setting up crash reporting for a project. Crash diagnostic
+data was transmitted from each device as a protobuf message, which was encoded
+using `nanopb <https://jpa.kapsi.fi/nanopb/>`_, a popular lightweight,
+embedded-friendly protobuf library for serializing and deserializing protobuf
+data to and from C structs.
+
+To send crash reports, a single, statically-allocated crash message struct was
+populated by the device's various subsystems, before being serialized to a
+buffer and queued for transmission over the appropriate interface. The fields of
+this struct ranged from single integers to complex nested messages. The nature
+of nanopb in a static memory environment required each variable-length field in
+the generated message to be reserved for its maximum allowable size, which
+quickly blew up in the cases of large strings and repeated submessages. All in
+all, the generated crash struct clocked in at around 12KB --- several times
+larger than its encoded size --- a high price to pay for such a
+memory-constrained device.
+
+This large overhead raised the question of whether it was necessary to store the
+crash data in an intermediate format, or if this could be eliminated. By the
+nature of the protobuf wire format, it is possible to build up a message in
+parts, writing one field at a time. Due to this, it would be possible for each
+subsystem to be passed some serializer which would allow them to write their
+fields directly to the final output buffer, avoiding any additional in-memory
+storage. This would be especially beneficial for variable-length fields, where
+systems could write only as much data as they had at the moment, avoiding the
+overhead of worst-case reservations. ``pw_protobuf`` was conceptualized as this
+type of wire serializer, providing a convenient wrapper around direct
+field-by-field serialization.
+
+While the project ended up shipping with their original ``nanopb`` setup, a
+prototype of this serializer was written as a proof of concept, and ended up
+being refined to support all basic protobuf operations as one of the first
+modules offered by the newly-started Pigweed project.
+
+Implementation
+^^^^^^^^^^^^^^
+The core encoders have undergone several iterations over time. The
+`original implementation <https://cs.opensource.google/pigweed/pigweed/+/bbf164c985576a348f3bcd4c48b3e9fd8a464a66:pw_protobuf/public/pw_protobuf/encoder.h;l=25>`_
+offered a simple API to directly serialize single protobuf fields to an
+in-memory buffer through a series of typed ``Encode`` functions. Message
+nesting was handled manually by the user, calling a ``Push`` function to begin
+writing fields to a submessage, followed by ``Pop`` on completion.
+
+The decoder was a
+`later addition <https://cs.opensource.google/pigweed/pigweed/+/6d9b9b447b84afb60e714ebd97523ee55b93c9a6:pw_protobuf/public/pw_protobuf/decoder.h;l=23>`_,
+initially invoking a callback on each field in the serialized message with its
+field number, giving the users the ability to extract the field by calling the
+appropriate typed ``Decode`` function. This was implemented via a
+``DecodeHandler`` virtual interface, and it persists to this day as
+``CallbackDecoder``. However, this proved to be too cumbersome to use, so the
+main decoder was `rewritten <https://cs.opensource.google/pigweed/pigweed/+/fe9723cd67796e9236022cde6ef42cda99682d77>`_
+in the style of an iterator where users manually advanced it through the
+serialized fields, decoding those which they cared about.
+
+Streaming enhancement
+^^^^^^^^^^^^^^^^^^^^^
+The original encoder and decoder were designed to operate on messages which fit
+into buffers directly in memory. However, as the ``pw_stream`` interface was
+stabilized and adopted, there was interest in processing protobuf messages whose
+data was not fully available (for example, reading out of flash
+sector-by-sector). This prompted another rewrite of the core classes to make
+``pw::Stream`` the interface to the serialized data. This was done differently
+for the encoder and decoder: the encoder only operates on streams, with
+``MemoryEncoder`` becoming a shallow wrapper instantiating a ``MemoryWriter`` on
+top of a buffer, whereas the decoder ended up having two separate, parallel
+``StreamDecoder`` and ``MemoryDecoder`` implementations.
+
+The reason for this asymmetry has to do with the manner in which the two were
+implemented. The encoder was
+`rewritten first <https://cs.opensource.google/pigweed/pigweed/+/0ed221cbb8b943205dea4ac315fe1d4b1e6b7371>`_,
+and carefully designed to function on top of the limited semantic guarantees
+offered by ``pw_stream``. Following this redesign, it seemed obvious and natural
+to use the existing MemoryStream to provide the previous encoding functionality
+nearly transparently. However, when reviewing this implementation with the
+larger team, several potential issues were noted. What was previously a simple
+memory access to write a protobuf field became an expensive virtual call which
+could not be elided. The common use case of serializing a message to a buffer
+had become significantly less performant, prompting concerns about the impact of
+the change. Additionally, it was noted that this performance impact would be far
+worse on the decoding side, where serialized varints had to be read one byte at
+a time.
+
+As a result, it was decided that a larger analysis was required. To aid this,
+the stream-based decoder would be implemented separately to the existing memory
+decoder so that direct comparisons could be made between the two
+implementations. Unfortunately, the performance of the two implementations was
+never properly analyzed as the team became entangled in higher priority
+commitments.
+
+.. code-block:: c++
+
+   class StreamEncoder {
+    public:
+     constexpr StreamEncoder(stream::Writer& writer, ByteSpan scratch_buffer);
+
+     Status WriteUint32(uint32_t field_number, uint32_t value);
+     Status WriteString(uint32_t field_number, std::string_view value);
+   };
+
+*A subset of the StreamEncoder API, demonstrating its low-level field writing
+operations.*
+
+Wire format code generation
+---------------------------
+``pw_protobuf`` provides lightweight generated code wrappers on top of its core
+wire format encoder and decoder which eliminate the need to provide the correct
+field number and type when writing/reading serialized fields. Each generated
+function calls directly into the underlying encoder/decoder API, in theory
+making them zero-overhead wrappers.
+
+The encoder codegen was part of the original implementation of ``pw_protobuf``.
+It constituted a ``protoc`` plugin written in Python, and several GN build
+templates to define protobuf libraries and invoke ``protoc`` on them to create
+a C++ target which could be depended on by others. The build integration was
+added separately to the main protobuf module, as ``pw_protobuf_compiler``, and
+has since expanded to support many different protobuf code generators in various
+languages.
+
+The decoder codegen was added at a much later date, alongside the struct object
+model. Like the encoder codegen, it defines wrappers around the underlying
+decoder functions which populate values for each of a message's fields, though
+users are still required to manually iterate through the message and extract
+each field.
+
+.. code-block:: c++
+
+   class FooEncoder : public ::pw::protobuf::StreamEncoder {
+     Status WriteBar(uint32_t value) {
+       return ::pw::protobuf::StreamEncoder::WriteUint32(
+           static_cast<uint32_t>(Fields::kBar), value);
+     }
+   };
+
+*An example of how a generated encoder wrapper calls into the underlying
+operation.*
+
+Message API
+-----------
+The ``Message`` API was the first attempt at providing higher-level semantic
+wrappers on top of ``pw_protobuf``'s direct wire serialization. It was developed
+in conjunction with the implementation of Pigweed's software update flow for a
+project and addressed several use cases that came up with the way the project
+stored its update bundle metadata.
+
+This API works on the decoding side only, giving users easier access to fields
+of a serialized message. It provides functions which scan a message for a field
+using its field number (similar to the ``Find`` APIs discussed later). However,
+instead of deserializing the field and returning its data directly, these APIs
+give the user a typed handle to the field which can be used to read it.
+
+These field handles apply protobuf semantics beyond the field-by-field iteration
+of the low level decoder. For example, a field can be accessed as a repeated
+field, whose handle provides a C++ iterator over each instance of the field in
+the serialized message. Additionally, ``Message`` is the only API currently in
+``pw_protobuf`` which allows users to work directly with protobuf ``map``
+fields, reading key-value pairs from a message.
+
+.. code-block:: c++
+
+   // Parse repeated field `repeated string rep_str = 5;`
+   RepeatedStrings rep_str = message.AsRepeatedString(5);
+   // Iterate through the entries. For iteration
+   for (String element : rep_str) {
+     // Process str
+   }
+
+   // Parse map field `map<string, bytes> str_to_bytes = 7;`
+   StringToBytesMap str_to_bytes = message.AsStringToBytesMap(7);
+   // Access the entry by a given key value
+   Bytes bytes_for_key = str_to_bytes["key"];
+   // Or iterate through map entries
+   for (StringToBytesMapEntry entry : str_to_bytes) {
+     String key = entry.Key();
+     Bytes value = entry.Value();
+     // Process entry
+   }
+
+*Examples of reading repeated and map fields from a serialized protobuf using
+the Message API.*
+
+Message structures
+------------------
+``pw_protobuf``'s message structure API is its premier high-level, in-memory
+object model. It was contributed by an external team with some guidance from
+Pigweed developers and was driven largely by a desire to work conveniently with
+protobufs in RPC methods without the burden of a third-party dependency in
+``nanopb`` (the only officially supported protobuf library in RPC at the time).
+
+Message structures function similarly to more conventional protobuf libraries,
+where every definition in a ``.proto`` file generates a corresponding C++
+object. In the case of ``pw_protobuf``, these objects are defined as structs
+containing the fields of their protobuf message as members. Functions are
+provided to encode from or decode to one of these structs, removing the manual
+per-field processing from the lower-level APIs.
+
+Each field in a protobuf message becomes an inline member of its generated
+struct. Protobuf types are mapped to C++ types where possible, with special
+handling of protobuf specifiers and variable-length fields. Fields labeled as
+optional are wrapped in a ``std::optional`` from the STL. Fields labeled as
+``oneof`` are not supported (in fact, the code generator completely ignores the
+keyword). Variable-length fields can either be inlined or handled through
+callbacks invoked by the encoder or decoder when processing the message. If
+inlined, a container sized to a user-specified maximum length is generated. For
+strings, this is a ``pw::InlineString`` while most other fields use a
+``pw::Vector``.
+
+Similar to nanopb, users can pass options to the ``pw_protobuf`` generator
+through the protobuf compiler to configure their generated message structures.
+These allow specifying the maximum size of variable-length fields, setting a
+fixed size, or forcing the use of callbacks for encoding and decoding. Options
+maybe be specified inline in the proto file or listed in a separate file
+(conventionally named ``.options``) to avoid leaking ``pw_protobuf``-specific
+metadata into protobuf files that may be shared across multiple languages and
+protobuf compiler contexts.
+
+Unlike the lower-level generated classes which require custom per-field encoding
+and decoding functions, message serialization is handled generically through the
+use of a field descriptor table. The descriptor table for a message contains an
+entry for each of its fields, storing its type, field number, and other metadata
+alongside its offset within the generated message structure. This table is
+generated once per message defined in a protobuf file, trading a small
+additional memory overhead for reduced code size when serializing and
+deserializing data.
+
+.. code-block:: proto
+
+   message Customer {
+     int32 age = 1;
+     string name = 2;
+     optional fixed32 loyalty_id = 3;
+   }
+
+.. code-block:: c++
+
+  struct Customer::Message {
+    int32_t age;
+    pw::InlineString<32> name;
+    std::optional<uint32_t> loyalty_id;
+  };
+
+*Example of how a protobuf message definition is converted as a C++ struct.*
+
+Find API
+--------
+``pw_protobuf``'s set of ``Find`` APIs constitute functions for extracting
+single fields from serialized messages. The functions scan the message for a
+field number and decode it as a specified protobuf type. Like the core
+serialization APIs, there are two levels to ``Find``: direct low-level typed
+functions, and generated code functions that invoke these for named protobuf
+fields.
+
+Extracting a single field is a common protobuf use case, and was envisioned
+early in ``pw_protobuf``'s development. An initial version of ``Find`` was
+started shortly after the original callback-based decoder was implemented,
+providing a ``DecodeHandler`` to scan for a specific field number in a message.
+This version was never fully completed and did not see any production use. More
+recently, the ``Find`` APIs were revisited and reimplemented on top of the
+iterative decoder.
+
+.. code-block:: c++
+
+   pw::Result<uint32_t> age = Customer::FindAge(serialized_customer);
+   if (age.ok()) {
+     PW_LOG_INFO("Age is %u", age.value());
+   }
+
+*An example of using a generated Find function to extract a field from a
+serialized protobuf message.*
+
+RPC integration
+---------------
+Pigweed RPC exchanges data in the form of protobufs and was designed to allow
+users to implement their services using different protobuf libraries, with some
+supported officially. Supporting the use of ``pw_protobuf`` had been a goal from
+the beginning, but it was never implemented on top of the direct wire encoders
+and decoders. Despite this, several RPC service implementations in Pigweed and
+customer projects ended up using ``pw_protobuf`` on top of the raw RPC method
+API, manually decoding and encoding messages.
+
+When message structures were contributed, they came with an expansion of RPC to
+allow their usage in method implementations, becoming the second officially
+supported protobuf library. ``pw_protobuf`` methods are structured and behave
+similarly to RPC's nanopb-based methods, automatically deserializing requests
+from and serializing responses to their generated message structures.
+
+What Works Well
+===============
+Overall, ``pw_protobuf`` has been a largely successful module despite its
+growing pains. It has become an integral part of Pigweed, used widely upstream
+across major components of the system, including logging and crash reporting.
+Several Pigweed customers have also shown to favor ``pw_protobuf``, choosing it
+over other embedded protobuf libraries like nanopb.
+
+The list below summarizes some of ``pw_protobuf``'s successes.
+
+**Overall**
+
+* Widespread adoption across Pigweed and Pigweed-based projects.
+
+* Easy to integrate into a project which uses Pigweed's build system.
+
+* Often comes at a minimal additional cost to projects, as the core of
+  ``pw_protobuf`` is already used by popular upstream modules.
+
+**Core wire format encoders/decoders**
+
+* Simple, intuitive APIs which give users a lot of control over the structure
+  of their messages.
+
+* Lightweight in terms of code size and memory use.
+
+**Codegen general**
+
+* Build system integration is extensive and generally simple to use.
+
+* Low-level codegen wrappers are convenient to use without sacrificing the
+  power of the underlying APIs.
+
+**Message API**
+
+* Though only used by a single project, it works well for their needs and
+  gives them extensive semantic processing of serialized messages without the
+  overhead of decoding to a full in-memory object.
+
+* More capable processing than the Find APIs: for example, allowing iteration
+  over elements of a repeated field.
+
+* As the entire API is stream-based, it permits useful operations such as
+  giving the user a bounded stream over a bytes field of the message,
+  eliminating the need for an additional copy of data.
+
+* Support for protobuf maps, something which is absent from any other
+  ``pw_protobuf`` API.
+
+**Message Structures**
+
+* Message structures work incredibly well for the majority of simple use cases,
+  making protobufs easy to use without having to understand the details of the
+  wire format.
+
+* Adoption of ``pw_protobuf`` increased following the addition of this API and
+  corresponding RPC support, indicating that it is more valuable to a typical
+  user who is not concerned with the minor efficiencies offered by the
+  lower-level APIs.
+
+* Encoding and decoding messages is efficient due to the struct model's generic
+  table-based implementation. Users do not have to write custom code to process
+  each message as they would with the lower-level APIs, resulting in reduced
+  overall code size in some cases.
+
+* Nested messages are far easier to handle than in any other API, which require
+  additional setup creating sub-encoders/decoders.
+
+* The use of containers such as ``pw::Vector`` for repeated fields simplifies
+  their use and avoids the issues of similar libraries such as nanopb, where
+  users have to remember to manually set their length.
+
+**Find API**
+
+* Eliminates a lot of boilerplate in the common use case where only a single
+  field from a message needs to be read.
+
+**RPC integration**
+
+* Has seen a high rate of adoption as it provides a convenient API to read and
+  write requests and responses without requiring the management of a third-party
+  library dependency.
+
+* ``pw_protobuf``-based RPC services can still fall back on the raw RPC API in
+  instances where more flexible handling is required.
+
+The Issues
+==========
+
+Overview
+--------
+This section shows a summary of the known issues present at each layer of the
+current ``pw_protobuf`` module. Several of these issues will be explored in
+further detail later.
+
+**Overall**
+
+* Lack of an overall vision and cohesive story: What is ``pw_protobuf`` trying
+  to be and what kinds of users does it target? Where does it fit into the
+  larger protobuf ecosystem?
+
+* Documentation structure doesn't clearly guide users. Should be addressed in
+  conjunction with the larger :ref:`SEED-0102 <seed-0102>` effort.
+
+* Too many overlapping implementations. We should focus on one model with a
+  clear delineation between its layers.
+
+* Despite describing itself as a lightweight and efficient protobuf library,
+  little size reporting and performance statistics are provided to substantiate
+  these claims.
+
+**Core wire format encoders/decoders**
+
+* Parallel memory and stream decoder implementations which don't share any code.
+  They also have different APIs, e.g. using ``Result`` (stream decoder) vs. a
+  ``Status`` and output pointer (memory decoder).
+
+* Effectively-deprecated APIs still exist (e.g. ``CallbackDecoder``).
+
+* Inefficiencies when working with varints and streams. When reading a varint
+  from a message, the ``StreamDecoder`` consumes its stream one byte at a time,
+  each going through a potentially costly virtual call to the underlying
+  implementation.
+
+**Codegen general**
+
+* The headers generated by ``pw_protobuf`` are poorly structured. Some users
+  have observed large compiler memory usage parsing them, which may be related.
+
+* Each message in a ``.proto`` file generates a namespace in C++, in which its
+  generated classes appear. This is unintuitive and difficult to use, with most
+  users resorting to a mess of using statements at the top of each file that
+  works with protobufs.
+
+* Due to the way ``pw_protobuf`` appends its own namespace to users' proto
+  packages, it is not always possible to deduce where this namespace will exist
+  in external compilation units. To work around this, a somewhat hacky approach
+  is used where every generated ``pw_protobuf`` namespace is aliased within a
+  root-level namespace scope.
+
+* While basic codegen works in all build systems, only the GN build supports
+  the full capabilities of ``pw_protobuf``. Several essential features, such as
+  options files, are missing from other builds.
+
+* There appear to be issues with how the codegen steps are exposed to the CMake
+  build graph, preventing protobuf files from being regenerated as a result of
+  some codegen script modifications.
+
+* Protobuf editions, the modern replacement for the proto2 and proto3 syntax
+  options, are not supported by the code generator. Files using them fail to
+  compile.
+
+**Message API**
+
+* The message API as a whole has been superseded by the structure API, and there
+  is no reason for it to be used.
+
+**Message structures**
+
+* Certain types of valid proto messages are impossible to represent due to
+  language limitations. For example, as message structs directly embed
+  submessages, a circular dependency between nested messages cannot exist.
+
+* Optional proto fields are represented in C++ by ``std::optional``. This has
+  several issues:
+
+  * Memory overhead as a result of storing each field's presence flag
+    individually.
+
+  * Inconsistent with how other protobuf libraries function. Typically, field
+    presence is exposed through a separate API, with accessors always
+    returning a value (the default if absent).
+
+* Not all types of fields are supported. Optional strings and optional
+  submessages do not work (the generator effectively ignores the ``optional``
+  specifier). ``oneof`` fields do not work.
+
+* Not all options work for all fields. Fixed/max size specifiers to inline
+  repeated fields generally only work for simple field types --- callbacks must
+  be used otherwise.
+
+* In cases where the generator does not support something, it often does not
+  indicate this to the user, silently outputting incorrect code instead.
+
+* Options files share both a filename and some option names with other protobuf
+  libraries, namely Nanopb. This can cause issues when trying to use the same
+  protobuf definition in different contexts, as the options do not always work
+  the same way in both.
+
+**Find API**
+
+* Lack of support for repeated fields. Only the first element will be found.
+
+* Similarly, does not support recurring non-repeated fields. The protobuf
+  specification requires that scalar fields are overridden if they reappear,
+  while string, bytes, or submessage fields are merged.
+
+* Only one layer of searching is supported; it is not possible to look up a
+  nested field.
+
+* The stream version of the Find API does not allow scanning for submessages due
+  to limitations with the ownership and lifetime of its decoder.
+
+**RPC integration**
+
+* RPC creates and runs message encoders and decoders for the user. Therefore, it
+  is not possible to use any messages with callback-based fields in RPC method
+  implementations.
+
+Deep dive on selected issues
+----------------------------
+
+Generated namespaces
+^^^^^^^^^^^^^^^^^^^^
+``pw_protobuf``'s generator was written to output a namespace for each message
+in a file from its first implementation, on top of which all subsequent
+generated code was added.
+
+The reason for this unusual design choice was to work around C++'s
+declaration-before-definition rule to allow circularly-referential protobuf
+messages. Each message's associated generated classes are first forward-declared
+at the start of the generated header, and later defined as necessary.
+
+For example, given a message ``Foo``, the following code is generated:
+
+.. code-block:: c++
+
+   namespace Foo {
+
+   // Message field numbers.
+   enum Fields;
+
+   // Generated struct.
+   struct Message;
+
+   class StreamEncoder;
+   class StreamDecoder;
+
+   // Some other metadata omitted.
+
+   }  // namespace Foo
+
+The more intuitive approach of generating a struct/class directly for each
+message is difficult, if not impossible, to cleanly implement under the current
+``pw_protobuf`` object model. There are several reasons why this is, with the
+primary being that cross-message dependencies cannot easily be generated due to
+the aforementioned declaration issues. C++ does not allow forward-declaring a
+subclass, so certain types of nested message relationships are not directly
+representable. Some potential workarounds have been suggested for this, such as
+defining struct members as aliases to internally-generated types, but we have
+been unable to get this correctly working following a timeboxed prototyping
+session.
+
+Message structures
+^^^^^^^^^^^^^^^^^^
+Many of the issues with message structs stem from the same language limitations
+as those described above with namespacing. As the generated structures' members
+are embedded directly within them and publicly exposed, it is not possible to
+represent certain types of valid protobuf messages. Additionally, the way
+certain types of fields are generated is problematic, as described below.
+
+**Optional fields**
+
+A field labeled as ``optional`` in a proto file generates a struct member
+wrapped in a ``std::optional`` from the C++ STL. This choice is semantically
+inconsistent with how the official protobuf libraries in other languages are
+designed. Typically, accessing a field will always return a valid value. In the
+case of absence, the field is populated with its default value (the zero value
+unless otherwise specified). Presence checking is implemented as a parallel API
+for users who require it.
+
+This choice also results in additional memory overhead, as each field's presence
+flag is stored within its optional wrapper, padding what could otherwise be a
+single bit to a much larger aligned size. In the conventional disconnected model
+of field presence, the generated object could instead store a bitfield with an
+entry for each of its members, compacting its overall size.
+
+Optional fields are not supported for all types. The compiler ignores the
+``optional`` specifier when it is set on string fields, as well as on nested
+messages, generating the member as a regular field and serializing it per
+standard ``proto3`` rules, omitting a zero-valued entry.
+
+Implementing ``optional`` the typical way would require hiding the members of
+each generated message, instead providing accessor functions to modify them,
+checking for presence and inserting default values where appropriate.
+
+**Oneof fields**
+
+The ``pw_protobuf`` code generator completely ignores the ``oneof`` specifier
+when processing a message. When multiple fields are listed within a ``oneof``
+block in a ``.proto`` file, the generated struct will contain all of them as
+direct members without any notion of exclusivity. This permits ``pw_protobuf``
+to encode semantically invalid protobuf messages: if multiple members of a
+``oneof`` are set, the encoder will serialize all of them, creating a message
+that is unprocessable by other protobuf libraries.
+
+For example, given the following protobuf definition:
+
+.. code-block:: proto
+
+   message Foo {
+     oneof variant {
+       uint32 a = 1;
+       uint32 b = 2;
+     }
+   }
+
+The generator will output the following struct, allowing invalid messages to be
+written.
+
+.. code-block:: c++
+
+   struct Foo::Message {
+     uint32_t a;
+     uint32_t b;
+   };
+
+   // This will work and create a semantically invalid message.
+   Foo::StreamEncoder encoder;
+   encoder.Write({.a = 32, .b = 100});
+
+Similarly to ``optional``, the best approach to support ``oneof`` would be to
+hide the members of each message and provide accessors. This would avoid the
+risk of incorrectly reading memory (such as a wrong ``union`` member) and not
+require manual bookkeeping as in nanopb.
+
+--------
+Proposal
+--------
+
+Short-term Plan
+===============
+A full rework of ``pw_protobuf`` does not seem feasible at this point in time
+due to limited resourcing. As a result, the most reasonable course of action is
+to tie up the loose ends of the existing code, and leave the module in a state
+where it functions properly in every supported use case, with unsupported use
+cases made explicit.
+
+The important steps to making this happen are listed below.
+
+* Restructure the module documentation to help users select which protobuf API
+  is best suited for them, and add a section explicitly detailing the
+  limitations of each.
+
+* Deprecate and hide the ``Message`` API, as it has been superseded by the
+  ``Find`` APIs.
+
+* Discourage usage of message structures in new code, while providing a
+  comprehensive upfront explanation of their limitations and unsupported use
+  cases, including:
+
+  * ``oneof`` cannot be used.
+
+  * Inlining some types of repeated fields such as submessages is not possible.
+    Callbacks must be used to encode and decode them.
+
+  * The use of ``optional`` only generates optional struct members for simple
+    scalar fields. More complex optional fields must be processed through
+    callbacks.
+
+* Update the code generator to loudly fail when it encounters an unsupported
+  message or field structure.
+
+* Discourage the use of the automatic ``pw_protobuf`` RPC generator due to the
+  limitations with message structures. ``nanopb`` or manually processed ``raw``
+  methods should be used instead.
+
+  Similarly, clearly document the limitations around callback-based messages in
+  RPCs methods, and provide examples of how to fall back to raw RPC encoding and
+  decoding.
+
+* Move all upstream usage of ``pw_protobuf`` away from message structures and
+  ``pwpb_rpc`` to the lower-level direct wire APIs, or rarely Nanopb.
+
+* Rename the options files used by ``pw_protobuf``'s message structs to
+  distinguish them from Nanopb options.
+
+* Make the ``pw_protobuf`` code generator aware of the protobuf edition option
+  so that message definitions using it can be compiled.
+
+* Extend full protobuf code generation support to the Bazel and CMake builds, as
+  well as the Android build integration.
+
+* Minimize the amount of duplication in the code generator to clean up generated
+  header files and attempt to reduce compiler memory usage.
+
+* Extend the ``Find`` APIs with support for repeated fields to bring them closer
+  to the Message API's utility.
+
+Long-term Plan
+==============
+This section lays out a long term design vision for ``pw_protobuf``. There is no
+estimated timeframe on when this work will happen, but the ideas are collected
+here for future reference.
+
+Replace message structures
+--------------------------
+As discussed above, most issues with message structures stem from having members
+exposed directly. Obscuring the internal details of messages and providing
+public accessor APIs gives the flexibility to fix the existing problems without
+running against language limitations or exposing additional complexity to users.
+
+By doing so, the internal representation of a message is no longer directly tied
+to C++'s type system. Instead of defining typed members for each field in a
+message, the entire message structure could consist of an intermediate binary
+representation, with fields located at known offsets alongside necessary
+metadata. This avoids the declaration and aliasing issues, as types are now only
+required to be defined at access rather than storage.
+
+This would require a complete rewrite which would be incompatible with the
+current APIs. The least invasive way to handle it would be to create an entirely
+new code generator, port over the core lower level generator functionality, and
+build the new messages on top of it. The old API would then be fully deprecated,
+and users could migrate over one message at a time, with assistance from the
+Pigweed team for internal customers.
+
+Investigate standardization of wire format operations
+-----------------------------------------------------
+``pw_protobuf`` is one of many libraries, both within Google and externally,
+that re-implements protobuf wire format processing. At the time it was written,
+this made sense, as there was no convenient option that fit the niche that
+``pw_protobuf`` targeted. However, since then, the core protobuf team has
+heavily invested in the development of `upb <https://github.com/protocolbuffers/upb>`_:
+a compact, low-level protobuf backend intended to be wrapped by higher-level
+libraries in various languages. Many of upb's core design goals align with the
+initial vision for ``pw_protobuf``, making it worthwhile to coordinate with its
+developers to see it may be suitable for use in Pigweed.
+
+Preliminary investigations into upb have shown that, while small in size, it is
+still larger than the core of ``pw_protobuf`` as it is a complete protobuf
+library supporting the entire protobuf specification. Not all of that is
+required for Pigweed or its customers, so any potential reuse would likely be
+contingent on the ability to selectively remove unnecessary parts.
+
+At the time of writing, upb does not have a stable API or ABI. While this is
+okay for first-party consumers, shipping it as part of Pigweed may present
+additional maintenance issues.
+
+Nonetheless, synchronizing with upb to share learnings and potentially reduce
+duplicated effort should be an essential step in any future ``pw_protobuf``
+work.

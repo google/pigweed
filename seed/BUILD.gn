@@ -50,9 +50,9 @@ pw_seed("0102") {
 }
 
 pw_seed("0103") {
-  changelist = 133971
+  sources = [ "0103-pw_protobuf-past-present-future.rst" ]
   title = "pw_protobuf: Past, present, and future"
-  status = "Last Call"
+  status = "Accepted"
   author = "Alexei Frolov"
   facilitator = "Armando Montanez"
 }
