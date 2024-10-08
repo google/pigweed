@@ -32,6 +32,30 @@ Build the docs
 
    bazelisk build //docs/...
 
+.. _contrib-docs-quickstart-build-tree:
+
+Build the underlying sources directory
+======================================
+Use this command to verify that files are being copied over to
+the expected location:
+
+.. code-block:: console
+
+   bazelisk build //docs:docs/_sources
+
+.. _contrib-docs-quickstart-build-sphinx:
+
+Directly run Sphinx
+===================
+Use this command to mimic directly running ``sphinx-build``
+from a non-Bazel context. For example, you could set a breakpoint
+in your Sphinx extension, then run this command, then step through
+the code with ``pdb``.
+
+.. code-block:: console
+
+   bazelisk run //docs:docs.run
+
 .. _contrib-docs-quickstart-preview:
 
 ---------------------------------
