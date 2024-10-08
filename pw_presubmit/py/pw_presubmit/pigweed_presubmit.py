@@ -1154,6 +1154,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: end
     # Test data
     # keep-sorted: start
+    r'\bpw_build/test_data/pw_copy_and_patch_file/',
     r'\bpw_presubmit/py/test/owners_checks/',
     # keep-sorted: end
 )

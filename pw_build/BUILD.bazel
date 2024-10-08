@@ -21,6 +21,7 @@ load(
 )
 load(":glob_dirs.bzl", "glob_dirs", "match_dir", "match_dir_internal")
 load(":load_phase_test.bzl", "pw_string_comparison_test", "pw_string_list_comparison_test", "return_error")
+load(":pw_copy_and_patch_file_test.bzl", "pw_copy_and_patch_file_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -153,7 +154,10 @@ cc_library(
 
 pw_string_list_comparison_test(
     name = "simple_glob",
-    actual = glob_dirs(["test_data/**"]),
+    actual = glob_dirs(
+        ["test_data/**"],
+        exclude = ["test_data/pw_copy_and_patch_file/**"],
+    ),
     expected = [
         "test_data",
         "test_data/glob_dirs",
@@ -235,4 +239,12 @@ pw_string_list_comparison_test(
     actual = glob_dirs(["test_data/glob_dirs/others/**"]),
     expected = [
     ],
+)
+
+pw_copy_and_patch_file_test(
+    name = "patch_file_basic",
+    src = "test_data/pw_copy_and_patch_file/basic.txt",
+    out = "test_data/pw_copy_and_patch_file/patched_basic.txt",
+    expected = "test_data/pw_copy_and_patch_file/basic.expected",
+    patch_file = "test_data/pw_copy_and_patch_file/basic.patch",
 )

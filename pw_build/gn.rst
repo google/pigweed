@@ -1371,3 +1371,37 @@ Example
      ]
      linker_script = "basic_script.ld"
    }
+
+
+pw_copy_and_patch_file
+----------------------
+Provides the ability to patch a file as part of the build.
+
+The source file will not be patched in place, but instead copied into the
+output directory before patching. The output of this target will be the
+patched file.
+
+Arguments
+^^^^^^^^^
+- ``source``: The source file to be patched.
+
+- ``out``: The output file containing the patched contents.
+
+- ``patch_file``: The patch file.
+
+- ``root``: The root directory for applying the path.
+
+Example
+^^^^^^^
+
+To apply the patch `changes.patch` to the file `data/file.txt` which is located
+in the packages directory `<PW_ROOT>/environment/packages/external_sdk`.
+
+.. code-block::
+
+   pw_copy_and_patch_file("apply_patch") {
+     source = "$EXTERNAL_SDK/data/file.txt"
+     out = "data/patched_file.txt"
+     patch_file = "changes.patch"
+     root = "$EXTERNAL_SDK"
+   }

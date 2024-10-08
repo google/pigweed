@@ -36,3 +36,9 @@ pw_py_binary(
         "pw_build/generate_cc_blob_library.py",
     ],
 )
+
+pw_py_binary(
+    name = "copy_and_patch",
+    srcs = ["pw_build/copy_and_patch.py"],
+    deps = ["@python_packages//patch"],
+)

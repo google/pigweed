@@ -939,6 +939,9 @@ parso==0.8.3 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   jedi
+patch==1.16 \
+    --hash=sha256:c62073f356cff054c8ac24496f1a3d7cfa137835c31e9af39a9f5292fd75bd9f
+    # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 pathspec==0.11.1 \
     --hash=sha256:2798de800fa92780e33acca925945e9a19a133b715067cf165b8866c15a31687 \
     --hash=sha256:d8af70af76652554bd134c22b3e8a1cc46ed7d91edcdd721ef1a0c51a84a5293
