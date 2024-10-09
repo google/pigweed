@@ -296,6 +296,8 @@ cc_toolchain(
         ":supports_pic",
         ":rules_go_unsupported_feature",
         ":rules_rust_unsupported_feature",
+        "//pw_toolchain/cc/capability:compiler_is_clang",
+        "//pw_toolchain/cc/capability:linker_is_clang",
     ] + select({
         ":asan_enabled": [":asan_feature"],
         "//conditions:default": [],
@@ -325,6 +327,8 @@ cc_toolchain(
         ":supports_pic",
         "//pw_toolchain/cc/args:c++17_feature",
         "//pw_toolchain/cc/args:c++20_feature",
+        "//pw_toolchain/cc/capability:compiler_is_clang",
+        "//pw_toolchain/cc/capability:linker_is_clang",
     ],
     tool_map = "@llvm_toolchain//:all_tools",
 )

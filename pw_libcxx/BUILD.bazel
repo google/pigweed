@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_toolchain/cc/current_toolchain:conditions.bzl", "if_compiler_is_clang")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,10 +26,10 @@ cc_library(
         "operator_new.cc",
         "verbose_abort.cc",
     ],
-    target_compatible_with = select({
-        "@rules_cc//cc/compiler:clang": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    target_compatible_with = if_compiler_is_clang(
+        [],
+        otherwise = ["@platforms//:incompatible"],
+    ),
     alwayslink = True,
 )
 

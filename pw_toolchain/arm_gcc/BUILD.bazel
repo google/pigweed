@@ -14,6 +14,7 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
+    "pw_cc_feature",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
 )
@@ -256,6 +257,18 @@ pw_cc_flag_set(
     ],
 )
 
+pw_cc_feature(
+    name = "compiler_is_gcc",
+    enabled = True,
+    feature_name = "compiler_is_gcc",
+)
+
+pw_cc_feature(
+    name = "linker_is_gcc",
+    enabled = True,
+    feature_name = "linker_is_gcc",
+)
+
 pw_cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
     action_configs = [
@@ -322,6 +335,8 @@ pw_cc_toolchain(
     toolchain_features = [
         "//pw_toolchain/cc:c++17_feature",
         "//pw_toolchain/cc:c++20_feature",
+        ":compiler_is_gcc",
+        ":linker_is_gcc",
     ],
     toolchain_identifier = "arm-gcc-toolchain",
     visibility = ["//pw_toolchain:__pkg__"],
