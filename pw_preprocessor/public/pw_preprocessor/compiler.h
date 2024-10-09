@@ -309,3 +309,12 @@
 #define _PW_VA_OPT_SUPPORTED___VA_OPT__() 0
 
 #endif  // __clang_major__ < 9 || __GNUC__ < 12
+
+/// `PW_NO_UNIQUE_ADDRESS` indicates that an object can have no unique
+/// address. This is usually used to force empty member types to occupy
+/// 0 bytes instead of 1 byte to have a unique address.
+#if PW_HAVE_CPP_ATTRIBUTE(no_unique_address)
+#define PW_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#else
+#define PW_NO_UNIQUE_ADDRESS
+#endif  // PW_NO_UNIQUE_ADDRESS

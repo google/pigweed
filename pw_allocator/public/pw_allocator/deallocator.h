@@ -112,6 +112,15 @@ class Deallocator {
     return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this);
   }
 
+  /// Wraps an array of type ``T`` in a ``UniquePtr``
+  ///
+  /// @param[in]  ptr         Pointer to memory provided by this object.
+  /// @param[in]  size        The size of the array.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> WrapUniqueArray(T* ptr, size_t size) {
+    return UniquePtr<T[]>(UniquePtr<T[]>::kPrivateConstructor, ptr, this, size);
+  }
+
   /// Indicates what kind of information to retrieve using `GetInfo`.
   ///
   /// Note that this enum is considered open, and may be extended in the future.
