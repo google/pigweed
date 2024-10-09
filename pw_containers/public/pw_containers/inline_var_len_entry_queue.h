@@ -13,9 +13,18 @@
 // the License.
 #pragma once
 
+#ifdef __cplusplus
+
+#include <cstddef>
+#include <cstdint>
+
+#else
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#endif  // __cplusplus
 
 #include "pw_preprocessor/util.h"
 #include "pw_varint/varint.h"
