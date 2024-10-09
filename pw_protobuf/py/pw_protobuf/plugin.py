@@ -60,11 +60,13 @@ def parse_parameter_options(parameter: str) -> Namespace:
         help='Do not generate legacy SNAKE_CASE names for field name enums.',
     )
     parser.add_argument(
-        '--import-prefix',
-        dest='import_prefix',
-        help='Path prefix expected to be prepended to proto_file. If set '
-        'this prefix will be stripped from the proto filename before '
-        'performing .options file lookup',
+        '--options-file',
+        dest='options_files',
+        metavar='FILE',
+        action='append',
+        default=[],
+        type=Path,
+        help='Append FILE to options file list',
     )
 
     # protoc passes the custom arguments in shell quoted form, separated by
@@ -95,7 +97,7 @@ def process_proto_request(
     args = parse_parameter_options(req.parameter)
     for proto_file in req.proto_file:
         proto_options = options.load_options(
-            args.include_paths, Path(proto_file.name), args.import_prefix
+            args.include_paths, Path(proto_file.name), args.options_files
         )
         output_files = codegen_pwpb.process_proto_file(
             proto_file,

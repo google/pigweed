@@ -54,14 +54,20 @@ def load_options_from(options: ParsedOptions, options_file_name: Path):
 
 
 def load_options(
-    include_paths: list[Path], proto_file_name: Path, import_prefix: str
+    include_paths: list[Path], proto_file_name: Path, options_files: list[Path]
 ) -> ParsedOptions:
     """Loads the .options for the given .proto."""
     options: ParsedOptions = []
 
-    if import_prefix and Path(import_prefix) in proto_file_name.parents:
-        proto_file_name = proto_file_name.relative_to(import_prefix)
+    # First load from any files that were directly specified.
+    for options_file in options_files:
+        if (
+            options_file.name == proto_file_name.with_suffix('.options').name
+            and options_file.exists()
+        ):
+            load_options_from(options, options_file)
 
+    # Then search specified search paths for .options files.
     for include_path in include_paths:
         options_file_name = include_path / proto_file_name.with_suffix(
             '.options'
