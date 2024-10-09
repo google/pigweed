@@ -20,7 +20,7 @@
 
 namespace pw::spi {
 
-Status MockInitiator::WriteRead(ConstByteSpan tx_buffer, ByteSpan rx_buffer) {
+Status MockInitiator::DoWriteRead(ConstByteSpan tx_buffer, ByteSpan rx_buffer) {
   PW_CHECK_INT_LT(expected_transaction_index_, expected_transactions_.size());
 
   ConstByteSpan expected_tx_buffer =

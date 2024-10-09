@@ -26,11 +26,11 @@ class Rp2040Initiator final : public Initiator {
  public:
   Rp2040Initiator(spi_inst_t* spi) : spi_(spi) {}
 
-  // Implements pw::spi::Initiator:
-  Status Configure(const Config& config) override;
-  Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
-
  private:
+  // Implements pw::spi::Initiator:
+  Status DoConfigure(const Config& config) override;
+  Status DoWriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
+
   spi_inst_t* spi_;
 };
 

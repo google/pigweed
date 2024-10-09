@@ -72,7 +72,7 @@ void McuxpressoInitiator::SpiCallback(SPI_Type*,
   driver->transfer_semaphore_.release();
 }
 
-Status McuxpressoInitiator::Configure(const Config& config) {
+Status McuxpressoInitiator::DoConfigure(const Config& config) {
   std::lock_guard lock(mutex_);
   if (current_config_ && config == *current_config_) {
     return OkStatus();
@@ -126,8 +126,8 @@ Status McuxpressoInitiator::DoConfigureLocked(
   return status;
 }
 
-Status McuxpressoInitiator::WriteRead(ConstByteSpan write_buffer,
-                                      ByteSpan read_buffer) {
+Status McuxpressoInitiator::DoWriteRead(ConstByteSpan write_buffer,
+                                        ByteSpan read_buffer) {
   spi_transfer_t transfer = {};
 
   transfer.txData =

@@ -33,14 +33,14 @@ class LinuxInitiator : public Initiator {
       : max_speed_hz_(max_speed_hz), fd_(fd) {}
   ~LinuxInitiator() override;
 
-  // Implements pw::spi::Initiator
-  Status Configure(const Config& config) override;
-  Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
-
  private:
   uint32_t max_speed_hz_;
   int fd_;
   std::optional<Config> current_config_;
+
+  // Implements pw::spi::Initiator
+  Status DoConfigure(const Config& config) override;
+  Status DoWriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
 };
 
 // Linux userspace implementation of SPI ChipSelector

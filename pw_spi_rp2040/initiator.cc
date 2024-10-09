@@ -61,7 +61,7 @@ constexpr spi_cpol_t GetPolarity(ClockPolarity polarity) {
 
 }  // namespace
 
-Status Rp2040Initiator::Configure(const Config& config) {
+Status Rp2040Initiator::DoConfigure(const Config& config) {
   PW_ASSERT(config.bits_per_word() == 8);
 
   spi_set_format(spi_,
@@ -73,8 +73,8 @@ Status Rp2040Initiator::Configure(const Config& config) {
   return OkStatus();
 }
 
-Status Rp2040Initiator::WriteRead(ConstByteSpan write_buffer,
-                                  ByteSpan read_buffer) {
+Status Rp2040Initiator::DoWriteRead(ConstByteSpan write_buffer,
+                                    ByteSpan read_buffer) {
   if (write_buffer.empty() && !read_buffer.empty()) {
     // Read only transaction.
     spi_read_blocking(spi_,

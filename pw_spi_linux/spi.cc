@@ -33,7 +33,7 @@ LinuxInitiator::~LinuxInitiator() {
   }
 }
 
-Status LinuxInitiator::Configure(const Config& config) {
+Status LinuxInitiator::DoConfigure(const Config& config) {
   if (current_config_ == config) {
     // Don't waste time issuing ioctls if the config is not actually changing.
     return OkStatus();
@@ -79,8 +79,8 @@ Status LinuxInitiator::Configure(const Config& config) {
   return OkStatus();
 }
 
-Status LinuxInitiator::WriteRead(ConstByteSpan write_buffer,
-                                 ByteSpan read_buffer) {
+Status LinuxInitiator::DoWriteRead(ConstByteSpan write_buffer,
+                                   ByteSpan read_buffer) {
   // Configure a full-duplex transfer using ioctl()
 
   struct spi_ioc_transfer transaction[2] = {};

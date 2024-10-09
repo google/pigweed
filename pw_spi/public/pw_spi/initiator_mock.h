@@ -89,6 +89,10 @@ class MockInitiator : public pw::spi::Initiator {
   // Runs Finalize() regardless of whether it was already optionally finalized.
   ~MockInitiator() override;
 
+ private:
+  span<MockTransaction> expected_transactions_;
+  size_t expected_transaction_index_;
+
   // Implements a mocked backend for the SPI initiator.
   //
   // Expects (via Gtest):
@@ -102,15 +106,11 @@ class MockInitiator : public pw::spi::Initiator {
   //
   // Returns:
   // Specified transaction return type
-  pw::Status WriteRead(pw::ConstByteSpan, pw::ByteSpan) override;
+  pw::Status DoWriteRead(pw::ConstByteSpan, pw::ByteSpan) override;
 
-  pw::Status Configure(const pw::spi::Config& /*config */) override {
+  pw::Status DoConfigure(const pw::spi::Config& /*config */) override {
     return pw::OkStatus();
   }
-
- private:
-  span<MockTransaction> expected_transactions_;
-  size_t expected_transaction_index_;
 };
 
 // Makes a new SPI transactions list.

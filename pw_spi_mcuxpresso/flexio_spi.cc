@@ -118,7 +118,7 @@ void McuxpressoFlexIoInitiator::SpiCallback(FLEXIO_SPI_Type*,
   driver->transfer_semaphore_.release();
 }
 
-Status McuxpressoFlexIoInitiator::Configure(const Config& config) {
+Status McuxpressoFlexIoInitiator::DoConfigure(const Config& config) {
   if (current_config_ && config == *current_config_) {
     return OkStatus();
   }
@@ -174,8 +174,8 @@ Status McuxpressoFlexIoInitiator::Configure(const Config& config) {
   return status;
 }
 
-Status McuxpressoFlexIoInitiator::WriteRead(ConstByteSpan write_buffer,
-                                            ByteSpan read_buffer) {
+Status McuxpressoFlexIoInitiator::DoWriteRead(ConstByteSpan write_buffer,
+                                              ByteSpan read_buffer) {
   flexio_spi_transfer_t transfer = {};
   transfer.txData =
       reinterpret_cast<uint8_t*>(const_cast<std::byte*>(write_buffer.data()));

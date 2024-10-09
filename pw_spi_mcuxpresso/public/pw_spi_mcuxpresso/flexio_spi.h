@@ -38,11 +38,6 @@ class McuxpressoFlexIoInitiator : public Initiator {
         blocking_(blocking) {}
   ~McuxpressoFlexIoInitiator();
 
-  // Implements pw::spi::Initiator
-  pw::Status Configure(const Config& config) PW_LOCKS_EXCLUDED(mutex_) override;
-  pw::Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer)
-      PW_LOCKS_EXCLUDED(mutex_) override;
-
  private:
   // inclusive-language: disable
   static void SpiCallback(FLEXIO_SPI_Type*,
@@ -54,6 +49,12 @@ class McuxpressoFlexIoInitiator : public Initiator {
                       ClockPolarity clockPolarity);
 
   bool is_initialized() { return !!current_config_; }
+
+  // Implements pw::spi::Initiator
+  pw::Status DoConfigure(const Config& config)
+      PW_LOCKS_EXCLUDED(mutex_) override;
+  pw::Status DoWriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer)
+      PW_LOCKS_EXCLUDED(mutex_) override;
 
   std::optional<const Config> current_config_;
   FLEXIO_SPI_Type flexio_spi_config_;

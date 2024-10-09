@@ -41,11 +41,6 @@ class McuxpressoInitiator : public Initiator {
         blocking_(blocking) {}
   ~McuxpressoInitiator();
 
-  // Implements pw::spi::Initiator
-  Status Configure(const Config& config) PW_LOCKS_EXCLUDED(mutex_) override;
-  Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer)
-      PW_LOCKS_EXCLUDED(mutex_) override;
-
   Status SetChipSelect(uint32_t pin) PW_LOCKS_EXCLUDED(mutex_);
 
  private:
@@ -59,6 +54,11 @@ class McuxpressoInitiator : public Initiator {
                            const std::lock_guard<sync::Mutex>& lock);
 
   bool is_initialized() { return !!current_config_; }
+
+  // Implements pw::spi::Initiator
+  Status DoConfigure(const Config& config) PW_LOCKS_EXCLUDED(mutex_) override;
+  Status DoWriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer)
+      PW_LOCKS_EXCLUDED(mutex_) override;
 
   SPI_Type* register_map_;
   spi_master_handle_t driver_handle_;
