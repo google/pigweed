@@ -149,7 +149,7 @@ def add_file_to_bundle(
     existing UpdateBundle -- bundle and returns the updated UpdateBundle object.
     """
 
-    if not file_name in bundle.target_payloads:
+    if file_name not in bundle.target_payloads:
         bundle.target_payloads[file_name] = file_contents
     else:
         raise Exception(f'File name {file_name} already exists in bundle')

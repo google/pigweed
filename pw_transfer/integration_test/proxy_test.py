@@ -16,12 +16,9 @@
 
 import abc
 import asyncio
-from struct import pack
-import time
 import unittest
 
 from pw_rpc.internal import packet_pb2
-from pw_transfer import transfer_pb2
 from pw_hdlc import encode
 from pw_transfer.chunk import Chunk, ProtocolVersion
 

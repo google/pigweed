@@ -20,13 +20,12 @@ r"""Used to parse a data stream containing base64 tokenized messages and
 """
 
 import enum
-import os
 
 from pathlib import Path
 from typing import Iterable, Callable, Any
 
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
-from pw_tokenizer import detokenize, encode
+from pw_tokenizer import detokenize
 
 
 class TokenStatus(enum.Enum):

@@ -260,7 +260,7 @@ class DataSourceMap:
             current_parent = self._BASE_TOTAL_LABEL
         labels = []
         for ds_index, curr_ds in enumerate(data_sources):
-            if not current_parent in curr_ds:
+            if current_parent not in curr_ds:
                 continue
             label_map = curr_ds[current_parent]
             for child_label, label_info in label_map.items():

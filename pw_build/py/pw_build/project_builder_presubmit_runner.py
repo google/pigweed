@@ -112,7 +112,7 @@ def _bazel_command_args_to_build_commands(
     """Returns a list of BuildCommands based on a bazel PresubmitCheckTrace."""
     build_steps: list[BuildCommand] = []
 
-    if not 'bazel' in trace.args:
+    if 'bazel' not in trace.args:
         return build_steps
 
     bazel_command = list(arg for arg in trace.args if not arg.startswith('--'))

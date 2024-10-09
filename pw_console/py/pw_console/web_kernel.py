@@ -286,7 +286,7 @@ class WebKernel:
                     ) from error
 
             return 'unknown'
-        except ValueError as error:
+        except ValueError:
             _LOG.error('Failed to parse request: %s', request)
             return ''
 
@@ -308,7 +308,7 @@ class WebKernel:
 
             return {
                 'result': (
-                    _format_result_output(result) if not result is None else ''
+                    _format_result_output(result) if result is not None else ''
                 ),
                 'stdout': temp_stdout.getvalue(),
                 'stderr': temp_stderr.getvalue(),
@@ -398,7 +398,7 @@ class WebKernel:
 
     def handle_log_source_subscribe(self, logger_name, request_id) -> bool:
         if self.kernel_params['loggers'][logger_name]:
-            if not logger_name in self.logger_handlers:
+            if logger_name not in self.logger_handlers:
                 self.logger_handlers[logger_name] = WebSocketStreamingResponder(
                     self.connection,
                     self.loop,

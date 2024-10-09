@@ -175,7 +175,7 @@ class ArduinoBuilder:
         self.selected_board = board_name
 
         # Load default menu options for a selected board.
-        if not self.selected_board in self.board.keys():
+        if self.selected_board not in self.board.keys():
             _LOG.error("Error board: '%s' not supported.", self.selected_board)
             # TODO(tonymd): Print supported boards here
             sys.exit(1)

@@ -15,8 +15,6 @@
 
 from datetime import date
 
-import pygments
-import sphinx
 
 from pw_console.pigweed_code_style import PigweedCodeStyle
 from pw_console.pigweed_code_style import PigweedCodeLightStyle

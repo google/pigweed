@@ -29,7 +29,6 @@ Which tests to run can be specified as command-line arguments:
 
 """
 
-import itertools
 from parameterized import parameterized
 import random
 

@@ -322,7 +322,7 @@ class BazelToGnConverter:
     def _build_arg(self, name: str) -> str:
         """Returns the GN build argument for a third party module."""
         build_arg = f'$dir_pw_third_party_{name}'.replace('-', '_')
-        if not build_arg in self._names_by_build_arg:
+        if build_arg not in self._names_by_build_arg:
             self._names_by_build_arg[build_arg] = name
         return build_arg
 
@@ -417,7 +417,7 @@ class BazelToGnConverter:
         pigweed = self._workspaces['pigweed']
         for rule in pigweed.get_http_archives():
             repo = rule.label().target()
-            if not repo in self._names_by_repo:
+            if repo not in self._names_by_repo:
                 continue
             name = self._names_by_repo[repo]
             workspace = self._workspaces[name]

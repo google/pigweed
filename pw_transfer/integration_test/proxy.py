@@ -36,7 +36,6 @@ from pw_rpc.internal import packet_pb2
 from pw_transfer import transfer_pb2
 from pw_transfer.integration_test import config_pb2
 from pw_hdlc import decode
-from pw_transfer import ProtocolVersion
 from pw_transfer.chunk import Chunk
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
@@ -586,7 +585,7 @@ async def _handle_connection(
     server_reader, server_writer = await asyncio.open_connection(
         'localhost', server_port
     )
-    _LOG.info(f'New connection opened to server')
+    _LOG.info('New connection opened to server')
 
     # Queues for the simplex connections to pass events to each other.
     server_event_queue = asyncio.Queue()

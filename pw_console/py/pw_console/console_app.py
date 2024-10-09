@@ -1235,7 +1235,7 @@ class ConsoleApp:
             self.application.invalidate()
 
     def setup_command_runner_log_pane(self) -> None:
-        if not self.system_command_output_pane is None:
+        if self.system_command_output_pane is not None:
             return
 
         self.system_command_output_pane = LogPane(

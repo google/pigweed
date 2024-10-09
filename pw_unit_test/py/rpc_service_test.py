@@ -15,7 +15,6 @@
 """Tests using the callback client for pw_rpc."""
 
 import logging
-from pathlib import Path
 import unittest
 from unittest import mock
 
@@ -23,7 +22,6 @@ from pw_hdlc import rpc
 from pw_rpc import testing
 from pw_unit_test_proto import unit_test_pb2
 from pw_unit_test import run_tests, EventHandler, TestCase
-from pw_status import Status
 
 # The three suites (Passing, Failing, and DISABLED_Disabled) have these cases.
 _CASES = ('Zero', 'One', 'Two', 'DISABLED_Disabled')

@@ -697,7 +697,7 @@ class InputData:
             attribute = attribute_type(
                 attr_id=attribute_id, definition=attribute_spec
             )
-            assert not attribute in self.all_attributes
+            assert attribute not in self.all_attributes
             self.all_attributes.add(attribute)
         for channel_id, channel_spec in spec.channels.items():
             channel = channel_type(
@@ -705,17 +705,17 @@ class InputData:
                 definition=channel_spec,
                 units=self.all_units,
             )
-            assert not channel in self.all_channels
+            assert channel not in self.all_channels
             self.all_channels.add(channel)
         for trigger_id, trigger_spec in spec.triggers.items():
             trigger = trigger_type(
                 trigger_id=trigger_id, definition=trigger_spec
             )
-            assert not trigger in self.all_triggers
+            assert trigger not in self.all_triggers
             self.all_triggers.add(trigger)
         for sensor_id, sensor_spec in spec.sensors.items():
             sensor = sensor_type(item_id=sensor_id, definition=sensor_spec)
-            assert not sensor in self.all_sensors
+            assert sensor not in self.all_sensors
             self.all_sensors.add(sensor)
 
 

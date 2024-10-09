@@ -87,7 +87,7 @@ def _read_files(script: Path) -> list[Path]:
         paths_list: list[str] = eval(  # pylint: disable=eval-used
             ''.join(_read_files_list(file))
         )
-        return list(Path(p) for p in paths_list if not 'lib/stdcompat/' in p)
+        return list(Path(p) for p in paths_list if 'lib/stdcompat/' not in p)
 
 
 def _add_include_before_namespace(text: str, include: str) -> str:
