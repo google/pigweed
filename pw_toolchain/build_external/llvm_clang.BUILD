@@ -13,6 +13,8 @@
 # the License.
 
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:args_list.bzl", "cc_args_list")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
@@ -292,4 +294,38 @@ filegroup(
         "lib/clang/*/lib/armv*-unknown-none-eabi/**",
     ]),
     visibility = ["//visibility:public"],
+)
+
+cc_args(
+    name = "llvm-libc_link_args",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = selects.with_or({
+        ALL_CORTEX_M_CPUS: [
+            "-nostdlib++",
+            "-nostartfiles",
+            "-Wl,-lc++",
+        ],
+        "//conditions:default": [],
+    }),
+    data = [":llvm-libc_arm-none-eabi_link_files"],
+    visibility = ["//visibility:private"],
+)
+
+cc_args(
+    name = "llvm-libc_compile_args",
+    actions = ["@rules_cc//cc/toolchains/actions:compile_actions"],
+    args = selects.with_or({
+        ALL_CORTEX_M_CPUS: [],
+        "//conditions:default": [],
+    }),
+    data = [":llvm-libc_arm-none-eabi_compile_files"],
+    visibility = ["//visibility:private"],
+)
+
+cc_args_list(
+    name = "llvm-libc_args",
+    args = [
+        ":llvm-libc_compile_args",
+        ":llvm-libc_link_args",
+    ]
 )

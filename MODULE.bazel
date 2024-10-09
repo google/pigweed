@@ -121,7 +121,7 @@ cipd_repository(
 
 cipd_repository(
     name = "llvm_toolchain_device",
-    build_file = "@pw_toolchain//build_external:llvm_clang_legacy.BUILD",
+    build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
     tag = "git_revision:0dcada94bb1ae79f0edd91013038098c62a96b3b",
 )

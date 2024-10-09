@@ -12,13 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@pw_toolchain//cc_toolchain:defs.bzl",
-    "pw_cc_action_files",
-    "pw_cc_feature",
-    "pw_cc_flag_set",
-    "pw_cc_toolchain",
-)
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,138 +21,101 @@ licenses(["notice"])
 
 filegroup(name = "empty")
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m0",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m0",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m0plus",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m0plus",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "armv6m-none-eabi",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "--target=armv6m-none-eabi",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "armv8m.main-none-eabi",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "--target=armv8m.main-none-eabi",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cxx_compiler_flags",
     actions = [
-        "@pw_toolchain//actions:all_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    flags = [
+    args = [
         "-fno-register-global-dtors-with-atexit",
         "-fno-c++-static-destructors",
         "-fno-use-cxa-atexit",
         "-fno-threadsafe-statics",
         "-D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES",
     ],
-)
-
-pw_cc_flag_set(
-    name = "llvm-libc_link_flags",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
-        "-nostdlib++",
-        "-nostartfiles",
-        "-Wl,-lc++",
-    ],
-)
-
-pw_cc_action_files(
-    name = "cxx-lib-config-files",
-    srcs = [
+    data = [
         "//pw_libcxx:cxx_lib_configs",
     ],
-    actions = [
-        "@pw_toolchain//actions:all_compiler_actions",
-    ],
 )
 
-pw_cc_action_files(
-    name = "llvm-libc_compile_files",
-    srcs = [
-        "@llvm_toolchain_device//:llvm-libc_arm-none-eabi_compile_files",
-    ],
-    actions = [
-        "@pw_toolchain//actions:all_compiler_actions",
-    ],
-)
-
-pw_cc_action_files(
-    name = "llvm-libc_link_files",
-    srcs = [
-        "@llvm_toolchain_device//:llvm-libc_arm-none-eabi_link_files",
-    ],
-    actions = [
-        "@pw_toolchain//actions:all_link_actions",
-    ],
-)
-
-pw_cc_flag_set(
+cc_args(
     name = "cortex_common",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex_common_link",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
         "-Wl,--gc-sections",
     ],
 )
 
 # Additional arm_clang specific warning flags
-pw_cc_flag_set(
+cc_args(
     name = "warnings",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
     ],
-    flags = [
+    args = [
         # This can't be in common, because proto headers in host builds trigger
         "-Wundef",
         # Silence the really verbose ARM warnings.
@@ -165,80 +123,52 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "thumb_abi",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mabi=aapcs",
         "-mthumb",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m33",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m33",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_feature(
-    name = "compiler_is_clang",
-    enabled = True,
-    feature_name = "compiler_is_clang",
-)
-
-pw_cc_feature(
-    name = "linker_is_clang",
-    enabled = True,
-    feature_name = "linker_is_clang",
-)
-
-pw_cc_toolchain(
+cc_toolchain(
     name = "arm_clang_toolchain_cortex-m",
-    action_configs = [
-        "@llvm_toolchain_device//:ar",
-        "@llvm_toolchain_device//:clang",
-        "@llvm_toolchain_device//:clang++",
-        "@llvm_toolchain_device//:lld",
-        "@llvm_toolchain_device//:llvm-cov",
-        "@llvm_toolchain_device//:llvm-objcopy",
-        "@llvm_toolchain_device//:llvm-objdump",
-        "@llvm_toolchain_device//:llvm-strip",
-    ],
-    compiler = "clang",  # Useful for distinguishing gcc vs clang.
-    extra_action_files = [
-        ":cxx-lib-config-files",
-        ":llvm-libc_compile_files",
-        ":llvm-libc_link_files",
-    ],
-    flag_sets = [
+    args = [
         ":cxx_compiler_flags",
-        ":llvm-libc_link_flags",
+        "@llvm_toolchain_device//:llvm-libc_args",
         ":thumb_abi",
         ":cortex_common",
         ":cortex_common_link",
         ":warnings",
-        "@pw_toolchain//flag_sets:oz",
-        "@pw_toolchain//flag_sets:debugging",
-        "@pw_toolchain//flag_sets:reduced_size",
-        "@pw_toolchain//flag_sets:no_canonical_prefixes",
-        "@pw_toolchain//flag_sets:no_rtti",
-        "@pw_toolchain//flag_sets:wno_register",
-        "@pw_toolchain//flag_sets:wnon_virtual_dtor",
-        "//pw_toolchain/cc:common_warnings",
-        "//pw_toolchain/cc:color_diagnostics",
+        "//pw_toolchain/cc/args:oz",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
     ] + select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [
             ":cortex-m0",
@@ -254,6 +184,17 @@ pw_cc_toolchain(
         ],
         "@pw_toolchain//constraints/arm_mcpu:none": [],
     }),
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/capability:compiler_is_clang",
+        "//pw_toolchain/cc/capability:linker_is_clang",
+    ] + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
+        "//conditions:default": [],
+    }),
     tags = ["manual"],  # Don't try to build this in wildcard builds.
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
@@ -261,13 +202,7 @@ pw_cc_toolchain(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [],
         "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
     }),
-    toolchain_features = [
-        "//pw_toolchain/cc:c++17_feature",
-        "//pw_toolchain/cc:c++20_feature",
-        ":compiler_is_clang",
-        ":linker_is_clang",
-    ],
-    toolchain_identifier = "arm-clang-toolchain",
+    tool_map = "@llvm_toolchain_device//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
 )
 
