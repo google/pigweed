@@ -52,7 +52,13 @@ pw_test_group("fuzzers") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+    "fuchsia.rst",
+    "host/att/docs.rst",
+    "host/gap/docs.rst",
+    "host/l2cap/docs.rst",
+  ]
 }
 
 # Satisfies source_is_in_gn_build lint, which doesn't know about the BUILD.gn
