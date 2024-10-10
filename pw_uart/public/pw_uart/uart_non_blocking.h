@@ -171,6 +171,51 @@ class UartNonBlocking : public UartBase {
   /// @endrst
   bool CancelWrite() { return DoCancelWrite(); }
 
+  /// Ensures all queued data in the UART has been transmitted and the hardware
+  /// FIFO is empty.
+  ///
+  /// This function ensures that all data enqueued before calling this function
+  /// has been transmitted. Any data enqueued after this function completes will
+  /// be transmitted immediately.
+  ///
+  /// @param callback   A callback to invoke when the flush is completed.
+  ///                   @param status  OK: The operation was successful and the
+  ///                                  transmit FIFO is empty.
+  ///                                  CANCELLED: The operation was cancelled
+  ///                                  via CancelFlushOutput().
+  ///                                  May return other implementation-specific
+  ///                                  status codes.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successfully started.
+  ///    UNAVAILABLE: Another Write() or FlushOutput() operation is currently
+  ///    in progress.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
+  Status FlushOutput(Function<void(Status status)>&& callback) {
+    return DoFlushOutput(std::move(callback));
+  }
+
+  /// Cancels a pending FlushOutput() operation.
+  ///
+  /// This function will cancel an output flush in progress. The FlushOutput
+  /// callback will be called with status=CANCELLED.
+  ///
+  /// @returns @rst
+  ///
+  ///    true: The operation was successfully canceled a transaction in progress
+  ///          and the callback will be invoked with status=CANCELLED.
+  ///    false: There were no transactions in progress and nothing was
+  ///           cancelled. No callback will be invoked.
+  ///
+  /// @endrst
+  bool CancelFlushOutput() { return DoCancelFlushOutput(); }
+
  private:
   /// Reads at least `min_bytes` and at most `rx_buffer.size()` bytes from the
   /// UART into the provided buffer.
@@ -285,6 +330,51 @@ class UartNonBlocking : public UartBase {
   ///
   /// @endrst
   virtual bool DoCancelWrite() = 0;
+
+  /// Ensures all queued data in the UART has been transmitted and the hardware
+  /// FIFO is empty.
+  ///
+  /// This function ensures that all data enqueued before calling this function
+  /// has been transmitted. Any data enqueued after this function completes will
+  /// be transmitted immediately.
+  ///
+  /// @param callback   A callback to invoke when the flush is completed.
+  ///                   @param status  OK: The operation was successful and the
+  ///                                  transmit FIFO is empty.
+  ///                                  CANCELLED: The operation was cancelled
+  ///                                  via CancelFlushOutput().
+  ///                                  May return other implementation-specific
+  ///                                  status codes.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The operation was successfully started.
+  ///    UNAVAILABLE: Another Write() or FlushOutput() operation is currently
+  ///    in progress.
+  ///
+  /// May return other implementation-specific status codes.
+  ///
+  /// @endrst
+  virtual Status DoFlushOutput(Function<void(Status status)>&& /*callback*/) {
+    return Status::Unimplemented();
+  }
+
+  /// Cancels a pending FlushOutput() operation.
+  ///
+  /// This function will cancel an output flush in progress. The DoFlushOutput
+  /// callback will be called with status=CANCELLED.
+  ///
+  /// @returns @rst
+  ///
+  ///    true: The operation was successfully canceled a transaction in progress
+  ///          and the callback will be invoked with status=CANCELLED.
+  ///    false: There were no transactions in progress and nothing was
+  ///           cancelled. No callback will be invoked.
+  ///
+  /// @endrst
+  virtual bool DoCancelFlushOutput() { return false; }
 };
 
 }  // namespace pw::uart
