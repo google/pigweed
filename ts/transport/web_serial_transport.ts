@@ -116,6 +116,11 @@ export class WebSerialTransport implements DeviceTransport {
    * and can be called whenever a port is available.
    */
   async connectPort(port: SerialPort): Promise<void> {
+    this.serial.addEventListener('disconnect', (e: any) => {
+      if (e.target === port) {
+        this.connected.next(false);
+      }
+    });
     this.activePortConnectionConnection =
       this.portConnections.get(port) ?? (await this.connectNewPort(port));
 

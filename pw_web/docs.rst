@@ -6,10 +6,13 @@ pw_web
 Pigweed provides an NPM package with modules to build web apps for Pigweed
 devices.
 
-Also included is a basic React app that demonstrates using the npm package.
-
 Getting Started
 ===============
+
+Easiest way to get started is to follow the :ref:`Sense tutorial <showcase-sense-tutorial-intro>`
+and flash a Raspberry Pico board.
+
+Once you have a device running Pigweed, you can connect to it using just your web browser.
 
 Installation
 -------------
@@ -38,42 +41,39 @@ your HTML page by:
      const { pw_rpc, pw_hdlc, Device, WebSerial } from Pigweed;
    </script>
 
-Getting Started
----------------
-Easiest way to get started is to build pw_system demo and run it on a STM32F429I
-Discovery board. Discovery board is Pigweed's primary target for development.
-Refer to :ref:`target documentation<target-stm32f429i-disc1-stm32cube>` for
-instructions on how to build the demo and try things out.
+Modules
+=======
+.. _module-pw_web-device:
 
-``pigweedjs`` provides a ``Device`` API which simplifies common tasks. Here is
-an example to connect to device and call ``EchoService.Echo`` RPC service.
+Device
+------
+Device class is a helper API to connect to a device over serial and call RPCs
+easily.
 
-.. code-block:: html
+To initialize device, it needs a ``ProtoCollection`` instance. ``pigweedjs``
+includes a default one which you can use to get started, you can also generate
+one from your own ``.proto`` files using ``pw_proto_compiler``.
 
-   <h1>Hello Pigweed</h1>
-   <button onclick="connect()">Connect</button>
-   <button onclick="echo()">Echo RPC</button>
-   <br /><br />
-   <code></code>
-   <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
-   <script src="https://unpkg.com/pigweedjs/dist/protos/collection.umd.js"></script>
-   <script>
-     const { Device } = Pigweed;
-     const { ProtoCollection } = PigweedProtoCollection;
+``Device`` goes through all RPC methods in the provided ProtoCollection. For
+each RPC, it reads all the fields in ``Request`` proto and generates a
+JavaScript function to call that RPC and also a helper method to create a request.
+It then makes this function available under ``rpcs.*`` namespaced by its package name.
 
-     const device = new Device(new ProtoCollection());
+Device has following public API:
 
-     async function connect(){
-       await device.connect();
-     }
+- ``constructor(ProtoCollection, WebSerialTransport <optional>, channel <optional>, rpcAddress <optional>)``
+- ``connect()`` - Shows browser's WebSerial connection dialog and let's user
+  make device selection
+- ``rpcs.*`` - Device API enumerates all RPC services and methods present in the
+  provided proto collection and makes them available as callable functions under
+  ``rpcs``. Example: If provided proto collection includes Pigweed's Echo
+  service ie. ``pw.rpc.EchoService.Echo``, it can be triggered by calling
+  ``device.rpcs.pw.rpc.EchoService.Echo.call(request)``. The functions return
+  a ``Promise`` that resolves an array with status and response.
 
-     async function echo(){
-       const [status, response] = await device.rpcs.pw.rpc.EchoService.Echo("Hello");
-       document.querySelector('code').innerText = "Response: " + response;
-     }
-   </script>
-
-pw_system demo uses ``pw_log_rpc``; an RPC-based logging solution. pw_system
+Using Device API with Sense
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sense project uses ``pw_log_rpc``; an RPC-based logging solution. Sense
 also uses pw_tokenizer to tokenize strings and save device space. Below is an
 example that streams logs using the ``Device`` API.
 
@@ -95,55 +95,29 @@ example that streams logs using the ``Device`` API.
 
      async function connect(){
        await device.connect();
-       const call = device.rpcs.pw.log.Logs.Listen((msg) => {
-         msg.getEntriesList().forEach((entry) => {
-           const frame = entry.getMessage();
-           const detokenized = detokenizer.detokenizeUint8Array(frame);
-           document.querySelector('code').innerHTML += detokenized + "<br/>";
-         });
-       })
+       const req = device.rpcs.pw.log.Logs.Listen.createRequest()
+       const logs = device.rpcs.pw.log.Logs.Listen.call(req);
+       for await (const msg of logs){
+           msg.getEntriesList().forEach((entry) => {
+             const frame = entry.getMessage();
+             const detokenized = detokenizer.detokenizeUint8Array(frame);
+             document.querySelector('code').innerHTML += detokenized + "<br/>";
+           });
+       }
+       console.log("Log stream ended with status", logs.call.status);
      }
    </script>
 
 The above example requires a token database in CSV format. You can generate one
-from the pw_system's ``.elf`` file by running:
+from the Sense's ``.elf`` file by running:
 
 .. code-block:: bash
 
    $ pw_tokenizer/py/pw_tokenizer/database.py create \
-   --database db.csv out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
+   --database db.csv bazel-bin/apps/blinky/rp2040_blinky.elf
 
 You can then load this CSV in JavaScript using ``fetch()`` or by just copying
 the contents into the ``tokenDBCsv`` variable in the above example.
-
-Modules
-=======
-
-Device
-------
-Device class is a helper API to connect to a device over serial and call RPCs
-easily.
-
-To initialize device, it needs a ``ProtoCollection`` instance. ``pigweedjs``
-includes a default one which you can use to get started, you can also generate
-one from your own ``.proto`` files using ``pw_proto_compiler``.
-
-``Device`` goes through all RPC methods in the provided ProtoCollection. For
-each RPC, it reads all the fields in ``Request`` proto and generates a
-JavaScript function that accepts all the fields as it's arguments. It then makes
-this function available under ``rpcs.*`` namespaced by its package name.
-
-Device has following public API:
-
-- ``constructor(ProtoCollection, WebSerialTransport <optional>, rpcAddress <optional>)``
-- ``connect()`` - Shows browser's WebSerial connection dialog and let's user
-  make device selection
-- ``rpcs.*`` - Device API enumerates all RPC services and methods present in the
-  provided proto collection and makes them available as callable functions under
-  ``rpcs``. Example: If provided proto collection includes Pigweed's Echo
-  service ie. ``pw.rpc.EchoService.Echo``, it can be triggered by calling
-  ``device.rpcs.pw.rpc.EchoService.Echo("some message")``. The functions return
-  a ``Promise`` that resolves an array with status and response.
 
 WebSerialTransport
 ------------------
@@ -186,18 +160,6 @@ Following Pigweed modules are included in the NPM package:
 - `pw_rpc <https://pigweed.dev/pw_rpc/ts/>`_
 - `pw_tokenizer <https://pigweed.dev/pw_tokenizer/#typescript>`_
 - `pw_transfer <https://pigweed.dev/pw_transfer/#typescript>`_
-
-Web Console
-===========
-Pigweed includes a web console that demonstrates `pigweedjs` usage in a
-React-based web app. Web console includes a log viewer and a REPL that supports
-autocomplete. Here's how to run the web console locally:
-
-.. code-block:: bash
-
-   $ cd pw_web/webconsole
-   $ npm install
-   $ npm run dev
 
 Log Viewer Component
 ====================

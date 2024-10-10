@@ -31,8 +31,6 @@ import {
 import { Status } from 'pigweedjs/pw_status';
 import { Response } from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
-import { EchoMessage } from 'pigweedjs/protos/pw_rpc/echo_pb';
-
 describe('WebSerialTransport', () => {
   let device: Device;
   let serialMock: SerialMock;
@@ -96,21 +94,12 @@ describe('WebSerialTransport', () => {
     expect(device.rpcs.pw.rpc.EchoService.Echo).toBeDefined();
   });
 
-  it('has method arguments data', () => {
-    expect(device.getMethodArguments('pw.rpc.EchoService.Echo')).toStrictEqual([
-      'msg',
-    ]);
-    expect(device.getMethodArguments('pw.test2.Alpha.Unary')).toStrictEqual([
-      'magic_number',
-    ]);
-  });
-
   it('unary rpc sends request to serial', async () => {
     const methodStub = device.client
       .channel()!
       .methodStub('pw.rpc.EchoService.Echo')! as UnaryMethodStub;
-    const responseMsg = new EchoMessage();
-    responseMsg.setMsg('hello');
+    const req = device.rpcs.pw.rpc.EchoService.Echo.createRequest();
+    req.setMsg('hello');
     await device.connect();
     const nextCallId = methodStub.rpcs.nextCallId;
     setTimeout(() => {
@@ -120,12 +109,13 @@ describe('WebSerialTransport', () => {
           methodStub.method,
           Status.OK,
           nextCallId,
-          responseMsg,
+          req,
         ),
       );
     }, 10);
+
     const [status, response] =
-      await device.rpcs.pw.rpc.EchoService.Echo('hello');
+      await device.rpcs.pw.rpc.EchoService.Echo.call(req);
     expect(response.getMsg()).toBe('hello');
     expect(status).toBe(0);
   });
@@ -144,12 +134,11 @@ describe('WebSerialTransport', () => {
     const onCompleted = jest.fn();
     const onError = jest.fn();
 
-    device.rpcs.pw.rpc.test1.TheTestService.SomeServerStreaming(
-      4,
-      onNext,
-      onCompleted,
-      onError,
-    );
+    const req =
+      device.rpcs.pw.rpc.test1.TheTestService.SomeServerStreaming.createRequest();
+    req.setMagicNumber(4);
+    const rpcCall =
+      device.rpcs.pw.rpc.test1.TheTestService.SomeServerStreaming.call(req);
     device.client.processPacket(
       generateStreamingPacket(1, serverStreaming.method, response1, nextCallId),
     );
@@ -164,6 +153,12 @@ describe('WebSerialTransport', () => {
         nextCallId,
       ),
     );
+
+    for await (const msg of rpcCall) {
+      onNext(msg);
+    }
+
+    onCompleted(rpcCall.call.status);
 
     expect(onNext).toBeCalledWith(response1);
     expect(onNext).toBeCalledWith(response2);

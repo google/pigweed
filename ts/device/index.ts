@@ -21,15 +21,36 @@ import {
   UnaryMethodStub,
   MethodStub,
   ServerStreamingMethodStub,
+  Call,
 } from 'pigweedjs/pw_rpc';
 import { WebSerialTransport } from '../transport/web_serial_transport';
 import { ProtoCollection } from 'pigweedjs/pw_protobuf_compiler';
+import { Message } from 'google-protobuf';
 
 function protoFieldToMethodName(fieldName: string) {
   return fieldName.split('_').map(titleCase).join('');
 }
 function titleCase(title: string) {
   return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+interface RPCUnderlyingSource extends UnderlyingSource {
+  call?: Call;
+}
+
+export class RPCReadableStream<R = any> extends ReadableStream<R> {
+  constructor(private underlyingSource: RPCUnderlyingSource) {
+    super(underlyingSource);
+  }
+
+  get call(): Call {
+    return this.underlyingSource.call!;
+  }
+
+  cancel(): Promise<void> {
+    this.call.cancel();
+    return;
+  }
 }
 
 export class Device {
@@ -45,6 +66,7 @@ export class Device {
   constructor(
     protoCollection: ProtoCollection,
     transport: WebSerialTransport = new WebSerialTransport(),
+    channel = 1,
     rpcAddress = 82,
   ) {
     this.transport = transport;
@@ -54,7 +76,7 @@ export class Device {
     this.encoder = new Encoder();
     this.nameToMethodArgumentsMap = {};
     const channels = [
-      new Channel(1, (bytes) => {
+      new Channel(channel, (bytes) => {
         const hdlcBytes = this.encoder.uiFrame(this.rpcAddress, bytes);
         this.transport.sendChunk(hdlcBytes);
       }),
@@ -105,107 +127,56 @@ export class Device {
             ServerStreamingMethodStub,
       )
       .forEach((key) => {
-        const fn = this.createMethodWrapper(
-          service.methodsByName.get(key)!,
-          key,
-          `${service.name}.${key}`,
-        );
+        const fn = this.createMethodWrapper(service.methodsByName.get(key)!);
         methodMap[key] = fn;
       });
     return methodMap;
   }
 
-  private createMethodWrapper(
-    realMethod: MethodStub,
-    methodName: string,
-    fullMethodPath: string,
-  ) {
+  private createMethodWrapper(realMethod: MethodStub) {
     if (realMethod instanceof UnaryMethodStub) {
-      return this.createUnaryMethodWrapper(
-        realMethod,
-        methodName,
-        fullMethodPath,
-      );
+      return this.createUnaryMethodWrapper(realMethod);
     } else if (realMethod instanceof ServerStreamingMethodStub) {
-      return this.createServerStreamingMethodWrapper(
-        realMethod,
-        methodName,
-        fullMethodPath,
-      );
+      return this.createServerStreamingMethodWrapper(realMethod);
     }
     throw new Error(`Unknown method: ${realMethod}`);
   }
 
-  private createUnaryMethodWrapper(
-    realMethod: UnaryMethodStub,
-    methodName: string,
-    fullMethodPath: string,
-  ) {
-    const requestType = realMethod.method
-      .descriptor!.getInputType()
-      .replace(/^\./, '');
-    const requestProtoDescriptor =
-      this.protoCollection.getDescriptorProto(requestType)!;
-    const requestFields = requestProtoDescriptor.getFieldList()!;
-    const functionArguments = requestFields
-      .map((field) => field.getName())
-      .concat('return this(arguments);');
-
-    // We store field names so REPL can show hints in autocomplete using these.
-    this.nameToMethodArgumentsMap[fullMethodPath] = requestFields.map((field) =>
-      field.getName(),
-    );
-
-    // We create a new JS function dynamically here that takes
-    // proto message fields as arguments and calls the actual RPC method.
-    const fn = new Function(...functionArguments).bind((args: any[]) => {
-      const request = new realMethod.method.requestType();
-      requestFields.forEach((field, index) => {
-        request[`set${titleCase(field.getName())}`](args[index]);
-      });
-      return realMethod.call(request);
-    });
-    return fn;
+  private createUnaryMethodWrapper(realMethod: UnaryMethodStub) {
+    const call = async (request: Message, timeout?: number) => {
+      return await realMethod.call(request, timeout);
+    };
+    const createRequest = () => {
+      return new realMethod.method.requestType();
+    };
+    return { call, createRequest };
   }
 
   private createServerStreamingMethodWrapper(
     realMethod: ServerStreamingMethodStub,
-    methodName: string,
-    fullMethodPath: string,
   ) {
-    const requestType = realMethod.method
-      .descriptor!.getInputType()
-      .replace(/^\./, '');
-    const requestProtoDescriptor =
-      this.protoCollection.getDescriptorProto(requestType)!;
-    const requestFields = requestProtoDescriptor.getFieldList();
-    const functionArguments = requestFields
-      .map((field) => field.getName())
-      .concat(['onNext', 'onComplete', 'onError', 'return this(arguments);']);
-
-    // We store field names so REPL can show hints in autocomplete using these.
-    this.nameToMethodArgumentsMap[fullMethodPath] = requestFields.map((field) =>
-      field.getName(),
-    );
-
-    // We create a new JS function dynamically here that takes
-    // proto message fields as arguments and calls the actual RPC method.
-    const fn = new Function(...functionArguments).bind((args: any[]) => {
-      const request = new realMethod.method.requestType();
-      requestFields.forEach((field, index) => {
-        request[`set${protoFieldToMethodName(field.getName())}`](args[index]);
-      });
-      const callbacks = Array.from(args).slice(requestFields.length);
-      return realMethod.invoke(
-        request,
-        // @ts-ignore
-        callbacks[0],
-        // @ts-ignore
-        callbacks[1],
-        // @ts-ignore
-        callbacks[2],
-      );
-    });
-    return fn;
+    const call = (request: Message) => {
+      const source: RPCUnderlyingSource = {
+        start(controller: ReadableStreamDefaultController) {
+          this.call = realMethod.invoke(
+            request,
+            (msg) => {
+              controller.enqueue(msg);
+            },
+            () => {
+              controller.close();
+            },
+          );
+        },
+        cancel() {
+          this.call.cancel();
+        },
+      };
+      return new RPCReadableStream<Message>(source);
+    };
+    const createRequest = () => {
+      return new realMethod.method.requestType();
+    };
+    return { call, createRequest };
   }
 }

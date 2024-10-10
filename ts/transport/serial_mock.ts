@@ -191,7 +191,7 @@ export class SerialMock implements Serial {
   ): void;
 
   addEventListener(type: any, listener: any, options?: any) {
-    throw new Error('Method not implemented.');
+    console.info('Silently skipping event listeners in mock mode.');
   }
 
   removeEventListener(

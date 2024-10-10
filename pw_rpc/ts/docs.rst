@@ -6,8 +6,12 @@ TypeScript client
 .. pigweed-module-subpage::
    :name: pw_rpc
 
-The ``pw_rpc`` module makes it possible to call Pigweed RPCs from
-TypeScript. The module includes client library to facilitate handling RPCs.
+Pigweed TypeScript client provides two ways to call RPCs. The :ref:`Device <module-pw_web-device>` API is
+easier to work with if you are using the RPC via HDLC over WebSerial.
+
+If the ``device`` abstraction is not a good fit, Pigweed provides ``pw_rpc`` module,
+which makes it possible to call Pigweed RPCs from TypeScript. The module includes
+client library to facilitate handling RPCs.
 
 Creating an RPC Client
 ======================
