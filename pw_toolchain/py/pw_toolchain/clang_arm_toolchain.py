@@ -119,6 +119,8 @@ def get_cflags(compiler_info: dict[str, str]):
         '-Qunused-arguments',
         # Disable all default libraries.
         "-nodefaultlibs",
+        # Exclude start files from included in the link.
+        "-nostartfiles",
         '--target=arm-none-eabi',
     ]
 

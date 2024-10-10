@@ -69,7 +69,7 @@ def register_pigweed_cxx_toolchains(
         name = "llvm_toolchain_device",
         build_file = "@pigweed//pw_toolchain/build_external:llvm_clang.BUILD",
         path = "fuchsia/third_party/clang/${os}-${arch}",
-        tag = "git_revision:b5e4d323badbd24324bfab4366b670977b16df07" if not clang_tag else clang_tag,
+        tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98" if not clang_tag else clang_tag,
     )
 
     # Fetch llvm toolchain for host.
@@ -77,7 +77,7 @@ def register_pigweed_cxx_toolchains(
         name = "llvm_toolchain",
         build_file = "@pigweed//pw_toolchain/build_external:llvm_clang.BUILD",
         path = "fuchsia/third_party/clang/${os}-${arch}",
-        tag = "git_revision:e894df6392beea3723627329009f3e6d51d16f47" if not clang_tag else clang_tag,
+        tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98" if not clang_tag else clang_tag,
     )
 
     # Fetch linux sysroot for host builds.

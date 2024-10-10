@@ -116,9 +116,11 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:e894df6392beea3723627329009f3e6d51d16f47",
+    tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98",
 )
 
+# TODO: b/366374135 - This is behind, most recent version
+# is in pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json
 cipd_repository(
     name = "llvm_toolchain_device",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
