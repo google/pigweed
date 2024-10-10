@@ -110,7 +110,11 @@ class TokenizedStringEntry:
         domain: str = DEFAULT_DOMAIN,
         date_removed: datetime | None = None,
     ) -> None:
-        self._key = _EntryKey(domain, token, string)
+        self._key = _EntryKey(
+            ''.join(domain.split()),
+            token,
+            string,
+        )
         self.date_removed = date_removed
 
     @property

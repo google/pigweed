@@ -168,6 +168,13 @@ CSV_DATABASE_5_NO_DOMAIN = """\
 00000004,          ,"The answer is: %s"
 """
 
+CSV_DATABASE_6_DOMAIN_WHITESPACE = """\
+00000001,2001-09-04,"Domain 1","hello"
+00000002,          ,"\t","yes"
+00000002,          ,"  Domain\t20\n","No!"
+00000004,          ,"  ?   ","The answer is: %s"
+"""
+
 
 def read_db_from_csv(csv_str: str) -> tokens.Database:
     with io.StringIO(csv_str) as csv_db:
@@ -839,6 +846,37 @@ class TestFilter(unittest.TestCase):
                 'Darth Maul',
                 'Han Solo',
             },
+        )
+
+    def test_csv_remove_domain_whitespace(self) -> None:
+        db = read_db_from_csv(CSV_DATABASE_6_DOMAIN_WHITESPACE)
+        self.assertEqual(
+            db.token_to_entries[1],
+            [
+                tokens.TokenizedStringEntry(
+                    token=1,
+                    string='hello',
+                    domain='Domain1',
+                    date_removed=datetime(2001, 9, 4),
+                )
+            ],
+        )
+        self.assertEqual(
+            db.token_to_entries[2],
+            [
+                tokens.TokenizedStringEntry(token=2, string='yes', domain=''),
+                tokens.TokenizedStringEntry(
+                    token=2, string='No!', domain='Domain20'
+                ),
+            ],
+        )
+        self.assertEqual(
+            db.token_to_entries[4],
+            [
+                tokens.TokenizedStringEntry(
+                    token=4, string='The answer is: %s', domain='?'
+                ),
+            ],
         )
 
 

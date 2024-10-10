@@ -431,6 +431,7 @@ class Detokenizer:
         if not base:
             base = b'16'
 
+        domain = ''.join(domain.split())
         return self._detokenize_once(match, base, domain)
 
     def _detokenize_once(

@@ -1082,6 +1082,24 @@ class DetokenizeNestedDomains(unittest.TestCase):
             'This is a nested base64 argument',
         )
 
+    def test_nested_hashed_arg_with_domain_whitespace(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        0xA, 'and this is domain1', 'Domain1'
+                    ),
+                    tokens.TokenizedStringEntry(
+                        2, 'This is domain2 ' + '${Domain 1}#%08x', 'D2'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),
+            'This is domain2 and this is domain1',
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

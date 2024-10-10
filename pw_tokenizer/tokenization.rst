@@ -489,6 +489,9 @@ following:
 * Create a separate database for a small number of strings that use truncated
   tokens, for example only 10 or 16 bits instead of the full 32 bits.
 
+When a domain is specified, any whitespace will be ignored in domain names and
+removed from the database.
+
 If no domain is specified, the domain is empty (``""``). For many projects, this
 default domain is sufficient, so no additional configuration is required.
 
