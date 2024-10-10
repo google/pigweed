@@ -17,6 +17,29 @@ load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain", "rust_toolcha
 load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
 load(":toolchains.bzl", "CHANNELS", "EXTRA_TARGETS", "HOSTS")
 
+_rust_toolchain_repo_template = """\
+load("{pigweed_repo_name}//pw_toolchain/rust:defs.bzl", "pw_rust_declare_toolchain_targets")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+pw_rust_declare_toolchain_targets()
+"""
+
+def _rust_toolchain_repo_impl(ctx):
+    ctx.file("BUILD", _rust_toolchain_repo_template.format(pigweed_repo_name = ctx.attr.pigweed_repo_name))
+    pass
+
+_rust_toolchain_repo = repository_rule(
+    _rust_toolchain_repo_impl,
+    attrs = {
+        "pigweed_repo_name": attr.string(
+            doc = "The name of the pigweed used to reference build files for the registered repositories.",
+        ),
+    },
+)
+
 # buildifier: disable=unnamed-macro
 def pw_rust_register_toolchain_and_target_repos(cipd_tag, pigweed_repo_name = "@pigweed"):
     """Declare and register CIPD repos for Rust toolchain and target rupport.
@@ -26,6 +49,8 @@ def pw_rust_register_toolchain_and_target_repos(cipd_tag, pigweed_repo_name = "@
       pigweed_repo_name: The name of the pigweed used to reference build files
         for the registered repositories.  Defaults to "@pigweed".
     """
+    toolchain_repo_name = "{}_rust_toolchain_repo".format(pigweed_repo_name).lstrip("@")
+    _rust_toolchain_repo(name = toolchain_repo_name, pigweed_repo_name = pigweed_repo_name)
     for host in HOSTS:
         cipd_os = host["os"]
         if cipd_os == "macos":
@@ -54,8 +79,12 @@ def pw_rust_register_toolchain_and_target_repos(cipd_tag, pigweed_repo_name = "@
         )
 
 # buildifier: disable=unnamed-macro
-def pw_rust_register_toolchains():
+def pw_rust_register_toolchains(pigweed_repo_name = "@pigweed"):
     """Register Rust Toolchains
+
+    Args:
+      pigweed_repo_name: The name of the pigweed used to reference build files
+        for the registered repositories.  Defaults to "@pigweed".
 
     For this registration to be valid one must
     1. Call `pw_rust_register_toolchain_and_target_repos(tag)` pervisouly in the
@@ -63,15 +92,18 @@ def pw_rust_register_toolchains():
     2. Call `pw_rust_declare_toolchain_targets()` from
        `//pw_toolchain/rust/BUILD.bazel`.
     """
+
+    toolchain_repo = "{}_rust_toolchain_repo".format(pigweed_repo_name)
+
     for channel in CHANNELS:
         for host in HOSTS:
             native.register_toolchains(
-                "//pw_toolchain/rust:host_rust_toolchain_{}_{}_{}".format(host["os"], host["cpu"], channel["name"]),
-                "//pw_toolchain/rust:host_rust_analyzer_toolchain_{}_{}_{}".format(host["os"], host["cpu"], channel["name"]),
+                "{}//:host_rust_toolchain_{}_{}_{}".format(toolchain_repo, host["os"], host["cpu"], channel["name"]),
+                "{}//:host_rust_analyzer_toolchain_{}_{}_{}".format(toolchain_repo, host["os"], host["cpu"], channel["name"]),
             )
             for target in EXTRA_TARGETS:
                 native.register_toolchains(
-                    "//pw_toolchain/rust:{}_{}_rust_toolchain_{}_{}_{}".format(host["os"], host["cpu"], target["triple"], target["cpu"], channel["name"]),
+                    "{}//:{}_{}_rust_toolchain_{}_{}_{}".format(toolchain_repo, host["os"], host["cpu"], target["triple"], target["cpu"], channel["name"]),
                 )
 
 # buildifier: disable=unnamed-macro
@@ -186,7 +218,6 @@ def _pw_rust_host_toolchain(
         rustc_srcs = "{}//:rustc_srcs".format(toolchain_repo),
         target_compatible_with = compatible_with,
         visibility = ["//visibility:public"],
-        tags = ["manual"],
     )
 
     native.toolchain(

@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(":defs.bzl", "pw_rust_declare_toolchain_targets")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
-
-# TODO: b/296459700 - Make this modular and configurable.
-pw_rust_declare_toolchain_targets()
