@@ -25,6 +25,8 @@ The interface consists of these main classes:
   APIs.
 - `UartNonBlocking`_ - Extends ``pw::uart::UartBase`` to provide non-blocking
   (callback-based) Read and Write APIs.
+- `UartBlockingAdapter`_ - Provides the blocking `Uart`_ interface on top of a
+  `UartNonBlocking`_ device.
 
 
 -----------
@@ -96,8 +98,8 @@ API reference
    interfaces.
 
    Drivers which support non-blocking (callback) behavior should implement
-   ``UartNonBlocking``. A future adapter will allow a ``UartNonBlocking`` to be
-   used as a blocking ``Uart`` for application code which requires it.
+   ``UartNonBlocking``. Applications that require the blocking ``Uart``
+   interface can use the ``UartBlockingAdapter``.
 
 UartBase
 ========
@@ -112,6 +114,11 @@ Uart
 UartNonBlocking
 ===============
 .. doxygenclass:: pw::uart::UartNonBlocking
+  :members:
+
+UartBlockingAdapter
+===================
+.. doxygenclass:: pw::uart::UartBlockingAdapter
   :members:
 
 

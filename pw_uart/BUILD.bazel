@@ -61,6 +61,25 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "blocking_adapter",
+    srcs = [
+        "blocking_adapter.cc",
+    ],
+    hdrs = [
+        "public/pw_uart/blocking_adapter.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":uart",
+        ":uart_non_blocking",
+        "//pw_assert",
+        "//pw_log",
+        "//pw_status",
+        "//pw_sync:timed_thread_notification",
+    ],
+)
+
 pw_cc_test(
     name = "uart_test",
     srcs = [
@@ -80,6 +99,26 @@ pw_cc_test(
     deps = [
         ":uart_non_blocking",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "blocking_adapter_test",
+    srcs = [
+        "blocking_adapter_test.cc",
+    ],
+    deps = [
+        ":blocking_adapter",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_sync:timed_thread_notification",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_unit_test",
+        "//pw_work_queue",
     ],
 )
 

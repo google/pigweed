@@ -15,6 +15,8 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -23,6 +25,7 @@ config("public_include_path") {
 
 pw_test_group("tests") {
   tests = [
+    ":blocking_adapter_test",
     ":uart_non_blocking_test",
     ":uart_test",
   ]
@@ -60,6 +63,20 @@ pw_source_set("uart_non_blocking") {
   ]
 }
 
+pw_source_set("blocking_adapter") {
+  public_configs = [ ":public_include_path" ]
+  sources = [ "blocking_adapter.cc" ]
+  public = [ "public/pw_uart/blocking_adapter.h" ]
+  public_deps = [
+    ":uart",
+    ":uart_non_blocking",
+    "$dir_pw_assert",
+    "$dir_pw_log",
+    "$dir_pw_status",
+    "$dir_pw_sync:timed_thread_notification",
+  ]
+}
+
 pw_test("uart_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "uart_test.cc" ]
@@ -70,6 +87,27 @@ pw_test("uart_non_blocking_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "uart_non_blocking_test.cc" ]
   deps = [ ":uart_non_blocking" ]
+}
+
+pw_test("blocking_adapter_test") {
+  enable_if =
+      pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+      pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  sources = [ "blocking_adapter_test.cc" ]
+  deps = [
+    ":blocking_adapter",
+    "$dir_pw_assert",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:timed_thread_notification",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_unit_test",
+    "$dir_pw_work_queue",
+  ]
 }
 
 pw_doc_group("docs") {
