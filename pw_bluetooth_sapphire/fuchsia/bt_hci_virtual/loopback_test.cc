@@ -184,11 +184,8 @@ class LoopbackTest : public ::testing::Test,
     ZX_ASSERT(ns.is_ok());
 
     // Create Logger with dispatcher and namespace.
-    auto logger = fdf::Logger::Create(*ns, dispatcher(), "vendor-hci-logger");
-    ZX_ASSERT(logger.is_ok());
-
-    logger_ = std::move(logger.value());
-
+    logger_ = fdf::Logger::Create2(*ns, dispatcher(), "vendor-hci-logger");
+    ZX_ASSERT(logger_);
     fdf::Logger::SetGlobalInstance(logger_.get());
   }
 
