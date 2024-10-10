@@ -1426,6 +1426,7 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'.dockerignore$',
     r'.gitignore$',
     r'.pylintrc$',
+    r'.ruff.toml$',
     r'\bdocs/build_system.rst',
     r'\bdocs/code_reviews.rst',
     r'\bpw_assert_basic/basic_handler.cc',

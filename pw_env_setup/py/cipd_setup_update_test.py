@@ -168,6 +168,7 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('msrv_python.json'),
             Path('python310.json'),
             Path('rbe.json'),
+            Path('ruff.json'),
             Path('testing.json'),
             Path('web.json'),
         ]

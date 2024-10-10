@@ -11,6 +11,7 @@
     "luci.json",
     "msrv_python.json",
     "rbe.json",
+    "ruff.json",
     "testing.json",
     "web.json"
   ]

@@ -1,0 +1,132 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    'out',
+    '.environment',
+    'environment',
+    '.mypy_cache',
+    '.pytype',
+    '.ruff_cache',
+    '__pycache__',
+    '__pypackages__',
+]
+
+respect-gitignore = true
+
+line-length = 80
+
+# Assume Python 3.10.
+target-version = 'py310'
+
+[lint]
+# Enable the pycodestyle (`E`) and Pyflakes (`F`) rules by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = [
+  'F', # Pyflakes
+  'E', # pycodestyle
+  'C90', # mccabe
+  'I', # isort
+  'N', # pep8-naming
+  'D', # pydocstyle
+  'UP', # pyupgrade
+  'YTT', # flake8-2020
+  'ANN', # flake8-annotations
+  'ASYNC', # flake8-async
+  'S', # flake8-bandit
+  'BLE', # flake8-blind-except
+  'FBT', # flake8-boolean-trap
+  'B', # flake8-bugbear
+  'A', # flake8-builtins
+  'COM', # flake8-commas
+  'C4', # flake8-comprehensions
+  'DTZ', # flake8-datetimez
+  'T10', # flake8-debugger
+  'DJ', # flake8-django
+  'EM', # flake8-errmsg
+  'EXE', # flake8-executable
+  'FA', # flake8-future-annotations
+  'ISC', # flake8-implicit-str-concat
+  'ICN', # flake8-import-conventions
+  'G', # flake8-logging-format
+  'INP', # flake8-no-pep420
+  'PIE', # flake8-pie
+  'T20', # flake8-print
+  'PYI', # flake8-pyi
+  'PT', # flake8-pytest-style
+  # 'Q', # flake8-quotes
+  'RSE', # flake8-raise
+  'RET', # flake8-return
+  'SLF', # flake8-self
+  'SLOT', # flake8-slots
+  'SIM', # flake8-simplify
+  'TID', # flake8-tidy-imports
+  'TCH', # flake8-type-checking
+  'INT', # flake8-gettext
+  'ARG', # flake8-unused-arguments
+  'PTH', # flake8-use-pathlib
+  'TD', # flake8-todos
+  'FIX', # flake8-fixme
+  'ERA', # eradicate
+  'PD', # pandas-vet
+  'PGH', # pygrep-hooks
+  'PL', # Pylint
+  'TRY', # tryceratops
+  'FLY', # flynt
+  'NPY', # NumPy-specific rules
+  'AIR', # Airflow
+  'PERF', # Perflint
+  'RUF', # Ruff-specific rules
+]
+
+# All Rule codes: https://docs.astral.sh/ruff/rules/
+ignore = [
+  'ANN101',  # https://docs.astral.sh/ruff/rules/missing-type-self
+  'COM812', # Trailing comma missing
+  'D203',  # https://docs.astral.sh/ruff/rules/one-blank-line-before-class
+  'D212',  # https://docs.astral.sh/ruff/rules/multi-line-summary-first-line
+  'D213',  # https://docs.astral.sh/ruff/rules/multi-line-summary-second-line
+  'D400', # First line should end with a period
+  'D401', # First line of docstring should be in imperative mood
+  'D404', # First word of the docstring should not be "This"'
+  'D415', # First line should end with a period, question mark, or exclamation point
+  'D416', # Section name should end with a colon ("Raises")'
+  'FIX002', # Line contains TODO, consider resolving the issue
+  'PGH003', # Use specific rule codes when ignoring type issues
+  'PT009', # Use a regular `assert` instead of unittest-style `assertEqual`
+  'PTH123', # `open()` should be replaced by `Path.open()`
+  'S101', # Use of `assert` detected
+  'TD003', # Missing issue link on the line following this TODO
+  'UP006', # Use `list` instead of `List` for type annotation
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ['ALL']
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = '^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$'  # inclusive-language: ignore
+
+[lint.per-file-ignores]
+# pw_python_package tests often live outside any top level module.
+'**/py/*_test.py' = [
+  'INP001', # File is part of an implicit namespace package. Add an `__init__.py`.
+]
+
+[lint.pycodestyle]
+ignore-overlong-task-comments = true
+# Same as .black.toml
+max-doc-length = 88

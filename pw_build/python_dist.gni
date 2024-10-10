@@ -640,6 +640,7 @@ template("pw_python_pip_install") {
         "lint",
         "lint.mypy",
         "lint.pylint",
+        "lint.ruff",
       ]
       if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS ||
           filter_exclude([ subtarget ], _test_and_lint_subtargets) != []) {

@@ -1,0 +1,16 @@
+{
+  "packages": [
+    {
+      "path": "fuchsia/third_party/ruff/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:2@0.6.9.1"
+      ],
+      "version_file": ".versions/ruff.version"
+    }
+  ]
+}

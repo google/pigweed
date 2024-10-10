@@ -35,7 +35,8 @@ pw_python_package("py") {
     "$dir_pw_tokenizer/py",
     "$dir_pw_trace/py",
   ]
+  proto_library = "..:protos"
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
-  proto_library = "..:protos"
+  ruff_toml = "$dir_pigweed/.ruff.toml"
 }

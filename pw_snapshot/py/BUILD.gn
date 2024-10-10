@@ -35,6 +35,7 @@ pw_python_package("pw_snapshot_metadata") {
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
+  ruff_toml = "$dir_pigweed/.ruff.toml"
 }
 
 pw_python_package("pw_snapshot") {
@@ -68,6 +69,7 @@ pw_python_package("pw_snapshot") {
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
+  ruff_toml = "$dir_pigweed/.ruff.toml"
 }
 
 pw_python_group("py") {

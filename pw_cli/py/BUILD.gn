@@ -75,6 +75,7 @@ pw_python_package("py") {
     "pw_cli/shell_completion/zsh/pw/_pw",
     "pw_cli/shell_completion/zsh/pw_build/_pw_build",
   ]
+  ruff_toml = "$dir_pigweed/.ruff.toml"
 }
 
 pw_python_action_test("process_integration_test") {
