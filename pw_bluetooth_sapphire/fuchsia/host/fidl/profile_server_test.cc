@@ -3478,7 +3478,8 @@ INSTANTIATE_TEST_SUITE_P(ProfileServerTestFakeAdapter,
                          AndroidSupportedFeaturesTest,
                          ::testing::ValuesIn(kVendorCapabilitiesParams));
 
-TEST_F(ProfileServerTestFakeAdapter, ServiceFoundRelayedToFidlClient) {
+TEST_F(ProfileServerTestFakeAdapter,
+       ServiceUuidSearchResultRelayedToFidlClient) {
   fidlbredr::SearchResultsHandle search_results_handle;
   FakeSearchResults search_results(search_results_handle.NewRequest(),
                                    dispatcher());
@@ -3522,14 +3523,75 @@ TEST_F(ProfileServerTestFakeAdapter, ServiceFoundRelayedToFidlClient) {
             std::string("https://foobar.dev"));
 }
 
-TEST_F(ProfileServerTestFakeAdapter, SearchWithMissingServiceUuidFails) {
+TEST_F(ProfileServerTestFakeAdapter, FullUuidSearchResultRelayedToFidlClient) {
   fidlbredr::SearchResultsHandle search_results_handle;
   FakeSearchResults search_results(search_results_handle.NewRequest(),
                                    dispatcher());
 
-  // service_uuid is not set
+  EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 0u);
+  EXPECT_EQ(search_results.service_found_count(), 0u);
+
+  // FIDL client registers a service search.
+  fuchsia::bluetooth::Uuid search_uuid =
+      fidl_helpers::UuidToFidl(bt::sdp::profile::kHandsfree);
+  fidlbredr::ProfileSearchRequest request;
+  request.set_full_uuid(search_uuid);
+  request.set_attr_ids({});
+  request.set_results(std::move(search_results_handle));
+  client()->Search(std::move(request));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 1u);
+
+  // Trigger a match on the service search with some data. Should be received by
+  // the FIDL client.
+  bt::PeerId peer_id = bt::PeerId{10};
+  bt::UUID uuid = bt::sdp::profile::kHandsfree;
+
+  bt::sdp::AttributeId attr_id = 50;  // Random Attribute ID
+  bt::sdp::DataElement elem = bt::sdp::DataElement();
+  elem.SetUrl("https://foobar.dev");  // Random URL
+  auto attributes = std::map<bt::sdp::AttributeId, bt::sdp::DataElement>();
+  attributes.emplace(attr_id, std::move(elem));
+  adapter()->fake_bredr()->TriggerServiceFound(
+      peer_id, uuid, std::move(attributes));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(search_results.service_found_count(), 1u);
+  EXPECT_EQ(search_results.peer_id().value().value, peer_id.value());
+  EXPECT_EQ(search_results.attributes().value().size(), 1u);
+  EXPECT_EQ(search_results.attributes().value()[0].id(), attr_id);
+  EXPECT_EQ(search_results.attributes().value()[0].element().url(),
+            std::string("https://foobar.dev"));
+}
+
+TEST_F(ProfileServerTestFakeAdapter, SearchWithMissingUuidFails) {
+  fidlbredr::SearchResultsHandle search_results_handle;
+  FakeSearchResults search_results(search_results_handle.NewRequest(),
+                                   dispatcher());
+
+  // Neither `service_uuid` nor `full_uid` is set
   fidlbredr::ProfileSearchRequest request;
   request.set_results(std::move(search_results_handle));
+  client()->Search(std::move(request));
+  RunLoopUntilIdle();
+  EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 0u);
+  EXPECT_TRUE(search_results.closed());
+}
+
+TEST_F(ProfileServerTestFakeAdapter, SearchWithServiceAndFullUuidFails) {
+  fidlbredr::SearchResultsHandle search_results_handle;
+  FakeSearchResults search_results(search_results_handle.NewRequest(),
+                                   dispatcher());
+
+  fidlbredr::ServiceClassProfileIdentifier search_uuid =
+      fidlbredr::ServiceClassProfileIdentifier::AUDIO_SINK;
+
+  fidlbredr::ProfileSearchRequest request;
+  request.set_results(std::move(search_results_handle));
+  request.set_service_uuid(search_uuid);
+  request.set_full_uuid(fidl_helpers::UuidToFidl(bt::sdp::profile::kAudioSink));
   client()->Search(std::move(request));
   RunLoopUntilIdle();
   EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 0u);

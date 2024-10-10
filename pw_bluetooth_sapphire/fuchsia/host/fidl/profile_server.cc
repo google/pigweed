@@ -755,12 +755,27 @@ void ProfileServer::Advertise(
 
 void ProfileServer::Search(
     ::fuchsia::bluetooth::bredr::ProfileSearchRequest request) {
-  if (!request.has_results() || !request.has_service_uuid()) {
-    bt_log(WARN, "fidl", "%s: missing parameter", __FUNCTION__);
+  if (!request.has_results()) {
+    bt_log(WARN, "fidl", "%s: missing search results client", __FUNCTION__);
     return;
   }
 
-  bt::UUID search_uuid(static_cast<uint32_t>(request.service_uuid()));
+  bt::UUID search_uuid;
+  if (request.has_full_uuid() && request.has_service_uuid()) {
+    bt_log(WARN,
+           "fidl",
+           "%s: Cannot request both full and service UUID",
+           __FUNCTION__);
+    return;
+  } else if (request.has_service_uuid()) {
+    search_uuid = bt::UUID(static_cast<uint32_t>(request.service_uuid()));
+  } else if (request.has_full_uuid()) {
+    search_uuid = fidl_helpers::UuidFromFidl(request.full_uuid());
+  } else {
+    bt_log(WARN, "fidl", "%s: missing service or full UUID", __FUNCTION__);
+    return;
+  }
+
   std::unordered_set<bt::sdp::AttributeId> attributes;
   if (request.has_attr_ids() && !request.attr_ids().empty()) {
     attributes.insert(request.attr_ids().begin(), request.attr_ids().end());
