@@ -179,6 +179,16 @@ class LowEnergyConnectionManager final {
   // rejected.
   void SetPairingDelegate(const PairingDelegate::WeakPtr& delegate);
 
+  // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred
+  // parameters |params|.
+  //
+  // |cb| will be called with the channel created to the peer, or nullptr if the
+  // channel creation resulted in an error.
+  void OpenL2capChannel(PeerId peer_id,
+                        l2cap::Psm psm,
+                        l2cap::ChannelParameters params,
+                        l2cap::ChannelCallback cb);
+
   // TODO(armansito): Add a PeerCache::Observer interface and move these
   // callbacks there.
 

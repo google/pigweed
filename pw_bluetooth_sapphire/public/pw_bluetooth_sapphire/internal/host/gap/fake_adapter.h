@@ -17,6 +17,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
 
 namespace bt::gap::testing {
 
@@ -90,6 +91,11 @@ class FakeAdapter final : public Adapter {
 
     bool Disconnect(PeerId peer_id) override;
 
+    void OpenL2capChannel(PeerId peer_id,
+                          l2cap::Psm,
+                          l2cap::ChannelParameters,
+                          l2cap::ChannelCallback) override;
+
     void Pair(PeerId peer_id,
               sm::SecurityLevel pairing_level,
               sm::BondableMode bondable_mode,
@@ -147,6 +153,10 @@ class FakeAdapter final : public Adapter {
     bool privacy_enabled_ = false;
     std::optional<DeviceAddress> random_;
     fit::closure address_changed_callback_;
+    l2cap::ChannelId next_channel_id_ = l2cap::kFirstDynamicChannelId;
+    std::unordered_map<l2cap::ChannelId,
+                       std::unique_ptr<l2cap::testing::FakeChannel>>
+        channels_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }

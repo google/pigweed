@@ -106,6 +106,12 @@ class LowEnergyConnection final : public sm::Delegate {
   // parameters if all initialization procedures have completed.
   void OnInterrogationComplete();
 
+  // Opens an L2CAP channel using the parameters |params|. Otherwise, calls |cb|
+  // with a nullptr.
+  void OpenL2capChannel(l2cap::Psm psm,
+                        l2cap::ChannelParameters params,
+                        l2cap::ChannelCallback cb);
+
   // Accept a future incoming request to establish an Isochronous stream on this
   // LE connection. |id| specifies the CIG/CIS pair that identify the stream.
   // |cb| will be called after the request is received to indicate success of

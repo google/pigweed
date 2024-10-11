@@ -106,6 +106,14 @@ class AdapterImpl final : public Adapter {
       return adapter_->le_connection_manager_->Disconnect(peer_id);
     }
 
+    void OpenL2capChannel(PeerId peer_id,
+                          l2cap::Psm psm,
+                          l2cap::ChannelParameters params,
+                          l2cap::ChannelCallback cb) override {
+      adapter_->le_connection_manager_->OpenL2capChannel(
+          peer_id, psm, params, std::move(cb));
+    }
+
     void Pair(PeerId peer_id,
               sm::SecurityLevel pairing_level,
               sm::BondableMode bondable_mode,

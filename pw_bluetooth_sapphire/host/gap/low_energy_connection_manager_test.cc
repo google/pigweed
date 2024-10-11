@@ -44,6 +44,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
@@ -4408,6 +4409,77 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
   // have been sent
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_EQ(connection_1.queued_packets().size(), 0u);
+}
+
+TEST_F(LowEnergyConnectionManagerTest, ConnectAndOpenL2cap) {
+  constexpr l2cap::Psm kFakePsm = 15;
+  constexpr l2cap::ChannelParameters kChannelParameters{
+      .mode = l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+  constexpr l2cap::ChannelId kFakeChannelId = l2cap::kFirstDynamicChannelId;
+
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto connection_callback = [&conn_handle](auto result) {
+    ASSERT_EQ(fit::ok(), result);
+    conn_handle = std::move(result).value();
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  conn_mgr()->Connect(
+      peer->identifier(), connection_callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing,
+            peer->le()->connection_state());
+
+  RunUntilIdle();
+
+  EXPECT_EQ(1u, connected_peers().count(kAddress0));
+  ASSERT_TRUE(conn_handle);
+  EXPECT_TRUE(conn_handle->active());
+
+  std::optional<WeakSelf<l2cap::Channel>::WeakPtr> channel;
+  auto callback = [&channel](auto result) {
+    ASSERT_TRUE(result.is_alive());
+    channel = std::move(result);
+  };
+
+  fake_l2cap()->ExpectOutboundL2capChannel(conn_handle->handle(),
+                                           kFakePsm,
+                                           kFakeChannelId,
+                                           kFakeChannelId,
+                                           kChannelParameters);
+  conn_mgr()->OpenL2capChannel(
+      peer->identifier(), kFakePsm, kChannelParameters, callback);
+
+  RunUntilIdle();
+  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel->is_alive());
+}
+
+TEST_F(LowEnergyConnectionManagerTest, UnknownPeerFailOpenL2cap) {
+  constexpr PeerId kUnknownId(1);
+  constexpr l2cap::Psm kFakePsm = 15;
+  constexpr l2cap::ChannelParameters kChannelParameters{
+      .mode = l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+
+  std::optional<WeakSelf<l2cap::Channel>::WeakPtr> channel;
+  auto callback = [&channel](auto result) { channel = std::move(result); };
+
+  conn_mgr()->OpenL2capChannel(
+      kUnknownId, kFakePsm, kChannelParameters, callback);
+
+  RunUntilIdle();
+  EXPECT_TRUE(channel);
+  EXPECT_FALSE(channel->is_alive());
 }
 
 }  // namespace

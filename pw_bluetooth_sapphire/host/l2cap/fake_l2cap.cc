@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
 
 namespace bt {
 
@@ -204,6 +205,14 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle,
         /*n_frames_in_tx_window=*/kErtmNFramesInTxWindow,
         /*max_transmissions=*/kErtmMaxTransmissions,
         /*max_tx_pdu_payload_size=*/kMaxTxPduPayloadSize);
+  } else if (auto* credit_mode =
+                 std::get_if<l2cap::CreditBasedFlowControlMode>(&mode)) {
+    channel_info = l2cap::ChannelInfo::MakeCreditBasedFlowControlMode(
+        *credit_mode,
+        max_rx_sdu_size,
+        l2cap::kDefaultMTU,
+        l2cap::kMaxInboundPduPayloadSize,
+        /*remote_initial_credits*/ 0);
   }
 
   auto fake_chan = OpenFakeChannel(

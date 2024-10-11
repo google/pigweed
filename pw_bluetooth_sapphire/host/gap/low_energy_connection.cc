@@ -302,6 +302,17 @@ void LowEnergyConnection::OnInterrogationComplete() {
   MaybeUpdateConnectionParameters();
 }
 
+void LowEnergyConnection::OpenL2capChannel(l2cap::Psm psm,
+                                           l2cap::ChannelParameters params,
+                                           l2cap::ChannelCallback cb) {
+  bt_log(DEBUG,
+         "gap-le",
+         "opening l2cap channel on psm %#.4x (peer: %s)",
+         psm,
+         bt_str(peer_id()));
+  l2cap_->OpenL2capChannel(link()->handle(), psm, params, std::move(cb));
+}
+
 iso::AcceptCisStatus LowEnergyConnection::AcceptCis(
     iso::CigCisIdentifier id, iso::CisEstablishedCallback cb) {
   if (role() != pw::bluetooth::emboss::ConnectionRole::PERIPHERAL) {

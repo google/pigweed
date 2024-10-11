@@ -464,6 +464,26 @@ void LowEnergyConnectionManager::SetPairingDelegate(
   }
 }
 
+void LowEnergyConnectionManager::OpenL2capChannel(
+    PeerId peer_id,
+    l2cap::Psm psm,
+    l2cap::ChannelParameters params,
+    l2cap::ChannelCallback cb) {
+  auto connection_iterator = connections_.find(peer_id);
+  if (connection_iterator == connections_.end()) {
+    bt_log(INFO,
+           "gap-le",
+           "can't open l2cap channel: connection not found (peer: %s)",
+           bt_str(peer_id));
+    cb(l2cap::Channel::WeakPtr());
+    return;
+  }
+
+  auto& connection = connection_iterator->second;
+  BT_DEBUG_ASSERT(connection);
+  connection->OpenL2capChannel(psm, params, std::move(cb));
+}
+
 void LowEnergyConnectionManager::SetDisconnectCallbackForTesting(
     DisconnectCallback callback) {
   test_disconn_cb_ = std::move(callback);

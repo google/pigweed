@@ -158,6 +158,16 @@ class Adapter {
     // disconnected.
     virtual bool Disconnect(PeerId peer_id) = 0;
 
+    // Opens a new L2CAP channel to service |psm| on |peer_id| using the
+    // preferred parameters |params|.
+    //
+    // |cb| will be called with the channel created to the peer, or nullptr if
+    // the channel creation resulted in an error.
+    virtual void OpenL2capChannel(PeerId peer_id,
+                                  l2cap::Psm psm,
+                                  l2cap::ChannelParameters params,
+                                  l2cap::ChannelCallback cb) = 0;
+
     // Initiates the pairing process. Expected to only be called during
     // higher-level testing.
     //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is
