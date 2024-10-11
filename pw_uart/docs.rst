@@ -27,7 +27,32 @@ The interface consists of these main classes:
   (callback-based) Read and Write APIs.
 - `UartBlockingAdapter`_ - Provides the blocking `Uart`_ interface on top of a
   `UartNonBlocking`_ device.
+- `UartStream`_ - Provides the ``pw::stream::NonSeekableReaderWriter``
+  (:ref:`module-pw_stream`) interface on top of a `Uart`_ device.
 
+.. mermaid::
+
+   classDiagram
+    namespace uart {
+      class UartBase
+      class Uart
+      class UartNonBlocking
+      class UartBlockingAdapter
+      class UartStream
+    }
+
+    namespace stream {
+      class NonSeekableReaderWriter
+    }
+
+    UartBase <|-- Uart : extends
+    UartBase <|-- UartNonBlocking : extends
+
+    Uart <|-- UartBlockingAdapter : implements
+    UartNonBlocking --> UartBlockingAdapter
+
+    NonSeekableReaderWriter <|-- UartStream : implements
+    Uart --> UartStream
 
 -----------
 Get started
@@ -119,6 +144,11 @@ UartNonBlocking
 UartBlockingAdapter
 ===================
 .. doxygenclass:: pw::uart::UartBlockingAdapter
+  :members:
+
+UartStream
+==========
+.. doxygenclass:: pw::uart::UartStream
   :members:
 
 

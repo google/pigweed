@@ -80,6 +80,18 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "stream",
+    hdrs = [
+        "public/pw_uart/stream.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":uart",
+        "//pw_stream",
+    ],
+)
+
 pw_cc_test(
     name = "uart_test",
     srcs = [
@@ -119,6 +131,16 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_unit_test",
         "//pw_work_queue",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_test",
+    srcs = [
+        "stream_test.cc",
+    ],
+    deps = [
+        ":stream",
     ],
 )
 

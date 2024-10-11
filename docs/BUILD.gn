@@ -340,6 +340,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_toolchain/public/pw_toolchain/no_destructor.h",
   "$dir_pw_transfer/public/pw_transfer/atomic_file_transfer_handler.h",
   "$dir_pw_uart/public/pw_uart/blocking_adapter.h",
+  "$dir_pw_uart/public/pw_uart/stream.h",
   "$dir_pw_uart/public/pw_uart/uart.h",
   "$dir_pw_uart/public/pw_uart/uart_base.h",
   "$dir_pw_uart/public/pw_uart/uart_non_blocking.h",

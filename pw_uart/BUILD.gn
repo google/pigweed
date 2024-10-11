@@ -26,6 +26,7 @@ config("public_include_path") {
 pw_test_group("tests") {
   tests = [
     ":blocking_adapter_test",
+    ":stream_test",
     ":uart_non_blocking_test",
     ":uart_test",
   ]
@@ -77,6 +78,15 @@ pw_source_set("blocking_adapter") {
   ]
 }
 
+pw_source_set("stream") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_uart/stream.h" ]
+  public_deps = [
+    ":uart",
+    "$dir_pw_stream",
+  ]
+}
+
 pw_test("uart_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "uart_test.cc" ]
@@ -108,6 +118,12 @@ pw_test("blocking_adapter_test") {
     "$dir_pw_unit_test",
     "$dir_pw_work_queue",
   ]
+}
+
+pw_test("stream_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "stream_test.cc" ]
+  deps = [ ":stream" ]
 }
 
 pw_doc_group("docs") {

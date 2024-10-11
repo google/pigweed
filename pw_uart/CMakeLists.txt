@@ -66,3 +66,13 @@ pw_add_library(pw_uart.blocking_adapater STATIC
   SOURCES
     blocking_adapter.cc
 )
+
+pw_add_library(pw_uart.stream INTERFACE
+  HEADERS
+    public/pw_uart/stream.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_stream
+    pw_uart.uart
+)
