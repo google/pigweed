@@ -87,21 +87,21 @@ a custom hardware setup that makes parallel on-device testing easier.
 
          .. code-block:: console
 
-            $ bazelisk run //targets/rp2040/py:unit_test_server -- --debug-probe-only
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040 --debug-probe-only
 
       .. tab-item:: Standalone Raspberry Pi Pico
          :sync: single_pico
 
          .. code-block:: console
 
-            $ bazelisk run //targets/rp2040/py:unit_test_server
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040
 
       .. tab-item:: PicoPico
          :sync: picopico
 
          .. code-block:: console
 
-            $ bazelisk run //targets/rp2040/py:unit_test_server
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040
 
 
 #. Open another terminal and run the tests:
@@ -354,7 +354,7 @@ server configuration file with ``--server-config``.
 
 .. code-block:: console
 
-   $ python -m rp2040_utils.unit_test_server
+   $ python -m rp2040_utils.unit_test_server --chip RP2040
 
 .. tip::
 

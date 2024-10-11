@@ -43,13 +43,13 @@ except ImportError:
     _PICOTOOL_COMMAND = 'picotool'
 
 
-def flash(board_info: PicoBoardInfo, binary: Path) -> bool:
+def flash(board_info: PicoBoardInfo, chip: str, binary: Path) -> bool:
     """Load `binary` onto `board_info` and wait for the device to become
     available.
 
     Returns whether or not flashing was successful."""
     if isinstance(board_info, PicoDebugProbeBoardInfo):
-        return _load_debugprobe_binary(board_info, binary)
+        return _load_debugprobe_binary(board_info, chip, binary)
     if not _load_picotool_binary(board_info, binary):
         return False
     if not _wait_for_serial_port(board_info):
@@ -181,7 +181,7 @@ def _wait_for_serial_port(board_info: PicoBoardInfo) -> bool:
 
 
 def _load_debugprobe_binary(
-    board_info: PicoDebugProbeBoardInfo, binary: Path
+    board_info: PicoDebugProbeBoardInfo, chip: str, binary: Path
 ) -> bool:
     """Flash a binary to this device using a debug probe, returning success
     or failure."""
@@ -203,7 +203,7 @@ def _load_debugprobe_binary(
         '--probe',
         probe,
         '--chip',
-        'RP2040',
+        chip,
         '--speed',
         '10000',
         str(elf_path),
@@ -229,7 +229,7 @@ def _load_debugprobe_binary(
         '--probe',
         probe,
         '--chip',
-        'RP2040',
+        chip,
     )
     _LOG.debug('Resetting ==> %s', ' '.join(reset_cmd))
     process = subprocess.run(
@@ -291,6 +291,16 @@ def create_flash_parser() -> argparse.ArgumentParser:
         dest='verbose',
         action='store_true',
         help='Output additional logs as the script runs',
+    )
+    parser.add_argument(
+        '--chip',
+        dest='chip',
+        type=str,
+        choices=[
+            'RP2040',
+            'RP2350',
+        ],
+        help='RP2 chip connected to a debug probe (RP2040 or RP2350)',
     )
 
     return parser
@@ -362,7 +372,7 @@ def main():
     pw_cli.log.install(level=log_level)
     board = device_from_args(args, interactive=True)
     _LOG.info('Flashing bus %s port %s', board.bus, board.port)
-    flashed = flash(board, args.binary)
+    flashed = flash(board, args.chip, args.binary)
     sys.exit(0 if flashed else 1)
 
 

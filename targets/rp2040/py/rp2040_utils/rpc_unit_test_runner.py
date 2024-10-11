@@ -57,6 +57,7 @@ def create_test_runner_parser() -> argparse.ArgumentParser:
 def run_test_on_board(
     board: PicoBoardInfo,
     baud_rate: int,
+    chip: str,
     binary: Path,
     test_timeout_seconds: float,
 ) -> bool:
@@ -64,7 +65,7 @@ def run_test_on_board(
 
     Returns whether it succeeded.
     """
-    if not flash(board, binary):
+    if not flash(board, chip, binary):
         return False
     serial_device = serial.Serial(board.serial_port, baud_rate, timeout=0.1)
     reader = rpc.SerialReader(serial_device, 8192)
@@ -98,7 +99,7 @@ def main():
     )
     board = device_from_args(args, interactive=False)
     test_passed = run_test_on_board(
-        board, args.baud, args.binary, args.test_timeout
+        board, args.baud, args.chip, args.binary, args.test_timeout
     )
     sys.exit(0 if test_passed else 1)
 

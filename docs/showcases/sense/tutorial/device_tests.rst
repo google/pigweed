@@ -57,7 +57,7 @@ Run on-device tests
 
             $ bazelisk run \
                 @pigweed//targets/rp2040/py:unit_test_server \
-                -- --debug-probe-only
+                -- --chip RP2040 --debug-probe-only
             INFO: Analyzed target @@pigweed~//targets/rp2040/py:unit_test_server (134 packages loaded, 13872 targets configured).
             INFO: Found 1 target...
             Target @@pigweed~//targets/rp2040/py:unit_test_server up-to-date:
