@@ -920,7 +920,7 @@
     "@@rules_fuzzing+//fuzzing/private:extensions.bzl%non_module_dependencies": {
       "general": {
         "bzlTransitiveDigest": "pkrbyh5sNG44812OoOPN82CzTlQh8VgkdLgGuzdZwIw=",
-        "usagesDigest": "BGguGPrUTDDWKIpMQmBf1CCQFQi7magSOzA05uI0b/U=",
+        "usagesDigest": "rLlsIEdGGTCfncf4e9Gv7AxdKdiDJjpnS3Y2W8+636Y=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},

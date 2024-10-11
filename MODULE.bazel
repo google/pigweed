@@ -80,6 +80,15 @@ http_archive = use_repo_rule(
     "http_archive",
 )
 
+# TODO(b/370523804): Remove this once the following issues are addressed in a
+# released version of rules_fuzzing
+# https://github.com/bazel-contrib/rules_fuzzing/issues/257
+non_module_dependencies = use_extension("@rules_fuzzing//fuzzing/private:extensions.bzl", "non_module_dependencies")
+use_repo(
+    non_module_dependencies,
+    "rules_fuzzing_oss_fuzz",
+)
+
 # Configure libusb
 # ================
 #
