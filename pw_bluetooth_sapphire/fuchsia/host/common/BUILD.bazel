@@ -18,13 +18,10 @@ load(
     "fuchsia_unittest_package",
 )
 load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 fuchsia_cc_test(
     name = "common_test",
     death_unittest = True,
-    # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_async:fake_dispatcher_fixture",
         "//pw_bluetooth_sapphire/host/common",

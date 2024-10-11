@@ -104,7 +104,6 @@ fuchsia_component_manifest(
 fuchsia_structured_config_cpp_elf_lib(
     name = "bt_host_config",
     cm_label = ":manifest",
-    target_compatible_with = ["@platforms//os:fuchsia"],
 )
 
 fuchsia_structured_config_values(
@@ -130,8 +129,6 @@ fuchsia_cc_test(
     testonly = True,
     srcs = ["host_test.cc"],
     death_unittest = True,
-    # TODO: b/310957361 - gtest not supported on device
-    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":sources",
         "//pw_bluetooth_sapphire/fuchsia/host/fidl:fake_vendor_server",

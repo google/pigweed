@@ -19,11 +19,6 @@ in some builds for testing. See `bt-host README
 for more details on product assembly.
 
 .. note::
-   Please do not add any Fuchsia-specific dependencies (targets that load from
-   ``@fuchsia_sdk``) outside of ``//pw_bluetooth_sapphire/fuchsia`` since that
-   will break the global Pigweed build (``//...``) for macOS hosts.
-
-.. note::
    Every ``bazelisk`` invocation needs ``--config=fuchsia`` whenever the target
    or dependency needs to specify ``@fuchsia_sdk`` backends for Pigweed and the
    target platform is Fuchsia.

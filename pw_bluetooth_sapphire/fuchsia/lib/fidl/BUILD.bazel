@@ -18,7 +18,6 @@ load(
     "fuchsia_unittest_package",
 )
 load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = [
     "//pw_bluetooth_sapphire/fuchsia/bt_host:__pkg__",
@@ -44,7 +43,6 @@ fuchsia_cc_test(
     srcs = [
         "hanging_getter_unittest.cc",
     ],
-    target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],
     deps = [
         ":fidl",

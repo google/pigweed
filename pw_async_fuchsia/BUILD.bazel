@@ -115,6 +115,7 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "pw_async_fuchsia_tests",
     fuchsia_api_level = FUCHSIA_API_LEVEL,
+    tags = ["manual"],
     unit_tests = [":pw_async_fuchsia_test"],
 )
 
