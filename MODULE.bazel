@@ -174,12 +174,24 @@ register_toolchains(
 
 # Get probe-rs
 # ============
-probe_rs = use_extension("@rules_probe_rs//probe_rs:extensions.bzl", "probe_rs")
-probe_rs.tools(
+
+# TODO: https://pwbug.dev/346388161 - Re enable use of rules_probe_rs once rp2350
+# support is upstreamed.
+#
+# probe_rs = use_extension("@rules_probe_rs//probe_rs:extensions.bzl", "probe_rs")
+# probe_rs.tools(
+#     name = "probe_rs",
+#     version = "0.24.0",
+# )
+# use_repo(probe_rs, "probe_rs")
+
+# Use pre-release prebuilts for RP2350 support.
+cipd_repository(
     name = "probe_rs",
-    version = "0.24.0",
+    build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
+    path = "pigweed/third_party/probe-rs/${os}-${arch}",
+    tag = "git_revision:37660106aba307cbab5cf6c2b0da57b72b6dc4e9",
 )
-use_repo(probe_rs, "probe_rs")
 
 # STM32 APIs
 # ==========
