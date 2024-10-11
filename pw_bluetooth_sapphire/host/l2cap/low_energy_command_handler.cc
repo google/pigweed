@@ -16,6 +16,8 @@
 
 #include <pw_bytes/endian.h>
 
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+
 namespace bt::l2cap::internal {
 bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
     const ByteBuffer& payload_buf) {
@@ -23,6 +25,32 @@ bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
       cpp20::endian::little,
       static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::result>()));
   result_ = ConnectionParameterUpdateResult{result};
+  return true;
+}
+
+bool LowEnergyCommandHandler::LeCreditBasedConnectionResponse::Decode(
+    const ByteBuffer& payload_buf) {
+  const uint16_t destination_cid = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::dst_cid>()));
+  destination_cid_ = ChannelId{destination_cid};
+  const uint16_t mtu = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::mtu>()));
+  mtu_ = mtu;
+  const uint16_t mps = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::mps>()));
+  mps_ = mps;
+  const uint16_t initial_credits = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(
+          payload_buf.ReadMember<&PayloadT::initial_credits>()));
+  initial_credits_ = initial_credits;
+  const uint16_t result = pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little,
+      static_cast<uint16_t>(payload_buf.ReadMember<&PayloadT::result>()));
+  result_ = LECreditBasedConnectionResult{result};
   return true;
 }
 
@@ -42,6 +70,29 @@ void LowEnergyCommandHandler::ConnectionParameterUpdateResponder::Send(
 LowEnergyCommandHandler::LowEnergyCommandHandler(
     SignalingChannelInterface* sig, fit::closure request_fail_callback)
     : CommandHandler(sig, std::move(request_fail_callback)) {}
+
+bool LowEnergyCommandHandler::SendLeCreditBasedConnectionRequest(
+    uint16_t psm,
+    uint16_t cid,
+    uint16_t mtu,
+    uint16_t mps,
+    uint16_t credits,
+    SendLeCreditBasedConnectionRequestCallback cb) {
+  auto on_le_credit_based_connection_rsp =
+      BuildResponseHandler<LeCreditBasedConnectionResponse>(std::move(cb));
+
+  LECreditBasedConnectionRequestPayload payload;
+  payload.le_psm = pw::bytes::ConvertOrderTo(cpp20::endian::little, psm);
+  payload.src_cid = pw::bytes::ConvertOrderTo(cpp20::endian::little, cid);
+  payload.mtu = pw::bytes::ConvertOrderTo(cpp20::endian::little, mtu);
+  payload.mps = pw::bytes::ConvertOrderTo(cpp20::endian::little, mps);
+  payload.initial_credits =
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, credits);
+
+  return sig()->SendRequest(kLECreditBasedConnectionRequest,
+                            BufferView(&payload, sizeof(payload)),
+                            std::move(on_le_credit_based_connection_rsp));
+}
 
 bool LowEnergyCommandHandler::SendConnectionParameterUpdateRequest(
     uint16_t interval_min,

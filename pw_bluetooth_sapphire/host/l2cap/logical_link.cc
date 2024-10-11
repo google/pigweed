@@ -18,6 +18,7 @@
 
 #include <cinttypes>
 #include <functional>
+#include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
@@ -26,7 +27,9 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/le_dynamic_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::l2cap::internal {
@@ -108,7 +111,11 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle,
   if (type_ == bt::LinkType::kLE) {
     signaling_channel_ = std::make_unique<LESignalingChannel>(
         OpenFixedChannel(kLESignalingChannelId), role_, pw_dispatcher_);
-    // TODO(armansito): Initialize LE registry when it exists.
+    dynamic_registry_ = std::make_unique<LeDynamicChannelRegistry>(
+        signaling_channel_.get(),
+        fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),
+        fit::bind_member<&LogicalLink::OnServiceRequest>(this),
+        random_channel_ids);
 
     ServeConnectionParameterUpdateRequest();
   } else {
@@ -191,14 +198,7 @@ void LogicalLink::OpenChannel(Psm psm,
                               ChannelParameters params,
                               ChannelCallback callback) {
   BT_DEBUG_ASSERT(!closed_);
-
-  // TODO(fxbug.dev/42178956): Implement channels for LE credit-based
-  // connections
-  if (type_ == bt::LinkType::kLE) {
-    bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
-    CompleteDynamicOpen(/*dyn_chan=*/nullptr, std::move(callback));
-    return;
-  }
+  BT_DEBUG_ASSERT(dynamic_registry_);
 
   auto create_channel =
       [this, cb = std::move(callback)](const DynamicChannel* dyn_chan) mutable {

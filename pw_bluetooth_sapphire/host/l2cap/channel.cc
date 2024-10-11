@@ -25,6 +25,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/credit_based_flow_control_rx_engine.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/credit_based_flow_control_tx_engine.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_engines.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/logical_link.h"
@@ -135,22 +137,35 @@ ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher,
   BT_ASSERT_MSG(
       info_.mode == RetransmissionAndFlowControlMode::kBasic ||
           info_.mode ==
-              RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+              RetransmissionAndFlowControlMode::kEnhancedRetransmission ||
+          info.mode == CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
       "Channel constructed with unsupported mode: %s\n",
       AnyChannelModeToString(info_.mode).c_str());
+
+  auto connection_failure_cb = [link] {
+    if (link.is_alive()) {
+      // |link| is expected to ignore this call if it has been closed.
+      link->SignalError();
+    }
+  };
 
   if (info_.mode == RetransmissionAndFlowControlMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
     tx_engine_ =
         std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), *this);
+  } else if (std::holds_alternative<CreditBasedFlowControlMode>(info_.mode)) {
+    BT_ASSERT(info_.remote_initial_credits.has_value());
+    auto mode = std::get<CreditBasedFlowControlMode>(info_.mode);
+    rx_engine_ = std::make_unique<CreditBasedFlowControlRxEngine>(
+        std::move(connection_failure_cb));
+    tx_engine_ = std::make_unique<CreditBasedFlowControlTxEngine>(
+        id,
+        max_tx_sdu_size(),
+        *this,
+        mode,
+        info_.max_tx_pdu_payload_size,
+        *info_.remote_initial_credits);
   } else {
-    // Must capture |link| and not |link_| to avoid having to take |mutex_|.
-    auto connection_failure_cb = [link] {
-      if (link.is_alive()) {
-        // |link| is expected to ignore this call if it has been closed.
-        link->SignalError();
-      }
-    };
     std::tie(rx_engine_, tx_engine_) =
         MakeLinkedEnhancedRetransmissionModeEngines(
             id,

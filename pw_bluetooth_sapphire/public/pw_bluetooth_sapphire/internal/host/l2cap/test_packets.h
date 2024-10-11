@@ -78,6 +78,24 @@ DynamicByteBuffer AclConnectionParameterUpdateRsp(
     hci_spec::ConnectionHandle link_handle,
     ConnectionParameterUpdateResult result);
 
+DynamicByteBuffer AclLeCreditBasedConnectionReq(
+    l2cap::CommandId id,
+    hci_spec::ConnectionHandle link_handle,
+    l2cap::Psm psm,
+    l2cap::ChannelId cid,
+    uint16_t mtu,
+    uint16_t mps,
+    uint16_t credits);
+
+DynamicByteBuffer AclLeCreditBasedConnectionRsp(
+    l2cap::CommandId id,
+    hci_spec::ConnectionHandle link_handle,
+    l2cap::ChannelId cid,
+    uint16_t mtu,
+    uint16_t mps,
+    uint16_t credits,
+    LECreditBasedConnectionResult result);
+
 // S-Frame Packets
 
 DynamicByteBuffer AclSFrame(hci_spec::ConnectionHandle link_handle,

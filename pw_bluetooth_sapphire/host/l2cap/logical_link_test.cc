@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/logical_link.h"
 
 #include <memory>
+#include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
@@ -24,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 
 namespace bt::l2cap::internal {
@@ -58,7 +60,8 @@ class LogicalLinkTest : public TestingBase {
 
     TestingBase::TearDown();
   }
-  void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
+  void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE,
+                      bool random_channel_ids = true) {
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, Psm) {
       return std::nullopt;
@@ -73,14 +76,15 @@ class LogicalLinkTest : public TestingBase {
         std::move(query_service_cb),
         transport()->acl_data_channel(),
         transport()->command_channel(),
-        /*random_channel_ids=*/true,
+        random_channel_ids,
         *a2dp_offload_manager_,
         dispatcher());
   }
-  void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL) {
+  void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL,
+                                    bool random_channel_ids = true) {
     link()->Close();
     DeleteLink();
-    NewLogicalLink(type);
+    NewLogicalLink(type, random_channel_ids);
   }
 
   LogicalLink* link() const { return link_.get(); }
@@ -276,6 +280,44 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
       ToResult(
           pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS),
       *cb_status);
+}
+
+TEST_F(LogicalLinkTest, OpensLeDynamicChannel) {
+  ResetAndCreateNewLogicalLink(LinkType::kLE, false);
+  static constexpr uint16_t kPsm = 0x015;
+  static constexpr ChannelParameters kParams{
+      .mode = CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+
+  transport()->acl_data_channel()->SetDataRxHandler(
+      fit::bind_member<&LogicalLink::HandleRxPacket>(link()));
+
+  const auto req =
+      l2cap::testing::AclLeCreditBasedConnectionReq(1,
+                                                    kConnHandle,
+                                                    kPsm,
+                                                    kFirstDynamicChannelId,
+                                                    kDefaultMTU,
+                                                    kMaxInboundPduPayloadSize,
+                                                    0);
+  const auto rsp = l2cap::testing::AclLeCreditBasedConnectionRsp(
+      /*id=*/1,
+      /*link_handle=*/kConnHandle,
+      /*cid=*/kFirstDynamicChannelId,
+      /*mtu=*/64,
+      /*mps=*/32,
+      /*credits=*/10,
+      /*result=*/LECreditBasedConnectionResult::kSuccess);
+  EXPECT_ACL_PACKET_OUT(test_device(), req, &rsp);
+
+  WeakPtr<Channel> channel;
+  link()->OpenChannel(
+      kPsm, kParams, [&](auto result) { channel = std::move(result); });
+  RunUntilIdle();
+
+  ASSERT_TRUE(channel.is_alive());
 }
 
 }  // namespace

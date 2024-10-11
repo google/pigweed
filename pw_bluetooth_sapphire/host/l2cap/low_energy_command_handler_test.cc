@@ -17,6 +17,7 @@
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::l2cap::internal {
@@ -190,6 +191,67 @@ TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqNotEnoughBytes) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpectRejectNotUnderstood(
       kConnectionParameterUpdateRequest, param_update_req));
   EXPECT_FALSE(cb_called);
+}
+
+TEST_F(LowEnergyCommandHandlerTest, OutboundLeCreditBasedConnectionReq) {
+  constexpr static Psm kPsm = 0x1234;
+  constexpr static ChannelId kSourceCid = 0x0042;
+  constexpr static ChannelId kDestinationCid = 0x0054;
+  constexpr static uint16_t kLocalMtu = 126;
+  constexpr static uint16_t kRemoteMtu = 1234;
+  constexpr static uint16_t kLocalMps = 128;
+  constexpr static uint16_t kRemoteMps = 1000;
+  constexpr static uint16_t kLocalInitialCredits = 42;
+  constexpr static uint16_t kRemoteInitialCredits = 99;
+  constexpr static auto kResult = LECreditBasedConnectionResult::kNoResources;
+  const static StaticByteBuffer kLeConnReq(LowerBits(kPsm),
+                                           UpperBits(kPsm),
+                                           LowerBits(kSourceCid),
+                                           UpperBits(kSourceCid),
+                                           LowerBits(kLocalMtu),
+                                           UpperBits(kLocalMtu),
+                                           LowerBits(kLocalMps),
+                                           UpperBits(kLocalMps),
+                                           LowerBits(kLocalInitialCredits),
+                                           UpperBits(kLocalInitialCredits));
+  const static StaticByteBuffer kLeConnRsp(
+      LowerBits(kDestinationCid),
+      UpperBits(kDestinationCid),
+      LowerBits(kRemoteMtu),
+      UpperBits(kRemoteMtu),
+      LowerBits(kRemoteMps),
+      UpperBits(kRemoteMps),
+      LowerBits(kRemoteInitialCredits),
+      UpperBits(kRemoteInitialCredits),
+      LowerBits(static_cast<uint16_t>(kResult)),
+      UpperBits(static_cast<uint16_t>(kResult)));
+
+  bool cb_called = false;
+  LowEnergyCommandHandler::SendLeCreditBasedConnectionRequestCallback cb =
+      [&](const auto& rsp) {
+        cb_called = true;
+        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
+        EXPECT_EQ(kDestinationCid, rsp.destination_cid());
+        EXPECT_EQ(kRemoteMtu, rsp.mtu());
+        EXPECT_EQ(kRemoteMps, rsp.mps());
+        EXPECT_EQ(kRemoteInitialCredits, rsp.initial_credits());
+        EXPECT_EQ(kResult, rsp.result());
+      };
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(),
+                      kLECreditBasedConnectionRequest,
+                      kLeConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kLeConnRsp.view()});
+
+  EXPECT_TRUE(
+      cmd_handler()->SendLeCreditBasedConnectionRequest(kPsm,
+                                                        kSourceCid,
+                                                        kLocalMtu,
+                                                        kLocalMps,
+                                                        kLocalInitialCredits,
+                                                        std::move(cb)));
+  RunUntilIdle();
+  EXPECT_TRUE(cb_called);
 }
 
 }  // namespace bt::l2cap::internal
