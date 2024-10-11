@@ -35,24 +35,6 @@ cc_library(
 )
 
 cc_library(
-    name = "pw_stream_uart_dma_mcuxpresso",
-    srcs = ["dma_stream.cc"],
-    hdrs = ["public/pw_stream_uart_mcuxpresso/dma_stream.h"],
-    includes = ["public"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
-    deps = [
-        "//pw_clock_tree",
-        "//pw_preprocessor",
-        "//pw_stream",
-        "//pw_sync:interrupt_spin_lock",
-        "//pw_sync:thread_notification",
-        "//targets:mcuxpresso_sdk",
-    ],
-)
-
-cc_library(
     name = "interrupt_safe_writer",
     srcs = ["interrupt_safe_writer.cc"],
     hdrs = ["public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h"],
@@ -84,15 +66,6 @@ pw_cc_test(
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [":pw_stream_uart_mcuxpresso"],
-)
-
-pw_cc_test(
-    name = "dma_stream_example",
-    srcs = ["dma_stream_example.cc"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
-    deps = [":pw_stream_uart_dma_mcuxpresso"],
 )
 
 pw_cc_test(

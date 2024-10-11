@@ -35,22 +35,6 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "stream.cc" ]
   }
 
-  pw_source_set("pw_stream_uart_dma_mcuxpresso") {
-    public_configs = [ ":default_config" ]
-    public = [ "public/pw_stream_uart_mcuxpresso/dma_stream.h" ]
-    public_deps = [
-      "$dir_pw_clock_tree",
-      "$dir_pw_stream",
-      "$dir_pw_sync:thread_notification",
-    ]
-    deps = [
-      "$dir_pw_preprocessor",
-      "$dir_pw_sync:interrupt_spin_lock",
-      pw_third_party_mcuxpresso_SDK,
-    ]
-    sources = [ "dma_stream.cc" ]
-  }
-
   pw_source_set("pw_stream_uart_interrupt_safe_writer_mcuxpresso") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h" ]
@@ -91,20 +75,6 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     ]
   }
 
-  pw_test("dma_stream_example") {
-    enable_if =
-        pw_third_party_mcuxpresso_SDK ==
-        "//targets/mimxrt595_evk_freertos:sdk" &&
-        (pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_debug" ||
-         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_size_optimized" ||
-         pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_speed_optimized")
-    sources = [ "dma_stream_example.cc" ]
-    deps = [
-      ":pw_stream_uart_dma_mcuxpresso",
-      "//targets/mimxrt595_evk_freertos:sdk",
-    ]
-  }
-
   pw_test("interrupt_safe_writer_example") {
     enable_if =
         pw_third_party_mcuxpresso_SDK ==
@@ -124,7 +94,6 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     tests = [
       ":stream_test",
       ":stream_example",
-      ":dma_stream_example",
       ":interrupt_safe_writer_example",
     ]
   }
@@ -137,7 +106,6 @@ if (pw_third_party_mcuxpresso_SDK != "") {
 pw_doc_group("docs") {
   inputs = [
     "stream_example.cc",
-    "dma_stream_example.cc",
     "interrupt_safe_writer_example.cc",
   ]
   sources = [ "docs.rst" ]
