@@ -209,9 +209,9 @@ extern "C" void pw_Log(int level,
 
   ::fuchsia_syslog::LogBuffer buffer;
   buffer.BeginRecord(fuchsia_severity,
-                     cpp17::string_view(file_name),
+                     std::string_view(file_name),
                      line_number,
-                     cpp17::string_view(formatted.c_str()),
+                     std::string_view(formatted.c_str()),
                      log_state.socket().borrow(),
                      /*dropped_count=*/0,
                      process_koid,
