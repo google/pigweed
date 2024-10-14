@@ -789,12 +789,6 @@ class StreamEncoder {
                               WireType type,
                               size_t data_size);
 
-  // Callbacks for oneof fields set a flag to ensure they are only invoked once.
-  // To maintain logical constness of message structs passed to write, this
-  // resets each callback's invoked flag following a write operation.
-  void ResetOneOfCallbacks(ConstByteSpan message,
-                           span<const internal::MessageField> table);
-
   // The current encoder status. This status is only updated to reflect the
   // first error encountered. Any further write operations are blocked when the
   // encoder enters an error state.

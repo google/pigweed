@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import abc
 import collections
-import dataclasses
 import enum
 import itertools
 
@@ -391,27 +390,9 @@ class ProtoEnum(ProtoNode):
 class ProtoMessage(ProtoNode):
     """Representation of a message in a .proto file."""
 
-    @dataclasses.dataclass
-    class OneOf:
-        name: str
-        fields: list[ProtoMessageField] = dataclasses.field(
-            default_factory=list
-        )
-
-        def is_synthetic(self) -> bool:
-            """Returns whether this is a synthetic oneof field."""
-            # protoc expresses proto3 optional fields as a "synthetic" oneof
-            # containing only a single member. pw_protobuf does not support
-            # oneof in general, but has special handling for proto3 optional
-            # fields. This method exists to distinguish a real, user-defined
-            # oneof from a compiler-generated one.
-            # https://cs.opensource.google/protobuf/protobuf/+/main:src/google/protobuf/descriptor.proto;l=305;drc=5a68dddcf9564f92815296099f07f7dfe8713908
-            return len(self.fields) == 1 and self.fields[0].has_presence()
-
     def __init__(self, name: str):
         super().__init__(name)
         self._fields: list[ProtoMessageField] = []
-        self._oneofs: list[ProtoMessage.OneOf] = []
         self._dependencies: list[ProtoMessage] | None = None
         self._dependency_cycles: list[ProtoMessage] = []
 
@@ -421,23 +402,8 @@ class ProtoMessage(ProtoNode):
     def fields(self) -> list[ProtoMessageField]:
         return list(self._fields)
 
-    def oneofs(self) -> list[ProtoMessage.OneOf]:
-        return list(self._oneofs)
-
-    def add_field(
-        self,
-        field: ProtoMessageField,
-        oneof_index: int | None = None,
-    ) -> None:
+    def add_field(self, field: ProtoMessageField) -> None:
         self._fields.append(field)
-
-        if oneof_index is not None:
-            self._oneofs[oneof_index].fields.append(field)
-            # pylint: disable=protected-access
-            field._oneof = self._oneofs[oneof_index]
-
-    def add_oneof(self, name) -> None:
-        self._oneofs.append(ProtoMessage.OneOf(name))
 
     def _supports_child(self, child: ProtoNode) -> bool:
         return (
@@ -530,7 +496,6 @@ class ProtoMessageField:
         self._has_presence: bool = has_presence
         self._repeated: bool = repeated
         self._options: CodegenOptions | None = codegen_options
-        self._oneof: ProtoMessage.OneOf | None = None
 
     def name(self) -> str:
         return self.upper_camel_case(self._field_name)
@@ -563,11 +528,6 @@ class ProtoMessageField:
 
     def options(self) -> CodegenOptions | None:
         return self._options
-
-    def oneof(self) -> ProtoMessage.OneOf | None:
-        if self._oneof is not None and not self._oneof.is_synthetic():
-            return self._oneof
-        return None
 
     @staticmethod
     def upper_camel_case(field_name: str) -> str:
@@ -754,10 +714,6 @@ def _add_message_fields(
         elif codegen_options:
             merged_options = codegen_options
 
-        oneof_index = (
-            field.oneof_index if field.HasField('oneof_index') else None
-        )
-
         message.add_field(
             ProtoMessageField(
                 field.name,
@@ -767,8 +723,7 @@ def _add_message_fields(
                 has_presence,
                 repeated,
                 merged_options,
-            ),
-            oneof_index=oneof_index,
+            )
         )
 
 
@@ -854,8 +809,6 @@ def _build_hierarchy(
 
     def build_message_subtree(proto_message):
         node = ProtoMessage(proto_message.name)
-        for oneof in proto_message.oneof_decl:
-            node.add_oneof(oneof.name)
         for proto_enum in proto_message.enum_type:
             node.add_child(ProtoEnum(proto_enum.name))
         for submessage in proto_message.nested_type:

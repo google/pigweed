@@ -18,7 +18,6 @@
 #include "pw_function/function.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/wire_format.h"
-#include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
@@ -37,12 +36,6 @@ enum class VarintType {
   kUnsigned = 0,
   kNormal = 1,
   kZigZag = 2,
-};
-
-enum class CallbackType {
-  kNone = 0,
-  kSingleField = 1,
-  kOneOfGroup = 2,
 };
 
 // Represents a field in a code generated message struct that can be the target
@@ -79,7 +72,7 @@ class MessageField {
                          bool is_fixed_size,
                          bool is_repeated,
                          bool is_optional,
-                         CallbackType callback_type,
+                         bool use_callback,
                          size_t field_offset,
                          size_t field_size,
                          const span<const MessageField>* nested_message_fields)
@@ -91,7 +84,7 @@ class MessageField {
                     static_cast<uint32_t>(is_fixed_size) << kIsFixedSizeShift |
                     static_cast<uint32_t>(is_repeated) << kIsRepeatedShift |
                     static_cast<uint32_t>(is_optional) << kIsOptionalShift |
-                    static_cast<uint32_t>(callback_type) << kCallbackTypeShift |
+                    static_cast<uint32_t>(use_callback) << kUseCallbackShift |
                     static_cast<uint32_t>(field_size) << kFieldSizeShift),
         field_offset_(field_offset),
         nested_message_fields_(nested_message_fields) {}
@@ -120,9 +113,8 @@ class MessageField {
   constexpr bool is_optional() const {
     return (field_info_ >> kIsOptionalShift) & 1;
   }
-  constexpr CallbackType callback_type() const {
-    return static_cast<CallbackType>((field_info_ >> kCallbackTypeShift) &
-                                     kCallbackTypeMask);
+  constexpr bool use_callback() const {
+    return (field_info_ >> kUseCallbackShift) & 1;
   }
   constexpr size_t field_offset() const { return field_offset_; }
   constexpr size_t field_size() const {
@@ -144,11 +136,11 @@ class MessageField {
   //   is_string      : 1
   //   is_fixed_size  : 1
   //   is_repeated    : 1
-  //   [unused space] : 1
+  //   use_callback   : 1
   //   -
   //   elem_size      : 4
-  //   callback_type  : 2
   //   is_optional    : 1
+  //   [unused space] : 2
   //   -
   //   field_size     : 16
   //
@@ -164,11 +156,9 @@ class MessageField {
   static constexpr unsigned int kIsStringShift = 26u;
   static constexpr unsigned int kIsFixedSizeShift = 25u;
   static constexpr unsigned int kIsRepeatedShift = 24u;
-  // Unused space: bit 23 (previously use_callback).
+  static constexpr unsigned int kUseCallbackShift = 23u;
   static constexpr unsigned int kElemSizeShift = 19u;
   static constexpr unsigned int kElemSizeMask = (1u << 4) - 1;
-  static constexpr unsigned int kCallbackTypeShift = 17;
-  static constexpr unsigned int kCallbackTypeMask = (1u << 2) - 1;
   static constexpr unsigned int kIsOptionalShift = 16u;
   static constexpr unsigned int kFieldSizeShift = 0u;
   static constexpr unsigned int kFieldSizeMask = kMaxFieldSize;
@@ -245,82 +235,6 @@ union Callback {
 
   Function<Status(StreamEncoder& encoder)> encode_;
   Function<Status(StreamDecoder& decoder)> decode_;
-};
-
-enum class NullFields : uint32_t {};
-
-/// Callback for a oneof structure member.
-/// A oneof callback will only be invoked once per struct member.
-template <typename StreamEncoder,
-          typename StreamDecoder,
-          typename Fields = NullFields>
-struct OneOf {
- public:
-  constexpr OneOf() : invoked_(false), encode_() {}
-  ~OneOf() { encode_ = nullptr; }
-
-  // Set the encoder callback.
-  void SetEncoder(Function<Status(StreamEncoder& encoder)>&& encode) {
-    encode_ = std::move(encode);
-  }
-
-  // Set the decoder callback.
-  void SetDecoder(
-      Function<Status(Fields field, StreamDecoder& decoder)>&& decode) {
-    decode_ = std::move(decode);
-  }
-
-  // Allow moving of callbacks by moving the member.
-  constexpr OneOf(OneOf&& other) = default;
-  constexpr OneOf& operator=(OneOf&& other) = default;
-
-  // Copying a callback does not copy the functions.
-  constexpr OneOf(const OneOf&) : encode_() {}
-  constexpr OneOf& operator=(const OneOf&) {
-    encode_ = nullptr;
-    return *this;
-  }
-
-  // Evaluate to true if the encoder or decoder callback is set.
-  explicit operator bool() const { return encode_ || decode_; }
-
- private:
-  friend StreamDecoder;
-  friend StreamEncoder;
-
-  constexpr void ResetForNewWrite() const { invoked_ = false; }
-
-  Status Encode(StreamEncoder& encoder) const {
-    if (encode_) {
-      if (invoked_) {
-        // The oneof has already been encoded.
-        return OkStatus();
-      }
-
-      invoked_ = true;
-      return encode_(encoder);
-    }
-    return Status::DataLoss();
-  }
-
-  Status Decode(Fields field, StreamDecoder& decoder) const {
-    if (decode_) {
-      if (invoked_) {
-        // Multiple fields from the same oneof exist in the serialized message.
-        return Status::DataLoss();
-      }
-
-      invoked_ = true;
-      return decode_(field, decoder);
-    }
-    return Status::DataLoss();
-  }
-
-  mutable bool invoked_;
-  union {
-    Function<Status(StreamEncoder& encoder)> encode_;
-    Function<Status(Fields field, StreamDecoder& decoder)> decode_;
-  };
 };
 
 template <typename T>

@@ -543,19 +543,11 @@ Status StreamDecoder::Read(span<std::byte> message,
 
     // If the field is using callbacks, interpret the output field accordingly
     // and allow the caller to provide custom handling.
-    if (field->callback_type() == internal::CallbackType::kSingleField) {
+    if (field->use_callback()) {
       const Callback<StreamEncoder, StreamDecoder>* callback =
           reinterpret_cast<const Callback<StreamEncoder, StreamDecoder>*>(
               out.data());
       PW_TRY(callback->Decode(*this));
-      continue;
-    }
-    if (field->callback_type() == internal::CallbackType::kOneOfGroup) {
-      const OneOf<StreamEncoder, StreamDecoder>* callback =
-          reinterpret_cast<const OneOf<StreamEncoder, StreamDecoder>*>(
-              out.data());
-      PW_TRY(callback->Decode(
-          static_cast<NullFields>(current_field_.field_number()), *this));
       continue;
     }
 

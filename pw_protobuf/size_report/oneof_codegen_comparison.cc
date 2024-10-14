@@ -331,18 +331,14 @@ PW_NO_INLINE void BasicEncode() {
   } which_key = KeyType::KEY_STRING;
   volatile bool has_timestamp = true;
   volatile bool has_has_value = false;
-
-  message.key.SetEncoder(
-      [&which_key](ResponseInfo::StreamEncoder& key_encoder) {
-        if (which_key == KeyType::KEY_STRING) {
-          return key_encoder.WriteKeyString("test");
-        }
-        if (which_key == KeyType::KEY_TOKEN) {
-          return key_encoder.WriteKeyToken(99999);
-        }
-        return Status::InvalidArgument();
-      });
-
+  if (which_key == KeyType::KEY_STRING) {
+    message.key_string.SetEncoder(
+        [](ResponseInfo::StreamEncoder& key_string_encoder) -> pw::Status {
+          return key_string_encoder.WriteKeyString("test");
+        });
+  } else if (which_key == KeyType::KEY_TOKEN) {
+    message.key_token = 99999;
+  }
   message.timestamp =
       has_timestamp ? std::optional<uint32_t>(1663003467) : std::nullopt;
   message.has_value = has_has_value ? std::optional<bool>(false) : std::nullopt;
@@ -365,27 +361,6 @@ PW_NO_INLINE void BasicDecode() {
   } which_key = KeyType::NONE;
   volatile bool has_timestamp = false;
   volatile bool has_has_value = false;
-
-  message.key.SetDecoder(
-      [](ResponseInfo::Fields field, ResponseInfo::StreamDecoder& key_decoder) {
-        switch (field) {
-          case ResponseInfo::Fields::kKeyString: {
-            std::array<char, 16> key_string;
-            StatusWithSize sws = key_decoder.ReadKeyString(key_string);
-            ConsumeValue(sws);
-            break;
-          }
-          case ResponseInfo::Fields::kKeyToken: {
-            Result<uint32_t> key_token = key_decoder.ReadKeyToken();
-            ConsumeValue(key_token);
-            break;
-          }
-          default:
-            return Status::DataLoss();
-        }
-        return OkStatus();
-      });
-
   if (pw::Status status = decoder.Read(message); status.ok()) {
     ConsumeValue(status);
     has_timestamp = message.timestamp.has_value();
