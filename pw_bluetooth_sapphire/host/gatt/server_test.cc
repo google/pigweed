@@ -3204,7 +3204,7 @@ class ServerTestSecurity : public ServerTest {
     return true;
   }
 
-  template <bool (ServerTestSecurity::* EmulateMethod)(
+  template <bool (ServerTestSecurity::*EmulateMethod)(
                 att::Handle, fit::result<att::ErrorCode>),
             bool IsWrite>
   void RunTest() {

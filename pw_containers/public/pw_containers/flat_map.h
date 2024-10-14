@@ -287,7 +287,7 @@ class FlatMap {
 };
 
 template <typename K, typename V, typename... Items>
-FlatMap(const Pair<K, V>& item1,
-        const Items&... items) -> FlatMap<K, V, 1 + sizeof...(items)>;
+FlatMap(const Pair<K, V>& item1, const Items&... items)
+    -> FlatMap<K, V, 1 + sizeof...(items)>;
 
 }  // namespace pw::containers
