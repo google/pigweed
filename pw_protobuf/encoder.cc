@@ -252,16 +252,22 @@ Status StreamEncoder::Write(span<const std::byte> message,
   for (const auto& field : table) {
     // Calculate the span of bytes corresponding to the structure field to
     // read from.
-    const auto values =
+    ConstByteSpan values =
         message.subspan(field.field_offset(), field.field_size());
     PW_CHECK(values.begin() >= message.begin() &&
              values.end() <= message.end());
 
     // If the field is using callbacks, interpret the input field accordingly
     // and allow the caller to provide custom handling.
-    if (field.use_callback()) {
+    if (field.callback_type() == internal::CallbackType::kSingleField) {
       const Callback<StreamEncoder, StreamDecoder>* callback =
           reinterpret_cast<const Callback<StreamEncoder, StreamDecoder>*>(
+              values.data());
+      PW_TRY(callback->Encode(*this));
+      continue;
+    } else if (field.callback_type() == internal::CallbackType::kOneOfGroup) {
+      const OneOf<StreamEncoder, StreamDecoder>* callback =
+          reinterpret_cast<const OneOf<StreamEncoder, StreamDecoder>*>(
               values.data());
       PW_TRY(callback->Encode(*this));
       continue;
@@ -560,7 +566,28 @@ Status StreamEncoder::Write(span<const std::byte> message,
     }
   }
 
+  ResetOneOfCallbacks(message, table);
+
   return status_;
+}
+
+void StreamEncoder::ResetOneOfCallbacks(
+    ConstByteSpan message, span<const internal::MessageField> table) {
+  for (const auto& field : table) {
+    // Calculate the span of bytes corresponding to the structure field to
+    // read from.
+    ConstByteSpan values =
+        message.subspan(field.field_offset(), field.field_size());
+    PW_CHECK(values.begin() >= message.begin() &&
+             values.end() <= message.end());
+
+    if (field.callback_type() == internal::CallbackType::kOneOfGroup) {
+      const OneOf<StreamEncoder, StreamDecoder>* callback =
+          reinterpret_cast<const OneOf<StreamEncoder, StreamDecoder>*>(
+              values.data());
+      callback->invoked_ = false;
+    }
+  }
 }
 
 }  // namespace pw::protobuf

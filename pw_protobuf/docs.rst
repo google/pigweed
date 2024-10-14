@@ -67,6 +67,13 @@ Message Structures
 The highest level API is based around message structures created through C++
 code generation, integrated with Pigweed's build system.
 
+.. warning::
+
+   Message structures only support a subset of protobuf field types. Before
+   continuing, refer to :ref:`pw_protobuf-message-limitations` to understand
+   what types of protobuf messages can and cannot be represented, and whether
+   or not message structures are a suitable choice.
+
 This results in the following generated structure:
 
 .. code-block:: c++
@@ -259,6 +266,31 @@ from one message type to another:
   ``Status::ResourceExhausted()`` from ``Write`` calls, and from the
   encoder's ``status()`` call. Always check the status of calls or the encoder,
   as in the case of error, the encoded data will be invalid.
+
+.. _pw_protobuf-message-limitations:
+
+Limitations
+-----------
+``pw_protobuf``'s message structure API is incomplete. Generally speaking, it is
+reasonable to use for basic messages containing simple inline fields (scalar
+types, bytes, and strings) and nested messages of similar form. Beyond this,
+certain other types of protobuf specifiers can be used, but may be limited in
+how and when they are supported. These cases are described below.
+
+If an object representation of protobuf messages is desired, the Pigweed team
+recommends using `Nanopb`_, which is fully supported within Pigweed's build and
+RPC systems.
+
+Message structures are eventually intended to be replaced with an alternative
+object model. See `SEED-0103 <http://pwrev.dev/133971>`_ for additional
+information about how message structures came to be and our future plans.
+
+``oneof`` fields
+^^^^^^^^^^^^^^^^
+``oneof`` protobuf fields cannot be inlined within a message structure: they
+must be encoded and decoded using callbacks.
+
+.. _pw_protobuf-per-field-apis:
 
 Per-Field Writers and Readers
 =============================
@@ -1039,7 +1071,7 @@ that can hold the set of values encoded by it, following these rules.
      message Store {
        Store nearest_store = 1;
        repeated int32 employee_numbers = 2;
-       string driections = 3;
+       string directions = 3;
        repeated string address = 4;
        repeated Employee employees = 5;
      }
@@ -1060,6 +1092,75 @@ that can hold the set of values encoded by it, following these rules.
 
   A Callback object can be converted to a ``bool`` indicating whether a callback
   is set.
+
+* Fields defined within a ``oneof`` group are represented by a ``OneOf``
+  callback.
+
+  .. code-block:: protobuf
+
+     message OnlineOrder {
+       Product product = 1;
+       Customer customer = 2;
+
+       oneof delivery {
+         Address shipping_address = 3;
+         Date pickup_date = 4;
+       }
+     }
+
+  .. code-block::
+
+     // No options set.
+
+  .. code-block:: c++
+
+     struct OnlineOrder::Message {
+       Product::Message product;
+       Customer::Message customer;
+       pw::protobuf::OneOf<OnlineOrder::StreamEncoder,
+                           OnlineOrder::StreamDecoder,
+                           OnlineOrder::Fields>
+         delivery;
+     };
+
+  Encoding a ``oneof`` field is identical to using a regular field callback.
+  The encode callback will be invoked once when the message is written. Users
+  must ensure that only a single field is written to the encoder within the
+  callback.
+
+  .. code-block:: c++
+
+     OnlineOrder::Message message;
+     message.delivery.SetEncoder(
+         [&pickup_date](OnlineOrder::StreamEncoder& encoder) {
+           return encoder.GetPickupDateEncoder().Write(pickup_date);
+         });
+
+  The ``OneOf`` decoder callback is invoked when reading a message structure
+  when a field within the ``oneof`` group is encountered. The found field is
+  passed to the callback.
+
+  If multiple fields from the ``oneof`` group are encountered within a ``Read``,
+  it will fail with a ``DATA_LOSS`` status.
+
+  .. code-block:: c++
+
+     OnlineOrder::Message message;
+     message.delivery.SetDecoder(
+         [this](OnlineOrder::Fields field, OnlineOrder::StreamDecoder& decoder) {
+           switch (field) {
+             case OnlineOrder::Fields::kShippingAddress:
+               PW_TRY(decoder.GetShippingAddressDecoder().Read(&this->shipping_address));
+               break;
+             case OnlineOrder::Fields::kPickupDate:
+               PW_TRY(decoder.GetPickupDateDecoder().Read(&this->pickup_date));
+               break;
+             default:
+               return pw::Status::DataLoss();
+           }
+
+           return pw::OkStatus();
+         });
 
 Message structures can be copied, but doing so will clear any assigned
 callbacks. To preserve functions applied to callbacks, ensure that the message
@@ -2313,10 +2414,9 @@ allocation, making it unsuitable for many embedded systems.
 
 nanopb
 ======
-`nanopb <https://github.com/nanopb/nanopb>`_ is a commonly used embedded
-protobuf library with very small code size and full code generation. It provides
-both encoding/decoding functionality and in-memory C structs representing
-protobuf messages.
+`Nanopb`_ is a commonly used embedded protobuf library with very small code size
+and full code generation. It provides both encoding/decoding functionality and
+in-memory C structs representing protobuf messages.
 
 nanopb works well for many embedded products; however, using its generated code
 can run into RAM usage issues when processing nontrivial protobuf messages due
@@ -2334,3 +2434,5 @@ intuitive user interface.
 
 Depending on the requirements of a project, either of these libraries could be
 suitable.
+
+.. _Nanopb: https://jpa.kapsi.fi/nanopb/

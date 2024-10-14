@@ -89,6 +89,21 @@ def debug_print(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+class _CallbackType(enum.Enum):
+    NONE = 0
+    SINGLE_FIELD = 1
+    ONEOF_GROUP = 2
+
+    def as_cpp(self) -> str:
+        match self:
+            case _CallbackType.NONE:
+                return 'kNone'
+            case _CallbackType.SINGLE_FIELD:
+                return 'kSingleField'
+            case _CallbackType.ONEOF_GROUP:
+                return 'kOneOfGroup'
+
+
 class ProtoMember(abc.ABC):
     """Base class for a C++ class member for a field in a protobuf message."""
 
@@ -112,6 +127,21 @@ class ProtoMember(abc.ABC):
     @abc.abstractmethod
     def should_appear(self) -> bool:  # pylint: disable=no-self-use
         """Whether the member should be generated."""
+
+    @abc.abstractmethod
+    def _use_callback(self) -> bool:
+        """Whether the member should be encoded and decoded with a callback."""
+
+    def callback_type(self) -> _CallbackType:
+        if self._field.oneof() is not None:
+            return _CallbackType.ONEOF_GROUP
+
+        options = self._field.options()
+        assert options is not None
+
+        if options.use_callback or self._use_callback():
+            return _CallbackType.SINGLE_FIELD
+        return _CallbackType.NONE
 
     def field_cast(self) -> str:
         return 'static_cast<uint32_t>(Fields::{})'.format(
@@ -189,6 +219,9 @@ class ProtoMethod(ProtoMember):
     def should_appear(self) -> bool:  # pylint: disable=no-self-use
         """Whether the method should be generated."""
         return True
+
+    def _use_callback(self) -> bool:  # pylint: disable=no-self-use
+        return False
 
     def param_string(self) -> str:
         return ', '.join([f'{type} {name}' for type, name in self.params()])
@@ -394,6 +427,11 @@ class MessageProperty(ProtoMember):
         return self._field.field_name()
 
     def should_appear(self) -> bool:
+        # Oneof fields are not supported by the code generator.
+        oneof = self._field.oneof()
+        if oneof is not None:
+            return oneof.is_synthetic()
+
         return True
 
     @abc.abstractmethod
@@ -424,13 +462,9 @@ class MessageProperty(ProtoMember):
         """
         return f'::pw::Vector<{type_name}, {max_size}>'
 
-    def use_callback(self) -> bool:  # pylint: disable=no-self-use
+    def _use_callback(self) -> bool:  # pylint: disable=no-self-use
         """Returns whether the decoder should use a callback."""
-        options = self._field.options()
-        assert options is not None
-        return options.use_callback or (
-            self._field.is_repeated() and self.max_size() == 0
-        )
+        return self._field.is_repeated() and self.max_size() == 0
 
     def is_optional(self) -> bool:
         """Returns whether the decoder should use std::optional."""
@@ -466,7 +500,7 @@ class MessageProperty(ProtoMember):
 
     def struct_member_type(self, from_root: bool = False) -> str:
         """Returns the structure member type."""
-        if self.use_callback():
+        if self.callback_type() is _CallbackType.SINGLE_FIELD:
             return (
                 f'{PROTOBUF_NAMESPACE}::Callback<StreamEncoder, StreamDecoder>'
             )
@@ -514,6 +548,13 @@ class MessageProperty(ProtoMember):
 
     def table_entry(self) -> list[str]:
         """Table entry."""
+
+        oneof = self._field.oneof()
+        if oneof is not None and not oneof.is_synthetic():
+            struct_member = oneof.name
+        else:
+            struct_member = self.name()
+
         return [
             self.field_cast(),
             self._wire_type_table_entry(),
@@ -523,9 +564,12 @@ class MessageProperty(ProtoMember):
             self._bool_attr('is_fixed_size'),
             self._bool_attr('is_repeated'),
             self._bool_attr('is_optional'),
-            self._bool_attr('use_callback'),
-            'offsetof(Message, {})'.format(self.name()),
-            'sizeof(Message::{})'.format(self.name()),
+            (
+                f'{_INTERNAL_NAMESPACE}::CallbackType::'
+                + self.callback_type().as_cpp()
+            ),
+            'offsetof(Message, {})'.format(struct_member),
+            'sizeof(Message::{})'.format(struct_member),
             self.sub_table(),
         ]
 
@@ -642,23 +686,17 @@ class SubMessageProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return '{}::Message'.format(self._relative_type_namespace(from_root))
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         # Always use a callback for a message dependency removed to break a
         # cycle, and for repeated fields, since in both cases there's no way
         # to handle the size of nested field.
-        options = self._field.options()
-        assert options is not None
-        return (
-            options.use_callback
-            or self._dependency_removed()
-            or self._field.is_repeated()
-        )
+        return self._dependency_removed() or self._field.is_repeated()
 
     def wire_type(self) -> str:
         return 'kDelimited'
 
     def sub_table(self) -> str:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return 'nullptr'
 
         return '&{}::kMessageFields'.format(self._relative_type_namespace())
@@ -671,7 +709,7 @@ class SubMessageProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
 
         return '{}::kMaxEncodedSizeBytes'.format(
@@ -1984,7 +2022,7 @@ class BytesProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return 'std::byte'
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         return self.max_size() == 0
 
     def max_size(self) -> int:
@@ -2013,7 +2051,7 @@ class BytesProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
         return self.max_size_constant_name()
 
@@ -2115,7 +2153,7 @@ class StringProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return 'char'
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         return self.max_size() == 0
 
     def max_size(self) -> int:
@@ -2146,7 +2184,7 @@ class StringProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
         return self.max_size_constant_name()
 
@@ -2578,14 +2616,18 @@ PROTO_FIELD_PROPERTIES: dict[int, Type[MessageProperty]] = {
 def proto_message_field_props(
     message: ProtoMessage,
     root: ProtoNode,
+    include_hidden: bool = False,
 ) -> Iterable[MessageProperty]:
     """Yields a MessageProperty for each field in a ProtoMessage.
 
-    Only properties which should_appear() is True are returned.
+    Only properties which should_appear() is True are returned, unless
+    `include_hidden` is set.
 
     Args:
       message: The ProtoMessage whose fields are iterated.
       root: The root ProtoNode of the tree.
+      include_hidden: If True, also yield fields which shouldn't appear in the
+          struct.
 
     Yields:
       An appropriately-typed MessageProperty object for each field
@@ -2594,7 +2636,7 @@ def proto_message_field_props(
     for field in message.fields():
         property_class = PROTO_FIELD_PROPERTIES[field.type()]
         prop = property_class(field, message, root)
-        if prop.should_appear():
+        if include_hidden or prop.should_appear():
             yield prop
 
 
@@ -2930,8 +2972,18 @@ def generate_struct_for_message(
             name = prop.name()
             output.write_line(f'{type_name} {name};')
 
-            if not prop.use_callback():
+            if prop.callback_type() is _CallbackType.NONE:
                 cmp.append(f'this->{name} == other.{name}')
+
+        for oneof in message.oneofs():
+            if oneof.is_synthetic():
+                continue
+
+            fields = f'{message.cpp_namespace(root=root)}::Fields'
+            output.write_line(
+                f'{PROTOBUF_NAMESPACE}::OneOf'
+                f'<StreamEncoder, StreamDecoder, {fields}> {oneof.name};'
+            )
 
         # Equality operator
         output.write_line()
@@ -2986,7 +3038,10 @@ def generate_table_for_message(
     #
     # The kMessageFields span is generated whether the message has fields or
     # not. Only the span is referenced elsewhere.
-    if properties:
+    all_properties = list(
+        proto_message_field_props(message, root, include_hidden=True)
+    )
+    if all_properties:
         output.write_line(
             f'inline constexpr {_INTERNAL_NAMESPACE}::MessageField '
             ' _kMessageFields[] = {'
@@ -2994,7 +3049,7 @@ def generate_table_for_message(
 
         # Generate members for each of the message's fields.
         with output.indent():
-            for prop in properties:
+            for prop in all_properties:
                 table = ', '.join(prop.table_entry())
                 output.write_line(f'{{{table}}},')
 
@@ -3010,19 +3065,20 @@ def generate_table_for_message(
             [f'message.{prop.name()}' for prop in properties]
         )
 
-        # Generate std::tuple for Message fields.
-        output.write_line(
-            'inline constexpr auto ToTuple(const Message &message) {'
-        )
-        output.write_line(f'  return std::tie({member_list});')
-        output.write_line('}')
+        if properties:
+            # Generate std::tuple for main Message fields only.
+            output.write_line(
+                'inline constexpr auto ToTuple(const Message &message) {'
+            )
+            output.write_line(f'  return std::tie({member_list});')
+            output.write_line('}')
 
-        # Generate mutable std::tuple for Message fields.
-        output.write_line(
-            'inline constexpr auto ToMutableTuple(Message &message) {'
-        )
-        output.write_line(f'  return std::tie({member_list});')
-        output.write_line('}')
+            # Generate mutable std::tuple for Message fields.
+            output.write_line(
+                'inline constexpr auto ToMutableTuple(Message &message) {'
+            )
+            output.write_line(f'  return std::tie({member_list});')
+            output.write_line('}')
     else:
         output.write_line(
             f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
@@ -3117,7 +3173,7 @@ def generate_is_trivially_comparable_specialization(
 ) -> None:
     is_trivially_comparable = True
     for prop in proto_message_field_props(message, root):
-        if prop.use_callback():
+        if prop.callback_type() is not _CallbackType.NONE:
             is_trivially_comparable = False
             break
 

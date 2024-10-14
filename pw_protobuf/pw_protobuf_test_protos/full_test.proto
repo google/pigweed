@@ -211,3 +211,15 @@ message CornerCases {
   // Generates ReadUint32() and WriteUint32() that call the parent definition.
   uint32 _uint32 = 1;
 }
+
+message OneOfTest {
+  message AMessage {
+    bool a_bool = 1;
+  }
+
+  oneof type {
+    int32 an_int = 1;
+    string a_string = 2;
+    AMessage a_message = 3;
+  }
+}
