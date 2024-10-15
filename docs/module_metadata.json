@@ -428,6 +428,13 @@
       "C++17"
     ]
   },
+  "pw_numeric": {
+    "tagline": "Efficient mathematical utilities for embedded",
+    "status": "stable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_perf_test": {
     "tagline": "Micro-benchmarks that are easy to write and run",
     "status": "unstable",

@@ -77,6 +77,7 @@ Modules
    pw_module/docs
    pw_multibuf/docs
    pw_multisink/docs
+   pw_numeric/docs
    pw_package/docs
    pw_perf_test/docs
    pw_persistent_ram/docs
