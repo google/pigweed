@@ -25,3 +25,11 @@ substantially, some features may be moved to other modules (e.g.
 - Pseudo-random number generation belongs in :ref:`module-pw_random`.
 - Data integrity checking belongs in :ref:`module-pw_checksum`.
 - Bit / byte manipulation belong in :ref:`module-pw_bytes`.
+
+-----------------
+C++ API reference
+-----------------
+
+pw_numeric/integer_division.h
+=============================
+.. doxygenfunction:: pw::IntegerDivisionRoundNearest

@@ -14,11 +14,27 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("integer_division") {
+  public = [ "public/pw_numeric/integer_division.h" ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test("integer_division_test") {
+  sources = [ "integer_division_test.cc" ]
+  deps = [ ":integer_division" ]
+}
+
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":integer_division_test" ]
 }
 
 pw_doc_group("docs") {

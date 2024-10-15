@@ -13,3 +13,20 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+pw_add_library(pw_numeric.integer_division INTERFACE
+  HEADERS
+    public/pw_numeric/integer_division.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_numeric.integer_division_test
+  SOURCES
+    integer_division_test.cc
+  PRIVATE_DEPS
+    pw_numeric.integer_division
+  GROUPS
+    modules
+    pw_numeric
+)

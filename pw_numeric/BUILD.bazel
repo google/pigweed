@@ -12,6 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:pigweed.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+cc_library(
+    name = "integer_division",
+    hdrs = ["public/pw_numeric/integer_division.h"],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "integer_division_test",
+    srcs = ["integer_division_test.cc"],
+    deps = [
+        ":integer_division",
+        "//pw_unit_test",
+    ],
+)
