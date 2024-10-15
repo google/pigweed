@@ -217,3 +217,17 @@ flash_rp2040(
     testonly = True,
     rp2040_binary = ":rp2040_system_async_example",
 )
+
+cc_library(
+    name = "rp2040_linker_script",
+    deps = [
+        "@pico-sdk//src/rp2_common/pico_crt0/rp2040:default_linker_script",
+    ],
+)
+
+cc_library(
+    name = "rp2350_linker_script",
+    deps = [
+        "@pico-sdk//src/rp2_common/pico_crt0/rp2350:default_linker_script",
+    ],
+)
