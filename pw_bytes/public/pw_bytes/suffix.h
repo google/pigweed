@@ -50,7 +50,7 @@ inline void ByteLiteralIsTooLarge() {}
 /// This should not be used in header files, as it requires a ``using``
 /// declaration that will be publicly exported at whatever level it is
 /// used.
-PW_CONSTEVAL std::byte operator"" _b(unsigned long long value) {
+PW_CONSTEVAL std::byte operator""_b(unsigned long long value) {
   if (value > 255) {
     internal::ByteLiteralIsTooLarge();
   }
