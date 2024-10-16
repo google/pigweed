@@ -37,9 +37,9 @@ be a good fit for you. You'll probably be happier with the official
 --------
 Examples
 --------
-.. _RP2040 showcase: https://pigweed.googlesource.com/pigweed/showcase/rp2/
+.. _Sense showcase: https://pigweed.googlesource.com/pigweed/showcase/sense/
 
-The `RP2040 showcase`_ is our work-in-progress demonstration of using
+The `Sense showcase`_ is our work-in-progress demonstration of using
 the RP2040, Bazel, and Pigweed together. The showcase is scheduled to be
 completed in July 2024.
 
