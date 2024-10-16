@@ -337,6 +337,29 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "enqueue_heap_func",
+    hdrs = [
+        "public/pw_async2/enqueue_heap_func.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "enqueue_heap_func_test",
+    srcs = [
+        "enqueue_heap_func_test.cc",
+    ],
+    deps = [
+        ":dispatcher",
+        ":enqueue_heap_func",
+        "//pw_unit_test",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

@@ -261,5 +261,22 @@ if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
   )
 endif()
 
+pw_add_library(pw_async2.enqueue_heap_func INTERFACE
+  HEADERS
+    public/pw_async2/enqueue_heap_func.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+)
+
+pw_add_test(pw_async2.enqueue_heap_func_test
+  SOURCES
+    enqueue_heap_func_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_async2.enqueue_heap_func
+  GROUPS
+    modules
+    pw_async2
+)
 
 add_subdirectory(examples)

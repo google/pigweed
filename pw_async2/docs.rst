@@ -223,6 +223,8 @@ C++ API reference
 -------------
 C++ Utilities
 -------------
+.. doxygenfunction:: pw::async2::EnqueueHeapFunc
+
 .. doxygenfunction:: pw::async2::AllocateTask(pw::allocator::Allocator& allocator, Pendable&& pendable)
 
 .. doxygenfunction:: pw::async2::AllocateTask(pw::allocator::Allocator& allocator, Args&&... args)
