@@ -48,7 +48,9 @@ def _pw_env_substitute(env, string):
         string = string.replace('$pw_env{' + key + '}', value)
 
     if '$pw_env{' in string:
-        raise ValueError(f'Unresolved $pw_env\\{...} in JSON string: {string}')
+        raise ValueError(
+            'Unresolved $pw_env{{...}} in JSON string: {}'.format(string)
+        )
 
     return string
 
