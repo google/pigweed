@@ -24,7 +24,7 @@ namespace pw::containers {
 /// `pw::containers::FilteredView` provides a view of a container with only
 /// elements that match the specified filter. This class is similar to C++20's
 /// [std::ranges::filter_view](
-/// https://en.cppreference.com/w/cpp/ranges/filter_view>).
+/// https://en.cppreference.com/w/cpp/ranges/filter_view).
 ///
 /// `FilteredView` works with any container with an incrementable iterator. The
 /// `back()` function currently requires a bidirectional iterator.
