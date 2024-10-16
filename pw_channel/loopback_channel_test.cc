@@ -30,7 +30,7 @@ using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
-using ::pw::operator"" _b;
+using ::pw::operator""_b;
 using ::pw::channel::DatagramReader;
 using ::pw::channel::LoopbackByteChannel;
 using ::pw::channel::LoopbackDatagramChannel;

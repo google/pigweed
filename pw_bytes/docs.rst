@@ -82,7 +82,7 @@ pw_bytes/suffix.h
 This module exports a single ``_b`` literal, making it easier to create
 ``std::byte`` values for tests.
 
-.. cpp:function:: constexpr std::byte operator"" _b(unsigned long long value)
+.. cpp:function:: constexpr std::byte operator""_b(unsigned long long value)
 
 .. note::
    This should not be used in header files, as it requires a ``using``

@@ -33,7 +33,7 @@ using ::pw::allocator::test::AllocatorForTest;
 ///
 /// This is useful for writing size-related test assertions without
 /// explicit (verbose) casts.
-constexpr size_t operator"" _size(unsigned long long n) { return n; }
+constexpr size_t operator""_size(unsigned long long n) { return n; }
 
 const size_t kArbitraryAllocatorSize = 1024;
 const size_t kArbitraryChunkSize = 32;

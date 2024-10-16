@@ -35,7 +35,7 @@ using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::async2::Waker;
-using ::pw::operator"" _b;
+using ::pw::operator""_b;
 using ::pw::channel::DatagramReader;
 using ::pw::channel::DatagramWriter;
 using ::pw::channel::ForwardingByteChannelPair;
