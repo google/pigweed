@@ -1350,7 +1350,8 @@ def commit_message_format(ctx: PresubmitContext):
 
     # Check that the first line matches the expected pattern.
     match = re.match(
-        r'^(?:[.\w*/]+(?:{[\w* ,]+})?[\w*/]*|SEED-\d+): (?P<desc>.+)$', lines[0]
+        r'^(?P<prefix>[.\w*/]+(?:{[\w* ,]+})?[\w*/]*|SEED-\d+): (?P<desc>.+)$',
+        lines[0],
     )
     if not match:
         _LOG.warning('The first line does not match the expected format')
@@ -1360,6 +1361,9 @@ def commit_message_format(ctx: PresubmitContext):
             lines[0],
         )
         errors += 1
+    elif match.group('prefix') == 'roll':
+        # We're much more flexible with roll commits.
+        pass
     elif not _valid_capitalization(match.group('desc').split()[0]):
         _LOG.warning(
             'The first word after the ":" in the first line ("%s") must be '
