@@ -247,6 +247,23 @@ def arg_parser() -> argparse.ArgumentParser:
         nargs='?',
         help='Print tab completions for the supplied command text.',
     )
+
+    default_analytics = None
+    if pw_cli.env.pigweed_environment().PW_DISABLE_CLI_ANALYTICS:
+        default_analytics = False
+    argparser.add_argument(
+        '--analytics',
+        action='store_true',
+        default=default_analytics,
+        help='Temporarily enable analytics collection.',
+    )
+    argparser.add_argument(
+        '--no-analytics',
+        action='store_false',
+        dest='analytics',
+        help='Temporarily disable analytics collection.',
+    )
+
     argparser.add_argument(
         'command',
         nargs='?',

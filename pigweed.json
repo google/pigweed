@@ -198,6 +198,12 @@
           ]
         ]
       }
+    },
+    "pw_cli_analytics": {
+      "report_command_line": true,
+      "report_project_name": true,
+      "report_remote_url": true,
+      "report_subcommand_name": "always"
     }
   }
 }

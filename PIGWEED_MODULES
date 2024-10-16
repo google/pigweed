@@ -43,6 +43,7 @@ pw_chrono_stl
 pw_chrono_threadx
 pw_chrono_zephyr
 pw_cli
+pw_cli_analytics
 pw_clock_tree
 pw_clock_tree_mcuxpresso
 pw_compilation_testing

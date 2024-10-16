@@ -40,6 +40,7 @@ Modules
    pw_chre/docs
    pw_chrono/docs
    pw_cli/docs
+   pw_cli_analytics/docs
    pw_clock_tree/docs
    pw_compilation_testing/docs
    pw_config_loader/docs

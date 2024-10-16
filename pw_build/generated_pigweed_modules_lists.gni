@@ -74,6 +74,7 @@ declare_args() {
   dir_pw_chrono_threadx = get_path_info("../pw_chrono_threadx", "abspath")
   dir_pw_chrono_zephyr = get_path_info("../pw_chrono_zephyr", "abspath")
   dir_pw_cli = get_path_info("../pw_cli", "abspath")
+  dir_pw_cli_analytics = get_path_info("../pw_cli_analytics", "abspath")
   dir_pw_clock_tree = get_path_info("../pw_clock_tree", "abspath")
   dir_pw_clock_tree_mcuxpresso =
       get_path_info("../pw_clock_tree_mcuxpresso", "abspath")
@@ -275,6 +276,7 @@ declare_args() {
     dir_pw_chrono_threadx,
     dir_pw_chrono_zephyr,
     dir_pw_cli,
+    dir_pw_cli_analytics,
     dir_pw_clock_tree,
     dir_pw_clock_tree_mcuxpresso,
     dir_pw_compilation_testing,
@@ -459,6 +461,7 @@ declare_args() {
     "$dir_pw_chrono_threadx:tests",
     "$dir_pw_chrono_zephyr:tests",
     "$dir_pw_cli:tests",
+    "$dir_pw_cli_analytics:tests",
     "$dir_pw_clock_tree:tests",
     "$dir_pw_clock_tree_mcuxpresso:tests",
     "$dir_pw_compilation_testing:tests",
@@ -643,6 +646,7 @@ declare_args() {
     "$dir_pw_chrono_threadx:docs",
     "$dir_pw_chrono_zephyr:docs",
     "$dir_pw_cli:docs",
+    "$dir_pw_cli_analytics:docs",
     "$dir_pw_clock_tree:docs",
     "$dir_pw_clock_tree_mcuxpresso:docs",
     "$dir_pw_compilation_testing:docs",

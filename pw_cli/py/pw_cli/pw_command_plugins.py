@@ -29,6 +29,7 @@ def _register_builtin_plugins(registry: plugins.Registry) -> None:
     """Registers the commands that are included with pw by default."""
 
     # Register these by name to avoid circular dependencies.
+    registry.register_by_name('cli-analytics', 'pw_cli_analytics.cli', 'main')
     registry.register_by_name('bloat', 'pw_bloat.__main__', 'main')
     registry.register_by_name('doctor', 'pw_doctor.doctor', 'main')
     registry.register_by_name('emu', 'pw_emu.__main__', 'main')

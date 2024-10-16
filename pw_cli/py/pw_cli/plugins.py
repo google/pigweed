@@ -143,7 +143,8 @@ class Plugin:
         sys.argv = [f'pw {self.name}', *argv]
 
         try:
-            return self.target()
+            # If the plugin doesn't return an exit code assume it succeeded.
+            return self.target() or 0
         finally:
             sys.argv = original_sys_argv
 

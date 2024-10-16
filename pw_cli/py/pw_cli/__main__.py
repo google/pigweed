@@ -18,6 +18,8 @@ import os
 import sys
 from typing import NoReturn
 
+from pw_cli_analytics import analytics as cli_analytics
+import pw_cli.env
 import pw_cli.log
 from pw_cli import arguments, plugins, pw_command_plugins
 
@@ -27,6 +29,7 @@ _LOG = logging.getLogger(__name__)
 def main() -> NoReturn:
     """Entry point for the pw command."""
 
+    argv_copy = sys.argv[:]
     args = arguments.parse_args()
 
     pw_cli.log.install(level=args.loglevel, debug_log=args.debug_log)
@@ -68,12 +71,36 @@ def main() -> NoReturn:
         print(pw_command_plugins.format_help(), file=sys.stderr)
         sys.exit(0)
 
+    if args.analytics is None:
+        args.analytics = True
+
+    env = pw_cli.env.pigweed_environment()
+    if env.PW_DISABLE_CLI_ANALYTICS:
+        args.analytics = False
+
+    analytics: cli_analytics.Analytics | None = None
+    analytics_state = cli_analytics.State.UNKNOWN
+    if args.analytics and args.command != 'analytics':
+        # If there are no analytics settings we need to initialize them. Don't
+        # send telemetry out on the initial run.
+        analytics_state = cli_analytics.initialize()
+        if analytics_state != cli_analytics.State.NEWLY_INITIALIZED:
+            analytics = cli_analytics.Analytics(argv_copy, args)
+            analytics.begin()
+
+    status = -1
     try:
-        sys.exit(pw_command_plugins.run(args.command, args.plugin_args))
+        status = pw_command_plugins.run(args.command, args.plugin_args)
     except (plugins.Error, KeyError) as err:
         _LOG.critical('Cannot run command %s.', args.command)
         _LOG.critical('%s', err)
-        sys.exit(2)
+        status = 2
+    finally:
+        if analytics:
+            analytics.end(status=status)
+        cli_analytics.finalize()
+
+    sys.exit(status)
 
 
 if __name__ == '__main__':

@@ -61,7 +61,10 @@ pw_python_package("py") {
     "plural_test.py",
     "tool_runner_test.py",
   ]
-  python_deps = [ "$dir_pw_env_setup/py" ]
+  python_deps = [
+    "$dir_pw_cli_analytics/py",
+    "$dir_pw_env_setup/py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
   inputs = [

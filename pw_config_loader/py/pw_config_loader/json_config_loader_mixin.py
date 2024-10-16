@@ -17,10 +17,12 @@ from typing import Any
 
 import json
 
-from pw_config_loader.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader import yaml_config_loader_mixin
+
+Stage = yaml_config_loader_mixin.Stage
 
 
-class JsonConfigLoaderMixin(YamlConfigLoaderMixin):
+class JsonConfigLoaderMixin(yaml_config_loader_mixin.YamlConfigLoaderMixin):
     """JSON Config file loader mixin.
 
     Use this mixin to load json file settings and save them into

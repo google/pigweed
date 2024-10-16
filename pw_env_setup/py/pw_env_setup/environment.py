@@ -266,7 +266,13 @@ class Command(_Action):
 class Doctor(Command):
     def __init__(self, *args, **kwargs):
         log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
-        cmd = ['pw', '--no-banner', '--loglevel', log_level, 'doctor']
+        cmd = [
+            'pw',
+            '--no-banner',
+            '--loglevel',
+            log_level,
+            'doctor',
+        ]
         super(Doctor, self).__init__(command=cmd, *args, **kwargs)
 
     def accept(self, visitor):
