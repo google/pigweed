@@ -230,7 +230,7 @@ To include a portion of a file:
       :start-after: my-start-text
       :end-before: my-end-text
 
-``mw-start-text`` and ``my-end-text`` are the exclusive delimiters that must
+``my-start-text`` and ``my-end-text`` are the exclusive delimiters that must
 appear verbatim in the source file.
 
 .. _docs-style-rest-includes-python:
