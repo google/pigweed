@@ -15,10 +15,12 @@
 #include "pw_async2/pend_func_task.h"
 
 #include "pw_async2/dispatcher.h"
+#include "pw_function/function.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
 
+using ::pw::Function;
 using ::pw::async2::Context;
 using ::pw::async2::Dispatcher;
 using ::pw::async2::PendFuncTask;
@@ -58,6 +60,19 @@ TEST(PendFuncTask, PendDelegatesToFunc) {
   allow_completion = true;
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
   EXPECT_EQ(poll_count, 2);
+}
+
+TEST(PendFuncTask, HoldsCallableByDefault) {
+  auto callable = [](Context&) -> Poll<> { return Ready(); };
+  PendFuncTask func_task(std::move(callable));
+  static_assert(std::is_same<decltype(func_task),
+                             PendFuncTask<decltype(callable)>>::value);
+}
+
+TEST(PendFuncTask, HoldsPwFunctionWithEmptyTypeList) {
+  PendFuncTask<> func_task([](Context&) -> Poll<> { return Ready(); });
+  static_assert(std::is_same<decltype(func_task),
+                             PendFuncTask<Function<Poll<>(Context&)>>>::value);
 }
 
 }  // namespace

@@ -129,6 +129,7 @@ cc_library(
     ],
     deps = [
         ":dispatcher",
+        "//pw_function",
     ],
 )
 

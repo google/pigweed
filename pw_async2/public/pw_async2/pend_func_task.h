@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_async2/dispatcher.h"
+#include "pw_function/function.h"
 
 namespace pw::async2 {
 
@@ -23,7 +24,7 @@ namespace pw::async2 {
 /// which accepts a ``Context&`` and returns a ``Poll<>``.
 ///
 /// The resulting ``Task`` will implement ``Pend`` by invoking ``func``.
-template <typename Func>
+template <typename Func = Function<Poll<>(Context&)> >
 class PendFuncTask : public Task {
  public:
   /// Create a new ``Task`` which delegates ``Pend`` to ``func``.

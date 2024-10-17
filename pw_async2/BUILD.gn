@@ -104,7 +104,10 @@ pw_test("dispatcher_thread_test") {
 pw_source_set("pend_func_task") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async2/pend_func_task.h" ]
-  public_deps = [ ":dispatcher" ]
+  public_deps = [
+    ":dispatcher",
+    dir_pw_function,
+  ]
 }
 
 pw_test("pend_func_task_test") {
