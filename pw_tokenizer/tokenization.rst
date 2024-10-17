@@ -277,6 +277,30 @@ tokenized.
 
 .. _module-pw_tokenizer-custom-macro:
 
+Tokenizing enums
+================
+Logging enums is one common special case where tokenization is particularly
+appropriate: enum values are conceptually already tokens mapping to their
+names, assuming no duplicate values.
+
+:c:macro:`PW_TOKENIZE_ENUM` will take in a fully qualified enum name along with all
+of the associated enum values. This macro will create database entries that
+include the domain name (fully qualified enum name), enum value, and a tokenized
+form of the enum value.
+
+The macro also supports returing the string version of the enum value in the
+case that there is a non-tokenizing backend, using
+:cpp:func:`pw::tokenizer::EnumToString`.
+
+All enum values in the enum declaration must be present in the macro, and the
+macro must be in the same namespace as the enum to be able to use the
+:cpp:func:`pw::tokenizer::EnumToString` function and avoid compiler errors.
+
+.. literalinclude: enum_test.cc
+   :language: cpp
+   :start-after: [pw_tokenizer-examples-enum]
+   :end-before: [pw_tokenizer-examples-enum]
+
 Tokenize a message with arguments in a custom macro
 ===================================================
 Projects can leverage the tokenization machinery in whichever way best suits

@@ -82,6 +82,7 @@ pw_source_set("pw_tokenizer") {
   ]
   public = [
     "public/pw_tokenizer/encode_args.h",
+    "public/pw_tokenizer/enum.h",
     "public/pw_tokenizer/hash.h",
     "public/pw_tokenizer/nested_tokenization.h",
     "public/pw_tokenizer/tokenize.h",
@@ -92,6 +93,7 @@ pw_source_set("pw_tokenizer") {
     "public/pw_tokenizer/internal/argument_types.h",
     "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
     "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
+    "public/pw_tokenizer/internal/enum.h",
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h",
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_256_hash_macro.h",
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
@@ -169,6 +171,7 @@ pw_test_group("tests") {
     ":base64_test",
     ":decode_test",
     ":detokenize_test",
+    ":enum_test",
     ":encode_args_test",
     ":hash_test",
     ":simple_tokenize_test",
@@ -241,6 +244,12 @@ pw_test("detokenize_test") {
 pw_test("encode_args_test") {
   sources = [ "encode_args_test.cc" ]
   deps = [ ":pw_tokenizer" ]
+}
+
+pw_test("enum_test") {
+  sources = [ "enum_test.cc" ]
+  deps = [ ":pw_tokenizer" ]
+  negative_compilation_tests = true
 }
 
 pw_test("hash_test") {

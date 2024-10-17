@@ -53,6 +53,7 @@ pw_facade("pw_log") {
     "public/pw_log/options.h",
     "public/pw_log/short.h",
     "public/pw_log/shorter.h",
+    "public/pw_log/tokenized_args.h",
   ]
   public_deps = [ ":config" ]
 
@@ -132,6 +133,7 @@ pw_test_group("tests") {
     ":basic_log_test",
     ":glog_adapter_test",
     ":proto_utils_test",
+    ":log_enum_test",
   ]
 }
 
@@ -170,6 +172,17 @@ pw_test("proto_utils_test") {
     "$dir_pw_protobuf:bytes_utils",
   ]
   sources = [ "proto_utils_test.cc" ]
+}
+
+pw_test("log_enum_test") {
+  enable_if = pw_log_BACKEND != ""
+  deps = [
+    ":args",
+    ":pw_log",
+    dir_pw_tokenizer,
+  ]
+
+  sources = [ "log_enum_test.cc" ]
 }
 
 pw_proto_library("protos") {

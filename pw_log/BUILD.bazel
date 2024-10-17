@@ -204,3 +204,15 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+pw_cc_test(
+    name = "log_enum_test",
+    srcs = [
+        "log_enum_test.cc",
+    ],
+    deps = [
+        "//pw_log",
+        "//pw_tokenizer",
+        "//pw_unit_test",
+    ],
+)

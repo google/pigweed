@@ -17,9 +17,20 @@
 
 #include <inttypes.h>
 
+#include "pw_preprocessor/arguments.h"
 #include "pw_tokenizer/config.h"
 
 #define PW_TOKENIZER_NESTED_PREFIX PW_TOKENIZER_NESTED_PREFIX_STR[0]
 
 /// Format specifier for a token argument.
-#define PW_TOKEN_FMT() PW_TOKENIZER_NESTED_PREFIX_STR "#%08" PRIx32
+#define PW_TOKEN_FMT(...) PW_DELEGATE_BY_ARG_COUNT(_PW_TOKEN_FMT_, __VA_ARGS__)
+
+// Case: no argument (no specified domain)
+#define _PW_TOKEN_FMT_0() PW_TOKENIZER_NESTED_PREFIX_STR "#%08" PRIx32
+
+// Case: one argument (specified domain)
+#define _PW_TOKEN_FMT_1(domain_value) \
+  PW_TOKENIZER_NESTED_PREFIX_STR      \
+  "{" domain_value                    \
+  "}"                                 \
+  "#%08" PRIx32

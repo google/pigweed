@@ -154,6 +154,7 @@ pw_test_group("tests") {
   tests = [
     ":log_tokenized_test",
     ":metadata_test",
+    ":tokenized_args_test",
   ]
 }
 
@@ -173,6 +174,18 @@ pw_test("log_tokenized_test") {
 pw_test("metadata_test") {
   sources = [ "metadata_test.cc" ]
   deps = [ ":metadata" ]
+}
+
+pw_test("tokenized_args_test") {
+  enable_if = pw_log_BACKEND != "" &&
+              (host_os != "win" || pw_log_tokenized_HANDLER_BACKEND != "")
+  deps = [
+    dir_pw_log,
+    dir_pw_log_tokenized,
+    dir_pw_tokenizer,
+  ]
+
+  sources = [ "tokenized_args_test.cc" ]
 }
 
 pw_doc_group("docs") {

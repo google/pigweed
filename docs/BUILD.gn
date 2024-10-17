@@ -335,6 +335,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_tokenizer/public/pw_tokenizer/config.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/detokenize.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/encode_args.h",
+  "$dir_pw_tokenizer/public/pw_tokenizer/enum.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/nested_tokenization.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/token_database.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/tokenize.h",

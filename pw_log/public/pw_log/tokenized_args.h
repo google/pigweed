@@ -13,6 +13,12 @@
 // the License.
 #pragma once
 
+/// If nested tokenization is supported by the logging backend, this is a
+/// format specifier to declare a nested token with a specific domain value.
+///
+/// For non-tokenizing backends, defaults to the string specifier `%s`.
+#define PW_LOG_ENUM_FMT(enum) PW_LOG_TOKEN_FMT(#enum)
+
 // pw_log backends that use pw_tokenizer and want to support nested tokenization
 // define this file under their public_overrides/ directory to activate the
 // PW_LOG_TOKEN aliases. If this file does not exist in the log backend,
@@ -26,6 +32,7 @@
 #define PW_LOG_TOKEN PW_TOKENIZE_STRING
 #define PW_LOG_TOKEN_EXPR PW_TOKENIZE_STRING_EXPR
 #define PW_LOG_TOKEN_FMT PW_TOKEN_FMT
+#define PW_LOG_ENUM(enumerator) ::pw::tokenizer::EnumToToken(enumerator)
 
 #else
 
@@ -47,6 +54,13 @@
 /// alias for `PW_TOKEN_FORMAT`.
 ///
 /// For non-tokenizing backends, defaults to the string specifier `%s`.
-#define PW_LOG_TOKEN_FMT() "%s"
+#define PW_LOG_TOKEN_FMT(...) "%s"
+
+/// If nested tokenization is supported by the logging backend, this will
+/// return a token representation of the enum.
+///
+/// For non-tokenizing backends, defaults to the string representation of the
+/// enum.
+#define PW_LOG_ENUM(enumerator) ::pw::tokenizer::EnumToString(enumerator)
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")

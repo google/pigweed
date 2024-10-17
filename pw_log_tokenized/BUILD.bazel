@@ -148,3 +148,16 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+pw_cc_test(
+    name = "tokenized_args_test",
+    srcs = [
+        "tokenized_args_test.cc",
+    ],
+    deps = [
+        "//pw_log",
+        "//pw_log_tokenized",
+        "//pw_tokenizer",
+        "//pw_unit_test",
+    ],
+)
