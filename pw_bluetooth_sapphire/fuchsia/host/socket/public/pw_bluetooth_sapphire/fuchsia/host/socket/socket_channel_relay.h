@@ -459,7 +459,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     }
 
     if (read_res == ZX_ERR_PEER_CLOSED) {
-      bt_log(TRACE,
+      bt_log(WARN,
              "l2cap",
              "Failed to read from socket for channel %u: %s",
              channel_->id(),
@@ -470,7 +470,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     BT_ASSERT(n_bytes_read > 0);
     socket_packet_recv_count_++;
     if (n_bytes_read > channel_->max_tx_sdu_size()) {
-      bt_log(TRACE,
+      bt_log(WARN,
              "l2cap",
              "Dropping %zu bytes for channel %u as max TX SDU is %u ",
              n_bytes_read,
