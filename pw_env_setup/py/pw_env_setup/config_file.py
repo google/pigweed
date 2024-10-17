@@ -16,8 +16,13 @@
 See also https://pigweed.dev/seed/0101-pigweed.json.html.
 """
 
+from __future__ import annotations
+
+from collections.abc import Mapping
 import json
 import os
+from pathlib import Path
+from typing import Any
 
 try:
     # This will only succeed when using config_file from Bazel.
@@ -26,20 +31,20 @@ except (ImportError, ModuleNotFoundError):
     runfiles = None
 
 
-def _resolve_env(env):
+def _resolve_env(env: Mapping[str, str] | None) -> Mapping[str, str]:
     if env:
         return env
     return os.environ
 
 
-def _get_project_root(env):
+def _get_project_root(env: Mapping[str, str]) -> Path:
     for var in ('PW_PROJECT_ROOT', 'PW_ROOT'):
         if var in env:
-            return env[var]
+            return Path(env[var])
     raise ValueError('environment variable PW_PROJECT_ROOT not set')
 
 
-def _pw_env_substitute(env, string):
+def _pw_env_substitute(env: Mapping[str, str], string: Any) -> str:
     if not isinstance(string, str):
         return string
 
@@ -48,30 +53,28 @@ def _pw_env_substitute(env, string):
         string = string.replace('$pw_env{' + key + '}', value)
 
     if '$pw_env{' in string:
-        raise ValueError(
-            'Unresolved $pw_env{{...}} in JSON string: {}'.format(string)
-        )
+        raise ValueError(f'Unresolved $pw_env{{...}} in JSON string: {string}')
 
     return string
 
 
-def path(env=None):
+def path(env: Mapping[str, str] | None = None) -> Path:
     """Return the path where pigweed.json should reside."""
     env = _resolve_env(env)
-    return os.path.join(_get_project_root(env=env), 'pigweed.json')
+    return _get_project_root(env=env) / 'pigweed.json'
 
 
-def path_from_runfiles():
+def path_from_runfiles() -> Path:
     r = runfiles.Create()
     location = r.Rlocation("pigweed.json")
     if location is None:
         # Failed to find pigweed.json
         raise ValueError("Failed to find pigweed.json")
 
-    return location
+    return Path(location)
 
 
-def load(env=None):
+def load(env: Mapping[str, str] | None = None) -> dict:
     """Load pigweed.json if it exists and return the contents."""
     if env is None and runfiles is not None:
         config_path = path_from_runfiles()
