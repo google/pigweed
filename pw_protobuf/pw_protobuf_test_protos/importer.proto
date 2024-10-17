@@ -34,9 +34,7 @@ message TestResult {
 }
 
 message TestMessage {
-  oneof level {
-    imported.Notice notice = 1;
-    imported.Debug debug = 2;
-    imported.PrefixDebug prefix_debug = 3;
-  }
+  imported.Notice notice = 1;
+  imported.Debug debug = 2;
+  imported.PrefixDebug prefix_debug = 3;
 }

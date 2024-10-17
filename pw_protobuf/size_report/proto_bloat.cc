@@ -22,6 +22,7 @@
 #include "pw_preprocessor/concat.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_protobuf/internal/codegen.h"
 #include "pw_protobuf/stream_decoder.h"
 #include "pw_status/status.h"
 #include "pw_stream/null_stream.h"
@@ -75,7 +76,7 @@ constexpr protobuf::internal::MessageField kFakeTable[] = {
      true,
      true,
      true,
-     true,
+     protobuf::internal::CallbackType::kSingleField,
      260,
      840245,
      nullptr},
@@ -87,7 +88,7 @@ constexpr protobuf::internal::MessageField kFakeTable[] = {
      true,
      true,
      true,
-     true,
+     protobuf::internal::CallbackType::kSingleField,
      260,
      840245,
      nullptr}};

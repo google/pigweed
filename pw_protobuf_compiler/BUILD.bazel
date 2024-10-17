@@ -20,6 +20,25 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# In PWPB message structures, whether to generate oneof groups as individual
+# inline fields (the deprecated, legacy way) or callbacks. This exists to aid
+# downstream migration and should be removed once migration is complete.
+# TODO: https://pwbug.dev/373693434 - Remove this constraint.
+constraint_setting(
+    name = "pwpb_oneof_type",
+    default_constraint_value = ":pwpb_oneof_type_legacy_inline",
+)
+
+constraint_value(
+    name = "pwpb_oneof_type_callbacks",
+    constraint_setting = ":pwpb_oneof_type",
+)
+
+constraint_value(
+    name = "pwpb_oneof_type_legacy_inline",
+    constraint_setting = ":pwpb_oneof_type",
+)
+
 pw_cc_test(
     name = "nanopb_test",
     srcs = ["nanopb_test.cc"],

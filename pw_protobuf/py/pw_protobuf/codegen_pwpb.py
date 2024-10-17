@@ -14,6 +14,7 @@
 """This module defines the generated code for pw_protobuf C++ classes."""
 
 import abc
+from dataclasses import dataclass
 import enum
 
 # Type ignore here for graphlib-backport on Python 3.8
@@ -40,6 +41,13 @@ PROTO_CC_EXTENSION = '.pwpb.cc'
 
 PROTOBUF_NAMESPACE = '::pw::protobuf'
 _INTERNAL_NAMESPACE = '::pw::protobuf::internal'
+
+
+@dataclass
+class GeneratorOptions:
+    oneof_callbacks: bool
+    exclude_legacy_snake_case_field_name_enums: bool
+    suppress_legacy_namespace: bool
 
 
 class ClassType(enum.Enum):
@@ -89,11 +97,30 @@ def debug_print(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+class _CallbackType(enum.Enum):
+    NONE = 0
+    SINGLE_FIELD = 1
+    ONEOF_GROUP = 2
+
+    def as_cpp(self) -> str:
+        match self:
+            case _CallbackType.NONE:
+                return 'kNone'
+            case _CallbackType.SINGLE_FIELD:
+                return 'kSingleField'
+            case _CallbackType.ONEOF_GROUP:
+                return 'kOneOfGroup'
+
+
 class ProtoMember(abc.ABC):
     """Base class for a C++ class member for a field in a protobuf message."""
 
     def __init__(
-        self, field: ProtoMessageField, scope: ProtoNode, root: ProtoNode
+        self,
+        codegen_options: GeneratorOptions,
+        field: ProtoMessageField,
+        scope: ProtoNode,
+        root: ProtoNode,
     ):
         """Creates an instance of a class member.
 
@@ -101,6 +128,7 @@ class ProtoMember(abc.ABC):
           field: the ProtoMessageField to which the method belongs.
           scope: the ProtoNode namespace in which the method is being defined.
         """
+        self._codegen_options: GeneratorOptions = codegen_options
         self._field: ProtoMessageField = field
         self._scope: ProtoNode = scope
         self._root: ProtoNode = root
@@ -112,6 +140,24 @@ class ProtoMember(abc.ABC):
     @abc.abstractmethod
     def should_appear(self) -> bool:  # pylint: disable=no-self-use
         """Whether the member should be generated."""
+
+    @abc.abstractmethod
+    def _use_callback(self) -> bool:
+        """Whether the member should be encoded and decoded with a callback."""
+
+    def callback_type(self) -> _CallbackType:
+        if (
+            self._codegen_options.oneof_callbacks
+            and self._field.oneof() is not None
+        ):
+            return _CallbackType.ONEOF_GROUP
+
+        options = self._field.options()
+        assert options is not None
+
+        if options.use_callback or self._use_callback():
+            return _CallbackType.SINGLE_FIELD
+        return _CallbackType.NONE
 
     def field_cast(self) -> str:
         return 'static_cast<uint32_t>(Fields::{})'.format(
@@ -141,12 +187,13 @@ class ProtoMethod(ProtoMember):
 
     def __init__(
         self,
+        codegen_options: GeneratorOptions,
         field: ProtoMessageField,
         scope: ProtoNode,
         root: ProtoNode,
         base_class: str,
     ):
-        super().__init__(field, scope, root)
+        super().__init__(codegen_options, field, scope, root)
         self._base_class: str = base_class
 
     @abc.abstractmethod
@@ -189,6 +236,9 @@ class ProtoMethod(ProtoMember):
     def should_appear(self) -> bool:  # pylint: disable=no-self-use
         """Whether the method should be generated."""
         return True
+
+    def _use_callback(self) -> bool:  # pylint: disable=no-self-use
+        return False
 
     def param_string(self) -> str:
         return ', '.join([f'{type} {name}' for type, name in self.params()])
@@ -394,6 +444,11 @@ class MessageProperty(ProtoMember):
         return self._field.field_name()
 
     def should_appear(self) -> bool:
+        # Oneof fields are not supported by the code generator.
+        oneof = self._field.oneof()
+        if self._codegen_options.oneof_callbacks and oneof is not None:
+            return oneof.is_synthetic()
+
         return True
 
     @abc.abstractmethod
@@ -424,13 +479,9 @@ class MessageProperty(ProtoMember):
         """
         return f'::pw::Vector<{type_name}, {max_size}>'
 
-    def use_callback(self) -> bool:  # pylint: disable=no-self-use
+    def _use_callback(self) -> bool:  # pylint: disable=no-self-use
         """Returns whether the decoder should use a callback."""
-        options = self._field.options()
-        assert options is not None
-        return options.use_callback or (
-            self._field.is_repeated() and self.max_size() == 0
-        )
+        return self._field.is_repeated() and self.max_size() == 0
 
     def is_optional(self) -> bool:
         """Returns whether the decoder should use std::optional."""
@@ -466,7 +517,7 @@ class MessageProperty(ProtoMember):
 
     def struct_member_type(self, from_root: bool = False) -> str:
         """Returns the structure member type."""
-        if self.use_callback():
+        if self.callback_type() is _CallbackType.SINGLE_FIELD:
             return (
                 f'{PROTOBUF_NAMESPACE}::Callback<StreamEncoder, StreamDecoder>'
             )
@@ -514,6 +565,17 @@ class MessageProperty(ProtoMember):
 
     def table_entry(self) -> list[str]:
         """Table entry."""
+
+        oneof = self._field.oneof()
+        if (
+            self._codegen_options.oneof_callbacks
+            and oneof is not None
+            and not oneof.is_synthetic()
+        ):
+            struct_member = oneof.name
+        else:
+            struct_member = self.name()
+
         return [
             self.field_cast(),
             self._wire_type_table_entry(),
@@ -523,9 +585,12 @@ class MessageProperty(ProtoMember):
             self._bool_attr('is_fixed_size'),
             self._bool_attr('is_repeated'),
             self._bool_attr('is_optional'),
-            self._bool_attr('use_callback'),
-            'offsetof(Message, {})'.format(self.name()),
-            'sizeof(Message::{})'.format(self.name()),
+            (
+                f'{_INTERNAL_NAMESPACE}::CallbackType::'
+                + self.callback_type().as_cpp()
+            ),
+            'offsetof(Message, {})'.format(struct_member),
+            'sizeof(Message::{})'.format(struct_member),
             self.sub_table(),
         ]
 
@@ -642,23 +707,17 @@ class SubMessageProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return '{}::Message'.format(self._relative_type_namespace(from_root))
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         # Always use a callback for a message dependency removed to break a
         # cycle, and for repeated fields, since in both cases there's no way
         # to handle the size of nested field.
-        options = self._field.options()
-        assert options is not None
-        return (
-            options.use_callback
-            or self._dependency_removed()
-            or self._field.is_repeated()
-        )
+        return self._dependency_removed() or self._field.is_repeated()
 
     def wire_type(self) -> str:
         return 'kDelimited'
 
     def sub_table(self) -> str:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return 'nullptr'
 
         return '&{}::kMessageFields'.format(self._relative_type_namespace())
@@ -671,7 +730,7 @@ class SubMessageProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
 
         return '{}::kMaxEncodedSizeBytes'.format(
@@ -1984,7 +2043,7 @@ class BytesProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return 'std::byte'
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         return self.max_size() == 0
 
     def max_size(self) -> int:
@@ -2013,7 +2072,7 @@ class BytesProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
         return self.max_size_constant_name()
 
@@ -2115,7 +2174,7 @@ class StringProperty(MessageProperty):
     def type_name(self, from_root: bool = False) -> str:
         return 'char'
 
-    def use_callback(self) -> bool:
+    def _use_callback(self) -> bool:
         return self.max_size() == 0
 
     def max_size(self) -> int:
@@ -2146,7 +2205,7 @@ class StringProperty(MessageProperty):
         return 'SizeOfDelimitedFieldWithoutValue'
 
     def _size_length(self) -> str | None:
-        if self.use_callback():
+        if self.callback_type() is not _CallbackType.NONE:
             return None
         return self.max_size_constant_name()
 
@@ -2576,16 +2635,21 @@ PROTO_FIELD_PROPERTIES: dict[int, Type[MessageProperty]] = {
 
 
 def proto_message_field_props(
+    codegen_options: GeneratorOptions,
     message: ProtoMessage,
     root: ProtoNode,
+    include_hidden: bool = False,
 ) -> Iterable[MessageProperty]:
     """Yields a MessageProperty for each field in a ProtoMessage.
 
-    Only properties which should_appear() is True are returned.
+    Only properties which should_appear() is True are returned, unless
+    `include_hidden` is set.
 
     Args:
       message: The ProtoMessage whose fields are iterated.
       root: The root ProtoNode of the tree.
+      include_hidden: If True, also yield fields which shouldn't appear in the
+          struct.
 
     Yields:
       An appropriately-typed MessageProperty object for each field
@@ -2593,8 +2657,8 @@ def proto_message_field_props(
     """
     for field in message.fields():
         property_class = PROTO_FIELD_PROPERTIES[field.type()]
-        prop = property_class(field, message, root)
-        if prop.should_appear():
+        prop = property_class(codegen_options, field, message, root)
+        if include_hidden or prop.should_appear():
             yield prop
 
 
@@ -2610,6 +2674,7 @@ def generate_class_for_message(
     message: ProtoMessage,
     root: ProtoNode,
     output: OutputFile,
+    codegen_options: GeneratorOptions,
     class_type: ClassType,
 ) -> None:
     """Creates a C++ class to encode or decoder a protobuf message."""
@@ -2691,7 +2756,9 @@ def generate_class_for_message(
         # Generate methods for each of the message's fields.
         for field in message.fields():
             for method_class in proto_field_methods(class_type, field.type()):
-                method = method_class(field, message, root, base_class)
+                method = method_class(
+                    codegen_options, field, message, root, base_class
+                )
                 if not method.should_appear():
                     continue
 
@@ -2720,6 +2787,7 @@ def define_not_in_class_methods(
     message: ProtoMessage,
     root: ProtoNode,
     output: OutputFile,
+    codegen_options: GeneratorOptions,
     class_type: ClassType,
 ) -> None:
     """Defines methods for a message class that were previously declared."""
@@ -2730,7 +2798,13 @@ def define_not_in_class_methods(
 
     for field in message.fields():
         for method_class in proto_field_methods(class_type, field.type()):
-            method = method_class(field, message, root, base_class)
+            method = method_class(
+                codegen_options,
+                field,
+                message,
+                root,
+                base_class,
+            )
             if not method.should_appear() or method.in_class_definition():
                 continue
 
@@ -2856,7 +2930,7 @@ def forward_declare(
     message: ProtoMessage,
     root: ProtoNode,
     output: OutputFile,
-    exclude_legacy_snake_case_field_name_enums: bool,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
     namespace = message.cpp_namespace(root=root)
@@ -2870,7 +2944,7 @@ def forward_declare(
             output.write_line(f'{field.enum_name()} = {field.number()},')
 
         # Migration support from SNAKE_CASE to kConstantCase.
-        if not exclude_legacy_snake_case_field_name_enums:
+        if not codegen_options.exclude_legacy_snake_case_field_name_enums:
             for field in message.fields():
                 output.write_line(
                     f'{field.legacy_enum_name()} = {field.number()},'
@@ -2880,7 +2954,7 @@ def forward_declare(
 
     # Define constants for fixed-size fields.
     output.write_line()
-    for prop in proto_message_field_props(message, root):
+    for prop in proto_message_field_props(codegen_options, message, root):
         max_size = prop.max_size()
         if max_size:
             output.write_line(
@@ -2915,7 +2989,10 @@ def forward_declare(
 
 
 def generate_struct_for_message(
-    message: ProtoMessage, root: ProtoNode, output: OutputFile
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Creates a C++ struct to hold a protobuf message values."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -2925,13 +3002,24 @@ def generate_struct_for_message(
     # Generate members for each of the message's fields.
     with output.indent():
         cmp: list[str] = []
-        for prop in proto_message_field_props(message, root):
+        for prop in proto_message_field_props(codegen_options, message, root):
             type_name = prop.struct_member_type()
             name = prop.name()
             output.write_line(f'{type_name} {name};')
 
-            if not prop.use_callback():
+            if prop.callback_type() is _CallbackType.NONE:
                 cmp.append(f'this->{name} == other.{name}')
+
+        if codegen_options.oneof_callbacks:
+            for oneof in message.oneofs():
+                if oneof.is_synthetic():
+                    continue
+
+                fields = f'{message.cpp_namespace(root=root)}::Fields'
+                output.write_line(
+                    f'{PROTOBUF_NAMESPACE}::OneOf'
+                    f'<StreamEncoder, StreamDecoder, {fields}> {oneof.name};'
+                )
 
         # Equality operator
         output.write_line()
@@ -2952,7 +3040,10 @@ def generate_struct_for_message(
 
 
 def generate_table_for_message(
-    message: ProtoMessage, root: ProtoNode, output: OutputFile
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Creates a C++ array to hold a protobuf message description."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -2960,7 +3051,7 @@ def generate_table_for_message(
     namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
-    properties = list(proto_message_field_props(message, root))
+    properties = list(proto_message_field_props(codegen_options, message, root))
 
     output.write_line('PW_MODIFY_DIAGNOSTICS_PUSH();')
     output.write_line('PW_MODIFY_DIAGNOSTIC(ignored, "-Winvalid-offsetof");')
@@ -2986,7 +3077,12 @@ def generate_table_for_message(
     #
     # The kMessageFields span is generated whether the message has fields or
     # not. Only the span is referenced elsewhere.
-    if properties:
+    all_properties = list(
+        proto_message_field_props(
+            codegen_options, message, root, include_hidden=True
+        )
+    )
+    if all_properties:
         output.write_line(
             f'inline constexpr {_INTERNAL_NAMESPACE}::MessageField '
             ' _kMessageFields[] = {'
@@ -2994,7 +3090,7 @@ def generate_table_for_message(
 
         # Generate members for each of the message's fields.
         with output.indent():
-            for prop in properties:
+            for prop in all_properties:
                 table = ', '.join(prop.table_entry())
                 output.write_line(f'{{{table}}},')
 
@@ -3010,19 +3106,20 @@ def generate_table_for_message(
             [f'message.{prop.name()}' for prop in properties]
         )
 
-        # Generate std::tuple for Message fields.
-        output.write_line(
-            'inline constexpr auto ToTuple(const Message &message) {'
-        )
-        output.write_line(f'  return std::tie({member_list});')
-        output.write_line('}')
+        if properties:
+            # Generate std::tuple for main Message fields only.
+            output.write_line(
+                'inline constexpr auto ToTuple(const Message &message) {'
+            )
+            output.write_line(f'  return std::tie({member_list});')
+            output.write_line('}')
 
-        # Generate mutable std::tuple for Message fields.
-        output.write_line(
-            'inline constexpr auto ToMutableTuple(Message &message) {'
-        )
-        output.write_line(f'  return std::tie({member_list});')
-        output.write_line('}')
+            # Generate mutable std::tuple for Message fields.
+            output.write_line(
+                'inline constexpr auto ToMutableTuple(Message &message) {'
+            )
+            output.write_line(f'  return std::tie({member_list});')
+            output.write_line('}')
     else:
         output.write_line(
             f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
@@ -3033,7 +3130,10 @@ def generate_table_for_message(
 
 
 def generate_sizes_for_message(
-    message: ProtoMessage, root: ProtoNode, output: OutputFile
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Creates C++ constants for the encoded sizes of a protobuf message."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -3043,7 +3143,7 @@ def generate_sizes_for_message(
 
     property_sizes: list[str] = []
     scratch_sizes: list[str] = []
-    for prop in proto_message_field_props(message, root):
+    for prop in proto_message_field_props(codegen_options, message, root):
         property_sizes.append(prop.max_encoded_size())
         if prop.include_in_scratch_size():
             scratch_sizes.append(prop.max_encoded_size())
@@ -3074,7 +3174,10 @@ def generate_sizes_for_message(
 
 
 def generate_find_functions_for_message(
-    message: ProtoMessage, root: ProtoNode, output: OutputFile
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Creates C++ constants for the encoded sizes of a protobuf message."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -3094,7 +3197,7 @@ def generate_find_functions_for_message(
             continue
 
         for cls in methods:
-            method = cls(field, message, root, '')
+            method = cls(codegen_options, field, message, root, '')
             method_signature = (
                 f'inline {method.return_type()} '
                 f'{method.name()}({method.param_string()})'
@@ -3113,11 +3216,14 @@ def generate_find_functions_for_message(
 
 
 def generate_is_trivially_comparable_specialization(
-    message: ProtoMessage, root: ProtoNode, output: OutputFile
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
 ) -> None:
     is_trivially_comparable = True
-    for prop in proto_message_field_props(message, root):
-        if prop.use_callback():
+    for prop in proto_message_field_props(codegen_options, message, root):
+        if prop.callback_type() is not _CallbackType.NONE:
             is_trivially_comparable = False
             break
 
@@ -3171,8 +3277,7 @@ def generate_code_for_package(
     file_descriptor_proto,
     package: ProtoNode,
     output: OutputFile,
-    suppress_legacy_namespace: bool,
-    exclude_legacy_snake_case_field_name_enums: bool,
+    codegen_options: GeneratorOptions,
 ) -> None:
     """Generates code for a single .pb.h file corresponding to a .proto file."""
 
@@ -3220,7 +3325,7 @@ def generate_code_for_package(
                 cast(ProtoMessage, node),
                 package,
                 output,
-                exclude_legacy_snake_case_field_name_enums,
+                codegen_options,
             )
 
     # Define all top-level enums.
@@ -3237,24 +3342,41 @@ def generate_code_for_package(
     messages = []
     for message in dependency_sorted_messages(package):
         output.write_line()
-        generate_struct_for_message(message, package, output)
+        generate_struct_for_message(message, package, output, codegen_options)
         output.write_line()
-        generate_table_for_message(message, package, output)
+        generate_table_for_message(message, package, output, codegen_options)
         output.write_line()
-        generate_sizes_for_message(message, package, output)
+        generate_sizes_for_message(message, package, output, codegen_options)
         output.write_line()
-        generate_find_functions_for_message(message, package, output)
-        output.write_line()
-        generate_class_for_message(
-            message, package, output, ClassType.STREAMING_ENCODER
+        generate_find_functions_for_message(
+            message,
+            package,
+            output,
+            codegen_options,
         )
         output.write_line()
         generate_class_for_message(
-            message, package, output, ClassType.MEMORY_ENCODER
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.STREAMING_ENCODER,
         )
         output.write_line()
         generate_class_for_message(
-            message, package, output, ClassType.STREAMING_DECODER
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.MEMORY_ENCODER,
+        )
+        output.write_line()
+        generate_class_for_message(
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.STREAMING_DECODER,
         )
         messages.append(message)
 
@@ -3262,13 +3384,25 @@ def generate_code_for_package(
     # methods which were previously only declared.
     for message in messages:
         define_not_in_class_methods(
-            message, package, output, ClassType.STREAMING_ENCODER
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.STREAMING_ENCODER,
         )
         define_not_in_class_methods(
-            message, package, output, ClassType.MEMORY_ENCODER
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.MEMORY_ENCODER,
         )
         define_not_in_class_methods(
-            message, package, output, ClassType.STREAMING_DECODER
+            message,
+            package,
+            output,
+            codegen_options,
+            ClassType.STREAMING_DECODER,
         )
 
     if package.cpp_namespace():
@@ -3278,7 +3412,7 @@ def generate_code_for_package(
         # empty (since everyone can see the global namespace). It shouldn't
         # ever be empty, though.
 
-        if not suppress_legacy_namespace:
+        if not codegen_options.suppress_legacy_namespace:
             output.write_line()
             output.write_line(
                 '// Aliases for legacy pwpb codegen interface. '
@@ -3312,7 +3446,10 @@ def generate_code_for_package(
 
         for message in messages:
             generate_is_trivially_comparable_specialization(
-                message, package, output
+                message,
+                package,
+                output,
+                codegen_options,
             )
 
         output.write_line(f'}}  // namespace {proto_namespace}')
@@ -3321,8 +3458,7 @@ def generate_code_for_package(
 def process_proto_file(
     proto_file,
     proto_options,
-    suppress_legacy_namespace: bool,
-    exclude_legacy_snake_case_field_name_enums: bool,
+    codegen_options: GeneratorOptions,
 ) -> Iterable[OutputFile]:
     """Generates code for a single .proto file."""
 
@@ -3338,8 +3474,7 @@ def process_proto_file(
         proto_file,
         package_root,
         output_file,
-        suppress_legacy_namespace,
-        exclude_legacy_snake_case_field_name_enums,
+        codegen_options,
     )
 
     return [output_file]

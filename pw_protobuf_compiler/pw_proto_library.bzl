@@ -401,6 +401,10 @@ def _proto_compiler_aspect_impl(target, ctx):
             continue
         args.add("--custom_opt={}".format(plugin_option))
 
+        pwpb_oneof_legacy_constraint = ctx.attr._pwpb_oneof_type_legacy_inline[platform_common.ConstraintValueInfo]
+        if ctx.attr._is_pwpb and ctx.target_platform_has_constraint(pwpb_oneof_legacy_constraint):
+            args.add("--custom_opt=--no-oneof-callbacks")
+
     args.add("--custom_out={}".format(out_path))
     args.add_all(proto_info.direct_sources)
 
@@ -442,7 +446,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         includes = transitive_includes,
     )]
 
-def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
+def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], is_pwpb = False):
     """Returns an aspect that runs the proto compiler.
 
     The aspect propagates through the deps of proto_library targets, running
@@ -460,6 +464,7 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
         attr_aspects = ["deps"],
         attrs = {
             "_extensions": attr.string_list(default = extensions),
+            "_is_pwpb": attr.bool(default = is_pwpb),
             "_plugin_options": attr.string_list(
                 default = plugin_options,
             ),
@@ -472,6 +477,9 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
                 default = Label(protoc_plugin),
                 executable = True,
                 cfg = "exec",
+            ),
+            "_pwpb_oneof_type_legacy_inline": attr.label(
+                default = Label("//pw_protobuf_compiler:pwpb_oneof_type_legacy_inline"),
             ),
         },
         implementation = _proto_compiler_aspect_impl,
@@ -521,6 +529,7 @@ _pwpb_proto_compiler_aspect = _proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
     ["--no-legacy-namespace", "--options-file={}"],
+    True,
 )
 
 _pwpb_proto_library = rule(
