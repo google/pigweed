@@ -209,7 +209,12 @@ class UniquePtr : public allocator::internal::BaseUniquePtr {
   UnderlyingType& operator[](size_t index) {
     return value_[index];
   }
-  const UnderlyingType& operator[](size_t index) const { return value_[index]; }
+
+  template <typename U = T,
+            typename = std::enable_if_t<std::is_array_v<U>, bool>>
+  const UnderlyingType& operator[](size_t index) const {
+    return value_[index];
+  }
 
   /// Returns the number of elements allocated.
   ///
