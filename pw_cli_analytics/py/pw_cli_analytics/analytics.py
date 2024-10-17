@@ -321,6 +321,7 @@ class Analytics:
             cwd: Checkout directory.
         """
         payload = Payload()
+        payload.event_params['command'] = 'redacted'
 
         rsn = self.config['report_subcommand_name']
         if rsn == 'always':

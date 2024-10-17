@@ -80,7 +80,7 @@ def main() -> NoReturn:
 
     analytics: cli_analytics.Analytics | None = None
     analytics_state = cli_analytics.State.UNKNOWN
-    if args.analytics and args.command != 'analytics':
+    if args.analytics and args.command != 'cli-analytics':
         # If there are no analytics settings we need to initialize them. Don't
         # send telemetry out on the initial run.
         analytics_state = cli_analytics.initialize()
