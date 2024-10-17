@@ -203,9 +203,22 @@ class UniquePtr : public allocator::internal::BaseUniquePtr {
   /// Returns a reference to the element at the given index.
   ///
   /// The behavior of this operation is undefined if this ``UniquePtr`` is in an
-  /// "empty" (``nullptr``) state or does not contain an array.
-  UnderlyingType& operator[](size_t index) { return value_[index]; }
+  /// "empty" (``nullptr``) state.
+  template <typename U = T,
+            typename = std::enable_if_t<std::is_array_v<U>, bool>>
+  UnderlyingType& operator[](size_t index) {
+    return value_[index];
+  }
   const UnderlyingType& operator[](size_t index) const { return value_[index]; }
+
+  /// Returns the number of elements allocated.
+  ///
+  /// This will assert if it is called on a non-array type UniquePtr.
+  template <typename U = T,
+            typename = std::enable_if_t<std::is_array_v<U>, bool>>
+  size_t size() const {
+    return size_;
+  }
 
  private:
   /// A pointer to the contained value.

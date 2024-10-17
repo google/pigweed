@@ -211,6 +211,11 @@ TEST_F(UniquePtrTest, CanRelease) {
   EXPECT_EQ(allocator_.deallocate_size(), sizeof(Size));
 }
 
+TEST_F(UniquePtrTest, SizeReturnsCorrectSize) {
+  pw::UniquePtr<int[]> ptr_array = allocator_.MakeUniqueArray<int>(5);
+  EXPECT_EQ(ptr_array.size(), 5U);
+}
+
 // Verify that the UniquePtr implementation is the size of 2 pointers for the
 // non-array case. This should not contain the size_t size_ parameter.
 static_assert(
