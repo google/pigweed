@@ -15,7 +15,7 @@
 # This script must be tested on bash, zsh, and dash.
 
 _bootstrap_abspath () {
-  $(command -v python3 || command -v python2 || command -v python) -c "import os.path; print(os.path.abspath('$@'))"
+  $(command -v python3 || command -v python) -c "import os.path; print(os.path.abspath('$@'))"
 }
 
 # Shell: bash.

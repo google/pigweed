@@ -270,8 +270,6 @@ pw_bootstrap() {
     _PW_PYTHON="$PW_BOOTSTRAP_PYTHON"
   elif command -v python3 > /dev/null 2> /dev/null; then
     _PW_PYTHON=python3
-  elif command -v python2 > /dev/null 2> /dev/null; then
-    _PW_PYTHON=python2
   elif command -v python > /dev/null 2> /dev/null; then
     _PW_PYTHON=python
   else
@@ -279,6 +277,15 @@ pw_bootstrap() {
     pw_error_info "  Pigweed's bootstrap process requires a local system"
     pw_error_info "  Python. Please install Python on your system, add it to "
     pw_error_info "  your PATH and re-try running bootstrap."
+    return
+  fi
+
+  local _pw_python_major_version=$($_PW_PYTHON -c 'import sys; print(sys.version_info[0])')
+  if [ "$_pw_python_major_version" != "3" ]; then
+    pw_error "Error: System Python is not Python 3\n"
+    pw_error_info "  The system Python is not Python 3. Please install Python 3"
+    pw_error_info "  and rerun bootstrap. Note that you may need to open a new"
+    pw_error_info "  terminal to see the newly installed Python."
     return
   fi
 

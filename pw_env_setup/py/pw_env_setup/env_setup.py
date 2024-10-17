@@ -17,9 +17,6 @@
 
 This script installs everything and writes out a file for the user's shell
 to source.
-
-For now, this is valid Python 2 and Python 3. Once we switch to running this
-with PyOxidizer it can be upgraded to recent Python 3.
 """
 
 from __future__ import print_function

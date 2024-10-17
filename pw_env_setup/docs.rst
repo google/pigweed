@@ -263,8 +263,6 @@ here.
   The specified module must provide a "run_actions" method which takes a single
   argument, "env_vars", which is a pw_env_setup.Environment instance.
 
-  NB: This feature is not supported when using a python2 system python.
-
   Sample plugin and pigweed.json blob:
 
 .. code-block:: python
@@ -555,8 +553,8 @@ never need to set these.
   Command to print a banner at the beginning of bootstrap.
 
 ``PW_BOOTSTRAP_PYTHON``
-  Python executable to be used, for example "python2" or "python3". Defaults to
-  "python".
+  Python executable to be used, for example "python3". Defaults to
+  "python3" if that's in ``PATH``, then tries "python".
 
 ``PW_CIPD_SERVICE_ACCOUNT_JSON``
   Value to pass as ``-service-account-json`` to CIPD invocations. This should

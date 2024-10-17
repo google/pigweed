@@ -278,8 +278,6 @@ function pw_bootstrap
         set _PW_PYTHON "$PW_BOOTSTRAP_PYTHON"
     else if command -v python3 >/dev/null 2>/dev/null
         set _PW_PYTHON python3
-    else if command -v python2 >/dev/null 2>/dev/null
-        set _PW_PYTHON python2
     else if command -v python >/dev/null 2>/dev/null
         set _PW_PYTHON python
     else
