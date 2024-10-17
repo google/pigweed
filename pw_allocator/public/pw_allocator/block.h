@@ -818,6 +818,11 @@ BlockResult Block<OffsetType, kAlign, kCanPoison>::Resize(
   new_inner_size = AlignUp(new_inner_size, kAlignment);
 
   if (old_inner_size == new_inner_size) {
+    // A small change to a block that has been padded may not change its size,
+    // but still needs its padding adjusted. This allows an aligned block that
+    // "lent" bytes to the previous block to become aligned can reclaim them
+    // when it is freed.
+    block->padding_ = new_inner_size - requested_inner_size;
     return BlockResult();
   }
 
@@ -833,7 +838,7 @@ BlockResult Block<OffsetType, kAlign, kCanPoison>::Resize(
     // The merged block is too small for the resized block.
     status = Status::OutOfRange();
 
-  } else if (new_inner_size + kBlockOverhead <= block->InnerSize()) {
+  } else if (new_inner_size + kBlockOverhead < block->InnerSize()) {
     // There is enough room after the resized block for another trailing block.
     bool should_poison = block->info_.poisoned;
     Block* trailing = Split(block, new_inner_size);

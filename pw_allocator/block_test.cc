@@ -529,14 +529,14 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
   size_t available =
       BlockType::kAlignment + GetOuterSize<BlockType>(kLayout.size());
 
-  auto* block = Preallocate<BlockType>(
+  auto* first = Preallocate<BlockType>(
       bytes_,
       {
           {leading, Preallocation::kUsed},
           {available, Preallocation::kFree},
           {Preallocation::kSizeRemaining, Preallocation::kUsed},
       });
-  block = block->Next();
+  BlockType* block = first->Next();
 
   // Allocate from the front of the block.
   auto result = BlockType::AllocFirst(block, kLayout);
@@ -544,11 +544,31 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
   EXPECT_EQ(result.prev(), BlockResult::Prev::kResized);
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
+  // Verify the previous block was padded.
+  size_t old_requested_size = leading - BlockType::kBlockOverhead;
+  EXPECT_EQ(first->RequestedSize(), old_requested_size);
+  EXPECT_GT(first->InnerSize(), old_requested_size);
+
+  // Resize the first block, and verify the padding is updated.
+  size_t new_requested_size = old_requested_size + 1;
+  result = BlockType::Resize(first, new_requested_size);
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
+  EXPECT_EQ(first->RequestedSize(), new_requested_size);
+  EXPECT_GT(first->InnerSize(), new_requested_size);
+
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_TRUE(block->Used());
-  CheckAllReachableBlock(block);
+
+  // Verify that freeing the subsequent block does not reclaim bytes that were
+  // resized.
+  BlockType::Free(block);
+  EXPECT_EQ(first->RequestedSize(), new_requested_size);
+  EXPECT_GT(first->InnerSize(), new_requested_size);
+  CheckAllReachableBlock(first);
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirst_ShiftToPrevAndNewNext_FirstBlock) {
