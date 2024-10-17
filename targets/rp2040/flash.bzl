@@ -15,6 +15,24 @@
 
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 
+def _flash_rp2(
+        name,
+        chip,
+        binary,
+        **kwargs):
+    data = [binary]
+    args = ["--chip", chip, "$(rootpath " + binary + ")"]
+
+    native_binary(
+        name = name,
+        src = str(Label("//targets/rp2040/py:flash")),
+        args = args,
+        data = data,
+        # Note: out is mandatory in older bazel-skylib versions.
+        out = name + ".exe",
+        **kwargs
+    )
+
 def flash_rp2040(
         name,
         rp2040_binary,
@@ -26,15 +44,17 @@ def flash_rp2040(
       rp2040_binary: The binary target to flash.
       **kwargs: Forwarded to the underlying native_binary rule.
     """
-    data = [rp2040_binary]
-    args = ["$(rootpath " + rp2040_binary + ")"]
+    _flash_rp2(name, "RP2040", rp2040_binary, **kwargs)
 
-    native_binary(
-        name = name,
-        src = str(Label("//targets/rp2040/py:flash")),
-        args = args,
-        data = data,
-        # Note: out is mandatory in older bazel-skylib versions.
-        out = name + ".exe",
-        **kwargs
-    )
+def flash_rp2350(
+        name,
+        rp2350_binary,
+        **kwargs):
+    """Flash the binary to a connected rp2350  device.
+
+    Args:
+      name: The name of this flash_rp2350 rule.
+      rp2350_binary: The binary target to flash.
+      **kwargs: Forwarded to the underlying native_binary rule.
+    """
+    _flash_rp2(name, "RP2350", rp2350_binary, **kwargs)

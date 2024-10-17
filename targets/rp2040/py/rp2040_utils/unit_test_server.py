@@ -86,6 +86,7 @@ def parse_args():
         '--chip',
         dest='chip',
         type=str,
+        required=True,
         choices=[
             'RP2040',
             'RP2350',

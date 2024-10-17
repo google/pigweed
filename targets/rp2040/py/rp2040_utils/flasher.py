@@ -296,6 +296,7 @@ def create_flash_parser() -> argparse.ArgumentParser:
         '--chip',
         dest='chip',
         type=str,
+        required=True,
         choices=[
             'RP2040',
             'RP2350',
