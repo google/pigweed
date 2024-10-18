@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("//pw_build:python.bzl", "pw_py_binary")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,11 +23,45 @@ py_library(
     name = "pw_build",
     srcs = [
         "pw_build/__init__.py",
-        # TODO(tonymd): Add more sources when needed.
-        # Used by pw_hdlc/py/decode_test.py:
+        "pw_build/bazel_query.py",
+        "pw_build/bazel_to_gn.py",
+        "pw_build/build_recipe.py",
+        "pw_build/collect_wheels.py",
+        "pw_build/copy_and_patch.py",
+        "pw_build/copy_from_cipd.py",
+        "pw_build/create_gn_venv.py",
+        "pw_build/create_python_tree.py",
+        "pw_build/error.py",
+        "pw_build/exec.py",
+        "pw_build/file_prefix_map.py",
+        "pw_build/generate_cc_blob_library.py",
+        "pw_build/generate_modules_lists.py",
+        "pw_build/generate_python_package.py",
+        "pw_build/generate_python_package_gn.py",
+        "pw_build/generate_python_requirements.py",
+        "pw_build/generate_python_wheel.py",
+        "pw_build/generate_python_wheel_cache.py",
+        "pw_build/generate_report.py",
         "pw_build/generated_tests.py",
+        "pw_build/gn_resolver.py",
+        "pw_build/gn_target.py",
+        "pw_build/gn_writer.py",
+        "pw_build/host_tool.py",
+        "pw_build/merge_profraws.py",
+        "pw_build/mirror_tree.py",
+        "pw_build/nop.py",
+        "pw_build/pip_install_python_deps.py",
+        "pw_build/python_package.py",
+        "pw_build/python_runner.py",
+        "pw_build/wrap_ninja.py",
+        "pw_build/zip.py",
     ],
     imports = ["."],
+    deps = [
+        "//pw_cli/py:pw_cli",
+        "//pw_config_loader/py:pw_config_loader",
+        "//pw_presubmit/py:pw_presubmit",
+    ],
 )
 
 pw_py_binary(
@@ -41,4 +75,108 @@ pw_py_binary(
     name = "copy_and_patch",
     srcs = ["pw_build/copy_and_patch.py"],
     deps = ["@python_packages//patch"],
+)
+
+pw_py_test(
+    name = "bazel_query_test",
+    size = "small",
+    srcs = [
+        "bazel_query_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "bazel_to_gn_test",
+    size = "small",
+    srcs = [
+        "bazel_to_gn_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "create_python_tree_test",
+    size = "small",
+    srcs = [
+        "create_python_tree_test.py",
+    ],
+    # TODO(b/373956968): Bazel support for generated Python packages.
+    tags = ["manual"],
+    deps = [
+        ":pw_build",
+        "@python_packages//parameterized",
+    ],
+)
+
+pw_py_test(
+    name = "file_prefix_map_test",
+    size = "small",
+    srcs = [
+        "file_prefix_map_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "generate_cc_blob_library_test",
+    size = "small",
+    srcs = [
+        "generate_cc_blob_library_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "gn_target_test",
+    size = "small",
+    srcs = [
+        "gn_target_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "gn_writer_test",
+    size = "small",
+    srcs = [
+        "gn_writer_test.py",
+    ],
+    # TODO(b/314139942): Requires GN on the path.
+    tags = ["manual"],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "python_runner_test",
+    size = "small",
+    srcs = [
+        "python_runner_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "zip_test",
+    size = "small",
+    srcs = [
+        "zip_test.py",
+    ],
+    deps = [
+        ":pw_build",
+    ],
 )
