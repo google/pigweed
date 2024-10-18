@@ -45,13 +45,60 @@ py_library(
     name = "pw_env_setup",
     srcs = [
         "pw_env_setup/__init__.py",
+        "pw_env_setup/apply_visitor.py",
+        "pw_env_setup/batch_visitor.py",
+        "pw_env_setup/cipd_setup/__init__.py",
+        "pw_env_setup/cipd_setup/update.py",
+        "pw_env_setup/cipd_setup/wrapper.py",
         "pw_env_setup/config_file.py",
+        "pw_env_setup/environment.py",
+        "pw_env_setup/github_visitor.py",
+        "pw_env_setup/gni_visitor.py",
+        "pw_env_setup/json_visitor.py",
+        "pw_env_setup/python_packages.py",
+        "pw_env_setup/shell_visitor.py",
+        "pw_env_setup/virtualenv_setup/__init__.py",
+        "pw_env_setup/virtualenv_setup/__main__.py",
+        "pw_env_setup/virtualenv_setup/install.py",
     ],
     data = [
+        "pw_env_setup/cipd_setup/.cipd_version",
+        "pw_env_setup/cipd_setup/.cipd_version.digests",
+        "pw_env_setup/cipd_setup/arm.json",
+        "pw_env_setup/cipd_setup/bazel.json",
+        "pw_env_setup/cipd_setup/bazelisk.json",
+        "pw_env_setup/cipd_setup/buildifier.json",
+        "pw_env_setup/cipd_setup/clang.json",
+        "pw_env_setup/cipd_setup/clang_next.json",
+        "pw_env_setup/cipd_setup/cmake.json",
+        "pw_env_setup/cipd_setup/compatibility.json",
+        "pw_env_setup/cipd_setup/coverage.json",
+        "pw_env_setup/cipd_setup/default.json",
+        "pw_env_setup/cipd_setup/doxygen.json",
+        "pw_env_setup/cipd_setup/go.json",
+        "pw_env_setup/cipd_setup/host_tools.json",
+        "pw_env_setup/cipd_setup/kythe.json",
+        "pw_env_setup/cipd_setup/luci.json",
+        "pw_env_setup/cipd_setup/msrv_python.json",
+        "pw_env_setup/cipd_setup/openjdk.json",
+        "pw_env_setup/cipd_setup/pigweed.json",
+        "pw_env_setup/cipd_setup/python.json",
+        "pw_env_setup/cipd_setup/python310.json",
+        "pw_env_setup/cipd_setup/python311.json",
+        "pw_env_setup/cipd_setup/rbe.json",
+        "pw_env_setup/cipd_setup/riscv.json",
+        "pw_env_setup/cipd_setup/ruff.json",
+        "pw_env_setup/cipd_setup/testing.json",
+        "pw_env_setup/cipd_setup/upstream.json",
+        "pw_env_setup/cipd_setup/web.json",
+        "pw_env_setup/virtualenv_setup/constraint.list",
+        "pw_env_setup/virtualenv_setup/constraint_hashes_linux.list",
+        "pw_env_setup/virtualenv_setup/python_base_requirements.txt",
         ":pigweed_json",
     ],
     imports = ["."],
     deps = [
+        "@python_packages//six",
         "@rules_python//python/runfiles",
     ],
 )
@@ -61,5 +108,40 @@ pw_py_test(
     srcs = ["config_file_test.py"],
     deps = [
         ":pw_env_setup",
+    ],
+)
+
+pw_py_test(
+    name = "json_visitor_test",
+    srcs = ["json_visitor_test.py"],
+    deps = [
+        ":pw_env_setup",
+        "@python_packages//six",
+    ],
+)
+
+pw_py_test(
+    name = "cipd_setup_update_test",
+    srcs = ["cipd_setup_update_test.py"],
+    deps = [
+        ":pw_env_setup",
+        "@python_packages//parameterized",
+    ],
+)
+
+pw_py_test(
+    name = "environment_test",
+    srcs = ["environment_test.py"],
+    deps = [
+        ":pw_env_setup",
+    ],
+)
+
+pw_py_test(
+    name = "python_packages_test",
+    srcs = ["python_packages_test.py"],
+    deps = [
+        ":pw_env_setup",
+        "@python_packages//toml",
     ],
 )
