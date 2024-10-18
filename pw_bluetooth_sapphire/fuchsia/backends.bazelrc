@@ -22,6 +22,15 @@ common:fuchsia --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletes
 common:fuchsia --@pigweed//pw_async:task_backend=@pigweed//pw_async_fuchsia:task
 common:fuchsia --@pigweed//pw_async:fake_dispatcher_backend=@pigweed//pw_async_fuchsia:fake_dispatcher
 
+# TODO: https://pwbug.dev/374340793 - This is a temporary workaround for now and
+# this command line option shouldn't be applied more widely.
+# Disable the injection of magic TestTrimmingTransition at analysis time
+# which does not happen when aspects are visiting the configured graph,
+# creating conflicts. See https://fxrev.dev/1047976.
+build:fuchsia --experimental_retain_test_configuration_across_testonly
+cquery:fuchsia --experimental_retain_test_configuration_across_testonly
+aquery:fuchsia --experimental_retain_test_configuration_across_testonly
+
 # The following flags are needed to build boringssl with the correct size
 build:fuchsia --copt=-DBORINGSSL_ALLOW_CXX_RUNTIME
 build:fuchsia --copt=-DOPENSSL_SMALL
