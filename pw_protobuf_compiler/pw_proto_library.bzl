@@ -49,28 +49,48 @@ load(
 # For Copybara use only
 ADDITIONAL_PWPB_DEPS = []
 
-def pwpb_proto_library(name, deps, tags = None, visibility = None):
+# TODO: b/373693434 - The `oneof_callbacks` parameter is temporary to assist
+# with migration.
+def pwpb_proto_library(name, deps, tags = None, visibility = None, oneof_callbacks = False):
     """A C++ proto library generated using pw_protobuf.
 
     Attributes:
       deps: proto_library targets for which to generate this library.
     """
-    _pwpb_proto_library(
-        name = name,
-        protos = deps,
-        deps = [
-            Label("//pw_assert"),
-            Label("//pw_containers:vector"),
-            Label("//pw_preprocessor"),
-            Label("//pw_protobuf"),
-            Label("//pw_result"),
-            Label("//pw_span"),
-            Label("//pw_status"),
-            Label("//pw_string:string"),
-        ] + ADDITIONAL_PWPB_DEPS,
-        tags = tags,
-        visibility = visibility,
-    )
+    if oneof_callbacks:
+        _pwpb_proto_library(
+            name = name,
+            protos = deps,
+            deps = [
+                Label("//pw_assert"),
+                Label("//pw_containers:vector"),
+                Label("//pw_preprocessor"),
+                Label("//pw_protobuf"),
+                Label("//pw_result"),
+                Label("//pw_span"),
+                Label("//pw_status"),
+                Label("//pw_string:string"),
+            ] + ADDITIONAL_PWPB_DEPS,
+            tags = tags,
+            visibility = visibility,
+        )
+    else:
+        _pwpb_legacy_oneof_proto_library(
+            name = name,
+            protos = deps,
+            deps = [
+                Label("//pw_assert"),
+                Label("//pw_containers:vector"),
+                Label("//pw_preprocessor"),
+                Label("//pw_protobuf"),
+                Label("//pw_result"),
+                Label("//pw_span"),
+                Label("//pw_status"),
+                Label("//pw_string:string"),
+            ] + ADDITIONAL_PWPB_DEPS,
+            tags = tags,
+            visibility = visibility,
+        )
 
 def pwpb_rpc_proto_library(name, deps, pwpb_proto_library_deps, tags = None, visibility = None):
     """A pwpb_rpc proto library target.
@@ -401,10 +421,6 @@ def _proto_compiler_aspect_impl(target, ctx):
             continue
         args.add("--custom_opt={}".format(plugin_option))
 
-        pwpb_oneof_legacy_constraint = ctx.attr._pwpb_oneof_type_legacy_inline[platform_common.ConstraintValueInfo]
-        if ctx.attr._is_pwpb and ctx.target_platform_has_constraint(pwpb_oneof_legacy_constraint):
-            args.add("--custom_opt=--no-oneof-callbacks")
-
     args.add("--custom_out={}".format(out_path))
     args.add_all(proto_info.direct_sources)
 
@@ -446,7 +462,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         includes = transitive_includes,
     )]
 
-def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], is_pwpb = False):
+def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
     """Returns an aspect that runs the proto compiler.
 
     The aspect propagates through the deps of proto_library targets, running
@@ -464,7 +480,6 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], is_pw
         attr_aspects = ["deps"],
         attrs = {
             "_extensions": attr.string_list(default = extensions),
-            "_is_pwpb": attr.bool(default = is_pwpb),
             "_plugin_options": attr.string_list(
                 default = plugin_options,
             ),
@@ -477,9 +492,6 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], is_pw
                 default = Label(protoc_plugin),
                 executable = True,
                 cfg = "exec",
-            ),
-            "_pwpb_oneof_type_legacy_inline": attr.label(
-                default = Label("//pw_protobuf_compiler:pwpb_oneof_type_legacy_inline"),
             ),
         },
         implementation = _proto_compiler_aspect_impl,
@@ -529,7 +541,29 @@ _pwpb_proto_compiler_aspect = _proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
     ["--no-legacy-namespace", "--options-file={}"],
-    True,
+)
+
+# TODO: b/373693434 - This aspect and its corresponding rule should be removed
+# once oneof callback migration is complete.
+_pwpb_legacy_oneof_compiler_aspect = _proto_compiler_aspect(
+    ["pwpb.h"],
+    "//pw_protobuf/py:plugin",
+    ["--no-oneof-callbacks", "--no-legacy-namespace", "--options-file={}"],
+)
+
+_pwpb_legacy_oneof_proto_library = rule(
+    implementation = _impl_pw_proto_library,
+    attrs = {
+        "deps": attr.label_list(
+            providers = [CcInfo],
+        ),
+        "protos": attr.label_list(
+            providers = [ProtoInfo],
+            aspects = [_pwpb_legacy_oneof_compiler_aspect],
+        ),
+    },
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
 )
 
 _pwpb_proto_library = rule(

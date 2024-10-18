@@ -16,7 +16,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 load("//pw_perf_test:pw_cc_perf_test.bzl", "pw_cc_perf_test")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pwpb_proto_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -317,12 +317,9 @@ proto_library(
     ],
 )
 
-pw_proto_library(
-    name = "codegen_test_proto_cc",
-    deps = [
-        ":codegen_test_proto",
-        ":common_proto",
-    ],
+pwpb_proto_library(
+    name = "codegen_test_proto_pwpb",
+    deps = [":codegen_test_proto"],
 )
 
 pw_cc_test(
@@ -331,7 +328,7 @@ pw_cc_test(
         "codegen_decoder_test.cc",
     ],
     deps = [
-        ":codegen_test_proto_cc.pwpb",
+        ":codegen_test_proto_pwpb",
         ":pw_protobuf",
         "//pw_span",
         "//pw_unit_test",
@@ -344,7 +341,7 @@ pw_cc_test(
         "codegen_encoder_test.cc",
     ],
     deps = [
-        ":codegen_test_proto_cc.pwpb",
+        ":codegen_test_proto_pwpb",
         ":pw_protobuf",
         "//pw_span",
         "//pw_unit_test",
@@ -359,7 +356,7 @@ pw_cc_test(
     # TODO: b/373693434 - Temporarily disabled pending the oneof migration.
     tags = ["manual"],
     deps = [
-        ":codegen_test_proto_cc.pwpb",
+        ":codegen_test_proto_pwpb",
         ":pw_protobuf",
         "//pw_span",
         "//pw_unit_test",
