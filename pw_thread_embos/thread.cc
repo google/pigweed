@@ -14,7 +14,6 @@
 #include "pw_thread/thread.h"
 
 #include "pw_assert/check.h"
-#include "pw_thread/id.h"
 #include "pw_thread_embos/config.h"
 #include "pw_thread_embos/context.h"
 #include "pw_thread_embos/options.h"

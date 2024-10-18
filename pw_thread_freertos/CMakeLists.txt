@@ -27,7 +27,7 @@ pw_add_library(pw_thread_freertos.config INTERFACE
     ${pw_thread_freertos_CONFIG}
 )
 
-# This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
+# This target provides the backend for pw::Thread::id & pw::this_thread::get_id.
 pw_add_library(pw_thread_freertos.id INTERFACE
   HEADERS
     public/pw_thread_freertos/id_inline.h
@@ -41,7 +41,7 @@ pw_add_library(pw_thread_freertos.id INTERFACE
     pw_assert
     pw_interrupt.context
     pw_third_party.freertos
-    pw_thread.id.facade
+    pw_thread.thread.facade
 )
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
@@ -61,7 +61,7 @@ pw_add_library(pw_thread_freertos.sleep STATIC
     pw_assert
     pw_chrono_freertos.system_clock
     pw_third_party.freertos
-    pw_thread.id
+    pw_thread.thread
 )
 
 # This target provides the backend for pw::Thread and the headers needed for
@@ -83,7 +83,6 @@ pw_add_library(pw_thread_freertos.thread STATIC
     pw_span
     pw_string
     pw_third_party.freertos
-    pw_thread.id
     pw_thread.thread.facade
     pw_thread_freertos.config
   SOURCES
@@ -101,7 +100,7 @@ pw_add_library(pw_thread_freertos.yield INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_third_party.freertos
-    pw_thread.id
+    pw_thread.thread
     pw_thread.yield.facade
 )
 

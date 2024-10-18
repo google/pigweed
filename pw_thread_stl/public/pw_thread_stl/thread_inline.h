@@ -46,7 +46,7 @@ inline Thread& Thread::operator=(Thread&& other) {
 
 inline Thread::~Thread() = default;
 
-inline Id Thread::get_id() const { return native_type_.get_id(); }
+inline Thread::id Thread::get_id() const { return native_type_.get_id(); }
 
 inline void Thread::join() { native_type_.join(); }
 

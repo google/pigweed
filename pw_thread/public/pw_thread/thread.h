@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <tuple>
+#include <type_traits>
 
 #include "pw_function/function.h"
 #include "pw_thread/id.h"

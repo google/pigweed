@@ -35,19 +35,19 @@ TEST(Thread, TestThreadContext) {
   thread_1 = Thread(context_1.options(),
                     [&thread_ran_sem_1] { thread_ran_sem_1.release(); });
 
-  EXPECT_NE(thread_0.get_id(), Id());
+  EXPECT_NE(thread_0.get_id(), Thread::id());
   EXPECT_TRUE(thread_0.joinable());
 
-  EXPECT_NE(thread_1.get_id(), Id());
+  EXPECT_NE(thread_1.get_id(), Thread::id());
   EXPECT_TRUE(thread_1.joinable());
 
   thread_0.detach();
   thread_1.detach();
 
-  EXPECT_EQ(thread_0.get_id(), Id());
+  EXPECT_EQ(thread_0.get_id(), Thread::id());
   EXPECT_FALSE(thread_0.joinable());
 
-  EXPECT_EQ(thread_1.get_id(), Id());
+  EXPECT_EQ(thread_1.get_id(), Thread::id());
   EXPECT_FALSE(thread_1.joinable());
 
   thread_ran_sem_0.acquire();

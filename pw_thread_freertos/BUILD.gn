@@ -51,7 +51,7 @@ config("id_public_overrides") {
   visibility = [ ":*" ]
 }
 
-# This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
+# This target provides the backend for pw::Thread::id & pw::this_thread::get_id.
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",
@@ -104,8 +104,8 @@ pw_source_set("sleep") {
     "$dir_pw_assert",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_third_party/freertos",
-    "$dir_pw_thread:id",
     "$dir_pw_thread:sleep.facade",
+    "$dir_pw_thread:thread",
   ]
 }
 
@@ -123,10 +123,10 @@ pw_source_set("thread") {
   ]
   public_deps = [
     ":config",
+    ":id",
     "$dir_pw_assert",
     "$dir_pw_string",
     "$dir_pw_third_party/freertos",
-    "$dir_pw_thread:id",
     "$dir_pw_thread:thread.facade",
     dir_pw_function,
     dir_pw_span,
@@ -182,7 +182,7 @@ pw_source_set("yield") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_third_party/freertos",
-    "$dir_pw_thread:id",
+    "$dir_pw_thread:thread",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
 }

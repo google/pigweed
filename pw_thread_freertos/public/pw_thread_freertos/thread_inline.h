@@ -17,7 +17,6 @@
 
 #include "FreeRTOS.h"
 #include "pw_assert/assert.h"
-#include "pw_thread/id.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_freertos/config.h"
 #include "pw_thread_freertos/options.h"
@@ -35,11 +34,11 @@ inline Thread& Thread::operator=(Thread&& other) {
 
 inline Thread::~Thread() { PW_DASSERT(native_type_ == nullptr); }
 
-inline Id Thread::get_id() const {
+inline Thread::id Thread::get_id() const {
   if (native_type_ == nullptr) {
-    return Id(nullptr);
+    return Thread::id(nullptr);
   }
-  return Id(native_type_->task_handle());
+  return Thread::id(native_type_->task_handle());
 }
 
 inline void Thread::swap(Thread& other) {

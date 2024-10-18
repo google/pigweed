@@ -186,7 +186,7 @@ pw_test("test_thread_context_facade_test") {
 pw_test("id_facade_test") {
   enable_if = pw_thread_ID_BACKEND != ""
   sources = [ "id_facade_test.cc" ]
-  deps = [ ":id" ]
+  deps = [ ":thread" ]
 }
 
 pw_test("thread_snapshot_service_test") {
@@ -213,8 +213,8 @@ pw_test("sleep_facade_test") {
     "sleep_facade_test_c.c",
   ]
   deps = [
-    ":id",
     ":sleep",
+    ":thread",
     "$dir_pw_chrono:system_clock",
   ]
 }
@@ -233,7 +233,6 @@ pw_source_set("thread_facade_test") {
   testonly = pw_unit_test_TESTONLY
   sources = [ "thread_facade_test.cc" ]
   deps = [
-    ":id",
     ":non_portable_test_thread_options",
     ":sleep",
     ":thread",
@@ -263,7 +262,7 @@ pw_test("yield_facade_test") {
     "yield_facade_test_c.c",
   ]
   deps = [
-    ":id",
+    ":thread",
     ":yield",
   ]
 }

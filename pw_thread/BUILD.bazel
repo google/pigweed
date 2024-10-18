@@ -94,7 +94,7 @@ pw_facade(
     ],
     backend = ":sleep_backend",
     implementation_deps = [
-        ":id",
+        ":thread",
     ],
     includes = ["public"],
     deps = [
@@ -214,7 +214,7 @@ pw_facade(
     ],
     backend = ":yield_backend",
     implementation_deps = [
-        ":id",
+        ":thread",
     ],
     includes = ["public"],
     deps = [
@@ -271,7 +271,6 @@ cc_library(
         "thread_facade_test.cc",
     ],
     deps = [
-        ":id",
         ":non_portable_test_thread_options",
         ":thread",
         "//pw_chrono:system_clock",
@@ -310,7 +309,7 @@ pw_cc_test(
         "id_facade_test.cc",
     ],
     deps = [
-        ":id",
+        ":thread",
         "//pw_unit_test",
     ],
 )
@@ -331,8 +330,8 @@ pw_cc_test(
         "sleep_facade_test_c.c",
     ],
     deps = [
-        ":id",
         ":sleep",
+        ":thread",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -377,7 +376,7 @@ pw_cc_test(
         "yield_facade_test_c.c",
     ],
     deps = [
-        ":id",
+        ":thread",
         ":yield",
         "//pw_preprocessor",
         "//pw_unit_test",

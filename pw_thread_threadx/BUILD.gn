@@ -53,7 +53,7 @@ config("id_public_overrides") {
   visibility = [ ":*" ]
 }
 
-# This target provides the backend for pw::thread::Id.
+# This target provides the backend for pw::Thread::id.
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",
@@ -65,12 +65,12 @@ pw_source_set("id") {
     "$dir_pw_third_party/threadx",
   ]
   public = [
+    "$dir_pw_thread:thread.facade",
     "id_public_overrides/pw_thread_backend/id_inline.h",
     "id_public_overrides/pw_thread_backend/id_native.h",
     "public/pw_thread_threadx/id_inline.h",
     "public/pw_thread_threadx/id_native.h",
   ]
-  deps = [ "$dir_pw_thread:id.facade" ]
 }
 
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
@@ -104,7 +104,7 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
       "$dir_pw_assert",
       "$dir_pw_chrono_threadx:system_clock",
       "$dir_pw_third_party/threadx",
-      "$dir_pw_thread:id",
+      "$dir_pw_thread:thread",
     ]
   }
 }
@@ -126,7 +126,6 @@ pw_source_set("thread") {
     "$dir_pw_assert",
     "$dir_pw_string",
     "$dir_pw_third_party/threadx",
-    "$dir_pw_thread:id",
     "$dir_pw_thread:thread.facade",
     dir_pw_function,
     dir_pw_span,
@@ -161,7 +160,7 @@ pw_source_set("yield") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_third_party/threadx",
-    "$dir_pw_thread:id",
+    "$dir_pw_thread:thread",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
 }

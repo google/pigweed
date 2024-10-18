@@ -31,7 +31,7 @@ config("id_public_overrides") {
   visibility = [ ":*" ]
 }
 
-# This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
+# This target provides the backend for pw::Thread::id & pw::this_thread::get_id.
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",

@@ -15,7 +15,7 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-# Backend for the pw_thread module's pw::thread::Id.
+# Backend for the pw_thread module's pw::Thread::id.
 pw_add_backend_variable(pw_thread.id_BACKEND)
 
 # Backend for the pw_thread module's pw::thread::sleep_{for,until}.

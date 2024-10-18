@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #include "pw_assert/assert.h"
-#include "pw_thread/id.h"
+#include "pw_thread/thread.h"
 #include "pw_thread_embos/context.h"
 
 namespace pw::thread {
@@ -31,11 +31,11 @@ inline Thread& Thread::operator=(Thread&& other) {
 
 inline Thread::~Thread() { PW_DASSERT(native_type_ == nullptr); }
 
-inline Id Thread::get_id() const {
+inline Thread::id Thread::get_id() const {
   if (native_type_ == nullptr) {
-    return Id(nullptr);
+    return Thread::id(nullptr);
   }
-  return Id(&native_type_->tcb());
+  return Thread::id(&native_type_->tcb());
 }
 
 inline void Thread::swap(Thread& other) {

@@ -18,7 +18,6 @@
 
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_thread/id.h"
 #include "pw_thread_zephyr/config.h"
 #include "pw_thread_zephyr/context.h"
 #include "pw_thread_zephyr/options.h"

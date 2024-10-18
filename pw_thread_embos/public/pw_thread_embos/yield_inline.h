@@ -15,13 +15,13 @@
 
 #include "RTOS.h"
 #include "pw_assert/assert.h"
-#include "pw_thread/id.h"
+#include "pw_thread/thread.h"
 
 namespace pw::this_thread {
 
 inline void yield() noexcept {
   // Ensure this is being called by a thread.
-  PW_DASSERT(get_id() != thread::Id());
+  PW_DASSERT(get_id() != Thread::id());
   OS_Yield();
 }
 

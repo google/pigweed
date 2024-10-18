@@ -13,7 +13,7 @@
 # the License.
 
 declare_args() {
-  # Backend for the pw_thread module's pw::thread::Id.
+  # Backend for the pw_thread module's pw::Thread::id.
   pw_thread_ID_BACKEND = ""
 
   # Backend for the pw_thread module's pw::thread::sleep_{for,until}.

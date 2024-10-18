@@ -24,7 +24,7 @@ pw_add_library(pw_thread_zephyr.config INTERFACE
     "${pw_thread_zephyr_CONFIG}"
 )
 
-# This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
+# This target provides the backend for pw::Thread::id & pw::this_thread::get_id.
 pw_add_library(pw_thread_zephyr.id INTERFACE
   HEADERS
     public/pw_thread_zephyr/id_inline.h
@@ -37,7 +37,7 @@ pw_add_library(pw_thread_zephyr.id INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_interrupt.context
-    pw_thread.id.facade
+    pw_thread.thread.facade
 )
 
 pw_add_library(pw_thread_zephyr.sleep STATIC
@@ -75,7 +75,6 @@ pw_add_library(pw_thread_zephyr.thread STATIC
     pw_function
     pw_span
     pw_string
-    pw_thread.id
     pw_thread.thread.facade
     pw_thread_zephyr.config
   SOURCES

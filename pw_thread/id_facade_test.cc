@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_thread/id.h"
+#include "pw_thread/thread.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::this_thread {
@@ -22,7 +22,7 @@ TEST(Id, GetId) {
   // We expect unit tests to run in a thread context.
   // Unfortunately beyond this we need the ability to create and destroy threads
   // to test more Id functionality.
-  EXPECT_NE(get_id(), thread::Id());
+  EXPECT_NE(get_id(), Thread::id());
 }
 
 }  // namespace

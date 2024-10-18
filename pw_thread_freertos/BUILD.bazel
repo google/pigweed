@@ -60,8 +60,8 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_thread:id",
         "//pw_thread:sleep.facade",
+        "//pw_thread:thread",
         "@freertos",
     ],
 )
@@ -166,7 +166,7 @@ cc_library(
         "yield_public_overrides",
     ],
     deps = [
-        "//pw_thread:id",
+        "//pw_thread:thread",
         "//pw_thread:yield.facade",
         "@freertos",
     ],

@@ -103,8 +103,8 @@ C
 ---------------------
 Thread Identification
 ---------------------
-The class ``pw::thread::Id`` is a lightweight, trivially copyable class that
-serves as a unique identifier of Thread objects.
+The class :cpp:type:`pw::Thread::id` is a lightweight, trivially copyable class
+that serves as a unique identifier of Thread objects.
 
 Instances of this class may also hold the special distinct value that does
 not represent any thread. Once a thread has finished, the value of its
@@ -113,20 +113,19 @@ Thread::id may be reused by another thread.
 This class is designed for use as key in associative containers, both ordered
 and unordered.
 
-Although the current API is similar to C++11 STL
-`std::thread::id <https://en.cppreference.com/w/cpp/thread/thread/id>`_, it is
-missing the required hashing and streaming operators and may diverge further in
-the future.
+Although the current API is similar to C++11 STL `std::thread::id
+<https://en.cppreference.com/w/cpp/thread/thread/id>`_, it is missing the
+required hashing and streaming operators and may diverge further in the future.
 
-A thread's identification (``pw::thread::Id``) can be acquired only in C++ in
-one of two ways:
+A thread's identification (:cpp:type:`pw::Thread::id`) can be acquired only in
+C++ in one of two ways:
 
-1) Using the ``pw::thread::Thread`` handle's ``pw::thread::Id get_id() const``
+1) Using the :cpp:type:`pw::Thread` handle's ``pw::Thread::id get_id() const``
    method.
 2) While executing the thread using
-   ``pw::thread::Id pw::this_thread::get_id() noexcept``.
+   ``pw::Thread::id pw::this_thread::get_id() noexcept``.
 
-.. cpp:function:: pw::thread::Id pw::this_thread::get_id() noexcept
+.. cpp:function:: pw::Thread::id pw::this_thread::get_id() noexcept
 
    This is thread safe, not IRQ safe. It is implementation defined whether this
    is safe before the scheduler has started.
@@ -136,12 +135,11 @@ Example
 =======
 .. code-block:: cpp
 
-   #include "pw_thread/id.h"
+   #include "pw_thread/thread.h"
 
    void FunctionInvokedByThread() {
-     const pw::thread::Id my_id = pw::this_thread::get_id();
+     const pw::Thread::id my_id = pw::this_thread::get_id();
    }
-
 
 .. _module-pw_thread-thread-creation:
 

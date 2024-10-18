@@ -48,7 +48,7 @@ pw_source_set("config") {
   ]
 }
 
-# This target provides the backend for pw::thread::Id.
+# This target provides the backend for pw::Thread::id.
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",
@@ -100,8 +100,8 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
       "$dir_pw_assert",
       "$dir_pw_chrono_embos:system_clock",
       "$dir_pw_third_party/embos",
-      "$dir_pw_thread:id",
       "$dir_pw_thread:sleep.facade",
+      "$dir_pw_thread:thread",
     ]
   }
 }
@@ -158,7 +158,7 @@ pw_source_set("yield") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_third_party/embos",
-    "$dir_pw_thread:id",
+    "$dir_pw_thread:thread",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
 }

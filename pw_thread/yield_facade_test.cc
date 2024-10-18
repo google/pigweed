@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_thread/id.h"
+#include "pw_thread/thread.h"
 #include "pw_thread/yield.h"
 #include "pw_unit_test/framework.h"
 
@@ -28,7 +28,7 @@ void pw_this_thread_CallYield();
 
 TEST(Yield, CompilesAndRuns) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
-  ASSERT_NE(get_id(), thread::Id());
+  ASSERT_NE(get_id(), Thread::id());
 
   // Unfortunately we have not thought of a useful way to test yield without
   // knowing the backend implementation as things like round robin scheduling
@@ -39,7 +39,7 @@ TEST(Yield, CompilesAndRuns) {
 
 TEST(Yield, CompilesAndRunsInC) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
-  ASSERT_NE(get_id(), thread::Id());
+  ASSERT_NE(get_id(), Thread::id());
 
   // Unfortunately we have not thought of a useful way to test yield without
   // knowing the backend implementation as things like round robin scheduling

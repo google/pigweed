@@ -20,7 +20,7 @@
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_chrono_embos/system_clock_constants.h"
-#include "pw_thread/id.h"
+#include "pw_thread/thread.h"
 
 using pw::chrono::SystemClock;
 
@@ -28,7 +28,7 @@ namespace pw::this_thread {
 
 void sleep_for(chrono::SystemClock::duration sleep_duration) {
   // Ensure we are invoking this from a thread.
-  PW_DCHECK(get_id() != thread::Id());
+  PW_DCHECK(get_id() != Thread::id());
 
   // Yield for negative and zero length durations.
   if (sleep_duration <= SystemClock::duration::zero()) {

@@ -15,9 +15,11 @@
 
 #include "pw_thread_backend/id_native.h"
 
+// This header is deprecated. Include pw_thread/thread.h instead.
+
 namespace pw::thread {
 
-// Legacy alias. Use pw::Thread::id instead.
+// Legacy alias. Use pw::Thread::id in pw_thread/thread.h instead.
 using Id = backend::NativeId;
 
 }  // namespace pw::thread
@@ -26,7 +28,7 @@ namespace pw::this_thread {
 
 // This is thread safe, not IRQ safe. It is implementation defined whether this
 // is safe before the scheduler has started.
-thread::Id get_id() noexcept;
+thread::backend::NativeId get_id() noexcept;
 
 }  // namespace pw::this_thread
 
