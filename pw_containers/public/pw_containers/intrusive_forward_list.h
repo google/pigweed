@@ -53,33 +53,33 @@ class LegacyIntrusiveList;
 /// This class is modeled on `std::forward_list`, with the following
 /// differences:
 ///
-/// * Since items are not allocated by this class, the following methods have
+/// - Since items are not allocated by this class, the following methods have
 ///   no analogue:
-///     std::forward_list<T>::get_allocator
-///     std::forward_list<T>::emplace_after
-///     std::forward_list<T>::emplace_front
-///     std::forward_list<T>::resize
+///   - std::forward_list<T>::get_allocator
+///   - std::forward_list<T>::emplace_after
+///   - std::forward_list<T>::emplace_front
+///   - std::forward_list<T>::resize
 ///
-/// * Methods corresponding to the following take initializer lists of pointer
+/// - Methods corresponding to the following take initializer lists of pointer
 ///   to items rather than the itenms themselves:
-///     std::forward_list<T>::(constructor)
-///     std::forward_list<T>::assign
-///     std::forward_list<T>::insert_after
+///   - std::forward_list<T>::(constructor)
+///   - std::forward_list<T>::assign
+///   - std::forward_list<T>::insert_after
 ///
-/// * There are no overloads corresponding to the following methods that take
+/// - There are no overloads corresponding to the following methods that take
 ///   r-value references.:
-///     std::forward_list<T>::insert_after
-///     std::forward_list<T>::push_front
-///     std::forward_list<T>::splice_after
+///   - std::forward_list<T>::insert_after
+///   - std::forward_list<T>::push_front
+///   - std::forward_list<T>::splice_after
 ///
-/// * Since modifying the list modifies the items themselves, methods
+/// - Since modifying the list modifies the items themselves, methods
 ///   corresponding to those below only take `iterator`s and not
 ///   `const_iterator`s:
-///     std::forward_list<T>::insert_after
-///     std::forward_list<T>::erase_after
-///     std::forward_list<T>::splice_after
+///   - std::forward_list<T>::insert_after
+///   - std::forward_list<T>::erase_after
+///   - std::forward_list<T>::splice_after
 ///
-/// * C++23 methods are not (yet) supported.
+/// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   T           Type of intrusive items stored in the list.
 template <typename T>

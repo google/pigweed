@@ -76,37 +76,37 @@ class IntrusiveMapItemWithKey : public containers::internal::IntrusiveMapItem<
 /// This map requires unique keys. Attempting to add an item with same key as an
 /// item already in the map will fail.
 ///
-/// * Since items are not allocated by this class, the following methods have
+/// - Since items are not allocated by this class, the following methods have
 ///   no analogue:
-///     std::map<T>::operator=
-///     std::map<T>::operator[]
-///     std::map<T>::get_allocator
-///     std::map<T>::insert_or_assign
-///     std::map<T>::emplace
-///     std::map<T>::emplace_hint
-///     std::map<T>::try_emplace
+///   - std::map<T>::operator=
+///   - std::map<T>::operator[]
+///   - std::map<T>::get_allocator
+///   - std::map<T>::insert_or_assign
+///   - std::map<T>::emplace
+///   - std::map<T>::emplace_hint
+///   - std::map<T>::try_emplace
 ///
-/// * Methods corresponding to the following take initializer lists of pointer
-///   to items rather than the itenms themselves:
-///     std::map<T>::(constructor)
-///     std::map<T>::insert
+/// - Methods corresponding to the following take initializer lists of pointer
+///   to items rather than the items themselves:
+///   - std::map<T>::(constructor)
+///   - std::map<T>::insert
 ///
-/// * There are no overloads corresponding to the following methods that take
+/// - There are no overloads corresponding to the following methods that take
 ///   r-value references.:
-///     std::map<T>::insert
-///     std::map<T>::merge
+///   - std::map<T>::insert
+///   - std::map<T>::merge
 ///
-/// * Since modifying the map modifies the items themselves, methods
+/// - Since modifying the map modifies the items themselves, methods
 ///   corresponding to those below only take `iterator`s and not
 ///   `const_iterator`s:
-///     std::map<T>::insert
-///     std::map<T>::erase
+///   - std::map<T>::insert
+///   - std::map<T>::erase
 ///
-/// * C++23 methods are not (yet) supported.
+/// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   Key         Type to sort items on
 /// @tparam   T           Type of values stored in the map.
-/// @tparam   Compare     Function with the signature `bool(Key, Key) that is
+/// @tparam   Compare     Function with the signature `bool(Key, Key)` that is
 ///                       used to order items.
 /// @tparam   GetKey      Function with signature `Key(const T&)` that
 ///                       returns the value that items are sorted on.

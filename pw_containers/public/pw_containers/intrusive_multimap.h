@@ -27,37 +27,37 @@ namespace pw {
 /// This map requires unique keys. Attempting to add an item with same key as an
 /// item already in the map will fail.
 ///
-/// * Since items are not allocated by this class, the following methods have
+/// - Since items are not allocated by this class, the following methods have
 ///   no analogue:
-///     std::multimap<T>::operator=
-///     std::multimap<T>::get_allocator
-///     std::multimap<T>::emplace
-///     std::multimap<T>::emplace_hint
+///   - std::multimap<T>::operator=
+///   - std::multimap<T>::get_allocator
+///   - std::multimap<T>::emplace
+///   - std::multimap<T>::emplace_hint
 ///
-/// * Methods corresponding to the following take initializer lists of pointer
-///   to items rather than the itenms themselves:
-///     std::multimap<T>::(constructor)
-///     std::multimap<T>::insert
+/// - Methods corresponding to the following take initializer lists of pointer
+///   to items rather than the items themselves:
+///   - std::multimap<T>::(constructor)
+///   - std::multimap<T>::insert
 ///
-/// * There are no overloads corresponding to the following methods that take
+/// - There are no overloads corresponding to the following methods that take
 ///   r-value references.:
-///     std::multimap<T>::insert
-///     std::multimap<T>::merge
+///   - std::multimap<T>::insert
+///   - std::multimap<T>::merge
 ///
-/// * Since modifying the map modifies the items themselves, methods
+/// - Since modifying the map modifies the items themselves, methods
 ///   corresponding to those below only take `iterator`s and not
 ///   `const_iterator`s:
-///     std::multimap<T>::insert
-///     std::multimap<T>::erase
+///   - std::multimap<T>::insert
+///   - std::multimap<T>::erase
 ///
-/// * C++23 methods are not (yet) supported.
+/// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   Key         Type to sort items on
 /// @tparam   T           Type of values stored in the map.
+/// @tparam   Compare     Function with the signature `bool(Key, Key)` that is
+///                       used to order items.
 /// @tparam   GetKey      Function with signature `Key(const T&)` that
 ///                       returns the value that items are sorted on.
-/// @tparam   Compare     Function with the signature `bool(Key, Key) that is
-///                       used to order items.
 template <typename Key,
           typename T,
           typename Compare = std::less<Key>,

@@ -44,35 +44,35 @@ namespace containers::future {
 ///
 /// This class is modeled on `std::list`, with the following differences:
 ///
-/// * Since items are not allocated by this class, the following methods have
+/// - Since items are not allocated by this class, the following methods have
 ///   no analogue:
-///     std::list<T>::get_allocator
-///     std::list<T>::emplace
-///     std::list<T>::emplace_front
-///     std::list<T>::emplace_back
-///     std::list<T>::resize
+///   - std::list<T>::get_allocator
+///   - std::list<T>::emplace
+///   - std::list<T>::emplace_front
+///   - std::list<T>::emplace_back
+///   - std::list<T>::resize
 ///
-/// * Methods corresponding to the following take initializer lists of pointer
-///   to items rather than the itenms themselves:
-///     std::list<T>::(constructor)
-///     std::list<T>::assign
-///     std::list<T>::insert
+/// - Methods corresponding to the following take initializer lists of pointer
+///   to items rather than the items themselves:
+///   - std::list<T>::(constructor)
+///   - std::list<T>::assign
+///   - std::list<T>::insert
 ///
-/// * There are no overloads corresponding to the following methods that take
+/// - There are no overloads corresponding to the following methods that take
 ///   r-value references.:
-///     std::list<T>::insert
-///     std::list<T>::push_back
-///     std::list<T>::push_front
-///     std::list<T>::splice
+///   - std::list<T>::insert
+///   - std::list<T>::push_back
+///   - std::list<T>::push_front
+///   - std::list<T>::splice
 ///
-/// * Since modifying the list modifies the items themselves, methods
+/// - Since modifying the list modifies the items themselves, methods
 ///   corresponding to those below only take `iterator`s and not
 ///   `const_iterator`s:
-///     std::list<T>::insert
-///     std::list<T>::erase
-///     std::list<T>::splice
+///   - std::list<T>::insert
+///   - std::list<T>::erase
+///   - std::list<T>::splice
 ///
-/// * C++23 methods are not (yet) supported.
+/// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   T           Type of intrusive items stored in the list.
 template <typename T>
