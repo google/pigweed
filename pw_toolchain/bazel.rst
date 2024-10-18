@@ -30,6 +30,8 @@ upstream toolchains by calling ``register_pigweed_cxx_toolchains()``:
    would prefer more stability in toolchain configurations, consider declaring
    custom toolchains in your project.
 
+.. _module-pw_toolchain-bazel-compiler-specific-logic:
+
 -----------------------------
 Compiler-specific build logic
 -----------------------------
