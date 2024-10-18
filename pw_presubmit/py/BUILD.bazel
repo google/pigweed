@@ -1,0 +1,228 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+py_library(
+    name = "pw_presubmit",
+    srcs = [
+        "pw_presubmit/__init__.py",
+        "pw_presubmit/bazel_parser.py",
+        "pw_presubmit/build.py",
+        "pw_presubmit/cli.py",
+        "pw_presubmit/cpp_checks.py",
+        "pw_presubmit/format/__init__.py",
+        "pw_presubmit/format/bazel.py",
+        "pw_presubmit/format/core.py",
+        "pw_presubmit/format/cpp.py",
+        "pw_presubmit/format/gn.py",
+        "pw_presubmit/format/python.py",
+        "pw_presubmit/format/test_data/__init__.py",
+        "pw_presubmit/format_code.py",
+        "pw_presubmit/git_repo.py",
+        "pw_presubmit/gitmodules.py",
+        "pw_presubmit/inclusive_language.py",
+        "pw_presubmit/install_hook.py",
+        "pw_presubmit/javascript_checks.py",
+        "pw_presubmit/json_check.py",
+        "pw_presubmit/keep_sorted.py",
+        "pw_presubmit/module_owners.py",
+        "pw_presubmit/ninja_parser.py",
+        "pw_presubmit/npm_presubmit.py",
+        "pw_presubmit/owners_checks.py",
+        "pw_presubmit/pigweed_presubmit.py",
+        "pw_presubmit/presubmit.py",
+        "pw_presubmit/presubmit_context.py",
+        "pw_presubmit/python_checks.py",
+        "pw_presubmit/repo.py",
+        "pw_presubmit/rst_format.py",
+        "pw_presubmit/shell_checks.py",
+        "pw_presubmit/source_in_build.py",
+        "pw_presubmit/todo_check.py",
+        "pw_presubmit/tools.py",
+    ],
+    data = [
+        "pw_presubmit/format/test_data/bazel_test_data.bazel",
+        "pw_presubmit/format/test_data/bazel_test_data_golden.bazel",
+        "pw_presubmit/format/test_data/clang_format_config",
+        "pw_presubmit/format/test_data/cpp_test_data.cc",
+        "pw_presubmit/format/test_data/cpp_test_data_golden.cc",
+        "pw_presubmit/format/test_data/gn_test_data.gn",
+        "pw_presubmit/format/test_data/gn_test_data_golden.gn",
+        "pw_presubmit/format/test_data/malformed_file.txt",
+        "pw_presubmit/format/test_data/python_test_data.py",
+        "pw_presubmit/format/test_data/python_test_data_golden.py",
+    ],
+    imports = ["."],
+    deps = [
+        "//pw_cli/py:pw_cli",
+        "//pw_env_setup/py:pw_env_setup",
+        "//pw_package/py:pw_package",
+    ],
+)
+
+pw_py_test(
+    name = "bazel_parser_test",
+    srcs = ["bazel_parser_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+py_library(
+    name = "format_testing_utils",
+    srcs = ["format_testing_utils.py"],
+)
+
+pw_py_test(
+    name = "bazel_format_test",
+    srcs = ["bazel_format_test.py"],
+    # TODO(b/314139942): Requires buildifier on the path.
+    tags = ["manual"],
+    deps = [
+        ":format_testing_utils",
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "context_test",
+    srcs = ["context_test.py"],
+    # TODO(b/374120469): Make PW_PROJECT_ROOT optional for pw presubmit
+    tags = ["manual"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "cpp_checks_test",
+    srcs = ["cpp_checks_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "cpp_format_test",
+    srcs = ["cpp_format_test.py"],
+    # TODO(b/314139942): Requires clang-format on the path.
+    tags = ["manual"],
+    deps = [
+        ":format_testing_utils",
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "format_core_test",
+    srcs = ["format_core_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "gitmodules_test",
+    srcs = ["gitmodules_test.py"],
+    # TODO(b/314139942): Requires git on the path.
+    tags = ["manual"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "gn_format_test",
+    srcs = ["gn_format_test.py"],
+    # TODO(b/314139942): Requires GN on the path.
+    tags = ["manual"],
+    deps = [
+        ":format_testing_utils",
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "inclusive_language_test",
+    srcs = ["inclusive_language_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "keep_sorted_test",
+    srcs = ["keep_sorted_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "ninja_parser_test",
+    srcs = ["ninja_parser_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "presubmit_test",
+    srcs = ["presubmit_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "python_format_test",
+    srcs = ["python_format_test.py"],
+    # TODO(b/314139942): Requires black on the path.
+    tags = ["manual"],
+    deps = [
+        ":format_testing_utils",
+        ":pw_presubmit",
+        "@python_packages//black",
+    ],
+)
+
+pw_py_test(
+    name = "owners_checks_test",
+    srcs = ["owners_checks_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "todo_check_test",
+    srcs = ["todo_check_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)
+
+pw_py_test(
+    name = "tools_test",
+    srcs = ["tools_test.py"],
+    deps = [
+        ":pw_presubmit",
+    ],
+)

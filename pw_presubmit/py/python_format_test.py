@@ -32,6 +32,8 @@ _BLACK_CONFIG_PATH = _TEST_DATA_FILES / 'black_config.toml'
 class TestBlackFormatter(unittest.TestCase):
     """Tests for the BlackFormatter."""
 
+    maxDiff = None
+
     def test_check_file(self):
         tool_runner = CapturingToolRunner()
         formatter = BlackFormatter(_BLACK_CONFIG_PATH)

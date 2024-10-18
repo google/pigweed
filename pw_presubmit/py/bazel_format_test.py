@@ -75,7 +75,11 @@ class TestBuildifierFormatter(unittest.TestCase):
             _TEST_MALFORMED, _TEST_MALFORMED.read_bytes()
         )
         self.assertFalse(result.ok)
-        self.assertEqual(result.formatted_file_contents, b'')
+        # stdout may differ depending on the version of buildifier used.
+        self.assertNotIn(
+            'This is just a text file with random contents!',
+            result.formatted_file_contents.decode(),
+        )
         self.assertIn('syntax error', result.error_message)
 
         self.assertEqual(
