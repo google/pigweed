@@ -422,6 +422,12 @@ pw_source_set("must_place") {
   public = [ "public/pw_build/must_place.ld.h" ]
 }
 
+pw_source_set("linker_symbol") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_build/linker_symbol.h" ]
+  public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
+}
+
 pw_doc_group("docs") {
   sources = [
     "bazel.rst",
@@ -447,6 +453,17 @@ if (current_toolchain != default_toolchain) {
   pw_test("cc_blob_library_test") {
     sources = [ "cc_blob_library_test.cc" ]
     deps = [ ":test_blob" ]
+  }
+
+  pw_test("linker_symbol_test") {
+    sources = [ "linker_symbol_test.cc" ]
+    enable_if = current_os == "linux"
+    deps = [ ":linker_symbol" ]
+    inputs = [ "linker_symbol_test.ld" ]
+    ldflags = [
+      "-T",
+      rebase_path("linker_symbol_test.ld", root_build_dir),
+    ]
   }
 
   pw_test("module_config_test") {
@@ -521,6 +538,7 @@ if (current_toolchain != default_toolchain) {
     tests = [
       ":cc_blob_library_test",
       ":file_prefix_map_test",
+      ":linker_symbol_test",
     ]
   }
 }

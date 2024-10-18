@@ -148,6 +148,30 @@ cc_library(
     includes = ["public"],
 )
 
+cc_library(
+    name = "linker_symbol",
+    hdrs = ["public/pw_build/linker_symbol.h"],
+    includes = ["public"],
+    deps = [
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "linker_symbol_test",
+    srcs = ["linker_symbol_test.cc"],
+    linkopts = [
+        "-T$(location linker_symbol_test.ld)",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    deps = [
+        ":linker_symbol",
+        ":linker_symbol_test.ld",
+    ],
+)
+
 pw_string_list_comparison_test(
     name = "simple_glob",
     actual = glob_dirs(
