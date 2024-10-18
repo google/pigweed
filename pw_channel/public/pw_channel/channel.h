@@ -436,7 +436,6 @@ class AnyChannel {
 
   // Read functions
 
-  // The max_bytes argument is ignored for datagram-oriented channels.
   virtual async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) = 0;
 

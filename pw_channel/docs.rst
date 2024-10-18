@@ -8,6 +8,71 @@ pw_channel
 
 .. cpp:namespace:: pw::channel
 
+-------------
+Why channels?
+-------------
+``pw_channel`` provides features that are essential for efficient,
+high-performance communications.
+
+Flow control
+============
+Flow control is managing the flow of data between two nodes. If one node sends
+more data than the other node can receive, network performance degrades. The
+effects vary, but could include data loss, throughput drops, or even crashes in
+one or both nodes.
+
+In networking, backpressure is when a node, overwhelmed by inbound traffic,
+exterts pressure on upstream nodes. Flow control schemes must account for
+backpressure. Communications APIs have to provide ways to release the pressure,
+allowing higher layers to can reduce data rates or drop stale or unnecessary
+packets. Without this, network communications may break down.
+
+Expressing backpressure in an API might seem simple. You could just return a
+status code that indicates that the link isn't ready, and retry when it is.
+
+..  code-block:: cpp
+
+   // Returns `UNAVAILABLE` if the link isn't ready for data yet; retry later.
+   Status Write(std::span<const std::byte> packet);
+
+In practice, this is very difficult to work with:
+
+..  code-block:: cpp
+
+    std::span packet = ExpensiveOperationToPreprarePacket();
+    if (Write(packet).IsUnavailable()) {
+      // ... then what?
+    }
+
+Now what do you do? You did work to prepare the packet, but you can't send it.
+Do you store the packet somewhere and retry? Or, wait a bit and recreate the
+packet, then try to send again? How long do you wait before sending?
+
+The result is inefficient code that is difficult to write correctly.
+
+There are other options: you can add an ``IsReadyToWrite()`` function, and only
+call ``Write`` when that is true. But what if ``IsReadyToWrite()`` becomes false
+while you're preparing the packet? Then, you're back in the same situation.
+Another approach: block until the link is ready for a write. But this means an
+entire thread and its resources are locked up for an arbitrary amount of time.
+
+``pw_channel`` solves for backpressure. The implementation can exert
+backpressure in each of these places:
+
+- :cpp:func:`GetWriteAllocator <pw::channel::AnyChannel::GetWriteAllocator>` --
+  If used, the channel's allocator only provides memory when the channel is
+  ready.
+- :cpp:func:`PendReadyToWrite <pw::channel::AnyChannel::PendReadyToWrite>` --
+  The channel wakes the task when it is ready to accept outbound data. The task
+  then calls :cpp:func:`Write <pw::channel::AnyChannel::Write>`, which is
+  guaranteed to succeed.  :cpp:func:`Write <pw::channel::AnyChannel::Write>`
+  takes ownership of the memory.
+- :cpp:func:`PendFlush <pw::channel::AnyChannel::PendFlush>` commits the write.
+  Wakes the task only when there are more writes to commit.
+
+The task sending data can do other work while the channel is busy, and it
+doesn't have to prepare the packet until the channel is ready to receive it.
+
 ------------------
 Channel attributes
 ------------------
