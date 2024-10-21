@@ -18,7 +18,6 @@ import asyncio
 import functools
 import logging
 import os
-import re
 import time
 from typing import Callable, Iterable, NoReturn
 
@@ -299,13 +298,6 @@ class WatchApp(PluginMixin):
     """Pigweed Watch main window application."""
 
     # pylint: disable=too-many-instance-attributes
-
-    NINJA_FAILURE_TEXT = '\033[31mFAILED: '
-
-    NINJA_BUILD_STEP = re.compile(
-        r"^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$"
-    )
-
     def __init__(
         self,
         event_handler,
@@ -626,7 +618,7 @@ class WatchApp(PluginMixin):
     def jump_to_error(self, backwards: bool = False) -> None:
         if not self.root_log_pane.log_view.search_text:
             self.root_log_pane.log_view.set_search_regex(
-                '^FAILED: ', False, None
+                '^FAILE?D?: ', False, None
             )
         if backwards:
             self.root_log_pane.log_view.search_backwards()

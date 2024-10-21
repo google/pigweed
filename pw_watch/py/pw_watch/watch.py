@@ -34,11 +34,10 @@ Examples:
   # Build python.tests in out/ and pw_apps in out/cmake/
   pw watch python.tests -C out/cmake pw_apps
 
-  # Run 'bazel build' and 'bazel test' on the target '//...' in outbazel/
-  pw watch --run-command 'mkdir -p outbazel'
-  -C outbazel '//...'
-  --build-system-command outbazel 'bazel build'
-  --build-system-command outbazel 'bazel test'
+  # Run 'bazel build' and 'bazel test' on the target '//...' in out/bazel/
+  pw watch -C out/bazel '//...'
+  --build-system-command out/bazel 'bazel build'
+  --build-system-command out/bazel 'bazel test'
 """
 
 import argparse
@@ -543,21 +542,6 @@ def _exit_due_to_inotify_instance_limit():
     _exit(1)
 
 
-def _exit_due_to_pigweed_not_installed():
-    # Show information and suggested commands when pigweed environment variable
-    # not found.
-    _LOG.error('Environment variable $PW_ROOT not defined.')
-    _LOG.error(
-        'Did you forget to activate the Pigweed environment? '
-        'Try source ./activate.sh'
-    )
-    _LOG.error(
-        'Did you forget to install the Pigweed environment? '
-        'Try source ./bootstrap.sh'
-    )
-    _exit(1)
-
-
 # Go over each directory inside of the current directory.
 # If it is not on the path of elements in directories_to_exclude, add
 # (directory, True) to subdirectories_to_watch and later recursively call
@@ -609,7 +593,9 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
                 yield item, True
 
 
-def get_common_excludes() -> list[Path]:
+def get_common_excludes(
+    source_path: Path | None = None,
+) -> list[Path]:
     """Find commonly excluded directories, and return them as a [Path]"""
     exclude_list: list[Path] = []
 
@@ -623,28 +609,23 @@ def get_common_excludes() -> list[Path]:
         'out',  # Typical build directory.
     ]
 
-    # Preset exclude list for Pigweed's upstream directories.
-    pw_root_dir = Path(os.environ['PW_ROOT'])
+    pw_project_root_dir = pw_cli.env.project_root()
+
+    if source_path:
+        pw_project_root_dir = source_path
+
+    # Preset exclude for common project structures.
     exclude_list.extend(
-        pw_root_dir / ignored_directory
+        pw_project_root_dir / ignored_directory
         for ignored_directory in typical_ignored_directories
     )
 
     # Ignore bazel-* directories
     exclude_list.extend(
-        d for d in pw_root_dir.glob('bazel-*') if d.is_dir() and d.is_symlink()
+        d
+        for d in pw_project_root_dir.glob('bazel-*')
+        if d.is_dir() and d.is_symlink()
     )
-
-    # Preset exclude for common downstream project structures.
-    #
-    # If watch is invoked outside of the Pigweed root, exclude common
-    # directories.
-    pw_project_root_dir = Path(os.environ['PW_PROJECT_ROOT'])
-    if pw_project_root_dir != pw_root_dir:
-        exclude_list.extend(
-            pw_project_root_dir / ignored_directory
-            for ignored_directory in typical_ignored_directories
-        )
 
     # Check for and warn about legacy directories.
     legacy_directories = [
@@ -653,7 +634,7 @@ def get_common_excludes() -> list[Path]:
     ]
     found_legacy = False
     for legacy_directory in legacy_directories:
-        full_legacy_directory = pw_root_dir / legacy_directory
+        full_legacy_directory = pw_project_root_dir / legacy_directory
         if full_legacy_directory.is_dir():
             _LOG.warning(
                 'Legacy environment directory found: %s',
@@ -752,6 +733,8 @@ def watch_setup(  # pylint: disable=too-many-locals
     keep_going: bool = False,
     colors: bool = True,
     debug_logging: bool = False,
+    source_path: Path | None = None,
+    default_build_system: str | None = None,
     # pylint: enable=unused-argument
     # pylint: disable=too-many-arguments
 ) -> tuple[PigweedBuildWatcher, list[Path]]:
@@ -771,16 +754,12 @@ def watch_setup(  # pylint: disable=too-many-locals
 
     _LOG.info('Starting Pigweed build watcher')
 
-    # Get pigweed directory information from environment variable PW_ROOT.
-    if os.environ['PW_ROOT'] is None:
-        _exit_due_to_pigweed_not_installed()
-
     build_recipes = project_builder.build_recipes
 
     # Preset exclude list for pigweed directory.
     if not exclude_list:
         exclude_list = []
-    exclude_list += get_common_excludes()
+    exclude_list += get_common_excludes(source_path=source_path)
 
     # Add build directories to the exclude list if they are not already ignored.
     for build_dir in list(
@@ -853,12 +832,18 @@ def watch_setup(  # pylint: disable=too-many-locals
 def watch(
     event_handler: PigweedBuildWatcher,
     exclude_list: list[Path],
+    watch_file_path: Path = Path.cwd(),
 ):
     """Watches files and runs Ninja commands when they change."""
+    if event_handler.project_builder.source_path:
+        watch_file_path = event_handler.project_builder.source_path
+
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
     # who have deeply nested home directories.
-    path_to_log = str(Path().resolve()).replace(str(Path.home()), '$HOME')
+    path_to_log = str(watch_file_path.resolve()).replace(
+        str(Path.home()), '$HOME'
+    )
 
     try:
         # It can take awhile to configure the filesystem watcher, so have the
@@ -871,7 +856,9 @@ def watch(
         # directory should be observed recursively or not is determined by the
         # second element in subdirectories_to_watch.
         observers = []
-        for path, rec in minimal_watch_directories(Path.cwd(), exclude_list):
+        for path, rec in minimal_watch_directories(
+            watch_file_path, exclude_list
+        ):
             observer = Observer()
             observer.schedule(
                 event_handler,
@@ -990,6 +977,7 @@ def main() -> int:
         root_logger=_LOG,
         log_level=logging.DEBUG if args.debug_logging else logging.INFO,
         abort_callback=_recipe_abort,
+        source_path=args.source_path,
     )
 
     event_handler, exclude_list = watch_setup(project_builder, **vars(args))

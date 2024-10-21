@@ -24,7 +24,7 @@ from unittest.mock import MagicMock
 from pw_build.project_builder_argparse import add_project_builder_arguments
 from pw_build.project_builder_prefs import (
     ProjectBuilderPrefs,
-    _DEFAULT_CONFIG,
+    default_config,
     load_defaults_from_argparse,
 )
 
@@ -54,7 +54,8 @@ class TestProjectBuilderPrefs(unittest.TestCase):
         )
         # Construct an expected result config.
         expected_config: dict[Any, Any] = {}
-        expected_config.update(_DEFAULT_CONFIG)
+        # Apply default build_system_commands and build_directories.
+        expected_config.update(default_config())
         expected_config.update(
             load_defaults_from_argparse(add_project_builder_arguments)
         )
@@ -79,7 +80,7 @@ class TestProjectBuilderPrefs(unittest.TestCase):
         )
 
         # Construct an expected result config.
-        expected_config: dict[Any, Any] = copy.copy(_DEFAULT_CONFIG)
+        expected_config: dict[Any, Any] = copy.copy(default_config())
         expected_config.update(defaults_from_argparse)
 
         # pylint: disable=protected-access

@@ -24,6 +24,7 @@ def add_project_builder_arguments(
     build_dir_group = parser.add_argument_group(
         title='Build Directory and Command Options'
     )
+
     build_dir_group.add_argument(
         '-C',
         '--build-directory',
@@ -73,6 +74,25 @@ def add_project_builder_arguments(
             "--run-command 'bazel build //pw_cli/...' "
             "--run-command 'bazel test //pw_cli/...' "
             "-C out python.lint python.test"
+        ),
+    )
+    build_dir_group.add_argument(
+        '-S',
+        '--source-path',
+        type=Path,
+        help=(
+            'Path to the root of the source files. Defaults to the'
+            'current working directory. If running under bazel this'
+            'will be set to the $BUILD_WORKSPACE_DIRECTORY'
+            'environment variable.'
+        ),
+    )
+    build_dir_group.add_argument(
+        '--default-build-system',
+        choices=['ninja', 'bazel'],
+        help=(
+            'Build system to use when no build directories or build targets '
+            'are specified on the command line.'
         ),
     )
 

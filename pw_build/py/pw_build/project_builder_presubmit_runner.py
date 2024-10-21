@@ -20,7 +20,7 @@ import fnmatch
 import logging
 from pathlib import Path
 
-
+import pw_cli.env
 import pw_cli.log
 from pw_cli.arguments import (
     print_completions_for_option,
@@ -495,7 +495,7 @@ def _get_prefs(
         prefs.apply_command_line_args(args)
     else:
         prefs = ProjectBuilderPrefs(
-            load_argparse_arguments=add_project_builder_arguments
+            load_argparse_arguments=add_project_builder_arguments,
         )
         prefs.apply_command_line_args(args)
     return prefs
@@ -693,7 +693,7 @@ def main(
         command_line_dash_c_recipes = create_build_recipes(prefs)
 
     if repo_root is None:
-        repo_root = pw_env.PW_PROJECT_ROOT
+        repo_root = pw_cli.env.project_root()
     if presubmit_out_dir is None:
         presubmit_out_dir = repo_root / 'out/presubmit'
     if package_root is None:
@@ -800,6 +800,7 @@ def main(
         log_level=log_level,
         allow_progress_bars=args.progress_bars,
         log_build_steps=args.log_build_steps,
+        source_path=args.source_path,
     )
 
     if project_builder.should_use_progress_bars():

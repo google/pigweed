@@ -14,8 +14,11 @@
 """The env module defines the environment variables used by Pigweed."""
 
 from pathlib import Path
+import os
+import sys
 
 from pw_cli import envparse
+from pw_cli.allowed_caller import AllowedCaller, check_caller_in
 
 
 def pigweed_environment_parser() -> envparse.EnvironmentParser:
@@ -97,3 +100,82 @@ def pigweed_environment() -> envparse.EnvNamespace:
         _memoized_environment = pigweed_environment_parser().parse_env()
 
     return _memoized_environment
+
+
+_BAZEL_PROJECT_ROOT_ALLOW_LIST = [
+    AllowedCaller(
+        filename='pw_build/py/pw_build/pigweed_upstream_build.py',
+        name='__main__',
+        function='<module>',
+    ),
+    AllowedCaller(
+        filename='pw_build/py/pw_build/project_builder.py',
+        name='*',
+        function='__init__',
+        self_class='ProjectBuilder',
+    ),
+    AllowedCaller(
+        filename='pw_build/py/pw_build/project_builder_presubmit_runner.py',
+        name='pw_build.project_builder_presubmit_runner',
+        function='main',
+    ),
+    AllowedCaller(
+        filename='pw_watch/py/pw_watch/watch.py',
+        name='__main__',
+        function='get_common_excludes',
+    ),
+]
+
+
+_PROJECT_ROOT_ERROR_MESSAGE = '''
+Error: Unable to determine the project root directory. Expected environment
+variables are not set. Either $BUILD_WORKSPACE_DIRECTORY for bazel or
+$PW_PROJECT_ROOT for Pigweed bootstrap are required.
+
+Please re-run with either of these scenarios:
+
+  1. Under bazel with "bazelisk run ..." or "bazel run ..."
+  2. After activating a Pigweed bootstrap environment with ". ./activate.sh"
+'''
+
+
+def project_root(env: envparse.EnvNamespace | None = None) -> Path:
+    """Returns the project root by checking bootstrap and bazel env vars.
+
+    Please do not use this function unless the Python script must escape the
+    bazel sandbox. For example, an interactive tool that operates on the project
+    source code like code formatting.
+    """
+
+    if running_under_bazel():
+        bazel_source_dir = os.environ.get('BUILD_WORKSPACE_DIRECTORY', '')
+
+        # Ensure this function is only callable by functions in the allow list.
+        check_caller_in(_BAZEL_PROJECT_ROOT_ALLOW_LIST)
+
+        root = Path(bazel_source_dir)
+    else:
+        # Running outside bazel (via GN or bootstrap env).
+        if env is None:
+            env = pigweed_environment()
+        root = env.PW_PROJECT_ROOT
+
+    if not root:
+        print(_PROJECT_ROOT_ERROR_MESSAGE, file=sys.stderr)
+        sys.exit(1)
+
+    return root
+
+
+def running_under_bazel() -> bool:
+    """Returns True if any bazel script environment variables are set.
+
+    For more info on which variables are set when running executables in bazel
+    see: https://bazel.build/docs/user-manual#running-executables
+    """
+    # The root of the workspace where the build was run.
+    bazel_source_dir = os.environ.get('BUILD_WORKSPACE_DIRECTORY', '')
+    # The current working directory where Bazel was run from.
+    bazel_working_dir = os.environ.get('BUILD_WORKING_DIRECTORY', '')
+
+    return bool(bazel_source_dir or bazel_working_dir)

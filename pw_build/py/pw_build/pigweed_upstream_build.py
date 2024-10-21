@@ -47,8 +47,10 @@ from pw_build.project_builder_presubmit_runner import (
 _LOG = logging.getLogger('pw_build')
 
 _PW_ENV = pw_cli.env.pigweed_environment()
-_REPO_ROOT = _PW_ENV.PW_PROJECT_ROOT
+_REPO_ROOT = pw_cli.env.project_root()
 _PACKAGE_ROOT = _PW_ENV.PW_PACKAGE_ROOT
+if not _PACKAGE_ROOT:
+    _PACKAGE_ROOT = _REPO_ROOT / 'environment/packages'
 
 
 def gn_recipe() -> BuildRecipe:

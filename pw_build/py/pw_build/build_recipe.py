@@ -115,10 +115,10 @@ class BuildCommand:
         assert self.build_dir
 
         # Both make and ninja use -C for a build directory.
-        if self.make_command() or self.ninja_command():
+        if self.is_make_command() or self.is_ninja_command():
             return ['-C', str(self.build_dir), *self.targets]
 
-        if self.bazel_command():
+        if self.is_bazel_command():
             # Bazel doesn't use -C for the out directory. Instead we use
             # --symlink_prefix to save some outputs to the desired
             # location. This is the same pattern used by pw_presubmit.
@@ -152,32 +152,38 @@ class BuildCommand:
                 resolved_args.append(arg)
         return resolved_args
 
-    def make_command(self) -> bool:
+    def is_make_command(self) -> bool:
         return (
             self.build_system_command is not None
             and self.build_system_command.endswith('make')
         )
 
-    def ninja_command(self) -> bool:
+    def is_ninja_command(self) -> bool:
         return (
             self.build_system_command is not None
             and self.build_system_command.endswith('ninja')
         )
 
-    def bazel_command(self) -> bool:
-        return (
-            self.build_system_command is not None
-            and self.build_system_command.endswith('bazel')
+    def is_bazel_command(self) -> bool:
+        return self.build_system_command is not None and (
+            self.build_system_command.endswith('bazel')
+            or self.build_system_command.endswith('bazelisk')
         )
 
     def bazel_build_command(self) -> bool:
-        return self.bazel_command() and 'build' in self.build_system_extra_args
+        return (
+            self.is_bazel_command() and 'build' in self.build_system_extra_args
+        )
 
     def bazel_test_command(self) -> bool:
-        return self.bazel_command() and 'test' in self.build_system_extra_args
+        return (
+            self.is_bazel_command() and 'test' in self.build_system_extra_args
+        )
 
     def bazel_clean_command(self) -> bool:
-        return self.bazel_command() and 'clean' in self.build_system_extra_args
+        return (
+            self.is_bazel_command() and 'clean' in self.build_system_extra_args
+        )
 
     def get_args(
         self,
@@ -193,13 +199,13 @@ class BuildCommand:
         # Assmemble user-defined extra args.
         extra_args = []
         extra_args.extend(self.build_system_extra_args)
-        if additional_ninja_args and self.ninja_command():
+        if additional_ninja_args and self.is_ninja_command():
             extra_args.extend(additional_ninja_args)
 
         if additional_bazel_build_args and self.bazel_build_command():
             extra_args.extend(additional_bazel_build_args)
 
-        if additional_bazel_args and self.bazel_command():
+        if additional_bazel_args and self.is_bazel_command():
             extra_args.extend(additional_bazel_args)
 
         build_system_target_args = self._get_build_system_args()
