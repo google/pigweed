@@ -82,6 +82,7 @@ def _upstream_remote(cwd: Path | str | None = None) -> str | None:
                     check=True,
                     cwd=cwd,
                     stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                 )
                 .stdout.decode()
                 .strip()
@@ -101,6 +102,7 @@ def _upstream_remote(cwd: Path | str | None = None) -> str | None:
                 check=True,
                 cwd=cwd,
                 stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
             )
             .stdout.decode()
             .strip()
@@ -125,6 +127,7 @@ def _fallback_remote(cwd: Path | str | None = None) -> str | None:
             check=True,
             cwd=cwd,
             stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError:
         return None
@@ -180,6 +183,7 @@ def _pigweed_commit(cwd: Path | str | None = None) -> GerritCommit | None:
         ['git', 'log'],
         cwd=pw_root,
         stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
         text=True,
     )
 
