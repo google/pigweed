@@ -58,7 +58,7 @@ class BrEdrConnectionRequest final {
 
   BrEdrConnectionRequest(PeerId id,
                          DeviceAddress addr,
-                         fit::closure timeout_cb,
+                         fit::closure timeout_callback,
                          pw::async::Dispatcher& dispatcher)
       : state_(RequestState::kPending),
         peer_id_(id),
@@ -66,8 +66,8 @@ class BrEdrConnectionRequest final {
         timeout_task_(dispatcher),
         weak_self_(this) {
     timeout_task_.set_function(
-        [timeout_cb = std::move(timeout_cb)](pw::async::Context /*ctx*/,
-                                             pw::Status status) {
+        [timeout_cb = std::move(timeout_callback)](pw::async::Context /*ctx*/,
+                                                   pw::Status status) {
           if (status.ok()) {
             timeout_cb();
           }

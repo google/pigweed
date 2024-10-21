@@ -73,7 +73,7 @@ void BrEdrConnectionRequest::CreateConnection(
   auto complete_cb = [self,
                       timeout,
                       peer_id = peer_id_,
-                      on_command_fail = std::move(on_command_fail)](
+                      on_command_fail_cb = std::move(on_command_fail)](
                          auto, const EventPacket& event) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
@@ -82,7 +82,7 @@ void BrEdrConnectionRequest::CreateConnection(
 
     Result<> status = event.ToResult();
     if (status.is_error()) {
-      on_command_fail(status, peer_id);
+      on_command_fail_cb(status, peer_id);
     } else {
       // Both CommandChannel and the controller perform some scheduling, so log
       // when the controller finally acknowledges Create Connection to observe

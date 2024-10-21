@@ -45,12 +45,11 @@ Connection::Connection(hci_spec::ConnectionHandle handle,
 
   auto disconn_complete_handler = [self = weak_self_.GetWeakPtr(),
                                    handle,
-                                   hci = hci_,
-                                   on_disconnection_complete =
+                                   on_disconnection_complete_cb =
                                        std::move(on_disconnection_complete)](
                                       const EmbossEventPacket& event) mutable {
     return Connection::OnDisconnectionComplete(
-        self, handle, event, std::move(on_disconnection_complete));
+        self, handle, event, std::move(on_disconnection_complete_cb));
   };
   hci_->command_channel()->AddEventHandler(
       hci_spec::kDisconnectionCompleteEventCode,

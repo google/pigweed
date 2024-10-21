@@ -107,16 +107,16 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // HostError::kAdvertisingDataTooLong or HostError::kScanResponseTooLong error
   // will be generated.
   struct AdvertisingOptions {
-    AdvertisingOptions(AdvertisingIntervalRange interval,
-                       AdvFlags flags,
-                       bool extended_pdu,
-                       bool anonymous,
-                       bool include_tx_power_level)
-        : interval(interval),
-          flags(flags),
-          extended_pdu(extended_pdu),
-          include_tx_power_level(include_tx_power_level),
-          anonymous(anonymous) {}
+    AdvertisingOptions(AdvertisingIntervalRange init_interval,
+                       AdvFlags init_flags,
+                       bool init_extended_pdu,
+                       bool init_anonymous,
+                       bool init_include_tx_power_level)
+        : interval(init_interval),
+          flags(init_flags),
+          extended_pdu(init_extended_pdu),
+          include_tx_power_level(init_include_tx_power_level),
+          anonymous(init_anonymous) {}
 
     AdvertisingIntervalRange interval;
     AdvFlags flags;

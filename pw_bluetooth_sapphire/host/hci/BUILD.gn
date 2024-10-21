@@ -17,10 +17,6 @@ import("$dir_pw_unit_test/test.gni")
 
 dir_public_hci = "../../public/pw_bluetooth_sapphire/internal/host/hci"
 
-config("copts") {
-  cflags_cc = [ "-Wno-shadow" ]
-}
-
 pw_source_set("hci") {
   public = [
     "$dir_public_hci/acl_connection.h",
@@ -69,13 +65,6 @@ pw_source_set("hci") {
 
   public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    ":copts",
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
-
   deps = [ "$dir_pw_preprocessor" ]
 }
 
@@ -97,12 +86,6 @@ pw_source_set("testing") {
   deps = [ "$dir_pw_async:heap_dispatcher" ]
 
   public_deps = [ ":hci" ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
 }
 
 pw_test("tests") {
@@ -119,8 +102,6 @@ pw_test("tests") {
     "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
   ]
-
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
 
   deps = [
     ":testing",

@@ -69,10 +69,10 @@ LowEnergyScanner::PendingScanResult::PendingScanResult(
     fit::closure timeout_handler)
     : result_(result), timeout_(timeout), timeout_task_(dispatcher) {
   timeout_task_.set_function(
-      [timeout_handler = std::move(timeout_handler)](pw::async::Context /*ctx*/,
-                                                     pw::Status status) {
+      [timeout_handler_cb = std::move(timeout_handler)](
+          pw::async::Context /*ctx*/, pw::Status status) {
         if (status.ok()) {
-          timeout_handler();
+          timeout_handler_cb();
         }
       });
   StartTimer();
@@ -141,9 +141,8 @@ bool LowEnergyScanner::StartScan(const ScanOptions& options,
 
   // Obtain the local address type.
   local_addr_delegate_->EnsureLocalAddress(
-      [this, options, callback = std::move(callback)](
-          const auto& address) mutable {
-        StartScanInternal(address, options, std::move(callback));
+      [this, options, cb = std::move(callback)](const auto& address) mutable {
+        StartScanInternal(address, options, std::move(cb));
       });
 
   return true;

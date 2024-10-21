@@ -23,10 +23,10 @@ void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
     return;
   }
   (void)heap_dispatcher_.Post(
-      [callback = std::move(callback), addr = local_address_](
+      [cb = std::move(callback), addr = local_address_](
           pw::async::Context /*ctx*/, pw::Status status) {
         if (status.ok()) {
-          callback(addr);
+          cb(addr);
         }
       });
 }

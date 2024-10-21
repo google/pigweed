@@ -260,29 +260,27 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   // of the SetAdvertisingParams HCI command, we place the remaining advertising
   // setup HCI commands in the result callback here. SequentialCommandRunner
   // doesn't allow enqueuing commands within a callback (during a run).
-  hci_cmd_runner_->RunCommands([this,
-                                address,
-                                options,
-                                result_callback = std::move(result_callback),
-                                connect_callback = std::move(connect_callback)](
-                                   hci::Result<> result) mutable {
-    if (bt_is_error(result,
-                    WARN,
-                    "hci-le",
-                    "failed to start advertising for %s",
-                    bt_str(address))) {
-      result_callback(result);
-      return;
-    }
+  hci_cmd_runner_->RunCommands(
+      [this,
+       address,
+       options,
+       result_cb = std::move(result_callback),
+       connect_cb = std::move(connect_callback)](hci::Result<> result) mutable {
+        if (bt_is_error(result,
+                        WARN,
+                        "hci-le",
+                        "failed to start advertising for %s",
+                        bt_str(address))) {
+          result_cb(result);
+          return;
+        }
 
-    bool success = StartAdvertisingInternalStep2(address,
-                                                 options,
-                                                 std::move(connect_callback),
-                                                 std::move(result_callback));
-    if (!success) {
-      result_callback(ToResult(HostError::kCanceled));
-    }
-  });
+        bool success = StartAdvertisingInternalStep2(
+            address, options, std::move(connect_cb), std::move(result_cb));
+        if (!success) {
+          result_cb(ToResult(HostError::kCanceled));
+        }
+      });
 }
 
 bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
@@ -313,8 +311,8 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
   hci_cmd_runner_->RunCommands([this,
                                 address,
                                 extended_pdu = options.extended_pdu,
-                                result_callback = std::move(result_callback),
-                                connect_callback = std::move(connect_callback)](
+                                result_cb = std::move(result_callback),
+                                connect_cb = std::move(connect_callback)](
                                    Result<> result) mutable {
     if (!bt_is_error(result,
                      WARN,
@@ -322,11 +320,10 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
                      "failed to start advertising for %s",
                      bt_str(address))) {
       bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
-      connection_callbacks_[{address, extended_pdu}] =
-          std::move(connect_callback);
+      connection_callbacks_[{address, extended_pdu}] = std::move(connect_cb);
     }
 
-    result_callback(result);
+    result_cb(result);
     OnCurrentOperationComplete();
   });
 

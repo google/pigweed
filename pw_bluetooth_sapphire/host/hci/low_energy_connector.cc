@@ -37,8 +37,9 @@ using pw::bluetooth::emboss::LEPeerAddressType;
 using pw::bluetooth::emboss::StatusCode;
 
 LowEnergyConnector::PendingRequest::PendingRequest(
-    const DeviceAddress& peer_address, StatusCallback status_callback)
-    : peer_address(peer_address), status_callback(std::move(status_callback)) {}
+    const DeviceAddress& init_peer_address, StatusCallback init_status_callback)
+    : peer_address(init_peer_address),
+      status_callback(std::move(init_status_callback)) {}
 
 LowEnergyConnector::LowEnergyConnector(
     Transport::WeakPtr hci,
@@ -123,8 +124,15 @@ bool LowEnergyConnector::CreateConnection(
   }
 
   local_addr_delegate_->EnsureLocalAddress(
-      [=, callback = std::move(status_callback)](
-          const DeviceAddress& address) mutable {
+      [this,
+       use_accept_list,
+       peer_address,
+       scan_interval,
+       scan_window,
+       initial_parameters,
+       timeout,
+       callback =
+           std::move(status_callback)](const DeviceAddress& address) mutable {
         CreateConnectionInternal(address,
                                  use_accept_list,
                                  peer_address,

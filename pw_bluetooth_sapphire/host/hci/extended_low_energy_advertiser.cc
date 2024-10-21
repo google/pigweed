@@ -497,16 +497,16 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
     scan_rsp.Copy(&copied_scan_rsp);
 
     op_queue_.push([this,
-                    address,
-                    data = std::move(copied_data),
-                    scan_rsp = std::move(copied_scan_rsp),
-                    options,
+                    address_copy = address,
+                    data_copy = std::move(copied_data),
+                    scan_rsp_copy = std::move(copied_scan_rsp),
+                    options_copy = options,
                     conn_cb = std::move(connect_callback),
                     result_cb = std::move(result_callback)]() mutable {
-      StartAdvertising(address,
-                       data,
-                       scan_rsp,
-                       options,
+      StartAdvertising(address_copy,
+                       data_copy,
+                       scan_rsp_copy,
+                       options_copy,
                        std::move(conn_cb),
                        std::move(result_cb));
     });
