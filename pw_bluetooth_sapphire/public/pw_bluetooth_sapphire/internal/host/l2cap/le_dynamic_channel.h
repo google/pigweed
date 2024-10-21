@@ -47,6 +47,15 @@ class LeDynamicChannelRegistry final : public DynamicChannelRegistry {
                                 ChannelId remote_cid,
                                 ChannelParameters params) override;
 
+  // Incoming command handlers
+  void OnRxLeCreditBasedConnectionRequest(
+      uint16_t psm,
+      uint16_t remote_cid,
+      uint16_t maximum_transmission_unit,
+      uint16_t maximum_payload_size,
+      uint16_t initial_credits,
+      LowEnergyCommandHandler::LeCreditBasedConnectionResponder* responder);
+
   SignalingChannelInterface* const sig_;
 };
 
@@ -74,6 +83,14 @@ class LeDynamicChannel final : public DynamicChannel {
       ChannelId local_cid,
       ChannelParameters params);
 
+  static std::unique_ptr<LeDynamicChannel> MakeInbound(
+      DynamicChannelRegistry* registry,
+      SignalingChannelInterface* signaling_channel,
+      Psm psm,
+      ChannelId local_cid,
+      ChannelId remote_cid,
+      ChannelParameters params);
+
   // DynamicChannel overrides
   ~LeDynamicChannel() override = default;
 
@@ -82,8 +99,16 @@ class LeDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override;
   bool IsOpen() const override;
 
+  // Must be called for inbound channels after `MakeInbound` to complete opening
+  // the channel.
+  void CompleteInboundConnection(
+      LeChannelConfig remote_config,
+      LowEnergyCommandHandler::LeCreditBasedConnectionResponder* responder);
+
   // Must not be called until channel is open.
   ChannelInfo info() const override;
+
+  const LeChannelConfig& local_config() const { return local_config_; }
 
   /// The setup state of an LE dynamic channel is much simpler than a BR/EDR
   /// channel, namely it does not have a configuration state machine. Instead,
@@ -109,7 +134,8 @@ class LeDynamicChannel final : public DynamicChannel {
                    Psm psm,
                    ChannelId local_cid,
                    ChannelId remote_cid,
-                   ChannelParameters params);
+                   ChannelParameters params,
+                   bool is_outbound);
 
   void TriggerOpenCallback();
   void OnRxLeCreditConnRsp(
@@ -122,6 +148,7 @@ class LeDynamicChannel final : public DynamicChannel {
   LeChannelConfig local_config_;
   std::optional<LeChannelConfig> remote_config_;
   fit::closure open_result_cb_;
+  bool is_outbound_;
   WeakSelf<LeDynamicChannel> weak_self_;  // Keep last.
 };
 

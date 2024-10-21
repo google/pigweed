@@ -68,6 +68,18 @@ class LowEnergyCommandHandler final : public CommandHandler {
     void Send(ConnectionParameterUpdateResult result);
   };
 
+  class LeCreditBasedConnectionResponder final : public Responder {
+   public:
+    explicit LeCreditBasedConnectionResponder(
+        SignalingChannel::Responder* sig_responder);
+
+    void Send(ChannelId destination_cid,
+              uint16_t mtu,
+              uint16_t mps,
+              uint16_t initial_credits,
+              LECreditBasedConnectionResult result);
+  };
+
   // |sig| must be valid for the lifetime of this object.
   // |command_failed_callback| is called if an outbound request timed out with
   // RTX or ERTX timers after retransmission (if configured). The call may come
@@ -116,5 +128,15 @@ class LowEnergyCommandHandler final : public CommandHandler {
                          ConnectionParameterUpdateResponder* responder)>;
   void ServeConnectionParameterUpdateRequest(
       ConnectionParameterUpdateRequestCallback cb);
+
+  using LeCreditBasedConnectionRequestCallback =
+      fit::function<void(uint16_t psm,
+                         uint16_t cid,
+                         uint16_t mtu,
+                         uint16_t mps,
+                         uint16_t credits,
+                         LeCreditBasedConnectionResponder* responder)>;
+  void ServeLeCreditBasedConnectionRequest(
+      LeCreditBasedConnectionRequestCallback cb);
 };
 }  // namespace bt::l2cap::internal

@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "pw_async/fake_dispatcher_fixture.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/signaling_channel.h"
@@ -83,7 +84,7 @@ class LeDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
   // TestLoopFixture overrides
   void SetUp() override {
     channel_close_cb_ = nullptr;
-    service_request_cb_ = nullptr;
+    inbound_open_cb_ = nullptr;
     signaling_channel_ =
         std::make_unique<testing::FakeSignalingChannel>(dispatcher());
 
@@ -96,9 +97,10 @@ class LeDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
 
   void TearDown() override {
     RunUntilIdle();
+    services_.clear();
     registry_ = nullptr;
     signaling_channel_ = nullptr;
-    service_request_cb_ = nullptr;
+    inbound_open_cb_ = nullptr;
     channel_close_cb_ = nullptr;
   }
 
@@ -137,6 +139,23 @@ class LeDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
     return **channel;
   }
 
+  bool DoOpenInbound(
+      const LECreditBasedConnectionRequestPayload& request,
+      const LECreditBasedConnectionResponsePayload& expected_response) {
+    auto req = LeConnReq(request);
+    auto rsp = LeConnRsp(expected_response);
+
+    sig()->ReceiveExpect(
+        kLECreditBasedConnectionRequest, req.view(), rsp.view());
+
+    RunUntilIdle();
+    if (HasFatalFailure()) {
+      return false;
+    }
+
+    return true;
+  }
+
   bool DoCloseOutbound(const DisconnectionRequestPayload& request,
                        const DisconnectionResponsePayload& response) {
     auto req = DisconnReq(request);
@@ -171,8 +190,18 @@ class LeDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
     channel_close_cb_ = std::move(close_cb);
   }
 
-  void set_service_request_cb(ServiceRequestCallback service_request_cb) {
-    service_request_cb_ = std::move(service_request_cb);
+  bool RegisterService(Psm psm, ChannelParameters params) {
+    auto [_, result] = services_.insert(
+        {psm,
+         DynamicChannelRegistry::ServiceInfo{
+             params,
+             fit::bind_member(this, &LeDynamicChannelTest::OnInboundChannel)}});
+    return result;
+  }
+
+  void SetNextInboundChannel(std::optional<const DynamicChannel*>* out) {
+    ASSERT_EQ(inbound_open_cb_, nullptr);
+    inbound_open_cb_ = [out](const DynamicChannel* channel) { *out = channel; };
   }
 
  private:
@@ -182,15 +211,25 @@ class LeDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
     }
   }
 
-  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(Psm psm) {
-    if (service_request_cb_) {
-      return service_request_cb_(psm);
+  void OnInboundChannel(const DynamicChannel* channel) {
+    if (inbound_open_cb_) {
+      std::move(inbound_open_cb_)(channel);
     }
-    return std::nullopt;
+  }
+
+  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(Psm psm) {
+    auto iter = services_.find(psm);
+    if (iter == services_.end()) {
+      return std::nullopt;
+    }
+
+    return DynamicChannelRegistry::ServiceInfo(iter->second.channel_params,
+                                               iter->second.channel_cb.share());
   }
 
   DynamicChannelCallback channel_close_cb_;
-  ServiceRequestCallback service_request_cb_;
+  DynamicChannelCallback inbound_open_cb_;
+  std::unordered_map<Psm, DynamicChannelRegistry::ServiceInfo> services_;
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<LeDynamicChannelRegistry> registry_;
 
@@ -432,6 +471,114 @@ TEST_F(LeDynamicChannelTest, OpenOutboundPsmNotSupported) {
   auto chan =
       DoOpenOutbound(kLeConnReqPayload, kLeConnRspPayload, kChannelParams);
   EXPECT_FALSE(chan);
+}
+
+TEST_F(LeDynamicChannelTest, OpenInboundDefaultParamsCloseInbound) {
+  static constexpr auto kMode =
+      CreditBasedFlowControlMode::kLeCreditBasedFlowControl;
+  static constexpr Psm kPsm = 0x0015;
+  static constexpr ChannelParameters kChannelParams{
+      .mode = kMode,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+  static constexpr LECreditBasedConnectionRequestPayload kLeConnReqPayload{
+      .le_psm = kPsm,
+      .src_cid = DynamicCid(),
+      .mtu = 0x0064,
+      .mps = 0x0032,
+      .initial_credits = 0x0032,
+  };
+  static constexpr LECreditBasedConnectionResponsePayload kLeConnRspPayload{
+      .dst_cid = DynamicCid(),
+      .mtu = kDefaultMTU,
+      .mps = kMaxInboundPduPayloadSize,
+      .initial_credits = 0x0000,
+      .result = LECreditBasedConnectionResult::kSuccess,
+  };
+  static constexpr DisconnectionRequestPayload kDisconnReqPayload{
+      .dst_cid = kLeConnRspPayload.dst_cid,
+      .src_cid = kLeConnReqPayload.src_cid,
+  };
+
+  std::optional<const DynamicChannel*> channel;
+  SetNextInboundChannel(&channel);
+  ASSERT_TRUE(RegisterService(kPsm, kChannelParams));
+  EXPECT_TRUE(DoOpenInbound(kLeConnReqPayload, kLeConnRspPayload));
+  ASSERT_TRUE(channel);
+  ASSERT_TRUE(*channel);
+  EXPECT_TRUE((*channel)->IsOpen());
+  EXPECT_TRUE((*channel)->IsConnected());
+  EXPECT_EQ(kLeConnReqPayload.src_cid, (*channel)->remote_cid());
+  EXPECT_EQ(kLeConnRspPayload.dst_cid, (*channel)->local_cid());
+
+  ChannelInfo expected_info = ChannelInfo::MakeCreditBasedFlowControlMode(
+      kMode,
+      kLeConnRspPayload.mtu,
+      kLeConnReqPayload.mtu,
+      kLeConnReqPayload.mps,
+      kLeConnReqPayload.initial_credits);
+  ChannelInfo actual_info = (*channel)->info();
+
+  EXPECT_EQ(expected_info.mode, actual_info.mode);
+  EXPECT_EQ(expected_info.max_rx_sdu_size, actual_info.max_rx_sdu_size);
+  EXPECT_EQ(expected_info.max_tx_sdu_size, actual_info.max_tx_sdu_size);
+  EXPECT_EQ(expected_info.n_frames_in_tx_window,
+            actual_info.n_frames_in_tx_window);
+  EXPECT_EQ(expected_info.max_transmissions, actual_info.max_transmissions);
+  EXPECT_EQ(expected_info.max_tx_pdu_payload_size,
+            actual_info.max_tx_pdu_payload_size);
+  EXPECT_EQ(expected_info.psm, actual_info.psm);
+  EXPECT_EQ(expected_info.flush_timeout, actual_info.flush_timeout);
+  EXPECT_EQ(expected_info.remote_initial_credits,
+            actual_info.remote_initial_credits);
+
+  EXPECT_TRUE(DoCloseOutbound(kDisconnReqPayload));
+}
+
+TEST_F(LeDynamicChannelTest, OpenInboundUnsupportedPsm) {
+  static constexpr Psm kPsm = 0x0015;
+  static constexpr LECreditBasedConnectionRequestPayload kLeConnReqPayload{
+      .le_psm = kPsm,
+      .src_cid = DynamicCid(),
+      .mtu = 0x0064,
+      .mps = 0x0032,
+      .initial_credits = 0x0032,
+  };
+  static constexpr LECreditBasedConnectionResponsePayload kLeConnRspPayload{
+      .dst_cid = kInvalidChannelId,
+      .mtu = 0,
+      .mps = 0,
+      .initial_credits = 0,
+      .result = LECreditBasedConnectionResult::kPsmNotSupported,
+  };
+
+  std::optional<const DynamicChannel*> channel;
+  SetNextInboundChannel(&channel);
+  EXPECT_TRUE(DoOpenInbound(kLeConnReqPayload, kLeConnRspPayload));
+  EXPECT_FALSE(channel);
+}
+
+TEST_F(LeDynamicChannelTest, OpenInboundBadChannel) {
+  static constexpr LECreditBasedConnectionRequestPayload kLeConnReqPayload{
+      .le_psm = 0x0015,
+      .src_cid = DynamicCid(-1),
+      .mtu = 0x0064,
+      .mps = 0x0032,
+      .initial_credits = 0x0050,
+  };
+  static constexpr LECreditBasedConnectionResponsePayload kLeConnRspPayload{
+      .dst_cid = kInvalidChannelId,
+      .mtu = 0,
+      .mps = 0,
+      .initial_credits = 0,
+      .result = LECreditBasedConnectionResult::kInvalidSourceCID,
+  };
+
+  std::optional<const DynamicChannel*> channel;
+  SetNextInboundChannel(&channel);
+  EXPECT_TRUE(DoOpenInbound(kLeConnReqPayload, kLeConnRspPayload));
+  EXPECT_FALSE(channel);
 }
 
 }  // namespace

@@ -28,6 +28,13 @@ namespace {
 constexpr uint16_t kLeDynamicChannelCount =
     kLastLEDynamicChannelId - kFirstDynamicChannelId + 1;
 
+// Helper to determine initial state based on whether we have received or need
+// to send the connection request.
+LeDynamicChannel::State InitialState(bool has_remote_channel) {
+  return LeDynamicChannel::State{.exchanged_connection_request =
+                                     has_remote_channel};
+}
+
 CreditBasedFlowControlMode ConvertMode(AnyChannelMode mode) {
   // LE dynamic channels only support credit-based flow control modes.
   BT_ASSERT(std::holds_alternative<CreditBasedFlowControlMode>(mode));
@@ -47,6 +54,10 @@ LeDynamicChannelRegistry::LeDynamicChannelRegistry(
                              random_channel_ids),
       sig_(sig) {
   BT_DEBUG_ASSERT(sig_);
+  LowEnergyCommandHandler cmd_handler(sig_);
+  cmd_handler.ServeLeCreditBasedConnectionRequest(
+      fit::bind_member<
+          &LeDynamicChannelRegistry::OnRxLeCreditBasedConnectionRequest>(this));
 }
 
 DynamicChannelPtr LeDynamicChannelRegistry::MakeOutbound(
@@ -55,12 +66,81 @@ DynamicChannelPtr LeDynamicChannelRegistry::MakeOutbound(
 }
 
 DynamicChannelPtr LeDynamicChannelRegistry::MakeInbound(
-    [[maybe_unused]] Psm psm,
-    [[maybe_unused]] ChannelId local_cid,
-    [[maybe_unused]] ChannelId remote_cid,
-    [[maybe_unused]] ChannelParameters params) {
-  // Not yet implemented.
-  return nullptr;
+    Psm psm,
+    ChannelId local_cid,
+    ChannelId remote_cid,
+    ChannelParameters params) {
+  return LeDynamicChannel::MakeInbound(
+      this, sig_, psm, local_cid, remote_cid, params);
+}
+
+void LeDynamicChannelRegistry::OnRxLeCreditBasedConnectionRequest(
+    uint16_t psm,
+    uint16_t remote_cid,
+    uint16_t maximum_transmission_unit,
+    uint16_t maximum_payload_size,
+    uint16_t initial_credits,
+    LowEnergyCommandHandler::LeCreditBasedConnectionResponder* responder) {
+  bt_log(TRACE,
+         "l2cap-le",
+         "Got Connection Request for PSM %#.4x from channel %#.4x",
+         psm,
+         remote_cid);
+
+  if (remote_cid < kFirstDynamicChannelId) {
+    bt_log(DEBUG,
+           "l2cap-le",
+           "Invalid source CID; rejecting connection for PSM %#.4x from "
+           "channel %#.4x",
+           psm,
+           remote_cid);
+    responder->Send(
+        0, 0, 0, 0, LECreditBasedConnectionResult::kInvalidSourceCID);
+    return;
+  }
+
+  if (FindChannelByRemoteId(remote_cid) != nullptr) {
+    bt_log(DEBUG,
+           "l2cap-le",
+           "Remote CID already in use; rejecting connection for PSM %#.4x from "
+           "channel %#.4x",
+           psm,
+           remote_cid);
+    responder->Send(
+        0, 0, 0, 0, LECreditBasedConnectionResult::kSourceCIDAlreadyAllocated);
+    return;
+  }
+
+  ChannelId local_cid = FindAvailableChannelId();
+  if (local_cid == kInvalidChannelId) {
+    bt_log(DEBUG,
+           "l2cap-le",
+           "Out of IDs; rejecting connection for PSM %#.4x from channel %#.4x",
+           psm,
+           remote_cid);
+    responder->Send(0, 0, 0, 0, LECreditBasedConnectionResult::kNoResources);
+    return;
+  }
+
+  DynamicChannel* dyn_chan = RequestService(psm, local_cid, remote_cid);
+  if (!dyn_chan) {
+    bt_log(DEBUG,
+           "l2cap-le",
+           "Rejecting connection for unsupported PSM %#.4x from channel %#.4x",
+           psm,
+           remote_cid);
+    responder->Send(
+        0, 0, 0, 0, LECreditBasedConnectionResult::kPsmNotSupported);
+    return;
+  }
+
+  static_cast<LeDynamicChannel*>(dyn_chan)->CompleteInboundConnection(
+      LeChannelConfig{
+          .mtu = maximum_transmission_unit,
+          .mps = maximum_payload_size,
+          .initial_credits = initial_credits,
+      },
+      responder);
 }
 
 std::unique_ptr<LeDynamicChannel> LeDynamicChannel::MakeOutbound(
@@ -69,8 +149,25 @@ std::unique_ptr<LeDynamicChannel> LeDynamicChannel::MakeOutbound(
     Psm psm,
     ChannelId local_cid,
     ChannelParameters params) {
+  return std::unique_ptr<LeDynamicChannel>(
+      new LeDynamicChannel(registry,
+                           signaling_channel,
+                           psm,
+                           local_cid,
+                           kInvalidChannelId,
+                           params,
+                           true));
+}
+
+std::unique_ptr<LeDynamicChannel> LeDynamicChannel::MakeInbound(
+    DynamicChannelRegistry* registry,
+    SignalingChannelInterface* signaling_channel,
+    Psm psm,
+    ChannelId local_cid,
+    ChannelId remote_cid,
+    ChannelParameters params) {
   return std::unique_ptr<LeDynamicChannel>(new LeDynamicChannel(
-      registry, signaling_channel, psm, local_cid, kInvalidChannelId, params));
+      registry, signaling_channel, psm, local_cid, remote_cid, params, false));
 }
 
 std::string LeDynamicChannel::State::ToString() const {
@@ -87,16 +184,18 @@ LeDynamicChannel::LeDynamicChannel(DynamicChannelRegistry* registry,
                                    Psm psm,
                                    ChannelId local_cid,
                                    ChannelId remote_cid,
-                                   ChannelParameters params)
+                                   ChannelParameters params,
+                                   bool is_outbound)
     : DynamicChannel(registry, psm, local_cid, remote_cid),
       signaling_channel_(signaling_channel),
       flow_control_mode_(ConvertMode(params.mode.value_or(
           CreditBasedFlowControlMode::kLeCreditBasedFlowControl))),
-      state_(),
+      state_(InitialState(remote_cid != kInvalidChannelId)),
       local_config_(
           LeChannelConfig{.mtu = params.max_rx_sdu_size.value_or(kDefaultMTU),
                           .mps = kMaxInboundPduPayloadSize}),
       remote_config_(std::nullopt),
+      is_outbound_(is_outbound),
       weak_self_(this) {}
 
 void LeDynamicChannel::TriggerOpenCallback() {
@@ -109,6 +208,14 @@ void LeDynamicChannel::TriggerOpenCallback() {
 void LeDynamicChannel::Open(fit::closure open_cb) {
   BT_ASSERT_MSG(!open_result_cb_, "open callback already set");
   open_result_cb_ = std::move(open_cb);
+
+  if (!is_outbound_) {
+    // Only save the callback and return early. Inbound channels complete their
+    // open in `CompleteInboundConnection` as we need more info from the request
+    // packet to complete the open.
+    return;
+  }
+
   if (state_.exchanged_connection_request) {
     TriggerOpenCallback();
     return;
@@ -243,7 +350,8 @@ ChannelInfo LeDynamicChannel::info() const {
 void LeDynamicChannel::OnRxLeCreditConnRsp(
     const LowEnergyCommandHandler::LeCreditBasedConnectionResponse& rsp) {
   if (state_.exchanged_connection_response ||
-      !state_.exchanged_connection_request) {
+      !state_.exchanged_connection_request ||
+      remote_cid() != kInvalidChannelId) {
     bt_log(ERROR,
            "l2cap-le",
            "Channel %#.4x: Unexpected Connection Response, state %s",
@@ -298,6 +406,20 @@ void LeDynamicChannel::OnRxLeCreditConnRsp(
                                    .initial_credits = rsp.initial_credits()};
   state_.exchanged_connection_response = true;
   set_opened();
+}
+
+void LeDynamicChannel::CompleteInboundConnection(
+    LeChannelConfig remote_config,
+    LowEnergyCommandHandler::LeCreditBasedConnectionResponder* responder) {
+  remote_config_ = remote_config;
+  responder->Send(local_cid(),
+                  local_config_.mtu,
+                  local_config_.mps,
+                  local_config_.initial_credits,
+                  LECreditBasedConnectionResult::kSuccess);
+  state_.exchanged_connection_response = true;
+  set_opened();
+  TriggerOpenCallback();
 }
 
 }  // namespace bt::l2cap::internal

@@ -16,9 +16,36 @@
 
 #include <pw_bytes/endian.h>
 
+#include <type_traits>
+
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
 namespace bt::l2cap::internal {
+namespace {
+
+// Helpers to make converting values less verbose.
+// TODO(fxbug.dev/373673027) - Remove once we use Emboss.
+template <typename T>
+T Serialize(T value) {
+  return pw::bytes::ConvertOrderTo(cpp20::endian::little, value);
+}
+template <typename T>
+T SerializeEnum(T value) {
+  return static_cast<T>(pw::bytes::ConvertOrderTo(
+      cpp20::endian::little, static_cast<std::underlying_type_t<T>>(value)));
+}
+template <typename T>
+T Deserialize(T value) {
+  return pw::bytes::ConvertOrderFrom(cpp20::endian::little, value);
+}
+template <typename T>
+T DeserializeEnum(T value) {
+  return static_cast<T>(pw::bytes::ConvertOrderFrom(
+      cpp20::endian::little, static_cast<std::underlying_type_t<T>>(value)));
+}
+
+}  // namespace
+
 bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
     const ByteBuffer& payload_buf) {
   const uint16_t result = pw::bytes::ConvertOrderFrom(
@@ -64,6 +91,25 @@ void LowEnergyCommandHandler::ConnectionParameterUpdateResponder::Send(
   ConnectionParameterUpdateResponsePayload payload;
   payload.result = ConnectionParameterUpdateResult{pw::bytes::ConvertOrderTo(
       cpp20::endian::little, static_cast<uint16_t>(result))};
+  sig_responder_->Send(BufferView(&payload, sizeof(payload)));
+}
+
+LowEnergyCommandHandler::LeCreditBasedConnectionResponder::
+    LeCreditBasedConnectionResponder(SignalingChannel::Responder* sig_responder)
+    : Responder(sig_responder) {}
+
+void LowEnergyCommandHandler::LeCreditBasedConnectionResponder::Send(
+    ChannelId destination_cid,
+    uint16_t mtu,
+    uint16_t mps,
+    uint16_t initial_credits,
+    LECreditBasedConnectionResult result) {
+  LECreditBasedConnectionResponsePayload payload;
+  payload.dst_cid = Serialize(destination_cid);
+  payload.mtu = Serialize(mtu);
+  payload.mps = Serialize(mps);
+  payload.initial_credits = Serialize(initial_credits);
+  payload.result = SerializeEnum(result);
   sig_responder_->Send(BufferView(&payload, sizeof(payload)));
 }
 
@@ -154,6 +200,35 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
 
   sig()->ServeRequest(kConnectionParameterUpdateRequest,
                       std::move(on_param_update_req));
+}
+
+void LowEnergyCommandHandler::ServeLeCreditBasedConnectionRequest(
+    LeCreditBasedConnectionRequestCallback cb) {
+  using Request = LECreditBasedConnectionRequestPayload;
+  auto on_le_credit_based_connection_request =
+      [cb = std::move(cb)](const ByteBuffer& request_payload,
+                           SignalingChannel::Responder* sig_responder) {
+        if (request_payload.size() != sizeof(Request)) {
+          bt_log(DEBUG,
+                 "l2cap-le",
+                 "cmd: rejecting malformed LE Credit-based Connection Request, "
+                 "size %zu",
+                 request_payload.size());
+          sig_responder->RejectNotUnderstood();
+          return;
+        }
+
+        LeCreditBasedConnectionResponder responder(sig_responder);
+        cb(Deserialize(request_payload.ReadMember<&Request::le_psm>()),
+           Deserialize(request_payload.ReadMember<&Request::src_cid>()),
+           Deserialize(request_payload.ReadMember<&Request::mtu>()),
+           Deserialize(request_payload.ReadMember<&Request::mps>()),
+           Deserialize(request_payload.ReadMember<&Request::initial_credits>()),
+           &responder);
+      };
+
+  sig()->ServeRequest(kLECreditBasedConnectionRequest,
+                      std::move(on_le_credit_based_connection_request));
 }
 
 }  // namespace bt::l2cap::internal
