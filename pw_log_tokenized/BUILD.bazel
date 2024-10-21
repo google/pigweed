@@ -155,8 +155,8 @@ pw_cc_test(
         "tokenized_args_test.cc",
     ],
     deps = [
+        ":headers",
         "//pw_log",
-        "//pw_log_tokenized",
         "//pw_tokenizer",
         "//pw_unit_test",
     ],
