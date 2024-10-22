@@ -210,17 +210,17 @@ cipd_repository(
 http_archive(
     name = "stm32f4xx_hal_driver",
     build_file = "//third_party/stm32cube:stm32_hal_driver.BUILD.bazel",
-    sha256 = "c8741e184555abcd153f7bdddc65e4b0103b51470d39ee0056ce2f8296b4e835",
-    strip_prefix = "stm32f4xx_hal_driver-1.8.0",
-    urls = ["https://github.com/STMicroelectronics/stm32f4xx_hal_driver/archive/refs/tags/v1.8.0.tar.gz"],
+    sha256 = "d0427a3830f0c23dd4810952321b8209be7b3c50897d1fc2d79587435cc3a379",
+    strip_prefix = "stm32f4xx-hal-driver-1.8.0",
+    urls = ["https://github.com/STMicroelectronics/stm32f4xx-hal-driver/archive/refs/tags/v1.8.0.tar.gz"],
 )
 
 http_archive(
     name = "cmsis_device_f4",
     build_file = "//third_party/stm32cube:cmsis_device.BUILD.bazel",
-    sha256 = "6390baf3ea44aff09d0327a3c112c6ca44418806bfdfe1c5c2803941c391fdce",
-    strip_prefix = "cmsis_device_f4-2.6.8",
-    urls = ["https://github.com/STMicroelectronics/cmsis_device_f4/archive/refs/tags/v2.6.8.tar.gz"],
+    sha256 = "1d9612ecaaab8708c88be2c9573927f2e5e9a911aa2c1427182b545ed5ed0fd6",
+    strip_prefix = "cmsis-device-f4-2.6.8",
+    urls = ["https://github.com/STMicroelectronics/cmsis-device-f4/archive/refs/tags/v2.6.8.tar.gz"],
 )
 
 http_archive(
