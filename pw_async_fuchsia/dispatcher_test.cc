@@ -19,7 +19,6 @@
 #include "pw_async_fuchsia/util.h"
 #include "pw_unit_test/framework.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
 
 using namespace std::chrono_literals;
@@ -49,7 +48,7 @@ TEST_F(DispatcherFuchsiaTest, Basic) {
 
   bool set = false;
   async::Task task([&set](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     set = true;
   });
   fuchsia_dispatcher.Post(task);
@@ -63,15 +62,15 @@ TEST_F(DispatcherFuchsiaTest, DelayedTasks) {
 
   int c = 0;
   async::Task first([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 1;
   });
   async::Task second([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 2;
   });
   async::Task third([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 3;
   });
 
@@ -116,7 +115,7 @@ TEST_F(DispatcherFuchsiaTest, HeapAllocatedTasks) {
   int c = 0;
   for (int i = 0; i < 3; i++) {
     Post(&fuchsia_dispatcher, [&c](async::Context& ctx, Status status) {
-      ASSERT_OK(status);
+      PW_TEST_ASSERT_OK(status);
       c++;
     });
   }
@@ -141,13 +140,13 @@ TEST_F(DispatcherFuchsiaTest, ChainedTasks) {
   int c = 0;
 
   Post(&fuchsia_dispatcher, [&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c++;
     Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
-      ASSERT_OK(status);
+      PW_TEST_ASSERT_OK(status);
       c++;
       Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
-        ASSERT_OK(status);
+        PW_TEST_ASSERT_OK(status);
         c++;
       });
     });

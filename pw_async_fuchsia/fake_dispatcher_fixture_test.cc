@@ -17,7 +17,6 @@
 #include "pw_async_fuchsia/dispatcher.h"
 #include "pw_unit_test/framework.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
 
 using namespace std::chrono_literals;
@@ -30,7 +29,7 @@ using FakeDispatcherFuchsiaFixture = async::test::FakeDispatcherFixture;
 TEST_F(FakeDispatcherFuchsiaFixture, PostTasks) {
   int c = 0;
   auto inc_count = [&c](async::Context& /*ctx*/, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     ++c;
   };
 
@@ -45,15 +44,15 @@ TEST_F(FakeDispatcherFuchsiaFixture, PostTasks) {
 TEST_F(FakeDispatcherFuchsiaFixture, DelayedTasks) {
   int c = 0;
   async::Task first([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 1;
   });
   async::Task second([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 2;
   });
   async::Task third([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c = c * 10 + 3;
   });
 
@@ -77,7 +76,7 @@ TEST_F(FakeDispatcherFuchsiaFixture, HeapAllocatedTasks) {
   int c = 0;
   for (int i = 0; i < 3; i++) {
     Post(&dispatcher(), [&c](async::Context& ctx, Status status) {
-      ASSERT_OK(status);
+      PW_TEST_ASSERT_OK(status);
       c++;
     });
   }
@@ -90,13 +89,13 @@ TEST_F(FakeDispatcherFuchsiaFixture, ChainedTasks) {
   int c = 0;
 
   Post(&dispatcher(), [&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     c++;
     Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
-      ASSERT_OK(status);
+      PW_TEST_ASSERT_OK(status);
       c++;
       Post(ctx.dispatcher, [&c](async::Context& ctx, Status status) {
-        ASSERT_OK(status);
+        PW_TEST_ASSERT_OK(status);
         c++;
       });
     });
@@ -119,7 +118,7 @@ TEST_F(FakeDispatcherFuchsiaFixture, DestroyLoopInsideTask) {
   dispatcher().PostAfter(task1, 21ms);
 
   async::Task stop_task([&c](async::Context& ctx, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     ++c;
     static_cast<async::test::FakeDispatcher*>(ctx.dispatcher)->RequestStop();
     // Stop has been requested; now drive the Dispatcher so it destroys the

@@ -17,7 +17,9 @@
 #include <cstring>
 
 #include "pw_assert/check.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw {
 namespace {
@@ -171,6 +173,116 @@ TEST(PigweedTest, Logs) {
     GTEST_SKIP() << 1.0f << " skips!";
   }
   GTEST_SUCCEED() << "This message is ignored";
+}
+
+TEST(PigweedTest, PwOkMatchers) {
+  PW_TEST_ASSERT_OK(OkStatus());
+  PW_TEST_ASSERT_OK(StatusWithSize(123));
+  PW_TEST_ASSERT_OK(Result<int>(123));
+
+  PW_TEST_EXPECT_OK(OkStatus());
+  PW_TEST_EXPECT_OK(StatusWithSize(123));
+  PW_TEST_EXPECT_OK(Result<int>(123));
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto val, Result<int>(123));
+  EXPECT_EQ(val, 123);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto size, StatusWithSize(123U));
+  EXPECT_EQ(size, 123U);
+}
+
+TEST(AssertOkAndAssign, AssignsOkValueToNewLvalue) {
+  const auto value = Result<int>(5);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(int declare_and_assign, value);
+  EXPECT_EQ(5, declare_and_assign);
+}
+
+TEST(AssertOkAndAssign, AssignsOkValueToExistingLvalue) {
+  const auto value = Result<int>(5);
+  int existing_value = 0;
+  PW_TEST_ASSERT_OK_AND_ASSIGN(existing_value, value);
+  EXPECT_EQ(5, existing_value);
+}
+
+TEST(AssertOkAndAssign, AssignsExistingLvalueToConstReference) {
+  const auto value = Result<int>(5);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(const auto& ref, value);
+  EXPECT_EQ(5, ref);
+}
+
+class CopyMoveCounter {
+ public:
+  CopyMoveCounter() = delete;
+  CopyMoveCounter(int& copies, int& moves) : copies_(&copies), moves_(&moves) {}
+  CopyMoveCounter(const CopyMoveCounter& other)
+      : copies_(other.copies_), moves_(other.moves_) {
+    ++(*copies_);
+  }
+  CopyMoveCounter(CopyMoveCounter&& other)
+      : copies_(other.copies_), moves_(other.moves_) {
+    ++(*moves_);
+  }
+  CopyMoveCounter& operator=(const CopyMoveCounter& other) {
+    copies_ = other.copies_;
+    moves_ = other.moves_;
+    ++(*copies_);
+    return *this;
+  }
+  CopyMoveCounter& operator=(CopyMoveCounter&& other) {
+    copies_ = other.copies_;
+    moves_ = other.moves_;
+    ++(*moves_);
+    return *this;
+  }
+
+ private:
+  int* copies_;
+  int* moves_;
+};
+
+TEST(AssertOkAndAssign, OkRvalueDoesNotCopy) {
+  int copies = 0;
+  int moves = 0;
+  PW_TEST_ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm,
+                               Result(CopyMoveCounter(copies, moves)));
+  EXPECT_EQ(copies, 0);
+  EXPECT_EQ(moves, 2);
+}
+
+TEST(AssertOkAndAssign, OkLvalueMovedDoesNotCopy) {
+  int copies = 0;
+  int moves = 0;
+  Result result(CopyMoveCounter(copies, moves));
+  PW_TEST_ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm,
+                               std::move(result));
+  EXPECT_EQ(copies, 0);
+  EXPECT_EQ(moves, 3);
+}
+
+TEST(AssertOkAndAssign, OkLvalueCopiesOnce) {
+  int copies = 0;
+  int moves = 0;
+  Result result(CopyMoveCounter(copies, moves));
+  PW_TEST_ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm, result);
+  EXPECT_EQ(copies, 1);
+  EXPECT_EQ(moves, 2);
+}
+
+// The following test contents are disabled and is only for checking what
+// failure cases would look like. For example, when enabling the test,
+// the output is:
+// clang-format off
+// ERR  pw_unit_test/framework_test.cc:294: Failure
+// ERR        Expected: ::pw::internal::ConvertToStatus(Status::Unknown()) == pw::OkStatus()
+// ERR          Actual: UNKNOWN == OK
+// ERR  pw_unit_test/framework_test.cc:295: Failure
+// ERR        Expected: ::pw::internal::ConvertToStatus(Status::Unknown()) == pw::OkStatus()
+// ERR          Actual: UNKNOWN == OK
+// clang-format on
+TEST(TestMatchers, SampleFailures) {
+  if (false) {
+    PW_TEST_EXPECT_OK(Status::Unknown());
+    PW_TEST_ASSERT_OK(Status::Unknown());
+  }
 }
 
 class SkipOnSetUpTest : public ::testing::Test {

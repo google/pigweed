@@ -24,7 +24,6 @@
 #include "pw_unit_test/framework.h"
 #include "test_bundles.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_FAIL(status) ASSERT_NE(OkStatus(), status)
 
 namespace pw::software_update {
@@ -151,12 +150,12 @@ class UpdateBundleTest : public testing::Test {
   TestBundledUpdateBackend& backend() { return backend_; }
 
   void StageTestBundle(ConstByteSpan bundle_data) {
-    ASSERT_OK(bundle_blob_.Init());
+    PW_TEST_ASSERT_OK(bundle_blob_.Init());
     blob_store::BlobStore::BlobWriter blob_writer(bundle_blob(),
                                                   metadata_buffer_);
-    ASSERT_OK(blob_writer.Open());
-    ASSERT_OK(blob_writer.Write(bundle_data));
-    ASSERT_OK(blob_writer.Close());
+    PW_TEST_ASSERT_OK(blob_writer.Open());
+    PW_TEST_ASSERT_OK(blob_writer.Write(bundle_data));
+    PW_TEST_ASSERT_OK(blob_writer.Close());
   }
 
   // A helper to verify that all bundle operations are disallowed because
@@ -186,7 +185,7 @@ class UpdateBundleTest : public testing::Test {
     ASSERT_EQ(backend().IsNewRootPersisted(), expect_new_root_persisted);
     VerifyAllBundleOperationsDisallowed(update_bundle);
 
-    ASSERT_OK(update_bundle.Close());
+    PW_TEST_ASSERT_OK(update_bundle.Close());
     VerifyAllBundleOperationsDisallowed(update_bundle);
   }
 
@@ -206,11 +205,11 @@ TEST_F(UpdateBundleTest, GetTargetPayload) {
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(blob_reader(), backend());
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 
   {
     stream::IntervalReader res = update_bundle.GetTargetPayload("file1");
-    ASSERT_OK(res.status());
+    PW_TEST_ASSERT_OK(res.status());
 
     const char kExpectedContent[] = "file 1 content";
     char read_buffer[sizeof(kExpectedContent) + 1] = {0};
@@ -220,7 +219,7 @@ TEST_F(UpdateBundleTest, GetTargetPayload) {
 
   {
     stream::IntervalReader res = update_bundle.GetTargetPayload("file2");
-    ASSERT_OK(res.status());
+    PW_TEST_ASSERT_OK(res.status());
 
     const char kExpectedContent[] = "file 2 content";
     char read_buffer[sizeof(kExpectedContent) + 1] = {0};
@@ -239,14 +238,14 @@ TEST_F(UpdateBundleTest, PersistManifest) {
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(blob_reader(), backend());
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 
   std::byte manifest_buffer[sizeof(kTestBundleManifest)] = {};
   stream::MemoryWriter manifest_writer(manifest_buffer);
   backend().SetManifestWriter(&manifest_writer);
   ASSERT_FALSE(backend().BeforeManifestWriteCalled());
   ASSERT_FALSE(backend().AfterManifestWriteCalled());
-  ASSERT_OK(update_bundle.PersistManifest());
+  PW_TEST_ASSERT_OK(update_bundle.PersistManifest());
   ASSERT_TRUE(backend().BeforeManifestWriteCalled());
   ASSERT_TRUE(backend().AfterManifestWriteCalled());
 
@@ -277,7 +276,7 @@ TEST_F(UpdateBundleTest, SelfVerificationWithIncomingRoot) {
   UpdateBundleAccessor update_bundle(
       blob_reader(), backend(), /* self_verification = */ true);
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
   // Self verification must not persist anything.
   ASSERT_FALSE(backend().IsNewRootPersisted());
 
@@ -285,7 +284,7 @@ TEST_F(UpdateBundleTest, SelfVerificationWithIncomingRoot) {
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];
   stream::MemoryWriter manifest_writer(manifest_buffer);
   backend().SetManifestWriter(&manifest_writer);
-  ASSERT_OK(update_bundle.PersistManifest());
+  PW_TEST_ASSERT_OK(update_bundle.PersistManifest());
 
   ASSERT_EQ(
       memcmp(manifest_buffer, kTestBundleManifest, sizeof(kTestBundleManifest)),
@@ -297,7 +296,7 @@ TEST_F(UpdateBundleTest, SelfVerificationWithoutIncomingRoot) {
   UpdateBundleAccessor update_bundle(
       blob_reader(), backend(), /* self_verification = */ true);
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 }
 
 TEST_F(UpdateBundleTest, SelfVerificationWithMessedUpRoot) {
@@ -329,7 +328,7 @@ TEST_F(UpdateBundleTest, SelfVerificationIgnoresUnsignedBundle) {
   UpdateBundleAccessor update_bundle(
       blob_reader(), backend(), /* self_verification = */ true);
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
@@ -340,11 +339,11 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
 
   ASSERT_FALSE(backend().IsNewRootPersisted());
   ASSERT_FALSE(backend().BeforeManifestReadCalled());
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_TRUE(backend().IsNewRootPersisted());
   ASSERT_TRUE(backend().BeforeManifestReadCalled());
 
-  ASSERT_OK(update_bundle.Close());
+  PW_TEST_ASSERT_OK(update_bundle.Close());
   VerifyAllBundleOperationsDisallowed(update_bundle);
 }
 
@@ -360,11 +359,11 @@ TEST_F(UpdateBundleTest,
 
   ASSERT_FALSE(backend().IsNewRootPersisted());
   ASSERT_FALSE(backend().BeforeManifestReadCalled());
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_FALSE(backend().IsNewRootPersisted());
   ASSERT_TRUE(backend().BeforeManifestReadCalled());
 
-  ASSERT_OK(update_bundle.Close());
+  PW_TEST_ASSERT_OK(update_bundle.Close());
   VerifyAllBundleOperationsDisallowed(update_bundle);
 }
 
@@ -410,7 +409,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithoutExistingManifest) {
   UpdateBundleAccessor update_bundle(blob_reader(), backend());
 
   ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_TRUE(backend().IsNewRootPersisted());
 }
 
@@ -498,7 +497,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile0) {
   StageTestBundle(kTestBundlePersonalizedOutFile0);
   UpdateBundleAccessor update_bundle(blob_reader(), backend());
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile1) {
@@ -511,7 +510,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile1) {
   StageTestBundle(kTestBundlePersonalizedOutFile1);
   UpdateBundleAccessor update_bundle(blob_reader(), backend());
 
-  ASSERT_OK(update_bundle.OpenAndVerify());
+  PW_TEST_ASSERT_OK(update_bundle.OpenAndVerify());
 }
 
 TEST_F(UpdateBundleTest,

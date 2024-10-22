@@ -23,7 +23,6 @@ namespace {
 
 #define AS_BYTES(s) as_bytes(span(s, sizeof(s) - 1))
 
-#define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)
 
 // TEST_DIGEST/PUBKEY/SIGNATURE are generated using the pkey/ecdsa.c
@@ -95,14 +94,14 @@ namespace {
   "\xCD\x23\x00\x3F\xF9\xD9\x75\x46\xFF\x58\xE9\xBE\xC3\x74\x13\xB9"
 
 TEST(EcdsaP256, ValidSignature) {
-  ASSERT_OK(VerifyP256Signature(
+  PW_TEST_ASSERT_OK(VerifyP256Signature(
       AS_BYTES(TEST_PUBKEY), AS_BYTES(TEST_DIGEST), AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, LongerDigestGetsTruncated) {
-  ASSERT_OK(VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
-                                AS_BYTES(TEST_DIGEST "extra stuff"),
-                                AS_BYTES(TEST_SIGNATURE)));
+  PW_TEST_ASSERT_OK(VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                        AS_BYTES(TEST_DIGEST "extra stuff"),
+                                        AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, MalformedPublicKeyMissingHeader) {

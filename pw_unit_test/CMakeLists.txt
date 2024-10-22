@@ -61,6 +61,8 @@ pw_add_library(pw_unit_test.light STATIC
     pw_bytes.alignment
     pw_polyfill
     pw_preprocessor
+    pw_result
+    pw_status
     pw_string.builder
     pw_unit_test.config
   PRIVATE_DEPS
@@ -78,6 +80,8 @@ pw_add_library(pw_unit_test.googletest INTERFACE
     googletest_public_overrides
   PUBLIC_DEPS
     pw_third_party.googletest
+    pw_result
+    pw_status
 )
 
 pw_add_library(pw_unit_test.googletest_handler_adapter STATIC

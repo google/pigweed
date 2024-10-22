@@ -20,8 +20,6 @@
 #include "pw_stream/stream.h"
 #include "pw_unit_test/framework.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
-
 namespace pw::protobuf {
 namespace {
 
@@ -84,13 +82,13 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntry) {
   for (auto ele : kMapData) {
     stream::MemoryReader key_reader(as_bytes(span<const char>{ele.key}));
     stream::MemoryReader value_reader(as_bytes(span<const char>{ele.value}));
-    ASSERT_OK(WriteProtoStringToBytesMapEntry(ele.field_number,
-                                              key_reader,
-                                              ele.key.size(),
-                                              value_reader,
-                                              ele.value.size(),
-                                              stream_pipe_buffer,
-                                              writer));
+    PW_TEST_ASSERT_OK(WriteProtoStringToBytesMapEntry(ele.field_number,
+                                                      key_reader,
+                                                      ele.key.size(),
+                                                      value_reader,
+                                                      ele.value.size(),
+                                                      stream_pipe_buffer,
+                                                      writer));
   }
 
   ASSERT_EQ(memcmp(dst_buffer, encoded_proto, sizeof(dst_buffer)), 0);

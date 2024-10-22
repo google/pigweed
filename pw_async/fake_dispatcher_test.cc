@@ -18,7 +18,6 @@
 #include "pw_string/to_string.h"
 #include "pw_unit_test/framework.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
 
 using namespace std::chrono_literals;
@@ -274,7 +273,7 @@ TEST(FakeDispatcher, CancelInsideOtherTaskCancelsTaskWithoutRunningIt) {
   Task cancelled_task(cancelled_task_counter.fn());
 
   Task canceling_task([&cancelled_task](Context& c, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     ASSERT_TRUE(c.dispatcher->Cancel(cancelled_task));
   });
 
@@ -293,7 +292,7 @@ TEST(FakeDispatcher, CancelInsideCurrentTaskFails) {
 
   Task self_cancel_task;
   self_cancel_task.set_function([&self_cancel_task](Context& c, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     ASSERT_FALSE(c.dispatcher->Cancel(self_cancel_task));
   });
   dispatcher.Post(self_cancel_task);
@@ -309,7 +308,7 @@ TEST(FakeDispatcher, RequestStopInsideOtherTaskCancelsOtherTask) {
 
   int stop_count = 0;
   Task stop_task([&stop_count]([[maybe_unused]] Context& c, Status status) {
-    ASSERT_OK(status);
+    PW_TEST_ASSERT_OK(status);
     stop_count++;
     static_cast<FakeDispatcher*>(c.dispatcher)->RequestStop();
   });

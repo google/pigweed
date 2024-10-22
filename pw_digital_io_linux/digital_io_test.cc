@@ -31,7 +31,6 @@
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_unit_test/framework.h"
-#include "test_utils.h"
 
 namespace pw::digital_io {
 namespace {
@@ -433,11 +432,11 @@ TEST_F(DigitalIoTest, DoInput) {
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveHigh);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
   EXPECT_LINE_NOT_REQUESTED(line);
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.Enable());
   EXPECT_LINE_REQUESTED_INPUT(line);
 
   Result<State> state;
@@ -445,17 +444,17 @@ TEST_F(DigitalIoTest, DoInput) {
   // Force the line high and assert it is seen as active (active high).
   line.ForcePhysicalState(true);
   state = input.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 
   // Force the line low and assert it is seen as inactive (active high).
   line.ForcePhysicalState(false);
   state = input.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_OK(input.Disable());
+  PW_TEST_ASSERT_OK(input.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
 }
 
@@ -467,11 +466,11 @@ TEST_F(DigitalIoTest, DoInputInvert) {
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveLow);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input, chip.GetInputLine(config));
 
   // Enable the input, and ensure it is requested.
   EXPECT_LINE_NOT_REQUESTED(line);
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.Enable());
   EXPECT_LINE_REQUESTED_INPUT(line);
 
   Result<State> state;
@@ -479,17 +478,17 @@ TEST_F(DigitalIoTest, DoInputInvert) {
   // Force the line high and assert it is seen as inactive (active low).
   line.ForcePhysicalState(true);
   state = input.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Force the line low and assert it is seen as active (active low).
   line.ForcePhysicalState(false);
   state = input.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_OK(input.Disable());
+  PW_TEST_ASSERT_OK(input.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
 }
 
@@ -502,26 +501,26 @@ TEST_F(DigitalIoTest, DoOutput) {
       /* gpio_polarity= */ Polarity::kActiveHigh,
       /* gpio_default_state== */ State::kActive);
 
-  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
   EXPECT_LINE_NOT_REQUESTED(line);
-  ASSERT_OK(output.Enable());
+  PW_TEST_ASSERT_OK(output.Enable());
   EXPECT_LINE_REQUESTED_OUTPUT(line);
 
   // Expect the line to go high, due to default_state=kActive (active high).
   ASSERT_TRUE(line.physical_state());
 
   // Set the output's state to inactive, and assert it goes low (active high).
-  ASSERT_OK(output.SetStateInactive());
+  PW_TEST_ASSERT_OK(output.SetStateInactive());
   ASSERT_FALSE(line.physical_state());
 
   // Set the output's state to active, and assert it goes high (active high).
-  ASSERT_OK(output.SetStateActive());
+  PW_TEST_ASSERT_OK(output.SetStateActive());
   ASSERT_TRUE(line.physical_state());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_OK(output.Disable());
+  PW_TEST_ASSERT_OK(output.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
@@ -536,26 +535,26 @@ TEST_F(DigitalIoTest, DoOutputInvert) {
       /* gpio_polarity= */ Polarity::kActiveLow,
       /* gpio_default_state== */ State::kActive);
 
-  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
   // Enable the output, and ensure it is requested.
   EXPECT_LINE_NOT_REQUESTED(line);
-  ASSERT_OK(output.Enable());
+  PW_TEST_ASSERT_OK(output.Enable());
   EXPECT_LINE_REQUESTED_OUTPUT(line);
 
   // Expect the line to stay low, due to default_state=kActive (active low).
   ASSERT_FALSE(line.physical_state());
 
   // Set the output's state to inactive, and assert it goes high (active low).
-  ASSERT_OK(output.SetStateInactive());
+  PW_TEST_ASSERT_OK(output.SetStateInactive());
   ASSERT_TRUE(line.physical_state());
 
   // Set the output's state to active, and assert it goes low (active low).
-  ASSERT_OK(output.SetStateActive());
+  PW_TEST_ASSERT_OK(output.SetStateActive());
   ASSERT_FALSE(line.physical_state());
 
   // Disable the line and ensure it is no longer requested.
-  ASSERT_OK(output.Disable());
+  PW_TEST_ASSERT_OK(output.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
   // NOTE: We do not assert line.physical_state() here.
   // See the warning on LinuxDigitalOut in docs.rst.
@@ -571,9 +570,9 @@ TEST_F(DigitalIoTest, OutputGetState) {
       /* gpio_polarity= */ Polarity::kActiveHigh,
       /* gpio_default_state== */ State::kInactive);
 
-  ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto output, chip.GetOutputLine(config));
 
-  ASSERT_OK(output.Enable());
+  PW_TEST_ASSERT_OK(output.Enable());
 
   // Expect the line to stay low, due to default_state=kInactive (active high).
   ASSERT_FALSE(line.physical_state());
@@ -582,14 +581,14 @@ TEST_F(DigitalIoTest, OutputGetState) {
 
   // Verify GetState() returns the expected state: inactive (default_state).
   state = output.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kInactive, state.value());
 
   // Set the output's state to active, then verify GetState() returns the
   // new expected state.
-  ASSERT_OK(output.SetStateActive());
+  PW_TEST_ASSERT_OK(output.SetStateActive());
   state = output.GetState();
-  ASSERT_OK(state.status());
+  PW_TEST_ASSERT_OK(state.status());
   ASSERT_EQ(State::kActive, state.value());
 }
 
@@ -599,79 +598,82 @@ TEST_F(DigitalIoTest, OutputGetState) {
 
 TEST_F(DigitalIoTest, DoInputInterruptsEnabledBefore) {
   LinuxDigitalIoChip chip = OpenChip();
-  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
 
   auto& line = line0();
   LinuxInputConfig config(
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveHigh);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input,
+                               chip.GetInterruptLine(config, notifier));
 
   EXPECT_LINE_NOT_REQUESTED(line);
 
   // Have to set a handler before we can enable interrupts.
-  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
-                                      [](State) {}));
+  PW_TEST_ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
+                                              [](State) {}));
 
   // pw_digital_io says the line should be enabled before calling
   // EnableInterruptHandler(), but we explicitly support it being called with
   // the line disabled to avoid an unnecessary file close/reopen.
-  ASSERT_OK(input.EnableInterruptHandler());
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.EnableInterruptHandler());
+  PW_TEST_ASSERT_OK(input.Enable());
 
   // Interrupts requested; should be a line event handle.
   EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
 
   // Disable; nothing should be requested.
-  ASSERT_OK(input.Disable());
+  PW_TEST_ASSERT_OK(input.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
 }
 
 TEST_F(DigitalIoTest, DoInputInterruptsEnabledAfter) {
   LinuxDigitalIoChip chip = OpenChip();
-  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
 
   auto& line = line0();
   LinuxInputConfig config(
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveHigh);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input,
+                               chip.GetInterruptLine(config, notifier));
 
   EXPECT_LINE_NOT_REQUESTED(line);
 
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.Enable());
 
   // No interrupts requested; should be a normal line handle.
   EXPECT_LINE_REQUESTED_INPUT(line);
 
   // Interrupts requested while enabled; should be a line event handle.
   // Have to set a handler before we can enable interrupts.
-  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
-                                      [](State) {}));
-  ASSERT_OK(input.EnableInterruptHandler());
+  PW_TEST_ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kActivatingEdge,
+                                              [](State) {}));
+  PW_TEST_ASSERT_OK(input.EnableInterruptHandler());
   EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
 
   // Interrupts disabled while enabled; should revert to a normal line handle.
-  ASSERT_OK(input.DisableInterruptHandler());
+  PW_TEST_ASSERT_OK(input.DisableInterruptHandler());
   EXPECT_LINE_REQUESTED_INPUT(line);
 
   // Disable; nothing should be requested.
-  ASSERT_OK(input.Disable());
+  PW_TEST_ASSERT_OK(input.Disable());
   EXPECT_LINE_NOT_REQUESTED(line);
 }
 
 TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
   LinuxDigitalIoChip chip = OpenChip();
-  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
 
   auto& line = line0();
   LinuxInputConfig config(
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveHigh);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input,
+                               chip.GetInterruptLine(config, notifier));
 
   std::vector<State> interrupts;
   auto handler = [&interrupts](State state) {
@@ -680,14 +682,14 @@ TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
     interrupts.push_back(state);
   };
 
-  ASSERT_OK(
+  PW_TEST_ASSERT_OK(
       input.SetInterruptHandler(InterruptTrigger::kActivatingEdge, handler));
 
   // pw_digital_io says the line should be enabled before calling
   // EnableInterruptHandler(), but we explicitly support it being called with
   // the line disabled to avoid an unnecessary file close/reopen.
-  ASSERT_OK(input.EnableInterruptHandler());
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.EnableInterruptHandler());
+  PW_TEST_ASSERT_OK(input.Enable());
 
   EXPECT_LINE_REQUESTED_INPUT_INTERRUPT(line);
   LineEventFile* evt = line.current_event_handle();
@@ -700,7 +702,8 @@ TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
 
   constexpr int timeout = 0;  // Don't block
   PW_LOG_DEBUG("WaitForEvents(%d)", timeout);
-  ASSERT_OK_AND_ASSIGN(unsigned int count, notifier->WaitForEvents(timeout));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(unsigned int count,
+                               notifier->WaitForEvents(timeout));
   EXPECT_EQ(count, 1u);
 
   EXPECT_EQ(interrupts,
@@ -711,14 +714,15 @@ TEST_F(DigitalIoTest, DoInputInterruptsReadOne) {
 
 TEST_F(DigitalIoTest, DoInputInterruptsThread) {
   LinuxDigitalIoChip chip = OpenChip();
-  ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto notifier, LinuxGpioNotifier::Create());
 
   auto& line = line0();
   LinuxInputConfig config(
       /* gpio_index= */ 0,
       /* gpio_polarity= */ Polarity::kActiveHigh);
 
-  ASSERT_OK_AND_ASSIGN(auto input, chip.GetInterruptLine(config, notifier));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(auto input,
+                               chip.GetInterruptLine(config, notifier));
 
   constexpr unsigned int kCount = 10;
   struct {
@@ -739,13 +743,14 @@ TEST_F(DigitalIoTest, DoInputInterruptsThread) {
     context.HandleInterrupt(state);
   };
 
-  ASSERT_OK(input.SetInterruptHandler(InterruptTrigger::kBothEdges, handler));
+  PW_TEST_ASSERT_OK(
+      input.SetInterruptHandler(InterruptTrigger::kBothEdges, handler));
 
   // pw_digital_io says the line should be enabled before calling
   // EnableInterruptHandler(), but we explicitly support it being called with
   // the line disabled to avoid an unnecessary file close/reopen.
-  ASSERT_OK(input.EnableInterruptHandler());
-  ASSERT_OK(input.Enable());
+  PW_TEST_ASSERT_OK(input.EnableInterruptHandler());
+  PW_TEST_ASSERT_OK(input.Enable());
 
   // Run a notifier thread.
   pw::Thread notif_thread(pw::thread::stl::Options(), *notifier);

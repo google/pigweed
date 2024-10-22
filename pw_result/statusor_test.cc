@@ -34,9 +34,6 @@
 
 namespace {
 
-#define EXPECT_OK(expression) EXPECT_EQ(::pw::OkStatus(), expression)
-#define ASSERT_OK(expression) ASSERT_EQ(::pw::OkStatus(), expression)
-
 struct CopyDetector {
   CopyDetector() = default;
   explicit CopyDetector(int xx) : x(xx) {}
@@ -368,7 +365,7 @@ TEST(Result, TestCopyCtorStatusOk) {
   const int kI = 4;
   const pw::Result<int> original(kI);
   const pw::Result<int> copy(original);
-  EXPECT_OK(copy.status());
+  PW_TEST_EXPECT_OK(copy.status());
   EXPECT_EQ(*original, *copy);
 }
 
@@ -383,7 +380,7 @@ TEST(Result, TestCopyCtorNonAssignable) {
   CopyNoAssign value(kI);
   pw::Result<CopyNoAssign> original(value);
   pw::Result<CopyNoAssign> copy(original);
-  EXPECT_OK(copy.status());
+  PW_TEST_EXPECT_OK(copy.status());
   EXPECT_EQ(original->foo, copy->foo);
 }
 
@@ -391,7 +388,7 @@ TEST(Result, TestCopyCtorStatusOKConverting) {
   const int kI = 4;
   pw::Result<int> original(kI);
   pw::Result<double> copy(original);
-  EXPECT_OK(copy.status());
+  PW_TEST_EXPECT_OK(copy.status());
   EXPECT_EQ(*original, *copy);
 }
 
@@ -411,11 +408,11 @@ TEST(Result, TestAssignmentStatusOk) {
     target = source;
 
     ASSERT_TRUE(target.ok());
-    EXPECT_OK(target.status());
+    PW_TEST_EXPECT_OK(target.status());
     EXPECT_EQ(p, *target);
 
     ASSERT_TRUE(source.ok());
-    EXPECT_OK(source.status());
+    PW_TEST_EXPECT_OK(source.status());
     EXPECT_EQ(p, *source);
   }
 
@@ -428,11 +425,11 @@ TEST(Result, TestAssignmentStatusOk) {
     target = std::move(source);
 
     ASSERT_TRUE(target.ok());
-    EXPECT_OK(target.status());
+    PW_TEST_EXPECT_OK(target.status());
     EXPECT_EQ(p, *target);
 
     ASSERT_TRUE(source.ok());  // NOLINT(bugprone-use-after-move)
-    EXPECT_OK(source.status());
+    PW_TEST_EXPECT_OK(source.status());
     EXPECT_EQ(nullptr, *source);
   }
 }
@@ -480,11 +477,11 @@ TEST(Result, TestAssignmentStatusOKConverting) {
     target = source;
 
     ASSERT_TRUE(target.ok());
-    EXPECT_OK(target.status());
+    PW_TEST_EXPECT_OK(target.status());
     EXPECT_EQ(kI, *target);
 
     ASSERT_TRUE(source.ok());
-    EXPECT_OK(source.status());
+    PW_TEST_EXPECT_OK(source.status());
     EXPECT_EQ(kI, *source);
   }
 
@@ -497,11 +494,11 @@ TEST(Result, TestAssignmentStatusOKConverting) {
     target = std::move(source);
 
     ASSERT_TRUE(target.ok());
-    EXPECT_OK(target.status());
+    PW_TEST_EXPECT_OK(target.status());
     EXPECT_EQ(p, target->get());
 
     ASSERT_TRUE(source.ok());  // NOLINT(bugprone-use-after-move)
-    EXPECT_OK(source.status());
+    PW_TEST_EXPECT_OK(source.status());
     EXPECT_EQ(nullptr, source->get());
   }
 }
@@ -533,13 +530,13 @@ struct ImplicitConstructibleFromA {
 TEST(Result, ImplicitConvertingConstructor) {
   auto status_or = implicit_cast<pw::Result<ImplicitConstructibleFromA>>(
       pw::Result<A>(A{11}));
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_EQ(status_or->x, 11);
   EXPECT_TRUE(status_or->moved);
 
   pw::Result<A> a(A{12});
   auto status_or_2 = implicit_cast<pw::Result<ImplicitConstructibleFromA>>(a);
-  ASSERT_OK(status_or_2.status());
+  PW_TEST_ASSERT_OK(status_or_2.status());
   EXPECT_EQ(status_or_2->x, 12);
   EXPECT_FALSE(status_or_2->moved);
 }
@@ -559,13 +556,13 @@ TEST(Result, ExplicitConvertingConstructor) {
       (std::is_convertible<pw::Result<A>&&,
                            pw::Result<ExplicitConstructibleFromA>>::value));
   auto a1 = pw::Result<ExplicitConstructibleFromA>(pw::Result<A>(A{11}));
-  ASSERT_OK(a1.status());
+  PW_TEST_ASSERT_OK(a1.status());
   EXPECT_EQ(a1->x, 11);
   EXPECT_TRUE(a1->moved);
 
   pw::Result<A> a(A{12});
   auto a2 = pw::Result<ExplicitConstructibleFromA>(a);
-  ASSERT_OK(a2.status());
+  PW_TEST_ASSERT_OK(a2.status());
   EXPECT_EQ(a2->x, 12);
   EXPECT_FALSE(a2->moved);
 }
@@ -583,15 +580,15 @@ struct ConvertibleToBool {
 
 TEST(Result, ImplicitBooleanConstructionWithImplicitCasts) {
   auto a = pw::Result<bool>(pw::Result<ConvertibleToBool>(true));
-  ASSERT_OK(a.status());
+  PW_TEST_ASSERT_OK(a.status());
   EXPECT_TRUE(*a);
 
   auto b = pw::Result<bool>(pw::Result<ConvertibleToBool>(false));
-  ASSERT_OK(b.status());
+  PW_TEST_ASSERT_OK(b.status());
   EXPECT_FALSE(*b);
 
   auto c = pw::Result<ImplicitConstructibleFromBool>(pw::Result<bool>(false));
-  ASSERT_OK(c.status());
+  PW_TEST_ASSERT_OK(c.status());
   EXPECT_EQ(c->x, false);
   EXPECT_FALSE(
       (std::is_convertible<pw::Result<ConvertibleToBool>,
@@ -600,15 +597,15 @@ TEST(Result, ImplicitBooleanConstructionWithImplicitCasts) {
 
 TEST(Result, BooleanConstructionWithImplicitCasts) {
   auto a = pw::Result<bool>(pw::Result<ConvertibleToBool>(true));
-  ASSERT_OK(a.status());
+  PW_TEST_ASSERT_OK(a.status());
   EXPECT_TRUE(*a);
 
   auto b = pw::Result<bool>(pw::Result<ConvertibleToBool>(false));
-  ASSERT_OK(b.status());
+  PW_TEST_ASSERT_OK(b.status());
   EXPECT_FALSE(*b);
 
   auto c = pw::Result<ImplicitConstructibleFromBool>{pw::Result<bool>(false)};
-  ASSERT_OK(c.status());
+  PW_TEST_ASSERT_OK(c.status());
   EXPECT_FALSE(c->x);
 
   auto d = pw::Result<ImplicitConstructibleFromBool>{
@@ -617,7 +614,7 @@ TEST(Result, BooleanConstructionWithImplicitCasts) {
 
   auto e = pw::Result<ImplicitConstructibleFromBool>{
       pw::Result<ConvertibleToBool>(ConvertibleToBool{false})};
-  ASSERT_OK(e.status());
+  PW_TEST_ASSERT_OK(e.status());
   EXPECT_FALSE(e->x);
 
   auto f = pw::Result<ImplicitConstructibleFromBool>{
@@ -627,44 +624,44 @@ TEST(Result, BooleanConstructionWithImplicitCasts) {
 
 TEST(Result, ConstImplicitCast) {
   auto a = implicit_cast<pw::Result<bool>>(pw::Result<const bool>(true));
-  ASSERT_OK(a.status());
+  PW_TEST_ASSERT_OK(a.status());
   EXPECT_TRUE(*a);
   auto b = implicit_cast<pw::Result<bool>>(pw::Result<const bool>(false));
-  ASSERT_OK(b.status());
+  PW_TEST_ASSERT_OK(b.status());
   EXPECT_FALSE(*b);
   auto c = implicit_cast<pw::Result<const bool>>(pw::Result<bool>(true));
-  ASSERT_OK(c.status());
+  PW_TEST_ASSERT_OK(c.status());
   EXPECT_TRUE(*c);
   auto d = implicit_cast<pw::Result<const bool>>(pw::Result<bool>(false));
-  ASSERT_OK(d.status());
+  PW_TEST_ASSERT_OK(d.status());
   EXPECT_FALSE(*d);
   auto e = implicit_cast<pw::Result<const std::string>>(
       pw::Result<std::string>("foo"));
-  ASSERT_OK(e.status());
+  PW_TEST_ASSERT_OK(e.status());
   EXPECT_EQ(*e, "foo");
   auto f = implicit_cast<pw::Result<std::string>>(
       pw::Result<const std::string>("foo"));
-  ASSERT_OK(f.status());
+  PW_TEST_ASSERT_OK(f.status());
   EXPECT_EQ(*f, "foo");
   auto g = implicit_cast<pw::Result<std::shared_ptr<const std::string>>>(
       pw::Result<std::shared_ptr<std::string>>(
           std::make_shared<std::string>("foo")));
-  ASSERT_OK(g.status());
+  PW_TEST_ASSERT_OK(g.status());
   EXPECT_EQ(*(*g), "foo");
 }
 
 TEST(Result, ConstExplicitConstruction) {
   auto a = pw::Result<bool>(pw::Result<const bool>(true));
-  ASSERT_OK(a.status());
+  PW_TEST_ASSERT_OK(a.status());
   EXPECT_TRUE(*a);
   auto b = pw::Result<bool>(pw::Result<const bool>(false));
-  ASSERT_OK(b.status());
+  PW_TEST_ASSERT_OK(b.status());
   EXPECT_FALSE(*b);
   auto c = pw::Result<const bool>(pw::Result<bool>(true));
-  ASSERT_OK(c.status());
+  PW_TEST_ASSERT_OK(c.status());
   EXPECT_TRUE(*c);
   auto d = pw::Result<const bool>(pw::Result<bool>(false));
-  ASSERT_OK(d.status());
+  PW_TEST_ASSERT_OK(d.status());
   EXPECT_FALSE(*d);
 }
 
@@ -675,7 +672,7 @@ struct ExplicitConstructibleFromInt {
 
 TEST(Result, ExplicitConstruction) {
   auto a = pw::Result<ExplicitConstructibleFromInt>(10);
-  ASSERT_OK(a.status());
+  PW_TEST_ASSERT_OK(a.status());
   EXPECT_EQ(a->x, 10);
 }
 
@@ -683,7 +680,7 @@ TEST(Result, ImplicitConstruction) {
   // Check implicit casting works.
   auto status_or =
       implicit_cast<pw::Result<std::variant<int, std::string>>>(10);
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_EQ(std::get<int>(*status_or), 10);
 }
 
@@ -691,7 +688,7 @@ TEST(Result, ImplicitConstructionFromInitliazerList) {
   // Note: dropping the explicit std::initializer_list<int> is not supported
   // by pw::Result or std::optional.
   auto status_or = implicit_cast<pw::Result<std::vector<int>>>({{10, 20, 30}});
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   ASSERT_EQ(status_or->size(), 3u);
   EXPECT_EQ((*status_or)[0], 10);
   EXPECT_EQ((*status_or)[1], 20);
@@ -701,7 +698,7 @@ TEST(Result, ImplicitConstructionFromInitliazerList) {
 TEST(Result, UniquePtrImplicitConstruction) {
   auto status_or = implicit_cast<pw::Result<std::unique_ptr<Base1>>>(
       std::make_unique<Derived>());
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_NE(status_or->get(), nullptr);
 }
 
@@ -709,7 +706,7 @@ TEST(Result, NestedResultCopyAndMoveConstructorTests) {
   pw::Result<pw::Result<CopyDetector>> status_or = CopyDetector(10);
   pw::Result<pw::Result<CopyDetector>> status_error =
       pw::Status::InvalidArgument();
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_OK_AND_COPY_DETECTOR_HAS(*status_or, 10, true, false);
   pw::Result<pw::Result<CopyDetector>> a = status_or;
   EXPECT_OK_AND_COPY_DETECTOR_HAS(*a, 10, false, true);
@@ -718,14 +715,14 @@ TEST(Result, NestedResultCopyAndMoveConstructorTests) {
 
   const pw::Result<pw::Result<CopyDetector>>& cref = status_or;
   pw::Result<pw::Result<CopyDetector>> b = cref;  // NOLINT
-  ASSERT_OK(b.status());
+  PW_TEST_ASSERT_OK(b.status());
   EXPECT_OK_AND_COPY_DETECTOR_HAS(*b, 10, false, true);
   const pw::Result<pw::Result<CopyDetector>>& cref_err = status_error;
   pw::Result<pw::Result<CopyDetector>> b_err = cref_err;  // NOLINT
   EXPECT_FALSE(b_err.ok());
 
   pw::Result<pw::Result<CopyDetector>> c = std::move(status_or);
-  ASSERT_OK(c.status());
+  PW_TEST_ASSERT_OK(c.status());
   EXPECT_OK_AND_COPY_DETECTOR_HAS(*c, 10, true, false);
   pw::Result<pw::Result<CopyDetector>> c_err = std::move(status_error);
   EXPECT_FALSE(c_err.ok());
@@ -874,14 +871,14 @@ TEST(Result, StdAnyAssignment) {
 TEST(Result, ImplicitAssignment) {
   pw::Result<std::variant<int, std::string>> status_or;
   status_or = 10;
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_EQ(std::get<int>(*status_or), 10);
 }
 
 TEST(Result, SelfDirectInitAssignment) {
   pw::Result<std::vector<int>> status_or = {{10, 20, 30}};
   status_or = *status_or;
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   ASSERT_EQ(status_or->size(), 3u);
   EXPECT_EQ((*status_or)[0], 10);
   EXPECT_EQ((*status_or)[1], 20);
@@ -890,7 +887,7 @@ TEST(Result, SelfDirectInitAssignment) {
 
 TEST(Result, ImplicitCastFromInitializerList) {
   pw::Result<std::vector<int>> status_or = {{10, 20, 30}};
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   ASSERT_EQ(status_or->size(), 3u);
   EXPECT_EQ((*status_or)[0], 10);
   EXPECT_EQ((*status_or)[1], 20);
@@ -900,7 +897,7 @@ TEST(Result, ImplicitCastFromInitializerList) {
 TEST(Result, UniquePtrImplicitAssignment) {
   pw::Result<std::unique_ptr<Base1>> status_or;
   status_or = std::make_unique<Derived>();
-  ASSERT_OK(status_or.status());
+  PW_TEST_ASSERT_OK(status_or.status());
   EXPECT_NE(status_or->get(), nullptr);
 }
 
@@ -960,7 +957,7 @@ TEST(Result, SelfAssignment) {
     so = *&so;
 
     ASSERT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(long_str, *so);
   }
 
@@ -982,7 +979,7 @@ TEST(Result, SelfAssignment) {
     so = std::move(same);
 
     ASSERT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(17, *so);
   }
 
@@ -1008,7 +1005,7 @@ TEST(Result, SelfAssignment) {
     so = std::move(same);
 
     ASSERT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(raw, so->get());
   }
 
@@ -1240,7 +1237,7 @@ TEST(Result, TestPointerValueCtor) {
   {
     pw::Result<const int*> so(&kI);
     EXPECT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(&kI, *so);
   }
 
@@ -1248,7 +1245,7 @@ TEST(Result, TestPointerValueCtor) {
   {
     pw::Result<const int*> so(nullptr);
     EXPECT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(nullptr, *so);
   }
 
@@ -1258,7 +1255,7 @@ TEST(Result, TestPointerValueCtor) {
 
     pw::Result<const int*> so(p);
     EXPECT_TRUE(so.ok());
-    EXPECT_OK(so.status());
+    PW_TEST_EXPECT_OK(so.status());
     EXPECT_EQ(nullptr, *so);
   }
 }
@@ -1267,7 +1264,7 @@ TEST(Result, TestPointerCopyCtorStatusOk) {
   const int kI = 0;
   pw::Result<const int*> original(&kI);
   pw::Result<const int*> copy(original);
-  EXPECT_OK(copy.status());
+  PW_TEST_EXPECT_OK(copy.status());
   EXPECT_EQ(*original, *copy);
 }
 
@@ -1281,7 +1278,7 @@ TEST(Result, TestPointerCopyCtorStatusOKConverting) {
   Derived derived;
   pw::Result<Derived*> original(&derived);
   pw::Result<Base2*> copy(original);
-  EXPECT_OK(copy.status());
+  PW_TEST_EXPECT_OK(copy.status());
   EXPECT_EQ(static_cast<const Base2*>(*original), *copy);
 }
 
@@ -1296,7 +1293,7 @@ TEST(Result, TestPointerAssignmentStatusOk) {
   pw::Result<const int*> source(&kI);
   pw::Result<const int*> target;
   target = source;
-  EXPECT_OK(target.status());
+  PW_TEST_EXPECT_OK(target.status());
   EXPECT_EQ(*source, *target);
 }
 
@@ -1312,7 +1309,7 @@ TEST(Result, TestPointerAssignmentStatusOKConverting) {
   pw::Result<Derived*> source(&derived);
   pw::Result<Base2*> target;
   target = source;
-  EXPECT_OK(target.status());
+  PW_TEST_EXPECT_OK(target.status());
   EXPECT_EQ(static_cast<const Base2*>(*source), *target);
 }
 

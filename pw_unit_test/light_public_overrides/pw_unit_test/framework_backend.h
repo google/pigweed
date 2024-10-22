@@ -34,6 +34,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 #include "pw_span/span.h"
+#include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
@@ -351,10 +352,10 @@ StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
   // How many bytes of the object to print.
   //
   // WARNING: Printing the contents of an object may be undefined behavior!
-  // Accessing unintialized memory is undefined behavior, and objects sometimes
-  // contiain uninitialized regions, such as padding bytes or unalloacted
-  // storage (e.g. std::optional). kPrintMaybeUnintializedBytes MUST stay at 0,
-  // except when changed locally to help with debugging.
+  // Accessing uninitialized memory is undefined behavior, and objects
+  // sometimes contain uninitialized regions, such as padding bytes or
+  // unallocated storage (e.g. std::optional). kPrintMaybeUninitializedBytes
+  // MUST stay at 0, except when changed locally to help with debugging.
   constexpr size_t kPrintMaybeUnintializedBytes = 0;
 
   constexpr size_t kBytesToPrint =
@@ -363,7 +364,8 @@ StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
   if (kBytesToPrint != 0u) {
     sb << " |";
 
-    // reinterpret_cast to std::byte is permitted by C++'s type aliasing rules.
+    // reinterpret_cast to std::byte is permitted by C++'s type aliasing
+    // rules.
     const std::byte* bytes = reinterpret_cast<const std::byte*>(&value);
 
     for (size_t i = 0; i < kBytesToPrint; ++i) {
@@ -394,8 +396,8 @@ class TestInfo;
 using SetUpTestSuiteFunc = void (*)();
 using TearDownTestSuiteFunc = void (*)();
 
-// Used to tag arguments to EXPECT_STREQ/EXPECT_STRNE so they are treated like C
-// strings rather than pointers.
+// Used to tag arguments to EXPECT_STREQ/EXPECT_STRNE so they are treated like
+// C strings rather than pointers.
 struct CStringArg {
   const char* const c_str;
 };
@@ -420,8 +422,8 @@ class FailureMessageAdapter {
   }
 };
 
-// Used to ignore a stream-style message in an assert, which returns. This uses
-// a similar approach as upstream GoogleTest, but drops any messages.
+// Used to ignore a stream-style message in an assert, which returns. This
+// uses a similar approach as upstream GoogleTest, but drops any messages.
 class ReturnHelper {
  public:
   constexpr ReturnHelper() = default;
@@ -460,9 +462,9 @@ class Framework {
     event_handler_ = event_handler;
   }
 
-  // Runs all registered test cases, returning a status of 0 if all succeeded or
-  // nonzero if there were any failures. Test events that occur during the run
-  // are sent to the registered event handler, if any.
+  // Runs all registered test cases, returning a status of 0 if all succeeded
+  // or nonzero if there were any failures. Test events that occur during the
+  // run are sent to the registered event handler, if any.
   int RunAllTests();
 
   // Only run test suites whose names are included in the provided list during
@@ -483,11 +485,11 @@ class Framework {
   // Constructs an instance of a unit test class and runs the test.
   //
   // Tests are constructed within a static memory pool at run time instead of
-  // being statically allocated to avoid blowing up the size of the test binary
-  // in cases where users have large test fixtures (e.g. containing buffers)
-  // reused many times. Instead, only a small, fixed-size TestInfo struct is
-  // statically allocated per test case, with a run() function that references
-  // this method instantiated for its test class.
+  // being statically allocated to avoid blowing up the size of the test
+  // binary in cases where users have large test fixtures (e.g. containing
+  // buffers) reused many times. Instead, only a small, fixed-size TestInfo
+  // struct is statically allocated per test case, with a run() function that
+  // references this method instantiated for its test class.
   template <typename TestInstance>
   static void CreateAndRunTest(const TestInfo& test_info) {
     static_assert(
@@ -591,8 +593,8 @@ class Framework {
 
  private:
   // Convert char* to void* so that they are printed as pointers instead of
-  // strings in EXPECT_EQ and other macros. EXPECT_STREQ wraps its pointers in a
-  // CStringArg so its pointers are treated like C strings.
+  // strings in EXPECT_EQ and other macros. EXPECT_STREQ wraps its pointers in
+  // a CStringArg so its pointers are treated like C strings.
   static constexpr const void* ConvertForPrint(const char* str) { return str; }
 
   static constexpr const void* ConvertForPrint(char* str) { return str; }
@@ -612,10 +614,12 @@ class Framework {
   // If current_test_ was the last of its suite, call tear_down_ts
   void TearDownTestSuiteIfNeeded(TearDownTestSuiteFunc tear_down_ts) const;
 
-  // Sets current_test_ and dispatches an event indicating that a test started.
+  // Sets current_test_ and dispatches an event indicating that a test
+  // started.
   void StartTest(const TestInfo& test);
 
-  // Dispatches event indicating that a test finished and clears current_test_.
+  // Dispatches event indicating that a test finished and clears
+  // current_test_.
   void EndCurrentTest();
 
   // Singleton instance of the framework class.
@@ -645,9 +649,9 @@ class Framework {
   alignas(std::max_align_t) std::byte memory_pool_[config::kMemoryPoolSize];
 };
 
-// Information about a single test case, including a pointer to a function which
-// constructs and runs the test class. These are statically allocated instead of
-// the test classes, as test classes can be very large.
+// Information about a single test case, including a pointer to a function
+// which constructs and runs the test class. These are statically allocated
+// instead of the test classes, as test classes can be very large.
 class TestInfo {
  public:
   TestInfo(const char* const test_suite_name,
@@ -662,8 +666,9 @@ class TestInfo {
     Framework::Get().RegisterTest(this);
   }
 
-  // The name of the suite to which the test case belongs, the name of the test
-  // case itself, and the path to the file in which the test case is located.
+  // The name of the suite to which the test case belongs, the name of the
+  // test case itself, and the path to the file in which the test case is
+  // located.
   const TestCase& test_case() const { return test_case_; }
 
   bool enabled() const;
@@ -696,8 +701,8 @@ class TestInfo {
 //   }
 //
 // A new class is defined for the test, e.g. MyTest_SaysHello_Test. This class
-// inherits from the Test class and implements its PigweedTestBody function with
-// the block provided to the TEST macro.
+// inherits from the Test class and implements its PigweedTestBody function
+// with the block provided to the TEST macro.
 class Test {
  public:
   Test(const Test&) = delete;

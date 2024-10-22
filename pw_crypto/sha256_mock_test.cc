@@ -23,14 +23,13 @@ namespace {
 
 #define AS_BYTES(str) as_bytes(span(str, sizeof(str) - 1))
 
-#define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)
 
 TEST(Sha256, HandlesBackendInitFailures) {
   std::byte digest[kDigestSizeBytes];
 
   backend::ClearError();
-  ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
+  PW_TEST_ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
 
   backend::InjectError(backend::ErrorKind::kInit);
   ASSERT_FAIL(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
@@ -40,7 +39,7 @@ TEST(Sha256, HandlesBackendUpdateFailures) {
   std::byte digest[kDigestSizeBytes];
 
   backend::ClearError();
-  ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
+  PW_TEST_ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
 
   backend::InjectError(backend::ErrorKind::kUpdate);
   ASSERT_FAIL(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
@@ -50,7 +49,7 @@ TEST(Sha256, HandlesBackendFinalFailures) {
   std::byte digest[kDigestSizeBytes];
 
   backend::ClearError();
-  ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
+  PW_TEST_ASSERT_OK(Sha256().Update(AS_BYTES("blahblah")).Final(digest));
 
   backend::InjectError(backend::ErrorKind::kFinal);
   ASSERT_FAIL(Sha256().Update(AS_BYTES("blahblah")).Final(digest));

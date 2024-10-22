@@ -25,7 +25,6 @@
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_unit_test/framework.h"
-#include "test_utils.h"
 
 namespace pw::digital_io {
 namespace {
@@ -37,7 +36,7 @@ constexpr auto kWaitForDataTimeout = 100ms;
 class NotifierTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    ASSERT_OK_AND_ASSIGN(notifier_, LinuxGpioNotifier::Create());
+    PW_TEST_ASSERT_OK_AND_ASSIGN(notifier_, LinuxGpioNotifier::Create());
   }
 
   LinuxGpioNotifier& notifier() { return *notifier_; }
@@ -55,7 +54,7 @@ class FakeLine : public LinuxGpioNotifier::Handler {
 
   ~FakeLine() override {
     // Unregister now, if still registered, and make errors fail the test.
-    EXPECT_OK(Unregister());
+    PW_TEST_EXPECT_OK(Unregister());
     int result = close(event_fd_);
     PW_CHECK_INT_EQ(result, 0, "Failed to close event fd, err %d", errno);
   }
@@ -124,7 +123,7 @@ class FakeLine : public LinuxGpioNotifier::Handler {
 
 TEST_F(NotifierTest, TestNoEvent) {
   FakeLine line(notifier());
-  ASSERT_OK(line.Register());
+  PW_TEST_ASSERT_OK(line.Register());
 
   constexpr auto timeout = 0;  // Don't block
   auto result = notifier().WaitForEvents(timeout);
@@ -132,29 +131,30 @@ TEST_F(NotifierTest, TestNoEvent) {
 
   EXPECT_EQ(line.total_received_events(), 0u);
 
-  EXPECT_OK(line.Unregister());
+  PW_TEST_EXPECT_OK(line.Unregister());
 }
 
 TEST_F(NotifierTest, TestSendReceiveOneEventManual) {
   FakeLine line(notifier());
-  ASSERT_OK(line.Register());
+  PW_TEST_ASSERT_OK(line.Register());
 
   constexpr unsigned int num_events = 1;
 
   line.SendEvents(num_events);
 
   constexpr auto timeout = 0;  // Don't block
-  ASSERT_OK_AND_ASSIGN(unsigned int count, notifier().WaitForEvents(timeout));
+  PW_TEST_ASSERT_OK_AND_ASSIGN(unsigned int count,
+                               notifier().WaitForEvents(timeout));
 
   EXPECT_EQ(count, num_events);
   EXPECT_EQ(line.total_received_events(), num_events);
 
-  EXPECT_OK(line.Unregister());
+  PW_TEST_EXPECT_OK(line.Unregister());
 }
 
 TEST_F(NotifierTest, TestSendReceiveMultipleEventsManual) {
   FakeLine line(notifier());
-  ASSERT_OK(line.Register());
+  PW_TEST_ASSERT_OK(line.Register());
 
   constexpr unsigned int num_events = 4;
 
@@ -176,12 +176,12 @@ TEST_F(NotifierTest, TestSendReceiveMultipleEventsManual) {
   EXPECT_EQ(total_result, num_events);
   EXPECT_EQ(line.total_received_events(), num_events);
 
-  EXPECT_OK(line.Unregister());
+  PW_TEST_EXPECT_OK(line.Unregister());
 }
 
 TEST_F(NotifierTest, TestSendReceiveEventsThread) {
   FakeLine line(notifier());
-  ASSERT_OK(line.Register());
+  PW_TEST_ASSERT_OK(line.Register());
 
   pw::Thread notif_thread(pw::thread::stl::Options(), notifier());
 
@@ -194,7 +194,7 @@ TEST_F(NotifierTest, TestSendReceiveEventsThread) {
 
   EXPECT_EQ(line.total_received_events(), num_events);
 
-  EXPECT_OK(line.Unregister());
+  PW_TEST_EXPECT_OK(line.Unregister());
 
   notifier().CancelWait();
   notif_thread.join();
@@ -203,7 +203,7 @@ TEST_F(NotifierTest, TestSendReceiveEventsThread) {
 TEST_F(NotifierTest, TestRegisterLineMultipleLinesThread) {
   // Make primary line
   FakeLine line1(notifier());
-  ASSERT_OK(line1.Register());
+  PW_TEST_ASSERT_OK(line1.Register());
 
   pw::Thread notif_thread(pw::thread::stl::Options(), notifier());
 
@@ -213,7 +213,7 @@ TEST_F(NotifierTest, TestRegisterLineMultipleLinesThread) {
   {
     // Make secondary line in smaller scope
     FakeLine line2(notifier());
-    ASSERT_OK(line2.Register());
+    PW_TEST_ASSERT_OK(line2.Register());
 
     line1.SendEvents(1);
     line2.SendEvents(1);
@@ -221,14 +221,14 @@ TEST_F(NotifierTest, TestRegisterLineMultipleLinesThread) {
     EXPECT_TRUE(line1.TryWaitForData());
     EXPECT_TRUE(line2.TryWaitForData());
 
-    EXPECT_OK(line2.Unregister());
+    PW_TEST_EXPECT_OK(line2.Unregister());
   }
 
   // Line 1 is once again the only line that is registered.
   line1.SendEvents(1);
   EXPECT_TRUE(line1.TryWaitForData());
 
-  EXPECT_OK(line1.Unregister());
+  PW_TEST_EXPECT_OK(line1.Unregister());
 
   notifier().CancelWait();
   notif_thread.join();

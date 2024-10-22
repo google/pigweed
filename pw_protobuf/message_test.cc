@@ -17,8 +17,6 @@
 #include "pw_stream/memory_stream.h"
 #include "pw_unit_test/framework.h"
 
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
-
 namespace pw::protobuf {
 namespace {
 
@@ -42,7 +40,7 @@ TEST(ProtoHelper, IterateMessage) {
     ++count;
     EXPECT_EQ(field.field_number(), count);
     Uint32 value = field.As<Uint32>();
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     EXPECT_EQ(value.value(), count);
   }
 
@@ -68,16 +66,16 @@ TEST(ProtoHelper, MessageIterator) {
   ASSERT_EQ(first, first);
   ASSERT_EQ(first->field_number(), static_cast<uint32_t>(1));
   String str = first->As<String>();
-  ASSERT_OK(str.status());
+  PW_TEST_ASSERT_OK(str.status());
   Result<bool> cmp = str.Equal("foo 1");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 
   Message::iterator second = iter++;
   ASSERT_EQ(second, second);
   ASSERT_EQ(second->field_number(), static_cast<uint32_t>(2));
   Uint32 uint32_val = second->As<Uint32>();
-  ASSERT_OK(uint32_val.status());
+  PW_TEST_ASSERT_OK(uint32_val.status());
   ASSERT_EQ(uint32_val.value(), static_cast<uint32_t>(2));
 
   ASSERT_NE(first, second);
@@ -102,7 +100,7 @@ TEST(ProtoHelper, MessageIteratorMalformedProto) {
   Message parser = Message(reader, sizeof(encoded_proto));
 
   Message::iterator iter = parser.begin();
-  ASSERT_OK(iter.status());
+  PW_TEST_ASSERT_OK(iter.status());
 
   // Second field has invalid field number
   ASSERT_FALSE((++iter).ok());
@@ -166,85 +164,85 @@ TEST(ProtoHelper, AsProtoInteger) {
 
   {
     Int32 value = parser.AsInt32(1);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int32_t>(-123));
   }
 
   {
     Uint32 value = parser.AsUint32(2);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<uint32_t>(123));
   }
 
   {
     Sint32 value = parser.AsSint32(3);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int32_t>(-456));
   }
 
   {
     Fixed32 value = parser.AsFixed32(4);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<uint32_t>(268435457));
   }
 
   {
     Sfixed32 value = parser.AsSfixed32(5);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int32_t>(-268435457));
   }
 
   {
     Int64 value = parser.AsInt64(6);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int64_t>(-1099511627776));
   }
 
   {
     Uint64 value = parser.AsUint64(7);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<uint64_t>(1099511627776));
   }
 
   {
     Sint64 value = parser.AsSint64(8);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int64_t>(-2199023255552));
   }
 
   {
     Fixed64 value = parser.AsFixed64(9);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<uint64_t>(72057594037927937));
   }
 
   {
     Sfixed64 value = parser.AsSfixed64(10);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<int64_t>(-72057594037927937));
   }
 
   {
     Float value = parser.AsFloat(11);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<float>(123456.00));
   }
 
   {
     Double value = parser.AsDouble(12);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<double>(-123456.789));
   }
 
   {
     Bool value = parser.AsBool(13);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<bool>(true));
   }
 
   {
     Bool value = parser.AsBool(14);
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<bool>(false));
   }
 }
@@ -265,23 +263,23 @@ TEST(ProtoHelper, AsString) {
 
   constexpr uint32_t kFieldNumber = 1;
   String value = parser.AsString(kFieldNumber);
-  ASSERT_OK(value.status());
+  PW_TEST_ASSERT_OK(value.status());
   Result<bool> cmp = value.Equal("string");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 
   cmp = value.Equal("other");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_FALSE(cmp.value());
 
   // The string is a prefix of the target string to compare.
   cmp = value.Equal("string and more");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_FALSE(cmp.value());
 
   // The target string to compare is a sub prefix of this string
   cmp = value.Equal("str");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_FALSE(cmp.value());
 }
 
@@ -322,9 +320,9 @@ TEST(ProtoHelper, AsRepeatedStrings) {
 
     size_t count = 0;
     for (String ele : msg) {
-      ASSERT_OK(ele.status());
+      PW_TEST_ASSERT_OK(ele.status());
       Result<bool> res = ele.Equal(expected[count++]);
-      ASSERT_OK(res.status());
+      PW_TEST_ASSERT_OK(res.status());
       ASSERT_TRUE(res.value());
     }
 
@@ -341,9 +339,9 @@ TEST(ProtoHelper, AsRepeatedStrings) {
 
     size_t count = 0;
     for (String ele : msg) {
-      ASSERT_OK(ele.status());
+      PW_TEST_ASSERT_OK(ele.status());
       Result<bool> res = ele.Equal(expected[count++]);
-      ASSERT_OK(res.status());
+      PW_TEST_ASSERT_OK(res.status());
       ASSERT_TRUE(res.value());
     }
 
@@ -387,13 +385,13 @@ TEST(ProtoHelper, RepeatedFieldIterator) {
   RepeatedStrings::iterator first = iter++;
   ASSERT_EQ(first, first);
   Result<bool> cmp = first->Equal("foo 1");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 
   RepeatedStrings::iterator second = iter++;
   ASSERT_EQ(second, second);
   cmp = second->Equal("bar 1");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 
   ASSERT_NE(first, second);
@@ -519,18 +517,18 @@ TEST(ProtoHelper, AsMessage) {
   Message parser = Message(reader, sizeof(encoded_proto));
 
   Message info = parser.AsMessage(kInfoFieldNumber);
-  ASSERT_OK(info.status());
+  PW_TEST_ASSERT_OK(info.status());
 
   String number = info.AsString(kNumberFieldNumber);
-  ASSERT_OK(number.status());
+  PW_TEST_ASSERT_OK(number.status());
   Result<bool> cmp = number.Equal("123456");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 
   String email = info.AsString(kEmailFieldNumber);
-  ASSERT_OK(email.status());
+  PW_TEST_ASSERT_OK(email.status());
   cmp = email.Equal("foo@email.com");
-  ASSERT_OK(cmp.status());
+  PW_TEST_ASSERT_OK(cmp.status());
   ASSERT_TRUE(cmp.value());
 }
 
@@ -565,7 +563,7 @@ TEST(ProtoHelper, AsRepeatedMessages) {
   Message parser = Message(reader, sizeof(encoded_proto));
 
   RepeatedMessages messages = parser.AsRepeatedMessages(kInfoFieldNumber);
-  ASSERT_OK(messages.status());
+  PW_TEST_ASSERT_OK(messages.status());
 
   struct {
     std::string_view number;
@@ -578,15 +576,15 @@ TEST(ProtoHelper, AsRepeatedMessages) {
   size_t count = 0;
   for (Message message : messages) {
     String number = message.AsString(kNumberFieldNumber);
-    ASSERT_OK(number.status());
+    PW_TEST_ASSERT_OK(number.status());
     Result<bool> cmp = number.Equal(expected[count].number);
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     String email = message.AsString(kEmailFieldNumber);
-    ASSERT_OK(email.status());
+    PW_TEST_ASSERT_OK(email.status());
     cmp = email.Equal(expected[count].email);
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     count++;
@@ -634,15 +632,15 @@ TEST(ProtoHelper, AsStringToBytesMap) {
         parser.AsStringToStringMap(kFieldNumber);
 
     String value = string_map["key_foo"];
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     Result<bool> cmp = value.Equal("foo_a");
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     value = string_map["key_bar"];
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     cmp = value.Equal("bar_a");
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     // Non-existing key
@@ -657,15 +655,15 @@ TEST(ProtoHelper, AsStringToBytesMap) {
         parser.AsStringToStringMap(kFieldNumber);
 
     String value = string_map["key_foo"];
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     Result<bool> cmp = value.Equal("foo_b");
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     value = string_map["key_bar"];
-    ASSERT_OK(value.status());
+    PW_TEST_ASSERT_OK(value.status());
     cmp = value.Equal("bar_b");
-    ASSERT_OK(cmp.status());
+    PW_TEST_ASSERT_OK(cmp.status());
     ASSERT_TRUE(cmp.value());
 
     // Non-existing key
@@ -704,32 +702,32 @@ TEST(ProtoHelper, AsStringToMessageMap) {
   Message parser = Message(reader, sizeof(encoded_proto));
 
   StringMapParser<Message> staffs = parser.AsStringToMessageMap(kStaffsFieldId);
-  ASSERT_OK(staffs.status());
+  PW_TEST_ASSERT_OK(staffs.status());
 
   Message foo_staff = staffs["foo"];
-  ASSERT_OK(foo_staff.status());
+  PW_TEST_ASSERT_OK(foo_staff.status());
   String foo_number = foo_staff.AsString(kNumberFieldId);
-  ASSERT_OK(foo_number.status());
+  PW_TEST_ASSERT_OK(foo_number.status());
   Result<bool> foo_number_cmp = foo_number.Equal("123");
-  ASSERT_OK(foo_number_cmp.status());
+  PW_TEST_ASSERT_OK(foo_number_cmp.status());
   ASSERT_TRUE(foo_number_cmp.value());
   String foo_email = foo_staff.AsString(kEmailFieldId);
-  ASSERT_OK(foo_email.status());
+  PW_TEST_ASSERT_OK(foo_email.status());
   Result<bool> foo_email_cmp = foo_email.Equal("foo@email.com");
-  ASSERT_OK(foo_email_cmp.status());
+  PW_TEST_ASSERT_OK(foo_email_cmp.status());
   ASSERT_TRUE(foo_email_cmp.value());
 
   Message bar_staff = staffs["bar"];
-  ASSERT_OK(bar_staff.status());
+  PW_TEST_ASSERT_OK(bar_staff.status());
   String bar_number = bar_staff.AsString(kNumberFieldId);
-  ASSERT_OK(bar_number.status());
+  PW_TEST_ASSERT_OK(bar_number.status());
   Result<bool> bar_number_cmp = bar_number.Equal("456");
-  ASSERT_OK(bar_number_cmp.status());
+  PW_TEST_ASSERT_OK(bar_number_cmp.status());
   ASSERT_TRUE(bar_number_cmp.value());
   String bar_email = bar_staff.AsString(kEmailFieldId);
-  ASSERT_OK(bar_email.status());
+  PW_TEST_ASSERT_OK(bar_email.status());
   Result<bool> bar_email_cmp = bar_email.Equal("bar@email.com");
-  ASSERT_OK(bar_email_cmp.status());
+  PW_TEST_ASSERT_OK(bar_email_cmp.status());
   ASSERT_TRUE(bar_email_cmp.value());
 }
 

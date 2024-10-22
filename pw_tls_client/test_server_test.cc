@@ -24,8 +24,6 @@
 // third_party/boringssl/py/boringssl/generate_test_data.py.
 #include "test_certs_and_keys.h"
 
-#define ASSERT_OK(expr) ASSERT_EQ(pw::OkStatus(), expr)
-
 namespace pw::tls_client::test {
 namespace {
 
@@ -95,7 +93,7 @@ void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
   const pw::ConstByteSpan kTrustAnchors[] = {kRootACert, kRootBCert};
   for (auto cert : kTrustAnchors) {
     auto res = ParseDerCertificate(cert);
-    ASSERT_OK(res.status());
+    PW_TEST_ASSERT_OK(res.status());
     ASSERT_EQ(X509_STORE_add_cert(store, res.value()), 1);
     X509_free(res.value());
   }
@@ -108,7 +106,7 @@ void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
 TEST(InMemoryTestServer, NormalConnectionSucceed) {
   InMemoryTestServer server(server_receive_buffer, server_send_buffer);
   const ConstByteSpan kIntermediates[] = {kSubCACert};
-  ASSERT_OK(server.Initialize(kServerKey, kServerCert, kIntermediates));
+  PW_TEST_ASSERT_OK(server.Initialize(kServerKey, kServerCert, kIntermediates));
 
   // Create a raw BoringSSL client
   bssl::UniquePtr<SSL_CTX> client_ctx;
@@ -144,7 +142,7 @@ TEST(InMemoryTestServer, BufferTooSmallErrorsOut) {
   std::array<std::byte, 1> insufficient_buffer;
   InMemoryTestServer server(server_receive_buffer, insufficient_buffer);
   const ConstByteSpan kIntermediates[] = {kSubCACert};
-  ASSERT_OK(server.Initialize(kServerKey, kServerCert, kIntermediates));
+  PW_TEST_ASSERT_OK(server.Initialize(kServerKey, kServerCert, kIntermediates));
 
   // Create a raw BoringSSL client
   bssl::UniquePtr<SSL_CTX> client_ctx;

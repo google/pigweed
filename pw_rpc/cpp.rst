@@ -931,7 +931,7 @@ timeout for the waiting part (default timeout is 100ms).
    context(other_service_client);
    context.call({});
 
-   ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
+   PW_TEST_ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
              other::pw_rpc::pwpb::OtherService::GetPart>(
        client_context, {.value = 42}));
 

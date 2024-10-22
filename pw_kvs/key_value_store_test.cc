@@ -157,13 +157,10 @@ TEST(InitCheck, TooManySectors) {
   EXPECT_EQ(kvs.Init(), Status::FailedPrecondition());
 }
 
-#define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
-#define EXPECT_OK(expr) EXPECT_EQ(OkStatus(), expr)
-
 TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
   // Create and erase the fake flash. It will persist across reloads.
   Flash flash;
-  ASSERT_OK(flash.partition.Erase());
+  PW_TEST_ASSERT_OK(flash.partition.Erase());
 
   int num_reloads = 2;
   for (int reload = 0; reload < num_reloads; ++reload) {
@@ -179,7 +176,7 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     constexpr EntryFormat format{.magic = 0x83a9257, .checksum = nullptr};
     KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                             format);
-    ASSERT_OK(kvs.Init());
+    PW_TEST_ASSERT_OK(kvs.Init());
 
     // Write the same entry many times.
     const char* key = "abcd";
@@ -191,14 +188,14 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
           "PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
 
       written_value = i + 0xfc;  // Prevent accidental pass with zero.
-      EXPECT_OK(kvs.Put(key, written_value));
+      PW_TEST_EXPECT_OK(kvs.Put(key, written_value));
       EXPECT_EQ(kvs.size(), 1u);
     }
 
     // Verify that we can read the value back.
     PW_LOG_DEBUG("GET final value for key: %s", key);
     uint32_t actual_value;
-    EXPECT_OK(kvs.Get(key, &actual_value));
+    PW_TEST_EXPECT_OK(kvs.Get(key, &actual_value));
     EXPECT_EQ(actual_value, written_value);
 
     char fname_buf[64] = {'\0'};
@@ -213,7 +210,7 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
 TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_OK(flash.partition.Erase());
+  PW_TEST_ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS. For KVS magic value always use a random 32
   // bit integer rather than a human readable 4 bytes. See pw_kvs/format.h for
@@ -221,7 +218,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   constexpr EntryFormat format{.magic = 0x2ed3a058, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   // Write the same entry many times.
   const size_t num_writes = 10;
@@ -232,7 +229,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
     PW_LOG_DEBUG("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
 
     size_t value = i + 77;  // Prevent accidental pass with zero.
-    EXPECT_OK(kvs.Put(key.view(), value));
+    PW_TEST_EXPECT_OK(kvs.Put(key.view(), value));
     EXPECT_EQ(kvs.size(), i + 1);
   }
   ASSERT_EQ(OkStatus(), flash.Dump("WritingMultipleKeysIncreasesSize.bin"));
@@ -241,7 +238,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
 TEST(InMemoryKvs, WriteAndReadOneKey) {
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_OK(flash.partition.Erase());
+  PW_TEST_ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
   // For KVS magic value always use a random 32 bit integer rather than a
@@ -249,18 +246,18 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
   constexpr EntryFormat format{.magic = 0x5d70896, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   // Add one entry.
   const char* key = "Key1";
   PW_LOG_DEBUG("PUT value for key: %s", key);
   uint8_t written_value = 0xDA;
-  ASSERT_OK(kvs.Put(key, written_value));
+  PW_TEST_ASSERT_OK(kvs.Put(key, written_value));
   EXPECT_EQ(kvs.size(), 1u);
 
   PW_LOG_DEBUG("GET value for key: %s", key);
   uint8_t actual_value;
-  ASSERT_OK(kvs.Get(key, &actual_value));
+  PW_TEST_ASSERT_OK(kvs.Get(key, &actual_value));
   EXPECT_EQ(actual_value, written_value);
 
   EXPECT_EQ(kvs.size(), 1u);
@@ -269,25 +266,25 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
 TEST(InMemoryKvs, WriteOneKeyValueMultipleTimes) {
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_OK(flash.partition.Erase());
+  PW_TEST_ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           default_format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   // Add one entry, with the same key and value, multiple times.
   const char* key = "Key1";
   uint8_t written_value = 0xDA;
   for (int i = 0; i < 50; i++) {
     PW_LOG_DEBUG("PUT [%d] value for key: %s", i, key);
-    ASSERT_OK(kvs.Put(key, written_value));
+    PW_TEST_ASSERT_OK(kvs.Put(key, written_value));
     EXPECT_EQ(kvs.size(), 1u);
   }
 
   PW_LOG_DEBUG("GET value for key: %s", key);
   uint8_t actual_value;
-  ASSERT_OK(kvs.Get(key, &actual_value));
+  PW_TEST_ASSERT_OK(kvs.Get(key, &actual_value));
   EXPECT_EQ(actual_value, written_value);
 
   // Verify that only one entry was written to the KVS.
@@ -311,23 +308,23 @@ TEST(InMemoryKvs, Basic) {
   constexpr EntryFormat format{.magic = 0x7bf19895, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   // Add two entries with different keys and values.
   uint8_t value1 = 0xDA;
-  ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
+  PW_TEST_ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
   EXPECT_EQ(kvs.size(), 1u);
 
   uint32_t value2 = 0xBAD0301f;
-  ASSERT_OK(kvs.Put(key2, value2));
+  PW_TEST_ASSERT_OK(kvs.Put(key2, value2));
   EXPECT_EQ(kvs.size(), 2u);
 
   // Verify data
   uint32_t test2;
-  EXPECT_OK(kvs.Get(key2, &test2));
+  PW_TEST_EXPECT_OK(kvs.Get(key2, &test2));
 
   uint8_t test1;
-  ASSERT_OK(kvs.Get(key1, &test1));
+  PW_TEST_ASSERT_OK(kvs.Get(key1, &test1));
 
   EXPECT_EQ(test1, value1);
   EXPECT_EQ(test2, value2);
@@ -343,7 +340,7 @@ TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
   // Create and initialize the KVS.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           default_format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(OkStatus(), kvs.Put(keys[0], kValue));
@@ -483,7 +480,7 @@ TEST(InMemoryKvs, Put_MaxValueSize) {
   // Create and initialize the KVS.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           default_format);
-  ASSERT_OK(kvs.Init());
+  PW_TEST_ASSERT_OK(kvs.Init());
 
   size_t max_key_value_size = kvs.max_key_value_size_bytes();
   EXPECT_EQ(max_key_value_size,

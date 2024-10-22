@@ -74,7 +74,6 @@ pw_cc_test(
     name = "digital_io_test",
     srcs = [
         "digital_io_test.cc",
-        "test_utils.h",
     ],
     linkopts = [
         "-Wl,--wrap=close",
@@ -98,7 +97,6 @@ pw_cc_test(
     srcs = [
         "log_errno.h",
         "notifier_test.cc",
-        "test_utils.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

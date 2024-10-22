@@ -177,11 +177,6 @@ class StatusIsMatcher {
 
 }  // namespace internal
 
-/// Macros for testing the results of functions that return ``pw::Status``,
-/// ``pw::StatusWithSize``, or ``pw::Result<T>`` (for any T).
-#define EXPECT_OK(expression) EXPECT_THAT(expression, ::pw::unit_test::IsOk())
-#define ASSERT_OK(expression) ASSERT_THAT(expression, ::pw::unit_test::IsOk())
-
 /// Returns a gMock matcher that matches a `pw::Status`, `pw::StatusWithSize`,
 /// or `pw::Result<T>` (for any T) which is OK.
 inline internal::IsOkMatcher IsOk() { return {}; }
@@ -202,68 +197,5 @@ inline internal::IsOkAndHoldsMatcher<InnerMatcher> IsOkAndHolds(
   return internal::IsOkAndHoldsMatcher<InnerMatcher>(
       std::forward<InnerMatcher>(inner_matcher));
 }
-
-/// Executes an expression that returns a `pw::Result` or `pw::StatusWithSize`
-/// and assigns or moves that value to lhs if the error code is OK. If the
-// status is non-OK, generates a test failure and returns from the current
-/// function, which must have a void return type.
-///
-/// The MOVE variant moves the content out of the `pw::Result` and into lhs.
-/// This variant is required for move-only types.
-//
-/// Example: Declaring and initializing a new value. E.g.:
-///   ASSERT_OK_AND_ASSIGN(auto value, MaybeGetValue(arg));
-///   ASSERT_OK_AND_ASSIGN(const ValueType value, MaybeGetValue(arg));
-///   ASSERT_OK_AND_MOVE(auto ptr, MaybeGetUniquePtr(arg))
-///
-/// Example: Assigning to an existing value
-///   ValueType value;
-///   ASSERT_OK_AND_ASSIGN(value, MaybeGetValue(arg));
-///
-/// The value assignment example would expand into something like:
-///   auto status_or_value = MaybeGetValue(arg);
-///   ASSERT_OK(status_or_value.status());
-///   value = status_or_value.ValueOrDie();
-///
-/// WARNING: ASSERT_OK_AND_ASSIGN (and the move variant) expand into multiple
-///   statements; it cannot be used in a single statement (e.g. as the body of
-///   an if statement without {})!
-#define ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
-  ASSERT_OK_AND_ASSIGN_DETAIL(UNIQUE_IDENTIFIER_DETAIL(__LINE__), lhs, rexpr)
-
-/// Deprecated. Prefer ASSERT_OK_AND_ASSIGN, which will move if the rexpr is an
-/// rvalue (either an expression or `std::move(some_named_value)`).
-#define ASSERT_OK_AND_MOVE(lhs, rexpr) \
-  ASSERT_OK_AND_MOVE_DETAIL(UNIQUE_IDENTIFIER_DETAIL(__LINE__), lhs, rexpr)
-
-// NOLINTBEGIN(bugprone-macro-parentheses)
-// The suggestion would produce bad code.
-#define ASSERT_OK_AND_ASSIGN_DETAIL(result, lhs, rexpr)                 \
-  auto result = (rexpr);                                                \
-  if (!result.ok()) {                                                   \
-    FAIL() << "`" << #rexpr << "` is not OK: "                          \
-           << pw_StatusString(::pw::internal::ConvertToStatus(result)); \
-  }                                                                     \
-  lhs = ::pw::internal::ConvertToValue(result);
-
-#define ASSERT_OK_AND_MOVE_DETAIL(result, lhs, rexpr)                   \
-  auto&& result = (rexpr);                                              \
-  if (!result.ok()) {                                                   \
-    FAIL() << "`" << #rexpr << "` is not OK: "                          \
-           << pw_StatusString(::pw::internal::ConvertToStatus(result)); \
-  }                                                                     \
-  lhs = ::pw::unit_test::internal::GetValue(std::move(result));
-// NOLINTEND(bugprone-macro-parentheses)
-
-#define _PW_TRY_ASSIGN(result, lhs, expr)           \
-  auto result = (expr);                             \
-  if (!result.ok()) {                               \
-    return ::pw::internal::ConvertToStatus(result); \
-  }                                                 \
-  lhs = ::pw::internal::ConvertToValue(result);
-
-#define UNIQUE_IDENTIFIER_DETAIL(line) UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line)
-#define UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line) \
-  _assert_ok_and_assign_unique_name_##line
 
 }  // namespace pw::unit_test

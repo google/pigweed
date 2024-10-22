@@ -29,14 +29,6 @@ using ::pw::unit_test::StatusIs;
 using ::testing::Eq;
 using ::testing::Not;
 
-TEST(TestMatchers, AssertOk) { ASSERT_OK(OkStatus()); }
-TEST(TestMatchers, AssertOkStatusWithSize) { ASSERT_OK(StatusWithSize(123)); }
-TEST(TestMatchers, AssertOkResult) { ASSERT_OK(Result<int>(123)); }
-
-TEST(TestMatchers, ExpectOk) { EXPECT_OK(OkStatus()); }
-TEST(TestMatchers, ExpectOkStatusWithSize) { EXPECT_OK(StatusWithSize(123)); }
-TEST(TestMatchers, ExpectOkResult) { EXPECT_OK(Result<int>(123)); }
-
 TEST(TestMatchers, StatusIsSuccess) {
   EXPECT_THAT(OkStatus(), StatusIs(OkStatus()));
   EXPECT_THAT(Status::Cancelled(), StatusIs(Status::Cancelled()));
@@ -153,93 +145,8 @@ TEST(IsOkAndHolds, WrongResult) {
   EXPECT_THAT(value, Not(IsOkAndHolds(Eq(42))));
 }
 
-TEST(AssertOkAndAssign, AssignsOkValueToNewLvalue) {
-  const auto value = Result<int>(5);
-  ASSERT_OK_AND_ASSIGN(int declare_and_assign, value);
-  EXPECT_EQ(5, declare_and_assign);
-}
-
-TEST(AssertOkAndAssign, AssignsOkValueToExistingLvalue) {
-  const auto value = Result<int>(5);
-  int existing_value = 0;
-  ASSERT_OK_AND_ASSIGN(existing_value, value);
-  EXPECT_EQ(5, existing_value);
-}
-
-TEST(AssertOkAndAssign, AssignsExistingLvalueToConstReference) {
-  const auto value = Result<int>(5);
-  ASSERT_OK_AND_ASSIGN(const auto& ref, value);
-  EXPECT_EQ(5, ref);
-}
-
-void AssertOkAndAssignInternally(Result<int> my_result_name) {
-  ASSERT_OK_AND_ASSIGN([[maybe_unused]] int _unused, my_result_name);
-}
-
-TEST(AssertOkAndAssign, AssertFailsOnNonOkStatus) {
-  EXPECT_FATAL_FAILURE(AssertOkAndAssignInternally(Status::InvalidArgument()),
-                       "`my_result_name` is not OK: INVALID_ARGUMENT");
-}
-
-class CopyMoveCounter {
- public:
-  CopyMoveCounter() = delete;
-  CopyMoveCounter(int& copies, int& moves) : copies_(&copies), moves_(&moves) {}
-  CopyMoveCounter(const CopyMoveCounter& other)
-      : copies_(other.copies_), moves_(other.moves_) {
-    ++(*copies_);
-  }
-  CopyMoveCounter(CopyMoveCounter&& other)
-      : copies_(other.copies_), moves_(other.moves_) {
-    ++(*moves_);
-  }
-  CopyMoveCounter& operator=(const CopyMoveCounter& other) {
-    copies_ = other.copies_;
-    moves_ = other.moves_;
-    ++(*copies_);
-    return *this;
-  }
-  CopyMoveCounter& operator=(CopyMoveCounter&& other) {
-    copies_ = other.copies_;
-    moves_ = other.moves_;
-    ++(*moves_);
-    return *this;
-  }
-
- private:
-  int* copies_;
-  int* moves_;
-};
-
-TEST(AssertOkAndAssign, OkRvalueDoesNotCopy) {
-  int copies = 0;
-  int moves = 0;
-  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm,
-                       Result(CopyMoveCounter(copies, moves)));
-  EXPECT_EQ(copies, 0);
-  EXPECT_EQ(moves, 2);
-}
-
-TEST(AssertOkAndAssign, OkLvalueMovedDoesNotCopy) {
-  int copies = 0;
-  int moves = 0;
-  Result result(CopyMoveCounter(copies, moves));
-  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm, std::move(result));
-  EXPECT_EQ(copies, 0);
-  EXPECT_EQ(moves, 3);
-}
-
-TEST(AssertOkAndAssign, OkLvalueCopiesOnce) {
-  int copies = 0;
-  int moves = 0;
-  Result result(CopyMoveCounter(copies, moves));
-  ASSERT_OK_AND_ASSIGN([[maybe_unused]] CopyMoveCounter cm, result);
-  EXPECT_EQ(copies, 1);
-  EXPECT_EQ(moves, 2);
-}
-
-// The following test is commented out and is only for checking what
-// failure cases would look like. For example, when uncommenting the test,
+// The following test contents are disabled and is only for checking what
+// failure cases would look like. For example, when enabling the test,
 // the output is:
 //
 // ERR  pw_unit_test/googletest_test_matchers_test.cc:50: Failure
@@ -247,23 +154,10 @@ TEST(AssertOkAndAssign, OkLvalueCopiesOnce) {
 // ERR          Actual: Value of: OkStatus()
 // Expected: has status UNKNOWN
 //   Actual: 4-byte object <00-00 00-00>, which has status OK
-
-// ERR  pw_unit_test/googletest_test_matchers_test.cc:51: Failure
-// ERR        Expected:
-// ERR          Actual: Value of: Status::Unknown()
-// Expected: is OK
-//   Actual: 4-byte object <02-00 00-00>, which has status UNKNOWN
-
-// ERR  pw_unit_test/googletest_test_matchers_test.cc:52: Failure
-// ERR        Expected:
-// ERR          Actual: Value of: Status::Unknown()
-// Expected: is OK
-//   Actual: 4-byte object <02-00 00-00>, which has status UNKNOWN
-//
-// TEST(TestMatchers, SampleFailures) {
-//   EXPECT_THAT(OkStatus(), StatusIs(Status::Unknown()));
-//   EXPECT_OK(Status::Unknown());
-//   ASSERT_OK(Status::Unknown());
-// }
+TEST(TestMatchers, SampleFailures) {
+  if (false) {
+    EXPECT_THAT(OkStatus(), StatusIs(Status::Unknown()));
+  }
+}
 
 }  // namespace

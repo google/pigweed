@@ -67,7 +67,10 @@ pw_source_set("config") {
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
   testonly = pw_unit_test_TESTONLY
-  public = [ "public/pw_unit_test/framework.h" ]
+  public = [
+    "public/pw_unit_test/framework.h",
+    "public/pw_unit_test/status_test_matchers.h",
+  ]
   public_configs = [ ":public_include_path" ]
   public_deps = [ pw_unit_test_BACKEND ]
 
@@ -96,7 +99,9 @@ pw_source_set("light") {
     "$dir_pw_string:builder",
     dir_pw_polyfill,
     dir_pw_preprocessor,
+    dir_pw_result,
     dir_pw_span,
+    dir_pw_status,
   ]
 
   deps = [ dir_pw_assert ]
@@ -107,6 +112,7 @@ pw_source_set("light") {
     # The facade header is included here since public_overrides/gtest/gtest.h
     # includes it. This avoids a circular dependency in the build system.
     "public/pw_unit_test/framework.h",
+    "public/pw_unit_test/status_test_matchers.h",
     "public_overrides/gtest/gtest.h",
   ]
   sources = [ "framework_light.cc" ]
@@ -118,7 +124,11 @@ if (pw_unit_test_BACKEND != "") {
     public_configs = [ ":googletest_public_overrides_include_path" ]
     public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
 
-    public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
+    public_deps = [
+      dir_pw_result,
+      dir_pw_status,
+      pw_unit_test_GOOGLETEST_BACKEND,
+    ]
   }
 }
 
@@ -376,6 +386,7 @@ pw_test("framework_test") {
   sources = [ "framework_test.cc" ]
   deps = [
     dir_pw_assert,
+    dir_pw_result,
     dir_pw_status,
   ]
 

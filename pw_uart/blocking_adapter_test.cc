@@ -20,7 +20,6 @@
 #include <optional>
 #include <utility>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_log/log.h"
@@ -28,10 +27,8 @@
 #include "pw_sync/mutex.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/test_thread_context.h"
+#include "pw_unit_test/framework.h"
 #include "pw_work_queue/work_queue.h"
-
-#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
-#define EXPECT_OK(status) EXPECT_EQ(OkStatus(), status)
 
 // Waits for something critical for test execution.
 // We use PW_CHECK to ensure we crash on timeout instead of hanging forever.
@@ -301,17 +298,17 @@ TEST_F(BlockingAdapterTest, EnableWorks) {
   ASSERT_FALSE(underlying.enabled());
 
   // Can enable
-  EXPECT_OK(adapter.Enable());
+  PW_TEST_EXPECT_OK(adapter.Enable());
   EXPECT_TRUE(underlying.enabled());
 }
 
 TEST_F(BlockingAdapterTest, DisableWorks) {
   // Start out enabled
-  ASSERT_OK(underlying.Enable());
+  PW_TEST_ASSERT_OK(underlying.Enable());
   ASSERT_TRUE(underlying.enabled());
 
   // Can disable
-  EXPECT_OK(adapter.Disable());
+  PW_TEST_EXPECT_OK(adapter.Disable());
   EXPECT_FALSE(underlying.enabled());
 }
 
@@ -335,7 +332,7 @@ TEST_F(BlockingAdapterTest, ReadWorks) {
   // Wait for the read to complete.
   ASSERT_WAIT(blocking_action_complete);
 
-  EXPECT_OK(read_result.status());
+  PW_TEST_EXPECT_OK(read_result.status());
   EXPECT_EQ(read_result.size(), kRxData.size());
   EXPECT_TRUE(std::equal(kRxData.begin(), kRxData.end(), read_buffer.begin()));
 }
@@ -377,7 +374,7 @@ TEST_F(BlockingAdapterTest, WriteWorks) {
 
   // Wait for the write to complete.
   ASSERT_WAIT(blocking_action_complete);
-  EXPECT_OK(write_result);
+  PW_TEST_EXPECT_OK(write_result);
 }
 
 TEST_F(BlockingAdapterTest, WriteHandlesTimeouts) {
@@ -412,7 +409,7 @@ TEST_F(BlockingAdapterTest, FlushOutputWorks) {
 
   // Wait for the flush to complete.
   ASSERT_WAIT(blocking_action_complete);
-  EXPECT_OK(write_result);
+  PW_TEST_EXPECT_OK(write_result);
 }
 
 // FlushOutput does not provide a variant with timeout.
