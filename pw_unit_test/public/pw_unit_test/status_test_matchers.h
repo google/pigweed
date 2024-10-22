@@ -65,10 +65,6 @@
 #define _PW_TEST_ASSERT_OK_AND_ASSIGN_DETAIL(result, lhs, rexpr) \
   auto result = (rexpr);                                         \
   PW_TEST_ASSERT_OK(result);                                     \
-  if (!result.ok()) {                                            \
-    FAIL() << "`" << #rexpr << "` is not OK: "                   \
-           << (::pw::internal::ConvertToStatus(result)).str();   \
-  }                                                              \
   lhs = ::pw::internal::ConvertToValue(result)
 
 #define _PW_UNIQUE_IDENTIFIER_DETAIL(line) \
