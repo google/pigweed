@@ -19,8 +19,13 @@
 #include "pico/stdlib.h"
 #include "pw_cpu_exception/entry.h"
 #include "pw_log/log.h"
+#include "pw_preprocessor/arch.h"
 #include "pw_system/init.h"
 #include "task.h"
+
+#if !_PW_ARCH_ARM_V6M
+#include "RP2350.h"
+#endif  // !_PW_ARCH_ARM_V6M
 
 int main() {
   // PICO_SDK Inits
@@ -30,6 +35,23 @@ int main() {
 
   // Install the CPU exception handler.
   exception_set_exclusive_handler(HARDFAULT_EXCEPTION, pw_cpu_exception_Entry);
+  // On RP2040 (arm6m), only HardFault is supported
+#if !_PW_ARCH_ARM_V6M
+  // TODO: b/373723963 - The pico sdk exception_number enum doesn't currently
+  // have values for MemManage, BusFault or UsageFault, so cast the values for
+  // now until pico sdk has been updated. Enable the MemManage handler
+  SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk;
+  exception_set_exclusive_handler(static_cast<exception_number>(4),
+                                  pw_cpu_exception_Entry);
+  // Enable the BusFault handler
+  SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA_Msk;
+  exception_set_exclusive_handler(static_cast<exception_number>(5),
+                                  pw_cpu_exception_Entry);
+  // Enable the UsageFault handler
+  SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
+  exception_set_exclusive_handler(static_cast<exception_number>(6),
+                                  pw_cpu_exception_Entry);
+#endif  // !_PW_ARCH_ARM_V6M
 
   PW_LOG_INFO("pw_system main");
 
