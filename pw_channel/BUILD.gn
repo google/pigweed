@@ -157,7 +157,11 @@ pw_test("stream_channel_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "design.rst",
+    "docs.rst",
+    "reference.rst",
+  ]
 }
 
 pw_test_group("tests") {
