@@ -43,6 +43,7 @@ def _process_logs(
     handler = logging.StreamHandler(stream=decoded_log_stream)
 
     string_logger = logging.getLogger('crash_snapshot_logs')
+    string_logger.level = logging.DEBUG
     # only send logs to o StringIO handler
     string_logger.propagate = False
     string_logger.addHandler(handler)
