@@ -13,7 +13,6 @@
 # the License.
 
 load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
-load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,7 +37,6 @@ cc_library(
         "supplement_data.cc",
         "uuid.cc",
     ],
-    copts = ["-Wswitch-enum"] + COPTS,
     # This library is not compatible with --config=rp2040.
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],
@@ -74,7 +72,6 @@ cc_library(
 cc_library(
     name = "uuid_string_util",
     srcs = ["uuid_string_util.cc"],
-    copts = COPTS,
     deps = [":common"],
 )
 
@@ -101,7 +98,6 @@ pw_cc_test(
         "weak_self_test.cc",
         "windowed_inspect_numeric_property_test.cc",
     ],
-    copts = COPTS,
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":common",
