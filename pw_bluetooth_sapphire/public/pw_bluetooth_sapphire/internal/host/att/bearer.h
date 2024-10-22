@@ -173,9 +173,9 @@ class Bearer final {
 
   // Represents a locally initiated pending request or indication transaction.
   struct PendingTransaction {
-    PendingTransaction(OpCode opcode,
-                       TransactionCallback callback,
-                       ByteBufferPtr pdu);
+    PendingTransaction(OpCode opcode_in,
+                       TransactionCallback callback_in,
+                       ByteBufferPtr pdu_in);
 
     // Required fields
     OpCode opcode;
@@ -201,7 +201,7 @@ class Bearer final {
 
   // Represents a remote initiated pending request or indication transaction.
   struct PendingRemoteTransaction {
-    PendingRemoteTransaction(TransactionId id, OpCode opcode);
+    PendingRemoteTransaction(TransactionId id_in, OpCode opcode_in);
     PendingRemoteTransaction() = default;
 
     TransactionId id;

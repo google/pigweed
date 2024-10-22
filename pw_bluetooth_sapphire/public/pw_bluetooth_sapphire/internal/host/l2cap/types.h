@@ -167,13 +167,13 @@ struct ChannelInfo {
   }
 
   static ChannelInfo MakeCreditBasedFlowControlMode(
-      CreditBasedFlowControlMode mode,
+      CreditBasedFlowControlMode mode_in,
       uint16_t max_rx_sdu_size,
       uint16_t max_tx_sdu_size,
       uint16_t max_tx_pdu_payload_size,
       uint16_t remote_initial_credits,
       std::optional<Psm> psm = std::nullopt) {
-    return ChannelInfo(mode,
+    return ChannelInfo(mode_in,
                        max_rx_sdu_size,
                        max_tx_sdu_size,
                        /*n_frames_in_tx_window*/ 0,
@@ -184,25 +184,25 @@ struct ChannelInfo {
                        remote_initial_credits);
   }
 
-  ChannelInfo(AnyChannelMode mode,
-              uint16_t max_rx_sdu_size,
-              uint16_t max_tx_sdu_size,
-              uint8_t n_frames_in_tx_window,
-              uint8_t max_transmissions,
-              uint16_t max_tx_pdu_payload_size,
-              std::optional<Psm> psm = std::nullopt,
-              std::optional<pw::chrono::SystemClock::duration> flush_timeout =
-                  std::nullopt,
-              std::optional<uint16_t> remote_initial_credits = std::nullopt)
-      : mode(mode),
-        max_rx_sdu_size(max_rx_sdu_size),
-        max_tx_sdu_size(max_tx_sdu_size),
-        n_frames_in_tx_window(n_frames_in_tx_window),
-        max_transmissions(max_transmissions),
-        max_tx_pdu_payload_size(max_tx_pdu_payload_size),
-        psm(psm),
-        flush_timeout(flush_timeout),
-        remote_initial_credits(remote_initial_credits) {}
+  ChannelInfo(AnyChannelMode mode_in,
+              uint16_t max_rx_sdu_size_in,
+              uint16_t max_tx_sdu_size_in,
+              uint8_t n_frames_in_tx_window_in,
+              uint8_t max_transmissions_in,
+              uint16_t max_tx_pdu_payload_size_in,
+              std::optional<Psm> psm_in = std::nullopt,
+              std::optional<pw::chrono::SystemClock::duration>
+                  flush_timeout_in = std::nullopt,
+              std::optional<uint16_t> remote_initial_credits_in = std::nullopt)
+      : mode(mode_in),
+        max_rx_sdu_size(max_rx_sdu_size_in),
+        max_tx_sdu_size(max_tx_sdu_size_in),
+        n_frames_in_tx_window(n_frames_in_tx_window_in),
+        max_transmissions(max_transmissions_in),
+        max_tx_pdu_payload_size(max_tx_pdu_payload_size_in),
+        psm(psm_in),
+        flush_timeout(flush_timeout_in),
+        remote_initial_credits(remote_initial_credits_in) {}
 
   AnyChannelMode mode;
   uint16_t max_rx_sdu_size;

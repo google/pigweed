@@ -186,20 +186,20 @@ std::unique_ptr<Bearer> Bearer::Create(l2cap::Channel::WeakPtr chan,
   return bearer->Activate() ? std::move(bearer) : nullptr;
 }
 
-Bearer::PendingTransaction::PendingTransaction(OpCode opcode,
-                                               TransactionCallback callback,
-                                               ByteBufferPtr pdu)
-    : opcode(opcode),
-      callback(std::move(callback)),
-      pdu(std::move(pdu)),
+Bearer::PendingTransaction::PendingTransaction(OpCode opcode_in,
+                                               TransactionCallback callback_in,
+                                               ByteBufferPtr pdu_in)
+    : opcode(opcode_in),
+      callback(std::move(callback_in)),
+      pdu(std::move(pdu_in)),
       security_retry_level(sm::SecurityLevel::kNoSecurity) {
   BT_ASSERT(this->callback);
   BT_ASSERT(this->pdu);
 }
 
-Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id,
-                                                           OpCode opcode)
-    : id(id), opcode(opcode) {}
+Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id_in,
+                                                           OpCode opcode_in)
+    : id(id_in), opcode(opcode_in) {}
 
 Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
     : queue_(std::move(other.queue_)),
@@ -656,13 +656,13 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
   chan_->UpgradeSecurity(
       security_requirement,
       [self = weak_self_.GetWeakPtr(),
-       error = *std::move(error),
+       err = *std::move(error),
        security_requirement,
        t = std::move(transaction)](sm::Result<> status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
         if (!self.is_alive() || status.is_error()) {
-          t->callback(fit::error(std::move(error)));
+          t->callback(fit::error(std::move(err)));
           return;
         }
 

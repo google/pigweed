@@ -292,13 +292,14 @@ void Database::ExecuteWriteQueue(PeerId peer_id,
     write_queue.pop();
 
     auto attr_write_cb = [handle = next.handle(),
-                          write_complete_fn = write_complete_fn.share()](
+                          write_complete_function = write_complete_fn.share()](
                              fit::result<ErrorCode> status) {
       if (status.is_error()) {
-        write_complete_fn(fit::error(std::tuple(handle, status.error_value())));
+        write_complete_function(
+            fit::error(std::tuple(handle, status.error_value())));
       } else {
         bt_log(DEBUG, "att", "execute write to handle %#.4x - success", handle);
-        write_complete_fn(fit::ok());
+        write_complete_function(fit::ok());
       }
     };
 
