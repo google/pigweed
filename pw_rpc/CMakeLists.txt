@@ -284,8 +284,10 @@ pw_proto_library(pw_rpc.protos
     internal/packet.proto
     echo.proto
   INPUTS
-    echo.options
     benchmark.options
+    benchmark.pwpb_options
+    echo.options
+    echo.pwpb_options
   PREFIX
     pw_rpc
 )

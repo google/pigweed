@@ -24,7 +24,7 @@ package(default_visibility = ["//visibility:public"])
 pw_proto_filegroup(
     name = "pwpb_test_proto_and_options_files",
     srcs = ["pwpb_test.proto"],
-    options_files = ["pwpb_test.options"],
+    options_files = ["pwpb_test.pwpb_options"],
 )
 
 proto_library(

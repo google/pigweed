@@ -215,7 +215,7 @@ pw_proto_library(pw_rpc_transport.test_protos
   SOURCES
     internal/test.proto
   INPUTS
-    internal/test.options
+    internal/test.pwpb_options
   PREFIX
     pw_rpc_transport
 )

@@ -309,6 +309,6 @@ pw_test("rpc_integration_test") {
 
 pw_proto_library("test_protos") {
   sources = [ "internal/test.proto" ]
-  inputs = [ "internal/test.options" ]
+  inputs = [ "internal/test.pwpb_options" ]
   prefix = "pw_rpc_transport"
 }

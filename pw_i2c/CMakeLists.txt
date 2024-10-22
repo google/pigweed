@@ -75,7 +75,7 @@ pw_proto_library(pw_i2c.protos
   SOURCES
     i2c.proto
   INPUTS
-    i2c.options
+    i2c.pwpb_options
   PREFIX
     pw_i2c
 )

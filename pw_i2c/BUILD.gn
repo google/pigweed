@@ -73,7 +73,7 @@ pw_source_set("register_device") {
 
 pw_proto_library("protos") {
   sources = [ "i2c.proto" ]
-  inputs = [ "i2c.options" ]
+  inputs = [ "i2c.pwpb_options" ]
   prefix = "pw_i2c"
 }
 

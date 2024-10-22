@@ -19,7 +19,7 @@ pw_proto_library(pw_protobuf_compiler.pwpb_test_protos
   SOURCES
     pwpb_test_protos/pwpb_test.proto
   INPUTS
-    pwpb_test_protos/pwpb_test.options
+    pwpb_test_protos/pwpb_test.pwpb_options
   PREFIX
     "pw_protobuf_compiler/"
   DEPS

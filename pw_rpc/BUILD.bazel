@@ -21,11 +21,18 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+pw_proto_filegroup(
+    name = "benchmark_proto_and_options",
+    srcs = ["benchmark.proto"],
+    options_files = [
+        "benchmark.options",
+        "benchmark.pwpb_options",
+    ],
+)
+
 proto_library(
     name = "benchmark_proto",
-    srcs = [
-        "benchmark.proto",
-    ],
+    srcs = [":benchmark_proto_and_options"],
 )
 
 pw_proto_library(
@@ -470,7 +477,10 @@ pw_proto_library(
 pw_proto_filegroup(
     name = "echo_proto_and_options",
     srcs = ["echo.proto"],
-    options_files = ["echo.options"],
+    options_files = [
+        "echo.options",
+        "echo.pwpb_options",
+    ],
 )
 
 proto_library(

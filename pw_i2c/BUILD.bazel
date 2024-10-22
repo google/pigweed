@@ -169,7 +169,7 @@ pw_cc_test(
 pw_proto_filegroup(
     name = "i2c_proto_and_options",
     srcs = ["i2c.proto"],
-    options_files = ["i2c.options"],
+    options_files = ["i2c.pwpb_options"],
 )
 
 proto_library(

@@ -59,7 +59,10 @@ pw_proto_library("protos") {
     "tuf.proto",
     "update_bundle.proto",
   ]
-  inputs = [ "bundled_update.options" ]
+  inputs = [
+    "bundled_update.pwpb_options",
+    "bundled_update.options",
+  ]
   prefix = "pw_software_update"
   python_package = "py"
 }

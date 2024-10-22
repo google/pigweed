@@ -317,7 +317,7 @@ pw_cc_test(
 pw_proto_filegroup(
     name = "test_protos_and_options",
     srcs = ["internal/test.proto"],
-    options_files = ["internal/test.options"],
+    options_files = ["internal/test.pwpb_options"],
 )
 
 proto_library(

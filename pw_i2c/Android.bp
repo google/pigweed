@@ -20,11 +20,11 @@ genrule {
     name: "pw_i2c_proto_with_prefix",
     defaults: ["pw_rpc_add_prefix_to_proto"],
     srcs: [
-        "i2c.options",
+        "i2c.pwpb_options",
         "i2c.proto",
     ],
     out: [
-        "pw_i2c/i2c.options",
+        "pw_i2c/i2c.pwpb_options",
         "pw_i2c/i2c.proto",
     ],
 }
