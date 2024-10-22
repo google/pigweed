@@ -205,14 +205,14 @@ pw_proto_library(pw_protobuf.codegen_test_deps_protos
   SOURCES
     pw_protobuf_test_deps_protos/imported.proto
   INPUTS
-    pw_protobuf_test_deps_protos/imported.options
+    pw_protobuf_test_deps_protos/imported.pwpb_options
 )
 
 pw_proto_library(pw_protobuf.codegen_test_deps_protos_prefix
   SOURCES
     pw_protobuf_test_deps_protos/test_prefix_imported.proto
   INPUTS
-    pw_protobuf_test_deps_protos/test_prefix_imported.options
+    pw_protobuf_test_deps_protos/test_prefix_imported.pwpb_options
   STRIP_PREFIX
     pw_protobuf_test_deps_protos
   PREFIX
@@ -229,10 +229,10 @@ pw_proto_library(pw_protobuf.codegen_test_protos
     pw_protobuf_test_protos/proto2.proto
     pw_protobuf_test_protos/repeated.proto
   INPUTS
-    pw_protobuf_test_protos/full_test.options
-    pw_protobuf_test_protos/imported.options
-    pw_protobuf_test_protos/optional.options
-    pw_protobuf_test_protos/repeated.options
+    pw_protobuf_test_protos/full_test.pwpb_options
+    pw_protobuf_test_protos/imported.pwpb_options
+    pw_protobuf_test_protos/optional.pwpb_options
+    pw_protobuf_test_protos/repeated.pwpb_options
   DEPS
     pw_protobuf.common_proto
     pw_protobuf.status_proto

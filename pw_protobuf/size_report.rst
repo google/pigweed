@@ -46,7 +46,7 @@ the complexity of the proto message being encoded/decoded.
 
 This proto is configured with the following options file:
 
-.. literalinclude:: pw_protobuf_test_protos/size_report.options
+.. literalinclude:: pw_protobuf_test_protos/size_report.pwpb_options
   :lines: 14-
 
 Trivial proto

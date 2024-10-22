@@ -260,7 +260,7 @@ pw_proto_filegroup(
     srcs = [
         "pw_protobuf_test_deps_protos/imported.proto",
     ],
-    options_files = ["pw_protobuf_test_deps_protos/imported.options"],
+    options_files = ["pw_protobuf_test_deps_protos/imported.pwpb_options"],
 )
 
 pw_proto_filegroup(
@@ -268,7 +268,7 @@ pw_proto_filegroup(
     srcs = [
         "pw_protobuf_test_deps_protos/test_prefix_imported.proto",
     ],
-    options_files = ["pw_protobuf_test_deps_protos/test_prefix_imported.options"],
+    options_files = ["pw_protobuf_test_deps_protos/test_prefix_imported.pwpb_options"],
 )
 
 proto_library(
@@ -299,10 +299,10 @@ pw_proto_filegroup(
         "pw_protobuf_test_protos/size_report.proto",
     ],
     options_files = [
-        "pw_protobuf_test_protos/full_test.options",
-        "pw_protobuf_test_protos/optional.options",
-        "pw_protobuf_test_protos/imported.options",
-        "pw_protobuf_test_protos/repeated.options",
+        "pw_protobuf_test_protos/full_test.pwpb_options",
+        "pw_protobuf_test_protos/optional.pwpb_options",
+        "pw_protobuf_test_protos/imported.pwpb_options",
+        "pw_protobuf_test_protos/repeated.pwpb_options",
     ],
 )
 

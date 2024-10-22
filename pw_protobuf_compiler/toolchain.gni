@@ -26,4 +26,8 @@ declare_args() {
   # support while you migrate your codebase to kConstantCase.
   # b/266298474
   pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES = false
+
+  # If true, requires the use of the `.pwpb_options` extensions for pw_protobuf
+  # options files. If false, allows the generic `.options` to be used as well.
+  pw_protobuf_compiler_NO_GENERIC_OPTIONS_FILES = false
 }

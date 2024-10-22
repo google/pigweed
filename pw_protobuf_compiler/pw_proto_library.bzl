@@ -674,13 +674,13 @@ def _pw_proto_filegroup_impl(ctx):
 
     for options_src in ctx.attr.options_files:
         for file in options_src.files.to_list():
-            if file.extension == "options":
+            if file.extension == "options" or file.extension == "pwpb_options":
                 options_files.append(file)
             else:
                 fail((
                     "Files provided as `options_files` to a " +
-                    "`pw_proto_filegroup` must have the `.options` " +
-                    "extension; the file `{}` was provided."
+                    "`pw_proto_filegroup` must have the `.options` or " +
+                    "`.pwpb_options` extensions; the file `{}` was provided."
                 ).format(file.basename))
 
     return [

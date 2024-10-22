@@ -102,6 +102,14 @@ def _argument_parser() -> argparse.ArgumentParser:
             'in PWPB.'
         ),
     )
+    parser.add_argument(
+        '--pwpb-no-generic-options-files',
+        action='store_true',
+        help=(
+            'If set, requires the use of the `.pwpb_options` for pw_protobuf '
+            'options files'
+        ),
+    )
 
     return parser
 
@@ -129,6 +137,8 @@ def protoc_pwpb_args(
         out_args.append(
             '--custom_opt=--exclude-legacy-snake-case-field-name-enums'
         )
+    if args.pwpb_no_generic_options_files:
+        out_args.append('--custom_opt=--no-generic-options-files')
 
     out_args.extend(
         [

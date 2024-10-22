@@ -1262,7 +1262,7 @@ TEST(CodegenMessage, ReadImportedFromDepsOptions) {
 
   // The options file for the imported proto is applied, making the string
   // fields a vector rather than requiring a callback. This will not compile if
-  // the .options files aren't applied correctly.
+  // the .pwpb_options files aren't applied correctly.
   TestMessage::Message message{};
   const auto status = test_message.Read(message);
   ASSERT_EQ(status, OkStatus());
@@ -2055,7 +2055,7 @@ TEST(CodegenMessage, CallbackInSubclass) {
 }
 
 TEST(CodegenMessage, MaxSize) {
-  // Verify constants generated from max_size options in full_test.options
+  // Verify constants generated from max_size options in full_test.pwpb_options
   static_assert(Pigweed::kErrorMessageMaxSize == 64);
   static_assert(Pigweed::kDataMaxSize == 8);
 
@@ -2064,7 +2064,7 @@ TEST(CodegenMessage, MaxSize) {
             Pigweed::kErrorMessageMaxSize);
   EXPECT_EQ(size_message.data.max_size(), Pigweed::kDataMaxSize);
 
-  // Verify constants generated from max_count options in repeated.options
+  // Verify constants generated from max_count options in repeated.pwpb_options
   static_assert(RepeatedTest::kUint32sMaxSize == 8);
   static_assert(RepeatedTest::kFixed32sMaxSize == 8);
   static_assert(RepeatedTest::kDoublesMaxSize == 2);

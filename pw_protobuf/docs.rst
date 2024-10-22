@@ -781,7 +781,7 @@ messages comply with the specified limitations.
 
 Options Files
 =============
-Code generation can be configured using a separate ``.options`` file placed
+Code generation can be configured using a separate ``.pwpb_options`` file placed
 alongside the relevant ``.proto`` file.
 
 The format of this file is a series of fully qualified field names, or patterns,
@@ -811,7 +811,7 @@ e.g.
        "pet_daycare_protos/client.proto",
      ]
      inputs = [
-       "pet_daycare_protos/client.options",
+       "pet_daycare_protos/client.pwpb_options",
      ]
    }
 

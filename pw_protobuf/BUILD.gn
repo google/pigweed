@@ -102,7 +102,7 @@ pw_doc_group("docs") {
     "size_report.rst",
   ]
   inputs = [
-    "pw_protobuf_test_protos/size_report.options",
+    "pw_protobuf_test_protos/size_report.pwpb_options",
     "pw_protobuf_test_protos/size_report.proto",
   ]
   report_deps = [
@@ -281,12 +281,12 @@ pw_proto_library("common_protos") {
 
 pw_proto_library("codegen_test_deps_protos") {
   sources = [ "pw_protobuf_test_deps_protos/imported.proto" ]
-  inputs = [ "pw_protobuf_test_deps_protos/imported.options" ]
+  inputs = [ "pw_protobuf_test_deps_protos/imported.pwpb_options" ]
 }
 
 pw_proto_library("codegen_test_deps_protos_prefix") {
   sources = [ "pw_protobuf_test_deps_protos/test_prefix_imported.proto" ]
-  inputs = [ "pw_protobuf_test_deps_protos/test_prefix_imported.options" ]
+  inputs = [ "pw_protobuf_test_deps_protos/test_prefix_imported.pwpb_options" ]
   prefix = "test_prefix"
   strip_prefix = "pw_protobuf_test_deps_protos"
 }
@@ -304,11 +304,11 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_test_protos/size_report.proto",
   ]
   inputs = [
-    "pw_protobuf_test_protos/edition.options",
-    "pw_protobuf_test_protos/full_test.options",
-    "pw_protobuf_test_protos/optional.options",
-    "pw_protobuf_test_protos/imported.options",
-    "pw_protobuf_test_protos/repeated.options",
+    "pw_protobuf_test_protos/edition.pwpb_options",
+    "pw_protobuf_test_protos/full_test.pwpb_options",
+    "pw_protobuf_test_protos/optional.pwpb_options",
+    "pw_protobuf_test_protos/imported.pwpb_options",
+    "pw_protobuf_test_protos/repeated.pwpb_options",
   ]
   deps = [
     ":codegen_test_deps_protos",
