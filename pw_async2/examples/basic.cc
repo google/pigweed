@@ -200,29 +200,12 @@ TEST(ManualExample, Runs) {
   // DOCSTAG: [pw_async2-examples-basic-dispatcher]
 }
 
-class ExpectCoroTask final : public Task {
- public:
-  ExpectCoroTask(Coro<pw::Status>&& coro) : coro_(std::move(coro)) {}
-
- private:
-  Poll<> DoPend(Context& cx) final {
-    Poll<Status> result = coro_.Pend(cx);
-    if (result.IsPending()) {
-      return Pending();
-    }
-    EXPECT_EQ(*result, OkStatus());
-    return Ready();
-  }
-  Coro<pw::Status> coro_;
-};
-
 TEST(CoroExample, ReturnsOk) {
   AllocatorForTest<256> alloc;
   CoroContext coro_cx(alloc);
-  ExpectCoroTask task = ReceiveAndSendCoro(coro_cx, MyReceiver(), MySender());
+  auto coro = ReceiveAndSendCoro(coro_cx, MyReceiver(), MySender());
   Dispatcher dispatcher;
-  dispatcher.Post(task);
-  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.RunPendableUntilStalled(coro), Ready(OkStatus()));
 }
 
 }  // namespace

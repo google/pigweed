@@ -82,6 +82,16 @@ class Context {
   Waker* waker_;
 };
 
+template <typename T>
+using PendOutputOf = typename decltype(std::declval<T>().Pend(
+    std::declval<Context&>()))::OutputType;
+
+template <typename, typename = void>
+constexpr bool is_pendable = false;
+
+template <typename T>
+constexpr bool is_pendable<T, std::void_t<PendOutputOf<T>>> = true;
+
 /// A task which may complete one or more asynchronous operations.
 ///
 /// The ``Task`` interface is commonly implemented by users wishing to schedule

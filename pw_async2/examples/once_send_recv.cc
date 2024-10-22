@@ -104,32 +104,15 @@ TEST(OnceSendRecv, ReceiveAndLogValueTask) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 }
 
-class ExpectCoroTask final : public Task {
- public:
-  ExpectCoroTask(Coro<pw::Status>&& coro) : coro_(std::move(coro)) {}
-
- private:
-  Poll<> DoPend(Context& cx) final {
-    Poll<Status> result = coro_.Pend(cx);
-    if (result.IsPending()) {
-      return Pending();
-    }
-    EXPECT_EQ(*result, OkStatus());
-    return Ready();
-  }
-  Coro<pw::Status> coro_;
-};
-
 TEST(OnceSendRecv, ReceiveAndLogValueCoro) {
   AllocatorForTest<256> alloc;
   CoroContext coro_cx(alloc);
   auto send_recv = MakeOnceSenderAndReceiver<int>();
-  ExpectCoroTask task(ReceiveAndLogValue(coro_cx, std::move(send_recv.second)));
+  auto coro = ReceiveAndLogValue(coro_cx, std::move(send_recv.second));
   Dispatcher dispatcher;
-  dispatcher.Post(task);
-  EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(coro).IsPending());
   send_recv.first.emplace(5);
-  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.RunPendableUntilStalled(coro), Ready(OkStatus()));
 }
 
 }  // namespace

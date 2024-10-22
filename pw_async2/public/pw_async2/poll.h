@@ -53,6 +53,8 @@ class PW_NODISCARD_STR(
     "`Poll`-returning functions may or may not have completed. Their "
     "return value should be examined.") Poll {
  public:
+  using OutputType = T;
+
   /// Basic constructors.
   Poll() = delete;
   constexpr Poll(const Poll&) = default;

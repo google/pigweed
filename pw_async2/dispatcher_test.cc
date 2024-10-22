@@ -40,6 +40,15 @@ class MockTask : public Task {
   void DoDestroy() override { ++destroyed; }
 };
 
+class MockPendable {
+ public:
+  MockPendable(Poll<int> value) : value_(value) {}
+  Poll<int> Pend(Context&) { return value_; }
+
+ private:
+  Poll<int> value_;
+};
+
 TEST(Dispatcher, RunUntilStalledPendsPostedTask) {
   MockTask task;
   task.should_complete = true;
@@ -88,7 +97,7 @@ TEST(Dispatcher, RunUntilStalledWithNoTasksReturnsReady) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 }
 
-TEST(Dispatcher, RunUntilCompletePendsMultipleTasks) {
+TEST(Dispatcher, RunToCompletionPendsMultipleTasks) {
   class CounterTask : public Task {
    public:
     CounterTask(pw::Vector<Waker>* wakers, int* counter, int until)
@@ -129,6 +138,27 @@ TEST(Dispatcher, RunUntilCompletePendsMultipleTasks) {
   //   others
   // - two which have woken back up and complete
   EXPECT_EQ(counter, 5);
+}
+
+TEST(Dispatcher, RunPendableUntilStalledReturnsOutputOnReady) {
+  MockPendable pollable(Ready(5));
+  Dispatcher dispatcher;
+  Poll<int> result = dispatcher.RunPendableUntilStalled(pollable);
+  EXPECT_EQ(result, Ready(5));
+}
+
+TEST(Dispatcher, RunPendableUntilStalledReturnsPending) {
+  MockPendable pollable(Pending());
+  Dispatcher dispatcher;
+  Poll<int> result = dispatcher.RunPendableUntilStalled(pollable);
+  EXPECT_EQ(result, Pending());
+}
+
+TEST(Dispathcer, RunPendableToCompletionReturnsOutput) {
+  MockPendable pollable(Ready(5));
+  Dispatcher dispatcher;
+  int result = dispatcher.RunPendableToCompletion(pollable);
+  EXPECT_EQ(result, 5);
 }
 
 TEST(Dispatcher, PostToDispatcherFromInsidePendSucceeds) {
