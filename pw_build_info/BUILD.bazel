@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_build:python.bzl", "pw_py_binary")
 load(
     "//pw_build_info:substitute_workspace_status.bzl",
@@ -35,32 +36,33 @@ cc_library(
     ],
 )
 
+# When building for Linux, the linker provides a default linker script.
+# The add_build_id_to_default_script.ld wrapper includes the
+# build_id_linker_snippet.ld script in a way that appends to the
+# default linker script instead of overriding it.
+pw_linker_script(
+    name = "build_id_linker_script",
+    linker_script = "add_build_id_to_default_linker_script.ld",
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
 cc_library(
     name = "build_id",
     srcs = [
         "build_id.cc",
         "util.cc",
     ],
+    linkopts = [
+        "-Lpw_build_info",
+        "-Wl,--build-id=sha1",
+    ],
     # Automatically add the gnu build ID linker sections when building for
     # Linux. macOS and Windows executables are not supported, and embedded
     # targets must manually add the snippet to their linker script in a
     # read-only section.
-    linkopts = select({
-        # When building for Linux, the linker provides a default linker script.
-        # The add_build_id_to_default_script.ld wrapper includes the
-        # build_id_linker_snippet.ld script in a way that appends to the
-        # default linker script instead of overriding it.
-        "@platforms//os:linux": [
-            "-T$(location add_build_id_to_default_linker_script.ld)",
-        ],
-        "//conditions:default": [],
-    }) + [
-        "-Lpw_build_info",
-        "-Wl,--build-id=sha1",
-    ],
     deps = select({
         "@platforms//os:linux": [
-            ":add_build_id_to_default_linker_script.ld",
+            ":build_id_linker_script",
             ":build_id_linker_snippet.ld",
         ],
         "//conditions:default": [],
