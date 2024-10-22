@@ -6,8 +6,8 @@ pw_channel
 .. pigweed-module::
    :name: pw_channel
 
-``pw_channel`` provides features that are essential for efficient,
-high-performance communications. The ``Channel`` API is:
+   ``pw_channel`` provides features that are essential for efficient,
+   high-performance communications. The ``Channel`` API is:
 
    - **Flow-control-aware**: Built-in backpressure ensures that data is only
      requested when consumers are able to buffer and handle it.
