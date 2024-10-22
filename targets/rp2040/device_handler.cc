@@ -29,6 +29,9 @@ namespace {
 extern "C" uint32_t __pw_code_begin;
 extern "C" uint32_t __pw_code_end;
 
+extern "C" uint32_t __StackBottom;
+extern "C" uint32_t __StackTop;
+
 uintptr_t GetLinkerSymbolValue(const uint32_t& symbol) {
   return reinterpret_cast<uintptr_t>(&symbol);
 }
@@ -88,6 +91,18 @@ Status CaptureCpuState(
       *static_cast<cpu_exception::cortex_m::pwpb::SnapshotCpuStateOverlay::
                        StreamEncoder*>(
           static_cast<protobuf::StreamEncoder*>(&snapshot_encoder)));
+}
+
+Status CaptureMainStackThread(
+    const pw_cpu_exception_State& cpu_state,
+    thread::proto::pwpb::SnapshotThreadInfo::StreamEncoder& encoder) {
+  uintptr_t stack_low_addr = GetLinkerSymbolValue(__StackBottom);
+  uintptr_t stack_high_addr = GetLinkerSymbolValue(__StackTop);
+  thread::ProcessThreadStackCallback stack_dumper =
+      device_handler::AddressFilteredDumper;
+
+  return cpu_exception::cortex_m::SnapshotMainStackThread(
+      cpu_state, stack_low_addr, stack_high_addr, encoder, stack_dumper);
 }
 
 Status CaptureThreads(

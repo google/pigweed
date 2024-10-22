@@ -27,6 +27,13 @@ Status CaptureCpuState(
   return OkStatus();
 }
 
+// Captures the main system thread as part of a snapshot
+Status CaptureMainStackThread(
+    const pw_cpu_exception_State& /*cpu_state*/,
+    thread::proto::pwpb::SnapshotThreadInfo::StreamEncoder& /*encoder*/) {
+  return OkStatus();
+}
+
 Status CaptureThreads(
     uint32_t /*running_thread_stack_pointer*/,
     thread::proto::pwpb::SnapshotThreadInfo::StreamEncoder& /*encoder*/) {
