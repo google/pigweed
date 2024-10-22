@@ -31,4 +31,7 @@ declare_args() {
   # TODO(amontanez): This needs to be thought through fully, but can wait until
   # a Pi Pico successor that requires it.
   PICO_PLATFORM_DIR = get_path_info("src/rp2040", "abspath")
+
+  # Allows defining a custom linker script.
+  PICO_LINKER_SCRIPT = ":linker_script"
 }

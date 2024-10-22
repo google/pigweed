@@ -27,4 +27,10 @@ Status CaptureCpuState(
   return OkStatus();
 }
 
+Status CaptureThreads(
+    uint32_t /*running_thread_stack_pointer*/,
+    thread::proto::pwpb::SnapshotThreadInfo::StreamEncoder& /*encoder*/) {
+  return OkStatus();
+}
+
 }  // namespace pw::system::device_handler

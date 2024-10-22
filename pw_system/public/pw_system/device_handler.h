@@ -34,4 +34,9 @@ Status CaptureCpuState(
     const pw_cpu_exception_State& cpu_state,
     snapshot::pwpb::Snapshot::StreamEncoder& snapshot_encoder);
 
+// Captures all threads in the system as part of a snapshot
+Status CaptureThreads(
+    uint32_t running_thread_stack_pointer,
+    thread::proto::pwpb::SnapshotThreadInfo::StreamEncoder& encoder);
+
 }  // namespace pw::system::device_handler

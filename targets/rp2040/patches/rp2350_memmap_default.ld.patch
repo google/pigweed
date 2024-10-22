@@ -1,0 +1,29 @@
+diff --git a/src/rp2_common/pico_crt0/rp2350/memmap_default.ld b/src/rp2_common/pico_crt0/rp2350/memmap_default.ld
+index ba8a113..ae78e20 100644
+--- a/src/rp2_common/pico_crt0/rp2350/memmap_default.ld
++++ b/src/rp2_common/pico_crt0/rp2350/memmap_default.ld
+@@ -19,6 +19,8 @@
+     __StackLimit
+     __StackTop
+     __stack (== StackTop)
++    __pw_code_begin
++    __pw_code_end
+ */
+ 
+ MEMORY
+@@ -49,6 +51,7 @@ SECTIONS
+ 
+     .text : {
+         __logical_binary_start = .;
++        __pw_code_begin = .;
+         KEEP (*(.vectors))
+         KEEP (*(.binary_info_header))
+         __binary_info_header_end = .;
+@@ -98,6 +101,7 @@ SECTIONS
+ 
+         *(.eh_frame*)
+         . = ALIGN(4);
++        __pw_code_end = .;
+     } > FLASH
+ 
+     /* Note the boot2 section is optional, and should be discarded if there is

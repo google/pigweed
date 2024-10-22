@@ -14,6 +14,7 @@
 
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_build:pw_copy_and_patch_file.bzl", "pw_copy_and_patch_file")
 load("//pw_toolchain/cc/current_toolchain:conditions.bzl", "if_compiler_is_clang")
 load("//targets/rp2040:flash.bzl", "flash_rp2040")
 load("//targets/rp2040:transition.bzl", "RP2_SYSTEM_FLAGS", "rp2040_binary")
@@ -59,6 +60,9 @@ platform(
         "@platforms//cpu:armv6-m",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
     ],
+    flags = flags_from_dict({
+        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2040_linker_script",
+    }),
     parents = [":rp2_common"],
 )
 
@@ -71,6 +75,9 @@ platform(
         "@platforms//cpu:armv8-m",
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
     ],
+    flags = flags_from_dict({
+        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2350_linker_script",
+    }),
     parents = [":rp2_common"],
 )
 
@@ -182,6 +189,7 @@ cc_library(
     deps = [
         "//pw_cpu_exception_cortex_m:snapshot",
         "//pw_system:device_handler.facade",
+        "//pw_thread_freertos:snapshot",
         "@pico-sdk//src/rp2_common/hardware_watchdog:hardware_watchdog",
     ],
 )
@@ -218,16 +226,34 @@ flash_rp2040(
     rp2040_binary = ":rp2040_system_async_example",
 )
 
+pw_copy_and_patch_file(
+    name = "rp2040_memmap_default",
+    src = "@pico-sdk//src/rp2_common/pico_crt0/rp2040:memmap_default.ld",
+    out = "patched_rp2040_memmap_default.ld",
+    patch_file = "patches/rp2040_memmap_default.ld.patch",
+)
+
 cc_library(
     name = "rp2040_linker_script",
+    additional_linker_inputs = [":rp2040_memmap_default"],
+    linkopts = ["-T$(execpath :rp2040_memmap_default)"],
     deps = [
-        "@pico-sdk//src/rp2_common/pico_crt0/rp2040:default_linker_script",
+        "@pico-sdk//src/rp2_common/pico_standard_link:default_flash_region",
     ],
+)
+
+pw_copy_and_patch_file(
+    name = "rp2350_memmap_default",
+    src = "@pico-sdk//src/rp2_common/pico_crt0/rp2350:memmap_default.ld",
+    out = "patched_rp2350_memmap_default.ld",
+    patch_file = "patches/rp2350_memmap_default.ld.patch",
 )
 
 cc_library(
     name = "rp2350_linker_script",
+    additional_linker_inputs = [":rp2350_memmap_default"],
+    linkopts = ["-T$(execpath :rp2350_memmap_default)"],
     deps = [
-        "@pico-sdk//src/rp2_common/pico_crt0/rp2350:default_linker_script",
+        "@pico-sdk//src/rp2_common/pico_standard_link:default_flash_region",
     ],
 )

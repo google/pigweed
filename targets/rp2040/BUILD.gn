@@ -15,6 +15,7 @@
 import("//build_overrides/pi_pico.gni")
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/copy_and_patch.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_system/system_target.gni")
@@ -35,6 +36,7 @@ if (current_toolchain != default_toolchain) {
       "$PICO_ROOT/src/rp2_common/hardware_exception",
       "$PICO_ROOT/src/rp2_common/hardware_watchdog",
       "$PICO_ROOT/src/rp2_common/pico_malloc",
+      "$dir_pigweed/targets/rp2040:memmap_default_ld",
       "$dir_pw_cpu_exception:entry",
       "$dir_pw_string",
       "$dir_pw_system",
@@ -51,6 +53,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_cpu_exception:entry",
       "$dir_pw_cpu_exception_cortex_m:snapshot",
       "$dir_pw_system:device_handler.facade",
+      "$dir_pw_thread_freertos:snapshot",
     ]
     sources = [ "device_handler.cc" ]
   }
@@ -76,6 +79,25 @@ if (current_toolchain != default_toolchain) {
     inputs = [ "config/rp2040_hal_config.h" ]
     cflags = [ "-include" +
                rebase_path("config/rp2040_hal_config.h", root_build_dir) ]
+  }
+
+  pw_copy_and_patch_file("memmap_default_ld") {
+    source =
+        "${PICO_SRC_DIR}/src/rp2_common/pico_standard_link/memmap_default.ld"
+    out = "patched_memmap_default.ld"
+    patch_file = "patches/pico_sdk_v1_memmap_default.ld.patch"
+
+    # Check if PICO_SRC_DIR is defined, as in build configurations which don't
+    # define PICO_SRC_DIR, GN will complain, as root can't be an empty string.
+    if (PICO_SRC_DIR != "") {
+      root = "${PICO_SRC_DIR}"
+    }
+  }
+
+  config("linker_script") {
+    _linker_scripts = get_target_outputs(":memmap_default_ld")
+    _linker_script_path = rebase_path(_linker_scripts[0], root_build_dir)
+    ldflags = [ "-T${_linker_script_path}" ]
   }
 
   pw_source_set("rp2040_freertos_config") {
@@ -135,6 +157,8 @@ pw_system_target("rp2040") {
         "$dir_pw_sync_freertos:interrupt_spin_lock"
 
     pw_system_DEVICE_HANDLER = "$dir_pigweed/targets/rp2040:device_handler"
+
+    PICO_LINKER_SCRIPT = "$dir_pigweed/targets/rp2040:linker_script"
 
     pw_build_LINK_DEPS += [
       "$dir_pigweed/targets/rp2040:pre_init",
