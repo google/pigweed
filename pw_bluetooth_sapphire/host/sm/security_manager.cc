@@ -78,7 +78,7 @@ class SecurityManagerImpl final : public SecurityManager,
  private:
   // Represents a pending request to update the security level.
   struct PendingRequest {
-    PendingRequest(SecurityLevel level, PairingCallback callback);
+    PendingRequest(SecurityLevel level_in, PairingCallback callback_in);
     PendingRequest(PendingRequest&&) = default;
     PendingRequest& operator=(PendingRequest&&) = default;
 
@@ -248,9 +248,9 @@ class SecurityManagerImpl final : public SecurityManager,
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerImpl);
 };
 
-SecurityManagerImpl::PendingRequest::PendingRequest(SecurityLevel level,
-                                                    PairingCallback callback)
-    : level(level), callback(std::move(callback)) {}
+SecurityManagerImpl::PendingRequest::PendingRequest(SecurityLevel level_in,
+                                                    PairingCallback callback_in)
+    : level(level_in), callback(std::move(callback_in)) {}
 
 SecurityManagerImpl::~SecurityManagerImpl() {
   if (le_link_.is_alive()) {
@@ -809,7 +809,7 @@ void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
   BT_ASSERT(delegate_.is_alive());
   delegate_->ConfirmPairing([id = next_pairing_id_,
                              self = weak_self_.GetWeakPtr(),
-                             cb = std::move(confirm)](bool confirm) {
+                             cb = std::move(confirm)](bool is_confirmed) {
     if (!self.is_alive() || self->next_pairing_id_ != id) {
       bt_log(TRACE,
              "sm",
@@ -817,7 +817,7 @@ void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
              id);
       return;
     }
-    cb(confirm);
+    cb(is_confirmed);
   });
 }
 
@@ -831,7 +831,7 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey,
       [id = next_pairing_id_,
        self = weak_self_.GetWeakPtr(),
        method,
-       cb = std::move(confirm)](bool confirm) {
+       cb = std::move(confirm)](bool is_confirmed) {
         if (!self.is_alive() || self->next_pairing_id_ != id) {
           bt_log(TRACE,
                  "sm",
@@ -840,7 +840,7 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey,
                  id);
           return;
         }
-        cb(confirm);
+        cb(is_confirmed);
       });
 }
 
