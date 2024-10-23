@@ -730,7 +730,8 @@ class NestedMessageParserTest(unittest.TestCase):
             )
 
     def test_transform_bytes_sequential(self) -> None:
-        transform = lambda message: message.upper().replace(b'$', b'*')
+        def transform(message):
+            return message.upper().replace(b'$', b'*')
 
         self.assertEqual(self.decoder.transform(b'abc$abcd', transform), b'abc')
         self.assertEqual(self.decoder.transform(b'$', transform), b'*ABCD')

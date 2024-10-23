@@ -149,9 +149,8 @@ def generate_test_cases(test_case_template):
 
     random.seed(600613)
 
-    random_string = lambda size: bytes(
-        random.randrange(256) for _ in range(size)
-    )
+    def random_string(size):
+        return bytes(random.randrange(256) for _ in range(size))
 
     for i in range(1, 16):
         yield test_case(test_case_template, random_string(i))

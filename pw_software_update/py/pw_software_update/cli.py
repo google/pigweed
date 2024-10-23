@@ -79,9 +79,9 @@ def inspect_bundle_handler(arg) -> None:
 def _new_inspect_bundle_parser(subparsers) -> None:
     """Parser to handle inspect-bundle subcommand"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     inspect_bundle_parser = subparsers.add_parser(
         'inspect-bundle',
         description='Outputs contents of bundle',
@@ -112,9 +112,9 @@ def sign_bundle_handler(arg) -> None:
 def _new_sign_bundle_parser(subparsers) -> None:
     """Parser for sign-bundle subcommand"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     sign_bundle_parser = subparsers.add_parser(
         'sign-bundle',
         description='Sign an existing bundle using a development key',
@@ -207,9 +207,9 @@ def add_file_to_bundle_handler(arg) -> None:
 def _new_add_file_to_bundle_parser(subparsers) -> None:
     """Parser for adding file to bundle subcommand"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     add_file_to_bundle_parser = subparsers.add_parser(
         'add-file-to-bundle',
         description='Add a file to an existing bundle',
@@ -262,9 +262,9 @@ def add_root_metadata_to_bundle_handler(arg) -> None:
 def _new_add_root_metadata_to_bundle_parser(subparsers) -> None:
     """Parser for subcommand adding root metadata to bundle"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     add_root_metadata_to_bundle_parser = subparsers.add_parser(
         'add-root-metadata-to-bundle',
         description='Add root metadata to a bundle',
@@ -309,9 +309,9 @@ def create_empty_bundle_handler(arg) -> None:
 def _new_create_empty_bundle_parser(subparsers) -> None:
     """Parser for creation of an empty bundle."""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     create_empty_bundle_parser = subparsers.add_parser(
         'create-empty-bundle',
         description='Creation of an empty bundle',
@@ -358,9 +358,9 @@ def inspect_root_metadata_handler(arg) -> None:
 def _new_inspect_root_metadata_parser(subparsers) -> None:
     """Parser to handle inspect-root-metadata subcommand"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     inspect_root_metadata_parser = subparsers.add_parser(
         'inspect-root-metadata',
         description='Outputs contents of root metadata',
@@ -393,9 +393,9 @@ def sign_root_metadata_handler(arg) -> None:
 def _new_sign_root_metadata_parser(subparsers) -> None:
     """Parser to handle sign-root-metadata subcommand"""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     sign_root_metadata_parser = subparsers.add_parser(
         'sign-root-metadata',
         description='Signing of root metadata',
@@ -442,9 +442,9 @@ def create_root_metadata_handler(arg) -> None:
 def _new_create_root_metadata_parser(subparsers) -> None:
     """Parser to handle create-root-metadata subcommand."""
 
-    formatter_class = lambda prog: argparse.HelpFormatter(
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
     create_root_metadata_parser = subparsers.add_parser(
         'create-root-metadata',
         description='Creation of root metadata',

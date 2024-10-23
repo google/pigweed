@@ -207,7 +207,9 @@ def dict_deep_merge(
     # If a constructor for this subclass wasn't provided, try using a
     # zero-arg constructor for the provided dicts.
     if ctor is None:
-        ctor = lambda: src.__class__()  # pylint: disable=unnecessary-lambda
+
+        def ctor():
+            return src.__class__()  # pylint: disable=unnecessary-lambda
 
     # Ensure that we have a way to construct an empty dict of the same type.
     try:

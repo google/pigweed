@@ -205,10 +205,16 @@ def install(
 
     if env.PW_EMOJI:
         name_attr = 'emoji'
-        colorize = lambda ll: str
+
+        def colorize(ll):
+            del ll
+            return str
+
     else:
         name_attr = 'ascii'
-        colorize = lambda ll: getattr(colors, ll.color)
+
+        def colorize(ll):
+            return getattr(colors, ll.color)
 
     for log_level in _LOG_LEVELS:
         name = getattr(log_level, name_attr)

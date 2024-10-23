@@ -547,8 +547,12 @@ def package_stubs(
         if file_ns.startswith('::'):
             file_ns = file_ns[2:]
 
-        start_ns = lambda: gen.line(f'namespace {file_ns} {{\n')
-        finish_ns = lambda: gen.line(f'}}  // namespace {file_ns}\n')
+        def start_ns():
+            return gen.line(f'namespace {file_ns} {{\n')
+
+        def finish_ns():
+            return gen.line(f'}}  // namespace {file_ns}\n')
+
     else:
         start_ns = finish_ns = lambda: None
 

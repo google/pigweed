@@ -165,7 +165,10 @@ class TestPluginRegistry(unittest.TestCase):
         sys.modules[fake_module_name] = fake_module
 
         try:
-            function = lambda: None
+
+            def function():
+                return None
+
             function.__module__ = fake_module_name
             self.assertIsNotNone(self._registry.register('a', function))
 

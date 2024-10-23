@@ -133,9 +133,14 @@ def exclude_paths(
 ) -> Iterable[Path]:
     """Excludes paths based on a series of regular expressions."""
     if relative_to:
-        relpath = lambda path: Path(os.path.relpath(path, relative_to))
+
+        def relpath(path):
+            return Path(os.path.relpath(path, relative_to))
+
     else:
-        relpath = lambda path: path
+
+        def relpath(path):
+            return path
 
     for path in paths:
         if not any(e.search(relpath(path).as_posix()) for e in exclusions):

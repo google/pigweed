@@ -1272,9 +1272,7 @@ class ConsoleApp:
             self.window_manager.focus_first_visible_pane()
 
         try:
-            unused_result = await self.application.run_async(
-                set_exception_handler=True
-            )
+            await self.application.run_async(set_exception_handler=True)
         finally:
             if test_mode:
                 background_log_task.cancel()

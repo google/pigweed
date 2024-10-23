@@ -73,7 +73,8 @@ class Label:
 
     def __init__(self, paths: GnPaths, label: str):
         # Use this lambda to set attributes on this frozen dataclass.
-        set_attr = lambda attr, val: object.__setattr__(self, attr, val)
+        def set_attr(attr, val):
+            return object.__setattr__(self, attr, val)
 
         # Handle explicitly-specified toolchains
         if label.endswith(')'):
@@ -414,7 +415,8 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
 
 
 def _parse_args() -> argparse.Namespace:
-    file_pair = lambda s: tuple(Path(p) for p in s.split(':'))
+    def file_pair(s):
+        return tuple(Path(p) for p in s.split(':'))
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

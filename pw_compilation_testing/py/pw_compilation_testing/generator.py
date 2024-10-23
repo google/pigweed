@@ -362,7 +362,8 @@ def generate_gn_build(
 def _main(
     name: str, base: str, sources: Iterable[SourceFile], output: Path
 ) -> int:
-    print_stderr = lambda s: print(s, file=sys.stderr)
+    def print_stderr(s):
+        return print(s, file=sys.stderr)
 
     try:
         tests = list(enumerate_tests(name, (s.file_path for s in sources)))

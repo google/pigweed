@@ -265,7 +265,9 @@ def get_sources_and_headers(
         files,
     )
 
-    rebase_path = lambda f: pathlib.Path(stm32cube_path / f)
+    def rebase_path(f):
+        return pathlib.Path(stm32cube_path / f)
+
     return list(map(rebase_path, source_files)), list(
         map(rebase_path, header_files)
     )

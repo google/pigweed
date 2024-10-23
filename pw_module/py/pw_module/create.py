@@ -1174,7 +1174,9 @@ def _create_module(
 
 def register_subcommand(parser: argparse.ArgumentParser) -> None:
     """Registers the module `create` subcommand with `parser`."""
-    csv = lambda s: s.split(',')
+
+    def csv(s):
+        return s.split(",")
 
     def csv_with_choices(choices: list[str], string) -> list[str]:
         chosen_items = list(string.split(','))

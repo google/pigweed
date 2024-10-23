@@ -136,7 +136,9 @@ class PresubmitResult(enum.Enum):
         elif self is PresubmitResult.CANCEL:
             color = _COLOR.yellow
         else:
-            color = lambda value: value
+
+            def color(value):
+                return value
 
         padding = (width - len(self.value)) // 2 * ' '
         return padding + color(self.value) + padding

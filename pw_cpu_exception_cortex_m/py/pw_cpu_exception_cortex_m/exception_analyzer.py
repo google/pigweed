@@ -111,8 +111,10 @@ class CortexMExceptionAnalyzer:
               memory management fault at 0x00000000 [DACCVIOL] [MMARVALID]
         """
         cause = ''
+
         # The CFSR can accumulate multiple exceptions.
-        split_major_cause = lambda cause: cause if not cause else cause + ', '
+        def split_major_cause(cause):
+            return cause if not cause else cause + ', '
 
         if self._cpu_state.HasField('cfsr') and self.is_fault_active():
             if (

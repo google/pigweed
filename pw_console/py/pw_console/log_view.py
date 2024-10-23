@@ -187,10 +187,8 @@ class LogView:
                 self._restart_filtering()
 
     async def _send_logs_over_websockets(self, websocket, _path) -> None:
-        formatter: Callable[[LogLine], str] = operator.attrgetter(
-            'ansi_stripped_log'
-        )
-        formatter = lambda log: log_record_to_json(log.record)
+        def formatter(log: LogLine) -> str:
+            return log_record_to_json(log.record)
 
         theme_colors = json.dumps(
             self.log_pane.application.prefs.pw_console_color_config()

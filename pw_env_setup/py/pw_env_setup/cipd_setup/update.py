@@ -31,6 +31,10 @@ import subprocess
 import sys
 
 
+def _stderr(*args):
+    return print(*args, file=sys.stderr)
+
+
 def check_auth(cipd, package_files, cipd_service_account, spin):
     """Check have access to CIPD pigweed directory."""
     cmd = [cipd]
@@ -95,39 +99,37 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
 
     if inaccessible_paths and not logged_in:
         with spin.pause():
-            stderr = lambda *args: print(*args, file=sys.stderr)
-            stderr()
-            stderr(
+            _stderr()
+            _stderr(
                 'Not logged in to CIPD and no anonymous access to the '
                 'following CIPD paths:'
             )
             for path in inaccessible_paths:
-                stderr('  {}'.format(path))
-            stderr()
-            stderr('Attempting CIPD login')
+                _stderr('  {}'.format(path))
+            _stderr()
+            _stderr('Attempting CIPD login')
             try:
                 # Note that with -service-account-json, auth-login is a no-op.
                 subprocess.check_call(cmd + ['auth-login'] + extra_args)
             except subprocess.CalledProcessError:
-                stderr('CIPD login failed')
+                _stderr('CIPD login failed')
                 return False
 
         inaccessible_paths = _check_all_paths()
 
     if inaccessible_paths:
-        stderr = lambda *args: print(*args, file=sys.stderr)
-        stderr('=' * 60)
+        _stderr('=' * 60)
         username_part = ''
         if username:
             username_part = '({}) '.format(username)
-        stderr(
+        _stderr(
             'Your account {}does not have access to the following '
             'paths'.format(username_part)
         )
-        stderr('(or they do not exist)')
+        _stderr('(or they do not exist)')
         for path in inaccessible_paths:
-            stderr('  {}'.format(path))
-        stderr('=' * 60)
+            _stderr('  {}'.format(path))
+        _stderr('=' * 60)
         return False
 
     return True

@@ -140,7 +140,8 @@ class _FileSorter:
         raw_lines: list[str] = block.lines
         lines: list[_Line] = []
 
-        prefix = lambda x: len(x) - len(x.lstrip())
+        def prefix(x):
+            return len(x) - len(x.lstrip())
 
         prev_prefix: int | None = None
         comments: list[str] = []
