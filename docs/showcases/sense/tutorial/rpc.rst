@@ -122,49 +122,6 @@ You can search and filter your device's logs. Try it now:
 #. Press :kbd:`Ctrl+Alt+R` or click **Clear Filters** to clear your filter
    and return to the original table view.
 
-.. _showcase-sense-tutorial-crash:
-
---------------------------------
-Handle crashes (full setup only)
---------------------------------
-.. warning::
-
-   This workflow requires the :ref:`full hardware
-   setup <showcase-sense-tutorial-full>`.
-
-:ref:`module-pw_cpu_exception` provides a consistent interface
-for entering a CPU exception handler and makes it easier to
-consistently collect CPU state that may otherwise get clobbered
-by application exception handlers. Try triggering a crash now
-and downloading a snapshot:
-
-#. In the **Python Repl** of ``pw_console`` send the following command:
-
-   .. code-block:: pycon
-
-      >>> device.rpcs.pw.system.proto.DeviceService.Crash()
-
-   You should see error logs pop up in **Device Logs**.
-
-   The traceback in **Python Output** is expected because you just
-   manually triggered a crash:
-
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/crash_python_results.png
-
-#. Download the crash snapshot to ``/tmp`` (or whatever directory you prefer)
-   by running the following command in the **Python Repl**:
-
-   .. code-block:: pycon
-
-      >>> device.get_crash_snapshots('/tmp')
-
-   In **Host Logs** you should see confirmation that a snapshot was downloaded:
-
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/crash_snapshot.png
-
-#. You can leave ``pw_console`` running. We'll keep exploring it on the next
-   page.
-
 .. _showcase-sense-tutorial-pico-rpc-summary:
 
 -------
@@ -175,9 +132,6 @@ except this time we used them to communicate with a real embedded
 device rather than a simulated device running on our development host.
 In other words, when it's time to switch from simulated devices to
 real ones, you don't need to learn new tools.
-
-We also met a new friend, ``pw_cpu_exception``, that can help us
-debug crashes.
 
 Next, head over to :ref:`showcase-sense-tutorial-automate` to
 learn how to package up common development tasks into small scripts

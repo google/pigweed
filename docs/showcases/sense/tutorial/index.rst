@@ -102,4 +102,5 @@ development host ready to run Sense.
    factory
    bazel_cloud
    production
+   crash_handler
    outro

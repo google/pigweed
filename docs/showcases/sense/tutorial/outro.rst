@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-outro:
 
 ===============
-15. Wrapping up
+16. Wrapping up
 ===============
 Thank you for trying out Sense! We hope you enjoyed the tutorial and
 are excited to build more stuff with Pigweed.

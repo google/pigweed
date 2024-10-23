@@ -87,6 +87,7 @@ pw_doc_group("core_docs") {
     "showcases/sense/tutorial/bazel_cloud.rst",
     "showcases/sense/tutorial/build.rst",
     "showcases/sense/tutorial/code_intelligence.rst",
+    "showcases/sense/tutorial/crash_handler.rst",
     "showcases/sense/tutorial/device_tests.rst",
     "showcases/sense/tutorial/explore.rst",
     "showcases/sense/tutorial/factory.rst",
