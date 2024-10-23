@@ -183,6 +183,7 @@ genrule {
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc) ",
     out: [
         "pw_rpc/internal/packet.pwpb.h",
@@ -205,6 +206,7 @@ genrule {
         "--no-generate-type-hints " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     out: [
         "packet_pb2.py",
@@ -240,6 +242,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -282,6 +285,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -307,6 +311,7 @@ genrule_defaults {
         "--sources $(in) " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -349,6 +354,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -370,6 +376,7 @@ genrule_defaults {
         "--sources $(in) " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -401,6 +408,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -422,6 +430,7 @@ genrule_defaults {
         "--sources $(in) " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -453,6 +462,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -474,6 +484,7 @@ genrule_defaults {
         "--sources $(in) " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
@@ -505,6 +516,7 @@ genrule_defaults {
         "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
+        "--pwpb-no-oneof-callbacks "  +
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
