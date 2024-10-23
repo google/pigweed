@@ -16,7 +16,7 @@ Use the ``pw_android_common_backends`` ``cc_defaults`` in the Pigweed module
 library or binary rule to use a preselected set of backends common to most
 Android platform projects.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    cc_binary {
        name: "my_app",
@@ -37,7 +37,7 @@ Basic blueprint files format
 All Pigweed Soong blueprint files must be named ``Android.bp``, and include the
 folowing copyright header with the year adjusted and package.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    // Copyright 2024 The Pigweed Authors
    //
@@ -105,7 +105,7 @@ common Android backends via the ``pw_android_common_backends`` defaults.
    Every dependency has to be added as ``whole_static_libs`` to avoid dropping
    symbols on transitive dependencies.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    cc_library_static {
        name: "pw_<MODULE_NAME>",
@@ -155,7 +155,7 @@ common Android backend should still be provided, which uses the mentioned
    ``filegroup`` captures the absolute paths of the listed source files, so they
    can be addressed properly when the ``cc_defaults`` rule is used.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    filegroup {
        name: "pw_<MODULE_NAME>_src_files",
@@ -223,7 +223,7 @@ build flag values. Source files must be listed in a ``filegroup`` following the
 as a ``cc_library_headers`` following the ``pw_<MODULE_NAME>_include_dirs`` name
 format.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    filegroup {
        name: "pw_<MODULE_NAME>_src_files",
@@ -278,7 +278,7 @@ follows.
    name that distinguishes it from other rule names in Pigweed and other
    projects. It is recommended to suffix the project name.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    cc_library_static {
        name: "pw_<MODULE_NAME>_<PROJECT_NAME>",
@@ -301,7 +301,7 @@ the same as ``<FACADE_NAME>`` follow ``pw_<MODULE_NAME>``, e.g. ``pw_log``.
 .. note::
    Facade names should not be suffixed with ``_headers``.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    cc_library_headers {
        name: "pw_<MODULE_NAME>.<FACADE_NAME>",
@@ -326,7 +326,7 @@ rule instead, with the source files listed in a ``filegroup`` following the
    Facades cannot be defined as ``cc_static_library`` because it wouldn’t be
    possible to build the facade without a backend.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    filegroup {
        name: "pw_<MODULE_NAME>.<FACADE_NAME>_files",
@@ -348,7 +348,7 @@ To assign a backend to a facade defined as ``cc_defaults`` the ``cc_defaults``
 rule can be placed in the ``defaults`` list of a ``cc_static_library`` rule or
 binary rule that lists the facade's backend as a dependency.
 
-.. code-block:: javascript
+.. code-block:: androidbp
 
    cc_static_library {
        name: "user_of_pw_<MODULE_NAME>.<FACADE_NAME>",
