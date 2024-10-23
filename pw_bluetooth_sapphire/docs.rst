@@ -149,6 +149,57 @@ ATT
 Contributing
 ------------
 
+.. _module-pw_bluetooth_sapphire-building:
+
+Building
+========
+The following commands will build test binaries for the host platform. The
+tests use GoogleTest so they are not supported by the default build
+configuration.
+
+.. tab-set::
+
+   .. tab-item:: Bazel
+
+      .. code-block:: console
+
+         bazelisk build //pw_bluetooth_sapphire/host/... \
+           --platforms=//pw_unit_test:googletest_platform \
+           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+
+   .. tab-item:: GN
+
+      First, install the boringssl, emboss, and googletest packages with ``pw package``.
+
+      .. code-block:: console
+
+         pw package install boringssl
+         pw package install emboss
+         pw package install googletest
+
+      Next, configure the GN args for all of the packages and backends that
+      Sapphire uses. For example:
+
+      .. code-block:: console
+
+         gn args out
+
+      .. code-block:: console
+
+         dir_pw_third_party_boringssl = "/path/to/pigweed/.environment/packages/boringssl"
+         dir_pw_third_party_emboss = "/path/to/pigweed/.environment/packages/emboss"
+         dir_pw_third_party_googletest = "/path/to/pigweed/.environment/packages/googletest"
+         pw_bluetooth_sapphire_ENABLED = true
+         pw_unit_test_MAIN = "//third_party/googletest:gmock_main"
+         pw_unit_test_BACKEND = "//pw_unit_test:googletest"
+         pw_function_CONFIG = "//pw_function:enable_dynamic_allocation"
+         pw_chrono_SYSTEM_CLOCK_BACKEND = "//pw_chrono_stl:system_clock"
+         pw_chrono_SYSTEM_TIMER_BACKEND = "//pw_chrono_stl:system_timer"
+         pw_async_TASK_BACKEND = "//pw_async_basic:task"
+         pw_async_FAKE_DISPATCHER_BACKEND = "//pw_async_basic:fake_dispatcher"
+
+      Finally, build with ``pw watch``.
+
 Running tests
 =============
 .. tab-set::
@@ -183,8 +234,15 @@ Running tests
 
          $ pw presubmit --step gn_chre_googletest_nanopb_sapphire_build
 
-      You can also use ``pw watch`` if you install all the packages and set
-      your GN args to match the `GN presubmit step`_.
+      You can also use ``pw watch`` if you install required packages and set
+      your GN args as described in the :ref:`Building
+      <module-pw_bluetooth_sapphire-building>` section.
+
+Clangd support
+==============
+In order to use :ref:`module-pw_ide` to generate a compilation database for
+Clangd, you must first configure your GN args as described in the
+:ref:`Building <module-pw_bluetooth_sapphire-building>` GN tab.
 
 -------
 Roadmap

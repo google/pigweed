@@ -82,6 +82,11 @@ To stop the running emulator, use the following command:
 --------
 Building
 --------
+.. note::
+   See the main :ref:`Building <module-pw_bluetooth_sapphire-building>` section
+   for instructions on building for your host machine (producing Linux/macOS
+   test binaries).
+
 To build the ``bt-host`` package, use one of the following commands:
 
 .. tab-set::
