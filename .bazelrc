@@ -48,6 +48,9 @@ test --test_tag_filters=-integration,-do_not_build,-do_not_run_test
 
 # C++ related flags
 # =================
+# Do not strip debug symbols by default.
+common --strip=never
+
 # Silence all C/C++ warnings in external code.
 #
 # Note that this will not silence warnings from external headers #include'd in
