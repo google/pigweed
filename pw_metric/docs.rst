@@ -44,7 +44,7 @@ and metrics might look like. In this case, the object's
 ``MySubsystem::metrics()`` member is not globally registered; the user is on
 their own for combining this subsystem's metrics with others.
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_metric/metric.h"
 
@@ -67,7 +67,7 @@ their own for combining this subsystem's metrics with others.
 The metrics subsystem has no canonical output format at this time, but a JSON
 dump might look something like this:
 
-.. code-block:: none
+.. code-block:: json
 
    {
      "my_subsystem" : {
@@ -88,7 +88,7 @@ this use case. For example:
 
 **Before instrumenting:**
 
-.. code-block::
+.. code-block:: cpp
 
    // This code was passed down from generations of developers before; no one
    // knows what it does or how it works. But it needs to be fixed!
@@ -102,7 +102,7 @@ this use case. For example:
 
 **After instrumenting:**
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_metric/global.h"
    #include "pw_metric/metric.h"
@@ -273,12 +273,12 @@ tokenizing the metric and group names.
    ``pw::metric::Metric``, and works in three contexts: global, local, and
    member.
 
-   If the `_STATIC` variant is used, the macro declares a variable with static
+   If the ``_STATIC`` variant is used, the macro declares a variable with static
    storage. These can be used in function scopes, but not in classes.
 
    1. At global scope:
 
-      .. code-block::
+      .. code-block:: cpp
 
          PW_METRIC(foo, "foo", 15.5f);
 
@@ -288,7 +288,7 @@ tokenizing the metric and group names.
 
    2. At local function or member function scope:
 
-      .. code-block::
+      .. code-block:: cpp
 
          void MyFunc() {
            PW_METRIC(foo, "foo", 15.5f);
@@ -298,7 +298,7 @@ tokenizing the metric and group names.
 
    3. At member level inside a class or struct:
 
-      .. code-block::
+      .. code-block:: cpp
 
          struct MyStructy {
            void DoSomething() {
@@ -311,7 +311,7 @@ tokenizing the metric and group names.
    You can also put a metric into a group with the macro. Metrics can belong to
    strictly one group, otherwise an assertion will fail. Example:
 
-   .. code-block::
+   .. code-block:: cpp
 
       PW_METRIC_GROUP(my_group, "my_group");
       PW_METRIC(my_group, foo, "foo", 0.2f);
@@ -320,7 +320,7 @@ tokenizing the metric and group names.
 
    .. tip::
       If you want a globally registered metric, see ``pw_metric/global.h``; in
-      that contexts, metrics are globally registered without the need to
+      that context, metrics are globally registered without the need to
       centrally register in a single place.
 
 .. cpp:function:: PW_METRIC_GROUP(identifier, name)
@@ -332,12 +332,12 @@ tokenizing the metric and group names.
    Works similar to ``PW_METRIC`` and can be used in the same contexts (global,
    local, and member). Optionally, the group can be added to a parent group.
 
-   If the `_STATIC` variant is used, the macro declares a variable with static
+   If the ``_STATIC`` variant is used, the macro declares a variable with static
    storage. These can be used in function scopes, but not in classes.
 
    Example:
 
-   .. code-block::
+   .. code-block:: cpp
 
       PW_METRIC_GROUP(my_group, "my_group");
       PW_METRIC(my_group, foo, "foo", 0.2f);
@@ -351,7 +351,7 @@ tokenizing the metric and group names.
 
    Example:
 
-   .. code-block::
+   .. code-block:: cpp
 
       #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
@@ -381,7 +381,7 @@ tokenizing the metric and group names.
 
    Example:
 
-   .. code-block::
+   .. code-block:: cpp
 
       #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
@@ -411,7 +411,7 @@ to a pattern where rich/large objects are statically constructed at global
 scope, then interacted with via tasks or threads. For example, consider a
 hypothetical global ``Uart`` object:
 
-.. code-block::
+.. code-block:: cpp
 
    class Uart {
     public:
@@ -434,7 +434,7 @@ the UART to for example gain insight into which operations are triggering lots
 of data transfer. When adding metrics to the above imaginary UART object, one
 might consider the following approach:
 
-.. code-block::
+.. code-block:: cpp
 
    class Uart {
     public:
@@ -482,7 +482,7 @@ phases: The constructor where references are stored, and a ``Init()`` function
 which is called after all static constructors have run. This approach works
 correctly, even when the objects are allocated globally:
 
-.. code-block::
+.. code-block:: cpp
 
    class Uart {
     public:
@@ -532,7 +532,7 @@ The order of declaring in-class groups and metrics matters if the metrics are
 within a group declared inside the class. For example, the following class will
 work fine:
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_metric/metric.h"
 
@@ -550,7 +550,7 @@ work fine:
 but the following one will not since the group is constructed after the metrics
 (and will result in a compile error):
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_metric/metric.h"
 
@@ -604,7 +604,7 @@ there are no helper functions for this, so be careful.
 
 Below is an example that **is incorrect**. Don't do what follows!
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_metric/metric.h"
 
@@ -644,7 +644,7 @@ Batching the returned metrics avoids requiring a large buffer or large RPC MTU.
 The returned metric objects have flattened paths to the root. For example, the
 returned metrics (post detokenization and jsonified) might look something like:
 
-.. code-block:: none
+.. code-block:: json
 
    {
      "/i2c1/failed_txns": 17,
@@ -670,7 +670,7 @@ To expose a ``MetricService`` in your application, do the following:
 
 For example:
 
-.. code-block::
+.. code-block:: cpp
 
    #include "pw_rpc/server.h"
    #include "pw_metric/metric.h"
