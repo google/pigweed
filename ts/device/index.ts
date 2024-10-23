@@ -47,9 +47,9 @@ export class RPCReadableStream<R = any> extends ReadableStream<R> {
     return this.underlyingSource.call!;
   }
 
-  cancel(): Promise<void> {
+  override cancel(): Promise<void> {
     this.call.cancel();
-    return;
+    return Promise.resolve();
   }
 }
 
@@ -169,7 +169,7 @@ export class Device {
           );
         },
         cancel() {
-          this.call.cancel();
+          this.call!.cancel();
         },
       };
       return new RPCReadableStream<Message>(source);
