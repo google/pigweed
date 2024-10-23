@@ -74,35 +74,35 @@ def _main():
     seed_toctree = []
 
     for metadata_file in args.seed_metadata:
-        with open(metadata_file, 'r') as file:
-            meta = json.load(file)
+        contents = Path(metadata_file).read_text(encoding='utf-8')
+        meta = json.loads(contents)
 
-            if 'changelist' in meta:
-                # The SEED has not yet been merged and points to an active CL.
-                change_link = (
-                    'https://pigweed-review.googlesource.com'
-                    f'/c/pigweed/pigweed/+/{meta["changelist"]}'
-                )
-                title = f'`{meta["title"]} <{change_link}>`__'
-                seed_toctree.append(
-                    f'{meta["number"]}: {meta["title"]}<{change_link}>',
-                )
-            else:
-                # The SEED document is in the source tree.
-                title = f':ref:`{meta["title"]} <seed-{meta["number"]}>`'
-                seed_toctree.append(Path(meta["rst_file"]).stem)
-
-            facilitator = meta.get('facilitator', 'Unassigned')
-
-            seed_table.extend(
-                [
-                    f'   * - {meta["number"]}',
-                    f'     - {title}',
-                    f'     - {_status_badge(meta["status"])}',
-                    f'     - {meta["author"]}',
-                    f'     - {facilitator}',
-                ]
+        if 'changelist' in meta:
+            # The SEED has not yet been merged and points to an active CL.
+            change_link = (
+                'https://pigweed-review.googlesource.com'
+                f'/c/pigweed/pigweed/+/{meta["changelist"]}'
             )
+            title = f'`{meta["title"]} <{change_link}>`__'
+            seed_toctree.append(
+                f'{meta["number"]}: {meta["title"]}<{change_link}>',
+            )
+        else:
+            # The SEED document is in the source tree.
+            title = f':ref:`{meta["title"]} <seed-{meta["number"]}>`'
+            seed_toctree.append(Path(meta["rst_file"]).stem)
+
+        facilitator = meta.get('facilitator', 'Unassigned')
+
+        seed_table.extend(
+            [
+                f'   * - {meta["number"]}',
+                f'     - {title}',
+                f'     - {_status_badge(meta["status"])}',
+                f'     - {meta["author"]}',
+                f'     - {facilitator}',
+            ]
+        )
 
     table = '\n'.join(seed_table)
 
@@ -118,7 +118,7 @@ def _main():
     )
     # fmt: on
 
-    args.output.write_text(f'{table}\n\n{toctree}')
+    args.output.write_text(f'{table}\n\n{toctree}', encoding='utf-8')
 
 
 if __name__ == '__main__':
