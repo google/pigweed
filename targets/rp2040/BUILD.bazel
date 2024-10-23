@@ -16,8 +16,8 @@ load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:pw_copy_and_patch_file.bzl", "pw_copy_and_patch_file")
 load("//pw_toolchain/cc/current_toolchain:conditions.bzl", "if_compiler_is_clang")
-load("//targets/rp2040:flash.bzl", "flash_rp2040")
-load("//targets/rp2040:transition.bzl", "RP2_SYSTEM_FLAGS", "rp2040_binary")
+load("//targets/rp2040:flash.bzl", "flash_rp2040", "flash_rp2350")
+load("//targets/rp2040:transition.bzl", "RP2_SYSTEM_FLAGS", "rp2040_binary", "rp2350_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -240,6 +240,18 @@ cc_library(
     deps = [
         "@pico-sdk//src/rp2_common/pico_standard_link:default_flash_region",
     ],
+)
+
+rp2350_binary(
+    name = "rp2350_system_async_example",
+    testonly = True,
+    binary = ":system_async_example",
+)
+
+flash_rp2350(
+    name = "flash_rp2350_system_async_example",
+    testonly = True,
+    rp2350_binary = ":rp2350_system_async_example",
 )
 
 pw_copy_and_patch_file(
