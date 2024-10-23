@@ -249,15 +249,26 @@ TEST(ForwardingDatagramchannel, PendCloseAwakensAndClosesPeer) {
    public:
     TryToReadUntilClosed(DatagramReader& reader) : reader_(reader) {}
 
+    int packets_read = 0;
+    Waker waker;
+
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
       Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
+        waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+        return Pending();
+      }
+
+      if (read->ok()) {
+        packets_read += 1;
+        EXPECT_TRUE(read->value().empty());
         return Pending();
       }
       EXPECT_EQ(read->status(), pw::Status::FailedPrecondition());
       return Ready();
     }
+
     DatagramReader& reader_;
   };
 
@@ -271,9 +282,29 @@ TEST(ForwardingDatagramchannel, PendCloseAwakensAndClosesPeer) {
 
   Waker empty_waker;
   Context empty_cx(dispatcher, empty_waker);
-  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
 
-  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  // Write a datagram, but close before the datagram is read.
+  EXPECT_EQ(pair->second().PendReadyToWrite(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_EQ(pair->second().Write({}).status(), pw::OkStatus());
+  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_FALSE(pair->second().is_read_or_write_open());
+
+  // Closed second, so first is closed for writes, but still open for reads.
+  EXPECT_TRUE(pair->first().is_read_open());
+  EXPECT_FALSE(pair->first().is_write_open());
+
+  // First should read the packet and immediately be marked closed.
+  EXPECT_EQ(read_task.packets_read, 0);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(read_task.packets_read, 1);
+
+  EXPECT_FALSE(pair->first().is_read_or_write_open());
+
+  std::move(read_task.waker).Wake();  // wake the task so it runs again
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());  // runs to completion
+
+  EXPECT_FALSE(pair->first().is_read_or_write_open());
+  EXPECT_EQ(read_task.packets_read, 1);
 }
 
 TEST(ForwardingByteChannel, IgnoresEmptyWrites) {
@@ -382,12 +413,23 @@ TEST(ForwardingByteChannel, PendCloseAwakensAndClosesPeer) {
    public:
     TryToReadUntilClosed(ByteReader& reader) : reader_(reader) {}
 
+    int bytes_read = 0;
+    Waker waker;
+
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
       Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
+        waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
         return Pending();
       }
+
+      if (read->ok()) {
+        bytes_read += read->value().size();
+        EXPECT_EQ(read->value().size(), 5u);
+        return Pending();
+      }
+
       EXPECT_EQ(read->status(), pw::Status::FailedPrecondition());
       return Ready();
     }
@@ -404,9 +446,31 @@ TEST(ForwardingByteChannel, PendCloseAwakensAndClosesPeer) {
 
   Waker empty_waker;
   Context empty_cx(dispatcher, empty_waker);
-  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
 
-  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  InitializedMultiBuf data("hello");
+
+  // Write a datagram, but close before the datagram is read.
+  EXPECT_EQ(pair->second().PendReadyToWrite(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_EQ(pair->second().Write(data.Take()).status(), pw::OkStatus());
+  EXPECT_EQ(pair->second().PendClose(empty_cx), Ready(pw::OkStatus()));
+  EXPECT_FALSE(pair->second().is_read_or_write_open());
+
+  // Closed second, so first is closed for writes, but still open for reads.
+  EXPECT_TRUE(pair->first().is_read_open());
+  EXPECT_FALSE(pair->first().is_write_open());
+
+  // First should read the packet and immediately be marked closed.
+  EXPECT_EQ(read_task.bytes_read, 0);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+  EXPECT_EQ(read_task.bytes_read, 5);
+
+  EXPECT_FALSE(pair->second().is_read_or_write_open());
+
+  std::move(read_task.waker).Wake();  // wake the task so it runs again
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());  // runs to completion
+
+  EXPECT_FALSE(pair->first().is_read_or_write_open());
+  EXPECT_EQ(read_task.bytes_read, 5);
 }
 
 }  // namespace

@@ -20,13 +20,18 @@ async2::Poll<Result<multibuf::MultiBuf>>
 ForwardingChannel<DataType::kDatagram>::DoPendRead(async2::Context& cx)
     PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
-  if (!read_queue_.has_value()) {
+
+  // Close this channel if the sibling is closed, but return any remaining data.
+  if (!sibling_.is_write_open()) {
+    set_read_closed();
+    if (!read_queue_.has_value()) {
+      return Status::FailedPrecondition();
+    }
+  } else if (!read_queue_.has_value()) {
     waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
+
   auto read_data = std::move(*read_queue_);
   read_queue_.reset();
   std::move(sibling_.waker_).Wake();
@@ -36,9 +41,6 @@ ForwardingChannel<DataType::kDatagram>::DoPendRead(async2::Context& cx)
 async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
     async2::Context& cx) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
   if (sibling_.read_queue_.has_value()) {
     waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
@@ -49,9 +51,6 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
 Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
   PW_DASSERT(!sibling_.read_queue_.has_value());
   sibling_.read_queue_ = std::move(data);
   const uint32_t token = ++write_token_;
@@ -62,19 +61,13 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
 async2::Poll<Result<channel::WriteToken>>
 ForwardingChannel<DataType::kDatagram>::DoPendFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
     async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
-  pair_.closed_ = true;
+  sibling_.set_write_closed();  // No more writes from the other end
   read_queue_.reset();
   std::move(sibling_.waker_).Wake();
   return OkStatus();
@@ -83,13 +76,18 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
 async2::Poll<Result<multibuf::MultiBuf>>
 ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
-  if (read_queue_.empty()) {
+
+  // Close this channel if the sibling is closed, but return any remaining data.
+  if (!sibling_.is_write_open()) {
+    set_read_closed();
+    if (read_queue_.empty()) {
+      return Status::FailedPrecondition();
+    }
+  } else if (read_queue_.empty()) {
     read_waker_ = cx.GetWaker(async2::WaitReason::Unspecified());
     return async2::Pending();
   }
+
   auto read_data = std::move(read_queue_);
   read_queue_ = {};
   return read_data;
@@ -98,9 +96,6 @@ ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
 Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
   if (data.empty()) {
     return CreateWriteToken(write_token_);  // no data, nothing to do
   }
@@ -113,19 +108,13 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
 async2::Poll<Result<channel::WriteToken>>
 ForwardingChannel<DataType::kByte>::DoPendFlush(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPendClose(
     async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
-  if (pair_.closed_) {
-    return Status::FailedPrecondition();
-  }
-  pair_.closed_ = true;
+  sibling_.set_write_closed();  // No more writes from the other end
   read_queue_.Release();
   std::move(sibling_.read_waker_).Wake();
   return OkStatus();

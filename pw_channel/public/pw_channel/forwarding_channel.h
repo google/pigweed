@@ -75,7 +75,6 @@ class ForwardingChannelPair {
 
   sync::Mutex mutex_;
   multibuf::MultiBufAllocator& allocator_;
-  bool closed_ PW_GUARDED_BY(mutex_) = false;
 
   // These channels refer to each other, so their lifetimes must match.
   internal::ForwardingChannel<kType> first_;
