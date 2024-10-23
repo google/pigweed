@@ -268,6 +268,13 @@ pw_seed("0130") {
   sources = [ "0130-update-sphinx-theme.rst" ]
 }
 
+pw_seed("0132") {
+  title = "pw_usb"
+  author = "Łukasz Kędziora"
+  status = "Draft"
+  changelist = 243132
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -305,5 +312,6 @@ pw_seed_index("seeds") {
     ":0128",
     ":0129",
     ":0130",
+    ":0132",
   ]
 }
