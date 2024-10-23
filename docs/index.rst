@@ -186,7 +186,7 @@ Talk to us
    :hidden:
 
    Home <self>
-   Tour of Pigweed <docs/showcases/sense/index>
+   Tour <docs/showcases/sense/index>
    docs/get_started/index
    What's new <changelog>
    modules
