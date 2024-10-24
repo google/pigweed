@@ -93,12 +93,6 @@ pw_source_set("testing") {
   sources = [ "test_security_manager.cc" ]
 
   deps = [ ":sm" ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
 }
 
 pw_test("sm_tests") {
@@ -120,8 +114,6 @@ pw_test("sm_tests") {
     "util_test.cc",
   ]
 
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
-
   deps = [
     ":sm",
     ":testing",
@@ -135,7 +127,6 @@ pw_test("sm_tests") {
 
 pw_fuzzer("valid_packet_reader_fuzzer") {
   sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [ ":definitions" ]
 }
 
