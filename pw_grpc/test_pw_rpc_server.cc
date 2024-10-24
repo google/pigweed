@@ -54,7 +54,7 @@ class EchoService
     auto message =
         ::grpc::examples::echo::pwpb::EchoRequest::FindMessage(request);
     if (!message.ok()) {
-      responder.Finish({}, message.status());
+      responder.Finish({}, message.status()).IgnoreError();
     }
 
     if (message->size() < 100) {
