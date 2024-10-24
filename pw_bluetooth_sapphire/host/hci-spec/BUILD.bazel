@@ -13,7 +13,6 @@
 # the License.
 
 load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
-load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,13 +24,12 @@ cc_library(
         "le_connection_parameters.cc",
         "util.cc",
     ],
-    copts = ["-Wswitch-enum"] + COPTS,
     deps = [
+        "//pw_bluetooth:emboss_hci",
         "//pw_bluetooth_sapphire:config",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
-        "@pigweed//pw_bluetooth:emboss_hci",
-        "@pigweed//pw_chrono:system_clock",
+        "//pw_chrono:system_clock",
     ],
 )
 
@@ -40,7 +38,6 @@ pw_cc_test(
     srcs = [
         "util_test.cc",
     ],
-    copts = COPTS,
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":hci-spec",
