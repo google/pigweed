@@ -184,16 +184,16 @@ def _pigweed_commit(cwd: Path | str | None = None) -> GerritCommit | None:
         cwd=pw_root,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
     )
 
     commit = None
     assert proc.stdout
-    for i, line in enumerate(proc.stdout):
+    for i, raw_line in enumerate(proc.stdout):
         # If we get this far in we've spent too much time and should give up.
         if i > 100000:
             break
 
+        line = raw_line.decode(encoding='utf-8')
         parts = line.split()
         if len(parts) == 2 and parts[0] == 'commit':
             commit = parts[1]
