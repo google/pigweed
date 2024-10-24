@@ -165,8 +165,8 @@ bool LowEnergyCommandHandler::SendConnectionParameterUpdateRequest(
 }
 
 void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
-    ConnectionParameterUpdateRequestCallback cb) {
-  auto on_param_update_req = [cb = std::move(cb)](
+    ConnectionParameterUpdateRequestCallback callback) {
+  auto on_param_update_req = [cb = std::move(callback)](
                                  const ByteBuffer& request_payload,
                                  SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() !=
@@ -203,11 +203,11 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
 }
 
 void LowEnergyCommandHandler::ServeLeCreditBasedConnectionRequest(
-    LeCreditBasedConnectionRequestCallback cb) {
+    LeCreditBasedConnectionRequestCallback callback) {
   using Request = LECreditBasedConnectionRequestPayload;
   auto on_le_credit_based_connection_request =
-      [cb = std::move(cb)](const ByteBuffer& request_payload,
-                           SignalingChannel::Responder* sig_responder) {
+      [cb = std::move(callback)](const ByteBuffer& request_payload,
+                                 SignalingChannel::Responder* sig_responder) {
         if (request_payload.size() != sizeof(Request)) {
           bt_log(DEBUG,
                  "l2cap-le",

@@ -95,8 +95,8 @@ bool CommandHandler::SendDisconnectionRequest(
 }
 
 void CommandHandler::ServeDisconnectionRequest(
-    DisconnectionRequestCallback cb) {
-  auto on_discon_req = [cb = std::move(cb)](
+    DisconnectionRequestCallback callback) {
+  auto on_discon_req = [cb = std::move(callback)](
                            const ByteBuffer& request_payload,
                            SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(DisconnectionRequestPayload)) {

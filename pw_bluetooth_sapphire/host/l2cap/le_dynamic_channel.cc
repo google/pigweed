@@ -268,7 +268,7 @@ void LeDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
       [local_cid = local_cid(),
        remote_cid = remote_cid(),
        self = weak_self_.GetWeakPtr(),
-       done_cb = done_cb.share()](
+       done_cb_shared = done_cb.share()](
           const LowEnergyCommandHandler::DisconnectionResponse& rsp) mutable {
         if (rsp.local_cid() != local_cid || rsp.remote_cid() != remote_cid) {
           bt_log(WARN,
@@ -287,20 +287,20 @@ void LeDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
         }
 
         if (self.is_alive()) {
-          done_cb();
+          done_cb_shared();
         }
       };
 
   auto on_discon_rsp_timeout = [local_cid = local_cid(),
                                 self = weak_self_.GetWeakPtr(),
-                                done_cb = done_cb.share()]() mutable {
+                                done_cb_shared = done_cb.share()]() mutable {
     bt_log(WARN,
            "l2cap-le",
            "Channel %#.4x: Timed out waiting for Disconnection Response; "
            "completing disconnection",
            local_cid);
     if (self.is_alive()) {
-      done_cb();
+      done_cb_shared();
     }
   };
 
@@ -321,7 +321,6 @@ void LeDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
          "l2cap-le",
          "Channel %#.4x: Sent Disconnection Request",
          local_cid());
-  return;
 }
 
 bool LeDynamicChannel::IsConnected() const {

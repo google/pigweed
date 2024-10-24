@@ -127,7 +127,7 @@ class LowEnergyCommandHandler final : public CommandHandler {
                          uint16_t timeout_multiplier,
                          ConnectionParameterUpdateResponder* responder)>;
   void ServeConnectionParameterUpdateRequest(
-      ConnectionParameterUpdateRequestCallback cb);
+      ConnectionParameterUpdateRequestCallback callback);
 
   using LeCreditBasedConnectionRequestCallback =
       fit::function<void(uint16_t psm,
@@ -137,6 +137,6 @@ class LowEnergyCommandHandler final : public CommandHandler {
                          uint16_t credits,
                          LeCreditBasedConnectionResponder* responder)>;
   void ServeLeCreditBasedConnectionRequest(
-      LeCreditBasedConnectionRequestCallback cb);
+      LeCreditBasedConnectionRequestCallback callback);
 };
 }  // namespace bt::l2cap::internal

@@ -220,8 +220,8 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   // Don't retransmit after an ERTX timeout as the peer has already indicated
   // that it received the request and has been given a large amount of time.
   pending_command.response_timeout_task.set_function(
-      [this, cmd_id](pw::async::Context /*ctx*/, pw::Status status) {
-        if (status.ok()) {
+      [this, cmd_id](pw::async::Context /*ctx*/, pw::Status task_status) {
+        if (task_status.ok()) {
           OnResponseTimeout(cmd_id, /*retransmit=*/false);
         }
       });

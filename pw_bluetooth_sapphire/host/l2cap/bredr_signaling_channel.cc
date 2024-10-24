@@ -34,11 +34,12 @@ BrEdrSignalingChannel::BrEdrSignalingChannel(
                });
 }
 
-bool BrEdrSignalingChannel::TestLink(const ByteBuffer& data, DataCallback cb) {
+bool BrEdrSignalingChannel::TestLink(const ByteBuffer& data,
+                                     DataCallback callback) {
   return SendRequest(
       kEchoRequest,
       data,
-      [cb = std::move(cb)](Status status, const ByteBuffer& rsp_payload) {
+      [cb = std::move(callback)](Status status, const ByteBuffer& rsp_payload) {
         if (status == Status::kSuccess) {
           cb(rsp_payload);
         } else {

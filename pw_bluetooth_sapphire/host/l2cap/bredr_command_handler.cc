@@ -270,8 +270,9 @@ bool BrEdrCommandHandler::SendConfigurationRequest(
 }
 
 bool BrEdrCommandHandler::SendInformationRequest(
-    InformationType type, InformationResponseCallback cb) {
-  auto on_info_rsp = BuildResponseHandler<InformationResponse>(std::move(cb));
+    InformationType type, InformationResponseCallback callback) {
+  auto on_info_rsp =
+      BuildResponseHandler<InformationResponse>(std::move(callback));
 
   InformationRequestPayload payload = {
       InformationType{pw::bytes::ConvertOrderTo(cpp20::endian::little,
@@ -281,8 +282,9 @@ bool BrEdrCommandHandler::SendInformationRequest(
                             std::move(on_info_rsp));
 }
 
-void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
-  auto on_conn_req = [cb = std::move(cb)](
+void BrEdrCommandHandler::ServeConnectionRequest(
+    ConnectionRequestCallback callback) {
+  auto on_conn_req = [cb = std::move(callback)](
                          const ByteBuffer& request_payload,
                          SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(ConnectionRequestPayload)) {
@@ -336,8 +338,8 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
 }
 
 void BrEdrCommandHandler::ServeConfigurationRequest(
-    ConfigurationRequestCallback cb) {
-  auto on_config_req = [cb = std::move(cb)](
+    ConfigurationRequestCallback callback) {
+  auto on_config_req = [cb = std::move(callback)](
                            const ByteBuffer& request_payload,
                            SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() < sizeof(ConfigurationRequestPayload)) {
@@ -372,8 +374,8 @@ void BrEdrCommandHandler::ServeConfigurationRequest(
 }
 
 void BrEdrCommandHandler::ServeInformationRequest(
-    InformationRequestCallback cb) {
-  auto on_info_req = [cb = std::move(cb)](
+    InformationRequestCallback callback) {
+  auto on_info_req = [cb = std::move(callback)](
                          const ByteBuffer& request_payload,
                          SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(InformationRequestPayload)) {

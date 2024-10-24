@@ -106,12 +106,6 @@ pw_source_set("l2cap") {
     "$dir_pw_third_party/fuchsia:fit",
   ]
 
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
-
   deps = [
     "$dir_pw_bluetooth:emboss_l2cap_frames",
     "$dir_pw_preprocessor",
@@ -164,12 +158,6 @@ pw_source_set("testing") {
     "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_unit_test",
   ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
 }
 
 pw_test("l2cap_tests") {
@@ -215,18 +203,11 @@ pw_test("l2cap_tests") {
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
 
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [
-    "$dir_pw_build:internal_strict_warnings_core",
-    "$dir_pw_bluetooth_sapphire/host:copts",
-  ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_fuzzer("basic_mode_rx_engine_fuzzer") {
   sources = [ "basic_mode_rx_engine_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -235,7 +216,6 @@ pw_fuzzer("basic_mode_rx_engine_fuzzer") {
 
 pw_fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   sources = [ "enhanced_retransmission_mode_engines_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -244,7 +224,6 @@ pw_fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
 
 pw_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   sources = [ "bredr_dynamic_channel_registry_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -254,7 +233,6 @@ pw_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
 
 pw_fuzzer("channel_configuration_fuzzer") {
   sources = [ "channel_configuration_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -263,7 +241,6 @@ pw_fuzzer("channel_configuration_fuzzer") {
 
 pw_fuzzer("common_handler_fuzzer") {
   sources = [ "common_handler_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -272,7 +249,6 @@ pw_fuzzer("common_handler_fuzzer") {
 
 pw_fuzzer("l2cap_fuzzer") {
   sources = [ "l2cap_fuzztest.cc" ]
-  configs = [ "$dir_pw_bluetooth_sapphire/host:copts" ]
   deps = [
     ":l2cap",
     "$dir_pw_bluetooth_sapphire/host/testing",

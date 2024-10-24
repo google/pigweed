@@ -180,7 +180,7 @@ class CommandHandler {
       fit::function<void(ChannelId local_cid,
                          ChannelId remote_cid,
                          DisconnectionResponder* responder)>;
-  void ServeDisconnectionRequest(DisconnectionRequestCallback cb);
+  void ServeDisconnectionRequest(DisconnectionRequestCallback callback);
 
   // |sig| must be valid for the lifetime of this object.
   // |command_failed_callback| is called if an outbound request timed out with
@@ -202,53 +202,54 @@ class CommandHandler {
   // TODO(fxbug.dev/42111549): Name the return type of CallbackT to make parsing
   // code more readable.
   template <class ResponseT, typename CallbackT>
-  SignalingChannel::ResponseHandler BuildResponseHandler(CallbackT rsp_cb) {
-    return
-        [rsp_cb = std::move(rsp_cb), fail_cb = request_fail_callback_.share()](
-            Status status, const ByteBuffer& rsp_payload) {
-          if (status == Status::kTimeOut) {
-            bt_log(INFO,
-                   "l2cap",
-                   "cmd: timed out waiting for \"%s\"",
-                   ResponseT::kName);
-            if (fail_cb) {
-              fail_cb();
-            }
-            return ResponseHandlerAction::kCompleteOutboundTransaction;
-          }
+  SignalingChannel::ResponseHandler BuildResponseHandler(
+      CallbackT response_cb) {
+    return [rsp_cb = std::move(response_cb),
+            fail_cb = request_fail_callback_.share()](
+               Status status, const ByteBuffer& rsp_payload) {
+      if (status == Status::kTimeOut) {
+        bt_log(INFO,
+               "l2cap",
+               "cmd: timed out waiting for \"%s\"",
+               ResponseT::kName);
+        if (fail_cb) {
+          fail_cb();
+        }
+        return ResponseHandlerAction::kCompleteOutboundTransaction;
+      }
 
-          ResponseT rsp(status);
-          if (status == Status::kReject) {
-            if (!rsp.ParseReject(rsp_payload)) {
-              bt_log(DEBUG,
-                     "l2cap",
-                     "cmd: ignoring malformed Command Reject, size %zu",
-                     rsp_payload.size());
-              return ResponseHandlerAction::kCompleteOutboundTransaction;
-            }
-            return InvokeResponseCallback(&rsp_cb, std::move(rsp));
-          }
+      ResponseT rsp(status);
+      if (status == Status::kReject) {
+        if (!rsp.ParseReject(rsp_payload)) {
+          bt_log(DEBUG,
+                 "l2cap",
+                 "cmd: ignoring malformed Command Reject, size %zu",
+                 rsp_payload.size());
+          return ResponseHandlerAction::kCompleteOutboundTransaction;
+        }
+        return InvokeResponseCallback(&rsp_cb, std::move(rsp));
+      }
 
-          if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
-            bt_log(DEBUG,
-                   "l2cap",
-                   "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
-                   ResponseT::kName,
-                   rsp_payload.size(),
-                   sizeof(typename ResponseT::PayloadT));
-            return ResponseHandlerAction::kCompleteOutboundTransaction;
-          }
+      if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
+        bt_log(DEBUG,
+               "l2cap",
+               "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
+               ResponseT::kName,
+               rsp_payload.size(),
+               sizeof(typename ResponseT::PayloadT));
+        return ResponseHandlerAction::kCompleteOutboundTransaction;
+      }
 
-          if (!rsp.Decode(rsp_payload)) {
-            bt_log(DEBUG,
-                   "l2cap",
-                   "cmd: ignoring malformed \"%s\", could not decode",
-                   ResponseT::kName);
-            return ResponseHandlerAction::kCompleteOutboundTransaction;
-          }
+      if (!rsp.Decode(rsp_payload)) {
+        bt_log(DEBUG,
+               "l2cap",
+               "cmd: ignoring malformed \"%s\", could not decode",
+               ResponseT::kName);
+        return ResponseHandlerAction::kCompleteOutboundTransaction;
+      }
 
-          return InvokeResponseCallback(&rsp_cb, std::move(rsp));
-        };
+      return InvokeResponseCallback(&rsp_cb, std::move(rsp));
+    };
   }
 
   // Invokes |rsp_cb| with |rsp|. Returns

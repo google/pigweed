@@ -423,7 +423,7 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
       [local_cid = local_cid(),
        remote_cid = remote_cid(),
        self = weak_self_.GetWeakPtr(),
-       done_cb = done_cb.share()](
+       done_cb_shared = done_cb.share()](
           const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
         if (rsp.local_cid() != local_cid || rsp.remote_cid() != remote_cid) {
           bt_log(WARN,
@@ -442,20 +442,20 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
         }
 
         if (self.is_alive()) {
-          done_cb();
+          done_cb_shared();
         }
       };
 
   auto on_discon_rsp_timeout = [local_cid = local_cid(),
                                 self = weak_self_.GetWeakPtr(),
-                                done_cb = done_cb.share()]() mutable {
+                                done_cb_shared = done_cb.share()]() mutable {
     bt_log(WARN,
            "l2cap-bredr",
            "Channel %#.4x: Timed out waiting for Disconnection Response; "
            "completing disconnection",
            local_cid);
     if (self.is_alive()) {
-      done_cb();
+      done_cb_shared();
     }
   };
 

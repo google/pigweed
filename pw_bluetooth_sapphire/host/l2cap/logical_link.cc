@@ -451,25 +451,25 @@ void LogicalLink::SignalError() {
          "Upper layer error on link %#.4x; closing all channels",
          handle());
 
-  size_t num_channels_closing = channels_.size();
+  size_t num_channels_to_close = channels_.size();
 
   if (signaling_channel_) {
     BT_ASSERT(channels_.count(kSignalingChannelId) ||
               channels_.count(kLESignalingChannelId));
     // There is no need to close the signaling channel.
-    num_channels_closing--;
+    num_channels_to_close--;
   }
 
-  if (num_channels_closing == 0) {
+  if (num_channels_to_close == 0) {
     link_error_cb_();
     return;
   }
 
   // num_channels_closing is shared across all callbacks.
   fit::closure channel_removed_cb =
-      [this, num_channels_closing = num_channels_closing]() mutable {
-        num_channels_closing--;
-        if (num_channels_closing != 0) {
+      [this, channels_remaining = num_channels_to_close]() mutable {
+        channels_remaining--;
+        if (channels_remaining != 0) {
           return;
         }
         bt_log(TRACE,

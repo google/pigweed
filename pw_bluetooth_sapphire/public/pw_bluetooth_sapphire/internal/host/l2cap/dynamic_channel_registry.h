@@ -65,11 +65,11 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   // call completes, incoming PDUs with |local_cid| should be discarded as in
   // error or considered to belong to a subsequent channel with that ID. Any
   // outbound PDUs passed to the Channel interface for this channel should be
-  // discarded. When the close operation completes, |close_cb| will be called,
-  // the internal channel will be destroyed, and |local_cid| may be recycled for
-  // another dynamic channel. |close_cb| will be called immediately if the
-  // channel doesn't exist.
-  void CloseChannel(ChannelId local_cid, fit::closure close_cb);
+  // discarded. When the close operation completes, |close_callback| will be
+  // called, the internal channel will be destroyed, and |local_cid| may be
+  // recycled for another dynamic channel. |close_callback| will be called
+  // immediately if the channel doesn't exist.
+  void CloseChannel(ChannelId local_cid, fit::closure close_callback);
 
  protected:
   // |max_num_channels| is the number of dynamic channel IDs that can be
@@ -138,11 +138,11 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   friend class DynamicChannel;
 
   // Open a newly-created channel. If |pass_failed| is true, always invoke
-  // |open_cb| with the result of the operation, including with nullptr if the
-  // channel failed to open. Otherwise if |pass_failed| is false, only invoke
-  // |open_cb| for successfully-opened channels.
+  // |open_callback| with the result of the operation, including with nullptr if
+  // the channel failed to open. Otherwise if |pass_failed| is false, only
+  // invoke |open_callback| for successfully-opened channels.
   void ActivateChannel(DynamicChannel* channel,
-                       DynamicChannelCallback open_cb,
+                       DynamicChannelCallback open_callback,
                        bool pass_failed);
 
   // Signal a remote-initiated closure of a channel owned by this registry, then

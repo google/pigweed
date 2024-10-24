@@ -38,7 +38,7 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   // This is implemented as v5.0 Vol 3, Part A Section 4.8: "These requests may
   // be used for testing the link or for passing vendor specific information
   // using the optional data field."
-  bool TestLink(const ByteBuffer& data, DataCallback cb);
+  bool TestLink(const ByteBuffer& data, DataCallback callback);
 
  private:
   // SignalingChannel overrides
