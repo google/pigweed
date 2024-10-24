@@ -35,9 +35,6 @@ pw_source_set("iso") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/transport",
   ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_test("tests") {

@@ -23,10 +23,10 @@ IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
   cmd_ = hci_->command_channel()->AsWeakPtr();
   BT_ASSERT(cmd_.is_alive());
 
-  auto self = GetWeakPtr();
+  auto weak_self = GetWeakPtr();
   cis_request_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISRequestSubeventCode,
-      [self = std::move(self)](const hci::EmbossEventPacket& event) {
+      [self = std::move(weak_self)](const hci::EmbossEventPacket& event) {
         if (!self.is_alive()) {
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }

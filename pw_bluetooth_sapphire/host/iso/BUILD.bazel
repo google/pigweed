@@ -13,7 +13,6 @@
 # the License.
 
 load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
-load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,9 +23,6 @@ cc_library(
     srcs = [
         "iso_stream.cc",
         "iso_stream_manager.cc",
-    ],
-    copts = [
-        "-Wno-unused-parameter",
     ],
     deps = [
         "//pw_bluetooth_sapphire:public",
@@ -43,7 +39,6 @@ pw_cc_test(
         "iso_stream_manager_test.cc",
         "iso_stream_test.cc",
     ],
-    copts = COPTS,
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":iso",

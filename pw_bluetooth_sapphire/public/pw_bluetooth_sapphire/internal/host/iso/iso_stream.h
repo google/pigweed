@@ -46,7 +46,7 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
       const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
       const std::optional<std::vector<uint8_t>>& codec_configuration,
       uint32_t controller_delay_usecs,
-      fit::function<void(SetupDataPathError)> cb) = 0;
+      fit::function<void(SetupDataPathError)> callback) = 0;
 
   virtual hci_spec::ConnectionHandle cis_handle() const = 0;
 
