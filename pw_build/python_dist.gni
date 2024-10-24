@@ -221,6 +221,12 @@ template("pw_python_distribution") {
         "Either 'common_config_file' or ('name' + 'version') are required in generate_setup_cfg")
   }
 
+  _inputs = []
+  if (defined(invoker.generate_setup_cfg)) {
+    if (defined(generate_setup_cfg.common_config_file)) {
+      _inputs += [ generate_setup_cfg.common_config_file ]
+    }
+  }
   _extra_file_inputs = []
   _extra_file_args = []
 
@@ -341,7 +347,7 @@ template("pw_python_distribution") {
            [ ":${invoker.target_name}.${_metadata_path_list_suffix}" ]
 
     script = "$dir_pw_build/py/pw_build/create_python_tree.py"
-    inputs = _extra_file_inputs
+    inputs = _inputs + _extra_file_inputs
     public_deps = _public_deps
     _pw_internal_run_in_venv = false
 
