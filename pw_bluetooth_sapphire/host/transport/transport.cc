@@ -38,36 +38,36 @@ void Transport::Initialize(
 
   bt_log(DEBUG, "hci", "initializing Transport");
   auto self = GetWeakPtr();
-  auto complete_cb_wrapper =
-      [self, cb = std::move(complete_callback)](pw::Status status) mutable {
-        if (!self.is_alive()) {
-          return;
-        }
+  auto complete_cb_wrapper = [self, complete_cb = std::move(complete_callback)](
+                                 pw::Status status) mutable {
+    if (!self.is_alive()) {
+      return;
+    }
 
-        if (!status.ok()) {
-          cb(/*success=*/false);
-          return;
-        }
+    if (!status.ok()) {
+      complete_cb(/*success=*/false);
+      return;
+    }
 
-        self->command_channel_ = std::make_unique<CommandChannel>(
-            self->controller_.get(), self->dispatcher_);
-        self->command_channel_->set_channel_timeout_cb([self] {
-          if (self.is_alive()) {
-            self->OnChannelError();
+    self->command_channel_ = std::make_unique<CommandChannel>(
+        self->controller_.get(), self->dispatcher_);
+    self->command_channel_->set_channel_timeout_cb([self] {
+      if (self.is_alive()) {
+        self->OnChannelError();
+      }
+    });
+
+    self->controller_->GetFeatures(
+        [self, cb = std::move(complete_cb)](FeaturesBits features) mutable {
+          if (!self.is_alive()) {
+            return;
           }
+          self->features_ = features;
+
+          bt_log(INFO, "hci", "Transport initialized");
+          cb(/*success=*/true);
         });
-
-        self->controller_->GetFeatures(
-            [self, cb = std::move(cb)](FeaturesBits features) mutable {
-              if (!self.is_alive()) {
-                return;
-              }
-              self->features_ = features;
-
-              bt_log(INFO, "hci", "Transport initialized");
-              cb(/*success=*/true);
-            });
-      };
+  };
 
   auto error_cb = [self](pw::Status status) {
     if (self.is_alive()) {

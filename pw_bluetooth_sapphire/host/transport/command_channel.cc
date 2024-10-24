@@ -153,20 +153,21 @@ void CommandChannel::TransactionData::Cancel() {
 CommandChannel::EventCallbackVariant
 CommandChannel::TransactionData::MakeCallback() {
   return std::visit(
-      overloaded{[this](CommandCallback& cb) -> EventCallbackVariant {
-                   return [transaction_id = transaction_id_,
-                           cb = cb.share()](const EventPacket& event) {
-                     cb(transaction_id, event);
-                     return EventCallbackResult::kContinue;
-                   };
-                 },
-                 [this](EmbossCommandCallback& cb) -> EventCallbackVariant {
-                   return [transaction_id = transaction_id_,
-                           cb = cb.share()](const EmbossEventPacket& event) {
-                     cb(transaction_id, event);
-                     return EventCallbackResult::kContinue;
-                   };
-                 }},
+      overloaded{
+          [this](CommandCallback& callback) -> EventCallbackVariant {
+            return [transaction_id = transaction_id_,
+                    cb = callback.share()](const EventPacket& event) {
+              cb(transaction_id, event);
+              return EventCallbackResult::kContinue;
+            };
+          },
+          [this](EmbossCommandCallback& callback) -> EventCallbackVariant {
+            return [transaction_id = transaction_id_,
+                    cb = callback.share()](const EmbossEventPacket& event) {
+              cb(transaction_id, event);
+              return EventCallbackResult::kContinue;
+            };
+          }},
       callback_);
 }
 

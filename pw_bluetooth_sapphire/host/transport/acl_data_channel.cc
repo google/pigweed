@@ -414,11 +414,11 @@ void AclDataChannelImpl::RequestAclPriority(
   hci_->EncodeVendorCommand(
       pw::bluetooth::SetAclPriorityCommandParameters{
           .connection_handle = handle, .priority = priority},
-      [this, priority, callback = std::move(callback)](
+      [this, priority, request_cb = std::move(callback)](
           pw::Result<pw::span<const std::byte>> encode_result) mutable {
         if (!encode_result.ok()) {
           bt_log(TRACE, "hci", "encoding ACL priority command failed");
-          callback(fit::failed());
+          request_cb(fit::failed());
           return;
         }
 
@@ -429,7 +429,7 @@ void AclDataChannelImpl::RequestAclPriority(
                  "hci",
                  "encoded ACL priority command too small (size: %zu)",
                  encoded.size());
-          callback(fit::failed());
+          request_cb(fit::failed());
           return;
         }
 
@@ -444,7 +444,7 @@ void AclDataChannelImpl::RequestAclPriority(
 
         transport_->command_channel()->SendCommand(
             std::move(packet),
-            [cb = std::move(callback), priority](
+            [cb = std::move(request_cb), priority](
                 auto id, const hci::EmbossEventPacket& event) mutable {
               if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
                 cb(fit::failed());

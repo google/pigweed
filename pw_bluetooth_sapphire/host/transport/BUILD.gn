@@ -64,9 +64,6 @@ pw_source_set("transport") {
   ]
 
   public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_source_set("testing") {
@@ -80,9 +77,6 @@ pw_source_set("testing") {
   ]
 
   public_deps = [ ":transport" ]
-
-  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
-  configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_test("tests") {

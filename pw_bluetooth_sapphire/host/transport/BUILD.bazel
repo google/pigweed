@@ -33,19 +33,16 @@ cc_library(
         "sco_data_packet.cc",
         "transport.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
     deps = [
+        "//pw_async:dispatcher",
+        "//pw_async:task",
+        "//pw_bluetooth",
+        "//pw_bluetooth:emboss_hci",
+        "//pw_bluetooth:emboss_hci_test",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
-        "@pigweed//pw_async:dispatcher",
-        "@pigweed//pw_async:task",
-        "@pigweed//pw_bluetooth",
-        "@pigweed//pw_bluetooth:emboss_hci",
-        "@pigweed//pw_bluetooth:emboss_hci_test",
-        "@pigweed//third_party/fuchsia:fit",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -55,29 +52,9 @@ cc_library(
         "fake_sco_data_channel.cc",
         "mock_acl_data_channel.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
     deps = [
         ":transport",
         "//pw_bluetooth_sapphire:public",
-    ],
-)
-
-# Bazel support for pw_bluetooth_sapphire has not been configured for all
-# files yet, but must be enumerated to satisfy presubmit.
-filegroup(
-    name = "_files",
-    srcs = [
-        "acl_data_channel_test.cc",
-        "command_channel_test.cc",
-        "emboss_control_packets_test.cc",
-        "emboss_packet_test.cc",
-        "packet_test.cc",
-        "sco_data_channel_test.cc",
-        "sco_data_packet_test.cc",
-        "slab_allocators_test.cc",
-        "transport_test.cc",
     ],
 )
 
