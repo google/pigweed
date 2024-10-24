@@ -696,9 +696,11 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             if self.default_logfile:
                 new_logfile_dir = self.default_logfile.parent
                 new_logfile_name = self.default_logfile
-                new_logfile_postfix = '_' + recipe.display_name.replace(
-                    ' ', '_'
-                )
+                # Replace spaces and forward slash with undescores.
+                display_name = recipe.display_name
+                display_name = display_name.replace(' ', '_')
+                display_name = display_name.replace('/', '_')
+                new_logfile_postfix = '_' + display_name
 
             new_logfile = new_logfile_dir / (
                 new_logfile_name.stem

@@ -16,10 +16,12 @@
 import argparse
 import copy
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Any
 import unittest
-from unittest.mock import MagicMock
+
+from parameterized import parameterized  # type: ignore
 
 from pw_build.project_builder_argparse import add_project_builder_arguments
 from pw_build.project_builder_prefs import (
@@ -28,7 +30,10 @@ from pw_build.project_builder_prefs import (
     load_defaults_from_argparse,
 )
 
-from pw_config_loader import yaml_config_loader_mixin
+_BAZEL_COMMAND = 'bazel'
+# Prefer bazelisk if available.
+if shutil.which('bazelisk'):
+    _BAZEL_COMMAND = 'bazelisk'
 
 
 def _create_tempfile(content: str) -> Path:
@@ -64,12 +69,195 @@ class TestProjectBuilderPrefs(unittest.TestCase):
             prefs._config, expected_config  # pylint: disable=protected-access
         )
 
-    def test_apply_command_line_args(self) -> None:
-        """Check command line args are applied to watch preferences."""
+    @parameterized.expand(
+        [
+            (
+                'Manual --build-system-commands on the command line',
+                # Argparse input
+                [
+                    '--build-system-command',
+                    'out',
+                    'bazel build',
+                    '--build-system-command',
+                    'out',
+                    'bazel test',
+                ],
+                # Expected changed config
+                {
+                    'default_build_targets': [],
+                    'build_directories': [],
+                    'build_system_commands': {
+                        'out': {
+                            'commands': [
+                                {
+                                    'command': 'bazel',
+                                    'extra_args': ['build'],
+                                },
+                                {
+                                    'command': 'bazel',
+                                    'extra_args': ['test'],
+                                },
+                            ],
+                        },
+                    },
+                },
+            ),
+            (
+                'Empty build directory (no -C) with targets. '
+                'Ninja manually specified.',
+                # Argparse input
+                '--default-build-system ninja docs python.lint'.split(),
+                # Expected changed config
+                {
+                    'default_build_system': 'ninja',
+                    'default_build_targets': ['docs', 'python.lint'],
+                    'build_directories': [],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [{'command': 'ninja', 'extra_args': []}]
+                        }
+                    },
+                },
+            ),
+            (
+                'Empty build directory (no -C) with targets. '
+                'Ninja not specified.',
+                # Argparse input
+                'docs python.lint'.split(),
+                # Expected changed config
+                {
+                    'default_build_targets': ['docs', 'python.lint'],
+                    'build_directories': [],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [{'command': 'ninja', 'extra_args': []}]
+                        }
+                    },
+                },
+            ),
+            (
+                'Empty build directory (no -C) with targets (bazel).',
+                # Argparse input
+                (
+                    '--default-build-system bazel //pw_watch/... //pw_build/...'
+                ).split(),
+                # Expected changed config
+                {
+                    'default_build_system': 'bazel',
+                    'default_build_targets': [
+                        '//pw_watch/...',
+                        '//pw_build/...',
+                    ],
+                    'build_directories': [],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [
+                                {
+                                    'command': _BAZEL_COMMAND,
+                                    'extra_args': ['build'],
+                                },
+                                {
+                                    'command': _BAZEL_COMMAND,
+                                    'extra_args': ['test'],
+                                },
+                            ]
+                        }
+                    },
+                },
+            ),
+            (
+                'Targets with no build directory and an additional build '
+                'directory with targets.',
+                # Argparse input
+                'docs python.lint -C out2 python.tests'.split(),
+                # Expected changed config
+                {
+                    'default_build_targets': ['docs', 'python.lint'],
+                    'build_directories': [['out2', 'python.tests']],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [{'command': 'ninja', 'extra_args': []}]
+                        }
+                    },
+                },
+            ),
+            (
+                '',
+                # Argparse input
+                'docs python.lint -C out2 python.tests'.split(),
+                # Expected changed config
+                {
+                    'default_build_targets': ['docs', 'python.lint'],
+                    'build_directories': [['out2', 'python.tests']],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [{'command': 'ninja', 'extra_args': []}]
+                        }
+                    },
+                },
+            ),
+            (
+                'Two build directories; one with build system commands the '
+                'other with none defined.',
+                # Argparse input
+                [
+                    '-C',
+                    'out/gn',
+                    'python.lint',
+                    '-C',
+                    'out/bazel',
+                    '//...',
+                    '--build-system-command',
+                    'out/bazel',
+                    'bazel build',
+                    '--build-system-command',
+                    'out/bazel',
+                    'bazel test',
+                    '--logfile',
+                    'out/build.txt',
+                ],
+                # Expected changed config
+                {
+                    'default_build_targets': [],
+                    'build_directories': [
+                        ['out/gn', 'python.lint'],
+                        ['out/bazel', '//...'],
+                    ],
+                    'build_system_commands': {
+                        'default': {
+                            'commands': [{'command': 'ninja', 'extra_args': []}]
+                        },
+                        'out/bazel': {
+                            'commands': [
+                                {
+                                    'command': 'bazel',
+                                    'extra_args': ['build'],
+                                },
+                                {
+                                    'command': 'bazel',
+                                    'extra_args': ['test'],
+                                },
+                            ],
+                        },
+                    },
+                    'logfile': Path('out/build.txt'),
+                },
+            ),
+        ]
+    )
+    def test_apply_command_line_args(
+        self,
+        _name,
+        argparse_args,
+        expected_config_changes,
+    ):
+        """Check command line args are applied to ProjectBuilderPrefs."""
         # Load default command line arg values.
-        defaults_from_argparse = load_defaults_from_argparse(
-            add_project_builder_arguments
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.RawDescriptionHelpFormatter,
         )
+        parser = add_project_builder_arguments(parser)
+        argparse_output = parser.parse_args(argparse_args)
 
         # Create a prefs instance with the test config file.
         prefs = ProjectBuilderPrefs(
@@ -79,53 +267,17 @@ class TestProjectBuilderPrefs(unittest.TestCase):
             user_file=False,
         )
 
-        # Construct an expected result config.
-        expected_config: dict[Any, Any] = copy.copy(default_config())
-        expected_config.update(defaults_from_argparse)
-
+        # Save config before apply_command_line_args
         # pylint: disable=protected-access
-        prefs._update_config = MagicMock(  # type: ignore
-            wraps=prefs._update_config
-        )
-        # pylint: enable=protected-access
+        expected_config = copy.deepcopy(prefs._config)
 
-        args_dict = copy.deepcopy(defaults_from_argparse)
-        changed_args = {
-            'jobs': 8,
-            'colors': False,
-            'build_system_commands': [
-                ['out', 'bazel build'],
-                ['out', 'bazel test'],
-            ],
-        }
-        args_dict.update(changed_args)
+        # Run apply_command_line_args
+        prefs.apply_command_line_args(argparse_output)
 
-        prefs.apply_command_line_args(argparse.Namespace(**args_dict))
+        # Add the expected changes to the base
+        expected_config.update(expected_config_changes)
 
-        # apply_command_line_args modifies build_system_commands to match the
-        # prefs dict format.
-        changed_args['build_system_commands'] = {
-            'default': {'commands': [{'command': 'ninja', 'extra_args': []}]},
-            'out': {
-                'commands': [
-                    {'command': 'bazel', 'extra_args': ['build']},
-                    {'command': 'bazel', 'extra_args': ['test']},
-                ],
-            },
-        }
-
-        # Check that only args changed from their defaults are applied.
-        # pylint: disable=protected-access
-        prefs._update_config.assert_called_once_with(
-            changed_args,
-            yaml_config_loader_mixin.Stage.DEFAULT,
-        )
-        # pylint: enable=protected-access
-
-        # Check the result includes the project_config settings and the
-        # changed_args.
-        expected_config.update(changed_args)
-        # pylint: disable=protected-access
+        # Check equality
         self.assertEqual(prefs._config, expected_config)
         # pylint: enable=protected-access
 

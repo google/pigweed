@@ -233,5 +233,6 @@ pw_py_test(
     ],
     deps = [
         ":pw_project_builder",
+        "@python_packages//parameterized",
     ],
 )
