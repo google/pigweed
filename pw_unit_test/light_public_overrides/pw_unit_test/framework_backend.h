@@ -295,7 +295,6 @@
 #define SUCCEED() GTEST_SUCCEED()
 #endif  // !GTEST_DONT_DEFINE_SUCCEED
 
-/// @def RUN_ALL_TESTS
 /// The `pw_unit_test` framework entrypoint. Runs every registered test case
 /// and dispatches the results through the event handler.
 ///
@@ -303,8 +302,7 @@
 ///
 /// @returns A status of 0 if all tests passed, or non-zero if there were any
 /// failures. This is compatible with GoogleTest.
-#define RUN_ALL_TESTS() \
-  ::pw::unit_test::internal::Framework::Get().RunAllTests()
+int RUN_ALL_TESTS();
 
 /// @def GTEST_HAS_DEATH_TEST
 /// Death tests are not supported. The `*_DEATH_IF_SUPPORTED` macros do nothing.
@@ -770,6 +768,10 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
 
 }  // namespace unit_test
 }  // namespace pw
+
+inline int RUN_ALL_TESTS() {
+  return ::pw::unit_test::internal::Framework::Get().RunAllTests();
+}
 
 #define _PW_TEST(test_suite_name, test_name, parent_class)                     \
   static_assert(sizeof(#test_suite_name) > 1,                                  \

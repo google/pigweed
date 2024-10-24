@@ -594,13 +594,13 @@ that enough space is available to store these variables.
 Test control
 ============
 
+.. doxygenfunction:: RUN_ALL_TESTS
 .. doxygendefine:: FAIL
 .. doxygendefine:: GTEST_FAIL
 .. doxygendefine:: SUCCEED
 .. doxygendefine:: GTEST_SUCCEED
 .. doxygendefine:: GTEST_SKIP
 .. doxygendefine:: ADD_FAILURE
-.. doxygendefine:: RUN_ALL_TESTS
 .. doxygendefine:: GTEST_HAS_DEATH_TEST
 .. doxygendefine:: EXPECT_DEATH_IF_SUPPORTED
 .. doxygendefine:: ASSERT_DEATH_IF_SUPPORTED

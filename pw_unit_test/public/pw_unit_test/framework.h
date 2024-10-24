@@ -177,11 +177,9 @@
 #error "The pw_unit_test framework backend must define SUCCEED()"
 #endif  // SUCCEED
 
-// RUN_ALL_TESTS can be a macro or a function, check for both.
-#ifndef RUN_ALL_TESTS
-static_assert(std::is_same<decltype(RUN_ALL_TESTS()), int>::value,
-              "The pw_unit_test framework backend must define RUN_ALL_TESTS()");
-#endif  // RUN_ALL_TESTS
+static_assert(std::is_same_v<decltype(RUN_ALL_TESTS()), int>,
+              "The pw_unit_test framework backend must define the "
+              "int RUN_ALL_TESTS() function");
 
 #ifndef GTEST_HAS_DEATH_TEST
 #error "The pw_unit_test framework backend must define GTEST_HAS_DEATH_TEST"
