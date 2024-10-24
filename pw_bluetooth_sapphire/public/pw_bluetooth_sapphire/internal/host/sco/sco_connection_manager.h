@@ -139,7 +139,7 @@ class ScoConnectionManager final {
 
   hci::CommandChannel::EventHandlerId AddEventHandler(
       const hci_spec::EventCode& code,
-      hci::CommandChannel::EventCallbackVariant cb);
+      hci::CommandChannel::EventCallbackVariant event_callback_variant);
 
   // Event handlers:
   hci::CommandChannel::EventCallbackResult OnSynchronousConnectionComplete(

@@ -129,15 +129,17 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code,
-    hci::CommandChannel::EventCallbackVariant cb) {
+    hci::CommandChannel::EventCallbackVariant event_cb_variant) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci::CommandChannel::EventHandlerId event_id = 0;
   event_id = std::visit(
-      [this, &self, code](auto&& cb) -> hci::CommandChannel::EventHandlerId {
-        using T = std::decay_t<decltype(cb)>;
+      [this, &self, code](
+          auto&& event_cb) -> hci::CommandChannel::EventHandlerId {
+        using T = std::decay_t<decltype(event_cb)>;
         if constexpr (std::is_same_v<T, hci::CommandChannel::EventCallback>) {
           return transport_->command_channel()->AddEventHandler(
-              code, [self, cb = std::move(cb)](const hci::EventPacket& event) {
+              code,
+              [self, cb = std::move(event_cb)](const hci::EventPacket& event) {
                 if (!self.is_alive()) {
                   return hci::CommandChannel::EventCallbackResult::kRemove;
                 }
@@ -148,7 +150,8 @@ hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
                                  hci::CommandChannel::EmbossEventCallback>) {
           return transport_->command_channel()->AddEventHandler(
               code,
-              [self, cb = std::move(cb)](const hci::EmbossEventPacket& event) {
+              [self,
+               cb = std::move(event_cb)](const hci::EmbossEventPacket& event) {
                 if (!self.is_alive()) {
                   return hci::CommandChannel::EventCallbackResult::kRemove;
                 }
@@ -156,7 +159,7 @@ hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
               });
         }
       },
-      std::move(cb));
+      std::move(event_cb_variant));
   BT_ASSERT(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
@@ -486,10 +489,11 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
 }
 
 void ScoConnectionManager::SendCommandWithStatusCallback(
-    hci::EmbossCommandPacket command_packet, hci::ResultFunction<> cb) {
+    hci::EmbossCommandPacket command_packet, hci::ResultFunction<> result_cb) {
   hci::CommandChannel::CommandCallback command_cb;
-  if (cb) {
-    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+  if (result_cb) {
+    command_cb = [cb = std::move(result_cb)](auto,
+                                             const hci::EventPacket& event) {
       cb(event.ToResult());
     };
   }
