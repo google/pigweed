@@ -224,10 +224,10 @@ void Impl::Finish(TransactionId id) {
   TrySendNextTransaction();
 }
 
-Impl::Transaction::Transaction(TransactionId id,
+Impl::Transaction::Transaction(TransactionId id_in,
                                ServiceSearchAttributeRequest req,
                                SearchResultFunction cb)
-    : id(id), request(std::move(req)), callback(std::move(cb)) {}
+    : id(id_in), request(std::move(req)), callback(std::move(cb)) {}
 
 void Impl::Cancel(TransactionId id, HostError reason) {
   auto node = pending_.extract(id);

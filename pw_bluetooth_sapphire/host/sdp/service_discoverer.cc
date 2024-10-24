@@ -77,7 +77,7 @@ void ServiceDiscoverer::SingleSearch(SearchId search_id,
   }
   Search& search = search_it->second;
   Client::SearchResultFunction result_cb =
-      [this, peer_id, search_id = search_id](
+      [this, peer_id, search_id](
           fit::result<
               Error<>,
               std::reference_wrapper<const std::map<AttributeId, DataElement>>>

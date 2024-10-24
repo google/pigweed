@@ -538,16 +538,16 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     l2cap_->RegisterService(
         psm,
         chan_params,
-        [psm = psm,
-         conn_cb = conn_cb.share()](l2cap::Channel::WeakPtr channel) mutable {
-          bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
+        [l2cap_psm = psm, conn_cb_shared = conn_cb.share()](
+            l2cap::Channel::WeakPtr channel) mutable {
+          bt_log(TRACE, "sdp", "Channel connected to %#.4x", l2cap_psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;
           protocol_l2cap.emplace_back(protocol::kL2CAP);
-          protocol_l2cap.emplace_back(psm);
+          protocol_l2cap.emplace_back(l2cap_psm);
           std::vector<DataElement> protocol;
           protocol.emplace_back(std::move(protocol_l2cap));
-          conn_cb(std::move(channel), DataElement(std::move(protocol)));
+          conn_cb_shared(std::move(channel), DataElement(std::move(protocol)));
         });
   }
 
@@ -861,9 +861,9 @@ std::set<l2cap::Psm> Server::AllocatedPsmsForTest() const {
 }
 
 Server::InspectProperties::InspectServiceRecordProperties::
-    InspectServiceRecordProperties(std::string record,
-                                   std::unordered_set<l2cap::Psm> psms)
-    : record(std::move(record)), psms(std::move(psms)) {}
+    InspectServiceRecordProperties(std::string record_in,
+                                   std::unordered_set<l2cap::Psm> psms_in)
+    : record(std::move(record_in)), psms(std::move(psms_in)) {}
 
 void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(
     inspect::Node& parent, std::string name) {
