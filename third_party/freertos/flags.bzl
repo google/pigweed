@@ -13,7 +13,6 @@
 # the License.
 """Typical FreeRTOS backends and other platform configuration flags."""
 
-# LINT.IfChange
 FREERTOS_FLAGS = {
     str(Label("//pw_chrono:system_clock_backend")): str(Label("//pw_chrono_freertos:system_clock")),
     str(Label("//pw_chrono:system_timer_backend")): str(Label("//pw_chrono_freertos:system_timer")),
@@ -30,4 +29,3 @@ FREERTOS_FLAGS = {
     str(Label("//pw_thread:test_thread_context_backend")): str(Label("//pw_thread_freertos:test_thread_context")),
     str(Label("//pw_thread:yield_backend")): str(Label("//pw_thread_freertos:yield")),
 }
-# LINT.ThenChange(//.bazelrc)
