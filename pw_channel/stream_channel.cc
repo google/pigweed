@@ -73,8 +73,12 @@ void StreamChannelReadState::ReadLoop(pw::stream::Reader& reader) {
     OwnedChunk buffer = WaitForBufferToFillAndTakeFrontChunk();
     Result<pw::ByteSpan> read = reader.Read(buffer);
     if (!read.ok()) {
-      PW_LOG_ERROR("Failed to read from stream in StreamChannel.");
       SetReadError(read.status());
+
+      if (!read.status().IsOutOfRange()) {
+        PW_LOG_ERROR("Failed to read from stream in StreamChannel: %s",
+                     read.status().str());
+      }
       return;
     }
     buffer->Truncate(read->size());
@@ -104,6 +108,7 @@ void StreamChannelReadState::ProvideFilledBuffer(MultiBuf&& filled_buffer) {
 void StreamChannelReadState::SetReadError(Status status) {
   std::lock_guard lock(buffer_lock_);
   status_ = status;
+  std::move(on_buffer_filled_).Wake();
 }
 
 Status StreamChannelWriteState::SendData(MultiBuf&& buf) {
@@ -130,9 +135,9 @@ void StreamChannelWriteState::WriteLoop(pw::stream::Writer& writer) {
       buffer = std::move(buffer_to_write_);
     }
     for (const auto& chunk : buffer.Chunks()) {
-      Status status = writer.Write(chunk);
-      if (!status.ok()) {
-        PW_LOG_ERROR("Failed to write to stream in StreamChannel.");
+      if (Status status = writer.Write(chunk); !status.ok()) {
+        PW_LOG_ERROR("Failed to write to stream in StreamChannel: %s",
+                     status.str());
         std::lock_guard lock(buffer_lock_);
         status_ = status;
         return;
