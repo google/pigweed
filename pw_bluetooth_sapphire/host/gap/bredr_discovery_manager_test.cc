@@ -390,11 +390,7 @@ TEST_F(BrEdrDiscoveryManagerDeathTest,
                      kInquiryResultMissingResponses.view(),
                      kInquiryResultIncompleteResponse.view()}) {
     EXPECT_DEATH_IF_SUPPORTED(
-        [=] {
-          test_device()->SendCommandChannelPacket(event);
-          RunUntilIdle();
-        }(),
-        ".*");
+        (test_device()->SendCommandChannelPacket(event), RunUntilIdle()), ".*");
   }
 }
 

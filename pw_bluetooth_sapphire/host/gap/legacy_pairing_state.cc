@@ -318,7 +318,7 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
                                          /*exclusive_upper_bound=*/10000);
 
     auto confirm_cb = [this,
-                       cb = std::move(cb),
+                       callback = std::move(cb),
                        pairing = current_pairing_->GetWeakPtr(),
                        peer_id = peer_id_,
                        handle = handle(),
@@ -336,9 +336,9 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
 
       if (confirm) {
         state_ = State::kWaitLinkKey;
-        cb(random_pin);
+        callback(random_pin);
       } else {
-        cb(std::nullopt);
+        callback(std::nullopt);
       }
     };
     pairing_delegate_->DisplayPasskey(
@@ -356,16 +356,16 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
   // user will be requested to input their own 4-digit PIN code.
   auto pairing = current_pairing_->GetWeakPtr();
   auto passkey_cb =
-      [this, cb = std::move(cb), pairing](int64_t passkey) mutable {
+      [this, callback = std::move(cb), pairing](int64_t passkey) mutable {
         if (!pairing.is_alive()) {
           return;
         }
         bt_log(DEBUG, "gap-bredr", "Replying to User Passkey Request");
         if (passkey >= 0) {
           state_ = State::kWaitLinkKey;
-          cb(static_cast<uint16_t>(passkey));
+          callback(static_cast<uint16_t>(passkey));
         } else {
-          cb(std::nullopt);
+          callback(std::nullopt);
         }
       };
   pairing_delegate_->RequestPasskey(peer_id_, std::move(passkey_cb));

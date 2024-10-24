@@ -330,10 +330,10 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(
 
   self->cmd_->SendCommand(
       std::move(write_eir),
-      [self, name = std::move(name), cb = std::move(callback)](
+      [self, local_name = std::move(name), cb = std::move(callback)](
           auto, const hci::EmbossEventPacket& event) mutable {
         if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
-          self->local_name_ = std::move(name);
+          self->local_name_ = std::move(local_name);
         }
         cb(event.ToResult());
       });
@@ -357,7 +357,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
 
   cmd_->SendCommand(
       std::move(write_name),
-      [self, name = std::move(name), cb = std::move(callback)](
+      [self, name_as_str = std::move(name), cb = std::move(callback)](
           auto, const hci::EmbossEventPacket& event) mutable {
         if (hci_is_error(event, WARN, "gap", "set local name failed")) {
           cb(event.ToResult());
@@ -365,7 +365,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
         }
         // If the WriteLocalName command was successful, update the extended
         // inquiry data.
-        self->UpdateEIRResponseData(std::move(name), std::move(cb));
+        self->UpdateEIRResponseData(std::move(name_as_str), std::move(cb));
       });
 }
 
@@ -495,20 +495,20 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
                     hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
-    Peer* const peer = self->cache_->FindById(id);
-    if (!peer) {
+    Peer* const cached_peer = self->cache_->FindById(id);
+    if (!cached_peer) {
       return;
     }
 
-    auto params =
+    auto event_view =
         event.view<pw::bluetooth::emboss::RemoteNameRequestCompleteEventView>();
     emboss::support::ReadOnlyContiguousBuffer name =
-        params.remote_name().BackingStorage();
+        event_view.remote_name().BackingStorage();
     const unsigned char* name_end = std::find(name.begin(), name.end(), '\0');
     std::string name_string(reinterpret_cast<const char*>(name.begin()),
                             reinterpret_cast<const char*>(name_end));
-    peer->RegisterName(std::move(name_string),
-                       Peer::NameSource::kNameDiscoveryProcedure);
+    cached_peer->RegisterName(std::move(name_string),
+                              Peer::NameSource::kNameDiscoveryProcedure);
   };
 
   auto cmd_id =
@@ -579,7 +579,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       return;
     }
 
-    bool enable =
+    bool enabling =
         !self->discoverable_.empty() || !self->pending_discoverable_.empty();
     const auto params = event.view<
         pw::bluetooth::emboss::ReadScanEnableCommandCompleteEventView>();
@@ -587,15 +587,15 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     bool enabled =
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
 
-    if (enable == enabled) {
+    if (enabling == enabled) {
       bt_log(INFO,
              "gap-bredr",
              "inquiry scan already %s",
-             (enable ? "enabled" : "disabled"));
+             (enabling ? "enabled" : "disabled"));
       return;
     }
 
-    if (enable) {
+    if (enabling) {
       scan_type |= static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     } else {
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
@@ -612,18 +612,18 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     resolve_pending.cancel();
     self->cmd_->SendCommand(
         std::move(write_enable),
-        [self](auto, const hci::EmbossEventPacket& event) {
+        [self](auto, const hci::EmbossEventPacket& response) {
           if (!self.is_alive()) {
             return;
           }
 
           // Warn if the command failed
-          hci_is_error(event, WARN, "gap-bredr", "write scan enable failed");
+          hci_is_error(response, WARN, "gap-bredr", "write scan enable failed");
 
           while (!self->pending_discoverable_.empty()) {
             auto cb = std::move(self->pending_discoverable_.front());
             self->pending_discoverable_.pop();
-            cb(event.ToResult());
+            cb(response.ToResult());
           }
           self->UpdateInspectProperties();
         });

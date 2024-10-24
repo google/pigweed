@@ -260,7 +260,7 @@ void SecureSimplePairingState::OnUserConfirmationRequest(
     cb(outgoing_connection_);
     return;
   }
-  auto confirm_cb = [cb = std::move(cb),
+  auto confirm_cb = [callback = std::move(cb),
                      pairing = current_pairing_->GetWeakPtr(),
                      peer_id = peer_id(),
                      handle = handle()](bool confirm) mutable {
@@ -273,7 +273,7 @@ void SecureSimplePairingState::OnUserConfirmationRequest(
            confirm ? "Confirm" : "Cancel",
            bt_str(peer_id),
            handle);
-    cb(confirm);
+    callback(confirm);
   };
   // PairingAction::kDisplayPasskey indicates that this device has a display and
   // performs "Numeric Comparison with automatic confirmation" but
@@ -314,7 +314,7 @@ void SecureSimplePairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
                 static_cast<int>(current_pairing_->action));
   auto pairing = current_pairing_->GetWeakPtr();
   auto passkey_cb =
-      [this, cb = std::move(cb), pairing](int64_t passkey) mutable {
+      [this, callback = std::move(cb), pairing](int64_t passkey) mutable {
         if (!pairing.is_alive()) {
           return;
         }
@@ -325,9 +325,9 @@ void SecureSimplePairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
                bt_str(peer_id()),
                passkey);
         if (passkey >= 0) {
-          cb(static_cast<uint32_t>(passkey));
+          callback(static_cast<uint32_t>(passkey));
         } else {
-          cb(std::nullopt);
+          callback(std::nullopt);
         }
       };
   pairing_delegate()->RequestPasskey(peer_id(), std::move(passkey_cb));

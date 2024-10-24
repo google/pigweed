@@ -226,7 +226,9 @@ class ServiceSearchResponse : public Response {
 
 // Represents a range of attributes, inclusive of |start| and |end|.
 struct AttributeRange {
-  AttributeRange(AttributeId start, AttributeId end) : start(start), end(end) {
+  AttributeRange(AttributeId attribute_range_start,
+                 AttributeId attribute_range_end)
+      : start(attribute_range_start), end(attribute_range_end) {
     BT_DEBUG_ASSERT(start <= end);
   }
 

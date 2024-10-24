@@ -160,8 +160,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   // Revisit this logic when multi-advertising is supported.
   local_addr_delegate_->EnsureLocalAddress(
       [self,
-       data = std::move(data),
-       scan_rsp = std::move(scan_rsp),
+       advertising_data = std::move(data),
+       scan_response = std::move(scan_rsp),
        options,
        connect_cb = std::move(connect_callback),
        status_cb = std::move(status_callback)](const auto& address) mutable {
@@ -177,7 +177,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
         if (connect_cb) {
           adv_conn_cb = [self,
                          id = ad_ptr->id(),
-                         connect_cb = std::move(connect_cb)](auto link) {
+                         on_connect_cb = std::move(connect_cb)](auto link) {
             bt_log(DEBUG, "gap-le", "received new connection");
 
             if (!self.is_alive()) {
@@ -186,31 +186,31 @@ void LowEnergyAdvertisingManager::StartAdvertising(
 
             // remove the advertiser because advertising has stopped
             self->advertisements_.erase(id);
-            connect_cb(id, std::move(link));
+            on_connect_cb(id, std::move(link));
           };
         }
         auto status_cb_wrapper =
             [self,
-             ad_ptr = std::move(ad_ptr),
-             status_cb = std::move(status_cb)](hci::Result<> status) mutable {
+             advertisement_ptr = std::move(ad_ptr),
+             result_cb = std::move(status_cb)](hci::Result<> status) mutable {
               if (!self.is_alive()) {
                 return;
               }
 
               if (status.is_error()) {
-                status_cb(AdvertisementInstance(), status);
+                result_cb(AdvertisementInstance(), status);
                 return;
               }
 
-              auto id = ad_ptr->id();
-              self->advertisements_.emplace(id, std::move(ad_ptr));
-              status_cb(AdvertisementInstance(id, self), status);
+              auto id = advertisement_ptr->id();
+              self->advertisements_.emplace(id, std::move(advertisement_ptr));
+              result_cb(AdvertisementInstance(id, self), status);
             };
 
         // Call StartAdvertising, with the callback
         self->advertiser_->StartAdvertising(address,
-                                            data,
-                                            scan_rsp,
+                                            advertising_data,
+                                            scan_response,
                                             options,
                                             std::move(adv_conn_cb),
                                             std::move(status_cb_wrapper));

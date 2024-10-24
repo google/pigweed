@@ -250,7 +250,7 @@ void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level,
   BT_ASSERT(sm_);
   sm_->UpgradeSecurity(
       level,
-      [cb = std::move(cb), peer_id = peer_id(), handle = handle()](
+      [callback = std::move(cb), peer_id = peer_id(), handle = handle()](
           sm::Result<> status, const auto& sp) {
         bt_log(INFO,
                "gap-le",
@@ -259,7 +259,7 @@ void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level,
                bt_str(sp),
                bt_str(peer_id),
                handle);
-        cb(status);
+        callback(status);
       });
 }
 
@@ -528,10 +528,10 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   // the Connection Update status event, which is handled by the above code (see
   // v5.2, Vol. 4, Part E 7.7.15 / 7.7.65.3).
   le_conn_update_complete_command_callback_ =
-      [this, params](pw::bluetooth::emboss::StatusCode status) {
+      [this, params](pw::bluetooth::emboss::StatusCode completion_status) {
         // Retry connection parameter update with l2cap if the peer doesn't
         // support LL procedure.
-        if (status ==
+        if (completion_status ==
             pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE) {
           bt_log(INFO,
                  "gap-le",

@@ -148,19 +148,19 @@ class AdapterImpl final : public Adapter {
         // All advertisement connections are first registered with
         // LowEnergyConnectionManager before being reported to higher layers.
         advertisement_connect_cb =
-            [this, connectable = std::move(connectable)](
+            [this, connectable_params = std::move(connectable)](
                 AdvertisementId advertisement_id,
                 std::unique_ptr<hci::LowEnergyConnection> link) mutable {
-              auto register_link_cb =
-                  [advertisement_id,
-                   connection_callback = std::move(connectable->connection_cb)](
-                      ConnectionResult result) {
-                    connection_callback(advertisement_id, std::move(result));
-                  };
+              auto register_link_cb = [advertisement_id,
+                                       connection_callback = std::move(
+                                           connectable_params->connection_cb)](
+                                          ConnectionResult result) {
+                connection_callback(advertisement_id, std::move(result));
+              };
 
               adapter_->le_connection_manager_->RegisterRemoteInitiatedLink(
                   std::move(link),
-                  connectable->bondable_mode,
+                  connectable_params->bondable_mode,
                   std::move(register_link_cb));
             };
       }
@@ -201,7 +201,9 @@ class AdapterImpl final : public Adapter {
     }
 
     void register_address_changed_callback(fit::closure callback) override {
-      auto cb = [cb = std::move(callback)](auto) { cb(); };
+      auto cb = [addr_changed_cb = std::move(callback)](auto) {
+        addr_changed_cb();
+      };
       adapter_->le_address_manager_->register_address_changed_callback(
           std::move(cb));
     }
@@ -827,7 +829,8 @@ void AdapterImpl::GetSupportedDelayRange(
 
   hci_->command_channel()->SendCommand(
       std::move(cmd_packet),
-      [cb = std::move(cb)](auto /*id*/, const hci::EmbossEventPacket& event) {
+      [callback = std::move(cb)](auto /*id*/,
+                                 const hci::EmbossEventPacket& event) {
         auto view = event.view<
             pw::bluetooth::emboss::
                 ReadLocalSupportedControllerDelayCommandCompleteEventView>();
@@ -835,13 +838,13 @@ void AdapterImpl::GetSupportedDelayRange(
                          WARN,
                          "gap",
                          "read local supported controller delay failed")) {
-          cb(PW_STATUS_UNKNOWN, /*min=*/0, /*max=*/0);
+          callback(PW_STATUS_UNKNOWN, /*min=*/0, /*max=*/0);
           return;
         }
         bt_log(INFO, "gap", "controller delay read successfully");
-        cb(PW_STATUS_OK,
-           view.min_controller_delay().Read(),
-           view.max_controller_delay().Read());
+        callback(PW_STATUS_OK,
+                 view.min_controller_delay().Read(),
+                 view.max_controller_delay().Read());
       });
 }
 

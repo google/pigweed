@@ -192,14 +192,14 @@ class SignalingChannel : public SignalingChannelInterface {
  private:
   // Enqueue a response to a request with command id |id| and payload
   // |request_packet|. Register a callback |cb| that will be invoked when a
-  // response-type command packet (specified by |response_code|) is received.
-  // Starts the RTX timer and handles retransmission of |request_packet| and
-  // eventual timeout failure if a response isn't received. If the signaling
-  // channel receives a Command Reject that matches the same |id|, the rejection
-  // packet will be forwarded to the callback instead.
+  // response-type command packet (specified by |response_command_code|) is
+  // received. Starts the RTX timer and handles retransmission of
+  // |request_packet| and eventual timeout failure if a response isn't received.
+  // If the signaling channel receives a Command Reject that matches the same
+  // |id|, the rejection packet will be forwarded to the callback instead.
   void EnqueueResponse(const ByteBuffer& request_packet,
                        CommandId id,
-                       CommandCode response_code,
+                       CommandCode response_command_code,
                        ResponseHandler cb);
 
   // Called when a response-type command packet is received. Sends a Command
@@ -246,11 +246,11 @@ class SignalingChannel : public SignalingChannelInterface {
   // that have been sent.
   struct PendingCommand {
     PendingCommand(const ByteBuffer& request_packet,
-                   CommandCode response_code,
-                   ResponseHandler response_handler,
+                   CommandCode response_command_code,
+                   ResponseHandler response_handler_cb,
                    pw::async::Dispatcher& dispatcher)
-        : response_code(response_code),
-          response_handler(std::move(response_handler)),
+        : response_code(response_command_code),
+          response_handler(std::move(response_handler_cb)),
           command_packet(std::make_unique<DynamicByteBuffer>(request_packet)),
           transmit_count(1u),
           timer_duration(0u),

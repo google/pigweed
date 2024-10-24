@@ -154,10 +154,10 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active,
     // Post the callback instead of calling it synchronously to avoid bugs
     // caused by client code not expecting this.
     (void)heap_dispatcher_.Post(
-        [callback = std::move(callback), session = std::move(session)](
+        [cb = std::move(callback), discovery_session = std::move(session)](
             pw::async::Context /*ctx*/, pw::Status status) mutable {
           if (status.ok()) {
-            callback(std::move(session));
+            cb(std::move(discovery_session));
           }
         });
     return;

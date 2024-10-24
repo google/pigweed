@@ -96,12 +96,12 @@ void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
 
 void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet,
                                        CommandId id,
-                                       CommandCode response_code,
+                                       CommandCode response_command_code,
                                        ResponseHandler cb) {
-  BT_ASSERT(IsSupportedResponse(response_code));
+  BT_ASSERT(IsSupportedResponse(response_command_code));
 
   const auto [iter, inserted] = pending_commands_.try_emplace(
-      id, request_packet, response_code, std::move(cb), pw_dispatcher_);
+      id, request_packet, response_command_code, std::move(cb), pw_dispatcher_);
   BT_ASSERT(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which

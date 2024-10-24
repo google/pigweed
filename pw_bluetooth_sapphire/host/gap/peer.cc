@@ -172,9 +172,9 @@ Peer::LowEnergyData::RegisterInitializingConnection() {
       return;
     }
 
-    ConnectionState prev_state = connection_state();
+    ConnectionState conn_prev_state = connection_state();
     initializing_tokens_count_--;
-    OnConnectionStateMaybeChanged(prev_state);
+    OnConnectionStateMaybeChanged(conn_prev_state);
   };
 
   return InitializingConnectionToken(std::move(unregister_cb));
@@ -351,9 +351,9 @@ Peer::BrEdrData::RegisterInitializingConnection() {
       return;
     }
 
-    ConnectionState prev_state = connection_state();
+    ConnectionState conn_prev_state = connection_state();
     initializing_tokens_count_--;
-    OnConnectionStateMaybeChanged(prev_state);
+    OnConnectionStateMaybeChanged(conn_prev_state);
   });
 }
 
@@ -372,9 +372,9 @@ Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
       return;
     }
 
-    ConnectionState prev_state = connection_state();
+    ConnectionState conn_prev_state = connection_state();
     connection_tokens_count_--;
-    OnConnectionStateMaybeChanged(prev_state);
+    OnConnectionStateMaybeChanged(conn_prev_state);
   });
 }
 

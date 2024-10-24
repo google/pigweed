@@ -65,26 +65,28 @@ void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {
             *device_name_value_handle,
             /*offset=*/0,
             att::kMaxAttributeValueLength,
-            [self, cb = std::move(cb)](att::Result<> result,
-                                       const ByteBuffer& buffer,
-                                       bool /*maybe_truncated*/) mutable {
+            [self, device_name_cb = std::move(cb)](
+                att::Result<> discover_result,
+                const ByteBuffer& buffer,
+                bool /*maybe_truncated*/) mutable {
               if (!self.is_alive()) {
                 return;
               }
 
               if (bt_is_error(
-                      result,
+                      discover_result,
                       DEBUG,
                       "gap-le",
                       "error reading device name characteristic (peer: %s)",
                       bt_str(self->peer_id_))) {
-                cb(result.take_error());
+                device_name_cb(discover_result.take_error());
                 return;
               }
 
               const auto device_name_end =
                   std::find(buffer.begin(), buffer.end(), '\0');
-              cb(fit::ok(std::string(buffer.begin(), device_name_end)));
+              device_name_cb(
+                  fit::ok(std::string(buffer.begin(), device_name_end)));
             });
       });
 }
@@ -126,19 +128,20 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
     // according to Core Spec v5.3, Vol 3, Part C, 12.2: "2 octets in length"
     self->service_->ReadCharacteristic(
         *appearance_value_handle,
-        [self, cb = std::move(cb)](att::Result<> result,
-                                   const ByteBuffer& buffer,
-                                   bool /*maybe_truncated*/) mutable {
+        [self, appearance_cb = std::move(cb)](
+            att::Result<> discover_result,
+            const ByteBuffer& buffer,
+            bool /*maybe_truncated*/) mutable {
           if (!self.is_alive()) {
             return;
           }
 
-          if (bt_is_error(result,
+          if (bt_is_error(discover_result,
                           DEBUG,
                           "gap-le",
                           "error reading appearance characteristic (peer: %s)",
                           bt_str(self->peer_id_))) {
-            cb(result.take_error());
+            appearance_cb(discover_result.take_error());
             return;
           }
 
@@ -148,13 +151,13 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
                 "gap-le",
                 "appearance characteristic has invalid value size (peer: %s)",
                 bt_str(self->peer_id_));
-            cb(ToResult(HostError::kPacketMalformed).take_error());
+            appearance_cb(ToResult(HostError::kPacketMalformed).take_error());
             return;
           }
 
           uint16_t char_value = pw::bytes::ConvertOrderFrom(
               cpp20::endian::little, buffer.template To<uint16_t>());
-          cb(fit::ok(char_value));
+          appearance_cb(fit::ok(char_value));
         });
   });
 }
@@ -197,21 +200,22 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
 
     self->service_->ReadCharacteristic(
         *conn_params_value_handle,
-        [self, cb = std::move(cb)](att::Result<> result,
-                                   const ByteBuffer& buffer,
-                                   bool /*maybe_truncated*/) mutable {
+        [self, connection_params_cb = std::move(cb)](
+            att::Result<> discover_result,
+            const ByteBuffer& buffer,
+            bool /*maybe_truncated*/) mutable {
           if (!self.is_alive()) {
             return;
           }
 
-          if (bt_is_error(result,
+          if (bt_is_error(discover_result,
                           DEBUG,
                           "gap-le",
                           "error reading peripheral preferred connection "
                           "parameters characteristic "
                           "(peer: %s)",
                           bt_str(self->peer_id_))) {
-            cb(result.take_error());
+            connection_params_cb(discover_result.take_error());
             return;
           }
 
@@ -224,7 +228,8 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
                    "has invalid value size "
                    "(peer: %s)",
                    bt_str(self->peer_id_));
-            cb(ToResult(HostError::kPacketMalformed).take_error());
+            connection_params_cb(
+                ToResult(HostError::kPacketMalformed).take_error());
             return;
           }
 
@@ -240,7 +245,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
               pw::bytes::ConvertOrderFrom(cpp20::endian::little,
                                           char_value.supervision_timeout));
 
-          cb(fit::ok(params));
+          connection_params_cb(fit::ok(params));
         });
   });
 }
