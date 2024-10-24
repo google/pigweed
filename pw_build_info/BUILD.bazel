@@ -53,7 +53,8 @@ cc_library(
         "util.cc",
     ],
     linkopts = [
-        "-Lpw_build_info",
+        "-Lexternal/" + repo_name() + "/" + package_name(),
+        "-L" + package_name(),
         "-Wl,--build-id=sha1",
     ],
     # Automatically add the gnu build ID linker sections when building for
