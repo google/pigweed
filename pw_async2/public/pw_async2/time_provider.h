@@ -116,7 +116,8 @@ class TimeProvider : public chrono::VirtualClock<Clock> {
 /// This timer uses a `TimeProvider` to control its execution and so can be
 /// used with any `TimeProvider` with a compatible `Clock` type.
 template <typename Clock>
-class [[nodiscard]] TimeFuture : public IntrusiveList<TimeFuture<Clock>>::Item {
+class [[nodiscard]] TimeFuture
+    : public IntrusiveForwardList<TimeFuture<Clock>>::Item {
  public:
   TimeFuture() : provider_(nullptr) {}
   TimeFuture(const TimeFuture&) = delete;
@@ -134,19 +135,18 @@ class [[nodiscard]] TimeFuture : public IntrusiveList<TimeFuture<Clock>>::Item {
     expiration_ = other.expiration_;
 
     // Replace the entry of `other_` in the list.
-    if (provider_ != nullptr) {
+    if (!other.unlisted()) {
       auto previous = provider_->futures_.before_begin();
       while (&*std::next(previous) != &other) {
         previous++;
       }
+
+      // NOTE: this will leave `other` reporting (falsely) that it has expired.
+      // However, `other` should not be used post-`move`.
       other.unlist(&*previous);
       provider_->futures_.insert_after(previous, *this);
     }
 
-    // Zero out other.
-    // NOTE: this will leave `other` reporting (falsely) that it has expired.
-    // However, `other` should not be used post-`move`.
-    other.provider_ = nullptr;
     return *this;
   }
 
@@ -158,14 +158,43 @@ class [[nodiscard]] TimeFuture : public IntrusiveList<TimeFuture<Clock>>::Item {
   Poll<typename Clock::time_point> Pend(Context& cx)
       PW_LOCKS_EXCLUDED(internal::time_lock()) {
     std::lock_guard lock(internal::time_lock());
-    if (provider_ == nullptr) {
+    if (this->unlisted()) {
       return Ready(expiration_);
     }
     // NOTE: this is done under the lock in order to ensure that `provider_` is
-    // not set to `nullptr` between it being initially read and `waker_` being
+    // not set to unlisted between it being initially read and `waker_` being
     // set.
     waker_ = cx.GetWaker(WaitReason::Timeout());
     return Pending();
+  }
+
+  /// Resets ``TimeFuture`` to expire at ``expiration``.
+  void Reset(typename Clock::time_point expiration)
+      PW_LOCKS_EXCLUDED(internal::time_lock()) {
+    std::lock_guard lock(internal::time_lock());
+    UnlistLocked();
+    expiration_ = expiration;
+    EnlistLocked();
+  }
+
+  // Returns the provider associated with this timer.
+  //
+  // NOTE: this method must not be called before initializing the timer.
+  TimeProvider<Clock>& provider() PW_NO_LOCK_SAFETY_ANALYSIS {
+    // A lock is not required because this value is only mutated in
+    // constructors.
+    return *provider_;
+  }
+
+  // Returns the provider associated with this timer.
+  //
+  // NOTE: this method must not be called before initializing the timer.
+  // NOTE: this method must not be called with other methods that modify
+  // the expiration time such as `Reset`.
+  typename Clock::time_point expiration() PW_NO_LOCK_SAFETY_ANALYSIS {
+    // A lock is not required because this is only mutated in ``Reset`` and
+    // constructors.
+    return expiration_;
   }
 
  private:
@@ -175,16 +204,16 @@ class [[nodiscard]] TimeFuture : public IntrusiveList<TimeFuture<Clock>>::Item {
   TimeFuture(TimeProvider<Clock>& provider,
              typename Clock::time_point expiration)
       : waker_(), provider_(&provider), expiration_(expiration) {
-    InitialEnlist();
+    std::lock_guard lock(internal::time_lock());
+    EnlistLocked();
   }
 
-  void InitialEnlist() PW_LOCKS_EXCLUDED(internal::time_lock()) {
-    std::lock_guard lock(internal::time_lock());
+  void EnlistLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(internal::time_lock()) {
     // Skip enlisting if the expiration of the timer is in the past.
     // NOTE: this *does not* trigger a waker since `Poll` has not yet been
     // invoked, so none has been registered.
     if (provider_->now() >= expiration_) {
-      provider_ = nullptr;
+      return;
     }
 
     if (provider_->futures_.empty() ||
@@ -212,29 +241,30 @@ class [[nodiscard]] TimeFuture : public IntrusiveList<TimeFuture<Clock>>::Item {
   // list, the `TimeProvider` will be rescheduled to wake up based on the
   // new `head`'s expiration time.
   void UnlistLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(internal::time_lock()) {
-    if (provider_ == nullptr) {
+    if (this->unlisted()) {
       return;
     }
-    auto& provider = *provider_;
-    provider_ = nullptr;
-
-    if (&provider.futures_.front() == this) {
-      provider.futures_.pop_front();
-      if (provider.futures_.empty()) {
-        provider.DoCancel();
+    if (&provider_->futures_.front() == this) {
+      provider_->futures_.pop_front();
+      if (provider_->futures_.empty()) {
+        provider_->DoCancel();
       } else {
-        provider.DoInvokeAt(provider.futures_.front().expiration_);
+        provider_->DoInvokeAt(provider_->futures_.front().expiration_);
       }
       return;
     }
 
-    provider.futures_.remove(*this);
+    provider_->futures_.remove(*this);
   }
 
   Waker waker_;
-  // NOTE: `nullptr` is used as a sentinel to indicate that this future has
-  // expired and is no longer listed. This prevents unnecessary extra calls
-  // to `Unlist` and `provider_->now()`.
+  // NOTE: the lock is only required when
+  //  (1) modifying these fields or
+  //  (2) reading these fields via the TimeProvider.
+  //
+  // Reading these fields when nonmodification is guaranteed (such as in an
+  // accessor like ``provider`` or ``expiration`` above) does not require
+  // holding the lock.
   TimeProvider<Clock>* provider_ PW_GUARDED_BY(internal::time_lock());
   typename Clock::time_point expiration_ PW_GUARDED_BY(internal::time_lock());
 };
@@ -247,7 +277,6 @@ void TimeProvider<Clock>::RunExpired(typename Clock::time_point now) {
       DoInvokeAt(futures_.front().expiration_);
       return;
     }
-    futures_.front().provider_ = nullptr;
     std::move(futures_.front().waker_).Wake();
     futures_.pop_front();
   }

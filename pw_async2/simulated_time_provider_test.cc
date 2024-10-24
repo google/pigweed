@@ -62,15 +62,18 @@ TEST(SimulatedTimeProvider, AdvanceTime) {
 }
 
 struct WaitTask : public Task {
-  WaitTask(TimeFuture<SystemClock>&& future) : future_(std::move(future)) {}
+  WaitTask(TimeFuture<SystemClock>&& future)
+      : future_(std::move(future)), completed_(false) {}
 
   Poll<> DoPend(Context& cx) final {
     if (future_.Pend(cx).IsPending()) {
       return Pending();
     }
+    completed_ = true;
     return Ready();
   }
   TimeFuture<SystemClock> future_;
+  bool completed_;
 };
 
 TEST(SimulatedTimeProvider, AdvanceTimeRunsPastTimers) {
@@ -115,6 +118,72 @@ TEST(SimulatedTimeProvider, TimeUntilNextExpirationAfterDestroyReturnsNullopt) {
     auto timer = tp.WaitFor(1h);
   }
   EXPECT_FALSE(tp.TimeUntilNextExpiration().has_value());
+}
+
+TEST(SimulatedTimeProvider, ResetSetsTimerBackToPendingAndFiresAgain) {
+  SimulatedTimeProvider<SystemClock> tp;
+  Dispatcher dispatcher;
+
+  auto timer = tp.WaitFor(1h);
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsPending());
+  tp.AdvanceTime(90min);
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsReady());
+  timer.Reset(timer.expiration() + 40min);
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsPending());
+  tp.AdvanceTime(90min);
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsReady());
+}
+
+TEST(SimulatedTimeProvider, TimerWithPastExpirationExpiresImmediately) {
+  SimulatedTimeProvider<SystemClock> tp;
+  auto start = tp.now();
+  tp.AdvanceTime(90min);
+  auto timer = tp.WaitUntil(start + 30min);
+  Dispatcher dispatcher;
+  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsReady());
+}
+
+TEST(SimulatedTimeProvider, MultipleMovedTimersExpireInOrder) {
+  SimulatedTimeProvider<SystemClock> tp;
+  // Insert out-of-order to check that they become sorted.
+  auto t3_init = tp.WaitFor(3h);
+  auto t1_init = tp.WaitFor(1h);
+  auto t2_init = tp.WaitFor(2h);
+  // Move out of order to check that sorting is preserved.
+  WaitTask t2(std::move(t2_init));
+  WaitTask t1(std::move(t1_init));
+  WaitTask t3(std::move(t3_init));
+
+  Dispatcher dispatcher;
+  dispatcher.Post(t1);
+  dispatcher.Post(t2);
+  dispatcher.Post(t3);
+
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
+  EXPECT_FALSE(t1.completed_);
+  EXPECT_FALSE(t2.completed_);
+  EXPECT_FALSE(t3.completed_);
+
+  // t1 should expire first.
+  EXPECT_TRUE(tp.AdvanceUntilNextExpiration());
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
+  EXPECT_TRUE(t1.completed_);
+  EXPECT_FALSE(t2.completed_);
+  EXPECT_FALSE(t3.completed_);
+
+  // Then t2.
+  EXPECT_TRUE(tp.AdvanceUntilNextExpiration());
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
+  EXPECT_TRUE(t1.completed_);
+  EXPECT_TRUE(t2.completed_);
+  EXPECT_FALSE(t3.completed_);
+
+  // Then t3.
+  EXPECT_TRUE(tp.AdvanceUntilNextExpiration());
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_TRUE(t1.completed_);
+  EXPECT_TRUE(t2.completed_);
+  EXPECT_TRUE(t3.completed_);
 }
 
 }  // namespace
