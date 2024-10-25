@@ -33,8 +33,6 @@ import six
 
 from pw_env_setup import environment
 
-# pylint: disable=super-with-arguments
-
 
 class WrittenEnvFailure(Exception):
     pass
@@ -252,7 +250,7 @@ class _PrependAppendEnvironmentTest(unittest.TestCase):
         windows = kwargs.pop('windows', False)
         pathsep = kwargs.pop('pathsep', os.pathsep)
         allcaps = kwargs.pop('allcaps', False)
-        super(_PrependAppendEnvironmentTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.windows = windows
         self.pathsep = pathsep
         self.allcaps = allcaps
@@ -290,9 +288,7 @@ class _PrependAppendEnvironmentTest(unittest.TestCase):
         self.assertEqual(os.environ, self.orig_env)
 
 
-# TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
-# pylint: disable=useless-object-inheritance
-class _AppendPrependTestMixin(object):
+class _AppendPrependTestMixin:
     def test_prepend_present_ctx(self):
         orig = os.environ[self.var_already_set]
         self.env.prepend(self.var_already_set, 'path')
@@ -439,7 +435,7 @@ class WindowsEnvironmentTest(
         kwargs['pathsep'] = ';'
         kwargs['windows'] = True
         kwargs['allcaps'] = True
-        super(WindowsEnvironmentTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class PosixEnvironmentTest(
@@ -449,7 +445,7 @@ class PosixEnvironmentTest(
         kwargs['pathsep'] = ':'
         kwargs['windows'] = False
         kwargs['allcaps'] = False
-        super(PosixEnvironmentTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.real_windows = os.name == 'nt'
 
 

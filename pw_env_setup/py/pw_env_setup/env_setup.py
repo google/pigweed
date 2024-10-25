@@ -162,11 +162,9 @@ def _assert_sequence(value):
     return value
 
 
-# TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
-# pylint: disable=useless-object-inheritance
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-arguments
-class EnvSetup(object):
+class EnvSetup:
     """Run environment setup for Pigweed."""
 
     def __init__(

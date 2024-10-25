@@ -36,7 +36,7 @@ def _is_windows() -> bool:
     return platform.system().lower() == 'windows'
 
 
-class GnTarget(object):  # pylint: disable=useless-object-inheritance
+class GnTarget:
     def __init__(self, val):
         self.directory, self.target = val.split('#', 1)
         self.name = '-'.join(

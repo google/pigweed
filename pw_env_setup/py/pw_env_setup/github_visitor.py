@@ -26,16 +26,12 @@ from __future__ import print_function
 import contextlib
 import os
 
-# Disable Python 2-related warnings since this file must be Python 2
-# compatible.
-# pylint: disable=super-with-arguments, useless-object-inheritance
 
-
-class GitHubVisitor(object):
+class GitHubVisitor:
     """Serializes an Environment into files GitHub Actions understands."""
 
     def __init__(self, *args, **kwargs):
-        super(GitHubVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._replacements = ()
         self._github_env = None
         self._github_path = None

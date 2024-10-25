@@ -33,9 +33,6 @@ from . import gni_visitor
 from . import json_visitor
 from . import shell_visitor
 
-# Disable super() warnings since this file must be Python 2 compatible.
-# pylint: disable=super-with-arguments
-
 
 class BadNameType(TypeError):
     pass
@@ -65,7 +62,7 @@ class AcceptNotOverridden(TypeError):
     pass
 
 
-class _Action(object):  # pylint: disable=useless-object-inheritance
+class _Action:
     def unapply(self, env, orig_env):
         pass
 
@@ -82,9 +79,8 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
 
 
 class _VariableAction(_Action):
-    # pylint: disable=keyword-arg-before-vararg
-    def __init__(self, name, value, allow_empty_values=False, *args, **kwargs):
-        super(_VariableAction, self).__init__(*args, **kwargs)
+    def __init__(self, name, value, *args, allow_empty_values=False, **kwargs):
+        super().__init__(*args, **kwargs)
         self.name = name
         self.value = value
         self.allow_empty_values = allow_empty_values
@@ -145,7 +141,7 @@ class Set(_VariableAction):
 
     def __init__(self, *args, **kwargs):
         deactivate = kwargs.pop('deactivate', True)
-        super(Set, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.deactivate = deactivate
 
     def accept(self, visitor):
@@ -158,7 +154,7 @@ class Clear(_VariableAction):
     def __init__(self, *args, **kwargs):
         kwargs['value'] = ''
         kwargs['allow_empty_values'] = True
-        super(Clear, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def accept(self, visitor):
         visitor.visit_clear(self)
@@ -184,11 +180,11 @@ class Prepend(_VariableAction):
     """Prepend a value to a PATH-like variable."""
 
     def __init__(self, name, value, join, *args, **kwargs):
-        super(Prepend, self).__init__(name, value, *args, **kwargs)
+        super().__init__(name, value, *args, **kwargs)
         self._join = join
 
     def _check(self):
-        super(Prepend, self)._check()
+        super()._check()
         _append_prepend_check(self)
 
     def accept(self, visitor):
@@ -199,11 +195,11 @@ class Append(_VariableAction):
     """Append a value to a PATH-like variable. (Uncommon, see Prepend.)"""
 
     def __init__(self, name, value, join, *args, **kwargs):
-        super(Append, self).__init__(name, value, *args, **kwargs)
+        super().__init__(name, value, *args, **kwargs)
         self._join = join
 
     def _check(self):
-        super(Append, self)._check()
+        super()._check()
         _append_prepend_check(self)
 
     def accept(self, visitor):
@@ -221,7 +217,7 @@ class Echo(_Action):
         # These values act funny on Windows.
         if value.lower() in ('off', 'on'):
             raise BadEchoValue(value)
-        super(Echo, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.value = value
         self.newline = newline
 
@@ -236,7 +232,7 @@ class Comment(_Action):
     """Add a comment to the init script."""
 
     def __init__(self, value, *args, **kwargs):
-        super(Comment, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.value = value
 
     def accept(self, visitor):
@@ -251,7 +247,7 @@ class Command(_Action):
 
     def __init__(self, command, *args, **kwargs):
         exit_on_error = kwargs.pop('exit_on_error', True)
-        super(Command, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         assert isinstance(command, (list, tuple))
         self.command = command
         self.exit_on_error = exit_on_error
@@ -273,7 +269,7 @@ class Doctor(Command):
             log_level,
             'doctor',
         ]
-        super(Doctor, self).__init__(command=cmd, *args, **kwargs)
+        super().__init__(command=cmd, *args, **kwargs)
 
     def accept(self, visitor):
         visitor.visit_doctor(self)
@@ -294,7 +290,7 @@ class BlankLine(_Action):
 
 class Function(_Action):
     def __init__(self, name, body, *args, **kwargs):
-        super(Function, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.name = name
         self.body = body
 
@@ -313,14 +309,12 @@ class Hash(_Action):
         return 'Hash()'
 
 
-class Join(object):  # pylint: disable=useless-object-inheritance
+class Join:
     def __init__(self, pathsep=os.pathsep):
         self.pathsep = pathsep
 
 
-# TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
-# pylint: disable=useless-object-inheritance
-class Environment(object):
+class Environment:
     """Stores the environment changes necessary for Pigweed.
 
     These changes can be accessed by writing them to a file for bash-like
@@ -331,7 +325,7 @@ class Environment(object):
         pathsep = kwargs.pop('pathsep', os.pathsep)
         windows = kwargs.pop('windows', os.name == 'nt')
         allcaps = kwargs.pop('allcaps', windows)
-        super(Environment, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._actions = []
         self._pathsep = pathsep
         self._windows = windows
@@ -376,7 +370,7 @@ class Environment(object):
         assert not self._finalized
         name = self.normalize_key(name)
         if self.get(name, None):
-            self._actions.append(Remove(name, value, self._pathsep))
+            self._actions.append(Remove(name, value))
 
     def remove(self, name, value):
         """Remove a value from a PATH-like variable."""

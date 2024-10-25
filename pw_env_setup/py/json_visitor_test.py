@@ -31,7 +31,6 @@ import six
 from pw_env_setup import environment, json_visitor
 
 
-# pylint: disable=super-with-arguments
 class JSONVisitorTest(unittest.TestCase):
     """Tests for env_setup.json_visitor."""
 

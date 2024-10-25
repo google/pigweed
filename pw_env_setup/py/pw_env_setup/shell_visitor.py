@@ -15,14 +15,11 @@
 
 import inspect
 
-# Disable super() warnings since this file must be Python 2 compatible.
-# pylint: disable=super-with-arguments
 
-
-class _BaseShellVisitor(object):  # pylint: disable=useless-object-inheritance
+class _BaseShellVisitor:
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
-        super(_BaseShellVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._pathsep = pathsep
         self._outs = None
 
@@ -57,7 +54,7 @@ class ShellVisitor(_BaseShellVisitor):
     """Serializes an Environment into a bash-like shell file."""
 
     def __init__(self, *args, **kwargs):
-        super(ShellVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._replacements = ()
 
     def serialize(self, env, outs):
@@ -178,7 +175,7 @@ class DeactivateShellVisitor(_BaseShellVisitor):
 
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
-        super(DeactivateShellVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._pathsep = pathsep
 
     def serialize(self, env, outs):
@@ -233,7 +230,7 @@ class FishShellVisitor(ShellVisitor):
     """Serializes an Environment into a fish shell file."""
 
     def __init__(self, *args, **kwargs):
-        super(FishShellVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._pathsep = ' '
 
     def _remove_value_from_path(self, variable, value):

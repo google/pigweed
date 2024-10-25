@@ -13,19 +13,16 @@
 # the License.
 """Serializes an Environment into a batch file."""
 
-# Disable super() warnings since this file must be Python 2 compatible.
-# pylint: disable=super-with-arguments
-
 # goto label written to the end of Windows batch files for exiting a script.
 _SCRIPT_END_LABEL = '_pw_end'
 
 
-class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
+class BatchVisitor:
     """Serializes an Environment into a batch file."""
 
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
-        super(BatchVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._replacements = ()
         self._outs = None
         self._pathsep = pathsep

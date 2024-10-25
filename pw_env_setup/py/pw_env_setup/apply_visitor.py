@@ -15,16 +15,13 @@
 
 import os
 
-# Disable super() warnings since this file must be Python 2 compatible.
-# pylint: disable=super-with-arguments
 
-
-class ApplyVisitor(object):  # pylint: disable=useless-object-inheritance
+class ApplyVisitor:
     """Applies an Environment to the current process."""
 
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', os.pathsep)
-        super(ApplyVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._pathsep = pathsep
         self._environ = None
         self._unapply_steps = None

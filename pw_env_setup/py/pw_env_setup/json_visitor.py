@@ -15,15 +15,12 @@
 
 import json
 
-# Disable super() warnings since this file must be Python 2 compatible.
-# pylint: disable=super-with-arguments
 
-
-class JSONVisitor(object):  # pylint: disable=useless-object-inheritance
+class JSONVisitor:
     """Serializes an Environment into a JSON file."""
 
     def __init__(self, *args, **kwargs):
-        super(JSONVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._data = {}
 
     def serialize(self, env, outs):
