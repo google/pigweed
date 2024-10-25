@@ -143,6 +143,33 @@ TEST(Result, TryAssign) {
   EXPECT_EQ(TryResultAssign(true), OkStatus());
 }
 
+constexpr int kExpectedVal = 5;
+
+class Immovable {
+ public:
+  Immovable() = delete;
+  explicit Immovable(int val) : val_(val) {}
+  Immovable(const Immovable&) = delete;
+  Immovable& operator=(const Immovable&) = delete;
+  Immovable(Immovable&&) = delete;
+  Immovable& operator=(Immovable&&) = delete;
+  int val() { return val_; }
+
+ private:
+  int val_;
+};
+
+Result<Immovable> MakeImmovable() { return Result<Immovable>(kExpectedVal); }
+
+Result<int> TryResultAssignImmovable() {
+  PW_TRY_ASSIGN(auto&& thingy, MakeImmovable());
+  return thingy.val();
+}
+
+TEST(Result, TryAssignImmovable) {
+  EXPECT_EQ(TryResultAssignImmovable(), Result<int>(kExpectedVal));
+}
+
 struct Value {
   int number;
 };
