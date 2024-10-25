@@ -13,7 +13,6 @@
 # the License.
 
 load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
-load("//pw_bluetooth_sapphire/host:variables.bzl", "COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,14 +43,11 @@ cc_library(
         "server.cc",
         "types.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/att",
-        "@pigweed//third_party/fuchsia:fit",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -63,16 +59,13 @@ cc_library(
         "fake_layer.cc",
         "mock_server.cc",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
     deps = [
         ":gatt",
+        "//pw_async:heap_dispatcher",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/common:uuid_string_util",
-        "@pigweed//pw_async:heap_dispatcher",
-        "@pigweed//pw_unit_test",
+        "//pw_unit_test",
     ],
 )
 
@@ -86,7 +79,6 @@ pw_cc_test(
         "remote_service_manager_test.cc",
         "server_test.cc",
     ],
-    copts = COPTS,
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":gatt",

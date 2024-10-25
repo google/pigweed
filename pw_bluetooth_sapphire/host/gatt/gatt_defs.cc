@@ -16,25 +16,25 @@
 
 namespace bt::gatt {
 
-ServiceData::ServiceData(ServiceKind kind,
+ServiceData::ServiceData(ServiceKind kind_in,
                          att::Handle start,
                          att::Handle end,
-                         const UUID& type)
-    : kind(kind), range_start(start), range_end(end), type(type) {}
+                         const UUID& type_in)
+    : kind(kind_in), range_start(start), range_end(end), type(type_in) {}
 
 CharacteristicData::CharacteristicData(
     Properties props,
     std::optional<ExtendedProperties> ext_props,
-    att::Handle handle,
-    att::Handle value_handle,
-    const UUID& type)
+    att::Handle handle_in,
+    att::Handle value_handle_in,
+    const UUID& type_in)
     : properties(props),
       extended_properties(ext_props),
-      handle(handle),
-      value_handle(value_handle),
-      type(type) {}
+      handle(handle_in),
+      value_handle(value_handle_in),
+      type(type_in) {}
 
-DescriptorData::DescriptorData(att::Handle handle, const UUID& type)
-    : handle(handle), type(type) {}
+DescriptorData::DescriptorData(att::Handle handle_in, const UUID& type_in)
+    : handle(handle_in), type(type_in) {}
 
 }  // namespace bt::gatt

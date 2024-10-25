@@ -279,13 +279,13 @@ class RemoteService final {
                       ReadValueCallback callback);
 
   // Helper function that drives the recursive "Read by Type" procedure.
-  // Accumulates attribute values in |values| until either |start| > |end| or an
-  // error occurs. On completion, accumulated |values| and the status are passed
-  // to |callback|. Called by ReadByType().
+  // Accumulates attribute values in |results| until either |start| > |end| or
+  // an error occurs. On completion, accumulated |results| and the status are
+  // passed to |callback|. Called by ReadByType().
   void ReadByTypeHelper(const UUID& type,
                         att::Handle start,
                         att::Handle end,
-                        std::vector<ReadByTypeResult> values,
+                        std::vector<ReadByTypeResult> results,
                         ReadByTypeCallback callback);
 
   // Returns true if characteristic discovery has completed.

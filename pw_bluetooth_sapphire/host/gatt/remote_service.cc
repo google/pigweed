@@ -595,17 +595,17 @@ void RemoteService::SendLongWriteRequest(att::Handle handle,
 
 void RemoteService::ReadLongHelper(att::Handle value_handle,
                                    uint16_t offset,
-                                   MutableByteBufferPtr buffer,
+                                   MutableByteBufferPtr out_buffer,
                                    size_t bytes_read,
                                    ReadValueCallback callback) {
   BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(buffer);
+  BT_DEBUG_ASSERT(out_buffer);
 
   auto self = GetWeakPtr();
   auto read_cb = [self,
                   value_handle,
                   offset,
-                  buffer = std::move(buffer),
+                  buffer = std::move(out_buffer),
                   bytes_read,
                   cb = std::move(callback)](
                      att::Result<> status,
@@ -674,10 +674,10 @@ void RemoteService::ReadByTypeHelper(
     const UUID& type,
     att::Handle start,
     att::Handle end,
-    std::vector<RemoteService::ReadByTypeResult> values,
+    std::vector<RemoteService::ReadByTypeResult> results,
     ReadByTypeCallback callback) {
   if (start > end) {
-    callback(fit::ok(), std::move(values));
+    callback(fit::ok(), std::move(results));
     return;
   }
 
@@ -685,7 +685,7 @@ void RemoteService::ReadByTypeHelper(
                   type,
                   start,
                   end,
-                  values_accum = std::move(values),
+                  values_accum = std::move(results),
                   cb = std::move(callback)](
                      Client::ReadByTypeResult result) mutable {
     if (!self.is_alive()) {

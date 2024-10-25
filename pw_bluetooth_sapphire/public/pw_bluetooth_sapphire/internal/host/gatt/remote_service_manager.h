@@ -47,14 +47,14 @@ class RemoteServiceManager final {
 
   // Initiates the Exchange MTU procedure followed by service discovery.
   // |callback| is called to notify the result of the procedure.
-  // |mtu_cb| is called when the MTU for the connection is determined, which may
-  // occur before initialization completes. If |services| is empty, discover all
-  // services. If |services| is not empty, only discover services that match the
-  // UUIDs in |services|.
+  // |mtu_callback| is called when the MTU for the connection is determined,
+  // which may occur before initialization completes. If |services| is empty,
+  // discover all services. If |services| is not empty, only discover services
+  // that match the UUIDs in |services|.
   // TODO(fxbug.dev/42144310): Support initiating multiple service discoveries
   // for different service UUIDs.
   void Initialize(att::ResultFunction<> callback,
-                  fit::callback<void(uint16_t)> mtu_cb,
+                  fit::callback<void(uint16_t)> mtu_callback,
                   std::vector<UUID> services = {});
 
   // Returns a vector containing discovered services that match any of the given
@@ -133,15 +133,15 @@ class RemoteServiceManager final {
 
   // Discover primary and secondary services.
   // If |service_uuids| is non-empty, only discovers services with the given
-  // UUIDs. |status_cb| will be called when the operation completes.
+  // UUIDs. |status_callback| will be called when the operation completes.
   void DiscoverServices(std::vector<UUID> service_uuids,
-                        att::ResultFunction<> status_cb);
+                        att::ResultFunction<> status_callback);
   void DiscoverPrimaryAndSecondaryServicesInRange(
       std::vector<UUID> service_uuids,
       att::Handle start,
       att::Handle end,
       ServiceCallback service_cb,
-      att::ResultFunction<> status_cb);
+      att::ResultFunction<> status_callback);
 
   // Called by |client_| when a notification or indication is received.
   void OnNotification(bool ind,

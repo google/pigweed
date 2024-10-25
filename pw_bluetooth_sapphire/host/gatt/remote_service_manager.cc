@@ -75,13 +75,14 @@ RemoteServiceManager::~RemoteServiceManager() {
   }
 }
 
-void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
-                                      fit::callback<void(uint16_t)> mtu_cb,
-                                      std::vector<UUID> services) {
+void RemoteServiceManager::Initialize(
+    att::ResultFunction<> result_callback,
+    fit::callback<void(uint16_t)> mtu_callback,
+    std::vector<UUID> services_to_discover) {
   auto self = weak_self_.GetWeakPtr();
 
-  auto init_cb = [self,
-                  user_init_cb = std::move(cb)](att::Result<> status) mutable {
+  auto wrapped_result_cb = [self, user_result_cb = std::move(result_callback)](
+                               att::Result<> status) mutable {
     TRACE_DURATION("bluetooth",
                    "gatt::RemoteServiceManager::Initialize::init_cb");
     bt_log(DEBUG, "gatt", "RemoteServiceManager initialization complete");
@@ -112,13 +113,13 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
       self->pending_list_services_requests_.pop();
     }
 
-    user_init_cb(status);
+    user_result_cb(status);
   };
 
   client_->ExchangeMTU([self,
-                        init_cb = std::move(init_cb),
-                        mtu_cb = std::move(mtu_cb),
-                        services = std::move(services)](
+                        result_cb = std::move(wrapped_result_cb),
+                        mtu_cb = std::move(mtu_callback),
+                        discovery_services = std::move(services_to_discover)](
                            att::Result<uint16_t> mtu_result) mutable {
     // The Client's Bearer may outlive this object.
     if (!self.is_alive()) {
@@ -136,48 +137,52 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
              "gatt",
              "MTU exchange failed: %s",
              bt_str(mtu_result.error_value()));
-      init_cb(fit::error(mtu_result.error_value()));
+      result_cb(fit::error(mtu_result.error_value()));
       return;
     }
 
     self->InitializeGattProfileService([self,
-                                        init_cb = std::move(init_cb),
-                                        services = std::move(services)](
-                                           att::Result<> status) mutable {
-      if (status == ToResult(HostError::kNotFound)) {
+                                        init_cb = std::move(result_cb),
+                                        services =
+                                            std::move(discovery_services)](
+                                           att::Result<> init_status) mutable {
+      if (init_status == ToResult(HostError::kNotFound)) {
         // The GATT Profile service's Service Changed characteristic is
-        // optional. Its absence implies that the set of GATT services on the
-        // server is fixed, so the kNotFound error can be safely ignored.
+        // optional. Its absence implies that the set of GATT services on
+        // the server is fixed, so the kNotFound error can be safely
+        // ignored.
         bt_log(DEBUG,
                "gatt",
                "GATT Profile service not found. Assuming services are fixed.");
-      } else if (status.is_error()) {
-        init_cb(status);
+      } else if (init_status.is_error()) {
+        init_cb(init_status);
         return;
       }
 
       self->DiscoverServices(
           std::move(services),
-          [self, init_cb = std::move(init_cb)](att::Result<> status) mutable {
-            if (status.is_error()) {
-              init_cb(status);
+          [self, discover_cb = std::move(init_cb)](
+              att::Result<> discovery_status) mutable {
+            if (discovery_status.is_error()) {
+              discover_cb(discovery_status);
               return;
             }
 
             // Handle Service Changed notifications received during service
-            // discovery. Skip notifying the service watcher callback as it will
-            // be notified in the init_cb callback. We handle Service Changed
-            // notifications before notifying the service watcher and init_cb in
-            // order to reduce the likelihood that returned services are
-            // instantly invalidated by Service Changed notifications. It is
-            // likely that bonded peers will send a Service Changed notification
-            // upon connection to indicate that services changed since the last
-            // connection, and such notifications will probably be received
-            // before service discovery completes. (Core Spec v5.3, Vol 3, Part
-            // G, Sec 2.5.2)
+            // discovery. Skip notifying the service watcher callback as it
+            // will be notified in the init_cb callback. We handle Service
+            // Changed notifications before notifying the service watcher
+            // and init_cb in order to reduce the likelihood that returned
+            // services are instantly invalidated by Service Changed
+            // notifications. It is likely that bonded peers will send a
+            // Service Changed notification upon connection to indicate that
+            // services changed since the last connection, and such
+            // notifications will probably be received before service
+            // discovery completes. (Core Spec v5.3, Vol 3, Part G,
+            // Sec 2.5.2)
             self->MaybeHandleNextServiceChangedNotification(
-                [self, init_cb = std::move(init_cb)]() mutable {
-                  init_cb(fit::ok());
+                [self, cb = std::move(discover_cb)]() mutable {
+                  cb(fit::ok());
                 });
           });
     });
@@ -193,10 +198,11 @@ RemoteService* RemoteServiceManager::GattProfileService() {
 }
 
 void RemoteServiceManager::ConfigureServiceChangedNotifications(
-    RemoteService* gatt_profile_service, att::ResultFunction<> callback) {
+    RemoteService* gatt_profile_service,
+    att::ResultFunction<> result_callback) {
   auto self = weak_self_.GetWeakPtr();
   gatt_profile_service->DiscoverCharacteristics(
-      [self, callback = std::move(callback)](
+      [self, callback = std::move(result_callback)](
           att::Result<> status,
           const CharacteristicMap& characteristics) mutable {
         // The Client's Bearer may outlive this object.
@@ -213,8 +219,8 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(
           return;
         }
 
-        RemoteService* gatt_profile_service = self->GattProfileService();
-        BT_ASSERT(gatt_profile_service);
+        RemoteService* profile_service = self->GattProfileService();
+        BT_ASSERT(profile_service);
 
         auto svc_changed_char_iter = std::find_if(
             characteristics.begin(),
@@ -243,8 +249,9 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(
         };
 
         // Don't save handler_id as notifications never need to be disabled.
-        auto status_cb = [self, callback = std::move(callback)](
-                             att::Result<> status, IdType /*handler_id*/) {
+        auto status_cb = [self, cb = std::move(callback)](
+                             att::Result<> enable_status,
+                             IdType /*handler_id*/) {
           // The Client's Bearer may outlive this object.
           if (!self.is_alive()) {
             return;
@@ -252,49 +259,50 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(
 
           // If the Service Changed characteristic exists, notification support
           // is mandatory (Core Spec v5.2, Vol 3, Part G, Sec 7.1).
-          if (bt_is_error(status,
+          if (bt_is_error(enable_status,
                           WARN,
                           "gatt",
                           "Enabling notifications of Service Changed "
                           "characteristic failed")) {
-            callback(status);
+            cb(enable_status);
             return;
           }
 
-          callback(fit::ok());
+          cb(fit::ok());
         };
 
-        gatt_profile_service->EnableNotifications(svc_changed_char_handle,
-                                                  std::move(notification_cb),
-                                                  std::move(status_cb));
+        profile_service->EnableNotifications(svc_changed_char_handle,
+                                             std::move(notification_cb),
+                                             std::move(status_cb));
       });
 }
 
 void RemoteServiceManager::InitializeGattProfileService(
-    att::ResultFunction<> callback) {
+    att::ResultFunction<> init_callback) {
   auto self = weak_self_.GetWeakPtr();
-  DiscoverGattProfileService([self, callback = std::move(callback)](
-                                 att::Result<> status) mutable {
+  DiscoverGattProfileService([self, callback = std::move(init_callback)](
+                                 att::Result<> discovery_status) mutable {
     // The Client's Bearer may outlive this object.
     if (!self.is_alive()) {
       return;
     }
 
-    if (status.is_error()) {
-      callback(status);
+    if (discovery_status.is_error()) {
+      callback(discovery_status);
       return;
     }
 
     RemoteService* gatt_svc = self->GattProfileService();
     BT_ASSERT(gatt_svc);
     self->ConfigureServiceChangedNotifications(
-        gatt_svc, [self, callback = std::move(callback)](att::Result<> status) {
+        gatt_svc,
+        [self, cb = std::move(callback)](att::Result<> config_status) {
           // The Client's Bearer may outlive this object.
           if (!self.is_alive()) {
             return;
           }
 
-          callback(status);
+          cb(config_status);
         });
   });
 }
@@ -302,22 +310,21 @@ void RemoteServiceManager::InitializeGattProfileService(
 void RemoteServiceManager::DiscoverGattProfileService(
     att::ResultFunction<> callback) {
   auto self = weak_self_.GetWeakPtr();
-  auto status_cb = [self,
-                    callback = std::move(callback)](att::Result<> status) {
+  auto status_cb = [self, cb = std::move(callback)](att::Result<> status) {
     if (!self.is_alive()) {
       return;
     }
 
     if (bt_is_error(
             status, WARN, "gatt", "Error discovering GATT Profile service")) {
-      callback(status);
+      cb(status);
       return;
     }
 
     // The GATT Profile service is optional, and its absence implies that the
     // set of GATT services on the server is fixed.
     if (self->services_.empty()) {
-      callback(ToResult(HostError::kNotFound));
+      cb(ToResult(HostError::kNotFound));
       return;
     }
 
@@ -328,7 +335,7 @@ void RemoteServiceManager::DiscoverGattProfileService(
              "gatt",
              "Discovered (%zu) GATT Profile services, expected 1",
              self->services_.size());
-      callback(ToResult(HostError::kFailed));
+      cb(ToResult(HostError::kFailed));
       return;
     }
 
@@ -337,7 +344,7 @@ void RemoteServiceManager::DiscoverGattProfileService(
     // request, so it should be the same as the requested UUID.
     BT_ASSERT(uuid == types::kGenericAttributeService);
 
-    callback(fit::ok());
+    cb(fit::ok());
   };
   DiscoverServicesOfKind(ServiceKind::PRIMARY,
                          {types::kGenericAttributeService},
@@ -391,11 +398,11 @@ void RemoteServiceManager::DiscoverServicesOfKind(
   }
 }
 
-void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
-                                            att::ResultFunction<> status_cb) {
+void RemoteServiceManager::DiscoverServices(
+    std::vector<UUID> service_uuids, att::ResultFunction<> status_callback) {
   auto self = weak_self_.GetWeakPtr();
   auto status_cb_wrapper =
-      [self, status_cb = std::move(status_cb)](att::Result<> status) {
+      [self, status_cb = std::move(status_callback)](att::Result<> status) {
         TRACE_DURATION(
             "bluetooth",
             "gatt::RemoteServiceManager::DiscoverServices::status_cb_wrapper");
@@ -434,34 +441,34 @@ void RemoteServiceManager::DiscoverPrimaryAndSecondaryServicesInRange(
     att::Handle start,
     att::Handle end,
     ServiceCallback service_cb,
-    att::ResultFunction<> status_cb) {
+    att::ResultFunction<> status_callback) {
   auto self = weak_self_.GetWeakPtr();
   auto primary_discov_cb = [self,
                             service_uuids,
                             start,
                             end,
                             svc_cb = service_cb.share(),
-                            status_cb = std::move(status_cb)](
-                               att::Result<> status) mutable {
-    if (!self.is_alive() || status.is_error()) {
-      status_cb(status);
+                            status_cb = std::move(status_callback)](
+                               att::Result<> primary_status) mutable {
+    if (!self.is_alive() || primary_status.is_error()) {
+      status_cb(primary_status);
       return;
     }
 
     auto secondary_discov_cb = [cb = std::move(status_cb)](
-                                   att::Result<> status) mutable {
+                                   att::Result<> secondary_status) mutable {
       // Not all GATT servers support the "secondary service" group type. We
       // suppress the "Unsupported Group Type" error code and simply report no
       // services instead of treating it as a fatal condition (errors propagated
       // up the stack from here will cause the connection to be terminated).
-      if (status == ToResult(att::ErrorCode::kUnsupportedGroupType)) {
+      if (secondary_status == ToResult(att::ErrorCode::kUnsupportedGroupType)) {
         bt_log(DEBUG,
                "gatt",
                "peer does not support secondary services; ignoring ATT error");
-        status = fit::ok();
+        secondary_status = fit::ok();
       }
 
-      cb(status);
+      cb(secondary_status);
     };
 
     if (!service_uuids.empty()) {

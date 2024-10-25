@@ -97,7 +97,7 @@ class AttBasedServer final : public Server {
   void SendUpdate(IdType service_id,
                   IdType chrc_id,
                   BufferView value,
-                  IndicationCallback indicate_cb) override {
+                  IndicationCallback indicate_callback) override {
     auto buffer =
         NewBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
     BT_ASSERT(buffer);
@@ -109,38 +109,40 @@ class AttBasedServer final : public Server {
              "gatt",
              "peer has not configured characteristic: %s",
              bt_str(peer_id_));
-      if (indicate_cb) {
-        indicate_cb(ToResult(HostError::kNotSupported));
+      if (indicate_callback) {
+        indicate_callback(ToResult(HostError::kNotSupported));
       }
       return;
     }
 
     // Make sure that the client has subscribed to the requested protocol
     // method.
-    if ((indicate_cb && !config.indicate) || (!indicate_cb && !config.notify)) {
+    if ((indicate_callback && !config.indicate) ||
+        (!indicate_callback && !config.notify)) {
       bt_log(TRACE,
              "gatt",
              "peer has not enabled (%s): %s",
-             (indicate_cb ? "indications" : "notifications"),
+             (indicate_callback ? "indications" : "notifications"),
              bt_str(peer_id_));
-      if (indicate_cb) {
-        indicate_cb(ToResult(HostError::kNotSupported));
+      if (indicate_callback) {
+        indicate_callback(ToResult(HostError::kNotSupported));
       }
       return;
     }
 
     att::PacketWriter writer(
-        indicate_cb ? att::kIndication : att::kNotification, buffer.get());
+        indicate_callback ? att::kIndication : att::kNotification,
+        buffer.get());
     auto rsp_params = writer.mutable_payload<att::AttributeData>();
     rsp_params->handle =
         pw::bytes::ConvertOrderTo(cpp20::endian::little, config.handle);
     writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
 
-    if (!indicate_cb) {
+    if (!indicate_callback) {
       [[maybe_unused]] bool _ = att_->SendWithoutResponse(std::move(buffer));
       return;
     }
-    auto transaction_cb = [indicate_cb = std::move(indicate_cb)](
+    auto transaction_cb = [indicate_cb = std::move(indicate_callback)](
                               att::Bearer::TransactionResult result) mutable {
       if (result.is_ok()) {
         bt_log(DEBUG, "gatt", "got indication ACK");
@@ -492,7 +494,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
     BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
 
-    size_t value_size;
+    size_t out_value_size;
     std::list<const att::Attribute*> results;
     fit::result<att::ErrorCode> status =
         ReadByTypeHelper(start,
@@ -502,7 +504,7 @@ class AttBasedServer final : public Server {
                          att_->mtu() - kHeaderSize,
                          att::kMaxReadByTypeValueLength,
                          sizeof(att::AttributeData),
-                         &value_size,
+                         &out_value_size,
                          &results);
     if (status.is_error()) {
       att_->ReplyWithError(tid, start, status.error_value());
@@ -523,13 +525,13 @@ class AttBasedServer final : public Server {
       att::Handle handle = results.front()->handle();
       auto self = weak_self_.GetWeakPtr();
       auto result_cb = [self, tid, handle, kMaxValueSize](
-                           fit::result<att::ErrorCode> status,
+                           fit::result<att::ErrorCode> read_result,
                            const auto& value) {
         if (!self.is_alive())
           return;
 
-        if (status.is_error()) {
-          self->att_->ReplyWithError(tid, handle, status.error_value());
+        if (read_result.is_error()) {
+          self->att_->ReplyWithError(tid, handle, read_result.error_value());
           return;
         }
 
@@ -556,7 +558,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    size_t entry_size = sizeof(att::AttributeData) + value_size;
+    size_t entry_size = sizeof(att::AttributeData) + out_value_size;
     BT_DEBUG_ASSERT(entry_size <= std::numeric_limits<uint8_t>::max());
 
     size_t pdu_size = kHeaderSize + entry_size * results.size();
@@ -577,7 +579,7 @@ class AttBasedServer final : public Server {
           reinterpret_cast<att::AttributeData*>(next_entry.mutable_data());
       entry->handle =
           pw::bytes::ConvertOrderTo(cpp20::endian::little, attr->handle());
-      next_entry.Write(attr->value()->view(0, value_size),
+      next_entry.Write(attr->value()->view(0, out_value_size),
                        sizeof(entry->handle));
 
       next_entry = next_entry.mutable_view(entry_size);
@@ -608,10 +610,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fit::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> permissions_result =
         att::CheckReadPermissions(attr->read_reqs(), att_->security());
-    if (status.is_error()) {
-      att_->ReplyWithError(tid, handle, status.error_value());
+    if (permissions_result.is_error()) {
+      att_->ReplyWithError(tid, handle, permissions_result.error_value());
       return;
     }
 
@@ -677,10 +679,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fit::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> permissions_result =
         att::CheckReadPermissions(attr->read_reqs(), att_->security());
-    if (status.is_error()) {
-      att_->ReplyWithError(tid, handle, status.error_value());
+    if (permissions_result.is_error()) {
+      att_->ReplyWithError(tid, handle, permissions_result.error_value());
       return;
     }
 
@@ -778,10 +780,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fit::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> permissions_result =
         att::CheckWritePermissions(attr->write_reqs(), att_->security());
-    if (status.is_error()) {
-      att_->ReplyWithError(tid, handle, status.error_value());
+    if (permissions_result.is_error()) {
+      att_->ReplyWithError(tid, handle, permissions_result.error_value());
       return;
     }
 
