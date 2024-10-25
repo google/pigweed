@@ -117,7 +117,11 @@ void PacketIO::Start(async2::Dispatcher& dispatcher,
   dispatcher.Post(packet_writer_);
   dispatcher.Post(packet_flusher_);
 
-  thread::DetachedThread(thread_options, rpc_server_thread_);
+  thread::DetachedThread(thread_options, [this] {
+    while (true) {
+      rpc_server_thread_.RunOnce();
+    }
+  });
 }
 
 async2::Poll<> PacketIO::PacketReader::DoPend(async2::Context& cx) {

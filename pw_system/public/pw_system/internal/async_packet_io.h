@@ -13,7 +13,6 @@
 // the License.
 #pragma once
 
-#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <optional>
@@ -70,7 +69,7 @@ class RpcChannelOutputQueue final : public rpc::ChannelOutput {
 
 // Thread that receives inbound RPC packets and calls
 // pw::rpc::Server::ProcessPacket() with them.
-class RpcServerThread final : public thread::ThreadCore {
+class RpcServerThread final {
  public:
   RpcServerThread(Allocator& allocator, rpc::Server& server);
 
@@ -93,15 +92,9 @@ class RpcServerThread final : public thread::ThreadCore {
 
   void PushPacket(multibuf::MultiBuf&& packet);
 
- private:
-  void Run() override {
-    while (true) {
-      RunOnce();
-    }
-  }
-
   void RunOnce();
 
+ private:
   Allocator& allocator_;
   sync::Mutex mutex_;
   bool ready_for_packet_ PW_GUARDED_BY(mutex_) = true;
@@ -140,8 +133,6 @@ class PacketIO {
 
    private:
     async2::Poll<> DoPend(async2::Context& cx) override;
-
-    async2::Poll<> PendFlush(async2::Context& cx);
 
     PacketIO& io_;
     async2::Poll<InlineVarLenEntryQueue<>::Entry> outbound_packet_;

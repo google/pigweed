@@ -618,7 +618,6 @@ cc_library(
         "//pw_sync:mutex",
         "//pw_sync:thread_notification",
         "//pw_thread:thread",
-        "//pw_thread:thread_core",
     ],
 )
 
