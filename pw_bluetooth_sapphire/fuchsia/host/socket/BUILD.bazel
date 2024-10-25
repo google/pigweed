@@ -14,6 +14,7 @@
 
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_library",
     "fuchsia_cc_test",
     "fuchsia_unittest_package",
 )
@@ -21,7 +22,7 @@ load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+fuchsia_cc_library(
     name = "public",
     hdrs = [
         "public/pw_bluetooth_sapphire/fuchsia/host/socket/socket_channel_relay.h",
@@ -30,10 +31,9 @@ cc_library(
     includes = [
         "public",
     ],
-    tags = ["manual"],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "socket",
     deps = [
         ":public",

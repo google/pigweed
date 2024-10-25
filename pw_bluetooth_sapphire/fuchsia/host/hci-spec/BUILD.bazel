@@ -32,7 +32,6 @@ fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "hci_spec_tests",
     fuchsia_api_level = FUCHSIA_API_LEVEL,
-    tags = ["manual"],
     unit_tests = [
         ":hci_spec_test",
     ],

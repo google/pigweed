@@ -16,6 +16,7 @@ load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
     "fuchsia_cc_driver",
+    "fuchsia_cc_library",
     "fuchsia_cc_test",
     "fuchsia_component_manifest",
     "fuchsia_driver_bind_bytecode",
@@ -43,7 +44,7 @@ fuchsia_driver_bind_bytecode(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "common",
     testonly = True,
     srcs = [
@@ -54,7 +55,6 @@ cc_library(
         "loopback.cc",
         "loopback.h",
     ],
-    tags = ["manual"],
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
         "//pw_async_fuchsia:dispatcher",
@@ -80,7 +80,6 @@ fuchsia_cc_driver(
         "controller.h",
     ],
     output_name = "bt-hci-virtual",
-    tags = ["manual"],
     deps = [
         ":common",
     ],
@@ -97,7 +96,6 @@ fuchsia_driver_component(
     bind_bytecode = ":bt-hci-virtual-bind",
     driver_lib = ":bt-hci-virtual",
     manifest = ":manifest",
-    tags = ["manual"],
 )
 
 fuchsia_package(
@@ -108,7 +106,6 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.x64,
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -120,7 +117,6 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.arm64,
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -132,7 +128,6 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
     platform = fuchsia_platforms.riscv64,
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -154,7 +149,6 @@ fuchsia_unittest_package(
     testonly = True,
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
-    tags = ["manual"],
     unit_tests = [":loopback_test"],
     visibility = ["//visibility:public"],
 )
@@ -165,7 +159,6 @@ fuchsia_licenses_collection(
     # TODO: https://pwbug.dev/368652834 - Reenable license collection.
     # root_target = ":pkg.x64",
     root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_collection(
@@ -174,7 +167,6 @@ fuchsia_licenses_collection(
     # TODO: https://pwbug.dev/368652834 - Reenable license collection.
     # root_target = ":pkg.arm64",
     root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_collection(
@@ -183,7 +175,6 @@ fuchsia_licenses_collection(
     # TODO: https://pwbug.dev/368652834 - Reenable license collection.
     # root_target = ":pkg.riscv64",
     root_target = "//pw_bluetooth_sapphire/fuchsia:license_fuchsia",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -194,7 +185,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "virtual",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -205,7 +195,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "virtual",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -216,7 +205,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "virtual",
-    tags = ["manual"],
 )
 
 fuchsia_cipd_releases(

@@ -144,7 +144,6 @@ fuchsia_unittest_package(
     testonly = True,
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
-    tags = ["manual"],
     unit_tests = [
         ":host_test",
     ],
@@ -159,7 +158,6 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     resources = [":default_config_values"],
-    tags = ["manual"],
 )
 
 fuchsia_package(
@@ -171,7 +169,6 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.arm64,
     resources = [":default_config_values"],
-    tags = ["manual"],
 )
 
 fuchsia_package(
@@ -183,25 +180,21 @@ fuchsia_package(
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.riscv64,
     resources = [":default_config_values"],
-    tags = ["manual"],
 )
 
 fuchsia_licenses_collection(
     name = "bt_host_x64_pkg_licenses_collection",
     root_target = ":pkg.x64",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_collection(
     name = "bt_host_arm64_pkg_licenses_collection",
     root_target = ":pkg.arm64",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_collection(
     name = "bt_host_riscv64_pkg_licenses_collection",
     root_target = ":pkg.riscv64",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -211,7 +204,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "bt-host",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -221,7 +213,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "bt-host",
-    tags = ["manual"],
 )
 
 fuchsia_licenses_spdx(
@@ -231,7 +222,6 @@ fuchsia_licenses_spdx(
     licenses_cross_refs_base_url = "https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_bluetooth_sapphire/fuchsia/",
     root_package_homepage = "https://pigweed.dev/pw_bluetooth_sapphire/",
     root_package_name = "bt-host",
-    tags = ["manual"],
 )
 
 fuchsia_cipd_releases(

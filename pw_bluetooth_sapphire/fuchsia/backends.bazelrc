@@ -12,6 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# The following blocks exists to prevent almost all targets instantiated from
+# @fuchsia_sdk rules/macros from being considered target_compatible_with unless
+# `--config=fuchsia` is explicitly specified.
+# This allows non-fuchsia globs like //... and all non-fuchsia-specific builders
+# to ignore the problematic fuchsia-specific targets.
+common --@fuchsia_sdk//fuchsia:fuchsia_targets_enabled=false
+common:fuchsia --@fuchsia_sdk//fuchsia:fuchsia_targets_enabled
+
 common:fuchsia --@pigweed//pw_assert:backend=@pigweed//pw_assert_fuchsia
 common:fuchsia --@pigweed//pw_assert:assert_backend_impl=@pigweed//pw_build:empty_cc_library
 common:fuchsia --@pigweed//pw_assert:check_backend=@pigweed//pw_assert_fuchsia

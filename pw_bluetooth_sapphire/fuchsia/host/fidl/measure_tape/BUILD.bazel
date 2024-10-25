@@ -12,9 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@fuchsia_sdk//fuchsia:defs.bzl", "fuchsia_cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+fuchsia_cc_library(
     name = "peer_hlcpp",
     srcs = [
         "hlcpp_measure_tape_for_peer.cc",
@@ -28,7 +30,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "read_by_type_result_hlcpp",
     srcs = [
         "hlcpp_measure_tape_for_read_by_type_result.cc",

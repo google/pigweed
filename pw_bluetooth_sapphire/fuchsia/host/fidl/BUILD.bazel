@@ -14,6 +14,7 @@
 
 load(
     "@fuchsia_sdk//fuchsia:defs.bzl",
+    "fuchsia_cc_library",
     "fuchsia_cc_test",
     "fuchsia_unittest_package",
 )
@@ -21,7 +22,7 @@ load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+fuchsia_cc_library(
     name = "public",
     hdrs = [
         "public/pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h",
@@ -49,13 +50,12 @@ cc_library(
     includes = [
         "public",
     ],
-    tags = ["manual"],
     deps = [
         "//pw_bluetooth_sapphire/fuchsia/host/socket:public",
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "fidl",
     srcs = [
         "bredr_connection_server.cc",
@@ -91,7 +91,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "helpers",
     srcs = [
         "helpers.cc",
@@ -113,7 +113,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "adapter_test_fixture",
     testonly = True,
     srcs = [
@@ -132,7 +132,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "fake_adapter_test_fixture",
     testonly = True,
     deps = [
@@ -145,7 +145,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "fake_gatt_test_fixture",
     testonly = True,
     srcs = [
@@ -161,7 +161,7 @@ cc_library(
     ],
 )
 
-cc_library(
+fuchsia_cc_library(
     name = "fake_vendor_server",
     testonly = True,
     srcs = [
@@ -220,7 +220,6 @@ fuchsia_unittest_package(
     package_name = "bt_host_fidl_tests_bazel",
     testonly = True,
     fuchsia_api_level = FUCHSIA_API_LEVEL,
-    tags = ["manual"],
     unit_tests = [
         ":fidl_test",
     ],
