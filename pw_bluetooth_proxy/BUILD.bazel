@@ -12,25 +12,67 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# Bazel is not yet supported. These files are listed here to make
-# `source_is_in_bazel_build` happy.
-filegroup(
-    name = "files_not_in_bazel_yet",
+cc_library(
+    name = "pw_bluetooth_proxy",
     srcs = [
         "acl_data_channel.cc",
-        "emboss_util_test.cc",
-        "h4_packet_test.cc",
         "proxy_host.cc",
-        "proxy_host_test.cc",
+    ],
+    hdrs = [
         "public/pw_bluetooth_proxy/acl_data_channel.h",
         "public/pw_bluetooth_proxy/emboss_util.h",
         "public/pw_bluetooth_proxy/h4_packet.h",
         "public/pw_bluetooth_proxy/hci_transport.h",
         "public/pw_bluetooth_proxy/proxy_host.h",
-        "size_report/use_passthrough_proxy.cc",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bluetooth:emboss_att",
+        "//pw_bluetooth:emboss_hci_common",
+        "//pw_bluetooth:emboss_hci_data",
+        "//pw_bluetooth:emboss_hci_events",
+        "//pw_bluetooth:emboss_hci_h4",
+        "//pw_bluetooth:emboss_l2cap_frames",
+        "//pw_containers",
+        "//pw_function",
+        "//pw_log",
+        "//pw_span",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_test(
+    name = "emboss_util_test",
+    srcs = [
+        "emboss_util_test.cc",
+    ],
+    deps = [
+        ":pw_bluetooth_proxy",
+        "//pw_bluetooth:emboss_hci_test",
+        "//pw_span",
+    ],
+)
+
+pw_cc_test(
+    name = "pw_bluetooth_proxy_test",
+    srcs = [
+        "h4_packet_test.cc",
+        "proxy_host_test.cc",
+    ],
+    deps = [
+        ":pw_bluetooth_proxy",
+        "//pw_bluetooth:emboss_att",
+        "//pw_bluetooth:emboss_hci_commands",
+        "//pw_bluetooth:emboss_hci_common",
+        "//pw_bluetooth:emboss_hci_events",
+        "//pw_bluetooth:emboss_hci_h4",
     ],
 )

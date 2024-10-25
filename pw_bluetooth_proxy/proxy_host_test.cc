@@ -1598,7 +1598,7 @@ TEST(ResetTest, ResetClearsActiveConnections) {
         EXPECT_EQ(view.nocp_data()[0].num_completed_packets().Read(), 1);
       });
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&controller_capture](H4PacketWithH4&& packet) {
+      [&controller_capture]([[maybe_unused]] H4PacketWithH4&& packet) {
         ++controller_capture.sends_called;
       });
 
@@ -1649,7 +1649,9 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&sends_called](H4PacketWithH4&& packet) { ++sends_called; });
+      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++sends_called;
+      });
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
@@ -1793,7 +1795,9 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&capture](H4PacketWithH4&& packet) { ++capture.sends_called; });
+      [&capture]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+      });
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
