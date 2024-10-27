@@ -13,7 +13,7 @@ pw_async2
    - **Pluggable**: Your existing event loop, work queue, or task scheduler
      can run the ``Dispatcher`` without any extra threads.
    - **Coroutine-capable**: C++20 coroutines work just like other tasks, and can
-     easily plug into an existing ``pw_async2`` systems.
+     easily plug into an existing ``pw_async2`` system.
 
 :cpp:class:`pw::async2::Task` is Pigweed's async primitive. ``Task`` objects
 are cooperatively-scheduled "threads" which yield to the
@@ -22,7 +22,7 @@ progress, the ``Dispatcher`` will run it again. For example:
 
 .. tab-set::
 
-   .. tab-item:: Manual ``Task`` State Machine
+   .. tab-item:: Manual task state machine
 
       .. literalinclude:: examples/basic.cc
          :language: cpp
@@ -30,7 +30,7 @@ progress, the ``Dispatcher`` will run it again. For example:
          :start-after: [pw_async2-examples-basic-manual]
          :end-before: [pw_async2-examples-basic-manual]
 
-   .. tab-item:: Coroutine Function
+   .. tab-item:: Coroutine function
 
       .. literalinclude:: examples/basic.cc
          :language: cpp
@@ -74,6 +74,24 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
       * ``CoRo``
 
       And more.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Backends
+      :link: module-pw_async2-backends
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      You can fulfill the ``pw_async2`` interface with a Pigweed-provided
+      backend or roll your own.
+
+   .. grid-item-card:: :octicon:`pencil` Pigweed blog: C++20 coroutines
+      :link: docs-blog-05-coroutines
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      A blog post on how Pigweed implements coroutines without heap
+      allocation, and challenges encountered along the way.
 
 .. toctree::
    :hidden:
