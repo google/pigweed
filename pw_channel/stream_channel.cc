@@ -29,16 +29,11 @@ using pw::Status;
 using pw::async2::Context;
 using pw::async2::Pending;
 using pw::async2::Poll;
-using pw::async2::Ready;
-using pw::async2::WaitReason;
-using pw::async2::Waker;
 using pw::channel::ByteReaderWriter;
 using pw::multibuf::MultiBuf;
 using pw::multibuf::MultiBufAllocationFuture;
 using pw::multibuf::MultiBufAllocator;
 using pw::multibuf::OwnedChunk;
-using pw::sync::InterruptSpinLock;
-using pw::sync::ThreadNotification;
 
 namespace internal {
 

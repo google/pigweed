@@ -27,14 +27,11 @@
 
 namespace {
 
-using ::pw::Result;
 using ::pw::async2::Context;
 using ::pw::async2::PendFuncTask;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
-using ::pw::async2::Task;
-using ::pw::async2::Waker;
 using ::pw::multibuf::MultiBuf;
 using ::pw::multibuf::test::SimpleAllocatorForTest;
 using ::pw::operator""_b;

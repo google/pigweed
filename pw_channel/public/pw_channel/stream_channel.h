@@ -128,7 +128,7 @@ class StreamChannel final : public channel::ByteReaderWriter {
  private:
   // StreamChannel must live forever, as its state is referenced by other
   // threads.
-  ~StreamChannel() = default;
+  ~StreamChannel() final = default;
 
   Status ProvideBufferIfAvailable(async2::Context& cx);
 
