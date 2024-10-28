@@ -11,8 +11,11 @@ Reference
 -----------------
 C++ API reference
 -----------------
+.. TODO: https://pwbug.dev/376082608 - Remove ``:private-members:``.
+
 .. doxygenclass:: pw::async2::Task
   :members:
+  :private-members:
 
 .. doxygenclass:: pw::async2::Poll
   :members:
