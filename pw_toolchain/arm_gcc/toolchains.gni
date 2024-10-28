@@ -161,6 +161,12 @@ _cortex_m55 = [
   "$dir_pw_toolchain/arm_gcc:cortex_software_fpu",
 ]
 
+_cortex_m55f = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m55",
+  "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu_auto",
+]
+
 _cortex_a32 = [
   "$dir_pw_toolchain/arm_gcc:cortex_common",
   "$dir_pw_toolchain/arm_gcc:cortex_a32",
@@ -385,6 +391,31 @@ pw_toolchain_arm_gcc = {
                         [ "$dir_pw_build:optimize_size" ]
     }
   }
+  cortex_m55f_debug = {
+    name = "arm_gcc_cortex_m55f_debug"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = pigweed_default_configs + _arm_gcc + _cortex_m55f +
+                        [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m55f_speed_optimized = {
+    name = "arm_gcc_cortex_m55f_speed_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = pigweed_default_configs + _arm_gcc + _cortex_m55f +
+                        [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+
+  cortex_m55f_size_optimized = {
+    name = "arm_gcc_cortex_m55f_size_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = pigweed_default_configs + _arm_gcc + _cortex_m55f +
+                        [ "$dir_pw_build:optimize_size" ]
+    }
+  }
 
   cortex_a32_debug = {
     name = "arm_gcc_cortex_a32_debug"
@@ -443,6 +474,9 @@ pw_toolchain_arm_gcc_list = [
   pw_toolchain_arm_gcc.cortex_m55_debug,
   pw_toolchain_arm_gcc.cortex_m55_speed_optimized,
   pw_toolchain_arm_gcc.cortex_m55_size_optimized,
+  pw_toolchain_arm_gcc.cortex_m55f_debug,
+  pw_toolchain_arm_gcc.cortex_m55f_speed_optimized,
+  pw_toolchain_arm_gcc.cortex_m55f_size_optimized,
   pw_toolchain_arm_gcc.cortex_a32_debug,
   pw_toolchain_arm_gcc.cortex_a32_speed_optimized,
   pw_toolchain_arm_gcc.cortex_a32_size_optimized,

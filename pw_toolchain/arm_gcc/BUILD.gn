@@ -144,6 +144,15 @@ config("cortex_hardware_fpu_v5_sp") {
   ldflags = cflags
 }
 
+config("cortex_hardware_fpu_auto") {
+  cflags = [
+    "-mfloat-abi=hard",
+    "-mfpu=auto",
+  ]
+  asmflags = cflags
+  ldflags = cflags
+}
+
 config("wrap_newlib_stdio_functions") {
   ldflags = [
     "-Wl,--wrap=__sread",
