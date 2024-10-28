@@ -17,11 +17,12 @@
 #include "pw_log_tokenized/config.h"
 #include "pw_tokenizer/tokenize.h"
 
-#define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                    \
-  do {                                                          \
-    const uint32_t token = PW_TOKENIZE_STRING(                  \
-        PW_LOG_TOKENIZED_FORMAT_STRING("Check failure: " str)); \
-    pw_assert_tokenized_HandleCheckFailure(token, __LINE__);    \
+#define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                                   \
+  do {                                                                         \
+    const uint32_t _pw_assert_tokenized_to_handler_token = PW_TOKENIZE_STRING( \
+        PW_LOG_TOKENIZED_FORMAT_STRING("Check failure: " str));                \
+    pw_assert_tokenized_HandleCheckFailure(                                    \
+        _pw_assert_tokenized_to_handler_token, __LINE__);                      \
   } while (0)
 
 #define PW_HANDLE_CRASH(...) _PW_ASSERT_TOKENIZED_TO_HANDLER(#__VA_ARGS__)
