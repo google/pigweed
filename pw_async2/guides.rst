@@ -12,6 +12,27 @@ Quickstart & guides
 Guides
 ------
 
+Implementing tasks
+==================
+:cpp:class:`pw::async2::Task` instances complete one or more asynchronous
+operations. They are the top-level "thread" primitives of ``pw_async2``.
+
+You can use one of the concrete subclasses of ``Task`` that Pigweed provides:
+
+* :cpp:class:`pw::async2::CoroOrElseTask`: Delegates to a provided
+  coroutine and executes an ``or_else`` handler function on failure.
+* :cpp:class:`pw::async2::PendFuncTask`: Delegates to a provided
+  function.
+* :cpp:class:`pw::async2::PendableAsTask`: Delegates to a type
+  with a :cpp:func:`pw::async2::Pend` method.
+* :cpp:func:`pw::async2::AllocateTask`: Creates a concrete subclass of
+  ``Task``, just like ``PendableAsTask``, but the created task is
+  dynamically allocated and frees the associated memory upon
+  completion.
+
+Or you can subclass ``Task`` yourself. See :cpp:class:`pw::async2::Task`
+for more guidance on subclassing.
+
 .. _module-pw_async2-guides-tasks:
 
 How a dispatcher manages tasks
