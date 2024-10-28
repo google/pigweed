@@ -25,7 +25,13 @@
 #include "pw_preprocessor/compiler.h"
 
 // PW_CRASH - Crash the system, with a message.
-#define PW_CRASH PW_HANDLE_CRASH
+#define PW_CRASH(...)                                                        \
+  do {                                                                       \
+    if (0) { /* Check args but don't execute to avoid multiple evaluation */ \
+      _pw_assert_CheckMessageArguments(" " __VA_ARGS__);                     \
+    }                                                                        \
+    PW_HANDLE_CRASH(__VA_ARGS__);                                            \
+  } while (0)
 
 // PW_CHECK - If condition evaluates to false, crash. Message optional.
 #define PW_CHECK(condition, ...)                                               \
@@ -237,34 +243,40 @@ constexpr T ConvertToType(const U& value) {
 // hitting the CHECK backend. This controls whether evaluated values are
 // captured.
 #if PW_ASSERT_CAPTURE_VALUES
-#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,                         \
-                                     arg_a_val,                         \
-                                     comparison_op_str,                 \
-                                     arg_b_str,                         \
-                                     arg_b_val,                         \
-                                     type_fmt,                          \
-                                     ...)                               \
-                                                                        \
-  _pw_assert_ConditionCannotContainThePercentCharacter(                 \
-      arg_a_str arg_b_str); /* cannot use '%' in PW_CHECK conditions */ \
-  PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,                    \
-                                          arg_a_val,                    \
-                                          comparison_op_str,            \
-                                          arg_b_str,                    \
-                                          arg_b_val,                    \
-                                          type_fmt,                     \
+#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,                            \
+                                     arg_a_val,                            \
+                                     comparison_op_str,                    \
+                                     arg_b_str,                            \
+                                     arg_b_val,                            \
+                                     type_fmt,                             \
+                                     ...)                                  \
+                                                                           \
+  _pw_assert_ConditionCannotContainThePercentCharacter(                    \
+      arg_a_str arg_b_str); /* cannot use '%' in PW_CHECK conditions */    \
+  if (0) { /* Check args but don't execute to avoid multiple evaluation */ \
+    _pw_assert_CheckMessageArguments(" " __VA_ARGS__);                     \
+  }                                                                        \
+  PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,                       \
+                                          arg_a_val,                       \
+                                          comparison_op_str,               \
+                                          arg_b_str,                       \
+                                          arg_b_val,                       \
+                                          type_fmt,                        \
                                           __VA_ARGS__)
 #else
-#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,                           \
-                                     arg_a_val,                           \
-                                     comparison_op_str,                   \
-                                     arg_b_str,                           \
-                                     arg_b_val,                           \
-                                     type_fmt,                            \
-                                     ...)                                 \
-  _pw_assert_ConditionCannotContainThePercentCharacter(                   \
-      arg_a_str arg_b_str); /* cannot use '%' in PW_CHECK conditions */   \
-  PW_HANDLE_ASSERT_FAILURE(arg_a_str " " comparison_op_str " " arg_b_str, \
+#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,                            \
+                                     arg_a_val,                            \
+                                     comparison_op_str,                    \
+                                     arg_b_str,                            \
+                                     arg_b_val,                            \
+                                     type_fmt,                             \
+                                     ...)                                  \
+  _pw_assert_ConditionCannotContainThePercentCharacter(                    \
+      arg_a_str arg_b_str); /* cannot use '%' in PW_CHECK conditions */    \
+  if (0) { /* Check args but don't execute to avoid multiple evaluation */ \
+    _pw_assert_CheckMessageArguments(" " __VA_ARGS__);                     \
+  }                                                                        \
+  PW_HANDLE_ASSERT_FAILURE(arg_a_str " " comparison_op_str " " arg_b_str,  \
                            __VA_ARGS__)
 #endif  // PW_ASSERT_CAPTURE_VALUES
 
