@@ -20,8 +20,6 @@ passing through all arguments.
 Must be tested with Python 2 and Python 3.
 """
 
-from __future__ import print_function
-
 import hashlib
 import os
 import platform

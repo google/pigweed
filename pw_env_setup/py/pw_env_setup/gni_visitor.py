@@ -13,8 +13,6 @@
 # the License.
 """Serializes an Environment into a JSON file."""
 
-from __future__ import print_function
-
 import ntpath
 import os
 import posixpath

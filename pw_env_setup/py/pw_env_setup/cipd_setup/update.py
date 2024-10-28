@@ -19,8 +19,6 @@ Must be tested with Python 2 and Python 3.
 The stdout of this script is meant to be executed by the invoking shell.
 """
 
-from __future__ import print_function
-
 import collections
 import hashlib
 import json

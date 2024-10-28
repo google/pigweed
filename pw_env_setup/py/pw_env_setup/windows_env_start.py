@@ -20,8 +20,6 @@ easy to do in cmd.exe. Activated colors also don't persist in the parent
 process.
 """
 
-from __future__ import print_function
-
 import argparse
 import os
 import sys

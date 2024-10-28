@@ -19,8 +19,6 @@ This script installs everything and writes out a file for the user's shell
 to source.
 """
 
-from __future__ import print_function
-
 import argparse
 import copy
 import glob

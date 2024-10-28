@@ -13,8 +13,6 @@
 # the License.
 """Sets up a Python 3 virtualenv for Pigweed."""
 
-from __future__ import print_function
-
 import contextlib
 import datetime
 import glob

@@ -21,8 +21,6 @@ See also:
 """
 # pylint: enable=line-too-long
 
-from __future__ import print_function
-
 import contextlib
 import os
 
