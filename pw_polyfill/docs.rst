@@ -47,6 +47,11 @@ In GN, Bazel, or CMake, depend on ``$dir_pw_polyfill``, ``//pw_polyfill``,
 or ``pw_polyfill``, respectively, to access these features. In other build
 systems, add ``pw_polyfill/public`` as an include path.
 
+API reference
+-------------
+.. doxygenfile:: pw_polyfill/language_feature_macros.h
+   :sections: define
+
 ------------------------------------------------
 Backport new C++ features to older C++ standards
 ------------------------------------------------
