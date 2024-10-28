@@ -28,13 +28,16 @@
 #define PW_CRASH PW_HANDLE_CRASH
 
 // PW_CHECK - If condition evaluates to false, crash. Message optional.
-#define PW_CHECK(condition, ...)                                   \
-  do {                                                             \
-    if (!(condition)) {                                            \
-      _pw_assert_ConditionCannotContainThePercentCharacter(        \
-          #condition); /* cannot use '%' in PW_CHECK conditions */ \
-      PW_HANDLE_ASSERT_FAILURE(#condition, "" __VA_ARGS__);        \
-    }                                                              \
+#define PW_CHECK(condition, ...)                                               \
+  do {                                                                         \
+    if (!(condition)) {                                                        \
+      _pw_assert_ConditionCannotContainThePercentCharacter(                    \
+          #condition); /* cannot use '%' in PW_CHECK conditions */             \
+      if (0) { /* Check args but don't execute to avoid multiple evaluation */ \
+        _pw_assert_CheckMessageArguments(" " __VA_ARGS__);                     \
+      }                                                                        \
+      PW_HANDLE_ASSERT_FAILURE(#condition, "" __VA_ARGS__);                    \
+    }                                                                          \
   } while (0)
 
 #define PW_DCHECK(...)            \
@@ -307,5 +310,15 @@ static inline void _pw_assert_ConditionCannotContainThePercentCharacter(
 
 static inline void _pw_assert_ConditionCannotContainThePercentCharacter(
     const char* format, ...) {
+  (void)format;
+}
+
+// Empty function for checking that arguments match the format string. This
+// function also ensures arguments are considered "used" in PW_CHECK, even if
+// the backend does not use them.
+static inline void _pw_assert_CheckMessageArguments(const char* format, ...)
+    PW_PRINTF_FORMAT(1, 2);
+
+static inline void _pw_assert_CheckMessageArguments(const char* format, ...) {
   (void)format;
 }
