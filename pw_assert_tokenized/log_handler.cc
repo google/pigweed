@@ -27,6 +27,18 @@
 #include "pw_log_tokenized/metadata.h"
 #include "pw_span/span.h"
 
+extern "C" void pw_assert_HandleFailure(void) {
+  PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,
+                "pw_assert_tokenized",
+                PW_LOG_FLAGS,
+#if PW_ASSERT_ENABLE_DEBUG
+                "PW_ASSERT() or PW_DASSERT() failure");
+#else
+                "PW_ASSERT() failure. Note: PW_DASSERT disabled");
+#endif  // PW_ASSERT_ENABLE_DEBUG
+  PW_UNREACHABLE;
+}
+
 extern "C" void pw_assert_tokenized_HandleAssertFailure(
     uint32_t tokenized_file_name, int line_number) {
   // Buffer size for binary->base64 conversion with a null terminator.
