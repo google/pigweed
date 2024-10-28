@@ -22,7 +22,7 @@
 
 // clang-format off
 // The backend's thread_native header must provide PW_THREAD_JOINING_ENABLED.
-#include "pw_thread_backend/thread_native.h"
+#include "pw_thread_backend/thread_native.h"  // IWYU pragma: export
 // clang-format on
 
 namespace pw {
