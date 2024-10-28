@@ -39,6 +39,7 @@ sphinx_docs(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_async2:docs",
+        "//pw_boot:docs",
     ],
 )
 
