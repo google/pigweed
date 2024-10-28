@@ -16,4 +16,4 @@ Disambiguation: If you're looking for code formatting support, see
 Rust
 ----
 ``pw_format``'s Rust API is documented in the
-`pw_format crate's docs </rustdoc/pw_format>`_.
+`pw_format crate's docs </rustdoc/pw_format/>`_.

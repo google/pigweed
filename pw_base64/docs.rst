@@ -20,4 +20,4 @@ C++ API reference
 Rust API reference
 ------------------
 ``pw_base64``'s Rust API is documented in the
-`pw_base64 crate's docs </rustdoc/pw_base64>`_.
+`pw_base64 crate's docs </rustdoc/pw_base64/>`_.

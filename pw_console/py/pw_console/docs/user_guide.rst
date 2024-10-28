@@ -1091,12 +1091,11 @@ Log Window
 Upcoming Features
 -----------------
 
-For upcoming features see the Pigweed Console Bug Hotlist at:
-https://bugs.chromium.org/u/542633886/hotlists/Console
-
+Open feature requests:
+https://issues.pigweed.dev/issues?q=status:open%20pw_console%20type:feature_request
 
 Feature Requests
 ~~~~~~~~~~~~~~~~
 
-Create a feature request bugs using this template:
-https://bugs.chromium.org/p/pigweed/issues/entry?owner=tonymd@google.com&labels=Type-Enhancement,Priority-Medium&summary=pw_console
+Set the **Type** field to **Feature Request** when creating an issue:
+https://issues.pigweed.dev/issues/new?component=1194524&template=1691892

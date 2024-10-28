@@ -890,7 +890,7 @@ The CIPD package contents can be created with this command:
         pw_transfer_test_binaries
 
 To update the CIPD package itself, follow the `internal documentation for
-updating a CIPD package <go/pigweed-cipd#installing-packages-into-cipd>`_.
+updating a CIPD package <http://go/pigweed-cipd#installing-packages-into-cipd>`_.
 
 CI/CQ integration
 =================

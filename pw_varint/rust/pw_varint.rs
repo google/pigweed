@@ -147,7 +147,7 @@ fn encode_u64(data: &mut [u8], value: u64) -> Result<usize> {
 //   (n << 1) ^ (n >> (k - 1))
 //
 // See the following for a description of ZigZag encoding:
-//   https://developers.google.com/protocol-buffers/docs/encoding#types
+//   https://protobuf.dev/programming-guides/encoding/#signed-ints
 fn zig_zag_encode(value: i64) -> u64 {
     ((value as u64) << 1) ^ ((value >> (i64::BITS - 1)) as u64)
 }

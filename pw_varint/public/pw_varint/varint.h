@@ -197,7 +197,7 @@ inline constexpr size_t kMaxVarint64SizeBytes = PW_VARINT_MAX_INT64_SIZE_BYTES;
 /// @endcode
 ///
 /// See the following for a description of ZigZag encoding:
-///   https://developers.google.com/protocol-buffers/docs/encoding#types
+///   https://protobuf.dev/programming-guides/encoding/#signed-ints
 template <typename T>
 constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
   static_assert(std::is_signed<T>(), "Zig-zag encoding is for signed integers");

@@ -65,8 +65,9 @@ Add FuzzTest to your workspace with the following command.
 
    .. tab-item:: Bazel
 
-      Set the following `label flags`_, either in your `target config`_ or on
-      the command line:
+      Set the following :ref:`label flags <docs-build_system-bazel_flags>`,
+      either in your :ref:`target config
+      <docs-build_system-bazel_configuration>` or on the command line:
 
       * ``pw_fuzzer_fuzztest_backend`` to ``@com_google_fuzztest//fuzztest``.
 
@@ -76,9 +77,6 @@ Add FuzzTest to your workspace with the following command.
 
          bazel test //... \
             --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
-
-.. _target config: :ref:`_docs-build_system-bazel_configuration`
-.. _label flags: :ref:`_docs-build_system-bazel_flags`
 
 Updating
 ========

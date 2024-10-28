@@ -45,7 +45,7 @@ This is encoded as 4 bytes: ``44 a2 c9 da``.
 Arguments are encoded as follows:
 
 * **Integers**  (1--10 bytes) --
-  `ZagZag and varint encoded <https://developers.google.com/protocol-buffers/docs/encoding#signed-integers>`_,
+  `ZagZag and varint encoded <https://developers.google.com/protocol-buffers/docs/encoding#signed-ints>`_,
   similarly to Protocol Buffers. Smaller values take fewer bytes.
 * **Floating point numbers** (4 bytes) -- Single precision floating point.
 * **Strings** (1--128 bytes) -- Length byte followed by the string contents.

@@ -42,7 +42,7 @@ following problems:
   there's a lot of flexibility with how you construct a toolchain config, but
   very little by way of existing patterns for creating something that is
   testable, sharable, or in other ways modular. The existing
-  `tutorial for creating a C/C++ toolchain <https://bazel.build/tutorials/ccp-toolchain-config#configuring_the_c_toolchain>`_
+  `tutorial for creating a C/C++ toolchain <https://bazel.build/tutorials/ccp-toolchain-config#configure-cc-toolchain>`_
   illustrates expanding out the toolchain definition as a no-argument Starlark
   rule.
 

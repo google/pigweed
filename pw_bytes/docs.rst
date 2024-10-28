@@ -145,4 +145,4 @@ project's configuration.
 Rust API
 --------
 ``pw_bytes``'s Rust API is documented in our
-`rustdoc API docs </rustdoc/pw_bytes>`_.
+`rustdoc API docs </rustdoc/pw_bytes/>`_.

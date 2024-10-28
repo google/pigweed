@@ -296,8 +296,8 @@ Arguments
      :ref:`docs-python-build-python-gn-requirements-files`
 
 - ``pip_generate_hashes``: (Default: false) Use ``--generate-hashes`` When
-  running `pip-compile <A list of requirements files to install into this
-  virtualenv>`_ to compute the final ``requirements.txt``
+  running ``pip-compile <A list of requirements files to install into this
+  virtualenv>`` to compute the final ``requirements.txt``
 
 - ``source_packages``: A list of in-tree
   :ref:`module-pw_build-pw_python_package` or targets that will be checked for

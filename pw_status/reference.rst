@@ -408,4 +408,4 @@ in C++; instead use the :cpp:class:`pw::Status` class.
 Rust API
 --------
 ``pw_status``'s Rust API is documented in our
-`rustdoc API docs </rustdoc/pw_status>`_.
+`rustdoc API docs </rustdoc/pw_status/>`_.
