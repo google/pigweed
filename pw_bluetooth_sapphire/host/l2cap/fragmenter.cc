@@ -66,7 +66,7 @@ void OutboundFrame::WriteToFragment(MutableBufferView fragment_payload,
                               size()};
   static_assert(pages.size() == offsets.size());
 
-  BT_ASSERT(offset <= size());
+  PW_CHECK(offset <= size());
   size_t output_offset = 0;
 
   // Find the last page whose offset is not greater than the current offset.
@@ -85,16 +85,16 @@ void OutboundFrame::WriteToFragment(MutableBufferView fragment_payload,
     offset += bytes_copied;
     output_offset += bytes_copied;
   }
-  BT_ASSERT(output_offset <= fragment_payload.size());
+  PW_CHECK(output_offset <= fragment_payload.size());
 }
 
 OutboundFrame::BasicHeaderBuffer OutboundFrame::MakeBasicHeader() const {
   // Length is "the length of the entire L2CAP PDU in octets, excluding the
   // Length and CID field" (v5.0 Vol 3, Part A, Section 3.3.1)
   const size_t pdu_content_length = size() - sizeof(BasicHeader);
-  BT_ASSERT_MSG(pdu_content_length <=
-                    std::numeric_limits<decltype(BasicHeader::length)>::max(),
-                "PDU payload is too large to be encoded");
+  PW_CHECK(pdu_content_length <=
+               std::numeric_limits<decltype(BasicHeader::length)>::max(),
+           "PDU payload is too large to be encoded");
   BasicHeader header = {};
   header.length = pw::bytes::ConvertOrderTo(
       cpp20::endian::little, static_cast<uint16_t>(pdu_content_length));
@@ -106,7 +106,7 @@ OutboundFrame::BasicHeaderBuffer OutboundFrame::MakeBasicHeader() const {
 }
 
 OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
-  BT_ASSERT(include_fcs());
+  PW_CHECK(include_fcs());
   const BasicHeaderBuffer header = MakeBasicHeader();
   const FrameCheckSequence header_fcs = l2cap::ComputeFcs(header.view());
   const FrameCheckSequence whole_fcs =
@@ -121,9 +121,9 @@ Fragmenter::Fragmenter(hci_spec::ConnectionHandle connection_handle,
                        uint16_t max_acl_payload_size)
     : connection_handle_(connection_handle),
       max_acl_payload_size_(max_acl_payload_size) {
-  BT_ASSERT(connection_handle_ <= hci_spec::kConnectionHandleMax);
-  BT_ASSERT(max_acl_payload_size_);
-  BT_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
+  PW_CHECK(connection_handle_ <= hci_spec::kConnectionHandleMax);
+  PW_CHECK(max_acl_payload_size_);
+  PW_CHECK(max_acl_payload_size_ >= sizeof(BasicHeader));
 }
 
 // NOTE(armansito): The following method copies the contents of |data| into ACL
@@ -155,8 +155,8 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id,
                            const ByteBuffer& data,
                            FrameCheckSequenceOption fcs_option,
                            bool flushable) const {
-  BT_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
-  BT_DEBUG_ASSERT(channel_id);
+  PW_DCHECK(data.size() <= kMaxBasicFramePayloadSize);
+  PW_DCHECK(channel_id);
 
   OutboundFrame frame(channel_id, data, fcs_option);
   const size_t frame_size = frame.size();
@@ -166,7 +166,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id,
   PDU pdu;
   size_t processed = 0;
   for (size_t i = 0; i < num_fragments; i++) {
-    BT_DEBUG_ASSERT(frame_size > processed);
+    PW_DCHECK(frame_size > processed);
 
     const size_t fragment_size = std::min(
         frame_size - processed, static_cast<size_t>(max_acl_payload_size_));
@@ -182,7 +182,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id,
                                 pbf,
                                 hci_spec::ACLBroadcastFlag::kPointToPoint,
                                 static_cast<uint16_t>(fragment_size));
-    BT_DEBUG_ASSERT(acl_packet);
+    PW_DCHECK(acl_packet);
 
     frame.WriteToFragment(acl_packet->mutable_view()->mutable_payload_data(),
                           processed);
@@ -192,7 +192,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id,
   }
 
   // The PDU should have been completely processed if we got here.
-  BT_DEBUG_ASSERT(processed == frame_size);
+  PW_DCHECK(processed == frame_size);
 
   return pdu;
 }

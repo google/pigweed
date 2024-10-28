@@ -19,9 +19,9 @@ namespace bt::iso {
 IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
                                    hci::Transport::WeakPtr hci)
     : acl_handle_(handle), hci_(std::move(hci)), weak_self_(this) {
-  BT_ASSERT(hci_.is_alive());
+  PW_CHECK(hci_.is_alive());
   cmd_ = hci_->command_channel()->AsWeakPtr();
-  BT_ASSERT(cmd_.is_alive());
+  PW_CHECK(cmd_.is_alive());
 
   auto weak_self = GetWeakPtr();
   cis_request_handler_ = cmd_->AddLEMetaEventHandler(
@@ -76,12 +76,12 @@ AcceptCisStatus IsoStreamManager::AcceptCis(CigCisIdentifier id,
 }
 
 void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
 
   auto event_view =
       event.view<pw::bluetooth::emboss::LECISRequestSubeventView>();
-  BT_ASSERT(event_view.le_meta_event().subevent_code().Read() ==
-            hci_spec::kLECISRequestSubeventCode);
+  PW_CHECK(event_view.le_meta_event().subevent_code().Read() ==
+           hci_spec::kLECISRequestSubeventCode);
 
   hci_spec::ConnectionHandle request_handle =
       event_view.acl_connection_handle().Read();
@@ -117,8 +117,7 @@ void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
 
   // We should not already have an established stream using this same CIG/CIS
   // permutation.
-  BT_ASSERT_MSG(
-      streams_.count(id) == 0, "(cig = %u, cis = %u)", cig_id, cis_id);
+  PW_CHECK(streams_.count(id) == 0, "(cig = %u, cis = %u)", cig_id, cis_id);
   CisEstablishedCallback cb = std::move(accept_handlers_[id]);
   accept_handlers_.erase(id);
   AcceptCisRequest(event_view, std::move(cb));
@@ -134,7 +133,7 @@ void IsoStreamManager::AcceptCisRequest(
   hci_spec::ConnectionHandle cis_handle =
       event_view.cis_connection_handle().Read();
 
-  BT_ASSERT(streams_.count(id) == 0);
+  PW_CHECK(streams_.count(id) == 0);
 
   auto on_closed_cb = [this, id, cis_handle]() {
     if (hci_.is_alive()) {

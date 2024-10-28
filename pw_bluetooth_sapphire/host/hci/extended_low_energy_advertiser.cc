@@ -64,7 +64,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
 
   view.data()[0].advertising_handle().Write(handle.value());
   view.data()[0].duration().Write(hci_spec::kNoAdvertisingDuration);
@@ -239,7 +239,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
 
   size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
   DynamicByteBuffer buffer(block_size);
@@ -316,7 +316,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
   payload.advertising_handle().Write(handle.value());
 
   payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
@@ -344,7 +344,7 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
 
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
 
   size_t block_size = scan_rsp.CalculateBlockSize(/*include_flags=*/false);
   DynamicByteBuffer buffer(block_size);
@@ -421,7 +421,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
   payload.advertising_handle().Write(handle.value());
 
   payload.operation().Write(pwemb::LESetExtendedAdvDataOp::COMPLETE);
@@ -436,7 +436,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address, bool extended_pdu) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
   auto packet =
       hci::EmbossCommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
           hci_spec::kLERemoveAdvertisingSet);
@@ -449,12 +449,12 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
 void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(
     const EmbossEventPacket& event) {
   auto event_view = event.view<pw::bluetooth::emboss::EventHeaderView>();
-  BT_ASSERT(event_view.event_code_enum().Read() ==
-            pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE);
+  PW_CHECK(event_view.event_code_enum().Read() ==
+           pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE);
 
   auto cmd_complete_view =
       event.view<pw::bluetooth::emboss::CommandCompleteEventView>();
-  BT_ASSERT(
+  PW_CHECK(
       cmd_complete_view.command_opcode_enum().Read() ==
       pw::bluetooth::emboss::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1);
 

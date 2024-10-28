@@ -111,15 +111,15 @@ LowEnergyConnection::LowEnergyConnection(
       refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
       weak_self_(this),
       weak_delegate_(this) {
-  BT_ASSERT(peer_.is_alive());
-  BT_ASSERT(link_);
-  BT_ASSERT(conn_mgr_.is_alive());
-  BT_ASSERT(gatt_.is_alive());
-  BT_ASSERT(hci_.is_alive());
-  BT_ASSERT(peer_disconnect_callback_);
-  BT_ASSERT(error_callback_);
+  PW_CHECK(peer_.is_alive());
+  PW_CHECK(link_);
+  PW_CHECK(conn_mgr_.is_alive());
+  PW_CHECK(gatt_.is_alive());
+  PW_CHECK(hci_.is_alive());
+  PW_CHECK(peer_disconnect_callback_);
+  PW_CHECK(error_callback_);
   cmd_ = hci_->command_channel()->AsWeakPtr();
-  BT_ASSERT(cmd_.is_alive());
+  PW_CHECK(cmd_.is_alive());
 
   link_->set_peer_disconnect_callback(
       [this](const auto&, auto reason) { peer_disconnect_callback_(reason); });
@@ -151,19 +151,19 @@ LowEnergyConnection::AddRef() {
   };
   auto accept_cis_cb = [self](iso::CigCisIdentifier id,
                               iso::CisEstablishedCallback cb) {
-    BT_ASSERT(self.is_alive());
+    PW_CHECK(self.is_alive());
     return self->AcceptCis(id, std::move(cb));
   };
   auto bondable_cb = [self] {
-    BT_ASSERT(self.is_alive());
+    PW_CHECK(self.is_alive());
     return self->bondable_mode();
   };
   auto security_cb = [self] {
-    BT_ASSERT(self.is_alive());
+    PW_CHECK(self.is_alive());
     return self->security();
   };
   auto role_cb = [self] {
-    BT_ASSERT(self.is_alive());
+    PW_CHECK(self.is_alive());
     return self->role();
   };
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(
@@ -174,7 +174,7 @@ LowEnergyConnection::AddRef() {
                                     std::move(bondable_cb),
                                     std::move(security_cb),
                                     std::move(role_cb)));
-  BT_ASSERT(conn_ref);
+  PW_CHECK(conn_ref);
 
   refs_.Mutable()->insert(conn_ref.get());
 
@@ -189,10 +189,10 @@ LowEnergyConnection::AddRef() {
 }
 
 void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
-  BT_DEBUG_ASSERT(ref);
+  PW_DCHECK(ref);
 
   size_t res = refs_.Mutable()->erase(ref);
-  BT_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
+  PW_CHECK(res == 1u, "DropRef called with wrong connection reference");
   bt_log(DEBUG,
          "gap-le",
          "dropped ref (peer: %s, handle: %#.4x, count: %lu)",
@@ -229,7 +229,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
            sm::LevelToString(level),
            bt_str(self->peer_id()),
            handle);
-    BT_ASSERT(self->handle() == handle);
+    PW_CHECK(self->handle() == handle);
     self->OnSecurityRequest(level, std::move(cb));
   };
   l2cap::ChannelManager::LEFixedChannels fixed_channels =
@@ -247,7 +247,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
 // Used to respond to protocol/service requests for increased security.
 void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level,
                                             sm::ResultFunction<> cb) {
-  BT_ASSERT(sm_);
+  PW_CHECK(sm_);
   sm_->UpgradeSecurity(
       level,
       [callback = std::move(cb), peer_id = peer_id(), handle = handle()](
@@ -270,23 +270,23 @@ void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level,
 void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level,
                                           sm::BondableMode bondable_mode,
                                           sm::ResultFunction<> cb) {
-  BT_ASSERT(sm_);
+  PW_CHECK(sm_);
   sm_->set_bondable_mode(bondable_mode);
   OnSecurityRequest(level, std::move(cb));
 }
 
 void LowEnergyConnection::set_security_mode(LESecurityMode mode) {
-  BT_ASSERT(sm_);
+  PW_CHECK(sm_);
   sm_->set_security_mode(mode);
 }
 
 sm::BondableMode LowEnergyConnection::bondable_mode() const {
-  BT_ASSERT(sm_);
+  PW_CHECK(sm_);
   return sm_->bondable_mode();
 }
 
 sm::SecurityProperties LowEnergyConnection::security() const {
-  BT_ASSERT(sm_);
+  PW_CHECK(sm_);
   return sm_->security();
 }
 
@@ -297,7 +297,7 @@ void LowEnergyConnection::ResetSecurityManager(sm::IOCapability ioc) {
 }
 
 void LowEnergyConnection::OnInterrogationComplete() {
-  BT_ASSERT(!interrogation_completed_);
+  PW_CHECK(!interrogation_completed_);
   interrogation_completed_ = true;
   MaybeUpdateConnectionParameters();
 }
@@ -360,7 +360,7 @@ void LowEnergyConnection::RegisterEventHandlers() {
 // TODO(fxbug.dev/42159733): Wait to update connection parameters until all
 // initialization procedures have completed.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
-  BT_ASSERT(!conn_pause_peripheral_timeout_.has_value());
+  PW_CHECK(!conn_pause_peripheral_timeout_.has_value());
   conn_pause_peripheral_timeout_.emplace(
       dispatcher_, [this](pw::async::Context /*ctx*/, pw::Status status) {
         if (!status.ok()) {
@@ -381,7 +381,7 @@ void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
 // TODO(fxbug.dev/42159733): Wait to update connection parameters until all
 // initialization procedures have completed.
 void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
-  BT_ASSERT(!conn_pause_central_timeout_.has_value());
+  PW_CHECK(!conn_pause_central_timeout_.has_value());
   conn_pause_central_timeout_.emplace(
       dispatcher_, [this](pw::async::Context /*ctx*/, pw::Status status) {
         if (!status.ok()) {
@@ -457,7 +457,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
          bt_str(peer_id()),
          link_->handle());
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   peer_->MutLe().SetPreferredConnectionParameters(params);
 
@@ -466,13 +466,12 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  BT_ASSERT_MSG(
-      link_->role() == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
-      "tried to send connection parameter update request as central");
+  PW_CHECK(link_->role() == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
+           "tried to send connection parameter update request as central");
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
   // Ensure interrogation has completed.
-  BT_ASSERT(peer_->le()->feature_interrogation_complete());
+  PW_CHECK(peer_->le()->feature_interrogation_complete());
 
   // TODO(fxbug.dev/42126713): check local controller support for LL Connection
   // Parameters Request procedure (mask is currently in Adapter le state,
@@ -546,7 +545,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  BT_ASSERT_MSG(
+  PW_CHECK(
       link_->role() == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
       "tried to send l2cap connection parameter update request as central");
 
@@ -604,7 +603,7 @@ void LowEnergyConnection::UpdateConnectionParams(
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
                                auto id,
                                const hci::EmbossEventPacket& event) mutable {
-    BT_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    PW_CHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event,
                  TRACE,
                  "gap-le",
@@ -622,10 +621,10 @@ void LowEnergyConnection::UpdateConnectionParams(
 
 void LowEnergyConnection::OnLEConnectionUpdateComplete(
     const hci::EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
   auto view = event.view<pw::bluetooth::emboss::LEMetaEventView>();
-  BT_ASSERT(view.subevent_code().Read() ==
-            hci_spec::kLEConnectionUpdateCompleteSubeventCode);
+  PW_CHECK(view.subevent_code().Read() ==
+           hci_spec::kLEConnectionUpdateCompleteSubeventCode);
 
   auto payload = event.view<
       pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
@@ -662,7 +661,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(
       payload.supervision_timeout().UncheckedRead());
   link_->set_low_energy_parameters(params);
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
   peer_->MutLe().SetConnectionParameters(params);
 }
 
@@ -679,7 +678,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
     // been read by now, just use the default parameters.
     // TODO(fxbug.dev/42144795): Wait for preferred connection parameters to be
     // read.
-    BT_ASSERT(peer_.is_alive());
+    PW_CHECK(peer_.is_alive());
     auto conn_params = peer_->le()->preferred_connection_parameters().value_or(
         kDefaultPreferredConnectionParameters);
     UpdateConnectionParams(conn_params);

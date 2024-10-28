@@ -59,7 +59,7 @@ fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     const ConnectionCallback& connect_callback) const {
-  BT_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+  PW_CHECK(address.type() != DeviceAddress::Type::kBREDR);
 
   if (options.anonymous) {
     bt_log(WARN, "hci-le", "anonymous advertising not supported");

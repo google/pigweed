@@ -53,7 +53,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
                                          const SignalingPacketHandler& cb) {
   // "Multiple commands may be sent in a single C-frame over Fixed Channel CID
   // 0x0001 (ACL-U) (v5.0, Vol 3, Part A, Section 4)"
-  BT_DEBUG_ASSERT(sdu);
+  PW_DCHECK(sdu);
   if (sdu->size() < sizeof(CommandHeader)) {
     bt_log(DEBUG, "l2cap-bredr", "sig: dropped malformed ACL signaling packet");
     return;

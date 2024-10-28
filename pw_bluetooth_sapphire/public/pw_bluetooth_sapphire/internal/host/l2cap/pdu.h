@@ -69,7 +69,7 @@ class PDU final {
   // The connection handle that identifies the logical link this PDU is intended
   // for.
   hci_spec::ConnectionHandle connection_handle() const {
-    BT_DEBUG_ASSERT(is_valid());
+    PW_DCHECK(is_valid());
     return (*fragments_.begin())->connection_handle();
   }
 

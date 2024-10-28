@@ -28,7 +28,7 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   }
 
   std::optional<hci_spec::AdvertisingHandle> handle = NextHandle();
-  BT_ASSERT(handle);
+  PW_CHECK(handle);
 
   addr_to_handle_[{address, extended_pdu}] = handle.value();
   handle_to_addr_[handle.value()] = {address, extended_pdu};
@@ -80,12 +80,12 @@ void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address,
 }
 
 std::size_t AdvertisingHandleMap::Size() const {
-  BT_ASSERT(addr_to_handle_.size() == handle_to_addr_.size());
+  PW_CHECK(addr_to_handle_.size() == handle_to_addr_.size());
   return addr_to_handle_.size();
 }
 
 bool AdvertisingHandleMap::Empty() const {
-  BT_ASSERT(addr_to_handle_.empty() == handle_to_addr_.empty());
+  PW_CHECK(addr_to_handle_.empty() == handle_to_addr_.empty());
   return addr_to_handle_.empty();
 }
 

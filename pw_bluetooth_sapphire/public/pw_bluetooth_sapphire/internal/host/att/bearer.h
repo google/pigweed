@@ -75,7 +75,7 @@ class Bearer final {
   // procedures.
   uint16_t preferred_mtu() const { return preferred_mtu_; }
   void set_preferred_mtu(uint16_t value) {
-    BT_DEBUG_ASSERT(value >= kLEMinMTU);
+    PW_DCHECK(value >= kLEMinMTU);
     preferred_mtu_ = value;
   }
 

@@ -59,7 +59,7 @@ template <>
 struct ProtocolErrorTraits<NoProtocolError> {
   // This won't be called but still needs to be stubbed out to link correctly.
   static std::string ToString(NoProtocolError) {
-    BT_ASSERT(false);
+    PW_CHECK(false);
     return std::string();
   }
 };
@@ -216,12 +216,12 @@ class [[nodiscard]] Error {
   }
 
   [[nodiscard]] constexpr HostError host_error() const {
-    BT_ASSERT_MSG(is_host_error(), "Does not hold HostError");
+    PW_ASSERT(is_host_error());
     return std::get<HostError>(error_);
   }
 
   [[nodiscard]] constexpr ProtocolErrorCode protocol_error() const {
-    BT_ASSERT_MSG(is_protocol_error(), "Does not hold protocol error");
+    PW_ASSERT(is_protocol_error());
     return std::get<ProtocolErrorCode>(error_);
   }
 
@@ -285,7 +285,7 @@ class [[nodiscard]] Error {
             std::enable_if_t<detail::CanRepresentSuccessV<T>, int> = 0>
   constexpr explicit Error(const ProtocolErrorCode& proto_error)
       : error_(proto_error) {
-    BT_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
+    PW_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
   }
 
   std::variant<HostError, ProtocolErrorCode> error_;

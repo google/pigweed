@@ -42,7 +42,7 @@ Database::Iterator::Iterator(GroupingList* list,
                              const UUID* type,
                              bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {
-  BT_DEBUG_ASSERT(list);
+  PW_DCHECK(list);
   grp_end_ = list->end();
 
   if (type)
@@ -81,7 +81,7 @@ const Attribute* Database::Iterator::get() const {
   if (AtEnd() || !grp_iter_->active())
     return nullptr;
 
-  BT_DEBUG_ASSERT(attr_offset_ < grp_iter_->attributes().size());
+  PW_DCHECK(attr_offset_ < grp_iter_->attributes().size());
   return &grp_iter_->attributes()[attr_offset_];
 }
 
@@ -94,7 +94,7 @@ void Database::Iterator::Advance() {
       // If this grouping has more attributes to look at.
       if (attr_offset_ < grp_iter_->attributes().size() - 1) {
         size_t end_offset = grp_iter_->end_handle() - grp_iter_->start_handle();
-        BT_DEBUG_ASSERT(end_offset < grp_iter_->attributes().size());
+        PW_DCHECK(end_offset < grp_iter_->attributes().size());
 
         // Advance.
         attr_offset_++;
@@ -120,7 +120,7 @@ void Database::Iterator::Advance() {
       // next group below.
       attr_offset_ = 0u;
     } else {
-      BT_DEBUG_ASSERT(attr_offset_ == 0u);
+      PW_DCHECK(attr_offset_ == 0u);
     }
 
     // Advance the group.
@@ -146,18 +146,18 @@ void Database::Iterator::Advance() {
 
 Database::Database(Handle range_start, Handle range_end)
     : WeakSelf(this), range_start_(range_start), range_end_(range_end) {
-  BT_DEBUG_ASSERT(range_start_ < range_end_);
-  BT_DEBUG_ASSERT(range_start_ >= kHandleMin);
-  BT_DEBUG_ASSERT(range_end_ <= kHandleMax);
+  PW_DCHECK(range_start_ < range_end_);
+  PW_DCHECK(range_start_ >= kHandleMin);
+  PW_DCHECK(range_end_ <= kHandleMax);
 }
 
 Database::Iterator Database::GetIterator(Handle start,
                                          Handle end,
                                          const UUID* type,
                                          bool groups_only) {
-  BT_DEBUG_ASSERT(start >= range_start_);
-  BT_DEBUG_ASSERT(end <= range_end_);
-  BT_DEBUG_ASSERT(start <= end);
+  PW_DCHECK(start >= range_start_);
+  PW_DCHECK(end <= range_end_);
+  PW_DCHECK(start <= end);
 
   return Iterator(&groupings_, start, end, type, groups_only);
 }
@@ -208,7 +208,7 @@ AttributeGrouping* Database::NewGrouping(const UUID& group_type,
 
   auto iter =
       groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
-  BT_DEBUG_ASSERT(iter != groupings_.end());
+  PW_DCHECK(iter != groupings_.end());
 
   return &*iter;
 }
@@ -238,7 +238,7 @@ const Attribute* Database::FindAttribute(Handle handle) {
     return nullptr;
 
   size_t index = handle - iter->start_handle();
-  BT_DEBUG_ASSERT(index < iter->attributes().size());
+  PW_DCHECK(index < iter->attributes().size());
 
   return &iter->attributes()[index];
 }
@@ -247,7 +247,7 @@ void Database::ExecuteWriteQueue(PeerId peer_id,
                                  PrepareWriteQueue write_queue,
                                  const sm::SecurityProperties& security,
                                  WriteCallback callback) {
-  BT_ASSERT(callback);
+  PW_CHECK(callback);
 
   // When destroyed, invokes |callback| with success if it hasn't already been
   // called

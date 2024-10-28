@@ -48,8 +48,8 @@ class FakeVendorServer final
 
   void EncodeCommand(EncodeCommandRequest& request,
                      EncodeCommandCompleter::Sync& completer) override {
-    BT_ASSERT(request.set_acl_priority()->priority().has_value());
-    BT_ASSERT(request.set_acl_priority()->direction().has_value());
+    PW_CHECK(request.set_acl_priority()->priority().has_value());
+    PW_CHECK(request.set_acl_priority()->direction().has_value());
     std::vector<uint8_t> tmp{static_cast<unsigned char>(
         WhichSetAclPriority(request.set_acl_priority()->priority().value(),
                             request.set_acl_priority()->direction().value()))};

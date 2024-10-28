@@ -70,7 +70,7 @@ Gatt2ClientServer::Gatt2ClientServer(
 }
 
 Gatt2ClientServer::~Gatt2ClientServer() {
-  BT_ASSERT(gatt()->UnregisterRemoteServiceWatcher(service_watcher_id_));
+  PW_CHECK(gatt()->UnregisterRemoteServiceWatcher(service_watcher_id_));
 }
 
 void Gatt2ClientServer::OnWatchServicesResult(
@@ -233,7 +233,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
                  "WatchServices: ListServices complete (peer: %s)",
                  bt_str(self->peer_id_));
 
-          BT_ASSERT(self->watch_services_request_);
+          PW_CHECK(self->watch_services_request_);
           self->list_services_complete_ = true;
           self->OnWatchServicesResult(
               /*removed=*/{}, /*added=*/services, /*modified=*/{});
@@ -280,7 +280,7 @@ void Gatt2ClientServer::ConnectToService(
     request.Close(ZX_ERR_NOT_FOUND);
     return;
   }
-  BT_ASSERT(service_handle == service->handle());
+  PW_CHECK(service_handle == service->handle());
 
   // This removed handler may be called long after the service is removed from
   // the service map or this server is destroyed, since removed handlers are not
@@ -316,12 +316,12 @@ void Gatt2ClientServer::ConnectToService(
   // service is already shut down, but that should not be possible in this
   // synchronous callback (the service would not have been returned in the first
   // place).
-  BT_ASSERT_MSG(service->AddRemovedHandler(std::move(removed_handler)),
-                "adding service removed handler failed (service may be shut "
-                "down) (peer: %s, "
-                "handle: %#.4x)",
-                bt_str(peer_id_),
-                service_handle);
+  PW_CHECK(service->AddRemovedHandler(std::move(removed_handler)),
+           "adding service removed handler failed (service may be shut "
+           "down) (peer: %s, "
+           "handle: %#.4x)",
+           bt_str(peer_id_),
+           service_handle);
 
   std::unique_ptr<Gatt2RemoteServiceServer> remote_service_server =
       std::make_unique<Gatt2RemoteServiceServer>(
@@ -340,7 +340,7 @@ void Gatt2ClientServer::ConnectToService(
       });
 
   // Error handler should not have been called yet.
-  BT_ASSERT(services_.count(service_handle) == 1);
+  PW_CHECK(services_.count(service_handle) == 1);
   services_[service_handle] = std::move(remote_service_server);
 }
 

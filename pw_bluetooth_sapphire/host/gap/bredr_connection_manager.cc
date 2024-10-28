@@ -95,7 +95,7 @@ std::string ReasonAsString(DisconnectReason reason) {
 void SetPageScanEnabled(bool enabled,
                         hci::Transport::WeakPtr hci,
                         hci::ResultFunction<> cb) {
-  BT_DEBUG_ASSERT(cb);
+  PW_DCHECK(cb);
   auto read_enable = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
       hci_spec::kReadScanEnable);
@@ -171,7 +171,7 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
         }
       },
       std::move(cb));
-  BT_DEBUG_ASSERT(event_id);
+  PW_DCHECK(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
 }
@@ -197,9 +197,9 @@ BrEdrConnectionManager::BrEdrConnectionManager(
       legacy_pairing_enabled_(legacy_pairing_enabled),
       dispatcher_(dispatcher),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(hci_.is_alive());
-  BT_DEBUG_ASSERT(cache_);
-  BT_DEBUG_ASSERT(l2cap_);
+  PW_DCHECK(hci_.is_alive());
+  PW_DCHECK(cache_);
+  PW_DCHECK(l2cap_);
 
   hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(
       hci_->command_channel()->AsWeakPtr());
@@ -334,7 +334,7 @@ PeerId BrEdrConnectionManager::GetPeerId(
   }
 
   auto* peer = cache_->FindByAddress(it->second.link().peer_address());
-  BT_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle %#.4x", handle);
+  PW_DCHECK(peer, "Couldn't find peer for handle %#.4x", handle);
   return peer->identifier();
 }
 
@@ -412,7 +412,7 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
           PeerId peer_id, auto& service_attributes) {
         if (self.is_alive()) {
           Peer* const peer = self->cache_->FindById(peer_id);
-          BT_ASSERT(peer);
+          PW_CHECK(peer);
           peer->MutBrEdr().AddService(uuid);
         }
         client_cb(peer_id, service_attributes);
@@ -629,15 +629,15 @@ void BrEdrConnectionManager::AttachInspect(inspect::Node& parent,
 
 void BrEdrConnectionManager::WritePageTimeout(
     pw::chrono::SystemClock::duration page_timeout, hci::ResultFunction<> cb) {
-  BT_ASSERT(page_timeout >= hci_spec::kMinPageTimeoutDuration);
-  BT_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
+  PW_CHECK(page_timeout >= hci_spec::kMinPageTimeoutDuration);
+  PW_CHECK(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
 
   const int64_t raw_page_timeout =
       page_timeout / hci_spec::kDurationPerPageTimeoutUnit;
-  BT_ASSERT(raw_page_timeout >=
-            static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN));
-  BT_ASSERT(raw_page_timeout <=
-            static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX));
+  PW_CHECK(raw_page_timeout >=
+           static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN));
+  PW_CHECK(raw_page_timeout <=
+           static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX));
 
   auto write_page_timeout_cmd = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::WritePageTimeoutCommandWriter>(
@@ -790,7 +790,7 @@ void BrEdrConnectionManager::InitializeConnection(
          bt_str(peer_id));
 
   // We should never have more than one link to a given peer
-  BT_DEBUG_ASSERT(!FindConnectionById(peer_id));
+  PW_DCHECK(!FindConnectionById(peer_id));
 
   // The controller has completed the HCI connection procedure, so the
   // connection request can no longer be failed by a lower layer error. Now tie
@@ -832,7 +832,7 @@ void BrEdrConnectionManager::InitializeConnection(
                                hci_,
                                std::move(request),
                                dispatcher_);
-  BT_ASSERT(success);
+  PW_CHECK(success);
 
   BrEdrConnection& connection = conn_iter->second;
   connection.AttachInspect(inspect_properties_.connections_node_,
@@ -985,8 +985,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
 hci::CommandChannel::EventCallbackResult
 BrEdrConnectionManager::OnAuthenticationComplete(
     const hci::EmbossEventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() ==
-                  hci_spec::kAuthenticationCompleteEventCode);
+  PW_DCHECK(event.event_code() == hci_spec::kAuthenticationCompleteEventCode);
   auto params =
       event.view<pw::bluetooth::emboss::AuthenticationCompleteEventView>();
   hci_spec::ConnectionHandle connection_handle =
@@ -1515,7 +1514,7 @@ BrEdrConnectionManager::OnLinkKeyNotification(
     }
 
     // Reuse current properties
-    BT_DEBUG_ASSERT(peer->bredr()->link_key());
+    PW_DCHECK(peer->bredr()->link_key());
     sec_props = peer->bredr()->link_key()->security();
     key_type =
         static_cast<pw::bluetooth::emboss::KeyType>(sec_props.GetLinkKeyType());
@@ -1545,7 +1544,7 @@ BrEdrConnectionManager::OnLinkKeyNotification(
     } else {
       // The connection request's legacy pairing state object must exist at this
       // point since we created it in the request's constructor.
-      BT_ASSERT(request.value()->legacy_pairing_state());
+      PW_CHECK(request.value()->legacy_pairing_state());
       request.value()->legacy_pairing_state()->OnLinkKeyNotification(
           key_value, static_cast<hci_spec::LinkKeyType>(key_type));
     }
@@ -1837,7 +1836,7 @@ BrEdrConnectionManager::OnPinCodeRequest(const hci::EmbossEventPacket& event) {
 
 void BrEdrConnectionManager::HandleNonAclConnectionRequest(
     const DeviceAddress& addr, pw::bluetooth::emboss::LinkType link_type) {
-  BT_DEBUG_ASSERT(link_type != pw::bluetooth::emboss::LinkType::ACL);
+  PW_DCHECK(link_type != pw::bluetooth::emboss::LinkType::ACL);
 
   // Initialize the peer if it doesn't exist, to ensure we have allocated a
   // PeerId

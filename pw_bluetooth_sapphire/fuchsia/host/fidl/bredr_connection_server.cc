@@ -84,7 +84,7 @@ void BrEdrConnectionServer::Receive(ReceiveCallback callback) {
 
 void BrEdrConnectionServer::WatchChannelParameters(
     WatchChannelParametersCallback callback) {
-  BT_ASSERT_MSG(
+  PW_CHECK(
       !pending_watch_channel_parameters_.has_value(),
       "WatchChannelParameters called while there was already a pending call.");
   pending_watch_channel_parameters_ = std::move(callback);
@@ -99,7 +99,7 @@ void BrEdrConnectionServer::handle_unknown_method(uint64_t ordinal,
 }
 
 bool BrEdrConnectionServer::Activate() {
-  BT_ASSERT(state_ == State::kActivating);
+  PW_CHECK(state_ == State::kActivating);
 
   WeakPtr self = weak_self_.GetWeakPtr();
   bt::l2cap::ChannelId channel_id = channel_->id();
@@ -136,7 +136,7 @@ bool BrEdrConnectionServer::Activate() {
 }
 
 void BrEdrConnectionServer::Deactivate() {
-  BT_ASSERT(state_ != State::kDeactivated);
+  PW_CHECK(state_ != State::kDeactivated);
   state_ = State::kDeactivating;
 
   if (!receive_queue_.empty()) {
@@ -156,7 +156,7 @@ void BrEdrConnectionServer::Deactivate() {
 void BrEdrConnectionServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
-  BT_ASSERT(state_ != State::kDeactivated);
+  PW_CHECK(state_ != State::kDeactivated);
   if (state_ == State::kDeactivating) {
     bt_log(DEBUG,
            "fidl",
@@ -166,14 +166,14 @@ void BrEdrConnectionServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
     return;
   }
 
-  BT_ASSERT(rx_data);
+  PW_CHECK(rx_data);
   if (rx_data->size() == 0) {
     bt_log(
         DEBUG, "fidl", "Ignoring empty rx_data for channel %u", channel_->id());
     return;
   }
 
-  BT_ASSERT(receive_queue_.size() <= receive_queue_max_frames_);
+  PW_CHECK(receive_queue_.size() <= receive_queue_max_frames_);
   // On a full queue, we drop the oldest element, on the theory that newer data
   // is more useful. This should be true, e.g., for real-time applications such
   // as voice calls. In the future, we may want to make the drop-head vs.
@@ -196,7 +196,7 @@ void BrEdrConnectionServer::OnChannelClosed() {
            channel_->id());
     return;
   }
-  BT_ASSERT(state_ == State::kActivated);
+  PW_CHECK(state_ == State::kActivated);
   DeactivateAndRequestDestruction();
 }
 

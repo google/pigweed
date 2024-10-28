@@ -111,7 +111,7 @@ int main() {
   LifecycleHandler lifecycle_handler(&loop, host->GetWeakPtr());
 
   auto init_cb = [&host, &lifecycle_handler, &loop](bool success) {
-    BT_DEBUG_ASSERT(host);
+    PW_DCHECK(host);
     if (!success) {
       bt_log(
           ERROR, "bt-host", "Failed to initialize bt-host; shutting down...");

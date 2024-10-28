@@ -40,7 +40,7 @@ void A2dpOffloadManager::StartA2dpOffload(
     hci_spec::ConnectionHandle link_handle,
     uint16_t max_tx_sdu_size,
     hci::ResultCallback<> callback) {
-  BT_DEBUG_ASSERT(cmd_channel_.is_alive());
+  PW_DCHECK(cmd_channel_.is_alive());
 
   switch (a2dp_offload_status_) {
     case A2dpOffloadStatus::kStarted: {
@@ -175,7 +175,7 @@ void A2dpOffloadManager::RequestStopA2dpOffload(
     ChannelId local_id,
     hci_spec::ConnectionHandle link_handle,
     hci::ResultCallback<> callback) {
-  BT_DEBUG_ASSERT(cmd_channel_.is_alive());
+  PW_DCHECK(cmd_channel_.is_alive());
 
   switch (a2dp_offload_status_) {
     case A2dpOffloadStatus::kStopped: {

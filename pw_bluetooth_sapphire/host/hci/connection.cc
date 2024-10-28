@@ -41,7 +41,7 @@ Connection::Connection(hci_spec::ConnectionHandle handle,
       conn_state_(State::kConnected),
       hci_(std::move(hci)),
       weak_self_(this) {
-  BT_ASSERT(hci_.is_alive());
+  PW_CHECK(hci_.is_alive());
 
   auto disconn_complete_handler = [self = weak_self_.GetWeakPtr(),
                                    handle,
@@ -75,7 +75,7 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
     hci_spec::ConnectionHandle handle,
     const EmbossEventPacket& event,
     fit::callback<void()> on_disconnection_complete) {
-  BT_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
+  PW_CHECK(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
 
   auto view =
       event.view<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
@@ -119,13 +119,13 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
 }
 
 void Connection::Disconnect(pw::bluetooth::emboss::StatusCode reason) {
-  BT_ASSERT(conn_state_ == Connection::State::kConnected);
+  PW_CHECK(conn_state_ == Connection::State::kConnected);
 
   conn_state_ = Connection::State::kWaitingForDisconnectionComplete;
 
   // Here we send a HCI_Disconnect command without waiting for it to complete.
   auto status_cb = [](auto id, const EventPacket& event) {
-    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 

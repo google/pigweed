@@ -62,17 +62,17 @@ LowEnergyConnector::LowEnergyConnector(
       options_(options),
       hci_(std::move(hci)),
       le_connection_manager_(std::move(conn_mgr)) {
-  BT_ASSERT(peer_cache_);
-  BT_ASSERT(l2cap_);
-  BT_ASSERT(gatt_.is_alive());
-  BT_ASSERT(hci_.is_alive());
-  BT_ASSERT(le_connection_manager_.is_alive());
+  PW_CHECK(peer_cache_);
+  PW_CHECK(l2cap_);
+  PW_CHECK(gatt_.is_alive());
+  PW_CHECK(hci_.is_alive());
+  PW_CHECK(le_connection_manager_.is_alive());
 
   cmd_ = hci_->command_channel()->AsWeakPtr();
-  BT_ASSERT(cmd_.is_alive());
+  PW_CHECK(cmd_.is_alive());
 
   auto peer = peer_cache_->FindById(peer_id_);
-  BT_ASSERT(peer);
+  PW_CHECK(peer);
   peer_address_ = peer->address();
 
   request_create_connection_task_.set_function(
@@ -106,10 +106,10 @@ void LowEnergyConnector::StartOutbound(
     hci::LowEnergyConnector* connector,
     LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     ResultCallback cb) {
-  BT_ASSERT(*state_ == State::kDefault);
-  BT_ASSERT(discovery_manager.is_alive());
-  BT_ASSERT(connector);
-  BT_ASSERT(request_timeout.count() != 0);
+  PW_CHECK(*state_ == State::kDefault);
+  PW_CHECK(discovery_manager.is_alive());
+  PW_CHECK(connector);
+  PW_CHECK(request_timeout.count() != 0);
   hci_connector_ = connector;
   discovery_manager_ = std::move(discovery_manager);
   hci_request_timeout_ = request_timeout;
@@ -125,15 +125,15 @@ void LowEnergyConnector::StartOutbound(
 
 void LowEnergyConnector::StartInbound(
     std::unique_ptr<hci::LowEnergyConnection> connection, ResultCallback cb) {
-  BT_ASSERT(*state_ == State::kDefault);
-  BT_ASSERT(connection);
+  PW_CHECK(*state_ == State::kDefault);
+  PW_CHECK(connection);
   // Connection address should resolve to same peer as the given peer ID.
   Peer* conn_peer = peer_cache_->FindByAddress(connection->peer_address());
-  BT_ASSERT(conn_peer);
-  BT_ASSERT_MSG(peer_id_ == conn_peer->identifier(),
-                "peer_id_ (%s) != connection peer (%s)",
-                bt_str(peer_id_),
-                bt_str(conn_peer->identifier()));
+  PW_CHECK(conn_peer);
+  PW_CHECK(peer_id_ == conn_peer->identifier(),
+           "peer_id_ (%s) != connection peer (%s)",
+           bt_str(peer_id_),
+           bt_str(conn_peer->identifier()));
   result_cb_ = std::move(cb);
   set_is_outbound(false);
 
@@ -242,7 +242,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   if (*state_ == State::kFailed) {
     return;
   }
-  BT_ASSERT(*state_ == State::kStartingScanning);
+  PW_CHECK(*state_ == State::kStartingScanning);
 
   // Failed to start scan, abort connection procedure.
   if (!session) {
@@ -263,7 +263,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
         if (!status.ok()) {
           return;
         }
-        BT_ASSERT(*state_ == State::kScanning);
+        PW_CHECK(*state_ == State::kScanning);
         bt_log(INFO,
                "gap-le",
                "scan for pending connection timed out (peer: %s)",
@@ -279,7 +279,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   // The error callback must be set before the result callback in case the
   // result callback is called synchronously.
   discovery_session_->set_error_callback([self] {
-    BT_ASSERT(self->state_.value() == State::kScanning);
+    PW_CHECK(self->state_.value() == State::kScanning);
     bt_log(INFO,
            "gap-le",
            "discovery error while scanning for peer (peer: %s)",
@@ -289,7 +289,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   });
 
   discovery_session_->SetResultCallback([self](auto& peer) {
-    BT_ASSERT(self->state_.value() == State::kScanning);
+    PW_CHECK(self->state_.value() == State::kScanning);
 
     if (peer.identifier() != self->peer_id_) {
       return;
@@ -310,8 +310,8 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
 void LowEnergyConnector::RequestCreateConnection() {
   // Scanning may be skipped. When the peer disconnects during/after
   // interrogation, a retry may be initiated by calling this method.
-  BT_ASSERT(*state_ == State::kDefault || *state_ == State::kScanning ||
-            *state_ == State::kPauseBeforeConnectionRetry);
+  PW_CHECK(*state_ == State::kDefault || *state_ == State::kScanning ||
+           *state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
   std::optional<LowEnergyDiscoveryManager::PauseToken> pause_token;
@@ -331,7 +331,7 @@ void LowEnergyConnector::RequestCreateConnection() {
 
   // TODO(fxbug.dev/42149416): Use slow interval & window for auto connections
   // during background scan.
-  BT_ASSERT(hci_connector_->CreateConnection(
+  PW_CHECK(hci_connector_->CreateConnection(
       /*use_accept_list=*/false,
       peer_address_,
       kLEScanFastInterval,
@@ -353,7 +353,7 @@ void LowEnergyConnector::OnConnectResult(
     NotifyFailure(status);
     return;
   }
-  BT_ASSERT(link);
+  PW_CHECK(link);
 
   bt_log(INFO,
          "gap-le",
@@ -367,14 +367,14 @@ void LowEnergyConnector::OnConnectResult(
 
 bool LowEnergyConnector::InitializeConnection(
     std::unique_ptr<hci::LowEnergyConnection> link) {
-  BT_ASSERT(link);
+  PW_CHECK(link);
 
   auto peer_disconnect_cb =
       fit::bind_member<&LowEnergyConnector::OnPeerDisconnect>(this);
   auto error_cb = [this]() { NotifyFailure(); };
 
   Peer* peer = peer_cache_->FindById(peer_id_);
-  BT_ASSERT(peer);
+  PW_CHECK(peer);
   auto connection = LowEnergyConnection::Create(peer->GetWeakPtr(),
                                                 std::move(link),
                                                 options_,
@@ -399,13 +399,13 @@ bool LowEnergyConnector::InitializeConnection(
 }
 
 void LowEnergyConnector::StartInterrogation() {
-  BT_ASSERT((*is_outbound_ && *state_ == State::kConnecting) ||
-            (!*is_outbound_ && *state_ == State::kDefault));
-  BT_ASSERT(connection_);
+  PW_CHECK((*is_outbound_ && *state_ == State::kConnecting) ||
+           (!*is_outbound_ && *state_ == State::kDefault));
+  PW_CHECK(connection_);
 
   state_.Set(State::kInterrogating);
   auto peer = peer_cache_->FindById(peer_id_);
-  BT_ASSERT(peer);
+  PW_CHECK(peer);
   bool sca_supported =
       adapter_state_.SupportedCommands().le_request_peer_sca().Read();
   interrogator_.emplace(
@@ -418,14 +418,14 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
   // If a disconnect event is received before interrogation completes, state_
   // will be either kFailed or kPauseBeforeConnectionRetry depending on the
   // status of the disconnect.
-  BT_ASSERT(*state_ == State::kInterrogating || *state_ == State::kFailed ||
-            *state_ == State::kPauseBeforeConnectionRetry);
+  PW_CHECK(*state_ == State::kInterrogating || *state_ == State::kFailed ||
+           *state_ == State::kPauseBeforeConnectionRetry);
   if (*state_ == State::kFailed ||
       *state_ == State::kPauseBeforeConnectionRetry) {
     return;
   }
 
-  BT_ASSERT(connection_);
+  PW_CHECK(connection_);
 
   // If the controller responds to an interrogation command with the 0x3e
   // "kConnectionFailedToBeEstablished" error, it will send a Disconnection
@@ -460,7 +460,7 @@ void LowEnergyConnector::OnPeerDisconnect(
     pw::bluetooth::emboss::StatusCode status_code) {
   // The peer can't disconnect while scanning or connecting, and we unregister
   // from disconnects after kFailed & kComplete.
-  BT_ASSERT_MSG(
+  PW_CHECK(
       *state_ == State::kInterrogating ||
           *state_ == State::kAwaitingConnectionFailedToBeEstablishedDisconnect,
       "Received peer disconnect during invalid state (state: %s, status: %s)",
@@ -504,9 +504,9 @@ bool LowEnergyConnector::MaybeRetryConnection() {
 }
 
 void LowEnergyConnector::NotifySuccess() {
-  BT_ASSERT(*state_ == State::kInterrogating);
-  BT_ASSERT(connection_);
-  BT_ASSERT(result_cb_);
+  PW_CHECK(*state_ == State::kInterrogating);
+  PW_CHECK(connection_);
+  PW_CHECK(result_cb_);
 
   state_.Set(State::kComplete);
 

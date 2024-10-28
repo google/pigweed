@@ -45,7 +45,7 @@ bool ProcessDescriptorDiscoveryResponse(
     BufferView entries,
     Client::DescriptorCallback desc_callback,
     att::Handle* out_last_handle) {
-  BT_DEBUG_ASSERT(out_last_handle);
+  PW_DCHECK(out_last_handle);
 
   if (entries.size() % sizeof(EntryType)) {
     bt_log(DEBUG, "gatt", "malformed information data list");
@@ -96,11 +96,11 @@ class Impl final : public Client {
  public:
   explicit Impl(att::Bearer::WeakPtr bearer)
       : att_(std::move(bearer)), weak_self_(this) {
-    BT_DEBUG_ASSERT(att_.is_alive());
+    PW_DCHECK(att_.is_alive());
 
     auto handler = [this](auto txn_id, const att::PacketReader& pdu) {
-      BT_DEBUG_ASSERT(pdu.opcode() == att::kNotification ||
-                      pdu.opcode() == att::kIndication);
+      PW_DCHECK(pdu.opcode() == att::kNotification ||
+                pdu.opcode() == att::kIndication);
 
       if (pdu.payload_size() < sizeof(att::NotificationParams)) {
         // Received a malformed notification. Disconnect the link.
@@ -177,7 +177,7 @@ class Impl final : public Client {
                       att::Bearer::TransactionResult result) mutable {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        BT_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
+        PW_DCHECK(rsp.opcode() == att::kExchangeMTUResponse);
 
         if (rsp.payload_size() != sizeof(att::ExchangeMTUResponseParams)) {
           // Received a malformed response. Disconnect the link.
@@ -235,7 +235,7 @@ class Impl final : public Client {
                                att::Handle range_end,
                                ServiceCallback svc_callback,
                                att::ResultFunction<> status_callback) override {
-    BT_ASSERT(range_start <= range_end);
+    PW_CHECK(range_start <= range_end);
 
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
     if (!pdu) {
@@ -277,7 +277,7 @@ class Impl final : public Client {
       }
 
       const att::PacketReader& rsp = result.value();
-      BT_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
+      PW_DCHECK(rsp.opcode() == att::kReadByGroupTypeResponse);
       TRACE_DURATION("bluetooth",
                      "gatt::Client::DiscoverServicesInRange rsp_cb",
                      "size",
@@ -401,8 +401,8 @@ class Impl final : public Client {
                                         ServiceCallback svc_callback,
                                         att::ResultFunction<> status_callback,
                                         std::vector<UUID> uuids) override {
-    BT_ASSERT(range_start <= range_end);
-    BT_ASSERT(!uuids.empty());
+    PW_CHECK(range_start <= range_end);
+    PW_CHECK(!uuids.empty());
     UUID uuid = uuids.back();
     uuids.pop_back();
 
@@ -486,7 +486,7 @@ class Impl final : public Client {
       }
 
       const att::PacketReader& rsp = result.value();
-      BT_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+      PW_DCHECK(rsp.opcode() == att::kFindByTypeValueResponse);
 
       size_t payload_size = rsp.payload_size();
       if (payload_size < 1 ||
@@ -571,9 +571,9 @@ class Impl final : public Client {
                                att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::ResultFunction<> status_callback) override {
-    BT_ASSERT(range_start <= range_end);
-    BT_ASSERT(chrc_callback);
-    BT_ASSERT(status_callback);
+    PW_CHECK(range_start <= range_end);
+    PW_CHECK(chrc_callback);
+    PW_CHECK(status_callback);
 
     if (range_start == range_end) {
       status_callback(fit::ok());
@@ -606,7 +606,7 @@ class Impl final : public Client {
 
       // ReadByTypeRequest() should return an error result if there are no
       // attributes in a success response.
-      BT_ASSERT(!attributes.empty());
+      PW_CHECK(!attributes.empty());
 
       for (auto& char_attr : attributes) {
         Properties properties = 0u;
@@ -686,9 +686,9 @@ class Impl final : public Client {
                            att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::ResultFunction<> status_callback) override {
-    BT_DEBUG_ASSERT(range_start <= range_end);
-    BT_DEBUG_ASSERT(desc_callback);
-    BT_DEBUG_ASSERT(status_callback);
+    PW_DCHECK(range_start <= range_end);
+    PW_DCHECK(desc_callback);
+    PW_DCHECK(status_callback);
 
     auto pdu = NewPDU(sizeof(att::FindInformationRequestParams));
     if (!pdu) {
@@ -723,7 +723,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      BT_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
+      PW_DCHECK(rsp.opcode() == att::kFindInformationResponse);
       TRACE_DURATION("bluetooth",
                      "gatt::Client::DiscoverDescriptors rsp_cb",
                      "size",
@@ -804,7 +804,7 @@ class Impl final : public Client {
                       att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        BT_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
+        PW_DCHECK(rsp.opcode() == att::kReadResponse);
         bool maybe_truncated =
             (rsp.payload_size() != att::kMaxAttributeValueLength) &&
             (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
@@ -828,7 +828,7 @@ class Impl final : public Client {
                          att::Handle end_handle,
                          ReadByTypeCallback callback) override {
     size_t type_size = type.CompactSize(/*allow_32bit=*/false);
-    BT_ASSERT(type_size == sizeof(uint16_t) || type_size == sizeof(UInt128));
+    PW_CHECK(type_size == sizeof(uint16_t) || type_size == sizeof(UInt128));
     auto pdu = NewPDU(type_size == sizeof(uint16_t)
                           ? sizeof(att::ReadByTypeRequestParams16)
                           : sizeof(att::ReadByTypeRequestParams128));
@@ -873,7 +873,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      BT_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
+      PW_CHECK(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
         cb(fit::error(
             ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
@@ -946,7 +946,7 @@ class Impl final : public Client {
         // Advance list view to next pair (or end of list).
         attr_list_view = attr_list_view.view(pair_size);
       }
-      BT_ASSERT(attr_list_view.size() == 0);
+      PW_CHECK(attr_list_view.size() == 0);
 
       cb(fit::ok(std::move(attributes)));
     };
@@ -974,7 +974,7 @@ class Impl final : public Client {
                       att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        BT_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+        PW_DCHECK(rsp.opcode() == att::kReadBlobResponse);
         bool maybe_truncated =
             (static_cast<size_t>(offset) + rsp.payload_size() !=
              att::kMaxAttributeValueLength) &&
@@ -1031,7 +1031,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      BT_DEBUG_ASSERT(rsp.opcode() == att::kWriteResponse);
+      PW_DCHECK(rsp.opcode() == att::kWriteResponse);
 
       if (rsp.payload_size()) {
         att_->ShutDown();
@@ -1118,7 +1118,7 @@ class Impl final : public Client {
                 callback(prep_write_status);
                 // Now that this request is complete, remove it from the overall
                 // queue.
-                BT_DEBUG_ASSERT(!long_write_queue_.empty());
+                PW_DCHECK(!long_write_queue_.empty());
                 long_write_queue_.pop();
 
                 if (long_write_queue_.size() > 0) {
@@ -1148,7 +1148,7 @@ class Impl final : public Client {
         callback(status);
         // Now that this request is complete, remove it from the overall
         // queue.
-        BT_DEBUG_ASSERT(!long_write_queue_.empty());
+        PW_DCHECK(!long_write_queue_.empty());
         long_write_queue_.pop();
 
         // If the super queue still has any long writes left to execute,
@@ -1194,7 +1194,7 @@ class Impl final : public Client {
         [cb = std::move(callback)](att::Bearer::TransactionResult result) {
           if (result.is_ok()) {
             const att::PacketReader& rsp = result.value();
-            BT_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
+            PW_DCHECK(rsp.opcode() == att::kPrepareWriteResponse);
             cb(fit::ok(), rsp.payload_data());
             return;
           }
@@ -1236,7 +1236,7 @@ class Impl final : public Client {
                       att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        BT_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
+        PW_DCHECK(rsp.opcode() == att::kExecuteWriteResponse);
 
         if (rsp.payload_size()) {
           att_->ShutDown();

@@ -242,9 +242,9 @@ class CountingWeakManager {
   std::optional<pw::IntrusivePtr<RefType>> GetWeakRef() {
     // Make sure the weak ref doesn't accidentally get cleared after it's set.
     if (count_get_weak_ref_ == 0) {
-      BT_ASSERT(!manager_.HasWeakRef());
+      PW_CHECK(!manager_.HasWeakRef());
     } else {
-      BT_ASSERT(manager_.HasWeakRef());
+      PW_CHECK(manager_.HasWeakRef());
     }
     count_get_weak_ref_++;
     return manager_.GetWeakRef();

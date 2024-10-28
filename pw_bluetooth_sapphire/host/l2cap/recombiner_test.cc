@@ -32,7 +32,7 @@ constexpr ChannelId kTestChannelId = 0xFFFF;
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   StaticByteBuffer bytes(std::forward<T>(data)...);
-  BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+  PW_DCHECK(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
   auto packet = hci::ACLDataPacket::New(
       static_cast<uint16_t>(bytes.size() - sizeof(hci_spec::ACLDataHeader)));

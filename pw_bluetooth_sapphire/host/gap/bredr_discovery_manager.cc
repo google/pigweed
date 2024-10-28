@@ -42,7 +42,7 @@ Peer* AddOrUpdateConnectablePeer(PeerCache* cache, const DeviceAddress& addr) {
   } else {
     peer->set_connectable(true);
   }
-  BT_ASSERT(peer);
+  PW_CHECK(peer);
   return peer;
 }
 
@@ -104,21 +104,21 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(
       desired_inquiry_mode_(mode),
       current_inquiry_mode_(pw::bluetooth::emboss::InquiryMode::STANDARD),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(cache_);
-  BT_DEBUG_ASSERT(cmd_.is_alive());
+  PW_DCHECK(cache_);
+  PW_DCHECK(cmd_.is_alive());
 
   result_handler_id_ = cmd_->AddEventHandler(
       hci_spec::kInquiryResultEventCode,
       fit::bind_member<&BrEdrDiscoveryManager::InquiryResult>(this));
-  BT_DEBUG_ASSERT(result_handler_id_);
+  PW_DCHECK(result_handler_id_);
   rssi_handler_id_ = cmd_->AddEventHandler(
       hci_spec::kInquiryResultWithRSSIEventCode,
       cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRssi, this));
-  BT_DEBUG_ASSERT(rssi_handler_id_);
+  PW_DCHECK(rssi_handler_id_);
   eir_handler_id_ = cmd_->AddEventHandler(
       hci_spec::kExtendedInquiryResultEventCode,
       cpp20::bind_front(&BrEdrDiscoveryManager::ExtendedInquiryResult, this));
-  BT_DEBUG_ASSERT(eir_handler_id_);
+  PW_DCHECK(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
   WriteInquiryScanSettings(
@@ -133,7 +133,7 @@ BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
 }
 
 void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
-  BT_DEBUG_ASSERT(callback);
+  PW_DCHECK(callback);
 
   bt_log(INFO, "gap-bredr", "RequestDiscovery");
 
@@ -224,8 +224,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
           return;
         }
 
-        BT_DEBUG_ASSERT(event.event_code() ==
-                        hci_spec::kInquiryCompleteEventCode);
+        PW_DCHECK(event.event_code() == hci_spec::kInquiryCompleteEventCode);
         self->zombie_discovering_.clear();
 
         if (bt_is_error(status, TRACE, "gap", "inquiry complete error")) {
@@ -242,7 +241,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
 // Stops the inquiry procedure.
 void BrEdrDiscoveryManager::StopInquiry() {
-  BT_DEBUG_ASSERT(result_handler_id_);
+  PW_DCHECK(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
   const hci::EmbossCommandPacket inq_cancel = hci::EmbossCommandPacket::New<
@@ -257,7 +256,7 @@ void BrEdrDiscoveryManager::StopInquiry() {
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
     const hci::EmbossEventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryResultEventCode);
+  PW_DCHECK(event.event_code() == hci_spec::kInquiryResultEventCode);
   std::unordered_set<Peer*> peers;
 
   auto view = event.view<pw::bluetooth::emboss::InquiryResultEventView>();
@@ -466,8 +465,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
       hci_spec::kRemoteNameRequest);
   auto params = packet.view_t();
-  BT_DEBUG_ASSERT(peer->bredr());
-  BT_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
+  PW_DCHECK(peer->bredr());
+  PW_DCHECK(peer->bredr()->page_scan_repetition_mode());
   params.bd_addr().CopyFrom(peer->address().value().view());
   params.page_scan_repetition_mode().Write(
       *(peer->bredr()->page_scan_repetition_mode()));
@@ -491,8 +490,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    BT_DEBUG_ASSERT(event.event_code() ==
-                    hci_spec::kRemoteNameRequestCompleteEventCode);
+    PW_DCHECK(event.event_code() ==
+              hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
     Peer* const cached_peer = self->cache_->FindById(id);
@@ -522,7 +521,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
-  BT_DEBUG_ASSERT(callback);
+  PW_DCHECK(callback);
 
   auto self = weak_self_.GetWeakPtr();
   auto result_cb = [self, cb = callback.share()](const hci::Result<>& result) {
@@ -684,7 +683,7 @@ BrEdrDiscoveryManager::AddDiscoverySession() {
   // constructor.
   std::unique_ptr<BrEdrDiscoverySession> session(
       new BrEdrDiscoverySession(weak_self_.GetWeakPtr()));
-  BT_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
+  PW_DCHECK(discovering_.find(session.get()) == discovering_.end());
   discovering_.insert(session.get());
   bt_log(INFO,
          "gap-bredr",
@@ -715,7 +714,7 @@ BrEdrDiscoveryManager::AddDiscoverableSession() {
   // constructor.
   std::unique_ptr<BrEdrDiscoverableSession> session(
       new BrEdrDiscoverableSession(weak_self_.GetWeakPtr()));
-  BT_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
+  PW_DCHECK(discoverable_.find(session.get()) == discoverable_.end());
   discoverable_.insert(session.get());
   bt_log(INFO,
          "gap-bredr",

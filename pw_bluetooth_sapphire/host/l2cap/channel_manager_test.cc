@@ -725,7 +725,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
   void ReceiveAclDataPacket(const ByteBuffer& packet) {
     const size_t payload_size = packet.size() - sizeof(hci_spec::ACLDataHeader);
-    BT_ASSERT(payload_size <= std::numeric_limits<uint16_t>::max());
+    PW_CHECK(payload_size <= std::numeric_limits<uint16_t>::max());
     hci::ACLDataPacketPtr acl_packet =
         hci::ACLDataPacket::New(static_cast<uint16_t>(payload_size));
     auto mutable_acl_packet_data = acl_packet->mutable_view()->mutable_data();
@@ -1035,13 +1035,13 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
   // quit the message loop
   std::vector<std::string> sdus;
   auto att_rx_cb = [&sdus](ByteBufferPtr sdu) {
-    BT_DEBUG_ASSERT(sdu);
+    PW_DCHECK(sdu);
     sdus.push_back(sdu->ToString());
   };
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    BT_DEBUG_ASSERT(sdu);
+    PW_DCHECK(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -1132,7 +1132,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    BT_DEBUG_ASSERT(sdu);
+    PW_DCHECK(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -1235,7 +1235,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    BT_DEBUG_ASSERT(sdu);
+    PW_DCHECK(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -1360,7 +1360,7 @@ TEST_F(ChannelManagerRealAclChannelTest,
        RemovingLinkInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = QueueLEConnection(
       kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  PW_CHECK(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   chanmgr()->RemoveConnection(kTestHandle1);
   EXPECT_FALSE(fixed_channels.att.is_alive());
 }
@@ -1368,7 +1368,7 @@ TEST_F(ChannelManagerRealAclChannelTest,
 TEST_F(ChannelManagerRealAclChannelTest, SendBasicSDU) {
   LEFixedChannels fixed_channels = QueueLEConnection(
       kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  PW_CHECK(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   EXPECT_ACL_PACKET_OUT(test_device(),
                         StaticByteBuffer(

@@ -30,7 +30,7 @@ template <typename T>
 T Random() {
   static_assert(std::is_trivial_v<T> && !std::is_pointer_v<T>,
                 "Type cannot be filled with random bytes");
-  BT_DEBUG_ASSERT(random_generator());
+  PW_DCHECK(random_generator());
   T t;
   random_generator()->Get({reinterpret_cast<std::byte*>(&t), sizeof(T)});
   return t;

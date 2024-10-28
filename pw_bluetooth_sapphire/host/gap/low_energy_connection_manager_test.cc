@@ -225,10 +225,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     if (canceled) {
       canceled_peers_.insert(address);
     } else if (connected) {
-      BT_DEBUG_ASSERT(connected_peers_.find(address) == connected_peers_.end());
+      PW_DCHECK(connected_peers_.find(address) == connected_peers_.end());
       connected_peers_.insert(address);
     } else {
-      BT_DEBUG_ASSERT(connected_peers_.find(address) != connected_peers_.end());
+      PW_DCHECK(connected_peers_.find(address) != connected_peers_.end());
       connected_peers_.erase(address);
     }
   }
@@ -537,7 +537,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
 
 struct TestObject final {
   explicit TestObject(bool* d) : deleted(d) {
-    BT_DEBUG_ASSERT(deleted);
+    PW_DCHECK(deleted);
     *deleted = false;
   }
 

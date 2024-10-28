@@ -28,7 +28,7 @@ Connection::Connection(std::unique_ptr<Client> client,
                        std::unique_ptr<Server> server,
                        RemoteServiceWatcher svc_watcher)
     : server_(std::move(server)), weak_self_(this) {
-  BT_ASSERT(svc_watcher);
+  PW_CHECK(svc_watcher);
 
   remote_service_manager_ =
       std::make_unique<RemoteServiceManager>(std::move(client));
@@ -37,7 +37,7 @@ Connection::Connection(std::unique_ptr<Client> client,
 
 void Connection::Initialize(std::vector<UUID> service_uuids,
                             fit::callback<void(uint16_t)> mtu_cb) {
-  BT_ASSERT(remote_service_manager_);
+  PW_CHECK(remote_service_manager_);
 
   auto uuids_count = service_uuids.size();
   // status_cb must not capture att_ in order to prevent reference cycle.

@@ -76,7 +76,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
 WeakSelf<TestSecurityManager>::WeakPtr TestSecurityManagerFactory::GetTestSm(
     hci_spec::ConnectionHandle conn_handle) {
   auto iter = test_sms_.find(conn_handle);
-  BT_ASSERT(iter != test_sms_.end());
+  PW_CHECK(iter != test_sms_.end());
   return iter->second;
 }
 

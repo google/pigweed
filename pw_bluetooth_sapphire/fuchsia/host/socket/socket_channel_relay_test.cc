@@ -176,7 +176,7 @@ class SocketChannelRelayLifetimeTest : public SocketChannelRelayTest {
     return was_deactivation_callback_invoked_;
   }
   RelayT* relay() {
-    BT_DEBUG_ASSERT(relay_);
+    PW_DCHECK(relay_);
     return relay_.get();
   }
   void DestroyRelay() { relay_ = nullptr; }

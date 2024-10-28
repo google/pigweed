@@ -60,8 +60,8 @@ ScStage1Passkey::ScStage1Passkey(PairingPhase::Listener::WeakPtr listener,
       sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
       weak_self_(this) {
-  BT_ASSERT(method == PairingMethod::kPasskeyEntryDisplay ||
-            method == PairingMethod::kPasskeyEntryInput);
+  PW_CHECK(method == PairingMethod::kPasskeyEntryDisplay ||
+           method == PairingMethod::kPasskeyEntryInput);
 }
 
 void ScStage1Passkey::Run() {
@@ -116,10 +116,10 @@ void ScStage1Passkey::Run() {
 }
 
 void ScStage1Passkey::StartBitExchange() {
-  BT_ASSERT(passkey_.has_value());
+  PW_CHECK(passkey_.has_value());
   // The passkey is 6 digits i.e. representable in 2^20 bits. Attempting to
   // exchange > 20 bits indicates a programmer error.
-  BT_ASSERT(passkey_bit_location_ <= kMaxPasskeyBitLocation);
+  PW_CHECK(passkey_bit_location_ <= kMaxPasskeyBitLocation);
   local_rand_ = Random<UInt128>();
   sent_local_confirm_ = sent_local_rand_ = false;
 
@@ -128,18 +128,18 @@ void ScStage1Passkey::StartBitExchange() {
     // where we should have received a peer confirm before StartBitExchange is
     // if, as responder in the first bit exchange, we receive the peer
     // initiator's confirm while waiting for local user input.
-    BT_ASSERT((role_ == Role::kInitiator && !peer_confirm_.has_value()) ||
-              passkey_bit_location_ == 0);
+    PW_CHECK((role_ == Role::kInitiator && !peer_confirm_.has_value()) ||
+             passkey_bit_location_ == 0);
     SendPairingConfirm();
   }
   // As responder, we wait for the peer confirm before taking any action.
 }
 
 void ScStage1Passkey::SendPairingConfirm() {
-  BT_ASSERT(!sent_local_confirm_);
-  BT_ASSERT(passkey_.has_value());
+  PW_CHECK(!sent_local_confirm_);
+  PW_CHECK(passkey_.has_value());
   if (role_ == Role::kResponder) {
-    BT_ASSERT(peer_confirm_.has_value());
+    PW_CHECK(peer_confirm_.has_value());
   }
 
   uint8_t current_passkey_bit = GetPasskeyBit(*passkey_, passkey_bit_location_);
@@ -188,10 +188,10 @@ void ScStage1Passkey::OnPairingConfirm(PairingConfirmValue confirm) {
 }
 
 void ScStage1Passkey::SendPairingRandom() {
-  BT_ASSERT(sent_local_confirm_ && peer_confirm_.has_value());
-  BT_ASSERT(!sent_local_rand_);
+  PW_CHECK(sent_local_confirm_ && peer_confirm_.has_value());
+  PW_CHECK(!sent_local_rand_);
   if (role_ == Role::kResponder) {
-    BT_ASSERT(peer_rand_.has_value());
+    PW_CHECK(peer_rand_.has_value());
   }
   sm_chan_->SendMessage(kPairingRandom, local_rand_);
   sent_local_rand_ = true;
@@ -240,10 +240,10 @@ void ScStage1Passkey::OnPairingRandom(PairingRandomValue rand) {
 }
 
 void ScStage1Passkey::FinishBitExchange() {
-  BT_ASSERT(sent_local_confirm_);
-  BT_ASSERT(peer_confirm_.has_value());
-  BT_ASSERT(sent_local_rand_);
-  BT_ASSERT(peer_rand_.has_value());
+  PW_CHECK(sent_local_confirm_);
+  PW_CHECK(peer_confirm_.has_value());
+  PW_CHECK(sent_local_rand_);
+  PW_CHECK(peer_rand_.has_value());
   passkey_bit_location_++;
   if (passkey_bit_location_ <= kMaxPasskeyBitLocation) {
     peer_confirm_ = std::nullopt;

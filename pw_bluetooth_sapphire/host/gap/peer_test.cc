@@ -117,7 +117,7 @@ class PeerTest : public pw::async::test::FakeDispatcherFixture {
             {"peer",
              "le_data",
              Peer::LowEnergyData::kInspectConnectionStateName});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
@@ -127,7 +127,7 @@ class PeerTest : public pw::async::test::FakeDispatcherFixture {
         {"peer",
          "le_data",
          Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
@@ -138,21 +138,21 @@ class PeerTest : public pw::async::test::FakeDispatcherFixture {
             {"peer",
              "le_data",
              Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyConnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "le", "connection_events"});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyDisconnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "le", "disconnection_events"});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
@@ -163,21 +163,21 @@ class PeerTest : public pw::async::test::FakeDispatcherFixture {
             {"peer",
              "bredr_data",
              Peer::BrEdrData::kInspectConnectionStateName});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrConnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "bredr", "connection_events"});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrDisconnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "bredr", "disconnection_events"});
-    BT_ASSERT(val);
+    PW_CHECK(val);
     return *val;
   }
 #endif  // NINSPECT

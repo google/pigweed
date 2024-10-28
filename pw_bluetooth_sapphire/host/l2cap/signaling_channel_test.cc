@@ -62,7 +62,7 @@ class TestSignalingChannel : public SignalingChannel {
   // SignalingChannel overrides
   void DecodeRxUnit(ByteBufferPtr sdu,
                     const SignalingPacketHandler& cb) override {
-    BT_ASSERT(sdu);
+    PW_CHECK(sdu);
     if (sdu->size()) {
       cb(SignalingPacket(sdu.get(), sdu->size() - sizeof(CommandHeader)));
     } else {

@@ -43,7 +43,7 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid,
     return;
   }
 
-  BT_DEBUG_ASSERT(channel->IsConnected());
+  PW_DCHECK(channel->IsConnected());
   auto disconn_done_cb =
       [self = GetWeakPtr(), close_cb = std::move(close_callback), channel] {
         if (!self.is_alive()) {
@@ -66,16 +66,16 @@ DynamicChannelRegistry::DynamicChannelRegistry(
       close_cb_(std::move(close_cb)),
       service_request_cb_(std::move(service_request_cb)),
       random_channel_ids_(random_channel_ids) {
-  BT_DEBUG_ASSERT(max_num_channels > 0);
-  BT_DEBUG_ASSERT(max_num_channels < 65473);
-  BT_DEBUG_ASSERT(close_cb_);
-  BT_DEBUG_ASSERT(service_request_cb_);
+  PW_DCHECK(max_num_channels > 0);
+  PW_DCHECK(max_num_channels < 65473);
+  PW_DCHECK(close_cb_);
+  PW_DCHECK(service_request_cb_);
 }
 
 DynamicChannel* DynamicChannelRegistry::RequestService(Psm psm,
                                                        ChannelId local_cid,
                                                        ChannelId remote_cid) {
-  BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
+  PW_DCHECK(local_cid != kInvalidChannelId);
 
   auto service_info = service_request_cb_(psm);
   if (!service_info) {
@@ -204,8 +204,8 @@ void DynamicChannelRegistry::OnChannelDisconnected(DynamicChannel* channel) {
 }
 
 void DynamicChannelRegistry::RemoveChannel(DynamicChannel* channel) {
-  BT_DEBUG_ASSERT(channel);
-  BT_DEBUG_ASSERT(!channel->IsConnected());
+  PW_DCHECK(channel);
+  PW_DCHECK(!channel->IsConnected());
 
   auto iter = channels_.find(channel->local_cid());
   if (iter == channels_.end()) {

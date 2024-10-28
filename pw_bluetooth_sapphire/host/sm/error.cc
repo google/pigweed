@@ -71,7 +71,7 @@ std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
                          "%s (SMP %#.2x)",
                          ErrorToString(ecode),
                          static_cast<unsigned int>(ecode));
-  BT_DEBUG_ASSERT(status.ok());
+  PW_DCHECK(status.ok());
   return out;
 }
 

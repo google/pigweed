@@ -62,7 +62,7 @@ bool operator!=(CreditBasedFlowControlMode mode, const AnyChannelMode& any) {
 std::string AnyChannelModeToString(const AnyChannelMode& mode) {
   std::string buffer(kAnyChannelModeMaxStringSize, 0);
   pw::StatusWithSize result = pw::ToString(mode, buffer);
-  BT_ASSERT(result.ok());
+  PW_CHECK(result.ok());
   buffer.resize(result.size());
   return buffer;
 }

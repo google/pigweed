@@ -27,11 +27,11 @@ PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan,
     : chan_(std::move(chan)),
       reset_timer_(std::move(timer_resetter)),
       weak_self_(this) {
-  BT_ASSERT(chan_);
+  PW_CHECK(chan_);
   if (chan_->link_type() == bt::LinkType::kLE) {
-    BT_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
+    PW_CHECK(chan_->id() == l2cap::kLESMPChannelId);
   } else if (chan_->link_type() == bt::LinkType::kACL) {
-    BT_ASSERT(chan_->id() == l2cap::kSMPChannelId);
+    PW_CHECK(chan_->id() == l2cap::kSMPChannelId);
   } else {
     BT_PANIC("unsupported link type for SMP!");
   }
@@ -54,15 +54,15 @@ PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan,
   // is no way to configure this MTU, so we expect that L2CAP always provides a
   // channel with a sufficiently large MTU. This assertion serves as an explicit
   // acknowledgement of that contract between L2CAP and SMP.
-  BT_ASSERT(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
-            chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
+  PW_CHECK(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
+           chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
 }
 
 PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan)
     : PairingChannel(std::move(chan), []() {}) {}
 
 void PairingChannel::SetChannelHandler(Handler::WeakPtr new_handler) {
-  BT_ASSERT(new_handler.is_alive());
+  PW_CHECK(new_handler.is_alive());
   bt_log(TRACE, "sm", "changing pairing channel handler");
   handler_ = std::move(new_handler);
 }

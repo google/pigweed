@@ -166,7 +166,7 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
           std::make_unique<A2dpOffloadManager>(cmd_channel_->AsWeakPtr())),
       random_channel_ids_(random_channel_ids),
       weak_self_(this) {
-  BT_ASSERT(acl_data_channel_);
+  PW_CHECK(acl_data_channel_);
   max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
   max_le_payload_size_ = acl_data_channel_->GetLeBufferInfo().max_data_length();
   acl_data_channel_->SetDataRxHandler(MakeInboundDataHandler());
@@ -205,7 +205,7 @@ ChannelManagerImpl::BrEdrFixedChannels ChannelManagerImpl::AddACLConnection(
   ll->set_security_upgrade_callback(std::move(security_cb));
 
   Channel::WeakPtr smp = OpenFixedChannel(handle, kSMPChannelId);
-  BT_ASSERT(smp.is_alive());
+  PW_CHECK(smp.is_alive());
   return BrEdrFixedChannels{.smp = std::move(smp)};
 }
 
@@ -225,8 +225,8 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
 
   Channel::WeakPtr att = OpenFixedChannel(handle, kATTChannelId);
   Channel::WeakPtr smp = OpenFixedChannel(handle, kLESMPChannelId);
-  BT_ASSERT(att.is_alive());
-  BT_ASSERT(smp.is_alive());
+  PW_CHECK(att.is_alive());
+  PW_CHECK(smp.is_alive());
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
@@ -412,9 +412,9 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't
   // assume this will succeed.
   auto iter = ll_map_.find(handle);
-  BT_DEBUG_ASSERT_MSG(iter == ll_map_.end(),
-                      "connection handle re-used! (handle=%#.4x)",
-                      handle);
+  PW_DCHECK(iter == ll_map_.end(),
+            "connection handle re-used! (handle=%#.4x)",
+            handle);
 
   auto ll = std::make_unique<internal::LogicalLink>(
       handle,

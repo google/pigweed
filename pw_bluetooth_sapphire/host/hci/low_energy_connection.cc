@@ -32,9 +32,9 @@ LowEnergyConnection::LowEnergyConnection(
     : AclConnection(handle, local_address, peer_address, role, hci),
       WeakSelf(this),
       parameters_(params) {
-  BT_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
-  BT_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
-  BT_ASSERT(hci.is_alive());
+  PW_CHECK(local_address.type() != DeviceAddress::Type::kBREDR);
+  PW_CHECK(peer_address.type() != DeviceAddress::Type::kBREDR);
+  PW_CHECK(hci.is_alive());
 
   le_ltk_request_id_ = hci->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLELongTermKeyRequestSubeventCode,

@@ -66,7 +66,7 @@ class GattRemoteServiceServerTest : public bt::fidl::testing::FakeGattFixture {
 
  protected:
   const bt::gatt::testing::FakeClient::WeakPtr& fake_client() const {
-    BT_ASSERT(fake_client_.is_alive());
+    PW_CHECK(fake_client_.is_alive());
     return fake_client_;
   }
 

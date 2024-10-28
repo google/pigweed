@@ -46,7 +46,7 @@ void IsoStreamServer::OnStreamEstablished(
 
 void IsoStreamServer::OnStreamEstablishmentFailed(
     pw::bluetooth::emboss::StatusCode status) {
-  BT_ASSERT(status != pw::bluetooth::emboss::StatusCode::SUCCESS);
+  PW_CHECK(status != pw::bluetooth::emboss::StatusCode::SUCCESS);
   bt_log(WARN,
          "fidl",
          "CIS failed to be established: %u",

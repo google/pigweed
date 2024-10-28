@@ -33,14 +33,14 @@ class FakeGattFixture : public bt::testing::TestLoopFixture {
 
  protected:
   const bt::gatt::GATT::WeakPtr& gatt() const {
-    BT_ASSERT_MSG(weak_gatt_.is_alive(),
-                  "fake GATT layer accessed after it was destroyed!");
+    PW_CHECK(weak_gatt_.is_alive(),
+             "fake GATT layer accessed after it was destroyed!");
     return weak_gatt_;
   }
 
   const bt::gatt::testing::FakeLayer::WeakPtr& fake_gatt() const {
-    BT_ASSERT_MSG(weak_fake_layer_.is_alive(),
-                  "fake GATT layer accessed after it was destroyed!");
+    PW_CHECK(weak_fake_layer_.is_alive(),
+             "fake GATT layer accessed after it was destroyed!");
     return weak_fake_layer_;
   }
 

@@ -34,7 +34,7 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
       peer_id_(conn_->peer_identifier()),
       adapter_(std::move(adapter)),
       gatt_(std::move(gatt)) {
-  BT_DEBUG_ASSERT(conn_);
+  PW_DCHECK(conn_);
 
   set_error_handler([this](zx_status_t) { OnClosed(); });
   conn_->set_closed_callback(
@@ -105,8 +105,8 @@ void LowEnergyConnectionServer::AcceptCis(
               connection_params) {
         if (weak_stream_server.is_alive()) {
           if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
-            BT_ASSERT(weak_stream_ptr.has_value());
-            BT_ASSERT(connection_params.has_value());
+            PW_CHECK(weak_stream_ptr.has_value());
+            PW_CHECK(connection_params.has_value());
             weak_stream_server->OnStreamEstablished(*weak_stream_ptr,
                                                     *connection_params);
           } else {

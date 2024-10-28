@@ -44,7 +44,7 @@ constexpr typename std::underlying_type<Enum>::type EnumValue(const Enum& e) {
 // Returns the payload size of the next PDU needed to transmit the maximal
 // amount of the remaining |total_payload_size| bytes.
 uint16_t NextPduPayloadSize(size_t total_payload_size, uint16_t max_pdu_size) {
-  BT_DEBUG_ASSERT(max_pdu_size > kPduHeaderSize);
+  PW_DCHECK(max_pdu_size > kPduHeaderSize);
   // Factor in the header size.
   uint16_t max_payload_size = max_pdu_size - kPduHeaderSize;
   // There is no risk of overflow in this static cast as any value of
@@ -83,15 +83,15 @@ CreditBasedFlowControlTxEngine::CreditBasedFlowControlTxEngine(
       max_tx_pdu_size_(max_tx_pdu_size),
       credits_(initial_credits) {
   // The enhanced flow control mode is not yet supported.
-  BT_ASSERT_MSG(mode_ == kLeCreditBasedFlowControlMode,
-                "Credit based flow control mode unsupported: 0x%.2ux",
-                EnumValue(mode));
+  PW_CHECK(mode_ == kLeCreditBasedFlowControlMode,
+           "Credit based flow control mode unsupported: 0x%.2ux",
+           EnumValue(mode));
 
-  BT_DEBUG_ASSERT_MSG(
+  PW_DCHECK(
       mode != kLeCreditBasedFlowControlMode || max_tx_sdu_size > kMinimumLeMtu,
       "Invalid MTU for LE mode: %d",
       max_tx_sdu_size);
-  BT_DEBUG_ASSERT_MSG(
+  PW_DCHECK(
       mode != kLeCreditBasedFlowControlMode || max_tx_pdu_size > kMinimumLeMps,
       "Invalid MPS for LE mode: %d",
       max_tx_pdu_size);
@@ -133,7 +133,7 @@ void CreditBasedFlowControlTxEngine::SegmentSdu(ByteBufferPtr sdu) {
     MutableBufferView payload;
     std::tie(frame, payload) = CreateFrame(
         NextPduPayloadSize(payload_remaining, max_tx_pdu_size_), channel_id());
-    BT_DEBUG_ASSERT(payload.size() <= payload_remaining);
+    PW_DCHECK(payload.size() <= payload_remaining);
 
     if (payload_remaining > sdu->size()) {
       // First frame of the SDU, write the SDU header.
@@ -143,7 +143,7 @@ void CreditBasedFlowControlTxEngine::SegmentSdu(ByteBufferPtr sdu) {
 
       payload = payload.mutable_view(kSduHeaderSize);
       payload_remaining -= kSduHeaderSize;
-      BT_DEBUG_ASSERT(payload_remaining == sdu->size());
+      PW_DCHECK(payload_remaining == sdu->size());
     }
 
     sdu->Copy(&payload, sdu->size() - payload_remaining, payload.size());
@@ -168,7 +168,7 @@ void CreditBasedFlowControlTxEngine::ProcessSdus() {
 
     if (!sdu)
       break;
-    BT_ASSERT(*sdu);
+    PW_CHECK(*sdu);
 
     if ((*sdu)->size() > max_tx_sdu_size()) {
       bt_log(INFO,

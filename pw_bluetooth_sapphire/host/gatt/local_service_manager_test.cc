@@ -1065,9 +1065,9 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
                PeerId peer_id,
                fit::result<att::ErrorCode>* out_status,
                uint16_t* out_value) {
-    BT_ASSERT(attr);
-    BT_ASSERT(out_status);
-    BT_ASSERT(out_value);
+    PW_CHECK(attr);
+    PW_CHECK(out_status);
+    PW_CHECK(out_value);
 
     auto result_cb = [&out_status, &out_value](auto cb_status,
                                                const auto& value) {
@@ -1087,8 +1087,8 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
                 PeerId peer_id,
                 uint16_t ccc_value,
                 fit::result<att::ErrorCode>* out_status) {
-    BT_ASSERT(attr);
-    BT_ASSERT(out_status);
+    PW_CHECK(attr);
+    PW_CHECK(out_status);
 
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value =

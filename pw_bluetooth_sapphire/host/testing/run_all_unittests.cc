@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
         pw::string::Format(
             new_argv_seed_option, "--gtest_random_seed=%d", random_seed)
             .ok();
-    BT_ASSERT(format_ok);
+    PW_CHECK(format_ok);
     new_argv.push_back(new_argv_seed_option);
   }
 

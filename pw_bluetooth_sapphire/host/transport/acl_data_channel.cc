@@ -191,25 +191,24 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport,
       hci_(hci),
       bredr_buffer_info_(bredr_buffer_info),
       le_buffer_info_(le_buffer_info) {
-  BT_DEBUG_ASSERT(transport_);
-  BT_ASSERT(hci_);
+  PW_DCHECK(transport_);
+  PW_CHECK(hci_);
 
-  BT_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() ||
-                  le_buffer_info.IsAvailable());
+  PW_DCHECK(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
   num_completed_packets_event_handler_id_ =
       transport_->command_channel()->AddEventHandler(
           hci_spec::kNumberOfCompletedPacketsEventCode,
           fit::bind_member<
               &AclDataChannelImpl::NumberOfCompletedPacketsCallback>(this));
-  BT_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
+  PW_DCHECK(num_completed_packets_event_handler_id_);
 
   data_buffer_overflow_event_handler_id_ =
       transport_->command_channel()->AddEventHandler(
           hci_spec::kDataBufferOverflowEventCode,
           fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(
               this));
-  BT_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
+  PW_DCHECK(data_buffer_overflow_event_handler_id_);
 
   bt_log(DEBUG, "hci", "AclDataChannel initialized");
 }
@@ -233,9 +232,9 @@ void AclDataChannelImpl::RegisterConnection(
          connection->handle());
   auto [_, inserted] =
       registered_connections_.emplace(connection->handle(), connection);
-  BT_ASSERT_MSG(inserted,
-                "connection with handle %#.4x already registered",
-                connection->handle());
+  PW_CHECK(inserted,
+           "connection with handle %#.4x already registered",
+           connection->handle());
 
   // Reset the round-robin iterators because they have been invalidated.
   ResetRoundRobinIterators();
@@ -300,7 +299,7 @@ void AclDataChannelImpl::IncrementPendingPacketsForLink(
 }
 
 void AclDataChannelImpl::SendPackets(ConnectionMap::iterator& current_link) {
-  BT_DEBUG_ASSERT(current_link != registered_connections_.end());
+  PW_DCHECK(current_link != registered_connections_.end());
   const ConnectionMap::iterator original_link = current_link;
   const LinkType link_type = original_link->second->type();
   size_t free_buffer_packets = GetNumFreePacketsForLinkType(link_type);
@@ -324,7 +323,7 @@ void AclDataChannelImpl::SendPackets(ConnectionMap::iterator& current_link) {
 
     // If there is an available packet, send and update packet counts
     ACLDataPacketPtr packet = current_link->second->GetNextOutboundPacket();
-    BT_DEBUG_ASSERT(packet);
+    PW_DCHECK(packet);
     hci_->SendAclData(packet->view().data().subspan());
 
     is_packet_queued = true;
@@ -361,7 +360,7 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent,
 }
 
 void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
-  BT_ASSERT(rx_callback);
+  PW_CHECK(rx_callback);
   rx_callback_ = std::move(rx_callback);
   hci_->SetReceiveAclFunction(
       fit::bind_member<&AclDataChannelImpl::OnRxPacket>(this));
@@ -372,8 +371,8 @@ void AclDataChannelImpl::ClearControllerPacketCount(
   // Ensure link has already been unregistered. Otherwise, queued packets for
   // this handle could be sent after clearing packet count, and the packet count
   // could become corrupted.
-  BT_ASSERT(registered_connections_.find(handle) ==
-            registered_connections_.end());
+  PW_CHECK(registered_connections_.find(handle) ==
+           registered_connections_.end());
 
   bt_log(DEBUG, "hci", "clearing pending packets (handle: %#.4x)", handle);
 
@@ -472,8 +471,8 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(
   }
   auto view = event.unchecked_view<
       pw::bluetooth::emboss::NumberOfCompletedPacketsEventView>();
-  BT_ASSERT(view.header().event_code_enum().Read() ==
-            pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  PW_CHECK(view.header().event_code_enum().Read() ==
+           pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
   size_t handles_in_packet =
       (event.size() -
@@ -545,12 +544,11 @@ AclDataChannelImpl::NumberOfCompletedPacketsCallback(
 size_t AclDataChannelImpl::GetNumFreePacketsForLinkType(
     LinkType link_type) const {
   if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
-    BT_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >=
-                    *num_pending_bredr_packets_);
+    PW_DCHECK(bredr_buffer_info_.max_num_packets() >=
+              *num_pending_bredr_packets_);
     return bredr_buffer_info_.max_num_packets() - *num_pending_bredr_packets_;
   } else if (link_type == LinkType::kLE) {
-    BT_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >=
-                    *num_pending_le_packets_);
+    PW_DCHECK(le_buffer_info_.max_num_packets() >= *num_pending_le_packets_);
     return le_buffer_info_.max_num_packets() - *num_pending_le_packets_;
   }
   return 0;
@@ -559,10 +557,10 @@ size_t AclDataChannelImpl::GetNumFreePacketsForLinkType(
 void AclDataChannelImpl::DecrementPendingPacketsForLinkType(LinkType link_type,
                                                             size_t count) {
   if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
-    BT_DEBUG_ASSERT(*num_pending_bredr_packets_ >= count);
+    PW_DCHECK(*num_pending_bredr_packets_ >= count);
     *num_pending_bredr_packets_.Mutable() -= count;
   } else if (link_type == LinkType::kLE) {
-    BT_DEBUG_ASSERT(*num_pending_le_packets_ >= count);
+    PW_DCHECK(*num_pending_le_packets_ >= count);
     *num_pending_le_packets_.Mutable() -= count;
   }
 }
@@ -571,17 +569,16 @@ void AclDataChannelImpl::IncrementPendingPacketsForLinkType(
     LinkType link_type) {
   if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
     *num_pending_bredr_packets_.Mutable() += 1;
-    BT_DEBUG_ASSERT(*num_pending_bredr_packets_ <=
-                    bredr_buffer_info_.max_num_packets());
+    PW_DCHECK(*num_pending_bredr_packets_ <=
+              bredr_buffer_info_.max_num_packets());
   } else if (link_type == LinkType::kLE) {
     *num_pending_le_packets_.Mutable() += 1;
-    BT_DEBUG_ASSERT(*num_pending_le_packets_ <=
-                    le_buffer_info_.max_num_packets());
+    PW_DCHECK(*num_pending_le_packets_ <= le_buffer_info_.max_num_packets());
   }
 }
 
 void AclDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
-  BT_ASSERT(rx_callback_);
+  PW_CHECK(rx_callback_);
 
   if (buffer.size() < sizeof(hci_spec::ACLDataHeader)) {
     // TODO(fxbug.dev/42179582): Handle these types of errors by signaling

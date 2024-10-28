@@ -43,7 +43,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
     bt::gap::Peer* const peer = adapter()->peer_cache()->NewPeer(
         bt::testing::MakePublicDeviceAddress(fuzzed_data_provider),
         /*connectable=*/true);
-    BT_ASSERT(peer);
+    PW_CHECK(peer);
     bt::gap::testing::PeerFuzzer peer_fuzzer(fuzzed_data_provider, *peer);
     while (fuzzed_data_provider.remaining_bytes() != 0) {
       peer_fuzzer.FuzzOneField();
@@ -56,7 +56,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
     peer_watcher()->GetNext(
         [this, peer, &watch_peers_responses](
             fuchsia::bluetooth::host::PeerWatcher_GetNext_Result result) {
-          BT_ASSERT(result.is_response());
+          PW_CHECK(result.is_response());
           std::vector<::fuchsia::bluetooth::sys::Peer> updated;
           if (result.response().is_updated()) {
             updated = std::move(result.response().updated());
@@ -65,14 +65,14 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
           if (result.response().is_removed()) {
             removed = std::move(result.response().removed());
           }
-          BT_ASSERT_MSG(updated.size() == 1,
-                        "peer %s: peers updated = %zu",
-                        bt_str(*peer),
-                        updated.size());
-          BT_ASSERT_MSG(removed.size() == 0,
-                        "peer %s: peers removed = %zu",
-                        bt_str(*peer),
-                        removed.size());
+          PW_CHECK(updated.size() == 1,
+                   "peer %s: peers updated = %zu",
+                   bt_str(*peer),
+                   updated.size());
+          PW_CHECK(removed.size() == 0,
+                   "peer %s: peers removed = %zu",
+                   bt_str(*peer),
+                   removed.size());
           HandleWatchPeersResponse(*host_client(),
                                    watch_peers_responses,
                                    /*max_call_depth=*/1,
@@ -80,10 +80,10 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
                                    std::move(removed));
         });
     RunLoopUntilIdle();
-    BT_ASSERT_MSG(watch_peers_responses == 1,
-                  "peer %s: WatchPeers returned %d times",
-                  bt_str(*peer),
-                  watch_peers_responses);
+    PW_CHECK(watch_peers_responses == 1,
+             "peer %s: WatchPeers returned %d times",
+             bt_str(*peer),
+             watch_peers_responses);
   }
 
  private:
@@ -121,13 +121,13 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
       std::vector<fuchsia::bluetooth::sys::Peer> updated,
       std::vector<fuchsia::bluetooth::PeerId> removed) {
     call_counter++;
-    BT_ASSERT_MSG(call_counter <= max_call_depth,
-                  "max depth (%d) exceeded",
-                  call_counter);
+    PW_CHECK(call_counter <= max_call_depth,
+             "max depth (%d) exceeded",
+             call_counter);
     peer_watcher()->GetNext(
         [this, &host, &call_counter, max_call_depth](
             fuchsia::bluetooth::host::PeerWatcher_GetNext_Result result) {
-          BT_ASSERT(result.is_response());
+          PW_CHECK(result.is_response());
           std::vector<::fuchsia::bluetooth::sys::Peer> updated;
           if (result.response().is_updated()) {
             updated = std::move(result.response().updated());

@@ -34,7 +34,7 @@ LowEnergyInterrogator::LowEnergyInterrogator(
       weak_self_(this) {}
 
 void LowEnergyInterrogator::Start(ResultCallback callback) {
-  BT_ASSERT(!callback_);
+  PW_CHECK(!callback_);
   callback_ = std::move(callback);
 
   if (!peer_.is_alive()) {
@@ -42,7 +42,7 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
     return;
   }
 
-  BT_ASSERT(peer_->le().has_value());
+  PW_CHECK(peer_->le().has_value());
 
   // Always read remote version information as a test of whether the connection
   // was *actually* successfully established. If the connection failed to be
@@ -140,9 +140,9 @@ void LowEnergyInterrogator::QueueRequestPeerSca() {
   cmd_runner_.RunCommands([this](hci::Result<> result) {
     // This shouldn't happen since we verified that the peer supports SCA
     // updates
-    BT_DEBUG_ASSERT_MSG(!result.is_error(),
-                        "request for SCA from peer %s failed",
-                        bt_str(peer_id_));
+    PW_DCHECK(!result.is_error(),
+              "request for SCA from peer %s failed",
+              bt_str(peer_id_));
     // Report success since the data is not critical and we don't want to
     // interrupt pairing
     Complete(fit::ok());
@@ -198,8 +198,8 @@ void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
             event, WARN, "gap-le", "read remote version info failed")) {
       return;
     }
-    BT_DEBUG_ASSERT(event.event_code() ==
-                    hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+    PW_DCHECK(event.event_code() ==
+              hci_spec::kReadRemoteVersionInfoCompleteEventCode);
     bt_log(TRACE,
            "gap-le",
            "read remote version info completed (peer: %s)",

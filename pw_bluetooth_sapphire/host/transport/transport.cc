@@ -27,14 +27,14 @@ Transport::Transport(std::unique_ptr<pw::bluetooth::Controller> controller,
     : WeakSelf(this),
       dispatcher_(dispatcher),
       controller_(std::move(controller)) {
-  BT_ASSERT(controller_);
+  PW_CHECK(controller_);
 }
 
 Transport::~Transport() { bt_log(INFO, "hci", "Transport shutting down"); }
 
 void Transport::Initialize(
     fit::callback<void(bool /*success*/)> complete_callback) {
-  BT_ASSERT(!command_channel_);
+  PW_CHECK(!command_channel_);
 
   bt_log(DEBUG, "hci", "initializing Transport");
   auto self = GetWeakPtr();
@@ -112,7 +112,7 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
 }
 
 bool Transport::InitializeIsoDataChannel(const DataBufferInfo& buffer_info) {
-  BT_ASSERT(buffer_info.IsAvailable());
+  PW_CHECK(buffer_info.IsAvailable());
 
   if (static_cast<uint32_t>(*features_ & FeaturesBits::kHciIso) == 0) {
     bt_log(WARN, "hci", "HCI ISO not supported");
@@ -125,13 +125,13 @@ bool Transport::InitializeIsoDataChannel(const DataBufferInfo& buffer_info) {
 }
 
 FeaturesBits Transport::GetFeatures() {
-  BT_ASSERT(features_);
+  PW_CHECK(features_);
   return features_.value();
 }
 
 void Transport::SetTransportErrorCallback(fit::closure callback) {
-  BT_ASSERT(callback);
-  BT_ASSERT(!error_cb_);
+  PW_CHECK(callback);
+  PW_CHECK(!error_cb_);
   error_cb_ = std::move(callback);
 }
 
@@ -145,7 +145,7 @@ void Transport::OnChannelError() {
 }
 
 void Transport::AttachInspect(inspect::Node& parent, const std::string& name) {
-  BT_ASSERT(acl_data_channel_);
+  PW_CHECK(acl_data_channel_);
   hci_node_ = parent.CreateChild(name);
 
   if (command_channel_) {

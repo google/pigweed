@@ -49,7 +49,7 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(
                              random_channel_ids),
       state_(0u),
       sig_(sig) {
-  BT_DEBUG_ASSERT(sig_);
+  PW_DCHECK(sig_);
   BrEdrCommandHandler cmd_handler(sig_);
   cmd_handler.ServeConnectionRequest(
       fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxConnReq>(this));
@@ -404,7 +404,7 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
 }
 
 void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
-  BT_ASSERT(done_cb);
+  PW_CHECK(done_cb);
   if (!IsConnected()) {
     done_cb();
     return;
@@ -489,8 +489,8 @@ bool BrEdrDynamicChannel::IsOpen() const {
 }
 
 ChannelInfo BrEdrDynamicChannel::info() const {
-  BT_ASSERT(local_config().retransmission_flow_control_option().has_value());
-  BT_ASSERT(local_config().mtu_option().has_value());
+  PW_CHECK(local_config().retransmission_flow_control_option().has_value());
+  PW_CHECK(local_config().mtu_option().has_value());
 
   const auto max_rx_sdu_size = local_config().mtu_option()->mtu();
   const auto peer_mtu = remote_config().mtu_option()->mtu();
@@ -832,8 +832,8 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(
       state_(0u),
       peer_supports_ertm_(peer_supports_ertm),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(signaling_channel_);
-  BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
+  PW_DCHECK(signaling_channel_);
+  PW_DCHECK(local_cid != kInvalidChannelId);
 
   UpdateLocalConfigForErtm();
 }
@@ -851,7 +851,7 @@ void BrEdrDynamicChannel::PassOpenResult() {
 // client. The channel may still be connected, in case it's useful to perform
 // channel configuration at this point.
 void BrEdrDynamicChannel::PassOpenError() {
-  BT_ASSERT(!IsOpen());
+  PW_CHECK(!IsOpen());
   PassOpenResult();
 }
 
@@ -927,7 +927,7 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
     return;
   }
 
-  BT_ASSERT(!IsWaitingForPeerErtmSupport());
+  PW_CHECK(!IsWaitingForPeerErtmSupport());
 
   SendLocalConfig();
 }
@@ -990,7 +990,7 @@ bool BrEdrDynamicChannel::BothConfigsAccepted() const {
 }
 
 bool BrEdrDynamicChannel::AcceptedChannelModesAreConsistent() const {
-  BT_ASSERT(BothConfigsAccepted());
+  PW_CHECK(BothConfigsAccepted());
   auto local_mode = local_config_.retransmission_flow_control_option()->mode();
   auto remote_mode =
       remote_config_.retransmission_flow_control_option()->mode();
@@ -1096,10 +1096,10 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
 std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption>
 BrEdrDynamicChannel::CheckForUnacceptableErtmOptions(
     const ChannelConfiguration& config) const {
-  BT_ASSERT(config.retransmission_flow_control_option()->mode() ==
-            RetransmissionAndFlowControlMode::kEnhancedRetransmission);
-  BT_ASSERT(local_config().retransmission_flow_control_option()->mode() ==
-            RetransmissionAndFlowControlMode::kEnhancedRetransmission);
+  PW_CHECK(config.retransmission_flow_control_option()->mode() ==
+           RetransmissionAndFlowControlMode::kEnhancedRetransmission);
+  PW_CHECK(local_config().retransmission_flow_control_option()->mode() ==
+           RetransmissionAndFlowControlMode::kEnhancedRetransmission);
 
   std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption>
       unacceptable_rfc_option;

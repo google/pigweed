@@ -39,15 +39,15 @@ void PairingPhase::InvalidatePairingChannelHandler() {
 }
 
 void PairingPhase::OnFailure(Error error) {
-  BT_ASSERT(!has_failed());
+  PW_CHECK(!has_failed());
   bt_log(WARN, "sm", "pairing failed: %s", bt_str(error));
   has_failed_ = true;
-  BT_ASSERT(listener_.is_alive());
+  PW_CHECK(listener_.is_alive());
   listener_->OnPairingFailed(error);
 }
 
 void PairingPhase::Abort(ErrorCode ecode) {
-  BT_ASSERT(!has_failed());
+  PW_CHECK(!has_failed());
   Error error(ecode);
   bt_log(INFO, "sm", "abort pairing: %s", bt_str(error));
 

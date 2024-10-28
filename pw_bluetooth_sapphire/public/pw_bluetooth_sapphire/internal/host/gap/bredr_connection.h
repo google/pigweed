@@ -112,12 +112,12 @@ class BrEdrConnection final {
   bool interrogation_complete() const { return !request_.has_value(); }
 
   sm::SecurityProperties security_properties() const {
-    BT_ASSERT(pairing_state_manager_);
+    PW_CHECK(pairing_state_manager_);
     return pairing_state_manager_->security_properties();
   }
 
   void set_security_mode(BrEdrSecurityMode mode) {
-    BT_ASSERT(pairing_state_manager_);
+    PW_CHECK(pairing_state_manager_);
     pairing_state_manager_->set_security_mode(mode);
   }
 

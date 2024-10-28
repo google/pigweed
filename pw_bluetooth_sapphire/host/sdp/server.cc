@@ -139,7 +139,7 @@ l2cap::Psm FindProtocolListPsm(const DataElement& protocol_list) {
          "Trying to find PSM from %s",
          protocol_list.ToString().c_str());
   const auto* l2cap_protocol = protocol_list.At(0);
-  BT_DEBUG_ASSERT(l2cap_protocol);
+  PW_DCHECK(l2cap_protocol);
   const auto* prot_uuid = l2cap_protocol->At(0);
   if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid ||
       *prot_uuid->Get<UUID>() != protocol::kL2CAP) {
@@ -249,7 +249,7 @@ Server::Server(l2cap::ChannelManager* l2cap)
       next_handle_(kFirstUnreservedHandle),
       db_state_(0),
       weak_ptr_factory_(this) {
-  BT_ASSERT(l2cap_);
+  PW_CHECK(l2cap_);
 
   records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
 
@@ -282,7 +282,7 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 bool Server::AddConnection(l2cap::Channel::WeakPtr channel) {
-  BT_ASSERT(channel.is_alive());
+  PW_CHECK(channel.is_alive());
   hci_spec::ConnectionHandle handle = channel->link_handle();
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
 
@@ -513,7 +513,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     assigned_handles.emplace(next);
   }
 
-  BT_ASSERT(assigned_handles.size() == records.size());
+  PW_CHECK(assigned_handles.size() == records.size());
 
   // The RegistrationHandle is the smallest ServiceHandle that was assigned.
   RegistrationHandle reg_handle = *assigned_handles.begin();
@@ -554,7 +554,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   // Store the complete records.
   for (auto& record : records) {
     auto [it, success] = records_.emplace(record.handle(), std::move(record));
-    BT_DEBUG_ASSERT(success);
+    PW_DCHECK(success);
     const ServiceRecord& placed_record = it->second;
     if (placed_record.IsProtocolOnly()) {
       bt_log(TRACE,
@@ -592,8 +592,8 @@ bool Server::UnregisterService(RegistrationHandle handle) {
   }
 
   for (const auto& svc_h : handles_it.mapped()) {
-    BT_ASSERT(svc_h != kSDPHandle);
-    BT_ASSERT(records_.find(svc_h) != records_.end());
+    PW_CHECK(svc_h != kSDPHandle);
+    PW_CHECK(records_.find(svc_h) != records_.end());
     bt_log(DEBUG, "sdp", "unregistering service (handle: %#.8x)", svc_h);
 
     // Unregister any service callbacks from L2CAP
@@ -719,7 +719,7 @@ void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) {
 
 std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu,
                                                    uint16_t max_tx_sdu_size) {
-  BT_DEBUG_ASSERT(sdu);
+  PW_DCHECK(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   if (sdu->size() < sizeof(Header)) {
     bt_log(DEBUG, "sdp", "PDU too short; dropping");

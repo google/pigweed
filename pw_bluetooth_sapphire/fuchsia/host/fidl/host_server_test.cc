@@ -189,8 +189,8 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
   bt::gap::Peer* AddFakePeer(const bt::DeviceAddress& address) {
     bt::gap::Peer* peer =
         adapter()->peer_cache()->NewPeer(address, /*connectable=*/true);
-    BT_ASSERT(peer);
-    BT_ASSERT(peer->temporary());
+    PW_CHECK(peer);
+    PW_CHECK(peer->temporary());
 
     test_device()->AddPeer(
         std::make_unique<FakePeer>(address, pw_dispatcher()));

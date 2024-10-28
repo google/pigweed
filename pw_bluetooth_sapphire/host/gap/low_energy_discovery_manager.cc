@@ -37,7 +37,7 @@ const char* kInspectScanWindowPropertyName = "scan_window_ms";
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     bool active, LowEnergyDiscoveryManager::WeakPtr manager)
     : alive_(true), active_(active), manager_(std::move(manager)) {
-  BT_ASSERT(manager_.is_alive());
+  PW_CHECK(manager_.is_alive());
 }
 
 LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
@@ -65,7 +65,7 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
 }
 
 void LowEnergyDiscoverySession::Stop() {
-  BT_DEBUG_ASSERT(alive_);
+  PW_DCHECK(alive_);
   if (manager_.is_alive()) {
     manager_->RemoveSession(this);
   }
@@ -73,7 +73,7 @@ void LowEnergyDiscoverySession::Stop() {
 }
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
-  BT_ASSERT(peer.le());
+  PW_CHECK(peer.le());
 
   if (!alive_ || !peer_found_callback_) {
     return;
@@ -103,8 +103,8 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
       peer_cache_(peer_cache),
       paused_count_(0),
       scanner_(scanner) {
-  BT_DEBUG_ASSERT(peer_cache_);
-  BT_DEBUG_ASSERT(scanner_);
+  PW_DCHECK(peer_cache_);
+  PW_DCHECK(scanner_);
 
   scanner_->set_delegate(this);
 }
@@ -117,7 +117,7 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
 
 void LowEnergyDiscoveryManager::StartDiscovery(bool active,
                                                SessionCallback callback) {
-  BT_ASSERT(callback);
+  PW_CHECK(callback);
   bt_log(INFO, "gap-le", "start %s discovery", active ? "active" : "passive");
 
   // If a request to start or stop is currently pending then this one will
@@ -130,7 +130,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active,
   if (!pending_.empty() ||
       (scanner_->state() == hci::LowEnergyScanner::State::kStopping &&
        sessions_.empty())) {
-    BT_ASSERT(!scanner_->IsScanning());
+    PW_CHECK(!scanner_->IsScanning());
     pending_.push_back(
         DiscoveryRequest{.active = active, .callback = std::move(callback)});
     return;
@@ -190,7 +190,7 @@ LowEnergyDiscoveryManager::PauseDiscovery() {
       return;
     }
 
-    BT_ASSERT(paused());
+    PW_CHECK(paused());
     paused_count_.Set(*paused_count_ - 1);
     if (*paused_count_ == 0) {
       ResumeDiscovery();
@@ -243,14 +243,14 @@ LowEnergyDiscoveryManager::AddSession(bool active) {
 
 void LowEnergyDiscoveryManager::RemoveSession(
     LowEnergyDiscoverySession* session) {
-  BT_ASSERT(session);
+  PW_CHECK(session);
 
   // Only alive sessions are allowed to call this method. If there is at least
   // one alive session object out there, then we MUST be scanning.
-  BT_ASSERT(session->alive());
+  PW_CHECK(session->alive());
 
   auto iter = std::find(sessions_.begin(), sessions_.end(), session);
-  BT_ASSERT(iter != sessions_.end());
+  PW_CHECK(iter != sessions_.end());
 
   bool active = session->active();
 
@@ -298,7 +298,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
     peer = peer_cache_->NewPeer(result.address(), result.connectable());
-    BT_ASSERT(peer);
+    PW_CHECK(peer);
   } else if (!peer->connectable() && result.connectable()) {
     bt_log(DEBUG,
            "gap-le",
@@ -506,7 +506,7 @@ void LowEnergyDiscoveryManager::NotifyPending() {
       cb(std::move(new_sessions[i]));
     }
   }
-  BT_ASSERT(pending_.empty());
+  PW_CHECK(pending_.empty());
 }
 
 void LowEnergyDiscoveryManager::StartScan(bool active) {
@@ -560,7 +560,7 @@ void LowEnergyDiscoveryManager::StopScan() {
 }
 
 void LowEnergyDiscoveryManager::ResumeDiscovery() {
-  BT_ASSERT(!paused());
+  PW_CHECK(!paused());
 
   if (!scanner_->IsIdle()) {
     bt_log(TRACE, "gap-le", "attempt to resume discovery when it is not idle");
@@ -599,7 +599,7 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   // Due to the move, sessions_ should be empty before the loop and any
   // callbacks will add sessions to pending_ so it should be empty
   // afterwards as well.
-  BT_ASSERT(sessions_.empty());
+  PW_CHECK(sessions_.empty());
 }
 
 }  // namespace bt::gap

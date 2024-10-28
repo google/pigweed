@@ -59,7 +59,7 @@ const auto kF5KeyId = std::array<uint8_t, 4>{0x65, 0x6C, 0x74, 0x62};
 // Swap the endianness of a 128-bit integer. |in| and |out| should not be backed
 // by the same buffer.
 void Swap128(const UInt128& in, UInt128* out) {
-  BT_DEBUG_ASSERT(out);
+  PW_DCHECK(out);
   for (size_t i = 0; i < in.size(); ++i) {
     (*out)[i] = in[in.size() - i - 1];
   }
@@ -68,7 +68,7 @@ void Swap128(const UInt128& in, UInt128* out) {
 // XOR two 128-bit integers and return the result in |out|. It is possible to
 // pass a pointer to one of the inputs as |out|.
 void Xor128(const UInt128& int1, const UInt128& int2, UInt128* out) {
-  BT_DEBUG_ASSERT(out);
+  PW_DCHECK(out);
 
   for (size_t i = 0; i < kUInt128Size; ++i) {
     out->at(i) = int1.at(i) ^ int2.at(i);
@@ -296,9 +296,9 @@ void C1(const UInt128& tk,
         const DeviceAddress& initiator_addr,
         const DeviceAddress& responder_addr,
         UInt128* out_confirm_value) {
-  BT_DEBUG_ASSERT(preq.size() == kPreqSize);
-  BT_DEBUG_ASSERT(pres.size() == kPreqSize);
-  BT_DEBUG_ASSERT(out_confirm_value);
+  PW_DCHECK(preq.size() == kPreqSize);
+  PW_DCHECK(pres.size() == kPreqSize);
+  PW_DCHECK(out_confirm_value);
 
   UInt128 p1, p2;
 
@@ -333,7 +333,7 @@ void S1(const UInt128& tk,
         const UInt128& r1,
         const UInt128& r2,
         UInt128* out_stk) {
-  BT_DEBUG_ASSERT(out_stk);
+  PW_DCHECK(out_stk);
 
   UInt128 r_prime;
 
@@ -348,7 +348,7 @@ void S1(const UInt128& tk,
 }
 
 uint32_t Ah(const UInt128& k, uint32_t r) {
-  BT_DEBUG_ASSERT(r <= k24BitMax);
+  PW_DCHECK(r <= k24BitMax);
 
   // r' = padding || r.
   UInt128 r_prime;
@@ -479,7 +479,7 @@ std::optional<UInt128> F4(const UInt256& u,
   current_view = WriteToBuffer(u, current_view);
 
   // Ensures |current_view| is at the end of data_to_encrypt
-  BT_DEBUG_ASSERT(current_view.size() == 0);
+  PW_DCHECK(current_view.size() == 0);
   return AesCmac(x, data_to_encrypt);
 }
 
@@ -517,7 +517,7 @@ std::optional<F5Results> F5(const UInt256& dhkey,
   current_view = WriteToBuffer(counter, current_view);
 
   // Ensures |current_view| is at the end of data_to_encrypt
-  BT_DEBUG_ASSERT(current_view.size() == 0);
+  PW_DCHECK(current_view.size() == 0);
   maybe_cmac = AesCmac(t_key, data_to_encrypt);
   if (!maybe_cmac.has_value()) {
     return std::nullopt;
@@ -560,7 +560,7 @@ std::optional<UInt128> F6(const UInt128& mackey,
   current_view = WriteToBuffer(n2, current_view);
   current_view = WriteToBuffer(n1, current_view);
   // Ensures |current_view| is at the end of data_to_encrypt
-  BT_DEBUG_ASSERT(current_view.size() == 0);
+  PW_DCHECK(current_view.size() == 0);
   return AesCmac(mackey, data_to_encrypt);
 }
 
@@ -576,7 +576,7 @@ std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x,
       WriteToBuffer(responder_nonce, data_to_encrypt.mutable_view());
   current_view = WriteToBuffer(responder_pubkey_x, current_view);
   current_view = WriteToBuffer(initiator_pubkey_x, current_view);
-  BT_DEBUG_ASSERT(current_view.size() == 0);
+  PW_DCHECK(current_view.size() == 0);
   std::optional<UInt128> maybe_cmac = AesCmac(initiator_nonce, data_to_encrypt);
   if (!maybe_cmac.has_value()) {
     return std::nullopt;

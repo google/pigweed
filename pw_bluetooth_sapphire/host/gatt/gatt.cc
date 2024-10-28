@@ -234,7 +234,7 @@ class Impl final : public GATT {
 
   RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(
       PeerId peer_id, RemoteServiceWatcher watcher) override {
-    BT_ASSERT(watcher);
+    PW_CHECK(watcher);
 
     RemoteServiceWatcherId id = next_watcher_id_++;
     peer_remote_service_watchers_.emplace(
@@ -258,7 +258,7 @@ class Impl final : public GATT {
   void ListServices(PeerId peer_id,
                     std::vector<UUID> uuids,
                     ServiceListCallback callback) override {
-    BT_ASSERT(callback);
+    PW_CHECK(callback);
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       // Connection not found.

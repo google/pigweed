@@ -53,7 +53,7 @@ class WindowedInspectNumericProperty {
                          return;
                        }
 
-                       BT_ASSERT(!values_.empty());
+                       PW_CHECK(!values_.empty());
                        auto oldest_value = values_.front();
                        // Undo expiring value.
                        property_.Subtract(oldest_value.second);
@@ -86,7 +86,7 @@ class WindowedInspectNumericProperty {
   //
   // AttachInspect is only supported for the convenience types declared below.
   virtual void AttachInspect(::inspect::Node& node, std::string name) {
-    BT_ASSERT_MSG(false, "AttachInspect not implemented for NumericPropertyT");
+    PW_CHECK(false, "AttachInspect not implemented for NumericPropertyT");
   }
 
   // Add the given value to the value of this numeric metric.

@@ -31,7 +31,7 @@ BrEdrInterrogator::BrEdrInterrogator(Peer::WeakPtr peer,
       handle_(handle),
       cmd_runner_(std::move(cmd_channel)),
       weak_self_(this) {
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 }
 
 void BrEdrInterrogator::Start(ResultCallback callback) {
@@ -251,8 +251,8 @@ void BrEdrInterrogator::QueueReadRemoteVersionInformation() {
     if (hci_is_error(event, WARN, "gap", "read remote version info failed")) {
       return;
     }
-    BT_DEBUG_ASSERT(event.event_code() ==
-                    hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+    PW_DCHECK(event.event_code() ==
+              hci_spec::kReadRemoteVersionInfoCompleteEventCode);
     bt_log(TRACE,
            "gap",
            "read remote version info completed (peer id: %s)",

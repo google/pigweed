@@ -24,8 +24,8 @@ namespace bt {
 namespace {
 
 DeviceClass::ServiceClass bit_no_to_service_class(uint8_t bit_no) {
-  BT_DEBUG_ASSERT(bit_no >= 13);
-  BT_DEBUG_ASSERT(bit_no < 24);
+  PW_DCHECK(bit_no >= 13);
+  PW_DCHECK(bit_no < 24);
   switch (bit_no) {
     case 13:
       return DeviceClass::ServiceClass::kLimitedDiscoverableMode;
@@ -89,12 +89,12 @@ DeviceClass::DeviceClass(MajorClass major_class)
     : bytes_{0x00, static_cast<uint8_t>(major_class), 0x00} {}
 
 DeviceClass::DeviceClass(std::initializer_list<uint8_t> bytes) {
-  BT_DEBUG_ASSERT(bytes.size() == bytes_.size());
+  PW_DCHECK(bytes.size() == bytes_.size());
   std::copy(bytes.begin(), bytes.end(), bytes_.begin());
 }
 
 DeviceClass::DeviceClass(uint32_t value) {
-  BT_DEBUG_ASSERT(value < 1 << 24);  // field should only populate 24 bits
+  PW_DCHECK(value < 1 << 24);  // field should only populate 24 bits
   bytes_ = {
       static_cast<uint8_t>((value >> 0) & 0xFF),
       static_cast<uint8_t>((value >> 8) & 0xFF),

@@ -28,7 +28,7 @@
 namespace bt::testing {
 
 FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
-  BT_ASSERT(dev_);
+  PW_CHECK(dev_);
 
   // Initialize services
   services_.insert({/*start_handle=*/1,
@@ -122,8 +122,8 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn,
 
   for (auto& [_, service] : services_) {
     // FakeGattServer only supports 16bit UUIDs currently.
-    BT_ASSERT(service.type.CompactSize(/*allow_32bit=*/false) ==
-              UUIDElemSize::k16Bit);
+    PW_CHECK(service.type.CompactSize(/*allow_32bit=*/false) ==
+             UUIDElemSize::k16Bit);
     att::AttributeGroupDataEntry* entry =
         next_entry.AsMutable<att::AttributeGroupDataEntry>();
     entry->start_handle =

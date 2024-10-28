@@ -92,7 +92,7 @@ class RemoteServiceManagerTest : public pw::async::test::FakeDispatcherFixture {
 
     RunUntilIdle();
 
-    BT_DEBUG_ASSERT(services.size() == 1u);
+    PW_DCHECK(services.size() == 1u);
     return services[0];
   }
 
@@ -109,7 +109,7 @@ class RemoteServiceManagerTest : public pw::async::test::FakeDispatcherFixture {
       RemoteService::WeakPtr service,
       std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
-    BT_DEBUG_ASSERT(service.is_alive());
+    PW_DCHECK(service.is_alive());
 
     SetCharacteristicsAndDescriptors(std::move(fake_chrs),
                                      std::move(fake_descrs));
@@ -152,8 +152,8 @@ class RemoteServiceManagerTest : public pw::async::test::FakeDispatcherFixture {
       att::Result<>* out_status,
       IdType* out_id,
       RemoteService::ValueCallback callback = NopValueCallback) {
-    BT_DEBUG_ASSERT(out_status);
-    BT_DEBUG_ASSERT(out_id);
+    PW_DCHECK(out_status);
+    PW_DCHECK(out_id);
     service->EnableNotifications(chr_id,
                                  std::move(callback),
                                  [&](att::Result<> cb_status, IdType cb_id) {

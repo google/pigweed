@@ -24,7 +24,7 @@ pw::random::RandomGenerator* g_random_generator = nullptr;
 pw::random::RandomGenerator* random_generator() { return g_random_generator; }
 
 void set_random_generator(pw::random::RandomGenerator* generator) {
-  BT_ASSERT(!generator || !g_random_generator);
+  PW_CHECK(!generator || !g_random_generator);
   g_random_generator = generator;
 }
 

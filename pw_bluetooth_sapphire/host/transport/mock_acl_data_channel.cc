@@ -19,12 +19,12 @@
 namespace bt::hci::testing {
 
 void MockAclDataChannel::ReceivePacket(std::unique_ptr<ACLDataPacket> packet) {
-  BT_ASSERT(data_rx_handler_);
+  PW_CHECK(data_rx_handler_);
   data_rx_handler_(std::move(packet));
 }
 
 void MockAclDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback) {
-  BT_ASSERT(rx_callback);
+  PW_CHECK(rx_callback);
   data_rx_handler_ = std::move(rx_callback);
 }
 
@@ -36,9 +36,9 @@ void MockAclDataChannel::RegisterConnection(
          connection->handle());
   auto [_, inserted] =
       registered_connections_.emplace(connection->handle(), connection);
-  BT_ASSERT_MSG(inserted,
-                "connection with handle %#.4x already registered",
-                connection->handle());
+  PW_CHECK(inserted,
+           "connection with handle %#.4x already registered",
+           connection->handle());
 }
 
 void MockAclDataChannel::UnregisterConnection(

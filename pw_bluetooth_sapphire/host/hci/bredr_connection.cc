@@ -25,10 +25,10 @@ BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci),
       WeakSelf(this) {
-  BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
-  BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  BT_ASSERT(hci.is_alive());
-  BT_ASSERT(hci->acl_data_channel());
+  PW_CHECK(local_address.type() == DeviceAddress::Type::kBREDR);
+  PW_CHECK(peer_address.type() == DeviceAddress::Type::kBREDR);
+  PW_CHECK(hci.is_alive());
+  PW_CHECK(hci->acl_data_channel());
 }
 
 bool BrEdrConnection::StartEncryption() {
@@ -37,7 +37,7 @@ bool BrEdrConnection::StartEncryption() {
     return false;
   }
 
-  BT_ASSERT(ltk().has_value() == ltk_type_.has_value());
+  PW_CHECK(ltk().has_value() == ltk_type_.has_value());
   if (!ltk().has_value()) {
     bt_log(
         DEBUG,
@@ -118,7 +118,7 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
 
 void BrEdrConnection::ValidateEncryptionKeySize(
     hci::ResultFunction<> key_size_validity_cb) {
-  BT_ASSERT(state() == Connection::State::kConnected);
+  PW_CHECK(state() == Connection::State::kConnected);
 
   auto cmd = EmbossCommandPacket::New<
       pw::bluetooth::emboss::ReadEncryptionKeySizeCommandWriter>(

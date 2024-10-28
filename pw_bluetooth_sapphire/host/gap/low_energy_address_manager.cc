@@ -33,9 +33,9 @@ LowEnergyAddressManager::LowEnergyAddressManager(
       needs_refresh_(false),
       refreshing_(false),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
-  BT_DEBUG_ASSERT(delegate_);
-  BT_DEBUG_ASSERT(cmd_.is_alive());
+  PW_DCHECK(public_.type() == DeviceAddress::Type::kLEPublic);
+  PW_DCHECK(delegate_);
+  PW_DCHECK(cmd_.is_alive());
 }
 
 LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
@@ -64,7 +64,7 @@ void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
 }
 
 void LowEnergyAddressManager::EnsureLocalAddress(AddressCallback callback) {
-  BT_DEBUG_ASSERT(callback);
+  PW_DCHECK(callback);
 
   // Report the address right away if it doesn't need refreshing.
   if (!needs_refresh_) {
@@ -165,7 +165,7 @@ void LowEnergyAddressManager::CancelExpiry() {
 }
 
 bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
-  BT_DEBUG_ASSERT(delegate_);
+  PW_DCHECK(delegate_);
   return delegate_();
 }
 

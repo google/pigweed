@@ -46,7 +46,7 @@ constexpr size_t kMaxSupportedAttributeListBytes = 655360;
 // Returns true if the continuation state is valid here, false otherwise.
 // Sets |out| to point to it if present and valid.
 bool ValidContinuationState(const ByteBuffer& buf, BufferView* out) {
-  BT_DEBUG_ASSERT(out);
+  PW_DCHECK(out);
   if (buf.size() == 0) {
     return false;
   }
@@ -173,7 +173,7 @@ void AddToAttributeRanges(std::list<AttributeRange>* ranges,
 Request::Request() { cont_state_.Fill(0); }
 
 void Request::SetContinuationState(const ByteBuffer& buf) {
-  BT_DEBUG_ASSERT(buf.size() < kMaxContStateLength);
+  PW_DCHECK(buf.size() < kMaxContStateLength);
   cont_state_[0] = static_cast<uint8_t>(buf.size());
   if (cont_state_[0] == 0) {
     return;
@@ -192,7 +192,7 @@ bool Request::ParseContinuationState(const ByteBuffer& buf) {
 }
 
 size_t Request::WriteContinuationState(MutableByteBuffer* buf) const {
-  BT_DEBUG_ASSERT(buf->size() > cont_info_size());
+  PW_DCHECK(buf->size() > cont_info_size());
   size_t written_size = sizeof(uint8_t) + cont_info_size();
   buf->Write(cont_state_.view(0, written_size));
   return written_size;
@@ -274,7 +274,7 @@ ServiceSearchRequest::ServiceSearchRequest(const ByteBuffer& params)
     service_search_pattern_.clear();
     return;
   }
-  BT_DEBUG_ASSERT(valid());
+  PW_DCHECK(valid());
 }
 
 bool ServiceSearchRequest::valid() const {
@@ -318,7 +318,7 @@ ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
   write_view = buf->mutable_view(written);
   written += WriteContinuationState(&write_view);
 
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 
@@ -474,7 +474,7 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(
   if (!buf) {
     return buf;
   }
-  BT_ASSERT(buf->size() <= max_size);
+  PW_CHECK(buf->size() <= max_size);
 
   size_t written = sizeof(Header);
   buf->WriteObj(
@@ -504,7 +504,7 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(
                   written);
     written += sizeof(uint16_t);
   }
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 
@@ -545,7 +545,7 @@ ServiceAttributeRequest::ServiceAttributeRequest(const ByteBuffer& params) {
     attribute_ranges_.clear();
     return;
   }
-  BT_DEBUG_ASSERT(valid());
+  PW_DCHECK(valid());
 }
 
 bool ServiceAttributeRequest::valid() const {
@@ -580,7 +580,7 @@ ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
 
   // valid() ensures that |size| can't overflow due to too many attribute
   // ranges.
-  BT_DEBUG_ASSERT(size <= std::numeric_limits<uint16_t>::max());
+  PW_DCHECK(size <= std::numeric_limits<uint16_t>::max());
   auto buf =
       BuildNewPdu(kServiceAttributeRequest, tid, static_cast<uint16_t>(size));
 
@@ -601,7 +601,7 @@ ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
 
   mut_view = buf->mutable_view(written);
   written += WriteContinuationState(&mut_view);
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 
@@ -843,7 +843,7 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
                   written);
     written += sizeof(uint32_t);
   }
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 
@@ -919,7 +919,7 @@ ServiceSearchAttributeRequest::ServiceSearchAttributeRequest(
          max_attribute_byte_count_,
          attribute_ranges_.size());
 
-  BT_DEBUG_ASSERT(valid());
+  PW_DCHECK(valid());
 }
 
 bool ServiceSearchAttributeRequest::valid() const {
@@ -982,7 +982,7 @@ ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
 
   mut_view = buf->mutable_view(written);
   written += WriteContinuationState(&mut_view);
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 
@@ -1013,7 +1013,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(
   if (complete() && attribute_lists_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(TRACE, "sdp", "can't parse into a complete response");
-    BT_DEBUG_ASSERT(!partial_response_);
+    PW_DCHECK(!partial_response_);
     return ToResult(HostError::kNotReady);
   }
 
@@ -1259,15 +1259,15 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
     // Safe to cast because the value is constrained by the number of local
     // attributes, which will be much less than UINT32_MAX. bytes_skipped (an
     // untrusted value) is checked for out-of-range above.
-    BT_DEBUG_ASSERT(bytes_skipped + attribute_lists_byte_count <
-                    std::numeric_limits<uint32_t>::max());
+    PW_DCHECK(bytes_skipped + attribute_lists_byte_count <
+              std::numeric_limits<uint32_t>::max());
     bytes_skipped =
         static_cast<uint32_t>(bytes_skipped + attribute_lists_byte_count);
     buf->WriteObj(pw::bytes::ConvertOrderTo(cpp20::endian::big, bytes_skipped),
                   written);
     written += sizeof(uint32_t);
   }
-  BT_DEBUG_ASSERT(written == sizeof(Header) + size);
+  PW_DCHECK(written == sizeof(Header) + size);
   return buf;
 }
 

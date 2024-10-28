@@ -205,7 +205,7 @@ void FakeController::ClearDefaultCommandStatus(hci_spec::OpCode opcode) {
 
 void FakeController::SetDefaultResponseStatus(hci_spec::OpCode opcode,
                                               pwemb::StatusCode status) {
-  BT_DEBUG_ASSERT(status != pwemb::StatusCode::SUCCESS);
+  PW_DCHECK(status != pwemb::StatusCode::SUCCESS);
   default_status_map_[opcode] = status;
 }
 
@@ -214,7 +214,7 @@ void FakeController::ClearDefaultResponseStatus(hci_spec::OpCode opcode) {
 }
 
 bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
-  BT_DEBUG_ASSERT(peer);
+  PW_DCHECK(peer);
 
   if (peers_.count(peer->address()) != 0u) {
     return false;
@@ -243,7 +243,7 @@ FakePeer* FakeController::FindPeer(const DeviceAddress& address) {
 }
 
 void FakeController::SendCommand(pw::span<const std::byte> command) {
-  BT_ASSERT(command.size() >= sizeof(hci_spec::CommandHeader));
+  PW_CHECK(command.size() >= sizeof(hci_spec::CommandHeader));
 
   // Post the packet to simulate async HCI behavior.
   (void)heap_dispatcher().Post(
@@ -361,7 +361,7 @@ void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code,
 
 void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle,
                                    const ByteBuffer& payload) {
-  BT_DEBUG_ASSERT(payload.size() <= hci_spec::kMaxACLPayloadSize);
+  PW_DCHECK(payload.size() <= hci_spec::kMaxACLPayloadSize);
 
   DynamicByteBuffer buffer(sizeof(hci_spec::ACLDataHeader) + payload.size());
   MutablePacketView<hci_spec::ACLDataHeader> acl(&buffer, payload.size());
@@ -378,8 +378,8 @@ void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle,
 void FakeController::SendL2CAPBFrame(hci_spec::ConnectionHandle handle,
                                      l2cap::ChannelId channel_id,
                                      const ByteBuffer& payload) {
-  BT_DEBUG_ASSERT(payload.size() <=
-                  hci_spec::kMaxACLPayloadSize - sizeof(l2cap::BasicHeader));
+  PW_DCHECK(payload.size() <=
+            hci_spec::kMaxACLPayloadSize - sizeof(l2cap::BasicHeader));
 
   DynamicByteBuffer buffer(sizeof(l2cap::BasicHeader) + payload.size());
   MutablePacketView<l2cap::BasicHeader> bframe(&buffer, payload.size());
@@ -487,7 +487,7 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr,
 void FakeController::SendConnectionRequest(const DeviceAddress& addr,
                                            pwemb::LinkType link_type) {
   FakePeer* peer = FindPeer(addr);
-  BT_ASSERT(peer);
+  PW_CHECK(peer);
   peer->set_last_connection_request_link_type(link_type);
 
   bt_log(DEBUG,
@@ -525,7 +525,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
       return;
     }
 
-    BT_DEBUG_ASSERT(!peer->logical_links().empty());
+    PW_DCHECK(!peer->logical_links().empty());
 
     l2cap::ConnectionParameterUpdateRequestPayload payload;
     payload.interval_min =
@@ -582,8 +582,8 @@ void FakeController::Disconnect(const DeviceAddress& addr,
         }
 
         auto links = peer->Disconnect();
-        BT_DEBUG_ASSERT(!peer->connected());
-        BT_DEBUG_ASSERT(!links.empty());
+        PW_DCHECK(!peer->connected());
+        PW_DCHECK(!links.empty());
 
         for (auto link : links) {
           NotifyConnectionState(addr, link, /*connected=*/false);
@@ -980,7 +980,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
   std::optional<DeviceAddress::Type> addr_type =
       DeviceAddress::LeAddrToDeviceAddr(params.peer_address_type().Read());
-  BT_DEBUG_ASSERT(addr_type && *addr_type != DeviceAddress::Type::kBREDR);
+  PW_DCHECK(addr_type && *addr_type != DeviceAddress::Type::kBREDR);
 
   const DeviceAddress peer_address(*addr_type,
                                    DeviceAddressBytes(params.peer_address()));
@@ -1279,7 +1279,7 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
     return;
   }
 
-  BT_DEBUG_ASSERT(peer->connected());
+  PW_DCHECK(peer->connected());
 
   uint16_t min_interval = params.connection_interval_min().UncheckedRead();
   uint16_t max_interval = params.connection_interval_max().UncheckedRead();
@@ -1333,7 +1333,7 @@ void FakeController::OnDisconnectCommandReceived(
     return;
   }
 
-  BT_DEBUG_ASSERT(peer->connected());
+  PW_DCHECK(peer->connected());
 
   RespondWithCommandStatus(hci_spec::kDisconnect, pwemb::StatusCode::SUCCESS);
 
@@ -1719,7 +1719,7 @@ void FakeController::OnLECreateConnectionCancel() {
 
   le_connect_pending_ = false;
   le_connect_rsp_task_.Cancel();
-  BT_DEBUG_ASSERT(le_connect_params_);
+  PW_DCHECK(le_connect_params_);
 
   NotifyConnectionState(le_connect_params_->peer_address,
                         0,
@@ -2357,7 +2357,7 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
   RespondWithCommandComplete(hci_spec::kLinkKeyRequestReply,
                              pwemb::StatusCode::SUCCESS);
 
-  BT_ASSERT(!peer->logical_links().empty());
+  PW_CHECK(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     auto event =
         hci::EmbossEventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
@@ -2461,7 +2461,7 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
       pwemb::KeyType::UNAUTHENTICATED_COMBINATION_FROM_P192);
   SendCommandChannelPacket(link_key_event.data());
 
-  BT_ASSERT(!peer->logical_links().empty());
+  PW_CHECK(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     auto event =
         hci::EmbossEventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
@@ -3266,7 +3266,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
 
   // rest of the function deals with enabling advertising for a given set of
   // advertising sets
-  BT_ASSERT(params.enable().Read() == pwemb::GenericEnableParam::ENABLE);
+  PW_CHECK(params.enable().Read() == pwemb::GenericEnableParam::ENABLE);
 
   if (num_sets == 0) {
     bt_log(
@@ -3281,8 +3281,8 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     // FakeController currently doesn't support testing with duration and max
     // events. When those are used in the host, these checks will fail and
     // remind us to add the necessary code to FakeController.
-    BT_ASSERT(params.data()[i].duration().Read() == 0);
-    BT_ASSERT(params.data()[i].max_extended_advertising_events().Read() == 0);
+    PW_CHECK(params.data()[i].duration().Read() == 0);
+    PW_CHECK(params.data()[i].max_extended_advertising_events().Read() == 0);
 
     hci_spec::AdvertisingHandle handle =
         params.data()[i].advertising_handle().Read();
@@ -4069,7 +4069,7 @@ void FakeController::OnVendorCommand(
 void FakeController::OnACLDataPacketReceived(
     const ByteBuffer& acl_data_packet) {
   if (acl_data_callback_) {
-    BT_DEBUG_ASSERT(data_dispatcher_);
+    PW_DCHECK(data_dispatcher_);
     DynamicByteBuffer packet_copy(acl_data_packet);
     (void)data_dispatcher_->Post(
         [packet_copy = std::move(packet_copy), cb = acl_data_callback_.share()](
@@ -4153,9 +4153,9 @@ void FakeController::OnIsoDataPacketReceived(
 
 void FakeController::SetDataCallback(DataCallback callback,
                                      pw::async::Dispatcher& pw_dispatcher) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(!acl_data_callback_);
-  BT_DEBUG_ASSERT(!data_dispatcher_);
+  PW_DCHECK(callback);
+  PW_DCHECK(!acl_data_callback_);
+  PW_DCHECK(!data_dispatcher_);
 
   acl_data_callback_ = std::move(callback);
   data_dispatcher_.emplace(pw_dispatcher);

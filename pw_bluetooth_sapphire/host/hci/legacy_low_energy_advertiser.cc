@@ -245,7 +245,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   // |starting_| was reset or the |result_callback| was moved), return early.
   if (options.include_tx_power_level) {
     auto power_cb = [this](auto, const hci::EmbossEventPacket& event) mutable {
-      BT_ASSERT(staged_params_.has_value());
+      PW_CHECK(staged_params_.has_value());
       if (!starting_ || !staged_params_.value().result_callback) {
         bt_log(
             INFO, "hci-le", "Advertising canceled during TX Power Level read.");

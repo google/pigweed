@@ -123,7 +123,7 @@ void CommandHandler::ServeDisconnectionRequest(
 CommandHandler::CommandHandler(SignalingChannelInterface* sig,
                                fit::closure request_fail_callback)
     : sig_(sig), request_fail_callback_(std::move(request_fail_callback)) {
-  BT_ASSERT(sig_);
+  PW_CHECK(sig_);
 }
 
 }  // namespace bt::l2cap::internal

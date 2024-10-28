@@ -33,9 +33,9 @@ SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
       role_(role),
       next_cmd_id_(0x01),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(chan_);
-  BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId ||
-                  chan_->id() == kLESignalingChannelId);
+  PW_DCHECK(chan_);
+  PW_DCHECK(chan_->id() == kSignalingChannelId ||
+            chan_->id() == kLESignalingChannelId);
 
   // Note: No need to guard against out-of-thread access as these callbacks are
   // called on the L2CAP thread.
@@ -54,7 +54,7 @@ SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
 bool SignalingChannel::SendRequest(CommandCode req_code,
                                    const ByteBuffer& payload,
                                    ResponseHandler cb) {
-  BT_ASSERT(cb);
+  PW_CHECK(cb);
 
   // Command identifiers for pending requests are assumed to be unique across
   // all types of requests and reused by order of least recent use. See v5.0
@@ -89,8 +89,8 @@ bool SignalingChannel::SendRequest(CommandCode req_code,
 }
 
 void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
-  BT_ASSERT(!IsSupportedResponse(req_code));
-  BT_ASSERT(cb);
+  PW_CHECK(!IsSupportedResponse(req_code));
+  PW_CHECK(cb);
   inbound_handlers_[req_code] = std::move(cb);
 }
 
@@ -98,11 +98,11 @@ void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet,
                                        CommandId id,
                                        CommandCode response_command_code,
                                        ResponseHandler cb) {
-  BT_ASSERT(IsSupportedResponse(response_command_code));
+  PW_CHECK(IsSupportedResponse(response_command_code));
 
   const auto [iter, inserted] = pending_commands_.try_emplace(
       id, request_packet, response_command_code, std::move(cb), pw_dispatcher_);
-  BT_ASSERT(inserted);
+  PW_CHECK(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which
   // will call OnResponseTimeout when it expires. This timer is canceled if the
@@ -127,7 +127,7 @@ SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig,
                                                CommandCode code,
                                                CommandId id)
     : sig_(sig), code_(code), id_(id) {
-  BT_DEBUG_ASSERT(sig_);
+  PW_DCHECK(sig_);
 }
 
 void SignalingChannel::ResponderImpl::Send(const ByteBuffer& rsp_payload) {
@@ -232,7 +232,7 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
 
 void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
   auto iter = pending_commands_.find(id);
-  BT_ASSERT(iter != pending_commands_.end());
+  PW_CHECK(iter != pending_commands_.end());
 
   if (!retransmit ||
       iter->second.transmit_count == kMaxSignalingChannelTransmissions) {
@@ -246,8 +246,8 @@ void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {
-  BT_DEBUG_ASSERT(packet);
-  BT_DEBUG_ASSERT(packet->size() >= sizeof(CommandHeader));
+  PW_DCHECK(packet);
+  PW_DCHECK(packet->size() >= sizeof(CommandHeader));
 
   if (!is_open())
     return false;
@@ -258,11 +258,11 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   // response rather than assert and crash.
   [[maybe_unused]] SignalingPacket reply(
       packet.get(), packet->size() - sizeof(CommandHeader));
-  BT_DEBUG_ASSERT(reply.header().code);
-  BT_DEBUG_ASSERT(reply.payload_size() ==
-                  pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                              reply.header().length));
-  BT_DEBUG_ASSERT(chan_);
+  PW_DCHECK(reply.header().code);
+  PW_DCHECK(reply.payload_size() ==
+            pw::bytes::ConvertOrderFrom(cpp20::endian::little,
+                                        reply.header().length));
+  PW_DCHECK(chan_);
 
   return chan_->Send(std::move(packet));
 }
@@ -270,10 +270,10 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
 ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
                                             uint8_t identifier,
                                             const ByteBuffer& data) {
-  BT_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
+  PW_DCHECK(data.size() <= std::numeric_limits<uint16_t>::max());
 
   auto buffer = NewBuffer(sizeof(CommandHeader) + data.size());
-  BT_ASSERT(buffer);
+  PW_CHECK(buffer);
 
   MutableSignalingPacket packet(buffer.get(), data.size());
   packet.mutable_header()->code = code;
@@ -288,7 +288,7 @@ ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
 bool SignalingChannel::SendCommandReject(uint8_t identifier,
                                          RejectReason reason,
                                          const ByteBuffer& data) {
-  BT_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
+  PW_DCHECK(data.size() <= kCommandRejectMaxDataLength);
 
   constexpr size_t kMaxPayloadLength =
       sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
@@ -314,7 +314,7 @@ CommandId SignalingChannel::GetNextCommandId() {
 }
 
 void SignalingChannel::OnChannelClosed() {
-  BT_DEBUG_ASSERT(is_open());
+  PW_DCHECK(is_open());
 
   is_open_ = false;
 }

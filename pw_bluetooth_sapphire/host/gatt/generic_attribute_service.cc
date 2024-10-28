@@ -26,8 +26,8 @@ GenericAttributeService::GenericAttributeService(
     SendIndicationCallback send_indication_callback)
     : local_service_manager_(std::move(local_service_manager)),
       send_indication_callback_(std::move(send_indication_callback)) {
-  BT_ASSERT(local_service_manager_.is_alive());
-  BT_DEBUG_ASSERT(send_indication_callback_);
+  PW_CHECK(local_service_manager_.is_alive());
+  PW_DCHECK(send_indication_callback_);
 
   Register();
 }
@@ -60,7 +60,7 @@ void GenericAttributeService::Register() {
                                              PeerId peer_id,
                                              bool notify,
                                              bool indicate) {
-    BT_DEBUG_ASSERT(chrc_id == 0u);
+    PW_DCHECK(chrc_id == 0u);
 
     SetServiceChangedIndicationSubscription(peer_id, indicate);
     if (persist_service_changed_ccc_callback_) {
@@ -92,7 +92,7 @@ void GenericAttributeService::Register() {
                                 ReadResponder responder) {
     // The stack shouldn't send us any read requests other than this id, none of
     // the other characteristics or descriptors support it.
-    BT_DEBUG_ASSERT(chrc_id == kServerSupportedFeaturesChrcId);
+    PW_DCHECK(chrc_id == kServerSupportedFeaturesChrcId);
 
     // The only octet is the first octet.  The only bit is the EATT supported
     // bit.
@@ -105,7 +105,7 @@ void GenericAttributeService::Register() {
                                               std::move(read_handler),
                                               NopWriteHandler,
                                               std::move(ccc_callback));
-  BT_DEBUG_ASSERT(service_id_ != kInvalidId);
+  PW_DCHECK(service_id_ != kInvalidId);
 
   local_service_manager_->set_service_changed_callback(
       fit::bind_member<&GenericAttributeService::OnServiceChanged>(this));

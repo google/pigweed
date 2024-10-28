@@ -95,7 +95,7 @@ struct EnhancedControlField {
   }
 
   void set_receive_seq_num(uint8_t seq_num) {
-    BT_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
+    PW_DCHECK(seq_num <= kMaxSeqNum);
     // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2,
     // Table 3.2.
     uint16_t host_val =
@@ -142,7 +142,7 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
   SimpleInformationFrameHeader() = default;
 
   explicit SimpleInformationFrameHeader(uint8_t tx_seq) {
-    BT_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
+    PW_DCHECK(tx_seq <= kMaxSeqNum);
     uint16_t host_val =
         pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value);
     host_val |= (tx_seq << 1);
@@ -150,7 +150,7 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
   }
 
   uint8_t tx_seq() const {
-    BT_DEBUG_ASSERT(!designates_supervisory_frame());
+    PW_DCHECK(!designates_supervisory_frame());
     return (pw::bytes::ConvertOrderFrom(cpp20::endian::little, raw_value) &
             (0b0111'1110)) >>
            1;
@@ -192,7 +192,7 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
   SimpleSupervisoryFrame() = default;
 
   explicit SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
-    BT_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
+    PW_DCHECK(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     uint16_t host_val =

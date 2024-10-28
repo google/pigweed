@@ -104,9 +104,8 @@ SecurityProperties::SecurityProperties(hci_spec::LinkKeyType lk_type)
                          IsAuthenticatedKey(lk_type),
                          IsSecureConnectionsKey(lk_type),
                          kMaxEncryptionKeySize) {
-  BT_DEBUG_ASSERT_MSG(
-      lk_type != hci_spec::LinkKeyType::kChangedCombination,
-      "Can't infer security information from a Changed Combination Key");
+  PW_DCHECK(lk_type != hci_spec::LinkKeyType::kChangedCombination,
+            "Can't infer security information from a Changed Combination Key");
 }
 
 SecurityProperties::SecurityProperties(const SecurityProperties& other) {

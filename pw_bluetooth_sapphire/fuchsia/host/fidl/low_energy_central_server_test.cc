@@ -100,7 +100,7 @@ class LowEnergyCentralServerTest : public TestingBase {
   // Ownership of |handle| remains with the caller when this method returns.
   bool IsClientHandleClosedAfterLoop(
       fidl::InterfaceHandle<fgatt::Client>* handle) {
-    BT_ASSERT(handle);
+    PW_CHECK(handle);
 
     fgatt::ClientPtr proxy;
     proxy.Bind(std::move(*handle));

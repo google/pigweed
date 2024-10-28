@@ -201,9 +201,9 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(
       // detect truncated datagrams.
       read_buf_(channel_->max_tx_sdu_size() + 1),
       weak_self_(this) {
-  BT_ASSERT(dispatcher_);
-  BT_ASSERT(socket_);
-  BT_ASSERT(channel_.is_alive());
+  PW_CHECK(dispatcher_);
+  PW_CHECK(socket_);
+  PW_CHECK(channel_.is_alive());
 
   // Note: binding |this| is safe, as BindWait() wraps the bound method inside
   // of a lambda which verifies that |this| hasn't been destroyed.
@@ -234,7 +234,7 @@ SocketChannelRelay<ChannelT>::~SocketChannelRelay() {
 
 template <typename ChannelT>
 bool SocketChannelRelay<ChannelT>::Activate() {
-  BT_ASSERT(state_ == RelayState::kActivating);
+  PW_CHECK(state_ == RelayState::kActivating);
 
   // Note: we assume that BeginWait() does not synchronously dispatch any
   // events. The wait handler will assert otherwise.
@@ -283,7 +283,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::Deactivate() {
-  BT_ASSERT(state_ != RelayState::kDeactivated);
+  PW_CHECK(state_ != RelayState::kDeactivated);
 
   state_ = RelayState::kDeactivating;
   if (!socket_write_queue_.empty()) {
@@ -299,7 +299,7 @@ void SocketChannelRelay<ChannelT>::Deactivate() {
   // We assume that UnbindAndCancelWait() will not trigger a re-entrant call
   // into Deactivate(). And the RelayIsDestroyedWhenDispatcherIsShutDown test
   // verifies that to be the case. (If we had re-entrant calls, a
-  // BT_ASSERT() in the lambda bound by BindWait() would cause an abort.)
+  // PW_CHECK() in the lambda bound by BindWait() would cause an abort.)
   UnbindAndCancelWait(&sock_read_waiter_);
   UnbindAndCancelWait(&sock_write_waiter_);
   UnbindAndCancelWait(&sock_close_waiter_);
@@ -324,7 +324,7 @@ void SocketChannelRelay<ChannelT>::DeactivateAndRequestDestruction() {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnSocketReadable(zx_status_t status) {
-  BT_ASSERT(state_ == RelayState::kActivated);
+  PW_CHECK(state_ == RelayState::kActivated);
   if (!CopyFromSocketToChannel() ||
       !BeginWait("socket read waiter", &sock_read_waiter_)) {
     DeactivateAndRequestDestruction();
@@ -333,7 +333,7 @@ void SocketChannelRelay<ChannelT>::OnSocketReadable(zx_status_t status) {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnSocketWritable(zx_status_t status) {
-  BT_ASSERT(state_ == RelayState::kActivated);
+  PW_CHECK(state_ == RelayState::kActivated);
   if (socket_write_queue_.empty()) {
     // The write queue may be emptied before this signal handler is called if
     // the first packet in the write queue gets dropped and the subsequent
@@ -350,7 +350,7 @@ void SocketChannelRelay<ChannelT>::OnSocketWritable(zx_status_t status) {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnSocketClosed(zx_status_t status) {
-  BT_ASSERT(state_ == RelayState::kActivated);
+  PW_CHECK(state_ == RelayState::kActivated);
   DeactivateAndRequestDestruction();
 }
 
@@ -359,7 +359,7 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
     ByteBufferPtr rx_data) {
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
-  BT_ASSERT(state_ != RelayState::kDeactivated);
+  PW_CHECK(state_ != RelayState::kDeactivated);
   TRACE_DURATION("bluetooth",
                  "SocketChannelRelay::OnChannelDataReceived",
                  "channel id",
@@ -374,7 +374,7 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
     return;
   }
 
-  BT_ASSERT(rx_data);
+  PW_CHECK(rx_data);
   if (rx_data->size() == 0) {
     bt_log(DEBUG,
            "l2cap",
@@ -384,7 +384,7 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
     return;
   }
 
-  BT_ASSERT(socket_write_queue_.size() <= socket_write_queue_max_frames_);
+  PW_CHECK(socket_write_queue_.size() <= socket_write_queue_max_frames_);
   // On a full queue, we drop the oldest element, on the theory that newer data
   // is more useful. This should be true, e.g., for real-time applications such
   // as voice calls. In the future, we may want to make the drop-head vs.
@@ -413,8 +413,8 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnChannelClosed() {
-  BT_ASSERT(state_ != RelayState::kActivating);
-  BT_ASSERT(state_ != RelayState::kDeactivated);
+  PW_CHECK(state_ != RelayState::kActivating);
+  PW_CHECK(state_ != RelayState::kDeactivated);
 
   if (state_ == RelayState::kDeactivating) {
     bt_log(DEBUG,
@@ -425,7 +425,7 @@ void SocketChannelRelay<ChannelT>::OnChannelClosed() {
     return;
   }
 
-  BT_ASSERT(state_ == RelayState::kActivated);
+  PW_CHECK(state_ == RelayState::kActivated);
   if (!socket_write_queue_.empty()) {
     ServiceSocketWriteQueue();
   }
@@ -446,14 +446,14 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     size_t n_bytes_read = 0;
     read_res = socket_.read(
         0, read_buf_.mutable_data(), read_buf_.size(), &n_bytes_read);
-    BT_ASSERT_MSG(read_res == ZX_OK || read_res == ZX_ERR_SHOULD_WAIT ||
-                      read_res == ZX_ERR_PEER_CLOSED,
-                  "%s",
-                  zx_status_get_string(read_res));
-    BT_ASSERT_MSG(n_bytes_read <= read_buf_.size(),
-                  "(n_bytes_read=%zu, read_buf_size=%zu)",
-                  n_bytes_read,
-                  read_buf_.size());
+    PW_CHECK(read_res == ZX_OK || read_res == ZX_ERR_SHOULD_WAIT ||
+                 read_res == ZX_ERR_PEER_CLOSED,
+             "%s",
+             zx_status_get_string(read_res));
+    PW_CHECK(n_bytes_read <= read_buf_.size(),
+             "(n_bytes_read=%zu, read_buf_size=%zu)",
+             n_bytes_read,
+             read_buf_.size());
     if (read_res == ZX_ERR_SHOULD_WAIT) {
       return true;
     }
@@ -467,7 +467,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
       return false;
     }
 
-    BT_ASSERT(n_bytes_read > 0);
+    PW_CHECK(n_bytes_read > 0);
     socket_packet_recv_count_++;
     if (n_bytes_read > channel_->max_tx_sdu_size()) {
       bt_log(WARN,
@@ -509,15 +509,15 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
                  "channel_id",
                  channel_->id());
   do {
-    BT_ASSERT(!socket_write_queue_.empty());
-    BT_ASSERT(socket_write_queue_.front());
+    PW_CHECK(!socket_write_queue_.empty());
+    PW_CHECK(socket_write_queue_.front());
     TRACE_DURATION("bluetooth",
                    "SocketChannelRelay::ServiceSocketWriteQueue write",
                    "channel_id",
                    channel_->id());
 
     const ByteBuffer& rx_data = *socket_write_queue_.front();
-    BT_ASSERT_MSG(rx_data.size(), "Zero-length message on write queue");
+    PW_CHECK(rx_data.size(), "Zero-length message on write queue");
 
     socket_packet_sent_count_++;
     TRACE_FLOW_END("bluetooth",
@@ -530,12 +530,12 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
     size_t n_bytes_written = 0;
     write_res =
         socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);
-    BT_ASSERT_MSG(write_res == ZX_OK || write_res == ZX_ERR_SHOULD_WAIT ||
-                      write_res == ZX_ERR_PEER_CLOSED,
-                  "%s",
-                  zx_status_get_string(write_res));
+    PW_CHECK(write_res == ZX_OK || write_res == ZX_ERR_SHOULD_WAIT ||
+                 write_res == ZX_ERR_PEER_CLOSED,
+             "%s",
+             zx_status_get_string(write_res));
     if (write_res != ZX_OK) {
-      BT_ASSERT(n_bytes_written == 0);
+      PW_CHECK(n_bytes_written == 0);
       bt_log(TRACE,
              "l2cap",
              "Failed to write %zu bytes to socket for channel %u: %s",
@@ -544,10 +544,10 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
              zx_status_get_string(write_res));
       break;
     }
-    BT_ASSERT_MSG(n_bytes_written == rx_data.size(),
-                  "(n_bytes_written=%zu, rx_data.size()=%zu)",
-                  n_bytes_written,
-                  rx_data.size());
+    PW_CHECK(n_bytes_written == rx_data.size(),
+             "(n_bytes_written=%zu, rx_data.size()=%zu)",
+             n_bytes_written,
+             rx_data.size());
     socket_write_queue_.pop_front();
   } while (write_res == ZX_OK && !socket_write_queue_.empty());
 
@@ -597,20 +597,19 @@ void SocketChannelRelay<ChannelT>::BindWait(
                                      async::WaitBase* actual_wait,
                                      zx_status_t status,
                                      const zx_packet_signal_t* signal) {
-        BT_ASSERT_MSG(
-            self.is_alive(), "(%s, channel_id=%u)", wait_name, channel_id);
-        BT_ASSERT_MSG(actual_dispatcher == self->dispatcher_,
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
-        BT_ASSERT_MSG(actual_wait == expected_wait,
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
-        BT_ASSERT_MSG(status == ZX_OK || status == ZX_ERR_CANCELED,
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
+        PW_CHECK(self.is_alive(), "(%s, channel_id=%u)", wait_name, channel_id);
+        PW_CHECK(actual_dispatcher == self->dispatcher_,
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
+        PW_CHECK(actual_wait == expected_wait,
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
+        PW_CHECK(status == ZX_OK || status == ZX_ERR_CANCELED,
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
 
         if (status == ZX_ERR_CANCELED) {  // Dispatcher is shutting down.
           bt_log(DEBUG,
@@ -622,19 +621,19 @@ void SocketChannelRelay<ChannelT>::BindWait(
           return;
         }
 
-        BT_ASSERT_MSG(signal, "(%s, channel_id=%u)", wait_name, channel_id);
-        BT_ASSERT_MSG(signal->trigger == expected_wait->trigger(),
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
-        BT_ASSERT_MSG(self->state_ != RelayState::kActivating,
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
-        BT_ASSERT_MSG(self->state_ != RelayState::kDeactivated,
-                      "(%s, channel_id=%u)",
-                      wait_name,
-                      channel_id);
+        PW_CHECK(signal, "(%s, channel_id=%u)", wait_name, channel_id);
+        PW_CHECK(signal->trigger == expected_wait->trigger(),
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
+        PW_CHECK(self->state_ != RelayState::kActivating,
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
+        PW_CHECK(self->state_ != RelayState::kDeactivated,
+                 "(%s, channel_id=%u)",
+                 wait_name,
+                 channel_id);
 
         if (self->state_ == RelayState::kDeactivating) {
           bt_log(DEBUG,
@@ -651,15 +650,15 @@ void SocketChannelRelay<ChannelT>::BindWait(
 template <typename ChannelT>
 bool SocketChannelRelay<ChannelT>::BeginWait(const char* wait_name,
                                              async::Wait* wait) {
-  BT_ASSERT(state_ != RelayState::kDeactivating);
-  BT_ASSERT(state_ != RelayState::kDeactivated);
+  PW_CHECK(state_ != RelayState::kDeactivating);
+  PW_CHECK(state_ != RelayState::kDeactivated);
 
   if (wait->is_pending()) {
     return true;
   }
 
   zx_status_t wait_res = wait->Begin(dispatcher_);
-  BT_ASSERT(wait_res == ZX_OK || wait_res == ZX_ERR_BAD_STATE);
+  PW_CHECK(wait_res == ZX_OK || wait_res == ZX_ERR_BAD_STATE);
 
   if (wait_res != ZX_OK) {
     bt_log(ERROR,
@@ -675,14 +674,14 @@ bool SocketChannelRelay<ChannelT>::BeginWait(const char* wait_name,
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::UnbindAndCancelWait(async::Wait* wait) {
-  BT_ASSERT(state_ != RelayState::kActivating);
-  BT_ASSERT(state_ != RelayState::kDeactivated);
+  PW_CHECK(state_ != RelayState::kActivating);
+  PW_CHECK(state_ != RelayState::kDeactivated);
   zx_status_t cancel_res;
   wait->set_handler(nullptr);
   cancel_res = wait->Cancel();
-  BT_ASSERT_MSG(cancel_res == ZX_OK || cancel_res == ZX_ERR_NOT_FOUND,
-                "Cancel failed: %s",
-                zx_status_get_string(cancel_res));
+  PW_CHECK(cancel_res == ZX_OK || cancel_res == ZX_ERR_NOT_FOUND,
+           "Cancel failed: %s",
+           zx_status_get_string(cancel_res));
 }
 
 template <typename ChannelT>

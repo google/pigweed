@@ -186,7 +186,7 @@ void Gatt2ServerServer::OnReadRequest(bt::PeerId peer_id,
                                       btg::ReadResponder responder) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send read requests for registered services.
-  BT_ASSERT(svc_iter != services_.end());
+  PW_CHECK(svc_iter != services_.end());
 
   auto cb = [responder = std::move(responder)](
                 LocalService_ReadValue_Result res) mutable {
@@ -209,7 +209,7 @@ void Gatt2ServerServer::OnWriteRequest(bt::PeerId peer_id,
                                        btg::WriteResponder responder) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send write requests for registered services.
-  BT_ASSERT(svc_iter != services_.end());
+  PW_CHECK(svc_iter != services_.end());
 
   auto cb = [responder = std::move(responder)](
                 LocalService_WriteValue_Result result) mutable {
@@ -240,7 +240,7 @@ void Gatt2ServerServer::OnClientCharacteristicConfiguration(
     bool indicate) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send CCC updates for registered services.
-  BT_ASSERT(svc_iter != services_.end());
+  PW_CHECK(svc_iter != services_.end());
 
   auto cb = []() {
     bt_log(TRACE, "fidl", "characteristic configuration acknowledged");
@@ -263,7 +263,7 @@ bool Gatt2ServerServer::ValidateValueChangedEvent(
     const char* update_type) {
   auto iter = services_.find(service_id);
   // It is impossible for clients to send events to a closed service.
-  BT_ASSERT(iter != services_.end());
+  PW_CHECK(iter != services_.end());
   // Subtract credit before validating parameters so that credits aren't
   // permanently lost from the client's perspective.
   SubtractCredit(iter->second);
@@ -363,7 +363,7 @@ void Gatt2ServerServer::SubtractCredit(Service& svc) {
   // perspective because new credits are granted before the count reaches 0
   // (excessive events will fill the FIDL channel and eventually crash the
   // client).
-  BT_ASSERT(svc.credits > 0);
+  PW_CHECK(svc.credits > 0);
   svc.credits--;
   if (svc.credits <= REFRESH_CREDITS_AT) {
     // Static cast OK because current_credits > 0 and we never add more than

@@ -33,10 +33,10 @@ att::Handle InsertCharacteristicAttributes(
     const Characteristic& chrc,
     att::Attribute::ReadHandler read_handler,
     att::Attribute::WriteHandler write_handler) {
-  BT_DEBUG_ASSERT(grouping);
-  BT_DEBUG_ASSERT(!grouping->complete());
-  BT_DEBUG_ASSERT(read_handler);
-  BT_DEBUG_ASSERT(write_handler);
+  PW_DCHECK(grouping);
+  PW_DCHECK(!grouping->complete());
+  PW_DCHECK(read_handler);
+  PW_DCHECK(write_handler);
 
   // Characteristic Declaration (Vol 3, Part G, 3.3.1).
   auto* decl_attr = grouping->AddAttribute(
@@ -45,18 +45,18 @@ att::Handle InsertCharacteristicAttributes(
                               /*authentication=*/false,
                               /*authorization=*/false),  // read (no security)
       att::AccessRequirements());                        // write (not allowed)
-  BT_DEBUG_ASSERT(decl_attr);
+  PW_DCHECK(decl_attr);
 
   // Characteristic Value Declaration (Vol 3, Part G, 3.3.2)
   auto* value_attr = grouping->AddAttribute(
       chrc.type(), chrc.read_permissions(), chrc.write_permissions());
-  BT_DEBUG_ASSERT(value_attr);
+  PW_DCHECK(value_attr);
 
   value_attr->set_read_handler(std::move(read_handler));
   value_attr->set_write_handler(std::move(write_handler));
 
   size_t uuid_size = chrc.type().CompactSize(/*allow_32bit=*/false);
-  BT_DEBUG_ASSERT(uuid_size == 2 || uuid_size == 16);
+  PW_DCHECK(uuid_size == 2 || uuid_size == 16);
 
   // The characteristic declaration value contains:
   // 1 octet: properties
@@ -81,14 +81,14 @@ void InsertDescriptorAttribute(att::AttributeGrouping* grouping,
                                const att::AccessRequirements& write_reqs,
                                att::Attribute::ReadHandler read_handler,
                                att::Attribute::WriteHandler write_handler) {
-  BT_DEBUG_ASSERT(grouping);
-  BT_DEBUG_ASSERT(!grouping->complete());
-  BT_DEBUG_ASSERT(read_handler);
-  BT_DEBUG_ASSERT(write_handler);
+  PW_DCHECK(grouping);
+  PW_DCHECK(!grouping->complete());
+  PW_DCHECK(read_handler);
+  PW_DCHECK(write_handler);
 
   // There is no special declaration attribute type for descriptors.
   auto* attr = grouping->AddAttribute(type, read_reqs, write_reqs);
-  BT_DEBUG_ASSERT(attr);
+  PW_DCHECK(attr);
 
   attr->set_read_handler(std::move(read_handler));
   attr->set_write_handler(std::move(write_handler));
@@ -98,7 +98,7 @@ void InsertDescriptorAttribute(att::AttributeGrouping* grouping,
 // Returns the number of attributes that will be in the service attribute group
 // (exluding the service declaration) in |out_attrs|.
 bool ValidateService(const Service& service, size_t* out_attr_count) {
-  BT_DEBUG_ASSERT(out_attr_count);
+  PW_DCHECK(out_attr_count);
 
   size_t attr_count = 0u;
   std::unordered_set<IdType> ids;
@@ -168,10 +168,10 @@ class LocalServiceManager::ServiceData final {
         write_handler_(std::forward<WriteHandler>(write_handler)),
         ccc_callback_(std::forward<ClientConfigCallback>(ccc_callback)),
         weak_self_(this) {
-    BT_DEBUG_ASSERT(read_handler_);
-    BT_DEBUG_ASSERT(write_handler_);
-    BT_DEBUG_ASSERT(ccc_callback_);
-    BT_DEBUG_ASSERT(grouping);
+    PW_DCHECK(read_handler_);
+    PW_DCHECK(write_handler_);
+    PW_DCHECK(ccc_callback_);
+    PW_DCHECK(grouping);
 
     start_handle_ = grouping->start_handle();
     end_handle_ = grouping->end_handle();
@@ -196,7 +196,7 @@ class LocalServiceManager::ServiceData final {
   bool GetCharacteristicConfig(IdType chrc_id,
                                PeerId peer_id,
                                ClientCharacteristicConfig* out_config) {
-    BT_DEBUG_ASSERT(out_config);
+    PW_DCHECK(out_config);
 
     auto iter = chrc_configs_.find(chrc_id);
     if (iter == chrc_configs_.end())
@@ -394,7 +394,7 @@ class LocalServiceManager::ServiceData final {
               /*authentication=*/false,
               /*authorization=*/false),  // read (no security)
           att::AccessRequirements());    // write (not allowed)
-      BT_DEBUG_ASSERT(decl_attr);
+      PW_DCHECK(decl_attr);
       decl_attr->SetValue(StaticByteBuffer(
           (uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
     }
@@ -461,7 +461,7 @@ class LocalServiceManager::ServiceData final {
   void AddCCCDescriptor(att::AttributeGrouping* grouping,
                         const Characteristic& chrc,
                         att::Handle chrc_handle) {
-    BT_DEBUG_ASSERT(chrc.update_permissions().allowed());
+    PW_DCHECK(chrc.update_permissions().allowed());
 
     // Readable with no authentication or authorization (Vol 3, Part G,
     // 3.3.3.3). We let the service determine the encryption permission.
@@ -530,7 +530,7 @@ LocalServiceManager::LocalServiceManager()
     : WeakSelf(this),
       db_(std::make_unique<att::Database>()),
       next_service_id_(1ull) {
-  BT_DEBUG_ASSERT(db_);
+  PW_DCHECK(db_);
 }
 
 LocalServiceManager::~LocalServiceManager() = default;
@@ -539,10 +539,10 @@ IdType LocalServiceManager::RegisterService(ServicePtr service,
                                             ReadHandler read_handler,
                                             WriteHandler write_handler,
                                             ClientConfigCallback ccc_callback) {
-  BT_DEBUG_ASSERT(service);
-  BT_DEBUG_ASSERT(read_handler);
-  BT_DEBUG_ASSERT(write_handler);
-  BT_DEBUG_ASSERT(ccc_callback);
+  PW_DCHECK(service);
+  PW_DCHECK(read_handler);
+  PW_DCHECK(write_handler);
+  PW_DCHECK(ccc_callback);
 
   if (services_.find(next_service_id_) != services_.end()) {
     bt_log(TRACE, "gatt", "server: Ran out of service IDs");
@@ -578,7 +578,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service,
                                                     std::move(read_handler),
                                                     std::move(write_handler),
                                                     std::move(ccc_callback));
-  BT_DEBUG_ASSERT(grouping->complete());
+  PW_DCHECK(grouping->complete());
   grouping->set_active(true);
 
   // TODO(armansito): Handle potential 64-bit unsigned overflow?
@@ -614,7 +614,7 @@ bool LocalServiceManager::GetCharacteristicConfig(
     IdType chrc_id,
     PeerId peer_id,
     ClientCharacteristicConfig* out_config) {
-  BT_DEBUG_ASSERT(out_config);
+  PW_DCHECK(out_config);
 
   auto iter = services_.find(service_id);
   if (iter == services_.end())

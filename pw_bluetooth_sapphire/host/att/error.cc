@@ -78,7 +78,7 @@ std::string ProtocolErrorTraits<att::ErrorCode>::ToString(
                          "%s (ATT %#.2hhx)",
                          ErrorToString(ecode),
                          static_cast<unsigned char>(ecode));
-  BT_DEBUG_ASSERT(status.ok());
+  PW_DCHECK(status.ok());
   return out;
 }
 

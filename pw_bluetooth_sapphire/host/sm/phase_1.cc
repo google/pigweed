@@ -86,29 +86,29 @@ Phase1::Phase1(PairingChannel::WeakPtr chan,
       io_capability_(io_capability),
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)) {
-  BT_ASSERT(!(role == Role::kInitiator && preq_.has_value()));
-  BT_ASSERT(!(role == Role::kResponder && !preq_.has_value()));
-  BT_ASSERT(requested_level_ >= SecurityLevel::kEncrypted);
+  PW_CHECK(!(role == Role::kInitiator && preq_.has_value()));
+  PW_CHECK(!(role == Role::kResponder && !preq_.has_value()));
+  PW_CHECK(requested_level_ >= SecurityLevel::kEncrypted);
   if (requested_level_ > SecurityLevel::kEncrypted) {
-    BT_ASSERT(io_capability != IOCapability::kNoInputNoOutput);
+    PW_CHECK(io_capability != IOCapability::kNoInputNoOutput);
   }
   SetPairingChannelHandler(*this);
 }
 
 void Phase1::Start() {
-  BT_ASSERT(!has_failed());
+  PW_CHECK(!has_failed());
   if (role() == Role::kResponder) {
-    BT_ASSERT(preq_.has_value());
+    PW_CHECK(preq_.has_value());
     RespondToPairingRequest(*preq_);
     return;
   }
-  BT_ASSERT(!preq_.has_value());
+  PW_CHECK(!preq_.has_value());
   InitiateFeatureExchange();
 }
 
 void Phase1::InitiateFeatureExchange() {
   // Only the initiator can initiate the feature exchange.
-  BT_ASSERT(role() == Role::kInitiator);
+  PW_CHECK(role() == Role::kInitiator);
   LocalPairingParams preq_values = BuildPairingParameters();
   preq_ = PairingRequestParams{
       .io_capability = preq_values.io_capability,
@@ -123,7 +123,7 @@ void Phase1::InitiateFeatureExchange() {
 void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // We should only be in this state when pairing is initiated by the remote
   // i.e. we are the responder.
-  BT_ASSERT(role() == Role::kResponder);
+  PW_CHECK(role() == Role::kResponder);
 
   LocalPairingParams pres_values = BuildPairingParameters();
   pres_ = PairingResponseParams{
@@ -179,7 +179,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
     // We always request identity information from the remote.
     local_params.remote_keys = KeyDistGen::kIdKey;
 
-    BT_ASSERT(listener().is_alive());
+    PW_CHECK(listener().is_alive());
     if (listener()->OnIdentityRequest().has_value()) {
       local_params.local_keys |= KeyDistGen::kIdKey;
     }
@@ -279,8 +279,8 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
     remote_keys = pres.initiator_key_dist_gen;
 
     // When we are the responder we always respect the initiator's wishes.
-    BT_ASSERT((preq.initiator_key_dist_gen & remote_keys) == remote_keys);
-    BT_ASSERT((preq.responder_key_dist_gen & local_keys) == local_keys);
+    PW_CHECK((preq.initiator_key_dist_gen & remote_keys) == remote_keys);
+    PW_CHECK((preq.responder_key_dist_gen & local_keys) == local_keys);
   }
   // v5.1 Vol 3 Part C Section 9.4.2.2 says that bonding information shall not
   // be exchanged or stored in non-bondable mode. This check ensures that we

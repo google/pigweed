@@ -143,7 +143,7 @@ class AdapterImpl final : public Adapter {
       LowEnergyAdvertisingManager::ConnectionCallback advertisement_connect_cb =
           nullptr;
       if (connectable) {
-        BT_ASSERT(connectable->connection_cb);
+        PW_CHECK(connectable->connection_cb);
 
         // All advertisement connections are first registered with
         // LowEnergyConnectionManager before being reported to higher layers.
@@ -621,8 +621,8 @@ AdapterImpl::AdapterImpl(pw::async::Dispatcher& pw_dispatcher,
       dispatcher_(pw_dispatcher),
       weak_self_(this),
       weak_self_adapter_(this) {
-  BT_DEBUG_ASSERT(hci_.is_alive());
-  BT_DEBUG_ASSERT(gatt_.is_alive());
+  PW_DCHECK(hci_.is_alive());
+  PW_DCHECK(gatt_.is_alive());
 
   auto self = weak_self_.GetWeakPtr();
   hci_->SetTransportErrorCallback([self] {
@@ -679,16 +679,16 @@ AdapterImpl::~AdapterImpl() {
 
 bool AdapterImpl::Initialize(InitializeCallback callback,
                              fit::closure transport_error_cb) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(transport_error_cb);
+  PW_DCHECK(callback);
+  PW_DCHECK(transport_error_cb);
 
   if (IsInitialized()) {
     bt_log(WARN, "gap", "Adapter already initialized");
     return false;
   }
 
-  BT_DEBUG_ASSERT(!IsInitializing());
-  BT_DEBUG_ASSERT(!init_seq_runner_);
+  PW_DCHECK(!IsInitializing());
+  PW_DCHECK(!init_seq_runner_);
 
   init_state_ = State::kInitializing;
   init_cb_ = std::move(callback);
@@ -713,7 +713,7 @@ void AdapterImpl::ShutDown() {
   bt_log(DEBUG, "gap", "adapter shutting down");
 
   if (IsInitializing()) {
-    BT_DEBUG_ASSERT(!init_seq_runner_->IsReady());
+    PW_DCHECK(!init_seq_runner_->IsReady());
     init_seq_runner_->Cancel();
   }
 
@@ -1055,7 +1055,7 @@ void AdapterImpl::InitializeStep1() {
 }
 
 void AdapterImpl::InitializeStep2() {
-  BT_DEBUG_ASSERT(IsInitializing());
+  PW_DCHECK(IsInitializing());
 
   // Low Energy MUST be supported. We don't support BR/EDR-only controllers.
   if (!state_.IsLowEnergySupported()) {
@@ -1074,7 +1074,7 @@ void AdapterImpl::InitializeStep2() {
            hci_spec::HCIVersionToString(state_.hci_version).c_str());
   }
 
-  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
+  PW_DCHECK(init_seq_runner_->IsReady());
 
   // If the controller supports the Read Buffer Size command then send it.
   // Otherwise we'll default to 0 when initializing the ACLDataChannel.
@@ -1322,9 +1322,9 @@ void AdapterImpl::InitializeStep2() {
 }
 
 void AdapterImpl::InitializeStep3() {
-  BT_ASSERT(IsInitializing());
-  BT_ASSERT(init_seq_runner_->IsReady());
-  BT_ASSERT(!init_seq_runner_->HasQueuedCommands());
+  PW_CHECK(IsInitializing());
+  PW_CHECK(init_seq_runner_->IsReady());
+  PW_CHECK(!init_seq_runner_->HasQueuedCommands());
 
   if (!state_.bredr_data_buffer_info.IsAvailable() &&
       !state_.low_energy_state.acl_data_buffer_info().IsAvailable()) {
@@ -1501,7 +1501,7 @@ void AdapterImpl::InitializeStep3() {
 void AdapterImpl::InitializeStep4() {
   // Initialize the scan manager and low energy adapters based on current
   // feature support
-  BT_DEBUG_ASSERT(IsInitializing());
+  PW_DCHECK(IsInitializing());
 
   // We use the public controller address as the local LE identity address.
   DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic,
@@ -1638,8 +1638,8 @@ bool AdapterImpl::CompleteInitialization(bool success) {
 }
 
 void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
-  BT_DEBUG_ASSERT(init_seq_runner_);
-  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
+  PW_DCHECK(init_seq_runner_);
+  PW_DCHECK(init_seq_runner_->IsReady());
 
   if (max_lmp_feature_page_index_.has_value() &&
       page > max_lmp_feature_page_index_.value()) {
@@ -1781,9 +1781,9 @@ void AdapterImpl::OnTransportError() {
 }
 
 void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
-  BT_DEBUG_ASSERT(le_connection_manager_);
-  BT_DEBUG_ASSERT(peer);
-  BT_DEBUG_ASSERT(peer->le());
+  PW_DCHECK(le_connection_manager_);
+  PW_DCHECK(peer);
+  PW_DCHECK(peer->le());
 
   PeerId peer_id = peer->identifier();
 
@@ -1817,7 +1817,7 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
         }
 
         auto conn = std::move(result).value();
-        BT_ASSERT(conn);
+        PW_CHECK(conn);
         bt_log(INFO, "gap", "peer auto-connected (peer: %s)", bt_str(peer_id));
         if (self->auto_conn_cb_) {
           self->auto_conn_cb_(std::move(conn));

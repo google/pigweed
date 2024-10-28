@@ -62,7 +62,7 @@ CommandChannel::QueuedCommand::QueuedCommand(
     EmbossCommandPacket command_packet,
     std::unique_ptr<TransactionData> transaction_data)
     : packet(std::move(command_packet)), data(std::move(transaction_data)) {
-  BT_DEBUG_ASSERT(data);
+  PW_DCHECK(data);
 }
 
 CommandChannel::TransactionData::TransactionData(
@@ -82,7 +82,7 @@ CommandChannel::TransactionData::TransactionData(
       callback_(std::move(callback)),
       timeout_task_(channel_->dispatcher_),
       handler_id_(0u) {
-  BT_DEBUG_ASSERT(transaction_id != 0u);
+  PW_DCHECK(transaction_id != 0u);
   exclusions_.insert(opcode_);
 }
 
@@ -101,7 +101,7 @@ CommandChannel::TransactionData::~TransactionData() {
 
 void CommandChannel::TransactionData::StartTimer() {
   // Transactions should only ever be started once.
-  BT_DEBUG_ASSERT(!timeout_task_.is_pending());
+  PW_DCHECK(!timeout_task_.is_pending());
   timeout_task_.set_function(
       [chan = channel_, tid = id()](auto, pw::Status status) {
         if (status.ok()) {
@@ -240,9 +240,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     return 0;
   }
 
-  BT_ASSERT_MSG((complete_event_code == hci_spec::kLEMetaEventCode) ==
-                    le_meta_subevent_code.has_value(),
-                "only LE Meta Event subevents are supported");
+  PW_CHECK((complete_event_code == hci_spec::kLEMetaEventCode) ==
+               le_meta_subevent_code.has_value(),
+           "only LE Meta Event subevents are supported");
 
   if (IsAsync(complete_event_code)) {
     // Cannot send an asynchronous command if there's an external event handler
@@ -561,7 +561,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   EventHandlerId handler_id =
       NewEventHandler(code, event_type, data->opcode(), data->MakeCallback());
 
-  BT_ASSERT(handler_id != 0u);
+  PW_CHECK(handler_id != 0u);
   data->set_handler_id(handler_id);
   handlers->emplace(code, handler_id);
   bt_log(TRACE,
@@ -576,8 +576,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
     EventType event_type,
     hci_spec::OpCode pending_opcode,
     EventCallbackVariant event_callback_variant) {
-  BT_DEBUG_ASSERT(event_code);
-  BT_DEBUG_ASSERT(
+  PW_DCHECK(event_code);
+  PW_DCHECK(
       (std::holds_alternative<EventCallback>(event_callback_variant) &&
        std::get<EventCallback>(event_callback_variant)) ||
       (std::holds_alternative<EmbossEventCallback>(event_callback_variant) &&
@@ -598,8 +598,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
          handler_id,
          EventTypeToString(event_type).c_str(),
          event_code);
-  BT_DEBUG_ASSERT(event_handler_id_map_.find(handler_id) ==
-                  event_handler_id_map_.end());
+  PW_DCHECK(event_handler_id_map_.find(handler_id) ==
+            event_handler_id_map_.end());
   event_handler_id_map_[handler_id] = std::move(data);
 
   return handler_id;
@@ -608,8 +608,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
 void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   hci_spec::EventCode event_code = event->event_code();
 
-  BT_DEBUG_ASSERT(event_code == hci_spec::kCommandStatusEventCode ||
-                  event_code == hci_spec::kCommandCompleteEventCode);
+  PW_DCHECK(event_code == hci_spec::kCommandStatusEventCode ||
+            event_code == hci_spec::kCommandCompleteEventCode);
 
   hci_spec::OpCode matching_opcode;
 
@@ -650,7 +650,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   }
 
   std::unique_ptr<TransactionData>& transaction_ref = it->second;
-  BT_DEBUG_ASSERT(transaction_ref->opcode() == matching_opcode);
+  PW_DCHECK(transaction_ref->opcode() == matching_opcode);
 
   // If the command is synchronous or there's no handler to cleanup, we're done.
   if (transaction_ref->handler_id() == 0u) {
@@ -732,10 +732,10 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
            event_id,
            event_code);
     auto handler_iter = event_handler_id_map_.find(event_id);
-    BT_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
+    PW_DCHECK(handler_iter != event_handler_id_map_.end());
 
     EventHandlerData& handler = handler_iter->second;
-    BT_DEBUG_ASSERT(handler.event_code == event_code);
+    PW_DCHECK(handler.event_code == event_code);
 
     std::visit(
         [&pending_callbacks, event_id](auto& callback) {

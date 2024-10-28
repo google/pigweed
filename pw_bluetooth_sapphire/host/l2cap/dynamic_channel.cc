@@ -31,7 +31,7 @@ DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry,
       local_cid_(local_cid),
       remote_cid_(remote_cid),
       opened_(false) {
-  BT_DEBUG_ASSERT(registry_);
+  PW_DCHECK(registry_);
 }
 
 bool DynamicChannel::SetRemoteChannelId(ChannelId remote_cid) {

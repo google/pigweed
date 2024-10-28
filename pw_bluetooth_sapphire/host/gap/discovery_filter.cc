@@ -89,7 +89,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     return rssi_ok;
   }
 
-  BT_DEBUG_ASSERT(advertising_data.has_value());
+  PW_DCHECK(advertising_data.has_value());
   const AdvertisingData& ad = advertising_data->get();
 
   if (flags_) {

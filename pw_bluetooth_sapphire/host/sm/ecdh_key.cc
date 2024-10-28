@@ -43,8 +43,8 @@ std::optional<EcdhKey> EcdhKey::ParseFromPublicKey(
   BN_init(&y);
   // Assert on le2bn output. le2bn "returns NULL on allocation failure", but
   // allocation should never fail on Fuchsia per overcommit semantics.
-  BT_ASSERT(BN_le2bn(pub_key.x, sizeof(pub_key.x), &x));
-  BT_ASSERT(BN_le2bn(pub_key.y, sizeof(pub_key.y), &y));
+  PW_CHECK(BN_le2bn(pub_key.x, sizeof(pub_key.x), &x));
+  PW_CHECK(BN_le2bn(pub_key.y, sizeof(pub_key.y), &y));
 
   // One potential cause of failure is if pub_key is not a valid ECDH key on the
   // P-256 curve.
@@ -73,13 +73,13 @@ sm::PairingPublicKeyParams EcdhKey::GetSerializedPublicKey() const {
   BIGNUM x, y;
   BN_init(&x);
   BN_init(&y);
-  BT_ASSERT(EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_),
-                                                EC_KEY_get0_public_key(key_),
-                                                &x,
-                                                &y,
-                                                nullptr) == 1);
-  BT_ASSERT(BN_bn2le_padded(params.x, sizeof(params.x), &x) == 1);
-  BT_ASSERT(BN_bn2le_padded(params.y, sizeof(params.y), &y) == 1);
+  PW_CHECK(EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_),
+                                               EC_KEY_get0_public_key(key_),
+                                               &x,
+                                               &y,
+                                               nullptr) == 1);
+  PW_CHECK(BN_bn2le_padded(params.x, sizeof(params.x), &x) == 1);
+  PW_CHECK(BN_bn2le_padded(params.y, sizeof(params.y), &y) == 1);
   BN_free(&x);
   BN_free(&y);
   return params;
@@ -94,10 +94,10 @@ UInt256 EcdhKey::GetPublicKeyX() const {
                                           &x,
                                           /*y=*/nullptr,
                                           /*ctx=*/nullptr) == 1;
-  BT_ASSERT(success);
+  PW_CHECK(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &x) == 1;
-  BT_ASSERT(success);
+  PW_CHECK(success);
   BN_free(&x);
   return out;
 }
@@ -111,10 +111,10 @@ UInt256 EcdhKey::GetPublicKeyY() const {
                                           /*x=*/nullptr,
                                           &y,
                                           /*ctx=*/nullptr) == 1;
-  BT_ASSERT(success);
+  PW_CHECK(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &y) == 1;
-  BT_ASSERT(success);
+  PW_CHECK(success);
   BN_free(&y);
   return out;
 }
@@ -158,7 +158,7 @@ UInt256 LocalEcdhKey::CalculateDhKey(const EcdhKey& peer_public_key) const {
                        EC_KEY_get0_public_key(peer_public_key.boringssl_key()),
                        boringssl_key(),
                        /*kdf=*/nullptr) == out.size();
-  BT_ASSERT(success);
+  PW_CHECK(success);
   std::reverse(out.begin(), out.end());
   return out;
 }
@@ -167,8 +167,8 @@ void LocalEcdhKey::SetPrivateKeyForTesting(const UInt256& private_key) {
   BIGNUM pkey;
   BN_init(&pkey);
   BN_le2bn(private_key.data(), private_key.size(), &pkey);
-  BT_ASSERT_MSG(EC_KEY_set_private_key(mut_boringssl_key(), &pkey) == 1,
-                "Could not set private key in test");
+  PW_CHECK(EC_KEY_set_private_key(mut_boringssl_key(), &pkey) == 1,
+           "Could not set private key in test");
   BN_free(&pkey);
 }
 

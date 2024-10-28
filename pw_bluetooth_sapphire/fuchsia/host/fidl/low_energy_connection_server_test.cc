@@ -60,7 +60,7 @@ class LowEnergyConnectionServerTest
               [&](const bt::gap::Peer& peer) { peer_id = peer.identifier(); });
         });
     RunLoopUntilIdle();
-    BT_ASSERT(peer_id);
+    PW_CHECK(peer_id);
     peer_id_ = *peer_id;
 
     std::optional<bt::gap::LowEnergyConnectionManager::ConnectionResult>
@@ -72,8 +72,8 @@ class LowEnergyConnectionServerTest
         },
         bt::gap::LowEnergyConnectionOptions());
     RunLoopUntilIdle();
-    BT_ASSERT(conn_result);
-    BT_ASSERT(conn_result->is_ok());
+    PW_CHECK(conn_result);
+    PW_CHECK(conn_result->is_ok());
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection =
         std::move(*conn_result).value();
 

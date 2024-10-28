@@ -37,8 +37,8 @@ class AttBasedServer final : public Server {
         local_services_(std::move(local_services)),
         att_(std::move(bearer)),
         weak_self_(this) {
-    BT_ASSERT(local_services_.is_alive());
-    BT_DEBUG_ASSERT(att_.is_alive());
+    PW_CHECK(local_services_.is_alive());
+    PW_DCHECK(att_.is_alive());
 
     exchange_mtu_id_ = att_->RegisterHandler(
         att::kExchangeMTURequest,
@@ -100,7 +100,7 @@ class AttBasedServer final : public Server {
                   IndicationCallback indicate_callback) override {
     auto buffer =
         NewBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     LocalServiceManager::ClientCharacteristicConfig config;
     if (!local_services_->GetCharacteristicConfig(
@@ -165,7 +165,7 @@ class AttBasedServer final : public Server {
   // ATT protocol request handlers:
   void OnExchangeMTU(att::Bearer::TransactionId tid,
                      const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kExchangeMTURequest);
+    PW_DCHECK(packet.opcode() == att::kExchangeMTURequest);
 
     if (packet.payload_size() != sizeof(att::ExchangeMTURequestParams)) {
       att_->ReplyWithError(
@@ -180,7 +180,7 @@ class AttBasedServer final : public Server {
 
     auto buffer =
         NewBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     att::PacketWriter writer(att::kExchangeMTUResponse, buffer.get());
     auto rsp_params = writer.mutable_payload<att::ExchangeMTUResponseParams>();
@@ -198,7 +198,7 @@ class AttBasedServer final : public Server {
 
   void OnFindInformation(att::Bearer::TransactionId tid,
                          const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kFindInformationRequest);
+    PW_DCHECK(packet.opcode() == att::kFindInformationRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnFindInformation");
 
     if (packet.payload_size() != sizeof(att::FindInformationRequestParams)) {
@@ -216,7 +216,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kRspStructSize =
         sizeof(att::FindInformationResponseParams);
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
-    BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
+    PW_DCHECK(kHeaderSize <= att_->mtu());
 
     if (start == att::kInvalidHandle || start > end) {
       att_->ReplyWithError(tid, start, att::ErrorCode::kInvalidHandle);
@@ -231,7 +231,7 @@ class AttBasedServer final : public Server {
     std::list<const att::Attribute*> results;
     for (auto it = db()->GetIterator(start, end); !it.AtEnd(); it.Advance()) {
       const auto* attr = it.get();
-      BT_DEBUG_ASSERT(attr);
+      PW_DCHECK(attr);
 
       // GATT does not allow 32-bit UUIDs
       size_t compact_size = attr->type().CompactSize(/*allow_32bit=*/false);
@@ -253,12 +253,12 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    BT_DEBUG_ASSERT(!results.empty());
+    PW_DCHECK(!results.empty());
 
     size_t pdu_size = kHeaderSize + entry_size * results.size();
 
     auto buffer = NewBuffer(pdu_size);
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     att::PacketWriter writer(att::kFindInformationResponse, buffer.get());
     auto rsp_params =
@@ -285,7 +285,7 @@ class AttBasedServer final : public Server {
 
   void OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
                                 const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kFindByTypeValueRequest);
+    PW_DCHECK(packet.opcode() == att::kFindByTypeValueRequest);
 
     if (packet.payload_size() < sizeof(att::FindByTypeValueRequestParams)) {
       att_->ReplyWithError(
@@ -322,7 +322,7 @@ class AttBasedServer final : public Server {
     // Filter for identical values
     for (; !iter.AtEnd(); iter.Advance()) {
       const auto* attr = iter.get();
-      BT_DEBUG_ASSERT(attr);
+      PW_DCHECK(attr);
 
       // Only support static values for this Request type
       if (attr->value()) {
@@ -342,7 +342,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kRspStructSize = sizeof(att::HandlesInformationList);
     size_t pdu_size = sizeof(att::Header) + kRspStructSize * results.size();
     auto buffer = NewBuffer(pdu_size);
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     att::PacketWriter writer(att::kFindByTypeValueResponse, buffer.get());
 
@@ -368,7 +368,7 @@ class AttBasedServer final : public Server {
 
   void OnReadByGroupType(att::Bearer::TransactionId tid,
                          const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kReadByGroupTypeRequest);
+    PW_DCHECK(packet.opcode() == att::kReadByGroupTypeRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnReadByGroupType");
 
     att::Handle start, end;
@@ -406,7 +406,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kRspStructSize =
         sizeof(att::ReadByGroupTypeResponseParams);
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
-    BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
+    PW_DCHECK(kHeaderSize <= att_->mtu());
 
     size_t value_size;
     std::list<const att::Attribute*> results;
@@ -425,19 +425,19 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    BT_DEBUG_ASSERT(!results.empty());
+    PW_DCHECK(!results.empty());
 
     size_t entry_size = value_size + sizeof(att::AttributeGroupDataEntry);
     size_t pdu_size = kHeaderSize + entry_size * results.size();
-    BT_DEBUG_ASSERT(pdu_size <= att_->mtu());
+    PW_DCHECK(pdu_size <= att_->mtu());
 
     auto buffer = NewBuffer(pdu_size);
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     att::PacketWriter writer(att::kReadByGroupTypeResponse, buffer.get());
     auto params = writer.mutable_payload<att::ReadByGroupTypeResponseParams>();
 
-    BT_DEBUG_ASSERT(entry_size <= std::numeric_limits<uint8_t>::max());
+    PW_DCHECK(entry_size <= std::numeric_limits<uint8_t>::max());
     params->length = static_cast<uint8_t>(entry_size);
 
     // Points to the next entry in the target PDU.
@@ -461,7 +461,7 @@ class AttBasedServer final : public Server {
 
   void OnReadByType(att::Bearer::TransactionId tid,
                     const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kReadByTypeRequest);
+    PW_DCHECK(packet.opcode() == att::kReadByTypeRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnReadByType");
 
     att::Handle start, end;
@@ -492,7 +492,7 @@ class AttBasedServer final : public Server {
 
     constexpr size_t kRspStructSize = sizeof(att::ReadByTypeResponseParams);
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
-    BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
+    PW_DCHECK(kHeaderSize <= att_->mtu());
 
     size_t out_value_size;
     std::list<const att::Attribute*> results;
@@ -511,12 +511,12 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    BT_DEBUG_ASSERT(!results.empty());
+    PW_DCHECK(!results.empty());
 
     // If the value is dynamic, then delegate the read to any registered
     // handler.
     if (!results.front()->value()) {
-      BT_DEBUG_ASSERT(results.size() == 1u);
+      PW_DCHECK(results.size() == 1u);
 
       const size_t kMaxValueSize =
           std::min(att_->mtu() - kHeaderSize - sizeof(att::AttributeData),
@@ -559,13 +559,13 @@ class AttBasedServer final : public Server {
     }
 
     size_t entry_size = sizeof(att::AttributeData) + out_value_size;
-    BT_DEBUG_ASSERT(entry_size <= std::numeric_limits<uint8_t>::max());
+    PW_DCHECK(entry_size <= std::numeric_limits<uint8_t>::max());
 
     size_t pdu_size = kHeaderSize + entry_size * results.size();
-    BT_DEBUG_ASSERT(pdu_size <= att_->mtu());
+    PW_DCHECK(pdu_size <= att_->mtu());
 
     auto buffer = NewBuffer(pdu_size);
-    BT_ASSERT(buffer);
+    PW_CHECK(buffer);
 
     att::PacketWriter writer(att::kReadByTypeResponse, buffer.get());
     auto params = writer.mutable_payload<att::ReadByTypeResponseParams>();
@@ -590,7 +590,7 @@ class AttBasedServer final : public Server {
 
   void OnReadBlobRequest(att::Bearer::TransactionId tid,
                          const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kReadBlobRequest);
+    PW_DCHECK(packet.opcode() == att::kReadBlobRequest);
 
     if (packet.payload_size() != sizeof(att::ReadBlobRequestParams)) {
       att_->ReplyWithError(
@@ -633,7 +633,7 @@ class AttBasedServer final : public Server {
       size_t value_size =
           std::min(value.size(), self->att_->mtu() - kHeaderSize);
       auto buffer = NewBuffer(value_size + kHeaderSize);
-      BT_ASSERT(buffer);
+      PW_CHECK(buffer);
 
       att::PacketWriter writer(att::kReadBlobResponse, buffer.get());
       writer.mutable_payload_data().Write(value.view(0, value_size));
@@ -661,7 +661,7 @@ class AttBasedServer final : public Server {
 
   void OnReadRequest(att::Bearer::TransactionId tid,
                      const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kReadRequest);
+    PW_DCHECK(packet.opcode() == att::kReadRequest);
 
     if (packet.payload_size() != sizeof(att::ReadRequestParams)) {
       att_->ReplyWithError(
@@ -702,7 +702,7 @@ class AttBasedServer final : public Server {
       size_t value_size =
           std::min(value.size(), self->att_->mtu() - kHeaderSize);
       auto buffer = NewBuffer(value_size + kHeaderSize);
-      BT_ASSERT(buffer);
+      PW_CHECK(buffer);
 
       att::PacketWriter writer(att::kReadResponse, buffer.get());
       writer.mutable_payload_data().Write(value.view(0, value_size));
@@ -723,7 +723,7 @@ class AttBasedServer final : public Server {
 
   void OnWriteCommand(att::Bearer::TransactionId tid,
                       const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kWriteCommand);
+    PW_DCHECK(packet.opcode() == att::kWriteCommand);
 
     if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
       // Ignore if wrong size, no response allowed
@@ -762,7 +762,7 @@ class AttBasedServer final : public Server {
 
   void OnWriteRequest(att::Bearer::TransactionId tid,
                       const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kWriteRequest);
+    PW_DCHECK(packet.opcode() == att::kWriteRequest);
 
     if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
       att_->ReplyWithError(
@@ -822,7 +822,7 @@ class AttBasedServer final : public Server {
 
   void OnPrepareWriteRequest(att::Bearer::TransactionId tid,
                              const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kPrepareWriteRequest);
+    PW_DCHECK(packet.opcode() == att::kPrepareWriteRequest);
 
     if (packet.payload_size() < sizeof(att::PrepareWriteRequestParams)) {
       att_->ReplyWithError(
@@ -870,7 +870,7 @@ class AttBasedServer final : public Server {
 
   void OnExecuteWriteRequest(att::Bearer::TransactionId tid,
                              const att::PacketReader& packet) {
-    BT_DEBUG_ASSERT(packet.opcode() == att::kExecuteWriteRequest);
+    PW_DCHECK(packet.opcode() == att::kExecuteWriteRequest);
 
     if (packet.payload_size() != sizeof(att::ExecuteWriteRequestParams)) {
       att_->ReplyWithError(
@@ -937,8 +937,8 @@ class AttBasedServer final : public Server {
       size_t entry_prefix_size,
       size_t* out_value_size,
       std::list<const att::Attribute*>* out_results) {
-    BT_DEBUG_ASSERT(out_results);
-    BT_DEBUG_ASSERT(out_value_size);
+    PW_DCHECK(out_results);
+    PW_DCHECK(out_value_size);
 
     if (start == att::kInvalidHandle || start > end)
       return fit::error(att::ErrorCode::kInvalidHandle);
@@ -956,7 +956,7 @@ class AttBasedServer final : public Server {
 
     for (; !iter.AtEnd(); iter.Advance()) {
       const auto* attr = iter.get();
-      BT_DEBUG_ASSERT(attr);
+      PW_DCHECK(attr);
 
       fit::result<att::ErrorCode> security_result =
           att::CheckReadPermissions(attr->read_reqs(), att_->security());

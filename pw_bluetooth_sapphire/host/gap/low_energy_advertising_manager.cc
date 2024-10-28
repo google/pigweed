@@ -51,8 +51,8 @@ AdvertisementInstance::AdvertisementInstance() : id_(kInvalidAdvertisementId) {}
 AdvertisementInstance::AdvertisementInstance(
     AdvertisementId id, WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner)
     : id_(id), owner_(std::move(owner)) {
-  BT_DEBUG_ASSERT(id_ != kInvalidAdvertisementId);
-  BT_DEBUG_ASSERT(owner_.is_alive());
+  PW_DCHECK(id_ != kInvalidAdvertisementId);
+  PW_DCHECK(owner_.is_alive());
 }
 
 AdvertisementInstance::~AdvertisementInstance() { Reset(); }
@@ -104,8 +104,8 @@ LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(
     : advertiser_(advertiser),
       local_addr_delegate_(local_addr_delegate),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(advertiser_);
-  BT_DEBUG_ASSERT(local_addr_delegate_);
+  PW_DCHECK(advertiser_);
+  PW_DCHECK(local_addr_delegate_);
 }
 
 LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {

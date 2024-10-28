@@ -35,7 +35,7 @@ using EventFixedSizedPacket =
 template <typename T>
 bool StatusCodeFromEvent(const EventPacket& event,
                          pw::bluetooth::emboss::StatusCode* out_code) {
-  BT_DEBUG_ASSERT(out_code);
+  PW_DCHECK(out_code);
 
   if (event.view().payload_size() < sizeof(T))
     return false;
@@ -49,7 +49,7 @@ bool StatusCodeFromEvent(const EventPacket& event,
 template <typename T>
 bool StatusCodeFromEmbossEvent(const EventPacket& event,
                                pw::bluetooth::emboss::StatusCode* out_code) {
-  BT_DEBUG_ASSERT(out_code);
+  PW_DCHECK(out_code);
 
   auto emboss_packet = EmbossEventPacket::New<T>(event.event_code());
   bt::MutableBufferView dest = emboss_packet.mutable_data();
@@ -73,7 +73,7 @@ bool StatusCodeFromEmbossEvent(const EventPacket& event,
 template <typename T>
 bool StatusCodeFromSubevent(const EventPacket& event,
                             pw::bluetooth::emboss::StatusCode* out_code) {
-  BT_ASSERT(out_code);
+  PW_CHECK(out_code);
 
   if (event.view().payload_size() <
       sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
@@ -87,7 +87,7 @@ bool StatusCodeFromSubevent(const EventPacket& event,
 template <>
 bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(
     const EventPacket& event, pw::bluetooth::emboss::StatusCode* out_code) {
-  BT_DEBUG_ASSERT(out_code);
+  PW_DCHECK(out_code);
 
   const auto* params = event.return_params<hci_spec::SimpleReturnParams>();
   if (!params)

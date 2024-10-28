@@ -117,7 +117,7 @@ class BrEdrConnectionRequest final {
   }
 
   Peer::InitializingConnectionToken take_peer_init_token() {
-    BT_ASSERT(peer_init_conn_token_);
+    PW_CHECK(peer_init_conn_token_);
     return std::exchange(peer_init_conn_token_, std::nullopt).value();
   }
 

@@ -22,8 +22,8 @@ namespace bt::l2cap::internal {
 void BasicModeTxEngine::NotifySduQueued() {
   std::optional<ByteBufferPtr> sdu = channel().GetNextQueuedSdu();
 
-  BT_ASSERT(sdu);
-  BT_ASSERT(*sdu);
+  PW_CHECK(sdu);
+  PW_CHECK(*sdu);
 
   if ((*sdu)->size() > max_tx_sdu_size()) {
     bt_log(INFO,

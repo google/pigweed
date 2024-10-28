@@ -73,10 +73,10 @@ void FakeChannel::Close() {
 
 bool FakeChannel::Activate(RxCallback rx_callback,
                            ClosedCallback closed_callback) {
-  BT_DEBUG_ASSERT(rx_callback);
-  BT_DEBUG_ASSERT(closed_callback);
-  BT_DEBUG_ASSERT(!rx_cb_);
-  BT_DEBUG_ASSERT(!closed_cb_);
+  PW_DCHECK(rx_callback);
+  PW_DCHECK(closed_callback);
+  PW_DCHECK(!rx_cb_);
+  PW_DCHECK(!closed_cb_);
 
   if (activate_fails_)
     return false;
@@ -109,7 +109,7 @@ void FakeChannel::SignalLinkError() {
 }
 
 bool FakeChannel::Send(ByteBufferPtr sdu) {
-  BT_DEBUG_ASSERT(sdu);
+  PW_DCHECK(sdu);
 
   if (!send_cb_)
     return false;
@@ -140,7 +140,7 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
 
 void FakeChannel::UpgradeSecurity(sm::SecurityLevel level,
                                   sm::ResultFunction<> callback) {
-  BT_ASSERT(security_dispatcher_);
+  PW_CHECK(security_dispatcher_);
   (void)security_dispatcher_->Post(
       [cb = std::move(callback),
        f = security_cb_.share(),

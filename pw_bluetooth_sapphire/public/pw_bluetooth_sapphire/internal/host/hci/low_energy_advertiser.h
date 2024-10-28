@@ -34,7 +34,7 @@ class AdvertisingIntervalRange final {
   constexpr AdvertisingIntervalRange(uint16_t min, uint16_t max)
       : min_(std::max(min, hci_spec::kLEAdvertisingIntervalMin)),
         max_(std::min(max, hci_spec::kLEAdvertisingIntervalMax)) {
-    BT_ASSERT(min < max);
+    PW_ASSERT(min < max);
   }
 
   uint16_t min() const { return min_; }

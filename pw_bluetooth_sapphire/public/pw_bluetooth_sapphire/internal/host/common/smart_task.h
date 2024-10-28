@@ -31,7 +31,7 @@ class SmartTask {
 
   ~SmartTask() {
     if (pending_) {
-      BT_ASSERT(Cancel());
+      PW_CHECK(Cancel());
     }
   }
 

@@ -17,7 +17,7 @@
 namespace bt::hci {
 
 void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
-  BT_DEBUG_ASSERT(callback);
+  PW_DCHECK(callback);
   if (!async_) {
     callback(local_address_);
     return;

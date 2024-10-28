@@ -159,7 +159,7 @@ FidlController::FidlController(fidl::ClientEnd<fhbt::Vendor> vendor_client_end,
           [this](zx_status_t status) { OnScoUnbind(status); },
           [this](fhbt::ScoPacket packet) { OnReceiveSco(std::move(packet)); }),
       dispatcher_(dispatcher) {
-  BT_ASSERT(vendor_client_end.is_valid());
+  PW_CHECK(vendor_client_end.is_valid());
   vendor_client_end_ = std::move(vendor_client_end);
 }
 
@@ -373,7 +373,7 @@ void FidlController::GetFeatures(
 void FidlController::EncodeVendorCommand(
     pw::bluetooth::VendorCommandParameters parameters,
     pw::Callback<void(pw::Result<pw::span<const std::byte>>)> callback) {
-  BT_ASSERT(vendor_);
+  PW_CHECK(vendor_);
 
   if (!std::holds_alternative<pw::bluetooth::SetAclPriorityCommandParameters>(
           parameters)) {

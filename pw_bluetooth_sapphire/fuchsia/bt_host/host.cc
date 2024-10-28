@@ -142,15 +142,15 @@ void BtHostComponent::BindToHostInterface(
     return;
   }
 
-  BT_DEBUG_ASSERT(gap_);
-  BT_DEBUG_ASSERT(gatt_);
+  PW_DCHECK(gap_);
+  PW_DCHECK(gatt_);
 
   zx::channel channel = host_client.TakeChannel();
 
   host_server_ = std::make_unique<HostServer>(
       std::move(channel), gap_->AsWeakPtr(), gatt_->GetWeakPtr());
   host_server_->set_error_handler([this](zx_status_t status) {
-    BT_DEBUG_ASSERT(host_server_);
+    PW_DCHECK(host_server_);
     bt_log(WARN, "bt-host", "Host interface disconnected");
     host_server_ = nullptr;
   });

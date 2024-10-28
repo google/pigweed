@@ -36,7 +36,7 @@ void FakeSdpServer::RegisterWithL2cap(FakeL2cap* l2cap) {
 
 void FakeSdpServer::HandleSdu(FakeDynamicChannel::WeakPtr channel,
                               const ByteBuffer& sdu) {
-  BT_ASSERT(channel->opened());
+  PW_CHECK(channel->opened());
   auto response = server()->HandleRequest(
       std::make_unique<DynamicByteBuffer>(sdu), l2cap::kDefaultMTU);
   if (response) {

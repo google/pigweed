@@ -132,14 +132,14 @@ class RetireLog final {
     std::array<ElementT, NumQuantiles> quantiles;  // output
     auto unsorted_begin = elements.begin();
     for (auto [partition, index] : partitions_and_indexes) {
-      BT_ASSERT(partition >= 0.);
-      BT_ASSERT(partition <= 1.);
+      PW_CHECK(partition >= 0.);
+      PW_CHECK(partition <= 1.);
       // Even though the last element is at index depth()-1, use depth() here
       // instead to ensure the final (max) element has sufficient range
       // representation.
       const size_t cut_point =
           static_cast<size_t>(static_cast<double>(depth()) * partition);
-      BT_ASSERT(cut_point <= depth());
+      PW_CHECK(cut_point <= depth());
 
       // In the case that partition = 1.0, cut_point = depth(). Saturate to the
       // final (max) element.

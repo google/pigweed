@@ -44,7 +44,7 @@ constexpr char kScanUuidFormatString[] =
 // place, I've decided that it sucks. I'm explicitly naming this using the
 // "Uuid" style as a reminder to fix style elsewhere.
 bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
-  BT_DEBUG_ASSERT(out_bytes);
+  PW_DCHECK(out_bytes);
 
   if (uuid_string.length() == 4) {
     // Possibly a 16-bit short UUID, parse it in context of the Base UUID.
@@ -87,7 +87,7 @@ bool IsStringValidUuid(const std::string& uuid_string) {
 }
 
 bool StringToUuid(const std::string& uuid_string, UUID* out_uuid) {
-  BT_DEBUG_ASSERT(out_uuid);
+  PW_DCHECK(out_uuid);
 
   UInt128 bytes;
   if (!ParseUuidString(uuid_string, &bytes)) {

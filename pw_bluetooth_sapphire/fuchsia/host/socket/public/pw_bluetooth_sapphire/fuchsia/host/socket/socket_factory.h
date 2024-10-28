@@ -120,19 +120,18 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
   auto relay = std::make_unique<RelayT>(
       std::move(local_socket),
       channel,
-      typename RelayT::DeactivationCallback(
-          [self = weak_self_.GetWeakPtr(),
-           id = unique_id,
-           closed_cb = std::move(closed_callback)]() mutable {
-            BT_DEBUG_ASSERT_MSG(self.is_alive(), "(unique_id=%u)", id);
-            size_t n_erased = self->channel_to_relay_.erase(id);
-            BT_DEBUG_ASSERT_MSG(
-                n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
+      typename RelayT::DeactivationCallback([self = weak_self_.GetWeakPtr(),
+                                             id = unique_id,
+                                             closed_cb = std::move(
+                                                 closed_callback)]() mutable {
+        PW_DCHECK(self.is_alive(), "(unique_id=%u)", id);
+        size_t n_erased = self->channel_to_relay_.erase(id);
+        PW_DCHECK(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
 
-            if (closed_cb) {
-              closed_cb();
-            }
-          }));
+        if (closed_cb) {
+          closed_cb();
+        }
+      }));
 
   // Note: Activate() may abort, if |channel| has been Activated() without
   // going through this SocketFactory.

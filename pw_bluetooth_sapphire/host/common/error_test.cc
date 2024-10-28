@@ -186,13 +186,13 @@ TEST(ErrorTest, ResultFromNonSuccessProtocolErrorThatOnlyHoldsErrors) {
 TEST(ErrorDeathTest, ReadingHostErrorThatIsNotPresentIsFatal) {
   const Error error = MakeError(TestError::kFail1);
   ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.host_error(),
-                            "HostError");
+                            "host_error");
 }
 
 TEST(ErrorDeathTest, ReadingProtocolErrorThatIsNotPresentIsFatal) {
   const Error<TestError> error(HostError::kFailed);
   ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.protocol_error(),
-                            "protocol error");
+                            "protocol_error");
 }
 
 TEST(ErrorTest, ResultIsAnyOf) {

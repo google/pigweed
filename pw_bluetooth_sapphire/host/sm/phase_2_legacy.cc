@@ -64,23 +64,23 @@ Phase2Legacy::Phase2Legacy(PairingChannel::WeakPtr chan,
       on_stk_ready_(std::move(cb)),
       weak_self_(this) {
   // Cache |preq| and |pres|. These are used for confirm value generation.
-  BT_ASSERT(preq.size() == preq_.size());
-  BT_ASSERT(pres.size() == pres_.size());
-  BT_ASSERT_MSG(IsSupportedLegacyMethod(features.method),
-                "unsupported legacy pairing method!");
+  PW_CHECK(preq.size() == preq_.size());
+  PW_CHECK(pres.size() == pres_.size());
+  PW_CHECK(IsSupportedLegacyMethod(features.method),
+           "unsupported legacy pairing method!");
   preq.Copy(&preq_);
   pres.Copy(&pres_);
   SetPairingChannelHandler(*this);
 }
 
 void Phase2Legacy::Start() {
-  BT_ASSERT(!has_failed());
-  BT_ASSERT(!features_.secure_connections);
-  BT_ASSERT(!tk_.has_value());
-  BT_ASSERT(!peer_confirm_.has_value());
-  BT_ASSERT(!peer_rand_.has_value());
-  BT_ASSERT(!sent_local_confirm_);
-  BT_ASSERT(!sent_local_rand_);
+  PW_CHECK(!has_failed());
+  PW_CHECK(!features_.secure_connections);
+  PW_CHECK(!tk_.has_value());
+  PW_CHECK(!peer_confirm_.has_value());
+  PW_CHECK(!peer_rand_.has_value());
+  PW_CHECK(!sent_local_confirm_);
+  PW_CHECK(!sent_local_rand_);
   MakeTemporaryKeyRequest();
 }
 
@@ -89,7 +89,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
          "sm",
          "TK request - method: %s",
          sm::util::PairingMethodToString(features_.method).c_str());
-  BT_ASSERT(listener().is_alive());
+  PW_CHECK(listener().is_alive());
   auto self = weak_self_.GetWeakPtr();
   if (features_.method == sm::PairingMethod::kPasskeyEntryInput) {
     // The TK will be provided by the user.
@@ -123,7 +123,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
   }
 
   // TODO(fxbug.dev/42138242): Support providing a TK out of band.
-  BT_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
+  PW_CHECK(features_.method == sm::PairingMethod::kJustWorks);
   listener()->ConfirmPairing([self](bool confirm) {
     if (!self.is_alive()) {
       return;
@@ -172,8 +172,8 @@ void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
 }
 
 void Phase2Legacy::SendConfirmValue() {
-  BT_ASSERT(!sent_local_confirm_);
-  BT_ASSERT(local_confirm_.has_value());
+  PW_CHECK(!sent_local_confirm_);
+  PW_CHECK(local_confirm_.has_value());
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG,
@@ -198,8 +198,8 @@ void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
     // We MUST have a TK and have previously generated an Mconfirm - this was
     // implicitly checked in CanReceivePairingConfirm by checking whether we've
     // sent the confirm value.
-    BT_ASSERT(tk_.has_value());
-    BT_ASSERT(sent_local_confirm_);
+    PW_CHECK(tk_.has_value());
+    PW_CHECK(sent_local_confirm_);
 
     // We have sent Mconfirm and just received Sconfirm. We now send Mrand for
     // the peer to compare.
@@ -213,11 +213,11 @@ void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
 }
 
 void Phase2Legacy::SendRandomValue() {
-  BT_ASSERT(!sent_local_rand_);
+  PW_CHECK(!sent_local_rand_);
   // This is always generated in the TK callback, which must have been called by
   // now as the random are sent after the confirm values, and the TK must exist
   // in order to send the confirm.
-  BT_ASSERT(local_rand_.has_value());
+  PW_CHECK(local_rand_.has_value());
 
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
@@ -236,9 +236,9 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
     return;
   }
   // These should have been checked in CanReceivePairingRandom
-  BT_ASSERT(local_rand_.has_value());
-  BT_ASSERT(tk_.has_value());
-  BT_ASSERT(peer_confirm_.has_value());
+  PW_CHECK(local_rand_.has_value());
+  PW_CHECK(tk_.has_value());
+  PW_CHECK(peer_confirm_.has_value());
 
   peer_rand_ = rand;
 
@@ -359,7 +359,7 @@ fit::result<ErrorCode> Phase2Legacy::CanReceivePairingRandom() const {
   } else {
     // We know we have not received Mrand, and should not have sent Srand
     // without receiving Mrand.
-    BT_ASSERT(!sent_local_rand_);
+    PW_CHECK(!sent_local_rand_);
 
     // We need to send Sconfirm before the initiator sends Mrand.
     if (!sent_local_confirm_) {

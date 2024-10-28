@@ -191,7 +191,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
   }
 
   void UpgradeSecurity(SecurityLevel level) {
-    BT_DEBUG_ASSERT(pairing_);
+    PW_DCHECK(pairing_);
     pairing_->UpgradeSecurity(level, [this](auto status, const auto& props) {
       security_callback_count_++;
       security_status_ = status;
@@ -201,7 +201,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
 
   // Called when SMP sends a packet over the fake channel.
   void OnDataReceived(std::unique_ptr<const ByteBuffer> packet) {
-    BT_DEBUG_ASSERT(packet);
+    PW_DCHECK(packet);
 
     PacketReader reader(packet.get());
     switch (reader.code()) {
@@ -373,7 +373,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
                                   UInt128* out_value,
                                   bool peer_initiator = false,
                                   uint32_t tk = 0) {
-    BT_DEBUG_ASSERT(out_value);
+    PW_DCHECK(out_value);
 
     tk = pw::bytes::ConvertOrderTo(cpp20::endian::little, tk);
     UInt128 tk128;
@@ -402,8 +402,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
                                  Role local_role,
                                  bool gen_initiator_confirm,
                                  uint8_t r = 0) {
-    BT_ASSERT_MSG(public_ecdh_key_.has_value(),
-                  "cannot compute confirm, missing key!");
+    PW_CHECK(public_ecdh_key_.has_value(),
+             "cannot compute confirm, missing key!");
     UInt256 pka = public_ecdh_key_->GetPublicKeyX(),
             pkb = peer_key.GetPublicKeyX();
     if (local_role == Role::kResponder) {
@@ -633,8 +633,8 @@ class InitiatorPairingTest : public SecurityManagerTest {
   void GenerateMatchingLegacyConfirmAndRandom(UInt128* out_confirm,
                                               UInt128* out_random,
                                               uint32_t tk = 0) {
-    BT_DEBUG_ASSERT(out_confirm);
-    BT_DEBUG_ASSERT(out_random);
+    PW_DCHECK(out_confirm);
+    PW_DCHECK(out_random);
     *out_random = kHardCodedPairingRandom;
     GenerateLegacyConfirmValue(
         *out_random, out_confirm, /*peer_initiator=*/false, tk);
@@ -698,7 +698,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     EXPECT_EQ(0, pairing_failed_count());
     EXPECT_EQ(0, security_callback_count());
 
-    BT_DEBUG_ASSERT(out_stk);
+    PW_DCHECK(out_stk);
 
     UInt128 tk;
     tk.fill(0);
@@ -857,8 +857,8 @@ class ResponderPairingTest : public SecurityManagerTest {
   void GenerateMatchingLegacyConfirmAndRandom(UInt128* out_confirm,
                                               UInt128* out_random,
                                               uint32_t tk = 0) {
-    BT_DEBUG_ASSERT(out_confirm);
-    BT_DEBUG_ASSERT(out_random);
+    PW_DCHECK(out_confirm);
+    PW_DCHECK(out_random);
     *out_random = kHardCodedPairingRandom;
     GenerateLegacyConfirmValue(
         *out_random, out_confirm, /*peer_initiator=*/true, tk);
@@ -930,7 +930,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     EXPECT_EQ(0, pairing_failed_count());
     EXPECT_EQ(0, security_callback_count());
 
-    BT_DEBUG_ASSERT(out_stk);
+    PW_DCHECK(out_stk);
 
     UInt128 tk;
     tk.fill(0);

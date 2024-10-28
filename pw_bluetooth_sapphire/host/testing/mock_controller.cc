@@ -135,8 +135,8 @@ bool MockController::AllExpectedCommandPacketsSent() const {
 }
 
 void MockController::SetDataCallback(DataCallback callback) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(!data_callback_);
+  PW_DCHECK(callback);
+  PW_DCHECK(!data_callback_);
 
   data_callback_ = std::move(callback);
 }
@@ -151,8 +151,8 @@ void MockController::SetTransactionCallback(fit::closure callback) {
 }
 
 void MockController::SetTransactionCallback(TransactionCallback callback) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(!transaction_callback_);
+  PW_DCHECK(callback);
+  PW_DCHECK(!transaction_callback_);
   transaction_callback_ = std::move(callback);
 }
 

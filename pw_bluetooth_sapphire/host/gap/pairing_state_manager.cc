@@ -65,10 +65,10 @@ PairingStateManager::PairingStateManager(
 
     // We should also check that |peer| and |outgoing_connection| are unchanged
     // before and after connection is complete
-    BT_ASSERT(legacy_pairing_state_->peer()->identifier() ==
-              peer_->identifier());
-    BT_ASSERT(legacy_pairing_state_->outgoing_connection() ==
-              outgoing_connection);
+    PW_CHECK(legacy_pairing_state_->peer()->identifier() ==
+             peer_->identifier());
+    PW_CHECK(legacy_pairing_state_->outgoing_connection() ==
+             outgoing_connection);
   }
 }
 

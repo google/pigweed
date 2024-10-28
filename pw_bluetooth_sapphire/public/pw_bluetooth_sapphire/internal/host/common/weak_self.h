@@ -38,7 +38,7 @@ class WeakRef : public pw::RefCounted<WeakRef> {
 
   // Get a reference to the alive object.
   void* get() {
-    BT_ASSERT_MSG(ptr_, "attempted to get a destroyed ptr");
+    PW_CHECK(ptr_, "attempted to get a destroyed ptr");
     return ptr_;
   }
 
@@ -85,13 +85,13 @@ class RecyclingWeakRef : public pw::Recyclable<RecyclingWeakRef>,
   bool is_in_use() { return in_use_; }
 
   void* get() {
-    BT_ASSERT_MSG(in_use_, "shouldn't get an unallocated ptr");
-    BT_ASSERT_MSG(ptr_, "attempted to get a destroyed ptr");
+    PW_CHECK(in_use_, "shouldn't get an unallocated ptr");
+    PW_CHECK(ptr_, "attempted to get a destroyed ptr");
     return ptr_;
   }
 
   pw::IntrusivePtr<RecyclingWeakRef> alloc(void* p) {
-    BT_ASSERT(!in_use_);
+    PW_CHECK(!in_use_);
     in_use_ = true;
     ptr_ = p;
     return pw::IntrusivePtr<RecyclingWeakRef>(this);
@@ -177,7 +177,7 @@ class WeakPtr {
 
   bool is_alive() const { return ptr_ && ptr_->is_alive(); }
   T& get() const {
-    BT_ASSERT_MSG(ptr_, "tried to get never-assigned weak pointer");
+    PW_CHECK(ptr_, "tried to get never-assigned weak pointer");
     return *static_cast<T*>(ptr_->get());
   }
 
@@ -263,7 +263,7 @@ class WeakSelf {
 
   WeakPtr GetWeakPtr() {
     auto weak_ref = manager_.GetWeakRef();
-    BT_ASSERT_MSG(weak_ref.has_value(), "weak pointer not available");
+    PW_CHECK(weak_ref.has_value(), "weak pointer not available");
     return WeakPtr(*std::move(weak_ref));
   }
 

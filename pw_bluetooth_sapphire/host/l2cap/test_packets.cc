@@ -205,7 +205,7 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id,
       params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
-  BT_ASSERT_MSG(
+  PW_CHECK(
       std::holds_alternative<l2cap::RetransmissionAndFlowControlMode>(any_mode),
       "Channel mode is unsupported for configuration request.");
   const auto mode = std::get<l2cap::RetransmissionAndFlowControlMode>(any_mode);
@@ -278,7 +278,7 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id,
     case l2cap::RetransmissionAndFlowControlMode::kRetransmission:
     case l2cap::RetransmissionAndFlowControlMode::kFlowControl:
     case l2cap::RetransmissionAndFlowControlMode::kStreaming:
-      BT_ASSERT_MSG(false, "unsupported mode");
+      PW_CHECK(false, "unsupported mode");
   }
 }
 
@@ -290,7 +290,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id,
       params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
-  BT_ASSERT_MSG(
+  PW_CHECK(
       std::holds_alternative<l2cap::RetransmissionAndFlowControlMode>(any_mode),
       "Channel mode is unsupported for configuration response.");
   const auto mode = std::get<l2cap::RetransmissionAndFlowControlMode>(any_mode);
@@ -374,7 +374,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id,
     case l2cap::RetransmissionAndFlowControlMode::kRetransmission:
     case l2cap::RetransmissionAndFlowControlMode::kFlowControl:
     case l2cap::RetransmissionAndFlowControlMode::kStreaming:
-      BT_ASSERT_MSG(false, "unsupported mode");
+      PW_CHECK(false, "unsupported mode");
   }
 }
 

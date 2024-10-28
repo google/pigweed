@@ -42,7 +42,7 @@ const StaticByteBuffer kTestValue2('x', 'x', 'x');
 // Returns the handles of each attribute visited by advancing |iter| until the
 // end.
 std::vector<Handle> IterHandles(Database::Iterator* iter) {
-  BT_DEBUG_ASSERT(iter);
+  PW_DCHECK(iter);
 
   std::vector<Handle> handles;
   for (; !iter->AtEnd(); iter->Advance()) {

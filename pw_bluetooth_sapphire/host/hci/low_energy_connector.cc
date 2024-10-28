@@ -99,14 +99,14 @@ bool LowEnergyConnector::CreateConnection(
     const hci_spec::LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback,
     pw::chrono::SystemClock::duration timeout) {
-  BT_DEBUG_ASSERT(status_callback);
-  BT_DEBUG_ASSERT(timeout.count() > 0);
+  PW_DCHECK(status_callback);
+  PW_DCHECK(timeout.count() > 0);
 
   if (request_pending()) {
     return false;
   }
 
-  BT_DEBUG_ASSERT(!request_timeout_task_.is_pending());
+  PW_DCHECK(!request_timeout_task_.is_pending());
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
   if (use_local_identity_address_) {
@@ -176,7 +176,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     return;
   }
 
-  BT_DEBUG_ASSERT(!pending_request_->initiating);
+  PW_DCHECK(!pending_request_->initiating);
 
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
@@ -184,7 +184,7 @@ void LowEnergyConnector::CreateConnectionInternal(
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
   auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
-    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive()) {
       return;
@@ -344,7 +344,7 @@ EmbossCommandPacket LowEnergyConnector::BuildCreateConnectionPacket(
 }
 
 void LowEnergyConnector::CancelInternal(bool timed_out) {
-  BT_DEBUG_ASSERT(request_pending());
+  PW_DCHECK(request_pending());
 
   if (pending_request_->canceled) {
     bt_log(WARN, "hci-le", "connection attempt already canceled!");
@@ -463,7 +463,7 @@ void LowEnergyConnector::OnConnectionCompleteEvent(
 
 void LowEnergyConnector::OnCreateConnectionComplete(
     Result<> result, std::unique_ptr<LowEnergyConnection> link) {
-  BT_DEBUG_ASSERT(pending_request_);
+  PW_DCHECK(pending_request_);
   bt_log(DEBUG, "hci-le", "connection complete - status: %s", bt_str(result));
 
   request_timeout_task_.Cancel();
@@ -475,7 +475,7 @@ void LowEnergyConnector::OnCreateConnectionComplete(
 }
 
 void LowEnergyConnector::OnCreateConnectionTimeout() {
-  BT_DEBUG_ASSERT(pending_request_);
+  PW_DCHECK(pending_request_);
   bt_log(INFO, "hci-le", "create connection timed out: canceling request");
 
   // TODO(armansito): This should cancel the connection attempt only if the

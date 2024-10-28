@@ -134,7 +134,7 @@ class DataFuzzTest : public TestingBase {
     packet_view.AsMutable<hci_spec::ACLDataHeader>()->handle_and_flags =
         handle_and_flags;
 
-    BT_ASSERT(test_device()->SendACLDataChannelPacket(packet_view));
+    PW_CHECK(test_device()->SendACLDataChannelPacket(packet_view));
     return true;
   }
 

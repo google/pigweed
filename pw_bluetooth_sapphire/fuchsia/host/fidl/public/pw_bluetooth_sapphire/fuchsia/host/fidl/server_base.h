@@ -58,7 +58,7 @@ class ServerBase : public Server, public Interface {
   // Constructs a FIDL server by binding a zx::channel.
   ServerBase(Interface* impl, zx::channel channel)
       : binding_(impl, std::move(channel)) {
-    BT_DEBUG_ASSERT(binding_.is_bound());
+    PW_DCHECK(binding_.is_bound());
   }
 
   ~ServerBase() override = default;
@@ -93,7 +93,7 @@ class AdapterServerBase : public ServerBase<Interface> {
                     zx::channel channel)
       : ServerBase<Interface>(impl, std::move(channel)),
         adapter_(std::move(adapter)) {
-    BT_DEBUG_ASSERT(adapter_.is_alive());
+    PW_DCHECK(adapter_.is_alive());
   }
 
   ~AdapterServerBase() override = default;
@@ -117,7 +117,7 @@ class GattServerBase : public ServerBase<Interface> {
                  fidl::InterfaceRequest<Interface> request)
       : ServerBase<Interface>(impl, std::move(request)),
         gatt_(std::move(gatt)) {
-    BT_DEBUG_ASSERT(gatt_.is_alive());
+    PW_DCHECK(gatt_.is_alive());
   }
 
   ~GattServerBase() override = default;

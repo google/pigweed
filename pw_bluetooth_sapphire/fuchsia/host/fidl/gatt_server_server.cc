@@ -154,8 +154,8 @@ class GattServerServer::LocalServiceImpl
         owner_(owner),
         id_(id),
         delegate_(std::move(delegate)) {
-    BT_DEBUG_ASSERT(owner_);
-    BT_DEBUG_ASSERT(delegate_);
+    PW_DCHECK(owner_);
+    PW_DCHECK(delegate_);
   }
 
   // The destructor removes the GATT service
@@ -336,7 +336,7 @@ void GattServerServer::PublishService(
       return;
     }
 
-    BT_DEBUG_ASSERT(self->services_.find(id) == self->services_.end());
+    PW_DCHECK(self->services_.find(id) == self->services_.end());
 
     // This will be called if either the delegate or the service connection
     // closes.
@@ -388,7 +388,7 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
   };
 
   auto* delegate = iter->second->delegate();
-  BT_DEBUG_ASSERT(delegate);
+  PW_DCHECK(delegate);
   delegate->OnReadValue(id, offset, std::move(cb));
 }
 
@@ -407,7 +407,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
 
   auto fidl_value = fidl::To<std::vector<uint8_t>>(value);
   auto* delegate = iter->second->delegate();
-  BT_DEBUG_ASSERT(delegate);
+  PW_DCHECK(delegate);
 
   if (!responder) {
     delegate->OnWriteWithoutResponse(id, offset, std::move(fidl_value));
@@ -434,7 +434,7 @@ void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id,
   }
 
   auto* delegate = iter->second->delegate();
-  BT_DEBUG_ASSERT(delegate);
+  PW_DCHECK(delegate);
   delegate->OnCharacteristicConfiguration(
       chrc_id, peer_id.ToString(), notify, indicate);
 }

@@ -135,7 +135,7 @@ class Inspectable {
   }
 
   virtual void AttachInspect(inspect::Node& node, std::string name) {
-    BT_ASSERT_MSG(false, "AttachInspect not implemented for PropertyT");
+    PW_CHECK(false, "AttachInspect not implemented for PropertyT");
   }
 
   // Returns a InspectableGuard wrapper around the contained value that allows

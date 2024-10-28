@@ -68,7 +68,7 @@ LowEnergyCentralServer::LowEnergyCentralServer(
       gatt_(std::move(gatt)),
       requesting_scan_deprecated_(false),
       weak_self_(this) {
-  BT_ASSERT(gatt_.is_alive());
+  PW_CHECK(gatt_.is_alive());
 }
 
 LowEnergyCentralServer::~LowEnergyCentralServer() {
@@ -96,7 +96,7 @@ LowEnergyCentralServer::ScanResultWatcherServer::ScanResultWatcherServer(
       error_callback_(std::move(error_cb)) {
   set_error_handler([this](auto) {
     bt_log(DEBUG, "fidl", "ScanResultWatcher client closed, stopping scan");
-    BT_ASSERT(error_callback_);
+    PW_CHECK(error_callback_);
     error_callback_();
   });
 }
@@ -134,7 +134,7 @@ void LowEnergyCentralServer::ScanResultWatcherServer::Watch(
            "%s: called before previous call completed",
            __FUNCTION__);
     Close(ZX_ERR_CANCELED);
-    BT_ASSERT(error_callback_);
+    PW_CHECK(error_callback_);
     error_callback_();
     return;
   }
@@ -165,10 +165,10 @@ void LowEnergyCentralServer::ScanResultWatcherServer::MaybeSendPeers() {
 
     fble::Peer fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
     measure_fble::Size peer_size = measure_fble::Measure(fidl_peer);
-    BT_ASSERT_MSG(peer_size.num_handles == 0,
-                  "Expected fuchsia.bluetooth.le/Peer to not have handles, but "
-                  "%zu handles found",
-                  peer_size.num_handles);
+    PW_CHECK(peer_size.num_handles == 0,
+             "Expected fuchsia.bluetooth.le/Peer to not have handles, but "
+             "%zu handles found",
+             peer_size.num_handles);
     bytes_used += peer_size.num_bytes;
     if (bytes_used > kMaxBytes) {
       // Don't remove the peer that exceeded the size limit. It will be sent in
@@ -363,8 +363,8 @@ void LowEnergyCentralServer::Connect(
           return;
 
         auto conn_iter = self->connections_.find(peer_id);
-        BT_ASSERT(conn_iter != self->connections_.end());
-        BT_ASSERT(conn_iter->second == nullptr);
+        PW_CHECK(conn_iter != self->connections_.end());
+        PW_CHECK(conn_iter->second == nullptr);
 
         if (result.is_error()) {
           bt_log(INFO,
@@ -377,8 +377,8 @@ void LowEnergyCentralServer::Connect(
         }
 
         auto conn_ref = std::move(result).value();
-        BT_ASSERT(conn_ref);
-        BT_ASSERT(peer_id == conn_ref->peer_identifier());
+        PW_CHECK(conn_ref);
+        PW_CHECK(peer_id == conn_ref->peer_identifier());
 
         auto closed_cb = [self, peer_id] {
           if (self.is_alive()) {
@@ -392,7 +392,7 @@ void LowEnergyCentralServer::Connect(
                                                         request.TakeChannel(),
                                                         std::move(closed_cb));
 
-        BT_ASSERT(!conn_iter->second);
+        PW_CHECK(!conn_iter->second);
         conn_iter->second = std::move(server);
       };
 
@@ -577,8 +577,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
     }
 
     auto conn_ref = std::move(result).value();
-    BT_ASSERT(conn_ref);
-    BT_ASSERT(peer_id == conn_ref->peer_identifier());
+    PW_CHECK(conn_ref);
+    PW_CHECK(peer_id == conn_ref->peer_identifier());
 
     if (self->gatt_client_servers_.find(peer_id) !=
         self->gatt_client_servers_.end()) {
@@ -612,7 +612,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
       }
     });
 
-    BT_ASSERT(!iter->second);
+    PW_CHECK(!iter->second);
     iter->second = std::move(conn_ref);
     callback(Status());
   };

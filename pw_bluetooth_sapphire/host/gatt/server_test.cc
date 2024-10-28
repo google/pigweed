@@ -149,7 +149,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
           state = kSearching;
         } else if (state == kCorrectChrcUuidFound &&
                    attr.type() == types::kClientCharacteristicConfig) {
-          BT_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
+          PW_CHECK(matching_chrc_value_handle != att::kInvalidHandle);
           DynamicByteBuffer new_ccc(sizeof(ccc_val));
           new_ccc.WriteObj(ccc_val);
           fit::result<att::ErrorCode> write_status =

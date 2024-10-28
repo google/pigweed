@@ -48,7 +48,7 @@ IsoDataChannelImpl::IsoDataChannelImpl(const DataBufferInfo& buffer_info,
     : command_channel_(command_channel), hci_(hci), buffer_info_(buffer_info) {
   // IsoDataChannel shouldn't be used if the buffer is unavailable (implying the
   // controller doesn't support isochronous channels).
-  BT_ASSERT(buffer_info_.IsAvailable());
+  PW_CHECK(buffer_info_.IsAvailable());
 
   hci_->SetReceiveIsoFunction(
       fit::bind_member<&IsoDataChannelImpl::OnRxPacket>(this));

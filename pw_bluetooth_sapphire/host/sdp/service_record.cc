@@ -68,7 +68,7 @@ void ServiceRecord::SetAttribute(AttributeId id, DataElement value) {
 
 const DataElement& ServiceRecord::GetAttribute(AttributeId id) const {
   auto it = attributes_.find(id);
-  BT_DEBUG_ASSERT_MSG(it != attributes_.end(), "attribute %#.4x not set!", id);
+  PW_DCHECK(it != attributes_.end(), "attribute %#.4x not set!", id);
   return it->second;
 }
 
@@ -267,7 +267,7 @@ bool ServiceRecord::AddInfo(const std::string& language_code,
 
     // "%" can't be in pw_assert statements.
     const size_t list_size_mod_3 = base_attr_list.size() % 3;
-    BT_DEBUG_ASSERT(list_size_mod_3 == 0);
+    PW_DCHECK(list_size_mod_3 == 0);
 
     // 0x0100 is guaranteed to be taken, start counting from higher.
     base_attrid = 0x9000;
@@ -326,7 +326,7 @@ std::vector<ServiceRecord::Information> ServiceRecord::GetInfo() const {
   std::vector<ServiceRecord::Information> out;
   const auto& base_id_seq = base_id_list.Get<std::vector<DataElement>>();
   const size_t list_size_mod_3 = base_id_seq->size() % 3;
-  BT_DEBUG_ASSERT(list_size_mod_3 == 0);
+  PW_DCHECK(list_size_mod_3 == 0);
 
   for (size_t i = 0; i + 2 < base_id_seq->size(); i += 3) {
     // Each entry is a triplet of uint16_t (language_code, encoding format, base

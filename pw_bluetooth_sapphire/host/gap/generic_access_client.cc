@@ -23,8 +23,8 @@ namespace bt::gap::internal {
 GenericAccessClient::GenericAccessClient(PeerId peer_id,
                                          gatt::RemoteService::WeakPtr service)
     : WeakSelf(this), service_(std::move(service)), peer_id_(peer_id) {
-  BT_ASSERT(service_.is_alive());
-  BT_ASSERT(service_->uuid() == kGenericAccessService);
+  PW_CHECK(service_.is_alive());
+  PW_CHECK(service_->uuid() == kGenericAccessService);
 }
 
 void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {

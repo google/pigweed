@@ -50,14 +50,14 @@ Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
 }
 
 void PeerCache::ForEach(PeerCallback f) {
-  BT_DEBUG_ASSERT(f);
+  PW_DCHECK(f);
   for (const auto& iter : peers_) {
     f(*iter.second.peer());
   }
 }
 
 bool PeerCache::AddBondedPeer(BondingData bd) {
-  BT_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
+  PW_DCHECK(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
   const bool bond_le = bd.le_pairing_data.peer_ltk ||
                        bd.le_pairing_data.local_ltk || bd.le_pairing_data.csrk;
@@ -100,10 +100,10 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   }
 
   if (bond_le) {
-    BT_ASSERT(bd.le_pairing_data.irk.has_value() ==
-              bd.le_pairing_data.identity_address.has_value());
+    PW_CHECK(bd.le_pairing_data.irk.has_value() ==
+             bd.le_pairing_data.identity_address.has_value());
     peer->MutLe().SetBondData(bd.le_pairing_data);
-    BT_ASSERT(peer->le()->bonded());
+    PW_CHECK(peer->le()->bonded());
 
     // Add the peer to the resolving list if it has an IRK.
     if (bd.le_pairing_data.irk) {
@@ -118,15 +118,15 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
     }
 
     peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
-    BT_DEBUG_ASSERT(peer->bredr()->bonded());
+    PW_DCHECK(peer->bredr()->bonded());
   }
 
   if (peer->technology() == TechnologyType::kDualMode) {
     address_map_[GetAliasAddress(bd.address)] = bd.identifier;
   }
 
-  BT_DEBUG_ASSERT(!peer->temporary());
-  BT_DEBUG_ASSERT(peer->bonded());
+  PW_DCHECK(!peer->temporary());
+  PW_DCHECK(peer->bonded());
   bt_log(TRACE,
          "gap",
          "restored bonded peer: %s, id: %s",
@@ -141,8 +141,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 
 bool PeerCache::StoreLowEnergyBond(PeerId identifier,
                                    const sm::PairingData& bond_data) {
-  BT_ASSERT(bond_data.irk.has_value() ==
-            bond_data.identity_address.has_value());
+  PW_CHECK(bond_data.irk.has_value() == bond_data.identity_address.has_value());
 
   auto log_bond_failure =
       fit::defer([this] { peer_metrics_.LogLeBondFailureEvent(); });
@@ -190,8 +189,8 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
   // TODO(fxbug.dev/42072204): Check that we're not downgrading the security
   // level before overwriting the bond.
   peer->MutLe().SetBondData(bond_data);
-  BT_DEBUG_ASSERT(!peer->temporary());
-  BT_DEBUG_ASSERT(peer->le()->bonded());
+  PW_DCHECK(!peer->temporary());
+  PW_DCHECK(peer->le()->bonded());
 
   // Add the peer to the resolving list if it has an IRK.
   if (peer->identity_known() && bond_data.irk) {
@@ -214,7 +213,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
 
 bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
                                const sm::LTK& link_key) {
-  BT_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
+  PW_DCHECK(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
   if (!peer) {
     bt_log(WARN,
@@ -227,8 +226,8 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
   // TODO(fxbug.dev/42072204): Check that we're not downgrading the security
   // level before overwriting the bond.
   peer->MutBrEdr().SetBondData(link_key);
-  BT_DEBUG_ASSERT(!peer->temporary());
-  BT_DEBUG_ASSERT(peer->bredr()->bonded());
+  PW_DCHECK(!peer->temporary());
+  PW_DCHECK(peer->bredr()->bonded());
 
   NotifyPeerBonded(*peer);
   return true;
@@ -316,14 +315,14 @@ Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
     address = in_address;
   }
 
-  BT_DEBUG_ASSERT(address);
+  PW_DCHECK(address);
   auto identifier = FindIdByAddress(*address);
   if (!identifier) {
     return nullptr;
   }
 
   auto* p = FindById(*identifier);
-  BT_DEBUG_ASSERT(p);
+  PW_DCHECK(p);
   return p;
 }
 
@@ -345,7 +344,7 @@ PeerCache::CallbackId PeerCache::add_peer_updated_callback(
     PeerCallback callback) {
   auto [iter, success] =
       peer_updated_callbacks_.emplace(next_callback_id_++, std::move(callback));
-  BT_ASSERT(success);
+  PW_CHECK(success);
   return iter->first;
 }
 
@@ -404,10 +403,10 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier,
 }
 
 void PeerCache::NotifyPeerBonded(const Peer& peer) {
-  BT_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
-  BT_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
-  BT_DEBUG_ASSERT_MSG(peer.identity_known(),
-                      "peers not allowed to bond with unknown identity!");
+  PW_DCHECK(peers_.find(peer.identifier()) != peers_.end());
+  PW_DCHECK(peers_.at(peer.identifier()).peer() == &peer);
+  PW_DCHECK(peer.identity_known(),
+            "peers not allowed to bond with unknown identity!");
 
   bt_log(INFO, "gap", "successfully bonded (peer: %s)", bt_str(peer));
   if (peer_bonded_callback_) {
@@ -417,15 +416,15 @@ void PeerCache::NotifyPeerBonded(const Peer& peer) {
 
 void PeerCache::NotifyPeerUpdated(const Peer& peer,
                                   Peer::NotifyListenersChange change) {
-  BT_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
-  BT_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
+  PW_DCHECK(peers_.find(peer.identifier()) != peers_.end());
+  PW_DCHECK(peers_.at(peer.identifier()).peer() == &peer);
 
   for (auto& [_, peer_updated_callback] : peer_updated_callbacks_) {
     peer_updated_callback(peer);
   }
 
   if (change == Peer::NotifyListenersChange::kBondUpdated) {
-    BT_ASSERT(peer.bonded());
+    PW_CHECK(peer.bonded());
     bt_log(INFO, "gap", "peer bond updated %s", bt_str(peer));
     if (peer_bonded_callback_) {
       peer_bonded_callback_(peer);
@@ -435,10 +434,10 @@ void PeerCache::NotifyPeerUpdated(const Peer& peer,
 
 void PeerCache::UpdateExpiry(const Peer& peer) {
   auto peer_record_iter = peers_.find(peer.identifier());
-  BT_DEBUG_ASSERT(peer_record_iter != peers_.end());
+  PW_DCHECK(peer_record_iter != peers_.end());
 
   auto& peer_record = peer_record_iter->second;
-  BT_DEBUG_ASSERT(peer_record.peer() == &peer);
+  PW_DCHECK(peer_record.peer() == &peer);
 
   peer_record.removal_task()->Cancel();
 
@@ -450,15 +449,15 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
 }
 
 void PeerCache::MakeDualMode(const Peer& peer) {
-  BT_ASSERT(address_map_.at(peer.address()) == peer.identifier());
+  PW_CHECK(address_map_.at(peer.address()) == peer.identifier());
   const auto address_alias = GetAliasAddress(peer.address());
   auto [iter, inserted] =
       address_map_.try_emplace(address_alias, peer.identifier());
-  BT_ASSERT_MSG(inserted || iter->second == peer.identifier(),
-                "%s can't become dual-mode because %s maps to %s",
-                bt_str(peer.identifier()),
-                bt_str(address_alias),
-                bt_str(iter->second));
+  PW_CHECK(inserted || iter->second == peer.identifier(),
+           "%s can't become dual-mode because %s maps to %s",
+           bt_str(peer.identifier()),
+           bt_str(address_alias),
+           bt_str(iter->second));
   bt_log(INFO,
          "gap",
          "peer became dual mode (peer: %s, address: %s, alias: %s)",
@@ -472,11 +471,11 @@ void PeerCache::MakeDualMode(const Peer& peer) {
 }
 
 void PeerCache::RemovePeer(Peer* peer) {
-  BT_DEBUG_ASSERT(peer);
+  PW_DCHECK(peer);
 
   auto peer_record_it = peers_.find(peer->identifier());
-  BT_DEBUG_ASSERT(peer_record_it != peers_.end());
-  BT_DEBUG_ASSERT(peer_record_it->second.peer() == peer);
+  PW_DCHECK(peer_record_it != peers_.end());
+  PW_DCHECK(peer_record_it->second.peer() == peer);
 
   PeerId id = peer->identifier();
   bt_log(DEBUG, "gap", "removing peer %s", bt_str(id));

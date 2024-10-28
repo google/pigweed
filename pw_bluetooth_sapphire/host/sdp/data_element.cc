@@ -532,7 +532,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       }
       BufferView sequence_buf = cursor.view(0, data_bytes);
       size_t remaining = data_bytes;
-      BT_DEBUG_ASSERT(sequence_buf.size() == data_bytes);
+      PW_DCHECK(sequence_buf.size() == data_bytes);
 
       std::vector<DataElement> seq;
       while (remaining > 0) {
@@ -544,7 +544,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
         seq.push_back(std::move(next));
         remaining -= used;
       }
-      BT_DEBUG_ASSERT(remaining == 0);
+      PW_DCHECK(remaining == 0);
       if (type_desc == Type::kAlternative) {
         elem->SetAlternative(std::move(seq));
       } else {
@@ -655,7 +655,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     }
     case Type::kUuid: {
       size_t written = uuid_.ToBytes(&cursor);
-      BT_DEBUG_ASSERT(written);
+      PW_DCHECK(written);
       // SDP is big-endian, so reverse.
       std::reverse(cursor.mutable_data(), cursor.mutable_data() + written);
       pos += written;
@@ -664,7 +664,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     case Type::kString:
     case Type::kUrl: {
       size_t used = WriteLength(&cursor, bytes_.size());
-      BT_DEBUG_ASSERT(used);
+      PW_DCHECK(used);
       pos += used;
       cursor.Write(bytes_.data(), bytes_.size(), used);
       pos += bytes_.size();
@@ -673,12 +673,12 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     case Type::kSequence:
     case Type::kAlternative: {
       size_t used = WriteLength(&cursor, AggregateSize(aggregate_));
-      BT_DEBUG_ASSERT(used);
+      PW_DCHECK(used);
       pos += used;
       cursor = cursor.mutable_view(used);
       for (const auto& elem : aggregate_) {
         used = elem.Write(&cursor);
-        BT_DEBUG_ASSERT(used);
+        PW_DCHECK(used);
         pos += used;
         cursor = cursor.mutable_view(used);
       }

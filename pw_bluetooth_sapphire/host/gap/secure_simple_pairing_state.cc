@@ -50,9 +50,9 @@ SecureSimplePairingState::SecureSimplePairingState(
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
-  BT_ASSERT(link_.is_alive());
-  BT_ASSERT(send_auth_request_callback_);
-  BT_ASSERT(status_callback_);
+  PW_CHECK(link_.is_alive());
+  PW_CHECK(send_auth_request_callback_);
+  PW_CHECK(status_callback_);
   link_->set_encryption_change_callback(
       fit::bind_member<&SecureSimplePairingState::OnEncryptionChange>(this));
   cleanup_cb_ = [](SecureSimplePairingState* self) {
@@ -83,7 +83,7 @@ void SecureSimplePairingState::InitiatePairing(
   // TODO(fxbug.dev/42082728): Reject pairing if peer/local device don't support
   // Secure Connections and SC is required
   if (state() == State::kIdle) {
-    BT_ASSERT(!is_pairing());
+    PW_CHECK(!is_pairing());
 
     // If the current link key already meets the security requirements, skip
     // pairing and report success.
@@ -122,7 +122,7 @@ void SecureSimplePairingState::InitiatePairing(
   // ongoing pairing procedure instead of sending their own Authentication
   // Request.
   if (is_pairing()) {
-    BT_ASSERT(state() != State::kIdle);
+    PW_CHECK(state() != State::kIdle);
     bt_log(INFO,
            "gap-bredr",
            "Already pairing %#.4x (id: %s); blocking callback on completion",
@@ -134,14 +134,14 @@ void SecureSimplePairingState::InitiatePairing(
   } else {
     // In the error state, we should expect no pairing to be created and cancel
     // this particular request immediately.
-    BT_ASSERT(state() == State::kFailed);
+    PW_CHECK(state() == State::kFailed);
     status_cb(handle(), ToResult(HostError::kCanceled));
   }
 }
 
 void SecureSimplePairingState::InitiateNextPairingRequest() {
-  BT_ASSERT(state() == State::kIdle);
-  BT_ASSERT(!is_pairing());
+  PW_CHECK(state() == State::kIdle);
+  PW_CHECK(!is_pairing());
 
   if (request_queue_.empty()) {
     return;
@@ -187,11 +187,11 @@ std::optional<IoCapability> SecureSimplePairingState::OnIoCapabilityRequest() {
   current_pairing_->local_iocap =
       sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
   if (state() == State::kInitiatorWaitIoCapRequest) {
-    BT_ASSERT(initiator());
+    PW_CHECK(initiator());
     state_ = State::kInitiatorWaitIoCapResponse;
   } else {
-    BT_ASSERT(is_pairing());
-    BT_ASSERT(!initiator());
+    PW_CHECK(is_pairing());
+    PW_CHECK(!initiator());
     current_pairing_->ComputePairingData();
 
     state_ = GetStateForPairingEvent(current_pairing_->expected_event);
@@ -205,19 +205,19 @@ void SecureSimplePairingState::OnIoCapabilityResponse(IoCapability peer_iocap) {
   // they may try to re-pair.  Cancel the previous pairing if they try to
   // restart.
   if (state() == State::kWaitEncryption) {
-    BT_ASSERT(is_pairing());
+    PW_CHECK(is_pairing());
     current_pairing_ = nullptr;
     state_ = State::kIdle;
   }
   if (state() == State::kIdle) {
-    BT_ASSERT(!is_pairing());
+    PW_CHECK(!is_pairing());
     current_pairing_ = Pairing::MakeResponder(peer_iocap, outgoing_connection_);
 
     // Defer gathering local IO Capability until OnIoCapabilityRequest, where
     // the pairing can be rejected if there's no pairing delegate.
     state_ = State::kResponderWaitIoCapRequest;
   } else if (state() == State::kInitiatorWaitIoCapResponse) {
-    BT_ASSERT(initiator());
+    PW_CHECK(initiator());
 
     current_pairing_->peer_iocap = peer_iocap;
     current_pairing_->ComputePairingData();
@@ -235,10 +235,10 @@ void SecureSimplePairingState::OnUserConfirmationRequest(
     cb(false);
     return;
   }
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   // TODO(fxbug.dev/42113087): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate().is_alive());
+  PW_CHECK(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
   if (current_pairing_->action == PairingAction::kAutomatic) {
@@ -301,17 +301,17 @@ void SecureSimplePairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
     cb(std::nullopt);
     return;
   }
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   // TODO(fxbug.dev/42113087): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate().is_alive());
+  PW_CHECK(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
-  BT_ASSERT_MSG(current_pairing_->action == PairingAction::kRequestPasskey,
-                "%#.4x (id: %s): unexpected action %d",
-                handle(),
-                bt_str(peer_id()),
-                static_cast<int>(current_pairing_->action));
+  PW_CHECK(current_pairing_->action == PairingAction::kRequestPasskey,
+           "%#.4x (id: %s): unexpected action %d",
+           handle(),
+           bt_str(peer_id()),
+           static_cast<int>(current_pairing_->action));
   auto pairing = current_pairing_->GetWeakPtr();
   auto passkey_cb =
       [this, callback = std::move(cb), pairing](int64_t passkey) mutable {
@@ -339,10 +339,10 @@ void SecureSimplePairingState::OnUserPasskeyNotification(
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   // TODO(fxbug.dev/42113087): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate().is_alive());
+  PW_CHECK(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
   auto pairing = current_pairing_->GetWeakPtr();
@@ -390,7 +390,7 @@ void SecureSimplePairingState::OnSimplePairingComplete(
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   pairing_delegate()->CompletePairing(peer_id(), fit::ok());
   state_ = State::kWaitLinkKey;
@@ -403,7 +403,7 @@ std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
     return std::nullopt;
   }
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   std::optional<sm::LTK> link_key;
 
@@ -418,10 +418,10 @@ std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
            "recalling link key for bonded peer %s",
            bt_str(peer_->identifier()));
 
-    BT_ASSERT(peer_->bredr()->link_key().has_value());
+    PW_CHECK(peer_->bredr()->link_key().has_value());
     link_key = peer_->bredr()->link_key();
-    BT_ASSERT(link_key->security().enc_key_size() ==
-              hci_spec::kBrEdrLinkKeySize);
+    PW_CHECK(link_key->security().enc_key_size() ==
+             hci_spec::kBrEdrLinkKeySize);
 
     const auto link_key_type = link_key->security().GetLinkKeyType();
     link_->set_link_key(link_key->key(), link_key_type);
@@ -434,7 +434,7 @@ std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
   // the peer initiates the authentication procedure).
   if (state() == State::kIdle) {
     if (link_key.has_value()) {
-      BT_ASSERT(!is_pairing());
+      PW_CHECK(!is_pairing());
       current_pairing_ = Pairing::MakeResponderForBonded();
       state_ = State::kWaitEncryption;
       return link_key->key();
@@ -442,7 +442,7 @@ std::optional<hci_spec::LinkKey> SecureSimplePairingState::OnLinkKeyRequest() {
     return std::optional<hci_spec::LinkKey>();
   }
 
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   if (link_key.has_value() &&
       SecurityPropertiesMeetRequirements(
@@ -464,11 +464,11 @@ void SecureSimplePairingState::OnLinkKeyNotification(
   // TODO(fxbug.dev/42111880): We assume the controller is never in pairing
   // debug mode because it's a security hazard to pair and bond using Debug
   // Combination link keys.
-  BT_ASSERT_MSG(key_type != hci_spec::LinkKeyType::kDebugCombination,
-                "Pairing on link %#.4x (id: %s) resulted in insecure Debug "
-                "Combination link key",
-                handle(),
-                bt_str(peer_id()));
+  PW_CHECK(key_type != hci_spec::LinkKeyType::kDebugCombination,
+           "Pairing on link %#.4x (id: %s) resulted in insecure Debug "
+           "Combination link key",
+           handle(),
+           bt_str(peer_id()));
 
   // When not pairing, only connection link key changes are allowed.
   if (state() == State::kIdle &&
@@ -503,7 +503,7 @@ void SecureSimplePairingState::OnLinkKeyNotification(
   // The association model and resulting link security properties are computed
   // by both the Link Manager (controller) and the host subsystem, so check that
   // they agree.
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
   sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
   current_pairing_->security_properties = sec_props;
 
@@ -632,7 +632,7 @@ void SecureSimplePairingState::OnAuthenticationComplete(
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  BT_ASSERT(initiator());
+  PW_CHECK(initiator());
   EnableEncryption();
 }
 
@@ -724,7 +724,7 @@ void SecureSimplePairingState::Pairing::ComputePairingData() {
     action = PairingAction::kGetConsent;
   }
   expected_event = GetExpectedEvent(local_iocap, peer_iocap);
-  BT_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
+  PW_DCHECK(GetStateForPairingEvent(expected_event) != State::kFailed);
   authenticated = IsPairingAuthenticated(local_iocap, peer_iocap);
   bt_log(DEBUG,
          "gap-bredr",
@@ -819,7 +819,7 @@ std::vector<fit::closure> SecureSimplePairingState::CompletePairingRequests(
   std::vector<fit::closure> callbacks_to_signal;
 
   if (!is_pairing()) {
-    BT_ASSERT(request_queue_.empty());
+    PW_CHECK(request_queue_.empty());
     return callbacks_to_signal;
   }
 
@@ -836,8 +836,8 @@ std::vector<fit::closure> SecureSimplePairingState::CompletePairingRequests(
     return callbacks_to_signal;
   }
 
-  BT_ASSERT(state_ == State::kIdle);
-  BT_ASSERT(link_->ltk_type().has_value());
+  PW_CHECK(state_ == State::kIdle);
+  PW_CHECK(link_->ltk_type().has_value());
 
   auto security_properties = sm::SecurityProperties(link_->ltk_type().value());
 

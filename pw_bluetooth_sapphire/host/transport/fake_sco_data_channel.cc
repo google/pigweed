@@ -20,12 +20,12 @@ void FakeScoDataChannel::RegisterConnection(
     WeakPtr<ConnectionInterface> connection) {
   auto [iter, inserted] = connections_.emplace(
       connection->handle(), RegisteredConnection{std::move(connection)});
-  BT_ASSERT(inserted);
+  PW_CHECK(inserted);
 }
 
 void FakeScoDataChannel::UnregisterConnection(
     hci_spec::ConnectionHandle handle) {
-  BT_ASSERT(connections_.erase(handle) == 1);
+  PW_CHECK(connections_.erase(handle) == 1);
 }
 
 void FakeScoDataChannel::OnOutboundPacketReadable() { readable_count_++; }

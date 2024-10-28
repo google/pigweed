@@ -25,7 +25,7 @@ SequentialCommandRunner::SequentialCommandRunner(
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(cmd_.is_alive());
+  PW_DCHECK(cmd_.is_alive());
 }
 
 void SequentialCommandRunner::QueueCommand(
@@ -66,9 +66,9 @@ void SequentialCommandRunner::QueueLeAsyncCommand(
 }
 
 void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
-  BT_DEBUG_ASSERT(!status_callback_);
-  BT_DEBUG_ASSERT(status_callback);
-  BT_DEBUG_ASSERT(!command_queue_.empty());
+  PW_DCHECK(!status_callback_);
+  PW_DCHECK(status_callback);
+  PW_DCHECK(!command_queue_.empty());
 
   status_callback_ = std::move(status_callback);
   sequence_number_++;
@@ -87,7 +87,7 @@ bool SequentialCommandRunner::HasQueuedCommands() const {
 }
 
 void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
-  BT_DEBUG_ASSERT(status_callback_);
+  PW_DCHECK(status_callback_);
 
   // If an error occurred or we're done, reset.
   if (status.is_error() || (command_queue_.empty() && running_commands_ == 0)) {
@@ -170,7 +170,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
       return;
     }
 
-    BT_DEBUG_ASSERT(self->running_commands_ > 0);
+    PW_DCHECK(self->running_commands_ > 0);
     self->running_commands_--;
     self->TryRunNextQueuedCommand(event_result);
   };
@@ -211,7 +211,7 @@ void SequentialCommandRunner::Reset() {
 }
 
 void SequentialCommandRunner::NotifyStatusAndReset(Result<> status) {
-  BT_DEBUG_ASSERT(status_callback_);
+  PW_DCHECK(status_callback_);
   auto status_cb = std::move(status_callback_);
   Reset();
   status_cb(status);

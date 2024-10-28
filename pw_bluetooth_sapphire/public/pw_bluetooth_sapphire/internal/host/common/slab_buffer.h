@@ -22,8 +22,8 @@ template <size_t BackingBufferSize>
 class SlabBuffer : public MutableByteBuffer {
  public:
   explicit SlabBuffer(size_t size) : size_(size) {
-    BT_ASSERT(size);
-    BT_ASSERT(size_ <= buffer_.size());
+    PW_CHECK(size);
+    PW_CHECK(size_ <= buffer_.size());
   }
 
   // ByteBuffer overrides:

@@ -22,19 +22,19 @@
 namespace bt {
 
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer) const {
-  BT_ASSERT(out_buffer);
+  PW_CHECK(out_buffer);
   CopyRaw(out_buffer->mutable_data(), out_buffer->size(), 0, size());
 }
 
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer,
                       size_t pos,
                       size_t size) const {
-  BT_ASSERT(out_buffer);
+  PW_CHECK(out_buffer);
   CopyRaw(out_buffer->mutable_data(), out_buffer->size(), pos, size);
 }
 
 std::string ByteBuffer::Printable(size_t pos, size_t size) const {
-  BT_ASSERT(pos + size <= this->size());
+  PW_CHECK(pos + size <= this->size());
   const char* region_start = reinterpret_cast<const char*>(data() + pos);
   std::string_view view(region_start, size);
 
@@ -57,18 +57,18 @@ std::string ByteBuffer::Printable(size_t pos, size_t size) const {
 }
 
 BufferView ByteBuffer::view(size_t pos, size_t size) const {
-  BT_ASSERT_MSG(pos <= this->size(),
-                "offset past buffer (pos: %zu, size: %zu)",
-                pos,
-                this->size());
+  PW_CHECK(pos <= this->size(),
+           "offset past buffer (pos: %zu, size: %zu)",
+           pos,
+           this->size());
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
 
 pw::span<const std::byte> ByteBuffer::subspan(size_t pos, size_t size) const {
-  BT_ASSERT_MSG(pos <= this->size(),
-                "offset past buffer (pos: %zu, size: %zu)",
-                pos,
-                this->size());
+  PW_CHECK(pos <= this->size(),
+           "offset past buffer (pos: %zu, size: %zu)",
+           pos,
+           this->size());
   return pw::span(reinterpret_cast<const std::byte*>(data()) + pos,
                   std::min(size, this->size() - pos));
 }
@@ -107,27 +107,27 @@ void ByteBuffer::CopyRaw(void* dst_data,
                          size_t dst_capacity,
                          size_t src_offset,
                          size_t copy_size) const {
-  BT_ASSERT_MSG(copy_size == 0 || dst_data != nullptr,
-                "%zu byte write to pointer %p",
-                copy_size,
-                dst_data);
-  BT_ASSERT_MSG(copy_size <= dst_capacity,
-                "destination not large enough (required: %zu, available: %zu)",
-                copy_size,
-                dst_capacity);
-  BT_ASSERT_MSG(src_offset <= this->size(),
-                "offset exceeds source range (begin: %zu, copy_size: %zu)",
-                src_offset,
-                this->size());
-  BT_ASSERT_MSG(
+  PW_CHECK(copy_size == 0 || dst_data != nullptr,
+           "%zu byte write to pointer %p",
+           copy_size,
+           dst_data);
+  PW_CHECK(copy_size <= dst_capacity,
+           "destination not large enough (required: %zu, available: %zu)",
+           copy_size,
+           dst_capacity);
+  PW_CHECK(src_offset <= this->size(),
+           "offset exceeds source range (begin: %zu, copy_size: %zu)",
+           src_offset,
+           this->size());
+  PW_CHECK(
       std::numeric_limits<size_t>::max() - copy_size >= src_offset,
       "end of source range overflows size_t (src_offset: %zu, copy_size: %zu)",
       src_offset,
       copy_size);
-  BT_ASSERT_MSG(src_offset + copy_size <= this->size(),
-                "end exceeds source range (end: %zu, copy_size: %zu)",
-                src_offset + copy_size,
-                this->size());
+  PW_CHECK(src_offset + copy_size <= this->size(),
+           "end exceeds source range (end: %zu, copy_size: %zu)",
+           src_offset + copy_size,
+           this->size());
 
   // Data pointers for zero-length buffers are nullptr, over which memcpy has
   // undefined behavior, even for count = 0. Skip the memcpy invocation in that
@@ -145,20 +145,20 @@ void MutableByteBuffer::Write(const uint8_t* data, size_t size, size_t pos) {
 }
 
 MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
-  BT_ASSERT_MSG(pos <= this->size(),
-                "offset past buffer (pos: %zu, size: %zu)",
-                pos,
-                this->size());
+  PW_CHECK(pos <= this->size(),
+           "offset past buffer (pos: %zu, size: %zu)",
+           pos,
+           this->size());
   return MutableBufferView(mutable_data() + pos,
                            std::min(size, this->size() - pos));
 }
 
 pw::span<std::byte> MutableByteBuffer::mutable_subspan(size_t pos,
                                                        size_t size) {
-  BT_ASSERT_MSG(pos <= this->size(),
-                "offset past buffer (pos: %zu, size: %zu)",
-                pos,
-                this->size());
+  PW_CHECK(pos <= this->size(),
+           "offset past buffer (pos: %zu, size: %zu)",
+           pos,
+           this->size());
   return pw::span(reinterpret_cast<std::byte*>(mutable_data()) + pos,
                   std::min(size, this->size() - pos));
 }
@@ -176,15 +176,15 @@ DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size)
 
   // TODO(armansito): For now this is dumb but we should properly handle the
   // case when we're out of memory.
-  BT_ASSERT_MSG(buffer_.get(), "failed to allocate buffer");
+  PW_CHECK(buffer_.get(), "failed to allocate buffer");
 }
 
 DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
     : buffer_size_(buffer.size()),
       buffer_(buffer.size() ? std::make_unique<uint8_t[]>(buffer.size())
                             : nullptr) {
-  BT_ASSERT_MSG(!buffer_size_ || buffer_.get(),
-                "|buffer| cannot be nullptr when |buffer_size| is non-zero");
+  PW_CHECK(!buffer_size_ || buffer_.get(),
+           "|buffer| cannot be nullptr when |buffer_size| is non-zero");
   buffer.Copy(this);
 }
 
@@ -200,8 +200,8 @@ DynamicByteBuffer::DynamicByteBuffer(const std::string& buffer) {
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size,
                                      std::unique_ptr<uint8_t[]> buffer)
     : buffer_size_(buffer_size), buffer_(std::move(buffer)) {
-  BT_ASSERT_MSG(!buffer_size_ || buffer_.get(),
-                "|buffer| cannot be nullptr when |buffer_size| is non-zero");
+  PW_CHECK(!buffer_size_ || buffer_.get(),
+           "|buffer| cannot be nullptr when |buffer_size| is non-zero");
 }
 
 DynamicByteBuffer::DynamicByteBuffer(DynamicByteBuffer&& other) {
@@ -273,7 +273,7 @@ BufferView::BufferView(pw::span<const std::byte> bytes)
 BufferView::BufferView(const void* bytes, size_t size)
     : size_(size), bytes_(static_cast<const uint8_t*>(bytes)) {
   // If |size| non-zero then |bytes| cannot be nullptr.
-  BT_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
+  PW_CHECK(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
 BufferView::BufferView() = default;
@@ -287,7 +287,7 @@ ByteBuffer::const_iterator BufferView::cbegin() const { return bytes_; }
 ByteBuffer::const_iterator BufferView::cend() const { return bytes_ + size_; }
 
 MutableBufferView::MutableBufferView(MutableByteBuffer* buffer) {
-  BT_ASSERT(buffer);
+  PW_CHECK(buffer);
   size_ = buffer->size();
   bytes_ = buffer->mutable_data();
 }
@@ -295,7 +295,7 @@ MutableBufferView::MutableBufferView(MutableByteBuffer* buffer) {
 MutableBufferView::MutableBufferView(void* bytes, size_t size)
     : size_(size), bytes_(static_cast<uint8_t*>(bytes)) {
   // If |size| non-zero then |bytes| cannot be nullptr.
-  BT_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
+  PW_CHECK(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
 MutableBufferView::MutableBufferView() = default;

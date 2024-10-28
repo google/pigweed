@@ -62,7 +62,7 @@ class TxEngine {
       : channel_id_(channel_id),
         max_tx_sdu_size_(max_tx_sdu_size),
         channel_(channel) {
-    BT_ASSERT(max_tx_sdu_size_);
+    PW_CHECK(max_tx_sdu_size_);
   }
   virtual ~TxEngine() = default;
 

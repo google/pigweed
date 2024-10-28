@@ -94,7 +94,7 @@ void VirtualController::CreateLoopbackDevice(
 
   loopback_device_ = std::make_unique<LoopbackDevice>();
 
-  BT_ASSERT(request->has_uart_channel());
+  PW_CHECK(request->has_uart_channel());
   zx_status_t status = loopback_device_->Initialize(
       std::move(request->uart_channel()),
       std::string_view(name),

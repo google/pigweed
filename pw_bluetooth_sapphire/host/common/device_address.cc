@@ -46,7 +46,7 @@ DeviceAddressBytes::DeviceAddressBytes(
 }
 
 DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
-  BT_DEBUG_ASSERT(bytes.size() == bytes_.size());
+  PW_DCHECK(bytes.size() == bytes_.size());
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
@@ -67,7 +67,7 @@ std::string DeviceAddressBytes::ToString() const {
                          bytes_[2],
                          bytes_[1],
                          bytes_[0]);
-  BT_DEBUG_ASSERT(result.ok());
+  PW_DCHECK(result.ok());
   return out;
 }
 

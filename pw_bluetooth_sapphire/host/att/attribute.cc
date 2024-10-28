@@ -45,16 +45,16 @@ Attribute::Attribute(AttributeGrouping* group,
       type_(type),
       read_reqs_(read_reqs),
       write_reqs_(write_reqs) {
-  BT_DEBUG_ASSERT(group_);
-  BT_DEBUG_ASSERT(is_initialized());
+  PW_DCHECK(group_);
+  PW_DCHECK(is_initialized());
 }
 
 Attribute::Attribute() : handle_(kInvalidHandle) {}
 
 void Attribute::SetValue(const ByteBuffer& value) {
-  BT_DEBUG_ASSERT(value.size());
-  BT_DEBUG_ASSERT(value.size() <= kMaxAttributeValueLength);
-  BT_DEBUG_ASSERT(!write_reqs_.allowed());
+  PW_DCHECK(value.size());
+  PW_DCHECK(value.size() <= kMaxAttributeValueLength);
+  PW_DCHECK(!write_reqs_.allowed());
   value_ = DynamicByteBuffer(value);
 }
 
@@ -90,12 +90,12 @@ AttributeGrouping::AttributeGrouping(const UUID& group_type,
                                      size_t attr_count,
                                      const ByteBuffer& decl_value)
     : start_handle_(start_handle), active_(false) {
-  BT_DEBUG_ASSERT(start_handle_ != kInvalidHandle);
-  BT_DEBUG_ASSERT(decl_value.size());
+  PW_DCHECK(start_handle_ != kInvalidHandle);
+  PW_DCHECK(decl_value.size());
 
   // It is a programmer error to provide an attr_count which overflows a handle
   // - this is why the below static cast is OK.
-  BT_ASSERT(kHandleMax - start_handle >= attr_count);
+  PW_CHECK(kHandleMax - start_handle >= attr_count);
   auto handle_attr_count = static_cast<Handle>(attr_count);
 
   end_handle_ = start_handle + handle_attr_count;
@@ -121,12 +121,12 @@ Attribute* AttributeGrouping::AddAttribute(
   if (complete())
     return nullptr;
 
-  BT_DEBUG_ASSERT(attributes_[attributes_.size() - 1].handle() < end_handle_);
+  PW_DCHECK(attributes_[attributes_.size() - 1].handle() < end_handle_);
 
   // Groupings may not exceed kHandleMax attributes, so if we are incomplete per
   // the `complete()` check, we necessarily have < kHandleMax attributes. Thus
   // it is safe to cast attributes_.size() into a Handle.
-  BT_ASSERT(attributes_.size() < kHandleMax - start_handle_);
+  PW_CHECK(attributes_.size() < kHandleMax - start_handle_);
   Handle handle = start_handle_ + static_cast<Handle>(attributes_.size());
   attributes_.push_back(Attribute(this, handle, type, read_reqs, write_reqs));
 

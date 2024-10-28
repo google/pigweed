@@ -29,11 +29,11 @@ void FakeSignalingServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
 
 void FakeSignalingServer::HandleSdu(hci_spec::ConnectionHandle conn,
                                     const ByteBuffer& sdu) {
-  BT_ASSERT_MSG(sdu.size() >= sizeof(l2cap::CommandHeader),
-                "SDU has only %zu bytes",
-                sdu.size());
-  BT_ASSERT(sdu.To<l2cap::CommandHeader>().length ==
-            (sdu.size() - sizeof(l2cap::CommandHeader)));
+  PW_CHECK(sdu.size() >= sizeof(l2cap::CommandHeader),
+           "SDU has only %zu bytes",
+           sdu.size());
+  PW_CHECK(sdu.To<l2cap::CommandHeader>().length ==
+           (sdu.size() - sizeof(l2cap::CommandHeader)));
   // Extract CommandCode and strip signaling packet header from sdu.
   l2cap::CommandHeader packet_header = sdu.To<l2cap::CommandHeader>();
   l2cap::CommandCode packet_code = packet_header.code;

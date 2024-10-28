@@ -28,7 +28,7 @@ inspect::Hierarchy ReadInspect(const inspect::Inspector& inspector) {
         hierarchy = std::move(res);
       }));
   executor.run();
-  BT_ASSERT(hierarchy.is_ok());
+  PW_CHECK(hierarchy.is_ok());
   return hierarchy.take_value();
 }
 

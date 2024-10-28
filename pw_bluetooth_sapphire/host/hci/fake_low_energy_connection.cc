@@ -31,7 +31,7 @@ FakeLowEnergyConnection::FakeLowEnergyConnection(
 
 void FakeLowEnergyConnection::TriggerEncryptionChangeCallback(
     hci::Result<bool> result) {
-  BT_ASSERT(encryption_change_callback());
+  PW_CHECK(encryption_change_callback());
   encryption_change_callback()(result);
 }
 

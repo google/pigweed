@@ -107,7 +107,7 @@ class ByteBuffer {
 
   // Read-only random access operator.
   inline const uint8_t& operator[](size_t pos) const {
-    BT_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
+    PW_CHECK(pos < size(), "invalid offset (pos = %zu)", pos);
     return data()[pos];
   }
 
@@ -161,10 +161,10 @@ class ByteBuffer {
   auto ReadMember() const {
     using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<
         PointerToMember>::ClassType;
-    BT_ASSERT_MSG(sizeof(ClassT) <= this->size(),
-                  "insufficient buffer (class size: %zu, buffer size: %zu)",
-                  sizeof(ClassT),
-                  this->size());
+    PW_CHECK(sizeof(ClassT) <= this->size(),
+             "insufficient buffer (class size: %zu, buffer size: %zu)",
+             sizeof(ClassT),
+             this->size());
     using MemberT = typename bt_lib_cpp_type::MemberPointerTraits<
         PointerToMember>::MemberType;
     if constexpr (std::is_array_v<MemberT>) {
@@ -215,10 +215,10 @@ class ByteBuffer {
     // From the ReadMember<&Foo::bar>(2) example, ClassT = Foo
     using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<
         PointerToMember>::ClassType;
-    BT_ASSERT_MSG(sizeof(ClassT) <= this->size(),
-                  "insufficient buffer (class size: %zu, buffer size: %zu)",
-                  sizeof(ClassT),
-                  this->size());
+    PW_CHECK(sizeof(ClassT) <= this->size(),
+             "insufficient buffer (class size: %zu, buffer size: %zu)",
+             sizeof(ClassT),
+             this->size());
 
     // From the ReadMember<&Foo::bar>(2) example, MemberT = float[3]
     using MemberT = typename bt_lib_cpp_type::MemberPointerTraits<
@@ -241,15 +241,14 @@ class ByteBuffer {
       // unlikely case that it contains additional bytes, we can't use its size
       // for array indexing calculations.
       static_assert(sizeof(MemberAsStdArrayT) == sizeof(MemberT));
-      BT_ASSERT_MSG(index < kArraySize,
-                    "index past array bounds (index: %zu, array size: %zu)",
-                    index,
-                    kArraySize);
+      PW_CHECK(index < kArraySize,
+               "index past array bounds (index: %zu, array size: %zu)",
+               index,
+               kArraySize);
     } else {
       // Allow flexible array members (at the end of structs) that have zero
       // length
-      BT_ASSERT_MSG(base_offset == sizeof(ClassT),
-                    "read from zero-length array");
+      PW_CHECK(base_offset == sizeof(ClassT), "read from zero-length array");
     }
 
     // From the ReadMember<&Foo::bar>(2) example, ElementT = float
@@ -307,7 +306,7 @@ class MutableByteBuffer : public ByteBuffer {
 
   // Random access operator that allows mutations.
   inline uint8_t& operator[](size_t pos) {
-    BT_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
+    PW_CHECK(pos < size(), "invalid offset (pos = %zu)", pos);
     return mutable_data()[pos];
   }
 
@@ -323,7 +322,7 @@ class MutableByteBuffer : public ByteBuffer {
   template <typename T>
   T* AsMutable() {
     static_assert(std::is_trivially_copyable_v<T>);
-    BT_ASSERT(size() >= sizeof(T));
+    PW_CHECK(size() >= sizeof(T));
     return reinterpret_cast<T*>(mutable_data());
   }
 
@@ -428,7 +427,7 @@ class StaticByteBuffer : public MutableByteBuffer {
       // This is a runtime assert because this class was written to work with
       // non-constant values but most uses of StaticByteBuffer are in tests so
       // this is an acceptable cost.
-      BT_DEBUG_ASSERT((is_byte_storable(bytes) && ...));
+      PW_DASSERT((is_byte_storable(bytes) && ...));
     }
   }
 

@@ -480,9 +480,9 @@ class FakeController final : public ControllerTestDoubleBase,
     return num_supported_advertising_sets_;
   }
   void set_num_supported_advertising_sets(uint8_t value) {
-    BT_ASSERT(value >= extended_advertising_states_.size());
-    BT_ASSERT(value <= hci_spec::kAdvertisingHandleMax +
-                           1);  // support advertising handle of 0
+    PW_CHECK(value >= extended_advertising_states_.size());
+    PW_CHECK(value <= hci_spec::kAdvertisingHandleMax +
+                          1);  // support advertising handle of 0
     num_supported_advertising_sets_ = value;
   }
 

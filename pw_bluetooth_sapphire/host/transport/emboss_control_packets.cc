@@ -26,10 +26,9 @@ namespace android_emb = pw::bluetooth::vendor::android_hci;
 EmbossCommandPacket::EmbossCommandPacket(hci_spec::OpCode opcode,
                                          size_t packet_size)
     : DynamicPacket(packet_size) {
-  BT_ASSERT_MSG(
-      packet_size >=
-          pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes(),
-      "command packet size must be at least 3 bytes to accomodate header");
+  PW_CHECK(packet_size >=
+               pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes(),
+           "command packet size must be at least 3 bytes to accomodate header");
   auto header = view<pw::bluetooth::emboss::CommandHeaderWriter>();
   header.opcode_bits().BackingStorage().WriteUInt(opcode);
   header.parameter_total_size().Write(
@@ -56,7 +55,7 @@ pw::bluetooth::emboss::CommandHeaderView EmbossCommandPacket::header_view()
 
 EmbossEventPacket::EmbossEventPacket(size_t packet_size)
     : DynamicPacket(packet_size) {
-  BT_ASSERT_MSG(
+  PW_CHECK(
       packet_size >= pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes(),
       "event packet size must be at least 2 bytes to accomodate header");
 }

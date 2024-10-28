@@ -183,21 +183,20 @@ void Impl::ServiceSearchAttributes(
 
   auto [iter, placed] =
       pending_.try_emplace(next, next, std::move(req), std::move(result_cb));
-  BT_DEBUG_ASSERT_MSG(placed, "Should not have repeat transaction ID %u", next);
+  PW_DCHECK(placed, "Should not have repeat transaction ID %u", next);
 
   TrySendNextTransaction();
 }
 
 void Impl::Finish(TransactionId id) {
   auto node = pending_.extract(id);
-  BT_DEBUG_ASSERT(node);
+  PW_DCHECK(node);
   auto& state = node.mapped();
   pending_timeout_.reset();
   if (!state.callback) {
     return;
   }
-  BT_DEBUG_ASSERT_MSG(state.response.complete(),
-                      "Finished without complete response");
+  PW_DCHECK(state.response.complete(), "Finished without complete response");
 
   auto self = weak_self_.GetWeakPtr();
 
@@ -209,7 +208,7 @@ void Impl::Finish(TransactionId id) {
     }
     // |count| and |idx| are at most std::numeric_limits<uint32_t>::max() + 1,
     // which is caught by the above if statement.
-    BT_DEBUG_ASSERT(idx <= std::numeric_limits<uint32_t>::max());
+    PW_DCHECK(idx <= std::numeric_limits<uint32_t>::max());
     if (!state.callback(fit::ok(std::cref(
             state.response.attributes(static_cast<uint32_t>(idx)))))) {
       break;
@@ -303,7 +302,7 @@ void Impl::OnChannelClosed() {
 
 TransactionId Impl::GetNextId() {
   TransactionId next = next_tid_++;
-  BT_DEBUG_ASSERT(pending_.size() < std::numeric_limits<TransactionId>::max());
+  PW_DCHECK(pending_.size() < std::numeric_limits<TransactionId>::max());
   while (pending_.count(next)) {
     next = next_tid_++;  // Note: overflow is fine
   }
@@ -314,7 +313,7 @@ TransactionId Impl::GetNextId() {
 
 std::unique_ptr<Client> Client::Create(l2cap::Channel::WeakPtr channel,
                                        pw::async::Dispatcher& dispatcher) {
-  BT_DEBUG_ASSERT(channel.is_alive());
+  PW_DCHECK(channel.is_alive());
   return std::make_unique<Impl>(std::move(channel), dispatcher);
 }
 

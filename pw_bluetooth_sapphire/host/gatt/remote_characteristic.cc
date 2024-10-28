@@ -29,8 +29,8 @@ RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(
     ValueCallback value_cb, NotifyStatusCallback status_cb)
     : value_callback(std::move(value_cb)),
       status_callback(std::move(status_cb)) {
-  BT_DEBUG_ASSERT(value_callback);
-  BT_DEBUG_ASSERT(status_callback);
+  PW_DCHECK(value_callback);
+  PW_DCHECK(status_callback);
 }
 
 RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client,
@@ -42,7 +42,7 @@ RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client,
       next_notify_handler_id_(1u),
       client_(std::move(client)),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(client_.is_alive());
+  PW_DCHECK(client_.is_alive());
 }
 
 RemoteCharacteristic::~RemoteCharacteristic() {
@@ -77,9 +77,9 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(
 
 void RemoteCharacteristic::DiscoverDescriptors(
     att::Handle range_end, att::ResultFunction<> discover_callback) {
-  BT_DEBUG_ASSERT(client_.is_alive());
-  BT_DEBUG_ASSERT(discover_callback);
-  BT_DEBUG_ASSERT(range_end >= info().value_handle);
+  PW_DCHECK(client_.is_alive());
+  PW_DCHECK(discover_callback);
+  PW_DCHECK(range_end >= info().value_handle);
 
   discovery_error_ = false;
   descriptors_.clear();
@@ -127,7 +127,7 @@ void RemoteCharacteristic::DiscoverDescriptors(
     // succeed
     auto [_unused, success] =
         self->descriptors_.try_emplace(DescriptorHandle(desc.handle), desc);
-    BT_DEBUG_ASSERT(success);
+    PW_DCHECK(success);
   };
 
   auto status_cb = [self, discover_cb = std::move(discover_callback)](
@@ -190,9 +190,9 @@ void RemoteCharacteristic::DiscoverDescriptors(
 
 void RemoteCharacteristic::EnableNotifications(
     ValueCallback value_callback, NotifyStatusCallback status_callback) {
-  BT_DEBUG_ASSERT(client_.is_alive());
-  BT_DEBUG_ASSERT(value_callback);
-  BT_DEBUG_ASSERT(status_callback);
+  PW_DCHECK(client_.is_alive());
+  PW_DCHECK(value_callback);
+  PW_DCHECK(status_callback);
 
   if (!(info().properties & (Property::kNotify | Property::kIndicate))) {
     bt_log(DEBUG, "gatt", "characteristic does not support notifications");
@@ -202,7 +202,7 @@ void RemoteCharacteristic::EnableNotifications(
 
   // If notifications are already enabled then succeed right away.
   if (!notify_handlers_.empty()) {
-    BT_DEBUG_ASSERT(pending_notify_reqs_.empty());
+    PW_DCHECK(pending_notify_reqs_.empty());
 
     IdType id = next_notify_handler_id_++;
     notify_handlers_[id] = std::move(value_callback);
@@ -251,7 +251,7 @@ void RemoteCharacteristic::EnableNotifications(
 }
 
 bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
-  BT_DEBUG_ASSERT(client_.is_alive());
+  PW_DCHECK(client_.is_alive());
 
   auto handler_iter = notify_handlers_.find(handler_id);
   if (handler_iter == notify_handlers_.end()) {
@@ -322,7 +322,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
 
 void RemoteCharacteristic::HandleNotification(const ByteBuffer& value,
                                               bool maybe_truncated) {
-  BT_DEBUG_ASSERT(client_.is_alive());
+  PW_DCHECK(client_.is_alive());
 
   notifying_handlers_ = true;
   for (auto& iter : notify_handlers_) {

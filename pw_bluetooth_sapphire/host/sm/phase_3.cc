@@ -46,21 +46,20 @@ Phase3::Phase3(PairingChannel::WeakPtr chan,
       sent_local_keys_(false),
       on_complete_(std::move(on_complete)) {
   // LTKs may not be distributed during Secure Connections.
-  BT_ASSERT_MSG(
-      !(features_.secure_connections &&
-        (ShouldSendLtk() || ShouldReceiveLtk())),
-      "Phase 3 may not distribute the LTK in Secure Connections pairing");
+  PW_CHECK(!(features_.secure_connections &&
+             (ShouldSendLtk() || ShouldReceiveLtk())),
+           "Phase 3 may not distribute the LTK in Secure Connections pairing");
 
-  BT_ASSERT(HasKeysToDistribute(features_));
+  PW_CHECK(HasKeysToDistribute(features_));
   // The link must be encrypted with at least an STK in order for Phase 3 to
   // take place.
-  BT_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
+  PW_CHECK(le_sec.level() != SecurityLevel::kNoSecurity);
   SetPairingChannelHandler(*this);
 }
 
 void Phase3::Start() {
-  BT_ASSERT(!has_failed());
-  BT_ASSERT(!KeyExchangeComplete());
+  PW_CHECK(!has_failed());
+  PW_CHECK(!KeyExchangeComplete());
 
   if (role() == Role::kInitiator && !RequestedKeysObtained()) {
     bt_log(DEBUG, "sm", "waiting to receive keys from the responder");
@@ -112,7 +111,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Check that the received key has 0s at all locations more significant than
   // negotiated key_size
   uint8_t key_size = features_.encryption_key_size;
-  BT_DEBUG_ASSERT(key_size <= ltk.size());
+  PW_DCHECK(key_size <= ltk.size());
   for (auto i = key_size; i < ltk.size(); i++) {
     if (ltk[i] != 0) {
       bt_log(WARN, "sm", "received LTK is larger than max keysize! aborting");
@@ -121,7 +120,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
     }
   }
 
-  BT_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kEncKey));
+  PW_DCHECK(!(obtained_remote_keys_ & KeyDistGen::kEncKey));
   peer_ltk_bytes_ = ltk;
 
   // Wait to receive EDiv and Rand
@@ -190,7 +189,7 @@ void Phase3::OnIdentityInformation(const IRK& irk) {
     return;
   }
 
-  BT_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kIdKey));
+  PW_DCHECK(!(obtained_remote_keys_ & KeyDistGen::kIdKey));
   irk_ = irk;
 
   // Wait to receive identity address
@@ -254,7 +253,7 @@ void Phase3::OnExpectedKeyReceived() {
 }
 
 bool Phase3::SendLocalKeys() {
-  BT_DEBUG_ASSERT(!LocalKeysSent());
+  PW_DCHECK(!LocalKeysSent());
 
   if (ShouldSendLtk() && !SendEncryptionKey()) {
     return false;
@@ -269,7 +268,7 @@ bool Phase3::SendLocalKeys() {
 }
 
 bool Phase3::SendEncryptionKey() {
-  BT_ASSERT(!features_.secure_connections);
+  PW_CHECK(!features_.secure_connections);
 
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
@@ -337,7 +336,7 @@ bool Phase3::SendIdentityInfo() {
 }
 
 void Phase3::SignalComplete() {
-  BT_ASSERT(KeyExchangeComplete());
+  PW_CHECK(KeyExchangeComplete());
 
   // The security properties of all keys are determined by the security
   // properties of the link used to distribute them. This is already reflected
@@ -348,7 +347,7 @@ void Phase3::SignalComplete() {
 
   if (irk_.has_value()) {
     // If there is an IRK there must also be an identity address.
-    BT_ASSERT(identity_address_.has_value());
+    PW_CHECK(identity_address_.has_value());
     pairing_data.irk = Key(le_sec_, *irk_);
     pairing_data.identity_address = identity_address_;
   }

@@ -57,10 +57,10 @@ ExtendedLowEnergyScanner::~ExtendedLowEnergyScanner() {
 
 bool ExtendedLowEnergyScanner::StartScan(const ScanOptions& options,
                                          ScanStatusCallback callback) {
-  BT_ASSERT(options.interval >= hci_spec::kLEExtendedScanIntervalMin);
-  BT_ASSERT(options.interval <= hci_spec::kLEExtendedScanIntervalMax);
-  BT_ASSERT(options.window >= hci_spec::kLEExtendedScanIntervalMin);
-  BT_ASSERT(options.window <= hci_spec::kLEExtendedScanIntervalMax);
+  PW_CHECK(options.interval >= hci_spec::kLEExtendedScanIntervalMin);
+  PW_CHECK(options.interval <= hci_spec::kLEExtendedScanIntervalMax);
+  PW_CHECK(options.window >= hci_spec::kLEExtendedScanIntervalMin);
+  PW_CHECK(options.window <= hci_spec::kLEExtendedScanIntervalMax);
 
   return LowEnergyScanner::StartScan(options, std::move(callback));
 }
@@ -135,9 +135,9 @@ EmbossCommandPacket ExtendedLowEnergyScanner::BuildEnablePacket(
 std::vector<LEExtendedAdvertisingReportDataView>
 ExtendedLowEnergyScanner::ParseAdvertisingReports(
     const EmbossEventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_DEBUG_ASSERT(event.view<LEMetaEventView>().subevent_code().Read() ==
-                  hci_spec::kLEExtendedAdvertisingReportSubeventCode);
+  PW_DCHECK(event.event_code() == hci_spec::kLEMetaEventCode);
+  PW_DCHECK(event.view<LEMetaEventView>().subevent_code().Read() ==
+            hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   size_t reports_size =
       event.size() -
       pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventView::
@@ -186,7 +186,7 @@ static std::tuple<DeviceAddress, bool> BuildDeviceAddress(
     LEExtendedAddressType report_type, BdAddrView address_view) {
   std::optional<DeviceAddress::Type> address_type =
       DeviceAddress::LeAddrToDeviceAddr(report_type);
-  BT_DEBUG_ASSERT(address_type);
+  PW_DCHECK(address_type);
 
   bool resolved = false;
   switch (report_type) {

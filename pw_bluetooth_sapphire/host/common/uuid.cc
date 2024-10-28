@@ -63,7 +63,7 @@ UUID UUID::Generate() {
 
 UUID::UUID(const ByteBuffer& bytes) {
   bool result = FromBytes(bytes, this);
-  BT_ASSERT_MSG(result, "|bytes| must contain a 16, 32, or 128-bit UUID");
+  PW_CHECK(result, "|bytes| must contain a 16, 32, or 128-bit UUID");
 }
 
 bool UUID::operator==(const UUID& uuid) const { return value_ == uuid.value_; }
@@ -117,7 +117,7 @@ std::string UUID::ToString() const {
       value_[2],
       value_[1],
       value_[0]);
-  BT_DEBUG_ASSERT(result.ok());
+  PW_DCHECK(result.ok());
   return out;
 }
 
@@ -174,7 +174,7 @@ std::optional<uint16_t> UUID::As16Bit() const {
 }
 
 uint16_t UUID::ValueAs16Bit() const {
-  BT_DEBUG_ASSERT(type_ == Type::k16Bit);
+  PW_DCHECK(type_ == Type::k16Bit);
 
   return pw::bytes::ConvertOrderFrom(
       cpp20::endian::little,
@@ -182,7 +182,7 @@ uint16_t UUID::ValueAs16Bit() const {
 }
 
 uint32_t UUID::ValueAs32Bit() const {
-  BT_DEBUG_ASSERT(type_ != Type::k128Bit);
+  PW_DCHECK(type_ != Type::k128Bit);
 
   return pw::bytes::ConvertOrderFrom(
       cpp20::endian::little,

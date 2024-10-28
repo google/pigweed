@@ -30,7 +30,7 @@ ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer)
 
 fit::result<ErrorCode, ValidPacketReader> ValidPacketReader::ParseSdu(
     const ByteBufferPtr& sdu) {
-  BT_ASSERT(sdu);
+  PW_CHECK(sdu);
   size_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sm", "PDU too short!");

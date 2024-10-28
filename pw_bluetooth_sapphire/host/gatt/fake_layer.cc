@@ -28,7 +28,7 @@ FakeLayer::AddPeerService(PeerId peer_id,
   auto [iter, _] = peers_.try_emplace(peer_id, pw_dispatcher_);
   auto& peer = iter->second;
 
-  BT_ASSERT(info.range_start <= info.range_end);
+  PW_CHECK(info.range_start <= info.range_end);
   auto service =
       std::make_unique<RemoteService>(info, peer.fake_client.GetWeakPtr());
   RemoteService::WeakPtr service_weak = service->GetWeakPtr();
@@ -207,7 +207,7 @@ void FakeLayer::InitializeClient(PeerId peer_id,
 
 GATT::RemoteServiceWatcherId FakeLayer::RegisterRemoteServiceWatcherForPeer(
     PeerId peer_id, RemoteServiceWatcher watcher) {
-  BT_ASSERT(remote_service_watchers_.count(peer_id) == 0);
+  PW_CHECK(remote_service_watchers_.count(peer_id) == 0);
   remote_service_watchers_[peer_id] = std::move(watcher);
   // Use the PeerId as the watcher ID because FakeLayer only needs to support 1
   // watcher per peer.

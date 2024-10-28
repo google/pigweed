@@ -19,7 +19,7 @@
 namespace bt::l2cap::internal {
 
 ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
-  BT_ASSERT(pdu.is_valid());
+  PW_CHECK(pdu.is_valid());
   auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   return sdu;

@@ -63,7 +63,7 @@ class BrEdrCommandHandlerTest : public pw::async::test::FakeDispatcherFixture {
   size_t failed_requests() const { return failed_requests_; }
 
   void set_request_fail_callback(fit::closure request_fail_callback) {
-    BT_ASSERT(!request_fail_callback_);
+    PW_CHECK(!request_fail_callback_);
     request_fail_callback_ = std::move(request_fail_callback);
   }
 

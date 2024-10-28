@@ -81,7 +81,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
       return false;
     }
     auto iter = connections_.find(active_connection_->handle());
-    BT_ASSERT(iter != connections_.end());
+    PW_CHECK(iter != connections_.end());
     return (iter->second.config_state == HciConfigState::kConfigured);
   }
 
@@ -112,13 +112,13 @@ ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
     : command_channel_(command_channel), hci_(hci), buffer_info_(buffer_info) {
   // ScoDataChannel shouldn't be used if the buffer is unavailable (implying the
   // controller doesn't support SCO).
-  BT_ASSERT(buffer_info_.IsAvailable());
+  PW_CHECK(buffer_info_.IsAvailable());
 
   num_completed_packets_event_handler_id_ = command_channel_->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
       fit::bind_member<&ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent>(
           this));
-  BT_ASSERT(num_completed_packets_event_handler_id_);
+  PW_CHECK(num_completed_packets_event_handler_id_);
 
   hci_->SetReceiveScoFunction(
       fit::bind_member<&ScoDataChannelImpl::OnRxPacket>(this));
@@ -130,14 +130,14 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
 
 void ScoDataChannelImpl::RegisterConnection(
     WeakPtr<ConnectionInterface> connection) {
-  BT_ASSERT(connection->parameters().view().output_data_path().Read() ==
-            pw::bluetooth::emboss::ScoDataPath::HCI);
+  PW_CHECK(connection->parameters().view().output_data_path().Read() ==
+           pw::bluetooth::emboss::ScoDataPath::HCI);
   ConnectionData conn_data{.connection = connection};
   auto [_, inserted] =
       connections_.emplace(connection->handle(), std::move(conn_data));
-  BT_ASSERT_MSG(inserted,
-                "connection with handle %#.4x already registered",
-                connection->handle());
+  PW_CHECK(inserted,
+           "connection with handle %#.4x already registered",
+           connection->handle());
   MaybeUpdateActiveConnection();
 }
 
@@ -154,7 +154,7 @@ void ScoDataChannelImpl::UnregisterConnection(
 void ScoDataChannelImpl::ClearControllerPacketCount(
     hci_spec::ConnectionHandle handle) {
   bt_log(DEBUG, "hci", "clearing pending packets (handle: %#.4x)", handle);
-  BT_ASSERT(connections_.find(handle) == connections_.end());
+  PW_CHECK(connections_.find(handle) == connections_.end());
 
   auto iter = pending_packet_counts_.find(handle);
   if (iter == pending_packet_counts_.end()) {
@@ -226,8 +226,8 @@ ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(
   }
   auto view = event.unchecked_view<
       pw::bluetooth::emboss::NumberOfCompletedPacketsEventView>();
-  BT_ASSERT(view.header().event_code_enum().Read() ==
-            pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  PW_CHECK(view.header().event_code_enum().Read() ==
+           pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
   const size_t handles_in_packet =
       (event.size() -
@@ -415,7 +415,7 @@ void ScoDataChannelImpl::ConfigureHci() {
   }
 
   auto conn = connections_.find(active_connection_->handle());
-  BT_ASSERT(conn != connections_.end());
+  PW_CHECK(conn != connections_.end());
 
   auto callback = [self = weak_self_.GetWeakPtr(),
                    handle = conn->first](pw::Status status) {

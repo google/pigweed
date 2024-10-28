@@ -69,7 +69,7 @@ HostServer::HostServer(zx::channel channel,
       io_capability_(IOCapability::kNoInputNoOutput),
       weak_self_(this),
       weak_pairing_(this) {
-  BT_ASSERT(gatt_.is_alive());
+  PW_CHECK(gatt_.is_alive());
 
   auto self = weak_self_.GetWeakPtr();
   adapter->peer_cache()->set_peer_bonded_callback([self](const auto& peer) {
@@ -155,7 +155,7 @@ void HostServer::SetPeerWatcher(
 
 void HostServer::SetLocalName(::std::string local_name,
                               SetLocalNameCallback callback) {
-  BT_DEBUG_ASSERT(!local_name.empty());
+  PW_DCHECK(!local_name.empty());
   adapter()->SetLocalName(std::move(local_name),
                           [self = weak_self_.GetWeakPtr(),
                            callback = std::move(callback)](auto status) {
@@ -220,7 +220,7 @@ void HostServer::StartLEDiscovery() {
 void HostServer::StartDiscovery(
     ::fuchsia::bluetooth::host::HostStartDiscoveryRequest request) {
   bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
-  BT_DEBUG_ASSERT(adapter().is_alive());
+  PW_DCHECK(adapter().is_alive());
 
   if (!request.has_token()) {
     bt_log(WARN, "fidl", "missing Discovery token");
@@ -378,7 +378,7 @@ void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
 void HostServer::RegisterLowEnergyConnection(
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref,
     bool auto_connect) {
-  BT_DEBUG_ASSERT(conn_ref);
+  PW_DCHECK(conn_ref);
 
   bt::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
@@ -443,7 +443,7 @@ void HostServer::SetDiscoverable(bool discoverable,
       bt_log(ERROR, "fidl", "%s: failed (result: %s)", func, bt_str(result));
       fpromise::result<void, fsys::Error> fidl_result = ResultToFidl(result);
       if (result.is_ok()) {
-        BT_ASSERT(session == nullptr);
+        PW_CHECK(session == nullptr);
         fidl_result = fpromise::error(fsys::Error::FAILED);
       }
       self->requesting_discoverable_ = false;
@@ -640,8 +640,8 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
 
     // We must be connected and to the right peer
     auto connection = std::move(result).value();
-    BT_ASSERT(connection);
-    BT_ASSERT(peer_id == connection->peer_identifier());
+    PW_CHECK(connection);
+    PW_CHECK(peer_id == connection->peer_identifier());
 
     callback(fpromise::ok());
 
@@ -661,7 +661,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
                       peer_id,
                       func = __FUNCTION__](auto status, auto connection) {
     if (status.is_error()) {
-      BT_ASSERT(!connection);
+      PW_CHECK(!connection);
       bt_log(INFO,
              "fidl",
              "%s: failed to connect BR/EDR transport to peer (peer: %s)",
@@ -672,8 +672,8 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
     }
 
     // We must be connected and to the right peer
-    BT_ASSERT(connection);
-    BT_ASSERT(peer_id == connection->peer_id());
+    PW_CHECK(connection);
+    PW_CHECK(peer_id == connection->peer_id());
 
     callback(fpromise::ok());
   };
@@ -713,7 +713,7 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
                                         bredr_disconnected ? "" : " BR/EDR");
     callback(fpromise::error(fsys::Error::FAILED));
   } else {
-    BT_ASSERT(peer_removed);
+    PW_CHECK(peer_removed);
     callback(fpromise::ok());
   }
 }
@@ -778,7 +778,7 @@ void HostServer::PairLowEnergy(PeerId peer_id,
       callback(fpromise::ok());
     }
   };
-  BT_ASSERT(adapter()->le());
+  PW_CHECK(adapter()->le());
   adapter()->le()->Pair(
       peer_id, *security_level, bondable_mode, std::move(on_complete));
 }
@@ -799,7 +799,7 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
   // instead of hardcoding default.
   bt::gap::BrEdrSecurityRequirements security{.authentication = false,
                                               .secure_connections = false};
-  BT_ASSERT(adapter()->bredr());
+  PW_CHECK(adapter()->bredr());
   adapter()->bredr()->Pair(peer_id, security, std::move(on_complete));
 }
 
@@ -952,7 +952,7 @@ void HostServer::PeerWatcherServer::MaybeCallCallback() {
       bt::gap::Peer* peer = peer_cache_->FindById(id);
       // All ids in |updated_| are assumed to be valid as they would otherwise
       // be in |removed_|.
-      BT_ASSERT(peer);
+      PW_CHECK(peer);
       updated_fidl.push_back(fidl_helpers::PeerToFidl(*peer));
     }
     updated_.clear();
@@ -1056,7 +1056,7 @@ void HostServer::CompletePairing(PeerId id, bt::sm::Result<> status) {
          "pairing complete for peer: %s, status: %s",
          bt_str(id),
          bt_str(status));
-  BT_DEBUG_ASSERT(pairing_delegate_);
+  PW_DCHECK(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_ok());
 }
 
@@ -1086,10 +1086,10 @@ void HostServer::DisplayPasskey(PeerId id,
 void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   bt_log(DEBUG, "fidl", "passkey request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
-  BT_ASSERT(found_peer);
+  PW_CHECK(found_peer);
   auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
-  BT_ASSERT(pairing_delegate_);
+  PW_CHECK(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
       std::move(peer),
       fsys::PairingMethod::PASSKEY_ENTRY,
@@ -1127,10 +1127,10 @@ void HostServer::DisplayPairingRequest(bt::PeerId id,
                                        fsys::PairingMethod method,
                                        ConfirmCallback confirm) {
   auto found_peer = adapter()->peer_cache()->FindById(id);
-  BT_ASSERT(found_peer);
+  PW_CHECK(found_peer);
   auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
-  BT_ASSERT(pairing_delegate_);
+  PW_CHECK(pairing_delegate_);
   uint32_t displayed_passkey = passkey ? *passkey : 0u;
   pairing_delegate_->OnPairingRequest(
       std::move(peer),
@@ -1160,7 +1160,7 @@ void HostServer::DisplayPairingRequest(bt::PeerId id,
 }
 
 void HostServer::OnConnectionError(Server* server) {
-  BT_DEBUG_ASSERT(server);
+  PW_DCHECK(server);
   servers_.erase(server);
 }
 

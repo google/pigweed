@@ -37,10 +37,10 @@ using LargeACLDataPacket =
                                           allocators::kLargeACLDataPacketSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
-  BT_ASSERT_MSG(payload_size <= allocators::kLargeACLDataPayloadSize,
-                "payload size %zu too large (allowed = %zu)",
-                payload_size,
-                allocators::kLargeACLDataPayloadSize);
+  PW_CHECK(payload_size <= allocators::kLargeACLDataPayloadSize,
+           "payload size %zu too large (allowed = %zu)",
+           payload_size,
+           allocators::kLargeACLDataPayloadSize);
 
   if (payload_size <= allocators::kSmallACLDataPayloadSize) {
     return std::make_unique<SmallACLDataPacket>(payload_size);
@@ -112,11 +112,11 @@ void ACLDataPacket::WriteHeader(
     hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
     hci_spec::ACLBroadcastFlag broadcast_flag) {
   // Must fit inside 12-bits.
-  BT_DEBUG_ASSERT(connection_handle <= 0x0FFF);
+  PW_DCHECK(connection_handle <= 0x0FFF);
 
   // Must fit inside 2-bits.
-  BT_DEBUG_ASSERT(static_cast<uint8_t>(packet_boundary_flag) <= 0x03);
-  BT_DEBUG_ASSERT(static_cast<uint8_t>(broadcast_flag) <= 0x03);
+  PW_DCHECK(static_cast<uint8_t>(packet_boundary_flag) <= 0x03);
+  PW_DCHECK(static_cast<uint8_t>(broadcast_flag) <= 0x03);
 
   // Bitwise OR causes int promotion, so the result must be explicitly casted.
   uint16_t handle_and_flags = static_cast<uint16_t>(

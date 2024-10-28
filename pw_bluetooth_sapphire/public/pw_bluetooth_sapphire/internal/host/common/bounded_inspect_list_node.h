@@ -57,7 +57,7 @@ class BoundedInspectListNode {
   };
 
   explicit BoundedInspectListNode(size_t capacity) : capacity_(capacity) {
-    BT_ASSERT(capacity_ > 0u);
+    PW_CHECK(capacity_ > 0u);
   }
   ~BoundedInspectListNode() = default;
 

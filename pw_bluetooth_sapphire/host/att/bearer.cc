@@ -193,8 +193,8 @@ Bearer::PendingTransaction::PendingTransaction(OpCode opcode_in,
       callback(std::move(callback_in)),
       pdu(std::move(pdu_in)),
       security_retry_level(sm::SecurityLevel::kNoSecurity) {
-  BT_ASSERT(this->callback);
-  BT_ASSERT(this->pdu);
+  PW_CHECK(this->callback);
+  PW_CHECK(this->pdu);
 }
 
 Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id_in,
@@ -211,8 +211,8 @@ Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
 }
 
 Bearer::PendingTransactionPtr Bearer::TransactionQueue::ClearCurrent() {
-  BT_DEBUG_ASSERT(current_);
-  BT_DEBUG_ASSERT(timeout_task_.is_pending());
+  PW_DCHECK(current_);
+  PW_DCHECK(timeout_task_.is_pending());
 
   timeout_task_.Cancel();
 
@@ -227,7 +227,7 @@ void Bearer::TransactionQueue::TrySendNext(
     const l2cap::Channel::WeakPtr& chan,
     pw::async::TaskFunction timeout_cb,
     pw::chrono::SystemClock::duration timeout) {
-  BT_DEBUG_ASSERT(chan.is_alive());
+  PW_DCHECK(chan.is_alive());
 
   // Abort if a transaction is currently pending or there are no transactions
   // queued.
@@ -239,8 +239,8 @@ void Bearer::TransactionQueue::TrySendNext(
   current_ = std::move(queue_.front());
   queue_.pop();
   while (current()) {
-    BT_DEBUG_ASSERT(!timeout_task_.is_pending());
-    BT_DEBUG_ASSERT(current()->pdu);
+    PW_DCHECK(!timeout_task_.is_pending());
+    PW_DCHECK(current()->pdu);
 
     // We copy the PDU payload in case it needs to be retried following a
     // security upgrade.
@@ -296,7 +296,7 @@ Bearer::Bearer(l2cap::Channel::WeakPtr chan, pw::async::Dispatcher& dispatcher)
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(chan_);
+  PW_DCHECK(chan_);
 
   if (chan_->link_type() == bt::LinkType::kLE) {
     min_mtu_ = kLEMinMTU;
@@ -331,7 +331,7 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
   if (shut_down_) {
     return;
   }
-  BT_ASSERT(is_open());
+  PW_CHECK(is_open());
   shut_down_ = true;
 
   bt_log(DEBUG, "att", "bearer shutting down");
@@ -362,14 +362,14 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 }
 
 void Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback) {
-  BT_ASSERT(pdu);
-  BT_ASSERT(callback);
+  PW_CHECK(pdu);
+  PW_CHECK(callback);
 
   [[maybe_unused]] bool _ = SendInternal(std::move(pdu), std::move(callback));
 }
 
 bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
-  BT_ASSERT(pdu);
+  PW_CHECK(pdu);
   return SendInternal(std::move(pdu), {});
 }
 
@@ -377,7 +377,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   auto _check_callback_empty = fit::defer([&callback]() {
     // Ensure that callback was either never present or called/moved before
     // SendInternal returns
-    BT_ASSERT(!callback);
+    PW_CHECK(!callback);
   });
 
   if (!is_open()) {
@@ -389,7 +389,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
     return false;
   }
 
-  BT_ASSERT_MSG(IsPacketValid(*pdu), "packet has bad length!");
+  PW_CHECK(IsPacketValid(*pdu), "packet has bad length!");
 
   PacketReader reader(pdu.get());
   MethodType type = GetMethodType(reader.opcode());
@@ -401,9 +401,9 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   switch (type) {
     case MethodType::kCommand:
     case MethodType::kNotification:
-      BT_ASSERT_MSG(!callback,
-                    "opcode %#.2x has no response but callback was provided",
-                    reader.opcode());
+      PW_CHECK(!callback,
+               "opcode %#.2x has no response but callback was provided",
+               reader.opcode());
 
       // Send the command. No flow control is necessary.
       chan_->Send(std::move(pdu));
@@ -420,10 +420,9 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   }
   PW_MODIFY_DIAGNOSTICS_POP();
 
-  BT_ASSERT_MSG(
-      callback,
-      "transaction with opcode %#.2x has response that requires callback!",
-      reader.opcode());
+  PW_CHECK(callback,
+           "transaction with opcode %#.2x has response that requires callback!",
+           reader.opcode());
 
   tq->Enqueue(std::make_unique<PendingTransaction>(
       reader.opcode(), std::move(callback), std::move(pdu)));
@@ -433,7 +432,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
 }
 
 Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
-  BT_DEBUG_ASSERT(handler);
+  PW_DCHECK(handler);
 
   if (!is_open())
     return kInvalidHandlerId;
@@ -451,7 +450,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
     return kInvalidHandlerId;
 
   auto res = handler_id_map_.emplace(id, opcode);
-  BT_ASSERT_MSG(res.second, "handler ID got reused (id: %zu)", id);
+  PW_CHECK(res.second, "handler ID got reused (id: %zu)", id);
 
   handlers_[opcode] = std::move(handler);
 
@@ -459,7 +458,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
 }
 
 void Bearer::UnregisterHandler(HandlerId id) {
-  BT_DEBUG_ASSERT(id != kInvalidHandlerId);
+  PW_DCHECK(id != kInvalidHandlerId);
 
   auto iter = handler_id_map_.find(id);
   if (iter == handler_id_map_.end()) {
@@ -472,7 +471,7 @@ void Bearer::UnregisterHandler(HandlerId id) {
 }
 
 bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
-  BT_DEBUG_ASSERT(pdu);
+  PW_DCHECK(pdu);
 
   if (tid == kInvalidTransactionId)
     return false;
@@ -537,7 +536,7 @@ bool Bearer::IsPacketValid(const ByteBuffer& packet) {
 }
 
 void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
-  BT_DEBUG_ASSERT(tq);
+  PW_DCHECK(tq);
 
   if (!is_open()) {
     bt_log(TRACE, "att", "Cannot process transactions; bearer is closed");
@@ -558,7 +557,7 @@ void Bearer::SendErrorResponse(OpCode request_opcode,
                                Handle attribute_handle,
                                ErrorCode error_code) {
   auto buffer = NewBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
-  BT_ASSERT(buffer);
+  PW_CHECK(buffer);
 
   PacketWriter packet(kErrorResponse, buffer.get());
   auto* payload = packet.mutable_payload<ErrorResponseParams>();
@@ -572,8 +571,8 @@ void Bearer::SendErrorResponse(OpCode request_opcode,
 
 void Bearer::HandleEndTransaction(TransactionQueue* tq,
                                   const PacketReader& packet) {
-  BT_DEBUG_ASSERT(is_open());
-  BT_DEBUG_ASSERT(tq);
+  PW_DCHECK(is_open());
+  PW_DCHECK(tq);
 
   if (!tq->current()) {
     bt_log(DEBUG,
@@ -589,7 +588,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
 
   if (packet.opcode() == kErrorResponse) {
     // We should never hit this branch for indications.
-    BT_DEBUG_ASSERT(tq->current()->opcode != kIndication);
+    PW_DCHECK(tq->current()->opcode != kIndication);
 
     if (packet.payload_size() == sizeof(ErrorResponseParams)) {
       const auto& payload = packet.payload<ErrorResponseParams>();
@@ -608,7 +607,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
     target_opcode = MatchingTransactionCode(packet.opcode());
   }
 
-  BT_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
+  PW_DCHECK(tq->current()->opcode != kInvalidOpCode);
 
   if (tq->current()->opcode != target_opcode) {
     bt_log(DEBUG,
@@ -621,7 +620,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
 
   // The transaction is complete.
   auto transaction = tq->ClearCurrent();
-  BT_DEBUG_ASSERT(transaction);
+  PW_DCHECK(transaction);
 
   const sm::SecurityLevel security_requirement =
       error.has_value()
@@ -646,7 +645,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
     return;
   }
 
-  BT_ASSERT(error.has_value());
+  PW_CHECK(error.has_value());
   bt_log(TRACE,
          "att",
          "Received security error %s for transaction; requesting upgrade to "
@@ -673,7 +672,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
         // Re-send the request as described in Vol 3, Part G, 8.1. Since |t| was
         // originally resolved with an Error Response, it must have come out of
         // |request_queue_|.
-        BT_DEBUG_ASSERT(GetMethodType(t->opcode) == MethodType::kRequest);
+        PW_DCHECK(GetMethodType(t->opcode) == MethodType::kRequest);
         t->security_retry_level = security_requirement;
         self->request_queue_.Enqueue(std::move(t));
         self->TryStartNextTransaction(&self->request_queue_);
@@ -707,7 +706,7 @@ Bearer::TransactionId Bearer::NextRemoteTransactionId() {
 
 void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
                                     const PacketReader& packet) {
-  BT_DEBUG_ASSERT(currently_pending);
+  PW_DCHECK(currently_pending);
 
   if (currently_pending->has_value()) {
     bt_log(DEBUG,
@@ -766,8 +765,8 @@ void Bearer::OnChannelClosed() {
 }
 
 void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
-  BT_DEBUG_ASSERT(sdu);
-  BT_DEBUG_ASSERT(is_open());
+  PW_DCHECK(sdu);
+  PW_DCHECK(is_open());
 
   TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", sdu->size());
 

@@ -37,10 +37,10 @@ class GenericAttributeServiceTest : public ::testing::Test {
   bool WriteServiceChangedCcc(PeerId peer_id,
                               uint16_t ccc_value,
                               fit::result<att::ErrorCode>* out_status) {
-    BT_ASSERT(out_status);
+    PW_CHECK(out_status);
 
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
-    BT_ASSERT(attr);
+    PW_CHECK(attr);
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value =
         pw::bytes::ConvertOrderTo(cpp20::endian::little, ccc_value);

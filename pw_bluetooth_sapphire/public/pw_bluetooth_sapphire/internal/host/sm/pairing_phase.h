@@ -105,7 +105,7 @@ class PairingPhase {
   void HandleChannelClosed();
 
   PairingChannel& sm_chan() const {
-    BT_ASSERT(sm_chan_.is_alive());
+    PW_CHECK(sm_chan_.is_alive());
     return sm_chan_.get();
   }
 

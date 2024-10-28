@@ -99,10 +99,10 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle,
       a2dp_offload_manager_(a2dp_offload_manager),
       weak_conn_interface_(this),
       weak_self_(this) {
-  BT_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
-  BT_ASSERT(acl_data_channel_);
-  BT_ASSERT(cmd_channel_);
-  BT_ASSERT(query_service_cb_);
+  PW_CHECK(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
+  PW_CHECK(acl_data_channel_);
+  PW_CHECK(cmd_channel_);
+  PW_CHECK(query_service_cb_);
 
   // Allow packets to be sent on this link immediately.
   acl_data_channel_->RegisterConnection(weak_conn_interface_.GetWeakPtr());
@@ -133,11 +133,11 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle,
 
 LogicalLink::~LogicalLink() {
   bt_log(DEBUG, "l2cap", "LogicalLink destroyed (handle: %#.4x)", handle_);
-  BT_ASSERT(closed_);
+  PW_CHECK(closed_);
 }
 
 Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(!closed_);
 
   TRACE_DURATION("bluetooth",
                  "LogicalLink::OpenFixedChannel",
@@ -197,8 +197,8 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
 void LogicalLink::OpenChannel(Psm psm,
                               ChannelParameters params,
                               ChannelCallback callback) {
-  BT_DEBUG_ASSERT(!closed_);
-  BT_DEBUG_ASSERT(dynamic_registry_);
+  PW_DCHECK(!closed_);
+  PW_DCHECK(dynamic_registry_);
 
   auto create_channel =
       [this, cb = std::move(callback)](const DynamicChannel* dyn_chan) mutable {
@@ -211,8 +211,8 @@ void LogicalLink::OpenChannel(Psm psm,
 }
 
 void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
-  BT_DEBUG_ASSERT(packet);
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(packet);
+  PW_DCHECK(!closed_);
 
   TRACE_DURATION("bluetooth", "LogicalLink::HandleRxPacket", "handle", handle_);
 
@@ -236,7 +236,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
     return;
   }
 
-  BT_DEBUG_ASSERT(result.pdu->is_valid());
+  PW_DCHECK(result.pdu->is_valid());
 
   uint16_t channel_id = result.pdu->channel_id();
   auto iter = channels_.find(channel_id);
@@ -290,7 +290,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
 
 void LogicalLink::UpgradeSecurity(sm::SecurityLevel level,
                                   sm::ResultFunction<> callback) {
-  BT_DEBUG_ASSERT(security_callback_);
+  PW_DCHECK(security_callback_);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on closed link");
@@ -400,7 +400,7 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
 }
 
 void LogicalLink::RemoveChannel(Channel* chan, fit::closure removed_cb) {
-  BT_DEBUG_ASSERT(chan);
+  PW_DCHECK(chan);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
@@ -454,8 +454,8 @@ void LogicalLink::SignalError() {
   size_t num_channels_to_close = channels_.size();
 
   if (signaling_channel_) {
-    BT_ASSERT(channels_.count(kSignalingChannelId) ||
-              channels_.count(kLESignalingChannelId));
+    PW_CHECK(channels_.count(kSignalingChannelId) ||
+             channels_.count(kLESignalingChannelId));
     // There is no need to close the signaling channel.
     num_channels_to_close--;
   }
@@ -500,7 +500,7 @@ void LogicalLink::SignalError() {
 }
 
 void LogicalLink::Close() {
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(!closed_);
 
   closed_ = true;
 
@@ -515,7 +515,7 @@ void LogicalLink::Close() {
 
 std::optional<DynamicChannelRegistry::ServiceInfo>
 LogicalLink::OnServiceRequest(Psm psm) {
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(!closed_);
 
   // Query upper layer for a service handler attached to this PSM.
   auto result = query_service_cb_(handle_, psm);
@@ -532,8 +532,8 @@ LogicalLink::OnServiceRequest(Psm psm) {
 }
 
 void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
-  BT_DEBUG_ASSERT(dyn_chan);
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(dyn_chan);
+  PW_DCHECK(!closed_);
 
   auto iter = channels_.find(dyn_chan->local_cid());
   if (iter == channels_.end()) {
@@ -545,7 +545,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   }
 
   ChannelImpl* channel = iter->second.get();
-  BT_DEBUG_ASSERT(channel->remote_id() == dyn_chan->remote_cid());
+  PW_DCHECK(channel->remote_id() == dyn_chan->remote_cid());
 
   // Signal closure because this is a remote disconnection.
   channel->OnClosed();
@@ -557,7 +557,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
 
 void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan,
                                       ChannelCallback open_cb) {
-  BT_DEBUG_ASSERT(!closed_);
+  PW_DCHECK(!closed_);
 
   if (!dyn_chan) {
     open_cb(Channel::WeakPtr());
@@ -614,7 +614,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan,
 }
 
 void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
-  BT_ASSERT(signaling_channel_);
+  PW_CHECK(signaling_channel_);
 
   BrEdrCommandHandler cmd_handler(signaling_channel_.get());
   if (!cmd_handler.SendInformationRequest(
@@ -680,9 +680,9 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
 void LogicalLink::SendConnectionParameterUpdateRequest(
     hci_spec::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
-  BT_ASSERT(signaling_channel_);
-  BT_ASSERT(type_ == bt::LinkType::kLE);
-  BT_ASSERT(role_ == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
+  PW_CHECK(signaling_channel_);
+  PW_CHECK(type_ == bt::LinkType::kLE);
+  PW_CHECK(role_ == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.SendConnectionParameterUpdateRequest(
@@ -712,9 +712,9 @@ void LogicalLink::RequestAclPriority(
     Channel::WeakPtr channel,
     AclPriority priority,
     fit::callback<void(fit::result<fit::failed>)> callback) {
-  BT_ASSERT(channel.is_alive());
+  PW_CHECK(channel.is_alive());
   auto iter = channels_.find(channel->id());
-  BT_ASSERT(iter != channels_.end());
+  PW_CHECK(iter != channels_.end());
   pending_acl_requests_.push(
       PendingAclRequest{std::move(channel), priority, std::move(callback)});
   if (pending_acl_requests_.size() == 1) {
@@ -763,9 +763,9 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(
             std::chrono::duration_cast<std::chrono::milliseconds>(flush_timeout)
                 .count()) *
         hci_spec::kFlushTimeoutMsToCommandParameterConversionFactor);
-    BT_ASSERT(converted_flush_timeout != 0);
-    BT_ASSERT(converted_flush_timeout <=
-              hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
+    PW_CHECK(converted_flush_timeout != 0);
+    PW_CHECK(converted_flush_timeout <=
+             hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
   }
 
   auto write_timeout = hci::EmbossCommandPacket::New<
@@ -829,7 +829,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   }
 
   auto& request = pending_acl_requests_.front();
-  BT_ASSERT(request.callback);
+  PW_CHECK(request.callback);
 
   // Prevent closed channels with queued requests from upgrading channel
   // priority. Allow closed channels to downgrade priority so that they can
@@ -901,8 +901,8 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 }
 
 void LogicalLink::ServeConnectionParameterUpdateRequest() {
-  BT_ASSERT(signaling_channel_);
-  BT_ASSERT(type_ == bt::LinkType::kLE);
+  PW_CHECK(signaling_channel_);
+  PW_CHECK(type_ == bt::LinkType::kLE);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.ServeConnectionParameterUpdateRequest(

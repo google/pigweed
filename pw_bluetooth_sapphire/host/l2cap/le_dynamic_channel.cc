@@ -37,7 +37,7 @@ LeDynamicChannel::State InitialState(bool has_remote_channel) {
 
 CreditBasedFlowControlMode ConvertMode(AnyChannelMode mode) {
   // LE dynamic channels only support credit-based flow control modes.
-  BT_ASSERT(std::holds_alternative<CreditBasedFlowControlMode>(mode));
+  PW_CHECK(std::holds_alternative<CreditBasedFlowControlMode>(mode));
   return std::get<CreditBasedFlowControlMode>(mode);
 }
 
@@ -53,7 +53,7 @@ LeDynamicChannelRegistry::LeDynamicChannelRegistry(
                              std::move(service_request_cb),
                              random_channel_ids),
       sig_(sig) {
-  BT_DEBUG_ASSERT(sig_);
+  PW_DCHECK(sig_);
   LowEnergyCommandHandler cmd_handler(sig_);
   cmd_handler.ServeLeCreditBasedConnectionRequest(
       fit::bind_member<
@@ -206,7 +206,7 @@ void LeDynamicChannel::TriggerOpenCallback() {
 }
 
 void LeDynamicChannel::Open(fit::closure open_cb) {
-  BT_ASSERT_MSG(!open_result_cb_, "open callback already set");
+  PW_CHECK(!open_result_cb_, "open callback already set");
   open_result_cb_ = std::move(open_cb);
 
   if (!is_outbound_) {
@@ -258,7 +258,7 @@ void LeDynamicChannel::Open(fit::closure open_cb) {
 }
 
 void LeDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
-  BT_ASSERT(done_cb);
+  PW_CHECK(done_cb);
   if (!IsConnected()) {
     done_cb();
     return;
@@ -337,7 +337,7 @@ bool LeDynamicChannel::IsOpen() const {
 }
 
 ChannelInfo LeDynamicChannel::info() const {
-  BT_ASSERT(remote_config_.has_value());
+  PW_CHECK(remote_config_.has_value());
   return ChannelInfo::MakeCreditBasedFlowControlMode(
       flow_control_mode_,
       local_config_.mtu,

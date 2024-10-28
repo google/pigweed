@@ -54,10 +54,10 @@ LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options,
                                        ScanStatusCallback callback) {
-  BT_ASSERT(options.interval >= hci_spec::kLEScanIntervalMin);
-  BT_ASSERT(options.interval <= hci_spec::kLEScanIntervalMax);
-  BT_ASSERT(options.window >= hci_spec::kLEScanIntervalMin);
-  BT_ASSERT(options.window <= hci_spec::kLEScanIntervalMax);
+  PW_CHECK(options.interval >= hci_spec::kLEScanIntervalMin);
+  PW_CHECK(options.interval <= hci_spec::kLEScanIntervalMax);
+  PW_CHECK(options.window >= hci_spec::kLEScanIntervalMin);
+  PW_CHECK(options.window <= hci_spec::kLEScanIntervalMax);
   return LowEnergyScanner::StartScan(options, std::move(callback));
 }
 
@@ -117,7 +117,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
     return;
   }
 
-  BT_DEBUG_ASSERT(address == pending->result().address());
+  PW_DCHECK(address == pending->result().address());
   pending->result().AppendData(data);
   pending->result().set_resolved(resolved);
   pending->result().set_rssi(rssi);
@@ -133,10 +133,10 @@ void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
 std::vector<pw::bluetooth::emboss::LEAdvertisingReportDataView>
 LegacyLowEnergyScanner::ParseAdvertisingReports(
     const EmbossEventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_DEBUG_ASSERT(event.view<pw::bluetooth::emboss::LEMetaEventView>()
-                      .subevent_code()
-                      .Read() == hci_spec::kLEAdvertisingReportSubeventCode);
+  PW_DCHECK(event.event_code() == hci_spec::kLEMetaEventCode);
+  PW_DCHECK(event.view<pw::bluetooth::emboss::LEMetaEventView>()
+                .subevent_code()
+                .Read() == hci_spec::kLEAdvertisingReportSubeventCode);
 
   auto params =
       event.view<pw::bluetooth::emboss::LEAdvertisingReportSubeventView>();
@@ -183,7 +183,7 @@ static std::tuple<DeviceAddress, bool> BuildDeviceAddress(
     pw::bluetooth::emboss::BdAddrView address_view) {
   std::optional<DeviceAddress::Type> address_type =
       DeviceAddress::LeAddrToDeviceAddr(report_type);
-  BT_DEBUG_ASSERT(address_type);
+  PW_DCHECK(address_type);
 
   bool resolved = false;
   switch (report_type) {

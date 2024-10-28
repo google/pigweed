@@ -13,6 +13,7 @@
 // the License.
 
 #pragma once
+#include "pw_assert/assert.h"
 #include "pw_assert/check.h"
 
 #define BT_PANIC(msg, ...) PW_CRASH(msg, ##__VA_ARGS__)

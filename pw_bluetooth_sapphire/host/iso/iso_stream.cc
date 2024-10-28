@@ -99,7 +99,7 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
       on_closed_cb_(std::move(on_closed_cb)),
       cmd_(std::move(cmd)),
       weak_self_(this) {
-  BT_ASSERT(cmd_.is_alive());
+  PW_CHECK(cmd_.is_alive());
 
   auto weak_self = weak_self_.GetWeakPtr();
   cis_established_handler_ = cmd_->AddLEMetaEventHandler(
@@ -114,14 +114,14 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
         }
         return hci::CommandChannel::EventCallbackResult::kContinue;
       });
-  BT_ASSERT(cis_established_handler_ != 0u);
+  PW_CHECK(cis_established_handler_ != 0u);
 }
 
 bool IsoStreamImpl::OnCisEstablished(const hci::EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_ASSERT(event.view<pw::bluetooth::emboss::LEMetaEventView>()
-                .subevent_code()
-                .Read() == hci_spec::kLECISEstablishedSubeventCode);
+  PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
+  PW_CHECK(event.view<pw::bluetooth::emboss::LEMetaEventView>()
+               .subevent_code()
+               .Read() == hci_spec::kLECISEstablishedSubeventCode);
   auto view = event.view<pw::bluetooth::emboss::LECISEstablishedSubeventView>();
 
   // Ignore any events intended for another CIS

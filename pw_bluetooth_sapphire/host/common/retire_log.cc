@@ -20,13 +20,13 @@ namespace bt::internal {
 
 RetireLog::RetireLog(size_t min_depth, size_t max_depth)
     : min_depth_(min_depth), max_depth_(max_depth) {
-  BT_ASSERT(min_depth_ > 0);
-  BT_ASSERT(min_depth_ <= max_depth_);
+  PW_CHECK(min_depth_ > 0);
+  PW_CHECK(min_depth_ <= max_depth_);
 
   // For simplicity, log indexes are computed with doubles, so limit the depth
   // to 2**53 in which precision is preserved, assuming IEEE-754 DPFPs.
-  BT_ASSERT(max_depth_ <=
-            (decltype(max_depth_){1} << std::numeric_limits<double>::digits));
+  PW_CHECK(max_depth_ <=
+           (decltype(max_depth_){1} << std::numeric_limits<double>::digits));
   buffer_.reserve(max_depth_);
   std::apply(
       [this](auto&... scratchpad) { (scratchpad.reserve(max_depth_), ...); },

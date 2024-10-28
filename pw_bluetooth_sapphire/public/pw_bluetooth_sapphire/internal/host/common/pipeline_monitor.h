@@ -66,7 +66,7 @@ class PipelineMonitor final {
     }
 
     Token& operator=(Token&& other) noexcept {
-      BT_ASSERT(&parent_.get() == &other.parent_.get());
+      PW_CHECK(&parent_.get() == &other.parent_.get());
       id_ = std::exchange(other.id_, kInvalidTokenId);
       return *this;
     }
@@ -98,7 +98,7 @@ class PipelineMonitor final {
       if (!parent_.is_alive()) {
         return Token(parent_, kInvalidTokenId);
       }
-      BT_ASSERT(id_ != kInvalidTokenId);
+      PW_CHECK(id_ != kInvalidTokenId);
       return parent_->Split(this, bytes_to_take);
     }
 
@@ -145,11 +145,11 @@ class PipelineMonitor final {
   [[nodiscard]] int64_t tokens_issued() const { return tokens_issued_; }
   [[nodiscard]] size_t bytes_in_flight() const { return bytes_in_flight_; }
   [[nodiscard]] int64_t tokens_in_flight() const {
-    BT_ASSERT(issued_tokens_.size() <= std::numeric_limits<int64_t>::max());
+    PW_CHECK(issued_tokens_.size() <= std::numeric_limits<int64_t>::max());
     return issued_tokens_.size();
   }
   [[nodiscard]] size_t bytes_retired() const {
-    BT_ASSERT(bytes_issued() >= bytes_in_flight());
+    PW_CHECK(bytes_issued() >= bytes_in_flight());
     return bytes_issued() - bytes_in_flight();
   }
   [[nodiscard]] int64_t tokens_retired() const {
@@ -181,11 +181,11 @@ class PipelineMonitor final {
   [[nodiscard]] Token Split(Token* token, size_t bytes_to_take) {
     // For consistency, complete all token map and counter modifications before
     // processing alerts.
-    BT_ASSERT(this == &token->parent_.get());
+    PW_CHECK(this == &token->parent_.get());
     auto iter = issued_tokens_.find(token->id_);
-    BT_ASSERT(iter != issued_tokens_.end());
+    PW_CHECK(iter != issued_tokens_.end());
     TokenInfo& token_info = iter->second;
-    BT_ASSERT(bytes_to_take <= token_info.byte_count);
+    PW_CHECK(bytes_to_take <= token_info.byte_count);
     if (token_info.byte_count == bytes_to_take) {
       return std::move(*token);
     }
@@ -311,9 +311,9 @@ class PipelineMonitor final {
   void Retire(Token* token) {
     // For consistency, complete all token map and counter modifications before
     // processing alerts.
-    BT_ASSERT(this == &token->parent_.get());
+    PW_CHECK(this == &token->parent_.get());
     auto node = issued_tokens_.extract(token->id_);
-    BT_ASSERT(bool{node});
+    PW_CHECK(bool{node});
     const TokenInfo& token_info = node.mapped();
     bytes_in_flight_ -= token_info.byte_count;
     const pw::chrono::SystemClock::duration age =

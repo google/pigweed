@@ -241,7 +241,7 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
           }
 
           measure_fbg::Size result_size = measure_fbg::Measure(fidl_result);
-          BT_ASSERT(result_size.num_handles == 0);
+          PW_CHECK(result_size.num_handles == 0);
           bytes_used += result_size.num_bytes;
 
           if (bytes_used > kMaxBytes) {
@@ -441,7 +441,7 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
     // `DisableNotifications` completion callback in
     // `OnCharacteristicNotifierError`, so no notifications should be received
     // after removing a notifier.
-    BT_ASSERT_MSG(
+    PW_CHECK(
         notifier_iter != self->characteristic_notifiers_.end(),
         "characteristic notification value received after notifier unregistered"
         "(peer: %s, characteristic: 0x%lX) ",
@@ -509,7 +509,7 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
                                     .notifier = notifier_handle.Bind()};
     auto [notifier_iter, emplaced] = self->characteristic_notifiers_.emplace(
         notifier_id, std::move(notifier));
-    BT_ASSERT(emplaced);
+    PW_CHECK(emplaced);
 
     // When the client closes the protocol, unregister the notifier.
     notifier_iter->second.notifier.set_error_handler(

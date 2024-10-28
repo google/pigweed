@@ -29,11 +29,10 @@ ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(
   s.uuid = uuid;
   s.attributes = std::move(attributes);
   s.callback = std::move(callback);
-  BT_DEBUG_ASSERT(next_id_ <
-                  std::numeric_limits<ServiceDiscoverer::SearchId>::max());
+  PW_DCHECK(next_id_ < std::numeric_limits<ServiceDiscoverer::SearchId>::max());
   ServiceDiscoverer::SearchId id = next_id_++;
   auto [it, placed] = searches_.emplace(id, std::move(s));
-  BT_DEBUG_ASSERT_MSG(placed, "Should always be able to place new search");
+  PW_DCHECK(placed, "Should always be able to place new search");
   return id;
 }
 
@@ -66,10 +65,10 @@ void ServiceDiscoverer::SingleSearch(SearchId search_id,
     DiscoverySession session;
     session.client = std::move(client);
     auto placed = sessions_.emplace(peer_id, std::move(session));
-    BT_DEBUG_ASSERT(placed.second);
+    PW_DCHECK(placed.second);
     session_iter = placed.first;
   }
-  BT_DEBUG_ASSERT(session_iter != sessions_.end());
+  PW_DCHECK(session_iter != sessions_.end());
   auto search_it = searches_.find(search_id);
   if (search_it == searches_.end()) {
     bt_log(INFO, "sdp", "Couldn't find search with id %" PRIu64, search_id);

@@ -52,7 +52,7 @@ class LMPFeatureSet {
 
   // Sets |page| features to |features|
   inline void SetPage(size_t page, uint64_t features) {
-    BT_ASSERT(page < kMaxPages);
+    PW_CHECK(page < kMaxPages);
     features_[page] = features;
     valid_pages_[page] = true;
   }

@@ -66,7 +66,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
       : hci::LowEnergyAdvertiser(hci, kDefaultMaxAdSize),
         ads_(ad_store),
         hci_(hci) {
-    BT_ASSERT(ads_);
+    PW_CHECK(ads_);
   }
 
   ~FakeLowEnergyAdvertiser() override = default;

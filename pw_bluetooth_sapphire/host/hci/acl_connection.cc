@@ -88,7 +88,7 @@ void AclConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
     const EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kEncryptionChangeEventCode);
+  PW_CHECK(event.event_code() == hci_spec::kEncryptionChangeEventCode);
 
   auto params =
       event

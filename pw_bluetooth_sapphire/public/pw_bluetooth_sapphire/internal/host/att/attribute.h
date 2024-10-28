@@ -237,14 +237,14 @@ class AttributeGrouping final {
   }
 
   const UUID& group_type() const {
-    BT_DEBUG_ASSERT(!attributes_.empty());
+    PW_DCHECK(!attributes_.empty());
     return attributes_[0].type();
   }
 
   // Value of the group declaration attribute.
   BufferView decl_value() const {
-    BT_DEBUG_ASSERT(!attributes_.empty());
-    BT_DEBUG_ASSERT(attributes_[0].value());
+    PW_DCHECK(!attributes_.empty());
+    PW_DCHECK(attributes_[0].value());
     return attributes_[0].value()->view();
   }
 
@@ -254,8 +254,7 @@ class AttributeGrouping final {
 
   bool active() const { return active_; }
   void set_active(bool active) {
-    BT_DEBUG_ASSERT_MSG(complete(),
-                        "set_active() called on incomplete grouping!");
+    PW_DCHECK(complete(), "set_active() called on incomplete grouping!");
     active_ = active;
   }
 

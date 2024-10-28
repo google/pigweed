@@ -25,7 +25,7 @@ namespace bt {
 bool ParseUuids(const BufferView& data,
                 UUIDElemSize uuid_size,
                 UuidFunction func) {
-  BT_ASSERT(func);
+  PW_CHECK(func);
 
   if (data.size() % uuid_size) {
     return false;
@@ -98,15 +98,15 @@ SupplementDataReader::SupplementDataReader(const ByteBuffer& data)
 
 bool SupplementDataReader::GetNextField(DataType* out_type,
                                         BufferView* out_data) {
-  BT_DEBUG_ASSERT(out_type);
-  BT_DEBUG_ASSERT(out_data);
+  PW_DCHECK(out_type);
+  PW_DCHECK(out_data);
 
   if (!HasMoreData())
     return false;
 
   size_t tlv_len = remaining_[0];
   size_t cur_struct_size = tlv_len + 1;
-  BT_DEBUG_ASSERT(cur_struct_size <= remaining_.size());
+  PW_DCHECK(cur_struct_size <= remaining_.size());
 
   *out_type = static_cast<DataType>(remaining_[1]);
   *out_data = remaining_.view(2, tlv_len - 1);
@@ -127,7 +127,7 @@ bool SupplementDataReader::HasMoreData() const {
 
 SupplementDataWriter::SupplementDataWriter(MutableByteBuffer* buffer)
     : buffer_(buffer), bytes_written_(0u) {
-  BT_DEBUG_ASSERT(buffer_);
+  PW_DCHECK(buffer_);
 }
 
 bool SupplementDataWriter::WriteField(DataType type, const ByteBuffer& data) {

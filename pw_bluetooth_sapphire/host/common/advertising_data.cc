@@ -105,14 +105,14 @@ std::string EncodeUri(const std::string& uri) {
     if (std::equal(scheme, scheme + scheme_len, uri.begin())) {
       const pw::Result<pw::utf8::EncodedCodePoint> encoded_scheme =
           pw::utf8::EncodeCodePoint(i + 2);
-      BT_DEBUG_ASSERT(encoded_scheme.ok());
+      PW_DCHECK(encoded_scheme.ok());
       return std::string(encoded_scheme->as_view()) + uri.substr(scheme_len);
     }
   }
   // First codepoint (U+0001) is for uncompressed schemes.
   const pw::Result<pw::utf8::EncodedCodePoint> encoded_scheme =
       pw::utf8::EncodeCodePoint(1u);
-  BT_DEBUG_ASSERT(encoded_scheme.ok());
+  PW_DCHECK(encoded_scheme.ok());
   return std::string(encoded_scheme->as_view()) + uri;
 }
 
@@ -322,7 +322,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
     // While parsing through the advertising data fields, we do not need to
     // validate that per-field sizes do not overflow a uint8_t because they, by
     // construction, are obtained from a uint8_t.
-    BT_DEBUG_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
+    PW_DCHECK(field.size() <= std::numeric_limits<uint8_t>::max());
     PW_MODIFY_DIAGNOSTICS_PUSH();
     PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
     switch (type) {
@@ -383,7 +383,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
         const BufferView manuf_data(field.data() + kManufacturerIdSize,
                                     field.size() - kManufacturerIdSize);
 
-        BT_ASSERT(out_ad.SetManufacturerData(id, manuf_data));
+        PW_CHECK(out_ad.SetManufacturerData(id, manuf_data));
         break;
       }
       case DataType::kServiceData16Bit:
@@ -404,7 +404,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
         }
         const BufferView service_data(field.data() + uuid_size,
                                       field.size() - uuid_size);
-        BT_ASSERT(out_ad.SetServiceData(uuid, service_data));
+        PW_CHECK(out_ad.SetServiceData(uuid, service_data));
         break;
       }
       case DataType::kAppearance: {
@@ -422,7 +422,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
       case DataType::kURI: {
         // Assertion is safe as AddUri only fails when field size > uint8_t,
         // which is impossible.
-        BT_ASSERT(out_ad.AddUri(DecodeUri(field.ToString())));
+        PW_CHECK(out_ad.AddUri(DecodeUri(field.ToString())));
         break;
       }
       case DataType::kFlags: {
@@ -452,7 +452,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   *out = AdvertisingData();
 
   if (local_name_) {
-    BT_ASSERT(out->SetLocalName(*local_name_));
+    PW_CHECK(out->SetLocalName(*local_name_));
   }
 
   if (tx_power_) {
@@ -466,21 +466,21 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   out->service_uuids_ = service_uuids_;
 
   for (const auto& it : manufacturer_data_) {
-    BT_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
+    PW_CHECK(out->SetManufacturerData(it.first, it.second.view()));
   }
 
   for (const auto& it : service_data_) {
-    BT_ASSERT(out->SetServiceData(it.first, it.second.view()));
+    PW_CHECK(out->SetServiceData(it.first, it.second.view()));
   }
 
   for (const auto& it : uris_) {
-    BT_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
+    PW_CHECK(out->AddUri(it), "Copying invalid AD with too-long URI");
   }
 }
 
 [[nodiscard]] bool AdvertisingData::AddServiceUuid(const UUID& uuid) {
   auto iter = service_uuids_.find(uuid.CompactSize());
-  BT_ASSERT(iter != service_uuids_.end());
+  PW_CHECK(iter != service_uuids_.end());
   BoundedUuids& uuids = iter->second;
   return uuids.AddUuid(uuid);
 }
@@ -654,7 +654,7 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
 
 bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
                                  std::optional<AdvFlags> flags) const {
-  BT_DEBUG_ASSERT(buffer);
+  PW_DCHECK(buffer);
 
   size_t min_buf_size = CalculateBlockSize(flags.has_value());
   if (buffer->size() < min_buf_size) {
@@ -684,7 +684,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
   }
 
   if (local_name_) {
-    BT_ASSERT(local_name_->name.size() <= kMaxNameLength);
+    PW_CHECK(local_name_->name.size() <= kMaxNameLength);
     (*buffer)[pos++] =
         static_cast<uint8_t>(local_name_->name.size()) + 1;  // 1 for null char
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
@@ -696,7 +696,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
 
   for (const auto& manuf_pair : manufacturer_data_) {
     size_t data_size = manuf_pair.second.size();
-    BT_ASSERT(data_size <= kMaxManufacturerDataLength);
+    PW_CHECK(data_size <= kMaxManufacturerDataLength);
     (*buffer)[pos++] =
         1 + 2 +
         static_cast<uint8_t>(data_size);  // 1 for type, 2 for Manuf. Code
@@ -711,7 +711,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
     UUID uuid = service_data_pair.first;
     size_t encoded_service_data_size =
         EncodedServiceDataSize(uuid, service_data_pair.second.view());
-    BT_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
+    PW_CHECK(encoded_service_data_size <= kMaxEncodedServiceDataLength);
     (*buffer)[pos++] =
         1 + static_cast<uint8_t>(encoded_service_data_size);  // 1 for type
     (*buffer)[pos++] =
@@ -724,7 +724,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
 
   for (const auto& uri : uris_) {
     std::string s = EncodeUri(uri);
-    BT_ASSERT(s.size() <= kMaxEncodedUriLength);
+    PW_CHECK(s.size() <= kMaxEncodedUriLength);
     (*buffer)[pos++] = 1 + static_cast<uint8_t>(s.size());  // 1 for type
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kURI);
     buffer->Write(reinterpret_cast<const uint8_t*>(s.c_str()), s.length(), pos);
@@ -737,17 +737,17 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
     }
 
     // 1 for type
-    BT_ASSERT(1 + uuid_width * bounded_uuids.set().size() <=
-              std::numeric_limits<uint8_t>::max());
+    PW_CHECK(1 + uuid_width * bounded_uuids.set().size() <=
+             std::numeric_limits<uint8_t>::max());
     (*buffer)[pos++] =
         1 + uuid_width * static_cast<uint8_t>(bounded_uuids.set().size());
     (*buffer)[pos++] = static_cast<uint8_t>(
         ServiceUuidTypeForUuidSize(uuid_width, /*complete=*/false));
     for (const auto& uuid : bounded_uuids.set()) {
-      BT_ASSERT_MSG(uuid.CompactSize() == uuid_width,
-                    "UUID: %s - Expected Width: %d",
-                    bt_str(uuid),
-                    uuid_width);
+      PW_CHECK(uuid.CompactSize() == uuid_width,
+               "UUID: %s - Expected Width: %d",
+               bt_str(uuid),
+               uuid_width);
       auto target = buffer->mutable_view(pos);
       pos += uuid.ToBytes(&target);
     }
@@ -808,7 +808,7 @@ bool AdvertisingData::operator!=(const AdvertisingData& other) const {
 }
 
 bool AdvertisingData::BoundedUuids::AddUuid(UUID uuid) {
-  BT_ASSERT(set_.size() <= bound_);
+  PW_CHECK(set_.size() <= bound_);
   if (set_.size() < bound_) {
     if (!set_.insert(uuid).second) {
       bt_log(INFO,

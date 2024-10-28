@@ -103,7 +103,7 @@ fbt::ChannelParameters ChannelInfoToFidlChannelParameters(
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = std::make_unique<fidlbredr::DataElement>();
   bt_log(TRACE, "fidl", "DataElementToFidl: %s", in->ToString().c_str());
-  BT_DEBUG_ASSERT(in);
+  PW_DCHECK(in);
   switch (in->type()) {
     case bt::sdp::DataElement::Type::kUnsignedInt: {
       switch (in->size()) {
@@ -147,13 +147,13 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
     }
     case bt::sdp::DataElement::Type::kUuid: {
       auto uuid = in->Get<bt::UUID>();
-      BT_DEBUG_ASSERT(uuid);
+      PW_DCHECK(uuid);
       elem->set_uuid(fidl_helpers::UuidToFidl(*uuid));
       return elem;
     }
     case bt::sdp::DataElement::Type::kString: {
       auto bytes = in->Get<bt::DynamicByteBuffer>();
-      BT_DEBUG_ASSERT(bytes);
+      PW_DCHECK(bytes);
       std::vector<uint8_t> data(bytes->cbegin(), bytes->cend());
       elem->set_str(data);
       return elem;
@@ -686,8 +686,8 @@ void ProfileServer::Advertise(
     registering.emplace_back(std::move(rec.value()));
   }
 
-  BT_ASSERT(adapter().is_alive());
-  BT_ASSERT(adapter()->bredr());
+  PW_CHECK(adapter().is_alive());
+  PW_CHECK(adapter()->bredr());
 
   uint64_t next = advertised_total_ + 1;
 
@@ -783,7 +783,7 @@ void ProfileServer::Search(
     attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
   }
 
-  BT_DEBUG_ASSERT(adapter().is_alive());
+  PW_DCHECK(adapter().is_alive());
 
   auto next = searches_total_ + 1;
 
@@ -866,7 +866,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
     cb(fpromise::ok(std::move(fidl_chan.value())));
   };
-  BT_DEBUG_ASSERT(adapter().is_alive());
+  PW_DCHECK(adapter().is_alive());
 
   adapter()->bredr()->OpenL2capChannel(
       id,
@@ -992,7 +992,7 @@ void ProfileServer::OnChannelConnected(
     return;
   }
 
-  BT_DEBUG_ASSERT(adapter().is_alive());
+  PW_DCHECK(adapter().is_alive());
   auto handle = channel->link_handle();
   auto id = adapter()->bredr()->GetPeerId(handle);
 
@@ -1000,11 +1000,11 @@ void ProfileServer::OnChannelConnected(
   // thing that we can connect. We can't say anything about what the higher
   // level protocols will be.
   auto prot_seq = protocol_list.At(0);
-  BT_ASSERT(prot_seq);
+  PW_CHECK(prot_seq);
 
   fidlbredr::ProtocolDescriptorPtr desc =
       DataElementToProtocolDescriptor(prot_seq);
-  BT_ASSERT(desc);
+  PW_CHECK(desc);
 
   fuchsia::bluetooth::PeerId peer_id{id.value()};
 
@@ -1141,10 +1141,10 @@ void ProfileServer::OnScoConnectionResult(
   }
 
   size_t parameter_index = result.value().second;
-  BT_ASSERT_MSG(parameter_index < server->parameters().size(),
-                "parameter_index (%zu)  >= request->parameters.size() (%zu)",
-                parameter_index,
-                server->parameters().size());
+  PW_CHECK(parameter_index < server->parameters().size(),
+           "parameter_index (%zu)  >= request->parameters.size() (%zu)",
+           parameter_index,
+           server->parameters().size());
   fidlbredr::ScoConnectionParameters parameters =
       fidl::Clone(server->parameters()[parameter_index]);
   parameters.set_max_tx_data_size(max_tx_data_size);
@@ -1278,7 +1278,7 @@ ProfileServer::BindBrEdrConnectionServer(
 
 std::optional<fuchsia::bluetooth::bredr::Channel> ProfileServer::ChannelToFidl(
     bt::l2cap::Channel::WeakPtr channel) {
-  BT_ASSERT(channel.is_alive());
+  PW_CHECK(channel.is_alive());
   fidlbredr::Channel fidl_chan;
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());

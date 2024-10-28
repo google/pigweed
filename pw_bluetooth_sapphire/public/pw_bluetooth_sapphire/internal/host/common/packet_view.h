@@ -36,13 +36,13 @@ class PacketViewBase {
 
   size_t size() const { return size_; }
   size_t payload_size() const {
-    BT_ASSERT(size() >= header_size());
+    PW_CHECK(size() >= header_size());
     return size() - header_size();
   }
 
   template <typename PayloadType>
   const PayloadType& payload() const {
-    BT_ASSERT(sizeof(PayloadType) <= payload_size());
+    PW_CHECK(sizeof(PayloadType) <= payload_size());
     return *reinterpret_cast<const PayloadType*>(payload_data().data());
   }
 
@@ -62,11 +62,11 @@ class PacketViewBase {
       : header_size_(header_size),
         buffer_(buffer),
         size_(header_size_ + payload_size) {
-    BT_ASSERT(buffer_);
-    BT_ASSERT_MSG(buffer_->size() >= size_,
-                  "view size %zu exceeds buffer size %zu",
-                  size_,
-                  buffer_->size());
+    PW_CHECK(buffer_);
+    PW_CHECK(buffer_->size() >= size_,
+             "view size %zu exceeds buffer size %zu",
+             size_,
+             buffer_->size());
   }
 
   // Default copy ctor is required for PacketView and MutablePacketView to be
@@ -79,8 +79,8 @@ class PacketViewBase {
   PacketViewBase& operator=(const PacketViewBase&) = delete;
 
   void set_size(size_t size) {
-    BT_ASSERT(buffer_->size() >= size);
-    BT_ASSERT(size >= header_size());
+    PW_CHECK(buffer_->size() >= size);
+    PW_CHECK(size >= header_size());
     size_ = size;
   }
 
@@ -192,7 +192,7 @@ class MutablePacketView : public PacketView<HeaderType> {
 
   template <typename PayloadType>
   PayloadType* mutable_payload() const {
-    BT_ASSERT(sizeof(PayloadType) <= this->payload_size());
+    PW_CHECK(sizeof(PayloadType) <= this->payload_size());
     return reinterpret_cast<PayloadType*>(mutable_payload_bytes());
   }
 };

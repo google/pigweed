@@ -87,7 +87,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
                            : "";
                 }),
       service_changed_gatt_data_({.notify = false, .indicate = false}) {
-  BT_DEBUG_ASSERT(peer_);
+  PW_DCHECK(peer_);
 }
 
 void Peer::LowEnergyData::AttachInspect(inspect::Node& parent,
@@ -205,13 +205,13 @@ Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
 
 void Peer::LowEnergyData::SetConnectionParameters(
     const hci_spec::LEConnectionParameters& params) {
-  BT_DEBUG_ASSERT(peer_->connectable());
+  PW_DCHECK(peer_->connectable());
   conn_params_ = params;
 }
 
 void Peer::LowEnergyData::SetPreferredConnectionParameters(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  BT_DEBUG_ASSERT(peer_->connectable());
+  PW_DCHECK(peer_->connectable());
   preferred_conn_params_ = params;
 }
 
@@ -220,8 +220,8 @@ bool Peer::LowEnergyData::StoreBond(const sm::PairingData& bond_data) {
 }
 
 void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
-  BT_DEBUG_ASSERT(peer_->connectable());
-  BT_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
+  PW_DCHECK(peer_->connectable());
+  PW_DCHECK(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
 
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
@@ -241,7 +241,7 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
 }
 
 void Peer::LowEnergyData::ClearBondData() {
-  BT_ASSERT(bond_data_->has_value());
+  PW_CHECK(bond_data_->has_value());
   if (bond_data_->value().irk) {
     peer_->set_identity_known(false);
   }
@@ -280,13 +280,13 @@ void Peer::LowEnergyData::OnConnectionStateMaybeChanged(
 
 Peer::BrEdrData::BrEdrData(Peer* owner)
     : peer_(owner), services_({}, MakeContainerOfToStringConvertFunction()) {
-  BT_DEBUG_ASSERT(peer_);
-  BT_DEBUG_ASSERT(peer_->identity_known());
+  PW_DCHECK(peer_);
+  PW_DCHECK(peer_->identity_known());
 
   // Devices that are capable of BR/EDR and use a LE random device address will
   // end up with separate entries for the BR/EDR and LE addresses.
-  BT_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLERandom &&
-                  peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
+  PW_DCHECK(peer_->address().type() != DeviceAddress::Type::kLERandom &&
+            peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
   address_ = {DeviceAddress::Type::kBREDR, peer_->address().value()};
 }
 
@@ -304,8 +304,7 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
 
 void Peer::BrEdrData::SetInquiryData(
     const pw::bluetooth::emboss::InquiryResultView& view) {
-  BT_DEBUG_ASSERT(peer_->address().value() ==
-                  DeviceAddressBytes{view.bd_addr()});
+  PW_DCHECK(peer_->address().value() == DeviceAddressBytes{view.bd_addr()});
   SetInquiryData(
       DeviceClass(view.class_of_device().BackingStorage().ReadUInt()),
       view.clock_offset().BackingStorage().ReadUInt(),
@@ -314,8 +313,7 @@ void Peer::BrEdrData::SetInquiryData(
 
 void Peer::BrEdrData::SetInquiryData(
     const pw::bluetooth::emboss::InquiryResultWithRssiView& view) {
-  BT_DEBUG_ASSERT(peer_->address().value() ==
-                  DeviceAddressBytes{view.bd_addr()});
+  PW_DCHECK(peer_->address().value() == DeviceAddressBytes{view.bd_addr()});
   SetInquiryData(
       DeviceClass(view.class_of_device().BackingStorage().ReadUInt()),
       view.clock_offset().BackingStorage().ReadUInt(),
@@ -325,8 +323,7 @@ void Peer::BrEdrData::SetInquiryData(
 
 void Peer::BrEdrData::SetInquiryData(
     const pw::bluetooth::emboss::ExtendedInquiryResultEventView& view) {
-  BT_DEBUG_ASSERT(peer_->address().value() ==
-                  DeviceAddressBytes(view.bd_addr()));
+  PW_DCHECK(peer_->address().value() == DeviceAddressBytes(view.bd_addr()));
   const BufferView response_view(
       view.extended_inquiry_response().BackingStorage().data(),
       view.extended_inquiry_response().SizeInBytes());
@@ -340,7 +337,7 @@ void Peer::BrEdrData::SetInquiryData(
 
 Peer::InitializingConnectionToken
 Peer::BrEdrData::RegisterInitializingConnection() {
-  BT_ASSERT(!connected());
+  PW_CHECK(!connected());
 
   ConnectionState prev_state = connection_state();
   initializing_tokens_count_++;
@@ -358,10 +355,10 @@ Peer::BrEdrData::RegisterInitializingConnection() {
 }
 
 Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
-  BT_ASSERT_MSG(!connected(),
-                "attempt to register BR/EDR connection when a connection is "
-                "already registered (peer: %s)",
-                bt_str(peer_->identifier()));
+  PW_CHECK(!connected(),
+           "attempt to register BR/EDR connection when a connection is "
+           "already registered (peer: %s)",
+           bt_str(peer_->identifier()));
 
   ConnectionState prev_state = connection_state();
   connection_tokens_count_++;
@@ -452,7 +449,7 @@ void Peer::BrEdrData::SetInquiryData(
 }
 
 bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
-  BT_DEBUG_ASSERT(eir.size());
+  PW_DCHECK(eir.size());
 
   // TODO(armansito): Validate that the EIR data is not malformed?
   SupplementDataReader reader(eir);
@@ -486,7 +483,7 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
 }
 
 void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
-  BT_DEBUG_ASSERT(peer_->connectable());
+  PW_DCHECK(peer_->connectable());
 
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
@@ -500,7 +497,7 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
 }
 
 void Peer::BrEdrData::ClearBondData() {
-  BT_ASSERT(link_key_.has_value());
+  PW_CHECK(link_key_.has_value());
   link_key_ = std::nullopt;
 }
 
@@ -557,10 +554,10 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback,
       last_updated_(dispatcher.now()),
       dispatcher_(dispatcher),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(notify_listeners_callback_);
-  BT_DEBUG_ASSERT(update_expiry_callback_);
-  BT_DEBUG_ASSERT(dual_mode_callback_);
-  BT_DEBUG_ASSERT(identifier.IsValid());
+  PW_DCHECK(notify_listeners_callback_);
+  PW_DCHECK(update_expiry_callback_);
+  PW_DCHECK(dual_mode_callback_);
+  PW_DCHECK(identifier.IsValid());
 
   if (address.type() == DeviceAddress::Type::kBREDR ||
       address.type() == DeviceAddress::Type::kLEPublic) {
@@ -717,19 +714,19 @@ bool Peer::TryMakeTemporary() {
 }
 
 void Peer::UpdateExpiry() {
-  BT_DEBUG_ASSERT(update_expiry_callback_);
+  PW_DCHECK(update_expiry_callback_);
   update_expiry_callback_(*this);
 }
 
 void Peer::NotifyListeners(NotifyListenersChange change) {
-  BT_DEBUG_ASSERT(notify_listeners_callback_);
+  PW_DCHECK(notify_listeners_callback_);
   notify_listeners_callback_(*this, change);
 }
 
 void Peer::MakeDualMode() {
   technology_.Set(TechnologyType::kDualMode);
   if (bredr_cross_transport_key_) {
-    BT_ASSERT(
+    PW_CHECK(
         bredr_data_);  // Should only be hit after BR/EDR is already created.
     bredr_data_->SetBondData(*bredr_cross_transport_key_);
     bt_log(DEBUG,
@@ -737,7 +734,7 @@ void Peer::MakeDualMode() {
            "restored cross-transport-generated br/edr link key");
     bredr_cross_transport_key_ = std::nullopt;
   }
-  BT_DEBUG_ASSERT(dual_mode_callback_);
+  PW_DCHECK(dual_mode_callback_);
   dual_mode_callback_(*this);
 }
 

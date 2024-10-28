@@ -35,7 +35,7 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
       bondable_cb_(std::move(bondable_cb)),
       security_cb_(std::move(security_cb)),
       role_cb_(std::move(role_cb)) {
-  BT_ASSERT(peer_id_.IsValid());
+  PW_CHECK(peer_id_.IsValid());
 }
 
 LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {
@@ -45,7 +45,7 @@ LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {
 }
 
 void LowEnergyConnectionHandle::Release() {
-  BT_ASSERT(active_);
+  PW_CHECK(active_);
   active_ = false;
   if (release_cb_) {
     release_cb_(this);
@@ -64,22 +64,22 @@ void LowEnergyConnectionHandle::MarkClosed() {
 
 iso::AcceptCisStatus LowEnergyConnectionHandle::AcceptCis(
     iso::CigCisIdentifier id, iso::CisEstablishedCallback cis_established_cb) {
-  BT_ASSERT(active_);
+  PW_CHECK(active_);
   return accept_cis_cb_(id, std::move(cis_established_cb));
 }
 
 sm::BondableMode LowEnergyConnectionHandle::bondable_mode() const {
-  BT_ASSERT(active_);
+  PW_CHECK(active_);
   return bondable_cb_();
 }
 
 sm::SecurityProperties LowEnergyConnectionHandle::security() const {
-  BT_ASSERT(active_);
+  PW_CHECK(active_);
   return security_cb_();
 }
 
 pw::bluetooth::emboss::ConnectionRole LowEnergyConnectionHandle::role() const {
-  BT_ASSERT(active_);
+  PW_CHECK(active_);
   return role_cb_();
 }
 

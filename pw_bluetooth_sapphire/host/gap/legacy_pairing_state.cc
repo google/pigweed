@@ -65,7 +65,7 @@ LegacyPairingState::LegacyPairingState(
           std::move(peer), std::move(pairing_delegate), outgoing_connection) {
   // We can only populate |link_|, |send_auth_request_callback_|, and
   // |status_callback_| if the ACL connection is complete.
-  BT_ASSERT(link.is_alive());
+  PW_CHECK(link.is_alive());
 
   BuildEstablishedLink(
       std::move(link), std::move(auth_cb), std::move(status_cb));
@@ -113,7 +113,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
     return;
   }
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
@@ -126,7 +126,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
     return;
   }
 
-  BT_ASSERT(pairing_delegate_.is_alive());
+  PW_CHECK(pairing_delegate_.is_alive());
 
   // Only initiate pairing if we have output capabilities to display a PIN
   pw::bluetooth::emboss::IoCapability io_capability =
@@ -143,7 +143,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
   }
 
   if (state_ == State::kIdle) {
-    BT_ASSERT(!is_pairing());
+    PW_CHECK(!is_pairing());
 
     // TODO(fxbug.dev/348676274): Do not downgrade to LP if peer was
     // previously bonded with SSP
@@ -176,7 +176,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
   // L2CAP channels), but each should wait for the results of any ongoing
   // pairing procedure before sending their own HCI_Authentication_Request.
   if (is_pairing()) {
-    BT_ASSERT(state_ != State::kIdle);
+    PW_CHECK(state_ != State::kIdle);
     bt_log(INFO,
            "gap-bredr",
            "Already pairing on link %#.4x for peer id %s; blocking callback on "
@@ -190,7 +190,7 @@ void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {
   } else {
     // In the error state, we should expect no pairing to be created and cancel
     // this particular request immediately.
-    BT_ASSERT(state_ == State::kFailed);
+    PW_CHECK(state_ == State::kFailed);
     status_cb(handle(), ToResult(HostError::kCanceled));
   }
 }
@@ -201,7 +201,7 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
     return std::nullopt;
   }
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
@@ -232,10 +232,10 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
            "Recalling link key for bonded peer %s",
            bt_str(peer_id_));
 
-    BT_ASSERT(peer_->bredr()->link_key().has_value());
+    PW_CHECK(peer_->bredr()->link_key().has_value());
     link_key = peer_->bredr()->link_key();
-    BT_ASSERT(link_key->security().enc_key_size() ==
-              hci_spec::kBrEdrLinkKeySize);
+    PW_CHECK(link_key->security().enc_key_size() ==
+             hci_spec::kBrEdrLinkKeySize);
 
     if (link_.is_alive()) {
       const hci_spec::LinkKeyType link_key_type =
@@ -254,7 +254,7 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
   // the peer initiates the authentication procedure and has a valid link key).
   if (state_ == State::kIdle) {
     if (link_key.has_value()) {
-      BT_ASSERT(!is_pairing());
+      PW_CHECK(!is_pairing());
       current_pairing_ = Pairing::MakeResponderForBonded();
       state_ = State::kWaitEncryption;
       return link_key->key();
@@ -262,7 +262,7 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
     return std::nullopt;
   }
 
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
 
   // TODO(fxbug.dev/348676274): Do not downgrade to LP if peer was
   // previously bonded with SSP
@@ -273,7 +273,7 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
       SecurityPropertiesMeetRequirements(
           link_key->security(), current_pairing_->preferred_security)) {
     // Skip Legacy Pairing and just perform authentication with existing key
-    BT_ASSERT(current_pairing_->initiator);
+    PW_CHECK(current_pairing_->initiator);
     state_ = State::kInitiatorWaitAuthComplete;
     return link_key->key();
   }
@@ -291,11 +291,11 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
   }
 
   if (state_ == State::kIdle) {
-    BT_ASSERT(!is_pairing());
+    PW_CHECK(!is_pairing());
     current_pairing_ = Pairing::MakeResponder(outgoing_connection_);
   }
 
-  BT_ASSERT(pairing_delegate_.is_alive());
+  PW_CHECK(pairing_delegate_.is_alive());
 
   // Get our I/O capabilities
   pw::bluetooth::emboss::IoCapability io_capability =
@@ -307,10 +307,10 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
   // Capability (Core Spec v5.4, Vol 3, Part C, 5.2.2.5, Table 5.5) so all PINs
   // will be randomly generated.
   if (initiator()) {
-    BT_ASSERT(io_capability !=
-              pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT);
-    BT_ASSERT(io_capability !=
-              pw::bluetooth::emboss::IoCapability::KEYBOARD_ONLY);
+    PW_CHECK(io_capability !=
+             pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT);
+    PW_CHECK(io_capability !=
+             pw::bluetooth::emboss::IoCapability::KEYBOARD_ONLY);
 
     // Randomly generate a 4-digit passkey
     uint16_t random_pin;
@@ -378,7 +378,7 @@ void LegacyPairingState::OnLinkKeyNotification(const UInt128& link_key,
     return;
   }
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   // Legacy Pairing generates a Combination key type (Core Spec v5.4, Vol 4,
   // Part E, 7.7.24)
@@ -397,7 +397,7 @@ void LegacyPairingState::OnLinkKeyNotification(const UInt128& link_key,
 
   // The resulting link security properties are computed by both the Link
   // Manager (Controller) and the Host subsystem, so check that they agree.
-  BT_ASSERT(is_pairing());
+  PW_CHECK(is_pairing());
   sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
   current_pairing_->security_properties = sec_props;
 
@@ -405,7 +405,7 @@ void LegacyPairingState::OnLinkKeyNotification(const UInt128& link_key,
   bredr_security_ = sec_props;
 
   // Link keys resulting from legacy pairing are assigned lowest security level.
-  BT_ASSERT(sec_props.level() == sm::SecurityLevel::kNoSecurity);
+  PW_CHECK(sec_props.level() == sm::SecurityLevel::kNoSecurity);
 
   if (!link_.is_alive()) {
     // Connection is not complete yet so temporarily store this to later give
@@ -441,7 +441,7 @@ void LegacyPairingState::OnLinkKeyNotification(const UInt128& link_key,
 
 void LegacyPairingState::OnAuthenticationComplete(
     pw::bluetooth::emboss::StatusCode status_code) {
-  BT_ASSERT(link_.is_alive());
+  PW_CHECK(link_.is_alive());
 
   if (is_pairing() && peer_->bredr() && peer_->bredr()->bonded() &&
       status_code == pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING) {
@@ -482,14 +482,14 @@ void LegacyPairingState::OnAuthenticationComplete(
   }
 
   // HCI_Authentication_Complete events are only received by initiators
-  BT_ASSERT(initiator());
+  PW_CHECK(initiator());
 
   // After successful authentication, we can now enable encryption
   EnableEncryption();
 }
 
 void LegacyPairingState::OnEncryptionChange(hci::Result<bool> result) {
-  BT_ASSERT(link_.is_alive());
+  PW_CHECK(link_.is_alive());
 
   if (state_ != State::kWaitEncryption) {
     // Ignore encryption changes when not expecting them because they may be
@@ -571,7 +571,7 @@ LegacyPairingState::Pairing::MakeResponderForBonded() {
 }
 
 void LegacyPairingState::EnableEncryption() {
-  BT_ASSERT(link_.is_alive());
+  PW_CHECK(link_.is_alive());
 
   if (!link_->StartEncryption()) {
     bt_log(
@@ -614,8 +614,8 @@ void LegacyPairingState::SignalStatus(hci::Result<> status,
 }
 
 void LegacyPairingState::InitiateNextPairingRequest() {
-  BT_ASSERT(state_ == State::kIdle);
-  BT_ASSERT(!is_pairing());
+  PW_CHECK(state_ == State::kIdle);
+  PW_CHECK(!is_pairing());
 
   if (!link_.is_alive()) {
     bt_log(WARN,
@@ -626,7 +626,7 @@ void LegacyPairingState::InitiateNextPairingRequest() {
     return;
   }
 
-  BT_ASSERT(peer_.is_alive());
+  PW_CHECK(peer_.is_alive());
 
   // If we interrogated the peer and they support SSP, we should be using SSP
   // since we also support SSP.
@@ -661,7 +661,7 @@ std::vector<fit::closure> LegacyPairingState::CompletePairingRequests(
   std::vector<fit::closure> callbacks_to_signal;
 
   if (!is_pairing()) {
-    BT_ASSERT(request_queue_.empty());
+    PW_CHECK(request_queue_.empty());
     return callbacks_to_signal;
   }
 
@@ -678,7 +678,7 @@ std::vector<fit::closure> LegacyPairingState::CompletePairingRequests(
     return callbacks_to_signal;
   }
 
-  BT_ASSERT(state_ == State::kIdle);
+  PW_CHECK(state_ == State::kIdle);
 
   sm::SecurityProperties security_properties =
       sm::SecurityProperties(hci_spec::LinkKeyType::kCombination);

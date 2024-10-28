@@ -60,7 +60,7 @@ RemoteService::RemoteService(const ServiceData& service_data,
     : service_data_(service_data),
       client_(std::move(client)),
       remaining_descriptor_requests_(kSentinel) {
-  BT_DEBUG_ASSERT(client_.is_alive());
+  PW_DCHECK(client_.is_alive());
 }
 
 RemoteService::~RemoteService() {
@@ -151,7 +151,7 @@ void RemoteService::ReadCharacteristic(CharacteristicHandle id,
                                        ReadValueCallback callback) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -173,7 +173,7 @@ void RemoteService::ReadLongCharacteristic(CharacteristicHandle id,
                                            ReadValueCallback callback) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -233,7 +233,7 @@ void RemoteService::WriteCharacteristic(CharacteristicHandle id,
                                         att::ResultFunction<> cb) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     cb(status);
     return;
@@ -257,7 +257,7 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id,
                                             att::ResultFunction<> callback) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -292,7 +292,7 @@ void RemoteService::WriteCharacteristicWithoutResponse(
     att::ResultFunction<> cb) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     cb(status);
     return;
@@ -316,7 +316,7 @@ void RemoteService::ReadDescriptor(DescriptorHandle id,
                                    ReadValueCallback callback) {
   const DescriptorData* desc;
   fit::result status = GetDescriptor(id, &desc);
-  BT_DEBUG_ASSERT(desc || status.is_error());
+  PW_DCHECK(desc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -331,7 +331,7 @@ void RemoteService::ReadLongDescriptor(DescriptorHandle id,
                                        ReadValueCallback callback) {
   const DescriptorData* desc;
   att::Result<> status = GetDescriptor(id, &desc);
-  BT_DEBUG_ASSERT(desc || status.is_error());
+  PW_DCHECK(desc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -364,7 +364,7 @@ void RemoteService::WriteDescriptor(DescriptorHandle id,
                                     att::ResultFunction<> callback) {
   const DescriptorData* desc;
   fit::result status = GetDescriptor(id, &desc);
-  BT_DEBUG_ASSERT(desc || status.is_error());
+  PW_DCHECK(desc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -388,7 +388,7 @@ void RemoteService::WriteLongDescriptor(DescriptorHandle id,
                                         att::ResultFunction<> callback) {
   const DescriptorData* desc;
   fit::result status = GetDescriptor(id, &desc);
-  BT_DEBUG_ASSERT(desc || status.is_error());
+  PW_DCHECK(desc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -415,7 +415,7 @@ void RemoteService::EnableNotifications(CharacteristicHandle id,
                                         NotifyStatusCallback status_callback) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_error()) {
     status_callback(status, kInvalidId);
     return;
@@ -430,7 +430,7 @@ void RemoteService::DisableNotifications(
     att::ResultFunction<> status_callback) {
   RemoteCharacteristic* chrc;
   fit::result status = GetCharacteristic(id, &chrc);
-  BT_DEBUG_ASSERT(chrc || status.is_error());
+  PW_DCHECK(chrc || status.is_error());
   if (status.is_ok() && !chrc->DisableNotifications(handler_id)) {
     status = ToResult(HostError::kNotFound);
   }
@@ -438,9 +438,9 @@ void RemoteService::DisableNotifications(
 }
 
 void RemoteService::StartDescriptorDiscovery() {
-  BT_DEBUG_ASSERT(!pending_discov_reqs_.empty());
+  PW_DCHECK(!pending_discov_reqs_.empty());
 
-  BT_ASSERT(!characteristics_.empty());
+  PW_CHECK(!characteristics_.empty());
   remaining_descriptor_requests_ = characteristics_.size();
 
   auto self = GetWeakPtr();
@@ -468,11 +468,11 @@ void RemoteService::StartDescriptorDiscovery() {
       }
 
       // HasCharacteristics() should return true now.
-      BT_DEBUG_ASSERT(self->HasCharacteristics());
+      PW_DCHECK(self->HasCharacteristics());
 
       // Fall through and notify clients below.
     } else {
-      BT_DEBUG_ASSERT(!self->HasCharacteristics());
+      PW_DCHECK(!self->HasCharacteristics());
       bt_log(DEBUG, "gatt", "descriptor discovery failed %s", bt_str(status));
       self->characteristics_.clear();
 
@@ -498,14 +498,14 @@ void RemoteService::StartDescriptorDiscovery() {
       end_handle = next->second.info().handle - 1;
     }
 
-    BT_DEBUG_ASSERT(client_.is_alive());
+    PW_DCHECK(client_.is_alive());
     iter->second.DiscoverDescriptors(end_handle, desc_done_callback);
   }
 }
 
 fit::result<Error<>> RemoteService::GetCharacteristic(
     CharacteristicHandle id, RemoteCharacteristic** out_char) {
-  BT_DEBUG_ASSERT(out_char);
+  PW_DCHECK(out_char);
 
   if (!HasCharacteristics()) {
     *out_char = nullptr;
@@ -524,7 +524,7 @@ fit::result<Error<>> RemoteService::GetCharacteristic(
 
 fit::result<Error<>> RemoteService::GetDescriptor(
     DescriptorHandle id, const DescriptorData** out_desc) {
-  BT_DEBUG_ASSERT(out_desc);
+  PW_DCHECK(out_desc);
 
   if (!HasCharacteristics()) {
     *out_desc = nullptr;
@@ -551,8 +551,8 @@ fit::result<Error<>> RemoteService::GetDescriptor(
 }
 
 void RemoteService::CompleteCharacteristicDiscovery(att::Result<> status) {
-  BT_DEBUG_ASSERT(!pending_discov_reqs_.empty());
-  BT_DEBUG_ASSERT(status.is_error() || remaining_descriptor_requests_ == 0u);
+  PW_DCHECK(!pending_discov_reqs_.empty());
+  PW_DCHECK(status.is_error() || remaining_descriptor_requests_ == 0u);
 
   // We return a new copy of only the immutable data of our characteristics and
   // their descriptors. This requires a copy, which *could* be expensive in the
@@ -598,8 +598,8 @@ void RemoteService::ReadLongHelper(att::Handle value_handle,
                                    MutableByteBufferPtr out_buffer,
                                    size_t bytes_read,
                                    ReadValueCallback callback) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(out_buffer);
+  PW_DCHECK(callback);
+  PW_DCHECK(out_buffer);
 
   auto self = GetWeakPtr();
   auto read_cb = [self,
@@ -635,7 +635,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle,
 
     // Copy the blob into our |buffer|. |blob| may be truncated depending on the
     // size of |buffer|.
-    BT_ASSERT(bytes_read < buffer->size());
+    PW_CHECK(bytes_read < buffer->size());
     size_t copy_size = std::min(blob.size(), buffer->size() - bytes_read);
     bool truncated_by_max_bytes = (blob.size() != copy_size);
     buffer->Write(blob.view(0, copy_size), bytes_read);
@@ -643,7 +643,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle,
 
     // We are done if the read was not truncated by the MTU or we have read the
     // maximum number of bytes requested.
-    BT_ASSERT(bytes_read <= buffer->size());
+    PW_CHECK(bytes_read <= buffer->size());
     if (!maybe_truncated_by_mtu || bytes_read == buffer->size()) {
       cb(fit::ok(),
          buffer->view(0, bytes_read),
@@ -758,7 +758,7 @@ void RemoteService::ReadByTypeHelper(
     const std::vector<Client::ReadByTypeValue>& values = result.value();
     // Client already checks for invalid response where status is success but no
     // values are returned.
-    BT_ASSERT(!values.empty());
+    PW_CHECK(!values.empty());
 
     // Convert and accumulate values.
     for (const auto& val : values) {
