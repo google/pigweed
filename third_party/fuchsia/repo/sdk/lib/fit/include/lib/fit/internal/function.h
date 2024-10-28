@@ -384,16 +384,16 @@ class alignas(FunctionAlignment(inline_target_size)) generic_function_base {
   struct empty {};
 
   union {
+    // Empty struct used when initializing the storage in the constexpr
+    // constructor.
+    empty null_bits_;
+
     // Function context data. The bits_ field requires special alignment, but
     // adding the alignas() at the field declaration increases the padding.
     // Instead, generic_function_base is aligned according to max_align_t and
     // inline_target_size, and bits_ is placed first in the class. Thus, bits_
     // MUST remain first in the class to ensure proper alignment.
     mutable uint8_t bits_[inline_target_size];
-
-    // Empty struct used when initializing the storage in the constexpr
-    // constructor.
-    empty null_bits_;
   };
 
   // The target_ops pointer for this function. This field has lower alignment

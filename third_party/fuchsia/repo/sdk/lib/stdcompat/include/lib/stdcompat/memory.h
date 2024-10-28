@@ -11,22 +11,7 @@
 
 namespace cpp17 {
 
-#if defined(__cpp_lib_addressof_constexpr) && __cpp_lib_addressof_constexpr >= 201603L && \
-    !defined(LIB_STDCOMPAT_USE_POLYFILLS)
-
 using std::addressof;
-
-#else  // Provide constexpr polyfill for addressof.
-
-template <typename T>
-constexpr T* addressof(T& arg) noexcept {
-  return __builtin_addressof(arg);
-}
-
-template <typename T>
-const T* addressof(const T&&) = delete;
-
-#endif  // __cpp_lib_addressof_constexpr >= 201603L && !defined(LIB_STDCOMPAT_USE_POLYFILLS)
 
 }  // namespace cpp17
 
@@ -45,8 +30,8 @@ constexpr T* to_address(T* pointer) noexcept {
   return pointer;
 }
 
-// TODO(https://fxbug.dev/42149777): This std::pointer_traits stuff is only to be bug-compatible with the
-// standard library implementations; switch back to auto when the linked bug is resolved.
+// TODO(https://fxbug.dev/42149777): This std::pointer_traits stuff is only to be bug-compatible
+// with the standard library implementations; switch back to auto when the linked bug is resolved.
 template <typename T>
 constexpr typename std::pointer_traits<T>::element_type* to_address(const T& pointer) noexcept {
   static_assert(
