@@ -83,7 +83,8 @@ class UniquePtr : public allocator::internal::BaseUniquePtr {
         deallocator_(other.deallocator_),
         size_(other.size_) {
     static_assert(
-        std::is_assignable_v<T*&, U*>,
+        std::is_assignable_v<UnderlyingType*&,
+                             typename UniquePtr<U>::UnderlyingType*>,
         "Attempted to construct a UniquePtr<T> from a UniquePtr<U> where "
         "U* is not assignable to T*.");
     other.Release();
@@ -106,7 +107,8 @@ class UniquePtr : public allocator::internal::BaseUniquePtr {
   /// ``UniquePtr<Base> base = deallocator.MakeUnique<Child>();``.
   template <typename U>
   UniquePtr& operator=(UniquePtr<U>&& other) noexcept {
-    static_assert(std::is_assignable_v<T*&, U*>,
+    static_assert(std::is_assignable_v<UnderlyingType*&,
+                                       typename UniquePtr<U>::UnderlyingType*>,
                   "Attempted to assign a UniquePtr<U> to a UniquePtr<T> where "
                   "U* is not assignable to T*.");
     Reset();

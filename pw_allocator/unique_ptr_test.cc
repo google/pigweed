@@ -152,40 +152,44 @@ TEST_F(UniquePtrTest, DestructorDestroysAndFrees) {
   EXPECT_EQ(allocator_.deallocate_size(), sizeof(DestructorCounter));
 }
 
+class ConstructorCounter {
+ public:
+  ConstructorCounter() { ++count_; }
+
+  size_t getCount() { return count_; }
+
+ private:
+  static size_t count_;
+};
+size_t ConstructorCounter::count_ = 0;
+
 TEST_F(UniquePtrTest, ArrayElementsAreConstructed) {
   constexpr static size_t kArraySize = 5;
-  size_t count = 0;
-  class ConstructorCounter {
-   public:
-    ConstructorCounter(size_t& count) { ++count; }
-  };
 
-  EXPECT_EQ(count, 0ul);
   pw::UniquePtr<ConstructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<ConstructorCounter>(kArraySize, count);
+      allocator_.MakeUniqueArray<ConstructorCounter>(kArraySize);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(count, kArraySize);
+  EXPECT_EQ(ptr[0].getCount(), kArraySize);
 }
+
+class DestructorCounter {
+ public:
+  ~DestructorCounter() { ++count_; }
+
+  static size_t count_;
+};
+size_t DestructorCounter::count_ = 0;
 
 TEST_F(UniquePtrTest, DestructorDestroysAndFreesArray) {
   constexpr static size_t kArraySize = 5;
-  size_t count = 0;
-  class DestructorCounter {
-   public:
-    DestructorCounter(size_t& count) : count_(&count) {}
-    ~DestructorCounter() { (*count_)++; }
-
-   private:
-    size_t* count_;
-  };
   pw::UniquePtr<DestructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<DestructorCounter>(kArraySize, count);
+      allocator_.MakeUniqueArray<DestructorCounter>(kArraySize);
   ASSERT_NE(ptr, nullptr);
 
-  EXPECT_EQ(count, 0ul);
+  EXPECT_EQ(DestructorCounter::count_, 0ul);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
   ptr.Reset();  // Reset the UniquePtr, destroying its contents.
-  EXPECT_EQ(count, kArraySize);
+  EXPECT_EQ(DestructorCounter::count_, kArraySize);
   EXPECT_EQ(allocator_.deallocate_size(),
             sizeof(DestructorCounter) * kArraySize);
 }
