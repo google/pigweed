@@ -653,7 +653,10 @@ pw_test_group("tests") {
     ":unique_ptr_test",
     ":worst_fit_block_allocator_test",
   ]
-  group_deps = [ "examples" ]
+  group_deps = [
+    "benchmarks:tests",
+    "examples",
+  ]
 }
 
 # Docs

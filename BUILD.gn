@@ -616,6 +616,9 @@ if (current_toolchain != default_toolchain) {
           "$dir_pw_rpc:test_rpc_server",
           "$dir_pw_unit_test:test_rpc_server",
         ]
+
+        # Build the benchmarks, but don't run them by default.
+        deps += [ ":pw_benchmarks" ]
       }
     }
 
@@ -661,6 +664,11 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_protobuf:perf_tests",
     ]
     output_metadata = true
+  }
+
+  # TODO(b/369853273): Merge benchmarks and perf tests
+  group("pw_benchmarks") {
+    deps = [ "$dir_pw_allocator/benchmarks" ]
   }
 
   # Fuzzers not based on a fuzzing engine. Engine-based fuzzers should be

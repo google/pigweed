@@ -727,4 +727,5 @@ pw_add_test(pw_allocator.worst_fit_block_allocator_test
     pw_allocator
 )
 
+add_subdirectory(benchmarks)
 add_subdirectory(examples)

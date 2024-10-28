@@ -128,8 +128,7 @@ bool TestHarness::HandleRequest(const Request& request) {
         using T = std::decay_t<decltype(r)>;
 
         if constexpr (std::is_same_v<T, AllocationRequest>) {
-          size_t size = std::max(r.size, sizeof(Allocation));
-          Layout layout(size, r.alignment);
+          Layout layout(r.size, r.alignment);
           BeforeAllocate(layout);
           void* ptr = allocator_->Allocate(layout);
           AfterAllocate(ptr);
@@ -139,7 +138,6 @@ bool TestHarness::HandleRequest(const Request& request) {
           } else {
             max_size_ = std::max(layout.size() / 2, size_t(1));
           }
-
         } else if constexpr (std::is_same_v<T, DeallocationRequest>) {
           Allocation* old = RemoveAllocation(r.index);
           if (old == nullptr) {
@@ -154,8 +152,7 @@ bool TestHarness::HandleRequest(const Request& request) {
           if (old == nullptr) {
             return false;
           }
-          size_t new_size = std::max(r.new_size, sizeof(Allocation));
-          Layout new_layout = Layout(new_size, old->layout.alignment());
+          Layout new_layout(r.new_size, old->layout.alignment());
           BeforeReallocate(new_layout);
           void* new_ptr = allocator_->Reallocate(old, new_layout);
           AfterReallocate(new_ptr);
@@ -182,7 +179,18 @@ void TestHarness::Reset() {
 }
 
 void TestHarness::AddAllocation(void* ptr, Layout layout) {
-  PW_ASSERT(layout.size() >= sizeof(Allocation));
+  constexpr Layout min_layout = Layout::Of<Allocation>();
+  if (layout.size() < min_layout.size() ||
+      layout.alignment() < min_layout.alignment()) {
+    // The harness should want to test small sizes and alignments, but it
+    // needs the layout to be at least `Layout::Of<Allocation>` in order
+    // to persist details about it. If either the size or alignment is too
+    // small, deallocate immediately.
+    BeforeDeallocate(ptr);
+    allocator_->Deallocate(ptr);
+    AfterDeallocate();
+    return;
+  }
   auto* bytes = static_cast<std::byte*>(ptr);
   auto* allocation = ::new (bytes) Allocation(layout);
   allocations_.push_back(*allocation);

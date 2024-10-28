@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,24 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Runs the main function in detokenize.py."""
 
-import("//build_overrides/pigweed.gni")
+from pw_allocator import benchmarks
 
-import("$dir_pw_build/python.gni")
-
-pw_python_package("py") {
-  setup = [
-    "pyproject.toml",
-    "setup.cfg",
-  ]
-  sources = [
-    "pw_allocator/__init__.py",
-    "pw_allocator/__main__.py",
-    "pw_allocator/benchmarks.py",
-    "pw_allocator/heap_viewer.py",
-  ]
-  python_deps = [ "$dir_pw_cli/py" ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-  mypy_ini = "$dir_pigweed/.mypy.ini"
-  ruff_toml = "$dir_pigweed/.ruff.toml"
-}
+benchmarks.main()

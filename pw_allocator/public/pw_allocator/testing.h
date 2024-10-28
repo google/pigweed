@@ -90,6 +90,11 @@ class AllocatorForTest : public Allocator {
     }
   }
 
+  /// @copydoc BlockAllocator::MeasureFragmentation
+  Fragmentation MeasureFragmentation() const {
+    return allocator_->MeasureFragmentation();
+  }
+
  private:
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {

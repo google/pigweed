@@ -1,0 +1,136 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+group("benchmarks") {
+  deps = [
+    ":best_fit_benchmark",
+    ":dual_first_fit_benchmark",
+    ":first_fit_benchmark",
+    ":last_fit_benchmark",
+    ":worst_fit_benchmark",
+  ]
+}
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+# Libraries
+
+pw_source_set("measurements") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/benchmarks/measurements.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:intrusive_map",
+    dir_pw_metric,
+  ]
+  sources = [ "measurements.cc" ]
+}
+
+pw_source_set("benchmark") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_allocator/benchmarks/benchmark.h",
+    "public/pw_allocator/benchmarks/config.h",
+  ]
+  public_deps = [
+    ":measurements",
+    "$dir_pw_allocator:block_allocator",
+    "$dir_pw_allocator:fragmentation",
+    "$dir_pw_allocator:test_harness",
+    "$dir_pw_chrono:system_clock",
+    dir_pw_metric,
+    dir_pw_tokenizer,
+  ]
+  sources = [ "benchmark.cc" ]
+}
+
+# Binaries
+
+pw_executable("best_fit_benchmark") {
+  sources = [ "best_fit_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:best_fit_block_allocator",
+    "$dir_pw_random",
+  ]
+}
+
+pw_executable("dual_first_fit_benchmark") {
+  sources = [ "dual_first_fit_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:dual_first_fit_block_allocator",
+    "$dir_pw_random",
+  ]
+}
+
+pw_executable("first_fit_benchmark") {
+  sources = [ "first_fit_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:first_fit_block_allocator",
+    "$dir_pw_random",
+  ]
+}
+
+pw_executable("last_fit_benchmark") {
+  sources = [ "last_fit_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:last_fit_block_allocator",
+    "$dir_pw_random",
+  ]
+}
+
+pw_executable("worst_fit_benchmark") {
+  sources = [ "worst_fit_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:worst_fit_block_allocator",
+    "$dir_pw_random",
+  ]
+}
+
+# Unit tests
+
+pw_test("measurements_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  deps = [ ":measurements" ]
+  sources = [ "measurements_test.cc" ]
+}
+
+pw_test("benchmark_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:testing",
+  ]
+  sources = [ "benchmark_test.cc" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":benchmark_test",
+    ":measurements_test",
+  ]
+}
